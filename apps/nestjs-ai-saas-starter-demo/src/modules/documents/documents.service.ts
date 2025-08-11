@@ -8,9 +8,7 @@ import { SearchDocumentDto } from './dto/search-document.dto';
 export class DocumentsService {
   private readonly logger = new Logger(DocumentsService.name);
 
-  constructor(
-    @InjectChromaDB() private readonly chromaClient: ChromaClient,
-  ) {}
+  constructor(@InjectChromaDB() private readonly chromaClient: ChromaClient) {}
 
   async createDocument(createDocumentDto: CreateDocumentDto) {
     try {
@@ -48,12 +46,13 @@ export class DocumentsService {
 
       return {
         query: searchDto.query,
-        results: results.documents[0]?.map((doc, index) => ({
-          document: doc,
-          metadata: results.metadatas[0]?.[index],
-          distance: results.distances?.[0]?.[index],
-          id: results.ids[0]?.[index],
-        })) || [],
+        results:
+          results.documents[0]?.map((doc, index) => ({
+            document: doc,
+            metadata: results.metadatas[0]?.[index],
+            distance: results.distances?.[0]?.[index],
+            id: results.ids[0]?.[index],
+          })) || [],
       };
     } catch (error) {
       this.logger.error('Failed to search documents', error);
@@ -75,7 +74,7 @@ export class DocumentsService {
     try {
       const collection = await this.chromaClient.getCollection({ name });
       const count = await collection.count();
-      
+
       return {
         name,
         count,
@@ -92,7 +91,7 @@ export class DocumentsService {
       const collection = await this.chromaClient.getCollection({
         name: 'default',
       });
-      
+
       await collection.delete({
         ids: [id],
       });
@@ -111,7 +110,7 @@ export class DocumentsService {
       });
 
       const embedding = await collection.embeddingFunction?.generate([text]);
-      
+
       return {
         text,
         embedding: embedding?.[0],

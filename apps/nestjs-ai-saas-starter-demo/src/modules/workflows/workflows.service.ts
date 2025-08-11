@@ -10,7 +10,7 @@ export class WorkflowsService {
 
   constructor(
     private readonly graphBuilder: WorkflowGraphBuilderService,
-    private readonly sampleWorkflow: SampleWorkflow,
+    private readonly sampleWorkflow: SampleWorkflow
   ) {}
 
   async listWorkflows() {
@@ -34,28 +34,28 @@ export class WorkflowsService {
 
   async getWorkflow(id: string) {
     const workflows = await this.listWorkflows();
-    const workflow = workflows.find(w => w.id === id);
-    
+    const workflow = workflows.find((w) => w.id === id);
+
     if (!workflow) {
       throw new NotFoundException(`Workflow ${id} not found`);
     }
-    
+
     return workflow;
   }
 
   async executeWorkflow(workflowId: string, executeDto: ExecuteWorkflowDto) {
     try {
       const executionId = this.generateExecutionId();
-      
+
       // For demonstration, we'll use the sample workflow
       if (workflowId === 'sample') {
         const graph = await this.graphBuilder.buildFromClass(SampleWorkflow);
-        
+
         const result = await graph.invoke({
           input: executeDto.input,
           metadata: executeDto.metadata || {},
         });
-        
+
         this.executions.set(executionId, {
           workflowId,
           status: 'completed',
@@ -63,14 +63,14 @@ export class WorkflowsService {
           startTime: new Date(),
           endTime: new Date(),
         });
-        
+
         return {
           executionId,
           status: 'completed',
           result,
         };
       }
-      
+
       // Simulate other workflows
       this.executions.set(executionId, {
         workflowId,
@@ -78,7 +78,7 @@ export class WorkflowsService {
         input: executeDto.input,
         startTime: new Date(),
       });
-      
+
       // Simulate async execution
       setTimeout(() => {
         const execution = this.executions.get(executionId);
@@ -91,7 +91,7 @@ export class WorkflowsService {
           };
         }
       }, 5000);
-      
+
       return {
         executionId,
         status: 'running',
@@ -105,11 +105,13 @@ export class WorkflowsService {
 
   async getExecutionStatus(workflowId: string, executionId: string) {
     const execution = this.executions.get(executionId);
-    
+
     if (!execution || execution.workflowId !== workflowId) {
-      throw new NotFoundException(`Execution ${executionId} not found for workflow ${workflowId}`);
+      throw new NotFoundException(
+        `Execution ${executionId} not found for workflow ${workflowId}`
+      );
     }
-    
+
     return {
       executionId,
       workflowId,
@@ -120,18 +122,24 @@ export class WorkflowsService {
     };
   }
 
-  async approveWorkflowStep(workflowId: string, executionId: string, approved: boolean) {
+  async approveWorkflowStep(
+    workflowId: string,
+    executionId: string,
+    approved: boolean
+  ) {
     const execution = this.executions.get(executionId);
-    
+
     if (!execution || execution.workflowId !== workflowId) {
-      throw new NotFoundException(`Execution ${executionId} not found for workflow ${workflowId}`);
+      throw new NotFoundException(
+        `Execution ${executionId} not found for workflow ${workflowId}`
+      );
     }
-    
+
     // Simulate approval processing
     if (approved) {
       execution.status = 'approved';
       execution.approvalTime = new Date();
-      
+
       // Continue workflow execution
       setTimeout(() => {
         execution.status = 'completed';
@@ -149,7 +157,7 @@ export class WorkflowsService {
         message: 'Workflow rejected by user',
       };
     }
-    
+
     return {
       executionId,
       workflowId,

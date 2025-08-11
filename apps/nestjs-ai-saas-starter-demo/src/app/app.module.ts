@@ -12,6 +12,7 @@ import { LangGraphModule } from '@hive-academy/nestjs-langgraph';
 import { DocumentsModule } from '../modules/documents/documents.module';
 import { GraphModule } from '../modules/graph/graph.module';
 import { WorkflowsModule } from '../modules/workflows/workflows.module';
+import { HealthModule } from '../modules/health/health.module';
 
 @Module({
   imports: [
@@ -19,20 +20,22 @@ import { WorkflowsModule } from '../modules/workflows/workflows.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    
+
     // ChromaDB Module
     ChromaDBModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         url: configService.get('CHROMADB_URL', 'http://localhost:8000'),
-        auth: configService.get('CHROMADB_API_KEY') ? {
-          provider: 'token',
-          credentials: configService.get('CHROMADB_API_KEY'),
-        } : undefined,
+        auth: configService.get('CHROMADB_API_KEY')
+          ? {
+              provider: 'token',
+              credentials: configService.get('CHROMADB_API_KEY'),
+            }
+          : undefined,
       }),
       inject: [ConfigService],
     }),
-    
+
     // Neo4j Module
     Neo4jModule.forRootAsync({
       imports: [ConfigModule],
@@ -44,7 +47,7 @@ import { WorkflowsModule } from '../modules/workflows/workflows.module';
       }),
       inject: [ConfigService],
     }),
-    
+
     // LangGraph Module
     LangGraphModule.forRootAsync({
       imports: [ConfigModule],
@@ -62,11 +65,12 @@ import { WorkflowsModule } from '../modules/workflows/workflows.module';
       }),
       inject: [ConfigService],
     }),
-    
+
     // Feature Modules
     DocumentsModule,
     GraphModule,
     WorkflowsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

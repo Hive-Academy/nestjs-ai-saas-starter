@@ -14,9 +14,9 @@ export class GraphService {
     try {
       const result = await this.neo4jService.write(
         `CREATE (n:${createNodeDto.label} $props) RETURN n`,
-        { props: createNodeDto.properties },
+        { props: createNodeDto.properties }
       );
-      
+
       return {
         success: true,
         node: result.records[0]?.get('n'),
@@ -31,9 +31,9 @@ export class GraphService {
     try {
       const result = await this.neo4jService.read(
         'MATCH (n) WHERE id(n) = $id RETURN n',
-        { id: parseInt(id) },
+        { id: parseInt(id) }
       );
-      
+
       return result.records[0]?.get('n') || null;
     } catch (error) {
       this.logger.error(`Failed to get node ${id}`, error);
@@ -45,9 +45,9 @@ export class GraphService {
     try {
       await this.neo4jService.write(
         'MATCH (n) WHERE id(n) = $id DETACH DELETE n',
-        { id: parseInt(id) },
+        { id: parseInt(id) }
       );
-      
+
       return { success: true };
     } catch (error) {
       this.logger.error(`Failed to delete node ${id}`, error);
@@ -68,9 +68,9 @@ export class GraphService {
           fromId: parseInt(createRelationshipDto.fromNodeId),
           toId: parseInt(createRelationshipDto.toNodeId),
           props: createRelationshipDto.properties || {},
-        },
+        }
       );
-      
+
       return {
         success: true,
         relationship: result.records[0]?.get('r'),
@@ -89,16 +89,19 @@ export class GraphService {
         WHERE id(n) = $nodeId
         RETURN n, r, m
         `,
-        { nodeId: parseInt(nodeId) },
+        { nodeId: parseInt(nodeId) }
       );
-      
-      return result.records.map(record => ({
+
+      return result.records.map((record) => ({
         node: record.get('n'),
         relationship: record.get('r'),
         relatedNode: record.get('m'),
       }));
     } catch (error) {
-      this.logger.error(`Failed to get relationships for node ${nodeId}`, error);
+      this.logger.error(
+        `Failed to get relationships for node ${nodeId}`,
+        error
+      );
       throw error;
     }
   }
@@ -107,11 +110,11 @@ export class GraphService {
     try {
       const result = await this.neo4jService.read(
         queryDto.query,
-        queryDto.parameters || {},
+        queryDto.parameters || {}
       );
-      
+
       return {
-        records: result.records.map(record => record.toObject()),
+        records: result.records.map((record) => record.toObject()),
         summary: {
           queryType: result.summary.query.text,
           counters: result.summary.counters,
@@ -135,14 +138,14 @@ export class GraphService {
         {
           fromId: parseInt(fromId),
           toId: parseInt(toId),
-        },
+        }
       );
-      
+
       const path = result.records[0]?.get('path');
       if (!path) {
         return { found: false };
       }
-      
+
       return {
         found: true,
         length: path.length,
@@ -150,7 +153,10 @@ export class GraphService {
         relationships: path.relationships,
       };
     } catch (error) {
-      this.logger.error(`Failed to find shortest path from ${fromId} to ${toId}`, error);
+      this.logger.error(
+        `Failed to find shortest path from ${fromId} to ${toId}`,
+        error
+      );
       throw error;
     }
   }
@@ -163,10 +169,10 @@ export class GraphService {
         WHERE id(n) = $nodeId
         RETURN DISTINCT m
         `,
-        { nodeId: parseInt(nodeId) },
+        { nodeId: parseInt(nodeId) }
       );
-      
-      return result.records.map(record => record.get('m'));
+
+      return result.records.map((record) => record.get('m'));
     } catch (error) {
       this.logger.error(`Failed to get neighbors for node ${nodeId}`, error);
       throw error;
@@ -176,24 +182,25 @@ export class GraphService {
   async getGraphStats() {
     try {
       const nodeCount = await this.neo4jService.read(
-        'MATCH (n) RETURN count(n) as count',
+        'MATCH (n) RETURN count(n) as count'
       );
-      
+
       const relationshipCount = await this.neo4jService.read(
-        'MATCH ()-[r]-() RETURN count(r) as count',
+        'MATCH ()-[r]-() RETURN count(r) as count'
       );
-      
+
       const labels = await this.neo4jService.read(
-        'CALL db.labels() YIELD label RETURN collect(label) as labels',
+        'CALL db.labels() YIELD label RETURN collect(label) as labels'
       );
-      
+
       const relationshipTypes = await this.neo4jService.read(
-        'CALL db.relationshipTypes() YIELD relationshipType RETURN collect(relationshipType) as types',
+        'CALL db.relationshipTypes() YIELD relationshipType RETURN collect(relationshipType) as types'
       );
-      
+
       return {
         nodeCount: nodeCount.records[0]?.get('count').toNumber() || 0,
-        relationshipCount: relationshipCount.records[0]?.get('count').toNumber() || 0,
+        relationshipCount:
+          relationshipCount.records[0]?.get('count').toNumber() || 0,
         labels: labels.records[0]?.get('labels') || [],
         relationshipTypes: relationshipTypes.records[0]?.get('types') || [],
       };

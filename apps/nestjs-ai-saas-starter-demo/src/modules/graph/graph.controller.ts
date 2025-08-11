@@ -22,7 +22,10 @@ export class GraphController {
 
   @Post('node')
   @ApiOperation({ summary: 'Create a new node' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Node created successfully' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Node created successfully',
+  })
   async createNode(@Body() createNodeDto: CreateNodeDto) {
     return this.graphService.createNode(createNodeDto);
   }
@@ -42,7 +45,9 @@ export class GraphController {
 
   @Post('relationship')
   @ApiOperation({ summary: 'Create a relationship between nodes' })
-  async createRelationship(@Body() createRelationshipDto: CreateRelationshipDto) {
+  async createRelationship(
+    @Body() createRelationshipDto: CreateRelationshipDto
+  ) {
     return this.graphService.createRelationship(createRelationshipDto);
   }
 
@@ -62,10 +67,7 @@ export class GraphController {
   @ApiOperation({ summary: 'Find shortest path between two nodes' })
   @ApiQuery({ name: 'from', required: true })
   @ApiQuery({ name: 'to', required: true })
-  async findShortestPath(
-    @Query('from') from: string,
-    @Query('to') to: string,
-  ) {
+  async findShortestPath(@Query('from') from: string, @Query('to') to: string) {
     return this.graphService.findShortestPath(from, to);
   }
 
@@ -74,7 +76,7 @@ export class GraphController {
   @ApiQuery({ name: 'depth', required: false, type: Number })
   async getNeighbors(
     @Param('nodeId') nodeId: string,
-    @Query('depth') depth: number = 1,
+    @Query('depth') depth = 1
   ) {
     return this.graphService.getNeighbors(nodeId, depth);
   }
