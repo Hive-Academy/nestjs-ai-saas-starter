@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/nestjs-ai-saas-starter-demo-e2e"
+    },
+    {
+      "path": "./apps/nestjs-ai-saas-starter-demo"
+    }
+  ]
+}

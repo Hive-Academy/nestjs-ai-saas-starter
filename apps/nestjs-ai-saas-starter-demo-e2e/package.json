@@ -1,0 +1,26 @@
+{
+  "name": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "implicitDependencies": [
+      "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo"
+    ],
+    "targets": {
+      "e2e": {
+        "executor": "@nx/jest:jest",
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ],
+        "options": {
+          "jestConfig": "apps/nestjs-ai-saas-starter-demo-e2e/jest.config.ts",
+          "passWithNoTests": true
+        },
+        "dependsOn": [
+          "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:build",
+          "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:serve"
+        ]
+      }
+    }
+  }
+}
