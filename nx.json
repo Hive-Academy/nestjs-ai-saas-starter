@@ -28,7 +28,12 @@
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
         }
-      }
+      },
+      "exclude": [
+        "libs/nestjs-chromadb/*",
+        "libs/nestjs-neo4j/*",
+        "libs/nestjs-langgraph/*"
+      ]
     },
     {
       "plugin": "@nx/webpack/plugin",
@@ -52,11 +57,29 @@
         "targetName": "test"
       },
       "exclude": ["apps/nestjs-ai-saas-starter-demo-e2e/**/*"]
+    },
+    {
+      "plugin": "@nx/js/typescript",
+      "include": [
+        "libs/nestjs-chromadb/*",
+        "libs/nestjs-neo4j/*",
+        "libs/nestjs-langgraph/*"
+      ],
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
+      }
     }
   ],
   "targetDefaults": {
     "test": {
       "dependsOn": ["^build"]
+    },
+    "@nx/js:tsc": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   }
 }

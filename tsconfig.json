@@ -8,6 +8,18 @@
     },
     {
       "path": "./apps/nestjs-ai-saas-starter-demo"
+    },
+    {
+      "path": "./libs/nestjs-chromadb"
+    },
+    {
+      "path": "./libs/nestjs-neo4j"
+    },
+    {
+      "path": "./libs/nestjs-langgraph"
+    },
+    {
+      "path": "./libs/shared"
     }
   ]
 }

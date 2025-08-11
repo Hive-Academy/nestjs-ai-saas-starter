@@ -2,15 +2,37 @@
   "name": "@nestjs-ai-saas-starter/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev:services": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:stop": "docker compose -f docker-compose.dev.yml down",
+    "dev:reset": "docker compose -f docker-compose.dev.yml down -v",
+    "dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "docker:prod": "docker compose -f docker-compose.yml up -d"
+  },
   "private": true,
   "dependencies": {
+    "@huggingface/inference": "^4.6.1",
+    "@langchain/anthropic": "^0.3.26",
+    "@langchain/core": "^0.3.68",
+    "@langchain/google-genai": "^0.2.16",
+    "@langchain/langgraph": "^0.4.3",
+    "@langchain/langgraph-checkpoint": "^0.1.0",
+    "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
+    "@langchain/openai": "^0.6.7",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/terminus": "^11.0.0",
     "axios": "^1.6.0",
+    "chromadb": "^3.0.11",
+    "cohere-ai": "^7.18.0",
+    "langchain": "^0.3.30",
+    "neo4j-driver": "^5.28.1",
+    "openai": "^5.12.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -31,11 +53,13 @@
     "@swc/jest": "~0.2.38",
     "@types/jest": "^30.0.0",
     "@types/node": "~18.16.9",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "jest": "^30.0.2",
     "jest-environment-node": "^30.0.2",
     "jest-util": "^30.0.2",
+    "jsonc-eslint-parser": "^2.1.0",
     "nx": "21.3.11",
     "prettier": "^2.6.2",
     "ts-jest": "^29.4.0",
@@ -46,6 +70,7 @@
     "webpack-cli": "^5.1.4"
   },
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "libs/*"
   ]
 }

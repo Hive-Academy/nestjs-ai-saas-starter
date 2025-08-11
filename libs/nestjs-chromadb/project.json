@@ -1,0 +1,9 @@
+{
+  "name": "nestjs-chromadb",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nestjs-chromadb/src",
+  "projectType": "library",
+  "tags": ["domain:chroma-db type:data-access"],
+  "// targets": "to see all targets run: nx show project nestjs-chromadb --web",
+  "targets": {}
+}

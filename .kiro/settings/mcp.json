@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "nx-mcp": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "C://Program Files/nodejs/npx.cmd",
+        "-y",
+        "nx-mcp@latest",
+        "D://projects/nestjs-ai-saas-starter"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "nx_docs"
+      ]
+    }
+  }
+}

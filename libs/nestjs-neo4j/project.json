@@ -1,0 +1,9 @@
+{
+  "name": "nestjs-neo4j",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nestjs-neo4j/src",
+  "projectType": "library",
+  "tags": ["domain:neo4j type:data-access"],
+  "// targets": "to see all targets run: nx show project nestjs-neo4j --web",
+  "targets": {}
+}
