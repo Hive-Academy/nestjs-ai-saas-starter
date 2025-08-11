@@ -1,7 +1,8 @@
 {
-  "name": "@hive-academy/shared",
+  "name": "@internal/shared",
   "version": "0.0.1",
-  "description": "Shared types and utilities for Hive Academy AI SaaS starter ecosystem",
+  "private": true,
+  "description": "Internal shared types and utilities (not published to npm)",
   "author": "Hive Academy Team",
   "license": "MIT",
   "keywords": [
@@ -38,9 +39,6 @@
     "README.md",
     "CHANGELOG.md"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
     "tslib": "^2.3.0"
   }

@@ -23,7 +23,7 @@ This monorepo provides a complete foundation for building AI-powered SaaS applic
 - **🔍 Vector Database**: Comprehensive ChromaDB integration for semantic search
 - **📊 Graph Database**: Advanced Neo4j integration for relationship modeling
 - **🏢 Enterprise Ready**: Production-ready with health checks, monitoring, and Docker deployment
-- **📦 Publishable Libraries**: Four NPM packages ready for distribution
+- **📦 Publishable Libraries**: Three NPM packages ready for distribution
 - **🔄 CI/CD Pipeline**: Automated testing, building, versioning, and publishing
 
 ## 🏗️ Architecture
@@ -39,7 +39,7 @@ nestjs-ai-saas-starter/
 │   ├── nestjs-chromadb/                 # ChromaDB integration
 │   ├── nestjs-neo4j/                    # Neo4j integration
 │   ├── nestjs-langgraph/                # LangGraph workflows
-│   └── shared/                          # Shared utilities
+│   └── shared/                          # Internal shared utilities
 ├── docs/                                # Documentation
 ├── docker/                              # Docker configurations
 ├── .github/workflows/                   # CI/CD pipelines
@@ -194,7 +194,7 @@ git commit -m "docs: update installation guide"
 
 ## 📦 Published Libraries
 
-This workspace publishes four NPM packages under the `@anubis` scope:
+This workspace publishes three NPM packages under the `@anubis` scope:
 
 ### [@anubis/nestjs-chromadb](https://www.npmjs.com/package/@anubis/nestjs-chromadb)
 
@@ -284,20 +284,12 @@ export class AppModule {}
 - Tool registry and management
 - Comprehensive testing utilities
 
-### [@anubis/shared](https://www.npmjs.com/package/@anubis/shared)
+### Internal Libraries
 
-**Shared Types and Utilities**
-
-```bash
-npm install @anubis/shared
-```
-
-```typescript
-import { AgentType, getAgentCapability } from '@anubis/shared';
-
-const researcher = getAgentCapability(AgentType.RESEARCHER);
+**@internal/shared** - Internal shared types and utilities used across the workspace (not published to npm)
 console.log(researcher.skills); // ['web_search', 'data_analysis', ...]
-```
+
+````
 
 **Features:**
 
@@ -316,7 +308,7 @@ docker build -f docker/Dockerfile -t anubis-agent:latest .
 
 # Run production stack
 docker compose -f docker-compose.yml up -d
-```
+````
 
 ### Environment Configuration
 

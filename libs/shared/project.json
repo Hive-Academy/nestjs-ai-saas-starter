@@ -3,7 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/shared/src",
   "projectType": "library",
-  "tags": ["type:util"],
+  "tags": ["type:util", "scope:internal"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
@@ -21,13 +21,6 @@
           }
         ]
       }
-    },
-    "publish": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "npm publish dist/libs/shared --access public"
-      },
-      "dependsOn": ["build"]
     },
     "docs": {
       "executor": "nx:run-commands",

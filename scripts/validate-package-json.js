@@ -13,12 +13,24 @@ function validatePackageJson(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const pkg = JSON.parse(content);
 
+    // Skip validation for private/internal packages
+    if (pkg.private === true || pkg.name?.startsWith('@internal/')) {
+      console.log(`⏭️  Skipping validation for internal package: ${pkg.name}`);
+      return;
+    }
+
     const errors = [];
     const warnings = [];
 
     // Required fields
-    const requiredFields = ['name', 'version', 'description', 'author', 'license'];
-    requiredFields.forEach(field => {
+    const requiredFields = [
+      'name',
+      'version',
+      'description',
+      'author',
+      'license',
+    ];
+    requiredFields.forEach((field) => {
       if (!pkg[field]) {
         errors.push(`Missing required field: ${field}`);
       }
@@ -41,7 +53,7 @@ function validatePackageJson(filePath) {
 
     // Should have main, module, and types
     const entryFields = ['main', 'module', 'types'];
-    entryFields.forEach(field => {
+    entryFields.forEach((field) => {
       if (!pkg[field]) {
         warnings.push(`Missing ${field} field`);
       }
@@ -68,24 +80,21 @@ function validatePackageJson(filePath) {
     }
 
     // Check for common issues
-    if (pkg.private === true) {
-      errors.push('Package is marked as private but should be publishable');
-    }
+    // (private packages are handled earlier by skipping validation)
 
     // Report results
     if (errors.length > 0) {
       console.error(`❌ Validation failed for ${filePath}:`);
-      errors.forEach(error => console.error(`  - ${error}`));
+      errors.forEach((error) => console.error(`  - ${error}`));
       process.exit(1);
     }
 
     if (warnings.length > 0) {
       console.warn(`⚠️  Warnings for ${filePath}:`);
-      warnings.forEach(warning => console.warn(`  - ${warning}`));
+      warnings.forEach((warning) => console.warn(`  - ${warning}`));
     }
 
     console.log(`✅ ${filePath} is valid`);
-
   } catch (error) {
     console.error(`❌ Failed to validate ${filePath}: ${error.message}`);
     process.exit(1);
@@ -102,12 +111,14 @@ if (args.length > 0) {
   // Find all package.json files in libs directory
   const libsDir = path.join(process.cwd(), 'libs');
   if (fs.existsSync(libsDir)) {
-    const libs = fs.readdirSync(libsDir, { withFileTypes: true })
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
+    const libs = fs
+      .readdirSync(libsDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name);
 
-    filesToValidate = libs.map(lib => path.join('libs', lib, 'package.json'))
-      .filter(filePath => fs.existsSync(filePath));
+    filesToValidate = libs
+      .map((lib) => path.join('libs', lib, 'package.json'))
+      .filter((filePath) => fs.existsSync(filePath));
   }
 }
 
