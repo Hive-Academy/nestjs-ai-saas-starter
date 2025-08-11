@@ -47,6 +47,7 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 ## Key Features
 
 ### ✅ Core Foundation
+
 - **Declarative Workflow System**: Define workflows using `@Workflow`, `@Node`, and `@Edge` decorators
 - **Graph Compilation & Caching**: Automatic workflow compilation with intelligent caching via `CompilationCacheService`
 - **State Management**: Robust state handling with `WorkflowStateAnnotation` and type safety
@@ -54,6 +55,7 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 - **Subgraph Management**: Complex workflow composition with `SubgraphManagerService`
 
 ### ✅ Advanced Streaming
+
 - **Token-Level Streaming**: Real-time token streaming with `TokenStreamingService`
 - **Event-Based Streaming**: Lifecycle and custom events via `EventStreamProcessorService`
 - **Progress Tracking**: Granular progress monitoring with `WorkflowStreamService`
@@ -61,6 +63,7 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 - **Stream Decorators**: `@StreamToken`, `@StreamEvent`, `@StreamProgress`, `@StreamAll`
 
 ### ✅ Tool System
+
 - **Tool Autodiscovery**: Automatic tool registration via `ToolDiscoveryService`
 - **Tool Registry**: Centralized tool management with `ToolRegistryService`
 - **Tool Building**: Dynamic tool creation via `ToolBuilderService`
@@ -68,6 +71,7 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 - **Tool Decorators**: `@Tool` and `@ComposedTool` for tool definition
 
 ### ✅ Human-in-the-Loop (HITL)
+
 - **Human Approval Service**: Sophisticated approval workflows via `HumanApprovalService`
 - **Confidence Evaluation**: AI confidence assessment with `ConfidenceEvaluatorService`
 - **Approval Chains**: Multi-level approval routing via `ApprovalChainService`
@@ -75,18 +79,21 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 - **Approval Decorators**: `@RequiresApproval` with risk assessment and escalation
 
 ### ✅ Workflow Routing
+
 - **Command Processing**: Advanced command handling via `CommandProcessorService`
 - **Workflow Routing**: Dynamic routing logic with `WorkflowRoutingService`
 - **Agent Handoff**: Seamless agent transitions via `AgentHandoffService`
 - **Conditional Routing**: Complex branching and decision logic
 
 ### ✅ Base Classes & Patterns
+
 - **UnifiedWorkflowBase**: Foundation for all workflow implementations
 - **DeclarativeWorkflowBase**: Decorator-driven workflow pattern
 - **StreamingWorkflowBase**: Specialized streaming workflow support
 - **AgentNodeBase**: Base class for agent node implementations
 
 ### ✅ Provider System
+
 - **LLM Provider Factory**: Dynamic LLM provider creation
 - **Checkpoint Provider**: State persistence and recovery
 - **Memory Provider**: Context and memory management
@@ -94,6 +101,7 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 - **Trace Provider**: Execution tracing and debugging
 
 ### ✅ Testing Utilities
+
 - **WorkflowTestBuilder**: Fluent API for workflow testing
 - **MockAgentFactory**: Mock agent creation for testing
 - **Example Workflows**: Reference implementations and patterns
@@ -156,25 +164,24 @@ import { DeclarativeWorkflowBase } from '@anubis/nestjs-langgraph';
   channels: {
     prompt: null,
     content: null,
-    analysis: null
-  }
+    analysis: null,
+  },
 })
 export class ContentGeneratorWorkflow extends DeclarativeWorkflowBase {
-  
   @Node({ type: 'standard', description: 'Initialize workflow' })
   async initialize(state: WorkflowState) {
-    return { 
+    return {
       ...state,
       status: 'active',
-      startedAt: new Date() 
+      startedAt: new Date(),
     };
   }
 
   @Node({ type: 'llm', description: 'Generate content with streaming' })
-  @StreamToken({ 
+  @StreamToken({
     enabled: true,
     bufferSize: 50,
-    format: 'text'
+    format: 'text',
   })
   async generateContent(state: WorkflowState) {
     const response = await this.llm.invoke(state.prompt);
@@ -183,8 +190,8 @@ export class ContentGeneratorWorkflow extends DeclarativeWorkflowBase {
 
   @Node({ type: 'tool', description: 'Analyze generated content' })
   async analyzeContent(state: WorkflowState) {
-    const analysis = await this.executeTool('analyze_text', { 
-      text: state['content'] 
+    const analysis = await this.executeTool('analyze_text', {
+      text: state['content'],
     });
     return { ...state, analysis };
   }
@@ -199,14 +206,14 @@ export class ContentGeneratorWorkflow extends DeclarativeWorkflowBase {
     name: 'analyze_text',
     description: 'Analyze text for sentiment and key topics',
     schema: z.object({
-      text: z.string().min(1).describe('Text to analyze')
-    })
+      text: z.string().min(1).describe('Text to analyze'),
+    }),
   })
   async analyzeText({ text }: { text: string }) {
     return {
       sentiment: 'positive',
       topics: ['AI', 'workflow', 'automation'],
-      confidence: 0.95
+      confidence: 0.95,
     };
   }
 }
@@ -226,24 +233,24 @@ import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
         websocket: {
           enabled: true,
           cors: true,
-          port: 3001
-        }
+          port: 3001,
+        },
       },
       tools: {
         autoDiscover: true,
         validation: true,
-        cache: true
+        cache: true,
       },
       hitl: {
         enabled: true,
         defaultTimeout: 300000,
-        confidenceThreshold: 0.7
+        confidenceThreshold: 0.7,
       },
       compilation: {
         cache: true,
-        eager: false
-      }
-    })
+        eager: false,
+      },
+    }),
   ],
   providers: [ContentGeneratorWorkflow],
 })
@@ -265,11 +272,10 @@ Define complex AI workflows using intuitive TypeScript decorators:
   channels: {
     document: null,
     extractedInfo: null,
-    analysisResult: null
-  }
+    analysisResult: null,
+  },
 })
 export class DocumentProcessorWorkflow extends DeclarativeWorkflowBase {
-
   @Node({ type: 'standard', description: 'Initialize processing' })
   async initialize(state: WorkflowState) {
     return { ...state, status: 'active', timestamp: new Date() };
@@ -278,7 +284,7 @@ export class DocumentProcessorWorkflow extends DeclarativeWorkflowBase {
   @Node({ type: 'llm', description: 'Extract key information' })
   async extractInfo(state: WorkflowState) {
     const response = await this.llm.invoke({
-      messages: [{ role: 'user', content: `Extract key info from: ${state['document']}` }]
+      messages: [{ role: 'user', content: `Extract key info from: ${state['document']}` }],
     });
     return { ...state, extractedInfo: response.content };
   }
@@ -301,9 +307,10 @@ export class DocumentProcessorWorkflow extends DeclarativeWorkflowBase {
 Real-time streaming capabilities with multiple granularities:
 
 #### Token-Level Streaming
+
 ```typescript
 @Node({ type: 'llm' })
-@StreamToken({ 
+@StreamToken({
   enabled: true,
   bufferSize: 30,
   batchSize: 5,
@@ -323,6 +330,7 @@ async generateWithTokens(state: WorkflowState) {
 ```
 
 #### Event-Based Streaming
+
 ```typescript
 @Node({ type: 'tool' })
 @StreamEvent({
@@ -338,6 +346,7 @@ async processWithEvents(state: WorkflowState) {
 ```
 
 #### Progress Streaming
+
 ```typescript
 @Node({ type: 'standard' })
 @StreamProgress({
@@ -363,18 +372,19 @@ async processWithEvents(state: WorkflowState) {
 async processLargeDataset(state: WorkflowState) {
   const items = state['dataset'];
   const results = [];
-  
+
   for (let i = 0; i < items.length; i++) {
     const result = await this.processItem(items[i]);
     results.push(result);
     // Progress is automatically tracked and streamed
   }
-  
+
   return { ...state, processedResults: results };
 }
 ```
 
 #### Combined Streaming
+
 ```typescript
 @Node({ type: 'standard' })
 @StreamAll({
@@ -403,6 +413,7 @@ async comprehensiveProcessing(state: WorkflowState) {
 Automatic tool registration and intelligent agent mapping:
 
 #### Basic Tool Definition
+
 ```typescript
 @Tool({
   name: 'web_search',
@@ -439,6 +450,7 @@ async searchWeb({ query, maxResults, filters }: WebSearchParams) {
 ```
 
 #### Composed Tools
+
 ```typescript
 @ComposedTool({
   name: 'research_and_summarize',
@@ -451,24 +463,24 @@ async searchWeb({ query, maxResults, filters }: WebSearchParams) {
 })
 async researchAndSummarize({ topic }: { topic: string }) {
   // Components are executed based on strategy
-  const searchResults = await this.executeTool('web_search', { 
-    query: topic, 
-    maxResults: 10 
+  const searchResults = await this.executeTool('web_search', {
+    query: topic,
+    maxResults: 10
   });
-  
+
   const contents = await Promise.all(
     searchResults.map(r => this.executeTool('extract_content', { url: r.url }))
   );
-  
-  const summary = await this.executeTool('summarize_text', { 
+
+  const summary = await this.executeTool('summarize_text', {
     text: contents.join('\n'),
     maxLength: 500
   });
-  
-  const factCheck = await this.executeTool('fact_check', { 
-    text: summary.content 
+
+  const factCheck = await this.executeTool('fact_check', {
+    text: summary.content
   });
-  
+
   return {
     summary: summary.content,
     factCheck: factCheck.verified,
@@ -483,6 +495,7 @@ async researchAndSummarize({ topic }: { topic: string }) {
 Sophisticated approval workflows with confidence evaluation:
 
 #### Basic Approval Requirements
+
 ```typescript
 @Node({ type: 'human' })
 @RequiresApproval({
@@ -497,6 +510,7 @@ async deployToProduction(state: WorkflowState) {
 ```
 
 #### Advanced Approval with Risk Assessment
+
 ```typescript
 @Node({ type: 'human' })
 @RequiresApproval({
@@ -551,18 +565,18 @@ Advanced routing and command processing:
 @Node({ type: 'condition' })
 async routeBasedOnConfidence(state: WorkflowState): Promise<Command<WorkflowState>> {
   if (state.confidence > 0.9) {
-    return { 
-      type: CommandType.GOTO, 
-      goto: 'auto_approve' 
+    return {
+      type: CommandType.GOTO,
+      goto: 'auto_approve'
     };
   } else if (state.confidence > 0.7) {
-    return { 
-      type: CommandType.GOTO, 
-      goto: 'human_review' 
+    return {
+      type: CommandType.GOTO,
+      goto: 'human_review'
     };
   } else {
-    return { 
-      type: CommandType.HANDOFF, 
+    return {
+      type: CommandType.HANDOFF,
       handoff: {
         targetAgent: AgentType.SENIOR_DEVELOPER,
         context: state,
@@ -585,32 +599,32 @@ defineConditionalRouting() {}
 
 ### Workflow Decorators
 
-| Decorator | Description | Options |
-|-----------|-------------|---------|
+| Decorator   | Description             | Options                                                                 |
+| ----------- | ----------------------- | ----------------------------------------------------------------------- |
 | `@Workflow` | Define a workflow class | `name`, `description`, `streaming`, `channels`, `requiresHumanApproval` |
-| `@Node` | Define a workflow node | `type`, `description`, `retryPolicy`, `timeout` |
-| `@Edge` | Define workflow edges | Source, target/condition function |
+| `@Node`     | Define a workflow node  | `type`, `description`, `retryPolicy`, `timeout`                         |
+| `@Edge`     | Define workflow edges   | Source, target/condition function                                       |
 
 ### Streaming Decorators
 
-| Decorator | Description | Options |
-|-----------|-------------|---------|
-| `@StreamToken` | Enable token streaming | `enabled`, `bufferSize`, `format`, `filter`, `processor` |
-| `@StreamEvent` | Enable event streaming | `events`, `bufferSize`, `delivery`, `transformer` |
-| `@StreamProgress` | Enable progress streaming | `granularity`, `interval`, `milestones`, `includeETA` |
-| `@StreamAll` | Enable all streaming types | Combined options for all types |
+| Decorator         | Description                | Options                                                  |
+| ----------------- | -------------------------- | -------------------------------------------------------- |
+| `@StreamToken`    | Enable token streaming     | `enabled`, `bufferSize`, `format`, `filter`, `processor` |
+| `@StreamEvent`    | Enable event streaming     | `events`, `bufferSize`, `delivery`, `transformer`        |
+| `@StreamProgress` | Enable progress streaming  | `granularity`, `interval`, `milestones`, `includeETA`    |
+| `@StreamAll`      | Enable all streaming types | Combined options for all types                           |
 
 ### Tool Decorators
 
-| Decorator | Description | Options |
-|-----------|-------------|---------|
-| `@Tool` | Define a tool | `name`, `description`, `schema`, `agents`, `examples` |
-| `@ComposedTool` | Define a composed tool | `components`, `strategy`, `timeout` |
+| Decorator       | Description            | Options                                               |
+| --------------- | ---------------------- | ----------------------------------------------------- |
+| `@Tool`         | Define a tool          | `name`, `description`, `schema`, `agents`, `examples` |
+| `@ComposedTool` | Define a composed tool | `components`, `strategy`, `timeout`                   |
 
 ### Approval Decorators
 
-| Decorator | Description | Options |
-|-----------|-------------|---------|
+| Decorator           | Description            | Options                                                       |
+| ------------------- | ---------------------- | ------------------------------------------------------------- |
 | `@RequiresApproval` | Require human approval | `confidenceThreshold`, `riskThreshold`, `chainId`, `handlers` |
 
 ## Services & Providers
@@ -656,15 +670,7 @@ defineConditionalRouting() {}
 Fluent API for testing workflows:
 
 ```typescript
-const testBuilder = new WorkflowTestBuilder()
-  .withWorkflow(MyWorkflow)
-  .withInitialState({ prompt: 'test prompt' })
-  .withMockLLM(mockResponse)
-  .withMockTool('web_search', mockSearchResults)
-  .expectNode('initialize')
-  .expectNode('generateContent')
-  .expectState({ content: 'expected content' })
-  .build();
+const testBuilder = new WorkflowTestBuilder().withWorkflow(MyWorkflow).withInitialState({ prompt: 'test prompt' }).withMockLLM(mockResponse).withMockTool('web_search', mockSearchResults).expectNode('initialize').expectNode('generateContent').expectState({ content: 'expected content' }).build();
 
 await testBuilder.execute();
 ```
@@ -677,9 +683,9 @@ Create mock agents for testing:
 const mockAgent = MockAgentFactory.create({
   type: AgentType.RESEARCHER,
   responses: {
-    'search': mockSearchResponse,
-    'analyze': mockAnalysisResponse
-  }
+    search: mockSearchResponse,
+    analyze: mockAnalysisResponse,
+  },
 });
 ```
 
@@ -688,19 +694,25 @@ const mockAgent = MockAgentFactory.create({
 The library includes comprehensive example workflows:
 
 ### Simple Test Workflow
+
 Basic workflow demonstrating core features:
+
 ```typescript
 import { SimpleTestWorkflow } from '@anubis/nestjs-langgraph';
 ```
 
 ### Integration Demo Workflow
+
 Advanced workflow showcasing all features:
+
 ```typescript
 import { IntegrationDemoWorkflow } from '@anubis/nestjs-langgraph';
 ```
 
 ### HITL Approval Test Workflow
+
 Comprehensive HITL approval scenarios:
+
 ```typescript
 import { HITLApprovalTestWorkflow, HITLTestDataFactory } from '@anubis/nestjs-langgraph';
 
@@ -711,7 +723,9 @@ const criticalScenario = HITLTestDataFactory.createCriticalRiskScenario();
 ```
 
 ### Streaming Workflow Example
+
 Demonstrates all streaming capabilities:
+
 ```typescript
 import { StreamingWorkflowExample } from '@anubis/nestjs-langgraph';
 ```
@@ -729,14 +743,14 @@ import { StreamingWorkflowExample } from '@anubis/nestjs-langgraph';
 
 ### Benchmarks
 
-| Feature | Throughput | Latency | Memory |
-|---------|------------|---------|--------|
-| Workflow Compilation | >100 workflows/sec | <10ms | <5MB per workflow |
-| Token Streaming | >1,000 tokens/sec | <100ms | <50MB |
-| Event Processing | >500 events/sec | <50ms | <25MB |
-| Tool Discovery | >50 tools/sec | <20ms | <10MB |
-| Approval Processing | >100 requests/sec | <200ms | <30MB |
-| WebSocket Connections | >100 concurrent | <50ms | <1MB per connection |
+| Feature               | Throughput         | Latency | Memory              |
+| --------------------- | ------------------ | ------- | ------------------- |
+| Workflow Compilation  | >100 workflows/sec | <10ms   | <5MB per workflow   |
+| Token Streaming       | >1,000 tokens/sec  | <100ms  | <50MB               |
+| Event Processing      | >500 events/sec    | <50ms   | <25MB               |
+| Tool Discovery        | >50 tools/sec      | <20ms   | <10MB               |
+| Approval Processing   | >100 requests/sec  | <200ms  | <30MB               |
+| WebSocket Connections | >100 concurrent    | <50ms   | <1MB per connection |
 
 ## Contributing
 
@@ -837,6 +851,7 @@ interface NestjsLanggraphModuleOptions {
 ## Roadmap
 
 ### Phase 3 - Enterprise Features (In Progress)
+
 - [ ] Advanced monitoring with OpenTelemetry
 - [ ] Workflow versioning and migration
 - [ ] Multi-tenant execution environments
@@ -845,6 +860,7 @@ interface NestjsLanggraphModuleOptions {
 - [ ] Advanced caching strategies
 
 ### Phase 4 - Advanced Patterns (Planned)
+
 - [ ] Supervisor pattern implementation
 - [ ] Pipeline pattern support
 - [ ] Map-reduce workflows
@@ -867,4 +883,4 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 **Built with ❤️ by the Anubis Team**
 
-*Empowering developers to build sophisticated AI agent workflows with ease and confidence.*
+_Empowering developers to build sophisticated AI agent workflows with ease and confidence._

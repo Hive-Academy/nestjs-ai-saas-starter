@@ -1,5 +1,5 @@
 import { killPort } from '@nx/node/utils';
-/* eslint-disable */
+ 
 
 module.exports = async function() {
   // Put clean up logic here (e.g. stopping services, docker-compose, etc.).

@@ -19,7 +19,7 @@ export class ToolRegistryService implements OnModuleInit {
   constructor(
     private readonly discoveryService: DiscoveryService,
     private readonly metadataScanner: MetadataScanner,
-    private readonly reflector: Reflector,
+    private readonly reflector: Reflector
   ) {}
 
   async onModuleInit() {
@@ -40,7 +40,7 @@ export class ToolRegistryService implements OnModuleInit {
 
       // Get tools from class metadata
       const tools = getClassTools(instance.constructor);
-      
+
       for (const toolMeta of tools) {
         await this.registerTool(toolMeta, instance);
       }
@@ -86,7 +86,10 @@ export class ToolRegistryService implements OnModuleInit {
     if (agents) {
       if (agents === '*') {
         // Available to all agents
-        this.agentTools.set('*', (this.agentTools.get('*') || new Set()).add(name));
+        this.agentTools.set(
+          '*',
+          (this.agentTools.get('*') || new Set()).add(name)
+        );
       } else if (Array.isArray(agents)) {
         // Available to specific agents
         for (const agent of agents) {
@@ -112,7 +115,7 @@ export class ToolRegistryService implements OnModuleInit {
    */
   getToolsForAgent(agentId: string): DynamicStructuredTool[] {
     const tools: DynamicStructuredTool[] = [];
-    
+
     // Get agent-specific tools
     const agentToolNames = this.agentTools.get(agentId) || new Set();
     for (const toolName of agentToolNames) {
@@ -151,10 +154,13 @@ export class ToolRegistryService implements OnModuleInit {
   /**
    * Register a tool dynamically at runtime
    */
-  registerDynamicTool(tool: DynamicStructuredTool, metadata?: Partial<ToolMetadata>): void {
+  registerDynamicTool(
+    tool: DynamicStructuredTool,
+    metadata?: Partial<ToolMetadata>
+  ): void {
     const name = tool.name;
     this.tools.set(name, tool);
-    
+
     if (metadata) {
       this.toolMetadata.set(name, {
         name,
@@ -167,7 +173,10 @@ export class ToolRegistryService implements OnModuleInit {
       // Register agent associations
       if (metadata.agents) {
         if (metadata.agents === '*') {
-          this.agentTools.set('*', (this.agentTools.get('*') || new Set()).add(name));
+          this.agentTools.set(
+            '*',
+            (this.agentTools.get('*') || new Set()).add(name)
+          );
         } else if (Array.isArray(metadata.agents)) {
           for (const agent of metadata.agents) {
             const agentToolSet = this.agentTools.get(agent) || new Set();
@@ -187,16 +196,16 @@ export class ToolRegistryService implements OnModuleInit {
   removeTool(name: string): boolean {
     const deleted = this.tools.delete(name);
     this.toolMetadata.delete(name);
-    
+
     // Remove from agent associations
     for (const [agent, toolSet] of this.agentTools.entries()) {
       toolSet.delete(name);
     }
-    
+
     if (deleted) {
       this.logger.debug(`Removed tool: ${name}`);
     }
-    
+
     return deleted;
   }
 
@@ -205,16 +214,16 @@ export class ToolRegistryService implements OnModuleInit {
    */
   getToolsByTags(tags: string[]): DynamicStructuredTool[] {
     const tools: DynamicStructuredTool[] = [];
-    
+
     for (const [name, metadata] of this.toolMetadata.entries()) {
-      if (metadata.tags && tags.some(tag => metadata.tags?.includes(tag))) {
+      if (metadata.tags && tags.some((tag) => metadata.tags?.includes(tag))) {
         const tool = this.tools.get(name);
         if (tool) {
           tools.push(tool);
         }
       }
     }
-    
+
     return tools;
   }
 
@@ -228,3 +237,4 @@ export class ToolRegistryService implements OnModuleInit {
     this.logger.debug('Cleared all tools');
   }
 }
+

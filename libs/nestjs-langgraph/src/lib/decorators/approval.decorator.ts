@@ -1,7 +1,11 @@
 import 'reflect-metadata';
 import { Injectable, Inject } from '@nestjs/common';
 import { WorkflowState } from '../interfaces/workflow.interface';
-import { HUMAN_APPROVAL_SERVICE, CONFIDENCE_EVALUATOR_SERVICE, APPROVAL_CHAIN_SERVICE } from '../hitl/constants';
+import {
+  HUMAN_APPROVAL_SERVICE,
+  CONFIDENCE_EVALUATOR_SERVICE,
+  APPROVAL_CHAIN_SERVICE,
+} from '../hitl/constants';
 import type { HumanApprovalService } from '../hitl/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../hitl/confidence-evaluator.service';
 import type { ApprovalChainService } from '../hitl/approval-chain.service';
@@ -13,17 +17,17 @@ export enum ApprovalRiskLevel {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 /**
  * Approval escalation strategy
  */
 export enum EscalationStrategy {
-  CHAIN = 'chain',        // Follow approval chain
-  DIRECT = 'direct',      // Direct to specific approver
+  CHAIN = 'chain', // Follow approval chain
+  DIRECT = 'direct', // Direct to specific approver
   BROADCAST = 'broadcast', // Send to all in level
-  ADAPTIVE = 'adaptive'   // AI-driven selection
+  ADAPTIVE = 'adaptive', // AI-driven selection
 }
 
 /**
@@ -32,31 +36,31 @@ export enum EscalationStrategy {
 export interface RequiresApprovalOptions {
   /** Condition function to determine if approval is needed */
   when?: (state: WorkflowState) => boolean;
-  
+
   /** Confidence threshold below which approval is required (0-1) */
   confidenceThreshold?: number;
-  
+
   /** Risk level threshold for approval requirement */
   riskThreshold?: ApprovalRiskLevel;
-  
+
   /** Message to show when requesting approval */
   message?: string | ((state: WorkflowState) => string);
-  
+
   /** Additional metadata to include with approval request */
   metadata?: (state: WorkflowState) => Record<string, unknown>;
-  
+
   /** Timeout for approval in milliseconds */
   timeoutMs?: number;
-  
+
   /** What to do if timeout is reached */
   onTimeout?: 'approve' | 'reject' | 'escalate' | 'retry';
-  
+
   /** Approval chain ID to use */
   chainId?: string;
-  
+
   /** Escalation strategy */
   escalationStrategy?: EscalationStrategy;
-  
+
   /** Skip approval if conditions are met */
   skipConditions?: {
     /** Skip if confidence above this threshold */
@@ -68,7 +72,7 @@ export interface RequiresApprovalOptions {
     /** Custom skip condition */
     custom?: (state: WorkflowState) => boolean;
   };
-  
+
   /** Risk assessment configuration */
   riskAssessment?: {
     /** Enable automatic risk evaluation */
@@ -82,7 +86,7 @@ export interface RequiresApprovalOptions {
       score: number;
     };
   };
-  
+
   /** Approval delegation options */
   delegation?: {
     /** Allow delegation */
@@ -92,7 +96,7 @@ export interface RequiresApprovalOptions {
     /** Allowed delegate roles */
     allowedRoles?: string[];
   };
-  
+
   /** Custom approval handlers */
   handlers?: {
     /** Pre-approval hook */
@@ -105,7 +109,7 @@ export interface RequiresApprovalOptions {
 /**
  * Enhanced decorator to mark a node as requiring human approval with confidence evaluation
  * and approval chain integration
- * 
+ *
  * @example
  * ```typescript
  * @Node('risky_operation')
@@ -131,76 +135,109 @@ export interface RequiresApprovalOptions {
  * }
  * ```
  */
-export function RequiresApproval(options: RequiresApprovalOptions = {}): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+export function RequiresApproval(
+  options: RequiresApprovalOptions = {}
+): MethodDecorator {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Store enhanced approval metadata
-    Reflect.defineMetadata('approval:metadata', {
-      ...options,
-      nodeId: String(propertyKey),
-      decoratedAt: new Date()
-    }, target, propertyKey);
-    
+    Reflect.defineMetadata(
+      'approval:metadata',
+      {
+        ...options,
+        nodeId: String(propertyKey),
+        decoratedAt: new Date(),
+      },
+      target,
+      propertyKey
+    );
+
     // Wrap the original method with enhanced approval logic
     const originalMethod = descriptor.value;
-    
-    descriptor.value = async function(this: any, state: WorkflowState): Promise<any> {
+
+    descriptor.value = async function (
+      this: any,
+      state: WorkflowState
+    ): Promise<any> {
       try {
         // Get services from DI container (if available)
-        const humanApprovalService = this.humanApprovalService as HumanApprovalService;
-        const confidenceEvaluator = this.confidenceEvaluatorService as ConfidenceEvaluatorService;
-        const approvalChainService = this.approvalChainService as ApprovalChainService;
-        
+        const humanApprovalService = this
+          .humanApprovalService as HumanApprovalService;
+        const confidenceEvaluator = this
+          .confidenceEvaluatorService as ConfidenceEvaluatorService;
+        const approvalChainService = this
+          .approvalChainService as ApprovalChainService;
+
         // Run pre-approval hook if defined
         if (options.handlers?.beforeApproval) {
           await options.handlers.beforeApproval(state);
         }
-        
+
         // Check skip conditions first
         const shouldSkip = await this.evaluateSkipConditions(state, options);
         if (shouldSkip) {
           if (this.logger) {
-            this.logger.debug(`Skipping approval for ${String(propertyKey)} - skip conditions met`);
+            this.logger.debug(
+              `Skipping approval for ${String(
+                propertyKey
+              )} - skip conditions met`
+            );
           }
           return originalMethod.call(this, state);
         }
-        
+
         // Check if already approved
         const approvalKey = `approved_${String(propertyKey)}`;
         const alreadyApproved = state[approvalKey] || state.approvalReceived;
-        
+
         if (alreadyApproved) {
           if (this.logger) {
-            this.logger.debug(`Approval already received for ${String(propertyKey)}`);
+            this.logger.debug(
+              `Approval already received for ${String(propertyKey)}`
+            );
           }
           return originalMethod.call(this, state);
         }
-        
+
         // Evaluate if approval is needed
-        const needsApproval = await this.evaluateApprovalRequired(state, options, {
-          humanApprovalService,
-          confidenceEvaluator,
-          approvalChainService
-        });
-        
+        const needsApproval = await this.evaluateApprovalRequired(
+          state,
+          options,
+          {
+            humanApprovalService,
+            confidenceEvaluator,
+            approvalChainService,
+          }
+        );
+
         if (needsApproval) {
-          return await this.routeToApproval(state, options, String(propertyKey));
+          return await this.routeToApproval(
+            state,
+            options,
+            String(propertyKey)
+          );
         }
-        
+
         // Execute the original method
         const result = await originalMethod.call(this, state);
-        
+
         // Run post-approval hook if defined
         if (options.handlers?.afterApproval) {
           await options.handlers.afterApproval(state, true);
         }
-        
+
         return result;
-        
       } catch (error) {
         if (this.logger) {
-          this.logger.error(`Error in approval decorator for ${String(propertyKey)}:`, error);
+          this.logger.error(
+            `Error in approval decorator for ${String(propertyKey)}:`,
+            error
+          );
         }
-        
+
         // Run post-approval hook with failure
         if (options.handlers?.afterApproval) {
           try {
@@ -211,25 +248,28 @@ export function RequiresApproval(options: RequiresApprovalOptions = {}): MethodD
             }
           }
         }
-        
+
         throw error;
       }
     };
-    
+
     // Add helper methods to the decorated class
     if (!target.evaluateSkipConditions) {
-      target.evaluateSkipConditions = async function(
-        state: WorkflowState, 
+      target.evaluateSkipConditions = async function (
+        state: WorkflowState,
         options: RequiresApprovalOptions
       ): Promise<boolean> {
         const skip = options.skipConditions;
         if (!skip) return false;
-        
+
         // High confidence skip
-        if (skip.highConfidence && (state.confidence || 0) >= skip.highConfidence) {
+        if (
+          skip.highConfidence &&
+          (state.confidence || 0) >= skip.highConfidence
+        ) {
           return true;
         }
-        
+
         // User role skip
         if (skip.userRole && state.metadata?.['userRole']) {
           const userRole = state.metadata['userRole'] as string;
@@ -237,23 +277,23 @@ export function RequiresApproval(options: RequiresApprovalOptions = {}): MethodD
             return true;
           }
         }
-        
+
         // Safe mode skip
         if (skip.safeMode && state.metadata?.['safeMode'] === true) {
           return true;
         }
-        
+
         // Custom skip condition
         if (skip.custom) {
           return skip.custom(state);
         }
-        
+
         return false;
       };
     }
-    
+
     if (!target.evaluateApprovalRequired) {
-      target.evaluateApprovalRequired = async function(
+      target.evaluateApprovalRequired = async function (
         state: WorkflowState,
         options: RequiresApprovalOptions,
         services: {
@@ -266,70 +306,78 @@ export function RequiresApproval(options: RequiresApprovalOptions = {}): MethodD
         if (options.when && options.when(state)) {
           return true;
         }
-        
+
         // Confidence threshold check
         if (options.confidenceThreshold !== undefined) {
-          const confidence = services.confidenceEvaluator 
+          const confidence = services.confidenceEvaluator
             ? await services.confidenceEvaluator.evaluateConfidence(state)
             : state.confidence || 0;
-            
+
           if (confidence < options.confidenceThreshold) {
             if (this.logger) {
-              this.logger.debug(`Approval required: confidence ${confidence} < threshold ${options.confidenceThreshold}`);
+              this.logger.debug(
+                `Approval required: confidence ${confidence} < threshold ${options.confidenceThreshold}`
+              );
             }
             return true;
           }
         }
-        
+
         // Risk assessment check
         if (options.riskAssessment?.enabled && services.confidenceEvaluator) {
-          const riskAssessment = await services.confidenceEvaluator.assessRisk(state, {
-            factors: options.riskAssessment.factors || [],
-            customEvaluator: options.riskAssessment.evaluator
-          });
-          
+          const riskAssessment = await services.confidenceEvaluator.assessRisk(
+            state,
+            {
+              factors: options.riskAssessment.factors || [],
+              customEvaluator: options.riskAssessment.evaluator,
+            }
+          );
+
           if (options.riskThreshold) {
             const riskLevels = {
               [ApprovalRiskLevel.LOW]: 1,
               [ApprovalRiskLevel.MEDIUM]: 2,
               [ApprovalRiskLevel.HIGH]: 3,
-              [ApprovalRiskLevel.CRITICAL]: 4
+              [ApprovalRiskLevel.CRITICAL]: 4,
             };
-            
+
             const currentRiskLevel = riskLevels[riskAssessment.level];
             const thresholdLevel = riskLevels[options.riskThreshold];
-            
+
             if (currentRiskLevel >= thresholdLevel) {
               if (this.logger) {
-                this.logger.debug(`Approval required: risk level ${riskAssessment.level} >= threshold ${options.riskThreshold}`);
+                this.logger.debug(
+                  `Approval required: risk level ${riskAssessment.level} >= threshold ${options.riskThreshold}`
+                );
               }
               return true;
             }
           }
         }
-        
+
         return false;
       };
     }
-    
+
     if (!target.routeToApproval) {
-      target.routeToApproval = async function(
+      target.routeToApproval = async function (
         state: WorkflowState,
         options: RequiresApprovalOptions,
         nodeId: string
       ): Promise<any> {
         // Generate approval message
-        const message = typeof options.message === 'function' 
-          ? options.message(state)
-          : options.message || `Approval required for ${nodeId}`;
-        
+        const message =
+          typeof options.message === 'function'
+            ? options.message(state)
+            : options.message || `Approval required for ${nodeId}`;
+
         // Generate metadata
         const metadata = options.metadata ? options.metadata(state) : {};
-        
+
         if (this.logger) {
           this.logger.log(`Routing to approval: ${message}`);
         }
-        
+
         return {
           type: 'goto',
           goto: 'human_approval',
@@ -345,20 +393,20 @@ export function RequiresApproval(options: RequiresApprovalOptions = {}): MethodD
                 chainId: options.chainId,
                 escalationStrategy: options.escalationStrategy,
                 timeoutMs: options.timeoutMs,
-                onTimeout: options.onTimeout || 'reject'
+                onTimeout: options.onTimeout || 'reject',
               },
-              requestedAt: new Date()
-            }
+              requestedAt: new Date(),
+            },
           },
           metadata: {
             approvalOptions: options,
             nodeId,
-            timestamp: new Date()
-          }
+            timestamp: new Date(),
+          },
         };
       };
     }
-    
+
     return descriptor;
   };
 }
@@ -375,7 +423,7 @@ export function getApprovalOptions(
 
 /**
  * Decorator to handle approval responses
- * 
+ *
  * @example
  * ```typescript
  * @ApprovalHandler()
@@ -389,7 +437,11 @@ export function getApprovalOptions(
  * ```
  */
 export function ApprovalHandler(): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Mark as approval handler
     Reflect.defineMetadata('approval:handler', true, target, propertyKey);
     return descriptor;
@@ -399,6 +451,9 @@ export function ApprovalHandler(): MethodDecorator {
 /**
  * Check if a method is an approval handler
  */
-export function isApprovalHandler(target: any, propertyKey: string | symbol): boolean {
+export function isApprovalHandler(
+  target: any,
+  propertyKey: string | symbol
+): boolean {
   return Reflect.getMetadata('approval:handler', target, propertyKey) === true;
 }

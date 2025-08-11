@@ -1,6 +1,6 @@
 # Agents-Workflow Library Code Examples
 
-This document provides concrete code examples for implementing the new agents-workflow library using modern patterns from @anubis/nestjs-langgraph.
+This document provides concrete code examples for implementing the new agents-workflow library using modern patterns from @hive-academy/nestjs-langgraph.
 
 ## 1. Base Agent Node Pattern
 
@@ -8,8 +8,8 @@ This document provides concrete code examples for implementing the new agents-wo
 
 ```typescript
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
-import { AgentNodeBase as LangGraphNodeBase, AgentNodeConfig } from '@anubis/nestjs-langgraph';
-import { WorkflowState, Command, AgentType } from '@anubis/shared';
+import { AgentNodeBase as LangGraphNodeBase, AgentNodeConfig } from '@hive-academy/nestjs-langgraph';
+import { WorkflowState, Command, AgentType } from '@hive-academy/shared';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { StructuredToolInterface } from '@langchain/core/tools';
 
@@ -18,17 +18,11 @@ import { StructuredToolInterface } from '@langchain/core/tools';
  * Extends the nestjs-langgraph base with agent-specific functionality
  */
 @Injectable()
-export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState> 
-  extends LangGraphNodeBase<TState> {
-  
+export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState> extends LangGraphNodeBase<TState> {
   protected readonly logger: Logger;
   protected abstract readonly agentType: AgentType;
 
-  constructor(
-    @Inject('LLM_SERVICE') protected readonly llmService?: any,
-    @Inject('TOOL_REGISTRY') protected readonly toolRegistry?: any,
-    @Optional() @Inject('INTELLIGENCE_SERVICE') protected readonly intelligenceService?: any
-  ) {
+  constructor(@Inject('LLM_SERVICE') protected readonly llmService?: any, @Inject('TOOL_REGISTRY') protected readonly toolRegistry?: any, @Optional() @Inject('INTELLIGENCE_SERVICE') protected readonly intelligenceService?: any) {
     super();
     this.logger = new Logger(this.constructor.name);
   }
@@ -68,23 +62,19 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
         ...state.agentContext,
         [this.agentType]: {
           ...this.getAgentContext(state),
-          ...update
-        }
-      }
+          ...update,
+        },
+      },
     };
   }
 
   /**
    * Create a tool execution command
    */
-  protected createToolCommand(
-    toolName: string, 
-    params: Record<string, any>, 
-    update?: Partial<TState>
-  ): Command<TState> {
+  protected createToolCommand(toolName: string, params: Record<string, any>, update?: Partial<TState>): Command<TState> {
     return this.createCommand('TOOLS', {
       tools: [{ name: toolName, params }],
-      update
+      update,
     });
   }
 
@@ -94,13 +84,13 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   protected shouldRouteToApproval(state: TState): boolean {
     if (this.nodeConfig.requiresApproval) return true;
     if (!this.meetsConfidenceThreshold(state)) return true;
-    
+
     // Check for high-risk operations
     const agentContext = this.getAgentContext(state);
     if (agentContext?.risks?.some((r: any) => r.severity === 'critical')) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -114,8 +104,8 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
         previousNode: this.nodeConfig.id,
         nextNode,
         requiresApproval: true,
-        ...update
-      }
+        ...update,
+      },
     });
   }
 }
@@ -127,17 +117,8 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { 
-  Workflow, 
-  StartNode, 
-  Node, 
-  ConditionalEdge,
-  ApprovalNode,
-  ToolNode,
-  StreamProgress,
-  DeclarativeWorkflowBase 
-} from '@anubis/nestjs-langgraph';
-import { WorkflowState, AgentType, Command } from '@anubis/shared';
+import { Workflow, StartNode, Node, ConditionalEdge, ApprovalNode, ToolNode, StreamProgress, DeclarativeWorkflowBase } from '@hive-academy/nestjs-langgraph';
+import { WorkflowState, AgentType, Command } from '@hive-academy/shared';
 
 // Import business nodes
 import { ArchitectureAnalysisNode } from './nodes/architecture-analysis.node';
@@ -155,10 +136,10 @@ import { ArchitectRoutingService } from './services/architect-routing.service';
   name: 'architect-workflow',
   description: 'Technical architecture and decision-making workflow',
   streaming: true,
-  hitl: { 
-    enabled: true, 
+  hitl: {
+    enabled: true,
     interruptNodes: ['human_approval'],
-    approvalTimeout: 300000 
+    approvalTimeout: 300000,
   },
   channels: {
     requirements: null,
@@ -166,27 +147,17 @@ import { ArchitectRoutingService } from './services/architect-routing.service';
     technicalSpecs: null,
     validationResults: null,
     decomposedTasks: null,
-    reviewResults: null
+    reviewResults: null,
   },
   confidenceThreshold: 0.75,
   autoApproveThreshold: 0.95,
-  pattern: 'supervisor'
+  pattern: 'supervisor',
 })
 @Injectable()
 export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
-  
   public readonly agentType = AgentType.ARCHITECT;
 
-  constructor(
-    private readonly architectureAnalysisNode: ArchitectureAnalysisNode,
-    private readonly technicalDecisionNode: TechnicalDecisionNode,
-    private readonly architectureValidationNode: ArchitectureValidationNode,
-    private readonly specGenerationNode: SpecGenerationNode,
-    private readonly taskDecompositionNode: TaskDecompositionNode,
-    private readonly technicalReviewNode: TechnicalReviewNode,
-    private readonly contextService: ArchitectContextService,
-    private readonly routingService: ArchitectRoutingService,
-  ) {
+  constructor(private readonly architectureAnalysisNode: ArchitectureAnalysisNode, private readonly technicalDecisionNode: TechnicalDecisionNode, private readonly architectureValidationNode: ArchitectureValidationNode, private readonly specGenerationNode: SpecGenerationNode, private readonly taskDecompositionNode: TaskDecompositionNode, private readonly technicalReviewNode: TechnicalReviewNode, private readonly contextService: ArchitectContextService, private readonly routingService: ArchitectRoutingService) {
     super();
   }
 
@@ -194,10 +165,10 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
   // NODE IMPLEMENTATIONS
   // ===================================================================
 
-  @StartNode({ 
+  @StartNode({
     description: 'Analyze current architecture and requirements',
     timeout: 120000,
-    type: 'llm'
+    type: 'llm',
   })
   @StreamProgress({ granularity: 'coarse' })
   async architectureAnalysis(state: WorkflowState): Promise<Partial<WorkflowState> | Command<WorkflowState>> {
@@ -205,55 +176,55 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
     return await this.architectureAnalysisNode.executeWithHooks(state);
   }
 
-  @Node({ 
+  @Node({
     id: 'technical_decision',
     type: 'llm',
     description: 'Make technical decisions based on analysis',
     requiresApproval: true,
     confidenceThreshold: 0.8,
-    timeout: 120000
+    timeout: 120000,
   })
   @StreamProgress({ granularity: 'coarse' })
   async technicalDecision(state: WorkflowState): Promise<Partial<WorkflowState> | Command<WorkflowState>> {
     return await this.technicalDecisionNode.executeWithHooks(state);
   }
 
-  @Node({ 
+  @Node({
     id: 'architecture_validation',
     type: 'standard',
     description: 'Validate architecture approach and decisions',
-    timeout: 90000
+    timeout: 90000,
   })
   async architectureValidation(state: WorkflowState): Promise<Partial<WorkflowState> | Command<WorkflowState>> {
     return await this.architectureValidationNode.executeWithHooks(state);
   }
 
-  @Node({ 
+  @Node({
     id: 'spec_generation',
     type: 'llm',
     description: 'Generate detailed technical specifications',
-    timeout: 180000
+    timeout: 180000,
   })
   @StreamProgress({ granularity: 'fine' })
   async specGeneration(state: WorkflowState): Promise<Partial<WorkflowState> | Command<WorkflowState>> {
     return await this.specGenerationNode.executeWithHooks(state);
   }
 
-  @Node({ 
+  @Node({
     id: 'task_decomposition',
     type: 'standard',
     description: 'Decompose specifications into executable tasks',
-    timeout: 120000
+    timeout: 120000,
   })
   async taskDecomposition(state: WorkflowState): Promise<Partial<WorkflowState> | Command<WorkflowState>> {
     return await this.taskDecompositionNode.executeWithHooks(state);
   }
 
-  @Node({ 
+  @Node({
     id: 'technical_review',
     type: 'llm',
     description: 'Conduct comprehensive technical review',
-    timeout: 120000
+    timeout: 120000,
   })
   async technicalReview(state: WorkflowState): Promise<Partial<WorkflowState> | Command<WorkflowState>> {
     return await this.technicalReviewNode.executeWithHooks(state);
@@ -261,7 +232,7 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
 
   @ApprovalNode({
     description: 'Human approval checkpoint for architecture decisions',
-    timeout: 300000
+    timeout: 300000,
   })
   async humanApproval(state: WorkflowState): Promise<Command<WorkflowState>> {
     return this.handleHumanApproval(state);
@@ -269,7 +240,7 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
 
   @ToolNode({
     description: 'Execute architect-specific tools',
-    timeout: 60000
+    timeout: 60000,
   })
   async tools(state: WorkflowState): Promise<Partial<WorkflowState>> {
     return await this.executeTools(state);
@@ -279,73 +250,101 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
   // ROUTING LOGIC
   // ===================================================================
 
-  @ConditionalEdge('architectureAnalysis', {
-    'continue': 'technical_decision',
-    'needs_approval': 'human_approval', 
-    'needs_tools': 'tools'
-  }, { default: 'continue' })
+  @ConditionalEdge(
+    'architectureAnalysis',
+    {
+      continue: 'technical_decision',
+      needs_approval: 'human_approval',
+      needs_tools: 'tools',
+    },
+    { default: 'continue' }
+  )
   routeAfterAnalysis(state: WorkflowState): string {
     return this.routingService.routeAfterAnalysis(state);
   }
 
-  @ConditionalEdge('technical_decision', {
-    'continue': 'architecture_validation',
-    'needs_tools': 'tools'
-  }, { default: 'continue' })
+  @ConditionalEdge(
+    'technical_decision',
+    {
+      continue: 'architecture_validation',
+      needs_tools: 'tools',
+    },
+    { default: 'continue' }
+  )
   routeAfterDecision(state: WorkflowState): string {
     return this.routingService.needsTools(state) ? 'needs_tools' : 'continue';
   }
 
-  @ConditionalEdge('architecture_validation', {
-    'continue': 'spec_generation',
-    'needs_tools': 'tools',
-    'needs_revision': 'technical_decision'
-  }, { default: 'continue' })
+  @ConditionalEdge(
+    'architecture_validation',
+    {
+      continue: 'spec_generation',
+      needs_tools: 'tools',
+      needs_revision: 'technical_decision',
+    },
+    { default: 'continue' }
+  )
   routeAfterValidation(state: WorkflowState): string {
     return this.routingService.routeAfterValidation(state);
   }
 
-  @ConditionalEdge('spec_generation', {
-    'continue': 'task_decomposition',
-    'needs_tools': 'tools'
-  }, { default: 'continue' })
+  @ConditionalEdge(
+    'spec_generation',
+    {
+      continue: 'task_decomposition',
+      needs_tools: 'tools',
+    },
+    { default: 'continue' }
+  )
   routeAfterSpecGeneration(state: WorkflowState): string {
     return this.routingService.needsTools(state) ? 'needs_tools' : 'continue';
   }
 
-  @ConditionalEdge('task_decomposition', {
-    'continue': 'technical_review',
-    'needs_tools': 'tools'
-  }, { default: 'continue' })
+  @ConditionalEdge(
+    'task_decomposition',
+    {
+      continue: 'technical_review',
+      needs_tools: 'tools',
+    },
+    { default: 'continue' }
+  )
   routeAfterDecomposition(state: WorkflowState): string {
     return this.routingService.needsTools(state) ? 'needs_tools' : 'continue';
   }
 
-  @ConditionalEdge('technical_review', {
-    'approved': '__end__',
-    'needs_approval': 'human_approval',
-    'needs_revision': 'spec_generation'
-  }, { default: 'needs_approval' })
+  @ConditionalEdge(
+    'technical_review',
+    {
+      approved: '__end__',
+      needs_approval: 'human_approval',
+      needs_revision: 'spec_generation',
+    },
+    { default: 'needs_approval' }
+  )
   routeAfterReview(state: WorkflowState): string {
     return this.routingService.routeAfterReview(state);
   }
 
-  @ConditionalEdge('human_approval', {
-    'approved': 'technical_decision',
-    'rejected': '__end__',
-    'retry': 'architectureAnalysis'
-  }, { default: 'retry' })
+  @ConditionalEdge(
+    'human_approval',
+    {
+      approved: 'technical_decision',
+      rejected: '__end__',
+      retry: 'architectureAnalysis',
+    },
+    { default: 'retry' }
+  )
   routeAfterApproval(state: WorkflowState): string {
     return this.routingService.routeAfterApproval(state);
   }
 
   @ConditionalEdge('tools', {
-    'architecture_analysis': 'architectureAnalysis',
-    'technical_decision': 'technical_decision',
-    'architecture_validation': 'architecture_validation',
-    'spec_generation': 'spec_generation',
-    'task_decomposition': 'task_decomposition',
-    'technical_review': 'technical_review'
+    architecture_analysis: 'architectureAnalysis',
+    technical_decision: 'technical_decision',
+    architecture_validation: 'architecture_validation',
+    spec_generation: 'spec_generation',
+    task_decomposition: 'task_decomposition',
+    technical_review: 'technical_review',
   })
   routeAfterTools(state: WorkflowState): string {
     return this.routingService.routeAfterTools(state);
@@ -359,7 +358,7 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
     if (!state.humanFeedback) {
       return this.createCommand('PAUSE', {
         message: 'Architecture decisions require human approval',
-        context: this.contextService.buildApprovalContext(state)
+        context: this.contextService.buildApprovalContext(state),
       });
     }
 
@@ -369,9 +368,9 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
         lastApprovalDecision: {
           status: state.humanFeedback.status,
           timestamp: new Date(),
-          feedback: state.humanFeedback.feedback
-        }
-      }
+          feedback: state.humanFeedback.feedback,
+        },
+      },
     });
   }
 
@@ -391,7 +390,7 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
     return {
       toolResults: results,
       pendingToolCalls: [],
-      lastToolExecution: new Date()
+      lastToolExecution: new Date(),
     };
   }
 
@@ -411,12 +410,12 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
       completedNodes: [],
       agentContext: this.contextService.createInitialContext(input),
       workflowContext: {
-        projectPath: input.projectPath as string || process.cwd(),
-        outputDirectory: input.outputDirectory as string || '.anubis/output'
+        projectPath: (input.projectPath as string) || process.cwd(),
+        outputDirectory: (input.outputDirectory as string) || '.anubis/output',
       },
       messages: [],
       retryCount: 0,
-      attemptNumber: 1
+      attemptNumber: 1,
     };
   }
 
@@ -425,7 +424,7 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
    */
   public extractOutput(state: WorkflowState): Record<string, unknown> {
     const context = this.contextService.getArchitectContext(state);
-    
+
     return {
       architecture: context?.architectureAnalysis,
       technicalDecisions: context?.technicalDecisions,
@@ -433,7 +432,7 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
       tasks: context?.decomposedTasks,
       validation: context?.architectureValidation,
       confidence: state.confidence,
-      completedAt: new Date()
+      completedAt: new Date(),
     };
   }
 
@@ -442,11 +441,11 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
    */
   public suggestNextAgent(state: WorkflowState): AgentType | null {
     const context = this.contextService.getArchitectContext(state);
-    
+
     if (context?.technicalSpecs && context?.architectureValidation) {
       return AgentType.SENIOR_DEVELOPER;
     }
-    
+
     return null;
   }
 }
@@ -458,19 +457,15 @@ export class ArchitectWorkflow extends DeclarativeWorkflowBase<WorkflowState> {
 
 ```typescript
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { WorkflowState, AgentType, Command } from '@anubis/shared';
-import { AgentNodeConfig } from '@anubis/nestjs-langgraph';
+import { WorkflowState, AgentType, Command } from '@hive-academy/shared';
+import { AgentNodeConfig } from '@hive-academy/nestjs-langgraph';
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
 
 // Import the base class from our library
 import { AgentNodeBase } from '../../../nodes/base/agent-node.base';
 
 // Import intelligence services
-import { 
-  TreeSitterAnalyzerService,
-  CodebaseGraphService,
-  EnhancedRAGService 
-} from '@anubis/intelligence/backend';
+import { TreeSitterAnalyzerService, CodebaseGraphService, EnhancedRAGService } from '@hive-academy/intelligence/backend';
 
 interface ArchitectureAnalysisResult {
   currentArchitecture: {
@@ -499,10 +494,9 @@ interface ArchitectureAnalysisResult {
 
 @Injectable()
 export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
-  
   protected readonly logger = new Logger(ArchitectureAnalysisNode.name);
   protected readonly agentType = AgentType.ARCHITECT;
-  
+
   protected readonly nodeConfig: AgentNodeConfig = {
     id: 'architecture_analysis',
     name: 'Architecture Analysis',
@@ -511,16 +505,10 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
     confidenceThreshold: 0.7,
     maxRetries: 3,
     timeout: 120000,
-    type: 'llm'
+    type: 'llm',
   };
 
-  constructor(
-    @Inject('LLM_SERVICE') llmService: any,
-    @Inject('TOOL_REGISTRY') toolRegistry: any,
-    private readonly treeService: TreeSitterAnalyzerService,
-    private readonly graphService: CodebaseGraphService,
-    private readonly ragService: EnhancedRAGService,
-  ) {
+  constructor(@Inject('LLM_SERVICE') llmService: any, @Inject('TOOL_REGISTRY') toolRegistry: any, private readonly treeService: TreeSitterAnalyzerService, private readonly graphService: CodebaseGraphService, private readonly ragService: EnhancedRAGService) {
     super(llmService, toolRegistry);
   }
 
@@ -541,18 +529,18 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
       // Analyze current codebase structure
       const projectPath = state.workflowContext?.projectPath || process.cwd();
       const codebaseStructure = await this.analyzeCodebaseStructure(projectPath);
-      
+
       // Get relevant context using RAG
       const relevantContext = await this.getRelevantArchitecturalContext(state.userRequest);
 
       // Determine if we need additional tool execution
       const needsDetailedAnalysis = this.needsDetailedCodeAnalysis(codebaseStructure, state);
-      
+
       if (needsDetailedAnalysis) {
         return this.createToolCommand('analyze_detailed_structure', {
           projectPath,
           analysisType: 'deep',
-          focusAreas: this.determineAnalysisFocusAreas(state.userRequest)
+          focusAreas: this.determineAnalysisFocusAreas(state.userRequest),
         });
       }
 
@@ -563,9 +551,8 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
       return this.updateAgentContext(state, {
         architectureAnalysis: analysis,
         codebaseStructure,
-        analysisTimestamp: new Date()
+        analysisTimestamp: new Date(),
       });
-
     } catch (error) {
       this.logger.error(`Architecture analysis failed: ${error.message}`, error.stack);
       throw error;
@@ -579,10 +566,10 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
     try {
       // Use Tree-sitter for code structure analysis
       const structureAnalysis = await this.treeService.analyzeProject(projectPath);
-      
+
       // Use graph service for dependency analysis
       const dependencyGraph = await this.graphService.analyzeDependencies(projectPath);
-      
+
       // Calculate complexity metrics
       const metrics = await this.graphService.calculateMetrics(dependencyGraph);
 
@@ -590,7 +577,7 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
         structure: structureAnalysis,
         dependencies: dependencyGraph,
         metrics,
-        analyzedAt: new Date()
+        analyzedAt: new Date(),
       };
     } catch (error) {
       this.logger.warn(`Codebase structure analysis failed: ${error.message}`);
@@ -599,7 +586,7 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
         dependencies: null,
         metrics: null,
         error: error.message,
-        analyzedAt: new Date()
+        analyzedAt: new Date(),
       };
     }
   }
@@ -612,21 +599,21 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
       const searchResults = await this.ragService.search({
         query: `architecture patterns design decisions: ${userRequest}`,
         limit: 5,
-        threshold: 0.7
+        threshold: 0.7,
       });
 
       return {
         relevantPatterns: searchResults.documents,
         searchQuery: searchResults.query,
         relevanceScores: searchResults.distances,
-        searchedAt: new Date()
+        searchedAt: new Date(),
       };
     } catch (error) {
       this.logger.warn(`RAG context retrieval failed: ${error.message}`);
       return {
         relevantPatterns: [],
         error: error.message,
-        searchedAt: new Date()
+        searchedAt: new Date(),
       };
     }
   }
@@ -634,11 +621,7 @@ export class ArchitectureAnalysisNode extends AgentNodeBase<WorkflowState> {
   /**
    * Perform LLM-based architecture analysis
    */
-  private async performLLMAnalysis(
-    state: WorkflowState, 
-    codebaseStructure: any, 
-    relevantContext: any
-  ): Promise<ArchitectureAnalysisResult> {
+  private async performLLMAnalysis(state: WorkflowState, codebaseStructure: any, relevantContext: any): Promise<ArchitectureAnalysisResult> {
     const messages = [
       new SystemMessage(`You are a senior software architect analyzing a codebase for architectural improvements.
 
@@ -655,20 +638,20 @@ Focus on:
 4. Specific recommendations for implementation
 
 Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
-      new HumanMessage(`Please analyze the architecture for: ${state.userRequest}`)
+      new HumanMessage(`Please analyze the architecture for: ${state.userRequest}`),
     ];
 
     const response = await this.llm.invoke(messages);
-    
+
     try {
       const analysisResult = JSON.parse(response.content as string) as ArchitectureAnalysisResult;
-      
+
       // Validate and enhance the result
       return {
         ...analysisResult,
         confidence: this.calculateConfidence(analysisResult, codebaseStructure),
         needsTools: this.determineIfToolsNeeded(analysisResult),
-        requiredTools: this.identifyRequiredTools(analysisResult)
+        requiredTools: this.identifyRequiredTools(analysisResult),
       };
     } catch (parseError) {
       this.logger.warn('Failed to parse LLM response, using fallback analysis');
@@ -682,15 +665,11 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
   private needsDetailedCodeAnalysis(codebaseStructure: any, state: WorkflowState): boolean {
     // If structure analysis failed, we need tools
     if (!codebaseStructure.structure) return true;
-    
+
     // If request involves complex architectural changes, we need detailed analysis
-    const complexityIndicators = [
-      'refactor', 'redesign', 'microservices', 'modular', 'decouple'
-    ];
-    
-    return complexityIndicators.some(indicator => 
-      state.userRequest.toLowerCase().includes(indicator)
-    );
+    const complexityIndicators = ['refactor', 'redesign', 'microservices', 'modular', 'decouple'];
+
+    return complexityIndicators.some((indicator) => state.userRequest.toLowerCase().includes(indicator));
   }
 
   /**
@@ -698,10 +677,10 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
    */
   private determineAnalysisFocusAreas(userRequest: string): string[] {
     const focusMap = {
-      'performance': ['hot-paths', 'bottlenecks', 'optimization'],
-      'scalability': ['load-patterns', 'resource-usage', 'concurrency'],
-      'maintainability': ['complexity-metrics', 'coupling', 'cohesion'],
-      'security': ['data-flow', 'access-patterns', 'vulnerabilities']
+      performance: ['hot-paths', 'bottlenecks', 'optimization'],
+      scalability: ['load-patterns', 'resource-usage', 'concurrency'],
+      maintainability: ['complexity-metrics', 'coupling', 'cohesion'],
+      security: ['data-flow', 'access-patterns', 'vulnerabilities'],
     };
 
     const focusAreas: string[] = [];
@@ -726,8 +705,7 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
     }
 
     // Increase confidence if analysis seems comprehensive
-    if (result.currentArchitecture.patterns.length > 0 && 
-        result.recommendations.designPatterns.length > 0) {
+    if (result.currentArchitecture.patterns.length > 0 && result.recommendations.designPatterns.length > 0) {
       confidence += 0.2;
     }
 
@@ -744,9 +722,7 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
    */
   private determineIfToolsNeeded(result: ArchitectureAnalysisResult): boolean {
     // Tools needed if we have insufficient data for recommendations
-    return result.currentArchitecture.patterns.length === 0 ||
-           result.recommendations.designPatterns.length === 0 ||
-           result.proposedChanges.impacts.length === 0;
+    return result.currentArchitecture.patterns.length === 0 || result.recommendations.designPatterns.length === 0 || result.proposedChanges.impacts.length === 0;
   }
 
   /**
@@ -758,14 +734,14 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
     if (result.currentArchitecture.patterns.length === 0) {
       tools.push({
         name: 'analyze_design_patterns',
-        params: { analysisType: 'patterns', depth: 'comprehensive' }
+        params: { analysisType: 'patterns', depth: 'comprehensive' },
       });
     }
 
     if (result.proposedChanges.impacts.length === 0) {
       tools.push({
         name: 'analyze_change_impact',
-        params: { changeType: 'architectural', scope: 'full' }
+        params: { changeType: 'architectural', scope: 'full' },
       });
     }
 
@@ -781,26 +757,24 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
         patterns: codebaseStructure.structure ? ['layered-architecture'] : [],
         technologies: ['typescript', 'nestjs'],
         principles: ['separation-of-concerns'],
-        constraints: ['existing-codebase', 'backward-compatibility']
+        constraints: ['existing-codebase', 'backward-compatibility'],
       },
       proposedChanges: {
         newPatterns: [],
         newTechnologies: [],
         impacts: ['requires-analysis'],
-        risks: ['insufficient-analysis-data']
+        risks: ['insufficient-analysis-data'],
       },
       recommendations: {
         designPatterns: ['repository-pattern', 'dependency-injection'],
         techStack: ['maintain-current'],
-        bestPractices: ['code-review', 'testing']
+        bestPractices: ['code-review', 'testing'],
       },
       clarity: 0.3,
       complexity: 0.7,
       confidence: 0.3,
       needsTools: true,
-      requiredTools: [
-        { name: 'comprehensive_code_analysis', params: { projectPath: state.workflowContext?.projectPath } }
-      ]
+      requiredTools: [{ name: 'comprehensive_code_analysis', params: { projectPath: state.workflowContext?.projectPath } }],
     };
   }
 
@@ -826,7 +800,7 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
     return this.updateAgentContext(state, {
       architectureAnalysis: finalAnalysis,
       toolResultsProcessed: true,
-      enhancedDataAvailable: true
+      enhancedDataAvailable: true,
     });
   }
 
@@ -840,11 +814,11 @@ Respond with a JSON object matching the ArchitectureAnalysisResult interface.`),
 Enhanced Data: ${JSON.stringify(enhancedData, null, 2)}
 
 Provide a definitive architectural analysis and recommendations based on this comprehensive data.`),
-      new HumanMessage(`Based on the enhanced analysis data, provide final recommendations for: ${state.userRequest}`)
+      new HumanMessage(`Based on the enhanced analysis data, provide final recommendations for: ${state.userRequest}`),
     ];
 
     const response = await this.llm.invoke(messages);
-    
+
     try {
       return JSON.parse(response.content as string);
     } catch (error) {
@@ -868,8 +842,8 @@ Provide a definitive architectural analysis and recommendations based on this co
 
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkflowState, AgentType } from '@anubis/shared';
-import { extractTypedContext } from '@anubis/agent-system/shared';
+import { WorkflowState, AgentType } from '@hive-academy/shared';
+import { extractTypedContext } from '@hive-academy/agent-system/shared';
 
 export interface ArchitectContext {
   architectureAnalysis?: any;
@@ -899,11 +873,11 @@ export class ArchitectContextService {
       lastUpdated: new Date(),
       confidence: 0.5,
       risks: [],
-      recommendations: {}
+      recommendations: {},
     };
 
     return {
-      [AgentType.ARCHITECT]: architectContext
+      [AgentType.ARCHITECT]: architectContext,
     };
   }
 
@@ -919,16 +893,16 @@ export class ArchitectContextService {
    */
   updateContext(state: WorkflowState, update: Partial<ArchitectContext>): Partial<WorkflowState> {
     const currentContext = this.getArchitectContext(state) || {};
-    
+
     return {
       agentContext: {
         ...state.agentContext,
         [AgentType.ARCHITECT]: {
           ...currentContext,
           ...update,
-          lastUpdated: new Date()
-        }
-      }
+          lastUpdated: new Date(),
+        },
+      },
     };
   }
 
@@ -937,7 +911,7 @@ export class ArchitectContextService {
    */
   buildApprovalContext(state: WorkflowState): Record<string, any> {
     const context = this.getArchitectContext(state);
-    
+
     return {
       agentType: AgentType.ARCHITECT,
       currentNode: state.currentNodeId,
@@ -947,7 +921,7 @@ export class ArchitectContextService {
       confidence: context?.confidence || 0,
       recommendations: context?.recommendations,
       userRequest: state.userRequest,
-      executionId: state.executionId
+      executionId: state.executionId,
     };
   }
 
@@ -956,7 +930,7 @@ export class ArchitectContextService {
    */
   extractDeliverables(state: WorkflowState): Record<string, any> {
     const context = this.getArchitectContext(state);
-    
+
     if (!context) {
       return {};
     }
@@ -967,7 +941,7 @@ export class ArchitectContextService {
       specifications: context.technicalSpecs,
       validationResults: context.architectureValidation,
       tasks: context.decomposedTasks,
-      reviewResults: context.reviewResults
+      reviewResults: context.reviewResults,
     };
   }
 
@@ -976,16 +950,10 @@ export class ArchitectContextService {
    */
   isWorkComplete(state: WorkflowState): boolean {
     const context = this.getArchitectContext(state);
-    
+
     if (!context) return false;
 
-    return !!(
-      context.architectureAnalysis &&
-      context.technicalDecisions &&
-      context.technicalSpecs &&
-      context.architectureValidation &&
-      context.decomposedTasks
-    );
+    return !!(context.architectureAnalysis && context.technicalDecisions && context.technicalSpecs && context.architectureValidation && context.decomposedTasks);
   }
 
   /**
@@ -993,7 +961,7 @@ export class ArchitectContextService {
    */
   calculateOverallConfidence(state: WorkflowState): number {
     const context = this.getArchitectContext(state);
-    
+
     if (!context) return 0.0;
 
     const weights = {
@@ -1002,7 +970,7 @@ export class ArchitectContextService {
       architectureValidation: 0.2,
       technicalSpecs: 0.2,
       decomposedTasks: 0.1,
-      reviewResults: 0.1
+      reviewResults: 0.1,
     };
 
     let totalConfidence = 0;
@@ -1024,17 +992,15 @@ export class ArchitectContextService {
   getHighPriorityRisks(state: WorkflowState): any[] {
     const context = this.getArchitectContext(state);
     const risks = context?.risks || [];
-    
-    return risks.filter(risk => risk.severity === 'critical' || risk.probability > 0.7);
+
+    return risks.filter((risk) => risk.severity === 'critical' || risk.probability > 0.7);
   }
 
   /**
    * Check if ready for next agent
    */
   isReadyForNextAgent(state: WorkflowState): boolean {
-    return this.isWorkComplete(state) && 
-           this.calculateOverallConfidence(state) >= 0.7 &&
-           this.getHighPriorityRisks(state).length === 0;
+    return this.isWorkComplete(state) && this.calculateOverallConfidence(state) >= 0.7 && this.getHighPriorityRisks(state).length === 0;
   }
 }
 ```
@@ -1045,20 +1011,16 @@ export class ArchitectContextService {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Tool } from '@anubis/nestjs-langgraph';
+import { Tool } from '@hive-academy/nestjs-langgraph';
 import { z } from 'zod';
-import { 
-  TreeSitterAnalyzerService,
-  CodebaseGraphService,
-  EnhancedRAGService 
-} from '@anubis/intelligence/backend';
+import { TreeSitterAnalyzerService, CodebaseGraphService, EnhancedRAGService } from '@hive-academy/intelligence/backend';
 
 const CodebaseStructureAnalysisSchema = z.object({
   projectPath: z.string().describe('Path to the project root'),
   analysisDepth: z.enum(['shallow', 'deep']).default('shallow').describe('Depth of analysis to perform'),
   focusAreas: z.array(z.string()).optional().describe('Specific areas to focus the analysis on'),
   includeMetrics: z.boolean().default(true).describe('Whether to include complexity metrics'),
-  includeDependencies: z.boolean().default(true).describe('Whether to analyze dependencies')
+  includeDependencies: z.boolean().default(true).describe('Whether to analyze dependencies'),
 });
 
 type CodebaseStructureAnalysisParams = z.infer<typeof CodebaseStructureAnalysisSchema>;
@@ -1066,16 +1028,11 @@ type CodebaseStructureAnalysisParams = z.infer<typeof CodebaseStructureAnalysisS
 @Tool({
   name: 'analyze_codebase_structure',
   description: 'Analyze the structure, patterns, and metrics of a codebase to inform architectural decisions',
-  schema: CodebaseStructureAnalysisSchema
+  schema: CodebaseStructureAnalysisSchema,
 })
 @Injectable()
 export class CodebaseStructureAnalysisTool {
-  
-  constructor(
-    private readonly treeService: TreeSitterAnalyzerService,
-    private readonly graphService: CodebaseGraphService,
-    private readonly ragService: EnhancedRAGService
-  ) {}
+  constructor(private readonly treeService: TreeSitterAnalyzerService, private readonly graphService: CodebaseGraphService, private readonly ragService: EnhancedRAGService) {}
 
   async execute(params: CodebaseStructureAnalysisParams) {
     const { projectPath, analysisDepth, focusAreas = [], includeMetrics, includeDependencies } = params;
@@ -1089,7 +1046,7 @@ export class CodebaseStructureAnalysisTool {
         dependencies: null,
         metrics: null,
         patterns: [],
-        recommendations: []
+        recommendations: [],
       };
 
       // 1. Analyze code structure using Tree-sitter
@@ -1119,16 +1076,15 @@ export class CodebaseStructureAnalysisTool {
         success: true,
         data: results,
         confidence: this.calculateAnalysisConfidence(results),
-        executionTime: Date.now() - results.timestamp.getTime()
+        executionTime: Date.now() - results.timestamp.getTime(),
       };
-
     } catch (error) {
       return {
         success: false,
         error: error.message,
         data: null,
         confidence: 0,
-        executionTime: 0
+        executionTime: 0,
       };
     }
   }
@@ -1139,14 +1095,14 @@ export class CodebaseStructureAnalysisTool {
       analyzeFunctions: true,
       analyzeClasses: true,
       analyzeImports: true,
-      focusAreas
+      focusAreas,
     });
 
     return {
       ...analysis,
       depth: 'deep',
       focusAreas,
-      detailLevel: 'comprehensive'
+      detailLevel: 'comprehensive',
     };
   }
 
@@ -1155,13 +1111,13 @@ export class CodebaseStructureAnalysisTool {
       includeAST: false,
       analyzeFunctions: false,
       analyzeClasses: true,
-      analyzeImports: true
+      analyzeImports: true,
     });
 
     return {
       ...analysis,
       depth: 'shallow',
-      detailLevel: 'overview'
+      detailLevel: 'overview',
     };
   }
 
@@ -1171,14 +1127,14 @@ export class CodebaseStructureAnalysisTool {
         includeExternal: true,
         includeInternal: true,
         analyzeCircular: true,
-        calculateCoupling: true
+        calculateCoupling: true,
       });
     } catch (error) {
       return {
         error: error.message,
         dependencies: [],
         circularDependencies: [],
-        couplingMetrics: null
+        couplingMetrics: null,
       };
     }
   }
@@ -1189,7 +1145,7 @@ export class CodebaseStructureAnalysisTool {
         includeComplexity: true,
         includeCohesion: true,
         includeCoupling: true,
-        includeInstability: true
+        includeInstability: true,
       });
     } catch (error) {
       return {
@@ -1197,7 +1153,7 @@ export class CodebaseStructureAnalysisTool {
         complexity: null,
         cohesion: null,
         coupling: null,
-        instability: null
+        instability: null,
       };
     }
   }
@@ -1211,7 +1167,7 @@ export class CodebaseStructureAnalysisTool {
         patterns.push({
           name: 'Layered Architecture',
           confidence: 0.8,
-          description: 'Clear separation of concerns with layered structure'
+          description: 'Clear separation of concerns with layered structure',
         });
       }
 
@@ -1219,7 +1175,7 @@ export class CodebaseStructureAnalysisTool {
         patterns.push({
           name: 'Repository Pattern',
           confidence: 0.7,
-          description: 'Data access abstraction through repository interfaces'
+          description: 'Data access abstraction through repository interfaces',
         });
       }
 
@@ -1227,7 +1183,7 @@ export class CodebaseStructureAnalysisTool {
         patterns.push({
           name: 'Dependency Injection',
           confidence: 0.9,
-          description: 'Inversion of control through dependency injection'
+          description: 'Inversion of control through dependency injection',
         });
       }
 
@@ -1235,15 +1191,14 @@ export class CodebaseStructureAnalysisTool {
         patterns.push({
           name: 'Microservices',
           confidence: 0.6,
-          description: 'Distributed architecture with service boundaries'
+          description: 'Distributed architecture with service boundaries',
         });
       }
-
     } catch (error) {
       patterns.push({
         name: 'Pattern Detection Error',
         confidence: 0.0,
-        description: error.message
+        description: error.message,
       });
     }
 
@@ -1259,7 +1214,7 @@ export class CodebaseStructureAnalysisTool {
       const ragResults = await this.ragService.search({
         query: searchQuery,
         limit: 3,
-        threshold: 0.6
+        threshold: 0.6,
       });
 
       // Add RAG-based recommendations
@@ -1269,7 +1224,7 @@ export class CodebaseStructureAnalysisTool {
           priority: 'medium',
           description: doc.content,
           confidence: 1 - ragResults.distances[index],
-          source: 'knowledge-base'
+          source: 'knowledge-base',
         });
       });
 
@@ -1281,7 +1236,7 @@ export class CodebaseStructureAnalysisTool {
             priority: 'high',
             description: 'Consider refactoring complex components to improve maintainability',
             confidence: 0.8,
-            source: 'metrics-analysis'
+            source: 'metrics-analysis',
           });
         }
 
@@ -1291,7 +1246,7 @@ export class CodebaseStructureAnalysisTool {
             priority: 'medium',
             description: 'Reduce coupling between modules through better abstraction',
             confidence: 0.7,
-            source: 'metrics-analysis'
+            source: 'metrics-analysis',
           });
         }
       }
@@ -1303,17 +1258,16 @@ export class CodebaseStructureAnalysisTool {
           priority: 'high',
           description: 'Resolve circular dependencies to improve modularity',
           confidence: 0.9,
-          source: 'dependency-analysis'
+          source: 'dependency-analysis',
         });
       }
-
     } catch (error) {
       recommendations.push({
         type: 'error',
         priority: 'low',
         description: `Recommendation generation failed: ${error.message}`,
         confidence: 0.0,
-        source: 'error-handler'
+        source: 'error-handler',
       });
     }
 
@@ -1325,39 +1279,27 @@ export class CodebaseStructureAnalysisTool {
     // Look for typical layered structure patterns
     const layerKeywords = ['controller', 'service', 'repository', 'entity', 'dto'];
     const directories = structure?.directories || [];
-    
-    return layerKeywords.filter(keyword => 
-      directories.some((dir: string) => dir.toLowerCase().includes(keyword))
-    ).length >= 3;
+
+    return layerKeywords.filter((keyword) => directories.some((dir: string) => dir.toLowerCase().includes(keyword))).length >= 3;
   }
 
   private hasRepositoryPattern(structure: any): boolean {
     const files = structure?.files || [];
-    return files.some((file: string) => 
-      file.toLowerCase().includes('repository') || 
-      file.toLowerCase().includes('repo')
-    );
+    return files.some((file: string) => file.toLowerCase().includes('repository') || file.toLowerCase().includes('repo'));
   }
 
   private hasDependencyInjection(structure: any): boolean {
     // Look for DI decorators or patterns
     const content = structure?.content || '';
-    return content.includes('@Injectable') || 
-           content.includes('@Inject') || 
-           content.includes('constructor(');
+    return content.includes('@Injectable') || content.includes('@Inject') || content.includes('constructor(');
   }
 
   private hasMicroservicesPattern(structure: any, dependencies: any): boolean {
     // Look for service boundaries and distributed patterns
-    const hasServiceBoundaries = structure?.directories?.some((dir: string) => 
-      dir.includes('service') || dir.includes('api') || dir.includes('gateway')
-    );
-    
-    const hasDistributedPatterns = dependencies?.external?.some((dep: any) => 
-      dep.name.includes('express') || dep.name.includes('fastify') || 
-      dep.name.includes('grpc') || dep.name.includes('kafka')
-    );
-    
+    const hasServiceBoundaries = structure?.directories?.some((dir: string) => dir.includes('service') || dir.includes('api') || dir.includes('gateway'));
+
+    const hasDistributedPatterns = dependencies?.external?.some((dep: any) => dep.name.includes('express') || dep.name.includes('fastify') || dep.name.includes('grpc') || dep.name.includes('kafka'));
+
     return hasServiceBoundaries && hasDistributedPatterns;
   }
 
@@ -1382,7 +1324,7 @@ export class CodebaseStructureAnalysisTool {
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { NestJSLangGraphModule } from '@anubis/nestjs-langgraph';
+import { NestJSLangGraphModule } from '@hive-academy/nestjs-langgraph';
 
 // Import workflows
 import { ArchitectWorkflow } from './workflows/architect/architect.workflow';
@@ -1409,18 +1351,12 @@ import { CodebaseStructureAnalysisTool } from './tools/architect/codebase-struct
 @Module({
   imports: [
     NestJSLangGraphModule.forFeature({
-      workflows: [
-        ArchitectWorkflow,
-        ProductManagerWorkflow,
-        SeniorDeveloperWorkflow,
-        QAEngineerWorkflow,
-        TechLeadWorkflow
-      ],
+      workflows: [ArchitectWorkflow, ProductManagerWorkflow, SeniorDeveloperWorkflow, QAEngineerWorkflow, TechLeadWorkflow],
       enableStreaming: true,
       enableHITL: true,
       enableMetrics: true,
-      enableCaching: true
-    })
+      enableCaching: true,
+    }),
   ],
   providers: [
     // Workflows
@@ -1457,7 +1393,7 @@ import { CodebaseStructureAnalysisTool } from './tools/architect/codebase-struct
     ArchitectContextService,
     ArchitectRoutingService,
     // ... other services
-  ]
+  ],
 })
 export class AgentsWorkflowModule {}
 ```
@@ -1491,13 +1427,13 @@ export { CodebaseStructureAnalysisTool } from './lib/tools/architect/codebase-st
 export interface { ArchitectContext } from './lib/workflows/architect/services/architect-context.service';
 
 // Re-export commonly used types from dependencies
-export type { WorkflowState, AgentType, Command } from '@anubis/shared';
-export type { AgentNodeConfig } from '@anubis/nestjs-langgraph';
+export type { WorkflowState, AgentType, Command } from '@hive-academy/shared';
+export type { AgentNodeConfig } from '@hive-academy/nestjs-langgraph';
 ```
 
 These code examples provide a comprehensive foundation for implementing the new agents-workflow library using modern patterns. The examples show:
 
-1. **Proper inheritance** from @anubis/nestjs-langgraph base classes
+1. **Proper inheritance** from @hive-academy/nestjs-langgraph base classes
 2. **Decorator usage** for defining workflows, nodes, edges, and tools
 3. **Type safety** throughout the implementation
 4. **Service integration** with intelligence domain services

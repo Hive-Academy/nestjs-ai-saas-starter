@@ -7,8 +7,8 @@ import { ToolRegistryService } from './tool-registry.service';
  * Fluent builder for creating tools programmatically
  */
 export class ToolBuilder {
-  private name: string = '';
-  private description: string = '';
+  private name = '';
+  private description = '';
   private schema?: z.ZodSchema<any>;
   private func?: (input: any) => Promise<any>;
   private agents?: string[] | '*';

@@ -336,7 +336,7 @@ export function FallbackEdge(from: string, to: string, options?: EdgeOptions): M
 /**
  * Special decorator for error handling edges
  */
-export function ErrorEdge(from: string, to: string = 'error_handler', options?: EdgeOptions): MethodDecorator {
+export function ErrorEdge(from: string, to = 'error_handler', options?: EdgeOptions): MethodDecorator {
   return Edge(from, (state: any) => state.error ? to : null, {
     ...options,
     metadata: {

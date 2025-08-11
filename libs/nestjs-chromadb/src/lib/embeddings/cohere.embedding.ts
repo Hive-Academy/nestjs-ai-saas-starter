@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import type { CohereEmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
+import type { CohereEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**
@@ -35,7 +35,7 @@ export class CohereEmbeddingProvider extends BaseEmbeddingProvider {
     try {
       const response = await this.callCohereAPI(texts);
       const embeddings = response.embeddings;
-      
+
       this.validateDimensions(embeddings, texts.length);
       return embeddings;
     } catch (error) {
@@ -51,7 +51,7 @@ export class CohereEmbeddingProvider extends BaseEmbeddingProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         texts,

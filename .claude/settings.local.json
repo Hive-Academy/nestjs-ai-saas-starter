@@ -9,7 +9,8 @@
       "Bash(mv:*)",
       "Bash(find:*)",
       "Bash(node fix-type-imports.js)",
-      "Bash(npm run build:libs:*)"
+      "Bash(npm run build:libs:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
   },

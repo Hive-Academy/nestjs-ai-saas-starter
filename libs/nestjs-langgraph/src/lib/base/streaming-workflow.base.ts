@@ -60,12 +60,12 @@ interface StreamingConfiguration {
 
 /**
  * Base class for streaming workflows that use decorators
- * 
+ *
  * This class extends DeclarativeWorkflowBase and provides automatic streaming
  * setup from @StreamToken, @StreamEvent, and @StreamProgress decorators.
  * It integrates with WorkflowStreamService, TokenStreamingService, and WebSocketBridgeService
  * for comprehensive real-time streaming capabilities.
- * 
+ *
  * @example
  * ```typescript
  * @Workflow({
@@ -74,12 +74,12 @@ interface StreamingConfiguration {
  *   streaming: true,
  * })
  * export class AIContentGenerationWorkflow extends StreamingWorkflowBase<ContentState> {
- *   
+ *
  *   @StartNode({ description: 'Initialize content generation' })
- *   @StreamProgress({ 
+ *   @StreamProgress({
  *     enabled: true,
  *     granularity: 'fine',
- *     includeETA: true 
+ *     includeETA: true
  *   })
  *   async start(state: ContentState): Promise<Partial<ContentState>> {
  *     return {
@@ -88,12 +88,12 @@ interface StreamingConfiguration {
  *       progress: 0
  *     };
  *   }
- *   
+ *
  *   @Node({
  *     type: 'llm',
  *     description: 'Generate content with AI'
  *   })
- *   @StreamToken({ 
+ *   @StreamToken({
  *     enabled: true,
  *     bufferSize: 25,
  *     format: 'text',
@@ -105,12 +105,12 @@ interface StreamingConfiguration {
  *   })
  *   async generateContent(state: ContentState): Promise<Partial<ContentState>> {
  *     const content = await this.llm.invoke(state.prompt);
- *     return { 
+ *     return {
  *       content: content.content,
- *       status: 'content_generated' 
+ *       status: 'content_generated'
  *     };
  *   }
- *   
+ *
  *   @Node('review_content')
  *   @StreamEvent({
  *     events: [StreamEventType.VALUES, StreamEventType.UPDATES],
@@ -127,7 +127,9 @@ interface StreamingConfiguration {
  * ```
  */
 @Injectable()
-export abstract class StreamingWorkflowBase<TState extends WorkflowState = WorkflowState>
+export abstract class StreamingWorkflowBase<
+    TState extends WorkflowState = WorkflowState
+  >
   extends DeclarativeWorkflowBase<TState>
   implements OnModuleInit
 {
@@ -140,7 +142,7 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     protected override readonly eventEmitter: EventEmitter2,
     protected readonly workflowStreamService?: WorkflowStreamService,
     protected readonly tokenStreamingService?: TokenStreamingService,
-    protected readonly webSocketBridgeService?: WebSocketBridgeService,
+    protected readonly webSocketBridgeService?: WebSocketBridgeService
   ) {
     super(metadataProcessor);
     this.logger = new Logger(this.constructor.name);
@@ -155,8 +157,10 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
 
     // Setup streaming configuration
     await this.setupStreamingConfiguration();
-    
-    this.logger.log(`StreamingWorkflowBase initialized: ${this.workflowConfig.name}`);
+
+    this.logger.log(
+      `StreamingWorkflowBase initialized: ${this.workflowConfig.name}`
+    );
   }
 
   /**
@@ -166,8 +170,10 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     input: Partial<TState>,
     config: any = {}
   ): Promise<TState> {
-    const executionId = config.executionId || `exec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    
+    const executionId =
+      config.executionId ||
+      `exec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
     try {
       // Setup streaming context
       await this.setupStreamingContext(executionId, input, config);
@@ -179,7 +185,6 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
       await this.completeStreaming(executionId, result);
 
       return result;
-
     } catch (error) {
       await this.handleStreamingError(executionId, error);
       throw error;
@@ -225,10 +230,14 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
       };
     } = {}
   ): AsyncGenerator<StreamUpdate> {
-    const executionId = options.executionId || `exec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const executionId =
+      options.executionId ||
+      `exec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     if (!this.workflowStreamService) {
-      throw new Error('WorkflowStreamService not available for streaming execution');
+      throw new Error(
+        'WorkflowStreamService not available for streaming execution'
+      );
     }
 
     try {
@@ -247,7 +256,6 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
         executionId,
         this.constructor
       );
-
     } finally {
       // Cleanup streaming context
       this.cleanupStreamingContext(executionId);
@@ -268,7 +276,10 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
   /**
    * Get token streaming observable for an execution
    */
-  getTokenStreamingObservable(executionId: string, nodeId?: string): Observable<StreamUpdate> {
+  getTokenStreamingObservable(
+    executionId: string,
+    nodeId?: string
+  ): Observable<StreamUpdate> {
     if (!this.tokenStreamingService) {
       throw new Error('TokenStreamingService not available');
     }
@@ -301,7 +312,10 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
 
     // Subscribe to specific event types if provided
     if (options.eventTypes && options.eventTypes.length > 0) {
-      this.webSocketBridgeService.subscribeToEvents(clientId, options.eventTypes);
+      this.webSocketBridgeService.subscribeToEvents(
+        clientId,
+        options.eventTypes
+      );
     }
 
     // Update execution context if executionId provided
@@ -359,7 +373,8 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     }
 
     if (this.tokenStreamingService) {
-      stats.activeTokenStreams = this.tokenStreamingService.getActiveTokenStreams();
+      stats.activeTokenStreams =
+        this.tokenStreamingService.getActiveTokenStreams();
     }
 
     if (this.webSocketBridgeService) {
@@ -384,19 +399,23 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     }
 
     if (config.tokenStreaming !== undefined) {
-      this.streamingConfiguration.tokenStreaming.enabled = config.tokenStreaming;
+      this.streamingConfiguration.tokenStreaming.enabled =
+        config.tokenStreaming;
     }
 
     if (config.eventStreaming !== undefined) {
-      this.streamingConfiguration.eventStreaming.enabled = config.eventStreaming;
+      this.streamingConfiguration.eventStreaming.enabled =
+        config.eventStreaming;
     }
 
     if (config.progressStreaming !== undefined) {
-      this.streamingConfiguration.progressStreaming.enabled = config.progressStreaming;
+      this.streamingConfiguration.progressStreaming.enabled =
+        config.progressStreaming;
     }
 
     if (config.webSocketRooms !== undefined) {
-      this.streamingConfiguration.webSocketConfig.enableRooms = config.webSocketRooms;
+      this.streamingConfiguration.webSocketConfig.enableRooms =
+        config.webSocketRooms;
     }
 
     this.logger.debug('Streaming configuration updated:', config);
@@ -409,7 +428,7 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
    */
   private async setupStreamingConfiguration(): Promise<void> {
     const definition = this.getWorkflowDefinition();
-    
+
     // Extract streaming metadata from workflow definition
     const streamingConfig: StreamingConfiguration = {
       enabled: this.workflowConfig.streaming || false,
@@ -432,22 +451,31 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     };
 
     // Process each node for streaming metadata
-    definition.nodes.forEach(node => {
+    definition.nodes.forEach((node) => {
       const streamingMetadata = node.config?.metadata?.['streaming'];
-      
+
       if (streamingMetadata?.token?.enabled) {
         streamingConfig.tokenStreaming.enabled = true;
-        streamingConfig.tokenStreaming.nodes.set(node.id, streamingMetadata.token);
+        streamingConfig.tokenStreaming.nodes.set(
+          node.id,
+          streamingMetadata.token
+        );
       }
-      
+
       if (streamingMetadata?.event?.enabled) {
         streamingConfig.eventStreaming.enabled = true;
-        streamingConfig.eventStreaming.nodes.set(node.id, streamingMetadata.event);
+        streamingConfig.eventStreaming.nodes.set(
+          node.id,
+          streamingMetadata.event
+        );
       }
-      
+
       if (streamingMetadata?.progress?.enabled) {
         streamingConfig.progressStreaming.enabled = true;
-        streamingConfig.progressStreaming.nodes.set(node.id, streamingMetadata.progress);
+        streamingConfig.progressStreaming.nodes.set(
+          node.id,
+          streamingMetadata.progress
+        );
       }
     });
 
@@ -455,8 +483,8 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
 
     this.logger.debug(
       `Streaming configuration: Token=${streamingConfig.tokenStreaming.enabled}, ` +
-      `Event=${streamingConfig.eventStreaming.enabled}, ` +
-      `Progress=${streamingConfig.progressStreaming.enabled}`
+        `Event=${streamingConfig.eventStreaming.enabled}, ` +
+        `Progress=${streamingConfig.progressStreaming.enabled}`
     );
   }
 
@@ -471,11 +499,17 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     const context: StreamingExecutionContext = {
       executionId,
       streamingEnabled: this.streamingConfiguration?.enabled || false,
-      tokenStreaming: this.streamingConfiguration?.tokenStreaming.enabled || false,
-      eventStreaming: this.streamingConfiguration?.eventStreaming.enabled || false,
-      progressStreaming: this.streamingConfiguration?.progressStreaming.enabled || false,
+      tokenStreaming:
+        this.streamingConfiguration?.tokenStreaming.enabled || false,
+      eventStreaming:
+        this.streamingConfiguration?.eventStreaming.enabled || false,
+      progressStreaming:
+        this.streamingConfiguration?.progressStreaming.enabled || false,
       clientConnections: [],
-      rooms: [this.streamingConfiguration?.webSocketConfig.defaultRoom || `exec_${executionId}`],
+      rooms: [
+        this.streamingConfiguration?.webSocketConfig.defaultRoom ||
+          `exec_${executionId}`,
+      ],
     };
 
     // Apply streaming options
@@ -487,7 +521,8 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
         context.eventStreaming = options.streamingOptions.enableEventStreaming;
       }
       if (options.streamingOptions.enableProgressStreaming !== undefined) {
-        context.progressStreaming = options.streamingOptions.enableProgressStreaming;
+        context.progressStreaming =
+          options.streamingOptions.enableProgressStreaming;
       }
       if (options.streamingOptions.rooms) {
         context.rooms.push(...options.streamingOptions.rooms);
@@ -505,7 +540,8 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
 
       // Setup token streaming for each enabled node
       if (context.tokenStreaming && this.tokenStreamingService) {
-        for (const [nodeId, config] of this.streamingConfiguration!.tokenStreaming.nodes) {
+        for (const [nodeId, config] of this.streamingConfiguration!
+          .tokenStreaming.nodes) {
           await this.tokenStreamingService.initializeTokenStream({
             executionId,
             nodeId,
@@ -528,7 +564,10 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
   /**
    * Complete streaming for an execution
    */
-  private async completeStreaming(executionId: string, result: TState): Promise<void> {
+  private async completeStreaming(
+    executionId: string,
+    result: TState
+  ): Promise<void> {
     const context = this.executionContexts.get(executionId);
     if (!context || !context.streamingEnabled) {
       return;
@@ -552,14 +591,17 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
   /**
    * Handle streaming errors
    */
-  private async handleStreamingError(executionId: string, error: unknown): Promise<void> {
+  private async handleStreamingError(
+    executionId: string,
+    error: unknown
+  ): Promise<void> {
     const context = this.executionContexts.get(executionId);
     if (!context) {
       return;
     }
 
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     // Emit error event
     this.eventEmitter.emit('workflow.execution.error', {
       executionId,
@@ -579,7 +621,7 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
         },
       };
 
-      context.clientConnections.forEach(clientId => {
+      context.clientConnections.forEach((clientId) => {
         this.webSocketBridgeService!.sendToClient(clientId, errorUpdate);
       });
     }
@@ -597,7 +639,7 @@ export abstract class StreamingWorkflowBase<TState extends WorkflowState = Workf
     }
 
     // Disconnect clients
-    context.clientConnections.forEach(clientId => {
+    context.clientConnections.forEach((clientId) => {
       this.disconnectWebSocketClient(clientId, executionId);
     });
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import type { OpenAIEmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
+import type { OpenAIEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**
@@ -37,7 +37,7 @@ export class OpenAIEmbeddingProvider extends BaseEmbeddingProvider {
     try {
       const response = await this.callOpenAIAPI(texts);
       const embeddings = response.data.map((item: any) => item.embedding);
-      
+
       this.validateDimensions(embeddings, texts.length);
       return embeddings;
     } catch (error) {
@@ -51,7 +51,7 @@ export class OpenAIEmbeddingProvider extends BaseEmbeddingProvider {
   private async callOpenAIAPI(texts: string[]): Promise<any> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.apiKey}`,
+      Authorization: `Bearer ${this.apiKey}`,
     };
 
     if (this.organization) {
@@ -69,7 +69,9 @@ export class OpenAIEmbeddingProvider extends BaseEmbeddingProvider {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+      throw new Error(
+        `OpenAI API error: ${error.error?.message || 'Unknown error'}`
+      );
     }
 
     return response.json();

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import type { HuggingFaceEmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
+import type { HuggingFaceEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**
@@ -21,7 +21,9 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
     super();
     this.apiKey = config.apiKey;
     this.model = config.model || 'sentence-transformers/all-MiniLM-L6-v2';
-    this.endpoint = config.endpoint || `https://api-inference.huggingface.co/pipeline/feature-extraction/${this.model}`;
+    this.endpoint =
+      config.endpoint ||
+      `https://api-inference.huggingface.co/pipeline/feature-extraction/${this.model}`;
     this.batchSize = config.batchSize || 50;
   }
 
@@ -36,7 +38,7 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
   private async embedBatch(texts: string[]): Promise<number[][]> {
     try {
       const response = await this.callHuggingFaceAPI(texts);
-      
+
       // HuggingFace API returns different formats depending on batch size
       let embeddings: number[][];
       if (texts.length === 1) {
@@ -46,13 +48,16 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
         // Multiple texts return array of arrays
         embeddings = response;
       }
-      
+
       this.validateDimensions(embeddings, texts.length);
       return embeddings;
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       const errorStack = getErrorStack(error);
-      this.logger.error(`HuggingFace embedding failed: ${errorMessage}`, errorStack);
+      this.logger.error(
+        `HuggingFace embedding failed: ${errorMessage}`,
+        errorStack
+      );
       throw new Error(`HuggingFace embedding failed: ${errorMessage}`);
     }
   }

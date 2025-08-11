@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import 'reflect-metadata';
-import { WorkflowDefinition, WorkflowNode, WorkflowEdge, WorkflowState, Command } from '../interfaces';
-import { 
-  WORKFLOW_METADATA_KEY, 
-  WORKFLOW_NODES_KEY, 
+import {
+  WorkflowDefinition,
+  WorkflowNode,
+  WorkflowEdge,
+  WorkflowState,
+  Command,
+} from '../interfaces';
+import {
+  WORKFLOW_METADATA_KEY,
+  WORKFLOW_NODES_KEY,
   WORKFLOW_EDGES_KEY,
   WORKFLOW_TOOLS_KEY,
   WorkflowOptions,
-  getWorkflowMetadata
+  getWorkflowMetadata,
 } from '../decorators/workflow.decorator';
 import { NodeMetadata, getWorkflowNodes } from '../decorators/node.decorator';
 import { EdgeMetadata, getWorkflowEdges } from '../decorators/edge.decorator';
@@ -18,7 +24,7 @@ import {
   getStreamTokenMetadata,
   getStreamEventMetadata,
   getStreamProgressMetadata,
-  getAllStreamingMetadata
+  getAllStreamingMetadata,
 } from '../decorators/streaming.decorator';
 
 /**
@@ -34,7 +40,9 @@ export class MetadataProcessorService {
   extractWorkflowDefinition<TState extends WorkflowState = WorkflowState>(
     workflowClass: any
   ): WorkflowDefinition<TState> {
-    this.logger.debug(`Extracting workflow definition from ${workflowClass.name}`);
+    this.logger.debug(
+      `Extracting workflow definition from ${workflowClass.name}`
+    );
 
     // Get workflow metadata
     const workflowOptions = getWorkflowMetadata(workflowClass);
@@ -44,11 +52,15 @@ export class MetadataProcessorService {
 
     // Get node metadata
     const nodeMetadata = getWorkflowNodes(workflowClass);
-    this.logger.debug(`Found ${nodeMetadata.length} nodes for workflow ${workflowOptions.name}`);
+    this.logger.debug(
+      `Found ${nodeMetadata.length} nodes for workflow ${workflowOptions.name}`
+    );
 
     // Get edge metadata
     const edgeMetadata = this.getEdgeMetadata(workflowClass);
-    this.logger.debug(`Found ${edgeMetadata.length} edges for workflow ${workflowOptions.name}`);
+    this.logger.debug(
+      `Found ${edgeMetadata.length} edges for workflow ${workflowOptions.name}`
+    );
 
     // Convert to WorkflowDefinition
     const definition: WorkflowDefinition<TState> = {
@@ -65,9 +77,9 @@ export class MetadataProcessorService {
           pattern: workflowOptions.pattern,
           tags: workflowOptions.tags,
           interruptNodes: workflowOptions.interruptNodes,
-          ...workflowOptions
-        }
-      }
+          ...workflowOptions,
+        },
+      },
     };
 
     this.logger.log(`Generated workflow definition for ${definition.name}`);
@@ -87,11 +99,13 @@ export class MetadataProcessorService {
   private convertNodesToDefinition<TState extends WorkflowState>(
     nodeMetadata: NodeMetadata[]
   ): WorkflowNode<TState>[] {
-    return nodeMetadata.map(node => ({
+    return nodeMetadata.map((node) => ({
       id: node.id,
       name: node.name || node.id,
       description: node.description,
-      handler: node.handler as (state: TState) => Promise<Partial<TState> | Command<TState>>,
+      handler: node.handler as (
+        state: TState
+      ) => Promise<Partial<TState> | Command<TState>>,
       requiresApproval: node.requiresApproval,
       config: {
         requiresApproval: node.requiresApproval,
@@ -104,9 +118,12 @@ export class MetadataProcessorService {
           methodName: node.methodName,
           confidenceThreshold: node.confidenceThreshold,
           maxRetries: node.maxRetries,
-          streaming: this.extractStreamingMetadata(nodeMetadata, node.methodName)
-        }
-      }
+          streaming: this.extractStreamingMetadata(
+            nodeMetadata,
+            node.methodName
+          ),
+        },
+      },
     }));
   }
 
@@ -120,23 +137,24 @@ export class MetadataProcessorService {
     const edges: WorkflowEdge<TState>[] = [];
 
     // Add explicit edges from @Edge decorators
-    edgeMetadata.forEach(edge => {
+    edgeMetadata.forEach((edge) => {
       edges.push({
         from: edge.from,
-        to: typeof edge.to === 'function' 
-          ? {
-              condition: edge.to as (state: TState) => string | null,
-              routes: {}, // Will be populated by analyzing the condition function
-              default: this.findDefaultRoute(nodeMetadata)
-            }
-          : edge.to,
+        to:
+          typeof edge.to === 'function'
+            ? {
+                condition: edge.to as (state: TState) => string | null,
+                routes: {}, // Will be populated by analyzing the condition function
+                default: this.findDefaultRoute(nodeMetadata),
+              }
+            : edge.to,
         config: {
           priority: edge.priority,
           minConfidence: edge.minConfidence,
           maxConfidence: edge.maxConfidence,
           condition: edge.condition as (state: WorkflowState) => boolean,
-          metadata: edge.metadata
-        }
+          metadata: edge.metadata,
+        },
       });
     });
 
@@ -156,35 +174,37 @@ export class MetadataProcessorService {
     // If no explicit edges, create sequential edges
     if (edges.length === 0 && nodeMetadata.length > 1) {
       this.logger.debug('No explicit edges found, creating sequential edges');
-      
+
       for (let i = 0; i < nodeMetadata.length - 1; i++) {
         const currentNode = nodeMetadata[i];
         const nextNode = nodeMetadata[i + 1];
-        
+
         // Skip if edge already exists
-        const existingEdge = edges.find(e => 
-          e.from === currentNode.id && 
-          (typeof e.to === 'string' ? e.to === nextNode.id : false)
+        const existingEdge = edges.find(
+          (e) =>
+            e.from === currentNode.id &&
+            (typeof e.to === 'string' ? e.to === nextNode.id : false)
         );
-        
+
         if (!existingEdge) {
           edges.push({
             from: currentNode.id,
             to: nextNode.id,
             config: {
-              metadata: { type: 'implicit', generated: true }
-            }
+              metadata: { type: 'implicit', generated: true },
+            },
           });
         }
       }
     }
 
     // Add approval routing edges for nodes that require approval
-    nodeMetadata.forEach(node => {
+    nodeMetadata.forEach((node) => {
       if (node.requiresApproval) {
-        const approvalEdge = edges.find(e => 
-          e.from === node.id && 
-          (typeof e.to === 'string' ? e.to === 'human_approval' : false)
+        const approvalEdge = edges.find(
+          (e) =>
+            e.from === node.id &&
+            (typeof e.to === 'string' ? e.to === 'human_approval' : false)
         );
 
         if (!approvalEdge) {
@@ -194,20 +214,22 @@ export class MetadataProcessorService {
               condition: (state: TState) => {
                 // Route to approval if confidence is low or explicitly required
                 const threshold = node.confidenceThreshold || 0.7;
-                return state.confidence < threshold || state.requiresApproval ? 'human_approval' : null;
+                return state.confidence < threshold || state.requiresApproval
+                  ? 'human_approval'
+                  : null;
               },
               routes: {
-                'human_approval': 'human_approval'
+                human_approval: 'human_approval',
               },
-              default: this.findDefaultRoute(nodeMetadata) || 'end'
+              default: this.findDefaultRoute(nodeMetadata) || 'end',
             },
             config: {
-              metadata: { 
-                type: 'approval', 
+              metadata: {
+                type: 'approval',
                 generated: true,
-                confidenceThreshold: node.confidenceThreshold 
-              }
-            }
+                confidenceThreshold: node.confidenceThreshold,
+              },
+            },
           });
         }
       }
@@ -217,22 +239,27 @@ export class MetadataProcessorService {
   /**
    * Determine entry point node
    */
-  private determineEntryPoint(nodeMetadata: NodeMetadata[], edgeMetadata: EdgeMetadata[]): string {
+  private determineEntryPoint(
+    nodeMetadata: NodeMetadata[],
+    edgeMetadata: EdgeMetadata[]
+  ): string {
     // Look for explicit start node
-    const startNode = nodeMetadata.find(node => 
-      node.id === 'start' || node.id.toLowerCase().includes('start')
+    const startNode = nodeMetadata.find(
+      (node) => node.id === 'start' || node.id.toLowerCase().includes('start')
     );
-    
+
     if (startNode) {
       return startNode.id;
     }
 
     // Look for node with no incoming edges
-    const targetNodes = new Set(edgeMetadata.map(edge => 
-      typeof edge.to === 'string' ? edge.to : null
-    ).filter(Boolean));
-    
-    const entryNode = nodeMetadata.find(node => !targetNodes.has(node.id));
+    const targetNodes = new Set(
+      edgeMetadata
+        .map((edge) => (typeof edge.to === 'string' ? edge.to : null))
+        .filter(Boolean)
+    );
+
+    const entryNode = nodeMetadata.find((node) => !targetNodes.has(node.id));
     if (entryNode) {
       return entryNode.id;
     }
@@ -245,10 +272,10 @@ export class MetadataProcessorService {
    * Find default route for conditional routing
    */
   private findDefaultRoute(nodeMetadata: NodeMetadata[]): string | undefined {
-    const endNode = nodeMetadata.find(node => 
-      node.id === 'end' || node.id.toLowerCase().includes('end')
+    const endNode = nodeMetadata.find(
+      (node) => node.id === 'end' || node.id.toLowerCase().includes('end')
     );
-    
+
     return endNode?.id || 'end';
   }
 
@@ -274,20 +301,24 @@ export class MetadataProcessorService {
     }
 
     // Validate entry point exists
-    const entryNode = definition.nodes.find(node => node.id === definition.entryPoint);
+    const entryNode = definition.nodes.find(
+      (node) => node.id === definition.entryPoint
+    );
     if (!entryNode) {
-      throw new Error(`Entry point node '${definition.entryPoint}' not found in workflow nodes`);
+      throw new Error(
+        `Entry point node '${definition.entryPoint}' not found in workflow nodes`
+      );
     }
 
     // Validate all edge references exist
     definition.edges.forEach((edge, index) => {
-      const fromNode = definition.nodes.find(node => node.id === edge.from);
+      const fromNode = definition.nodes.find((node) => node.id === edge.from);
       if (!fromNode) {
         throw new Error(`Edge ${index}: Source node '${edge.from}' not found`);
       }
 
       if (typeof edge.to === 'string') {
-        const toNode = definition.nodes.find(node => node.id === edge.to);
+        const toNode = definition.nodes.find((node) => node.id === edge.to);
         if (!toNode && edge.to !== 'end' && edge.to !== '__end__') {
           throw new Error(`Edge ${index}: Target node '${edge.to}' not found`);
         }
@@ -296,26 +327,35 @@ export class MetadataProcessorService {
 
     // Check for unreachable nodes (nodes with no incoming edges except entry point)
     const reachableNodes = new Set([definition.entryPoint]);
-    definition.edges.forEach(edge => {
+    definition.edges.forEach((edge) => {
       if (typeof edge.to === 'string') {
         reachableNodes.add(edge.to);
       } else if (edge.to.routes) {
-        Object.values(edge.to.routes).forEach(target => reachableNodes.add(target));
+        Object.values(edge.to.routes).forEach((target) =>
+          reachableNodes.add(target)
+        );
       }
       if (typeof edge.to !== 'string' && edge.to.default) {
         reachableNodes.add(edge.to.default);
       }
     });
 
-    const unreachableNodes = definition.nodes.filter(node => 
-      !reachableNodes.has(node.id) && node.id !== definition.entryPoint
+    const unreachableNodes = definition.nodes.filter(
+      (node) =>
+        !reachableNodes.has(node.id) && node.id !== definition.entryPoint
     );
 
     if (unreachableNodes.length > 0) {
-      this.logger.warn(`Unreachable nodes found: ${unreachableNodes.map(n => n.id).join(', ')}`);
+      this.logger.warn(
+        `Unreachable nodes found: ${unreachableNodes
+          .map((n) => n.id)
+          .join(', ')}`
+      );
     }
 
-    this.logger.log(`Workflow definition validation completed for ${definition.name}`);
+    this.logger.log(
+      `Workflow definition validation completed for ${definition.name}`
+    );
   }
 
   /**
@@ -326,8 +366,12 @@ export class MetadataProcessorService {
   ): string {
     const nodeCount = definition.nodes.length;
     const edgeCount = definition.edges.length;
-    const approvalNodes = definition.nodes.filter(n => n.requiresApproval).length;
-    const streamingNodes = definition.nodes.filter(n => n.config?.streaming).length;
+    const approvalNodes = definition.nodes.filter(
+      (n) => n.requiresApproval
+    ).length;
+    const streamingNodes = definition.nodes.filter(
+      (n) => n.config?.streaming
+    ).length;
 
     return `Workflow '${definition.name}': ${nodeCount} nodes, ${edgeCount} edges, ${approvalNodes} approval nodes, ${streamingNodes} streaming nodes`;
   }
@@ -344,7 +388,7 @@ export class MetadataProcessorService {
     progress?: StreamProgressMetadata;
   } {
     // Find the node metadata for this method
-    const node = nodeMetadata.find(n => n.methodName === methodName);
+    const node = nodeMetadata.find((n) => n.methodName === methodName);
     if (!node || !node.handler) {
       return {};
     }
@@ -356,7 +400,10 @@ export class MetadataProcessorService {
       const target = node.handler as object;
       return getAllStreamingMetadata(target, methodName);
     } catch (error) {
-      this.logger.warn(`Failed to extract streaming metadata for ${methodName}:`, error);
+      this.logger.warn(
+        `Failed to extract streaming metadata for ${methodName}:`,
+        error
+      );
       return {};
     }
   }
@@ -371,7 +418,7 @@ export class MetadataProcessorService {
     let eventNodes = 0;
     let progressNodes = 0;
 
-    definition.nodes.forEach(node => {
+    definition.nodes.forEach((node) => {
       const streamingMetadata = node.config?.metadata?.['streaming'];
       if (streamingMetadata) {
         if (streamingMetadata.token?.enabled) tokenNodes++;
@@ -389,12 +436,13 @@ export class MetadataProcessorService {
   hasStreamingCapabilities<TState extends WorkflowState>(
     definition: WorkflowDefinition<TState>
   ): boolean {
-    return definition.nodes.some(node => {
+    return definition.nodes.some((node) => {
       const streamingMetadata = node.config?.metadata?.['streaming'];
-      return streamingMetadata && (
-        streamingMetadata.token?.enabled ||
-        streamingMetadata.event?.enabled ||
-        streamingMetadata.progress?.enabled
+      return (
+        streamingMetadata &&
+        (streamingMetadata.token?.enabled ||
+          streamingMetadata.event?.enabled ||
+          streamingMetadata.progress?.enabled)
       );
     });
   }

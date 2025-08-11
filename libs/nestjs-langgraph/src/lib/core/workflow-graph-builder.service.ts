@@ -3,17 +3,20 @@ import { StateGraph, StateGraphArgs, END, START } from '@langchain/langgraph';
 import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { BaseMessage } from '@langchain/core/messages';
-import { 
-  WorkflowState, 
-  WorkflowNode, 
-  WorkflowEdge, 
+import {
+  WorkflowState,
+  WorkflowNode,
+  WorkflowEdge,
   ConditionalRouting,
   WorkflowDefinition,
   Command,
   WorkflowNodeConfig,
 } from '../interfaces/workflow.interface';
 import { CommandType } from '../constants';
-import { WorkflowStateAnnotation, createCustomStateAnnotation } from './workflow-state-annotation';
+import {
+  WorkflowStateAnnotation,
+  createCustomStateAnnotation,
+} from './workflow-state-annotation';
 import { MetadataProcessorService } from './metadata-processor.service';
 
 export interface GraphBuilderOptions {
@@ -59,9 +62,7 @@ export class WorkflowGraphBuilderService {
   private readonly logger = new Logger(WorkflowGraphBuilderService.name);
   private graphs = new Map<string, StateGraph<any>>();
 
-  constructor(
-    private readonly metadataProcessor: MetadataProcessorService,
-  ) {}
+  constructor(private readonly metadataProcessor: MetadataProcessorService) {}
 
   /**
    * Helper to safely add a node to the graph without triggering TypeScript's excessive stack depth
@@ -81,15 +82,14 @@ export class WorkflowGraphBuilderService {
    */
   buildFromDefinition<TState extends WorkflowState = WorkflowState>(
     definition: WorkflowDefinition<TState>,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): StateGraph<TState> {
     this.logger.debug(`Building workflow graph: ${definition.name}`);
 
     // Create state graph with appropriate annotation
-    const stateAnnotation = options.stateAnnotation || 
-                           definition.channels || 
-                           WorkflowStateAnnotation;
-    
+    const stateAnnotation =
+      options.stateAnnotation || definition.channels || WorkflowStateAnnotation;
+
     const graph = new StateGraph<TState>(stateAnnotation);
 
     // Add nodes
@@ -119,16 +119,19 @@ export class WorkflowGraphBuilderService {
    */
   buildFromDecorators<TState extends WorkflowState = WorkflowState>(
     workflowClass: any,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): StateGraph<TState> {
-    this.logger.debug(`Building workflow graph from decorators: ${workflowClass.name}`);
+    this.logger.debug(
+      `Building workflow graph from decorators: ${workflowClass.name}`
+    );
 
     // Extract workflow definition from decorator metadata
-    const definition = this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
-    
+    const definition =
+      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+
     // Validate the definition
     this.metadataProcessor.validateWorkflowDefinition(definition);
-    
+
     // Log summary for debugging
     const summary = this.metadataProcessor.getWorkflowSummary(definition);
     this.logger.debug(summary);
@@ -142,7 +145,7 @@ export class WorkflowGraphBuilderService {
    */
   createGraph<TState extends WorkflowState = WorkflowState>(
     name: string,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): StateGraph<TState> {
     const stateAnnotation = options.stateAnnotation || WorkflowStateAnnotation;
     const graph = new StateGraph<TState>(stateAnnotation);
@@ -157,7 +160,7 @@ export class WorkflowGraphBuilderService {
   addNode<TState extends WorkflowState = WorkflowState>(
     graph: StateGraph<TState>,
     node: WorkflowNode<TState>,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): void {
     const wrappedHandler = this.wrapNodeHandler(node, options);
     this.safeAddNode(graph, node.id, wrappedHandler);
@@ -168,7 +171,7 @@ export class WorkflowGraphBuilderService {
    */
   addEdge<TState extends WorkflowState = WorkflowState>(
     graph: StateGraph<TState>,
-    edge: WorkflowEdge<TState>,
+    edge: WorkflowEdge<TState>
   ): void {
     if (typeof edge.to === 'string') {
       // Simple edge
@@ -179,7 +182,7 @@ export class WorkflowGraphBuilderService {
       graph.addConditionalEdges(
         edge.from as any,
         routing.condition as any,
-        routing.routes as any,
+        routing.routes as any
       );
     }
   }
@@ -192,7 +195,7 @@ export class WorkflowGraphBuilderService {
     from: string,
     condition: EdgeCondition<TState>,
     routes: Record<string, string>,
-    defaultRoute?: string,
+    defaultRoute?: string
   ): void {
     const enhancedCondition = (state: TState) => {
       const result = condition(state);
@@ -202,7 +205,11 @@ export class WorkflowGraphBuilderService {
       return result;
     };
 
-    graph.addConditionalEdges(from as any, enhancedCondition as any, routes as any);
+    graph.addConditionalEdges(
+      from as any,
+      enhancedCondition as any,
+      routes as any
+    );
   }
 
   /**
@@ -212,7 +219,7 @@ export class WorkflowGraphBuilderService {
     graph: StateGraph<TState>,
     nodeId: string,
     tools: any[],
-    returnTo?: string,
+    returnTo?: string
   ): void {
     const toolNode = new ToolNode(tools);
     this.safeAddNode(graph, nodeId, (state: TState) => toolNode.invoke(state));
@@ -233,7 +240,7 @@ export class WorkflowGraphBuilderService {
     transforms?: {
       input?: (state: TState) => any;
       output?: (state: any) => Partial<TState>;
-    },
+    }
   ): void {
     const subgraphHandler = async (state: TState) => {
       const sg = typeof subgraph === 'function' ? subgraph() : subgraph;
@@ -260,7 +267,7 @@ export class WorkflowGraphBuilderService {
     options: GraphBuilderOptions & {
       approvalNode: NodeHandler<TState>;
       approvalRouting: EdgeCondition<TState>;
-    },
+    }
   ): StateGraph<TState> {
     const graph = this.createGraph<TState>(name, options);
 
@@ -275,7 +282,7 @@ export class WorkflowGraphBuilderService {
         approved: 'continue',
         rejected: 'end',
         retry: 'human_approval',
-      } as any,
+      } as any
     );
 
     return graph;
@@ -288,7 +295,7 @@ export class WorkflowGraphBuilderService {
     name: string,
     supervisor: NodeHandler<TState>,
     workers: Record<string, NodeHandler<TState>>,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): StateGraph<TState> {
     const graph = this.createGraph<TState>(name, options);
 
@@ -321,7 +328,7 @@ export class WorkflowGraphBuilderService {
           return acc;
         }, {} as Record<string, string>),
         [END]: END,
-      } as any,
+      } as any
     );
 
     return graph;
@@ -337,7 +344,7 @@ export class WorkflowGraphBuilderService {
       handler: NodeHandler<TState>;
       condition?: EdgeCondition<TState>;
     }>,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): StateGraph<TState> {
     const graph = this.createGraph<TState>(name, options);
 
@@ -358,7 +365,7 @@ export class WorkflowGraphBuilderService {
             continue: nextStage ? nextStage.id : END,
             skip: stages[i + 2]?.id || END,
             end: END,
-          } as any,
+          } as any
         );
       } else if (nextStage) {
         // Simple edge to next stage
@@ -382,7 +389,7 @@ export class WorkflowGraphBuilderService {
    */
   private wrapNodeHandler<TState extends WorkflowState = WorkflowState>(
     node: WorkflowNode<TState>,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): (state: TState) => Promise<any> {
     return async (state: TState): Promise<any> => {
       try {
@@ -395,7 +402,7 @@ export class WorkflowGraphBuilderService {
         // Execute node handler
         const result = await this.executeWithTimeout(
           node.handler(state),
-          node.config?.timeout,
+          node.config?.timeout
         );
 
         // Handle command pattern
@@ -418,8 +425,12 @@ export class WorkflowGraphBuilderService {
    * Check if result is a command
    */
   private isCommand<TState>(result: any): boolean {
-    return result && typeof result === 'object' && 'type' in result && 
-           Object.values(CommandType).includes(result.type);
+    return (
+      result &&
+      typeof result === 'object' &&
+      'type' in result &&
+      Object.values(CommandType).includes(result.type)
+    );
   }
 
   /**
@@ -428,7 +439,7 @@ export class WorkflowGraphBuilderService {
   private processCommand<TState extends WorkflowState = WorkflowState>(
     command: Command<TState>,
     state: TState,
-    node: WorkflowNode<TState>,
+    node: WorkflowNode<TState>
   ): Partial<TState> {
     this.logger.debug(`Processing command from node ${node.id}:`, command);
 
@@ -495,7 +506,7 @@ export class WorkflowGraphBuilderService {
   private handleNodeError<TState extends WorkflowState = WorkflowState>(
     error: any,
     state: TState,
-    node: WorkflowNode<TState>,
+    node: WorkflowNode<TState>
   ): Partial<TState> {
     this.logger.error(`Node ${node.id} failed:`, error);
 
@@ -519,7 +530,9 @@ export class WorkflowGraphBuilderService {
     const maxRetries = node.config?.retry?.maxAttempts || 0;
 
     if (retryCount < maxRetries) {
-      this.logger.debug(`Retrying node ${node.id} (attempt ${retryCount + 1}/${maxRetries})`);
+      this.logger.debug(
+        `Retrying node ${node.id} (attempt ${retryCount + 1}/${maxRetries})`
+      );
       return {
         currentNode: node.id,
         metadata: {
@@ -545,7 +558,7 @@ export class WorkflowGraphBuilderService {
    */
   private async executeWithTimeout<T>(
     promise: Promise<T>,
-    timeout?: number,
+    timeout?: number
   ): Promise<T> {
     if (!timeout) {
       return promise;
@@ -554,7 +567,7 @@ export class WorkflowGraphBuilderService {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error('Execution timeout')), timeout),
+        setTimeout(() => reject(new Error('Execution timeout')), timeout)
       ),
     ]);
   }
@@ -564,7 +577,7 @@ export class WorkflowGraphBuilderService {
    */
   compileGraph<TState extends WorkflowState = WorkflowState>(
     graph: StateGraph<TState>,
-    options: GraphBuilderOptions = {},
+    options: GraphBuilderOptions = {}
   ): any {
     const compileOptions: any = {};
 
@@ -606,6 +619,9 @@ export class WorkflowGraphBuilderService {
   ): void {
     // This will be handled during compilation with interruptBefore/interruptAfter options
     // The actual implementation is done in the compileGraph method
-    this.logger.debug('Interrupt configuration will be applied during compilation', interrupt);
+    this.logger.debug(
+      'Interrupt configuration will be applied during compilation',
+      interrupt
+    );
   }
 }

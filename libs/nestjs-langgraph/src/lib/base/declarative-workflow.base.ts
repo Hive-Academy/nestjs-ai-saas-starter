@@ -1,15 +1,21 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { UnifiedWorkflowBase, WorkflowConfig } from './unified-workflow.base';
-import { WorkflowDefinition, WorkflowState } from '../interfaces/workflow.interface';
+import {
+  WorkflowDefinition,
+  WorkflowState,
+} from '../interfaces/workflow.interface';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import { getWorkflowMetadata, isWorkflow } from '../decorators/workflow.decorator';
+import {
+  getWorkflowMetadata,
+  isWorkflow,
+} from '../decorators/workflow.decorator';
 
 /**
  * Base class for declarative workflows that use decorators
- * 
+ *
  * This class extends UnifiedWorkflowBase and provides automatic workflow
  * definition generation from @Workflow, @Node, and @Edge decorators.
- * 
+ *
  * @example
  * ```typescript
  * @Workflow({
@@ -19,7 +25,7 @@ import { getWorkflowMetadata, isWorkflow } from '../decorators/workflow.decorato
  *   hitl: { enabled: true },
  * })
  * export class CustomerSupportWorkflow extends DeclarativeWorkflowBase<CustomerState> {
- *   
+ *
  *   @StartNode({ description: 'Initialize customer support session' })
  *   async start(state: CustomerState): Promise<Partial<CustomerState>> {
  *     return {
@@ -27,7 +33,7 @@ import { getWorkflowMetadata, isWorkflow } from '../decorators/workflow.decorato
  *       status: 'active'
  *     };
  *   }
- *   
+ *
  *   @Node({
  *     type: 'llm',
  *     requiresApproval: true,
@@ -40,16 +46,16 @@ import { getWorkflowMetadata, isWorkflow } from '../decorators/workflow.decorato
  *       confidence: analysis.confidence
  *     };
  *   }
- *   
+ *
  *   @Node('generate_response')
  *   @StreamToken()
  *   async generateResponse(state: CustomerState): AsyncIterableIterator<string> {
  *     yield* this.llm.streamResponse(state.analysis);
  *   }
- *   
+ *
  *   @Edge('start', 'analyzeRequest')
  *   startToAnalyze() {}
- *   
+ *
  *   @ConditionalEdge('analyzeRequest', {
  *     'high_confidence': 'generate_response',
  *     'low_confidence': 'human_approval'
@@ -57,7 +63,7 @@ import { getWorkflowMetadata, isWorkflow } from '../decorators/workflow.decorato
  *   routeAfterAnalysis(state: CustomerState): string {
  *     return state.confidence > 0.8 ? 'high_confidence' : 'low_confidence';
  *   }
- *   
+ *
  *   @ApprovalNode({ timeout: 300000 })
  *   async humanApproval(state: CustomerState): Promise<Command<CustomerState>> {
  *     return this.handleHumanApproval(state);
@@ -66,15 +72,16 @@ import { getWorkflowMetadata, isWorkflow } from '../decorators/workflow.decorato
  * ```
  */
 @Injectable()
-export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = WorkflowState> 
-  extends UnifiedWorkflowBase<TState> implements OnModuleInit {
-
+export abstract class DeclarativeWorkflowBase<
+    TState extends WorkflowState = WorkflowState
+  >
+  extends UnifiedWorkflowBase<TState>
+  implements OnModuleInit
+{
   protected override readonly logger: Logger;
   protected cachedWorkflowDefinition?: WorkflowDefinition<TState>;
 
-  constructor(
-    protected readonly metadataProcessor: MetadataProcessorService,
-  ) {
+  constructor(protected readonly metadataProcessor: MetadataProcessorService) {
     super();
     this.logger = new Logger(this.constructor.name);
   }
@@ -107,16 +114,23 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
       };
     }
 
-    this.logger.log(`Initializing declarative workflow: ${this.workflowConfig.name}`);
-    
+    this.logger.log(
+      `Initializing declarative workflow: ${this.workflowConfig.name}`
+    );
+
     // Pre-generate the workflow definition for validation
     try {
       this.getWorkflowDefinition();
-      this.logger.log(`Declarative workflow initialized successfully: ${this.workflowConfig.name}`);
+      this.logger.log(
+        `Declarative workflow initialized successfully: ${this.workflowConfig.name}`
+      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Failed to initialize declarative workflow: ${errorMsg}`, errorStack);
+      this.logger.error(
+        `Failed to initialize declarative workflow: ${errorMsg}`,
+        errorStack
+      );
       throw error;
     }
   }
@@ -139,21 +153,25 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
       return this.cachedWorkflowDefinition;
     }
 
-    this.logger.debug(`Extracting workflow definition from decorators for ${this.constructor.name}`);
+    this.logger.debug(
+      `Extracting workflow definition from decorators for ${this.constructor.name}`
+    );
 
     // Extract definition from decorator metadata
-    const definition = this.metadataProcessor.extractWorkflowDefinition<TState>(this.constructor);
-    
+    const definition = this.metadataProcessor.extractWorkflowDefinition<TState>(
+      this.constructor
+    );
+
     // Validate the definition
     this.metadataProcessor.validateWorkflowDefinition(definition);
-    
+
     // Log summary for debugging
     const summary = this.metadataProcessor.getWorkflowSummary(definition);
     this.logger.debug(summary);
 
     // Cache the definition for performance
     this.cachedWorkflowDefinition = definition;
-    
+
     return definition;
   }
 
@@ -172,8 +190,10 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
   getDecoratorMetadata(): any {
     return {
       workflow: getWorkflowMetadata(this.constructor),
-      nodes: this.metadataProcessor.extractWorkflowDefinition(this.constructor).nodes,
-      edges: this.metadataProcessor.extractWorkflowDefinition(this.constructor).edges,
+      nodes: this.metadataProcessor.extractWorkflowDefinition(this.constructor)
+        .nodes,
+      edges: this.metadataProcessor.extractWorkflowDefinition(this.constructor)
+        .edges,
     };
   }
 
@@ -195,7 +215,9 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
 
     if (missingImplementations.length > 0) {
       throw new Error(
-        `Missing node implementations in ${this.constructor.name}: ${missingImplementations.join(', ')}`
+        `Missing node implementations in ${
+          this.constructor.name
+        }: ${missingImplementations.join(', ')}`
       );
     }
   }
@@ -205,7 +227,7 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
    */
   protected getNodeConfig(nodeId: string): any {
     const definition = this.getWorkflowDefinition();
-    const node = definition.nodes.find(n => n.id === nodeId);
+    const node = definition.nodes.find((n) => n.id === nodeId);
     return node?.config;
   }
 
@@ -223,14 +245,17 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
     hasStreaming: boolean;
   } {
     const definition = this.getWorkflowDefinition();
-    
+
     return {
       name: definition.name,
       nodeCount: definition.nodes.length,
       edgeCount: definition.edges.length,
-      approvalNodes: definition.nodes.filter(n => n.requiresApproval).length,
-      streamingNodes: definition.nodes.filter(n => n.config?.streaming).length,
-      toolNodes: definition.nodes.filter(n => n.config?.metadata?.['type'] === 'tool').length,
+      approvalNodes: definition.nodes.filter((n) => n.requiresApproval).length,
+      streamingNodes: definition.nodes.filter((n) => n.config?.streaming)
+        .length,
+      toolNodes: definition.nodes.filter(
+        (n) => n.config?.metadata?.['type'] === 'tool'
+      ).length,
       hasHITL: this.workflowConfig.hitl?.enabled || false,
       hasStreaming: this.workflowConfig.streaming || false,
     };
@@ -240,11 +265,13 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
    * Override initialize to use declarative approach
    */
   override async initialize(): Promise<void> {
-    this.logger.log(`Initializing declarative workflow: ${this.workflowConfig.name}`);
-    
+    this.logger.log(
+      `Initializing declarative workflow: ${this.workflowConfig.name}`
+    );
+
     // Validate node implementations before building
     this.validateNodeImplementations();
-    
+
     // Use the parent implementation which will call getWorkflowDefinition()
     await super.initialize();
   }
@@ -254,37 +281,40 @@ export abstract class DeclarativeWorkflowBase<TState extends WorkflowState = Wor
    */
   debugWorkflowStructure(): void {
     const definition = this.getWorkflowDefinition();
-    
+
     console.log('\n=== Workflow Structure Debug ===');
     console.log(`Name: ${definition.name}`);
     console.log(`Description: ${definition.description}`);
     console.log(`Entry Point: ${definition.entryPoint}`);
-    
+
     console.log('\nNodes:');
-    definition.nodes.forEach(node => {
-      console.log(`  - ${node.id} (${node.config?.metadata?.['type'] || 'standard'})`);
+    definition.nodes.forEach((node) => {
+      console.log(
+        `  - ${node.id} (${node.config?.metadata?.['type'] || 'standard'})`
+      );
       console.log(`    Method: ${node.config?.metadata?.['methodName']}`);
       console.log(`    Requires Approval: ${node.requiresApproval || false}`);
       console.log(`    Streaming: ${node.config?.streaming || false}`);
     });
-    
+
     console.log('\nEdges:');
     definition.edges.forEach((edge, index) => {
-      const toDescription = typeof edge.to === 'string' 
-        ? edge.to 
-        : 'conditional routing';
+      const toDescription =
+        typeof edge.to === 'string' ? edge.to : 'conditional routing';
       console.log(`  ${index + 1}. ${edge.from} → ${toDescription}`);
       if (edge.config?.metadata?.['type']) {
         console.log(`     Type: ${edge.config.metadata['type']}`);
       }
     });
-    
+
     console.log('\nConfiguration:');
-    console.log(`  HITL Enabled: ${this.workflowConfig.hitl?.enabled || false}`);
+    console.log(
+      `  HITL Enabled: ${this.workflowConfig.hitl?.enabled || false}`
+    );
     console.log(`  Streaming: ${this.workflowConfig.streaming || false}`);
     console.log(`  Caching: ${this.workflowConfig.cache || false}`);
     console.log(`  Metrics: ${this.workflowConfig.metrics || false}`);
-    
+
     console.log('=== End Debug ===\n');
   }
 }

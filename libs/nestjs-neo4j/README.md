@@ -94,20 +94,14 @@ export class UserService {
 
   async createUser(name: string, email: string) {
     return this.neo4jService.write(async (session) => {
-      const result = await session.run(
-        'CREATE (u:User {name: $name, email: $email}) RETURN u',
-        { name, email }
-      );
+      const result = await session.run('CREATE (u:User {name: $name, email: $email}) RETURN u', { name, email });
       return result.records[0].get('u').properties;
     });
   }
 
   async findUser(email: string) {
     return this.neo4jService.read(async (session) => {
-      const result = await session.run(
-        'MATCH (u:User {email: $email}) RETURN u',
-        { email }
-      );
+      const result = await session.run('MATCH (u:User {email: $email}) RETURN u', { email });
       return result.records[0]?.get('u')?.properties;
     });
   }
@@ -128,21 +122,14 @@ export class GraphService {
   constructor(private readonly neo4jService: Neo4jService) {}
 
   async findUserFriends(userId: string) {
-    const query = cypher()
-      .match('(user:User {id: $userId})')
-      .match('(user)-[:FRIEND_OF]-(friend:User)')
-      .where('friend.active = true')
-      .return('friend')
-      .orderBy('friend.name', 'ASC')
-      .limit(10)
-      .build();
+    const query = cypher().match('(user:User {id: $userId})').match('(user)-[:FRIEND_OF]-(friend:User)').where('friend.active = true').return('friend').orderBy('friend.name', 'ASC').limit(10).build();
 
     return this.neo4jService.read(async (session) => {
       const result = await session.run(query.cypher, {
         ...query.parameters,
         userId,
       });
-      return result.records.map(r => r.get('friend'));
+      return result.records.map((r) => r.get('friend'));
     });
   }
 }
@@ -166,7 +153,7 @@ async createComplexQuery() {
     .limit(20);
 
   const { cypher, parameters } = builder.build();
-  
+
   return this.neo4jService.read(async (session) => {
     const result = await session.run(cypher, {
       ...parameters,
@@ -179,29 +166,29 @@ async createComplexQuery() {
 
 ### Query Builder Methods
 
-| Method | Description | Example |
-|--------|-------------|---------|
-| `match(pattern)` | Add MATCH clause | `.match('(n:Node)')` |
-| `optionalMatch(pattern)` | Add OPTIONAL MATCH | `.optionalMatch('(n)-[r]->(m)')` |
-| `where(condition, params?)` | Add WHERE clause | `.where('n.age > $age', { age: 18 })` |
-| `andWhere(condition, params?)` | Add AND condition | `.andWhere('n.status = $status')` |
-| `orWhere(condition, params?)` | Add OR condition | `.orWhere('n.type = $type')` |
-| `create(pattern, params?)` | Add CREATE clause | `.create('(n:Node $props)', { props })` |
-| `merge(pattern, params?)` | Add MERGE clause | `.merge('(n:Node {id: $id})')` |
-| `set(expression, params?)` | Add SET clause | `.set('n.updated = $now')` |
-| `delete(variables)` | Add DELETE clause | `.delete(['n', 'r'])` |
-| `detachDelete(variables)` | Add DETACH DELETE | `.detachDelete('n')` |
-| `with(variables)` | Add WITH clause | `.with(['n', 'count(r) as cnt'])` |
-| `orderBy(expr, direction?)` | Add ORDER BY | `.orderBy('n.name', 'DESC')` |
-| `skip(count)` | Add SKIP | `.skip(10)` |
-| `limit(count)` | Add LIMIT | `.limit(20)` |
-| `return(expression)` | Add RETURN | `.return('n, r, m')` |
-| `returnDistinct(expression)` | Add RETURN DISTINCT | `.returnDistinct('n.category')` |
-| `call(procedure, params?)` | Add CALL clause | `.call('db.labels()')` |
-| `yield(variables)` | Add YIELD | `.yield(['label', 'count'])` |
-| `unwind(expr, as)` | Add UNWIND | `.unwind('$items', 'item')` |
-| `foreach(var, list, update)` | Add FOREACH | `.foreach('x', 'nodes', 'SET x.visited = true')` |
-| `raw(cypher, params?)` | Add raw Cypher | `.raw('// Custom Cypher')` |
+| Method                         | Description         | Example                                          |
+| ------------------------------ | ------------------- | ------------------------------------------------ |
+| `match(pattern)`               | Add MATCH clause    | `.match('(n:Node)')`                             |
+| `optionalMatch(pattern)`       | Add OPTIONAL MATCH  | `.optionalMatch('(n)-[r]->(m)')`                 |
+| `where(condition, params?)`    | Add WHERE clause    | `.where('n.age > $age', { age: 18 })`            |
+| `andWhere(condition, params?)` | Add AND condition   | `.andWhere('n.status = $status')`                |
+| `orWhere(condition, params?)`  | Add OR condition    | `.orWhere('n.type = $type')`                     |
+| `create(pattern, params?)`     | Add CREATE clause   | `.create('(n:Node $props)', { props })`          |
+| `merge(pattern, params?)`      | Add MERGE clause    | `.merge('(n:Node {id: $id})')`                   |
+| `set(expression, params?)`     | Add SET clause      | `.set('n.updated = $now')`                       |
+| `delete(variables)`            | Add DELETE clause   | `.delete(['n', 'r'])`                            |
+| `detachDelete(variables)`      | Add DETACH DELETE   | `.detachDelete('n')`                             |
+| `with(variables)`              | Add WITH clause     | `.with(['n', 'count(r) as cnt'])`                |
+| `orderBy(expr, direction?)`    | Add ORDER BY        | `.orderBy('n.name', 'DESC')`                     |
+| `skip(count)`                  | Add SKIP            | `.skip(10)`                                      |
+| `limit(count)`                 | Add LIMIT           | `.limit(20)`                                     |
+| `return(expression)`           | Add RETURN          | `.return('n, r, m')`                             |
+| `returnDistinct(expression)`   | Add RETURN DISTINCT | `.returnDistinct('n.category')`                  |
+| `call(procedure, params?)`     | Add CALL clause     | `.call('db.labels()')`                           |
+| `yield(variables)`             | Add YIELD           | `.yield(['label', 'count'])`                     |
+| `unwind(expr, as)`             | Add UNWIND          | `.unwind('$items', 'item')`                      |
+| `foreach(var, list, update)`   | Add FOREACH         | `.foreach('x', 'nodes', 'SET x.visited = true')` |
+| `raw(cypher, params?)`         | Add raw Cypher      | `.raw('// Custom Cypher')`                       |
 
 ### Complex Pattern Matching
 
@@ -244,13 +231,10 @@ export class OrderService {
   async createOrderWithItems(order: Order, items: Item[]) {
     // All operations within this method will run in a single transaction
     const session = this.neo4jService.getSession();
-    
+
     // Create order
-    const orderResult = await session.run(
-      'CREATE (o:Order {id: $id, total: $total}) RETURN o',
-      order
-    );
-    
+    const orderResult = await session.run('CREATE (o:Order {id: $id, total: $total}) RETURN o', order);
+
     // Create items and relationships
     for (const item of items) {
       await session.run(
@@ -260,7 +244,7 @@ export class OrderService {
         { orderId: order.id, ...item }
       );
     }
-    
+
     return orderResult.records[0].get('o').properties;
   }
 }
@@ -274,7 +258,7 @@ Optimize performance with bulk operations:
 async bulkCreateUsers(users: User[]) {
   return this.neo4jService.bulk(async (session) => {
     const results = [];
-    
+
     for (const user of users) {
       const result = await session.run(
         'CREATE (u:User {id: $id, name: $name}) RETURN u',
@@ -282,7 +266,7 @@ async bulkCreateUsers(users: User[]) {
       );
       results.push(result.records[0].get('u').properties);
     }
-    
+
     return results;
   });
 }
@@ -300,13 +284,13 @@ async transferFunds(fromId: string, toId: string, amount: number) {
       'MATCH (a:Account {id: $id}) SET a.balance = a.balance - $amount',
       { id: fromId, amount }
     );
-    
+
     // Add to destination account
     await session.run(
       'MATCH (a:Account {id: $id}) SET a.balance = a.balance + $amount',
       { id: toId, amount }
     );
-    
+
     // Create transfer record
     const result = await session.run(
       `MATCH (from:Account {id: $fromId}), (to:Account {id: $toId})
@@ -315,7 +299,7 @@ async transferFunds(fromId: string, toId: string, amount: number) {
        RETURN t`,
       { fromId, toId, amount }
     );
-    
+
     return result.records[0].get('t').properties;
   });
 }
@@ -358,9 +342,7 @@ export class AppModule {}
 
 // In feature modules
 @Module({
-  imports: [
-    Neo4jModule.forFeature(['analytics', 'reporting']),
-  ],
+  imports: [Neo4jModule.forFeature(['analytics', 'reporting'])],
 })
 export class AnalyticsModule {}
 ```
@@ -374,10 +356,7 @@ import { Driver } from 'neo4j-driver';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(
-    @InjectNeo4j('analytics') private analyticsDb: Driver,
-    @InjectNeo4j('reporting') private reportingDb: Driver,
-  ) {}
+  constructor(@InjectNeo4j('analytics') private analyticsDb: Driver, @InjectNeo4j('reporting') private reportingDb: Driver) {}
 }
 ```
 
@@ -388,17 +367,17 @@ export class AnalyticsService {
 ```typescript
 interface Neo4jModuleOptions {
   // Connection
-  uri: string;                    // Neo4j connection URI
-  username: string;               // Database username
-  password: string;               // Database password
-  database?: string;              // Target database (default: 'neo4j')
-  
+  uri: string; // Neo4j connection URI
+  username: string; // Database username
+  password: string; // Database password
+  database?: string; // Target database (default: 'neo4j')
+
   // Advanced Configuration
   config?: {
-    maxConnectionPoolSize?: number;        // Max pool size (default: 100)
+    maxConnectionPoolSize?: number; // Max pool size (default: 100)
     connectionAcquisitionTimeout?: number; // Timeout in ms (default: 60000)
-    maxTransactionRetryTime?: number;      // Max retry time in ms
-    disableLosslessIntegers?: boolean;     // Use native JS numbers
+    maxTransactionRetryTime?: number; // Max retry time in ms
+    disableLosslessIntegers?: boolean; // Use native JS numbers
     logging?: {
       level?: 'error' | 'warn' | 'info' | 'debug';
       logger?: (level: string, message: string) => void;
@@ -407,11 +386,11 @@ interface Neo4jModuleOptions {
     trust?: 'TRUST_ALL_CERTIFICATES' | 'TRUST_CUSTOM_CA_SIGNED_CERTIFICATES' | 'TRUST_SYSTEM_CA_SIGNED_CERTIFICATES';
     trustedCertificates?: string[];
   };
-  
+
   // Module Features
-  healthCheck?: boolean;          // Enable health checks (default: false)
-  retryAttempts?: number;         // Number of retry attempts (default: 3)
-  retryDelay?: number;            // Delay between retries in ms (default: 1000)
+  healthCheck?: boolean; // Enable health checks (default: false)
+  retryAttempts?: number; // Number of retry attempts (default: 3)
+  retryDelay?: number; // Delay between retries in ms (default: 1000)
 }
 ```
 
@@ -539,7 +518,7 @@ describe('UserService', () => {
     neo4jService.write.mockResolvedValue(mockUser);
 
     const result = await service.createUser('John');
-    
+
     expect(result).toEqual(mockUser);
     expect(neo4jService.write).toHaveBeenCalled();
   });
@@ -581,7 +560,7 @@ describe('UserService (Integration)', () => {
   it('should create and retrieve a user', async () => {
     const user = await service.createUser('John', 'john@example.com');
     const retrieved = await service.findUser('john@example.com');
-    
+
     expect(retrieved).toEqual(user);
   });
 });
@@ -601,19 +580,13 @@ export class UserService {
   private driver: Driver;
 
   constructor() {
-    this.driver = neo4j.driver(
-      'bolt://localhost:7687',
-      neo4j.auth.basic('neo4j', 'password')
-    );
+    this.driver = neo4j.driver('bolt://localhost:7687', neo4j.auth.basic('neo4j', 'password'));
   }
 
   async createUser(name: string) {
     const session = this.driver.session();
     try {
-      const result = await session.run(
-        'CREATE (u:User {name: $name}) RETURN u',
-        { name }
-      );
+      const result = await session.run('CREATE (u:User {name: $name}) RETURN u', { name });
       return result.records[0].get('u');
     } finally {
       await session.close();
@@ -638,10 +611,7 @@ export class UserService {
 
   async createUser(name: string) {
     return this.neo4jService.write(async (session) => {
-      const result = await session.run(
-        'CREATE (u:User {name: $name}) RETURN u',
-        { name }
-      );
+      const result = await session.run('CREATE (u:User {name: $name}) RETURN u', { name });
       return result.records[0].get('u');
     });
   }
@@ -662,7 +632,7 @@ Neo4jModule.forRoot({
   config: {
     connectionAcquisitionTimeout: 120000, // 2 minutes
   },
-})
+});
 ```
 
 #### 2. Transaction Rollback
@@ -690,7 +660,7 @@ Use streaming for large datasets:
 async streamLargeDataset() {
   return this.neo4jService.read(async (session) => {
     const result = session.run('MATCH (n) RETURN n');
-    
+
     result.subscribe({
       onNext: (record) => {
         // Process each record
@@ -711,21 +681,21 @@ async streamLargeDataset() {
 
 ### Neo4jService
 
-| Method | Description | Return Type |
-|--------|-------------|-------------|
-| `read<T>(operation, database?)` | Execute read operation with session callback | `Promise<T>` |
-| `write<T>(operation, database?)` | Execute write operation with session callback | `Promise<T>` |
-| `readQuery<T>(cypher, params?, database?)` | Execute read query (legacy) | `Promise<T[]>` |
-| `writeQuery<T>(cypher, params?, database?)` | Execute write query (legacy) | `Promise<T[]>` |
-| `run<T>(cypher, params?, options?)` | Execute query with full result details | `Promise<QueryResult<T>>` |
-| `runInTransaction<T>(work, database?)` | Run operations in transaction | `Promise<T>` |
-| `runInReadTransaction<T>(work, database?)` | Run in read transaction | `Promise<T>` |
-| `bulk<T>(operation, database?)` | Execute bulk operation | `Promise<T>` |
-| `bulkOperations(operations)` | Execute multiple operations in transaction | `Promise<BulkResult>` |
-| `getSession(options?)` | Get a session with options | `Session` |
-| `getDriver()` | Get the driver instance | `Driver` |
-| `verifyConnectivity()` | Check connection | `Promise<boolean>` |
-| `close()` | Close driver connection | `Promise<void>` |
+| Method                                      | Description                                   | Return Type               |
+| ------------------------------------------- | --------------------------------------------- | ------------------------- |
+| `read<T>(operation, database?)`             | Execute read operation with session callback  | `Promise<T>`              |
+| `write<T>(operation, database?)`            | Execute write operation with session callback | `Promise<T>`              |
+| `readQuery<T>(cypher, params?, database?)`  | Execute read query (legacy)                   | `Promise<T[]>`            |
+| `writeQuery<T>(cypher, params?, database?)` | Execute write query (legacy)                  | `Promise<T[]>`            |
+| `run<T>(cypher, params?, options?)`         | Execute query with full result details        | `Promise<QueryResult<T>>` |
+| `runInTransaction<T>(work, database?)`      | Run operations in transaction                 | `Promise<T>`              |
+| `runInReadTransaction<T>(work, database?)`  | Run in read transaction                       | `Promise<T>`              |
+| `bulk<T>(operation, database?)`             | Execute bulk operation                        | `Promise<T>`              |
+| `bulkOperations(operations)`                | Execute multiple operations in transaction    | `Promise<BulkResult>`     |
+| `getSession(options?)`                      | Get a session with options                    | `Session`                 |
+| `getDriver()`                               | Get the driver instance                       | `Driver`                  |
+| `verifyConnectivity()`                      | Check connection                              | `Promise<boolean>`        |
+| `close()`                                   | Close driver connection                       | `Promise<void>`           |
 
 ### Session Options
 
@@ -771,10 +741,10 @@ interface QueryResult<T = any> {
 
 ### Decorators
 
-| Decorator | Description | Usage |
-|-----------|-------------|-------|
-| `@InjectNeo4j(name?)` | Inject Neo4j driver or named session | Property/Constructor |
-| `@Transactional(options?)` | Mark method as transactional with options | Method |
+| Decorator                  | Description                               | Usage                |
+| -------------------------- | ----------------------------------------- | -------------------- |
+| `@InjectNeo4j(name?)`      | Inject Neo4j driver or named session      | Property/Constructor |
+| `@Transactional(options?)` | Mark method as transactional with options | Method               |
 
 ### Neo4jHealthService
 
@@ -825,7 +795,7 @@ export class HealthService {
 
 Manages connection lifecycle and provides connection utilities:
 
-```typescript
+````typescript
 interface Neo4jConnectionService {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -852,7 +822,7 @@ npm test
 
 # Build the library
 npm run build
-```
+````
 
 ## License
 
@@ -868,6 +838,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Acknowledgments
 
 Built with ❤️ by the Anubis team. Special thanks to:
+
 - The NestJS team for the amazing framework
 - Neo4j for the powerful graph database
 - Our contributors and community

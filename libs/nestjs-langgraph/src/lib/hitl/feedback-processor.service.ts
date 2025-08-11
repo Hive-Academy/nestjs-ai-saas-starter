@@ -114,7 +114,9 @@ export class FeedbackProcessorService {
   private feedbackStore = new Map<string, FeedbackEntry>();
   private executionFeedback = new Map<string, FeedbackEntry[]>();
 
-  constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
+  ) {}
 
   /**
    * Submit feedback
@@ -123,10 +125,10 @@ export class FeedbackProcessorService {
     executionId: string,
     type: FeedbackType,
     content: FeedbackEntry['content'],
-    provider: FeedbackEntry['provider'],
+    provider: FeedbackEntry['provider']
   ): Promise<FeedbackEntry> {
     const feedbackId = this.generateFeedbackId();
-    
+
     const entry: FeedbackEntry = {
       id: feedbackId,
       executionId,
@@ -139,7 +141,7 @@ export class FeedbackProcessorService {
 
     // Store feedback
     this.feedbackStore.set(feedbackId, entry);
-    
+
     // Add to execution mapping
     const executionEntries = this.executionFeedback.get(executionId) || [];
     executionEntries.push(entry);
@@ -148,8 +150,10 @@ export class FeedbackProcessorService {
     // Emit event
     await this.eventEmitter.emit('feedback.submitted', entry);
 
-    this.logger.log(`Feedback submitted: ${feedbackId} for execution ${executionId}`);
-    
+    this.logger.log(
+      `Feedback submitted: ${feedbackId} for execution ${executionId}`
+    );
+
     return entry;
   }
 
@@ -158,10 +162,10 @@ export class FeedbackProcessorService {
    */
   async processFeedback<TState extends WorkflowState = WorkflowState>(
     feedbackId: string,
-    currentState: TState,
+    currentState: TState
   ): Promise<Partial<TState>> {
     const entry = this.feedbackStore.get(feedbackId);
-    
+
     if (!entry) {
       throw new Error(`Feedback ${feedbackId} not found`);
     }
@@ -176,28 +180,28 @@ export class FeedbackProcessorService {
     try {
       // Process based on feedback type
       let stateUpdate: Partial<TState> = {};
-      
+
       switch (entry.type) {
         case FeedbackType.APPROVAL:
           stateUpdate = this.processApprovalFeedback(entry, currentState);
           break;
-        
+
         case FeedbackType.REJECTION:
           stateUpdate = this.processRejectionFeedback(entry, currentState);
           break;
-        
+
         case FeedbackType.MODIFICATION:
           stateUpdate = this.processModificationFeedback(entry, currentState);
           break;
-        
+
         case FeedbackType.CLARIFICATION:
           stateUpdate = this.processClarificationFeedback(entry, currentState);
           break;
-        
+
         case FeedbackType.RATING:
           stateUpdate = this.processRatingFeedback(entry, currentState);
           break;
-        
+
         case FeedbackType.COMMENT:
           stateUpdate = this.processCommentFeedback(entry, currentState);
           break;
@@ -220,10 +224,10 @@ export class FeedbackProcessorService {
       });
 
       return stateUpdate;
-      
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
       // Mark as processed with error
       entry.processed = true;
       entry.processingResult = {
@@ -248,7 +252,7 @@ export class FeedbackProcessorService {
    */
   private processApprovalFeedback<TState extends WorkflowState>(
     entry: FeedbackEntry,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       humanFeedback: {
@@ -268,7 +272,7 @@ export class FeedbackProcessorService {
    */
   private processRejectionFeedback<TState extends WorkflowState>(
     entry: FeedbackEntry,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       humanFeedback: {
@@ -289,7 +293,7 @@ export class FeedbackProcessorService {
    */
   private processModificationFeedback<TState extends WorkflowState>(
     entry: FeedbackEntry,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       humanFeedback: {
@@ -297,8 +301,9 @@ export class FeedbackProcessorService {
         status: 'needs_revision',
         approver: entry.provider,
         message: entry.content.message,
-        alternatives: entry.content.modifications ? 
-          Object.keys(entry.content.modifications) : undefined,
+        alternatives: entry.content.modifications
+          ? Object.keys(entry.content.modifications)
+          : undefined,
         metadata: entry.content.modifications,
         timestamp: entry.timestamp,
       },
@@ -314,7 +319,7 @@ export class FeedbackProcessorService {
    */
   private processClarificationFeedback<TState extends WorkflowState>(
     entry: FeedbackEntry,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       metadata: {
@@ -332,15 +337,16 @@ export class FeedbackProcessorService {
    */
   private processRatingFeedback<TState extends WorkflowState>(
     entry: FeedbackEntry,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     const rating = entry.content.rating || 3;
     const confidenceAdjustment = (rating - 3) * 0.1; // -0.2 to +0.2 based on rating
-    
+
     return {
-      confidence: Math.max(0, Math.min(1, 
-        (currentState.confidence || 0.5) + confidenceAdjustment
-      )),
+      confidence: Math.max(
+        0,
+        Math.min(1, (currentState.confidence || 0.5) + confidenceAdjustment)
+      ),
       metadata: {
         ...(currentState.metadata || {}),
         userRating: rating,
@@ -354,7 +360,7 @@ export class FeedbackProcessorService {
    */
   private processCommentFeedback<TState extends WorkflowState>(
     entry: FeedbackEntry,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       metadata: {
@@ -402,7 +408,7 @@ export class FeedbackProcessorService {
 
     for (const entry of entries) {
       byType[entry.type]++;
-      
+
       if (entry.processed) {
         processedCount++;
       }
@@ -419,9 +425,11 @@ export class FeedbackProcessorService {
       averageRating: ratingCount > 0 ? totalRating / ratingCount : undefined,
       processedCount,
       pendingCount: entries.length - processedCount,
-      successRate: entries.length > 0
-        ? entries.filter(e => e.processingResult?.success).length / entries.length
-        : 0,
+      successRate:
+        entries.length > 0
+          ? entries.filter((e) => e.processingResult?.success).length /
+            entries.length
+          : 0,
     };
   }
 
@@ -453,3 +461,4 @@ export class FeedbackProcessorService {
     return `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
+

@@ -148,9 +148,7 @@ export class SubgraphManagerService {
   private subgraphs = new Map<string, CompiledSubgraph>();
   private activeSubgraphs = new Map<string, SubgraphContext>();
 
-  constructor(
-    private readonly cacheService: CompilationCacheService,
-  ) {}
+  constructor(private readonly cacheService: CompilationCacheService) {}
 
   /**
    * Compile a subgraph with caching support
@@ -158,13 +156,15 @@ export class SubgraphManagerService {
   async compileSubgraph<TState extends WorkflowState = WorkflowState>(
     id: string,
     graph: StateGraph<TState>,
-    options: SubgraphOptions = {},
+    options: SubgraphOptions = {}
   ): Promise<CompiledSubgraph<TState>> {
     const cacheKey = options.cacheKey || this.generateCacheKey(id, options);
 
     // Check cache if enabled
     if (options.cache) {
-      const cached = await this.cacheService.get<CompiledSubgraph<TState>>(cacheKey);
+      const cached = await this.cacheService.get<CompiledSubgraph<TState>>(
+        cacheKey
+      );
       if (cached) {
         this.logger.debug(`Using cached subgraph: ${id}`);
         return cached;
@@ -174,7 +174,9 @@ export class SubgraphManagerService {
     this.logger.debug(`Compiling subgraph: ${id}`);
 
     // Compile the graph
-    const checkpointer = options.checkpoint?.enabled ? await this.getCheckpointer(options.checkpoint) : undefined;
+    const checkpointer = options.checkpoint?.enabled
+      ? await this.getCheckpointer(options.checkpoint)
+      : undefined;
     const compiledGraph = graph.compile({
       checkpointer: checkpointer as any, // Type cast to handle version compatibility
       interruptBefore: options.interrupt?.before as any,
@@ -187,9 +189,15 @@ export class SubgraphManagerService {
         return this.invokeSubgraph(id, compiledGraph, state, options, config);
       },
       stream: options.streaming?.passthrough
-        ? (async (state: TState, config?: any) => {
-            return this.streamSubgraph(id, compiledGraph, state, options, config);
-          }).bind(this) as any
+        ? ((async (state: TState, config?: any) => {
+            return this.streamSubgraph(
+              id,
+              compiledGraph,
+              state,
+              options,
+              config
+            );
+          }).bind(this) as any)
         : undefined,
       getMetadata: () => ({
         id,
@@ -220,7 +228,7 @@ export class SubgraphManagerService {
     subgraphId: string,
     graph: StateGraph<TState>,
     state: TState,
-    options: SubgraphOptions = {},
+    options: SubgraphOptions = {}
   ): Promise<TState> {
     // Create subgraph context
     const context: SubgraphContext = {
@@ -301,7 +309,7 @@ export class SubgraphManagerService {
       to: string;
       condition?: (state: TState) => boolean;
     }>,
-    options: SubgraphOptions = {},
+    options: SubgraphOptions = {}
   ): Promise<CompiledSubgraph<TState>> {
     // Create a new state graph with the standard annotation
     const graph = new StateGraph<TState>(WorkflowStateAnnotation as any);
@@ -323,7 +331,7 @@ export class SubgraphManagerService {
         graph.addConditionalEdges(
           edge.from as any, // Type cast for LangGraph compatibility
           (state: any) => (edge.condition!(state) ? edge.to : END),
-          [edge.to, END] as any, // Use array instead of object
+          [edge.to, END] as any // Use array instead of object
         );
       } else {
         graph.addEdge(edge.from as any, edge.to as any);
@@ -381,7 +389,7 @@ export class SubgraphManagerService {
     compiledGraph: any,
     state: TState,
     options: SubgraphOptions,
-    config?: any,
+    config?: any
   ): Promise<TState> {
     this.logger.debug(`Invoking subgraph: ${id}`);
 
@@ -407,7 +415,7 @@ export class SubgraphManagerService {
     compiledGraph: any,
     state: TState,
     options: SubgraphOptions,
-    config?: any,
+    config?: any
   ): AsyncIterableIterator<TState> {
     this.logger.debug(`Streaming subgraph: ${id}`);
 
@@ -440,9 +448,11 @@ export class SubgraphManagerService {
   private async compileSubgraphSync<TState extends WorkflowState>(
     id: string,
     graph: StateGraph<TState>,
-    options: SubgraphOptions,
+    options: SubgraphOptions
   ): Promise<CompiledSubgraph<TState>> {
-    const checkpointer = options.checkpoint?.enabled ? await this.getCheckpointer(options.checkpoint) : undefined;
+    const checkpointer = options.checkpoint?.enabled
+      ? await this.getCheckpointer(options.checkpoint)
+      : undefined;
     const compiledGraph = graph.compile({
       checkpointer: checkpointer as any, // Type cast to handle version compatibility
       interruptBefore: options.interrupt?.before as any,
@@ -454,9 +464,15 @@ export class SubgraphManagerService {
         return this.invokeSubgraph(id, compiledGraph, state, options, config);
       },
       stream: options.streaming?.passthrough
-        ? (async (state: TState, config?: any) => {
-            return this.streamSubgraph(id, compiledGraph, state, options, config);
-          }).bind(this) as any
+        ? ((async (state: TState, config?: any) => {
+            return this.streamSubgraph(
+              id,
+              compiledGraph,
+              state,
+              options,
+              config
+            );
+          }).bind(this) as any)
         : undefined,
       getMetadata: () => ({
         id,
@@ -489,14 +505,14 @@ export class SubgraphManagerService {
       }
       return value;
     });
-    
+
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
-    
+
     return Math.abs(hash).toString(36);
   }
 
@@ -508,9 +524,8 @@ export class SubgraphManagerService {
     if (config.type === 'sqlite' && config.path) {
       return SqliteSaver.fromConnString(config.path);
     }
-    
+
     // Default to in-memory SQLite
     return SqliteSaver.fromConnString(':memory:');
   }
-
 }

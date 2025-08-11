@@ -1,12 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ToolNode } from '@langchain/langgraph/prebuilt';
-import { DynamicStructuredTool } from '@langchain/core/tools';
-import { BaseMessage } from '@langchain/core/messages';
 import { AgentType } from '@internal/shared';
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { ToolNode } from '@langchain/langgraph/prebuilt';
+import { Injectable, Logger } from '@nestjs/common';
 
-import { ToolRegistryService } from './tool-registry.service';
 import { WorkflowState } from '../interfaces/workflow.interface';
-import { ToolMetadata } from '../decorators/tool.decorator';
+import { ToolRegistryService } from './tool-registry.service';
 
 /**
  * Enhanced service for creating and managing LangGraph ToolNodes
@@ -16,12 +14,15 @@ import { ToolMetadata } from '../decorators/tool.decorator';
 export class ToolNodeService {
   private readonly logger = new Logger(ToolNodeService.name);
   private readonly toolNodes = new Map<string, ToolNode<any>>();
-  private readonly executionMetrics = new Map<string, {
-    executionCount: number;
-    totalExecutionTime: number;
-    lastExecuted: Date;
-    errorCount: number;
-  }>();
+  private readonly executionMetrics = new Map<
+    string,
+    {
+      executionCount: number;
+      totalExecutionTime: number;
+      lastExecuted: Date;
+      errorCount: number;
+    }
+  >();
 
   constructor(private readonly toolRegistry: ToolRegistryService) {}
 
@@ -39,20 +40,24 @@ export class ToolNodeService {
   ): ToolNode<any> {
     // Get tools with enhanced resolution
     let resolvedTools: DynamicStructuredTool[];
-    
+
     if (!tools) {
       // Auto-discover tools for this node/agent
       const agentId = options?.agentOverride || nodeId;
       resolvedTools = this.toolRegistry.getToolsForAgent(agentId);
-      
+
       // Apply tag filtering if specified
       if (options?.includeTags || options?.excludeTags) {
-        resolvedTools = this.filterToolsByTags(resolvedTools, options.includeTags, options.excludeTags);
+        resolvedTools = this.filterToolsByTags(
+          resolvedTools,
+          options.includeTags,
+          options.excludeTags
+        );
       }
     } else if (tools.length > 0 && typeof tools[0] === 'string') {
       // Resolve tool names to actual tools
       resolvedTools = (tools as string[])
-        .map(name => this.toolRegistry.getTool(name))
+        .map((name) => this.toolRegistry.getTool(name))
         .filter((tool): tool is DynamicStructuredTool => tool !== undefined);
     } else {
       // Use provided tools directly
@@ -67,7 +72,9 @@ export class ToolNodeService {
     const toolNode = this.createEnhancedToolNode(resolvedTools, nodeId);
     this.toolNodes.set(nodeId, toolNode);
 
-    this.logger.debug(`Created ToolNode for ${nodeId} with ${resolvedTools.length} tools`);
+    this.logger.debug(
+      `Created ToolNode for ${nodeId} with ${resolvedTools.length} tools`
+    );
     return toolNode;
   }
 
@@ -76,7 +83,7 @@ export class ToolNodeService {
    */
   getOrCreateToolNode(
     nodeId: string,
-    tools?: DynamicStructuredTool[] | string[],
+    tools?: DynamicStructuredTool[] | string[]
   ): ToolNode<any> {
     const existing = this.toolNodes.get(nodeId);
     if (existing) {
@@ -90,7 +97,7 @@ export class ToolNodeService {
    */
   createToolExecutor<TState extends WorkflowState = WorkflowState>(
     nodeId: string,
-    tools?: DynamicStructuredTool[] | string[],
+    tools?: DynamicStructuredTool[] | string[]
   ): (state: TState) => Promise<Partial<TState>> {
     const toolNode = this.createToolNode(nodeId, tools);
 
@@ -98,22 +105,24 @@ export class ToolNodeService {
       try {
         // Execute tools based on messages in state
         const result = await toolNode.invoke(state as any);
-        
+
         // Return the result as a partial state update
         return result as Partial<TState>;
       } catch (error) {
         this.logger.error(`Tool execution failed for node ${nodeId}:`, error);
-        
+
         // Return error in state
         return {
           error: {
             id: `tool-error-${Date.now()}`,
             nodeId,
             type: 'tool_execution' as const,
-            message: error instanceof Error ? error.message : 'Tool execution failed',
+            message:
+              error instanceof Error ? error.message : 'Tool execution failed',
             timestamp: new Date(),
             isRecoverable: true,
-            suggestedRecovery: 'Retry tool execution or check tool configuration',
+            suggestedRecovery:
+              'Retry tool execution or check tool configuration',
           },
         } as unknown as Partial<TState>;
       }
@@ -126,14 +135,16 @@ export class ToolNodeService {
   createConditionalToolExecutor<TState extends WorkflowState = WorkflowState>(
     nodeId: string,
     condition: (state: TState) => boolean,
-    tools?: DynamicStructuredTool[] | string[],
+    tools?: DynamicStructuredTool[] | string[]
   ): (state: TState) => Promise<Partial<TState>> {
     const executor = this.createToolExecutor(nodeId, tools);
 
     return async (state: TState): Promise<Partial<TState>> => {
       // Check condition
       if (!condition(state)) {
-        this.logger.debug(`Condition not met for tool node ${nodeId}, skipping`);
+        this.logger.debug(
+          `Condition not met for tool node ${nodeId}, skipping`
+        );
         return {};
       }
 
@@ -150,17 +161,17 @@ export class ToolNodeService {
       nodeId: string;
       tools?: DynamicStructuredTool[] | string[];
       weight?: number; // For weighted merging of results
-    }>,
+    }>
   ): (state: TState) => Promise<Partial<TState>> {
     return async (state: TState): Promise<Partial<TState>> => {
-      const executors = nodeConfigs.map(config => 
+      const executors = nodeConfigs.map((config) =>
         this.createToolExecutor(config.nodeId, config.tools)
       );
 
       try {
         // Execute all tool nodes in parallel
         const results = await Promise.all(
-          executors.map(executor => executor(state))
+          executors.map((executor) => executor(state))
         );
 
         // Merge results
@@ -168,7 +179,7 @@ export class ToolNodeService {
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
           const config = nodeConfigs[i];
-          
+
           // Apply weighted merging if specified
           if (config.weight !== undefined) {
             // For weighted merging, we'd need more sophisticated logic
@@ -197,7 +208,7 @@ export class ToolNodeService {
       maxRetries?: number;
       retryDelay?: number;
       backoffMultiplier?: number;
-    },
+    }
   ): (state: TState) => Promise<Partial<TState>> {
     const maxRetries = options?.maxRetries || 3;
     const retryDelay = options?.retryDelay || 1000;
@@ -212,21 +223,29 @@ export class ToolNodeService {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           if (attempt > 0) {
-            this.logger.debug(`Retrying tool execution for ${nodeId} (attempt ${attempt}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            this.logger.debug(
+              `Retrying tool execution for ${nodeId} (attempt ${attempt}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
             delay *= backoffMultiplier;
           }
 
-          return await executor(state) as Partial<TState>;
+          return (await executor(state)) as Partial<TState>;
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          this.logger.warn(`Tool execution attempt ${attempt} failed for ${nodeId}:`, error);
+          this.logger.warn(
+            `Tool execution attempt ${attempt} failed for ${nodeId}:`,
+            error
+          );
         }
       }
 
       // All retries failed
       this.logger.error(`All retry attempts failed for tool node ${nodeId}`);
-      throw lastError || new Error(`Tool execution failed after ${maxRetries} retries`);
+      throw (
+        lastError ||
+        new Error(`Tool execution failed after ${maxRetries} retries`)
+      );
     };
   }
 
@@ -259,7 +278,7 @@ export class ToolNodeService {
     const toolNode = this.createToolNode(agentType, undefined, {
       includeTags: options?.includeTags,
       excludeTags: options?.excludeTags,
-      agentOverride: agentType
+      agentOverride: agentType,
     });
 
     return async (state: TState): Promise<Partial<TState>> => {
@@ -271,23 +290,29 @@ export class ToolNodeService {
         const result = options?.timeout
           ? await this.executeWithTimeout(toolNode, state, options.timeout)
           : await toolNode.invoke(state as any);
-        
+
         // Track metrics
         this.updateExecutionMetrics(nodeId, Date.now() - startTime, true);
-        
+
         return result as Partial<TState>;
       } catch (error) {
-        this.logger.error(`Agent tool execution failed for ${agentType}:`, error);
-        
+        this.logger.error(
+          `Agent tool execution failed for ${agentType}:`,
+          error
+        );
+
         // Track error metrics
         this.updateExecutionMetrics(nodeId, Date.now() - startTime, false);
-        
+
         return {
           error: {
             id: `agent-tool-error-${Date.now()}`,
             nodeId,
             type: 'agent_tool_execution' as const,
-            message: error instanceof Error ? error.message : 'Agent tool execution failed',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Agent tool execution failed',
             timestamp: new Date(),
             isRecoverable: true,
             suggestedRecovery: `Retry ${agentType} tool execution or check tool configuration`,
@@ -315,25 +340,34 @@ export class ToolNodeService {
 
     return {
       ...metrics,
-      averageExecutionTime: metrics.executionCount > 0 
-        ? metrics.totalExecutionTime / metrics.executionCount 
-        : 0,
-      successRate: metrics.executionCount > 0 
-        ? (metrics.executionCount - metrics.errorCount) / metrics.executionCount 
-        : 0
+      averageExecutionTime:
+        metrics.executionCount > 0
+          ? metrics.totalExecutionTime / metrics.executionCount
+          : 0,
+      successRate:
+        metrics.executionCount > 0
+          ? (metrics.executionCount - metrics.errorCount) /
+            metrics.executionCount
+          : 0,
     };
   }
 
   /**
    * Get tool usage statistics across all nodes
    */
-  getAllExecutionMetrics(): Record<string, ReturnType<typeof this.getExecutionMetrics>> {
-    const allMetrics: Record<string, ReturnType<typeof this.getExecutionMetrics>> = {};
-    
+  getAllExecutionMetrics(): Record<
+    string,
+    ReturnType<typeof this.getExecutionMetrics>
+  > {
+    const allMetrics: Record<
+      string,
+      ReturnType<typeof this.getExecutionMetrics>
+    > = {};
+
     for (const [nodeId] of this.executionMetrics) {
       allMetrics[nodeId] = this.getExecutionMetrics(nodeId);
     }
-    
+
     return allMetrics;
   }
 
@@ -352,19 +386,25 @@ export class ToolNodeService {
     includeTags?: string[],
     excludeTags?: string[]
   ): DynamicStructuredTool[] {
-    return tools.filter(tool => {
+    return tools.filter((tool) => {
       const metadata = this.toolRegistry.getToolMetadata(tool.name);
       if (!metadata?.tags) {
         return !includeTags; // Include if no include filter, exclude if include filter exists
       }
 
       // Check include tags
-      if (includeTags && !includeTags.some(tag => metadata.tags!.includes(tag))) {
+      if (
+        includeTags &&
+        !includeTags.some((tag) => metadata.tags!.includes(tag))
+      ) {
         return false;
       }
 
       // Check exclude tags
-      if (excludeTags && excludeTags.some(tag => metadata.tags!.includes(tag))) {
+      if (
+        excludeTags &&
+        excludeTags.some((tag) => metadata.tags!.includes(tag))
+      ) {
         return false;
       }
 
@@ -372,28 +412,39 @@ export class ToolNodeService {
     });
   }
 
-  private createEnhancedToolNode(tools: DynamicStructuredTool[], nodeId: string): ToolNode<any> {
+  private createEnhancedToolNode(
+    tools: DynamicStructuredTool[],
+    nodeId: string
+  ): ToolNode<any> {
     // Wrap tools with enhanced error handling and metrics
-    const enhancedTools = tools.map(tool => {
+    const enhancedTools = tools.map((tool) => {
       const originalFunc = tool.func;
-      
+
       return new DynamicStructuredTool({
         name: tool.name,
         description: tool.description,
         schema: tool.schema,
         func: async (input: any) => {
           const startTime = Date.now();
-          
+
           try {
             const result = await originalFunc(input);
-            this.updateExecutionMetrics(`tool:${tool.name}`, Date.now() - startTime, true);
+            this.updateExecutionMetrics(
+              `tool:${tool.name}`,
+              Date.now() - startTime,
+              true
+            );
             return result;
           } catch (error) {
-            this.updateExecutionMetrics(`tool:${tool.name}`, Date.now() - startTime, false);
+            this.updateExecutionMetrics(
+              `tool:${tool.name}`,
+              Date.now() - startTime,
+              false
+            );
             this.logger.error(`Tool ${tool.name} execution failed:`, error);
             throw error;
           }
-        }
+        },
       });
     });
 
@@ -410,31 +461,36 @@ export class ToolNodeService {
         reject(new Error(`Tool execution timed out after ${timeoutMs}ms`));
       }, timeoutMs);
 
-      toolNode.invoke(state as any)
-        .then(result => {
+      toolNode
+        .invoke(state as any)
+        .then((result) => {
           clearTimeout(timeout);
           resolve(result);
         })
-        .catch(error => {
+        .catch((error) => {
           clearTimeout(timeout);
           reject(error);
         });
     });
   }
 
-  private updateExecutionMetrics(nodeId: string, executionTime: number, success: boolean): void {
+  private updateExecutionMetrics(
+    nodeId: string,
+    executionTime: number,
+    success: boolean
+  ): void {
     const existing = this.executionMetrics.get(nodeId) || {
       executionCount: 0,
       totalExecutionTime: 0,
       lastExecuted: new Date(),
-      errorCount: 0
+      errorCount: 0,
     };
 
     this.executionMetrics.set(nodeId, {
       executionCount: existing.executionCount + 1,
       totalExecutionTime: existing.totalExecutionTime + executionTime,
       lastExecuted: new Date(),
-      errorCount: existing.errorCount + (success ? 0 : 1)
+      errorCount: existing.errorCount + (success ? 0 : 1),
     });
   }
 }

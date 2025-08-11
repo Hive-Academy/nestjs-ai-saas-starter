@@ -1,5 +1,12 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { ChromaClient, Collection, WhereDocument, Where, QueryResult, GetResult } from 'chromadb';
+import {
+  ChromaClient,
+  Collection,
+  WhereDocument,
+  Where,
+  QueryResult,
+  GetResult,
+} from 'chromadb';
 import { CHROMADB_CLIENT, DEFAULT_BATCH_SIZE } from '../constants';
 import {
   IChromaDBService,
@@ -27,7 +34,7 @@ export class ChromaDBService implements IChromaDBService {
     private readonly client: ChromaClient,
     private readonly collectionService: CollectionService,
     private readonly embeddingService: EmbeddingService,
-    private readonly adminService: ChromaAdminService,
+    private readonly adminService: ChromaAdminService
   ) {}
 
   /**
@@ -79,7 +86,7 @@ export class ChromaDBService implements IChromaDBService {
     name: string,
     metadata?: Record<string, any>,
     embeddingFunction?: any,
-    getOrCreate?: boolean,
+    getOrCreate?: boolean
   ): Promise<Collection> {
     return this.collectionService.createCollection(name, {
       metadata: metadata ? sanitizeMetadata(metadata) : undefined,
@@ -93,7 +100,7 @@ export class ChromaDBService implements IChromaDBService {
    */
   async getCollection(
     name: string,
-    embeddingFunction?: any,
+    embeddingFunction?: any
   ): Promise<Collection> {
     return this.collectionService.getCollection(name, embeddingFunction);
   }
@@ -118,20 +125,30 @@ export class ChromaDBService implements IChromaDBService {
   async addDocuments(
     collectionName: string,
     documents: ChromaDocument[],
-    options?: ChromaBulkOptions,
+    options?: ChromaBulkOptions
   ): Promise<void> {
-    const processedDocuments = await this.processDocumentsForEmbedding(documents);
+    const processedDocuments = await this.processDocumentsForEmbedding(
+      documents
+    );
     const collection = await this.getCollection(collectionName);
-    
+
     const batchSize = options?.batchSize || DEFAULT_BATCH_SIZE;
     for (let i = 0; i < processedDocuments.length; i += batchSize) {
       const batch = processedDocuments.slice(i, i + batchSize);
-      
+
       await collection.add({
-        ids: batch.map(doc => doc.id),
-        documents: batch.map(doc => doc.document).filter((doc): doc is string => !!doc),
-        metadatas: batch.map(doc => doc.metadata ? sanitizeMetadata(doc.metadata) : undefined).filter(Boolean) as any,
-        embeddings: batch.map(doc => doc.embedding).filter((emb): emb is number[] => !!emb),
+        ids: batch.map((doc) => doc.id),
+        documents: batch
+          .map((doc) => doc.document)
+          .filter((doc): doc is string => !!doc),
+        metadatas: batch
+          .map((doc) =>
+            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+          )
+          .filter(Boolean) as any,
+        embeddings: batch
+          .map((doc) => doc.embedding)
+          .filter((emb): emb is number[] => !!emb),
       });
     }
   }
@@ -142,20 +159,30 @@ export class ChromaDBService implements IChromaDBService {
   async updateDocuments(
     collectionName: string,
     documents: ChromaDocument[],
-    options?: ChromaBulkOptions,
+    options?: ChromaBulkOptions
   ): Promise<void> {
-    const processedDocuments = await this.processDocumentsForEmbedding(documents);
+    const processedDocuments = await this.processDocumentsForEmbedding(
+      documents
+    );
     const collection = await this.getCollection(collectionName);
-    
+
     const batchSize = options?.batchSize || DEFAULT_BATCH_SIZE;
     for (let i = 0; i < processedDocuments.length; i += batchSize) {
       const batch = processedDocuments.slice(i, i + batchSize);
-      
+
       await collection.update({
-        ids: batch.map(doc => doc.id),
-        documents: batch.map(doc => doc.document).filter((doc): doc is string => !!doc),
-        metadatas: batch.map(doc => doc.metadata ? sanitizeMetadata(doc.metadata) : undefined).filter(Boolean) as any,
-        embeddings: batch.map(doc => doc.embedding).filter((emb): emb is number[] => !!emb),
+        ids: batch.map((doc) => doc.id),
+        documents: batch
+          .map((doc) => doc.document)
+          .filter((doc): doc is string => !!doc),
+        metadatas: batch
+          .map((doc) =>
+            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+          )
+          .filter(Boolean) as any,
+        embeddings: batch
+          .map((doc) => doc.embedding)
+          .filter((emb): emb is number[] => !!emb),
       });
     }
   }
@@ -166,20 +193,30 @@ export class ChromaDBService implements IChromaDBService {
   async upsertDocuments(
     collectionName: string,
     documents: ChromaDocument[],
-    options?: ChromaBulkOptions,
+    options?: ChromaBulkOptions
   ): Promise<void> {
-    const processedDocuments = await this.processDocumentsForEmbedding(documents);
+    const processedDocuments = await this.processDocumentsForEmbedding(
+      documents
+    );
     const collection = await this.getCollection(collectionName);
-    
+
     const batchSize = options?.batchSize || DEFAULT_BATCH_SIZE;
     for (let i = 0; i < processedDocuments.length; i += batchSize) {
       const batch = processedDocuments.slice(i, i + batchSize);
-      
+
       await collection.upsert({
-        ids: batch.map(doc => doc.id),
-        documents: batch.map(doc => doc.document).filter((doc): doc is string => !!doc),
-        metadatas: batch.map(doc => doc.metadata ? sanitizeMetadata(doc.metadata) : undefined).filter(Boolean) as any,
-        embeddings: batch.map(doc => doc.embedding).filter((emb): emb is number[] => !!emb),
+        ids: batch.map((doc) => doc.id),
+        documents: batch
+          .map((doc) => doc.document)
+          .filter((doc): doc is string => !!doc),
+        metadatas: batch
+          .map((doc) =>
+            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+          )
+          .filter(Boolean) as any,
+        embeddings: batch
+          .map((doc) => doc.embedding)
+          .filter((emb): emb is number[] => !!emb),
       });
     }
   }
@@ -194,10 +231,10 @@ export class ChromaDBService implements IChromaDBService {
     limit?: number,
     offset?: number,
     whereDocument?: WhereDocument,
-    include?: string[],
+    include?: string[]
   ): Promise<GetResult<Record<string, any>>> {
     const collection = await this.getCollection(collectionName);
-    
+
     return collection.get({
       ids,
       where,
@@ -215,10 +252,10 @@ export class ChromaDBService implements IChromaDBService {
     collectionName: string,
     ids?: string[],
     where?: Where,
-    whereDocument?: WhereDocument,
+    whereDocument?: WhereDocument
   ): Promise<void> {
     const collection = await this.getCollection(collectionName);
-    
+
     await collection.delete({
       ids,
       where,
@@ -233,16 +270,20 @@ export class ChromaDBService implements IChromaDBService {
     collectionName: string,
     queryTexts?: string[],
     queryEmbeddings?: number[][],
-    options?: ChromaSearchOptions,
+    options?: ChromaSearchOptions
   ): Promise<ChromaSearchResult> {
     const collection = await this.getCollection(collectionName);
-    
+
     // Generate embeddings for query texts if needed and embedding service is available
     let processedQueryEmbeddings = queryEmbeddings;
-    if (queryTexts && !queryEmbeddings && this.embeddingService.isConfigured()) {
+    if (
+      queryTexts &&
+      !queryEmbeddings &&
+      this.embeddingService.isConfigured()
+    ) {
       processedQueryEmbeddings = await this.embeddingService.embed(queryTexts);
     }
-    
+
     return collection.query({
       queryTexts,
       queryEmbeddings: processedQueryEmbeddings,
@@ -264,7 +305,13 @@ export class ChromaDBService implements IChromaDBService {
   async similaritySearch(
     collectionName: string,
     query: string | number[],
-    options?: Omit<ChromaSearchOptions, 'includeMetadata' | 'includeDocuments' | 'includeDistances' | 'includeEmbeddings'> & {
+    options?: Omit<
+      ChromaSearchOptions,
+      | 'includeMetadata'
+      | 'includeDocuments'
+      | 'includeDistances'
+      | 'includeEmbeddings'
+    > & {
       limit?: number;
       filter?: Where;
       includeMetadata?: boolean;
@@ -278,7 +325,7 @@ export class ChromaDBService implements IChromaDBService {
     distances: number[];
   }> {
     let queryEmbedding: number[];
-    
+
     if (typeof query === 'string') {
       if (!this.embeddingService.isConfigured()) {
         throw new Error('Embedding service not configured for text queries');
@@ -306,7 +353,9 @@ export class ChromaDBService implements IChromaDBService {
       ids: result.ids[0] || [],
       documents: result.documents?.[0] || [],
       metadatas: result.metadatas?.[0] || [],
-      distances: (result.distances?.[0] || []).filter((d): d is number => d !== null),
+      distances: (result.distances?.[0] || []).filter(
+        (d): d is number => d !== null
+      ),
     };
   }
 
@@ -322,7 +371,7 @@ export class ChromaDBService implements IChromaDBService {
    */
   async peekDocuments(
     collectionName: string,
-    limit = 10,
+    limit = 10
   ): Promise<GetResult<Record<string, any>>> {
     const collection = await this.getCollection(collectionName);
     return collection.peek({ limit });
@@ -331,7 +380,9 @@ export class ChromaDBService implements IChromaDBService {
   /**
    * Get collection metadata
    */
-  async getCollectionMetadata(collectionName: string): Promise<Record<string, any> | null> {
+  async getCollectionMetadata(
+    collectionName: string
+  ): Promise<Record<string, any> | null> {
     try {
       const collection = await this.getCollection(collectionName);
       return collection.metadata || null;
@@ -345,30 +396,37 @@ export class ChromaDBService implements IChromaDBService {
    */
   async updateCollectionMetadata(
     collectionName: string,
-    metadata: Record<string, any>,
+    metadata: Record<string, any>
   ): Promise<void> {
-    return this.collectionService.modifyCollection(collectionName, sanitizeMetadata(metadata));
+    return this.collectionService.modifyCollection(
+      collectionName,
+      sanitizeMetadata(metadata)
+    );
   }
 
   /**
    * Process documents to add embeddings if needed
    */
-  private async processDocumentsForEmbedding(documents: ChromaDocument[]): Promise<ChromaDocument[]> {
+  private async processDocumentsForEmbedding(
+    documents: ChromaDocument[]
+  ): Promise<ChromaDocument[]> {
     if (!this.embeddingService.isConfigured()) {
       return documents;
     }
 
-    const documentsNeedingEmbeddings = documents.filter(doc => !doc.embedding && doc.document);
-    
+    const documentsNeedingEmbeddings = documents.filter(
+      (doc) => !doc.embedding && doc.document
+    );
+
     if (documentsNeedingEmbeddings.length === 0) {
       return documents;
     }
 
-    const textsToEmbed = documentsNeedingEmbeddings.map(doc => doc.document!);
+    const textsToEmbed = documentsNeedingEmbeddings.map((doc) => doc.document!);
     const embeddings = await this.embeddingService.embed(textsToEmbed);
 
     let embeddingIndex = 0;
-    return documents.map(doc => {
+    return documents.map((doc) => {
       if (!doc.embedding && doc.document) {
         return { ...doc, embedding: embeddings[embeddingIndex++] };
       }

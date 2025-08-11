@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import type { LangGraphModuleOptions  } from '../interfaces/module-options.interface';
+import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
 import { Inject, Optional } from '@nestjs/common';
 import { LANGGRAPH_MODULE_OPTIONS } from '../constants';
 
@@ -95,8 +95,9 @@ export class CompilationCacheService implements OnModuleDestroy {
   private readonly defaultTTL: number;
 
   constructor(
-    @Optional() @Inject(LANGGRAPH_MODULE_OPTIONS)
-    private readonly options?: LangGraphModuleOptions,
+    @Optional()
+    @Inject(LANGGRAPH_MODULE_OPTIONS)
+    private readonly options?: LangGraphModuleOptions
   ) {
     this.maxSize = options?.workflows?.maxCached || 100;
     this.defaultTTL = options?.workflows?.cacheTTL || 3600000; // 1 hour
@@ -147,7 +148,7 @@ export class CompilationCacheService implements OnModuleDestroy {
     key: string,
     value: T,
     ttl?: number,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<void> {
     // Check cache size limit
     if (this.cache.size >= this.maxSize) {
@@ -206,7 +207,7 @@ export class CompilationCacheService implements OnModuleDestroy {
   async getOrSet<T>(
     key: string,
     factory: () => Promise<T> | T,
-    ttl?: number,
+    ttl?: number
   ): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached !== null) {
@@ -236,7 +237,9 @@ export class CompilationCacheService implements OnModuleDestroy {
     }
 
     if (keysToDelete.length > 0) {
-      this.logger.debug(`Invalidated ${keysToDelete.length} cache entries matching pattern`);
+      this.logger.debug(
+        `Invalidated ${keysToDelete.length} cache entries matching pattern`
+      );
     }
 
     return keysToDelete.length;
@@ -284,7 +287,7 @@ export class CompilationCacheService implements OnModuleDestroy {
       key: string;
       factory: () => Promise<any> | any;
       ttl?: number;
-    }>,
+    }>
   ): Promise<void> {
     this.logger.log(`Warming up cache with ${items.length} items`);
 
@@ -293,7 +296,10 @@ export class CompilationCacheService implements OnModuleDestroy {
         const value = await item.factory();
         await this.set(item.key, value, item.ttl);
       } catch (error) {
-        this.logger.error(`Failed to warm up cache for key ${item.key}:`, error);
+        this.logger.error(
+          `Failed to warm up cache for key ${item.key}:`,
+          error
+        );
       }
     });
 
@@ -313,7 +319,9 @@ export class CompilationCacheService implements OnModuleDestroy {
    */
   getEntriesByAccessTime(limit = 10): CacheEntry[] {
     const entries = Array.from(this.cache.values());
-    entries.sort((a, b) => b.lastAccessedAt.getTime() - a.lastAccessedAt.getTime());
+    entries.sort(
+      (a, b) => b.lastAccessedAt.getTime() - a.lastAccessedAt.getTime()
+    );
     return entries.slice(0, limit);
   }
 
@@ -383,7 +391,9 @@ export class CompilationCacheService implements OnModuleDestroy {
     }
 
     if (keysToDelete.length > 0) {
-      this.logger.debug(`Cleaned up ${keysToDelete.length} expired cache entries`);
+      this.logger.debug(
+        `Cleaned up ${keysToDelete.length} expired cache entries`
+      );
     }
   }
 
@@ -403,7 +413,7 @@ export class CompilationCacheService implements OnModuleDestroy {
    */
   export(): Array<{ key: string; entry: CacheEntry }> {
     const entries: Array<{ key: string; entry: CacheEntry }> = [];
-    
+
     for (const [key, entry] of this.cache.entries()) {
       if (!this.isExpired(entry)) {
         entries.push({ key, entry });
