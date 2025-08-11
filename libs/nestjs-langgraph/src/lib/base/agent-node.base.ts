@@ -36,9 +36,6 @@ export interface AgentNodeConfig {
 export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState> implements OnModuleInit {
   protected llm?: BaseChatModel;
   protected readonly logger: Logger;
-  
-  @Optional()
-  @Inject(EventEmitter2)
   protected readonly eventEmitter?: EventEmitter2;
 
   /** Node configuration */
@@ -47,7 +44,12 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   /** Available tools for this node */
   protected tools: StructuredToolInterface[] = [];
 
-  constructor() {
+  constructor(
+    @Optional()
+    @Inject(EventEmitter2)
+    eventEmitter?: EventEmitter2
+  ) {
+    this.eventEmitter = eventEmitter;
     this.logger = new Logger(this.constructor.name);
   }
 

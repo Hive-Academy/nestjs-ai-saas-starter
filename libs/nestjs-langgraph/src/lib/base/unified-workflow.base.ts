@@ -1,6 +1,11 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { StateGraph, END, START, CompiledStateGraph } from '@langchain/langgraph';
+import {
+  StateGraph,
+  END,
+  START,
+  CompiledStateGraph,
+} from '@langchain/langgraph';
 import { BaseMessage } from '@langchain/core/messages';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StructuredToolInterface } from '@langchain/core/tools';
@@ -9,15 +14,15 @@ import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import { EventStreamProcessorService } from '../streaming/event-stream-processor.service';
 import { isWorkflow } from '../decorators/workflow.decorator';
-import { 
-  WorkflowState, 
-  WorkflowNodeConfig, 
+import {
+  WorkflowState,
+  WorkflowNodeConfig,
   WorkflowEdgeConfig,
   Command,
   CommandType,
   NodeHandler,
   WorkflowDefinition,
-  WorkflowError
+  WorkflowError,
 } from '../interfaces';
 
 /**
@@ -53,35 +58,32 @@ export interface WorkflowConfig {
  * Provides common functionality for workflow execution, streaming, and human-in-the-loop
  */
 @Injectable()
-export abstract class UnifiedWorkflowBase<TState extends WorkflowState = WorkflowState> {
+export abstract class UnifiedWorkflowBase<
+  TState extends WorkflowState = WorkflowState
+> {
   protected readonly logger: Logger;
-  
-  // Core services
-  @Inject(EventEmitter2)
-  protected readonly eventEmitter!: EventEmitter2;
-  
-  @Inject(WorkflowGraphBuilderService)
-  protected readonly graphBuilder!: WorkflowGraphBuilderService;
-  
-  @Inject(SubgraphManagerService)
-  protected readonly subgraphManager!: SubgraphManagerService;
-  
-  @Optional()
-  @Inject(WorkflowStreamService)
-  protected readonly streamService?: WorkflowStreamService;
-  
-  @Optional()
-  @Inject(EventStreamProcessorService)
-  protected readonly eventProcessor?: EventStreamProcessorService;
 
   // Workflow configuration
   protected abstract readonly workflowConfig: WorkflowConfig;
-  
+
   // Graph definition
   protected graph?: StateGraph<TState>;
   protected compiledGraph?: any; // CompiledStateGraph has complex generics
-  
-  constructor() {
+
+  constructor(
+    @Inject(EventEmitter2)
+    protected readonly eventEmitter: EventEmitter2,
+    @Inject(WorkflowGraphBuilderService)
+    protected readonly graphBuilder: WorkflowGraphBuilderService,
+    @Inject(SubgraphManagerService)
+    protected readonly subgraphManager: SubgraphManagerService,
+    @Optional()
+    @Inject(WorkflowStreamService)
+    protected readonly streamService?: WorkflowStreamService,
+    @Optional()
+    @Inject(EventStreamProcessorService)
+    protected readonly eventProcessor?: EventStreamProcessorService
+  ) {
     this.logger = new Logger(this.constructor.name);
   }
 
@@ -100,14 +102,18 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
   protected async buildGraph(): Promise<StateGraph<TState>> {
     // Check if this class uses decorators and route to appropriate builder
     if (this.isDecoratorBasedWorkflow()) {
-      this.logger.debug(`Building graph from decorators for ${this.constructor.name}`);
+      this.logger.debug(
+        `Building graph from decorators for ${this.constructor.name}`
+      );
       return this.graphBuilder.buildFromDecorators<TState>(this.constructor, {
         interrupt: {
           before: this.getInterruptNodes(),
         },
       });
     } else {
-      this.logger.debug(`Building graph from definition for ${this.constructor.name}`);
+      this.logger.debug(
+        `Building graph from definition for ${this.constructor.name}`
+      );
       const definition = this.getWorkflowDefinition();
       return this.graphBuilder.buildFromDefinition<TState>(definition, {
         interrupt: {
@@ -133,9 +139,9 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
     }
 
     // TODO: Implement checkpointer creation in SubgraphManagerService
-    const checkpointer = undefined; // this.workflowConfig.cache 
-      // ? await this.subgraphManager.createCheckpointer({ type: 'sqlite', dbPath: ':memory:' })
-      // : undefined;
+    const checkpointer = undefined; // this.workflowConfig.cache
+    // ? await this.subgraphManager.createCheckpointer({ type: 'sqlite', dbPath: ':memory:' })
+    // : undefined;
 
     return this.graph.compile({ checkpointer });
   }
@@ -149,17 +155,20 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
   /**
    * Execute the workflow
    */
-  async execute(input: Partial<TState>, config?: RunnableConfig): Promise<TState> {
+  async execute(
+    input: Partial<TState>,
+    config?: RunnableConfig
+  ): Promise<TState> {
     if (!this.compiledGraph) {
       await this.initialize();
     }
 
     this.logger.log(`Executing workflow: ${this.workflowConfig.name}`);
-    
+
     try {
       // Create initial state
       const initialState = this.createInitialState(input);
-      
+
       // Emit start event
       this.eventEmitter.emit('workflow.start', {
         workflowName: this.workflowConfig.name,
@@ -169,7 +178,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
 
       // Execute workflow
       const result = await this.compiledGraph!.invoke(initialState, config);
-      
+
       // Emit completion event
       this.eventEmitter.emit('workflow.complete', {
         workflowName: this.workflowConfig.name,
@@ -179,16 +188,20 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Workflow execution failed: ${errorMessage}`, errorStack);
-      
+      this.logger.error(
+        `Workflow execution failed: ${errorMessage}`,
+        errorStack
+      );
+
       // Emit error event
       this.eventEmitter.emit('workflow.error', {
         workflowName: this.workflowConfig.name,
         error,
       });
-      
+
       throw error;
     }
   }
@@ -198,7 +211,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   async *stream(
     input: Partial<TState>,
-    config?: RunnableConfig,
+    config?: RunnableConfig
   ): AsyncGenerator<any> {
     if (!this.compiledGraph) {
       await this.initialize();
@@ -220,7 +233,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
         this.compiledGraph!,
         initialState,
         config,
-        executionId,
+        executionId
       );
     } finally {
       // Cleanup is handled by streamService
@@ -255,22 +268,25 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
 
     // Default interrupt nodes
     const nodes = ['human_approval'];
-    
+
     // Add custom interrupt nodes from workflow definition
     // Handle both decorator-based and imperative workflows
     try {
-      const definition = this.isDecoratorBasedWorkflow() 
+      const definition = this.isDecoratorBasedWorkflow()
         ? this.getDecoratorWorkflowDefinition()
         : this.getWorkflowDefinition();
-      
-      definition.nodes.forEach(node => {
+
+      definition.nodes.forEach((node) => {
         if (node.requiresApproval) {
           nodes.push(node.id);
         }
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logger.warn('Could not extract interrupt nodes from workflow definition', errorMsg);
+      this.logger.warn(
+        'Could not extract interrupt nodes from workflow definition',
+        errorMsg
+      );
     }
 
     return nodes;
@@ -290,7 +306,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   protected async startNode(state: TState): Promise<Partial<TState>> {
     this.logger.log(`Starting workflow: ${this.workflowConfig.name}`);
-    
+
     return {
       currentNode: 'start',
       status: 'active',
@@ -303,7 +319,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   protected async endNode(state: TState): Promise<Partial<TState>> {
     this.logger.log(`Completing workflow: ${this.workflowConfig.name}`);
-    
+
     return {
       currentNode: 'end',
       status: 'completed',
@@ -316,7 +332,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   protected async handleHumanApproval(state: TState): Promise<Command<TState>> {
     this.logger.log('Waiting for human approval');
-    
+
     // Check if approval already received
     if (state.humanFeedback) {
       if (state.humanFeedback.approved) {
@@ -358,29 +374,25 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
   /**
    * Route based on confidence
    */
-  protected routeBasedOnConfidence(
-    state: TState,
-    defaultNext: string,
-  ): string {
+  protected routeBasedOnConfidence(state: TState, defaultNext: string): string {
     const threshold = this.workflowConfig.confidenceThreshold || 0.7;
-    
+
     if (state.confidence < threshold) {
       this.logger.log(
-        `Low confidence (${state.confidence}), routing to human approval`,
+        `Low confidence (${state.confidence}), routing to human approval`
       );
       return 'human_approval';
     }
 
-    const autoApproveThreshold = this.workflowConfig.autoApproveThreshold || 0.95;
+    const autoApproveThreshold =
+      this.workflowConfig.autoApproveThreshold || 0.95;
     if (state.confidence >= autoApproveThreshold) {
-      this.logger.log(
-        `High confidence (${state.confidence}), auto-approving`,
-      );
+      this.logger.log(`High confidence (${state.confidence}), auto-approving`);
       return defaultNext;
     }
 
     // Check for risks
-    if (state.risks?.some(r => r.severity === 'critical')) {
+    if (state.risks?.some((r) => r.severity === 'critical')) {
       this.logger.log('Critical risk detected, routing to human approval');
       return 'human_approval';
     }
@@ -394,7 +406,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
   protected async handleError(
     error: Error,
     state: TState,
-    nodeId: string,
+    nodeId: string
   ): Promise<Command<TState>> {
     this.logger.error(`Error in node ${nodeId}: ${error.message}`, error.stack);
 
@@ -445,17 +457,18 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   protected isErrorRecoverable(error: Error): boolean {
     // Network errors are usually recoverable
-    if (error.message.includes('ECONNREFUSED') || 
-        error.message.includes('ETIMEDOUT')) {
+    if (
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ETIMEDOUT')
+    ) {
       return true;
     }
-    
+
     // Rate limit errors are recoverable
-    if (error.message.includes('rate limit') || 
-        error.message.includes('429')) {
+    if (error.message.includes('rate limit') || error.message.includes('429')) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -466,11 +479,11 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
     if (error.message.includes('rate limit')) {
       return 'Wait and retry with exponential backoff';
     }
-    
+
     if (error.message.includes('ECONNREFUSED')) {
       return 'Check service availability and retry';
     }
-    
+
     return 'Review error and consider manual intervention';
   }
 
@@ -495,7 +508,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   protected transformSubgraphOutput(
     subgraphState: TState,
-    parentState: TState,
+    parentState: TState
   ): Partial<TState> {
     // Override in subclasses for custom transformations
     return {
@@ -509,7 +522,7 @@ export abstract class UnifiedWorkflowBase<TState extends WorkflowState = Workflo
    */
   async compileAsSubgraph(options: any = {}): Promise<any> {
     const definition = this.getWorkflowDefinition();
-    
+
     // TODO: Implement createSubgraph in SubgraphManagerService
     throw new Error('Subgraph creation not implemented yet');
     // return this.subgraphManager.createSubgraph(

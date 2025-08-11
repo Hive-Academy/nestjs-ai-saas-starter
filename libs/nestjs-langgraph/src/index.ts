@@ -2,7 +2,7 @@
 export { NestjsLanggraphModule } from './lib/nestjs-langgraph.module';
 
 // Interfaces - export specific interfaces to avoid conflicts
-export {
+export type {
   WorkflowState,
   WorkflowError,
   HumanFeedback,
@@ -22,7 +22,7 @@ export {
   WorkflowMetadata,
 } from './lib/interfaces/workflow.interface';
 
-export {
+export type {
   NodeMetadata,
   NodeContext,
   NodeResult,
@@ -33,7 +33,8 @@ export * from './lib/interfaces/streaming.interface';
 export * from './lib/interfaces/module-options.interface';
 
 // Re-export specific items from interfaces for convenience
-export { CommandType, NodeHandler } from './lib/interfaces';
+export { CommandType } from './lib/interfaces';
+export type { NodeHandler } from './lib/interfaces';
 
 // Constants
 export * from './lib/constants';
@@ -60,10 +61,12 @@ export { CommandProcessorService } from './lib/routing/command-processor.service
 export { WorkflowStateAnnotation } from './lib/core/workflow-state-annotation';
 
 // Base classes
-export { UnifiedWorkflowBase, WorkflowConfig } from './lib/base/unified-workflow.base';
+export { UnifiedWorkflowBase } from './lib/base/unified-workflow.base';
+export type { WorkflowConfig } from './lib/base/unified-workflow.base';
 export { DeclarativeWorkflowBase } from './lib/base/declarative-workflow.base';
 export { StreamingWorkflowBase } from './lib/base/streaming-workflow.base';
-export { AgentNodeBase, AgentNodeConfig } from './lib/base/agent-node.base';
+export { AgentNodeBase } from './lib/base/agent-node.base';
+export type { AgentNodeConfig } from './lib/base/agent-node.base';
 
 // Decorators
 export * from './lib/decorators';

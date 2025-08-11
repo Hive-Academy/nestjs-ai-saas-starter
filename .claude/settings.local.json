@@ -2,8 +2,17 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:kiro.dev)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx nx:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "browser",
+    "sequential-thinking",
+    "nx-mcp"
+  ]
 }
