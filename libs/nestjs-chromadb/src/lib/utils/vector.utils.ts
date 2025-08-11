@@ -234,9 +234,10 @@ export function distanceToSimilarity(
       return 1 / (1 + distance);
     case 'negative_exp':
       return Math.exp(-distance);
-    case 'gaussian':
+    case 'gaussian': {
       const s = sigma || 1;
       return Math.exp(-(distance * distance) / (2 * s * s));
+    }
     default:
       throw new Error(`Unknown similarity method: ${method}`);
   }

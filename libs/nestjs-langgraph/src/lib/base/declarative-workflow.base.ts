@@ -1,10 +1,15 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UnifiedWorkflowBase, WorkflowConfig } from './unified-workflow.base';
 import {
   WorkflowDefinition,
   WorkflowState,
 } from '../interfaces/workflow.interface';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
+import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
+import { SubgraphManagerService } from '../core/subgraph-manager.service';
+import { WorkflowStreamService } from '../streaming/workflow-stream.service';
+import { EventStreamProcessorService } from '../streaming/event-stream-processor.service';
 import {
   getWorkflowMetadata,
   isWorkflow,
@@ -81,8 +86,23 @@ export abstract class DeclarativeWorkflowBase<
   protected override readonly logger: Logger;
   protected cachedWorkflowDefinition?: WorkflowDefinition<TState>;
 
-  constructor(protected readonly metadataProcessor: MetadataProcessorService) {
-    super();
+  constructor(
+    @Inject(EventEmitter2)
+    protected override readonly eventEmitter: EventEmitter2,
+    @Inject(WorkflowGraphBuilderService)
+    protected override readonly graphBuilder: WorkflowGraphBuilderService,
+    @Inject(SubgraphManagerService)
+    protected override readonly subgraphManager: SubgraphManagerService,
+    @Inject(MetadataProcessorService)
+    protected readonly metadataProcessor: MetadataProcessorService,
+    @Optional()
+    @Inject(WorkflowStreamService)
+    protected override readonly streamService?: WorkflowStreamService,
+    @Optional()
+    @Inject(EventStreamProcessorService)
+    protected override readonly eventProcessor?: EventStreamProcessorService
+  ) {
+    super(eventEmitter, graphBuilder, subgraphManager, streamService, eventProcessor);
     this.logger = new Logger(this.constructor.name);
   }
 

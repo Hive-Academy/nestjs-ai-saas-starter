@@ -1,11 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable } from 'rxjs';
 import { DeclarativeWorkflowBase } from './declarative-workflow.base';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
+import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
+import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import { TokenStreamingService } from '../streaming/token-streaming.service';
 import { WebSocketBridgeService } from '../streaming/websocket-bridge.service';
+import { EventStreamProcessorService } from '../streaming/event-stream-processor.service';
 import {
   WorkflowState,
   WorkflowDefinition,
@@ -138,13 +141,28 @@ export abstract class StreamingWorkflowBase<
   private executionContexts = new Map<string, StreamingExecutionContext>();
 
   constructor(
-    protected override readonly metadataProcessor: MetadataProcessorService,
+    @Inject(EventEmitter2)
     protected override readonly eventEmitter: EventEmitter2,
-    protected readonly workflowStreamService?: WorkflowStreamService,
+    @Inject(WorkflowGraphBuilderService)
+    protected override readonly graphBuilder: WorkflowGraphBuilderService,
+    @Inject(SubgraphManagerService)
+    protected override readonly subgraphManager: SubgraphManagerService,
+    @Inject(MetadataProcessorService)
+    protected override readonly metadataProcessor: MetadataProcessorService,
+    @Optional()
+    @Inject(WorkflowStreamService)
+    protected override readonly streamService?: WorkflowStreamService,
+    @Optional()
+    @Inject(EventStreamProcessorService)
+    protected override readonly eventProcessor?: EventStreamProcessorService,
+    @Optional()
+    @Inject(TokenStreamingService)
     protected readonly tokenStreamingService?: TokenStreamingService,
+    @Optional()
+    @Inject(WebSocketBridgeService)
     protected readonly webSocketBridgeService?: WebSocketBridgeService
   ) {
-    super(metadataProcessor);
+    super(eventEmitter, graphBuilder, subgraphManager, metadataProcessor, streamService, eventProcessor);
     this.logger = new Logger(this.constructor.name);
   }
 
@@ -234,7 +252,7 @@ export abstract class StreamingWorkflowBase<
       options.executionId ||
       `exec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    if (!this.workflowStreamService) {
+    if (!this.streamService) {
       throw new Error(
         'WorkflowStreamService not available for streaming execution'
       );
@@ -249,7 +267,7 @@ export abstract class StreamingWorkflowBase<
       const graph = {} as any; // Placeholder for now
 
       // Stream execution with enhanced workflow stream service
-      yield* this.workflowStreamService.streamExecution(
+      yield* this.streamService.streamExecution(
         graph,
         input,
         this.getExecutionConfig(),
@@ -266,11 +284,11 @@ export abstract class StreamingWorkflowBase<
    * Get streaming observable for an execution
    */
   getStreamingObservable(executionId: string): Observable<StreamUpdate> {
-    if (!this.workflowStreamService) {
+    if (!this.streamService) {
       throw new Error('WorkflowStreamService not available');
     }
 
-    return this.workflowStreamService.createStream(executionId);
+    return this.streamService.createStream(executionId);
   }
 
   /**
@@ -368,8 +386,8 @@ export abstract class StreamingWorkflowBase<
     const workflowStats = this.getWorkflowStats();
     const stats: any = { workflowStats };
 
-    if (this.workflowStreamService) {
-      stats.activeStreams = this.workflowStreamService.getActiveStreamCount();
+    if (this.streamService) {
+      stats.activeStreams = this.streamService.getActiveStreamCount();
     }
 
     if (this.tokenStreamingService) {
@@ -534,8 +552,8 @@ export abstract class StreamingWorkflowBase<
     // Initialize streaming services
     if (context.streamingEnabled) {
       // Setup workflow streaming
-      if (this.workflowStreamService) {
-        this.workflowStreamService.createStream(executionId);
+      if (this.streamService) {
+        this.streamService.createStream(executionId);
       }
 
       // Setup token streaming for each enabled node

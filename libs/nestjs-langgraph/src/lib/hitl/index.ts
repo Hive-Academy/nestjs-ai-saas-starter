@@ -1,9 +1,6 @@
 // Core HITL services
-export { 
-  HumanApprovalService,
-  HumanApprovalRequest,
-  HumanApprovalResponse
-} from './human-approval.service';
+export { HumanApprovalService } from './human-approval.service';
+export type { HumanApprovalRequest, HumanApprovalResponse } from './human-approval.service';
 export * from './confidence-evaluator.service';
 export * from './approval-chain.service';
 export * from './feedback-processor.service';

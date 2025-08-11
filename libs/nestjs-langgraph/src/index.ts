@@ -82,10 +82,7 @@ export * from './lib/hitl';
 export { WorkflowTestBuilder } from './lib/testing/workflow-test.builder';
 export { MockAgentFactory } from './lib/testing/mock-agent.factory';
 
-// Examples and integration tests
-export { SimpleTestWorkflow } from './lib/examples/simple-test-workflow';
-// Note: Other test files have been moved to __tests__ directory
-// export { HITLApprovalTestWorkflow, HITLTestDataFactory } from './lib/examples/hitl-approval-test';
+// Note: Example files have been moved to __tests__ directory for testing
 
 // TODO: Additional exports will be added as services are implemented
 // - Routing services (CommandProcessorService, AgentHandoffService, etc.)

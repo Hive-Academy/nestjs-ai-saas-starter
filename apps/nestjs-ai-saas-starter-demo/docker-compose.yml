@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # ChromaDB Vector Database
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    volumes:
+      - chromadb_data:/chroma/chroma
+    networks:
+      - demo-network
+
+  # Neo4j Graph Database
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"  # Browser
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_pagecache_size=512M
+      - NEO4J_dbms_memory_heap_max__size=512M
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - demo-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - demo-network
+
+volumes:
+  chromadb_data:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
+
+networks:
+  demo-network:
+    driver: bridge
