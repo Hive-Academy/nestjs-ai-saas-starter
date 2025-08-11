@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { LangGraphModuleOptions } from '../interfaces/module-options.interface';
+import type { LangGraphModuleOptions  } from '../interfaces/module-options.interface';
 import { Inject, Optional } from '@nestjs/common';
 import { LANGGRAPH_MODULE_OPTIONS } from '../constants';
 

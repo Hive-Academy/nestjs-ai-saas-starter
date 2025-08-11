@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import { OpenAIEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
+import type { OpenAIEmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**

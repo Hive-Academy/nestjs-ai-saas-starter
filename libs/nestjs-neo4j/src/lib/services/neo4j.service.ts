@@ -1,9 +1,9 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Driver, Session, Transaction, Result, session as neo4jSession } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
-import { QueryResult, BulkOperation, BulkResult } from '../interfaces/query-result.interface';
-import { SessionOptions } from '../interfaces/neo4j-connection.interface';
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+import type { QueryResult, BulkOperation, BulkResult } from '../interfaces/query-result.interface';
+import type { SessionOptions } from '../interfaces/neo4j-connection.interface';
 
 @Injectable()
 export class Neo4jService {

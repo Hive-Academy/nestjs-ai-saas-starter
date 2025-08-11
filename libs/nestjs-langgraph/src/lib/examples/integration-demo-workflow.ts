@@ -15,7 +15,7 @@ import { RequiresApproval, ApprovalRiskLevel } from '../decorators/approval.deco
 
 import { WorkflowState } from '../interfaces/workflow.interface';
 import { StreamEventType } from '../constants';
-import { AgentType } from '@anubis/shared';
+import { AgentType } from '@internal/shared';
 
 /**
  * Integration Demo Workflow - Demonstrates all advanced features working together

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import { HuggingFaceEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
+import type { HuggingFaceEmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**

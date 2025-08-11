@@ -8,7 +8,7 @@ import { ToolDiscoveryService } from './tool-discovery.service';
 import { ToolRegistryService } from './tool-registry.service';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { Tool, ToolMetadata, getClassTools } from '../decorators/tool.decorator';
-import { AgentType } from '@anubis/shared';
+import { AgentType } from '@internal/shared';
 
 // Mock tool provider for testing
 @Injectable()

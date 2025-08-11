@@ -19,7 +19,7 @@ import { WorkflowGraphBuilderService } from '../../lib/core/workflow-graph-build
 import { StreamEventType, StreamUpdate } from '../../lib/interfaces/streaming.interface';
 import { WorkflowState, HumanFeedback } from '../../lib/interfaces/workflow.interface';
 import { ApprovalRiskLevel } from '../../lib/decorators/approval.decorator';
-import { AgentType } from '@anubis/shared';
+import { AgentType } from '@internal/shared';
 
 // Mock implementations for testing
 class MockToolsProvider {

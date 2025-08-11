@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { BaseMessage } from '@langchain/core/messages';
-import { AgentType } from '@anubis/shared';
+import { AgentType } from '@internal/shared';
 
 import { ToolRegistryService } from './tool-registry.service';
 import { WorkflowState } from '../interfaces/workflow.interface';

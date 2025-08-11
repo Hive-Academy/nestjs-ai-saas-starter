@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Driver } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
 
 export interface Neo4jHealthIndicator {
   name: string;

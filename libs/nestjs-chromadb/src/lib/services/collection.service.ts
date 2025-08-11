@@ -6,7 +6,7 @@ import {
   EmbeddingFunction,
 } from 'chromadb';
 import { CHROMADB_CLIENT } from '../constants';
-import { CollectionConfig } from '../interfaces/chromadb-module-options.interface';
+import type { CollectionConfig  } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage } from '../utils/error.utils';
 import { EmbeddingService } from './embedding.service';
 

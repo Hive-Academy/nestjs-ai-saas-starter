@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
+import type { EmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
 import { EmbeddingProvider } from '../embeddings/base.embedding';
 import { OpenAIEmbeddingProvider } from '../embeddings/openai.embedding';
 import { HuggingFaceEmbeddingProvider } from '../embeddings/huggingface.embedding';

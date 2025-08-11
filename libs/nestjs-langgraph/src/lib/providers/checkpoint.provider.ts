@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
-import { CheckpointConfig } from '../interfaces/module-options.interface';
+import type { CheckpointConfig  } from '../interfaces/module-options.interface';
 
 /**
  * Factory for creating checkpoint savers based on configuration

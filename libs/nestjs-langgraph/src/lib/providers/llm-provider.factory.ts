@@ -3,7 +3,7 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { LLMProviderConfig } from '../interfaces/module-options.interface';
+import type { LLMProviderConfig  } from '../interfaces/module-options.interface';
 
 /**
  * Factory for creating LLM providers based on configuration

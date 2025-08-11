@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import { CustomEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
+import type { CustomEmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
 
 /**
  * Custom embedding provider

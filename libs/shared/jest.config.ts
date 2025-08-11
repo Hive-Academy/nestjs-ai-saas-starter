@@ -10,7 +10,7 @@ const swcJestConfig = JSON.parse(
 swcJestConfig.swcrc = false;
 
 export default {
-  displayName: '@anubis/shared',
+  displayName: '@internal/shared',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {

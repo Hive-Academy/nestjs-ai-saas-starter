@@ -1,8 +1,8 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Driver } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
-import { Neo4jConnection } from '../interfaces/neo4j-connection.interface';
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+import type { Neo4jConnection } from '../interfaces/neo4j-connection.interface';
 
 @Injectable()
 export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, OnModuleDestroy {
