@@ -1,0 +1,40 @@
+{
+  "name": "shared",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/src",
+  "projectType": "library",
+  "tags": ["type:util"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared",
+        "main": "libs/shared/src/index.ts",
+        "tsConfig": "libs/shared/tsconfig.lib.json",
+        "assets": [
+          "libs/shared/*.md",
+          {
+            "input": "./libs/shared",
+            "glob": "**/*.!(ts)",
+            "output": "./"
+          }
+        ]
+      }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm publish dist/libs/shared --access public"
+      },
+      "dependsOn": ["build"]
+    },
+    "docs": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "typedoc --options typedoc.json",
+        "cwd": "libs/shared"
+      }
+    }
+  }
+}

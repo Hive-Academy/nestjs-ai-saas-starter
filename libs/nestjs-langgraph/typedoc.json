@@ -1,0 +1,16 @@
+{
+  "extends": "../../typedoc.base.json",
+  "name": "@anubis/nestjs-langgraph",
+  "out": "../../docs/api/nestjs-langgraph",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.lib.json",
+  "readme": "README.md",
+  "includeVersion": true,
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/anubis/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-langgraph/{path}#L{line}",
+  "navigationLinks": {
+    "GitHub": "https://github.com/anubis/nestjs-ai-saas-starter",
+    "NPM": "https://www.npmjs.com/package/@anubis/nestjs-langgraph"
+  }
+}

@@ -1,1 +1,1 @@
-export * from './lib/agent-types.js';
+export * from './lib/agent-types';

@@ -1,0 +1,17 @@
+{
+  "*.{ts,js,json,md}": [
+    "prettier --write"
+  ],
+  "*.{ts,js}": [
+    "eslint --fix"
+  ],
+  "libs/*/package.json": [
+    "npm run validate:package-json"
+  ],
+  "libs/**/*.ts": [
+    "nx affected:lint --fix --files"
+  ],
+  "libs/**/*.{spec,test}.ts": [
+    "nx affected:test --files"
+  ]
+}

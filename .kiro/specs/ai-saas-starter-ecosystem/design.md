@@ -11,10 +11,10 @@ This design document outlines the technical architecture for transforming our AI
 ```mermaid
 graph TB
     subgraph "Published Libraries"
-        A[[@anubis/nestjs-chromadb]]
-        B[[@anubis/nestjs-neo4j]]
-        C[[@anubis/nestjs-langgraph]]
-        D[[@anubis/shared]]
+        A["@anubis/nestjs-chromadb"]
+        B["@anubis/nestjs-neo4j"]
+        C["@anubis/nestjs-langgraph"]
+        D["@anubis/shared"]
     end
     
     subgraph "Enterprise Starter Applications"
@@ -26,28 +26,39 @@ graph TB
     end
     
     subgraph "Infrastructure"
-        H[Nx Workspace]
-        I[CI/CD Pipeline]
-        J[Documentation Site]
-        K[Docker Containers]
+        J[Nx Workspace]
+        K[CI/CD Pipeline]
+        L[Documentation Site]
+        M[Docker Containers]
     end
     
     A --> E
     A --> G
+    A --> H
     B --> E
     B --> F
     B --> G
+    B --> H
+    B --> I
     C --> E
     C --> F
     C --> G
+    C --> H
+    C --> I
     D --> E
     D --> F
     D --> G
+    D --> H
+    D --> I
     
-    H --> A
-    H --> B
-    H --> C
-    H --> D
+    J --> A
+    J --> B
+    J --> C
+    J --> D
+    K --> A
+    K --> B
+    K --> C
+    K --> D
     I --> A
     I --> B
     I --> C

@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged
+npx lint-staged
+
+# Validate that all affected libraries can build
+echo "🏗️  Building affected libraries..."
+npx nx affected:build --base=HEAD~1
+
+echo "✅ Pre-commit checks passed!"

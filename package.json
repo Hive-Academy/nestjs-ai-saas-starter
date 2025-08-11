@@ -7,7 +7,28 @@
     "dev:stop": "docker compose -f docker-compose.dev.yml down",
     "dev:reset": "docker compose -f docker-compose.dev.yml down -v",
     "dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
-    "docker:prod": "docker compose -f docker-compose.yml up -d"
+    "docker:prod": "docker compose -f docker-compose.yml up -d",
+    "build:libs": "nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared",
+    "publish:dry-run": "npm run build:libs && nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared",
+    "publish:libs": "npm run build:libs && nx run-many -t publish -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared",
+    "version:libs": "nx release version",
+    "publish:release": "nx release publish",
+    "docs:generate": "nx run-many -t docs -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared",
+    "docs:serve": "npx http-server docs/api -p 8080 -o",
+    "docs:build-site": "npm run docs:generate && node scripts/build-docs-site.js",
+    "prepare": "husky install",
+    "lint:fix": "nx run-many -t lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate:package-json": "node scripts/validate-package-json.js",
+    "setup:git-hooks": "node scripts/setup-git-hooks.js",
+    "postinstall": "npm run setup:git-hooks",
+    "spec:status": "node scripts/spec-resume.js",
+    "spec:analyze": "node scripts/spec-resume.js",
+    "spec:resume": "node scripts/spec-resume.js",
+    "spec:export": "node scripts/spec-resume.js",
+    "task:list": "node scripts/spec-resume.js",
+    "task:dashboard": "node scripts/spec-resume.js"
   },
   "private": true,
   "dependencies": {
@@ -35,6 +56,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@commitlint/cli": "^18.0.0",
+    "@commitlint/config-conventional": "^18.0.0",
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
@@ -54,17 +77,22 @@
     "@types/jest": "^30.0.0",
     "@types/node": "~18.16.9",
     "@types/uuid": "^10.0.0",
+    "chalk": "5.5.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
+    "husky": "^9.0.0",
     "jest": "^30.0.2",
     "jest-environment-node": "^30.0.2",
     "jest-util": "^30.0.2",
     "jsonc-eslint-parser": "^2.1.0",
+    "lint-staged": "^15.0.0",
     "nx": "21.3.11",
     "prettier": "^2.6.2",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "^2.3.0",
+    "typedoc": "^0.28.10",
+    "typedoc-plugin-markdown": "^4.0.0",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.29.0",
     "webpack-cli": "^5.1.4"
@@ -72,5 +100,10 @@
   "workspaces": [
     "apps/*",
     "libs/*"
-  ]
+  ],
+  "overrides": {
+    "chalk": {
+      "typescript": "$typescript"
+    }
+  }
 }

@@ -1,0 +1,16 @@
+{
+  "extends": "../../typedoc.base.json",
+  "name": "@anubis/nestjs-neo4j",
+  "out": "../../docs/api/nestjs-neo4j",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.lib.json",
+  "readme": "README.md",
+  "includeVersion": true,
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/anubis/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-neo4j/{path}#L{line}",
+  "navigationLinks": {
+    "GitHub": "https://github.com/anubis/nestjs-ai-saas-starter",
+    "NPM": "https://www.npmjs.com/package/@anubis/nestjs-neo4j"
+  }
+}

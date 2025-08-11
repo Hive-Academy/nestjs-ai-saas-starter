@@ -1,7 +1,26 @@
 {
-  "name": "@anubis/shared",
+  "name": "@hive-academy/shared",
   "version": "0.0.1",
-  "private": true,
+  "description": "Shared types and utilities for Hive Academy AI SaaS starter ecosystem",
+  "author": "Hive Academy Team",
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "shared",
+    "types",
+    "utilities",
+    "ai",
+    "agents"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/shared"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,6 +32,14 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "tslib": "^2.3.0"

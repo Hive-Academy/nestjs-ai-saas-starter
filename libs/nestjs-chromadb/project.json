@@ -3,7 +3,38 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/nestjs-chromadb/src",
   "projectType": "library",
-  "tags": ["domain:chroma-db type:data-access"],
-  "// targets": "to see all targets run: nx show project nestjs-chromadb --web",
-  "targets": {}
+  "tags": ["domain:chroma-db", "type:data-access"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/nestjs-chromadb",
+        "main": "libs/nestjs-chromadb/src/index.ts",
+        "tsConfig": "libs/nestjs-chromadb/tsconfig.lib.json",
+        "assets": [
+          "libs/nestjs-chromadb/*.md",
+          {
+            "input": "./libs/nestjs-chromadb",
+            "glob": "**/*.!(ts)",
+            "output": "./"
+          }
+        ]
+      }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm publish dist/libs/nestjs-chromadb --access public"
+      },
+      "dependsOn": ["build"]
+    },
+    "docs": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "typedoc --options typedoc.json",
+        "cwd": "libs/nestjs-chromadb"
+      }
+    }
+  }
 }

@@ -81,5 +81,36 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     }
+  },
+  "release": {
+    "projects": [
+      "libs/nestjs-chromadb",
+      "libs/nestjs-neo4j",
+      "libs/nestjs-langgraph",
+      "libs/shared"
+    ],
+    "version": {
+      "conventionalCommits": true,
+      "git": {
+        "commit": true,
+        "tag": true,
+        "commitMessage": "chore(release): version {version}",
+        "tagMessage": "v{version}"
+      }
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": "github",
+        "file": "CHANGELOG.md"
+      },
+      "projectChangelogs": {
+        "createRelease": "github",
+        "file": "CHANGELOG.md"
+      },
+      "git": {
+        "commit": true,
+        "commitMessage": "chore(release): update changelog for {version}"
+      }
+    }
   }
 }
