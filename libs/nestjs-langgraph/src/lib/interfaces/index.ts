@@ -4,6 +4,7 @@ export * from './streaming.interface';
 export * from './node.interface';
 export * from './tool.interface';
 export * from './state-management.interface';
+export * from './checkpoint.interface';
 
 // Re-export from constants to avoid circular dependencies
 export { CommandType } from '../constants';

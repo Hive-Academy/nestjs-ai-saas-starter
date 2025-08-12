@@ -2,9 +2,62 @@
 
 ## Overview
 
-This design document outlines the architecture for enhancing the NestJS LangGraph library to achieve production-ready status with comprehensive feature parity to the official LangGraph framework. The enhancement transforms the current basic workflow orchestration into a sophisticated AI agent platform supporting persistence, time travel, multi-agent coordination, functional APIs, and enterprise-grade monitoring.
+This design document outlines the architecture for creating a comprehensive NestJS LangGraph ecosystem through modular libraries under the `langgraph-modules` domain. Rather than enhancing a single library, we will create a suite of specialized, standalone NestJS libraries that provide enterprise-grade AI agent capabilities.
 
-The design follows NestJS architectural patterns with proper dependency injection, modular service organization, and comprehensive type safety. The implementation is structured in four phases: Core Infrastructure, Advanced Features, Platform Features, and Production Readiness.
+Each module will be independently developed, versioned, and published, allowing developers to adopt only the features they need while maintaining clean separation of concerns. The modular approach ensures better maintainability, testing, and scalability.
+
+The design follows NestJS architectural patterns with proper dependency injection, modular service organization, and comprehensive type safety across all modules.
+
+## Module Specifications
+
+### @langgraph-modules/checkpoint
+
+**Purpose**: State management and persistence capabilities
+**Dependencies**: None (foundational module)
+**Key Services**: StateTransformerService, CheckpointManagerService, various CheckpointSavers
+**Features**: Multi-backend persistence, state validation, reducer patterns
+
+### @langgraph-modules/time-travel
+
+**Purpose**: Workflow replay and debugging capabilities
+**Dependencies**: @langgraph-modules/checkpoint
+**Key Services**: TimeTravelService, ExecutionHistoryService, BranchManagerService
+**Features**: Checkpoint replay, execution branching, history visualization
+
+### @langgraph-modules/multi-agent
+
+**Purpose**: Agent coordination and handoff management
+**Dependencies**: @langgraph-modules/checkpoint
+**Key Services**: MultiAgentCoordinatorService, AgentNetworkService, SupervisorService
+**Features**: Agent handoffs, supervisor patterns, network topologies
+
+### @langgraph-modules/functional-api
+
+**Purpose**: Decorator-based workflow definition
+**Dependencies**: @langgraph-modules/checkpoint
+**Key Services**: FunctionalWorkflowService, DecoratorMetadataService
+**Features**: @Entrypoint/@Task decorators, automatic workflow generation
+
+### @langgraph-modules/memory
+
+**Purpose**: Advanced memory management and semantic search
+**Dependencies**: @langgraph-modules/checkpoint
+**Key Services**: AdvancedMemoryService, SemanticSearchService
+**Features**: Conversation summarization, semantic search, memory persistence
+
+### @langgraph-modules/platform
+
+**Purpose**: Assistant and thread management for production
+**Dependencies**: @langgraph-modules/checkpoint
+**Key Services**: AssistantService, ThreadService, WebhookService
+**Features**: Assistant versioning, thread operations, webhook notifications
+
+### @langgraph-modules/monitoring
+
+**Purpose**: Comprehensive observability and monitoring
+**Dependencies**: All other langgraph-modules
+**Key Services**: MonitoringService, MetricsCollectorService, HealthCheckService
+**Features**: Cross-module monitoring, performance tracking, alerting
 
 ## Architecture
 
@@ -12,25 +65,54 @@ The design follows NestJS architectural patterns with proper dependency injectio
 
 ```mermaid
 graph TB
+    subgraph "Core NestJS LangGraph"
+        CORE[nestjs-langgraph]
+    end
+
+    subgraph "LangGraph Modules Ecosystem"
+        subgraph "State & Persistence"
+            CHECKPOINT[@langgraph-modules/checkpoint]
+            TIMETRAVEL[@langgraph-modules/time-travel]
+        end
+
+        subgraph "Agent Coordination"
+            MULTIAGENT[@langgraph-modules/multi-agent]
+            FUNCAPI[@langgraph-modules/functional-api]
+        end
+
+        subgraph "Memory & Intelligence"
+            MEMORY[@langgraph-modules/memory]
+        end
+
+        subgraph "Platform & Operations"
+            PLATFORM[@langgraph-modules/platform]
+            MONITORING[@langgraph-modules/monitoring]
+        end
+    end
+
     subgraph "Application Layer"
-        FA[Functional API Decorators]
-        WC[Workflow Controllers]
-        AG[Agent Coordinators]
+        APP[User Application]
     end
 
-    subgraph "Core Services Layer"
-        SM[State Management]
-        WE[Workflow Engine]
-        CP[Checkpoint Manager]
-        TT[Time Travel Service]
-        MA[Multi-Agent Coordinator]
-        MM[Memory Manager]
-    end
+    APP --> CORE
+    APP --> CHECKPOINT
+    APP --> TIMETRAVEL
+    APP --> MULTIAGENT
+    APP --> FUNCAPI
+    APP --> MEMORY
+    APP --> PLATFORM
+    APP --> MONITORING
 
-    subgraph "Platform Services Layer"
-        AS[Assistant Service]
-        TS[Thread Service]
-        WH[Webhook Service]
+    TIMETRAVEL --> CHECKPOINT
+    MULTIAGENT --> CHECKPOINT
+    FUNCAPI --> CHECKPOINT
+    MEMORY --> CHECKPOINT
+    PLATFORM --> CHECKPOINT
+    MONITORING --> CHECKPOINT
+    MONITORING --> TIMETRAVEL
+    MONITORING --> MULTIAGENT
+    MONITORING --> MEMORY
+    MONITORING --> PLATFORM
         MO[Monitoring Service]
     end
 

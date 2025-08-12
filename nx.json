@@ -32,7 +32,14 @@
       "exclude": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/nestjs-langgraph/*"
+        "libs/nestjs-langgraph/*",
+        "libs/langgraph-modules/checkpoint/*",
+        "libs/langgraph-modules/time-travel/*",
+        "libs/langgraph-modules/multi-agent/*",
+        "libs/langgraph-modules/functional-api/*",
+        "libs/langgraph-modules/memory/*",
+        "libs/langgraph-modules/monitoring/*",
+        "libs/langgraph-modules/platform/*"
       ]
     },
     {
@@ -63,7 +70,14 @@
       "include": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/nestjs-langgraph/*"
+        "libs/nestjs-langgraph/*",
+        "libs/langgraph-modules/checkpoint/*",
+        "libs/langgraph-modules/time-travel/*",
+        "libs/langgraph-modules/multi-agent/*",
+        "libs/langgraph-modules/functional-api/*",
+        "libs/langgraph-modules/memory/*",
+        "libs/langgraph-modules/monitoring/*",
+        "libs/langgraph-modules/platform/*"
       ],
       "options": {
         "typecheck": {

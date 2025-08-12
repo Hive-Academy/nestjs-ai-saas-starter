@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { z } from 'zod';
-import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { StateTransformerService } from './state-transformer.service';
 import {
   StateAnnotationConfig,
@@ -372,7 +372,11 @@ describe('StateTransformerService', () => {
       };
       const options: StateMergeOptions = { conflictStrategy: 'merge' };
 
-      const result = service.mergeStates(baseState, updateState, options);
+      const result = service.mergeStates(
+        baseState,
+        updateState as any,
+        options
+      );
 
       expect(result.user).toEqual({ name: 'John', age: 31, city: 'NYC' });
       expect(result.settings).toEqual({ theme: 'dark', language: 'en' });

@@ -1,0 +1,9 @@
+{
+  "name": "langgraph-modules/time-travel",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/time-travel/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph type:data-access"],
+  "// targets": "to see all targets run: nx show project langgraph-modules/time-travel --web",
+  "targets": {}
+}

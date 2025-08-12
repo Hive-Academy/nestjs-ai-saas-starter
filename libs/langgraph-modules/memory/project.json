@@ -1,0 +1,9 @@
+{
+  "name": "langgraph-modules/memory",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/memory/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph type:data-access"],
+  "// targets": "to see all targets run: nx show project langgraph-modules/memory --web",
+  "targets": {}
+}

@@ -44,7 +44,6 @@ export * from './lib/constants';
 export { WorkflowGraphBuilderService } from './lib/core/workflow-graph-builder.service';
 export { SubgraphManagerService } from './lib/core/subgraph-manager.service';
 export { CompilationCacheService } from './lib/core/compilation-cache.service';
-export { StateTransformerService } from './lib/core/state-transformer.service';
 
 // Streaming services
 export { WorkflowStreamService } from './lib/streaming/workflow-stream.service';
@@ -74,8 +73,7 @@ export type { AgentNodeConfig } from './lib/base/agent-node.base';
 export * from './lib/decorators';
 
 // Providers
-export { createCheckpointProvider } from './lib/providers/checkpoint.provider';
-export { createLLMProvider } from './lib/providers/llm-provider.factory';
+export * from './lib/providers';
 
 // HITL services
 export * from './lib/hitl';

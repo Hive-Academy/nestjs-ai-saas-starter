@@ -118,7 +118,8 @@
   },
   "workspaces": [
     "apps/*",
-    "libs/*"
+    "libs/*",
+    "libs/langgraph-modules/*"
   ],
   "overrides": {
     "chalk": {

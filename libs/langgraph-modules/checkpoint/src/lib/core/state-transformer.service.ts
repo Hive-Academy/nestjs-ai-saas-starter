@@ -140,16 +140,16 @@ export class StateTransformerService {
       ...config.channels,
     };
 
-    // Create LangGraph annotation
-    const langGraphAnnotation = Annotation.Root(
-      Object.entries(allChannels).reduce((acc, [key, channelDef]) => {
-        acc[key] = Annotation({
-          reducer: channelDef.reducer as any,
-          default: channelDef.default as any,
-        });
-        return acc;
-      }, {} as any)
-    );
+    // Create LangGraph annotation (for future use)
+    // const langGraphAnnotation = Annotation.Root(
+    //   Object.entries(allChannels).reduce((acc, [key, channelDef]) => {
+    //     acc[key] = Annotation({
+    //       reducer: channelDef.reducer as any,
+    //       default: channelDef.default as any,
+    //     });
+    //     return acc;
+    //   }, {} as any)
+    // );
 
     // Create our enhanced state annotation
     const stateAnnotation: StateAnnotation<T> = {
@@ -333,7 +333,7 @@ export class StateTransformerService {
             `Merge conflict for field '${key}': ${currentValue} vs ${value}`
           );
         default:
-          (result as any)[key] = value;
+          (result as Record<string, any>)[key] = value;
       }
     });
 
@@ -379,7 +379,7 @@ export class StateTransformerService {
     const defaultState: EnhancedWorkflowState = {
       executionId: `exec_${Date.now()}_${Math.random()
         .toString(36)
-        .substr(2, 9)}`,
+        .substring(2, 11)}`,
       status: 'pending',
       completedNodes: [],
       confidence: 1.0,

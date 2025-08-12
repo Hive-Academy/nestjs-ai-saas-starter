@@ -1,0 +1,27 @@
+{
+  "name": "@langgraph-modules/checkpoint",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@langchain/langgraph": "^0.2.0"
+  },
+  "optionalDependencies": {
+    "ioredis": "^5.0.0",
+    "pg": "^8.0.0",
+    "sqlite": "^5.0.0",
+    "sqlite3": "^5.0.0"
+  },
+  "dependencies": {}
+}

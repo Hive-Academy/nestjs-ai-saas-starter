@@ -132,7 +132,13 @@ export interface StreamingConfig {
   /**
    * Default stream mode
    */
-  defaultMode?: 'values' | 'updates' | 'messages' | 'events' | 'debug' | 'multiple';
+  defaultMode?:
+    | 'values'
+    | 'updates'
+    | 'messages'
+    | 'events'
+    | 'debug'
+    | 'multiple';
 
   /**
    * WebSocket configuration for real-time streaming
@@ -395,13 +401,19 @@ export interface PerformanceConfig {
   };
 }
 
-export interface LangGraphModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
-  useFactory?: (...args: any[]) => Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
+export interface LangGraphModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
+  defaultLLM: any;
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
   inject?: any[];
   useClass?: Type<LangGraphOptionsFactory>;
   useExisting?: Type<LangGraphOptionsFactory>;
 }
 
 export interface LangGraphOptionsFactory {
-  createLangGraphOptions(): Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
+  createLangGraphOptions():
+    | Promise<LangGraphModuleOptions>
+    | LangGraphModuleOptions;
 }
