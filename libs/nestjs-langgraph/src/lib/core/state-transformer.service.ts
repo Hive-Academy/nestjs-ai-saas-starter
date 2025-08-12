@@ -124,7 +124,10 @@ export class StateTransformerService {
 
     if (config.reducers) {
       Object.entries(config.reducers).forEach(([key, reducer]) => {
-        this.stateReducers.set(`${config.name}.${key}`, reducer);
+        this.stateReducers.set(
+          `${config.name}.${key}`,
+          reducer as ReducerFunction
+        );
       });
     }
 
@@ -141,8 +144,8 @@ export class StateTransformerService {
     const langGraphAnnotation = Annotation.Root(
       Object.entries(allChannels).reduce((acc, [key, channelDef]) => {
         acc[key] = Annotation({
-          reducer: channelDef.reducer,
-          default: channelDef.default,
+          reducer: channelDef.reducer as any,
+          default: channelDef.default as any,
         });
         return acc;
       }, {} as any)
