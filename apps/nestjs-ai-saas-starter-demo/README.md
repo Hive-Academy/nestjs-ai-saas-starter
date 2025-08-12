@@ -39,6 +39,7 @@ docker-compose up -d
 ```
 
 This starts:
+
 - ChromaDB on http://localhost:8000
 - Neo4j on http://localhost:7474 (browser) and bolt://localhost:7687
 - Redis on localhost:6379
@@ -50,6 +51,7 @@ npx nx serve nestjs-ai-saas-starter-demo
 ```
 
 The application will be available at:
+
 - API: http://localhost:3000/api
 - Swagger Docs: http://localhost:3000/docs
 - Health Check: http://localhost:3000/api/health
@@ -193,16 +195,19 @@ src/
 ## Troubleshooting
 
 ### ChromaDB Connection Issues
+
 - Ensure Docker is running
 - Check if port 8000 is available
 - Verify ChromaDB container logs: `docker logs chromadb`
 
 ### Neo4j Connection Issues
+
 - Default credentials: neo4j/password
 - Access browser UI at http://localhost:7474
 - Check Neo4j logs: `docker logs neo4j`
 
 ### OpenAI API Issues
+
 - Verify your API key is set in .env
 - Check API key permissions and quotas
 - Enable debug mode: `LANGGRAPH_DEBUG=true`

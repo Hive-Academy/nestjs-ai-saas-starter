@@ -24,8 +24,8 @@ import { WorkflowGraphBuilderService } from './core/workflow-graph-builder.servi
 import { SubgraphManagerService } from './core/subgraph-manager.service';
 import { CompilationCacheService } from './core/compilation-cache.service';
 import { MetadataProcessorService } from './core/metadata-processor.service';
-// TODO: Re-enable these imports when services are implemented
-// import { StateTransformerService } from './core/state-transformer.service';
+import { StateTransformerService } from './core/state-transformer.service';
+// TODO: Re-enable this import when service is implemented
 // import { WorkflowRegistryService } from './core/workflow-registry.service';
 
 // Streaming services
@@ -56,11 +56,11 @@ import { HumanApprovalService } from './hitl/human-approval.service';
 import { ConfidenceEvaluatorService } from './hitl/confidence-evaluator.service';
 import { FeedbackProcessorService } from './hitl/feedback-processor.service';
 import { ApprovalChainService } from './hitl/approval-chain.service';
-import { 
-  HUMAN_APPROVAL_SERVICE, 
-  CONFIDENCE_EVALUATOR_SERVICE, 
-  APPROVAL_CHAIN_SERVICE, 
-  FEEDBACK_PROCESSOR_SERVICE 
+import {
+  HUMAN_APPROVAL_SERVICE,
+  CONFIDENCE_EVALUATOR_SERVICE,
+  APPROVAL_CHAIN_SERVICE,
+  FEEDBACK_PROCESSOR_SERVICE,
 } from './hitl/constants';
 
 // Provider factories
@@ -79,7 +79,7 @@ import { MockAgentFactory } from './testing/mock-agent.factory';
 export class NestjsLanggraphModule {
   static forRoot(options: LangGraphModuleOptions = {}): DynamicModule {
     const moduleId = randomUUID();
-    
+
     const optionsProvider: Provider = {
       provide: LANGGRAPH_MODULE_OPTIONS,
       useValue: options,
@@ -112,6 +112,7 @@ export class NestjsLanggraphModule {
       SubgraphManagerService,
       CompilationCacheService,
       MetadataProcessorService,
+      StateTransformerService,
       WorkflowStreamService,
       TokenStreamingService,
       WebSocketBridgeService,
@@ -149,7 +150,7 @@ export class NestjsLanggraphModule {
 
   static forRootAsync(options: LangGraphModuleAsyncOptions): DynamicModule {
     const moduleId = randomUUID();
-    
+
     const moduleIdProvider: Provider = {
       provide: LANGGRAPH_MODULE_ID,
       useValue: moduleId,
@@ -169,7 +170,7 @@ export class NestjsLanggraphModule {
         provide: DEFAULT_LLM,
         useFactory: async (
           factory: LLMProviderFactory,
-          opts: LangGraphModuleOptions,
+          opts: LangGraphModuleOptions
         ) => {
           if (opts.defaultLLM) {
             return factory.create(opts.defaultLLM);
@@ -192,6 +193,7 @@ export class NestjsLanggraphModule {
       SubgraphManagerService,
       CompilationCacheService,
       MetadataProcessorService,
+      StateTransformerService,
       WorkflowStreamService,
       TokenStreamingService,
       WebSocketBridgeService,
@@ -228,7 +230,7 @@ export class NestjsLanggraphModule {
     };
   }
 
-  static forFeature(workflows: Type<any>[]): DynamicModule {
+  static forFeature(workflows: Type<unknown>[]): DynamicModule {
     const providers = workflows.map((workflow) => ({
       provide: workflow,
       useClass: workflow,
@@ -242,7 +244,7 @@ export class NestjsLanggraphModule {
   }
 
   private static createAsyncProviders(
-    options: LangGraphModuleAsyncOptions,
+    options: LangGraphModuleAsyncOptions
   ): Provider[] {
     if (options.useFactory) {
       return [
@@ -284,8 +286,9 @@ export class NestjsLanggraphModule {
       SubgraphManagerService,
       CompilationCacheService,
       MetadataProcessorService,
-      // TODO: Re-enable when services are implemented
-      // StateTransformerService,
+      StateTransformerService,
+      StateTransformerService,
+      // TODO: Re-enable when service is implemented
       // WorkflowRegistryService,
     ];
   }
@@ -360,7 +363,7 @@ export class NestjsLanggraphModule {
   }
 
   private static createLLMProviders(
-    options: LangGraphModuleOptions,
+    options: LangGraphModuleOptions
   ): Provider[] {
     const providers: Provider[] = [LLMProviderFactory];
 
@@ -392,7 +395,7 @@ export class NestjsLanggraphModule {
   }
 
   private static createInfrastructureProviders(
-    options: LangGraphModuleOptions,
+    options: LangGraphModuleOptions
   ): Provider[] {
     const providers: Provider[] = [
       CheckpointProvider,
@@ -436,7 +439,7 @@ export class NestjsLanggraphModule {
         provide: CHECKPOINT_SAVER,
         useFactory: async (
           provider: CheckpointProvider,
-          options: LangGraphModuleOptions,
+          options: LangGraphModuleOptions
         ) => {
           if (options.checkpoint?.enabled) {
             return provider.create(options.checkpoint);

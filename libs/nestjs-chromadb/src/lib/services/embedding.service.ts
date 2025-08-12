@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { EmbeddingConfig  } from '../interfaces/chromadb-module-options.interface';
+import type { EmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
 import { EmbeddingProvider } from '../embeddings/base.embedding';
 import { OpenAIEmbeddingProvider } from '../embeddings/openai.embedding';
 import { HuggingFaceEmbeddingProvider } from '../embeddings/huggingface.embedding';
@@ -43,7 +43,9 @@ export class EmbeddingService {
       default: {
         // Using exhaustive check to keep type safety if union expands
         const _exhaustive: never = config as never;
-        throw new Error(`Unsupported embedding provider: ${JSON.stringify(_exhaustive)}`);
+        throw new Error(
+          `Unsupported embedding provider: ${JSON.stringify(_exhaustive)}`
+        );
       }
     }
   }
@@ -103,7 +105,9 @@ export class EmbeddingService {
   /**
    * Get the embedding function for ChromaDB collections
    */
-  getEmbeddingFunction(): { generate: (texts: string[]) => Promise<number[][]> } | undefined {
+  getEmbeddingFunction():
+    | { generate: (texts: string[]) => Promise<number[][]> }
+    | undefined {
     if (!this.provider) {
       return undefined;
     }

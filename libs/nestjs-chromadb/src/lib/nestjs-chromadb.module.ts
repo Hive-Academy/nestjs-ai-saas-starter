@@ -69,7 +69,7 @@ export class ChromaDBModule {
         provide: CollectionService,
         useFactory: (
           client: ChromaClient,
-          embeddingService: EmbeddingService,
+          embeddingService: EmbeddingService
         ) => {
           return new CollectionService(client, embeddingService);
         },
@@ -132,7 +132,7 @@ export class ChromaDBModule {
         provide: CollectionService,
         useFactory: (
           client: ChromaClient,
-          embeddingService: EmbeddingService,
+          embeddingService: EmbeddingService
         ) => {
           return new CollectionService(client, embeddingService);
         },
@@ -171,7 +171,7 @@ export class ChromaDBModule {
       provide: `COLLECTION_${config.name.toUpperCase()}`,
       useFactory: async (
         collectionService: CollectionService,
-        embeddingService: EmbeddingService,
+        embeddingService: EmbeddingService
       ) => {
         const embeddingFn =
           config.embeddingFunction ?? embeddingService.getEmbeddingFunction();
@@ -191,7 +191,7 @@ export class ChromaDBModule {
   }
 
   private static createAsyncProviders(
-    options: ChromaDBModuleAsyncOptions,
+    options: ChromaDBModuleAsyncOptions
   ): Provider[] {
     if (options.useExisting || options.useFactory) {
       return [this.createAsyncOptionsProvider(options)];
@@ -212,7 +212,7 @@ export class ChromaDBModule {
   }
 
   private static createAsyncOptionsProvider(
-    options: ChromaDBModuleAsyncOptions,
+    options: ChromaDBModuleAsyncOptions
   ): Provider {
     if (options.useFactory) {
       return {
@@ -239,13 +239,13 @@ export class ChromaDBModule {
       inject: options.useExisting
         ? [options.useExisting]
         : options.useClass
-          ? [options.useClass]
-          : [],
+        ? [options.useClass]
+        : [],
     };
   }
 
   private static mergeWithDefaults(
-    options: ChromaDBModuleOptions,
+    options: ChromaDBModuleOptions
   ): ChromaDBModuleOptions {
     const defaults = {
       batchSize: DEFAULT_BATCH_SIZE,
