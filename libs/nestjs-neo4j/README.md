@@ -1,4 +1,4 @@
-# @anubis/nestjs-neo4j
+# @hive-academy/nestjs-neo4j
 
 A comprehensive Neo4j integration module for NestJS applications, providing enterprise-grade features for graph database operations with full TypeScript support, advanced query builder, and transaction management.
 
@@ -20,11 +20,11 @@ A comprehensive Neo4j integration module for NestJS applications, providing ente
 ## Installation
 
 ```bash
-npm install @anubis/nestjs-neo4j neo4j-driver
+npm install @hive-academy/nestjs-neo4j neo4j-driver
 # or
-yarn add @anubis/nestjs-neo4j neo4j-driver
+yarn add @hive-academy/nestjs-neo4j neo4j-driver
 # or
-pnpm add @anubis/nestjs-neo4j neo4j-driver
+pnpm add @hive-academy/nestjs-neo4j neo4j-driver
 ```
 
 ## Quick Start
@@ -33,7 +33,7 @@ pnpm add @anubis/nestjs-neo4j neo4j-driver
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { Neo4jModule } from '@anubis/nestjs-neo4j';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [
@@ -53,7 +53,7 @@ export class AppModule {}
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Neo4jModule } from '@anubis/nestjs-neo4j';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [
@@ -86,7 +86,7 @@ export class AppModule {}
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from '@anubis/nestjs-neo4j';
+import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 
 @Injectable()
 export class UserService {
@@ -115,7 +115,7 @@ The module includes a powerful Cypher query builder for constructing type-safe q
 ### Basic Usage
 
 ```typescript
-import { cypher, CypherQueryBuilder } from '@anubis/nestjs-neo4j';
+import { cypher, CypherQueryBuilder } from '@hive-academy/nestjs-neo4j';
 
 @Injectable()
 export class GraphService {
@@ -221,7 +221,7 @@ Use the `@Transactional()` decorator for automatic transaction management:
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Neo4jService, Transactional } from '@anubis/nestjs-neo4j';
+import { Neo4jService, Transactional } from '@hive-academy/nestjs-neo4j';
 
 @Injectable()
 export class OrderService {
@@ -313,7 +313,7 @@ When health checks are enabled, the module automatically provides health indicat
 // In your health module
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
-import { Neo4jHealthIndicator } from '@anubis/nestjs-neo4j';
+import { Neo4jHealthIndicator } from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [TerminusModule],
@@ -351,7 +351,7 @@ Then inject specific database connections:
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { InjectNeo4j } from '@anubis/nestjs-neo4j';
+import { InjectNeo4j } from '@hive-academy/nestjs-neo4j';
 import { Driver } from 'neo4j-driver';
 
 @Injectable()
@@ -488,7 +488,7 @@ Mock the Neo4jService in your tests:
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { Neo4jService } from '@anubis/nestjs-neo4j';
+import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 
 describe('UserService', () => {
   let service: UserService;
@@ -531,7 +531,7 @@ Use a test database for integration tests:
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { Neo4jModule } from '@anubis/nestjs-neo4j';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 describe('UserService (Integration)', () => {
   let service: UserService;
@@ -603,7 +603,7 @@ export class UserService {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from '@anubis/nestjs-neo4j';
+import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 
 @Injectable()
 export class UserService {
@@ -751,7 +751,7 @@ interface QueryResult<T = any> {
 The module provides comprehensive health checking capabilities:
 
 ```typescript
-import { Neo4jHealthService } from '@anubis/nestjs-neo4j';
+import { Neo4jHealthService } from '@hive-academy/nestjs-neo4j';
 
 @Injectable()
 export class HealthService {

@@ -1,5 +1,6 @@
 // Main module
 export { NestjsLanggraphModule } from './lib/nestjs-langgraph.module';
+export { NestjsLanggraphModule as LangGraphModule } from './lib/nestjs-langgraph.module';
 
 // Interfaces - export specific interfaces to avoid conflicts
 export type {

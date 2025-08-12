@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "api": "npx nx run @nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:serve",
+    "start": "npx nx run ai-saas-frontend:serve:development",
     "dev:services": "docker compose -f docker-compose.dev.yml up -d",
     "dev:stop": "docker compose -f docker-compose.dev.yml down",
     "dev:reset": "docker compose -f docker-compose.dev.yml down -v",
@@ -32,6 +34,16 @@
   },
   "private": true,
   "dependencies": {
+    "@angular-devkit/build-angular": "20.1.5",
+    "@angular/animations": "20.1.6",
+    "@angular/cdk": "20.1.5",
+    "@angular/cli": "20.1.5",
+    "@angular/common": "20.1.6",
+    "@angular/core": "20.1.6",
+    "@angular/forms": "20.1.6",
+    "@angular/platform-browser": "20.1.6",
+    "@angular/platform-browser-dynamic": "20.1.6",
+    "@angular/router": "20.1.6",
     "@huggingface/inference": "^4.6.1",
     "@langchain/anthropic": "^0.3.26",
     "@langchain/core": "^0.3.68",
@@ -56,15 +68,18 @@
     "neo4j-driver": "^5.28.1",
     "openai": "^5.12.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0",
-    "zod": "^3.25.76"
+    "rxjs": "7.8.2",
+    "zod": "^3.25.76",
+    "zone.js": "0.15.1"
   },
   "devDependencies": {
+    "@angular-devkit/core": "~20.1.0",
     "@commitlint/cli": "^18.0.0",
     "@commitlint/config-conventional": "^18.0.0",
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
+    "@nx/angular": "21.3.11",
     "@nx/eslint": "21.3.11",
     "@nx/eslint-plugin": "21.3.11",
     "@nx/jest": "21.3.11",
@@ -94,7 +109,7 @@
     "prettier": "^2.6.2",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
-    "tslib": "^2.3.0",
+    "tslib": "2.8.1",
     "typedoc": "^0.28.10",
     "typedoc-plugin-markdown": "^4.0.0",
     "typescript": "~5.8.2",
@@ -108,6 +123,9 @@
   "overrides": {
     "chalk": {
       "typescript": "$typescript"
+    },
+    "@angular-devkit/build-angular": {
+      "jest": "$jest"
     }
   }
 }

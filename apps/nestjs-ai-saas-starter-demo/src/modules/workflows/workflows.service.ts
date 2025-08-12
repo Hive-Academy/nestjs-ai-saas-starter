@@ -49,7 +49,9 @@ export class WorkflowsService {
 
       // For demonstration, we'll use the sample workflow
       if (workflowId === 'sample') {
-        const graph = await this.graphBuilder.buildFromClass(SampleWorkflow);
+        const graph = await this.graphBuilder.buildFromClass(
+          this.sampleWorkflow.constructor as any
+        );
 
         const result = await graph.invoke({
           input: executeDto.input,

@@ -26,6 +26,12 @@ This monorepo provides a complete foundation for building AI-powered SaaS applic
 - **📦 Publishable Libraries**: Three NPM packages ready for distribution
 - **🔄 CI/CD Pipeline**: Automated testing, building, versioning, and publishing
 
+### 🎯 AI Provider Support
+
+- **OpenRouter** (Default): Access 100+ models (GPT-4, Claude, Gemini, Llama, etc.) through one API
+- **Ollama**: Fully local LLM inference for privacy and offline usage
+- **HuggingFace**: Local embeddings with sentence transformers (no API key required)
+
 ## 🏗️ Architecture
 
 ### Workspace Structure
@@ -92,11 +98,13 @@ npm install
 # Copy environment template
 cp .env.example .env
 
-# Edit environment variables
-# Add your API keys for:
-# - OpenAI (for embeddings)
-# - Cohere (optional)
-# - HuggingFace (optional)
+# Configure your AI providers:
+# LLM Provider (choose one):
+# - OpenRouter API key (default - recommended)
+# - Or use Ollama for local LLM
+#
+# Embeddings:
+# - HuggingFace (default - no API key needed for public models)
 ```
 
 ### 3. Start Development Services

@@ -7,7 +7,11 @@ import { z } from 'zod';
 import { ToolDiscoveryService } from './tool-discovery.service';
 import { ToolRegistryService } from './tool-registry.service';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import { Tool, ToolMetadata, getClassTools } from '../decorators/tool.decorator';
+import {
+  Tool,
+  ToolMetadata,
+  getClassTools,
+} from '../decorators/tool.decorator';
 import { AgentType } from '@internal/shared';
 
 // Mock tool provider for testing
@@ -18,11 +22,11 @@ class MockToolProvider {
     description: 'Search for test data',
     schema: z.object({
       query: z.string().min(1),
-      limit: z.number().optional().default(10)
+      limit: z.number().optional().default(10),
     }),
     agents: [AgentType.ARCHITECT, AgentType.SENIOR_DEVELOPER],
     tags: ['search', 'test'],
-    version: '1.0.0'
+    version: '1.0.0',
   })
   async searchTest(params: { query: string; limit?: number }) {
     return { results: [`Found: ${params.query}`] };
@@ -33,7 +37,7 @@ class MockToolProvider {
     description: 'Analyze test data',
     agents: '*',
     tags: ['analysis', 'test'],
-    streaming: true
+    streaming: true,
   })
   async analyzeTest(data: string) {
     return { analysis: `Analysis of: ${data}` };
@@ -57,7 +61,6 @@ class MockInvalidToolProvider {
   }
 }
 
-
 describe('ToolDiscoveryService', () => {
   let service: ToolDiscoveryService;
   let toolRegistry: ToolRegistryService;
@@ -67,14 +70,16 @@ describe('ToolDiscoveryService', () => {
 
   beforeEach(async () => {
     const mockDiscoveryService = {
-      getProviders: jest.fn().mockReturnValue([
-        { instance: new MockToolProvider() },
-        { instance: new MockInvalidToolProvider() }
-      ])
+      getProviders: jest
+        .fn()
+        .mockReturnValue([
+          { instance: new MockToolProvider() },
+          { instance: new MockInvalidToolProvider() },
+        ]),
     };
 
     const mockModuleRef = {
-      get: jest.fn()
+      get: jest.fn(),
     };
 
     const mockToolRegistry = {
@@ -82,7 +87,7 @@ describe('ToolDiscoveryService', () => {
       getToolsForAgent: jest.fn().mockReturnValue([]),
       getToolMetadata: jest.fn(),
       getTool: jest.fn(),
-      removeTool: jest.fn()
+      removeTool: jest.fn(),
     };
 
     module = await Test.createTestingModule({
@@ -92,35 +97,37 @@ describe('ToolDiscoveryService', () => {
         MockInvalidToolProvider,
         {
           provide: DiscoveryService,
-          useValue: mockDiscoveryService
+          useValue: mockDiscoveryService,
         },
         {
           provide: ModuleRef,
-          useValue: mockModuleRef
+          useValue: mockModuleRef,
         },
         {
           provide: ToolRegistryService,
-          useValue: mockToolRegistry
+          useValue: mockToolRegistry,
         },
         {
           provide: MetadataScanner,
           useValue: {
-            getAllMethodNames: jest.fn().mockReturnValue(['searchTest', 'analyzeTest']),
-            scanFromPrototype: jest.fn()
-          }
+            getAllMethodNames: jest
+              .fn()
+              .mockReturnValue(['searchTest', 'analyzeTest']),
+            scanFromPrototype: jest.fn(),
+          },
         },
         {
           provide: Reflector,
           useValue: {
             get: jest.fn(),
-            getMetadata: jest.fn()
-          }
+            getMetadata: jest.fn(),
+          },
         },
         {
           provide: MetadataProcessorService,
           useValue: {
-            processMetadata: jest.fn().mockResolvedValue({})
-          }
+            processMetadata: jest.fn().mockResolvedValue({}),
+          },
         },
         {
           provide: Logger,
@@ -128,10 +135,10 @@ describe('ToolDiscoveryService', () => {
             log: jest.fn(),
             debug: jest.fn(),
             warn: jest.fn(),
-            error: jest.fn()
-          }
-        }
-      ]
+            error: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<ToolDiscoveryService>(ToolDiscoveryService);
@@ -167,11 +174,11 @@ describe('ToolDiscoveryService', () => {
         autoDiscover: false,
         validateSchemas: false,
         maxConcurrency: 5,
-        verbose: true
+        verbose: true,
       };
 
       service.configure(newConfig);
-      
+
       // Configuration change should be reflected in internal state
       expect((service as any)['discoveryOptions'].autoDiscover).toBe(false);
       expect((service as any)['discoveryOptions'].validateSchemas).toBe(false);
@@ -190,17 +197,24 @@ describe('ToolDiscoveryService', () => {
       expect(result.scanTime).toBeGreaterThan(0);
 
       // Verify tool details
-      const searchTool = result.toolsFound.find(tool => tool.name === 'test_search');
+      const searchTool = result.toolsFound.find(
+        (tool) => tool.name === 'test_search'
+      );
       expect(searchTool).toBeDefined();
       expect(searchTool?.description).toBe('Search for test data');
-      expect(searchTool?.agents).toEqual([AgentType.ARCHITECT, AgentType.SENIOR_DEVELOPER]);
+      expect(searchTool?.agents).toEqual([
+        AgentType.ARCHITECT,
+        AgentType.SENIOR_DEVELOPER,
+      ]);
       expect(searchTool?.tags).toEqual(['search', 'test']);
     });
 
     it('should handle provider with invalid tools', async () => {
       service.configure({ validateSchemas: true });
-      
-      const result = await service.discoverFromProvider(MockInvalidToolProvider);
+
+      const result = await service.discoverFromProvider(
+        MockInvalidToolProvider
+      );
 
       expect(result.providerName).toBe('MockInvalidToolProvider');
       expect(result.errors.length).toBeGreaterThan(0);
@@ -209,8 +223,10 @@ describe('ToolDiscoveryService', () => {
 
     it('should skip validation when configured', async () => {
       service.configure({ validateSchemas: false });
-      
-      const result = await service.discoverFromProvider(MockInvalidToolProvider);
+
+      const result = await service.discoverFromProvider(
+        MockInvalidToolProvider
+      );
 
       expect(result.providerName).toBe('MockInvalidToolProvider');
       expect(result.toolsFound.length).toBeGreaterThan(0); // Invalid tools still discovered
@@ -220,7 +236,7 @@ describe('ToolDiscoveryService', () => {
       class NonInjectableProvider {
         @Tool({
           name: 'non_injectable_tool',
-          description: 'Tool from non-injectable provider'
+          description: 'Tool from non-injectable provider',
         })
         async testTool() {
           return {};
@@ -239,37 +255,39 @@ describe('ToolDiscoveryService', () => {
       // Mock tool registry methods to simulate registered tools
       (toolRegistry.getAllTools as jest.Mock).mockReturnValue([
         { name: 'test_search' },
-        { name: 'test_analyze' }
+        { name: 'test_analyze' },
       ]);
-      
+
       (toolRegistry.getToolMetadata as jest.Mock).mockImplementation((name) => {
         if (name === 'test_search') {
           return {
             name: 'test_search',
             agents: [AgentType.ARCHITECT, AgentType.SENIOR_DEVELOPER],
             tags: ['search', 'test'],
-            version: '1.0.0'
+            version: '1.0.0',
           };
         }
         if (name === 'test_analyze') {
           return {
             name: 'test_analyze',
             agents: '*',
-            tags: ['analysis', 'test']
+            tags: ['analysis', 'test'],
           };
         }
         return null;
       });
 
-      (toolRegistry.getToolsForAgent as jest.Mock).mockImplementation((agent) => {
-        if (agent === AgentType.ARCHITECT) {
-          return [{ name: 'test_search' }, { name: 'test_analyze' }];
+      (toolRegistry.getToolsForAgent as jest.Mock).mockImplementation(
+        (agent) => {
+          if (agent === AgentType.ARCHITECT) {
+            return [{ name: 'test_search' }, { name: 'test_analyze' }];
+          }
+          if (agent === '*') {
+            return [{ name: 'test_analyze' }];
+          }
+          return [];
         }
-        if (agent === '*') {
-          return [{ name: 'test_analyze' }];
-        }
-        return [];
-      });
+      );
 
       const stats = await service.performFullDiscovery();
 
@@ -286,16 +304,18 @@ describe('ToolDiscoveryService', () => {
         throw new Error('Discovery service error');
       });
 
-      await expect(service.performFullDiscovery()).rejects.toThrow('Discovery service error');
+      await expect(service.performFullDiscovery()).rejects.toThrow(
+        'Discovery service error'
+      );
     });
 
     it('should respect concurrency limits', async () => {
       const providers = Array.from({ length: 20 }, (_, i) => ({
-        instance: { constructor: { name: `Provider${i}` } }
+        instance: { constructor: { name: `Provider${i}` } },
       }));
 
       (discoveryService.getProviders as jest.Mock).mockReturnValue(providers);
-      
+
       service.configure({ maxConcurrency: 3 });
 
       const startTime = Date.now();
@@ -313,26 +333,26 @@ describe('ToolDiscoveryService', () => {
       (toolRegistry.getAllTools as jest.Mock).mockReturnValue([
         { name: 'search_tool' },
         { name: 'analysis_tool' },
-        { name: 'composed_tool' }
+        { name: 'composed_tool' },
       ]);
 
       (toolRegistry.getToolMetadata as jest.Mock).mockImplementation((name) => {
         const metadata = {
-          'search_tool': {
+          search_tool: {
             name: 'search_tool',
             tags: ['search', 'rag'],
-            agents: [AgentType.ARCHITECT]
+            agents: [AgentType.ARCHITECT],
           },
-          'analysis_tool': {
+          analysis_tool: {
             name: 'analysis_tool',
             tags: ['analysis', 'ml'],
-            agents: '*'
+            agents: '*',
           },
-          'composed_tool': {
+          composed_tool: {
             name: 'composed_tool',
             tags: ['composed', 'workflow'],
-            agents: [AgentType.SENIOR_DEVELOPER]
-          }
+            agents: [AgentType.SENIOR_DEVELOPER],
+          },
         };
         return metadata[name] || null;
       });
@@ -341,23 +361,27 @@ describe('ToolDiscoveryService', () => {
     it('should discover tools by tag', async () => {
       const searchTools = await service.discoverByTag(['search']);
       expect(searchTools.length).toBeGreaterThan(0);
-      
-      const tool = searchTools.find(t => t.name === 'search_tool');
+
+      const tool = searchTools.find((t) => t.name === 'search_tool');
       expect(tool).toBeDefined();
       expect(tool?.tags).toContain('search');
     });
 
     it('should discover tools for specific agents', async () => {
-      (toolRegistry.getToolsForAgent as jest.Mock).mockImplementation((agent) => {
-        if (agent === AgentType.ARCHITECT) {
-          return [{ name: 'search_tool' }];
+      (toolRegistry.getToolsForAgent as jest.Mock).mockImplementation(
+        (agent) => {
+          if (agent === AgentType.ARCHITECT) {
+            return [{ name: 'search_tool' }];
+          }
+          return [];
         }
-        return [];
-      });
+      );
 
-      const architectTools = await service.discoverForAgent(AgentType.ARCHITECT);
+      const architectTools = await service.discoverForAgent(
+        AgentType.ARCHITECT
+      );
       expect(architectTools.length).toBeGreaterThan(0);
-      
+
       const tool = architectTools[0];
       expect(tool.name).toBe('search_tool');
     });
@@ -365,7 +389,7 @@ describe('ToolDiscoveryService', () => {
     it('should filter tools by configuration', () => {
       service.configure({
         includeOnlyTags: ['search'],
-        excludeTags: ['deprecated']
+        excludeTags: ['deprecated'],
       });
 
       // Test internal filtering logic
@@ -374,7 +398,7 @@ describe('ToolDiscoveryService', () => {
         description: 'test',
         tags: ['search', 'rag'],
         methodName: 'test',
-        handler: jest.fn()
+        handler: jest.fn(),
       });
 
       const shouldInclude2 = (service as any)['shouldIncludeTool']({
@@ -382,7 +406,7 @@ describe('ToolDiscoveryService', () => {
         description: 'test2',
         tags: ['analysis'],
         methodName: 'test2',
-        handler: jest.fn()
+        handler: jest.fn(),
       });
 
       expect(shouldInclude1).toBe(true);
@@ -396,28 +420,28 @@ describe('ToolDiscoveryService', () => {
         { name: 'parent_tool' },
         { name: 'child_tool_1' },
         { name: 'child_tool_2' },
-        { name: 'orphaned_tool' }
+        { name: 'orphaned_tool' },
       ]);
 
       (toolRegistry.getToolMetadata as jest.Mock).mockImplementation((name) => {
         const metadata = {
-          'parent_tool': {
+          parent_tool: {
             name: 'parent_tool',
             tags: ['composed'],
-            agents: [AgentType.ARCHITECT]
+            agents: [AgentType.ARCHITECT],
           },
-          'child_tool_1': {
+          child_tool_1: {
             name: 'child_tool_1',
-            agents: [AgentType.ARCHITECT]
+            agents: [AgentType.ARCHITECT],
           },
-          'child_tool_2': {
+          child_tool_2: {
             name: 'child_tool_2',
-            agents: [AgentType.SENIOR_DEVELOPER]
+            agents: [AgentType.SENIOR_DEVELOPER],
           },
-          'orphaned_tool': {
+          orphaned_tool: {
             name: 'orphaned_tool',
-            agents: [] // No agents assigned
-          }
+            agents: [], // No agents assigned
+          },
         };
         return metadata[name] || null;
       });
@@ -442,7 +466,7 @@ describe('ToolDiscoveryService', () => {
       // Mock duplicate tools
       (toolRegistry.getAllTools as jest.Mock).mockReturnValue([
         { name: 'duplicate_tool' },
-        { name: 'duplicate_tool' } // Same name
+        { name: 'duplicate_tool' }, // Same name
       ]);
 
       const analysis = await service.analyzeToolDependencies();
@@ -457,7 +481,7 @@ describe('ToolDiscoveryService', () => {
       (toolRegistry.getAllTools as jest.Mock).mockReturnValue([
         { name: 'valid_tool', description: 'Valid tool' },
         { name: '', description: 'Invalid tool - no name' },
-        { name: 'no_description_tool', description: '' }
+        { name: 'no_description_tool', description: '' },
       ]);
 
       (toolRegistry.getToolMetadata as jest.Mock).mockImplementation((name) => {
@@ -466,7 +490,7 @@ describe('ToolDiscoveryService', () => {
             name: 'valid_tool',
             description: 'Valid tool',
             schema: z.object({ input: z.string() }),
-            agents: [AgentType.ARCHITECT]
+            agents: [AgentType.ARCHITECT],
           };
         }
         if (name === 'invalid_schema_tool') {
@@ -474,13 +498,13 @@ describe('ToolDiscoveryService', () => {
             name: 'invalid_schema_tool',
             description: 'Tool with invalid schema',
             schema: 'not a zod schema' as any,
-            agents: [AgentType.ARCHITECT]
+            agents: [AgentType.ARCHITECT],
           };
         }
         return {
           name,
           description: '',
-          agents: ['invalid-agent-type'] as any
+          agents: ['invalid-agent-type'] as any,
         };
       });
     });
@@ -495,14 +519,14 @@ describe('ToolDiscoveryService', () => {
       expect(validation.valid).toContain('valid_tool');
 
       // Should identify invalid tools
-      const invalidTool = validation.invalid.find(t => t.toolName === '');
+      const invalidTool = validation.invalid.find((t) => t.toolName === '');
       expect(invalidTool).toBeDefined();
       expect(invalidTool?.errors).toContain('Tool name is required');
     });
 
     it('should validate Zod schemas', async () => {
       (toolRegistry.getAllTools as jest.Mock).mockReturnValue([
-        { name: 'schema_tool', description: 'Tool with schema' }
+        { name: 'schema_tool', description: 'Tool with schema' },
       ]);
 
       (toolRegistry.getToolMetadata as jest.Mock).mockReturnValue({
@@ -510,8 +534,8 @@ describe('ToolDiscoveryService', () => {
         description: 'Tool with schema',
         schema: z.object({
           required: z.string(),
-          optional: z.number().optional()
-        })
+          optional: z.number().optional(),
+        }),
       });
 
       const validation = await service.validateToolConfiguration();
@@ -521,20 +545,24 @@ describe('ToolDiscoveryService', () => {
 
     it('should validate agent assignments', async () => {
       (toolRegistry.getAllTools as jest.Mock).mockReturnValue([
-        { name: 'agent_test_tool', description: 'Tool for agent validation' }
+        { name: 'agent_test_tool', description: 'Tool for agent validation' },
       ]);
 
       (toolRegistry.getToolMetadata as jest.Mock).mockReturnValue({
         name: 'agent_test_tool',
         description: 'Tool for agent validation',
-        agents: ['invalid-agent', AgentType.ARCHITECT]
+        agents: ['invalid-agent', AgentType.ARCHITECT],
       });
 
       const validation = await service.validateToolConfiguration();
 
-      const tool = validation.invalid.find(t => t.toolName === 'agent_test_tool');
+      const tool = validation.invalid.find(
+        (t) => t.toolName === 'agent_test_tool'
+      );
       expect(tool).toBeDefined();
-      expect(tool?.errors.some(error => error.includes('Invalid agent type'))).toBe(true);
+      expect(
+        tool?.errors.some((error) => error.includes('Invalid agent type'))
+      ).toBe(true);
     });
   });
 
@@ -544,7 +572,7 @@ describe('ToolDiscoveryService', () => {
       const mockMetadata = {
         name: 'detail_tool',
         description: 'Detailed tool',
-        agents: [AgentType.ARCHITECT, AgentType.SENIOR_DEVELOPER]
+        agents: [AgentType.ARCHITECT, AgentType.SENIOR_DEVELOPER],
       };
 
       (toolRegistry.getTool as jest.Mock).mockReturnValue(mockTool);
@@ -555,7 +583,10 @@ describe('ToolDiscoveryService', () => {
       expect(details).toBeDefined();
       expect(details?.tool).toBe(mockTool);
       expect(details?.metadata).toBe(mockMetadata);
-      expect(details?.agentAssignments).toEqual([AgentType.ARCHITECT, AgentType.SENIOR_DEVELOPER]);
+      expect(details?.agentAssignments).toEqual([
+        AgentType.ARCHITECT,
+        AgentType.SENIOR_DEVELOPER,
+      ]);
     });
 
     it('should handle non-existent tool details', () => {
@@ -569,7 +600,7 @@ describe('ToolDiscoveryService', () => {
 
     it('should refresh provider tools', async () => {
       const removeSpy = jest.spyOn(toolRegistry, 'removeTool');
-      
+
       await service.refreshProvider(MockToolProvider);
 
       // Should have attempted to remove existing tools from provider
@@ -588,11 +619,11 @@ describe('ToolDiscoveryService', () => {
   describe('Performance and Error Handling', () => {
     it('should handle large numbers of providers efficiently', async () => {
       const providers = Array.from({ length: 100 }, (_, i) => ({
-        instance: { constructor: { name: `Provider${i}` } }
+        instance: { constructor: { name: `Provider${i}` } },
       }));
 
       (discoveryService.getProviders as jest.Mock).mockReturnValue(providers);
-      
+
       const startTime = Date.now();
       await service.performFullDiscovery();
       const duration = Date.now() - startTime;
@@ -605,17 +636,21 @@ describe('ToolDiscoveryService', () => {
       const errorProvider = {
         instance: {
           constructor: {
-            name: 'ErrorProvider'
-          }
-        }
+            name: 'ErrorProvider',
+          },
+        },
       };
 
-      (discoveryService.getProviders as jest.Mock).mockReturnValue([errorProvider]);
+      (discoveryService.getProviders as jest.Mock).mockReturnValue([
+        errorProvider,
+      ]);
       (moduleRef.get as jest.Mock).mockImplementation(() => {
         throw new Error('Provider instantiation failed');
       });
 
-      const result = await service.discoverFromProvider(errorProvider.instance.constructor);
+      const result = await service.discoverFromProvider(
+        errorProvider.instance.constructor
+      );
 
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.toolsFound.length).toBe(0);
@@ -623,11 +658,11 @@ describe('ToolDiscoveryService', () => {
 
     it('should provide meaningful error messages', async () => {
       service.configure({ verbose: true });
-      
+
       const invalidProvider = class {
         @Tool({
           name: 'broken_tool',
-          description: 'This tool will break'
+          description: 'This tool will break',
         })
         async brokenMethod() {
           throw new Error('Method execution error');

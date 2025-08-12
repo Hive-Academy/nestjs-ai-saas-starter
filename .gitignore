@@ -45,3 +45,6 @@ Thumbs.db
 
 test-output
 .mcp.json
+
+.angular
+/.env

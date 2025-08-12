@@ -17,6 +17,8 @@
   "enabledMcpjsonServers": [
     "browser",
     "sequential-thinking",
-    "nx-mcp"
-  ]
+    "nx-mcp",
+    "filesystem"
+  ],
+  "enableAllProjectMcpServers": true
 }

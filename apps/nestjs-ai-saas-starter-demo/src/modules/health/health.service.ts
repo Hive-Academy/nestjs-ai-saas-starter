@@ -85,10 +85,12 @@ export class HealthService {
         },
       };
     } catch (error) {
-      this.logger.error(`ChromaDB health check failed: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`ChromaDB health check failed: ${errorMessage}`);
       return {
         status: 'unhealthy',
-        error: error.message,
+        error: errorMessage,
       };
     }
   }
@@ -114,10 +116,12 @@ export class HealthService {
         },
       };
     } catch (error) {
-      this.logger.error(`Neo4j health check failed: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Neo4j health check failed: ${errorMessage}`);
       return {
         status: 'unhealthy',
-        error: error.message,
+        error: errorMessage,
       };
     }
   }
@@ -135,10 +139,12 @@ export class HealthService {
         },
       };
     } catch (error) {
-      this.logger.error(`Redis health check failed: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Redis health check failed: ${errorMessage}`);
       return {
         status: 'unhealthy',
-        error: error.message,
+        error: errorMessage,
       };
     }
   }

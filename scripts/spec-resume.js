@@ -4,43 +4,22 @@
  * Spec Resume Analyzer
  * Analyzes existing Kiro specs and provides context for resuming work
  */
-
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
-
+import * as chalk from 'chalk';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { execSync } from 'child_process';
 // Try to load chalk, but provide fallback if not installed
-let chalk;
-try {
-  chalk = require('chalk');
-} catch (e) {
-  // Fallback chalk implementation with no colors
-  chalk = {
-    bold: (str) => str,
-    green: (str) => str,
-    yellow: (str) => str,
-    red: (str) => str,
-    cyan: (str) => str,
-    gray: (str) => str,
-    magenta: (str) => str,
-    underline: (str) => str,
-  };
-  chalk.bold.cyan = (str) => str;
-  chalk.bold.green = (str) => str;
-  chalk.bold.underline = (str) => str;
-  console.log('Note: Install chalk for colored output: npm install --save-dev chalk');
-}
 
 class SpecResumeAnalyzer {
   constructor() {
     this.specsDir = path.join(process.cwd(), '.kiro', 'specs');
     this.colors = {
-      complete: chalk.green,
-      inProgress: chalk.yellow,
-      blocked: chalk.red,
-      pending: chalk.gray,
-      info: chalk.cyan,
-      warning: chalk.magenta,
+      complete: chalk.default.green,
+      inProgress: chalk.default.yellow,
+      blocked: chalk.default.red,
+      pending: chalk.default.gray,
+      info: chalk.default.cyan,
+      warning: chalk.default.magenta,
     };
   }
 
@@ -49,20 +28,22 @@ class SpecResumeAnalyzer {
    */
   async analyze(specName, options = {}) {
     try {
-      console.log(chalk.bold.cyan(`\n📊 Analyzing Spec: ${specName}\n`));
-      
+      console.log(
+        chalk.default.bold.cyan(`\n📊 Analyzing Spec: ${specName}\n`)
+      );
+
       const specPath = path.join(this.specsDir, specName);
-      
+
       // Check if spec exists
-      if (!await this.fileExists(specPath)) {
-        console.error(chalk.red(`❌ Spec not found: ${specName}`));
+      if (!(await this.fileExists(specPath))) {
+        console.error(chalk.default.red(`❌ Spec not found: ${specName}`));
         this.listAvailableSpecs();
         return;
       }
 
       // Perform analysis
       const analysis = await this.performAnalysis(specPath, specName);
-      
+
       // Display results
       if (options.detailed) {
         this.displayDetailedAnalysis(analysis);
@@ -79,9 +60,8 @@ class SpecResumeAnalyzer {
       if (options.export) {
         await this.exportAnalysis(analysis, options.export);
       }
-
     } catch (error) {
-      console.error(chalk.red(`❌ Error: ${error.message}`));
+      console.error(chalk.default.red(`❌ Error: ${error.message}`));
       process.exit(1);
     }
   }
@@ -103,19 +83,19 @@ class SpecResumeAnalyzer {
 
     // Analyze spec files
     analysis.files = await this.analyzeSpecFiles(specPath);
-    
+
     // Parse tasks
     analysis.tasks = await this.parseTaskStatus(specPath);
-    
+
     // Analyze git status
     analysis.git = await this.analyzeGitStatus(specName);
-    
+
     // Analyze code implementation
     analysis.code = await this.analyzeCodeImplementation(specName);
-    
+
     // Calculate metrics
     analysis.metrics = this.calculateMetrics(analysis);
-    
+
     // Generate recommendations
     analysis.recommendations = this.generateRecommendations(analysis);
 
@@ -134,7 +114,7 @@ class SpecResumeAnalyzer {
       if (await this.fileExists(filePath)) {
         const content = await fs.readFile(filePath, 'utf-8');
         const stats = await fs.stat(filePath);
-        
+
         files[fileName] = {
           exists: true,
           size: stats.size,
@@ -164,7 +144,7 @@ class SpecResumeAnalyzer {
       items: [],
     };
 
-    if (!await this.fileExists(tasksFile)) {
+    if (!(await this.fileExists(tasksFile))) {
       return tasks;
     }
 
@@ -174,7 +154,7 @@ class SpecResumeAnalyzer {
     for (const line of lines) {
       if (line.match(/^- \[[ x]\]/)) {
         tasks.total++;
-        
+
         const isCompleted = line.includes('[x]');
         const taskInfo = {
           description: line.replace(/^- \[[ x]\]/, '').trim(),
@@ -186,10 +166,16 @@ class SpecResumeAnalyzer {
         if (isCompleted) {
           tasks.completed++;
           taskInfo.status = 'completed';
-        } else if (line.toLowerCase().includes('in-progress') || line.includes('🔄')) {
+        } else if (
+          line.toLowerCase().includes('in-progress') ||
+          line.includes('🔄')
+        ) {
           tasks.inProgress++;
           taskInfo.status = 'in-progress';
-        } else if (line.toLowerCase().includes('blocked') || line.includes('🚫')) {
+        } else if (
+          line.toLowerCase().includes('blocked') ||
+          line.includes('🚫')
+        ) {
           tasks.blocked++;
           taskInfo.status = 'blocked';
         } else {
@@ -224,28 +210,37 @@ class SpecResumeAnalyzer {
 
     try {
       // Get current branch
-      git.currentBranch = execSync('git branch --show-current', { encoding: 'utf-8' }).trim();
-      
+      git.currentBranch = execSync('git branch --show-current', {
+        encoding: 'utf-8',
+      }).trim();
+
       // Find related branches
-      const allBranches = execSync('git branch -r', { encoding: 'utf-8' }).split('\n');
-      git.branches = allBranches.filter(b => b.includes(`spec-${specName}`) || b.includes(specName));
-      
+      const allBranches = execSync('git branch -r', {
+        encoding: 'utf-8',
+      }).split('\n');
+      git.branches = allBranches.filter(
+        (b) => b.includes(`spec-${specName}`) || b.includes(specName)
+      );
+
       // Check for uncommitted changes
       const status = execSync('git status --porcelain', { encoding: 'utf-8' });
       if (status) {
-        git.uncommittedChanges = status.split('\n').filter(l => l);
+        git.uncommittedChanges = status.split('\n').filter((l) => l);
       }
-      
+
       // Get recent commits related to spec
       try {
-        const commits = execSync(`git log --oneline -10 --grep="${specName}"`, { encoding: 'utf-8' });
-        git.recentCommits = commits.split('\n').filter(l => l);
+        const commits = execSync(`git log --oneline -10 --grep="${specName}"`, {
+          encoding: 'utf-8',
+        });
+        git.recentCommits = commits.split('\n').filter((l) => l);
       } catch (e) {
         // No matching commits
       }
-
     } catch (error) {
-      console.warn(chalk.yellow('⚠️  Git analysis failed (not a git repository?)'));
+      console.warn(
+        chalk.default.yellow('⚠️  Git analysis failed (not a git repository?)')
+      );
     }
 
     return git;
@@ -266,10 +261,12 @@ class SpecResumeAnalyzer {
     try {
       const libsDir = path.join(process.cwd(), 'libs');
       const libs = await fs.readdir(libsDir);
-      
+
       for (const lib of libs) {
         // Check if lib name relates to spec
-        if (lib.toLowerCase().includes(specName.toLowerCase().replace(/-/g, ''))) {
+        if (
+          lib.toLowerCase().includes(specName.toLowerCase().replace(/-/g, ''))
+        ) {
           code.libsFound.push(lib);
         }
       }
@@ -279,7 +276,11 @@ class SpecResumeAnalyzer {
 
     // Check test coverage if available
     try {
-      const coverageFile = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
+      const coverageFile = path.join(
+        process.cwd(),
+        'coverage',
+        'coverage-summary.json'
+      );
       if (await this.fileExists(coverageFile)) {
         const coverage = JSON.parse(await fs.readFile(coverageFile, 'utf-8'));
         code.coverage = coverage.total;
@@ -296,10 +297,11 @@ class SpecResumeAnalyzer {
    */
   calculateMetrics(analysis) {
     const { tasks } = analysis;
-    
+
     const metrics = {
       overallCompletion: 0,
-      requirementsCompletion: analysis.files['requirements.md']?.completion || 0,
+      requirementsCompletion:
+        analysis.files['requirements.md']?.completion || 0,
       designCompletion: analysis.files['design.md']?.completion || 0,
       implementationCompletion: 0,
       momentum: 'unknown',
@@ -308,14 +310,16 @@ class SpecResumeAnalyzer {
 
     // Calculate implementation completion
     if (tasks.total > 0) {
-      metrics.implementationCompletion = Math.round((tasks.completed / tasks.total) * 100);
+      metrics.implementationCompletion = Math.round(
+        (tasks.completed / tasks.total) * 100
+      );
     }
 
     // Calculate overall completion (weighted average)
     metrics.overallCompletion = Math.round(
-      (metrics.requirementsCompletion * 0.2 +
-       metrics.designCompletion * 0.3 +
-       metrics.implementationCompletion * 0.5)
+      metrics.requirementsCompletion * 0.2 +
+        metrics.designCompletion * 0.3 +
+        metrics.implementationCompletion * 0.5
     );
 
     // Determine momentum
@@ -347,7 +351,8 @@ class SpecResumeAnalyzer {
     if (analysis.metrics.momentum === 'stalled') {
       recommendations.push({
         type: 'warning',
-        message: 'Spec appears stalled. Consider reviewing blockers or reassigning tasks.',
+        message:
+          'Spec appears stalled. Consider reviewing blockers or reassigning tasks.',
       });
     }
 
@@ -371,7 +376,8 @@ class SpecResumeAnalyzer {
     if (!analysis.files['design.md']?.exists) {
       recommendations.push({
         type: 'critical',
-        message: 'Missing design.md. Create design document before implementation.',
+        message:
+          'Missing design.md. Create design document before implementation.',
       });
     }
 
@@ -392,27 +398,30 @@ class SpecResumeAnalyzer {
   displaySummary(analysis) {
     const { metrics, tasks, git } = analysis;
 
-    console.log(chalk.bold('📈 Completion Status:'));
+    console.log(chalk.default.bold('📈 Completion Status:'));
     this.displayProgressBar('Requirements', metrics.requirementsCompletion);
     this.displayProgressBar('Design', metrics.designCompletion);
     this.displayProgressBar('Implementation', metrics.implementationCompletion);
     this.displayProgressBar('Overall', metrics.overallCompletion);
 
-    console.log(chalk.bold('\n📋 Task Summary:'));
+    console.log(chalk.default.bold('\n📋 Task Summary:'));
     console.log(`  Total Tasks: ${tasks.total}`);
     console.log(`  ${this.colors.complete('✓')} Completed: ${tasks.completed}`);
-    console.log(`  ${this.colors.inProgress('⚡')} In Progress: ${tasks.inProgress}`);
+    console.log(
+      `  ${this.colors.inProgress('⚡')} In Progress: ${tasks.inProgress}`
+    );
     console.log(`  ${this.colors.blocked('🚫')} Blocked: ${tasks.blocked}`);
     console.log(`  ${this.colors.pending('○')} Pending: ${tasks.pending}`);
 
-    console.log(chalk.bold('\n🔧 Git Status:'));
+    console.log(chalk.default.bold('\n🔧 Git Status:'));
     console.log(`  Current Branch: ${git.currentBranch}`);
     console.log(`  Uncommitted Changes: ${git.uncommittedChanges.length}`);
     console.log(`  Recent Commits: ${git.recentCommits.length}`);
 
-    console.log(chalk.bold('\n💡 Recommendations:'));
+    console.log(chalk.default.bold('\n💡 Recommendations:'));
     for (const rec of analysis.recommendations) {
-      const icon = rec.type === 'critical' ? '❗' : rec.type === 'warning' ? '⚠️' : 'ℹ️';
+      const icon =
+        rec.type === 'critical' ? '❗' : rec.type === 'warning' ? '⚠️' : 'ℹ️';
       console.log(`  ${icon} ${rec.message}`);
     }
   }
@@ -421,11 +430,11 @@ class SpecResumeAnalyzer {
    * Display detailed analysis
    */
   displayDetailedAnalysis(analysis) {
-    console.log(chalk.bold.underline('DETAILED SPEC ANALYSIS'));
+    console.log(chalk.default.bold.underline('DETAILED SPEC ANALYSIS'));
     console.log('═'.repeat(50));
 
     // Files section
-    console.log(chalk.bold('\n📁 SPEC FILES:'));
+    console.log(chalk.default.bold('\n📁 SPEC FILES:'));
     for (const [fileName, info] of Object.entries(analysis.files)) {
       if (info.exists) {
         const age = this.getAge(info.lastModified);
@@ -434,7 +443,7 @@ class SpecResumeAnalyzer {
         console.log(`    Last Modified: ${age}`);
         console.log(`    Size: ${info.size} bytes`);
       } else {
-        console.log(`  ${fileName}: ${chalk.red('NOT FOUND')}`);
+        console.log(`  ${fileName}: ${chalk.default.red('NOT FOUND')}`);
       }
     }
 
@@ -443,18 +452,22 @@ class SpecResumeAnalyzer {
 
     // Additional details
     if (analysis.code.libsFound.length > 0) {
-      console.log(chalk.bold('\n📦 Related Libraries:'));
+      console.log(chalk.default.bold('\n📦 Related Libraries:'));
       for (const lib of analysis.code.libsFound) {
         console.log(`  - libs/${lib}/`);
       }
     }
 
     if (analysis.tasks.items.length > 0) {
-      console.log(chalk.bold('\n📋 Recent Tasks:'));
+      console.log(chalk.default.bold('\n📋 Recent Tasks:'));
       const recentTasks = analysis.tasks.items.slice(0, 5);
       for (const task of recentTasks) {
         const statusIcon = this.getStatusIcon(task.status);
-        console.log(`  ${statusIcon} ${task.id || 'TASK-XXX'}: ${task.description.substring(0, 50)}...`);
+        console.log(
+          `  ${statusIcon} ${
+            task.id || 'TASK-XXX'
+          }: ${task.description.substring(0, 50)}...`
+        );
       }
     }
   }
@@ -463,14 +476,16 @@ class SpecResumeAnalyzer {
    * Generate continuation plan
    */
   generateContinuationPlan(analysis) {
-    console.log(chalk.bold.green('\n📋 CONTINUATION PLAN'));
+    console.log(chalk.default.bold.green('\n📋 CONTINUATION PLAN'));
     console.log('═'.repeat(50));
 
-    console.log(chalk.bold('\n🎯 Immediate Actions (1-2 hours):'));
-    
+    console.log(chalk.default.bold('\n🎯 Immediate Actions (1-2 hours):'));
+
     if (analysis.tasks.inProgress > 0) {
       console.log('  1. Complete in-progress tasks');
-      const inProgressTasks = analysis.tasks.items.filter(t => t.status === 'in-progress');
+      const inProgressTasks = analysis.tasks.items.filter(
+        (t) => t.status === 'in-progress'
+      );
       for (const task of inProgressTasks.slice(0, 3)) {
         console.log(`     - ${task.description.substring(0, 60)}`);
       }
@@ -484,18 +499,20 @@ class SpecResumeAnalyzer {
       console.log('  3. Address blocked tasks');
     }
 
-    console.log(chalk.bold('\n📅 Short-term Goals (Today):'));
+    console.log(chalk.default.bold('\n📅 Short-term Goals (Today):'));
     console.log('  - Complete pending high-priority tasks');
     console.log('  - Achieve 80% test coverage');
     console.log('  - Update documentation');
 
-    console.log(chalk.bold('\n📆 Long-term Goals (This Week):'));
+    console.log(chalk.default.bold('\n📆 Long-term Goals (This Week):'));
     console.log('  - Complete all implementation tasks');
     console.log('  - Perform integration testing');
     console.log('  - Deploy to staging');
 
-    console.log(chalk.bold('\n▶️  To Resume:'));
-    console.log(chalk.cyan(`  npm run spec:resume ${analysis.specName}`));
+    console.log(chalk.default.bold('\n▶️  To Resume:'));
+    console.log(
+      chalk.default.cyan(`  npm run spec:resume ${analysis.specName}`)
+    );
   }
 
   // Utility methods
@@ -515,11 +532,11 @@ class SpecResumeAnalyzer {
       const total = (content.match(/\[[ x]\]/g) || []).length;
       return total > 0 ? Math.round((completed / total) * 100) : 0;
     }
-    
+
     // For other files, check for TODO markers
     const todos = (content.match(/TODO|TBD|FIXME/gi) || []).length;
     const sections = (content.match(/^#{1,3} /gm) || []).length;
-    
+
     if (sections === 0) return 0;
     const incompleteSections = Math.min(todos, sections);
     return Math.round(((sections - incompleteSections) / sections) * 100);
@@ -529,12 +546,16 @@ class SpecResumeAnalyzer {
     const width = 30;
     const filled = Math.round((percentage / 100) * width);
     const empty = width - filled;
-    
-    const color = percentage >= 80 ? chalk.green :
-                   percentage >= 50 ? chalk.yellow :
-                   chalk.red;
-    
-    const bar = color('█'.repeat(filled)) + chalk.gray('░'.repeat(empty));
+
+    const color =
+      percentage >= 80
+        ? chalk.default.green
+        : percentage >= 50
+        ? chalk.default.yellow
+        : chalk.default.red;
+
+    const bar =
+      color('█'.repeat(filled)) + chalk.default.gray('░'.repeat(empty));
     console.log(`  ${label.padEnd(15)} ${bar} ${percentage}%`);
   }
 
@@ -543,7 +564,7 @@ class SpecResumeAnalyzer {
     const diff = now - new Date(date);
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(hours / 24);
-    
+
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     return 'recently';
@@ -551,15 +572,19 @@ class SpecResumeAnalyzer {
 
   getStatusIcon(status) {
     switch (status) {
-      case 'completed': return this.colors.complete('✓');
-      case 'in-progress': return this.colors.inProgress('⚡');
-      case 'blocked': return this.colors.blocked('🚫');
-      default: return this.colors.pending('○');
+      case 'completed':
+        return this.colors.complete('✓');
+      case 'in-progress':
+        return this.colors.inProgress('⚡');
+      case 'blocked':
+        return this.colors.blocked('🚫');
+      default:
+        return this.colors.pending('○');
     }
   }
 
   async listAvailableSpecs() {
-    console.log(chalk.bold('\n📁 Available specs:'));
+    console.log(chalk.default.bold('\n📁 Available specs:'));
     try {
       const specs = await fs.readdir(this.specsDir);
       for (const spec of specs) {
@@ -576,80 +601,89 @@ class SpecResumeAnalyzer {
   async exportAnalysis(analysis, outputFile) {
     const output = JSON.stringify(analysis, null, 2);
     await fs.writeFile(outputFile, output);
-    console.log(chalk.green(`\n✅ Analysis exported to ${outputFile}`));
+    console.log(chalk.default.green(`\n✅ Analysis exported to ${outputFile}`));
   }
 }
 
 // CLI Interface
-if (require.main === module) {
-  const analyzer = new SpecResumeAnalyzer();
-  
-  const args = process.argv.slice(2);
-  
-  // Parse command from npm script name
-  const npmLifecycle = process.env.npm_lifecycle_event;
-  let defaultOptions = {};
-  
-  if (npmLifecycle) {
-    switch (npmLifecycle) {
-      case 'spec:status':
-        defaultOptions = { detailed: false, plan: false };
-        break;
-      case 'spec:analyze':
-        defaultOptions = { detailed: true, plan: false };
-        break;
-      case 'spec:resume':
-        defaultOptions = { detailed: true, plan: true };
-        break;
-      case 'spec:export':
-        defaultOptions = { detailed: true, plan: false, export: 'spec-analysis.json' };
-        break;
-      case 'task:list':
-        defaultOptions = { detailed: false, plan: true };
-        break;
-      case 'task:dashboard':
-        defaultOptions = { detailed: true, plan: true };
-        break;
-    }
+
+const analyzer = new SpecResumeAnalyzer();
+
+const args = process.argv.slice(2);
+
+// Parse command from npm script name
+const npmLifecycle = process.env.npm_lifecycle_event;
+let defaultOptions = {};
+
+if (npmLifecycle) {
+  switch (npmLifecycle) {
+    case 'spec:status':
+      defaultOptions = { detailed: false, plan: false };
+      break;
+    case 'spec:analyze':
+      defaultOptions = { detailed: true, plan: false };
+      break;
+    case 'spec:resume':
+      defaultOptions = { detailed: true, plan: true };
+      break;
+    case 'spec:export':
+      defaultOptions = {
+        detailed: true,
+        plan: false,
+        export: 'spec-analysis.json',
+      };
+      break;
+    case 'task:list':
+      defaultOptions = { detailed: false, plan: true };
+      break;
+    case 'task:dashboard':
+      defaultOptions = { detailed: true, plan: true };
+      break;
   }
-  
-  // Get spec name from args
-  let specName = args.find(arg => !arg.startsWith('--'));
-  
-  // Parse additional options
-  const options = {
-    detailed: args.includes('--detailed') || defaultOptions.detailed,
-    plan: args.includes('--plan') || defaultOptions.plan,
-    export: args.includes('--export') ? args[args.indexOf('--export') + 1] : defaultOptions.export,
-  };
-  
-  if (!specName || specName === '--help' || specName === '-h') {
-    console.log(chalk.bold.cyan('\n📋 Kiro Spec Resume Analyzer\n'));
-    console.log(chalk.bold('Usage:'));
-    console.log('  Direct:     node scripts/spec-resume.js <spec-name> [options]');
-    console.log('  NPM:        npm run spec:analyze <spec-name>');
-    console.log('              npm run spec:resume <spec-name>');
-    console.log('              npm run task:dashboard <spec-name>');
-    console.log('\nOptions:');
-    console.log('  --detailed       Show detailed analysis');
-    console.log('  --plan          Generate continuation plan');
-    console.log('  --export <file> Export analysis to JSON file');
-    console.log('\nNPM Commands:');
-    console.log('  npm run spec:status <spec>     Quick status overview');
-    console.log('  npm run spec:analyze <spec>    Detailed analysis');
-    console.log('  npm run spec:resume <spec>     Analysis + continuation plan');
-    console.log('  npm run spec:export <spec>     Export to spec-analysis.json');
-    console.log('  npm run task:list <spec>       List tasks with plan');
-    console.log('  npm run task:dashboard <spec>  Full dashboard view');
-    console.log('\nExample:');
-    console.log('  npm run spec:analyze ai-saas-starter-ecosystem');
-    console.log('  npm run spec:resume -- ai-saas-starter-ecosystem --export report.json');
-    console.log('');
-    analyzer.listAvailableSpecs();
-    process.exit(0);
-  }
-  
-  analyzer.analyze(specName, options);
 }
 
-module.exports = SpecResumeAnalyzer;
+// Get spec name from args
+const specName = args.find((arg) => !arg.startsWith('--'));
+
+// Parse additional options
+const options = {
+  detailed: args.includes('--detailed') || defaultOptions.detailed,
+  plan: args.includes('--plan') || defaultOptions.plan,
+  export: args.includes('--export')
+    ? args[args.indexOf('--export') + 1]
+    : defaultOptions.export,
+};
+
+if (!specName || specName === '--help' || specName === '-h') {
+  console.log(chalk.default.bold.cyan('\n📋 Kiro Spec Resume Analyzer\n'));
+  console.log(chalk.default.bold('Usage:'));
+  console.log(
+    '  Direct:     node scripts/spec-resume.js <spec-name> [options]'
+  );
+  console.log('  NPM:        npm run spec:analyze <spec-name>');
+  console.log('              npm run spec:resume <spec-name>');
+  console.log('              npm run task:dashboard <spec-name>');
+  console.log('\nOptions:');
+  console.log('  --detailed       Show detailed analysis');
+  console.log('  --plan          Generate continuation plan');
+  console.log('  --export <file> Export analysis to JSON file');
+  console.log('\nNPM Commands:');
+  console.log('  npm run spec:status <spec>     Quick status overview');
+  console.log('  npm run spec:analyze <spec>    Detailed analysis');
+  console.log('  npm run spec:resume <spec>     Analysis + continuation plan');
+  console.log('  npm run spec:export <spec>     Export to spec-analysis.json');
+  console.log('  npm run task:list <spec>       List tasks with plan');
+  console.log('  npm run task:dashboard <spec>  Full dashboard view');
+  console.log('\nExample:');
+  console.log('  npm run spec:analyze ai-saas-starter-ecosystem');
+  console.log(
+    '  npm run spec:resume -- ai-saas-starter-ecosystem --export report.json'
+  );
+  console.log('');
+  analyzer.listAvailableSpecs();
+  process.exit(0);
+}
+
+analyzer.analyze(specName, options);
+
+export default SpecResumeAnalyzer;

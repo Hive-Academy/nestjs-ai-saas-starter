@@ -1,18 +1,23 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { Logger } from '@nestjs/common';
-import { Subject, take } from 'rxjs';
+import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
+import { Test, TestingModule } from '@nestjs/testing';
+import { take } from 'rxjs';
 
-import { TokenStreamingService } from './token-streaming.service';
 import { StreamEventType } from '../constants';
 import { StreamTokenMetadata } from '../decorators/streaming.decorator';
+import { TokenStreamingService } from './token-streaming.service';
 
-import {
-  mockLogger,
-  resetAllMocks,
-  TEST_TIMEOUT,
-  waitForAsync,
-} from '../test-utils';
+const mockLogger = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  verbose: jest.fn(),
+};
+
+function resetAllMocks() {
+  jest.clearAllMocks();
+}
 
 describe('TokenStreamingService', () => {
   let service: TokenStreamingService;
@@ -123,15 +128,17 @@ describe('TokenStreamingService', () => {
     it('should stream individual tokens', () => {
       const tokens = ['Hello', 'World', 'Test'];
 
-      tokens.forEach(token => {
-        service.streamToken(executionId, nodeId, token, { index: tokens.indexOf(token) });
+      tokens.forEach((token) => {
+        service.streamToken(executionId, nodeId, token, {
+          index: tokens.indexOf(token),
+        });
       });
 
       const activeStreams = service.getActiveTokenStreams();
       expect(activeStreams[0].totalTokens).toBe(tokens.length);
     });
 
-    it('should emit token stream updates', async (done) => {
+    it('should emit token stream updates', (done) => {
       const tokenStream = service.getTokenStream(executionId, nodeId);
       let eventCount = 0;
 
@@ -141,16 +148,16 @@ describe('TokenStreamingService', () => {
           expect(update.data).toBeDefined();
           expect(update.metadata?.executionId).toBe(executionId);
           eventCount++;
-          
+
           if (eventCount === 3) {
             subscription.unsubscribe();
             done();
           }
-        }
+        },
       });
 
       // Stream tokens that will trigger buffer flushes
-      ['Token1', 'Token2', 'Token3'].forEach(token => {
+      ['Token1', 'Token2', 'Token3'].forEach((token) => {
         service.streamToken(executionId, nodeId, token);
       });
     });
@@ -165,7 +172,7 @@ describe('TokenStreamingService', () => {
           filter: {
             minLength: 3,
             excludeWhitespace: true,
-            pattern: /^[a-zA-Z]+$/
+            pattern: /^[a-zA-Z]+$/,
           },
           methodName: 'filterTest',
         },
@@ -173,12 +180,12 @@ describe('TokenStreamingService', () => {
 
       // Stream various tokens
       const tokens = ['Hi', 'Hello', '123', 'Test', '   ', 'Valid'];
-      tokens.forEach(token => {
+      tokens.forEach((token) => {
         service.streamToken('filter-test', 'filter-node', token);
       });
 
       // Allow processing
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Should have filtered out short, numeric, and whitespace tokens
       const stats = await service.getTokenStats().pipe(take(1)).toPromise();
@@ -200,7 +207,7 @@ describe('TokenStreamingService', () => {
       });
 
       service.streamToken('processor-test', 'processor-node', 'test-token');
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       expect(processor).toHaveBeenCalledWith('test-token', expect.any(Object));
     });
@@ -288,15 +295,15 @@ describe('TokenStreamingService', () => {
       });
 
       // Stream several tokens
-      ['A', 'B', 'C', 'D', 'E'].forEach(token => {
+      ['A', 'B', 'C', 'D', 'E'].forEach((token) => {
         service.streamToken(executionId, nodeId, token);
       });
 
       // Allow processing
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const stats = await service.getTokenStats().pipe(take(1)).toPromise();
-      
+
       expect(stats?.activeStreams).toBe(1);
       expect(stats?.totalTokensProcessed).toBeGreaterThan(0);
       expect(stats?.averageTokensPerSecond).toBeGreaterThanOrEqual(0);
@@ -304,7 +311,7 @@ describe('TokenStreamingService', () => {
 
     it('should track performance metrics', async () => {
       const startTime = Date.now();
-      
+
       // Process a batch of tokens
       const executionId = 'perf-test';
       const nodeId = 'perf-node';
@@ -326,18 +333,19 @@ describe('TokenStreamingService', () => {
       }
 
       // Allow processing to complete
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const endTime = Date.now();
       const duration = endTime - startTime;
 
       const stats = await service.getTokenStats().pipe(take(1)).toPromise();
-      
+
       expect(stats?.totalTokensProcessed).toBeGreaterThan(0);
       expect(duration).toBeLessThan(2000); // Should complete within 2 seconds
-      
+
       // Performance check: should process at least 10 tokens per second
-      const tokensPerSecond = stats?.totalTokensProcessed! / (duration / 1000);
+      const tokensPerSecond =
+        (stats?.totalTokensProcessed ?? 0) / (duration / 1000);
       expect(tokensPerSecond).toBeGreaterThan(10);
     });
   });
@@ -354,7 +362,7 @@ describe('TokenStreamingService', () => {
         },
         complete: () => {
           expect(receivedEvents).toBe(3);
-        }
+        },
       });
 
       // Initialize stream and send tokens
@@ -369,7 +377,7 @@ describe('TokenStreamingService', () => {
         },
       });
 
-      ['A', 'B', 'C'].forEach(token => {
+      ['A', 'B', 'C'].forEach((token) => {
         service.streamToken('global-test', 'global-node', token);
       });
     });
@@ -383,7 +391,7 @@ describe('TokenStreamingService', () => {
         next: (update) => {
           expect(update.metadata?.executionId).toBe(executionId);
           receivedEvents++;
-        }
+        },
       });
 
       // Initialize two streams with different execution IDs
@@ -404,7 +412,7 @@ describe('TokenStreamingService', () => {
       service.streamToken('other-exec', 'node2', 'Token2');
       service.streamToken(executionId, 'node1', 'Token3');
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       subscription.unsubscribe();
     });
   });
@@ -515,7 +523,7 @@ describe('TokenStreamingService', () => {
       await Promise.all(streamPromises);
 
       // Allow processing
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const stats = await service.getTokenStats().pipe(take(1)).toPromise();
       expect(stats?.totalTokensProcessed).toBeGreaterThan(0);

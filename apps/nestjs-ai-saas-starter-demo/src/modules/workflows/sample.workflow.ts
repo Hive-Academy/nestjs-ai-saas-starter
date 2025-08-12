@@ -11,6 +11,7 @@ interface SampleWorkflowState extends WorkflowState {
   processedData?: string;
   reviewResult?: boolean;
   finalOutput?: string;
+  metadata?: Record<string, any>; // Explicitly declare metadata
 }
 
 @Injectable()
@@ -23,7 +24,9 @@ export class SampleWorkflow {
     name: 'start',
     description: 'Initial workflow node',
   })
-  async startNode(state: SampleWorkflowState): Promise<Partial<SampleWorkflowState>> {
+  async startNode(
+    state: SampleWorkflowState
+  ): Promise<Partial<SampleWorkflowState>> {
     console.log('Starting workflow with input:', state.input);
     return {
       metadata: {
@@ -37,10 +40,12 @@ export class SampleWorkflow {
     name: 'process',
     description: 'Process the input data',
   })
-  async processNode(state: SampleWorkflowState): Promise<Partial<SampleWorkflowState>> {
+  async processNode(
+    state: SampleWorkflowState
+  ): Promise<Partial<SampleWorkflowState>> {
     // Simulate data processing
     const processed = `Processed: ${state.input.toUpperCase()}`;
-    
+
     return {
       processedData: processed,
       metadata: {
@@ -54,10 +59,12 @@ export class SampleWorkflow {
     name: 'review',
     description: 'Review the processed data',
   })
-  async reviewNode(state: SampleWorkflowState): Promise<Partial<SampleWorkflowState>> {
+  async reviewNode(
+    state: SampleWorkflowState
+  ): Promise<Partial<SampleWorkflowState>> {
     // Simulate review logic
-    const isValid = state.processedData && state.processedData.length > 0;
-    
+    const isValid = !!(state.processedData && state.processedData.length > 0);
+
     return {
       reviewResult: isValid,
       metadata: {
@@ -72,11 +79,13 @@ export class SampleWorkflow {
     name: 'complete',
     description: 'Complete the workflow',
   })
-  async completeNode(state: SampleWorkflowState): Promise<Partial<SampleWorkflowState>> {
-    const output = state.reviewResult 
+  async completeNode(
+    state: SampleWorkflowState
+  ): Promise<Partial<SampleWorkflowState>> {
+    const output = state.reviewResult
       ? `Success: ${state.processedData}`
       : 'Failed: Review did not pass';
-    
+
     return {
       finalOutput: output,
       metadata: {

@@ -1,4 +1,4 @@
-# @anubis/nestjs-chromadb
+# @hive-academy/nestjs-chromadb
 
 [![npm version](https://badge.fury.io/js/@anubis%2Fnestjs-chromadb.svg)](https://badge.fury.io/js/@anubis%2Fnestjs-chromadb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -20,7 +20,7 @@ A comprehensive NestJS integration for ChromaDB vector database with full TypeSc
 ## Installation
 
 ```bash
-npm install @anubis/nestjs-chromadb chromadb
+npm install @hive-academy/nestjs-chromadb chromadb
 ```
 
 ## Quick Start
@@ -29,7 +29,7 @@ npm install @anubis/nestjs-chromadb chromadb
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
 @Module({
   imports: [
@@ -52,7 +52,7 @@ export class AppModule {}
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { ChromaDBService } from '@anubis/nestjs-chromadb';
+import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 
 @Injectable()
 export class DocumentService {
@@ -240,7 +240,7 @@ const results = await chromaDB.queryDocuments('collection', {
 ### CollectionService
 
 ```typescript
-import { CollectionService } from '@anubis/nestjs-chromadb';
+import { CollectionService } from '@hive-academy/nestjs-chromadb';
 
 @Injectable()
 export class MyService {
@@ -302,7 +302,7 @@ const collection = await chromaDB.getOrCreateCollection('custom-collection', {
 ```typescript
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
-import { ChromaDBHealthIndicator } from '@anubis/nestjs-chromadb';
+import { ChromaDBHealthIndicator } from '@hive-academy/nestjs-chromadb';
 
 @Module({
   imports: [TerminusModule],
@@ -317,7 +317,7 @@ export class HealthModule {}
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { ChromaDBService } from '@anubis/nestjs-chromadb';
+import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 
 describe('DocumentService', () => {
   let service: DocumentService;
@@ -354,7 +354,7 @@ describe('DocumentService', () => {
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
 describe('ChromaDB Integration', () => {
   beforeEach(async () => {
@@ -375,7 +375,7 @@ describe('ChromaDB Integration', () => {
 ## Error Handling
 
 ```typescript
-import { ChromaDBConnectionError, ChromaDBQueryError } from '@anubis/nestjs-chromadb';
+import { ChromaDBConnectionError, ChromaDBQueryError } from '@hive-academy/nestjs-chromadb';
 
 try {
   await chromaDB.queryDocuments('collection', { queryTexts: ['test'] });
@@ -436,6 +436,6 @@ This project is licensed under the MIT License - see the [LICENSE](../../LICENSE
 
 ## Related Packages
 
-- [@anubis/nestjs-neo4j](https://www.npmjs.com/package/@anubis/nestjs-neo4j) - Neo4j integration
-- [@anubis/nestjs-langgraph](https://www.npmjs.com/package/@anubis/nestjs-langgraph) - LangGraph workflows
-- [@anubis/shared](https://www.npmjs.com/package/@anubis/shared) - Shared utilities
+- [@hive-academy/nestjs-neo4j](https://www.npmjs.com/package/@hive-academy/nestjs-neo4j) - Neo4j integration
+- [@hive-academy/nestjs-langgraph](https://www.npmjs.com/package/@hive-academy/nestjs-langgraph) - LangGraph workflows
+- [@hive-academy/shared](https://www.npmjs.com/package/@hive-academy/shared) - Shared utilities

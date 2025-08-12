@@ -142,9 +142,9 @@ The **NestJS-LangGraph Integration Library** provides a declarative, decorator-b
 ## Installation
 
 ```bash
-npm install @anubis/nestjs-langgraph
+npm install @hive-academy/nestjs-langgraph
 # or
-yarn add @anubis/nestjs-langgraph
+yarn add @hive-academy/nestjs-langgraph
 ```
 
 ## Quick Start
@@ -153,8 +153,8 @@ yarn add @anubis/nestjs-langgraph
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Workflow, Node, Edge, StreamToken, Tool } from '@anubis/nestjs-langgraph';
-import { DeclarativeWorkflowBase } from '@anubis/nestjs-langgraph';
+import { Workflow, Node, Edge, StreamToken, Tool } from '@hive-academy/nestjs-langgraph';
+import { DeclarativeWorkflowBase } from '@hive-academy/nestjs-langgraph';
 
 @Injectable()
 @Workflow({
@@ -223,7 +223,7 @@ export class ContentGeneratorWorkflow extends DeclarativeWorkflowBase {
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
 @Module({
   imports: [
@@ -698,7 +698,7 @@ The library includes comprehensive example workflows:
 Basic workflow demonstrating core features:
 
 ```typescript
-import { SimpleTestWorkflow } from '@anubis/nestjs-langgraph';
+import { SimpleTestWorkflow } from '@hive-academy/nestjs-langgraph';
 ```
 
 ### Integration Demo Workflow
@@ -706,7 +706,7 @@ import { SimpleTestWorkflow } from '@anubis/nestjs-langgraph';
 Advanced workflow showcasing all features:
 
 ```typescript
-import { IntegrationDemoWorkflow } from '@anubis/nestjs-langgraph';
+import { IntegrationDemoWorkflow } from '@hive-academy/nestjs-langgraph';
 ```
 
 ### HITL Approval Test Workflow
@@ -714,7 +714,7 @@ import { IntegrationDemoWorkflow } from '@anubis/nestjs-langgraph';
 Comprehensive HITL approval scenarios:
 
 ```typescript
-import { HITLApprovalTestWorkflow, HITLTestDataFactory } from '@anubis/nestjs-langgraph';
+import { HITLApprovalTestWorkflow, HITLTestDataFactory } from '@hive-academy/nestjs-langgraph';
 
 // Create test scenarios
 const lowRiskScenario = HITLTestDataFactory.createLowRiskScenario();
@@ -727,7 +727,7 @@ const criticalScenario = HITLTestDataFactory.createCriticalRiskScenario();
 Demonstrates all streaming capabilities:
 
 ```typescript
-import { StreamingWorkflowExample } from '@anubis/nestjs-langgraph';
+import { StreamingWorkflowExample } from '@hive-academy/nestjs-langgraph';
 ```
 
 ## Performance
@@ -760,8 +760,8 @@ We welcome contributions! Please follow these guidelines:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/anubis
-cd anubis
+git clone https://github.com/your-org/hive-academy
+cd hive-academy
 
 # Install dependencies
 npm install
@@ -874,13 +874,13 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ## Support
 
-- 📧 Email: support@anubis-agent.com
-- 💬 Discord: [Join our community](https://discord.gg/anubis)
-- 📖 Documentation: [Full documentation](https://docs.anubis-agent.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/your-org/anubis/issues)
+- 📧 Email: support@hive-academy-agent.com
+- 💬 Discord: [Join our community](https://discord.gg/hive-academy)
+- 📖 Documentation: [Full documentation](https://docs.hive-academy-agent.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/your-org/hive-academy/issues)
 
 ---
 
-**Built with ❤️ by the Anubis Team**
+**Built with ❤️ by the hive-academy Team**
 
 _Empowering developers to build sophisticated AI agent workflows with ease and confidence._
