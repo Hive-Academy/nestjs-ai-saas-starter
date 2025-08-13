@@ -3,6 +3,7 @@ import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { ToolRegistryService } from './tool-registry.service';
 
+
 /**
  * Fluent builder for creating tools programmatically
  */
@@ -310,9 +311,9 @@ export class ToolBuilderService {
               const result = await tool.func(item);
               return { index: i + index, success: true, result };
             } catch (error) {
-              const errorResult = { 
-                index: i + index, 
-                success: false, 
+              const errorResult = {
+                index: i + index,
+                success: false,
                 error: error instanceof Error ? error.message : String(error),
               };
               if (!continueOnError) {

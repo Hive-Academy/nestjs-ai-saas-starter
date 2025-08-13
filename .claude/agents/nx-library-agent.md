@@ -186,7 +186,6 @@ export type { MyFeatureOptions } from './lib/interfaces/options.interface';
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
       "libs/nestjs-langgraph",
-      "libs/shared"
     ],
     "version": {
       "conventionalCommits": true,

@@ -59,7 +59,7 @@ jobs:
         run: npx nx run-many -t lint test
 
       - name: Build libraries
-        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared
+        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
 
       - name: Check for changes
         id: changes
@@ -95,14 +95,14 @@ jobs:
       - name: Publish to NPM (dry run)
         if: inputs.dry_run == true || github.event_name == 'workflow_dispatch' && inputs.dry_run
         run: |
-          npx nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared
+          npx nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to NPM
         if: inputs.dry_run != true && (github.event_name == 'push' && steps.changes.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch' && !inputs.dry_run)
         run: |
-          npx nx run-many -t publish -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared
+          npx nx run-many -t publish -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

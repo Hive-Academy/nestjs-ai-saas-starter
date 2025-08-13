@@ -3,7 +3,7 @@ import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
 import { ModuleRef } from '@nestjs/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { AgentType } from '@internal/shared';
+import { AgentType } from './agent-types';
 
 import {
   ToolMetadata,

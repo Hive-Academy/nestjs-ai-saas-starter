@@ -15,7 +15,6 @@
   - Update libs/nestjs-chromadb/project.json with publishable build target
   - Update libs/nestjs-neo4j/project.json with publishable build target
   - Update libs/nestjs-langgraph/project.json with publishable build target
-  - Update libs/shared/project.json with publishable build target
   - Configure proper package.json files with correct metadata and dependencies
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 

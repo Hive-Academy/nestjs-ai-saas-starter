@@ -1,9 +1,7 @@
 import {
   DynamicModule,
   Global,
-  InjectionToken,
   Module,
-  OptionalFactoryDependency,
   Provider,
 } from '@nestjs/common';
 import type { ChromaClient } from 'chromadb';
@@ -34,7 +32,7 @@ export class ChromaDBModule {
   /**
    * Register ChromaDB module synchronously
    */
-  static forRoot(options: ChromaDBModuleOptions): DynamicModule {
+  public static forRoot(options: ChromaDBModuleOptions): DynamicModule {
     const optionsWithDefaults = this.mergeWithDefaults(options);
 
     const providers: Provider[] = [
@@ -102,7 +100,7 @@ export class ChromaDBModule {
   /**
    * Register ChromaDB module asynchronously
    */
-  static forRootAsync(options: ChromaDBModuleAsyncOptions): DynamicModule {
+  public static forRootAsync(options: ChromaDBModuleAsyncOptions): DynamicModule {
     const providers: Provider[] = [
       ...this.createAsyncProviders(options),
       {
@@ -150,7 +148,7 @@ export class ChromaDBModule {
 
     return {
       module: ChromaDBModule,
-      imports: options.imports || [],
+      imports: options.imports ?? [],
       providers,
       exports: [
         ChromaDBService,
@@ -166,7 +164,7 @@ export class ChromaDBModule {
   /**
    * Register specific collections for injection
    */
-  static forFeature(collections: CollectionConfig[]): DynamicModule {
+  public static forFeature(collections: CollectionConfig[]): DynamicModule {
     const providers: Provider[] = collections.map((config) => ({
       provide: `COLLECTION_${config.name.toUpperCase()}`,
       useFactory: async (
@@ -219,14 +217,12 @@ export class ChromaDBModule {
         provide: CHROMADB_OPTIONS,
         useFactory: async (...args) => {
           const factory = options.useFactory as (
-            ...args: any[]
+            ...args: unknown[]
           ) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
           const config = await factory(...args);
           return this.mergeWithDefaults(config);
         },
-        inject: (options.inject ?? []) as Array<
-          InjectionToken | OptionalFactoryDependency
-        >,
+        inject: (options.inject ?? []),
       };
     }
 
@@ -236,11 +232,15 @@ export class ChromaDBModule {
         const config = await optionsFactory.createChromaDBOptions();
         return this.mergeWithDefaults(config);
       },
-      inject: options.useExisting
-        ? [options.useExisting]
-        : options.useClass
-        ? [options.useClass]
-        : [],
+      inject: (() => {
+        if (options.useExisting) {
+          return [options.useExisting];
+        }
+        if (options.useClass) {
+          return [options.useClass];
+        }
+        return [];
+      })(),
     };
   }
 

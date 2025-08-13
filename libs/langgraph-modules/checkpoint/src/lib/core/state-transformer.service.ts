@@ -333,7 +333,7 @@ export class StateTransformerService {
             `Merge conflict for field '${key}': ${currentValue} vs ${value}`
           );
         default:
-          (result as Record<string, any>)[key] = value;
+          (result as Record<string, unknown>)[key] = value;
       }
     });
 

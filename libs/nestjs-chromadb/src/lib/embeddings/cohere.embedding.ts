@@ -4,37 +4,65 @@ import type { CohereEmbeddingConfig } from '../interfaces/chromadb-module-option
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**
+ * Constants for Cohere embedding provider
+ */
+const COHERE_EMBEDDING_DIMENSION = 1024 as const; // embed-english-v2.0 dimension
+const DEFAULT_BATCH_SIZE = 96 as const; // Cohere API limit
+
+/**
+ * Cohere API response interface
+ */
+interface CohereEmbeddingResponse {
+  embeddings: number[][];
+  id: string;
+  texts: string[];
+  meta?: {
+    api_version?: {
+      version: string;
+    };
+  };
+}
+
+/**
+ * Cohere API error response interface
+ */
+interface CohereErrorResponse {
+  message?: string;
+  code?: string;
+}
+
+/**
  * Cohere embedding provider
  */
 @Injectable()
 export class CohereEmbeddingProvider extends BaseEmbeddingProvider {
-  private readonly logger = new Logger(CohereEmbeddingProvider.name);
-  readonly name = 'cohere';
-  readonly dimension = 1024; // embed-english-v2.0 dimension
-  readonly batchSize: number;
+  public readonly name = 'cohere';
+  public readonly dimension = COHERE_EMBEDDING_DIMENSION;
+  public readonly batchSize: number;
 
+  private readonly logger = new Logger(CohereEmbeddingProvider.name);
   private readonly apiKey: string;
   private readonly model: string;
 
   constructor(config: CohereEmbeddingConfig) {
     super();
     this.apiKey = config.apiKey;
-    this.model = config.model || 'embed-english-v2.0';
-    this.batchSize = config.batchSize || 96; // Cohere's max batch size
+    this.model = config.model ?? 'embed-english-v2.0';
+    this.batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
   }
 
-  async embed(texts: string[]): Promise<number[][]> {
+  public async embed(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
     }
 
-    return this.processBatches(texts, (batch) => this.embedBatch(batch));
+    return this.processBatches(texts, async (batch) => this.embedBatch(batch));
   }
 
   private async embedBatch(texts: string[]): Promise<number[][]> {
     try {
       const response = await this.callCohereAPI(texts);
-      const embeddings = response.embeddings;
+      const { embeddings } = response;
 
       this.validateDimensions(embeddings, texts.length);
       return embeddings;
@@ -46,7 +74,7 @@ export class CohereEmbeddingProvider extends BaseEmbeddingProvider {
     }
   }
 
-  private async callCohereAPI(texts: string[]): Promise<any> {
+  private async callCohereAPI(texts: string[]): Promise<CohereEmbeddingResponse> {
     const response = await fetch('https://api.cohere.ai/v1/embed', {
       method: 'POST',
       headers: {
@@ -61,10 +89,17 @@ export class CohereEmbeddingProvider extends BaseEmbeddingProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Cohere API error: ${error.message || 'Unknown error'}`);
+      let errorMessage = 'Unknown error';
+      try {
+        const errorData = await response.json() as CohereErrorResponse;
+        errorMessage = errorData.message ?? errorMessage;
+      } catch {
+        // Failed to parse error response
+      }
+      throw new Error(`Cohere API error: ${errorMessage}`);
     }
 
-    return response.json();
+    const data = await response.json() as CohereEmbeddingResponse;
+    return data;
   }
 }

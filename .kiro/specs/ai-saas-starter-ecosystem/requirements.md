@@ -15,7 +15,6 @@ This specification outlines the development of a comprehensive AI SaaS starter e
 1. WHEN I search for `@anubis/nestjs-chromadb` on npm THEN I SHALL find a published package with comprehensive documentation
 2. WHEN I search for `@anubis/nestjs-neo4j` on npm THEN I SHALL find a published package with comprehensive documentation  
 3. WHEN I search for `@anubis/nestjs-langgraph` on npm THEN I SHALL find a published package with comprehensive documentation
-4. WHEN I search for `@anubis/shared` on npm THEN I SHALL find a published package with shared types and utilities
 5. WHEN I install any library THEN I SHALL get proper TypeScript definitions and peer dependency warnings
 6. WHEN a library is updated THEN the version SHALL be automatically bumped and published via CI/CD
 7. WHEN I view the library documentation THEN I SHALL see installation instructions, API reference, and usage examples

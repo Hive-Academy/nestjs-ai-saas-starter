@@ -14,19 +14,19 @@ import {
  */
 export interface AgentNodeConfig {
   /** Unique identifier for the node */
-  id: string;
+  readonly id: string;
   /** Human-readable name */
-  name?: string;
+  readonly name?: string;
   /** Node description */
-  description?: string;
+  readonly description?: string;
   /** Whether this node requires human approval */
-  requiresApproval?: boolean;
+  readonly requiresApproval?: boolean;
   /** Confidence threshold for this node */
-  confidenceThreshold?: number;
+  readonly confidenceThreshold?: number;
   /** Maximum retry attempts */
-  maxRetries?: number;
+  readonly maxRetries?: number;
   /** Timeout in milliseconds */
-  timeout?: number;
+  readonly timeout?: number;
 }
 
 /**
@@ -34,17 +34,16 @@ export interface AgentNodeConfig {
  * Provides common functionality for LLM interaction, error handling, and state management
  */
 export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState> implements OnModuleInit {
-  protected llm?: BaseChatModel;
   protected readonly logger: Logger;
   protected readonly eventEmitter?: EventEmitter2;
+  
+  protected llm?: BaseChatModel;
+  protected tools: StructuredToolInterface[] = [];
 
   /** Node configuration */
   protected abstract readonly nodeConfig: AgentNodeConfig;
-  
-  /** Available tools for this node */
-  protected tools: StructuredToolInterface[] = [];
 
-  constructor(
+  public constructor(
     @Optional()
     @Inject(EventEmitter2)
     eventEmitter?: EventEmitter2
@@ -56,7 +55,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   /**
    * Initialize the node
    */
-  async onModuleInit(): Promise<void> {
+  public async onModuleInit(): Promise<void> {
     this.logger.log(`Initializing node: ${this.nodeConfig.id}`);
     
     // Initialize LLM if needed
@@ -75,80 +74,12 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    * Execute the node logic
    * Nodes can return either a state update or a Command for control flow
    */
-  abstract execute(state: TState): Promise<Partial<TState> | Command<TState>>;
-
-  /**
-   * Custom initialization logic
-   * Override in subclasses for specific initialization
-   */
-  protected async initialize(): Promise<void> {
-    // Override in subclasses
-  }
-
-  /**
-   * Check if this node requires an LLM
-   */
-  protected requiresLLM(): boolean {
-    // Override in subclasses that need LLM
-    return false;
-  }
-
-  /**
-   * Initialize the LLM for this node
-   */
-  protected async initializeLLM(): Promise<void> {
-    // Override in subclasses to provide LLM initialization
-    // This is where you'd inject your LLM provider service
-    this.logger.warn('LLM required but not initialized - override initializeLLM()');
-  }
-
-  /**
-   * Initialize tools for this node
-   */
-  protected async initializeTools(): Promise<StructuredToolInterface[]> {
-    // Override in subclasses to provide tools
-    return [];
-  }
-
-  /**
-   * Pre-execution hook
-   */
-  protected async preExecute(state: TState): Promise<void> {
-    this.logger.debug(`Pre-executing node ${this.nodeConfig.id}`);
-    
-    // Emit node start event
-    if (this.eventEmitter) {
-      this.eventEmitter.emit('node.start', {
-        nodeId: this.nodeConfig.id,
-        executionId: state.executionId,
-        state,
-      });
-    }
-  }
-
-  /**
-   * Post-execution hook
-   */
-  protected async postExecute(
-    state: TState,
-    result: Partial<TState> | Command<TState>,
-  ): Promise<void> {
-    this.logger.debug(`Post-executing node ${this.nodeConfig.id}`);
-    
-    // Emit node complete event
-    if (this.eventEmitter) {
-      this.eventEmitter.emit('node.complete', {
-        nodeId: this.nodeConfig.id,
-        executionId: state.executionId,
-        result,
-      });
-    }
-  }
+  public abstract execute(state: TState): Promise<Partial<TState> | Command<TState>>;
 
   /**
    * Execute with hooks and error handling
    */
-  async executeWithHooks(state: TState): Promise<Partial<TState> | Command<TState>> {
+  public async executeWithHooks(state: TState): Promise<Partial<TState> | Command<TState>> {
     try {
       // Pre-execution
       await this.preExecute(state);
@@ -169,6 +100,94 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   }
 
   /**
+   * Get node metadata
+   */
+  public getMetadata(): AgentNodeConfig {
+    return this.nodeConfig;
+  }
+
+  /**
+   * Get node ID
+   */
+  public getId(): string {
+    return this.nodeConfig.id;
+  }
+
+  /**
+   * Custom initialization logic
+   * Override in subclasses for specific initialization
+   */
+  protected async initialize(): Promise<void> {
+    // Override in subclasses
+    return Promise.resolve();
+  }
+
+  /**
+   * Check if this node requires an LLM
+   */
+  protected requiresLLM(): boolean {
+    // Override in subclasses that need LLM
+    return false;
+  }
+
+  /**
+   * Initialize the LLM for this node
+   */
+  protected async initializeLLM(): Promise<void> {
+    // Override in subclasses to provide LLM initialization
+    // This is where you'd inject your LLM provider service
+    this.logger.warn('LLM required but not initialized - override initializeLLM()');
+    return Promise.resolve();
+  }
+
+  /**
+   * Initialize tools for this node
+   */
+  protected async initializeTools(): Promise<StructuredToolInterface[]> {
+    // Override in subclasses to provide tools
+    return Promise.resolve([]);
+  }
+
+  /**
+   * Pre-execution hook
+   */
+  protected async preExecute(state: TState): Promise<void> {
+    this.logger.debug(`Pre-executing node ${this.nodeConfig.id}`);
+    
+    // Emit node start event
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('node.start', {
+        nodeId: this.nodeConfig.id,
+        executionId: state.executionId,
+        state,
+      });
+    }
+    
+    return Promise.resolve();
+  }
+
+  /**
+   * Post-execution hook
+   */
+  protected async postExecute(
+    state: TState,
+    result: Partial<TState> | Command<TState>,
+  ): Promise<void> {
+    this.logger.debug(`Post-executing node ${this.nodeConfig.id}`);
+    
+    // Emit node complete event
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('node.complete', {
+        nodeId: this.nodeConfig.id,
+        executionId: state.executionId,
+        result,
+      });
+    }
+    
+    return Promise.resolve();
+  }
+
+  /**
    * Apply timeout to a promise
    */
   protected async withTimeout<T>(
@@ -177,12 +196,12 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   ): Promise<T> {
     return Promise.race([
       promise,
-      new Promise<T>((_, reject) =>
+      new Promise<T>((_, reject) => {
         setTimeout(
           () => reject(new Error(`Node timeout after ${timeoutMs}ms`)),
           timeoutMs,
-        ),
-      ),
+        );
+      }),
     ]);
   }
 
@@ -223,7 +242,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     }
 
     // Check retry policy
-    const maxRetries = this.nodeConfig.maxRetries || 3;
+    const maxRetries = this.nodeConfig.maxRetries ?? 3;
     if (state.retryCount < maxRetries && workflowError.isRecoverable) {
       return {
         type: CommandType.RETRY,
@@ -234,7 +253,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
         update: {
           retryCount: state.retryCount + 1,
           lastError: workflowError,
-          confidence: Math.max((state.confidence || 1) - 0.1, 0),
+          confidence: Math.max((state.confidence ?? 1) - 0.1, 0),
         } as unknown as Partial<TState>,
       };
     }
@@ -345,8 +364,8 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    * Check if confidence meets threshold
    */
   protected meetsConfidenceThreshold(state: TState): boolean {
-    const threshold = this.nodeConfig.confidenceThreshold || 0.7;
-    return (state.confidence || 1) >= threshold;
+    const threshold = this.nodeConfig.confidenceThreshold ?? 0.7;
+    return (state.confidence ?? 1) >= threshold;
   }
 
   /**
@@ -364,7 +383,8 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     }
     
     // Check for high-risk operations
-    if (state['risks']?.some((r: any) => r.severity === 'critical')) {
+    const risks = state.risks as Array<{ severity: string }> | undefined;
+    if (risks?.some((r) => r.severity === 'critical')) {
       return true;
     }
     
@@ -388,19 +408,5 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     }
     
     return this.goto(nextNode);
-  }
-
-  /**
-   * Get node metadata
-   */
-  getMetadata(): AgentNodeConfig {
-    return this.nodeConfig;
-  }
-
-  /**
-   * Get node ID
-   */
-  getId(): string {
-    return this.nodeConfig.id;
   }
 }

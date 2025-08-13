@@ -10,15 +10,20 @@
       "Bash(find:*)",
       "Bash(node fix-type-imports.js)",
       "Bash(npm run build:libs:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npx eslint:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 30 npx nx lint nestjs-chromadb)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "browser",
     "sequential-thinking",
     "nx-mcp",
     "filesystem"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

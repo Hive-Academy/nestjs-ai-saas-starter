@@ -3,7 +3,6 @@ import {
   Driver,
   Session,
   Transaction,
-  Result,
   session as neo4jSession,
 } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
@@ -32,7 +31,7 @@ export class Neo4jService {
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.READ,
     });
 
@@ -51,9 +50,9 @@ export class Neo4jService {
   /**
    * Execute a read query (legacy method for backward compatibility)
    */
-  async readQuery<T = any>(
+  async readQuery<T = Record<string, unknown>>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     database?: string
   ): Promise<T[]> {
     return this.read(async (session) => {
@@ -70,7 +69,7 @@ export class Neo4jService {
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.WRITE,
     });
 
@@ -89,9 +88,9 @@ export class Neo4jService {
   /**
    * Execute a write query (legacy method for backward compatibility)
    */
-  async writeQuery<T = any>(
+  async writeQuery<T = Record<string, unknown>>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     database?: string
   ): Promise<T[]> {
     return this.write(async (session) => {
@@ -103,13 +102,13 @@ export class Neo4jService {
   /**
    * Execute a query with full result details
    */
-  async run<T = any>(
+  async run<T = Record<string, unknown>>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     options?: SessionOptions
   ): Promise<QueryResult<T>> {
     const session = this.driver.session({
-      database: options?.database || this.options.database,
+      database: options?.database ?? this.options.database,
       defaultAccessMode:
         options?.defaultAccessMode === 'READ'
           ? neo4jSession.READ
@@ -138,14 +137,14 @@ export class Neo4jService {
           profile: result.summary.profile,
           notifications: result.summary.notifications,
           server: {
-            address: result.summary.server.address || '',
-            version: result.summary.server.agent || '',
+            address: result.summary.server.address ?? '',
+            version: result.summary.server.agent ?? '',
           },
           resultConsumedAfter: result.summary.resultConsumedAfter.toNumber(),
           resultAvailableAfter: result.summary.resultAvailableAfter.toNumber(),
           database: result.summary.database
             ? {
-                name: result.summary.database.name || '',
+                name: result.summary.database.name ?? '',
               }
             : undefined,
         },
@@ -163,12 +162,12 @@ export class Neo4jService {
   /**
    * Run operations in a transaction
    */
-  async runInTransaction<T>(
+  public async runInTransaction<T>(
     work: (session: Session) => Promise<T>,
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.WRITE,
     });
 
@@ -187,12 +186,12 @@ export class Neo4jService {
   /**
    * Run operations in a read transaction
    */
-  async runInReadTransaction<T>(
+  public async runInReadTransaction<T>(
     work: (tx: Transaction) => Promise<T>,
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.READ,
     });
 
@@ -212,12 +211,12 @@ export class Neo4jService {
   /**
    * Execute bulk operations with session callback
    */
-  async bulk<T>(
+  public async bulk<T>(
     operation: (session: Session) => Promise<T>,
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.WRITE,
     });
 
@@ -236,7 +235,7 @@ export class Neo4jService {
   /**
    * Execute multiple operations in a single transaction (legacy method)
    */
-  async bulkOperations(operations: BulkOperation[]): Promise<BulkResult> {
+  public async bulkOperations(operations: BulkOperation[]): Promise<BulkResult> {
     const session = this.driver.session({
       database: this.options.database,
     });
@@ -262,8 +261,8 @@ export class Neo4jService {
             },
             notifications: result.summary.notifications,
             server: {
-              address: result.summary.server.address || '',
-              version: result.summary.server.agent || '',
+              address: result.summary.server.address ?? '',
+              version: result.summary.server.agent ?? '',
             },
             resultConsumedAfter: result.summary.resultConsumedAfter.toNumber(),
             resultAvailableAfter:
@@ -292,9 +291,9 @@ export class Neo4jService {
   /**
    * Get a session for manual control
    */
-  getSession(options?: SessionOptions): Session {
+  public getSession(options?: SessionOptions): Session {
     return this.driver.session({
-      database: options?.database || this.options.database,
+      database: options?.database ?? this.options.database,
       defaultAccessMode:
         options?.defaultAccessMode === 'READ'
           ? neo4jSession.READ
@@ -307,7 +306,7 @@ export class Neo4jService {
   /**
    * Verify connectivity
    */
-  async verifyConnectivity(): Promise<boolean> {
+  public async verifyConnectivity(): Promise<boolean> {
     try {
       await this.driver.verifyConnectivity();
       return true;
@@ -321,14 +320,14 @@ export class Neo4jService {
   /**
    * Get driver instance for advanced operations
    */
-  getDriver(): Driver {
+  public getDriver(): Driver {
     return this.driver;
   }
 
   /**
    * Close the driver connection
    */
-  async close(): Promise<void> {
+  public async close(): Promise<void> {
     await this.driver.close();
   }
 }

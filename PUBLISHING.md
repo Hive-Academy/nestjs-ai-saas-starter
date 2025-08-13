@@ -103,12 +103,6 @@ nx build nestjs-langgraph
 nx run nestjs-langgraph:publish
 ```
 
-### @anubis/shared
-
-```bash
-nx build shared
-nx run shared:publish
-```
 
 ## Troubleshooting
 

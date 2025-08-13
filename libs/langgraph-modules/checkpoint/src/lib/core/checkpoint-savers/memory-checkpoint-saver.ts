@@ -17,9 +17,7 @@ import {
 /**
  * In-memory checkpoint saver with TTL and cleanup capabilities
  */
-export class MemoryCheckpointSaver
-  extends BaseCheckpointSaver
-  implements EnhancedBaseCheckpointSaver
+export class MemoryCheckpointSaver implements EnhancedBaseCheckpointSaver
 {
   private readonly checkpoints = new Map<string, EnhancedCheckpoint>();
   private readonly threadCheckpoints = new Map<string, Set<string>>();

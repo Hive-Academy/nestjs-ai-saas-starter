@@ -1,4 +1,4 @@
-import { AgentType } from '@internal/shared';
+import { AgentType } from './agent-types';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { Injectable, Logger } from '@nestjs/common';

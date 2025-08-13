@@ -4,15 +4,28 @@ import type { HuggingFaceEmbeddingConfig } from '../interfaces/chromadb-module-o
 import { getErrorMessage, getErrorStack } from '../utils/error.utils';
 
 /**
+ * Constants for HuggingFace embedding provider
+ */
+const HUGGINGFACE_EMBEDDING_DIMENSION = 384 as const; // all-MiniLM-L6-v2 dimension
+const DEFAULT_BATCH_SIZE = 50 as const;
+
+/**
+ * HuggingFace API response types
+ */
+type HuggingFaceSingleResponse = number[];
+type HuggingFaceBatchResponse = number[][];
+type HuggingFaceResponse = HuggingFaceSingleResponse | HuggingFaceBatchResponse;
+
+/**
  * HuggingFace embedding provider
  */
 @Injectable()
 export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
-  private readonly logger = new Logger(HuggingFaceEmbeddingProvider.name);
-  readonly name = 'huggingface';
-  readonly dimension = 384; // all-MiniLM-L6-v2 dimension
-  readonly batchSize: number;
+  public readonly name = 'huggingface';
+  public readonly dimension = HUGGINGFACE_EMBEDDING_DIMENSION;
+  public readonly batchSize: number;
 
+  private readonly logger = new Logger(HuggingFaceEmbeddingProvider.name);
   private readonly apiKey?: string;
   private readonly model: string;
   private readonly endpoint: string;
@@ -20,19 +33,19 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
   constructor(config: HuggingFaceEmbeddingConfig) {
     super();
     this.apiKey = config.apiKey;
-    this.model = config.model || 'sentence-transformers/all-MiniLM-L6-v2';
+    this.model = config.model ?? 'sentence-transformers/all-MiniLM-L6-v2';
     this.endpoint =
-      config.endpoint ||
+      config.endpoint ??
       `https://api-inference.huggingface.co/pipeline/feature-extraction/${this.model}`;
-    this.batchSize = config.batchSize || 50;
+    this.batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
   }
 
-  async embed(texts: string[]): Promise<number[][]> {
+  public async embed(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
     }
 
-    return this.processBatches(texts, (batch) => this.embedBatch(batch));
+    return this.processBatches(texts, async (batch) => this.embedBatch(batch));
   }
 
   private async embedBatch(texts: string[]): Promise<number[][]> {
@@ -62,13 +75,13 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
     }
   }
 
-  private async callHuggingFaceAPI(texts: string[]): Promise<any> {
+  private async callHuggingFaceAPI(texts: string[]): Promise<HuggingFaceResponse> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      headers.Authorization = `Bearer ${this.apiKey}`;
     }
 
     const response = await fetch(this.endpoint, {
@@ -83,10 +96,16 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`HuggingFace API error: ${error}`);
+      let errorMessage = 'Unknown error';
+      try {
+        errorMessage = await response.text();
+      } catch {
+        // Failed to read error response
+      }
+      throw new Error(`HuggingFace API error: ${errorMessage}`);
     }
 
-    return response.json();
+    const data = await response.json() as HuggingFaceResponse;
+    return data;
   }
 }

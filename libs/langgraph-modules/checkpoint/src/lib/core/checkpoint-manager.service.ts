@@ -368,7 +368,10 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
         filteredCheckpoints = filteredCheckpoints.filter(([, , metadata]) => {
           if (!metadata.timestamp) return true;
           const checkpointDate = new Date(metadata.timestamp);
-          const { from, to } = options.dateRange;
+          const { from, to } = options.dateRange as {
+            from?: Date;
+            to?: Date;
+          };
           return (
             (!from || checkpointDate >= from) && (!to || checkpointDate <= to)
           );

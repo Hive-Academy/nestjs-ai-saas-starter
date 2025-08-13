@@ -1,4 +1,4 @@
-import { ModuleMetadata, Type, Provider, InjectionToken, OptionalFactoryDependency } from '@nestjs/common';
+import type { ModuleMetadata, Type, Provider, InjectionToken, OptionalFactoryDependency } from '@nestjs/common';
 import type { EmbeddingFunction, CollectionMetadata } from 'chromadb';
 
 /**
@@ -86,7 +86,7 @@ export interface CustomEmbeddingConfig {
 /**
  * Embedding configuration union type
  */
-export type EmbeddingConfig = 
+export type EmbeddingConfig =
   | { provider: 'openai'; config: OpenAIEmbeddingConfig }
   | { provider: 'huggingface'; config: HuggingFaceEmbeddingConfig }
   | { provider: 'cohere'; config: CohereEmbeddingConfig }
@@ -152,55 +152,10 @@ export interface ChromaDBModuleOptions {
 }
 
 /**
- * ChromaDB module configuration options
- */
-export interface ChromaDBModuleOptions {
-  /**
-   * ChromaDB client connection options
-   */
-  connection: ChromaDBClientOptions;
-
-  /**
-   * Default collection name for operations
-   */
-  defaultCollection?: string;
-
-  /**
-   * Batch size for bulk operations (default: 100)
-   */
-  batchSize?: number;
-
-  /**
-   * Maximum number of connection retries (default: 3)
-   */
-  maxRetries?: number;
-
-  /**
-   * Delay between retries in milliseconds (default: 1000)
-   */
-  retryDelay?: number;
-
-  /**
-   * Enable connection health checks
-   */
-  enableHealthCheck?: boolean;
-
-  /**
-   * Health check interval in milliseconds (default: 30000)
-   */
-  healthCheckInterval?: number;
-
-  /**
-   * Log connection details on startup
-   */
-  logConnection?: boolean;
-}
-
-/**
  * Factory interface for creating ChromaDB module options
  */
 export interface ChromaDBOptionsFactory {
-  createChromaDBOptions(): Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
+  createChromaDBOptions: () => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
 }
 
 /**
@@ -209,7 +164,7 @@ export interface ChromaDBOptionsFactory {
 export interface ChromaDBModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useExisting?: Type<ChromaDBOptionsFactory>;
   useClass?: Type<ChromaDBOptionsFactory>;
-  useFactory?: (...args: any[]) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
+  useFactory?: (...args: unknown[]) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
   inject?: Array<InjectionToken | OptionalFactoryDependency>;
   extraProviders?: Provider[];
 }

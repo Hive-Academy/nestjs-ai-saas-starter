@@ -17,9 +17,7 @@ import {
 /**
  * Redis-based checkpoint saver with optimized storage patterns
  */
-export class RedisCheckpointSaver
-  extends BaseCheckpointSaver
-  implements EnhancedBaseCheckpointSaver
+export class RedisCheckpointSaver implements EnhancedBaseCheckpointSaver
 {
   private redis: any; // Redis client
   private readonly keyPrefix: string;

@@ -19,7 +19,7 @@ export class Neo4jModule {
   /**
    * Register Neo4j module synchronously
    */
-  static forRoot(options: Neo4jModuleOptions): DynamicModule {
+  public static forRoot(options: Neo4jModuleOptions): DynamicModule {
     const optionsProvider: Provider = {
       provide: NEO4J_OPTIONS,
       useValue: options,
@@ -66,7 +66,7 @@ export class Neo4jModule {
   /**
    * Register Neo4j module asynchronously
    */
-  static forRootAsync(options: Neo4jModuleAsyncOptions): DynamicModule {
+  public static forRootAsync(options: Neo4jModuleAsyncOptions): DynamicModule {
     const providers = [
       ...this.createAsyncProviders(options),
       {
@@ -92,7 +92,7 @@ export class Neo4jModule {
 
     return {
       module: Neo4jModule,
-      imports: options.imports || [],
+      imports: options.imports ?? [],
       providers,
       exports: [
         Neo4jService,
@@ -107,7 +107,7 @@ export class Neo4jModule {
   /**
    * Register specific database sessions
    */
-  static forFeature(databases: string[]): DynamicModule {
+  public static forFeature(databases: string[]): DynamicModule {
     const providers = databases.map(database => ({
       provide: `NEO4J_SESSION_${database}`,
       useFactory: (driver: neo4j.Driver) => {
@@ -148,12 +148,12 @@ export class Neo4jModule {
       return {
         provide: NEO4J_OPTIONS,
         useFactory: options.useFactory,
-        inject: options.inject || [],
+        inject: options.inject ?? [],
       };
     }
 
     const inject = [
-      (options.useClass || options.useExisting) as Type<Neo4jModuleOptionsFactory>,
+      (options.useClass ?? options.useExisting) as Type<Neo4jModuleOptionsFactory>,
     ];
 
     return {

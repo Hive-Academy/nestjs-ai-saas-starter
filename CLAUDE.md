@@ -13,7 +13,6 @@ npm run build:libs
 npx nx build nestjs-chromadb
 npx nx build nestjs-neo4j
 npx nx build nestjs-langgraph
-npx nx build shared
 
 # Run tests
 npx nx test <project-name>              # Test specific project
@@ -73,7 +72,6 @@ This is an Nx monorepo with four publishable NPM libraries under the `@anubis` s
 1. **@anubis/nestjs-chromadb** - Vector database integration for semantic search and embeddings
 2. **@anubis/nestjs-neo4j** - Graph database integration for relationship modeling
 3. **@anubis/nestjs-langgraph** - AI agent workflow orchestration using LangGraph
-4. **@anubis/shared** - Shared types, interfaces, and utilities
 
 ### Library Architecture Patterns
 
@@ -151,7 +149,7 @@ Critical environment variables that must be set:
 ### Git Workflow
 - Conventional commits enforced via Husky hooks
 - Format: `type(scope): description`
-- Scopes: `chromadb`, `neo4j`, `langgraph`, `shared`, `deps`, `ci`, `docs`
+- Scopes: `chromadb`, `neo4j`, `langgraph`,  `deps`, `ci`, `docs`
 - Pre-commit: Linting and formatting
 - Pre-push: Tests and build validation
 

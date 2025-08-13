@@ -30,7 +30,14 @@
     "spec:resume": "node scripts/spec-resume.js",
     "spec:export": "node scripts/spec-resume.js",
     "task:list": "node scripts/spec-resume.js",
-    "task:dashboard": "node scripts/spec-resume.js"
+    "task:dashboard": "node scripts/spec-resume.js",
+    "validate:types": "node scripts/typescript-fixes/validate-types.js",
+    "validate:types:typescript": "node scripts/typescript-fixes/validate-types.js typescript",
+    "validate:types:eslint": "node scripts/typescript-fixes/validate-types.js eslint",
+    "validate:types:any": "node scripts/typescript-fixes/validate-types.js any-types",
+    "validate:types:build": "node scripts/typescript-fixes/validate-types.js build",
+    "apply:strict-config": "node scripts/typescript-fixes/apply-strict-config.js",
+    "ci:validate": "node scripts/typescript-fixes/ci-validation.js"
   },
   "private": true,
   "dependencies": {

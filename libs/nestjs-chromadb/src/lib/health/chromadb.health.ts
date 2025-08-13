@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ChromaDBService } from '../services/chromadb.service';
 
 export interface HealthIndicatorResult {
-  [key: string]: {
-    status: 'up' | 'down';
-    [key: string]: any;
+  readonly [key: string]: {
+    readonly status: 'up' | 'down';
+    readonly [key: string]: unknown;
   };
 }
 
@@ -18,22 +18,13 @@ export class HealthCheckError extends Error {
 export class ChromaDBHealthIndicator {
   constructor(private readonly chromaDBService: ChromaDBService) {}
 
-  protected getStatus(key: string, isHealthy: boolean, data?: any): HealthIndicatorResult {
-    return {
-      [key]: {
-        status: isHealthy ? 'up' : 'down',
-        ...data,
-      },
-    };
-  }
-
   /**
    * Health check for ChromaDB connection
    */
-  async isHealthy(key: string): Promise<HealthIndicatorResult> {
+  public async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
       const isHealthy = await this.chromaDBService.isHealthy();
-      
+
       if (!isHealthy) {
         throw new Error('ChromaDB connection is not healthy');
       }
@@ -59,10 +50,10 @@ export class ChromaDBHealthIndicator {
   /**
    * Health check with detailed collection information
    */
-  async isHealthyDetailed(key: string): Promise<HealthIndicatorResult> {
+  public async isHealthyDetailed(key: string): Promise<HealthIndicatorResult> {
     try {
       const isHealthy = await this.chromaDBService.isHealthy();
-      
+
       if (!isHealthy) {
         throw new Error('ChromaDB connection is not healthy');
       }
@@ -93,10 +84,10 @@ export class ChromaDBHealthIndicator {
   /**
    * Test a specific collection's health
    */
-  async isCollectionHealthy(key: string, collectionName: string): Promise<HealthIndicatorResult> {
+  public async isCollectionHealthy(key: string, collectionName: string): Promise<HealthIndicatorResult> {
     try {
       const exists = await this.chromaDBService.collectionExists(collectionName);
-      
+
       if (!exists) {
         throw new Error(`Collection '${collectionName}' does not exist`);
       }
@@ -119,5 +110,14 @@ export class ChromaDBHealthIndicator {
 
       throw new HealthCheckError(`ChromaDB collection '${collectionName}' health check failed`, result);
     }
+  }
+
+  protected getStatus(key: string, isHealthy: boolean, data?: Record<string, unknown>): HealthIndicatorResult {
+    return {
+      [key]: {
+        status: isHealthy ? 'up' : 'down',
+        ...data,
+      },
+    };
   }
 }

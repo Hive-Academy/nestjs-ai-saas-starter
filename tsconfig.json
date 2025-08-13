@@ -19,9 +19,6 @@
       "path": "./libs/nestjs-langgraph"
     },
     {
-      "path": "./libs/shared"
-    },
-    {
       "path": "./libs/langgraph-modules/checkpoint"
     },
     {

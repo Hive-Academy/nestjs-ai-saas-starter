@@ -1,29 +1,83 @@
-import { Collection, ChromaClient, WhereDocument, Where, QueryResult, GetResult } from 'chromadb';
+import type { Collection, ChromaClient, WhereDocument, Where, QueryResult, GetResult } from 'chromadb';
+
+/**
+ * ChromaDB metadata type - supports string, number, boolean, and null values
+ */
+export interface ChromaMetadata {
+  readonly [key: string]: string | number | boolean | null;
+}
+
+/**
+ * Metadata filter operators
+ */
+export type MetadataFilterOperator = '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$in' | '$nin';
+
+/**
+ * Single metadata filter condition
+ */
+export interface MetadataFilterCondition<T = string | number | boolean | null> {
+  readonly [K in MetadataFilterOperator]?: T | readonly T[];
+}
+
+/**
+ * Metadata filter with type constraints
+ */
+export type MetadataFilter<TMetadata extends ChromaMetadata = ChromaMetadata> = {
+  readonly [K in keyof TMetadata]?: TMetadata[K] | MetadataFilterCondition<TMetadata[K]>;
+};
+
+/**
+ * Document content filter
+ */
+export interface DocumentFilter {
+  readonly $contains?: string;
+  readonly $not_contains?: string;
+}
+
+/**
+ * Embedding vector representation
+ */
+export interface EmbeddingVector {
+  readonly values: readonly number[];
+  readonly dimension: number;
+}
+
+/**
+ * ChromaDB query parameters with proper typing
+ */
+export interface ChromaQuery<TMetadata extends ChromaMetadata = ChromaMetadata> {
+  readonly queryEmbeddings?: readonly EmbeddingVector[] | readonly number[][];
+  readonly queryTexts?: readonly string[];
+  readonly nResults?: number;
+  readonly where?: MetadataFilter<TMetadata>;
+  readonly whereDocument?: DocumentFilter;
+  readonly include?: ReadonlyArray<'metadatas' | 'documents' | 'distances' | 'embeddings'>;
+}
 
 /**
  * Document structure for ChromaDB operations
  */
-export interface ChromaDocument {
-  id: string;
-  document?: string;
-  metadata?: Record<string, any>;
-  embedding?: number[];
+export interface ChromaDocument<TMetadata extends ChromaMetadata = ChromaMetadata> {
+  readonly id: string;
+  readonly document?: string;
+  readonly metadata?: TMetadata;
+  readonly embedding?: readonly number[];
 }
 
 /**
- * Search result structure - using ChromaDB native types
+ * Search result structure - using ChromaDB native types with proper metadata typing
  */
-export type ChromaSearchResult = QueryResult<Record<string, any>>;
+export type ChromaSearchResult<TMetadata extends ChromaMetadata = ChromaMetadata> = QueryResult<TMetadata>;
 
 /**
  * Collection information structure
  */
-export interface ChromaCollectionInfo {
-  name: string;
-  id: string;
-  metadata?: Record<string, any>;
-  dimension?: number;
-  count?: number;
+export interface ChromaCollectionInfo<TMetadata extends ChromaMetadata = ChromaMetadata> {
+  readonly name: string;
+  readonly id: string;
+  readonly metadata?: TMetadata;
+  readonly dimension?: number;
+  readonly count?: number;
 }
 
 /**
@@ -51,96 +105,96 @@ export interface ChromaBulkOptions {
 /**
  * ChromaDB service interface defining core operations
  */
-export interface IChromaDBService {
+export interface ChromaDBServiceInterface {
   /**
    * Get the ChromaDB client instance
    */
-  getClient(): ChromaClient;
+  getClient: () => ChromaClient;
 
   /**
    * Check if connection to ChromaDB is healthy
    */
-  isHealthy(): Promise<boolean>;
+  isHealthy: () => Promise<boolean>;
 
   /**
    * Get heartbeat from ChromaDB server
    */
-  heartbeat(): Promise<number>;
+  heartbeat: () => Promise<number>;
 
   /**
    * Get ChromaDB server version
    */
-  version(): Promise<string>;
+  version: () => Promise<string>;
 
   /**
    * Reset the entire ChromaDB instance (use with caution)
    */
-  reset(): Promise<boolean>;
+  reset: () => Promise<boolean>;
 
   /**
    * List all collections
    */
-  listCollections(): Promise<ChromaCollectionInfo[]>;
+  listCollections: () => Promise<ChromaCollectionInfo[]>;
 
   /**
    * Create a new collection
    */
-  createCollection(
+  createCollection: <TMetadata extends ChromaMetadata = ChromaMetadata>(
     name: string,
-    metadata?: Record<string, any>,
-    embeddingFunction?: any,
+    metadata?: TMetadata,
+    embeddingFunction?: unknown,
     getOrCreate?: boolean,
-  ): Promise<Collection>;
+  ) => Promise<Collection>;
 
   /**
    * Get an existing collection
    */
-  getCollection(
+  getCollection: (
     name: string,
-    embeddingFunction?: any,
-  ): Promise<Collection>;
+    embeddingFunction?: unknown,
+  ) => Promise<Collection>;
 
   /**
    * Delete a collection
    */
-  deleteCollection(name: string): Promise<void>;
+  deleteCollection: (name: string) => Promise<void>;
 
   /**
    * Check if a collection exists
    */
-  collectionExists(name: string): Promise<boolean>;
+  collectionExists: (name: string) => Promise<boolean>;
 
   /**
    * Add documents to a collection
    */
-  addDocuments(
+  addDocuments: (
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions,
-  ): Promise<void>;
+  ) => Promise<void>;
 
   /**
    * Update documents in a collection
    */
-  updateDocuments(
+  updateDocuments: (
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions,
-  ): Promise<void>;
+  ) => Promise<void>;
 
   /**
    * Upsert documents in a collection
    */
-  upsertDocuments(
+  upsertDocuments: (
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions,
-  ): Promise<void>;
+  ) => Promise<void>;
 
   /**
    * Get documents from a collection
    */
-  getDocuments(
+  getDocuments: (
     collectionName: string,
     ids?: string[],
     where?: Where,
@@ -148,51 +202,51 @@ export interface IChromaDBService {
     offset?: number,
     whereDocument?: WhereDocument,
     include?: string[],
-  ): Promise<GetResult<Record<string, any>>>;
+  ) => Promise<GetResult<Record<string, unknown>>>;
 
   /**
    * Delete documents from a collection
    */
-  deleteDocuments(
+  deleteDocuments: (
     collectionName: string,
     ids?: string[],
     where?: Where,
     whereDocument?: WhereDocument,
-  ): Promise<void>;
+  ) => Promise<void>;
 
   /**
    * Search for similar documents
    */
-  searchDocuments(
+  searchDocuments: (
     collectionName: string,
     queryTexts?: string[],
     queryEmbeddings?: number[][],
     options?: ChromaSearchOptions,
-  ): Promise<ChromaSearchResult>;
+  ) => Promise<ChromaSearchResult>;
 
   /**
    * Count documents in a collection
    */
-  countDocuments(collectionName: string): Promise<number>;
+  countDocuments: (collectionName: string) => Promise<number>;
 
   /**
    * Peek at documents in a collection
    */
-  peekDocuments(
+  peekDocuments: (
     collectionName: string,
     limit?: number,
-  ): Promise<GetResult<Record<string, any>>>;
+  ) => Promise<GetResult<Record<string, unknown>>>;
 
   /**
    * Get collection metadata
    */
-  getCollectionMetadata(collectionName: string): Promise<Record<string, any> | null>;
+  getCollectionMetadata: (collectionName: string) => Promise<Record<string, unknown> | null>;
 
   /**
    * Update collection metadata
    */
-  updateCollectionMetadata(
+  updateCollectionMetadata: (
     collectionName: string,
-    metadata: Record<string, any>,
-  ): Promise<void>;
+    metadata: Record<string, unknown>,
+  ) => Promise<void>;
 }

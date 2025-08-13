@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-08-13T13:29:56.192Z",
+  "summary": {
+    "passed": 10,
+    "failed": 0,
+    "warnings": 0
+  },
+  "details": {
+    "passed": [
+      "nestjs-chromadb",
+      "nestjs-neo4j",
+      "nestjs-langgraph",
+      "langgraph-modules/checkpoint",
+      "langgraph-modules/memory",
+      "langgraph-modules/time-travel",
+      "langgraph-modules/multi-agent",
+      "langgraph-modules/functional-api",
+      "langgraph-modules/monitoring",
+      "langgraph-modules/platform"
+    ],
+    "failed": [],
+    "warnings": []
+  }
+}

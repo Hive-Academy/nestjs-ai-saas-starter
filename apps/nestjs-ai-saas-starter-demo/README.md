@@ -9,7 +9,6 @@ This demo application integrates all four ecosystem libraries:
 - **@hive-academy/nestjs-chromadb** - Vector database operations and semantic search
 - **@hive-academy/nestjs-neo4j** - Graph database operations and relationship modeling
 - **@hive-academy/nestjs-langgraph** - AI workflow orchestration with LangGraph
-- **@hive-academy/shared** - Shared utilities and types
 
 ## Prerequisites
 

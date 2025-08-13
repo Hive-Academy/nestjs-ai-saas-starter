@@ -10,12 +10,12 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
     throw new Error('Vectors must have the same dimensions');
   }
 
-  let dotProduct = 0;
+  let dotProd = 0;
   let normA = 0;
   let normB = 0;
 
   for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
+    dotProd += vecA[i] * vecB[i];
     normA += vecA[i] * vecA[i];
     normB += vecB[i] * vecB[i];
   }
@@ -27,7 +27,7 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
     return 0;
   }
 
-  return dotProduct / (normA * normB);
+  return dotProd / (normA * normB);
 }
 
 /**
@@ -67,13 +67,13 @@ export function dotProduct(vecA: number[], vecB: number[]): number {
  * Normalize a vector to unit length
  */
 export function normalize(vector: number[]): number[] {
-  const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+  const vectorMagnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
 
-  if (magnitude === 0) {
-    return new Array(vector.length).fill(0);
+  if (vectorMagnitude === 0) {
+    return new Array(vector.length).fill(0) as number[];
   }
 
-  return vector.map((val) => val / magnitude);
+  return vector.map((val) => val / vectorMagnitude);
 }
 
 /**
@@ -235,10 +235,10 @@ export function distanceToSimilarity(
     case 'negative_exp':
       return Math.exp(-distance);
     case 'gaussian': {
-      const s = sigma || 1;
+      const s = sigma ?? 1;
       return Math.exp(-(distance * distance) / (2 * s * s));
     }
     default:
-      throw new Error(`Unknown similarity method: ${method}`);
+      throw new Error(`Unknown similarity method: ${String(method)}`);
   }
 }

@@ -24,8 +24,8 @@ export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, On
   }
 
   private async connect(): Promise<void> {
-    const maxRetries = this.options.retryAttempts || 5;
-    const retryDelay = this.options.retryDelay || 5000;
+    const maxRetries = this.options.retryAttempts ?? 5;
+    const retryDelay = this.options.retryDelay ?? 5000;
 
     while (this.retryCount < maxRetries) {
       try {
@@ -40,7 +40,7 @@ export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, On
         
         return;
       } catch (error) {
-        this.retryCount++;
+        this.retryCount += 1;
         const message = error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(
           `Failed to connect to Neo4j (attempt ${this.retryCount}/${maxRetries}): ${message}`
@@ -115,7 +115,7 @@ export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, On
     }
   }
 
-  private delay(ms: number): Promise<void> {
+  private async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 

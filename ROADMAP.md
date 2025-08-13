@@ -17,7 +17,6 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 - ✅ ChromaDB integration library
 - ✅ Neo4j integration library
 - ✅ LangGraph workflows library
-- ✅ Shared utilities library
 - ✅ Nx monorepo setup
 - ✅ CI/CD pipeline with GitHub Actions
 - ✅ Automated library publishing
@@ -157,11 +156,6 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 - **Current**: Basic workflow execution, streaming support
 - **Planned**: Advanced patterns, debugging tools, performance monitoring
 - **Future**: Visual workflow builder, marketplace integration, auto-optimization
-
-#### @anubis/shared
-- **Current**: Basic types and utilities
-- **Planned**: Extended type definitions, utility functions, validation schemas
-- **Future**: Code generation tools, migration utilities, testing frameworks
 
 ### Infrastructure & DevOps
 

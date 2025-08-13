@@ -45,7 +45,6 @@ nestjs-ai-saas-starter/
 │   ├── nestjs-chromadb/                 # ChromaDB integration
 │   ├── nestjs-neo4j/                    # Neo4j integration
 │   ├── nestjs-langgraph/                # LangGraph workflows
-│   └── shared/                          # Internal shared utilities
 ├── docs/                                # Documentation
 ├── docker/                              # Docker configurations
 ├── .github/workflows/                   # CI/CD pipelines
@@ -291,20 +290,6 @@ export class AppModule {}
 - Human-in-the-loop (HITL) capabilities
 - Tool registry and management
 - Comprehensive testing utilities
-
-### Internal Libraries
-
-**@internal/shared** - Internal shared types and utilities used across the workspace (not published to npm)
-console.log(researcher.skills); // ['web_search', 'data_analysis', ...]
-
-````
-
-**Features:**
-
-- Agent type definitions
-- Common interfaces and types
-- Utility functions
-- Shared constants
 
 ## 🏭 Production Deployment
 

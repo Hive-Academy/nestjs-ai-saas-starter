@@ -40,7 +40,7 @@ export class Neo4jHealthService {
 
       try {
         const result = await session.run('CALL dbms.components() YIELD name, versions, edition');
-        const record = result.records[0];
+        const [record] = result.records;
         
         const responseTime = Date.now() - startTime;
         
@@ -87,7 +87,7 @@ export class Neo4jHealthService {
     });
 
     try {
-      const metrics: any = {};
+      const metrics: Record<string, number | string> = {};
       
       // Get database size
       try {
@@ -97,7 +97,7 @@ export class Neo4jHealthService {
         `);
         
         if (sizeResult.records.length > 0) {
-          const record = sizeResult.records[0];
+          const [record] = sizeResult.records;
           metrics.nodes = record.get('nodeCount').toNumber();
           metrics.relationships = record.get('relCount').toNumber();
           metrics.properties = record.get('propertyKeyCount').toNumber();

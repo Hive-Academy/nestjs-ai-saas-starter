@@ -104,7 +104,6 @@ git commit -m "test(langgraph): add workflow integration tests"
 - `chromadb`: ChromaDB library changes
 - `neo4j`: Neo4j library changes
 - `langgraph`: LangGraph library changes
-- `shared`: Shared utilities changes
 - `deps`: Dependency updates
 - `release`: Release-related changes
 - `ci`: CI/CD configuration

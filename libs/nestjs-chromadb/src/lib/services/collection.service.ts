@@ -9,6 +9,11 @@ import { CHROMADB_CLIENT } from '../constants';
 import type { CollectionConfig  } from '../interfaces/chromadb-module-options.interface';
 import { getErrorMessage } from '../utils/error.utils';
 import { EmbeddingService } from './embedding.service';
+import {
+  ChromaDBCollectionNotFoundError,
+} from '../errors/chromadb.errors';
+import { safeAsyncOperation } from '../utils/error.utils';
+import { validateCollectionName } from '../validation/type-guards';
 
 /**
  * Collection management service
@@ -16,7 +21,7 @@ import { EmbeddingService } from './embedding.service';
 @Injectable()
 export class CollectionService {
   private readonly logger = new Logger(CollectionService.name);
-  private collections = new Map<string, Collection>();
+  private readonly collections = new Map<string, Collection>();
 
   constructor(
     @Inject(CHROMADB_CLIENT)
@@ -28,7 +33,7 @@ export class CollectionService {
   /**
    * Create a new collection
    */
-  async createCollection(
+  public async createCollection(
     name: string,
     options?: {
       metadata?: CollectionMetadata;
@@ -36,58 +41,59 @@ export class CollectionService {
       embeddingFunction?: EmbeddingFunction | null;
     },
   ): Promise<Collection> {
-    try {
-      const embeddingFunction =
-        options?.embeddingFunction ||
-        (this.embeddingService.getEmbeddingFunction() as
-          | EmbeddingFunction
-          | undefined);
+    validateCollectionName(name, 'createCollection');
 
-      let collection: Collection;
+    return safeAsyncOperation(
+      async () => {
+        const embeddingFunction =
+          options?.embeddingFunction ??
+          (this.embeddingService.getEmbeddingFunction() as
+            | EmbeddingFunction
+            | undefined);
 
-      if (options?.getOrCreate) {
-        // Use getOrCreateCollection for getOrCreate behavior
-        collection = await this.client.getOrCreateCollection({
-          name,
-          metadata: options?.metadata,
-          embeddingFunction,
-        });
-      } else {
-        // Use createCollection for strict creation
-        collection = await this.client.createCollection({
-          name,
-          metadata: options?.metadata,
-          embeddingFunction,
-        });
-      }
+        let collection: Collection;
 
-      this.collections.set(name, collection);
-      this.logger.log(`Created collection: ${name}`);
-      return collection;
-    } catch (error) {
-      this.logger.error(
-        `Failed to create collection ${name}: ${getErrorMessage(error)}`,
-      );
-      throw error;
-    }
+        if (options?.getOrCreate) {
+          // Use getOrCreateCollection for getOrCreate behavior
+          collection = await this.client.getOrCreateCollection({
+            name,
+            metadata: options.metadata,
+            embeddingFunction,
+          });
+        } else {
+          // Use createCollection for strict creation
+          collection = await this.client.createCollection({
+            name,
+            metadata: options?.metadata,
+            embeddingFunction,
+          });
+        }
+
+        this.collections.set(name, collection);
+        this.logger.log(`Created collection: ${name}`);
+        return collection;
+      },
+      `Failed to create collection '${name}'`,
+      { collectionName: name, getOrCreate: options?.getOrCreate }
+    );
   }
 
   /**
    * Get an existing collection
    */
-  async getCollection(
+  public async getCollection(
     name: string,
     embeddingFunction?: EmbeddingFunction,
   ): Promise<Collection> {
     // Check cache first
     const cached = this.collections.get(name);
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     try {
       const collection = await this.client.getCollection({
         name,
         embeddingFunction:
-          embeddingFunction ||
+          embeddingFunction ??
           (this.embeddingService.getEmbeddingFunction() as
             | EmbeddingFunction
             | undefined),
@@ -106,7 +112,7 @@ export class CollectionService {
   /**
    * Get or create a collection
    */
-  async getOrCreateCollection(
+  public async getOrCreateCollection(
     name: string,
     options?: {
   metadata?: CollectionMetadata;
@@ -139,7 +145,7 @@ export class CollectionService {
   /**
    * List all collections
    */
-  async listCollections(): Promise<
+  public async listCollections(): Promise<
     Array<{
       name: string;
       id: string;
@@ -164,7 +170,7 @@ export class CollectionService {
   /**
    * Delete a collection
    */
-  async deleteCollection(name: string): Promise<void> {
+  public async deleteCollection(name: string): Promise<void> {
     try {
       await this.client.deleteCollection({ name });
       this.collections.delete(name);
@@ -180,19 +186,26 @@ export class CollectionService {
   /**
    * Check if a collection exists
    */
-  async collectionExists(name: string): Promise<boolean> {
+  public async collectionExists(name: string): Promise<boolean> {
+    validateCollectionName(name, 'collectionExists');
+
     try {
       await this.getCollection(name);
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      // Only return false for collection not found errors
+      if (error instanceof ChromaDBCollectionNotFoundError) {
+        return false;
+      }
+      // Re-throw other errors (connection issues, etc.)
+      throw error;
     }
   }
 
   /**
    * Get collection count (number of documents)
    */
-  async getCollectionCount(name: string): Promise<number> {
+  public async getCollectionCount(name: string): Promise<number> {
     try {
       const collection = await this.getCollection(name);
       return collection.count();
@@ -207,7 +220,7 @@ export class CollectionService {
   /**
    * Reset collection (delete and recreate)
    */
-  async resetCollection(
+  public async resetCollection(
     name: string,
   metadata?: CollectionMetadata,
   ): Promise<Collection> {
@@ -225,7 +238,7 @@ export class CollectionService {
   /**
    * Modify collection metadata
    */
-  async modifyCollection(
+  public async modifyCollection(
     name: string,
   metadata: CollectionMetadata,
   ): Promise<void> {
@@ -244,7 +257,7 @@ export class CollectionService {
   /**
    * Register collections from configuration
    */
-  async registerCollections(configs: CollectionConfig[]): Promise<void> {
+  public async registerCollections(configs: CollectionConfig[]): Promise<void> {
     for (const config of configs) {
       try {
         await this.getOrCreateCollection(config.name, {
@@ -263,7 +276,7 @@ export class CollectionService {
   /**
    * Clear cache for a collection
    */
-  clearCache(name?: string): void {
+  public clearCache(name?: string): void {
     if (name) {
       this.collections.delete(name);
     } else {

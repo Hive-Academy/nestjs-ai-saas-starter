@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `@anubis/nestjs-chromadb` - NestJS integration for ChromaDB vector database
 - `@anubis/nestjs-neo4j` - NestJS integration for Neo4j graph database  
 - `@anubis/nestjs-langgraph` - NestJS integration for LangGraph AI workflows
-- `@anubis/shared` - Shared types and utilities
 
 ### Infrastructure
 - Publishable library configurations

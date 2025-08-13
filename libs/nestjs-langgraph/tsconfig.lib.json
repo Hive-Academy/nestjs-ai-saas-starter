@@ -17,10 +17,5 @@
     "noUnusedLocals": false
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    {
-      "path": "../shared/tsconfig.lib.json"
-    }
-  ],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

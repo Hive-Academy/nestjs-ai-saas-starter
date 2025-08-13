@@ -438,4 +438,3 @@ This project is licensed under the MIT License - see the [LICENSE](../../LICENSE
 
 - [@hive-academy/nestjs-neo4j](https://www.npmjs.com/package/@hive-academy/nestjs-neo4j) - Neo4j integration
 - [@hive-academy/nestjs-langgraph](https://www.npmjs.com/package/@hive-academy/nestjs-langgraph) - LangGraph workflows
-- [@hive-academy/shared](https://www.npmjs.com/package/@hive-academy/shared) - Shared utilities

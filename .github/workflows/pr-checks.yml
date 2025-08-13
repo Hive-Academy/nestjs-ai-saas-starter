@@ -38,10 +38,10 @@ jobs:
         run: npx nx run-many -t test
 
       - name: Build libraries
-        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared
+        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
 
       - name: Test publishing (dry run)
-        run: npx nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared
+        run: npx nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
 
       - name: Check conventional commits
         uses: wagoid/commitlint-github-action@v5
@@ -51,7 +51,7 @@ jobs:
       - name: Validate package.json files
         run: |
           echo "Validating package.json files..."
-          for lib in nestjs-chromadb nestjs-neo4j nestjs-langgraph shared; do
+          for lib in nestjs-chromadb nestjs-neo4j nestjs-langgraph; do
             echo "Checking libs/$lib/package.json"
             if ! jq empty "libs/$lib/package.json" 2>/dev/null; then
               echo "❌ Invalid JSON in libs/$lib/package.json"

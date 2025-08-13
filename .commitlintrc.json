@@ -25,7 +25,6 @@
         "chromadb",
         "neo4j",
         "langgraph",
-        "shared",
         "deps",
         "release",
         "ci",
