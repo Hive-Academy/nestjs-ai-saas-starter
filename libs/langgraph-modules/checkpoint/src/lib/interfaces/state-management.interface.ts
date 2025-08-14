@@ -1,15 +1,15 @@
-import { z } from 'zod';
-import { BaseMessage } from '@langchain/core/messages';
+import type { z } from 'zod';
+import type { BaseMessage } from '@langchain/core/messages';
 
 /**
  * Reducer function type for state channels
  */
-export type ReducerFunction<T = any> = (current: T, update: T) => T;
+export type ReducerFunction<T = unknown> = (current: T, update: T) => T;
 
 /**
  * Channel definition for state annotations
  */
-export interface ChannelDefinition<T = any> {
+export interface ChannelDefinition<T = unknown> {
   /**
    * Reducer function for combining state updates
    */
@@ -93,17 +93,17 @@ export interface StateAnnotation<T> {
   /**
    * Create initial state
    */
-  createInitialState(): T;
+  createInitialState: () => T;
 
   /**
    * Validate state against schema
    */
-  validateState(state: T): ValidationResult<T>;
+  validateState: (state: T) => ValidationResult<T>;
 
   /**
    * Apply reducers to merge state updates
    */
-  applyReducers(current: T, update: Partial<T>): T;
+  applyReducers: (current: T, update: Partial<T>) => T;
 }
 
 /**
@@ -113,17 +113,17 @@ export interface StateTransformer<TFrom, TTo> {
   /**
    * Transform state from one format to another
    */
-  transform(state: TFrom): TTo;
+  transform: (state: TFrom) => TTo;
 
   /**
    * Reverse transformation if supported
    */
-  reverseTransform?(state: TTo): TFrom;
+  reverseTransform?: (state: TTo) => TFrom;
 
   /**
    * Validate that transformation is possible
    */
-  canTransform(state: TFrom): boolean;
+  canTransform: (state: TFrom) => boolean;
 }
 
 /**
@@ -213,7 +213,7 @@ export interface StateTransformationOptions {
   /**
    * Custom validation schema for the target state
    */
-  targetSchema?: z.ZodSchema<any>;
+  targetSchema?: z.ZodSchema<unknown>;
 
   /**
    * Whether to preserve metadata during transformation
@@ -290,7 +290,7 @@ export interface EnhancedWorkflowState {
   // Human-in-the-loop
   requiresApproval?: boolean;
   approvalReceived?: boolean;
-  humanFeedback?: any;
+  humanFeedback?: Record<string, unknown>;
 
   // Timestamps
   timestamps: {
