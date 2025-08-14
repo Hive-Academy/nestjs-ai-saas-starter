@@ -1,1 +1,1 @@
-export * from './lib/langgraph-modules/time-travel.module';
+export * from './lib/time-travel.module';

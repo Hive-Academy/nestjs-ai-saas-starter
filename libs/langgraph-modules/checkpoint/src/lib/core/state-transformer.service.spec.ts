@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import type { Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { StateTransformerService } from './state-transformer.service';
-import {
+import type {
   StateAnnotationConfig,
   StateTransformer,
   StateTransformationOptions,
@@ -219,7 +220,7 @@ describe('StateTransformerService', () => {
         age: z.number().positive(),
       });
 
-      service['stateValidators'].set('test-schema', schema);
+      service.stateValidators.set('test-schema', schema);
 
       const validState = { name: 'John', age: 30 };
       const result = service.validateState(validState, 'test-schema');
@@ -234,7 +235,7 @@ describe('StateTransformerService', () => {
         age: z.number().positive(),
       });
 
-      service['stateValidators'].set('test-schema', schema);
+      service.stateValidators.set('test-schema', schema);
 
       const invalidState = { name: 123, age: -5 };
       const result = service.validateState(invalidState, 'test-schema');

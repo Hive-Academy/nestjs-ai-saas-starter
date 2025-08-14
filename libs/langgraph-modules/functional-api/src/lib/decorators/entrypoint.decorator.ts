@@ -82,7 +82,7 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
  * Helper function to extract entrypoint metadata from a method
  */
 export function getEntrypointMetadata(target: object, methodName: string): EntrypointMetadata | undefined {
-  return Reflect.getMetadata(ENTRYPOINT_METADATA_KEY, target, methodName);
+  return Reflect.getMetadata(ENTRYPOINT_METADATA_KEY, target, methodName) as EntrypointMetadata | undefined;
 }
 
 /**

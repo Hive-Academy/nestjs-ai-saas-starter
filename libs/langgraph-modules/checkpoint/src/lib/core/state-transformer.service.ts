@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Annotation } from '@langchain/langgraph';
-import { BaseMessage } from '@langchain/core/messages';
+import type { BaseMessage } from '@langchain/core/messages';
 import { z } from 'zod';
-import {
+import type {
   StateAnnotationConfig,
   StateAnnotation,
   ChannelDefinition,
@@ -21,18 +20,18 @@ import {
 @Injectable()
 export class StateTransformerService {
   private readonly logger = new Logger(StateTransformerService.name);
-  private readonly stateAnnotations = new Map<string, StateAnnotation<any>>();
+  private readonly stateAnnotations = new Map<string, StateAnnotation<unknown>>();
   private readonly stateValidators = new Map<string, z.ZodSchema>();
   private readonly stateReducers = new Map<string, ReducerFunction>();
   private readonly stateTransformers = new Map<
     string,
-    StateTransformer<any, any>
+    StateTransformer<unknown, unknown>
   >();
 
   /**
    * Get built-in channel definitions for common use cases
    */
-  getBuiltInChannels(): BuiltInChannels {
+  public getBuiltInChannels(): BuiltInChannels {
     return {
       messages: {
         reducer: (current: BaseMessage[], update: BaseMessage[]) => [
@@ -45,7 +44,7 @@ export class StateTransformerService {
       },
       confidence: {
         reducer: (current: number, update: number) =>
-          Math.max(current || 0, update || 0),
+          Math.max(current ?? 0, update ?? 0),
         default: () => 1.0,
         validator: (value: number) => value >= 0 && value <= 1,
         description: 'Confidence score for workflow decisions',
@@ -112,7 +111,7 @@ export class StateTransformerService {
   /**
    * Create state annotation with comprehensive configuration
    */
-  createStateAnnotation<T>(
+  public createStateAnnotation<T>(
     config: StateAnnotationConfig<T>
   ): StateAnnotation<T> {
     this.logger.log(`Creating state annotation: ${config.name}`);
@@ -144,11 +143,11 @@ export class StateTransformerService {
     // const langGraphAnnotation = Annotation.Root(
     //   Object.entries(allChannels).reduce((acc, [key, channelDef]) => {
     //     acc[key] = Annotation({
-    //       reducer: channelDef.reducer as any,
-    //       default: channelDef.default as any,
+    //       reducer: channelDef.reducer as unknown,
+    //       default: channelDef.default as unknown,
     //     });
     //     return acc;
-    //   }, {} as any)
+    //   }, {} as unknown)
     // );
 
     // Create our enhanced state annotation
@@ -161,7 +160,7 @@ export class StateTransformerService {
         const initialState = {} as T;
         Object.entries(allChannels).forEach(([key, channelDef]) => {
           if (channelDef.default) {
-            (initialState as any)[key] = channelDef.default();
+            (initialState as Record<string, unknown>)[key] = channelDef.default();
           }
         });
         return initialState;
@@ -175,12 +174,12 @@ export class StateTransformerService {
         Object.entries(update).forEach(([key, value]) => {
           const channelDef = allChannels[key as keyof typeof allChannels];
           if (channelDef?.reducer && value !== undefined) {
-            (result as any)[key] = channelDef.reducer(
-              (current as any)[key],
+            (result as Record<string, unknown>)[key] = channelDef.reducer(
+              (current as Record<string, unknown>)[key],
               value
             );
           } else if (value !== undefined) {
-            (result as any)[key] = value;
+            (result as Record<string, unknown>)[key] = value;
           }
         });
 
@@ -202,14 +201,14 @@ export class StateTransformerService {
   /**
    * Get a previously created state annotation
    */
-  getStateAnnotation<T>(name: string): StateAnnotation<T> | undefined {
+  public getStateAnnotation<T>(name: string): StateAnnotation<T> | undefined {
     return this.stateAnnotations.get(name);
   }
 
   /**
    * Transform state between different formats
    */
-  transformState<TFrom, TTo>(
+  public transformState<TFrom, TTo>(
     state: TFrom,
     transformer: StateTransformer<TFrom, TTo>,
     options: StateTransformationOptions = {}
@@ -241,7 +240,7 @@ export class StateTransformerService {
   /**
    * Validate state using Zod schemas
    */
-  validateState<T>(state: T, schemaName: string): ValidationResult<T> {
+  public validateState<T>(state: T, schemaName: string): ValidationResult<T> {
     const schema = this.stateValidators.get(schemaName);
     if (!schema) {
       this.logger.warn(`No validation schema found for: ${schemaName}`);
@@ -270,7 +269,7 @@ export class StateTransformerService {
   /**
    * Merge two states using specified options
    */
-  mergeStates<T>(
+  public mergeStates<T>(
     baseState: T,
     updateState: Partial<T>,
     options: StateMergeOptions = {}
@@ -292,25 +291,25 @@ export class StateTransformerService {
 
       // Force overwrite if specified
       if (forceOverwrite.includes(key)) {
-        (result as any)[key] = value;
+        (result as Record<string, unknown>)[key] = value;
         return;
       }
 
       // Handle conflicts based on strategy
-      const currentValue = (baseState as any)[key];
+      const currentValue = (baseState as Record<string, unknown>)[key];
       const hasConflict =
         currentValue !== undefined &&
         value !== undefined &&
         currentValue !== value;
 
       if (!hasConflict) {
-        (result as any)[key] = value;
+        (result as Record<string, unknown>)[key] = value;
         return;
       }
 
       switch (conflictStrategy) {
         case 'overwrite':
-          (result as any)[key] = value;
+          (result as Record<string, unknown>)[key] = value;
           break;
         case 'preserve':
           // Keep current value
@@ -323,9 +322,12 @@ export class StateTransformerService {
             value !== null &&
             !Array.isArray(currentValue)
           ) {
-            (result as any)[key] = { ...currentValue, ...value };
+            (result as Record<string, unknown>)[key] = { 
+              ...(currentValue as Record<string, unknown>), 
+              ...(value as Record<string, unknown>) 
+            };
           } else {
-            (result as any)[key] = value;
+            (result as Record<string, unknown>)[key] = value;
           }
           break;
         case 'error':
@@ -353,7 +355,7 @@ export class StateTransformerService {
   /**
    * Register a custom state transformer
    */
-  registerStateTransformer<TFrom, TTo>(
+  public registerStateTransformer<TFrom, TTo>(
     name: string,
     transformer: StateTransformer<TFrom, TTo>
   ): void {
@@ -364,7 +366,7 @@ export class StateTransformerService {
   /**
    * Get a registered state transformer
    */
-  getStateTransformer<TFrom, TTo>(
+  public getStateTransformer<TFrom, TTo>(
     name: string
   ): StateTransformer<TFrom, TTo> | undefined {
     return this.stateTransformers.get(name);
@@ -373,7 +375,7 @@ export class StateTransformerService {
   /**
    * Create a default enhanced workflow state
    */
-  createEnhancedWorkflowState(
+  public createEnhancedWorkflowState(
     overrides: Partial<EnhancedWorkflowState> = {}
   ): EnhancedWorkflowState {
     const defaultState: EnhancedWorkflowState = {
@@ -398,7 +400,7 @@ export class StateTransformerService {
   /**
    * Apply reducers to a state update
    */
-  applyStateReducers<T>(
+  public applyStateReducers<T>(
     annotationName: string,
     currentState: T,
     update: Partial<T>
@@ -415,14 +417,14 @@ export class StateTransformerService {
   /**
    * Get all registered state annotations
    */
-  getRegisteredAnnotations(): string[] {
+  public getRegisteredAnnotations(): string[] {
     return Array.from(this.stateAnnotations.keys());
   }
 
   /**
    * Clear all registered annotations (useful for testing)
    */
-  clearAnnotations(): void {
+  public clearAnnotations(): void {
     this.stateAnnotations.clear();
     this.stateValidators.clear();
     this.stateReducers.clear();

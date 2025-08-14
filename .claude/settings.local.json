@@ -15,7 +15,10 @@
       "Bash(npx eslint:*)",
       "Bash(grep:*)",
       "Bash(timeout 30 npx nx lint nestjs-chromadb)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(rm:*)",
+      "WebSearch",
+      "WebFetch(domain:langchain-ai.github.io)"
     ],
     "deny": []
   },

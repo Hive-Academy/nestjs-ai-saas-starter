@@ -2,6 +2,12 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CheckpointManagerService } from '../core/checkpoint-manager.service';
 import { StateTransformerService } from '../core/state-transformer.service';
+import { CheckpointSaverFactory } from '../core/checkpoint-saver.factory';
+import { CheckpointRegistryService } from '../core/checkpoint-registry.service';
+import { CheckpointPersistenceService } from '../core/checkpoint-persistence.service';
+import { CheckpointMetricsService } from '../core/checkpoint-metrics.service';
+import { CheckpointCleanupService } from '../core/checkpoint-cleanup.service';
+import { CheckpointHealthService } from '../core/checkpoint-health.service';
 import { CheckpointConfig } from '../interfaces/checkpoint.interface';
 
 export interface CheckpointModuleOptions {
@@ -28,6 +34,26 @@ export interface CheckpointModuleOptions {
      * Maximum number of checkpoints per thread
      */
     maxPerThread?: number;
+
+    /**
+     * Health monitoring configuration
+     */
+    health?: {
+      /**
+       * Health check interval in milliseconds
+       */
+      checkInterval?: number;
+
+      /**
+       * Response time threshold for degraded status (ms)
+       */
+      degradedThreshold?: number;
+
+      /**
+       * Response time threshold for unhealthy status (ms)
+       */
+      unhealthyThreshold?: number;
+    };
   };
 }
 
@@ -36,7 +62,7 @@ export class LanggraphModulesCheckpointModule {
   /**
    * Configure the checkpoint module with options
    */
-  static forRoot(options: CheckpointModuleOptions = {}): DynamicModule {
+  public static forRoot(options: CheckpointModuleOptions = {}): DynamicModule {
     return {
       module: LanggraphModulesCheckpointModule,
       imports: [ConfigModule],
@@ -45,10 +71,64 @@ export class LanggraphModulesCheckpointModule {
           provide: 'CHECKPOINT_MODULE_OPTIONS',
           useValue: options,
         },
+        // Core services following SOLID principles
+        CheckpointSaverFactory,
+        CheckpointRegistryService,
+        CheckpointMetricsService,
+        CheckpointCleanupService,
+        CheckpointHealthService,
+        CheckpointPersistenceService,
+        
+        // Interface tokens for dependency injection
+        {
+          provide: 'ICheckpointSaverFactory',
+          useExisting: CheckpointSaverFactory,
+        },
+        {
+          provide: 'ICheckpointRegistryService',
+          useExisting: CheckpointRegistryService,
+        },
+        {
+          provide: 'ICheckpointPersistenceService',
+          useExisting: CheckpointPersistenceService,
+        },
+        {
+          provide: 'ICheckpointMetricsService',
+          useExisting: CheckpointMetricsService,
+        },
+        {
+          provide: 'ICheckpointCleanupService',
+          useExisting: CheckpointCleanupService,
+        },
+        {
+          provide: 'ICheckpointHealthService',
+          useExisting: CheckpointHealthService,
+        },
+        
+        // Facade service
         CheckpointManagerService,
+        
+        // Legacy service
         StateTransformerService,
       ],
-      exports: [CheckpointManagerService, StateTransformerService],
+      exports: [
+        CheckpointManagerService,
+        StateTransformerService,
+        // Export focused services for advanced usage
+        CheckpointSaverFactory,
+        CheckpointRegistryService,
+        CheckpointPersistenceService,
+        CheckpointMetricsService,
+        CheckpointCleanupService,
+        CheckpointHealthService,
+        // Export interface tokens
+        'ICheckpointSaverFactory',
+        'ICheckpointRegistryService',
+        'ICheckpointPersistenceService',
+        'ICheckpointMetricsService',
+        'ICheckpointCleanupService',
+        'ICheckpointHealthService',
+      ],
       global: true,
     };
   }
@@ -56,7 +136,7 @@ export class LanggraphModulesCheckpointModule {
   /**
    * Configure the checkpoint module asynchronously
    */
-  static forRootAsync(options: {
+  public static forRootAsync(options: {
     useFactory: (
       ...args: unknown[]
     ) => Promise<CheckpointModuleOptions> | CheckpointModuleOptions;
@@ -69,12 +149,66 @@ export class LanggraphModulesCheckpointModule {
         {
           provide: 'CHECKPOINT_MODULE_OPTIONS',
           useFactory: options.useFactory,
-          inject: options.inject || [],
+          inject: options.inject ?? [],
         },
+        // Core services following SOLID principles
+        CheckpointSaverFactory,
+        CheckpointRegistryService,
+        CheckpointMetricsService,
+        CheckpointCleanupService,
+        CheckpointHealthService,
+        CheckpointPersistenceService,
+        
+        // Interface tokens for dependency injection
+        {
+          provide: 'ICheckpointSaverFactory',
+          useExisting: CheckpointSaverFactory,
+        },
+        {
+          provide: 'ICheckpointRegistryService',
+          useExisting: CheckpointRegistryService,
+        },
+        {
+          provide: 'ICheckpointPersistenceService',
+          useExisting: CheckpointPersistenceService,
+        },
+        {
+          provide: 'ICheckpointMetricsService',
+          useExisting: CheckpointMetricsService,
+        },
+        {
+          provide: 'ICheckpointCleanupService',
+          useExisting: CheckpointCleanupService,
+        },
+        {
+          provide: 'ICheckpointHealthService',
+          useExisting: CheckpointHealthService,
+        },
+        
+        // Facade service
         CheckpointManagerService,
+        
+        // Legacy service
         StateTransformerService,
       ],
-      exports: [CheckpointManagerService, StateTransformerService],
+      exports: [
+        CheckpointManagerService,
+        StateTransformerService,
+        // Export focused services for advanced usage
+        CheckpointSaverFactory,
+        CheckpointRegistryService,
+        CheckpointPersistenceService,
+        CheckpointMetricsService,
+        CheckpointCleanupService,
+        CheckpointHealthService,
+        // Export interface tokens
+        'ICheckpointSaverFactory',
+        'ICheckpointRegistryService',
+        'ICheckpointPersistenceService',
+        'ICheckpointMetricsService',
+        'ICheckpointCleanupService',
+        'ICheckpointHealthService',
+      ],
       global: true,
     };
   }

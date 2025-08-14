@@ -3,6 +3,8 @@
  * Based on the official LangGraph Platform API structure
  */
 
+import type { RunStatus } from "./run.interface";
+
 export interface Webhook {
   webhook_id: string;
   url: string;
@@ -61,12 +63,3 @@ export interface WebhooksSearchResponse {
   webhooks: readonly Webhook[];
 }
 
-// Import RunStatus from run interface
-export enum RunStatus {
-  PENDING = 'pending',
-  RUNNING = 'running',
-  SUCCESS = 'success',
-  ERROR = 'error',
-  TIMEOUT = 'timeout',
-  INTERRUPTED = 'interrupted',
-}

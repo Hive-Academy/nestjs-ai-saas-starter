@@ -93,7 +93,7 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
  * Helper function to extract task metadata from a method
  */
 export function getTaskMetadata(target: object, methodName: string): TaskMetadata | undefined {
-  return Reflect.getMetadata(TASK_METADATA_KEY, target, methodName);
+  return Reflect.getMetadata(TASK_METADATA_KEY, target, methodName) as TaskMetadata | undefined;
 }
 
 /**

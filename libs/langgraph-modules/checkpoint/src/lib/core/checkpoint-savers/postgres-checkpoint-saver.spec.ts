@@ -1,5 +1,5 @@
 import { PostgresCheckpointSaver } from './postgres-checkpoint-saver';
-import { PostgresCheckpointConfig } from '../../interfaces/checkpoint.interface';
+import type { PostgresCheckpointConfig } from '../../interfaces/checkpoint.interface';
 
 // Mock pg
 const mockClient = {

@@ -1,9 +1,10 @@
-import {
-  BaseCheckpointSaver,
+import type {
   Checkpoint,
-  CheckpointMetadata,
-} from '@langchain/langgraph';
+  CheckpointMetadata} from '@langchain/langgraph';
 import {
+  BaseCheckpointSaver
+} from '@langchain/langgraph';
+import type {
   SqliteCheckpointConfig,
   EnhancedCheckpoint,
   EnhancedCheckpointMetadata,

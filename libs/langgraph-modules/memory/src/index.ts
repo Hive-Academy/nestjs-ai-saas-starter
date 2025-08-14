@@ -1,1 +1,8 @@
-export * from './lib/langgraph-modules/memory.module';
+// Module exports
+export * from './memory.module';
+
+// Service exports
+export * from './lib/services/advanced-memory.service';
+
+// Interface exports
+export * from './lib/interfaces/memory.interface';

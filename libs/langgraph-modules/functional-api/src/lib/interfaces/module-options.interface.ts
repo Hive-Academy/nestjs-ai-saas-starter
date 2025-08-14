@@ -1,4 +1,4 @@
-import { ModuleMetadata, Type } from '@nestjs/common';
+import type { ModuleMetadata, Type } from '@nestjs/common';
 
 /**
  * Configuration options for the Functional API module
@@ -56,7 +56,7 @@ export interface FunctionalApiModuleOptions {
  * Options factory interface for async module configuration
  */
 export interface FunctionalApiOptionsFactory {
-  createFunctionalApiOptions(): Promise<FunctionalApiModuleOptions> | FunctionalApiModuleOptions;
+  createFunctionalApiOptions: () => Promise<FunctionalApiModuleOptions> | FunctionalApiModuleOptions;
 }
 
 /**

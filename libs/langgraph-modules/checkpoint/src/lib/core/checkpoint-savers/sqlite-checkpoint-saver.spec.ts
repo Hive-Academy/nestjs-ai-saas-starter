@@ -1,5 +1,5 @@
 import { SqliteCheckpointSaver } from './sqlite-checkpoint-saver';
-import { SqliteCheckpointConfig } from '../../interfaces/checkpoint.interface';
+import type { SqliteCheckpointConfig } from '../../interfaces/checkpoint.interface';
 
 // Mock sqlite3
 const mockDatabase = {
@@ -30,7 +30,7 @@ describe('SqliteCheckpointSaver', () => {
 
     mockDatabase.serialize.mockImplementation((callback) => callback());
     mockDatabase.run.mockImplementation((sql, params, callback) => {
-      if (callback) callback.call({ lastID: 1, changes: 1 });
+      if (callback) {callback.call({ lastID: 1, changes: 1 });}
     });
 
     saver = new SqliteCheckpointSaver(config);
