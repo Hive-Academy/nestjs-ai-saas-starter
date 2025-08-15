@@ -1,14 +1,18 @@
-import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ChromaDBModule, ChromaDBModuleOptions } from '@hive-academy/nestjs-chromadb';
+import {
+  ChromaDBModule,
+  ChromaDBModuleOptions,
+} from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule, Neo4jModuleOptions } from '@hive-academy/nestjs-neo4j';
-
+import { HttpModule } from '@nestjs/axios';
+import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 // Import refactored memory services that use external libraries
+import { MemoryConfig } from './lib/interfaces/memory.interface';
 import { MemoryCoreService } from './lib/services/memory-core.service';
 import { MemoryFacadeService } from './lib/services/memory-facade.service';
 import { SemanticSearchService } from './lib/services/semantic-search.service';
 import { SummarizationService } from './lib/services/summarization.service';
-import { MemoryConfig } from './lib/interfaces/memory.interface';
+import { MemoryHealthService } from './lib/health/memory-health.service';
 
 /**
  * Memory module that orchestrates ChromaDB vector storage and Neo4j graph relationships
@@ -41,6 +45,7 @@ export class LanggraphModulesMemoryModule {
       MemoryFacadeService,
       SemanticSearchService,
       SummarizationService,
+      MemoryHealthService,
     ];
 
     return {
@@ -55,7 +60,8 @@ export class LanggraphModulesMemoryModule {
       exports: [
         MemoryFacadeService, // Primary high-level memory interface
         SemanticSearchService, // Advanced search capabilities
-        SummarizationService,  // LLM-based summarization
+        SummarizationService, // LLM-based summarization
+        MemoryHealthService, // Health checks and monitoring
       ],
     };
   }
@@ -65,15 +71,17 @@ export class LanggraphModulesMemoryModule {
    */
   public static forRootAsync(options: {
     imports?: Array<Type | DynamicModule>;
-    useFactory: (...args: unknown[]) => Promise<{
-      chromadb: ChromaDBModuleOptions;
-      neo4j: Neo4jModuleOptions;
-      memory?: Partial<MemoryConfig>;
-    }> | {
-      chromadb: ChromaDBModuleOptions;
-      neo4j: Neo4jModuleOptions;
-      memory?: Partial<MemoryConfig>;
-    };
+    useFactory: (...args: unknown[]) =>
+      | Promise<{
+          chromadb: ChromaDBModuleOptions;
+          neo4j: Neo4jModuleOptions;
+          memory?: Partial<MemoryConfig>;
+        }>
+      | {
+          chromadb: ChromaDBModuleOptions;
+          neo4j: Neo4jModuleOptions;
+          memory?: Partial<MemoryConfig>;
+        };
     inject?: Array<Type | string | symbol>;
   }): DynamicModule {
     const configProvider: Provider = {
@@ -90,7 +98,10 @@ export class LanggraphModulesMemoryModule {
         memory?: Partial<MemoryConfig>;
       }) => {
         const memoryConfig: MemoryConfig = {
-          storage: { type: 'vector', vector: { provider: 'chromadb', config: {} } },
+          storage: {
+            type: 'vector',
+            vector: { provider: 'chromadb', config: {} },
+          },
           enableSemanticSearch: true,
           enableAutoSummarization: true,
           ...moduleConfig.memory,
@@ -108,26 +119,34 @@ export class LanggraphModulesMemoryModule {
       MemoryFacadeService,
       SemanticSearchService,
       SummarizationService,
+      MemoryHealthService,
     ];
 
     return {
       module: LanggraphModulesMemoryModule,
       imports: [
         ConfigModule,
+        HttpModule,
         ChromaDBModule.forRootAsync({
-          useFactory: (moduleConfig: {
-            chromadb: ChromaDBModuleOptions;
-            neo4j: Neo4jModuleOptions;
-            memory?: Partial<MemoryConfig>;
-          }) => moduleConfig.chromadb,
+          useFactory: (...args: unknown[]) => {
+            const moduleConfig = args[0] as {
+              chromadb: ChromaDBModuleOptions;
+              neo4j: Neo4jModuleOptions;
+              memory?: Partial<MemoryConfig>;
+            };
+            return moduleConfig.chromadb;
+          },
           inject: ['MEMORY_MODULE_CONFIG'],
         }),
         Neo4jModule.forRootAsync({
-          useFactory: (moduleConfig: {
-            chromadb: ChromaDBModuleOptions;
-            neo4j: Neo4jModuleOptions;
-            memory?: Partial<MemoryConfig>;
-          }) => moduleConfig.neo4j,
+          useFactory: (...args: unknown[]) => {
+            const moduleConfig = args[0] as {
+              chromadb: ChromaDBModuleOptions;
+              neo4j: Neo4jModuleOptions;
+              memory?: Partial<MemoryConfig>;
+            };
+            return moduleConfig.neo4j;
+          },
           inject: ['MEMORY_MODULE_CONFIG'],
         }),
         ...(options.imports ?? []),
@@ -136,7 +155,8 @@ export class LanggraphModulesMemoryModule {
       exports: [
         MemoryFacadeService, // Primary high-level memory interface
         SemanticSearchService, // Advanced search capabilities
-        SummarizationService,  // LLM-based summarization
+        SummarizationService, // LLM-based summarization
+        MemoryHealthService, // Health checks and monitoring
       ],
     };
   }

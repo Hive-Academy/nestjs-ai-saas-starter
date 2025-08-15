@@ -9,8 +9,8 @@ export { RunService } from './lib/services/run.service';
 export { WebhookService } from './lib/services/webhook.service';
 
 // Interfaces
-export * from './lib/interfaces/platform.interface';
-export * from './lib/interfaces/assistant.interface';
+export type * from './lib/interfaces/platform.interface';
+export type * from './lib/interfaces/assistant.interface';
 export * from './lib/interfaces/thread.interface';
 export * from './lib/interfaces/run.interface';
 export * from './lib/interfaces/webhook.interface';

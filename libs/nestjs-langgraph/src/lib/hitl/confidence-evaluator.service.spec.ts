@@ -342,7 +342,7 @@ describe('ConfidenceEvaluatorService', () => {
         })
       );
       
-      const promises = states.map(state => 
+      const promises = states.map(async state => 
         Promise.all([
           service.evaluateConfidence(state),
           service.getConfidenceFactors(state),
@@ -405,7 +405,7 @@ describe('ConfidenceEvaluatorService', () => {
       
       // Run evaluation multiple times
       const results = await Promise.all(
-        Array.from({ length: 5 }, () => Promise.all([
+        Array.from({ length: 5 }, async () => Promise.all([
           service.evaluateConfidence(state),
           service.getConfidenceFactors(state),
           service.assessRisk(state, { factors: ['complexity', 'reliability', 'impact'] })

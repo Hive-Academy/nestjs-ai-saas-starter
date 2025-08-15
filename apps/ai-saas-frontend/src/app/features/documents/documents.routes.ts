@@ -3,7 +3,7 @@ import type { Routes } from '@angular/router';
 export const DOCUMENTS_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () =>
+    loadComponent: async () =>
       import('./documents-list/documents-list.component').then(
         (m) => m.DocumentsListComponent
       ),
@@ -11,7 +11,7 @@ export const DOCUMENTS_ROUTES: Routes = [
   },
   {
     path: 'upload',
-    loadComponent: () =>
+    loadComponent: async () =>
       import('./document-upload/document-upload.component').then(
         (m) => m.DocumentUploadComponent
       ),
@@ -19,7 +19,7 @@ export const DOCUMENTS_ROUTES: Routes = [
   },
   {
     path: 'search',
-    loadComponent: () =>
+    loadComponent: async () =>
       import('./document-search/document-search.component').then(
         (m) => m.DocumentSearchComponent
       ),
@@ -27,7 +27,7 @@ export const DOCUMENTS_ROUTES: Routes = [
   },
   {
     path: ':id',
-    loadComponent: () =>
+    loadComponent: async () =>
       import('./document-detail/document-detail.component').then(
         (m) => m.DocumentDetailComponent
       ),

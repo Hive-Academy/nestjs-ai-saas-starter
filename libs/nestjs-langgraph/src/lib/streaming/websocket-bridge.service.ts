@@ -594,8 +594,8 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     const tokenSubscription = this.tokenStreamingService
       .getGlobalTokenStream()
       .subscribe({
-        next: (update) => this.handleTokenStreamUpdate(update),
-        error: (error) => this.logger.error('Token stream integration error:', error),
+        next: (update) => { this.handleTokenStreamUpdate(update); },
+        error: (error) => { this.logger.error('Token stream integration error:', error); },
       });
     
     this.activeSubscriptions.add(tokenSubscription);

@@ -27,7 +27,7 @@ export class EventStreamProcessorService {
     const subject = new Subject<StreamUpdate>();
     
     // Push events to subject
-    events.forEach(event => subject.next(event));
+    events.forEach(event => { subject.next(event); });
     
     return subject.pipe(
       scan((batch, event) => {

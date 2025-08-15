@@ -198,7 +198,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
       promise,
       new Promise<T>((_, reject) => {
         setTimeout(
-          () => reject(new Error(`Node timeout after ${timeoutMs}ms`)),
+          () => { reject(new Error(`Node timeout after ${timeoutMs}ms`)); },
           timeoutMs,
         );
       }),

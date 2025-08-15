@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
+import {
+  BaseMessage,
+  HumanMessage,
+  AIMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import { MemorySummarizationOptions } from '../interfaces/memory.interface';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * Service for conversation summarization using LLM providers
@@ -11,7 +18,10 @@ import { MemorySummarizationOptions } from '../interfaces/memory.interface';
 export class SummarizationService {
   private readonly logger = new Logger(SummarizationService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService
+  ) {}
 
   /**
    * Create summary using LLM
@@ -27,23 +37,38 @@ export class SummarizationService {
     const strategy = options?.strategy ?? 'progressive';
     const maxMessages = options?.maxMessages ?? 50;
 
-    this.logger.debug(`Creating summary for ${messages.length} messages using ${strategy} strategy`);
+    this.logger.debug(
+      `Creating summary for ${messages.length} messages using ${strategy} strategy`
+    );
 
     try {
       switch (strategy) {
         case 'progressive':
-          return await this.progressiveSummarization(messages, maxMessages, options);
+          return await this.progressiveSummarization(
+            messages,
+            maxMessages,
+            options
+          );
         case 'batch':
           return await this.batchSummarization(messages, options);
         case 'sliding-window':
-          return await this.slidingWindowSummarization(messages, maxMessages, options);
+          return await this.slidingWindowSummarization(
+            messages,
+            maxMessages,
+            options
+          );
         default:
-          return await this.progressiveSummarization(messages, maxMessages, options);
+          return await this.progressiveSummarization(
+            messages,
+            maxMessages,
+            options
+          );
       }
     } catch (error) {
       // Use safe error extraction to satisfy strict lint rules
       const err = error as { message?: unknown; stack?: unknown } | undefined;
-      const message = typeof err?.message === 'string' ? err?.message : 'Unknown error';
+      const message =
+        typeof err?.message === 'string' ? err?.message : 'Unknown error';
       this.logger.error(`Summarization failed: ${message}`);
       // Fallback to simple summary if LLM fails
       return this.createFallbackSummary(messages);
@@ -71,10 +96,14 @@ export class SummarizationService {
 
     // If we have multiple chunk summaries, summarize them too
     if (chunks.length > 1) {
-  const combinedSummary = chunks.join('\n\n');
+      const combinedSummary = chunks.join('\n\n');
       return await this.generateLLMSummary(
         [new HumanMessage(combinedSummary)],
-        { ...options, customPrompt: 'Consolidate these summaries into a single coherent summary:' }
+        {
+          ...options,
+          customPrompt:
+            'Consolidate these summaries into a single coherent summary:',
+        }
       );
     }
 
@@ -109,12 +138,12 @@ export class SummarizationService {
 
     const olderSummary = await this.generateLLMSummary(olderMessages, {
       ...options,
-      customPrompt: 'Summarize this earlier part of the conversation:'
+      customPrompt: 'Summarize this earlier part of the conversation:',
     });
 
     const recentSummary = await this.generateLLMSummary(recentMessages, {
       ...options,
-      customPrompt: 'Summarize this recent part of the conversation:'
+      customPrompt: 'Summarize this recent part of the conversation:',
     });
 
     return `Previous context: ${olderSummary}\n\nRecent conversation: ${recentSummary}`;
@@ -127,7 +156,10 @@ export class SummarizationService {
     messages: readonly BaseMessage[],
     options?: MemorySummarizationOptions
   ): Promise<string> {
-    const provider = this.configService.get<string>('memory.summarization.provider', 'openai');
+    const provider = this.configService.get<string>(
+      'memory.summarization.provider',
+      'openai'
+    );
 
     switch (provider) {
       case 'openai':
@@ -153,52 +185,69 @@ export class SummarizationService {
       throw new Error('OpenAI API key not configured');
     }
 
-    const conversationText = this.formatMessagesForSummary(messages, options?.preserveImportant);
-    const prompt = options?.customPrompt ?? this.getDefaultSummarizationPrompt();
+    const conversationText = this.formatMessagesForSummary(
+      messages,
+      options?.preserveImportant
+    );
+    const prompt =
+      options?.customPrompt ?? this.getDefaultSummarizationPrompt();
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.configService.get<string>('memory.summarization.model', 'gpt-3.5-turbo'),
-        messages: [
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'https://api.openai.com/v1/chat/completions',
           {
-            role: 'system',
-            content: prompt
+            model: this.configService.get<string>(
+              'memory.summarization.model',
+              'gpt-3.5-turbo'
+            ),
+            messages: [
+              {
+                role: 'system',
+                content: prompt,
+              },
+              {
+                role: 'user',
+                content: conversationText,
+              },
+            ],
+            max_tokens: this.configService.get<number>(
+              'memory.summarization.maxTokens',
+              500
+            ),
+            temperature: 0.3,
           },
           {
-            role: 'user',
-            content: conversationText
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
           }
-        ],
-        max_tokens: this.configService.get<number>('memory.summarization.maxTokens', 500),
-        temperature: 0.3,
-      }),
-    });
+        )
+      );
 
-    if (!response.ok) {
+      const data = response.data as {
+        choices: Array<{ message: { content: string } }>;
+      };
+      return data.choices?.[0]?.message?.content?.trim?.() ?? '';
+    } catch (error) {
       let errorMessage = 'Unknown error';
-      try {
-        const errorData = (await response.json()) as { error?: { message?: string } };
-        errorMessage = errorData?.error?.message ?? errorMessage;
-      } catch {
-        // ignore JSON parse errors
-        try {
-          errorMessage = await response.text();
-        } catch {
-          // ignore
-        }
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as {
+          response?: {
+            data?: { error?: { message?: string } };
+            statusText?: string;
+          };
+        };
+        errorMessage =
+          axiosError.response?.data?.error?.message ??
+          axiosError.response?.statusText ??
+          errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
       throw new Error(`OpenAI API error: ${errorMessage}`);
     }
-
-    const data = (await response.json()) as {
-      choices: Array<{ message: { content: string } }>;
-    };
-    return data.choices?.[0]?.message?.content?.trim?.() ?? '';
   }
 
   /**
@@ -213,46 +262,64 @@ export class SummarizationService {
       throw new Error('Anthropic API key not configured');
     }
 
-    const conversationText = this.formatMessagesForSummary(messages, options?.preserveImportant);
-    const prompt = options?.customPrompt ?? this.getDefaultSummarizationPrompt();
+    const conversationText = this.formatMessagesForSummary(
+      messages,
+      options?.preserveImportant
+    );
+    const prompt =
+      options?.customPrompt ?? this.getDefaultSummarizationPrompt();
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: this.configService.get<string>('memory.summarization.model', 'claude-3-haiku-20240307'),
-        max_tokens: this.configService.get<number>('memory.summarization.maxTokens', 500),
-        messages: [
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'https://api.anthropic.com/v1/messages',
           {
-            role: 'user',
-            content: `${prompt}\n\n${conversationText}`
+            model: this.configService.get<string>(
+              'memory.summarization.model',
+              'claude-3-haiku-20240307'
+            ),
+            max_tokens: this.configService.get<number>(
+              'memory.summarization.maxTokens',
+              500
+            ),
+            messages: [
+              {
+                role: 'user',
+                content: `${prompt}\n\n${conversationText}`,
+              },
+            ],
+          },
+          {
+            headers: {
+              'x-api-key': apiKey,
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
+            },
           }
-        ],
-      }),
-    });
+        )
+      );
 
-    if (!response.ok) {
+      const data = response.data as { content: Array<{ text?: string }> };
+      const text = data.content?.[0]?.text ?? '';
+      return typeof text === 'string' ? text.trim() : '';
+    } catch (error) {
       let errorMessage = 'Unknown error';
-      try {
-        const errorData = (await response.json()) as { error?: { message?: string } };
-        errorMessage = errorData?.error?.message ?? errorMessage;
-      } catch {
-        try {
-          errorMessage = await response.text();
-        } catch {
-          // ignore
-        }
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as {
+          response?: {
+            data?: { error?: { message?: string } };
+            statusText?: string;
+          };
+        };
+        errorMessage =
+          axiosError.response?.data?.error?.message ??
+          axiosError.response?.statusText ??
+          errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
       throw new Error(`Anthropic API error: ${errorMessage}`);
     }
-
-    const data = (await response.json()) as { content: Array<{ text?: string }> };
-    const text = data.content?.[0]?.text ?? '';
-    return typeof text === 'string' ? text.trim() : '';
   }
 
   /**
@@ -267,40 +334,51 @@ export class SummarizationService {
       throw new Error('Cohere API key not configured');
     }
 
-    const conversationText = this.formatMessagesForSummary(messages, options?.preserveImportant);
+    const conversationText = this.formatMessagesForSummary(
+      messages,
+      options?.preserveImportant
+    );
 
-    const response = await fetch('https://api.cohere.ai/v1/summarize', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: conversationText,
-        length: 'medium',
-        format: 'paragraph',
-        model: this.configService.get<string>('memory.summarization.model', 'summarize-xlarge'),
-        additional_command: options?.customPrompt,
-      }),
-    });
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          'https://api.cohere.ai/v1/summarize',
+          {
+            text: conversationText,
+            length: 'medium',
+            format: 'paragraph',
+            model: this.configService.get<string>(
+              'memory.summarization.model',
+              'summarize-xlarge'
+            ),
+            additional_command: options?.customPrompt,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+      );
 
-    if (!response.ok) {
+      const data = response.data as { summary?: string };
+      return data.summary?.trim?.() ?? '';
+    } catch (error) {
       let errorMessage = 'Unknown error';
-      try {
-        const errorData = (await response.json()) as { message?: string };
-        errorMessage = errorData?.message ?? errorMessage;
-      } catch {
-        try {
-          errorMessage = await response.text();
-        } catch {
-          // ignore
-        }
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string }; statusText?: string };
+        };
+        errorMessage =
+          axiosError.response?.data?.message ??
+          axiosError.response?.statusText ??
+          errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
       throw new Error(`Cohere API error: ${errorMessage}`);
     }
-
-    const data = (await response.json()) as { summary?: string };
-    return data.summary?.trim?.() ?? '';
   }
 
   /**
@@ -311,13 +389,13 @@ export class SummarizationService {
     preserveImportant?: boolean
   ): string {
     return messages
-      .filter(msg => {
+      .filter((msg) => {
         if (preserveImportant && msg instanceof SystemMessage) {
           return false; // Skip system messages if preserving important ones
         }
         return true;
       })
-      .map(msg => {
+      .map((msg) => {
         const text = this.normalizeMessageContent(msg);
         if (msg instanceof HumanMessage) {
           return `User: ${text}`;
@@ -349,18 +427,26 @@ Keep the summary informative but brief, capturing the essential context that wou
    */
   private createFallbackSummary(messages: readonly BaseMessage[]): string {
     const messageCount = messages.length;
-    const userMessages = messages.filter(m => m instanceof HumanMessage).length;
-    const aiMessages = messages.filter(m => m instanceof AIMessage).length;
+    const userMessages = messages.filter(
+      (m) => m instanceof HumanMessage
+    ).length;
+    const aiMessages = messages.filter((m) => m instanceof AIMessage).length;
 
-    const recentMessages = messages.slice(-3).map(msg => {
-      const type = msg instanceof HumanMessage ? 'User' :
-                   msg instanceof AIMessage ? 'Assistant' : 'System';
+    const recentMessages = messages.slice(-3).map((msg) => {
+      const type =
+        msg instanceof HumanMessage
+          ? 'User'
+          : msg instanceof AIMessage
+          ? 'Assistant'
+          : 'System';
       const text = this.normalizeMessageContent(msg);
       const preview = text.substring(0, 100);
       return `${type}: ${preview}${text.length > 100 ? '...' : ''}`;
     });
 
-    return `Conversation summary (${messageCount} messages total, ${userMessages} from user, ${aiMessages} from assistant):\n\nRecent messages:\n${recentMessages.join('\n')}`;
+    return `Conversation summary (${messageCount} messages total, ${userMessages} from user, ${aiMessages} from assistant):\n\nRecent messages:\n${recentMessages.join(
+      '\n'
+    )}`;
   }
 
   /**
@@ -377,9 +463,12 @@ Keep the summary informative but brief, capturing the essential context that wou
         .map((part) =>
           typeof part === 'string'
             ? part
-            : typeof part === 'object' && part && 'text' in part && typeof (part).text === 'string'
-              ? (part).text
-              : ''
+            : typeof part === 'object' &&
+              part &&
+              'text' in part &&
+              typeof part.text === 'string'
+            ? part.text
+            : ''
         )
         .filter(Boolean)
         .join(' ');

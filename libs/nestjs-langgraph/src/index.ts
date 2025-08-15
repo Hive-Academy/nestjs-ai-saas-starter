@@ -29,9 +29,9 @@ export type {
   NodeResult,
 } from './lib/interfaces/node.interface';
 
-export * from './lib/interfaces/tool.interface';
+export type * from './lib/interfaces/tool.interface';
 export * from './lib/interfaces/streaming.interface';
-export * from './lib/interfaces/module-options.interface';
+export type * from './lib/interfaces/module-options.interface';
 
 // Re-export specific items from interfaces for convenience
 export { CommandType } from './lib/interfaces';

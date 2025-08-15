@@ -84,6 +84,7 @@
     "@commitlint/cli": "^18.0.0",
     "@commitlint/config-conventional": "^18.0.0",
     "@eslint/js": "^9.8.0",
+    "@nestjs/axios": "4.0.1",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@nx/angular": "21.3.11",

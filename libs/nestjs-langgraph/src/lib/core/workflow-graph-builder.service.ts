@@ -218,7 +218,7 @@ export class WorkflowGraphBuilderService {
     returnTo?: string
   ): void {
     const toolNode = new ToolNode(tools);
-    this.safeAddNode(graph, nodeId, (state: TState) => toolNode.invoke(state));
+    this.safeAddNode(graph, nodeId, async (state: TState) => toolNode.invoke(state));
 
     // Add routing back to the calling node
     if (returnTo) {
@@ -563,7 +563,7 @@ export class WorkflowGraphBuilderService {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error('Execution timeout')), timeout)
+        setTimeout(() => { reject(new Error('Execution timeout')); }, timeout)
       ),
     ]);
   }

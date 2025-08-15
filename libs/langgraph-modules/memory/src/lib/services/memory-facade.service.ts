@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+ 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseMessage } from '@langchain/core/messages';
@@ -404,7 +404,7 @@ export class MemoryFacadeService
   /**
    * Perform cleanup based on retention policy
    */
-  public cleanup(): Promise<number> {
+  public async cleanup(): Promise<number> {
     try {
       const config = this.configService.get<Record<string, unknown> | undefined>('memory.retention');
       if (!config) {

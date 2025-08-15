@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+ 
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import {
   ChromaClient,

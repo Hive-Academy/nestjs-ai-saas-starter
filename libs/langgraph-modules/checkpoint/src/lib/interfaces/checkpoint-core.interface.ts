@@ -2,6 +2,7 @@ import type {
   BaseCheckpointSaver,
   CheckpointMetadata,
 } from '@langchain/langgraph';
+import type { CheckpointStats } from './checkpoint-stats.interface';
 
 /**
  * Enhanced checkpoint metadata with additional tracking information
@@ -87,12 +88,12 @@ export interface EnhancedCheckpoint<T = Record<string, unknown>> {
    */
   id: string;
   channel_values: T;
-  pending_sends?: any[];
+  pending_sends?: unknown[];
   v?: number;
   ts?: string;
   channel_versions?: Record<string, number>;
   versions_seen?: Record<string, Record<string, number>>;
-  [key: string]: any;
+  [key: string]: unknown;
   /**
    * Enhanced metadata
    */
@@ -213,7 +214,7 @@ export interface EnhancedBaseCheckpointSaver extends BaseCheckpointSaver {
   /**
    * Get checkpoint statistics
    */
-  getStats?: () => Promise<import('./checkpoint-stats.interface').CheckpointStats>;
+  getStats?: () => Promise<CheckpointStats>;
 
   /**
    * Cleanup old checkpoints

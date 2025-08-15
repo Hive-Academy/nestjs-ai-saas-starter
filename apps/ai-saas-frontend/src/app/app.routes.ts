@@ -3,7 +3,7 @@ import type { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () =>
+    loadComponent: async () =>
       import('./features/dashboard/dashboard.component').then(
         (m) => m.DashboardComponent
       ),
@@ -11,7 +11,7 @@ export const routes: Routes = [
   },
   {
     path: 'documents',
-    loadChildren: () =>
+    loadChildren: async () =>
       import('./features/documents/documents.routes').then(
         (m) => m.DOCUMENTS_ROUTES
       ),
@@ -19,13 +19,13 @@ export const routes: Routes = [
   },
   {
     path: 'graph',
-    loadChildren: () =>
+    loadChildren: async () =>
       import('./features/graph/graph.routes').then((m) => m.GRAPH_ROUTES),
     title: 'Knowledge Graph',
   },
   {
     path: 'workflows',
-    loadChildren: () =>
+    loadChildren: async () =>
       import('./features/workflows/workflows.routes').then(
         (m) => m.WORKFLOWS_ROUTES
       ),
@@ -33,7 +33,7 @@ export const routes: Routes = [
   },
   {
     path: 'health',
-    loadComponent: () =>
+    loadComponent: async () =>
       import('./features/health/health.component').then(
         (m) => m.HealthComponent
       ),

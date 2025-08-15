@@ -685,7 +685,7 @@ describe('HumanApprovalService', () => {
       }));
 
       const results = await Promise.all(
-        responses.map(response => service.processApprovalResponse(response.requestId, response))
+        responses.map(async response => service.processApprovalResponse(response.requestId, response))
       );
 
       expect(results.every(result => result.success)).toBe(true);

@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+ 
 import { Injectable, Logger } from '@nestjs/common';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService, cypher } from '@hive-academy/nestjs-neo4j';
@@ -647,7 +647,7 @@ export class SemanticSearchService {
    */
   // The ChromaDB SDK returns different shapes for search vs get.
   // We normalize both with careful parsing; suppressing some lint rules for SDK typings.
-  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, complexity, no-nested-ternary */
+  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
   private convertToMemoryEntries(results: ChromaSearchResult | GetResult<Record<string, string | number | boolean | null>>): MemoryEntry[] {
     const memories: MemoryEntry[] = [];
     if (!results || !(results as any).ids) {return memories;}
@@ -684,7 +684,7 @@ export class SemanticSearchService {
 
     return memories;
   }
-  /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, complexity */
+  /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 }
 
 function safeParseJson(value: string): Record<string, unknown> {

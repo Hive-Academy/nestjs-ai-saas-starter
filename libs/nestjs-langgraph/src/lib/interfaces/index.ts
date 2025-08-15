@@ -1,10 +1,10 @@
-export * from './module-options.interface';
-export * from './workflow.interface';
+export type * from './module-options.interface';
+export type * from './workflow.interface';
 export * from './streaming.interface';
-export * from './node.interface';
-export * from './tool.interface';
-export * from './state-management.interface';
-export * from './checkpoint.interface';
+export type * from './node.interface';
+export type * from './tool.interface';
+export type * from './state-management.interface';
+export type * from './checkpoint.interface';
 
 // Re-export from constants to avoid circular dependencies
 export { CommandType } from '../constants';

@@ -18,6 +18,6 @@ export * from './lib/core/checkpoint-savers/postgres-checkpoint-saver';
 export * from './lib/core/checkpoint-savers/sqlite-checkpoint-saver';
 
 // Interfaces and types
-export * from './lib/interfaces/checkpoint.interface';
+export type * from './lib/interfaces/checkpoint.interface';
 export * from './lib/interfaces/checkpoint-services.interface';
-export * from './lib/interfaces/state-management.interface';
+export type * from './lib/interfaces/state-management.interface';

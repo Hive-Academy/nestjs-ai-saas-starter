@@ -54,7 +54,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    * Register an agent
    */
   registerAgent(definition: AgentDefinition): void {
-    return this.agentRegistry.registerAgent(definition);
+    this.agentRegistry.registerAgent(definition);
   }
 
   /**
@@ -357,7 +357,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   /**
    * @deprecated Use createNetwork() directly instead
    */
-  createAgentNetwork(
+  async createAgentNetwork(
     name: string,
     agents: readonly AgentDefinition[],
     topology: any

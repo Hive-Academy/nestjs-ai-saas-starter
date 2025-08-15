@@ -5,6 +5,7 @@ export { LanggraphModulesMemoryModule } from './memory.module';
 export { MemoryFacadeService } from './lib/services/memory-facade.service';
 export { SemanticSearchService } from './lib/services/semantic-search.service';
 export { SummarizationService } from './lib/services/summarization.service';
+export { MemoryHealthService } from './lib/health/memory-health.service';
 
 // Interface and type exports
 export type {
@@ -28,3 +29,19 @@ export {
   MemoryEntrySchema,
   MemorySearchOptionsSchema,
 } from './lib/interfaces/memory.interface';
+
+// Error classes
+export {
+  MemoryError,
+  MemoryStorageError,
+  MemoryRelationshipError,
+  MemoryEmbeddingError,
+  MemorySummarizationError,
+  MemoryConfigurationError,
+  MemoryTimeoutError,
+  wrapMemoryError,
+  isMemoryError,
+  extractErrorMessage,
+} from './lib/errors/memory-errors';
+
+export type { MemoryErrorContext } from './lib/errors/memory-errors';

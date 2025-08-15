@@ -16,4 +16,4 @@ bootstrapApplication(AppComponent, {
     provideHttpClient(withInterceptorsFromDi()),
     importProvidersFrom(BrowserAnimationsModule),
   ],
-}).catch((err) => console.error(err));
+}).catch((err) => { console.error(err); });

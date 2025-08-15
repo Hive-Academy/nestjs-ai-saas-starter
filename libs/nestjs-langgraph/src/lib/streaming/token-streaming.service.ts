@@ -337,9 +337,9 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
         streamConfig.flushInterval ? throttleTime(streamConfig.flushInterval) : map(x => x),
       )
       .subscribe({
-        next: (tokens) => this.processTokenBatch(streamKey, tokens, streamConfig),
-        error: (error) => this.logger.error(`Token processing error for ${streamKey}:`, error),
-        complete: () => this.logger.debug(`Token processing completed for ${streamKey}`),
+        next: async (tokens) => this.processTokenBatch(streamKey, tokens, streamConfig),
+        error: (error) => { this.logger.error(`Token processing error for ${streamKey}:`, error); },
+        complete: () => { this.logger.debug(`Token processing completed for ${streamKey}`); },
       });
 
     streamConfig.subscription = subscription;

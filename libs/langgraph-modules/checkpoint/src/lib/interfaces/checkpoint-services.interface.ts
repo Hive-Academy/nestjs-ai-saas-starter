@@ -8,7 +8,7 @@ import type {
   CheckpointCleanupOptions,
   EnhancedBaseCheckpointSaver,
 } from './checkpoint.interface';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 /**
  * Factory service for creating different types of checkpoint savers
@@ -17,7 +17,9 @@ export interface ICheckpointSaverFactory {
   /**
    * Create a checkpoint saver based on configuration
    */
-  createCheckpointSaver: (config: CheckpointConfig) => Promise<EnhancedBaseCheckpointSaver>;
+  createCheckpointSaver: (
+    config: CheckpointConfig
+  ) => Promise<EnhancedBaseCheckpointSaver>;
 }
 
 /**
@@ -27,7 +29,11 @@ export interface ICheckpointRegistryService {
   /**
    * Register a checkpoint saver
    */
-  registerSaver: (name: string, saver: EnhancedBaseCheckpointSaver, isDefault?: boolean) => void;
+  registerSaver: (
+    name: string,
+    saver: EnhancedBaseCheckpointSaver,
+    isDefault?: boolean
+  ) => void;
 
   /**
    * Get a checkpoint saver by name
@@ -111,7 +117,9 @@ export interface ICheckpointPersistenceService {
   /**
    * Save checkpoint with metadata enrichment
    */
-  saveCheckpoint: <T extends Record<string, unknown> = Record<string, unknown>>(
+  saveCheckpoint: <
+    _T extends Record<string, unknown> = Record<string, unknown>
+  >(
     threadId: string,
     checkpoint: unknown, // Checkpoint<T> type
     metadata?: EnhancedCheckpointMetadata,
@@ -147,7 +155,9 @@ export interface ICheckpointPersistenceService {
   /**
    * Create enhanced checkpoint with size and checksum
    */
-  createEnhancedCheckpoint: <T extends Record<string, unknown> = Record<string, unknown>>(
+  createEnhancedCheckpoint: <
+    T extends Record<string, unknown> = Record<string, unknown>
+  >(
     checkpoint: unknown, // Checkpoint<T> type
     metadata: EnhancedCheckpointMetadata
   ) => EnhancedCheckpoint<T>;
@@ -160,19 +170,37 @@ export interface ICheckpointMetricsService {
   /**
    * Record save operation metrics
    */
-  recordSaveMetrics: (saverName: string, duration: number, success: boolean) => void;
+  recordSaveMetrics: (
+    saverName: string,
+    duration: number,
+    success: boolean
+  ) => void;
 
   /**
    * Record load operation metrics
    */
-  recordLoadMetrics: (saverName: string, duration: number, success: boolean) => void;
+  recordLoadMetrics: (
+    saverName: string,
+    duration: number,
+    success: boolean
+  ) => void;
 
   /**
    * Get metrics for a specific saver
    */
   getMetrics: (saverName: string) => {
-    save: { totalTime: number; count: number; successCount: number; errorCount: number };
-    load: { totalTime: number; count: number; successCount: number; errorCount: number };
+    save: {
+      totalTime: number;
+      count: number;
+      successCount: number;
+      errorCount: number;
+    };
+    load: {
+      totalTime: number;
+      count: number;
+      successCount: number;
+      errorCount: number;
+    };
   };
 
   /**
@@ -183,10 +211,23 @@ export interface ICheckpointMetricsService {
     averageSaveTime: number;
     averageLoadTime: number;
     errorRate: number;
-    saverMetrics: Record<string, {
-      save: { totalTime: number; count: number; successCount: number; errorCount: number };
-      load: { totalTime: number; count: number; successCount: number; errorCount: number };
-    }>;
+    saverMetrics: Record<
+      string,
+      {
+        save: {
+          totalTime: number;
+          count: number;
+          successCount: number;
+          errorCount: number;
+        };
+        load: {
+          totalTime: number;
+          count: number;
+          successCount: number;
+          errorCount: number;
+        };
+      }
+    >;
   };
 
   /**
@@ -244,12 +285,14 @@ export interface ICheckpointCleanupService {
   /**
    * Update cleanup policies
    */
-  updateCleanupPolicies: (policies: Partial<{
-    maxAge: number;
-    maxPerThread: number;
-    cleanupInterval: number;
-    excludeThreads: string[];
-  }>) => void;
+  updateCleanupPolicies: (
+    policies: Partial<{
+      maxAge: number;
+      maxPerThread: number;
+      cleanupInterval: number;
+      excludeThreads: string[];
+    }>
+  ) => void;
 
   /**
    * Get cleanup statistics
@@ -341,11 +384,13 @@ export interface ICheckpointHealthService {
   /**
    * Update health monitoring configuration
    */
-  updateHealthConfig: (config: Partial<{
-    checkInterval: number;
-    unhealthyThreshold: number;
-    degradedThreshold: number;
-  }>) => void;
+  updateHealthConfig: (
+    config: Partial<{
+      checkInterval: number;
+      unhealthyThreshold: number;
+      degradedThreshold: number;
+    }>
+  ) => void;
 
   /**
    * Get health history
@@ -369,19 +414,22 @@ export interface ICheckpointHealthService {
       degradedSavers: number;
       unhealthySavers: number;
     };
-    savers: Record<string, {
-      status: {
-        healthy: boolean;
-        status: 'healthy' | 'degraded' | 'unhealthy';
-        lastCheck: Date;
-        responseTime: number;
-        error?: string;
-        details?: Record<string, unknown>;
-      };
-      uptime: number;
-      averageResponseTime: number;
-      recentErrors: number;
-    }>;
+    savers: Record<
+      string,
+      {
+        status: {
+          healthy: boolean;
+          status: 'healthy' | 'degraded' | 'unhealthy';
+          lastCheck: Date;
+          responseTime: number;
+          error?: string;
+          details?: Record<string, unknown>;
+        };
+        uptime: number;
+        averageResponseTime: number;
+        recentErrors: number;
+      }
+    >;
     trends: {
       healthTrend: 'improving' | 'stable' | 'degrading';
       responseTimeTrend: 'improving' | 'stable' | 'degrading';
@@ -411,8 +459,18 @@ export interface ICheckpointHealthService {
     };
     metrics: {
       operations: {
-        save: { totalTime: number; count: number; successCount: number; errorCount: number };
-        load: { totalTime: number; count: number; successCount: number; errorCount: number };
+        save: {
+          totalTime: number;
+          count: number;
+          successCount: number;
+          errorCount: number;
+        };
+        load: {
+          totalTime: number;
+          count: number;
+          successCount: number;
+          errorCount: number;
+        };
       };
       performance: {
         averageSaveTime: number;
@@ -429,12 +487,9 @@ export interface ICheckpointHealthService {
  */
 @Injectable()
 export abstract class BaseCheckpointService {
-  protected readonly logger: import('@nestjs/common').Logger;
+  protected readonly logger: Logger;
 
   constructor(loggerContext: string) {
-    // Import Logger dynamically to avoid require() issues
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Logger } = require('@nestjs/common');
     this.logger = new Logger(loggerContext);
   }
 
@@ -453,11 +508,9 @@ export abstract class BaseCheckpointService {
   /**
    * Calculate checksum for integrity verification
    */
-  protected calculateChecksum(checkpoint: unknown): string {
+  protected async calculateChecksum(checkpoint: unknown): Promise<string> {
     try {
-      // Import crypto dynamically to avoid require() issues
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const crypto = require('crypto');
+      const crypto = await import('crypto');
       const data = JSON.stringify(checkpoint);
       return crypto.createHash('sha256').update(data).digest('hex');
     } catch (error) {
@@ -493,15 +546,15 @@ export abstract class BaseCheckpointService {
   ): Error & { code: string } {
     const error = new Error(message) as Error & { code: string };
     error.code = code;
-    
+
     if (originalError) {
       (error as Error & { cause?: Error }).cause = originalError;
     }
-    
+
     if (additionalData) {
       Object.assign(error, additionalData);
     }
-    
+
     return error;
   }
 }

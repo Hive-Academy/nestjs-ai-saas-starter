@@ -171,7 +171,7 @@ export class ToolNodeService {
       try {
         // Execute all tool nodes in parallel
         const results = await Promise.all(
-          executors.map((executor) => executor(state))
+          executors.map(async (executor) => executor(state))
         );
 
         // Merge results

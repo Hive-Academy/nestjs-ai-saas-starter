@@ -11,9 +11,9 @@ export * from './lib/decorators/inject-collection.decorator';
 export * from './lib/decorators/embed.decorator';
 
 // Interfaces and types
-export * from './lib/interfaces/chromadb-module-options.interface';
-export * from './lib/interfaces/chromadb-service.interface';
-export * from './lib/interfaces/embedding-service.interface';
+export type * from './lib/interfaces/chromadb-module-options.interface';
+export type * from './lib/interfaces/chromadb-service.interface';
+export type * from './lib/interfaces/embedding-service.interface';
 
 // Health checking
 export * from './lib/health/chromadb.health';

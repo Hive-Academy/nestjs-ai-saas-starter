@@ -510,7 +510,7 @@ export class ToolDiscoveryService implements OnModuleInit {
       const batch = providers.slice(i, i + batchSize);
 
       const batchResults = await Promise.allSettled(
-        batch.map((wrapper) => {
+        batch.map(async (wrapper) => {
           if (wrapper.instance && typeof wrapper.instance === 'object') {
             return this.discoverFromProvider(wrapper.instance.constructor);
           }

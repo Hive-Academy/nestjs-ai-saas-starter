@@ -95,7 +95,7 @@ export class WorkflowTestBuilder {
       return Promise.race([
         compiled.invoke(initialState) as Promise<TState>,
         new Promise<TState>((_, reject) => 
-          setTimeout(() => reject(new Error('Test timeout')), options.timeout)
+          setTimeout(() => { reject(new Error('Test timeout')); }, options.timeout)
         ),
       ]);
     }

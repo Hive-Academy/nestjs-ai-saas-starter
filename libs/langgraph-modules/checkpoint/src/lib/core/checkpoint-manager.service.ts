@@ -27,7 +27,7 @@ import type {
 /**
  * Facade service for managing checkpoint persistence across multiple storage backends
  * Orchestrates the focused services using the Facade pattern for simplified API
- * 
+ *
  * This service provides a unified interface to all checkpoint operations while
  * delegating responsibilities to specialized services following SOLID principles.
  */
@@ -68,25 +68,38 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Save checkpoint with metadata and thread management
    * Delegates to persistence service for actual save operation
    */
-  public async saveCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
+  public async saveCheckpoint<
+    T extends Record<string, unknown> = Record<string, unknown>
+  >(
     threadId: string,
     checkpoint: unknown,
     metadata?: EnhancedCheckpointMetadata,
     saverName?: string
   ): Promise<void> {
-    return this.persistenceService.saveCheckpoint<T>(threadId, checkpoint, metadata, saverName);
+    return this.persistenceService.saveCheckpoint<T>(
+      threadId,
+      checkpoint,
+      metadata,
+      saverName
+    );
   }
 
   /**
    * Load checkpoint with version support
    * Delegates to persistence service for actual load operation
    */
-  public async loadCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
+  public async loadCheckpoint<
+    T extends Record<string, unknown> = Record<string, unknown>
+  >(
     threadId: string,
     checkpointId?: string,
     saverName?: string
   ): Promise<EnhancedCheckpoint<T> | null> {
-    return this.persistenceService.loadCheckpoint<T>(threadId, checkpointId, saverName);
+    return this.persistenceService.loadCheckpoint<T>(
+      threadId,
+      checkpointId,
+      saverName
+    );
   }
 
   /**
@@ -98,7 +111,11 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     options: ListCheckpointsOptions = {},
     saverName?: string
   ): Promise<EnhancedCheckpointTuple[]> {
-    return this.persistenceService.listCheckpoints(threadId, options, saverName);
+    return this.persistenceService.listCheckpoints(
+      threadId,
+      options,
+      saverName
+    );
   }
 
   // ========================================
@@ -123,7 +140,9 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get saver information
    */
-  getSaverInfo(saverName?: string): ReturnType<typeof this.registryService.getSaverInfo> {
+  getSaverInfo(
+    saverName?: string
+  ): ReturnType<typeof this.registryService.getSaverInfo> {
     return this.registryService.getSaverInfo(saverName);
   }
 
@@ -156,22 +175,29 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get performance metrics for a specific saver
    */
-  getMetrics(saverName?: string): ReturnType<typeof this.metricsService.getMetrics> {
-    const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+  getMetrics(
+    saverName?: string
+  ): ReturnType<typeof this.metricsService.getMetrics> {
+    const actualSaverName =
+      saverName || this.registryService.getDefaultSaverName() || 'default';
     return this.metricsService.getMetrics(actualSaverName);
   }
 
   /**
    * Get aggregated metrics across all savers
    */
-  getAggregatedMetrics(): ReturnType<typeof this.metricsService.getAggregatedMetrics> {
+  getAggregatedMetrics(): ReturnType<
+    typeof this.metricsService.getAggregatedMetrics
+  > {
     return this.metricsService.getAggregatedMetrics();
   }
 
   /**
    * Get performance insights and recommendations
    */
-  getPerformanceInsights(): ReturnType<typeof this.metricsService.getPerformanceInsights> {
+  getPerformanceInsights(): ReturnType<
+    typeof this.metricsService.getPerformanceInsights
+  > {
     return this.metricsService.getPerformanceInsights();
   }
 
@@ -200,7 +226,9 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Cleanup checkpoints across all savers
    */
-  async cleanupAllCheckpoints(options: CheckpointCleanupOptions = {}): Promise<number> {
+  async cleanupAllCheckpoints(
+    options: CheckpointCleanupOptions = {}
+  ): Promise<number> {
     return this.cleanupService.cleanupAll(options);
   }
 
@@ -214,14 +242,18 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get cleanup policies
    */
-  getCleanupPolicies(): ReturnType<typeof this.cleanupService.getCleanupPolicies> {
+  getCleanupPolicies(): ReturnType<
+    typeof this.cleanupService.getCleanupPolicies
+  > {
     return this.cleanupService.getCleanupPolicies();
   }
 
   /**
    * Update cleanup policies
    */
-  updateCleanupPolicies(policies: Parameters<typeof this.cleanupService.updateCleanupPolicies>[0]): void {
+  updateCleanupPolicies(
+    policies: Parameters<typeof this.cleanupService.updateCleanupPolicies>[0]
+  ): void {
     this.cleanupService.updateCleanupPolicies(policies);
   }
 
@@ -257,7 +289,9 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get detailed health status
    */
-  async getHealthStatus(saverName?: string): Promise<ReturnType<typeof this.healthService.getHealthStatus>> {
+  async getHealthStatus(
+    saverName?: string
+  ): Promise<ReturnType<typeof this.healthService.getHealthStatus>> {
     return this.healthService.getHealthStatus(saverName);
   }
 
@@ -271,14 +305,18 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get health history
    */
-  getHealthHistory(saverName?: string): ReturnType<typeof this.healthService.getHealthHistory> {
+  getHealthHistory(
+    saverName?: string
+  ): ReturnType<typeof this.healthService.getHealthHistory> {
     return this.healthService.getHealthHistory(saverName);
   }
 
   /**
    * Get diagnostic information
    */
-  async getDiagnosticInfo(saverName?: string): Promise<ReturnType<typeof this.healthService.getDiagnosticInfo>> {
+  async getDiagnosticInfo(
+    saverName?: string
+  ): Promise<ReturnType<typeof this.healthService.getDiagnosticInfo>> {
     return this.healthService.getDiagnosticInfo(saverName);
   }
 
@@ -296,7 +334,9 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     metrics: ReturnType<ICheckpointMetricsService['getAggregatedMetrics']>;
     health: ReturnType<ICheckpointHealthService['getHealthSummary']>;
     cleanup: ReturnType<ICheckpointCleanupService['getCleanupStats']>;
-    performance: ReturnType<ICheckpointMetricsService['getPerformanceInsights']>;
+    performance: ReturnType<
+      ICheckpointMetricsService['getPerformanceInsights']
+    >;
     recommendations: string[];
   } {
     const timestamp = new Date();
@@ -353,26 +393,36 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     // Check health status
     const healthSummary = this.healthService.getHealthSummary();
     if (healthSummary.overall.unhealthySavers > 0) {
-      issues.push(`${healthSummary.overall.unhealthySavers} saver(s) are unhealthy`);
+      issues.push(
+        `${healthSummary.overall.unhealthySavers} saver(s) are unhealthy`
+      );
     }
     if (healthSummary.overall.degradedSavers > 0) {
-      warnings.push(`${healthSummary.overall.degradedSavers} saver(s) show degraded performance`);
+      warnings.push(
+        `${healthSummary.overall.degradedSavers} saver(s) show degraded performance`
+      );
     }
 
     // Check performance
     const performance = this.metricsService.getPerformanceInsights();
     if (performance.slowestSavers.length > 0) {
-      warnings.push(`Slow performance detected in ${performance.slowestSavers.length} saver(s)`);
+      warnings.push(
+        `Slow performance detected in ${performance.slowestSavers.length} saver(s)`
+      );
     }
     if (performance.errorProneSavers.length > 0) {
-      issues.push(`High error rates detected in ${performance.errorProneSavers.length} saver(s)`);
+      issues.push(
+        `High error rates detected in ${performance.errorProneSavers.length} saver(s)`
+      );
     }
 
     const summary = {
       totalSavers: healthSummary.overall.totalSavers,
       healthySavers: healthSummary.overall.healthySavers,
       configurationValid: registryValidation.valid && cleanupValidation.valid,
-      performanceAcceptable: performance.slowestSavers.length === 0 && performance.errorProneSavers.length === 0,
+      performanceAcceptable:
+        performance.slowestSavers.length === 0 &&
+        performance.errorProneSavers.length === 0,
     };
 
     return {
@@ -421,7 +471,9 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`Initialized ${config.type} checkpoint saver: ${name}`);
       } catch (error) {
         this.logger.error(
-          `Failed to initialize checkpoint saver ${config.name || config.type}:`,
+          `Failed to initialize checkpoint saver ${
+            config.name || config.type
+          }:`,
           error
         );
       }
@@ -430,10 +482,18 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     // Validate that we have at least one saver
     const validation = this.registryService.validateSavers();
     if (!validation.valid) {
-      throw new Error(`Checkpoint saver initialization failed: ${validation.issues.join(', ')}`);
+      throw new Error(
+        `Checkpoint saver initialization failed: ${validation.issues.join(
+          ', '
+        )}`
+      );
     }
 
-    this.logger.log(`Checkpoint system initialized with ${this.registryService.getAvailableSavers().length} saver(s)`);
+    this.logger.log(
+      `Checkpoint system initialized with ${
+        this.registryService.getAvailableSavers().length
+      } saver(s)`
+    );
   }
 
   /**
