@@ -3,6 +3,10 @@
  * Base state interface for functional workflows
  */
 export interface FunctionalWorkflowState {
+  readonly workflowName?: string;
+  readonly executionId?: string;
+  readonly currentStep?: number;
+  readonly currentTask?: string;
   readonly [key: string]: unknown;
 }
 

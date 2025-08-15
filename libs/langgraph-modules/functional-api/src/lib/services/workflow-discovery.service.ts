@@ -38,7 +38,7 @@ export class WorkflowDiscoveryService {
    */
   async discoverWorkflows(): Promise<void> {
     this.logger.log('Starting workflow discovery');
-    
+
     const providers = this.discoveryService.getProviders();
     let discoveredCount = 0;
 
@@ -49,7 +49,7 @@ export class WorkflowDiscoveryService {
 
       try {
         const workflows = this.extractWorkflowsFromInstance(provider.instance);
-        
+
         for (const workflow of workflows) {
           this.registerWorkflow(workflow.definition, provider.instance);
           discoveredCount++;
@@ -57,7 +57,7 @@ export class WorkflowDiscoveryService {
       } catch (error) {
         this.logger.error(
           `Failed to extract workflows from ${provider.name}`,
-          error instanceof Error ? error.stack : error
+          error instanceof Error ? error.stack : String(error)
         );
       }
     }
@@ -93,7 +93,7 @@ export class WorkflowDiscoveryService {
     instance: object
   ): Array<{ definition: FunctionalWorkflowDefinition; instance: object }> {
     const methodNames = this.metadataScanner.getAllMethodNames(
-      Object.getPrototypeOf(instance)
+      Object.getPrototypeOf(instance) as object
     );
 
     const entrypoints = new Map<string, EntrypointMetadata>();
@@ -135,7 +135,7 @@ export class WorkflowDiscoveryService {
 
     // Build task definitions
     const allTasks = new Map<string, TaskDefinition>();
-    
+
     // Add entrypoint as a task
     allTasks.set(entrypoint.name, {
       name: entrypoint.name,

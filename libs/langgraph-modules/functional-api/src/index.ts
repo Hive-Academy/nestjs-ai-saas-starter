@@ -13,8 +13,8 @@ export * from './lib/decorators/entrypoint.decorator';
 export * from './lib/decorators/task.decorator';
 
 // Interfaces
-export * from './lib/interfaces/functional-workflow.interface';
-export * from './lib/interfaces/module-options.interface';
+export type * from './lib/interfaces/functional-workflow.interface';
+export type * from './lib/interfaces/module-options.interface';
 
 // Errors
 export * from './lib/errors/functional-workflow.errors';

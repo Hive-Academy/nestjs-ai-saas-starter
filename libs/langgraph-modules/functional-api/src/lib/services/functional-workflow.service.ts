@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { Observable, Subject, throwError, from, EMPTY } from 'rxjs';
-import { 
-  switchMap, 
+import {
+  switchMap,
   catchError,
 } from 'rxjs/operators';
 import {
@@ -23,6 +23,7 @@ import {
   TaskTimeoutError,
   UnknownTaskError,
 } from '../errors/functional-workflow.errors';
+import { CheckpointManagerService } from '@langgraph-modules/checkpoint';
 
 /**
  * Main service for executing functional workflows
@@ -38,6 +39,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
     private readonly options: FunctionalApiModuleOptions,
     private readonly discoveryService: WorkflowDiscoveryService,
     private readonly validator: WorkflowValidator,
+    private readonly checkpointManager: CheckpointManagerService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -53,10 +55,10 @@ export class FunctionalWorkflowService implements OnModuleInit {
   ): Promise<WorkflowExecutionResult<TState>> {
     const startTime = Date.now();
     const executionId = `exec_${++this.executionCounter}_${Date.now()}`;
-    
+
     try {
       this.logger.log(`Starting workflow execution: ${workflowName} (${executionId})`);
-      
+
       const definition = this.discoveryService.getWorkflow(workflowName);
       if (!definition) {
         throw new WorkflowExecutionError(
@@ -82,11 +84,14 @@ export class FunctionalWorkflowService implements OnModuleInit {
       // Build execution plan
       const dependencyGraph = this.validator.buildDependencyGraph(definition);
       const executionOrder = this.planExecution(dependencyGraph);
-      
+
       let currentState: TState = {
+        workflowName,
+        executionId,
+        currentStep: 0,
         ...options.initialState,
       } as TState;
-      
+
       let checkpointCount = 0;
       const executionPath: string[] = [];
 
@@ -117,6 +122,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
           currentState = {
             ...currentState,
             ...result.state,
+            currentTask: taskName,
+            currentStep: (currentState.currentStep || 0) + 1,
           } as TState;
 
           executionPath.push(taskName);
@@ -140,7 +147,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
         } catch (error) {
           const taskError = error instanceof Error ? error : new Error(String(error));
-          
+
           this.emitStreamEvent({
             type: 'task_error',
             taskName,
@@ -181,8 +188,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
       return result;
 
     } catch (error) {
-      const executionError = error instanceof WorkflowExecutionError 
-        ? error 
+      const executionError = error instanceof WorkflowExecutionError
+        ? error
         : new WorkflowExecutionError(
             workflowName,
             'Workflow execution failed',
@@ -260,9 +267,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
       const executeWithRetry = async (attempt: number): Promise<void> => {
         try {
-          const result = await method.call(instance, context);
+          const result = await method.call(instance, context) as TaskExecutionResult;
           clearTimeout(timeoutId);
-          
+
           // Validate result
           if (!result || typeof result !== 'object') {
             throw new TaskExecutionError(
@@ -271,7 +278,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
             );
           }
 
-          resolve(result);
+          resolve(result as TaskExecutionResult);
         } catch (error) {
           if (attempt < retries) {
             this.logger.warn(
@@ -290,7 +297,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         }
       };
 
-      executeWithRetry(0);
+      void executeWithRetry(0);
     });
   }
 
@@ -312,7 +319,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       }
 
       visiting.add(taskName);
-      
+
       const task = graph.tasks.get(taskName);
       if (!task) {
         throw new UnknownTaskError(taskName, 'unknown');
@@ -347,16 +354,46 @@ export class FunctionalWorkflowService implements OnModuleInit {
   }
 
   /**
-   * Saves a checkpoint (stub - would integrate with checkpoint module)
+   * Saves a checkpoint using the CheckpointManagerService
    */
   private async saveCheckpoint(executionId: string, state: FunctionalWorkflowState): Promise<void> {
-    this.logger.debug(`Would save checkpoint for execution ${executionId}`, state);
-    
-    this.emitStreamEvent({
-      type: 'checkpoint_saved',
-      timestamp: new Date(),
-      metadata: { executionId },
-    });
+    try {
+      const checkpoint = {
+        id: `checkpoint_${executionId}_${Date.now()}`,
+        channel_values: state,
+        channel_versions: {},
+        versions_seen: {},
+        pending_sends: [],
+        version: '1.0.0',
+      };
+
+      const metadata = {
+        executionId,
+        timestamp: new Date().toISOString(),
+        source: 'input' as const,
+        step: state.currentStep || 0,
+        parents: {},
+        workflowName: state.workflowName,
+        currentTask: state.currentTask,
+      };
+
+      await this.checkpointManager.saveCheckpoint(
+        executionId,
+        checkpoint,
+        metadata
+      );
+
+      this.logger.debug(`Checkpoint saved for execution ${executionId}`);
+
+      this.emitStreamEvent({
+        type: 'checkpoint_saved',
+        timestamp: new Date(),
+        metadata: { executionId, checkpointId: checkpoint.id },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to save checkpoint for execution ${executionId}`, error);
+      // Don't throw - checkpoint failures shouldn't stop workflow execution
+    }
   }
 
   /**
@@ -380,5 +417,90 @@ export class FunctionalWorkflowService implements OnModuleInit {
    */
   getWorkflowDefinition(name: string) {
     return this.discoveryService.getWorkflow(name);
+  }
+
+  /**
+   * Resumes workflow execution from a checkpoint
+   */
+  async resumeFromCheckpoint<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
+    executionId: string,
+    checkpointId?: string,
+    options: WorkflowExecutionOptions = {}
+  ): Promise<WorkflowExecutionResult<TState>> {
+    try {
+      this.logger.log(`Resuming workflow execution from checkpoint: ${executionId}`);
+
+      // Load checkpoint
+      const checkpoint = await this.checkpointManager.loadCheckpoint<TState>(
+        executionId,
+        checkpointId
+      );
+
+      if (!checkpoint) {
+        throw new WorkflowExecutionError(
+          'unknown',
+          `Checkpoint not found for execution ${executionId}`,
+          undefined,
+          undefined,
+          { executionId, checkpointId }
+        );
+      }
+
+      // Extract workflow name from checkpoint metadata
+      const workflowName = checkpoint.metadata?.workflowName as string;
+      if (!workflowName) {
+        throw new WorkflowExecutionError(
+          'unknown',
+          'Checkpoint metadata missing workflow name',
+          undefined,
+          undefined,
+          { executionId, checkpointId }
+        );
+      }
+
+      // Resume execution with restored state
+      const resumeOptions: WorkflowExecutionOptions = {
+        ...options,
+        initialState: {
+          ...checkpoint.channel_values,
+          ...options.initialState,
+        },
+        metadata: {
+          ...checkpoint.metadata,
+          ...options.metadata,
+          resumedFromCheckpoint: checkpointId || 'latest',
+          resumedAt: new Date().toISOString(),
+        },
+      };
+
+      return await this.executeWorkflow<TState>(workflowName, resumeOptions);
+    } catch (error) {
+      this.logger.error(`Failed to resume workflow from checkpoint: ${executionId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lists available checkpoints for an execution
+   */
+  async listCheckpoints(executionId: string): Promise<Array<{
+    id: string;
+    timestamp: string;
+    step: number;
+    metadata?: Record<string, unknown>;
+  }>> {
+    try {
+      const checkpoints = await this.checkpointManager.listCheckpoints(executionId);
+
+      return checkpoints.map(([_config, checkpoint, metadata]) => ({
+        id: checkpoint.id,
+        timestamp: metadata?.timestamp as string || new Date().toISOString(),
+        step: metadata?.step as number || 0,
+        metadata: metadata || {},
+      }));
+    } catch (error) {
+      this.logger.error(`Failed to list checkpoints for execution: ${executionId}`, error);
+      return [];
+    }
   }
 }

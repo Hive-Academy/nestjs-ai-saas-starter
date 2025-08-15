@@ -1,5 +1,6 @@
 import { Module, DynamicModule, Provider, Global } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
+import { LanggraphModulesCheckpointModule } from '@langgraph-modules/checkpoint';
 import {
   FunctionalApiModuleOptions,
   FunctionalApiModuleAsyncOptions,
@@ -31,7 +32,20 @@ export class FunctionalApiModule {
 
     return {
       module: FunctionalApiModule,
-      imports: [DiscoveryModule],
+      imports: [
+        DiscoveryModule,
+        LanggraphModulesCheckpointModule.forRoot({
+          checkpoint: {
+            savers: [
+              {
+                name: 'memory',
+                type: 'memory',
+                default: true,
+              },
+            ],
+          },
+        }),
+      ],
       providers: [
         optionsProvider,
         WorkflowValidator,
@@ -57,6 +71,17 @@ export class FunctionalApiModule {
       module: FunctionalApiModule,
       imports: [
         DiscoveryModule,
+        LanggraphModulesCheckpointModule.forRoot({
+          checkpoint: {
+            savers: [
+              {
+                name: 'memory',
+                type: 'memory',
+                default: true,
+              },
+            ],
+          },
+        }),
         ...(options.imports || []),
       ],
       providers: [
