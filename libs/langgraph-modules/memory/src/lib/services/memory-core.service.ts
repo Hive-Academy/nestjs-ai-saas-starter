@@ -23,6 +23,7 @@ import {
   MemoryTimeoutError,
   wrapMemoryError,
 } from '../errors/memory-errors';
+import { Session } from 'neo4j-driver';
 
 /**
  * Core memory service with proper type safety and SOLID principles
@@ -964,6 +965,8 @@ export class MemoryCoreService implements MemoryServiceInterface, OnModuleInit, 
         });
         break;
 
+      case "conversation": { throw new Error('Not implemented yet: "conversation" case') }
+      case "custom": { throw new Error('Not implemented yet: "custom" case') }
       default:
         // For conversation and custom types, create temporal relationships
         await this.createTemporalRelationships(session, entry);
@@ -974,7 +977,7 @@ export class MemoryCoreService implements MemoryServiceInterface, OnModuleInit, 
   /**
    * Create temporal relationships between memories in the same thread
    */
-  private async createTemporalRelationships(session: unknown, entry: MemoryEntry): Promise<void> {
+  private async createTemporalRelationships(session: Session, entry: MemoryEntry): Promise<void> {
     // Link to the previous memory in the same thread
     await session.run(`
       MATCH (current:Memory {id: $memoryId})
