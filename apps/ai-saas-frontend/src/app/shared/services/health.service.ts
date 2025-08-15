@@ -27,7 +27,7 @@ export interface ServiceHealth {
 export class HealthService {
   private readonly apiUrl = '/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getHealthStatus(): Observable<HealthStatus> {
     return this.http.get<HealthStatus>(`${this.apiUrl}/health`).pipe(

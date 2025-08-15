@@ -62,7 +62,7 @@ export class MetricsProvider {
 
     // Node events
     this.eventEmitter.on('node.completed', (data: any) => {
-      const nodeId = data.nodeId;
+      const {nodeId} = data;
       this.metrics.nodeExecutions.set(
         nodeId,
         (this.metrics.nodeExecutions.get(nodeId) || 0) + 1
@@ -71,7 +71,7 @@ export class MetricsProvider {
 
     // Tool events
     this.eventEmitter.on('tool.completed', (data: any) => {
-      const toolName = data.toolName;
+      const {toolName} = data;
       this.metrics.toolExecutions.set(
         toolName,
         (this.metrics.toolExecutions.get(toolName) || 0) + 1
@@ -116,7 +116,7 @@ export class MetricsProvider {
    * Get success rate
    */
   getSuccessRate(): number {
-    if (this.metrics.executionCount === 0) return 0;
+    if (this.metrics.executionCount === 0) {return 0;}
     return this.metrics.successCount / this.metrics.executionCount;
   }
 

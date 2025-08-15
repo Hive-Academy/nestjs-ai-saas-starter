@@ -124,8 +124,8 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   private readonly logger = new Logger(ConfidenceEvaluatorService.name);
 
   // In-memory stores (in production, these would be backed by persistent storage)
-  private approvalPatterns = new Map<string, ApprovalPattern>();
-  private confidenceHistory = new Map<string, ConfidenceFactor[]>();
+  private readonly approvalPatterns = new Map<string, ApprovalPattern>();
+  private readonly confidenceHistory = new Map<string, ConfidenceFactor[]>();
   private mlHooks?: MLIntegrationHooks;
 
   constructor(private readonly eventEmitter: EventEmitter2) {}
@@ -564,17 +564,17 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     const metadata = state.metadata || {};
 
     // Security risk assessment
-    if (metadata['privilegedOperation'] || metadata['adminAction']) {
+    if (metadata.privilegedOperation || metadata.adminAction) {
       details.security = Math.max(details.security, 0.8);
     }
 
     // Data impact assessment
-    if (metadata['prodData'] || metadata['customerData']) {
+    if (metadata.prodData || metadata.customerData) {
       details.dataImpact = Math.max(details.dataImpact, 0.9);
     }
 
     // User impact assessment
-    const userCount = (metadata['affectedUsers'] as number) || 0;
+    const userCount = (metadata.affectedUsers as number) || 0;
     if (userCount > 1000) {
       details.userImpact = 0.8;
     }
@@ -645,12 +645,12 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   ): string[] {
     const factors: string[] = [];
 
-    if (details.security > 0.6) factors.push('high-security-risk');
-    if (details.dataImpact > 0.7) factors.push('high-data-impact');
-    if (details.userImpact > 0.6) factors.push('high-user-impact');
-    if (details.businessImpact > 0.7) factors.push('high-business-impact');
+    if (details.security > 0.6) {factors.push('high-security-risk');}
+    if (details.dataImpact > 0.7) {factors.push('high-data-impact');}
+    if (details.userImpact > 0.6) {factors.push('high-user-impact');}
+    if (details.businessImpact > 0.7) {factors.push('high-business-impact');}
     if (details.operationalImpact > 0.8)
-      factors.push('high-operational-impact');
+      {factors.push('high-operational-impact');}
 
     factors.push(...customFactors);
 

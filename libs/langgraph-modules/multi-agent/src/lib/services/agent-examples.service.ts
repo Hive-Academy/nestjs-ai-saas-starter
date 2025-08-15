@@ -157,12 +157,12 @@ Ready for delivery.`;
             next: 'technical', 
             task: 'Resolve technical issue',
           };
-        } else {
+        } 
           return {
             messages: [new AIMessage('I can help with general inquiries. How may I assist you today?')],
             next: MULTI_AGENT_CONSTANTS.END,
           };
-        }
+        
       },
     };
 

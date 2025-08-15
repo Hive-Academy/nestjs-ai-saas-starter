@@ -1,5 +1,5 @@
-import { BaseMessage } from '@langchain/core/messages';
-import { StateGraph, StateGraphArgs } from '@langchain/langgraph';
+import type { BaseMessage } from '@langchain/core/messages';
+import type { StateGraph, StateGraphArgs } from '@langchain/langgraph';
 
 export interface WorkflowState {
   /**
@@ -233,12 +233,12 @@ export interface WorkflowDefinition<TState = WorkflowState> {
   /**
    * Workflow nodes
    */
-  nodes: WorkflowNode<TState>[];
+  nodes: Array<WorkflowNode<TState>>;
 
   /**
    * Workflow edges
    */
-  edges: WorkflowEdge<TState>[];
+  edges: Array<WorkflowEdge<TState>>;
 
   /**
    * Entry point node
@@ -539,7 +539,7 @@ export interface StreamingOptions {
   /**
    * Multiple stream modes
    */
-  modes?: ('values' | 'updates' | 'messages' | 'events' | 'debug')[];
+  modes?: Array<'values' | 'updates' | 'messages' | 'events' | 'debug'>;
 
   /**
    * Enable WebSocket streaming
@@ -622,22 +622,22 @@ export interface CompiledWorkflow<TState = WorkflowState> {
   /**
    * Invoke the workflow with initial state
    */
-  invoke(state: Partial<TState>, options?: WorkflowExecutionOptions): Promise<TState>;
+  invoke: (state: Partial<TState>, options?: WorkflowExecutionOptions) => Promise<TState>;
 
   /**
    * Stream workflow execution
    */
-  stream(state: Partial<TState>, options?: WorkflowExecutionOptions): AsyncIterableIterator<TState>;
+  stream: (state: Partial<TState>, options?: WorkflowExecutionOptions) => AsyncIterableIterator<TState>;
 
   /**
    * Get workflow graph
    */
-  getGraph(): StateGraph<TState>;
+  getGraph: () => StateGraph<TState>;
 
   /**
    * Get workflow metadata
    */
-  getMetadata(): WorkflowMetadata;
+  getMetadata: () => WorkflowMetadata;
 }
 
 export interface WorkflowMetadata {

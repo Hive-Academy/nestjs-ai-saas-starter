@@ -1,10 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { take } from 'rxjs';
 
 import { StreamEventType } from '../constants';
-import { StreamTokenMetadata } from '../decorators/streaming.decorator';
+import type { StreamTokenMetadata } from '../decorators/streaming.decorator';
 import { TokenStreamingService } from './token-streaming.service';
 
 const mockLogger = {
@@ -467,7 +468,7 @@ describe('TokenStreamingService', () => {
     it('should clean up stale streams automatically', async () => {
       // This test would require mocking time or waiting for the cleanup interval
       // For now, we'll test the manual cleanup method exists
-      expect(typeof service['cleanupStaleStreams']).toBe('function');
+      expect(typeof service.cleanupStaleStreams).toBe('function');
     });
 
     it('should handle module destruction gracefully', async () => {
@@ -487,7 +488,7 @@ describe('TokenStreamingService', () => {
     it('should handle concurrent token streaming', async () => {
       const concurrentStreams = 5;
       const tokensPerStream = 10;
-      const promises: Promise<void>[] = [];
+      const promises: Array<Promise<void>> = [];
 
       // Initialize concurrent streams
       for (let i = 0; i < concurrentStreams; i++) {
@@ -508,7 +509,7 @@ describe('TokenStreamingService', () => {
       await Promise.all(promises);
 
       // Stream tokens concurrently
-      const streamPromises: Promise<void>[] = [];
+      const streamPromises: Array<Promise<void>> = [];
       for (let i = 0; i < concurrentStreams; i++) {
         streamPromises.push(
           new Promise<void>((resolve) => {

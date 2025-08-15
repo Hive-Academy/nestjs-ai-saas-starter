@@ -1,4 +1,4 @@
-import { Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 import { HumanApprovalNode } from '../hitl/human-approval.node';
 import { HumanApprovalService } from '../hitl/human-approval.service';
 import { ConfidenceEvaluatorService } from '../hitl/confidence-evaluator.service';

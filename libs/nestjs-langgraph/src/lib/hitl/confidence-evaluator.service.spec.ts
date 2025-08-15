@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 
 import {
@@ -9,7 +10,7 @@ import {
 } from '../test-utils';
 
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
-import { WorkflowState } from '../interfaces/workflow.interface';
+import type { WorkflowState } from '../interfaces/workflow.interface';
 import { ApprovalRiskLevel } from '../decorators/approval.decorator';
 
 describe('ConfidenceEvaluatorService', () => {
@@ -426,9 +427,9 @@ describe('ConfidenceEvaluatorService', () => {
   describe('Configuration and Customization', () => {
     it('should allow configuration of confidence calculation method', () => {
       // Test internal configuration (would be expanded based on actual implementation)
-      expect(service['getValidConfidenceFactors']).toBeDefined();
-      expect(service['calculateWeightedConfidence']).toBeDefined();
-      expect(service['determineRiskLevel']).toBeDefined();
+      expect(service.getValidConfidenceFactors).toBeDefined();
+      expect(service.calculateWeightedConfidence).toBeDefined();
+      expect(service.determineRiskLevel).toBeDefined();
     });
 
     it('should support different confidence factor weights', async () => {

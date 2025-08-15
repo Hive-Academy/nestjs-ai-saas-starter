@@ -254,7 +254,7 @@ export interface HierarchicalConfig {
   /**
    * Hierarchy levels (top-level supervisors to leaf workers)
    */
-  levels: readonly (readonly string[])[];
+  levels: ReadonlyArray<readonly string[]>;
   
   /**
    * Escalation rules
@@ -384,7 +384,7 @@ export interface MultiAgentModuleOptions {
    */
   streaming?: {
     enabled: boolean;
-    modes?: ('values' | 'updates' | 'messages')[];
+    modes?: Array<'values' | 'updates' | 'messages'>;
   };
   
   /**

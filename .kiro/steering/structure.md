@@ -100,8 +100,8 @@ apps/nestjs-ai-saas-starter-demo/
 ### Library Imports
 ```typescript
 // Import from published libraries
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
-import { Neo4jModule } from '@anubis/nestjs-neo4j';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
 ```
 

@@ -82,14 +82,14 @@ npm run publish:release
 
 ## Library-Specific Publishing
 
-### @anubis/nestjs-chromadb
+### @hive-academy/nestjs-chromadb
 
 ```bash
 nx build nestjs-chromadb
 nx run nestjs-chromadb:publish
 ```
 
-### @anubis/nestjs-neo4j
+### @hive-academy/nestjs-neo4j
 
 ```bash
 nx build nestjs-neo4j
@@ -171,10 +171,10 @@ If a published version has issues:
 
 ```bash
 # Deprecate a version
-npm deprecate @anubis/nestjs-chromadb@1.0.0 "This version has critical bugs"
+npm deprecate @hive-academy/nestjs-chromadb@1.0.0 "This version has critical bugs"
 
 # Unpublish (only within 72 hours)
-npm unpublish @anubis/nestjs-chromadb@1.0.0
+npm unpublish @hive-academy/nestjs-chromadb@1.0.0
 ```
 
 ## Support

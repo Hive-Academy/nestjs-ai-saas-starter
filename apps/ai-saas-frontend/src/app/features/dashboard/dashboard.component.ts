@@ -279,7 +279,7 @@ export class DashboardComponent implements OnInit {
     },
   ];
 
-  constructor(private healthService: HealthService) {}
+  constructor(private readonly healthService: HealthService) {}
 
   ngOnInit() {
     this.healthData$ = this.healthService.getHealthStatus();

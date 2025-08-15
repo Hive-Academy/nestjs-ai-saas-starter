@@ -1,4 +1,4 @@
-import { Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import { TokenStreamingService } from '../streaming/token-streaming.service';
 import { WebSocketBridgeService } from '../streaming/websocket-bridge.service';

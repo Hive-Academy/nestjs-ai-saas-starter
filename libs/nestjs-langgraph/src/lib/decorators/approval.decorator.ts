@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Injectable, Inject } from '@nestjs/common';
-import { WorkflowState } from '../interfaces/workflow.interface';
+import type { WorkflowState } from '../interfaces/workflow.interface';
 import {
   HUMAN_APPROVAL_SERVICE,
   CONFIDENCE_EVALUATOR_SERVICE,
@@ -260,7 +260,7 @@ export function RequiresApproval(
         options: RequiresApprovalOptions
       ): Promise<boolean> {
         const skip = options.skipConditions;
-        if (!skip) return false;
+        if (!skip) {return false;}
 
         // High confidence skip
         if (
@@ -271,15 +271,15 @@ export function RequiresApproval(
         }
 
         // User role skip
-        if (skip.userRole && state.metadata?.['userRole']) {
-          const userRole = state.metadata['userRole'] as string;
+        if (skip.userRole && state.metadata?.userRole) {
+          const userRole = state.metadata.userRole as string;
           if (skip.userRole.includes(userRole)) {
             return true;
           }
         }
 
         // Safe mode skip
-        if (skip.safeMode && state.metadata?.['safeMode'] === true) {
+        if (skip.safeMode && state.metadata?.safeMode === true) {
           return true;
         }
 
@@ -303,7 +303,7 @@ export function RequiresApproval(
         }
       ): Promise<boolean> {
         // Custom condition check
-        if (options.when && options.when(state)) {
+        if (options.when?.(state)) {
           return true;
         }
 

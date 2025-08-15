@@ -242,7 +242,7 @@ export class DocumentsListComponent implements OnInit {
   documents$!: Observable<any[]>;
   loading = true;
 
-  constructor(private documentsService: DocumentsService) {}
+  constructor(private readonly documentsService: DocumentsService) {}
 
   ngOnInit() {
     this.documents$ = this.documentsService.getDocuments();

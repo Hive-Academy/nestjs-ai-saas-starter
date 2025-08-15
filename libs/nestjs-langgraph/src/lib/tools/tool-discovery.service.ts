@@ -295,7 +295,7 @@ export class ToolDiscoveryService implements OnModuleInit {
     // Analyze each tool
     for (const tool of allTools) {
       const metadata = this.toolRegistry.getToolMetadata(tool.name);
-      if (!metadata) continue;
+      if (!metadata) {continue;}
 
       // Check for composed tools
       if (metadata.tags?.includes('composed')) {
@@ -321,7 +321,7 @@ export class ToolDiscoveryService implements OnModuleInit {
       }
 
       // Check for orphaned tools (tools with no assigned agents)
-      const agents = metadata.agents;
+      const {agents} = metadata;
       if (!agents || (Array.isArray(agents) && agents.length === 0)) {
         orphanedTools.push(tool.name);
       }

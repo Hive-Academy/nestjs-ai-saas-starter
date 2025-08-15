@@ -138,7 +138,7 @@ export abstract class StreamingWorkflowBase<
 {
   protected override readonly logger: Logger;
   private streamingConfiguration?: StreamingConfiguration;
-  private executionContexts = new Map<string, StreamingExecutionContext>();
+  private readonly executionContexts = new Map<string, StreamingExecutionContext>();
 
   constructor(
     @Inject(EventEmitter2)
@@ -470,7 +470,7 @@ export abstract class StreamingWorkflowBase<
 
     // Process each node for streaming metadata
     definition.nodes.forEach((node) => {
-      const streamingMetadata = node.config?.metadata?.['streaming'];
+      const streamingMetadata = node.config?.metadata?.streaming;
 
       if (streamingMetadata?.token?.enabled) {
         streamingConfig.tokenStreaming.enabled = true;
@@ -587,7 +587,7 @@ export abstract class StreamingWorkflowBase<
     result: TState
   ): Promise<void> {
     const context = this.executionContexts.get(executionId);
-    if (!context || !context.streamingEnabled) {
+    if (!context?.streamingEnabled) {
       return;
     }
 

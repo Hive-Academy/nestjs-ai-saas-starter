@@ -66,7 +66,7 @@ export class CheckpointProvider {
    * Create a SQLite-based checkpoint saver
    */
   private async createSqliteCheckpointer(config?: Record<string, any>): Promise<BaseCheckpointSaver> {
-    const dbPath = config?.['path'] || './checkpoints.db';
+    const dbPath = config?.path || './checkpoints.db';
     
     try {
       const saver = SqliteSaver.fromConnString(dbPath);
@@ -101,7 +101,7 @@ export class CheckpointProvider {
       }
       
       const redisConfig = {
-        url: config?.['url'] || 'redis://localhost:6379',
+        url: config?.url || 'redis://localhost:6379',
         ...config,
       };
 
@@ -127,8 +127,8 @@ export class CheckpointProvider {
         throw new Error('Postgres checkpoint package not installed. Install @langchain/langgraph-checkpoint-postgres to use Postgres checkpointing.');
       }
       
-      const pool = config['pool'] || {
-        connectionString: config['connectionString'],
+      const pool = config.pool || {
+        connectionString: config.connectionString,
       };
 
       const saver = new PostgresSaver(pool);

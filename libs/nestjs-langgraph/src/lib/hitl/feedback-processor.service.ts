@@ -111,8 +111,8 @@ export interface FeedbackStats {
 @Injectable()
 export class FeedbackProcessorService {
   private readonly logger = new Logger(FeedbackProcessorService.name);
-  private feedbackStore = new Map<string, FeedbackEntry>();
-  private executionFeedback = new Map<string, FeedbackEntry[]>();
+  private readonly feedbackStore = new Map<string, FeedbackEntry>();
+  private readonly executionFeedback = new Map<string, FeedbackEntry[]>();
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
@@ -325,7 +325,7 @@ export class FeedbackProcessorService {
       metadata: {
         ...(currentState.metadata || {}),
         clarifications: [
-          ...((currentState.metadata?.['clarifications'] as string[]) || []),
+          ...((currentState.metadata?.clarifications as string[]) || []),
           entry.content.message,
         ],
       },
@@ -366,7 +366,7 @@ export class FeedbackProcessorService {
       metadata: {
         ...(currentState.metadata || {}),
         comments: [
-          ...((currentState.metadata?.['comments'] as string[]) || []),
+          ...((currentState.metadata?.comments as string[]) || []),
           {
             message: entry.content.message,
             provider: entry.provider,

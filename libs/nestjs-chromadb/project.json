@@ -3,7 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/nestjs-chromadb/src",
   "projectType": "library",
-  "tags": ["domain:chroma-db", "type:data-access"],
+  "tags": ["domain:chromadb", "type:data-access"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",

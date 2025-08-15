@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-08-13T13:29:56.192Z",
+  "timestamp": "2025-08-14T17:00:17.779Z",
   "summary": {
     "passed": 10,
     "failed": 0,
-    "warnings": 0
+    "warnings": 10
   },
   "details": {
     "passed": [
@@ -19,6 +19,17 @@
       "langgraph-modules/platform"
     ],
     "failed": [],
-    "warnings": []
+    "warnings": [
+      "nestjs-chromadb: Found 4 'any' types",
+      "nestjs-neo4j: Found 4 'any' types",
+      "nestjs-langgraph: Found 4 'any' types",
+      "langgraph-modules/checkpoint: Found 4 'any' types",
+      "langgraph-modules/memory: Found 4 'any' types",
+      "langgraph-modules/time-travel: Found 4 'any' types",
+      "langgraph-modules/multi-agent: Found 4 'any' types",
+      "langgraph-modules/functional-api: Found 4 'any' types",
+      "langgraph-modules/monitoring: Found 4 'any' types",
+      "langgraph-modules/platform: Found 4 'any' types"
+    ]
   }
 }

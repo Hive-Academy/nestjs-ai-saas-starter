@@ -1,11 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { Logger } from '@nestjs/common';
 import { HumanApprovalService, ApprovalWorkflowState } from './human-approval.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
 import { ApprovalChainService, ApprovalPolicy } from './approval-chain.service';
 import { FeedbackProcessorService, FeedbackType } from './feedback-processor.service';
-import { WorkflowState } from '../interfaces/workflow.interface';
+import type { WorkflowState } from '../interfaces/workflow.interface';
 import { ApprovalRiskLevel, EscalationStrategy } from '../decorators/approval.decorator';
 import { HITL_EVENTS, HITL_DEFAULTS } from './constants';
 

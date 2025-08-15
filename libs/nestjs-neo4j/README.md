@@ -599,7 +599,7 @@ export class UserService {
 }
 ```
 
-### After (Using @anubis/nestjs-neo4j)
+### After (Using @hive-academy/nestjs-neo4j)
 
 ```typescript
 import { Injectable } from '@nestjs/common';

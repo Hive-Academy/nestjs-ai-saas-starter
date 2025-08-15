@@ -98,7 +98,7 @@ export class MetadataProcessorService {
    */
   private convertNodesToDefinition<TState extends WorkflowState>(
     nodeMetadata: NodeMetadata[]
-  ): WorkflowNode<TState>[] {
+  ): Array<WorkflowNode<TState>> {
     return nodeMetadata.map((node) => ({
       id: node.id,
       name: node.name || node.id,
@@ -133,8 +133,8 @@ export class MetadataProcessorService {
   private convertEdgesToDefinition<TState extends WorkflowState>(
     edgeMetadata: EdgeMetadata[],
     nodeMetadata: NodeMetadata[]
-  ): WorkflowEdge<TState>[] {
-    const edges: WorkflowEdge<TState>[] = [];
+  ): Array<WorkflowEdge<TState>> {
+    const edges: Array<WorkflowEdge<TState>> = [];
 
     // Add explicit edges from @Edge decorators
     edgeMetadata.forEach((edge) => {
@@ -168,7 +168,7 @@ export class MetadataProcessorService {
    * Add implicit edges based on workflow patterns
    */
   private addImplicitEdges<TState extends WorkflowState>(
-    edges: WorkflowEdge<TState>[],
+    edges: Array<WorkflowEdge<TState>>,
     nodeMetadata: NodeMetadata[]
   ): void {
     // If no explicit edges, create sequential edges
@@ -389,7 +389,7 @@ export class MetadataProcessorService {
   } {
     // Find the node metadata for this method
     const node = nodeMetadata.find((n) => n.methodName === methodName);
-    if (!node || !node.handler) {
+    if (!node?.handler) {
       return {};
     }
 
@@ -419,11 +419,11 @@ export class MetadataProcessorService {
     let progressNodes = 0;
 
     definition.nodes.forEach((node) => {
-      const streamingMetadata = node.config?.metadata?.['streaming'];
+      const streamingMetadata = node.config?.metadata?.streaming;
       if (streamingMetadata) {
-        if (streamingMetadata.token?.enabled) tokenNodes++;
-        if (streamingMetadata.event?.enabled) eventNodes++;
-        if (streamingMetadata.progress?.enabled) progressNodes++;
+        if (streamingMetadata.token?.enabled) {tokenNodes++;}
+        if (streamingMetadata.event?.enabled) {eventNodes++;}
+        if (streamingMetadata.progress?.enabled) {progressNodes++;}
       }
     });
 
@@ -437,7 +437,7 @@ export class MetadataProcessorService {
     definition: WorkflowDefinition<TState>
   ): boolean {
     return definition.nodes.some((node) => {
-      const streamingMetadata = node.config?.metadata?.['streaming'];
+      const streamingMetadata = node.config?.metadata?.streaming;
       return (
         streamingMetadata &&
         (streamingMetadata.token?.enabled ||

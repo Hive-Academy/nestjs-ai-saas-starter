@@ -1,6 +1,6 @@
-import { Type, ModuleMetadata } from '@nestjs/common';
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { BaseCheckpointSaver } from '@langchain/langgraph';
+import type { Type, ModuleMetadata } from '@nestjs/common';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import type { BaseCheckpointSaver } from '@langchain/langgraph';
 
 export interface LangGraphModuleOptions {
   /**
@@ -220,7 +220,7 @@ export interface HITLConfig {
   /**
    * Risk levels that trigger approval
    */
-  riskLevels?: ('low' | 'medium' | 'high' | 'critical')[];
+  riskLevels?: Array<'low' | 'medium' | 'high' | 'critical'>;
 
   /**
    * Approval chain configuration
@@ -413,7 +413,6 @@ export interface LangGraphModuleAsyncOptions
 }
 
 export interface LangGraphOptionsFactory {
-  createLangGraphOptions():
-    | Promise<LangGraphModuleOptions>
+  createLangGraphOptions: () => | Promise<LangGraphModuleOptions>
     | LangGraphModuleOptions;
 }

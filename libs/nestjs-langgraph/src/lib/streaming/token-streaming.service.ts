@@ -46,11 +46,11 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TokenStreamingService.name);
   
   // Token stream configurations per execution:node
-  private tokenStreams = new Map<string, TokenStreamConfig>();
+  private readonly tokenStreams = new Map<string, TokenStreamConfig>();
   
   // Global token subjects for broadcasting
-  private globalTokenSubject = new Subject<StreamUpdate>();
-  private tokenStatsSubject = new BehaviorSubject<{
+  private readonly globalTokenSubject = new Subject<StreamUpdate>();
+  private readonly tokenStatsSubject = new BehaviorSubject<{
     activeStreams: number;
     totalTokensProcessed: number;
     averageTokensPerSecond: number;
@@ -62,8 +62,8 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   
   // Performance tracking
   private totalTokensProcessed = 0;
-  private streamStartTime = new Date();
-  private activeSubscriptions = new Set<Subscription>();
+  private readonly streamStartTime = new Date();
+  private readonly activeSubscriptions = new Set<Subscription>();
   
   // Cleanup timer
   private cleanupTimer?: Subscription;
@@ -292,13 +292,13 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get active token stream info
    */
-  getActiveTokenStreams(): {
+  getActiveTokenStreams(): Array<{
     streamKey: string;
     config: StreamTokenMetadata;
     bufferSize: number;
     totalTokens: number;
     lastFlush: Date;
-  }[] {
+  }> {
     return Array.from(this.tokenStreams.entries()).map(([streamKey, config]) => ({
       streamKey,
       config: {
@@ -614,7 +614,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
    */
   private updateTokenStats(): void {
     const activeStreams = this.tokenStreams.size;
-    const totalTokensProcessed = this.totalTokensProcessed;
+    const {totalTokensProcessed} = this;
     
     // Calculate average tokens per second
     const elapsedSeconds = (Date.now() - this.streamStartTime.getTime()) / 1000;

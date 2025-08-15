@@ -204,12 +204,12 @@ git commit -m "chore(release): prepare for v1.0.0"
 
 1. **Deprecate Published Version**:
    ```bash
-   npm deprecate @anubis/nestjs-chromadb@1.0.0 "This version has critical bugs"
+   npm deprecate @hive-academy/nestjs-chromadb@1.0.0 "This version has critical bugs"
    ```
 
 2. **Unpublish (within 72 hours)**:
    ```bash
-   npm unpublish @anubis/nestjs-chromadb@1.0.0
+   npm unpublish @hive-academy/nestjs-chromadb@1.0.0
    ```
 
 3. **Revert Git Changes**:

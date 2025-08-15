@@ -158,7 +158,7 @@ export class ToolRegistryService implements OnModuleInit {
     tool: DynamicStructuredTool,
     metadata?: Partial<ToolMetadata>
   ): void {
-    const name = tool.name;
+    const {name} = tool;
     this.tools.set(name, tool);
 
     if (metadata) {

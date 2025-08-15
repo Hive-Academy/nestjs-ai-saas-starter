@@ -106,7 +106,7 @@ type Entity {
 
 ## Integration with Nx Libraries
 
-### @anubis/nestjs-chromadb Design
+### @hive-academy/nestjs-chromadb Design
 ```typescript
 // Vector Storage Design
 interface VectorSchema {
@@ -122,7 +122,7 @@ interface VectorSchema {
 }
 ```
 
-### @anubis/nestjs-neo4j Design
+### @hive-academy/nestjs-neo4j Design
 ```typescript
 // Graph Schema Design
 interface GraphSchema {

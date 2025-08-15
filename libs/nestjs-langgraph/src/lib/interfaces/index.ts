@@ -10,8 +10,6 @@ export * from './checkpoint.interface';
 export { CommandType } from '../constants';
 
 // Create proper type exports for node handlers
-export interface NodeHandler<TState = any> {
-  (state: TState): Promise<
+export type NodeHandler<TState = any> = (state: TState) => Promise<
     Partial<TState> | import('./workflow.interface').Command<TState>
   >;
-}

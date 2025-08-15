@@ -102,17 +102,17 @@ export interface CompiledSubgraph<TState = WorkflowState> {
   /**
    * Invoke the subgraph
    */
-  invoke(state: TState, config?: any): Promise<TState>;
+  invoke: (state: TState, config?: any) => Promise<TState>;
 
   /**
    * Stream the subgraph execution
    */
-  stream?(state: TState, config?: any): AsyncIterableIterator<TState>;
+  stream?: (state: TState, config?: any) => AsyncIterableIterator<TState>;
 
   /**
    * Get subgraph metadata
    */
-  getMetadata(): SubgraphMetadata;
+  getMetadata: () => SubgraphMetadata;
 }
 
 export interface SubgraphMetadata {
@@ -145,8 +145,8 @@ export interface SubgraphMetadata {
 @Injectable()
 export class SubgraphManagerService {
   private readonly logger = new Logger(SubgraphManagerService.name);
-  private subgraphs = new Map<string, CompiledSubgraph>();
-  private activeSubgraphs = new Map<string, SubgraphContext>();
+  private readonly subgraphs = new Map<string, CompiledSubgraph>();
+  private readonly activeSubgraphs = new Map<string, SubgraphContext>();
 
   constructor(private readonly cacheService: CompilationCacheService) {}
 
@@ -197,7 +197,7 @@ export class SubgraphManagerService {
               options,
               config
             );
-          }).bind(this) as any)
+          }) as any)
         : undefined,
       getMetadata: () => ({
         id,
@@ -285,7 +285,7 @@ export class SubgraphManagerService {
    * Check if a workflow is running as a subgraph
    */
   isRunningAsSubgraph(state: WorkflowState): boolean {
-    return !!(state as any).subgraphContext;
+    return Boolean((state as any).subgraphContext);
   }
 
   /**
@@ -435,7 +435,7 @@ export class SubgraphManagerService {
 
       // Add prefix to events if configured
       if (options.streaming?.prefix) {
-        (outputChunk as any).__streamPrefix = options.streaming.prefix;
+        (outputChunk).__streamPrefix = options.streaming.prefix;
       }
 
       yield outputChunk;
@@ -472,7 +472,7 @@ export class SubgraphManagerService {
               options,
               config
             );
-          }).bind(this) as any)
+          }) as any)
         : undefined,
       getMetadata: () => ({
         id,

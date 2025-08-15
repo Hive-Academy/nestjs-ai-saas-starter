@@ -16,7 +16,7 @@ export interface TestWorkflowOptions {
 @Injectable()
 export class WorkflowTestBuilder {
   private events: any[] = [];
-  private mockResponses = new Map<string, any>();
+  private readonly mockResponses = new Map<string, any>();
 
   /**
    * Create a test workflow

@@ -1,6 +1,6 @@
 {
   "extends": "../../typedoc.base.json",
-  "name": "@anubis/nestjs-chromadb",
+  "name": "@hive-academy/nestjs-chromadb",
   "out": "../../docs/api/nestjs-chromadb",
   "entryPoints": ["src/index.ts"],
   "tsconfig": "tsconfig.lib.json",
@@ -11,6 +11,6 @@
   "sourceLinkTemplate": "https://github.com/anubis/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-chromadb/{path}#L{line}",
   "navigationLinks": {
     "GitHub": "https://github.com/anubis/nestjs-ai-saas-starter",
-    "NPM": "https://www.npmjs.com/package/@anubis/nestjs-chromadb"
+    "NPM": "https://www.npmjs.com/package/@hive-academy/nestjs-chromadb"
   }
 }

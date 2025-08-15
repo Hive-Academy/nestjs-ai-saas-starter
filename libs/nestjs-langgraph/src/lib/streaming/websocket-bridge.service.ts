@@ -352,7 +352,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
    */
   @OnEvent('stream.processed')
   handleStreamProcessed(data: any): void {
-    const executionId = data.executionId;
+    const {executionId} = data;
     if (!executionId) {
       return;
     }
@@ -571,11 +571,11 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get all rooms info
    */
-  getAllRoomsInfo(): {
+  getAllRoomsInfo(): Array<{
     id: string;
     clientCount: number;
     lastActivity: Date;
-  }[] {
+  }> {
     return Array.from(this.rooms.values()).map(room => ({
       id: room.id,
       clientCount: room.clients.size,

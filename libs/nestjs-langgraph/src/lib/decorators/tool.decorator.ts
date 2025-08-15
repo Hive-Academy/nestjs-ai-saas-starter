@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { WORKFLOW_TOOLS_KEY } from './workflow.decorator';
 
 /**
@@ -11,7 +11,7 @@ export interface ToolOptions {
   /** Tool description for LLM */
   description: string;
   /** Zod schema for input validation */
-  schema?: z.ZodSchema<any>;
+  schema?: z.ZodSchema;
   /** Which agents/nodes can use this tool */
   agents?: string[] | '*';
   /** Rate limiting */
@@ -246,8 +246,8 @@ export function DeprecatedTool(reason: string, alternative?: string): MethodDeco
     descriptor.value = function(this: any, ...args: any[]) {
       if (this.logger) {
         this.logger.warn(
-          `Tool ${String(propertyKey)} is deprecated: ${reason}` +
-          (alternative ? ` Use ${alternative} instead.` : '')
+          `Tool ${String(propertyKey)} is deprecated: ${reason}${ 
+          alternative ? ` Use ${alternative} instead.` : ''}`
         );
       }
       return originalMethod.apply(this, args);

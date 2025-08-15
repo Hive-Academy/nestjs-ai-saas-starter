@@ -358,64 +358,64 @@ export interface TimeTravelServiceInterface {
   /**
    * Replay workflow from specific checkpoint
    */
-  replayFromCheckpoint<T>(
+  replayFromCheckpoint: <T>(
     threadId: string,
     checkpointId: string,
     options?: ReplayOptions<T>
-  ): Promise<WorkflowExecution<T>>;
+  ) => Promise<WorkflowExecution<T>>;
 
   /**
    * Create execution branch from checkpoint
    */
-  createBranch<T>(
+  createBranch: <T>(
     threadId: string,
     fromCheckpointId: string,
     branchOptions: BranchOptions<T>
-  ): Promise<string>;
+  ) => Promise<string>;
 
   /**
    * Get execution history for visualization
    */
-  getExecutionHistory(
+  getExecutionHistory: (
     threadId: string,
     options?: HistoryOptions
-  ): Promise<readonly ExecutionHistoryNode[]>;
+  ) => Promise<readonly ExecutionHistoryNode[]>;
 
   /**
    * Compare states between two checkpoints
    */
-  compareCheckpoints<T>(
+  compareCheckpoints: <T>(
     threadId: string,
     checkpointId1: string,
     checkpointId2: string
-  ): Promise<StateComparison<T>>;
+  ) => Promise<StateComparison<T>>;
 
   /**
    * List all branches for a thread
    */
-  listBranches(threadId: string): Promise<readonly BranchInfo[]>;
+  listBranches: (threadId: string) => Promise<readonly BranchInfo[]>;
 
   /**
    * Merge branch back to main execution
    */
-  mergeBranch<T>(
+  mergeBranch: <T>(
     threadId: string,
     branchId: string,
     mergeStrategy?: 'overwrite' | 'merge' | 'custom'
-  ): Promise<void>;
+  ) => Promise<void>;
 
   /**
    * Delete a branch
    */
-  deleteBranch(threadId: string, branchId: string): Promise<void>;
+  deleteBranch: (threadId: string, branchId: string) => Promise<void>;
 
   /**
    * Export execution history for analysis
    */
-  exportHistory(
+  exportHistory: (
     threadId: string,
     format?: 'json' | 'csv' | 'mermaid'
-  ): Promise<string>;
+  ) => Promise<string>;
 }
 
 /**

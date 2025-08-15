@@ -110,7 +110,7 @@ export abstract class UnifiedWorkflowBase<
           before: this.getInterruptNodes(),
         },
       });
-    } else {
+    } 
       this.logger.debug(
         `Building graph from definition for ${this.constructor.name}`
       );
@@ -120,7 +120,7 @@ export abstract class UnifiedWorkflowBase<
           before: this.getInterruptNodes(),
         },
       });
-    }
+    
   }
 
   /**
@@ -222,7 +222,7 @@ export abstract class UnifiedWorkflowBase<
     }
 
     const initialState = this.createInitialState(input);
-    const executionId = initialState.executionId;
+    const {executionId} = initialState;
 
     // Create stream
     this.streamService.createStream(executionId);
@@ -230,7 +230,7 @@ export abstract class UnifiedWorkflowBase<
     try {
       // Stream execution
       yield* this.streamService.streamExecution(
-        this.compiledGraph!,
+        this.compiledGraph,
         initialState,
         config,
         executionId
@@ -343,7 +343,7 @@ export abstract class UnifiedWorkflowBase<
             approvalReceived: true,
           } as Partial<TState>,
         };
-      } else {
+      } 
         return {
           type: CommandType.END,
           update: {
@@ -351,7 +351,7 @@ export abstract class UnifiedWorkflowBase<
             rejectionReason: state.humanFeedback.reason,
           } as unknown as Partial<TState>,
         };
-      }
+      
     }
 
     // Wait for approval (will be interrupted)

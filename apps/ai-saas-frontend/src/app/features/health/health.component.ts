@@ -358,7 +358,7 @@ import { Observable, interval, startWith, switchMap } from 'rxjs';
 export class HealthComponent implements OnInit {
   healthData$!: Observable<HealthStatus>;
 
-  constructor(private healthService: HealthService) {}
+  constructor(private readonly healthService: HealthService) {}
 
   ngOnInit() {
     // Auto-refresh every 30 seconds
@@ -384,8 +384,8 @@ export class HealthComponent implements OnInit {
       return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
     } else if (minutes > 0) {
       return `${minutes}m ${seconds % 60}s`;
-    } else {
+    } 
       return `${seconds}s`;
-    }
+    
   }
 }

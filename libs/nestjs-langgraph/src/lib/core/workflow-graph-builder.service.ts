@@ -49,18 +49,14 @@ export interface GraphBuilderOptions {
   stateAnnotation?: any;
 }
 
-export interface NodeHandler<TState = WorkflowState> {
-  (state: TState): Promise<Partial<TState> | Command<TState>>;
-}
+export type NodeHandler<TState = WorkflowState> = (state: TState) => Promise<Partial<TState> | Command<TState>>;
 
-export interface EdgeCondition<TState = WorkflowState> {
-  (state: TState): string | null;
-}
+export type EdgeCondition<TState = WorkflowState> = (state: TState) => string | null;
 
 @Injectable()
 export class WorkflowGraphBuilderService {
   private readonly logger = new Logger(WorkflowGraphBuilderService.name);
-  private graphs = new Map<string, StateGraph<any>>();
+  private readonly graphs = new Map<string, StateGraph<any>>();
 
   constructor(private readonly metadataProcessor: MetadataProcessorService) {}
 
@@ -178,7 +174,7 @@ export class WorkflowGraphBuilderService {
       graph.addEdge(edge.from as any, edge.to as any);
     } else {
       // Conditional edge
-      const routing = edge.to as ConditionalRouting<TState>;
+      const routing = edge.to;
       graph.addConditionalEdges(
         edge.from as any,
         routing.condition as any,
@@ -315,7 +311,7 @@ export class WorkflowGraphBuilderService {
       'supervisor' as any,
       ((state: TState) => {
         // Check if a specific worker should be called
-        const nextWorker = (state as any).nextWorker;
+        const {nextWorker} = (state as any);
         if (nextWorker && workers[nextWorker]) {
           return nextWorker;
         }
@@ -323,10 +319,10 @@ export class WorkflowGraphBuilderService {
         return END;
       }) as any,
       {
-        ...Object.keys(workers).reduce((acc, key) => {
+        ...Object.keys(workers).reduce<Record<string, string>>((acc, key) => {
           acc[key] = key;
           return acc;
-        }, {} as Record<string, string>),
+        }, {}),
         [END]: END,
       } as any
     );
@@ -520,7 +516,7 @@ export class WorkflowGraphBuilderService {
         state: state.currentNode,
         executionId: state.executionId,
       },
-      isRecoverable: node.config?.retry?.maxAttempts ? true : false,
+      isRecoverable: Boolean(node.config?.retry?.maxAttempts),
       suggestedRecovery: 'Retry the node or check error details',
       timestamp: new Date(),
     };

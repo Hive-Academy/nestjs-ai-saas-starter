@@ -1,3 +1,4 @@
 {
-  "nxConsole.generateAiAgentRules": true
+  "nxConsole.generateAiAgentRules": true,
+  "postman.settings.dotenv-detection-notification-visibility": false
 }

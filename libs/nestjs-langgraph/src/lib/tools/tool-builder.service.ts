@@ -10,7 +10,7 @@ import { ToolRegistryService } from './tool-registry.service';
 export class ToolBuilder {
   private name = '';
   private description = '';
-  private schema?: z.ZodSchema<any>;
+  private schema?: z.ZodSchema;
   private func?: (input: any) => Promise<any>;
   private agents?: string[] | '*';
   private tags?: string[];
@@ -26,7 +26,7 @@ export class ToolBuilder {
     return this;
   }
 
-  setSchema(schema: z.ZodSchema<any>): this {
+  setSchema(schema: z.ZodSchema): this {
     this.schema = schema;
     return this;
   }

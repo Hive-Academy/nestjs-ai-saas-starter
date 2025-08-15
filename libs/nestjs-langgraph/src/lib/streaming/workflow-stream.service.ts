@@ -30,12 +30,12 @@ import {
 export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WorkflowStreamService.name);
   private readonly streams = new Map<string, Subject<StreamUpdate>>();
-  private sequenceCounters = new Map<string, number>();
-  private tokenStreamConfigs = new Map<string, StreamTokenMetadata>();
-  private eventStreamConfigs = new Map<string, StreamEventMetadata>();
-  private progressStreamConfigs = new Map<string, StreamProgressMetadata>();
-  private activeSubscriptions = new Set<Subscription>();
-  private streamingEnabled = new Map<string, boolean>();
+  private readonly sequenceCounters = new Map<string, number>();
+  private readonly tokenStreamConfigs = new Map<string, StreamTokenMetadata>();
+  private readonly eventStreamConfigs = new Map<string, StreamEventMetadata>();
+  private readonly progressStreamConfigs = new Map<string, StreamProgressMetadata>();
+  private readonly activeSubscriptions = new Set<Subscription>();
+  private readonly streamingEnabled = new Map<string, boolean>();
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
@@ -115,7 +115,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       
       // Configure streaming for each node that has streaming metadata
       definition.nodes.forEach(node => {
-        const streamingMetadata = node.config?.metadata?.['streaming'];
+        const streamingMetadata = node.config?.metadata?.streaming;
         if (streamingMetadata) {
           const nodeKey = `${executionId}:${node.id}`;
           
@@ -300,7 +300,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const content = message.content;
+    const {content} = message;
     const tokens = this.tokenizeContent(content, config);
     let accumulatedContent = '';
 
@@ -390,7 +390,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     try {
       for await (const chunk of llmStream) {
         const content = chunk.content || '';
-        if (!content) continue;
+        if (!content) {continue;}
 
         // Add to buffer
         tokenBuffer.push(content);
@@ -818,7 +818,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         return false;
       }
       
-      if (config.filter!.excludeTypes && config.filter!.excludeTypes.includes(event.type)) {
+      if (config.filter!.excludeTypes?.includes(event.type)) {
         return false;
       }
       

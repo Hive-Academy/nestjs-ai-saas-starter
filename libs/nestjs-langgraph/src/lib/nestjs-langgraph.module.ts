@@ -147,7 +147,7 @@ export class NestjsLanggraphModule {
     };
   }
 
-  static forFeature(workflows: Type<unknown>[]): DynamicModule {
+  static forFeature(workflows: Array<Type<unknown>>): DynamicModule {
     const providers = workflows.map((workflow) => ({
       provide: workflow,
       useClass: workflow,

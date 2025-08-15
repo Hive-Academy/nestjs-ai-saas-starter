@@ -54,11 +54,11 @@ export class LlmProviderService {
       return this.createOpenAILLM(model, temperature, maxTokens);
     } else if (model.startsWith('claude-')) {
       return this.createAnthropicLLM(model, temperature, maxTokens);
-    } else {
+    } 
       // Default to OpenAI for unknown models
       this.logger.warn(`Unknown model provider for ${model}, defaulting to OpenAI`);
       return this.createOpenAILLM(model, temperature, maxTokens);
-    }
+    
   }
 
   /**
@@ -229,7 +229,7 @@ export class LlmProviderService {
         supportsStreaming: true,
         provider: 'anthropic',
       };
-    } else {
+    } 
       // Default capabilities
       return {
         maxTokens: 4000,
@@ -237,6 +237,6 @@ export class LlmProviderService {
         supportsStreaming: false,
         provider: 'unknown',
       };
-    }
+    
   }
 }

@@ -13,7 +13,7 @@ import { ToolRegistryService } from './tool-registry.service';
 @Injectable()
 export class ToolNodeService {
   private readonly logger = new Logger(ToolNodeService.name);
-  private readonly toolNodes = new Map<string, ToolNode<any>>();
+  private readonly toolNodes = new Map<string, ToolNode>();
   private readonly executionMetrics = new Map<
     string,
     {
@@ -37,7 +37,7 @@ export class ToolNodeService {
       excludeTags?: string[];
       agentOverride?: AgentType | string;
     }
-  ): ToolNode<any> {
+  ): ToolNode {
     // Get tools with enhanced resolution
     let resolvedTools: DynamicStructuredTool[];
 
@@ -84,7 +84,7 @@ export class ToolNodeService {
   getOrCreateToolNode(
     nodeId: string,
     tools?: DynamicStructuredTool[] | string[]
-  ): ToolNode<any> {
+  ): ToolNode {
     const existing = this.toolNodes.get(nodeId);
     if (existing) {
       return existing;
@@ -260,7 +260,7 @@ export class ToolNodeService {
   /**
    * Get cached tool node
    */
-  getCachedToolNode(nodeId: string): ToolNode<any> | undefined {
+  getCachedToolNode(nodeId: string): ToolNode | undefined {
     return this.toolNodes.get(nodeId);
   }
 
@@ -402,8 +402,7 @@ export class ToolNodeService {
 
       // Check exclude tags
       if (
-        excludeTags &&
-        excludeTags.some((tag) => metadata.tags!.includes(tag))
+        excludeTags?.some((tag) => metadata.tags!.includes(tag))
       ) {
         return false;
       }
@@ -415,7 +414,7 @@ export class ToolNodeService {
   private createEnhancedToolNode(
     tools: DynamicStructuredTool[],
     nodeId: string
-  ): ToolNode<any> {
+  ): ToolNode {
     // Wrap tools with enhanced error handling and metrics
     const enhancedTools = tools.map((tool) => {
       const originalFunc = tool.func;
@@ -452,7 +451,7 @@ export class ToolNodeService {
   }
 
   private async executeWithTimeout<T>(
-    toolNode: ToolNode<any>,
+    toolNode: ToolNode,
     state: T,
     timeoutMs: number
   ): Promise<T> {

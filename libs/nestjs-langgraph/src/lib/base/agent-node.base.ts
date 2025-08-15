@@ -43,7 +43,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   /** Node configuration */
   protected abstract readonly nodeConfig: AgentNodeConfig;
 
-  public constructor(
+  constructor(
     @Optional()
     @Inject(EventEmitter2)
     eventEmitter?: EventEmitter2

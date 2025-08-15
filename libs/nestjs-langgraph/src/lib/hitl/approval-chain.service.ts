@@ -216,8 +216,8 @@ export interface ApprovalHistoryEntry {
 @Injectable()
 export class ApprovalChainService {
   private readonly logger = new Logger(ApprovalChainService.name);
-  private approvalRequests = new Map<string, ApprovalRequest>();
-  private approvalChains = new Map<string, ApprovalLevel[]>();
+  private readonly approvalRequests = new Map<string, ApprovalRequest>();
+  private readonly approvalChains = new Map<string, ApprovalLevel[]>();
 
   constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
 
@@ -417,27 +417,27 @@ export class ApprovalChainService {
 
     switch (level.policy) {
       case ApprovalPolicy.ALL:
-        if (rejections > 0) return 'rejected';
-        if (approvals === total) return 'approved';
+        if (rejections > 0) {return 'rejected';}
+        if (approvals === total) {return 'approved';}
         return 'pending';
 
       case ApprovalPolicy.ANY:
-        if (approvals > 0) return 'approved';
-        if (rejections === total) return 'rejected';
+        if (approvals > 0) {return 'approved';}
+        if (rejections === total) {return 'rejected';}
         return 'pending';
 
       case ApprovalPolicy.MAJORITY: {
         const majority = Math.floor(total / 2) + 1;
-        if (approvals >= majority) return 'approved';
-        if (rejections >= majority) return 'rejected';
+        if (approvals >= majority) {return 'approved';}
+        if (rejections >= majority) {return 'rejected';}
         return 'pending';
       }
 
       case ApprovalPolicy.THRESHOLD: {
         // Default threshold to 1 if not specified
         const threshold = 1;
-        if (approvals >= threshold) return 'approved';
-        if (rejections > total - threshold) return 'rejected';
+        if (approvals >= threshold) {return 'approved';}
+        if (rejections > total - threshold) {return 'rejected';}
         return 'pending';
       }
 

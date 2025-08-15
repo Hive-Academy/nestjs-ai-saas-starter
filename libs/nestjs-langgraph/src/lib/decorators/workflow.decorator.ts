@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { SetMetadata } from '@nestjs/common';
-import { WorkflowConfig } from '../base/unified-workflow.base';
-import { WorkflowStateAnnotation } from '../core/workflow-state-annotation';
+import type { WorkflowConfig } from '../base/unified-workflow.base';
+import type { WorkflowStateAnnotation } from '../core/workflow-state-annotation';
 
 export const WORKFLOW_METADATA_KEY = 'workflow:metadata';
 export const WORKFLOW_NODES_KEY = 'workflow:nodes';

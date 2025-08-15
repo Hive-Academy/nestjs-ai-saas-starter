@@ -1,5 +1,5 @@
-import { Provider } from '@nestjs/common';
-import { LangGraphModuleOptions } from '../interfaces/module-options.interface';
+import type { Provider } from '@nestjs/common';
+import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
 import { LLMProviderFactory } from './llm-provider.factory';
 import { DEFAULT_LLM, LLM_PROVIDER_PREFIX } from '../constants';
 

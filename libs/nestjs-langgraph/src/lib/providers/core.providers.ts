@@ -1,4 +1,4 @@
-import { Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { CompilationCacheService } from '../core/compilation-cache.service';

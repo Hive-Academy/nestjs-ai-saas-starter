@@ -208,7 +208,7 @@ export function createConditionalEdge(
       if (typeof result === 'string') {
         return routes[result] || 'end';
       }
-      return result ? (routes['true'] || routes['approved'] || 'end') : (routes['false'] || routes['rejected'] || 'end');
+      return result ? (routes.true || routes.approved || 'end') : (routes.false || routes.rejected || 'end');
     },
     type: 'conditional',
   };

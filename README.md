@@ -203,16 +203,16 @@ git commit -m "docs: update installation guide"
 
 This workspace publishes three NPM packages under the `@anubis` scope:
 
-### [@anubis/nestjs-chromadb](https://www.npmjs.com/package/@anubis/nestjs-chromadb)
+### [@hive-academy/nestjs-chromadb](https://www.npmjs.com/package/@hive-academy/nestjs-chromadb)
 
 **Vector Database Integration**
 
 ```bash
-npm install @anubis/nestjs-chromadb chromadb
+npm install @hive-academy/nestjs-chromadb chromadb
 ```
 
 ```typescript
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
 @Module({
   imports: [
@@ -232,16 +232,16 @@ export class AppModule {}
 - Health checks and connection management
 - Comprehensive TypeScript support
 
-### [@anubis/nestjs-neo4j](https://www.npmjs.com/package/@anubis/nestjs-neo4j)
+### [@hive-academy/nestjs-neo4j](https://www.npmjs.com/package/@hive-academy/nestjs-neo4j)
 
 **Graph Database Integration**
 
 ```bash
-npm install @anubis/nestjs-neo4j neo4j-driver
+npm install @hive-academy/nestjs-neo4j neo4j-driver
 ```
 
 ```typescript
-import { Neo4jModule } from '@anubis/nestjs-neo4j';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [

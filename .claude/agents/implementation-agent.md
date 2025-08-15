@@ -110,7 +110,7 @@ describe('DocumentProcessingService', () => {
 
 ## Library Integration Patterns
 
-### Using @anubis/nestjs-chromadb
+### Using @hive-academy/nestjs-chromadb
 ```typescript
 @Injectable()
 export class VectorSearchService {
@@ -129,7 +129,7 @@ export class VectorSearchService {
 }
 ```
 
-### Using @anubis/nestjs-neo4j
+### Using @hive-academy/nestjs-neo4j
 ```typescript
 @Injectable()
 export class GraphService {

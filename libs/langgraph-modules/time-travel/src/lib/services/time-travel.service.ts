@@ -28,7 +28,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   private readonly logger = new Logger(TimeTravelService.name);
   private readonly branches = new Map<string, BranchInfo>();
   private readonly executionHistory = new Map<string, ExecutionHistoryNode[]>();
-  private workflowRegistry: Map<string, unknown> = new Map();
+  private readonly workflowRegistry: Map<string, unknown> = new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -97,7 +97,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     const executionId = `exec_${uuidv4()}`;
 
     // Apply input modifications if provided
-    let modifiedState = checkpoint.channel_values as T;
+    let modifiedState = checkpoint.channel_values;
     if (options.stateModifications) {
       modifiedState = {
         ...modifiedState,
@@ -182,7 +182,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     const branchThreadId = `${threadId}_${branchOptions.name}_${Date.now()}`;
 
     // Apply branch modifications
-    let branchedState = checkpoint.channel_values as T;
+    let branchedState = checkpoint.channel_values;
     if (branchOptions.stateModifications) {
       branchedState = {
         ...branchedState,
@@ -337,8 +337,8 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     }
 
     return this.compareStates(
-      checkpoint1.channel_values as T,
-      checkpoint2.channel_values as T
+      checkpoint1.channel_values,
+      checkpoint2.channel_values
     );
   }
 
@@ -460,9 +460,9 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     const compareObjects = (
       obj1: unknown,
       obj2: unknown,
-      path: string = ''
+      path = ''
     ): void => {
-      if (obj1 === obj2) return;
+      if (obj1 === obj2) {return;}
 
       const type1 = typeof obj1;
       const type2 = typeof obj2;
@@ -623,7 +623,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   ): string {
     const lines: string[] = ['graph TD'];
 
-    const addNode = (node: ExecutionHistoryNode, indent: number = 1): void => {
+    const addNode = (node: ExecutionHistoryNode, indent = 1): void => {
       const nodeId = node.checkpointId.replace(/-/g, '');
       const label = `${node.nodeId}\\n${node.timestamp.toISOString()}`;
       const spacing = '  '.repeat(indent);

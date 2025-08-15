@@ -86,7 +86,7 @@ export interface HandoffResult {
 @Injectable()
 export class AgentHandoffService {
   private readonly logger = new Logger(AgentHandoffService.name);
-  private activeHandoffs = new Map<string, HandoffResult>();
+  private readonly activeHandoffs = new Map<string, HandoffResult>();
 
   /**
    * Create a handoff to another agent

@@ -34,7 +34,7 @@ export interface SearchDocumentsDto {
 export class DocumentsService {
   private readonly apiUrl = '/api/documents';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getDocuments(): Observable<Document[]> {
     return this.http.get<Document[]>(this.apiUrl).pipe(

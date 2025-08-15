@@ -64,10 +64,10 @@ export class WorkflowRoutingService {
       if (requiresHumanApproval) {
         this.logger.log(`Medium confidence (${confidence}) - requiring human approval`);
         return 'human_approval';
-      } else {
+      } 
         this.logger.log(`Medium confidence (${confidence}) - proceeding to next node`);
         return nextNode;
-      }
+      
     }
 
     // Low confidence - use configured route
@@ -90,7 +90,7 @@ export class WorkflowRoutingService {
     const pausedRoute = options?.pausedRoute ?? 'human_approval';
     const waitingRoute = options?.waitingRoute ?? 'human_approval';
     
-    const status = state['workflowStatus'] || state['status'];
+    const status = state.workflowStatus || state.status;
     
     this.logger.debug(`Routing based on status: ${status}`);
 
@@ -98,7 +98,7 @@ export class WorkflowRoutingService {
       case 'completed':
         return 'end';
       case 'failed':
-        return (state['retryCount'] || 0) < maxRetries ? 'retry' : 'end';
+        return (state.retryCount || 0) < maxRetries ? 'retry' : 'end';
       case 'paused':
         return pausedRoute;
       case 'waiting_input':
@@ -133,14 +133,14 @@ export class WorkflowRoutingService {
       if (retryCount < maxRetries) {
         this.logger.log(`Recoverable error, retrying (attempt ${retryCount + 1})`);
         return retryRoute;
-      } else {
+      } 
         this.logger.log(`Max retries exceeded, routing to ${errorRoute}`);
         return errorRoute;
-      }
-    } else {
+      
+    } 
       this.logger.log(`Non-recoverable error, routing to ${errorRoute}`);
       return errorRoute;
-    }
+    
   }
 
   /**
@@ -337,7 +337,7 @@ export class WorkflowRoutingService {
     },
   ): (state: TState) => string {
     return (state: TState) => {
-      const currentIndex = sequence.indexOf(state['currentNodeId'] || '');
+      const currentIndex = sequence.indexOf(state.currentNodeId || '');
       
       // Check skip condition
       if (options?.skipCondition?.(state)) {

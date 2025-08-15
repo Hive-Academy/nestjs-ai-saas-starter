@@ -335,8 +335,8 @@ interface TestingPipeline {
 ### Phase 1: Independent Libraries (Parallel Execution)
 
 **Target Libraries:**
-- `@anubis/nestjs-chromadb` (~383 issues)
-- `@anubis/nestjs-neo4j` (~300 issues)
+- `@hive-academy/nestjs-chromadb` (~383 issues)
+- `@hive-academy/nestjs-neo4j` (~300 issues)
 
 **Key Activities:**
 1. Replace all `any` types with proper interfaces

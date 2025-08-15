@@ -85,7 +85,7 @@ export interface CacheStats {
 @Injectable()
 export class CompilationCacheService implements OnModuleDestroy {
   private readonly logger = new Logger(CompilationCacheService.name);
-  private cache = new Map<string, CacheEntry>();
+  private readonly cache = new Map<string, CacheEntry>();
   private stats = {
     hits: 0,
     misses: 0,
@@ -196,7 +196,7 @@ export class CompilationCacheService implements OnModuleDestroy {
    * Clear all cached items
    */
   clear(): void {
-    const size = this.cache.size;
+    const {size} = this.cache;
     this.cache.clear();
     this.logger.debug(`Cleared ${size} cache entries`);
   }

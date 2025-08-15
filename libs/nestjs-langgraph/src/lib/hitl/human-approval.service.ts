@@ -585,14 +585,14 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           retryReason: response.message
         }
       };
-    } else {
+    } 
       // Max retries reached, reject
       return await this.handleApprovalRejection(request, {
         ...response,
         decision: 'rejected',
         message: `Max retries reached: ${response.message}`
       });
-    }
+    
   }
 
   /**
@@ -658,7 +658,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   private setupTimeout(requestId: string): void {
     const request = this.approvalRequests.get(requestId);
-    if (!request) return;
+    if (!request) {return;}
     
     // Clear existing timeout
     this.clearTimeout(requestId);
@@ -694,7 +694,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   private async streamApprovalRequest(request: HumanApprovalRequest): Promise<void> {
     const connection = this.streamConnections.get(request.executionId);
-    if (connection && connection.send) {
+    if (connection?.send) {
       try {
         connection.send(JSON.stringify({
           type: 'approval_requested',
@@ -723,7 +723,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     response: HumanApprovalResponse
   ): Promise<void> {
     const connection = this.streamConnections.get(request.executionId);
-    if (connection && connection.send) {
+    if (connection?.send) {
       try {
         connection.send(JSON.stringify({
           type: 'approval_updated',

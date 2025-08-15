@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import {
   ChromaClient,
@@ -5,6 +6,8 @@ import {
   WhereDocument,
   Where,
   GetResult,
+  EmbeddingFunction,
+  Metadata,
 } from 'chromadb';
 import { CHROMADB_CLIENT, DEFAULT_BATCH_SIZE } from '../constants';
 import {
@@ -89,8 +92,8 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     getOrCreate?: boolean
   ): Promise<Collection> {
     return this.collectionService.createCollection(name, {
-      metadata: metadata ? sanitizeMetadata(metadata) : undefined,
-      embeddingFunction,
+      metadata: (metadata ? sanitizeMetadata(metadata) : undefined) as Metadata | undefined,
+      embeddingFunction: (embeddingFunction as EmbeddingFunction | null | undefined) ?? undefined,
       getOrCreate,
     });
   }
@@ -102,7 +105,10 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     name: string,
     embeddingFunction?: unknown
   ): Promise<Collection> {
-    return this.collectionService.getCollection(name, embeddingFunction);
+    return this.collectionService.getCollection(
+      name,
+      (embeddingFunction as EmbeddingFunction | undefined)
+    );
   }
 
   /**
@@ -143,9 +149,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
           .filter((doc): doc is string => Boolean(doc)),
         metadatas: batch
           .map((doc) =>
-            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+            doc.metadata ? (sanitizeMetadata(doc.metadata) as Metadata) : undefined
           )
-          .filter(Boolean) as Array<Record<string, unknown>>,
+          .filter(Boolean) as Metadata[],
         embeddings: batch
           .map((doc) => doc.embedding)
           .filter((emb): emb is number[] => Boolean(emb)),
@@ -177,9 +183,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
           .filter((doc): doc is string => Boolean(doc)),
         metadatas: batch
           .map((doc) =>
-            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+            doc.metadata ? (sanitizeMetadata(doc.metadata) as Metadata) : undefined
           )
-          .filter(Boolean) as Array<Record<string, unknown>>,
+          .filter(Boolean) as Metadata[],
         embeddings: batch
           .map((doc) => doc.embedding)
           .filter((emb): emb is number[] => Boolean(emb)),
@@ -211,9 +217,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
           .filter((doc): doc is string => Boolean(doc)),
         metadatas: batch
           .map((doc) =>
-            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+            doc.metadata ? (sanitizeMetadata(doc.metadata) as Metadata) : undefined
           )
-          .filter(Boolean) as Array<Record<string, unknown>>,
+          .filter(Boolean) as Metadata[],
         embeddings: batch
           .map((doc) => doc.embedding)
           .filter((emb): emb is number[] => Boolean(emb)),
@@ -226,22 +232,36 @@ export class ChromaDBService implements ChromaDBServiceInterface {
    */
   public async getDocuments(
     collectionName: string,
-    ids?: string[],
-    where?: Where,
-    limit?: number,
-    offset?: number,
-    whereDocument?: WhereDocument,
-    include?: string[]
-  ): Promise<GetResult<Record<string, unknown>>> {
+    options?: {
+      ids?: string[];
+      where?: Where;
+      limit?: number;
+      offset?: number;
+      whereDocument?: WhereDocument;
+      includeMetadata?: boolean;
+      includeDocuments?: boolean;
+      includeEmbeddings?: boolean;
+    }
+  ): Promise<GetResult<Record<string, string | number | boolean | null>>> {
     const collection = await this.getCollection(collectionName);
+    const include: Array<'documents' | 'embeddings' | 'metadatas' | 'distances'> = [];
+    if (options?.includeDocuments) {
+      include.push('documents');
+    }
+    if (options?.includeEmbeddings) {
+      include.push('embeddings');
+    }
+    if (options?.includeMetadata) {
+      include.push('metadatas');
+    }
 
     return collection.get({
-      ids,
-      where,
-      limit,
-      offset,
-      whereDocument,
-      include: include as Array<'documents' | 'embeddings' | 'metadatas' | 'distances'>,
+      ids: options?.ids,
+      where: options?.where,
+      limit: options?.limit,
+      offset: options?.offset,
+      whereDocument: options?.whereDocument,
+      include: include.length ? include : undefined,
     });
   }
 
@@ -374,7 +394,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   public async peekDocuments(
     collectionName: string,
     limit = 10
-  ): Promise<GetResult<Record<string, unknown>>> {
+  ): Promise<GetResult<Record<string, string | number | boolean | null>>> {
     const collection = await this.getCollection(collectionName);
     return collection.peek({ limit });
   }
@@ -384,10 +404,10 @@ export class ChromaDBService implements ChromaDBServiceInterface {
    */
   public async getCollectionMetadata(
     collectionName: string
-  ): Promise<Record<string, unknown> | null> {
+  ): Promise<Record<string, string | number | boolean | null> | null> {
     try {
       const collection = await this.getCollection(collectionName);
-      return collection.metadata ?? null;
+      return (collection.metadata as Record<string, string | number | boolean | null> | undefined) ?? null;
     } catch {
       return null;
     }

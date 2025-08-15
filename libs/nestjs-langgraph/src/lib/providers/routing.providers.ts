@@ -1,4 +1,4 @@
-import { Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 import { CommandProcessorService } from '../routing/command-processor.service';
 import { AgentHandoffService } from '../routing/agent-handoff.service';
 import { WorkflowRoutingService } from '../routing/workflow-routing.service';

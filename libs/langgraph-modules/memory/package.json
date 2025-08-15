@@ -12,5 +12,8 @@
     },
     "./package.json": "./package.json"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@hive-academy/nestjs-chromadb": "*",
+    "@hive-academy/nestjs-neo4j": "*"
+  }
 }

@@ -87,7 +87,7 @@ export interface EnhancedCheckpoint<T = Record<string, unknown>> {
    */
   id: string;
   channel_values: T;
-  pending_sends?: Array<any>;
+  pending_sends?: any[];
   v?: number;
   ts?: string;
   channel_versions?: Record<string, number>;

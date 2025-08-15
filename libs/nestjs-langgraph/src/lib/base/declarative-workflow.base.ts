@@ -226,7 +226,7 @@ export abstract class DeclarativeWorkflowBase<
 
     for (const node of definition.nodes) {
       // Check if the method exists on this instance
-      const methodName = node.config?.metadata?.['methodName'];
+      const methodName = node.config?.metadata?.methodName;
       const method = (this as any)[methodName];
       if (!method || typeof method !== 'function') {
         missingImplementations.push(`${node.id} (method: ${methodName})`);
@@ -274,7 +274,7 @@ export abstract class DeclarativeWorkflowBase<
       streamingNodes: definition.nodes.filter((n) => n.config?.streaming)
         .length,
       toolNodes: definition.nodes.filter(
-        (n) => n.config?.metadata?.['type'] === 'tool'
+        (n) => n.config?.metadata?.type === 'tool'
       ).length,
       hasHITL: this.workflowConfig.hitl?.enabled || false,
       hasStreaming: this.workflowConfig.streaming || false,
@@ -310,9 +310,9 @@ export abstract class DeclarativeWorkflowBase<
     console.log('\nNodes:');
     definition.nodes.forEach((node) => {
       console.log(
-        `  - ${node.id} (${node.config?.metadata?.['type'] || 'standard'})`
+        `  - ${node.id} (${node.config?.metadata?.type || 'standard'})`
       );
-      console.log(`    Method: ${node.config?.metadata?.['methodName']}`);
+      console.log(`    Method: ${node.config?.metadata?.methodName}`);
       console.log(`    Requires Approval: ${node.requiresApproval || false}`);
       console.log(`    Streaming: ${node.config?.streaming || false}`);
     });
@@ -322,8 +322,8 @@ export abstract class DeclarativeWorkflowBase<
       const toDescription =
         typeof edge.to === 'string' ? edge.to : 'conditional routing';
       console.log(`  ${index + 1}. ${edge.from} → ${toDescription}`);
-      if (edge.config?.metadata?.['type']) {
-        console.log(`     Type: ${edge.config.metadata['type']}`);
+      if (edge.config?.metadata?.type) {
+        console.log(`     Type: ${edge.config.metadata.type}`);
       }
     });
 

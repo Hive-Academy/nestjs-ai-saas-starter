@@ -78,8 +78,8 @@ export class ThreadService {
     checkpointId?: string
   ): Promise<ThreadState> {
     const params: Record<string, unknown> = { values };
-    if (asNode) params.as_node = asNode;
-    if (checkpointId) params.checkpoint_id = checkpointId;
+    if (asNode) {params.as_node = asNode;}
+    if (checkpointId) {params.checkpoint_id = checkpointId;}
 
     this.logger.log(`Updating thread state: ${threadId}`);
     return this.client.post<ThreadState>(`/threads/${threadId}/state`, params);
@@ -96,10 +96,10 @@ export class ThreadService {
     checkpointNs?: string
   ): Promise<{ states: readonly ThreadState[] }> {
     const params: Record<string, unknown> = {};
-    if (limit) params.limit = limit;
-    if (before) params.before = before;
-    if (metadata) params.metadata = metadata;
-    if (checkpointNs) params.checkpoint_ns = checkpointNs;
+    if (limit) {params.limit = limit;}
+    if (before) {params.before = before;}
+    if (metadata) {params.metadata = metadata;}
+    if (checkpointNs) {params.checkpoint_ns = checkpointNs;}
 
     return this.client.get<{ states: readonly ThreadState[] }>(
       `/threads/${threadId}/history`,

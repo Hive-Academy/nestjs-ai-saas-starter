@@ -15,9 +15,9 @@ export type MetadataFilterOperator = '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$
 /**
  * Single metadata filter condition
  */
-export interface MetadataFilterCondition<T = string | number | boolean | null> {
+export type MetadataFilterCondition<T = string | number | boolean | null> = {
   readonly [K in MetadataFilterOperator]?: T | readonly T[];
-}
+};
 
 /**
  * Metadata filter with type constraints
@@ -35,18 +35,10 @@ export interface DocumentFilter {
 }
 
 /**
- * Embedding vector representation
- */
-export interface EmbeddingVector {
-  readonly values: readonly number[];
-  readonly dimension: number;
-}
-
-/**
  * ChromaDB query parameters with proper typing
  */
 export interface ChromaQuery<TMetadata extends ChromaMetadata = ChromaMetadata> {
-  readonly queryEmbeddings?: readonly EmbeddingVector[] | readonly number[][];
+  readonly queryEmbeddings?: readonly number[][];
   readonly queryTexts?: readonly string[];
   readonly nResults?: number;
   readonly where?: MetadataFilter<TMetadata>;
@@ -105,6 +97,19 @@ export interface ChromaBulkOptions {
 /**
  * ChromaDB service interface defining core operations
  */
+/**
+ * Options for getting documents from a collection
+ */
+export interface GetDocumentsOptions {
+  ids?: string[];
+  where?: Where;
+  limit?: number;
+  offset?: number;
+  whereDocument?: WhereDocument;
+  includeMetadata?: boolean;
+  includeDocuments?: boolean;
+  includeEmbeddings?: boolean;
+}
 export interface ChromaDBServiceInterface {
   /**
    * Get the ChromaDB client instance
@@ -196,13 +201,8 @@ export interface ChromaDBServiceInterface {
    */
   getDocuments: (
     collectionName: string,
-    ids?: string[],
-    where?: Where,
-    limit?: number,
-    offset?: number,
-    whereDocument?: WhereDocument,
-    include?: string[],
-  ) => Promise<GetResult<Record<string, unknown>>>;
+    options?: GetDocumentsOptions,
+  ) => Promise<GetResult<ChromaMetadata>>;
 
   /**
    * Delete documents from a collection
@@ -235,12 +235,12 @@ export interface ChromaDBServiceInterface {
   peekDocuments: (
     collectionName: string,
     limit?: number,
-  ) => Promise<GetResult<Record<string, unknown>>>;
+  ) => Promise<GetResult>;
 
   /**
    * Get collection metadata
    */
-  getCollectionMetadata: (collectionName: string) => Promise<Record<string, unknown> | null>;
+  getCollectionMetadata: (collectionName: string) => Promise<ChromaMetadata | null>;
 
   /**
    * Update collection metadata

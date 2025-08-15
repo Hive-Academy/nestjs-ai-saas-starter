@@ -1,5 +1,5 @@
-import { Provider } from '@nestjs/common';
-import { LangGraphModuleOptions } from '../interfaces/module-options.interface';
+import type { Provider } from '@nestjs/common';
+import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
 import { CheckpointProvider } from './checkpoint.provider';
 import { MemoryProvider } from './memory.provider';
 import { TraceProvider } from './trace.provider';

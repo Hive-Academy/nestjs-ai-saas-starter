@@ -83,13 +83,13 @@ Derive from acceptance criteria:
 
 When analyzing requirements involving:
 
-### @anubis/nestjs-chromadb
+### @hive-academy/nestjs-chromadb
 - Vector search accuracy requirements
 - Embedding model specifications
 - Collection size constraints
 - Query performance targets
 
-### @anubis/nestjs-neo4j
+### @hive-academy/nestjs-neo4j
 - Graph traversal depth limits
 - Relationship cardinality
 - Query complexity bounds

@@ -31,7 +31,7 @@ export interface EmbeddingProvider {
 /**
  * Abstract base class for embedding providers
  */
-// eslint-disable-next-line @typescript-eslint/member-ordering
+ 
 export abstract class BaseEmbeddingProvider implements EmbeddingProvider {
   // Abstract properties
   public abstract readonly name: string;

@@ -63,7 +63,7 @@ export class SampleWorkflow {
     state: SampleWorkflowState
   ): Promise<Partial<SampleWorkflowState>> {
     // Simulate review logic
-    const isValid = !!(state.processedData && state.processedData.length > 0);
+    const isValid = Boolean(state.processedData && state.processedData.length > 0);
 
     return {
       reviewResult: isValid,
@@ -103,7 +103,7 @@ export class SampleWorkflow {
 
   @Edge({ from: 'process', to: 'review' })
   processToReview(state: SampleWorkflowState): boolean {
-    return !!state.processedData;
+    return Boolean(state.processedData);
   }
 
   @Edge({ from: 'review', to: 'complete' })

@@ -142,12 +142,12 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 
 ### Core Libraries
 
-#### @anubis/nestjs-chromadb
+#### @hive-academy/nestjs-chromadb
 - **Current**: Basic CRUD operations, embedding providers
 - **Planned**: Advanced querying, batch operations, performance optimization
 - **Future**: Multi-modal embeddings, federated search, auto-scaling
 
-#### @anubis/nestjs-neo4j
+#### @hive-academy/nestjs-neo4j
 - **Current**: Basic connection management, simple queries
 - **Planned**: Advanced Cypher builder, graph algorithms, performance tuning
 - **Future**: Graph ML integration, real-time analytics, distributed graphs

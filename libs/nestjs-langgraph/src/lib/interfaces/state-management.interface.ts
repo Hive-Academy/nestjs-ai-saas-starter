@@ -17,16 +17,12 @@ export interface BaseWorkflowState {
 /**
  * State transformer function type for modifying state during transitions
  */
-export interface StateTransformer<TState = unknown> {
-  (currentState: TState, incomingState: Partial<TState>): TState;
-}
+export type StateTransformer<TState = unknown> = (currentState: TState, incomingState: Partial<TState>) => TState;
 
 /**
  * State validator function type for validating state changes
  */
-export interface StateValidator<TState = unknown> {
-  (state: TState): Promise<boolean>;
-}
+export type StateValidator<TState = unknown> = (state: TState) => Promise<boolean>;
 
 /**
  * State persistence options
@@ -69,37 +65,37 @@ export interface StateManager<TState = unknown> {
   /**
    * Get the current state
    */
-  getCurrentState(): Promise<TState>;
+  getCurrentState: () => Promise<TState>;
 
   /**
    * Update the state with partial changes
    */
-  updateState(changes: Partial<TState>): Promise<TState>;
+  updateState: (changes: Partial<TState>) => Promise<TState>;
 
   /**
    * Replace the entire state
    */
-  replaceState(newState: TState): Promise<TState>;
+  replaceState: (newState: TState) => Promise<TState>;
 
   /**
    * Reset state to initial values
    */
-  resetState(): Promise<TState>;
+  resetState: () => Promise<TState>;
 
   /**
    * Subscribe to state changes
    */
-  onStateChange(callback: (event: StateChangeEvent<TState>) => void): () => void;
+  onStateChange: (callback: (event: StateChangeEvent<TState>) => void) => () => void;
 
   /**
    * Get state history if persistence is enabled
    */
-  getStateHistory(): Promise<StateChangeEvent<TState>[]>;
+  getStateHistory: () => Promise<Array<StateChangeEvent<TState>>>;
 
   /**
    * Validate the current state
    */
-  validateState(): Promise<boolean>;
+  validateState: () => Promise<boolean>;
 }
 
 /**

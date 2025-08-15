@@ -70,45 +70,45 @@ export interface CheckpointManager<TState = unknown> {
   /**
    * Create a new checkpoint
    */
-  createCheckpoint(
+  createCheckpoint: (
     workflowId: string,
     nodeId: string,
     state: TState,
     options?: CheckpointOptions
-  ): Promise<Checkpoint<TState>>;
+  ) => Promise<Checkpoint<TState>>;
 
   /**
    * Get a specific checkpoint by ID
    */
-  getCheckpoint(checkpointId: string): Promise<Checkpoint<TState> | null>;
+  getCheckpoint: (checkpointId: string) => Promise<Checkpoint<TState> | null>;
 
   /**
    * List checkpoints matching query criteria
    */
-  listCheckpoints(query: CheckpointQuery): Promise<Checkpoint<TState>[]>;
+  listCheckpoints: (query: CheckpointQuery) => Promise<Array<Checkpoint<TState>>>;
 
   /**
    * Restore state from a checkpoint
    */
-  restoreFromCheckpoint(
+  restoreFromCheckpoint: (
     checkpointId: string,
     options?: CheckpointRestoreOptions
-  ): Promise<TState>;
+  ) => Promise<TState>;
 
   /**
    * Delete a checkpoint
    */
-  deleteCheckpoint(checkpointId: string): Promise<boolean>;
+  deleteCheckpoint: (checkpointId: string) => Promise<boolean>;
 
   /**
    * Clean up old checkpoints based on retention policy
    */
-  cleanupCheckpoints(retentionPolicy: CheckpointRetentionPolicy): Promise<number>;
+  cleanupCheckpoints: (retentionPolicy: CheckpointRetentionPolicy) => Promise<number>;
 
   /**
    * Get checkpoint statistics
    */
-  getCheckpointStats(workflowId?: string): Promise<CheckpointStats>;
+  getCheckpointStats: (workflowId?: string) => Promise<CheckpointStats>;
 }
 
 /**
@@ -140,32 +140,32 @@ export interface CheckpointStorage<TState = unknown> {
   /**
    * Store a checkpoint
    */
-  store(checkpoint: Checkpoint<TState>): Promise<void>;
+  store: (checkpoint: Checkpoint<TState>) => Promise<void>;
 
   /**
    * Retrieve a checkpoint by ID
    */
-  retrieve(checkpointId: string): Promise<Checkpoint<TState> | null>;
+  retrieve: (checkpointId: string) => Promise<Checkpoint<TState> | null>;
 
   /**
    * List checkpoints matching query
    */
-  list(query: CheckpointQuery): Promise<Checkpoint<TState>[]>;
+  list: (query: CheckpointQuery) => Promise<Array<Checkpoint<TState>>>;
 
   /**
    * Delete a checkpoint
    */
-  delete(checkpointId: string): Promise<boolean>;
+  delete: (checkpointId: string) => Promise<boolean>;
 
   /**
    * Check if storage backend is healthy
    */
-  healthCheck(): Promise<boolean>;
+  healthCheck: () => Promise<boolean>;
 
   /**
    * Get storage statistics
    */
-  getStats(): Promise<CheckpointStats>;
+  getStats: () => Promise<CheckpointStats>;
 }
 
 /**

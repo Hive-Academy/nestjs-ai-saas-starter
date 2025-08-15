@@ -169,8 +169,8 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
     const originalMethod = descriptor.value;
     descriptor.value = async function(this: any, ...args: unknown[]) {
       // Log token streaming initialization
-      if ((this as any).logger) {
-        (this as any).logger.debug(`Initializing token streaming for: ${tokenMetadata.methodName}`);
+      if ((this).logger) {
+        (this).logger.debug(`Initializing token streaming for: ${tokenMetadata.methodName}`);
       }
 
       // Add token streaming context to state if available
@@ -183,8 +183,8 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
       }
 
       // Initialize token stream if streaming service is available
-      if ((this as any).streamingService && tokenMetadata.enabled) {
-        await (this as any).streamingService.initializeTokenStream({
+      if ((this).streamingService && tokenMetadata.enabled) {
+        await (this).streamingService.initializeTokenStream({
           executionId: (args[0] as any)?.executionId,
           nodeId: (args[0] as any)?.currentNode || tokenMetadata.methodName,
           config: tokenMetadata,
@@ -195,8 +195,8 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
       const result = await originalMethod.apply(this, args);
 
       // Handle token streaming results
-      if ((this as any).streamingService && tokenMetadata.enabled && result) {
-        await (this as any).streamingService.processTokenResult(result, tokenMetadata);
+      if ((this).streamingService && tokenMetadata.enabled && result) {
+        await (this).streamingService.processTokenResult(result, tokenMetadata);
       }
 
       return result;
@@ -258,8 +258,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
     const originalMethod = descriptor.value;
     descriptor.value = async function(this: any, ...args: unknown[]) {
       // Log event streaming initialization
-      if ((this as any).logger) {
-        (this as any).logger.debug(`Initializing event streaming for: ${eventMetadata.methodName}`);
+      if ((this).logger) {
+        (this).logger.debug(`Initializing event streaming for: ${eventMetadata.methodName}`);
       }
 
       // Add event streaming context to state if available
@@ -272,8 +272,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       }
 
       // Initialize event stream if streaming service is available
-      if ((this as any).streamingService && eventMetadata.enabled) {
-        await (this as any).streamingService.initializeEventStream({
+      if ((this).streamingService && eventMetadata.enabled) {
+        await (this).streamingService.initializeEventStream({
           executionId: (args[0] as any)?.executionId,
           nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
           config: eventMetadata,
@@ -281,8 +281,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       }
 
       // Emit node start event
-      if ((this as any).streamingService && eventMetadata.enabled) {
-        await (this as any).streamingService.emitEvent(StreamEventType.NODE_START, {
+      if ((this).streamingService && eventMetadata.enabled) {
+        await (this).streamingService.emitEvent(StreamEventType.NODE_START, {
           nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
           timestamp: new Date(),
           metadata: args[0]
@@ -294,8 +294,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
         const result = await originalMethod.apply(this, args);
 
         // Emit node complete event
-        if ((this as any).streamingService && eventMetadata.enabled) {
-          await (this as any).streamingService.emitEvent(StreamEventType.NODE_COMPLETE, {
+        if ((this).streamingService && eventMetadata.enabled) {
+          await (this).streamingService.emitEvent(StreamEventType.NODE_COMPLETE, {
             nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
             timestamp: new Date(),
             result,
@@ -306,8 +306,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
         return result;
       } catch (error) {
         // Emit error event
-        if ((this as any).streamingService && eventMetadata.enabled) {
-          await (this as any).streamingService.emitEvent(StreamEventType.ERROR, {
+        if ((this).streamingService && eventMetadata.enabled) {
+          await (this).streamingService.emitEvent(StreamEventType.ERROR, {
             nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
             timestamp: new Date(),
             error: (error as Error).message,
@@ -403,8 +403,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
     const originalMethod = descriptor.value;
     descriptor.value = async function(this: any, ...args: unknown[]) {
       // Log progress streaming initialization
-      if ((this as any).logger) {
-        (this as any).logger.debug(`Initializing progress streaming for: ${progressMetadata.methodName}`);
+      if ((this).logger) {
+        (this).logger.debug(`Initializing progress streaming for: ${progressMetadata.methodName}`);
       }
 
       // Add progress streaming context to state if available
@@ -417,8 +417,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
       }
 
       // Initialize progress tracker if streaming service is available
-      if ((this as any).streamingService && progressMetadata.enabled) {
-        await (this as any).streamingService.initializeProgressTracker({
+      if ((this).streamingService && progressMetadata.enabled) {
+        await (this).streamingService.initializeProgressTracker({
           executionId: (args[0] as any)?.executionId,
           nodeId: (args[0] as any)?.currentNode || progressMetadata.methodName,
           config: progressMetadata,
@@ -433,8 +433,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
       };
 
       // Emit progress start event
-      if ((this as any).streamingService && progressMetadata.enabled) {
-        await (this as any).streamingService.emitProgress(StreamEventType.PROGRESS, {
+      if ((this).streamingService && progressMetadata.enabled) {
+        await (this).streamingService.emitProgress(StreamEventType.PROGRESS, {
           nodeId: progressContext.nodeId,
           progress: 0,
           status: 'started',
@@ -447,8 +447,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
         const result = await originalMethod.apply(this, args);
 
         // Emit progress complete event
-        if ((this as any).streamingService && progressMetadata.enabled) {
-          await (this as any).streamingService.emitProgress(StreamEventType.PROGRESS, {
+        if ((this).streamingService && progressMetadata.enabled) {
+          await (this).streamingService.emitProgress(StreamEventType.PROGRESS, {
             nodeId: progressContext.nodeId,
             progress: 100,
             status: 'completed',
@@ -460,8 +460,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
         return result;
       } catch (error) {
         // Emit progress error event
-        if ((this as any).streamingService && progressMetadata.enabled) {
-          await (this as any).streamingService.emitProgress(StreamEventType.PROGRESS, {
+        if ((this).streamingService && progressMetadata.enabled) {
+          await (this).streamingService.emitProgress(StreamEventType.PROGRESS, {
             nodeId: progressContext.nodeId,
             progress: -1,
             status: 'failed',

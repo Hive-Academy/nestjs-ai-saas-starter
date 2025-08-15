@@ -37,7 +37,7 @@ export class MockAgentFactory {
       },
 
       bindTools(tools: any[]): BaseChatModel {
-        return this as any;
+        return this;
       },
     } as any;
 

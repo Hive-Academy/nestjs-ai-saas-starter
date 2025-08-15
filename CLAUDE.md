@@ -69,8 +69,8 @@ npm run docs:generate
 ### Monorepo Structure (Nx-based)
 This is an Nx monorepo with four publishable NPM libraries under the `@anubis` scope:
 
-1. **@anubis/nestjs-chromadb** - Vector database integration for semantic search and embeddings
-2. **@anubis/nestjs-neo4j** - Graph database integration for relationship modeling
+1. **@hive-academy/nestjs-chromadb** - Vector database integration for semantic search and embeddings
+2. **@hive-academy/nestjs-neo4j** - Graph database integration for relationship modeling
 3. **@anubis/nestjs-langgraph** - AI agent workflow orchestration using LangGraph
 
 ### Library Architecture Patterns

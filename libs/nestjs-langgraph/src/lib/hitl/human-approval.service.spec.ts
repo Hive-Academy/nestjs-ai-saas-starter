@@ -1,4 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { Logger } from '@nestjs/common';
 
@@ -14,7 +15,8 @@ import { HumanApprovalService, ApprovalWorkflowState } from './human-approval.se
 import { ApprovalChainService } from './approval-chain.service';
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
-import { ApprovalRiskLevel, RequiresApprovalOptions } from '../decorators/approval.decorator';
+import type { RequiresApprovalOptions } from '../decorators/approval.decorator';
+import { ApprovalRiskLevel } from '../decorators/approval.decorator';
 import { WorkflowState } from '../interfaces/workflow.interface';
 import { HITL_EVENTS } from './constants';
 
@@ -154,7 +156,7 @@ describe('HumanApprovalService', () => {
 
       const request = await service.requestApproval('timeout-test', 'timeout-node', 'timeout test', state, options);
 
-      expect(service['timeoutHandlers'].has(request.id)).toBe(true);
+      expect(service.timeoutHandlers.has(request.id)).toBe(true);
 
       // Wait for timeout to trigger
       await new Promise(resolve => setTimeout(resolve, 1200));
@@ -437,7 +439,7 @@ describe('HumanApprovalService', () => {
       }
 
       // Trigger timeout
-      await service['handleTimeout'](request.id);
+      await service.handleTimeout(request.id);
 
       const finalRequest = service.getApprovalRequest(request.id);
       expect(finalRequest?.workflowState).toBe(ApprovalWorkflowState.REJECTED);
@@ -469,10 +471,10 @@ describe('HumanApprovalService', () => {
       const executionId = 'stream-test';
 
       service.registerStreamConnection(executionId, mockConnection);
-      expect(service['streamConnections'].has(executionId)).toBe(true);
+      expect(service.streamConnections.has(executionId)).toBe(true);
 
       service.unregisterStreamConnection(executionId);
-      expect(service['streamConnections'].has(executionId)).toBe(false);
+      expect(service.streamConnections.has(executionId)).toBe(false);
     });
 
     it('should stream approval requests to connected clients', async () => {
@@ -655,13 +657,13 @@ describe('HumanApprovalService', () => {
       await service.requestApproval('cleanup-1', 'node-1', 'test 1', state, { timeoutMs: 60000 });
       await service.requestApproval('cleanup-2', 'node-2', 'test 2', state, { timeoutMs: 60000 });
 
-      expect(service['timeoutHandlers'].size).toBe(2);
+      expect(service.timeoutHandlers.size).toBe(2);
 
       await service.onModuleDestroy();
 
-      expect(service['timeoutHandlers'].size).toBe(0);
-      expect(service['approvalRequests'].size).toBe(0);
-      expect(service['streamConnections'].size).toBe(0);
+      expect(service.timeoutHandlers.size).toBe(0);
+      expect(service.approvalRequests.size).toBe(0);
+      expect(service.streamConnections.size).toBe(0);
     });
 
     it('should handle concurrent approval processing', async () => {

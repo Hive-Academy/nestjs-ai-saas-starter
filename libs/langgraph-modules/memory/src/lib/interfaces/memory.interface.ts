@@ -1,4 +1,4 @@
-import { BaseMessage } from '@langchain/core/messages';
+import type { BaseMessage } from '@langchain/core/messages';
 import { z } from 'zod';
 
 /**
@@ -58,7 +58,7 @@ export interface MemoryMetadata {
   /**
    * Type of memory
    */
-  type: 'conversation' | 'summary' | 'fact' | 'context' | 'custom';
+  type: 'conversation' | 'summary' | 'fact' | 'context' | 'preference' | 'custom';
 
   /**
    * Source of the memory
@@ -103,7 +103,7 @@ export interface MemorySearchOptions {
   /**
    * Memory types to filter
    */
-  types?: readonly MemoryMetadata['type'][];
+  types?: ReadonlyArray<MemoryMetadata['type']>;
 
   /**
    * Tags to filter by
@@ -171,18 +171,13 @@ export interface MemorySummarizationOptions {
 }
 
 /**
- * Memory configuration
+ * Memory configuration (embedding configuration is handled by ChromaDB module)
  */
 export interface MemoryConfig {
   /**
    * Storage backend configuration
    */
   storage: MemoryStorageConfig;
-
-  /**
-   * Embedding configuration
-   */
-  embedding?: MemoryEmbeddingConfig;
 
   /**
    * Summarization configuration
@@ -240,35 +235,7 @@ export interface MemoryStorageConfig {
   };
 }
 
-/**
- * Memory embedding configuration
- */
-export interface MemoryEmbeddingConfig {
-  /**
-   * Embedding provider
-   */
-  provider: 'openai' | 'cohere' | 'huggingface' | 'custom';
 
-  /**
-   * Model name
-   */
-  model?: string;
-
-  /**
-   * API key
-   */
-  apiKey?: string;
-
-  /**
-   * Embedding dimension
-   */
-  dimension?: number;
-
-  /**
-   * Custom embedding function
-   */
-  customEmbedder?: (text: string) => Promise<readonly number[]>;
-}
 
 /**
  * Memory retention policy
@@ -346,70 +313,120 @@ export interface MemoryStats {
 }
 
 /**
+ * User memory patterns and preferences
+ */
+export interface UserMemoryPatterns {
+  preferredTopics: string[];
+  communicationStyle: string[];
+  frequentInteractions: string[];
+  memoryStats: {
+    totalMemories: number;
+    averageImportance: number;
+    mostActiveThreads: string[];
+    recentActivity: Date;
+  };
+}
+
+/**
+ * Storage statistics from ChromaDB
+ */
+export interface StorageStats {
+  totalMemories: number;
+  collectionInfo: {
+    name: string;
+    count: number;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+/**
+ * ChromaDB where clause for filtering
+ */
+export interface ChromaWhereClause {
+  threadId?: string | { $in: string[] };
+  type?: string | { $in: string[] };
+  tags?: { $contains: string } | { $in: string[] };
+  importance?: { $gte?: number; $lte?: number };
+  createdAt?: { $gte?: string; $lte?: string };
+  [key: string]: unknown;
+}
+
+/**
+ * ChromaDB query results structure
+ */
+export interface ChromaQueryResults {
+  ids: string[][];
+  distances?: number[][];
+  metadatas?: Array<Array<Record<string, unknown> | null>>;
+  documents?: Array<Array<string | null>>;
+  embeddings?: number[][][];
+}
+
+/**
  * Memory service interface
  */
 export interface MemoryServiceInterface {
   /**
    * Store a memory entry
    */
-  store(
+  store: (
     threadId: string,
     content: string,
     metadata?: Partial<MemoryMetadata>
-  ): Promise<MemoryEntry>;
+  ) => Promise<MemoryEntry>;
 
   /**
    * Store multiple memory entries
    */
-  storeBatch(
+  storeBatch: (
     threadId: string,
     entries: ReadonlyArray<{
       content: string;
       metadata?: Partial<MemoryMetadata>;
     }>
-  ): Promise<readonly MemoryEntry[]>;
+  ) => Promise<readonly MemoryEntry[]>;
 
   /**
    * Retrieve memories by thread
    */
-  retrieve(
+  retrieve: (
     threadId: string,
     limit?: number
-  ): Promise<readonly MemoryEntry[]>;
+  ) => Promise<readonly MemoryEntry[]>;
 
   /**
    * Search memories semantically
    */
-  search(options: MemorySearchOptions): Promise<readonly MemoryEntry[]>;
+  search: (options: MemorySearchOptions) => Promise<readonly MemoryEntry[]>;
 
   /**
    * Summarize conversation history
    */
-  summarize(
+  summarize: (
     threadId: string,
     messages: readonly BaseMessage[],
     options?: MemorySummarizationOptions
-  ): Promise<string>;
+  ) => Promise<string>;
 
   /**
    * Delete memories
    */
-  delete(threadId: string, memoryIds?: readonly string[]): Promise<number>;
+  delete: (threadId: string, memoryIds?: readonly string[]) => Promise<number>;
 
   /**
    * Clear all memories for a thread
    */
-  clear(threadId: string): Promise<void>;
+  clear: (threadId: string) => Promise<void>;
 
   /**
    * Get memory statistics
    */
-  getStats(): Promise<MemoryStats>;
+  getStats: () => Promise<MemoryStats>;
 
   /**
    * Perform cleanup based on retention policy
    */
-  cleanup(): Promise<number>;
+  cleanup: () => Promise<number>;
 }
 
 /**
@@ -421,7 +438,7 @@ export const MemoryEntrySchema = z.object({
   content: z.string(),
   embedding: z.array(z.number()).optional(),
   metadata: z.object({
-    type: z.enum(['conversation', 'summary', 'fact', 'context', 'custom']),
+    type: z.enum(['conversation', 'summary', 'fact', 'context', 'preference', 'custom']),
     source: z.string().optional(),
     tags: z.array(z.string()).optional(),
     importance: z.number().min(0).max(1).optional(),
@@ -437,7 +454,7 @@ export const MemorySearchOptionsSchema = z.object({
   query: z.string().optional(),
   threadIds: z.array(z.string()).optional(),
   types: z.array(
-    z.enum(['conversation', 'summary', 'fact', 'context', 'custom'])
+    z.enum(['conversation', 'summary', 'fact', 'context', 'preference', 'custom'])
   ).optional(),
   tags: z.array(z.string()).optional(),
   minRelevance: z.number().min(0).max(1).optional(),

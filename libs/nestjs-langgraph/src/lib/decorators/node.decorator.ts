@@ -126,7 +126,7 @@ export function Node(optionsOrId?: NodeOptions | string): MethodDecorator {
           new Promise((_, reject) => 
             setTimeout(
               () => reject(new Error(`Node ${nodeMetadata.id} timeout after ${nodeMetadata.timeout}ms`)),
-              nodeMetadata.timeout!
+              nodeMetadata.timeout
             )
           )
         ]);

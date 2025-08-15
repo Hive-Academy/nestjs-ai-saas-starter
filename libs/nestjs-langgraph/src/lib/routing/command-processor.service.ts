@@ -21,7 +21,7 @@ export class CommandProcessorService {
       applyMetadata?: boolean;
     },
   ): Promise<Partial<TState>> {
-    const sourceNodeId = options?.sourceNodeId || currentState['currentNodeId'] || 'unknown';
+    const sourceNodeId = options?.sourceNodeId || currentState.currentNodeId || 'unknown';
     const validateCommand = options?.validateCommand ?? true;
     const applyMetadata = options?.applyMetadata ?? true;
 
@@ -37,8 +37,8 @@ export class CommandProcessorService {
       this.logger.log(`Processing command from ${sourceNodeId}:`, {
         type: command.type || 'goto',
         goto: command.goto,
-        hasUpdate: !!command.update,
-        hasMetadata: !!command.metadata,
+        hasUpdate: Boolean(command.update),
+        hasMetadata: Boolean(command.metadata),
       });
 
       // Build state updates based on command type
@@ -72,7 +72,7 @@ export class CommandProcessorService {
     const baseUpdates = {
       ...(command.update || {}),
       currentNodeId: sourceNodeId,
-      completedNodes: [...(currentState['completedNodes'] || []), sourceNodeId],
+      completedNodes: [...(currentState.completedNodes || []), sourceNodeId],
     } as unknown as Partial<TState>;
 
     // Handle different command types
@@ -128,7 +128,7 @@ export class CommandProcessorService {
     baseUpdates: Partial<TState>,
     currentState: TState,
   ): Partial<TState> {
-    const retryCount = (currentState['retryCount'] || 0) + 1;
+    const retryCount = (currentState.retryCount || 0) + 1;
     const maxAttempts = command.maxAttempts || 3;
     
     if (retryCount > maxAttempts) {
@@ -213,26 +213,26 @@ export class CommandProcessorService {
     currentState: TState,
   ): void {
     // Handle human approval requirement
-    if (metadata['requiresApproval']) {
+    if (metadata.requiresApproval) {
       (stateUpdates as any).humanFeedback = {
         status: 'pending',
         timestamp: new Date(),
         metadata: {
-          commandReason: metadata['reason'],
-          sourceNode: metadata['sourceNode'],
-          targetNode: metadata['targetNode'],
+          commandReason: metadata.reason,
+          sourceNode: metadata.sourceNode,
+          targetNode: metadata.targetNode,
         },
       };
     }
 
     // Handle priority
-    if (metadata['priority']) {
-      (stateUpdates as any).priority = metadata['priority'];
+    if (metadata.priority) {
+      (stateUpdates as any).priority = metadata.priority;
     }
 
     // Handle confidence updates
-    if (typeof metadata['confidence'] === 'number') {
-      (stateUpdates as any).confidence = metadata['confidence'];
+    if (typeof metadata.confidence === 'number') {
+      (stateUpdates as any).confidence = metadata.confidence;
     }
 
     // Store metadata in context
@@ -259,7 +259,7 @@ export class CommandProcessorService {
         isRecoverable: this.isRecoverableError(error),
         suggestedRecovery: this.getSuggestedRecovery(error),
       },
-      retryCount: (currentState['retryCount'] || 0) + 1,
+      retryCount: (currentState.retryCount || 0) + 1,
     } as unknown as Partial<TState>;
   }
 
@@ -352,7 +352,7 @@ export class CommandProcessorService {
  * Fluent builder for creating commands
  */
 export class CommandBuilder<TState extends WorkflowState = WorkflowState> {
-  private command: Partial<Command<TState>> = {};
+  private readonly command: Partial<Command<TState>> = {};
 
   goto(target: string): this {
     this.command.goto = target;

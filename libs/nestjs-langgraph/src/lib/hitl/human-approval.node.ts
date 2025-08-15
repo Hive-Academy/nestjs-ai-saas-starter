@@ -146,7 +146,7 @@ export interface HumanApprovalResponse {
 @Injectable()
 export class HumanApprovalNode {
   private readonly logger = new Logger(HumanApprovalNode.name);
-  private pendingApprovals = new Map<string, HumanApprovalRequest>();
+  private readonly pendingApprovals = new Map<string, HumanApprovalRequest>();
 
   constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
 
@@ -162,7 +162,7 @@ export class HumanApprovalNode {
       skipCondition?: (state: TState) => boolean;
     },
   ): Promise<Partial<TState>> {
-    const executionId = state.executionId;
+    const {executionId} = state;
     
     // Check skip condition
     if (options?.skipCondition?.(state)) {
@@ -252,7 +252,7 @@ export class HumanApprovalNode {
     state: TState,
     response: HumanApprovalResponse,
   ): Partial<TState> {
-    const executionId = state.executionId;
+    const {executionId} = state;
     
     // Remove from pending approvals
     this.pendingApprovals.delete(executionId);
@@ -320,30 +320,30 @@ export class HumanApprovalNode {
     const metadata = state.metadata || {};
 
     // Check for various action types in metadata
-    if (metadata['codeGeneration']) {
+    if (metadata.codeGeneration) {
       actions.push({
         type: 'code_generation',
         description: 'Generate code files',
         impact: 'medium',
-        details: metadata['codeGeneration'],
+        details: metadata.codeGeneration,
       });
     }
 
-    if (metadata['fileOperations']) {
+    if (metadata.fileOperations) {
       actions.push({
         type: 'file_modification',
         description: 'Modify files',
         impact: 'high',
-        details: metadata['fileOperations'],
+        details: metadata.fileOperations,
       });
     }
 
-    if (metadata['apiCalls']) {
+    if (metadata.apiCalls) {
       actions.push({
         type: 'api_call',
         description: 'Make external API calls',
         impact: 'medium',
-        details: metadata['apiCalls'],
+        details: metadata.apiCalls,
       });
     }
 

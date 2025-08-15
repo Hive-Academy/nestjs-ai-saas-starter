@@ -1,4 +1,4 @@
-import { Provider } from '@nestjs/common';
+import type { Provider } from '@nestjs/common';
 import { ToolRegistryService } from '../tools/tool-registry.service';
 import { ToolNodeService } from '../tools/tool-node.service';
 import { ToolBuilderService } from '../tools/tool-builder.service';

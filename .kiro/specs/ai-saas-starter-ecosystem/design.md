@@ -11,8 +11,8 @@ This design document outlines the technical architecture for transforming our AI
 ```mermaid
 graph TB
     subgraph "Published Libraries"
-        A["@anubis/nestjs-chromadb"]
-        B["@anubis/nestjs-neo4j"]
+        A["@hive-academy/nestjs-chromadb"]
+        B["@hive-academy/nestjs-neo4j"]
         C["@anubis/nestjs-langgraph"]
         D["@anubis/shared"]
     end

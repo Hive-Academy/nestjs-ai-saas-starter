@@ -1,78 +1,143 @@
 import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AdvancedMemoryService } from './lib/services/advanced-memory.service';
+import { ChromaDBModule, ChromaDBModuleOptions } from '@hive-academy/nestjs-chromadb';
+import { Neo4jModule, Neo4jModuleOptions } from '@hive-academy/nestjs-neo4j';
+
+// Import refactored memory services that use external libraries
+import { MemoryCoreService } from './lib/services/memory-core.service';
+import { MemoryFacadeService } from './lib/services/memory-facade.service';
+import { SemanticSearchService } from './lib/services/semantic-search.service';
+import { SummarizationService } from './lib/services/summarization.service';
 import { MemoryConfig } from './lib/interfaces/memory.interface';
 
 /**
- * Memory module for advanced memory management with semantic search and summarization
+ * Memory module that orchestrates ChromaDB vector storage and Neo4j graph relationships
+ * Provides comprehensive memory capabilities for LangGraph applications
  */
 @Module({})
 export class LanggraphModulesMemoryModule {
   /**
-   * Configure memory module with options
+   * Configure memory module with required ChromaDB and Neo4j dependencies
    */
-  static forRoot(config?: MemoryConfig): DynamicModule {
+  public static forRoot(config: {
+    chromadb: ChromaDBModuleOptions;
+    neo4j: Neo4jModuleOptions;
+    memory?: Partial<MemoryConfig>;
+  }): DynamicModule {
+    const memoryConfig: MemoryConfig = {
+      storage: { type: 'vector', vector: { provider: 'chromadb', config: {} } },
+      enableSemanticSearch: true,
+      enableAutoSummarization: true,
+      ...config.memory,
+    };
+
     const providers: Provider[] = [
       {
         provide: 'MEMORY_CONFIG',
-        useValue: config ?? {
-          storage: { type: 'memory' },
-          enableSemanticSearch: false,
-          enableAutoSummarization: false,
-        },
+        useValue: memoryConfig,
       },
-      AdvancedMemoryService,
+      // Core memory services that orchestrate external services
+      MemoryCoreService,
+      MemoryFacadeService,
+      SemanticSearchService,
+      SummarizationService,
     ];
 
     return {
       module: LanggraphModulesMemoryModule,
-      imports: [ConfigModule],
+      imports: [
+        ConfigModule,
+        HttpModule,
+        ChromaDBModule.forRoot(config.chromadb),
+        Neo4jModule.forRoot(config.neo4j),
+      ],
       providers,
-      exports: [AdvancedMemoryService],
+      exports: [
+        MemoryFacadeService, // Primary high-level memory interface
+        SemanticSearchService, // Advanced search capabilities
+        SummarizationService,  // LLM-based summarization
+      ],
     };
   }
 
   /**
-   * Configure memory module asynchronously
+   * Configure memory module asynchronously with required ChromaDB and Neo4j dependencies
    */
-  static forRootAsync(options: {
+  public static forRootAsync(options: {
     imports?: Array<Type | DynamicModule>;
-    useFactory: (...args: unknown[]) => Promise<MemoryConfig> | MemoryConfig;
+    useFactory: (...args: unknown[]) => Promise<{
+      chromadb: ChromaDBModuleOptions;
+      neo4j: Neo4jModuleOptions;
+      memory?: Partial<MemoryConfig>;
+    }> | {
+      chromadb: ChromaDBModuleOptions;
+      neo4j: Neo4jModuleOptions;
+      memory?: Partial<MemoryConfig>;
+    };
     inject?: Array<Type | string | symbol>;
   }): DynamicModule {
+    const configProvider: Provider = {
+      provide: 'MEMORY_MODULE_CONFIG',
+      useFactory: options.useFactory,
+      inject: options.inject ?? [],
+    };
+
+    const memoryConfigProvider: Provider = {
+      provide: 'MEMORY_CONFIG',
+      useFactory: (moduleConfig: {
+        chromadb: ChromaDBModuleOptions;
+        neo4j: Neo4jModuleOptions;
+        memory?: Partial<MemoryConfig>;
+      }) => {
+        const memoryConfig: MemoryConfig = {
+          storage: { type: 'vector', vector: { provider: 'chromadb', config: {} } },
+          enableSemanticSearch: true,
+          enableAutoSummarization: true,
+          ...moduleConfig.memory,
+        };
+        return memoryConfig;
+      },
+      inject: ['MEMORY_MODULE_CONFIG'],
+    };
+
     const providers: Provider[] = [
-      {
-        provide: 'MEMORY_CONFIG',
-        useFactory: options.useFactory,
-        inject: options.inject ?? [],
-      },
-      {
-        provide: AdvancedMemoryService,
-        useFactory: (configService: ConfigService, memoryConfig: MemoryConfig) => {
-          // Merge config service values with provided config
-          const mergedConfig = {
-            ...configService.get<MemoryConfig>('memory', {
-              storage: { type: 'memory' },
-              enableSemanticSearch: false,
-              enableAutoSummarization: false,
-            }),
-            ...memoryConfig,
-          };
-
-          // Store merged config back in ConfigService
-          configService.set('memory', mergedConfig);
-
-          return new AdvancedMemoryService(configService);
-        },
-        inject: [ConfigService, 'MEMORY_CONFIG'],
-      },
+      configProvider,
+      memoryConfigProvider,
+      // Core memory services that orchestrate external services
+      MemoryCoreService,
+      MemoryFacadeService,
+      SemanticSearchService,
+      SummarizationService,
     ];
 
     return {
       module: LanggraphModulesMemoryModule,
-      imports: [ConfigModule, ...(options.imports ?? [])],
+      imports: [
+        ConfigModule,
+        ChromaDBModule.forRootAsync({
+          useFactory: (moduleConfig: {
+            chromadb: ChromaDBModuleOptions;
+            neo4j: Neo4jModuleOptions;
+            memory?: Partial<MemoryConfig>;
+          }) => moduleConfig.chromadb,
+          inject: ['MEMORY_MODULE_CONFIG'],
+        }),
+        Neo4jModule.forRootAsync({
+          useFactory: (moduleConfig: {
+            chromadb: ChromaDBModuleOptions;
+            neo4j: Neo4jModuleOptions;
+            memory?: Partial<MemoryConfig>;
+          }) => moduleConfig.neo4j,
+          inject: ['MEMORY_MODULE_CONFIG'],
+        }),
+        ...(options.imports ?? []),
+      ],
       providers,
-      exports: [AdvancedMemoryService],
+      exports: [
+        MemoryFacadeService, // Primary high-level memory interface
+        SemanticSearchService, // Advanced search capabilities
+        SummarizationService,  // LLM-based summarization
+      ],
     };
   }
 }

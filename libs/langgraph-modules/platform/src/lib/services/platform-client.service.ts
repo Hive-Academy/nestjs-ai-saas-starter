@@ -100,7 +100,7 @@ export class PlatformClientService {
     };
 
     if (this.options.apiKey) {
-      headers['Authorization'] = `Bearer ${this.options.apiKey}`;
+      headers.Authorization = `Bearer ${this.options.apiKey}`;
     }
 
     return headers;
@@ -109,8 +109,8 @@ export class PlatformClientService {
   private handleError(error: unknown): Error {
     if (error && typeof error === 'object' && 'response' in error) {
       const httpError = error as { response: { status: number; data?: { error?: string; message?: string } } };
-      const status = httpError.response.status;
-      const data = httpError.response.data;
+      const {status} = httpError.response;
+      const {data} = httpError.response;
       const message = data?.message || data?.error || `HTTP ${status} error`;
       return new Error(`Platform API error (${status}): ${message}`);
     }
