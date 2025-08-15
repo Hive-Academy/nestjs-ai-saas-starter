@@ -39,11 +39,29 @@ The checkpoint module follows a **layered architecture** with clear separation o
 │  │ Service │ │ Service │ │ Service ││
 │  └─────────┘ └─────────┘ └─────────┘│
 ├─────────────────────────────────────┤
-│     CheckpointSaverFactory          │  ← Factory Layer
+│ CheckpointSaverFactory │ LangGraph  │  ← Factory Layer
+│    (Custom Savers)     │ Provider   │
 ├─────────────────────────────────────┤
 │ Memory │ Redis │ Postgres │ SQLite  │  ← Storage Backends
+│ (Custom Enterprise) │ (Official)    │
 └─────────────────────────────────────┘
 ```
+
+### Dual Provider Strategy
+
+The module provides **two complementary approaches** for checkpoint management:
+
+1. **Custom Enterprise Savers** (`CheckpointSaverFactory`)
+   - Enhanced monitoring and metrics
+   - Custom compression and optimization
+   - Enterprise health checking
+   - Full control over implementation
+
+2. **Official LangGraph Integration** (`LangGraphCheckpointProvider`)
+   - Direct integration with official LangGraph packages
+   - Guaranteed compatibility with LangGraph ecosystem
+   - Minimal custom logic for maximum reliability
+   - Easy migration path from pure LangGraph
 
 ### SOLID Principles Implementation
 

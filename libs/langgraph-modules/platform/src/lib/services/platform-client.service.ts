@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { PlatformModuleOptions } from '../interfaces/platform.interface';
+import type { PlatformModuleOptions } from '../interfaces/platform.interface';
 import { PLATFORM_MODULE_OPTIONS } from '../constants/platform.constants';
 
 /**

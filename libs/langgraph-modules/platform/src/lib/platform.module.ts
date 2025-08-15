@@ -5,9 +5,6 @@ import {
   PlatformModuleAsyncOptions,
 } from './interfaces/platform.interface';
 import { PlatformClientService } from './services/platform-client.service';
-import { AssistantService } from './services/assistant.service';
-import { ThreadService } from './services/thread.service';
-import { RunService } from './services/run.service';
 import { WebhookService } from './services/webhook.service';
 import { PLATFORM_MODULE_OPTIONS, DEFAULT_PLATFORM_OPTIONS } from './constants/platform.constants';
 
@@ -26,9 +23,6 @@ export class PlatformModule {
         useValue: mergedOptions,
       },
       PlatformClientService,
-      AssistantService,
-      ThreadService,
-      RunService,
       WebhookService,
     ];
 
@@ -37,9 +31,6 @@ export class PlatformModule {
       imports: [HttpModule],
       providers,
       exports: [
-        AssistantService,
-        ThreadService,
-        RunService,
         WebhookService,
         PlatformClientService,
       ],
@@ -55,12 +46,9 @@ export class PlatformModule {
           const moduleOptions = await options.useFactory!(...args);
           return this.mergeWithDefaults(moduleOptions);
         },
-        inject: options.inject || [],
+        inject: options.inject || [] as any[],
       },
       PlatformClientService,
-      AssistantService,
-      ThreadService,
-      RunService,
       WebhookService,
     ];
 
@@ -69,9 +57,6 @@ export class PlatformModule {
       imports: [HttpModule],
       providers,
       exports: [
-        AssistantService,
-        ThreadService,
-        RunService,
         WebhookService,
         PlatformClientService,
       ],

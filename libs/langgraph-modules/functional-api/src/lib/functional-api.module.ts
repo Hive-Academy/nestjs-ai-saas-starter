@@ -8,6 +8,7 @@ import {
 } from './interfaces/module-options.interface';
 import { FunctionalWorkflowService } from './services/functional-workflow.service';
 import { WorkflowDiscoveryService } from './services/workflow-discovery.service';
+import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
 
 /**
@@ -50,11 +51,13 @@ export class FunctionalApiModule {
         optionsProvider,
         WorkflowValidator,
         WorkflowDiscoveryService,
+        GraphGeneratorService,
         FunctionalWorkflowService,
       ],
       exports: [
         FunctionalWorkflowService,
         WorkflowDiscoveryService,
+        GraphGeneratorService,
         WorkflowValidator,
         FUNCTIONAL_API_MODULE_OPTIONS,
       ],
@@ -88,11 +91,13 @@ export class FunctionalApiModule {
         ...asyncProviders,
         WorkflowValidator,
         WorkflowDiscoveryService,
+        GraphGeneratorService,
         FunctionalWorkflowService,
       ],
       exports: [
         FunctionalWorkflowService,
         WorkflowDiscoveryService,
+        GraphGeneratorService,
         WorkflowValidator,
         FUNCTIONAL_API_MODULE_OPTIONS,
       ],

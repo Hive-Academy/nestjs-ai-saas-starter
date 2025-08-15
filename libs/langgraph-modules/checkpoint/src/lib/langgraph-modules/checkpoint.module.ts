@@ -8,6 +8,7 @@ import { CheckpointPersistenceService } from '../core/checkpoint-persistence.ser
 import { CheckpointMetricsService } from '../core/checkpoint-metrics.service';
 import { CheckpointCleanupService } from '../core/checkpoint-cleanup.service';
 import { CheckpointHealthService } from '../core/checkpoint-health.service';
+import { LangGraphCheckpointProvider } from '../providers/langgraph-checkpoint.provider';
 import { CheckpointConfig } from '../interfaces/checkpoint.interface';
 
 export interface CheckpointModuleOptions {
@@ -79,6 +80,9 @@ export class LanggraphModulesCheckpointModule {
         CheckpointHealthService,
         CheckpointPersistenceService,
         
+        // Official LangGraph checkpoint provider
+        LangGraphCheckpointProvider,
+        
         // Interface tokens for dependency injection
         {
           provide: 'ICheckpointSaverFactory',
@@ -104,6 +108,10 @@ export class LanggraphModulesCheckpointModule {
           provide: 'ICheckpointHealthService',
           useExisting: CheckpointHealthService,
         },
+        {
+          provide: 'ILangGraphCheckpointProvider',
+          useExisting: LangGraphCheckpointProvider,
+        },
         
         // Facade service
         CheckpointManagerService,
@@ -121,6 +129,8 @@ export class LanggraphModulesCheckpointModule {
         CheckpointMetricsService,
         CheckpointCleanupService,
         CheckpointHealthService,
+        // Export official LangGraph provider
+        LangGraphCheckpointProvider,
         // Export interface tokens
         'ICheckpointSaverFactory',
         'ICheckpointRegistryService',
@@ -128,6 +138,7 @@ export class LanggraphModulesCheckpointModule {
         'ICheckpointMetricsService',
         'ICheckpointCleanupService',
         'ICheckpointHealthService',
+        'ILangGraphCheckpointProvider',
       ],
       global: true,
     };
@@ -159,6 +170,9 @@ export class LanggraphModulesCheckpointModule {
         CheckpointHealthService,
         CheckpointPersistenceService,
         
+        // Official LangGraph checkpoint provider
+        LangGraphCheckpointProvider,
+        
         // Interface tokens for dependency injection
         {
           provide: 'ICheckpointSaverFactory',
@@ -184,6 +198,10 @@ export class LanggraphModulesCheckpointModule {
           provide: 'ICheckpointHealthService',
           useExisting: CheckpointHealthService,
         },
+        {
+          provide: 'ILangGraphCheckpointProvider',
+          useExisting: LangGraphCheckpointProvider,
+        },
         
         // Facade service
         CheckpointManagerService,
@@ -201,6 +219,8 @@ export class LanggraphModulesCheckpointModule {
         CheckpointMetricsService,
         CheckpointCleanupService,
         CheckpointHealthService,
+        // Export official LangGraph provider
+        LangGraphCheckpointProvider,
         // Export interface tokens
         'ICheckpointSaverFactory',
         'ICheckpointRegistryService',
@@ -208,6 +228,7 @@ export class LanggraphModulesCheckpointModule {
         'ICheckpointMetricsService',
         'ICheckpointCleanupService',
         'ICheckpointHealthService',
+        'ILangGraphCheckpointProvider',
       ],
       global: true,
     };

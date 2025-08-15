@@ -366,6 +366,7 @@ export class CheckpointPersistenceService
           valueA = metadataA.stepName || '';
           valueB = metadataB.stepName || '';
           break;
+        case undefined:
         default:
           return 0;
       }

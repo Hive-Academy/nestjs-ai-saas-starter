@@ -4,6 +4,7 @@ export * from './lib/functional-api.module';
 // Services
 export * from './lib/services/functional-workflow.service';
 export * from './lib/services/workflow-discovery.service';
+export * from './lib/services/graph-generator.service';
 
 // Validation
 export * from './lib/validation/workflow-validator';

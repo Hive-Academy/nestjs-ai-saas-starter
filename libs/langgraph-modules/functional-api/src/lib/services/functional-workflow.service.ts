@@ -16,6 +16,7 @@ import {
 } from '../interfaces/functional-workflow.interface';
 import type { FunctionalApiModuleOptions } from '../interfaces/module-options.interface';
 import { WorkflowDiscoveryService } from './workflow-discovery.service';
+import { GraphGeneratorService } from './graph-generator.service';
 import { WorkflowValidator } from '../validation/workflow-validator';
 import {
   WorkflowExecutionError,
@@ -38,6 +39,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
     @Inject('FUNCTIONAL_API_MODULE_OPTIONS')
     private readonly options: FunctionalApiModuleOptions,
     private readonly discoveryService: WorkflowDiscoveryService,
+    private readonly graphGenerator: GraphGeneratorService,
     private readonly validator: WorkflowValidator,
     private readonly checkpointManager: CheckpointManagerService,
   ) {}
@@ -502,5 +504,199 @@ export class FunctionalWorkflowService implements OnModuleInit {
       this.logger.error(`Failed to list checkpoints for execution: ${executionId}`, error);
       return [];
     }
+  }
+
+  /**
+   * Executes a workflow using LangGraph StateGraph
+   * This is the new implementation that generates and runs LangGraph graphs
+   */
+  async executeWorkflowWithLangGraph<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
+    workflowName: string,
+    options: WorkflowExecutionOptions = {}
+  ): Promise<WorkflowExecutionResult<TState>> {
+    const startTime = Date.now();
+    const executionId = `langgraph_exec_${++this.executionCounter}_${Date.now()}`;
+
+    try {
+      this.logger.log(`Starting LangGraph workflow execution: ${workflowName} (${executionId})`);
+
+      // Get workflow definition and instance
+      const definition = this.discoveryService.getWorkflow(workflowName);
+      if (!definition) {
+        throw new WorkflowExecutionError(
+          workflowName,
+          `Workflow '${workflowName}' not found`,
+          undefined,
+          undefined,
+          { executionId }
+        );
+      }
+
+      const instance = this.discoveryService.getWorkflowInstance(workflowName);
+      if (!instance) {
+        throw new WorkflowExecutionError(
+          workflowName,
+          `Workflow instance for '${workflowName}' not found`,
+          undefined,
+          undefined,
+          { executionId }
+        );
+      }
+
+      // Validate workflow can be converted to graph
+      const validation = this.graphGenerator.validateWorkflowForGraphGeneration(definition);
+      if (!validation.valid) {
+        throw new WorkflowExecutionError(
+          workflowName,
+          `Workflow validation failed: ${validation.errors.join(', ')}`,
+          undefined,
+          undefined,
+          { executionId, validationErrors: validation.errors }
+        );
+      }
+
+      // Generate LangGraph StateGraph
+      const stateGraph = await this.graphGenerator.generateStateGraph<TState>(
+        definition,
+        instance
+      ) as any;
+
+      // Prepare initial state
+      const initialState: TState = {
+        workflowName,
+        executionId,
+        currentStep: 0,
+        ...options.initialState,
+      } as TState;
+
+      this.emitStreamEvent({
+        type: 'workflow_start',
+        timestamp: new Date(),
+        metadata: { 
+          executionId, 
+          workflowName,
+          executionType: 'langgraph' 
+        },
+      });
+
+      // Execute the LangGraph workflow
+      const config = {
+        configurable: {
+          thread_id: executionId,
+        },
+        recursionLimit: 100,
+        tags: [`workflow:${workflowName}`, 'functional-api'],
+        metadata: {
+          ...options.metadata,
+          workflowName,
+          executionId,
+          startTime: new Date().toISOString(),
+        },
+      };
+
+      // Run the graph with checkpointing if enabled
+      let finalState: TState;
+      let checkpointCount = 0;
+      
+      if (this.options.enableCheckpointing) {
+        // Stream execution for checkpoint opportunities
+        const stream = await stateGraph.stream(initialState, config);
+        let lastState: TState = initialState;
+
+        for await (const update of stream) {
+          lastState = { ...lastState, ...update } as TState;
+          
+          // Save checkpoint at intervals
+          if (this.shouldAutoCheckpoint(checkpointCount)) {
+            await this.saveCheckpoint(executionId, lastState);
+            checkpointCount++;
+          }
+        }
+        
+        finalState = lastState;
+      } else {
+        // Execute without checkpointing
+        finalState = await stateGraph.invoke(initialState, config) as TState;
+      }
+
+      const executionTime = Date.now() - startTime;
+
+      // Build execution path from state metadata
+      const executionPath: string[] = [];
+      if (finalState.metadata) {
+        Object.keys(finalState.metadata)
+          .filter(key => key.endsWith('_completed'))
+          .forEach(key => {
+            const taskName = key.replace('_completed', '');
+            executionPath.push(taskName);
+          });
+      }
+
+      const result: WorkflowExecutionResult<TState> = {
+        finalState,
+        executionPath,
+        executionTime,
+        checkpointCount,
+      };
+
+      this.emitStreamEvent({
+        type: 'workflow_complete',
+        state: finalState,
+        timestamp: new Date(),
+        metadata: { 
+          executionId, 
+          workflowName, 
+          executionTime,
+          executionType: 'langgraph' 
+        },
+      });
+
+      this.logger.log(
+        `LangGraph workflow execution completed: ${workflowName} (${executionId}) in ${executionTime}ms`
+      );
+
+      return result;
+
+    } catch (error) {
+      const executionError = error instanceof WorkflowExecutionError
+        ? error
+        : new WorkflowExecutionError(
+            workflowName,
+            'LangGraph workflow execution failed',
+            undefined,
+            error instanceof Error ? error : new Error(String(error)),
+            { executionId }
+          );
+
+      this.emitStreamEvent({
+        type: 'workflow_error',
+        error: executionError,
+        timestamp: new Date(),
+        metadata: { 
+          executionId, 
+          workflowName,
+          executionType: 'langgraph' 
+        },
+      });
+
+      this.logger.error(
+        `LangGraph workflow execution failed: ${workflowName} (${executionId})`,
+        executionError.stack
+      );
+
+      throw executionError;
+    }
+  }
+
+  /**
+   * Generates a visualization of the workflow graph
+   */
+  async visualizeWorkflow(workflowName: string): Promise<string> {
+    const definition = this.discoveryService.getWorkflow(workflowName);
+    if (!definition) {
+      throw new Error(`Workflow '${workflowName}' not found`);
+    }
+
+    return this.graphGenerator.generateGraphVisualization(definition);
   }
 }

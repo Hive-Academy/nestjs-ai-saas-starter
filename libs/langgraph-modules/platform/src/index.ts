@@ -3,9 +3,6 @@ export { PlatformModule } from './lib/platform.module';
 
 // Services
 export { PlatformClientService } from './lib/services/platform-client.service';
-export { AssistantService } from './lib/services/assistant.service';
-export { ThreadService } from './lib/services/thread.service';
-export { RunService } from './lib/services/run.service';
 export { WebhookService } from './lib/services/webhook.service';
 
 // Interfaces

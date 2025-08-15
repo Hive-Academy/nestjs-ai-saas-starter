@@ -11,11 +11,10 @@ export * from './lib/core/checkpoint-cleanup.service';
 export * from './lib/core/checkpoint-health.service';
 export * from './lib/core/state-transformer.service';
 
-// Checkpoint savers
-export * from './lib/core/checkpoint-savers/memory-checkpoint-saver';
-export * from './lib/core/checkpoint-savers/redis-checkpoint-saver';
-export * from './lib/core/checkpoint-savers/postgres-checkpoint-saver';
-export * from './lib/core/checkpoint-savers/sqlite-checkpoint-saver';
+// Checkpoint savers are now provided through the factory and provider patterns
+
+// Providers (integrates official LangGraph checkpoint packages)
+export * from './lib/providers/langgraph-checkpoint.provider';
 
 // Interfaces and types
 export type * from './lib/interfaces/checkpoint.interface';
