@@ -1,15 +1,18 @@
-// Provider factories
+// Provider factories (only remaining core ones)
 export * from './core.providers';
-export * from './streaming.providers';
-export * from './tool.providers';
 export * from './routing.providers';
-export * from './hitl.providers';
 export * from './llm.providers';
 export * from './infrastructure.providers';
 
 // Individual providers
-export * from './checkpoint.provider';
 export * from './llm-provider.factory';
-export * from './memory.provider';
 export * from './metrics.provider';
 export * from './trace.provider';
+
+// Organized module providers
+export * from './module.providers';
+export * from './module-exports.providers';
+export * from './child-module-imports.providers';
+
+// Adapter providers
+export * from './adapters';

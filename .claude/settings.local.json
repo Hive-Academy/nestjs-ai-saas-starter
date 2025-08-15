@@ -1,30 +1,27 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:kiro.dev)",
-      "Bash(mkdir:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(npx nx:*)",
-      "Bash(mv:*)",
-      "Bash(find:*)",
-      "Bash(node fix-type-imports.js)",
-      "Bash(npm run build:libs:*)",
-      "Bash(npm run lint:*)",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(npx eslint:*)",
-      "Bash(grep:*)",
-      "Bash(timeout 30 npx nx lint nestjs-chromadb)",
-      "Bash(npx tsc:*)",
-      "Bash(rm:*)",
       "WebSearch",
-      "WebFetch(domain:langchain-ai.github.io)",
+      "Bash(npx nx run-many:*)",
+      "Bash(npx nx show project:*)",
+      "Bash(npx nx sync:*)",
+      "Bash(git add:*)",
+      "Bash(npx nx test:*)",
+      "Bash(npx nx build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx nx run:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
       "mcp__filesystem__directory_tree",
-      "mcp__filesystem__read_text_file",
       "mcp__filesystem__read_multiple_files",
-      "mcp__filesystem__write_file"
+      "mcp__filesystem__read_text_file",
+      "Bash(find:*)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "D:\\d\\projects"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

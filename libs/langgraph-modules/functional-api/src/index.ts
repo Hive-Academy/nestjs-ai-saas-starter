@@ -9,7 +9,12 @@ export * from './lib/services/graph-generator.service';
 // Validation
 export * from './lib/validation/workflow-validator';
 
-// Decorators
+// Core Decorators (moved from main library)
+export * from './lib/decorators/workflow.decorator';
+export * from './lib/decorators/node.decorator';
+export * from './lib/decorators/edge.decorator';
+
+// Functional API Decorators
 export * from './lib/decorators/entrypoint.decorator';
 export * from './lib/decorators/task.decorator';
 

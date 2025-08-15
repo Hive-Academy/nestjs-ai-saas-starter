@@ -38,6 +38,27 @@
     },
     {
       "path": "./libs/langgraph-modules/platform"
+    },
+    {
+      "path": "./libs/langgraph-modules/hitl"
+    },
+    {
+      "path": "./libs/langgraph-modules/hitl"
+    },
+    {
+      "path": "./libs/langgraph-modules/streaming"
+    },
+    {
+      "path": "./libs/langgraph-modules/workflow-engine"
+    },
+    {
+      "path": "./libs/langgraph-modules/workflow-engine"
+    },
+    {
+      "path": "./libs/langgraph-modules/core"
+    },
+    {
+      "path": "./libs/langgraph-modules/core"
     }
   ]
 }

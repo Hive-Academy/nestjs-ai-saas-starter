@@ -1,0 +1,44 @@
+{
+  "name": "@langgraph-modules/core",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "name": "langgraph-modules/core",
+    "tags": [
+      "scope:langgraph"
+    ],
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "dist/libs/langgraph-modules/core",
+          "tsConfig": "libs/langgraph-modules/core/tsconfig.lib.json",
+          "packageJson": "libs/langgraph-modules/core/package.json",
+          "main": "libs/langgraph-modules/core/src/index.ts",
+          "assets": [
+            "libs/langgraph-modules/core/*.md"
+          ]
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "tslib": "^2.3.0",
+    "@nestjs/common": "^11.0.0"
+  }
+}

@@ -1,12 +1,10 @@
 import type { Provider } from '@nestjs/common';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
-import { CheckpointProvider } from './checkpoint.provider';
-import { MemoryProvider } from './memory.provider';
+import { createAdapterProviders, createAdapterProvidersAsync } from './adapters';
 import { TraceProvider } from './trace.provider';
 import { MetricsProvider } from './metrics.provider';
 import { WorkflowTestBuilder } from '../testing/workflow-test.builder';
 import { MockAgentFactory } from '../testing/mock-agent.factory';
-import { CHECKPOINT_SAVER, LANGGRAPH_MODULE_OPTIONS } from '../constants';
 
 /**
  * Infrastructure service providers for the LangGraph module (sync)
@@ -14,34 +12,20 @@ import { CHECKPOINT_SAVER, LANGGRAPH_MODULE_OPTIONS } from '../constants';
 export function createInfrastructureProviders(
   options: LangGraphModuleOptions
 ): Provider[] {
-  const providers: Provider[] = [
-    CheckpointProvider,
-    MemoryProvider,
+  return [
+    // Use modular adapter providers
+    ...createAdapterProviders(options),
+    // Keep unique providers
     TraceProvider,
     MetricsProvider,
     WorkflowTestBuilder,
     MockAgentFactory,
+    // TODO: Re-enable when WorkflowRegistryService is implemented
+    // {
+    //   provide: WORKFLOW_REGISTRY,
+    //   useClass: WorkflowRegistryService,
+    // }
   ];
-
-  // Create checkpoint saver if configured
-  if (options.checkpoint?.enabled) {
-    providers.push({
-      provide: CHECKPOINT_SAVER,
-      useFactory: async () => {
-        const provider = new CheckpointProvider();
-        return await provider.create(options.checkpoint!);
-      },
-    });
-  }
-
-  // Create workflow registry
-  // TODO: Re-enable when WorkflowRegistryService is implemented
-  // providers.push({
-  //   provide: WORKFLOW_REGISTRY,
-  //   useClass: WorkflowRegistryService,
-  // });
-
-  return providers;
 }
 
 /**
@@ -49,34 +33,26 @@ export function createInfrastructureProviders(
  */
 export function createInfrastructureProvidersAsync(): Provider[] {
   return [
-    CheckpointProvider,
-    MemoryProvider,
+    // Use modular adapter providers
+    ...createAdapterProvidersAsync(),
+    // Keep unique providers
     TraceProvider,
     MetricsProvider,
     WorkflowTestBuilder,
     MockAgentFactory,
-    {
-      provide: CHECKPOINT_SAVER,
-      useFactory: async (
-        provider: CheckpointProvider,
-        options: LangGraphModuleOptions
-      ) => {
-        if (options.checkpoint?.enabled) {
-          return provider.create(options.checkpoint);
-        }
-        return null;
-      },
-      inject: [CheckpointProvider, LANGGRAPH_MODULE_OPTIONS],
-    },
     // TODO: Re-enable when WorkflowRegistryService is implemented
     // {
     //   provide: WORKFLOW_REGISTRY,
     //   useClass: WorkflowRegistryService,
-    // },
+    // }
   ];
 }
 
 /**
  * Infrastructure service exports for the LangGraph module
  */
-export const INFRASTRUCTURE_EXPORTS = [WorkflowTestBuilder, MockAgentFactory];
+export const INFRASTRUCTURE_EXPORTS = [
+  // Export unique services
+  WorkflowTestBuilder,
+  MockAgentFactory
+];

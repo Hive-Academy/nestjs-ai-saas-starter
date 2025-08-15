@@ -163,6 +163,8 @@ export enum CommandType {
   END = 'end',
   ERROR = 'error',
   RETRY = 'retry',
+  SKIP = 'skip',
+  STOP = 'stop',
 }
 
 // Workflow status

@@ -101,7 +101,6 @@
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
       "libs/nestjs-langgraph"
-
     ],
     "version": {
       "conventionalCommits": true,

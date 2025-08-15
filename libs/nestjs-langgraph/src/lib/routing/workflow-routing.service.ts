@@ -26,6 +26,8 @@ export class WorkflowRoutingService {
         return 'approved';
       case 'rejected':
         return 'rejected';
+      case 'needs_revision':
+        return 'revision';
       default:
         return 'retry';
     }

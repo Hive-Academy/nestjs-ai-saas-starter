@@ -89,6 +89,15 @@ export class CommandProcessorService {
       case 'stop':
         return this.handleStopCommand(command, baseUpdates, currentState);
       
+      case 'update':
+        return this.handleUpdateCommand(command, baseUpdates, currentState);
+      
+      case 'end':
+        return this.handleEndCommand(command, baseUpdates, currentState);
+      
+      case 'error':
+        return this.handleErrorCommand(command, baseUpdates, currentState);
+      
       default:
         // Default to goto behavior
         return this.handleGotoCommand(command, baseUpdates, currentState);
@@ -197,6 +206,71 @@ export class CommandProcessorService {
         type: 'stop',
         payload: {
           reason: command.reason,
+        },
+        metadata: command.metadata as Record<string, unknown>,
+        timestamp: new Date(),
+      },
+    } as Partial<TState>;
+  }
+
+  /**
+   * Handle update command
+   */
+  private handleUpdateCommand<TState extends WorkflowState>(
+    command: Command<TState>,
+    baseUpdates: Partial<TState>,
+    currentState: TState,
+  ): Partial<TState> {
+    return {
+      ...baseUpdates,
+      ...command.update,
+      lastCommand: {
+        type: 'update',
+        payload: command.update,
+        metadata: command.metadata as Record<string, unknown>,
+        timestamp: new Date(),
+      },
+    } as Partial<TState>;
+  }
+
+  /**
+   * Handle end command
+   */
+  private handleEndCommand<TState extends WorkflowState>(
+    command: Command<TState>,
+    baseUpdates: Partial<TState>,
+    currentState: TState,
+  ): Partial<TState> {
+    return {
+      ...baseUpdates,
+      workflowStatus: 'completed',
+      nextAvailableNodes: [],
+      lastCommand: {
+        type: 'end',
+        payload: {},
+        metadata: command.metadata as Record<string, unknown>,
+        timestamp: new Date(),
+      },
+    } as Partial<TState>;
+  }
+
+  /**
+   * Handle error command
+   */
+  private handleErrorCommand<TState extends WorkflowState>(
+    command: Command<TState>,
+    baseUpdates: Partial<TState>,
+    currentState: TState,
+  ): Partial<TState> {
+    return {
+      ...baseUpdates,
+      workflowStatus: 'failed',
+      error: command.error,
+      nextAvailableNodes: [],
+      lastCommand: {
+        type: 'error',
+        payload: {
+          error: command.error,
         },
         metadata: command.metadata as Record<string, unknown>,
         timestamp: new Date(),

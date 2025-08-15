@@ -15,23 +15,12 @@ import {
 } from './constants';
 import { randomUUID } from 'crypto';
 
-// Provider factories
+// Organized provider factories
 import {
-  createCoreProviders,
-  CORE_EXPORTS,
-  createStreamingProviders,
-  STREAMING_EXPORTS,
-  createToolProviders,
-  TOOL_EXPORTS,
-  createRoutingProviders,
-  ROUTING_EXPORTS,
-  createHITLProviders,
-  HITL_EXPORTS,
-  createLLMProviders,
-  LLM_EXPORTS,
-  createInfrastructureProviders,
-  createInfrastructureProvidersAsync,
-  INFRASTRUCTURE_EXPORTS,
+  createModuleProviders,
+  createModuleProvidersAsync,
+  createModuleExports,
+  ChildModuleImportFactory,
 } from './providers';
 
 @Global()
@@ -40,45 +29,17 @@ export class NestjsLanggraphModule {
   static forRoot(options: LangGraphModuleOptions = {}): DynamicModule {
     const moduleId = randomUUID();
 
-    const optionsProvider: Provider = {
-      provide: LANGGRAPH_MODULE_OPTIONS,
-      useValue: options,
-    };
+    // Create child module imports dynamically based on configuration
+    const childModuleImports = ChildModuleImportFactory.createChildModuleImports(options);
 
-    const moduleIdProvider: Provider = {
-      provide: LANGGRAPH_MODULE_ID,
-      useValue: moduleId,
-    };
-
-    const providers = [
-      optionsProvider,
-      moduleIdProvider,
-      ...createCoreProviders(),
-      ...createStreamingProviders(),
-      ...createToolProviders(),
-      ...createRoutingProviders(),
-      ...createHITLProviders(),
-      ...createLLMProviders(options),
-      ...createInfrastructureProviders(options),
-    ];
-
-    const exports = [
-      LANGGRAPH_MODULE_OPTIONS,
-      DEFAULT_LLM,
-      TOOL_REGISTRY,
-      STREAM_MANAGER,
-      ...CORE_EXPORTS,
-      ...STREAMING_EXPORTS,
-      ...TOOL_EXPORTS,
-      ...ROUTING_EXPORTS,
-      ...HITL_EXPORTS,
-      ...LLM_EXPORTS,
-      ...INFRASTRUCTURE_EXPORTS,
-    ];
+    // Use organized provider factories
+    const providers = createModuleProviders(options, moduleId);
+    const exports = createModuleExports();
 
     return {
       module: NestjsLanggraphModule,
       imports: [
+        ...childModuleImports,
         EventEmitterModule.forRoot({
           wildcard: true,
           delimiter: '.',
@@ -94,41 +55,15 @@ export class NestjsLanggraphModule {
 
   static forRootAsync(options: LangGraphModuleAsyncOptions): DynamicModule {
     const moduleId = randomUUID();
-
-    const moduleIdProvider: Provider = {
-      provide: LANGGRAPH_MODULE_ID,
-      useValue: moduleId,
-    };
-
     const asyncProviders = this.createAsyncProviders(options);
 
-    const providers = [
-      moduleIdProvider,
-      ...asyncProviders,
-      ...createCoreProviders(),
-      ...createStreamingProviders(),
-      ...createToolProviders(),
-      ...createRoutingProviders(),
-      ...createHITLProviders(),
-      ...createLLMProviders(
-        options.defaultLLM ? { defaultLLM: options.defaultLLM } : {}
-      ),
-      ...createInfrastructureProvidersAsync(),
-    ];
-
-    const exports = [
-      LANGGRAPH_MODULE_OPTIONS,
-      DEFAULT_LLM,
-      TOOL_REGISTRY,
-      STREAM_MANAGER,
-      ...CORE_EXPORTS,
-      ...STREAMING_EXPORTS,
-      ...TOOL_EXPORTS,
-      ...ROUTING_EXPORTS,
-      ...HITL_EXPORTS,
-      ...LLM_EXPORTS,
-      ...INFRASTRUCTURE_EXPORTS,
-    ];
+    // Use organized provider factories
+    const providers = createModuleProvidersAsync(
+      asyncProviders,
+      moduleId,
+      options.defaultLLM ? { defaultLLM: options.defaultLLM } : {}
+    );
+    const exports = createModuleExports();
 
     return {
       module: NestjsLanggraphModule,
@@ -159,6 +94,7 @@ export class NestjsLanggraphModule {
       exports: providers,
     };
   }
+
 
   private static createAsyncProviders(
     options: LangGraphModuleAsyncOptions
