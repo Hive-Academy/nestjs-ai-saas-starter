@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { StateGraph, START, END } from '@langchain/langgraph';
+import { StateGraph, END } from '@langchain/langgraph';
 import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
-import { WorkflowState } from '../interfaces/workflow.interface';
+import { WorkflowState } from '../interfaces';
 import { CompilationCacheService } from './compilation-cache.service';
 import { WorkflowStateAnnotation } from './workflow-state-annotation';
 

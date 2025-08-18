@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState, HumanFeedback } from '../interfaces/workflow.interface';
+import { WorkflowState } from '@langgraph-modules/core';
 
 /**
  * Feedback type enumeration

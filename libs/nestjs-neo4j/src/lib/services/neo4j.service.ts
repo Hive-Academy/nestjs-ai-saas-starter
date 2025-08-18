@@ -133,9 +133,22 @@ export class Neo4jService {
             containsSystemUpdates:
               result.summary.counters.containsSystemUpdates?.() || false,
           },
-          plan: result.summary.plan,
-          profile: result.summary.profile,
-          notifications: result.summary.notifications,
+          plan: result.summary.plan || undefined,
+          profile: result.summary.profile || undefined,
+          notifications: result.summary.notifications.map(n => ({
+            code: n.code,
+            title: n.title,
+            description: n.description,
+            severity: n.severity as 'WARNING' | 'INFORMATION' | 'UNKNOWN',
+            position: n.position && 'offset' in n.position &&
+                     typeof n.position.offset === 'number' &&
+                     typeof n.position.line === 'number' &&
+                     typeof n.position.column === 'number' ? {
+              offset: n.position.offset,
+              line: n.position.line,
+              column: n.position.column
+            } : undefined
+          })),
           server: {
             address: result.summary.server.address ?? '',
             version: result.summary.server.agent ?? '',
@@ -259,7 +272,20 @@ export class Neo4jService {
               containsSystemUpdates:
                 result.summary.counters.containsSystemUpdates?.() || false,
             },
-            notifications: result.summary.notifications,
+            notifications: result.summary.notifications.map(n => ({
+              code: n.code,
+              title: n.title,
+              description: n.description,
+              severity: n.severity as 'WARNING' | 'INFORMATION' | 'UNKNOWN',
+              position: n.position && 'offset' in n.position &&
+                       typeof n.position.offset === 'number' &&
+                       typeof n.position.line === 'number' &&
+                       typeof n.position.column === 'number' ? {
+                offset: n.position.offset,
+                line: n.position.line,
+                column: n.position.column
+              } : undefined
+            })),
             server: {
               address: result.summary.server.address ?? '',
               version: result.summary.server.agent ?? '',

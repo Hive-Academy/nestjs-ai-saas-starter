@@ -1,19 +1,19 @@
 import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { UnifiedWorkflowBase, WorkflowConfig } from './unified-workflow.base';
+import { UnifiedWorkflowBase } from './unified-workflow.base';
 import {
   WorkflowDefinition,
   WorkflowState,
-} from '../interfaces/workflow.interface';
+} from '../interfaces';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
-import { EventStreamProcessorService } from '../streaming/event-stream-processor.service';
+import { EventStreamProcessorService } from '@langgraph-modules/streaming';
 import {
   getWorkflowMetadata,
   isWorkflow,
-} from '../decorators/workflow.decorator';
+} from '@langgraph-modules/functional-api';
 
 /**
  * Base class for declarative workflows that use decorators

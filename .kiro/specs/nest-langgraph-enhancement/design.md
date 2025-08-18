@@ -1,27 +1,124 @@
-# Design Document - Plug-and-Play Enterprise LangGraph Modules
+# NestJS LangGraph Enhancement - Technical Design
 
 ## Overview
 
-This design document outlines the architecture for creating **enterprise-ready, plug-and-play LangGraph modules** that transform LangGraph's basic building blocks into complete, production-ready solutions. Rather than simple integration wrappers, we create comprehensive modules that provide sophisticated functionality through simple APIs.
+This design document outlines the **modular architecture transformation** of the NestJS LangGraph library. The project successfully restructured a monolithic library into a clean, maintainable architecture with 11 specialized child modules coordinated by a main orchestrator.
 
-Each module follows the proven pattern established by our multi-agent system: **simple APIs backed by enterprise-grade implementations**. Developers get plug-and-play functionality with zero configuration, while the underlying architecture provides enterprise features like health monitoring, metrics collection, error handling, and observability.
+The new architecture follows SOLID principles with clear separation of concerns, eliminates circular dependencies, and provides a foundation for scalable enterprise AI applications.
 
-The design follows SOLID principles with focused services, comprehensive interfaces, and full NestJS integration including dependency injection, configuration management, and lifecycle hooks.
+## Current Architecture Status (Updated: 2025-01-16)
 
-## Implementation Status (Updated: 2025-01-15)
+### Major Achievements ✅ COMPLETED
+- **Modular Architecture**: Successfully decomposed into 11 specialized child modules
+- **File Recovery**: Recovered and properly distributed 30+ deleted files 
+- **Circular Dependencies**: Resolved streaming ↔ workflow-engine circular dependency
+- **Build Infrastructure**: Core, streaming, and workflow-engine modules building successfully
 
-**✅ PRODUCTION READY**
-- **Checkpoint Module**: Complete enterprise checkpoint management with multi-backend support, health monitoring, cleanup policies
-- **Multi-Agent Module**: Complete plug-and-play agent networks (supervisor, swarm, hierarchical) with built-in orchestration
-- **Memory Module**: Complete advanced memory management with ChromaDB/Neo4j integration, semantic search, and enterprise features
+### Current Module Structure
 
-**🔄 NEEDS COMPLETION**  
-- **Functional-API Module**: Decorators work but checkpoint integration needs completion
+**Main Orchestrator:**
+- `@libs/nestjs-langgraph` (orchestration layer)
 
-**⏳ PLANNED DEVELOPMENT**
-- **Time-Travel Module**: Structure exists, needs full implementation
-- **Platform Module**: Basic structure, needs enhancement and verification
-- **Monitoring Module**: Minimal implementation, needs comprehensive development
+**Child Modules (11 Total):**
+- `@libs/langgraph-modules/core` (shared interfaces) ✅ **Building Successfully**
+- `@libs/langgraph-modules/memory` 🔄 **In Progress**
+- `@libs/langgraph-modules/checkpoint` 🔄 **In Progress**
+- `@libs/langgraph-modules/multi-agent` (contains tools) ✅ **Files Migrated**
+- `@libs/langgraph-modules/functional-api` (contains decorators) ✅ **Files Migrated**
+- `@libs/langgraph-modules/platform` 🔄 **In Progress**
+- `@libs/langgraph-modules/time-travel` 🔄 **In Progress**
+- `@libs/langgraph-modules/monitoring` (contains metrics/trace) ✅ **Files Migrated**
+- `@libs/langgraph-modules/hitl` (contains HITL, workflow-routing) ✅ **Files Migrated**
+- `@libs/langgraph-modules/streaming` (streaming services) ✅ **Building Successfully**
+- `@libs/langgraph-modules/workflow-engine` (compilation, base classes, workflow-stream) ✅ **Building Successfully**
+
+### Critical Issues Remaining 🔴
+- **TypeScript Compilation**: Neo4j and ChromaDB type compatibility issues
+- **Inter-Module Imports**: Child modules cannot import from each other yet
+- **Integration Testing**: Module communication not validated
+- **Adapter Pattern**: Partially implemented, needs completion
+
+---
+
+## Technical Achievements (January 16, 2025)
+
+### File Recovery and Distribution ✅ COMPLETED
+
+Successfully recovered and distributed 30+ deleted files:
+
+#### Multi-Agent Module (7 files)
+- `discovery/tool-discovery.service.ts`
+- `discovery/tool-registry.service.ts` 
+- `tools/base-tool.abstract.ts`
+- `tools/tool-executor.service.ts`
+- `tools/tool-metadata.decorator.ts`
+- `tools/tool-response.interface.ts`
+- `tools/types/tool.types.ts`
+
+#### Functional-API Module (3 files)
+- `decorators/workflow.decorator.ts`
+- `decorators/node.decorator.ts`
+- `decorators/tool.decorator.ts`
+
+#### HITL Module (7 files)
+- `human-approval.node.ts`
+- `workflow-routing.service.ts`
+- `routing/command-processor.service.ts`
+- `routing/workflow-router.interface.ts`
+- `routing/route-handler.interface.ts`
+- `routing/route-matcher.service.ts`
+- `routing/route-registry.service.ts`
+
+#### Streaming Module (6 files) + Workflow-Engine Migration
+- Original streaming files + `workflow-stream.service.ts` moved to workflow-engine
+- Resolved circular dependency: `streaming → workflow-engine` (one-way)
+
+#### Workflow-Engine Module (9 files)
+- Core compilation and execution services
+- Base workflow classes
+- `workflow-stream.service.ts` (moved from streaming)
+
+### Architectural Solutions ✅ COMPLETED
+
+#### 1. Circular Dependency Resolution
+```
+Before: streaming ↔ workflow-engine (circular)
+After:  streaming → workflow-engine (one-way)
+```
+**Solution**: Moved `workflow-stream.service.ts` to workflow-engine module
+
+#### 2. Shared Interfaces Strategy
+```
+@libs/langgraph-modules/core (shared foundation)
+    ↑
+All child modules can depend on core
+```
+**Solution**: Created core module with CommandType, StreamEventType, and shared interfaces
+
+#### 3. Provider System Cleanup
+- Deleted broken `core.providers.ts` and `routing.providers.ts`
+- Fixed `infrastructure.providers.ts` imports
+- Updated `module.providers.ts` to only use existing providers
+
+### Dependency Flow Architecture ✅ ESTABLISHED
+
+```
+Main App
+    ↓
+@libs/nestjs-langgraph (Orchestrator)
+    ↓
+Child Modules (11)
+    ↓
+@libs/langgraph-modules/core (Shared)
+```
+
+**Dependency Rules:**
+- All child modules can depend on `core` module
+- Child modules should not directly depend on each other
+- Inter-module communication goes through the orchestrator
+- One-way dependencies resolved
+
+---
 
 ## Enterprise Module Specifications
 

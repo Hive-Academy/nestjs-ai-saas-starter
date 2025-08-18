@@ -5,7 +5,7 @@ export { StreamingModule } from './lib/streaming.module';
 export { TokenStreamingService } from './lib/services/token-streaming.service';
 export { EventStreamProcessorService } from './lib/services/event-stream-processor.service';
 export { WebSocketBridgeService } from './lib/services/websocket-bridge.service';
-export { WorkflowStreamService } from './lib/services/workflow-stream.service';
+// WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 // Decorators
 export * from './lib/decorators/streaming.decorator';

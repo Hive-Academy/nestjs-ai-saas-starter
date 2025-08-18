@@ -1,14 +1,10 @@
 import 'reflect-metadata';
-import { Injectable, Inject } from '@nestjs/common';
-import type { WorkflowState } from '../interfaces/workflow.interface';
-import {
-  HUMAN_APPROVAL_SERVICE,
-  CONFIDENCE_EVALUATOR_SERVICE,
-  APPROVAL_CHAIN_SERVICE,
-} from '../hitl/constants';
-import type { HumanApprovalService } from '../hitl/human-approval.service';
-import type { ConfidenceEvaluatorService } from '../hitl/confidence-evaluator.service';
-import type { ApprovalChainService } from '../hitl/approval-chain.service';
+
+import type { WorkflowState } from '@langgraph-modules/core';
+
+import type { HumanApprovalService } from '../services/human-approval.service';
+import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';
+import type { ApprovalChainService } from '../services/approval-chain.service';
 
 /**
  * Risk level enumeration for approval decisions
@@ -341,7 +337,7 @@ export function RequiresApproval(
               [ApprovalRiskLevel.CRITICAL]: 4,
             };
 
-            const currentRiskLevel = riskLevels[riskAssessment.level];
+            const currentRiskLevel = riskLevels[riskAssessment.level as ApprovalRiskLevel];
             const thresholdLevel = riskLevels[options.riskThreshold];
 
             if (currentRiskLevel >= thresholdLevel) {

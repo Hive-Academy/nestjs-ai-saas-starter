@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkflowState } from '../interfaces/workflow.interface';
+import { WorkflowState } from '@langgraph-modules/core';
 
 /**
  * Service for handling workflow routing logic
@@ -50,9 +50,9 @@ export class WorkflowRoutingService {
     const requiresHumanApproval = options?.requiresHumanApproval ?? false;
     const autoApproveThreshold = options?.autoApproveThreshold ?? 0.95;
     const lowConfidenceRoute = options?.lowConfidenceRoute ?? 'human_approval';
-    
+
     const confidence = state.confidence || 0;
-    
+
     this.logger.debug(`Routing based on confidence: ${confidence} (threshold: ${confidenceThreshold})`);
 
     // High confidence - auto approve if enabled
@@ -66,10 +66,10 @@ export class WorkflowRoutingService {
       if (requiresHumanApproval) {
         this.logger.log(`Medium confidence (${confidence}) - requiring human approval`);
         return 'human_approval';
-      } 
+      }
         this.logger.log(`Medium confidence (${confidence}) - proceeding to next node`);
         return nextNode;
-      
+
     }
 
     // Low confidence - use configured route
@@ -91,9 +91,9 @@ export class WorkflowRoutingService {
     const maxRetries = options?.maxRetries ?? 3;
     const pausedRoute = options?.pausedRoute ?? 'human_approval';
     const waitingRoute = options?.waitingRoute ?? 'human_approval';
-    
+
     const status = state.workflowStatus || state.status;
-    
+
     this.logger.debug(`Routing based on status: ${status}`);
 
     switch (status) {
@@ -125,9 +125,9 @@ export class WorkflowRoutingService {
     const maxRetries = options?.maxRetries ?? 3;
     const retryRoute = options?.retryRoute ?? 'retry';
     const errorRoute = options?.errorRoute ?? 'human_approval';
-    
+
     const retryCount = state.retryCount || 0;
-    
+
     this.logger.debug(`Routing on error: ${error.message} (retry ${retryCount}/${maxRetries})`);
 
     // Check if error is recoverable
@@ -135,14 +135,14 @@ export class WorkflowRoutingService {
       if (retryCount < maxRetries) {
         this.logger.log(`Recoverable error, retrying (attempt ${retryCount + 1})`);
         return retryRoute;
-      } 
+      }
         this.logger.log(`Max retries exceeded, routing to ${errorRoute}`);
         return errorRoute;
-      
-    } 
+
+    }
       this.logger.log(`Non-recoverable error, routing to ${errorRoute}`);
       return errorRoute;
-    
+
   }
 
   /**
@@ -199,7 +199,7 @@ export class WorkflowRoutingService {
   ): Record<string, string> {
     const includeDefaults = options?.includeDefaults ?? true;
     const defaultRoutes = options?.defaultRoutes ?? this.getDefaultRouting();
-    
+
     const routingMap: Record<string, string> = { ...routes };
 
     if (includeDefaults) {
@@ -297,7 +297,7 @@ export class WorkflowRoutingService {
           this.logger.warn(`Error evaluating condition for route ${route}:`, error);
         }
       }
-      
+
       this.logger.debug(`No conditions matched, using default: ${defaultRoute}`);
       return defaultRoute;
     };
@@ -310,11 +310,11 @@ export class WorkflowRoutingService {
     routes: Array<{ route: string; weight: number }>,
   ): () => string {
     const totalWeight = routes.reduce((sum, r) => sum + r.weight, 0);
-    
+
     return () => {
       const random = Math.random() * totalWeight;
       let accumulated = 0;
-      
+
       for (const { route, weight } of routes) {
         accumulated += weight;
         if (random < accumulated) {
@@ -322,7 +322,7 @@ export class WorkflowRoutingService {
           return route;
         }
       }
-      
+
       // Fallback (should not happen with proper weights)
       return routes[0].route;
     };
@@ -340,16 +340,16 @@ export class WorkflowRoutingService {
   ): (state: TState) => string {
     return (state: TState) => {
       const currentIndex = sequence.indexOf(state.currentNodeId || '');
-      
+
       // Check skip condition
       if (options?.skipCondition?.(state)) {
         this.logger.debug('Skip condition met, ending sequence');
         return 'end';
       }
-      
+
       // Determine next index
       let nextIndex = currentIndex + 1;
-      
+
       if (nextIndex >= sequence.length) {
         if (options?.loop) {
           nextIndex = 0;
@@ -359,7 +359,7 @@ export class WorkflowRoutingService {
           return 'end';
         }
       }
-      
+
       const nextRoute = sequence[nextIndex];
       this.logger.debug(`Sequential routing: ${nextRoute} (step ${nextIndex + 1}/${sequence.length})`);
       return nextRoute;

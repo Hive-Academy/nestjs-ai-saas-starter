@@ -48,7 +48,7 @@ export class CheckpointMetricsService
   recordSaveMetrics(saverName: string, duration: number, success: boolean): void {
     this.ensureSaverMetrics(saverName);
     const metrics = this.metrics.get(saverName)!;
-    
+
     this.updateOperationMetrics(metrics.save, duration, success);
     this.addToHistory(saverName, 'save', duration, success);
 
@@ -63,7 +63,7 @@ export class CheckpointMetricsService
   recordLoadMetrics(saverName: string, duration: number, success: boolean): void {
     this.ensureSaverMetrics(saverName);
     const metrics = this.metrics.get(saverName)!;
-    
+
     this.updateOperationMetrics(metrics.load, duration, success);
     this.addToHistory(saverName, 'load', duration, success);
 
@@ -80,7 +80,7 @@ export class CheckpointMetricsService
     load: { totalTime: number; count: number; successCount: number; errorCount: number };
   } {
     const metrics = this.metrics.get(saverName);
-    
+
     if (!metrics) {
       return {
         save: { totalTime: 0, count: 0, successCount: 0, errorCount: 0 },
@@ -265,12 +265,12 @@ export class CheckpointMetricsService
   } {
     const summary = this.getAggregatedMetrics();
     const insights = this.getPerformanceInsights();
-    
+
     const saverDetails: Record<string, any> = {};
     for (const saverName of this.metrics.keys()) {
       const metrics = this.getMetrics(saverName);
       const saverMetrics = this.metrics.get(saverName)!;
-      
+
       saverDetails[saverName] = {
         metrics,
         performance: {
@@ -300,7 +300,13 @@ export class CheckpointMetricsService
   exportMetrics(): {
     timestamp: Date;
     metrics: Record<string, SaverMetrics>;
-    history: typeof this.operationHistory;
+    history: Array<{
+      timestamp: Date;
+      saverName: string;
+      operation: 'save' | 'load';
+      duration: number;
+      success: boolean;
+    }>;
     summary: ReturnType<CheckpointMetricsService['getAggregatedMetrics']>;
   } {
     return {
@@ -316,7 +322,13 @@ export class CheckpointMetricsService
    */
   importMetrics(data: {
     metrics: Record<string, SaverMetrics>;
-    history: typeof this.operationHistory;
+    history: Array<{
+      timestamp: Date;
+      saverName: string;
+      operation: 'save' | 'load';
+      duration: number;
+      success: boolean;
+    }>;
   }): void {
     this.metrics.clear();
     this.operationHistory.splice(0, this.operationHistory.length);
@@ -463,9 +475,9 @@ export class CheckpointMetricsService
   private calculateUptimePercentage(saverName: string): number {
     const recent = this.getRecentOperations(3600000); // Last hour
     const saverOps = recent.filter(op => op.saverName === saverName);
-    
+
     if (saverOps.length === 0) {return 100;} // No operations, assume healthy
-    
+
     const successfulOps = saverOps.filter(op => op.success).length;
     return (successfulOps / saverOps.length) * 100;
   }

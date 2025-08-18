@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Inject } from '@nestjs/common';
 import { Subject, Observable, BehaviorSubject, timer, Subscription } from 'rxjs';
-import { buffer, debounceTime, filter, map, throttleTime } from 'rxjs/operators';
+import { buffer, filter, map, throttleTime } from 'rxjs/operators';
 import {
   StreamUpdate,
   StreamEventType,
@@ -11,7 +11,7 @@ import {
 } from '../interfaces/streaming.interface';
 import {
   StreamTokenMetadata,
-  StreamTokenOptions,
+  // StreamTokenOptions,
 } from '../decorators/streaming.decorator';
 
 /**
@@ -44,10 +44,10 @@ interface TokenStreamConfig extends StreamTokenMetadata {
 @Injectable()
 export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TokenStreamingService.name);
-  
+
   // Token stream configurations per execution:node
   private readonly tokenStreams = new Map<string, TokenStreamConfig>();
-  
+
   // Global token subjects for broadcasting
   private readonly globalTokenSubject = new Subject<StreamUpdate>();
   private readonly tokenStatsSubject = new BehaviorSubject<{
@@ -59,12 +59,12 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     totalTokensProcessed: 0,
     averageTokensPerSecond: 0,
   });
-  
+
   // Performance tracking
   private totalTokensProcessed = 0;
   private readonly streamStartTime = new Date();
   private readonly activeSubscriptions = new Set<Subscription>();
-  
+
   // Cleanup timer
   private cleanupTimer?: Subscription;
 
@@ -107,7 +107,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
 
     // Create token subject for this stream
     const subject = new Subject<TokenBufferEntry>();
-    
+
     // Create stream configuration
     const streamConfig: TokenStreamConfig = {
       ...config,
@@ -201,13 +201,13 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     if (nodeId) {
       const streamKey = `${executionId}:${nodeId}`;
       const streamConfig = this.tokenStreams.get(streamKey);
-      
+
       if (!streamConfig) {
         return new Observable(subscriber => {
           subscriber.error(new Error(`No token stream found for ${streamKey}`));
         });
       }
-      
+
       return streamConfig.subject.pipe(
         map(entry => this.createTokenStreamUpdate(entry)),
       );
@@ -274,7 +274,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
    */
   closeExecutionTokenStreams(executionId: string): void {
     const streamsToClose: string[] = [];
-    
+
     this.tokenStreams.forEach((_, streamKey) => {
       if (streamKey.startsWith(`${executionId}:`)) {
         streamsToClose.push(streamKey);
@@ -326,7 +326,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   ): void {
     // Create buffering pipeline
     const bufferTrigger = timer(0, streamConfig.flushInterval || 100);
-    
+
     const subscription = streamConfig.subject
       .pipe(
         // Buffer tokens based on size or time
@@ -364,7 +364,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
 
       // Check if buffer should be flushed
       const shouldFlush = this.shouldFlushBuffer(streamConfig);
-      
+
       if (shouldFlush) {
         await this.flushTokenBuffer(streamKey, streamConfig);
       }
@@ -384,7 +384,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   private shouldFlushBuffer(streamConfig: TokenStreamConfig): boolean {
     const bufferSize = streamConfig.buffer.length;
     const maxBufferSize = streamConfig.bufferSize || 50;
-    
+
     // Flush if buffer is full
     if (bufferSize >= maxBufferSize) {
       return true;
@@ -393,7 +393,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     // Flush if enough time has passed
     const timeSinceLastFlush = Date.now() - streamConfig.lastFlush.getTime();
     const flushInterval = streamConfig.flushInterval || 1000;
-    
+
     if (timeSinceLastFlush >= flushInterval && bufferSize > 0) {
       return true;
     }
@@ -423,10 +423,10 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
       // Create stream updates for each token
       processedTokens.forEach(tokenEntry => {
         const streamUpdate = this.createTokenStreamUpdate(tokenEntry);
-        
+
         // Emit to global stream
         this.globalTokenSubject.next(streamUpdate);
-        
+
         // Emit to EventEmitter for WebSocket bridge
         this.eventEmitter.emit(`workflow.token.${tokenEntry.executionId}`, {
           content: tokenEntry.token,
@@ -463,7 +463,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
 
     // Apply filtering
     if (config.filter) {
-      processedTokens = processedTokens.filter(entry => 
+      processedTokens = processedTokens.filter(entry =>
         this.shouldIncludeToken(entry.token, config)
       );
     }
@@ -518,21 +518,21 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
    */
   private batchTokens(tokens: TokenBufferEntry[], batchSize: number): TokenBufferEntry[] {
     const batched: TokenBufferEntry[] = [];
-    
+
     for (let i = 0; i < tokens.length; i += batchSize) {
       const batch = tokens.slice(i, i + batchSize);
       const batchedToken = batch[0]; // Use first token as base
-      
+
       // Combine token content
       batchedToken.token = batch.map(t => t.token).join('');
-      
+
       // Merge metadata
       batchedToken.metadata = {
         ...batchedToken.metadata,
         batchSize: batch.length,
         batchTokens: batch.map(t => t.token),
       };
-      
+
       batched.push(batchedToken);
     }
 
@@ -573,7 +573,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     // Simple tokenization - split by whitespace
     const tokens = content.split(/\s+/).filter(token => token.length > 0);
-    
+
     // This would need execution context from the decorator
     // For now, log that tokens were processed
     this.logger.debug(`Processed ${tokens.length} tokens from string content`);
@@ -587,14 +587,14 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     config: StreamTokenMetadata,
   ): Promise<void> {
     let tokenCount = 0;
-    
+
     try {
-      for await (const chunk of iterable) {
+      for await (const _chunk of iterable) {
         tokenCount++;
         // Process each chunk as a token
         // This would need execution context from the decorator
       }
-      
+
       this.logger.debug(`Processed ${tokenCount} tokens from async iterable`);
     } catch (error) {
       this.logger.error('Error processing async iterable tokens:', error);
@@ -615,7 +615,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   private updateTokenStats(): void {
     const activeStreams = this.tokenStreams.size;
     const {totalTokensProcessed} = this;
-    
+
     // Calculate average tokens per second
     const elapsedSeconds = (Date.now() - this.streamStartTime.getTime()) / 1000;
     const averageTokensPerSecond = elapsedSeconds > 0 ? totalTokensProcessed / elapsedSeconds : 0;
@@ -635,7 +635,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     const statsTimer = timer(0, 5000).subscribe(() => {
       this.updateTokenStats();
     });
-    
+
     this.activeSubscriptions.add(statsTimer);
   }
 

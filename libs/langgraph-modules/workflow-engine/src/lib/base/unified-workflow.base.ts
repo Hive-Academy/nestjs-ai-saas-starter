@@ -3,27 +3,21 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   StateGraph,
   END,
-  START,
-  CompiledStateGraph,
 } from '@langchain/langgraph';
-import { BaseMessage } from '@langchain/core/messages';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
-import { EventStreamProcessorService } from '../streaming/event-stream-processor.service';
-import { isWorkflow } from '../decorators/workflow.decorator';
+import { EventStreamProcessorService } from '@langgraph-modules/streaming';
+import { isWorkflow } from '@langgraph-modules/functional-api';
 import {
   WorkflowState,
-  WorkflowNodeConfig,
-  WorkflowEdgeConfig,
   Command,
-  CommandType,
-  NodeHandler,
   WorkflowDefinition,
   WorkflowError,
 } from '../interfaces';
+import { CommandType } from '../constants';
 
 /**
  * Configuration for workflow behavior
@@ -110,7 +104,7 @@ export abstract class UnifiedWorkflowBase<
           before: this.getInterruptNodes(),
         },
       });
-    } 
+    }
       this.logger.debug(
         `Building graph from definition for ${this.constructor.name}`
       );
@@ -120,7 +114,7 @@ export abstract class UnifiedWorkflowBase<
           before: this.getInterruptNodes(),
         },
       });
-    
+
   }
 
   /**
@@ -343,7 +337,7 @@ export abstract class UnifiedWorkflowBase<
             approvalReceived: true,
           } as Partial<TState>,
         };
-      } 
+      }
         return {
           type: CommandType.END,
           update: {
@@ -351,7 +345,7 @@ export abstract class UnifiedWorkflowBase<
             rejectionReason: state.humanFeedback.reason,
           } as unknown as Partial<TState>,
         };
-      
+
     }
 
     // Wait for approval (will be interrupted)

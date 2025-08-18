@@ -17,5 +17,40 @@
     "noUnusedLocals": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../langgraph-modules/monitoring/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/time-travel/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/platform/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/checkpoint/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/memory/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/workflow-engine/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/streaming/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/hitl/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/functional-api/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/multi-agent/tsconfig.lib.json"
+    },
+    {
+      "path": "../langgraph-modules/core/tsconfig.lib.json"
+    }
+  ]
 }

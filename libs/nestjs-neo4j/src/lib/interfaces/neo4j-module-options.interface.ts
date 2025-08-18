@@ -36,5 +36,5 @@ export interface Neo4jModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'>
   useExisting?: Type<Neo4jModuleOptionsFactory>;
   useClass?: Type<Neo4jModuleOptionsFactory>;
   useFactory?: (...args: unknown[]) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
-  inject?: Array<Type | string | symbol | { token: string | symbol; optional?: boolean }>;
+  inject?: Array<Type | string | symbol | { token: string | symbol; optional: boolean }>;
 }

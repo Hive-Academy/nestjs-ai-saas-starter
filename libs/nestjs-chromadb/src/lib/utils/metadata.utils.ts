@@ -113,7 +113,7 @@ export function extractMetadataFields<T extends Record<string, unknown>>(
 
   for (const field of fields) {
     if (field in metadata) {
-      extracted[field] = metadata[field as string];
+      extracted[field] = metadata[field as string] as T[keyof T];
     }
   }
 
@@ -302,7 +302,7 @@ export function validateMetadataSchema(
     }
 
     // Number range validation
-    if (config.type === 'number') {
+    if (config.type === 'number' && typeof value === 'number') {
       if (config.min !== undefined && value < config.min) {
         errors.push(`Field "${field}" should be >= ${config.min}, got ${String(value)}`);
       }
@@ -312,7 +312,7 @@ export function validateMetadataSchema(
     }
 
     // String pattern validation
-    if (config.type === 'string' && config.pattern && !config.pattern.test(value)) {
+    if (config.type === 'string' && typeof value === 'string' && config.pattern && !config.pattern.test(value)) {
       errors.push(`Field "${field}" does not match required pattern`);
     }
   }

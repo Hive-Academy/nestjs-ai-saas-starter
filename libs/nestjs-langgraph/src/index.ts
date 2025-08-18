@@ -6,14 +6,11 @@
 export * from './lib/nestjs-langgraph.module';
 export * from './lib/constants';
 
-// Core interfaces (orchestration layer only)
-export * from './lib/interfaces';
+// Re-export shared interfaces from core module
+export * from '@langgraph-modules/core';
 
 // Orchestration layer - main library's core responsibility
 export * from './lib/providers';
-export * from './lib/routing/workflow-routing.service';
-export * from './lib/routing/command-processor.service';
-export * from './lib/core/workflow-graph-builder.service';
 
 // Adapters for child module integration
 export * from './lib/adapters';
@@ -24,6 +21,9 @@ export * from './lib/adapters';
 
 // Note: Child modules are available for direct import but also re-exported here for convenience
 // Users can import from '@anubis/nestjs-langgraph' or directly from specific child modules
+
+// Core - Shared interfaces and types (already re-exported above)
+// export * from '@langgraph-modules/core'; // Already exported above
 
 // Multi-Agent System - Tools, Agents, and Coordination
 export * from '@langgraph-modules/multi-agent';

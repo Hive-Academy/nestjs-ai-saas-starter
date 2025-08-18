@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
+import type { LangGraphModuleOptions } from '@langgraph-modules/core';
 import { Inject, Optional } from '@nestjs/common';
-import { LANGGRAPH_MODULE_OPTIONS } from '../constants';
+import { LANGGRAPH_MODULE_OPTIONS } from '@langgraph-modules/core';
 
 export interface CacheEntry<T = any> {
   /**

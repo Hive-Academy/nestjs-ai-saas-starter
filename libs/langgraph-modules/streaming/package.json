@@ -20,7 +20,6 @@
     "reflect-metadata": "^0.1.13",
     "@langchain/core": "^0.3.68",
     "@nestjs/event-emitter": "^3.0.1",
-    "rxjs": "7.8.2",
-    "@langchain/langgraph": "^0.4.3"
+    "rxjs": "7.8.2"
   }
 }

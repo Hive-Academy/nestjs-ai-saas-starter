@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkflowState, Command } from '../interfaces/workflow.interface';
+import { WorkflowState, Command } from '../interfaces';
 
 /**
  * Service for processing workflow commands and handling command patterns
@@ -67,7 +67,7 @@ export class CommandProcessorService {
     sourceNodeId: string,
   ): Promise<Partial<TState>> {
     const type = command.type || 'goto';
-    
+
     // Base state updates from command
     const baseUpdates = {
       ...(command.update || {}),
@@ -79,25 +79,25 @@ export class CommandProcessorService {
     switch (type) {
       case 'goto':
         return this.handleGotoCommand(command, baseUpdates, currentState);
-      
+
       case 'retry':
         return this.handleRetryCommand(command, baseUpdates, currentState);
-      
+
       case 'skip':
         return this.handleSkipCommand(command, baseUpdates, currentState);
-      
+
       case 'stop':
         return this.handleStopCommand(command, baseUpdates, currentState);
-      
+
       case 'update':
         return this.handleUpdateCommand(command, baseUpdates, currentState);
-      
+
       case 'end':
         return this.handleEndCommand(command, baseUpdates, currentState);
-      
+
       case 'error':
         return this.handleErrorCommand(command, baseUpdates, currentState);
-      
+
       default:
         // Default to goto behavior
         return this.handleGotoCommand(command, baseUpdates, currentState);
@@ -113,7 +113,7 @@ export class CommandProcessorService {
     currentState: TState,
   ): Partial<TState> {
     const targetNode = String(command.goto);
-    
+
     return {
       ...baseUpdates,
       nextAvailableNodes: [targetNode],
@@ -139,7 +139,7 @@ export class CommandProcessorService {
   ): Partial<TState> {
     const retryCount = (currentState.retryCount || 0) + 1;
     const maxAttempts = command.maxAttempts || 3;
-    
+
     if (retryCount > maxAttempts) {
       this.logger.warn(`Max retry attempts (${maxAttempts}) exceeded`);
       return {
@@ -149,7 +149,7 @@ export class CommandProcessorService {
         retryCount,
       } as Partial<TState>;
     }
-    
+
     return {
       ...baseUpdates,
       nextAvailableNodes: [String(command.goto)],
@@ -391,7 +391,7 @@ export class CommandProcessorService {
       /rate limit/i,
       /temporary/i,
     ];
-    
+
     return recoverablePatterns.some(pattern => pattern.test(error.message));
   }
 
@@ -400,7 +400,7 @@ export class CommandProcessorService {
    */
   private getSuggestedRecovery(error: Error): string {
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('timeout')) {
       return 'Increase timeout and retry';
     }
@@ -410,7 +410,7 @@ export class CommandProcessorService {
     if (message.includes('not found')) {
       return 'Verify target node exists';
     }
-    
+
     return 'Review error and adjust command';
   }
 

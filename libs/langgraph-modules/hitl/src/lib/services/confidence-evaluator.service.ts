@@ -1,8 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState } from '../interfaces/workflow.interface';
+import { WorkflowState } from '@langgraph-modules/core';
 import { ApprovalRiskLevel } from '../decorators/approval.decorator';
-import { HITL_EVENTS, RISK_WEIGHTS, CONFIDENCE_FACTORS } from './constants';
+import { HITL_EVENTS, RISK_WEIGHTS } from '../constants';
 
 /**
  * Confidence factor contribution

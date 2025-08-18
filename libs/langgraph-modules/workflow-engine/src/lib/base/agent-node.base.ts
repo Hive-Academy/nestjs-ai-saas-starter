@@ -2,12 +2,12 @@ import { Logger, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { 
-  WorkflowState, 
-  Command, 
-  CommandType,
+import {
+  WorkflowState,
+  Command,
   WorkflowError
 } from '../interfaces';
+import { CommandType } from '../constants';
 
 /**
  * Configuration for an agent node
@@ -36,7 +36,7 @@ export interface AgentNodeConfig {
 export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState> implements OnModuleInit {
   protected readonly logger: Logger;
   protected readonly eventEmitter?: EventEmitter2;
-  
+
   protected llm?: BaseChatModel;
   protected tools: StructuredToolInterface[] = [];
 
@@ -57,15 +57,15 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   public async onModuleInit(): Promise<void> {
     this.logger.log(`Initializing node: ${this.nodeConfig.id}`);
-    
+
     // Initialize LLM if needed
     if (this.requiresLLM()) {
       await this.initializeLLM();
     }
-    
+
     // Initialize tools
     this.tools = await this.initializeTools();
-    
+
     // Custom initialization
     await this.initialize();
   }
@@ -83,16 +83,16 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     try {
       // Pre-execution
       await this.preExecute(state);
-      
+
       // Apply timeout if configured
       const executePromise = this.execute(state);
       const result = this.nodeConfig.timeout
         ? await this.withTimeout(executePromise, this.nodeConfig.timeout)
         : await executePromise;
-      
+
       // Post-execution
       await this.postExecute(state, result);
-      
+
       return result;
     } catch (error) {
       return this.handleError(error as Error, state);
@@ -153,7 +153,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected async preExecute(state: TState): Promise<void> {
     this.logger.debug(`Pre-executing node ${this.nodeConfig.id}`);
-    
+
     // Emit node start event
     if (this.eventEmitter) {
       this.eventEmitter.emit('node.start', {
@@ -162,7 +162,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
         state,
       });
     }
-    
+
     return Promise.resolve();
   }
 
@@ -174,7 +174,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     result: Partial<TState> | Command<TState>,
   ): Promise<void> {
     this.logger.debug(`Post-executing node ${this.nodeConfig.id}`);
-    
+
     // Emit node complete event
     if (this.eventEmitter) {
       this.eventEmitter.emit('node.complete', {
@@ -183,7 +183,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
         result,
       });
     }
-    
+
     return Promise.resolve();
   }
 
@@ -291,23 +291,23 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected getSuggestedRecovery(error: Error): string {
     const message = error.message.toLowerCase();
-    
+
     if (message.includes('timeout')) {
       return 'Increase timeout or retry with smaller payload';
     }
-    
+
     if (message.includes('rate limit')) {
       return 'Wait and retry with exponential backoff';
     }
-    
+
     if (message.includes('network') || message.includes('econnrefused')) {
       return 'Check service availability and network connection';
     }
-    
+
     if (message.includes('validation')) {
       return 'Review input data and ensure it meets requirements';
     }
-    
+
     return 'Review error details and consider manual intervention';
   }
 
@@ -376,18 +376,18 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     if (this.nodeConfig.requiresApproval) {
       return true;
     }
-    
+
     // Check confidence threshold
     if (!this.meetsConfidenceThreshold(state)) {
       return true;
     }
-    
+
     // Check for high-risk operations
     const risks = state.risks as Array<{ severity: string }> | undefined;
     if (risks?.some((r) => r.severity === 'critical')) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -406,7 +406,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
         requiresApproval: true,
       } as unknown as Partial<TState>);
     }
-    
+
     return this.goto(nextNode);
   }
 }

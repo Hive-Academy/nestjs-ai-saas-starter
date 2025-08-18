@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState, HumanFeedback } from '../interfaces/workflow.interface';
+import { WorkflowState, HumanFeedback } from '@langgraph-modules/core';
 
 /**
  * Proposed action for human approval
@@ -9,7 +9,7 @@ export interface ProposedAction {
   /**
    * Type of action
    */
-  type: 
+  type:
     | 'code_generation'
     | 'architecture_change'
     | 'file_modification'
@@ -163,7 +163,7 @@ export class HumanApprovalNode {
     },
   ): Promise<Partial<TState>> {
     const {executionId} = state;
-    
+
     // Check skip condition
     if (options?.skipCondition?.(state)) {
       this.logger.debug(`Skipping human approval for ${executionId} - condition met`);
@@ -173,7 +173,7 @@ export class HumanApprovalNode {
     // Check auto-approve threshold
     const confidence = state.confidence || 0;
     const autoApproveThreshold = options?.autoApproveThreshold ?? 0.95;
-    
+
     if (confidence >= autoApproveThreshold) {
       this.logger.log(`Auto-approving ${executionId} - confidence ${confidence} exceeds threshold`);
       return {
@@ -253,7 +253,7 @@ export class HumanApprovalNode {
     response: HumanApprovalResponse,
   ): Partial<TState> {
     const {executionId} = state;
-    
+
     // Remove from pending approvals
     this.pendingApprovals.delete(executionId);
 
@@ -278,7 +278,7 @@ export class HumanApprovalNode {
     const stateUpdate: Partial<TState> = {
       humanFeedback: {
         approved: response.decision === 'approved',
-        status: response.decision === 'retry' ? 'pending' : 
+        status: response.decision === 'retry' ? 'pending' :
                 response.decision === 'modify' ? 'needs_revision' :
                 response.decision,
         approver: response.approver || { id: 'unknown' },
@@ -366,12 +366,12 @@ export class HumanApprovalNode {
     if (this.pendingApprovals.has(executionId)) {
       this.pendingApprovals.delete(executionId);
       this.logger.log(`Cancelled approval for ${executionId}`);
-      
+
       this.eventEmitter.emit('workflow.human.approval.cancelled', {
         executionId,
         timestamp: new Date(),
       });
-      
+
       return true;
     }
     return false;

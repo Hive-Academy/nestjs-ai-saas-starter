@@ -56,10 +56,16 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
       let embeddings: number[][];
       if (texts.length === 1) {
         // Single text returns array of numbers
-        embeddings = [Array.isArray(response[0]) ? response[0] : response];
+        if (Array.isArray(response[0])) {
+          // Response is already a batch response
+          embeddings = response as HuggingFaceBatchResponse;
+        } else {
+          // Response is a single response, wrap it
+          embeddings = [response as HuggingFaceSingleResponse];
+        }
       } else {
         // Multiple texts return array of arrays
-        embeddings = response;
+        embeddings = response as HuggingFaceBatchResponse;
       }
 
       this.validateDimensions(embeddings, texts.length);

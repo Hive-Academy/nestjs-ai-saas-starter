@@ -4,6 +4,39 @@
   "include": [],
   "references": [
     {
+      "path": "../langgraph-modules/monitoring"
+    },
+    {
+      "path": "../langgraph-modules/time-travel"
+    },
+    {
+      "path": "../langgraph-modules/platform"
+    },
+    {
+      "path": "../langgraph-modules/checkpoint"
+    },
+    {
+      "path": "../langgraph-modules/memory"
+    },
+    {
+      "path": "../langgraph-modules/workflow-engine"
+    },
+    {
+      "path": "../langgraph-modules/streaming"
+    },
+    {
+      "path": "../langgraph-modules/hitl"
+    },
+    {
+      "path": "../langgraph-modules/functional-api"
+    },
+    {
+      "path": "../langgraph-modules/multi-agent"
+    },
+    {
+      "path": "../langgraph-modules/core"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {

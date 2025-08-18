@@ -18,6 +18,38 @@
     "customConditions": ["development"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "declaration": true
+    "declaration": true,
+    "baseUrl": ".",
+    "paths": {
+      "@langgraph-modules/core": ["libs/langgraph-modules/core/src/index.ts"],
+      "@langgraph-modules/memory": [
+        "libs/langgraph-modules/memory/src/index.ts"
+      ],
+      "@langgraph-modules/checkpoint": [
+        "libs/langgraph-modules/checkpoint/src/index.ts"
+      ],
+      "@langgraph-modules/multi-agent": [
+        "libs/langgraph-modules/multi-agent/src/index.ts"
+      ],
+      "@langgraph-modules/functional-api": [
+        "libs/langgraph-modules/functional-api/src/index.ts"
+      ],
+      "@langgraph-modules/platform": [
+        "libs/langgraph-modules/platform/src/index.ts"
+      ],
+      "@langgraph-modules/time-travel": [
+        "libs/langgraph-modules/time-travel/src/index.ts"
+      ],
+      "@langgraph-modules/monitoring": [
+        "libs/langgraph-modules/monitoring/src/index.ts"
+      ],
+      "@langgraph-modules/hitl": ["libs/langgraph-modules/hitl/src/index.ts"],
+      "@langgraph-modules/streaming": [
+        "libs/langgraph-modules/streaming/src/index.ts"
+      ],
+      "@langgraph-modules/workflow-engine": [
+        "libs/langgraph-modules/workflow-engine/src/index.ts"
+      ]
+    }
   }
 }

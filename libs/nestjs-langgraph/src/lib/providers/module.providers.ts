@@ -6,11 +6,6 @@ import {
 } from '../constants';
 
 import {
-  createCoreProviders,
-  createStreamingProviders,
-  createToolProviders,
-  createRoutingProviders,
-  createHITLProviders,
   createLLMProviders,
   createInfrastructureProviders,
   createInfrastructureProvidersAsync,
@@ -37,13 +32,9 @@ export function createModuleProviders(
   return [
     optionsProvider,
     moduleIdProvider,
-    ...createCoreProviders(),
-    ...createStreamingProviders(),
-    ...createToolProviders(),
-    ...createRoutingProviders(),
-    ...createHITLProviders(),
     ...createLLMProviders(options),
     ...createInfrastructureProviders(options),
+    // Child module providers handled via adapters
   ];
 }
 
@@ -63,12 +54,8 @@ export function createModuleProvidersAsync(
   return [
     moduleIdProvider,
     ...asyncProviders,
-    ...createCoreProviders(),
-    ...createStreamingProviders(),
-    ...createToolProviders(),
-    ...createRoutingProviders(),
-    ...createHITLProviders(),
     ...createLLMProviders(options),
     ...createInfrastructureProvidersAsync(),
+    // Child module providers handled via adapters
   ];
 }

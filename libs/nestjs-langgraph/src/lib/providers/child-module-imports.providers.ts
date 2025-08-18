@@ -1,4 +1,4 @@
-import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
+import type { LangGraphModuleOptions } from '@langgraph-modules/core';
 
 /**
  * Child module import factory

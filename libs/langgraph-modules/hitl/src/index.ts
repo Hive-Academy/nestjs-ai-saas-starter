@@ -7,6 +7,9 @@ export { ConfidenceEvaluatorService } from './lib/services/confidence-evaluator.
 export { ApprovalChainService } from './lib/services/approval-chain.service';
 export { FeedbackProcessorService } from './lib/services/feedback-processor.service';
 
+// Routing (moved from main library)
+export { WorkflowRoutingService } from './lib/routing/workflow-routing.service';
+
 // Nodes
 export { HumanApprovalNode } from './lib/nodes/human-approval.node';
 

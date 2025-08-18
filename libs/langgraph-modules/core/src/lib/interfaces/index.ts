@@ -4,8 +4,14 @@ export type * from './workflow.interface';
 export type * from './node.interface';
 export type * from './state-management.interface';
 
-// Re-export from constants to avoid circular dependencies
-export { CommandType } from '../constants';
+// Define CommandType enum here to avoid circular dependencies
+export enum CommandType {
+  GOTO = 'GOTO',
+  UPDATE = 'UPDATE',
+  END = 'END',
+  RETRY = 'RETRY',
+  ERROR = 'ERROR'
+}
 
 // Create proper type exports for node handlers
 import type { Command } from './workflow.interface';

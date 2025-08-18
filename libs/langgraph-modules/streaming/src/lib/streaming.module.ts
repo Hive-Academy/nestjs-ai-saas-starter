@@ -2,7 +2,7 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { TokenStreamingService } from './services/token-streaming.service';
 import { EventStreamProcessorService } from './services/event-stream-processor.service';
 import { WebSocketBridgeService } from './services/websocket-bridge.service';
-import { WorkflowStreamService } from './services/workflow-stream.service';
+// WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 export interface StreamingModuleOptions {
   websocket?: {
@@ -21,7 +21,6 @@ export class StreamingModule {
         TokenStreamingService,
         EventStreamProcessorService,
         WebSocketBridgeService,
-        WorkflowStreamService,
         {
           provide: 'STREAMING_OPTIONS',
           useValue: options || {},
@@ -31,7 +30,6 @@ export class StreamingModule {
         TokenStreamingService,
         EventStreamProcessorService,
         WebSocketBridgeService,
-        WorkflowStreamService,
       ],
     };
   }

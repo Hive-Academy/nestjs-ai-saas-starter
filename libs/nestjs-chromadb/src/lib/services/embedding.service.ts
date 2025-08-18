@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { EmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
-import type { EmbeddingServiceInterface } from '../interfaces/embedding-service.interface';
+import type { EmbeddingServiceInterface, EmbeddingVector } from '../interfaces/embedding-service.interface';
 import { EmbeddingProvider } from '../embeddings/base.embedding';
 import { OpenAIEmbeddingProvider } from '../embeddings/openai.embedding';
 import { HuggingFaceEmbeddingProvider } from '../embeddings/huggingface.embedding';
@@ -44,7 +44,7 @@ export class EmbeddingService implements EmbeddingServiceInterface {
   /**
    * Generate embeddings for texts
    */
-  public async embed(texts: string[]): Promise<number[][]> {
+  public async embed(texts: readonly string[]): Promise<readonly EmbeddingVector[]> {
     if (!this.provider) {
       throw new ChromaDBEmbeddingNotConfiguredError();
     }
@@ -54,7 +54,7 @@ export class EmbeddingService implements EmbeddingServiceInterface {
     }
 
     try {
-      return await this.provider.embed(texts);
+      return await this.provider.embed([...texts]);
     } catch (error) {
       throw ChromaDBErrorHandler.handleEmbeddingError(
         error,

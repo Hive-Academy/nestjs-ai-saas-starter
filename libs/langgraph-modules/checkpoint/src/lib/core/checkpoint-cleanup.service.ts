@@ -44,7 +44,7 @@ export class CheckpointCleanupService
     private readonly configService: ConfigService
   ) {
     super(CheckpointCleanupService.name);
-    
+
     this.cleanupPolicies = this.loadCleanupPolicies();
   }
 
@@ -224,7 +224,7 @@ export class CheckpointCleanupService
 
     // Check cleanup frequency
     const intervalHours = this.cleanupPolicies.cleanupInterval / (1000 * 60 * 60);
-    
+
     if (intervalHours > 24) {
       recommendations.push('Consider more frequent cleanup (current interval > 24 hours)');
     } else if (intervalHours < 1) {
@@ -242,7 +242,7 @@ export class CheckpointCleanupService
     // Check cleanup effectiveness
     const recentCleanups = this.cleanupHistory.slice(-5);
     const avgDeleted = recentCleanups.reduce((sum, record) => sum + record.deletedCount, 0) / Math.max(recentCleanups.length, 1);
-    
+
     if (avgDeleted === 0 && recentCleanups.length > 0) {
       recommendations.push('No checkpoints cleaned recently - consider adjusting cleanup policies');
     } else if (avgDeleted > 100) {
@@ -386,35 +386,11 @@ export class CheckpointCleanupService
       (sum, record) => sum + record.duration,
       0
     );
-    
+
     return totalDuration / this.cleanupHistory.length;
   }
 
-  /**
-   * Validate cleanup options
-   */
-  private validateCleanupOptions(_options: CheckpointCleanupOptions): void {
-    if (_options.maxAge !== undefined && _options.maxAge < 0) {
-      throw this.createError(
-        'maxAge must be non-negative',
-        'INVALID_MAX_AGE'
-      );
-    }
 
-    if (_options.maxPerThread !== undefined && _options.maxPerThread < 1) {
-      throw this.createError(
-        'maxPerThread must be positive',
-        'INVALID_MAX_PER_THREAD'
-      );
-    }
-
-    if (_options.excludeThreads && !Array.isArray(_options.excludeThreads)) {
-      throw this.createError(
-        'excludeThreads must be an array',
-        'INVALID_EXCLUDE_THREADS'
-      );
-    }
-  }
 
   /**
    * Get cleanup policies validation

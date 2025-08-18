@@ -9,7 +9,7 @@ import {
   StreamMetadata,
   StreamContext,
   TokenData,
-} from '../interfaces/streaming.interface';
+} from '@langgraph-modules/streaming';
 import { WorkflowStateAnnotation } from '../core/workflow-state-annotation';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import {
@@ -19,7 +19,7 @@ import {
   getStreamTokenMetadata,
   getStreamEventMetadata,
   getStreamProgressMetadata,
-} from '../decorators/streaming.decorator';
+} from '@langgraph-modules/streaming';
 
 /**
  * Service for managing multi-level streaming of workflow execution
@@ -112,13 +112,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   ): void {
     try {
       const definition = this.metadataProcessor.extractWorkflowDefinition(workflowClass);
-      
+
       // Configure streaming for each node that has streaming metadata
       definition.nodes.forEach(node => {
         const streamingMetadata = node.config?.metadata?.streaming;
         if (streamingMetadata) {
           const nodeKey = `${executionId}:${node.id}`;
-          
+
           if (streamingMetadata.token?.enabled) {
             this.tokenStreamConfigs.set(nodeKey, streamingMetadata.token);
           }
@@ -130,7 +130,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           }
         }
       });
-      
+
       this.streamingEnabled.set(executionId, definition.config?.streaming || false);
       this.logger.log(`Initialized streaming configuration for execution ${executionId}`);
     } catch (error) {
@@ -177,12 +177,12 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
       // Determine stream modes based on configuration
       const streamModes = this.getStreamModes(executionId);
-      
+
       const streamResult = await compiledGraph.stream(input, {
         ...config,
         streamMode: streamModes,
       });
-      
+
       for await (const chunk of streamResult) {
         // Handle different types of stream chunks
         if ('values' in chunk) {
@@ -206,7 +206,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
             // Check if token-level streaming is configured for current node
             const nodeId = (chunk as any).nodeId || 'unknown';
             const tokenConfig = this.getTokenStreamConfig(executionId, nodeId);
-            
+
             if (tokenConfig?.enabled && message.content) {
               // Stream tokens if enabled
               yield* this.streamMessageTokens(executionId, nodeId, message, tokenConfig);
@@ -226,11 +226,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           // Apply event streaming configuration if available
           const nodeId = (chunk as any).nodeId || 'unknown';
           const eventConfig = this.getEventStreamConfig(executionId, nodeId);
-          
+
           if (eventConfig?.enabled) {
             const filteredEvents = this.filterEvents(chunk.events as any[], eventConfig);
             const transformedEvents = this.transformEvents(filteredEvents, eventConfig);
-            
+
             yield this.createUpdate(
               StreamEventType.EVENTS,
               transformedEvents,
@@ -307,14 +307,14 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     try {
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        
+
         // Apply token filtering
         if (!this.shouldIncludeToken(token, config)) {
           continue;
         }
 
         // Process token if processor is configured
-        const processedToken = config.processor 
+        const processedToken = config.processor
           ? config.processor(token, { index: i, nodeId, executionId })
           : token;
 
@@ -332,8 +332,8 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           StreamEventType.TOKEN,
           tokenData,
           executionId,
-          { 
-            nodeId, 
+          {
+            nodeId,
             tokenConfig: config,
             accumulated: accumulatedContent,
             progress: ((i + 1) / tokens.length) * 100,
@@ -402,7 +402,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         }
 
         // Process token if processor is configured
-        const processedContent = tokenConfig.processor 
+        const processedContent = tokenConfig.processor
           ? tokenConfig.processor(content, { index: tokenIndex, nodeId, executionId })
           : content;
 
@@ -417,8 +417,8 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           StreamEventType.TOKEN,
           tokenData,
           executionId,
-          { 
-            nodeId, 
+          {
+            nodeId,
             tokenConfig,
             bufferSize: tokenBuffer.length,
           },
@@ -593,7 +593,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     additionalMetadata?: Partial<StreamMetadata>,
   ): StreamUpdate {
     const sequenceNumber = this.getNextSequence(executionId);
-    
+
     const metadata: StreamMetadata = {
       timestamp: new Date(),
       sequenceNumber,
@@ -627,11 +627,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       stream.complete();
       this.streams.delete(executionId);
       this.sequenceCounters.delete(executionId);
-      
+
       // Cleanup streaming configurations
       this.cleanupStreamingConfigs(executionId);
       this.streamingEnabled.delete(executionId);
-      
+
       this.logger.log(`Closed stream for execution ${executionId}`);
     }
   }
@@ -642,19 +642,19 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private cleanupStreamingConfigs(executionId: string): void {
     // Remove all configs for this execution
     const keysToRemove: string[] = [];
-    
+
     this.tokenStreamConfigs.forEach((_, key) => {
       if (key.startsWith(`${executionId}:`)) {
         keysToRemove.push(key);
       }
     });
-    
+
     this.eventStreamConfigs.forEach((_, key) => {
       if (key.startsWith(`${executionId}:`)) {
         keysToRemove.push(key);
       }
     });
-    
+
     this.progressStreamConfigs.forEach((_, key) => {
       if (key.startsWith(`${executionId}:`)) {
         keysToRemove.push(key);
@@ -677,7 +677,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     this.eventEmitter.on('streaming.config.update', (data) => {
       this.handleStreamingConfigUpdate(data);
     });
-    
+
     // Note: EventEmitter listeners don't return subscriptions like RxJS
   }
 
@@ -687,7 +687,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private handleStreamingConfigUpdate(data: any): void {
     const { executionId, nodeId, config } = data;
     const key = `${executionId}:${nodeId}`;
-    
+
     if (config.token) {
       this.tokenStreamConfigs.set(key, config.token);
     }
@@ -707,13 +707,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     this.streams.forEach((stream, executionId) => {
       this.closeStream(executionId);
     });
-    
+
     // Unsubscribe from all subscriptions
     this.activeSubscriptions.forEach(subscription => {
       subscription.unsubscribe();
     });
     this.activeSubscriptions.clear();
-    
+
     // Clear all maps
     this.tokenStreamConfigs.clear();
     this.eventStreamConfigs.clear();
@@ -722,7 +722,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Helper methods for streaming configuration
-  
+
   /**
    * Get token stream configuration for a node
    */
@@ -749,11 +749,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   private getStreamModes(executionId: string): string[] {
     const defaultModes = ['values', 'updates', 'messages', 'events', 'debug'];
-    
+
     if (!this.streamingEnabled.get(executionId)) {
       return ['values', 'updates']; // Minimal streaming
     }
-    
+
     return defaultModes;
   }
 
@@ -763,7 +763,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private tokenizeContent(content: string, config: StreamTokenMetadata): string[] {
     // Simple word-based tokenization - can be enhanced with proper tokenizers
     const tokens = content.split(/\s+/).filter(token => token.length > 0);
-    
+
     // Apply batch size if configured
     if (config.batchSize && config.batchSize > 1) {
       const batches: string[] = [];
@@ -772,7 +772,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       }
       return batches;
     }
-    
+
     return tokens;
   }
 
@@ -783,25 +783,25 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     if (!config.filter) {
       return true;
     }
-    
+
     const { minLength, maxLength, excludeWhitespace, pattern } = config.filter;
-    
+
     if (minLength && token.length < minLength) {
       return false;
     }
-    
+
     if (maxLength && token.length > maxLength) {
       return false;
     }
-    
+
     if (excludeWhitespace && /^\s*$/.test(token)) {
       return false;
     }
-    
+
     if (pattern && !pattern.test(token)) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -812,20 +812,20 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     if (!config.filter) {
       return events;
     }
-    
+
     return events.filter(event => {
       if (config.filter!.eventTypes && !config.filter!.eventTypes.includes(event.type)) {
         return false;
       }
-      
+
       if (config.filter!.excludeTypes?.includes(event.type)) {
         return false;
       }
-      
+
       if (!config.filter!.includeDebug && event.type === StreamEventType.DEBUG) {
         return false;
       }
-      
+
       return true;
     });
   }
@@ -837,7 +837,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     if (!config.transformer) {
       return events;
     }
-    
+
     return events.map(event => config.transformer!(event));
   }
 
@@ -853,9 +853,9 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     if (buffer.length === 0) {
       return;
     }
-    
+
     const bufferedContent = buffer.join('');
-    
+
     // Emit buffer flush event
     this.eventEmitter.emit(`workflow.token.buffer.flush.${executionId}`, {
       nodeId,
@@ -863,7 +863,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       bufferSize: buffer.length,
       config,
     });
-    
+
     this.logger.debug(`Flushed token buffer for ${executionId}:${nodeId} - ${buffer.length} tokens`);
   }
 

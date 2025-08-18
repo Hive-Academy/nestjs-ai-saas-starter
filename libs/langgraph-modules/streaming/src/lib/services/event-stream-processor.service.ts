@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject } from '@nestjs/common';
-import { Observable, Subject, debounceTime, groupBy, mergeMap, scan } from 'rxjs';
+import { Observable, Subject, debounceTime, groupBy, scan } from 'rxjs';
 import { StreamUpdate, StreamEventType } from '../interfaces/streaming.interface';
 
 /**
@@ -13,7 +13,7 @@ export class EventStreamProcessorService {
   private readonly logger = new Logger(EventStreamProcessorService.name);
   private readonly eventBuffer = new Map<string, StreamUpdate[]>();
   private readonly aggregators = new Map<string, Subject<any>>();
-  
+
   constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
 
   /**
@@ -25,10 +25,10 @@ export class EventStreamProcessorService {
     debounceMs = 100,
   ): Observable<StreamUpdate[]> {
     const subject = new Subject<StreamUpdate>();
-    
+
     // Push events to subject
     events.forEach(event => { subject.next(event); });
-    
+
     return subject.pipe(
       scan((batch, event) => {
         batch.push(event);
@@ -60,7 +60,7 @@ export class EventStreamProcessorService {
     events: StreamUpdate[],
   ): Map<StreamEventType, StreamUpdate[]> {
     const aggregated = new Map<StreamEventType, StreamUpdate[]>();
-    
+
     events.forEach(event => {
       if (event.metadata?.executionId === executionId) {
         const typeEvents = aggregated.get(event.type) || [];
@@ -68,7 +68,7 @@ export class EventStreamProcessorService {
         aggregated.set(event.type, typeEvents);
       }
     });
-    
+
     return aggregated;
   }
 
@@ -89,23 +89,23 @@ export class EventStreamProcessorService {
       if (criteria.types && !criteria.types.includes(event.type)) {
         return false;
       }
-      
+
       if (criteria.executionId && event.metadata?.executionId !== criteria.executionId) {
         return false;
       }
-      
+
       if (criteria.nodeId && event.metadata?.nodeId !== criteria.nodeId) {
         return false;
       }
-      
+
       if (criteria.startTime && event.metadata?.timestamp && event.metadata.timestamp < criteria.startTime) {
         return false;
       }
-      
+
       if (criteria.endTime && event.metadata?.timestamp && event.metadata.timestamp > criteria.endTime) {
         return false;
       }
-      
+
       return true;
     });
   }
@@ -126,12 +126,12 @@ export class EventStreamProcessorService {
   bufferEvents(executionId: string, event: StreamUpdate): void {
     const buffer = this.eventBuffer.get(executionId) || [];
     buffer.push(event);
-    
+
     // Limit buffer size to prevent memory issues
     if (buffer.length > 1000) {
       buffer.shift();
     }
-    
+
     this.eventBuffer.set(executionId, buffer);
   }
 
@@ -143,13 +143,13 @@ export class EventStreamProcessorService {
     fromSequence?: number,
   ): StreamUpdate[] {
     const buffer = this.eventBuffer.get(executionId) || [];
-    
+
     if (fromSequence !== undefined) {
       return buffer.filter(
         event => (event.metadata?.sequenceNumber || 0) >= fromSequence,
       );
     }
-    
+
     return [...buffer];
   }
 
@@ -172,11 +172,11 @@ export class EventStreamProcessorService {
   getEventStats(executionId: string): Record<StreamEventType, number> {
     const buffer = this.eventBuffer.get(executionId) || [];
     const stats: Partial<Record<StreamEventType, number>> = {};
-    
+
     buffer.forEach(event => {
       stats[event.type] = (stats[event.type] || 0) + 1;
     });
-    
+
     return stats as Record<StreamEventType, number>;
   }
 
@@ -187,7 +187,7 @@ export class EventStreamProcessorService {
   handleWorkflowStream(data: any): void {
     const executionId = data.executionId || 'unknown';
     this.logger.debug(`Received workflow stream event for ${executionId}`);
-    
+
     // Process and emit transformed event
     this.eventEmitter.emit('stream.processed', {
       executionId,
@@ -203,7 +203,7 @@ export class EventStreamProcessorService {
   handleTokenEvent(data: any): void {
     const executionId = data.executionId || 'unknown';
     this.logger.debug(`Received token event for ${executionId}`);
-    
+
     // Aggregate tokens
     const aggregator = this.getOrCreateAggregator(executionId);
     aggregator.next(data);
@@ -218,7 +218,7 @@ export class EventStreamProcessorService {
     this.logger.debug(
       `Progress update for ${executionId}: ${data.data?.progress}%`,
     );
-    
+
     // Emit progress to connected clients
     this.eventEmitter.emit('client.progress', {
       executionId,
@@ -234,12 +234,12 @@ export class EventStreamProcessorService {
   handleMilestoneEvent(data: any): void {
     const executionId = data.metadata?.executionId || 'unknown';
     const milestone = data.data?.milestone || 'unknown';
-    
+
     this.logger.log(`Milestone reached for ${executionId}: ${milestone}`);
-    
+
     // Store milestone in buffer for history
     this.bufferEvents(executionId, data);
-    
+
     // Emit milestone notification
     this.eventEmitter.emit('client.milestone', {
       executionId,
@@ -254,7 +254,7 @@ export class EventStreamProcessorService {
   private getOrCreateAggregator(executionId: string): Subject<any> {
     if (!this.aggregators.has(executionId)) {
       const aggregator = new Subject<any>();
-      
+
       // Setup aggregation pipeline
       aggregator.pipe(
         scan((acc, value) => {
@@ -269,10 +269,10 @@ export class EventStreamProcessorService {
           totalCount: aggregated.length,
         });
       });
-      
+
       this.aggregators.set(executionId, aggregator);
     }
-    
+
     return this.aggregators.get(executionId)!;
   }
 
@@ -294,7 +294,7 @@ export class EventStreamProcessorService {
     if (executionId) {
       return this.eventBuffer.get(executionId)?.length || 0;
     }
-    
+
     let total = 0;
     this.eventBuffer.forEach(buffer => {
       total += buffer.length;

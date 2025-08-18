@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState, HumanFeedback } from '../interfaces/workflow.interface';
-import { ApprovalChainService, ApprovalRequest, Approver } from './approval-chain.service';
+import { WorkflowState, HumanFeedback } from '@langgraph-modules/core';
+import { ApprovalChainService, Approver } from './approval-chain.service';
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
-import { HITL_EVENTS, HITL_DEFAULTS } from './constants';
+import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
 import { ApprovalRiskLevel, EscalationStrategy, RequiresApprovalOptions } from '../decorators/approval.decorator';
 
 /**
@@ -26,34 +26,34 @@ export enum ApprovalWorkflowState {
 export interface HumanApprovalRequest {
   /** Request ID */
   id: string;
-  
+
   /** Execution ID */
   executionId: string;
-  
+
   /** Node requesting approval */
   nodeId: string;
-  
+
   /** Approval message */
   message: string;
-  
+
   /** Request metadata */
   metadata: Record<string, unknown>;
-  
+
   /** Current workflow state */
   state: WorkflowState;
-  
+
   /** Approval options */
   options: RequiresApprovalOptions;
-  
+
   /** Current workflow state */
   workflowState: ApprovalWorkflowState;
-  
+
   /** Assigned approvers */
   approvers?: string[];
-  
+
   /** Approval chain ID */
   chainId?: string;
-  
+
   /** Risk assessment */
   riskAssessment?: {
     level: ApprovalRiskLevel;
@@ -61,27 +61,27 @@ export interface HumanApprovalRequest {
     score: number;
     details?: Record<string, unknown>;
   };
-  
+
   /** Confidence evaluation */
   confidence: {
     current: number;
     threshold: number;
     factors: Record<string, number>;
   };
-  
+
   /** Timestamps */
   timestamps: {
     requested: Date;
     responded?: Date;
     timeout?: Date;
   };
-  
+
   /** Timeout configuration */
   timeout: {
     duration: number;
     strategy: 'approve' | 'reject' | 'escalate' | 'retry';
   };
-  
+
   /** Retry information */
   retry: {
     count: number;
@@ -95,26 +95,26 @@ export interface HumanApprovalRequest {
 export interface HumanApprovalResponse {
   /** Request ID */
   requestId: string;
-  
+
   /** Decision */
   decision: 'approved' | 'rejected' | 'escalated' | 'retry' | 'modify';
-  
+
   /** Approver information */
   approver: {
     id: string;
     name?: string;
     role?: string;
   };
-  
+
   /** Response message */
   message?: string;
-  
+
   /** Modifications to apply */
   modifications?: Record<string, unknown>;
-  
+
   /** Additional metadata */
   metadata?: Record<string, unknown>;
-  
+
   /** Response timestamp */
   timestamp: Date;
 }
@@ -150,7 +150,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Human Approval Service initialized');
-    
+
     // Set up event listeners
     this.setupEventListeners();
   }
@@ -161,11 +161,11 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       clearTimeout(timeout);
       this.logger.debug(`Cleaned up timeout handler for request ${requestId}`);
     }
-    
+
     this.timeoutHandlers.clear();
     this.approvalRequests.clear();
     this.streamConnections.clear();
-    
+
     this.logger.log('Human Approval Service destroyed');
   }
 
@@ -180,13 +180,13 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     options: RequiresApprovalOptions = {}
   ): Promise<HumanApprovalRequest> {
     const requestId = this.generateRequestId();
-    
+
     this.logger.log(`Requesting approval for execution ${executionId}, node ${nodeId}`);
-    
+
     // Evaluate confidence
     const confidence = await this.confidenceEvaluator.evaluateConfidence(state);
     const confidenceFactors = await this.confidenceEvaluator.getConfidenceFactors(state);
-    
+
     // Assess risk if enabled
     let riskAssessment;
     if (options.riskAssessment?.enabled) {
@@ -195,7 +195,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         customEvaluator: options.riskAssessment.evaluator
       });
     }
-    
+
     // Create approval request
     const request: HumanApprovalRequest = {
       id: requestId,
@@ -225,13 +225,13 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         maxAttempts: HITL_DEFAULTS.RETRY_ATTEMPTS
       }
     };
-    
+
     // Store request
     this.approvalRequests.set(requestId, request);
-    
+
     // Set up timeout
     this.setupTimeout(requestId);
-    
+
     // Determine approvers based on escalation strategy
     if (options.chainId && options.escalationStrategy !== EscalationStrategy.DIRECT) {
       try {
@@ -246,31 +246,31 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
             metadata: request.metadata
           }
         );
-        
+
         request.approvers = approvalRequest.currentLevel.approvers.map(a => a.id);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to initiate approval chain: ${errorMsg}`);
       }
     }
-    
+
     // Update state to in progress
     request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
-    
+
     // Emit event for external systems
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
       request,
       approvers: request.approvers,
       streamEnabled: this.hasStreamConnection(executionId)
     });
-    
+
     // Stream real-time approval request if connection exists
     if (this.hasStreamConnection(executionId)) {
       await this.streamApprovalRequest(request);
     }
-    
+
     this.logger.log(`Approval request ${requestId} created for execution ${executionId}`);
-    
+
     return request;
   }
 
@@ -282,58 +282,58 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     response: HumanApprovalResponse
   ): Promise<{ success: boolean; nextState?: Partial<WorkflowState>; error?: string }> {
     const request = this.approvalRequests.get(requestId);
-    
+
     if (!request) {
       const error = `Approval request ${requestId} not found`;
       this.logger.error(error);
       return { success: false, error };
     }
-    
+
     if (request.workflowState !== ApprovalWorkflowState.IN_PROGRESS) {
       const error = `Approval request ${requestId} is not in progress (current state: ${request.workflowState})`;
       this.logger.warn(error);
       return { success: false, error };
     }
-    
+
     this.logger.log(`Processing approval response for ${requestId}: ${response.decision}`);
-    
+
     // Clear timeout
     this.clearTimeout(requestId);
-    
+
     // Update request timestamps
     request.timestamps.responded = response.timestamp;
-    
+
     try {
       let nextState: Partial<WorkflowState> = {};
-      
+
       switch (response.decision) {
         case 'approved':
           request.workflowState = ApprovalWorkflowState.APPROVED;
           nextState = await this.handleApprovalSuccess(request, response);
           break;
-          
+
         case 'rejected':
           request.workflowState = ApprovalWorkflowState.REJECTED;
           nextState = await this.handleApprovalRejection(request, response);
           break;
-          
+
         case 'escalated':
           request.workflowState = ApprovalWorkflowState.ESCALATED;
           nextState = await this.handleApprovalEscalation(request, response);
           break;
-          
+
         case 'retry':
           nextState = await this.handleApprovalRetry(request, response);
           break;
-          
+
         case 'modify':
           nextState = await this.handleApprovalModification(request, response);
           break;
-          
+
         default:
           throw new Error(`Unknown approval decision: ${response.decision}`);
       }
-      
+
       // Emit completion event
       await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_COMPLETED, {
         requestId,
@@ -342,18 +342,18 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         approver: response.approver,
         duration: Date.now() - request.timestamps.requested.getTime()
       });
-      
+
       // Stream real-time update
       if (this.hasStreamConnection(request.executionId)) {
         await this.streamApprovalUpdate(request, response);
       }
-      
+
       return { success: true, nextState };
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error processing approval response: ${errorMessage}`, error);
-      
+
       return { success: false, error: errorMessage };
     }
   }
@@ -363,16 +363,16 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   private async handleTimeout(requestId: string): Promise<void> {
     const request = this.approvalRequests.get(requestId);
-    
+
     if (!request || request.workflowState !== ApprovalWorkflowState.IN_PROGRESS) {
       return;
     }
-    
+
     this.logger.warn(`Approval timeout for request ${requestId}`);
-    
+
     request.workflowState = ApprovalWorkflowState.TIMEOUT;
     request.timestamps.timeout = new Date();
-    
+
     // Handle based on timeout strategy
     switch (request.timeout.strategy) {
       case 'approve':
@@ -384,7 +384,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           timestamp: new Date()
         });
         break;
-        
+
       case 'reject':
         await this.processApprovalResponse(requestId, {
           requestId,
@@ -394,7 +394,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           timestamp: new Date()
         });
         break;
-        
+
       case 'escalate':
         if (request.chainId) {
           await this.processApprovalResponse(requestId, {
@@ -415,13 +415,13 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           });
         }
         break;
-        
+
       case 'retry':
         if (request.retry.count < request.retry.maxAttempts) {
           request.retry.count++;
           request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
           this.setupTimeout(requestId); // Setup new timeout
-          
+
           await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
             request,
             retryAttempt: request.retry.count
@@ -437,7 +437,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         }
         break;
     }
-    
+
     // Emit timeout event
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_TIMEOUT, {
       requestId,
@@ -464,10 +464,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       },
       response.approver
     );
-    
+
     // Update confidence
     const newConfidence = Math.min(request.confidence.current + 0.1, 1.0);
-    
+
     return {
       humanFeedback: {
         approved: true,
@@ -501,10 +501,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       },
       response.approver
     );
-    
+
     // Decrease confidence
     const newConfidence = Math.max(request.confidence.current - 0.2, 0.0);
-    
+
     return {
       humanFeedback: {
         approved: false,
@@ -546,7 +546,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         this.logger.error(`Failed to process escalation: ${errorMsg}`);
       }
     }
-    
+
     // Emit escalation event
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_ESCALATED, {
       requestId: request.id,
@@ -554,7 +554,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       escalatedBy: response.approver,
       chainId: request.chainId
     });
-    
+
     return {
       waitingForApproval: true,
       metadata: {
@@ -576,7 +576,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       request.retry.count++;
       request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
       this.setupTimeout(request.id);
-      
+
       return {
         waitingForApproval: true,
         metadata: {
@@ -585,14 +585,14 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           retryReason: response.message
         }
       };
-    } 
+    }
       // Max retries reached, reject
       return await this.handleApprovalRejection(request, {
         ...response,
         decision: 'rejected',
         message: `Max retries reached: ${response.message}`
       });
-    
+
   }
 
   /**
@@ -613,7 +613,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       },
       response.approver
     );
-    
+
     return {
       humanFeedback: {
         approved: false,
@@ -640,7 +640,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     this.eventEmitter.on('approval.completed', async (event) => {
       const request = Array.from(this.approvalRequests.values())
         .find(r => r.executionId === event.executionId);
-        
+
       if (request) {
         await this.processApprovalResponse(request.id, {
           requestId: request.id,
@@ -659,15 +659,15 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private setupTimeout(requestId: string): void {
     const request = this.approvalRequests.get(requestId);
     if (!request) {return;}
-    
+
     // Clear existing timeout
     this.clearTimeout(requestId);
-    
+
     // Set new timeout
     const timeout = setTimeout(() => {
       this.handleTimeout(requestId);
     }, request.timeout.duration);
-    
+
     this.timeoutHandlers.set(requestId, timeout);
   }
 
@@ -786,21 +786,21 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   async cancelApproval(requestId: string): Promise<boolean> {
     const request = this.approvalRequests.get(requestId);
-    
+
     if (!request) {
       return false;
     }
-    
+
     this.clearTimeout(requestId);
     request.workflowState = ApprovalWorkflowState.CANCELLED;
-    
+
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_COMPLETED, {
       requestId,
       executionId: request.executionId,
       decision: 'cancelled',
       timestamp: new Date()
     });
-    
+
     this.logger.log(`Cancelled approval request ${requestId}`);
     return true;
   }
@@ -810,7 +810,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   getApprovalStats(): ApprovalWorkflowStats {
     const requests = Array.from(this.approvalRequests.values());
-    
+
     const byState: Record<ApprovalWorkflowState, number> = {
       [ApprovalWorkflowState.PENDING]: 0,
       [ApprovalWorkflowState.IN_PROGRESS]: 0,
@@ -820,24 +820,24 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       [ApprovalWorkflowState.TIMEOUT]: 0,
       [ApprovalWorkflowState.CANCELLED]: 0
     };
-    
+
     let totalResponseTime = 0;
     let responseCount = 0;
-    
+
     for (const request of requests) {
       byState[request.workflowState]++;
-      
+
       if (request.timestamps.responded) {
         totalResponseTime += request.timestamps.responded.getTime() - request.timestamps.requested.getTime();
         responseCount++;
       }
     }
-    
+
     const total = requests.length;
     const approved = byState[ApprovalWorkflowState.APPROVED];
     const escalated = byState[ApprovalWorkflowState.ESCALATED];
     const timeout = byState[ApprovalWorkflowState.TIMEOUT];
-    
+
     return {
       total,
       byState,

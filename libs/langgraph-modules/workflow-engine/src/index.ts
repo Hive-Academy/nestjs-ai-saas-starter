@@ -8,6 +8,12 @@ export { MetadataProcessorService } from './lib/core/metadata-processor.service'
 export { SubgraphManagerService } from './lib/core/subgraph-manager.service';
 export * from './lib/core/workflow-state-annotation';
 
+// Streaming Services (moved from streaming module to avoid circular dependency)
+export { WorkflowStreamService } from './lib/streaming/workflow-stream.service';
+
+// Routing (moved from main library)
+export { CommandProcessorService } from './lib/routing/command-processor.service';
+
 // Base Classes
 export { UnifiedWorkflowBase } from './lib/base/unified-workflow.base';
 export { DeclarativeWorkflowBase } from './lib/base/declarative-workflow.base';

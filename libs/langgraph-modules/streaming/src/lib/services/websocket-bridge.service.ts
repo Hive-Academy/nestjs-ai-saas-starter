@@ -1,9 +1,9 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { Subject, Subscription, filter, merge, map } from 'rxjs';
+import { Subject, Subscription, filter, merge } from 'rxjs';
 import { StreamUpdate, StreamEventType } from '../interfaces/streaming.interface';
 import { TokenStreamingService } from './token-streaming.service';
-import { WorkflowStreamService } from './workflow-stream.service';
+// WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 interface WebSocketClient {
   id: string;
@@ -45,7 +45,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     private readonly tokenStreamingService?: TokenStreamingService,
-    private readonly workflowStreamService?: WorkflowStreamService,
+    // WorkflowStreamService removed - now in workflow-engine module
   ) {}
 
   /**
@@ -260,7 +260,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     }
 
     const room = this.rooms.get(roomId)!;
-    
+
     // Check room limits
     if (room.config.maxClients && room.clients.size >= room.config.maxClients) {
       throw new Error(`Room ${roomId} is at maximum capacity`);
@@ -272,7 +272,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     room.lastActivity = new Date();
 
     this.logger.debug(`Client ${clientId} joined room ${roomId}`);
-    
+
     // Emit room join event
     this.eventEmitter.emit('websocket.room.join', {
       clientId,
@@ -287,7 +287,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   leaveRoom(clientId: string, roomId: string): void {
     const client = this.clients.get(clientId);
     const room = this.rooms.get(roomId);
-    
+
     if (!client || !room) {
       return;
     }
@@ -303,7 +303,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.debug(`Client ${clientId} left room ${roomId}`);
-    
+
     // Emit room leave event
     this.eventEmitter.emit('websocket.room.leave', {
       clientId,
@@ -337,7 +337,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   ): boolean {
     // Update client activity
     client.lastActivity = new Date();
-    
+
     // If client has no subscriptions, send all
     if (client.subscriptions.size === 0) {
       return true;
@@ -376,7 +376,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   @OnEvent('client.progress')
   handleClientProgress(data: any): void {
     const { executionId, progress, message } = data;
-    
+
     const update: StreamUpdate = {
       type: StreamEventType.PROGRESS,
       data: { progress, message },
@@ -396,7 +396,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   @OnEvent('client.milestone')
   handleClientMilestone(data: any): void {
     const { executionId, milestone, timestamp } = data;
-    
+
     const update: StreamUpdate = {
       type: StreamEventType.MILESTONE,
       data: { milestone },
@@ -416,7 +416,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   @OnEvent('tokens.aggregated')
   handleAggregatedTokens(data: any): void {
     const { executionId, tokens, totalCount } = data;
-    
+
     const update: StreamUpdate = {
       type: StreamEventType.TOKEN,
       data: {
@@ -441,7 +441,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   handleTokenBatchProcessed(data: any): void {
     const { streamKey, tokenCount, timestamp } = data;
     const [executionId] = streamKey.split(':');
-    
+
     const update: StreamUpdate = {
       type: StreamEventType.EVENTS,
       data: {
@@ -467,7 +467,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     // Extract execution ID from event name
     const parts = event.split('.');
     const executionId = parts[parts.length - 1];
-    
+
     if (!executionId || executionId === '*') {
       return;
     }
@@ -597,7 +597,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
         next: (update) => { this.handleTokenStreamUpdate(update); },
         error: (error) => { this.logger.error('Token stream integration error:', error); },
       });
-    
+
     this.activeSubscriptions.add(tokenSubscription);
     this.logger.debug('Token stream integration setup completed');
   }
@@ -618,7 +618,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     if (update.metadata?.executionId) {
       this.broadcastToExecution(update.metadata.executionId, update);
     }
-    
+
     // Also broadcast to token-specific rooms
     const tokenRoomId = `tokens:${update.metadata?.executionId || 'global'}`;
     this.broadcastToRoom(tokenRoomId, update);
@@ -630,13 +630,13 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   private setupClientStreamIntegration(client: WebSocketClient): void {
     // Create merged stream for the client combining multiple sources
     const streams: any[] = [];
-    
+
     // Add token stream if available and client is interested
     if (this.tokenStreamingService && client.subscriptions.has(StreamEventType.TOKEN)) {
       streams.push(
         this.tokenStreamingService.getGlobalTokenStream().pipe(
-          filter(update => 
-            !client.executionId || 
+          filter(update =>
+            !client.executionId ||
             update.metadata?.executionId === client.executionId
           )
         )
@@ -645,10 +645,10 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
 
     // Add workflow stream if available
     // This would be enhanced with WorkflowStreamService integration
-    
+
     if (streams.length > 0) {
       const mergedStream = merge(...streams);
-      
+
       const subscription = mergedStream.subscribe(
         (update: unknown) => {
           const streamUpdate = update as StreamUpdate;
@@ -661,7 +661,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
           client.subject.error(error);
         }
       );
-      
+
       client.subscription = subscription;
       this.activeSubscriptions.add(subscription);
     }
@@ -685,7 +685,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     const now = Date.now();
     const staleThreshold = 5 * 60 * 1000; // 5 minutes
     const disconnected: string[] = [];
-    
+
     this.clients.forEach((client, clientId) => {
       if (client.subject.closed) {
         disconnected.push(clientId);
@@ -711,7 +711,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     const now = Date.now();
     const staleThreshold = 10 * 60 * 1000; // 10 minutes
     const staleRooms: string[] = [];
-    
+
     this.rooms.forEach((room, roomId) => {
       if (room.clients.size === 0 && now - room.lastActivity.getTime() > staleThreshold) {
         staleRooms.push(roomId);

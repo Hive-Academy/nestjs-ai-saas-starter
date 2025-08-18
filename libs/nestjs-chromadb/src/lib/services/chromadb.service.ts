@@ -1,4 +1,4 @@
- 
+
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import {
   ChromaClient,
@@ -301,7 +301,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       !queryEmbeddings &&
       this.embeddingService.isConfigured()
     ) {
-      processedQueryEmbeddings = await this.embeddingService.embed(queryTexts);
+      processedQueryEmbeddings = (await this.embeddingService.embed(queryTexts)) as number[][];
     }
 
     return collection.query({
