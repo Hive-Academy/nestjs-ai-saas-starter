@@ -1,30 +1,22 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "mcp__sequential-thinking__sequentialthinking",
-      "WebSearch",
-      "Bash(npx nx run-many:*)",
-      "Bash(npx nx show project:*)",
-      "Bash(npx nx sync:*)",
-      "Bash(git add:*)",
-      "Bash(npx nx test:*)",
-      "Bash(npx nx build:*)",
-      "Bash(npx tsc:*)",
+      "Bash(npx nx run anubis-studio-shared-adapters:typecheck)",
       "Bash(npx nx run:*)",
-      "Bash(rm:*)",
-      "Bash(mkdir:*)",
-      "mcp__filesystem__directory_tree",
-      "mcp__filesystem__read_multiple_files",
-      "mcp__filesystem__read_text_file",
+      "Bash(find ./libs/anubis/shared -name \"*.ts\" -exec grep -l \"EventType\\|EventPriority\\|AgentType\\|DetailLevel\\|StreamEvent\\|ActivityItem\" {} ;)",
+      "Bash(grep:*)",
       "Bash(find:*)",
-      "Bash(cp:*)",
-      "Bash(mv:*)",
-      "Bash(npm run build:libs:*)",
-      "Bash(npx nx list:*)"
+      "Bash(npx nx serve:*)",
+      "Bash(npx nx build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx ngc:*)",
+      "WebSearch"
     ],
-    "deny": [],
     "additionalDirectories": [
-      "D:\\d\\projects"
+      "D:\\projects\\anubis",
+      "d:\\projects\\anubis",
     ]
   },
   "enableAllProjectMcpServers": true,
