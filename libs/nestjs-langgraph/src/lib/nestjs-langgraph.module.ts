@@ -82,6 +82,7 @@ export class NestjsLanggraphModule {
     };
   }
 
+
   static forFeature(workflows: Array<Type<unknown>>): DynamicModule {
     const providers = workflows.map((workflow) => ({
       provide: workflow,
