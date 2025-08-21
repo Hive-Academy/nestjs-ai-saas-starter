@@ -5,7 +5,7 @@ import {
   LangGraphModuleOptions,
   LangGraphModuleAsyncOptions,
   LangGraphOptionsFactory,
-} from './interfaces/module-options.interface';
+} from '@langgraph-modules/core';
 import {
   LANGGRAPH_MODULE_OPTIONS,
   LANGGRAPH_MODULE_ID,

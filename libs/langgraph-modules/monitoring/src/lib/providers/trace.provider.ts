@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CallbackManagerForLLMRun } from '@langchain/core/callbacks/manager';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 
 /**

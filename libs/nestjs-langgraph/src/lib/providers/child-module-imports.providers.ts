@@ -1,4 +1,4 @@
-import { DynamicModule, Logger } from '@nestjs/common';
+import { type DynamicModule, Logger } from '@nestjs/common';
 import * as path from 'path';
 
 // Use interface instead of importing from @langgraph-modules/core to avoid dependency issues
@@ -79,7 +79,7 @@ class PathResolutionService {
 
   static resolveModulePaths(moduleId: string): string[] {
     const environment = process.env.NODE_ENV || 'development';
-    
+
     // Primary paths using TypeScript path mapping
     const paths = [
       `@langgraph-modules/${moduleId}`,
@@ -138,7 +138,7 @@ class ModuleValidatorService {
 
       // Extract module information
       result.moduleInfo.exports = Object.keys(module);
-      
+
       this.logger.debug(`Validation successful for module: ${metadata.moduleId}`);
     } catch (error) {
       result.errors.push(`Module instantiation failed: ${error.message}`);
@@ -269,12 +269,12 @@ class ProductionLoadingStrategy implements IModuleLoadingStrategy {
     for (const modulePath of modulePaths) {
       try {
         ProductionLoadingStrategy.logger.debug(`Attempting to load module from path: ${modulePath}`);
-        
+
         // Use dynamic import with proper error handling
         const moduleExports = await import(modulePath);
-        
+
         // Handle both default and named exports
-        const ModuleClass = moduleExports[metadata.className] || 
+        const ModuleClass = moduleExports[metadata.className] ||
                            moduleExports.default?.[metadata.className] ||
                            moduleExports.default;
 
@@ -292,10 +292,10 @@ class ProductionLoadingStrategy implements IModuleLoadingStrategy {
 
         // Create dynamic module instance
         const dynamicModule = ModuleClass.forRoot(config);
-        
+
         const loadTime = Date.now() - startTime;
         ProductionLoadingStrategy.logger.log(`✅ Successfully loaded module '${moduleId}' in ${loadTime}ms using path: ${modulePath}`);
-        
+
         return dynamicModule;
       } catch (error) {
         ProductionLoadingStrategy.logger.debug(`Failed to load from path ${modulePath}:`, error.message);
@@ -322,7 +322,7 @@ class FallbackStrategy implements IModuleLoadingStrategy {
 
   async loadModule<T>(moduleId: string, config: any): Promise<DynamicModule | null> {
     FallbackStrategy.logger.warn(`⚠️ Using fallback implementation for module '${moduleId}'`);
-    
+
     // Return null to indicate graceful degradation
     // The main module will handle this gracefully
     return null;
@@ -334,7 +334,7 @@ class FallbackStrategy implements IModuleLoadingStrategy {
  */
 class DynamicModuleLoaderFacade {
   private static readonly logger = new Logger(DynamicModuleLoaderFacade.name);
-  
+
   constructor(
     private readonly strategies: IModuleLoadingStrategy[]
   ) {
@@ -366,7 +366,7 @@ class DynamicModuleLoaderFacade {
 
   private async loadSingleModule(moduleId: string, config: any): Promise<DynamicModule | null> {
     const strategies = this.strategies.filter(s => s.canHandle(moduleId));
-    
+
     for (const strategy of strategies) {
       try {
         const module = await strategy.loadModule(moduleId, config);
@@ -377,13 +377,13 @@ class DynamicModuleLoaderFacade {
         DynamicModuleLoaderFacade.logger.debug(`Strategy ${strategy.constructor.name} failed for ${moduleId}:`, error.message);
       }
     }
-    
+
     return null;
   }
 
   private getRequiredModules(options: LangGraphModuleOptions): [string, any][] {
     const modules: [string, any][] = [];
-    
+
     // Map options to module configurations
     if (options.checkpoint?.enabled) {
       modules.push(['checkpoint', options.checkpoint]);
@@ -415,7 +415,7 @@ class DynamicModuleLoaderFacade {
     if (options.workflowEngine) {
       modules.push(['workflow-engine', options.workflowEngine]);
     }
-    
+
     return modules;
   }
 }
@@ -425,12 +425,12 @@ class DynamicModuleLoaderFacade {
  */
 export class AdvancedChildModuleImportFactory {
   private static readonly logger = new Logger(AdvancedChildModuleImportFactory.name);
-  
+
   private static readonly loader = new DynamicModuleLoaderFacade([
     new ProductionLoadingStrategy(),
     new FallbackStrategy()
   ]);
-  
+
   /**
    * Create child module imports with advanced loading strategies
    */
@@ -440,16 +440,16 @@ export class AdvancedChildModuleImportFactory {
     try {
       const startTime = Date.now();
       const modules = await this.loader.loadModules(options);
-      
+
       const loadTime = Date.now() - startTime;
       const loadedModules = modules.map(m => m.module?.name || 'Unknown').join(', ');
-      
+
       this.logger.log(`🚀 Child module loading completed in ${loadTime}ms. Loaded: [${loadedModules}]`);
-      
+
       return modules;
     } catch (error) {
       this.logger.error('💥 Child module loading failed:', error);
-      
+
       // Return empty array for graceful degradation
       return [];
     }
@@ -462,16 +462,16 @@ export class AdvancedChildModuleImportFactory {
 export class ChildModuleImportFactory {
   private static readonly logger = new Logger(ChildModuleImportFactory.name);
   private static loadedModules: Map<string, DynamicModule> = new Map();
-  
+
   /**
    * Create child module imports synchronously by pre-loading during module initialization
    */
   static createChildModuleImports(options: LangGraphModuleOptions): DynamicModule[] {
     const modules: DynamicModule[] = [];
     const requiredModules = this.getRequiredModules(options);
-    
+
     this.logger.log(`Attempting to load ${requiredModules.length} child modules synchronously...`);
-    
+
     for (const [moduleId, config] of requiredModules) {
       try {
         const module = this.loadModuleSync(moduleId, config);
@@ -485,11 +485,11 @@ export class ChildModuleImportFactory {
         this.logger.error(`❌ Failed to load module ${moduleId}:`, error.message);
       }
     }
-    
+
     this.logger.log(`Loaded ${modules.length}/${requiredModules.length} child modules`);
     return modules;
   }
-  
+
   /**
    * Load module synchronously using require (for Node.js environments)
    */
@@ -499,21 +499,21 @@ export class ChildModuleImportFactory {
     if (this.loadedModules.has(cacheKey)) {
       return this.loadedModules.get(cacheKey)!;
     }
-    
+
     const metadata = ModuleRegistryService.getModule(moduleId);
     if (!metadata) {
       this.logger.warn(`Module metadata not found: ${moduleId}`);
       return null;
     }
-    
+
     const modulePaths = PathResolutionService.resolveModulePaths(moduleId);
-    
+
     for (const modulePath of modulePaths) {
       try {
         this.logger.debug(`Trying to load module from: ${modulePath}`);
-        
+
         let moduleExports: any;
-        
+
         // Try CommonJS require (works in Node.js environments)
         try {
           // Use require for synchronous loading
@@ -522,48 +522,48 @@ export class ChildModuleImportFactory {
           this.logger.debug(`Require failed for ${modulePath}:`, requireError.message);
           continue;
         }
-        
+
         // Handle both CommonJS and ES module exports
-        const ModuleClass = moduleExports[metadata.className] || 
+        const ModuleClass = moduleExports[metadata.className] ||
                            moduleExports.default?.[metadata.className] ||
                            moduleExports.default;
-        
+
         if (!ModuleClass) {
           this.logger.debug(`Module class ${metadata.className} not found in ${modulePath}`);
           continue;
         }
-        
+
         // Validate and instantiate module
         if (typeof ModuleClass.forRoot !== 'function') {
           this.logger.debug(`Module ${metadata.className} missing forRoot method`);
           continue;
         }
-        
+
         const dynamicModule = ModuleClass.forRoot(config);
         if (!dynamicModule || !dynamicModule.module) {
           this.logger.debug(`Module ${metadata.className} forRoot() returned invalid DynamicModule`);
           continue;
         }
-        
+
         // Cache the loaded module
         this.loadedModules.set(cacheKey, dynamicModule);
-        
+
         this.logger.debug(`Successfully loaded module ${moduleId} from ${modulePath}`);
         return dynamicModule;
-        
+
       } catch (error) {
         this.logger.debug(`Failed to load from path ${modulePath}:`, error.message);
         continue;
       }
     }
-    
+
     this.logger.warn(`All loading attempts failed for module: ${moduleId}`);
     return null;
   }
-  
+
   private static getRequiredModules(options: LangGraphModuleOptions): [string, any][] {
     const modules: [string, any][] = [];
-    
+
     // Map options to module configurations
     if (options.checkpoint?.enabled) {
       modules.push(['checkpoint', options.checkpoint]);
@@ -595,10 +595,10 @@ export class ChildModuleImportFactory {
     if (options.workflowEngine) {
       modules.push(['workflow-engine', options.workflowEngine]);
     }
-    
+
     return modules;
   }
-  
+
   /**
    * Async method for advanced loading (for future use)
    */

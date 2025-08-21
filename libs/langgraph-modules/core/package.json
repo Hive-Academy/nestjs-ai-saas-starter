@@ -17,7 +17,8 @@
   "nx": {
     "name": "langgraph-modules/core",
     "tags": [
-      "scope:langgraph"
+      "scope:langgraph",
+      "type:util"
     ],
     "targets": {
       "build": {
