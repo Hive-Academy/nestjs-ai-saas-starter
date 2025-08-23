@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { WORKFLOW_EDGES_KEY } from './workflow.decorator';
+import { WORKFLOW_EDGES_KEY } from '@langgraph-modules/core';
 
 /**
  * Options for @Edge decorator

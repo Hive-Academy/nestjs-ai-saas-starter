@@ -3,18 +3,18 @@ import { StateGraph, StateGraphArgs, END } from '@langchain/langgraph';
 import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 
-import {
+import type {
   WorkflowState,
   WorkflowNode,
   WorkflowEdge,
   WorkflowDefinition,
   Command,
 } from '../interfaces';
-import { CommandType } from '../constants';
+import { WorkflowCommandType } from '../constants';
 import {
   WorkflowStateAnnotation,
-  createCustomStateAnnotation,
-} from './workflow-state-annotation';
+  // createCustomStateAnnotation, // Currently unused
+} from '@langgraph-modules/core';
 import { MetadataProcessorService } from './metadata-processor.service';
 
 export interface GraphBuilderOptions {
@@ -423,7 +423,7 @@ export class WorkflowGraphBuilderService {
       result &&
       typeof result === 'object' &&
       'type' in result &&
-      Object.values(CommandType).includes(result.type)
+      Object.values(WorkflowCommandType).includes(result.type)
     );
   }
 
@@ -438,7 +438,7 @@ export class WorkflowGraphBuilderService {
     this.logger.debug(`Processing command from node ${node.id}:`, command);
 
     switch (command.type) {
-      case CommandType.GOTO:
+      case WorkflowCommandType.GOTO:
         return {
           ...command.update,
           currentNode: command.goto,
@@ -448,7 +448,7 @@ export class WorkflowGraphBuilderService {
           },
         } as unknown as Partial<TState>;
 
-      case CommandType.UPDATE:
+      case WorkflowCommandType.UPDATE:
         return {
           ...command.update,
           metadata: {
@@ -457,7 +457,7 @@ export class WorkflowGraphBuilderService {
           },
         } as unknown as Partial<TState>;
 
-      case CommandType.END:
+      case WorkflowCommandType.END:
         return {
           ...command.update,
           status: 'completed',
@@ -467,7 +467,7 @@ export class WorkflowGraphBuilderService {
           },
         } as unknown as Partial<TState>;
 
-      case CommandType.ERROR:
+      case WorkflowCommandType.ERROR:
         return {
           ...command.update,
           status: 'failed',
@@ -478,7 +478,7 @@ export class WorkflowGraphBuilderService {
           },
         } as unknown as Partial<TState>;
 
-      case CommandType.RETRY:
+      case WorkflowCommandType.RETRY:
         return {
           ...command.update,
           currentNode: command.retry?.node || node.id,
@@ -489,7 +489,7 @@ export class WorkflowGraphBuilderService {
           },
         } as unknown as Partial<TState>;
 
-      case CommandType.SKIP:
+      case WorkflowCommandType.SKIP:
         return {
           ...command.update,
           metadata: {
@@ -499,7 +499,7 @@ export class WorkflowGraphBuilderService {
           },
         } as unknown as Partial<TState>;
 
-      case CommandType.STOP:
+      case WorkflowCommandType.STOP:
         return {
           ...command.update,
           status: 'stopped',

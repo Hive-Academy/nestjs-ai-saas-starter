@@ -6,7 +6,6 @@ export { WorkflowGraphBuilderService } from './lib/core/workflow-graph-builder.s
 export { CompilationCacheService } from './lib/core/compilation-cache.service';
 export { MetadataProcessorService } from './lib/core/metadata-processor.service';
 export { SubgraphManagerService } from './lib/core/subgraph-manager.service';
-export * from './lib/core/workflow-state-annotation';
 
 // Streaming Services (moved from streaming module to avoid circular dependency)
 export { WorkflowStreamService } from './lib/streaming/workflow-stream.service';

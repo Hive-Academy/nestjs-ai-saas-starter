@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { StateGraph, StateGraphArgs, START, END } from '@langchain/langgraph';
+import { StateGraph, START, END } from '@langchain/langgraph';
 import { 
   WorkflowDefinition, 
   TaskDefinition,
@@ -35,8 +35,9 @@ export class GraphGeneratorService {
 
     // Add nodes for each task
     for (const [taskName, taskDef] of definition.tasks) {
-      const nodeHandler = this.createNodeHandler<TState>(taskDef, instance);
-      workflow.addNode(taskName, nodeHandler);
+      const nodeHandler = this.createNodeHandler<TState>(taskDef, instance, definition);
+      // Strategic type assertion for LangGraph compatibility
+      (workflow as any).addNode(taskName, nodeHandler);
     }
 
     // Add edges based on dependencies
@@ -99,7 +100,8 @@ export class GraphGeneratorService {
    */
   private createNodeHandler<TState extends FunctionalWorkflowState>(
     taskDef: TaskDefinition,
-    instance: object
+    instance: object,
+    definition: WorkflowDefinition
   ): (state: TState) => Promise<Partial<TState>> {
     return async (state: TState): Promise<Partial<TState>> => {
       this.logger.debug(`Executing task: ${taskDef.name}`);
@@ -115,9 +117,9 @@ export class GraphGeneratorService {
         const context: TaskExecutionContext = {
           state,
           taskName: taskDef.name,
-          workflowId: state.workflowName,
-          executionId: state.executionId,
-          metadata: state.metadata || {}
+          workflowId: state.workflowName || definition.name,
+          executionId: state.executionId || `exec_${Date.now()}`,
+          metadata: (state.metadata as Record<string, unknown>) || {}
         };
 
         // Execute the task
@@ -129,10 +131,10 @@ export class GraphGeneratorService {
           currentTask: taskDef.name,
           currentStep: (state.currentStep || 0) + 1,
           metadata: {
-            ...state.metadata,
+            ...(state.metadata || {}),
             [`${taskDef.name}_completed`]: new Date().toISOString()
           }
-        } as Partial<TState>;
+        } as unknown as Partial<TState>;
 
       } catch (error) {
         this.logger.error(`Task '${taskDef.name}' failed:`, error);
@@ -145,7 +147,7 @@ export class GraphGeneratorService {
             timestamp: new Date().toISOString()
           },
           currentTask: taskDef.name
-        } as Partial<TState>;
+        } as unknown as Partial<TState>;
       }
     };
   }
@@ -166,7 +168,7 @@ export class GraphGeneratorService {
     }
 
     // Add edge from START to entrypoint
-    workflow.addEdge(START, entrypoint.name);
+    workflow.addEdge(START, entrypoint.name as any);
 
     // Build dependency graph edges
     const tasksByDependency = new Map<string, string[]>();
@@ -187,37 +189,37 @@ export class GraphGeneratorService {
     for (const [fromTask, toTasks] of tasksByDependency) {
       if (toTasks.length === 1) {
         // Simple edge to single dependent
-        workflow.addEdge(fromTask, toTasks[0]);
+        workflow.addEdge(fromTask as any, toTasks[0] as any);
       } else if (toTasks.length > 1) {
         // Conditional edge to multiple dependents
         // This creates parallel execution paths
         workflow.addConditionalEdges(
-          fromTask,
-          (state: TState) => {
+          fromTask as any,
+          ((state: TState) => {
             // Execute all dependent tasks (parallel branches)
             // LangGraph will handle the parallel execution
             return toTasks[0]; // Return first task, others will be handled by graph structure
-          },
+          }) as any,
           toTasks.reduce((acc, task) => {
             acc[task] = task;
             return acc;
-          }, {} as Record<string, string>)
+          }, {} as any) // LangGraph routing compatibility
         );
       }
     }
 
     // Find terminal tasks (tasks with no dependents)
     const terminalTasks = Array.from(definition.tasks.keys())
-      .filter(taskName => !tasksByDependency.has(taskName) && taskName !== entrypoint.name);
+      .filter(taskName => !tasksByDependency.has(taskName) && taskName !== entrypoint?.name);
 
     // Add edges from terminal tasks to END
     for (const terminalTask of terminalTasks) {
-      workflow.addEdge(terminalTask, END);
+      workflow.addEdge(terminalTask as any, END);
     }
 
     // If entrypoint has no dependents and is not a terminal task, connect it to END
-    if (!tasksByDependency.has(entrypoint.name) && terminalTasks.length === 0) {
-      workflow.addEdge(entrypoint.name, END);
+    if (entrypoint && !tasksByDependency.has(entrypoint.name) && terminalTasks.length === 0) {
+      workflow.addEdge(entrypoint.name as any, END);
     }
 
     this.logger.debug(`Added ${tasksByDependency.size} dependency edges to workflow`);
@@ -245,7 +247,7 @@ export class GraphGeneratorService {
     
     // Find entrypoint
     const entrypoint = Array.from(definition.tasks.values())
-      .find(task => task.isEntrypoint);
+      .find((task: TaskDefinition) => task.isEntrypoint);
     
     if (entrypoint) {
       lines.push(`  START -> "${entrypoint.name}";`);
@@ -297,7 +299,7 @@ export class GraphGeneratorService {
 
     // Check for entrypoint
     const entrypoint = Array.from(definition.tasks.values())
-      .find(task => task.isEntrypoint);
+      .find((task: TaskDefinition) => task.isEntrypoint);
     
     if (!entrypoint) {
       errors.push('Workflow must have exactly one @Entrypoint decorated method');

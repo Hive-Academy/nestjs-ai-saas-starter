@@ -1,17 +1,41 @@
 import 'reflect-metadata';
 import { SetMetadata } from '@nestjs/common';
-import type { WorkflowConfig } from '../base/unified-workflow.base';
-import type { WorkflowStateAnnotation } from '../core/workflow-state-annotation';
-
-export const WORKFLOW_METADATA_KEY = 'workflow:metadata';
-export const WORKFLOW_NODES_KEY = 'workflow:nodes';
-export const WORKFLOW_EDGES_KEY = 'workflow:edges';
-export const WORKFLOW_TOOLS_KEY = 'workflow:tools';
+import type { WorkflowExecutionConfig } from '@langgraph-modules/core';
+import { 
+  WorkflowStateAnnotation,
+  WORKFLOW_METADATA_KEY,
+  WORKFLOW_NODES_KEY,
+  WORKFLOW_EDGES_KEY,
+  WORKFLOW_TOOLS_KEY,
+  isWorkflow
+} from '@langgraph-modules/core';
 
 /**
  * Options for @Workflow decorator
  */
-export interface WorkflowOptions extends Partial<WorkflowConfig> {
+export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
+  /** Unique name for the workflow */
+  name?: string;
+  /** Human-readable description */
+  description?: string;
+  /** Confidence threshold for automatic approval */
+  confidenceThreshold?: number;
+  /** Whether to require human approval for certain operations */
+  requiresHumanApproval?: boolean;
+  /** Threshold for automatic approval without human intervention */
+  autoApproveThreshold?: number;
+  /** Enable streaming for this workflow */
+  streaming?: boolean;
+  /** Enable caching for compiled graphs */
+  cache?: boolean;
+  /** Enable metrics collection */
+  metrics?: boolean;
+  /** Human-in-the-loop configuration */
+  hitl?: {
+    enabled: boolean;
+    timeout?: number;
+    fallbackStrategy?: 'auto-approve' | 'reject' | 'retry';
+  };
   /** State annotation or channels definition */
   channels?: typeof WorkflowStateAnnotation | any;
   /** Pattern to use (supervisor, pipeline, parallel, etc.) */
@@ -122,6 +146,4 @@ export function getWorkflowMetadata(target: any): WorkflowOptions | undefined {
 /**
  * Check if a class is decorated with @Workflow
  */
-export function isWorkflow(target: any): boolean {
-  return Reflect.hasMetadata(WORKFLOW_METADATA_KEY, target);
-}
+// isWorkflow function is now exported from @langgraph-modules/core

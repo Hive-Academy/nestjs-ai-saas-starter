@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, END } from '@langchain/langgraph';
 import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
-import { WorkflowState } from '../interfaces';
+import type { WorkflowState } from '../interfaces';
 import { CompilationCacheService } from './compilation-cache.service';
-import { WorkflowStateAnnotation } from './workflow-state-annotation';
+import { WorkflowStateAnnotation } from '@langgraph-modules/core';
 
 export interface SubgraphOptions {
   /**
@@ -145,7 +145,7 @@ export interface SubgraphMetadata {
 @Injectable()
 export class SubgraphManagerService {
   private readonly logger = new Logger(SubgraphManagerService.name);
-  private readonly subgraphs = new Map<string, CompiledSubgraph>();
+  private readonly subgraphs = new Map<string, CompiledSubgraph<any>>();
   private readonly activeSubgraphs = new Map<string, SubgraphContext>();
 
   constructor(private readonly cacheService: CompilationCacheService) {}
@@ -282,6 +282,64 @@ export class SubgraphManagerService {
   }
 
   /**
+   * Create a checkpointer for workflow persistence
+   */
+  async createCheckpointer(config?: any): Promise<BaseCheckpointSaver> {
+    // Use the existing getCheckpointer method with enhanced configuration
+    return this.getCheckpointer(config || { type: 'memory' });
+  }
+
+  /**
+   * Create a subgraph from a workflow definition
+   */
+  async createSubgraph<TState extends WorkflowState = WorkflowState>(
+    name: string,
+    definition: any,
+    options: SubgraphOptions = {}
+  ): Promise<CompiledSubgraph<TState>> {
+    // Create a new state graph from the definition
+    const graph = new StateGraph<TState>(WorkflowStateAnnotation as any);
+
+    // Process nodes from definition
+    if (definition.nodes) {
+      for (const node of definition.nodes) {
+        const handler = node.handler || node.func;
+        if (handler) {
+          // Strategic type assertion for LangGraph compatibility - bypassing deep generic inference
+          const nodeId = node.id || node.name;
+          const nodeHandler = handler as any;
+          (graph as any).addNode(nodeId, nodeHandler);
+        }
+      }
+    }
+
+    // Process edges from definition
+    if (definition.edges) {
+      for (const edge of definition.edges) {
+        if (edge.condition) {
+          graph.addConditionalEdges(
+            edge.from as any,
+            edge.condition,
+            edge.targets || [edge.to, END] as any
+          );
+        } else {
+          graph.addEdge(edge.from as any, edge.to as any);
+        }
+      }
+    }
+
+    // Set entry point
+    if (definition.entryPoint) {
+      graph.setEntryPoint(definition.entryPoint as any);
+    } else if (definition.nodes && definition.nodes.length > 0) {
+      graph.setEntryPoint(definition.nodes[0].id || definition.nodes[0].name as any);
+    }
+
+    // Compile and return the subgraph
+    return this.compileSubgraph(name, graph, options);
+  }
+
+  /**
    * Check if a workflow is running as a subgraph
    */
   isRunningAsSubgraph(state: WorkflowState): boolean {
@@ -372,7 +430,7 @@ export class SubgraphManagerService {
    * Clear all cached subgraphs
    */
   async clearAllCachedSubgraphs(): Promise<void> {
-    for (const [id, subgraph] of this.subgraphs) {
+    for (const [, subgraph] of this.subgraphs) {
       const metadata = subgraph.getMetadata();
       if (metadata.cacheKey) {
         await this.cacheService.delete(metadata.cacheKey);

@@ -1,6 +1,7 @@
 // Core orchestration interfaces (only what exists in main library)
 export type * from './module-options.interface';
 export type * from './workflow.interface';
+export type * from './workflow-config.interface';
 export type * from './node.interface';
 export type * from './state-management.interface';
 

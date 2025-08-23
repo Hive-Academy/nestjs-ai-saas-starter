@@ -7,10 +7,10 @@ import {
   StreamUpdate,
   StreamEventType,
   StreamMetadata,
-  StreamContext,
+  // StreamContext, // Currently unused
   TokenData,
 } from '@langgraph-modules/streaming';
-import { WorkflowStateAnnotation } from '../core/workflow-state-annotation';
+import { WorkflowStateAnnotation } from '@langgraph-modules/core';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import {
   StreamTokenMetadata,
@@ -152,12 +152,6 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     if (!stream) {
       throw new Error(`Stream not found for execution ${executionId}`);
     }
-
-    const context: StreamContext = {
-      executionId,
-      streamId: `stream_${Date.now()}`,
-      startTime: new Date(),
-    };
 
     try {
       // Initialize streaming configuration if workflow class provided
@@ -739,10 +733,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Get progress stream configuration for a node
+   * Currently unused - kept for future implementation
    */
-  private getProgressStreamConfig(executionId: string, nodeId: string): StreamProgressMetadata | undefined {
-    return this.progressStreamConfigs.get(`${executionId}:${nodeId}`);
-  }
+  // private getProgressStreamConfig(executionId: string, nodeId: string): StreamProgressMetadata | undefined {
+  //   return this.progressStreamConfigs.get(`${executionId}:${nodeId}`);
+  // }
 
   /**
    * Determine appropriate stream modes based on configuration

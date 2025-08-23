@@ -2,50 +2,23 @@ import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   StateGraph,
-  END,
 } from '@langchain/langgraph';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StructuredToolInterface } from '@langchain/core/tools';
+import type { WorkflowExecutionConfig } from '@langgraph-modules/core';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import { EventStreamProcessorService } from '@langgraph-modules/streaming';
-import { isWorkflow } from '@langgraph-modules/functional-api';
+import { isWorkflow } from '@langgraph-modules/core';
 import {
   WorkflowState,
   Command,
   WorkflowDefinition,
   WorkflowError,
 } from '../interfaces';
-import { CommandType } from '../constants';
+import { WorkflowCommandType } from '../constants';
 
-/**
- * Configuration for workflow behavior
- */
-export interface WorkflowConfig {
-  /** Unique name for the workflow */
-  name: string;
-  /** Human-readable description */
-  description?: string;
-  /** Confidence threshold for automatic approval */
-  confidenceThreshold?: number;
-  /** Whether to require human approval for certain operations */
-  requiresHumanApproval?: boolean;
-  /** Threshold for automatic approval without human intervention */
-  autoApproveThreshold?: number;
-  /** Enable streaming for this workflow */
-  streaming?: boolean;
-  /** Enable caching for compiled graphs */
-  cache?: boolean;
-  /** Enable metrics collection */
-  metrics?: boolean;
-  /** Human-in-the-loop configuration */
-  hitl?: {
-    enabled: boolean;
-    timeout?: number;
-    fallbackStrategy?: 'auto-approve' | 'reject' | 'retry';
-  };
-}
 
 /**
  * Base class for all LangGraph workflows
@@ -58,7 +31,7 @@ export abstract class UnifiedWorkflowBase<
   protected readonly logger: Logger;
 
   // Workflow configuration
-  protected abstract readonly workflowConfig: WorkflowConfig;
+  protected abstract readonly workflowConfig: WorkflowExecutionConfig;
 
   // Graph definition
   protected graph?: StateGraph<TState>;
@@ -132,10 +105,9 @@ export abstract class UnifiedWorkflowBase<
       throw new Error('Graph must be built before compilation');
     }
 
-    // TODO: Implement checkpointer creation in SubgraphManagerService
-    const checkpointer = undefined; // this.workflowConfig.cache
-    // ? await this.subgraphManager.createCheckpointer({ type: 'sqlite', dbPath: ':memory:' })
-    // : undefined;
+    const checkpointer = this.workflowConfig.cache
+      ? await this.subgraphManager.createCheckpointer({ type: 'sqlite', path: ':memory:' })
+      : undefined;
 
     return this.graph.compile({ checkpointer });
   }
@@ -331,7 +303,7 @@ export abstract class UnifiedWorkflowBase<
     if (state.humanFeedback) {
       if (state.humanFeedback.approved) {
         return {
-          type: CommandType.GOTO,
+          type: WorkflowCommandType.GOTO,
           goto: this.getPostApprovalNode(state),
           update: {
             approvalReceived: true,
@@ -339,7 +311,7 @@ export abstract class UnifiedWorkflowBase<
         };
       }
         return {
-          type: CommandType.END,
+          type: WorkflowCommandType.END,
           update: {
             status: 'rejected',
             rejectionReason: state.humanFeedback.reason,
@@ -350,7 +322,7 @@ export abstract class UnifiedWorkflowBase<
 
     // Wait for approval (will be interrupted)
     return {
-      type: CommandType.UPDATE,
+      type: WorkflowCommandType.UPDATE,
       update: {
         waitingForApproval: true,
       } as Partial<TState>,
@@ -423,7 +395,7 @@ export abstract class UnifiedWorkflowBase<
     const maxRetries = 3;
     if (state.retryCount < maxRetries && workflowError.isRecoverable) {
       return {
-        type: CommandType.RETRY,
+        type: WorkflowCommandType.RETRY,
         retry: {
           node: nodeId,
           delay: Math.pow(2, state.retryCount) * 1000, // Exponential backoff
@@ -437,7 +409,7 @@ export abstract class UnifiedWorkflowBase<
 
     // Non-recoverable or max retries reached
     return {
-      type: CommandType.ERROR,
+      type: WorkflowCommandType.ERROR,
       error: workflowError,
       update: {
         status: 'failed',
@@ -517,25 +489,23 @@ export abstract class UnifiedWorkflowBase<
   async compileAsSubgraph(options: any = {}): Promise<any> {
     const definition = this.getWorkflowDefinition();
 
-    // TODO: Implement createSubgraph in SubgraphManagerService
-    throw new Error('Subgraph creation not implemented yet');
-    // return this.subgraphManager.createSubgraph(
-    //   this.workflowConfig.name,
-    //   definition,
-    //   {
-    //     ...options,
-    //     transforms: {
-    //       input: this.transformSubgraphInput.bind(this),
-    //       output: this.transformSubgraphOutput.bind(this),
-    //     },
-    //   },
-    // );
+    return this.subgraphManager.createSubgraph(
+      this.workflowConfig.name,
+      definition,
+      {
+        ...options,
+        transforms: {
+          input: this.transformSubgraphInput.bind(this),
+          output: this.transformSubgraphOutput.bind(this),
+        },
+      },
+    );
   }
 
   /**
    * Get workflow metadata
    */
-  getMetadata(): WorkflowConfig {
+  getMetadata(): WorkflowExecutionConfig {
     return this.workflowConfig;
   }
 

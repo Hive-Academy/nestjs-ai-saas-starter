@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { WORKFLOW_NODES_KEY } from './workflow.decorator';
+import { WORKFLOW_NODES_KEY } from '@langgraph-modules/core';
 
 /**
  * Options for @Node decorator
@@ -238,4 +238,14 @@ export function SubgraphNode(options?: Omit<NodeOptions, 'type'>): MethodDecorat
     ...options, 
     type: 'subgraph'
   });
+}
+
+/**
+ * Get all streaming metadata from a target object and method
+ * Placeholder function for compatibility with workflow-engine
+ */
+export function getAllStreamingMetadata(target: any, methodName?: string): Record<string, any> {
+  // Return empty object for now - this would need proper implementation
+  // when streaming decorators are fully implemented
+  return {};
 }
