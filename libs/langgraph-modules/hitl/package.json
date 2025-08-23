@@ -41,6 +41,9 @@
   },
   "dependencies": {
     "tslib": "^2.3.0",
-    "@nestjs/common": "^11.0.0"
+    "@nestjs/common": "^11.0.0",
+    "reflect-metadata": "^0.1.13",
+    "@langgraph-modules/core": "0.0.1",
+    "@nestjs/event-emitter": "^3.0.1"
   }
 }

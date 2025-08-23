@@ -1,4 +1,3 @@
-import { Checkpoint, CheckpointMetadata } from '@langchain/langgraph';
 import { z } from 'zod';
 
 /**
@@ -358,7 +357,7 @@ export interface TimeTravelServiceInterface {
   /**
    * Replay workflow from specific checkpoint
    */
-  replayFromCheckpoint: <T>(
+  replayFromCheckpoint: <T extends Record<string, unknown>>(
     threadId: string,
     checkpointId: string,
     options?: ReplayOptions<T>
@@ -367,7 +366,7 @@ export interface TimeTravelServiceInterface {
   /**
    * Create execution branch from checkpoint
    */
-  createBranch: <T>(
+  createBranch: <T extends Record<string, unknown>>(
     threadId: string,
     fromCheckpointId: string,
     branchOptions: BranchOptions<T>
@@ -384,7 +383,7 @@ export interface TimeTravelServiceInterface {
   /**
    * Compare states between two checkpoints
    */
-  compareCheckpoints: <T>(
+  compareCheckpoints: <T extends Record<string, unknown>>(
     threadId: string,
     checkpointId1: string,
     checkpointId2: string
@@ -398,7 +397,7 @@ export interface TimeTravelServiceInterface {
   /**
    * Merge branch back to main execution
    */
-  mergeBranch: <T>(
+  mergeBranch: <T extends Record<string, unknown>>(
     threadId: string,
     branchId: string,
     mergeStrategy?: 'overwrite' | 'merge' | 'custom'

@@ -11,11 +11,15 @@
       "mcp__filesystem__read_text_file",
       "mcp__filesystem__list_directory",
       "mcp__filesystem__write_file",
-      "Bash(npx nx run-many:*)"
+      "Bash(npx nx run-many:*)",
+      "Read(/D:\\d\\projects\\nestjs-ai-saas-starter/**)",
+      "Bash(npx nx show:*)",
+      "Bash(npx nx typecheck:*)"
     ],
     "additionalDirectories": [
       "D:\\projects\\nestjs-ai-saas-starter",
-      "d:\\projects\\nestjs-ai-saas-starter"
+      "d:\\projects\\nestjs-ai-saas-starter",
+      "D:\\"
     ]
   },
   "enableAllProjectMcpServers": true,

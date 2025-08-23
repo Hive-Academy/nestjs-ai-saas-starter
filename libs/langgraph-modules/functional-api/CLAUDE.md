@@ -5,9 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ## Business Domain Overview
 
 ### Core Purpose
+
 The functional-api module enables **functional workflow composition** through decorator-driven programming patterns. It provides a declarative approach to defining complex data processing pipelines, ETL workflows, and computational graphs using pure functional principles.
 
 ### Key Value Propositions
+
 - **Functional Purity**: Tasks are designed as pure functions with immutable state transformations
 - **Declarative Composition**: Define complex workflows through simple decorator annotations
 - **Dependency Management**: Automatic resolution and execution ordering based on task dependencies
@@ -15,6 +17,7 @@ The functional-api module enables **functional workflow composition** through de
 - **Pipeline Architecture**: Natural expression of data transformation pipelines
 
 ### Target Use Cases
+
 - **Data Processing Pipelines**: ETL workflows, data validation, transformation chains
 - **Computational Workflows**: Scientific computing, mathematical operations, data analysis
 - **Business Logic Composition**: Domain-specific workflows with clear functional boundaries
@@ -26,7 +29,9 @@ The functional-api module enables **functional workflow composition** through de
 ### Core Principles
 
 #### Pure Function Composition
+
 Tasks are designed as **pure functions** that:
+
 - Take immutable input state
 - Return new state without side effects
 - Are deterministic and predictable
@@ -52,7 +57,9 @@ async transformData(context: TaskExecutionContext): Promise<TaskExecutionResult>
 ```
 
 #### Immutable State Management
+
 State flows through the workflow as immutable data:
+
 - Each task receives read-only state
 - Tasks return partial state updates
 - State transformations create new objects
@@ -67,7 +74,9 @@ interface WorkflowState extends FunctionalWorkflowState {
 ```
 
 #### Side Effect Isolation
+
 Side effects are explicitly managed and isolated:
+
 - Pure tasks handle computation
 - Dedicated tasks manage I/O operations
 - Clear boundaries between pure and impure operations
@@ -93,6 +102,7 @@ async saveResults(context: TaskExecutionContext): Promise<TaskExecutionResult> {
 ## Decorator-Driven Functional Patterns
 
 ### @Entrypoint Decorator
+
 Marks the workflow entry point - typically handles input validation and initial state setup:
 
 ```typescript
@@ -117,6 +127,7 @@ async initializeWorkflow(context: TaskExecutionContext): Promise<TaskExecutionRe
 ```
 
 ### @Task Decorator
+
 Defines computational units with explicit dependencies:
 
 ```typescript
@@ -142,6 +153,7 @@ async processComplexData(context: TaskExecutionContext): Promise<TaskExecutionRe
 ## Functional Programming Best Practices
 
 ### Pure Function Design
+
 Design tasks as pure functions following functional programming principles:
 
 ```typescript
@@ -184,6 +196,7 @@ async badTransformData(context: TaskExecutionContext): Promise<TaskExecutionResu
 ```
 
 ### Immutability Patterns
+
 Ensure all state transformations preserve immutability:
 
 ```typescript
@@ -214,6 +227,7 @@ async enrichOrderData(context: TaskExecutionContext): Promise<TaskExecutionResul
 ```
 
 ### Error Handling in Functional Context
+
 Handle errors functionally using Result types or explicit error state:
 
 ```typescript
@@ -262,9 +276,11 @@ async processDataSafely(context: TaskExecutionContext): Promise<TaskExecutionRes
 ## Key Services Architecture
 
 ### FunctionalWorkflowService
+
 Central orchestration service managing workflow execution:
 
 **Core Capabilities:**
+
 - **Dependency Resolution**: Automatically determines task execution order
 - **State Management**: Manages immutable state flow between tasks
 - **Execution Planning**: Builds efficient execution graphs
@@ -272,6 +288,7 @@ Central orchestration service managing workflow execution:
 - **Checkpoint Integration**: Supports workflow resumption
 
 **Key Methods:**
+
 ```typescript
 // Execute complete workflow
 await workflowService.executeWorkflow<MyState>('DataProcessingWorkflow', {
@@ -289,15 +306,18 @@ await workflowService.resumeFromCheckpoint<MyState>(
 ```
 
 ### WorkflowDiscoveryService
+
 Automatically discovers and registers decorated workflow classes:
 
 **Discovery Process:**
+
 1. Scans all NestJS providers for decorated methods
 2. Extracts @Entrypoint and @Task metadata
 3. Builds workflow definitions with dependency graphs
 4. Validates workflow integrity before registration
 
 **Runtime Registration:**
+
 ```typescript
 // Service automatically discovers workflows like:
 @Injectable()
@@ -311,9 +331,11 @@ export class ReportingWorkflow {
 ```
 
 ### WorkflowValidator
+
 Ensures workflow integrity and prevents runtime errors:
 
 **Validation Checks:**
+
 - **Single Entrypoint**: Ensures exactly one @Entrypoint per workflow
 - **Task References**: Validates all dependencies reference existing tasks
 - **Cycle Detection**: Prevents circular dependency chains
@@ -322,6 +344,7 @@ Ensures workflow integrity and prevents runtime errors:
 ## Performance Optimization
 
 ### Function Memoization
+
 Implement memoization for expensive pure computations:
 
 ```typescript
@@ -356,6 +379,7 @@ async performComplexCalculation(context: TaskExecutionContext): Promise<TaskExec
 ```
 
 ### Lazy Evaluation Strategies
+
 Implement lazy evaluation for optional or conditional computations:
 
 ```typescript
@@ -387,6 +411,7 @@ async conditionalProcessing(context: TaskExecutionContext): Promise<TaskExecutio
 ## Validation and Type Safety
 
 ### Compile-time Type Safety
+
 Leverage TypeScript for comprehensive type checking:
 
 ```typescript
@@ -415,6 +440,7 @@ export class DataPipelineWorkflow {
 ```
 
 ### Runtime Validation
+
 Implement validation for workflow inputs and state transitions:
 
 ```typescript
@@ -458,6 +484,7 @@ async validateAndCleanData(context: TaskExecutionContext): Promise<TaskExecution
 ## Integration with Imperative Workflows
 
 ### Hybrid Workflow Patterns
+
 Combine functional and imperative patterns when appropriate:
 
 ```typescript
@@ -487,6 +514,7 @@ export class DataTransformationWorkflow {
 ```
 
 ### Service Integration
+
 Integrate functional workflows with other services:
 
 ```typescript
@@ -521,6 +549,7 @@ export class IntegratedWorkflow {
 ## Testing Strategies for Functional Code
 
 ### Pure Function Testing
+
 Test pure functions in isolation:
 
 ```typescript
@@ -569,6 +598,7 @@ describe('DataTransformationWorkflow', () => {
 ```
 
 ### Property-Based Testing
+
 Use property-based testing for functional workflows:
 
 ```typescript
@@ -605,6 +635,7 @@ describe('Data validation properties', () => {
 ```
 
 ### Integration Testing
+
 Test complete functional workflows:
 
 ```typescript
@@ -647,6 +678,7 @@ describe('Complete Workflow Integration', () => {
 ## Common Anti-patterns to Avoid
 
 ### State Mutation
+
 ```typescript
 // ❌ Avoid mutating state
 @Task()
@@ -666,6 +698,7 @@ async goodTask(context: TaskExecutionContext): Promise<TaskExecutionResult> {
 ```
 
 ### Hidden Side Effects
+
 ```typescript
 // ❌ Avoid hidden side effects in pure tasks
 @Task()

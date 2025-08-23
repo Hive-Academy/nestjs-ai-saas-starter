@@ -141,7 +141,7 @@ class ModuleValidatorService {
 
       this.logger.debug(`Validation successful for module: ${metadata.moduleId}`);
     } catch (error) {
-      result.errors.push(`Module instantiation failed: ${error.message}`);
+      result.errors.push(`Module instantiation failed: ${error instanceof Error ? error.message : String(error)}`);
       result.valid = false;
     }
 
@@ -298,7 +298,7 @@ class ProductionLoadingStrategy implements IModuleLoadingStrategy {
 
         return dynamicModule;
       } catch (error) {
-        ProductionLoadingStrategy.logger.debug(`Failed to load from path ${modulePath}:`, error.message);
+        ProductionLoadingStrategy.logger.debug(`Failed to load from path ${modulePath}:`, error instanceof Error ? error.message : String(error));
         continue;
       }
     }
@@ -374,7 +374,7 @@ class DynamicModuleLoaderFacade {
           return module;
         }
       } catch (error) {
-        DynamicModuleLoaderFacade.logger.debug(`Strategy ${strategy.constructor.name} failed for ${moduleId}:`, error.message);
+        DynamicModuleLoaderFacade.logger.debug(`Strategy ${strategy.constructor.name} failed for ${moduleId}:`, error instanceof Error ? error.message : String(error));
       }
     }
 

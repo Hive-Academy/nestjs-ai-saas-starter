@@ -12,3 +12,12 @@ export * from './child-module-imports.providers';
 
 // Adapter providers
 export * from './adapters';
+
+// Export groups for module configuration
+export const CORE_EXPORTS = [];
+export const STREAMING_EXPORTS = [];
+export const TOOL_EXPORTS = [];
+export const ROUTING_EXPORTS = [];
+export const HITL_EXPORTS = [];
+export const LLM_EXPORTS = [];
+export const INFRASTRUCTURE_EXPORTS = [];

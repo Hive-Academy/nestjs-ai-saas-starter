@@ -1,6 +1,7 @@
 import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TimeTravelService } from './services/time-travel.service';
+import { BranchManagerService } from './services/branch-manager.service';
 import { TimeTravelConfig } from './interfaces/time-travel.interface';
 /**
  * Time travel module for workflow replay and debugging capabilities
@@ -33,7 +34,7 @@ export class LanggraphModulesTimeTravelModule {
       module: LanggraphModulesTimeTravelModule,
       imports: [ConfigModule],
       providers,
-      exports: [TimeTravelService],
+      exports: [TimeTravelService, BranchManagerService],
     };
   }
 
@@ -69,13 +70,20 @@ export class LanggraphModulesTimeTravelModule {
         },
         inject: [ConfigService, 'TIME_TRAVEL_CONFIG'],
       },
+      {
+        provide: BranchManagerService,
+        useFactory: (timeTravelService: TimeTravelService) => {
+          return new BranchManagerService(timeTravelService);
+        },
+        inject: [TimeTravelService],
+      },
     ];
 
     return {
       module: LanggraphModulesTimeTravelModule,
       imports: [ConfigModule, ...(options.imports ?? [])],
       providers,
-      exports: [TimeTravelService],
+      exports: [TimeTravelService, BranchManagerService],
     };
   }
 }

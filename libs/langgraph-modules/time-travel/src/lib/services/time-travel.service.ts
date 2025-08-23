@@ -62,7 +62,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   /**
    * Replay workflow from specific checkpoint with optional modifications
    */
-  async replayFromCheckpoint<T>(
+  async replayFromCheckpoint<T extends Record<string, unknown>>(
     threadId: string,
     checkpointId: string,
     options: ReplayOptions<T> = {}
@@ -154,7 +154,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   /**
    * Create execution branch from checkpoint
    */
-  async createBranch<T>(
+  async createBranch<T extends Record<string, unknown>>(
     threadId: string,
     fromCheckpointId: string,
     branchOptions: BranchOptions<T>
@@ -208,7 +208,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
         parentCheckpointId: fromCheckpointId,
         branchCreatedAt: new Date().toISOString(),
         branchDescription: branchOptions.description,
-        source: 'branch',
+        source: 'fork',
         step: 0,
         parents: {},
       }
@@ -259,8 +259,8 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     const historyNodes: ExecutionHistoryNode[] = checkpoints.map(
       ([config, checkpoint, metadata]) => ({
         checkpointId: checkpoint.id,
-        threadId: config.configurable?.thread_id as string ?? threadId,
-        nodeId: metadata?.step as string ?? 'unknown',
+        threadId: (config as any)?.configurable?.thread_id as string ?? threadId,
+        nodeId: String(metadata?.step ?? 'unknown'),
         timestamp: new Date(metadata?.timestamp ?? Date.now()),
         state: checkpoint.channel_values,
         parentCheckpointId: metadata?.parent_checkpoint_id as string,
@@ -319,7 +319,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   /**
    * Compare states between two checkpoints
    */
-  async compareCheckpoints<T>(
+  async compareCheckpoints<T extends Record<string, unknown>>(
     threadId: string,
     checkpointId1: string,
     checkpointId2: string
@@ -365,7 +365,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   /**
    * Merge branch back to main execution
    */
-  async mergeBranch<T>(
+  async mergeBranch<T extends Record<string, unknown>>(
     threadId: string,
     branchId: string,
     mergeStrategy: 'overwrite' | 'merge' | 'custom' = 'merge'
