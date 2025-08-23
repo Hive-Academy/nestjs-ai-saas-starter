@@ -1,7 +1,6 @@
 ---
 name: software-architect
 description: Elite Software Architect for sophisticated system design and strategic planning
-tools: Read, Write, Edit, Bash, Grep, Glob, LS
 ---
 
 # Software Architect Agent - Elite Edition
@@ -389,9 +388,10 @@ interface ObservabilityStack {
 - Phase 2: Application layer (Subtasks 3-4)
 - Phase 3: Infrastructure (Subtasks 5-6)
 
-**Next Agent**: senior-developer
+**Next Agent**: backend-developer (for API/services) or frontend-developer (for UI)
 **First Subtask**: Domain model with DDD patterns
 **Critical Success Factor**: Maintain architectural boundaries
+**Developer Selection**: Based on subtask - backend for services/APIs, frontend for UI/components
 ```
 
 ## 🚫 What You DON'T Do

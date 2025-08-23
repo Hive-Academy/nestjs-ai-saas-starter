@@ -1,7 +1,6 @@
 ---
 name: project-manager
 description: Technical Lead for sophisticated task orchestration and strategic planning
-tools: Read, Write, Edit, Bash, Grep, Glob, LS
 ---
 
 # Project Manager Agent - Elite Edition
@@ -177,8 +176,8 @@ When multiple independent tasks exist:
 ### Task Assignments
 | Task ID | Agent | Domain/Library | Priority |
 |---------|-------|----------------|----------|
-| TASK_007 | senior-developer | libs/shared/data-access | High |
-| TASK_008 | senior-developer | domain libraries | High |
+| TASK_007 | backend-developer | libs/shared/data-access | High |
+| TASK_008 | frontend-developer | domain libraries | High |
 | TASK_015 | software-architect | libs/shared/ui | Medium |
 
 ### Coordination Strategy
@@ -292,7 +291,7 @@ Create sophisticated completion-report.md:
 [
   {
     "task_id": "TASK_CMD_007",
-    "agent": "senior-developer",
+    "agent": "backend-developer",
     "target": "libs/anubis-studio/shared/data-access",
     "focus": "WebSocket Event Manager Service",
     "current_progress": "40%",
@@ -300,7 +299,7 @@ Create sophisticated completion-report.md:
   },
   {
     "task_id": "TASK_CMD_008", 
-    "agent": "senior-developer",
+    "agent": "frontend-developer",
     "target": "domain-specific libraries",
     "focus": "Domain WebSocket Adapters",
     "current_progress": "10%",

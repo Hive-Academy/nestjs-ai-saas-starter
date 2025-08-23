@@ -2,12 +2,12 @@ import { Logger, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
+import type {
   WorkflowState,
   Command,
   WorkflowError
 } from '../interfaces';
-import { CommandType } from '../constants';
+import { WorkflowCommandType } from '../constants';
 
 /**
  * Configuration for an agent node
@@ -245,7 +245,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     const maxRetries = this.nodeConfig.maxRetries ?? 3;
     if (state.retryCount < maxRetries && workflowError.isRecoverable) {
       return {
-        type: CommandType.RETRY,
+        type: WorkflowCommandType.RETRY,
         retry: {
           node: this.nodeConfig.id,
           delay: Math.pow(2, state.retryCount) * 1000, // Exponential backoff
@@ -260,7 +260,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
 
     // Non-recoverable or max retries reached
     return {
-      type: CommandType.ERROR,
+      type: WorkflowCommandType.ERROR,
       error: workflowError,
       update: {
         status: 'failed',
@@ -315,7 +315,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    * Create a command for workflow control
    */
   protected createCommand(
-    type: CommandType,
+    type: WorkflowCommandType,
     options: Partial<Command<TState>> = {},
   ): Command<TState> {
     return {
@@ -336,7 +336,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
     target: string,
     update?: Partial<TState>,
   ): Command<TState> {
-    return this.createCommand(CommandType.GOTO, {
+    return this.createCommand(WorkflowCommandType.GOTO, {
       goto: target,
       update,
     });
@@ -346,7 +346,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    * Create an update command
    */
   protected update(update: Partial<TState>): Command<TState> {
-    return this.createCommand(CommandType.UPDATE, {
+    return this.createCommand(WorkflowCommandType.UPDATE, {
       update,
     });
   }
@@ -355,7 +355,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    * Create an end command
    */
   protected end(update?: Partial<TState>): Command<TState> {
-    return this.createCommand(CommandType.END, {
+    return this.createCommand(WorkflowCommandType.END, {
       update,
     });
   }

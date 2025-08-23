@@ -6,8 +6,7 @@ import {
   WORKFLOW_METADATA_KEY,
   WORKFLOW_NODES_KEY,
   WORKFLOW_EDGES_KEY,
-  WORKFLOW_TOOLS_KEY,
-  isWorkflow
+  WORKFLOW_TOOLS_KEY
 } from '@langgraph-modules/core';
 
 /**

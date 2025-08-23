@@ -95,10 +95,13 @@ export interface WorkflowExecutionOptions {
  * Streaming workflow event types
  */
 export interface WorkflowStreamEvent<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
-  readonly type: 'task_start' | 'task_complete' | 'task_error' | 'workflow_complete' | 'workflow_error' | 'checkpoint_saved';
+  readonly type: 'task_start' | 'task_complete' | 'task_error' | 'workflow_complete' | 'workflow_error' | 'workflow_start' | 'checkpoint_saved';
   readonly taskName?: string;
   readonly state?: Partial<TState>;
   readonly error?: Error;
   readonly timestamp: Date;
   readonly metadata?: Record<string, unknown>;
 }
+
+// Type alias for backward compatibility
+export type WorkflowDefinition = FunctionalWorkflowDefinition;

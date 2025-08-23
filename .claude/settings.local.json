@@ -2,18 +2,26 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(npx nx run:*)",
+      "Bash(npx nx *)",
+      "WebSearch",
+      "Bash(npx nx build:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__write_file",
+      "Bash(npx nx run-many:*)"
     ],
     "additionalDirectories": [
-      "D:\\projects\\anubis",
-      "d:\\projects\\anubis",
+      "D:\\projects\\nestjs-ai-saas-starter",
+      "d:\\projects\\nestjs-ai-saas-starter"
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "browser",
-    "sequential-thinking",
-    "nx-mcp",
-    "filesystem"
-  ]
+  "statusLine": {
+    "type": "command",
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/statusline.ps1",
+    "padding": 0
+  }
 }

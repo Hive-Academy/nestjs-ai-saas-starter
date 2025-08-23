@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UnifiedWorkflowBase } from './unified-workflow.base';
-import {
+import type {
   WorkflowDefinition,
   WorkflowState,
 } from '../interfaces';

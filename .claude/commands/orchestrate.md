@@ -47,6 +47,58 @@ Examples:
 
 ## Phase 0: Pre-Flight Checks
 
+### Git Operations Guide
+
+### Task Branch Management
+
+#### New Task Branch Creation
+
+```bash
+# Ensure clean state
+git status --porcelain
+git add . && git commit -m "chore: checkpoint before new task"
+
+# Create feature branch
+TASK_ID="TASK_[DOMAIN]_[NUMBER]"
+git checkout -b feature/${TASK_ID}-description
+git push -u origin feature/${TASK_ID}-description
+```
+
+#### Continue Existing Task
+
+```bash
+git checkout feature/TASK_[ID]-description
+git pull origin feature/TASK_[ID]-description --rebase
+```
+
+#### Checkpoint Commits (After Subtasks)
+
+```bash
+git add .
+git commit -m "feat(TASK_[ID]): complete [subtask/component]"
+git push origin $(git branch --show-current)
+```
+
+#### Task Completion & PR
+
+```bash
+# Final commit
+git add .
+git commit -m "feat(TASK_[ID]): complete all acceptance criteria"
+git push origin feature/TASK_[ID]-description
+
+# Create PR
+gh pr create \
+  --title "feat(TASK_[ID]): [Task Name]" \
+  --body "Completes TASK_[ID] with all criteria verified"
+```
+
+### Branch Strategy
+
+- Sequential branching: New tasks branch from current, not main
+- Document parent branch in task folder
+- PR back to parent branch, not always main
+
 ### 1. Registry Status Check
 
 !cat task-tracking/registry.md | tail -20
@@ -98,7 +150,7 @@ First, capture and read the user's original request:
 ```bash
 # Store the original user request for all agents to reference
 USER_REQUEST="$ARGUMENTS"
-echo "User Request: $USER_REQUEST" > task-tracking/TASK_[ID]/context.txt
+echo "User Request: $USER_REQUEST" > task-tracking/TASK_[ID]/context.md
 ```
 
 ### Agent Invocation
@@ -278,8 +330,11 @@ $RESEARCH_REPORT
 
 6. Save to: task-tracking/TASK_[ID]/implementation-plan.md
 
-7. Return delegation to senior-developer with:
-   - First subtask from user's requirements
+7. Return delegation to appropriate developer with:
+   - For backend tasks: backend-developer
+   - For frontend tasks: frontend-developer
+   - For full-stack: start with backend-developer, then frontend-developer
+   - Include first subtask from user's requirements
    - Context needed to implement user's request
 ```
 
@@ -309,24 +364,35 @@ interface ArchitectureValidation {
 
 ---
 
-## Phase 4: Senior Developer
+## Phase 4: Development (Backend/Frontend)
 
 ### Context Loading
 
 ```bash
-# Read all context and determine current subtask
+# Read all context and determine developer type needed
 USER_REQUEST=$(cat task-tracking/TASK_[ID]/context.txt | grep "User Request:" | cut -d: -f2-)
 IMPLEMENTATION_PLAN=$(cat task-tracking/TASK_[ID]/implementation-plan.md)
 ACCEPTANCE_CRITERIA=$(grep -A20 "Acceptance Criteria" task-tracking/TASK_[ID]/task-description.md)
 PROGRESS=$(cat task-tracking/TASK_[ID]/progress.md 2>/dev/null || echo "Starting implementation")
+
+# Determine which developer to use
+TASK_TYPE=$(grep -i "Task Type:" task-tracking/TASK_[ID]/implementation-plan.md | cut -d: -f2)
 ```
+
+### Developer Selection
+
+**Decision Logic:**
+
+- If task involves API, services, database, or backend logic → backend-developer
+- If task involves UI, components, styling, or frontend → frontend-developer
+- If task involves both → sequence both developers
 
 ### Agent Invocation
 
-**Prompt for Developer:**
+**For Backend Tasks - Prompt for Backend Developer:**
 
 ```
-You are the senior-developer for TASK_[ID].
+You are the backend-developer for TASK_[ID].
 
 ## ORIGINAL USER REQUEST
 $USER_REQUEST
@@ -342,28 +408,96 @@ $PROGRESS
 
 ## YOUR RESPONSIBILITIES
 
-1. Implement the features that the USER REQUESTED above
+1. Implement the backend features that the USER REQUESTED above
 2. MANDATORY: Execute Type Search Protocol
    - Search @anubis/shared FIRST
+   - Check core/backend infrastructure services
    - Document findings in progress.md
    - Extend existing types, don't duplicate
 
-3. Implement with excellence:
-   - Zero 'any' types
-   - Functions < 30 lines
-   - Max 3 nesting levels
-   - Comprehensive error handling
-   - Performance conscious
+3. Implement with NestJS best practices:
+   - Use dependency injection
+   - Follow module boundaries
+   - Implement proper error handling
+   - Use existing Neo4j/ChromaDB services
+   - Keep services under 200 lines
 
 4. Update progress.md with:
-   - What you implemented from user's request
-   - How it addresses user's needs
-   - What remains from user's requirements
+   - What backend features you implemented
+   - Services and repositories used
+   - API endpoints created
+   - What remains for frontend
 
 5. Save code and update: task-tracking/TASK_[ID]/progress.md
 
-Return status showing which user requirements are complete.
+Return status showing which backend requirements are complete.
 ```
+
+**For Frontend Tasks - Prompt for Frontend Developer:**
+
+```
+You are the frontend-developer for TASK_[ID].
+
+## ORIGINAL USER REQUEST
+$USER_REQUEST
+
+## IMPLEMENTATION PLAN
+$IMPLEMENTATION_PLAN
+
+## ACCEPTANCE CRITERIA TO MEET
+$ACCEPTANCE_CRITERIA
+
+## CURRENT PROGRESS
+$PROGRESS
+
+## YOUR RESPONSIBILITIES
+
+1. Implement the frontend features that the USER REQUESTED above
+2. MANDATORY: Execute Component Search Protocol
+   - Search @anubis-studio/shared/ui FIRST for components
+   - Check @anubis-studio/shared/data-access for services
+   - Document findings in progress.md
+   - Extend existing components, don't duplicate
+
+3. Implement with Angular 18+ best practices:
+   - Use signals for state management
+   - Create beautiful UI with DaisyUI/TailwindCSS
+   - Apply generous white space for clean design
+   - Keep components under 100 lines
+   - Ensure WCAG 2.1 accessibility
+
+4. Update progress.md with:
+   - What UI components you implemented
+   - Existing components reused
+   - Services integrated
+   - What remains for implementation
+
+5. Save code and update: task-tracking/TASK_[ID]/progress.md
+
+Return status showing which frontend requirements are complete.
+```
+
+**For Full-Stack Tasks - Sequential Developer Execution:**
+
+When a task requires both backend and frontend work:
+
+1. **First: Backend Developer**
+   - Implement API endpoints, services, database logic
+   - Create DTOs and interfaces
+   - Set up data flow architecture
+   - Document API contracts in progress.md
+
+2. **Then: Frontend Developer**
+   - Consume the backend APIs
+   - Create UI components and pages
+   - Implement state management
+   - Connect frontend to backend services
+
+3. **Coordination Notes:**
+   - Backend developer must document API contracts clearly
+   - Frontend developer reads backend implementation first
+   - Both update the same progress.md file
+   - Maintain clear handoff documentation
 
 ### Quality Gate 4: Implementation Validation
 

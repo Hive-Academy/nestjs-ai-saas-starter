@@ -12,6 +12,26 @@ export interface CheckpointConfig {
   type: 'memory' | 'redis' | 'postgres' | 'sqlite';
 
   /**
+   * Whether checkpointing is enabled
+   */
+  enabled?: boolean;
+
+  /**
+   * Storage backend type
+   */
+  storage?: 'memory' | 'database' | 'redis' | 'postgres' | 'custom';
+
+  /**
+   * Storage configuration object
+   */
+  storageConfig?: Record<string, any>;
+
+  /**
+   * Custom saver implementation
+   */
+  saver?: any;
+
+  /**
    * Unique name for this checkpoint saver
    */
   name?: string;

@@ -160,7 +160,7 @@ export interface ICheckpointPersistenceService {
   >(
     checkpoint: unknown, // Checkpoint<T> type
     metadata: EnhancedCheckpointMetadata
-  ) => EnhancedCheckpoint<T>;
+  ) => Promise<EnhancedCheckpoint<T>>;
 }
 
 /**

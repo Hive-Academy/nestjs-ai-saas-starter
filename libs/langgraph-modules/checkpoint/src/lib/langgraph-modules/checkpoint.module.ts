@@ -1,4 +1,4 @@
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CheckpointManagerService } from '../core/checkpoint-manager.service';
 import { StateTransformerService } from '../core/state-transformer.service';
@@ -151,7 +151,7 @@ export class LanggraphModulesCheckpointModule {
     useFactory: (
       ...args: unknown[]
     ) => Promise<CheckpointModuleOptions> | CheckpointModuleOptions;
-    inject?: unknown[];
+    inject?: InjectionToken[];
   }): DynamicModule {
     return {
       module: LanggraphModulesCheckpointModule,

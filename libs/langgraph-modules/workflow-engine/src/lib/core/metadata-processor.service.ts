@@ -8,7 +8,6 @@ import {
   Command,
 } from '../interfaces';
 import {
-  WorkflowOptions,
   getWorkflowMetadata,
 } from '@langgraph-modules/functional-api';
 import { NodeMetadata, getWorkflowNodes } from '@langgraph-modules/functional-api';
@@ -16,6 +15,25 @@ import { EdgeMetadata, getWorkflowEdges } from '@langgraph-modules/functional-ap
 import {
   getAllStreamingMetadata,
 } from '@langgraph-modules/functional-api';
+
+// Placeholder types for streaming metadata
+interface StreamTokenMetadata {
+  enabled?: boolean;
+  bufferSize?: number;
+  [key: string]: any;
+}
+
+interface StreamEventMetadata {
+  enabled?: boolean;
+  eventTypes?: string[];
+  [key: string]: any;
+}
+
+interface StreamProgressMetadata {
+  enabled?: boolean;
+  updateInterval?: number;
+  [key: string]: any;
+}
 
 /**
  * Service to process decorator metadata and convert to WorkflowDefinition

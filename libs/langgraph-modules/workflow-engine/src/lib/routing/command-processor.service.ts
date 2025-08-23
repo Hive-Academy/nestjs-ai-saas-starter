@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkflowState, Command } from '../interfaces';
+import type { WorkflowState, Command } from '../interfaces';
 
 /**
  * Service for processing workflow commands and handling command patterns

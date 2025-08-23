@@ -7,6 +7,9 @@
       "path": "../checkpoint"
     },
     {
+      "path": "../core"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {

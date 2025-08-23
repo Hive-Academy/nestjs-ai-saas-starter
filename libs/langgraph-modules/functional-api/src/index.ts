@@ -14,6 +14,9 @@ export * from './lib/decorators/workflow.decorator';
 export * from './lib/decorators/node.decorator';
 export * from './lib/decorators/edge.decorator';
 
+// Re-export from core for backward compatibility
+export { isWorkflow } from '@langgraph-modules/core';
+
 // Functional API Decorators
 export * from './lib/decorators/entrypoint.decorator';
 export * from './lib/decorators/task.decorator';

@@ -187,8 +187,8 @@ export class StateTransformerService {
       },
     };
 
-    // Store the annotation
-    this.stateAnnotations.set(config.name, stateAnnotation);
+    // Store the annotation (type cast for storage compatibility)
+    this.stateAnnotations.set(config.name, stateAnnotation as StateAnnotation<unknown>);
 
     this.logger.log(
       `State annotation created: ${config.name} with ${
@@ -202,7 +202,7 @@ export class StateTransformerService {
    * Get a previously created state annotation
    */
   public getStateAnnotation<T>(name: string): StateAnnotation<T> | undefined {
-    return this.stateAnnotations.get(name);
+    return this.stateAnnotations.get(name) as StateAnnotation<T> | undefined;
   }
 
   /**
@@ -359,7 +359,7 @@ export class StateTransformerService {
     name: string,
     transformer: StateTransformer<TFrom, TTo>
   ): void {
-    this.stateTransformers.set(name, transformer);
+    this.stateTransformers.set(name, transformer as StateTransformer<unknown, unknown>);
     this.logger.log(`Registered state transformer: ${name}`);
   }
 
@@ -369,7 +369,7 @@ export class StateTransformerService {
   public getStateTransformer<TFrom, TTo>(
     name: string
   ): StateTransformer<TFrom, TTo> | undefined {
-    return this.stateTransformers.get(name);
+    return this.stateTransformers.get(name) as StateTransformer<TFrom, TTo> | undefined;
   }
 
   /**
@@ -411,7 +411,7 @@ export class StateTransformerService {
       return { ...currentState, ...update };
     }
 
-    return annotation.applyReducers(currentState, update);
+    return annotation.applyReducers(currentState, update) as T;
   }
 
   /**

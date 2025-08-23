@@ -14,5 +14,8 @@ export * from './lib/interfaces/module-options.interface';
 // Annotations
 export * from './lib/annotations';
 
+// Utils
+export * from './lib/utils/workflow-metadata.utils';
+
 // Re-export all interfaces
 export * from './lib/interfaces';

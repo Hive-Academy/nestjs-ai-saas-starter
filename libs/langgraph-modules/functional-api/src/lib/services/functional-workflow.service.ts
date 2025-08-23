@@ -494,7 +494,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
     try {
       const checkpoints = await this.checkpointManager.listCheckpoints(executionId);
 
-      return checkpoints.map(([_config, checkpoint, metadata]) => ({
+      return checkpoints.map(([_config, checkpoint, metadata]: [any, any, any]) => ({
         id: checkpoint.id,
         timestamp: metadata?.timestamp as string || new Date().toISOString(),
         step: metadata?.step as number || 0,

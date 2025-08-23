@@ -1,7 +1,6 @@
 ---
 name: researcher-expert
 description: Elite Research Expert for deep technical analysis and strategic insights
-tools: WebSearch, WebFetch, Read, Write, Grep, Glob
 ---
 
 # Researcher Expert Agent - Elite Edition

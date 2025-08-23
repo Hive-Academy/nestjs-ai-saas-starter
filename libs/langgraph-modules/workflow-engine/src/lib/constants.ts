@@ -4,7 +4,7 @@ export const WORKFLOW_ENGINE_CONSTANTS = {
   DEFAULT_TIMEOUT: 30000,
 };
 
-export enum CommandType {
+export enum WorkflowCommandType {
   GOTO = 'goto',
   UPDATE = 'update',
   END = 'end',

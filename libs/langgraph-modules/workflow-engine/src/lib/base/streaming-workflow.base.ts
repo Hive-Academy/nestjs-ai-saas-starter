@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable } from 'rxjs';
 import { DeclarativeWorkflowBase } from './declarative-workflow.base';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
+import { WorkflowGraphBuilderService, GraphBuilderOptions } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import {
@@ -260,13 +260,13 @@ export abstract class StreamingWorkflowBase<
       // Setup streaming context
       await this.setupStreamingContext(executionId, input, options);
 
-      // Get workflow definition and create placeholder graph
-      // TODO: Implement proper graph building from workflow definition
-      const graph = {} as any; // Placeholder for now
+      // Get workflow definition and build graph
+      const definition = this.getWorkflowDefinition();
+      const graph = await this.graphBuilder.buildFromDefinition(definition, this.getGraphBuilderOptions());
 
       // Stream execution with enhanced workflow stream service
       yield* this.streamService.streamExecution(
-        graph,
+        graph as any,
         input,
         this.getExecutionConfig(),
         executionId,
@@ -669,6 +669,18 @@ export abstract class StreamingWorkflowBase<
     });
 
     this.logger.debug(`Streaming context cleanup for execution ${executionId}`);
+  }
+
+  /**
+   * Get GraphBuilderOptions for building the workflow graph
+   */
+  private getGraphBuilderOptions(): GraphBuilderOptions {
+    return {
+      interrupt: {
+        before: this.getInterruptNodes(),
+      },
+      debug: false, // Can be made configurable
+    };
   }
 
   /**

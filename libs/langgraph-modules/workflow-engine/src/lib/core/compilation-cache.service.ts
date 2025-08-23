@@ -97,10 +97,10 @@ export class CompilationCacheService implements OnModuleDestroy {
   constructor(
     @Optional()
     @Inject(LANGGRAPH_MODULE_OPTIONS)
-    private readonly options?: LangGraphModuleOptions
+    moduleOptions?: LangGraphModuleOptions
   ) {
-    this.maxSize = options?.workflows?.maxCached || 100;
-    this.defaultTTL = options?.workflows?.cacheTTL || 3600000; // 1 hour
+    this.maxSize = moduleOptions?.workflows?.maxCached || 100;
+    this.defaultTTL = moduleOptions?.workflows?.cacheTTL || 3600000; // 1 hour
 
     // Start cleanup interval
     this.startCleanupInterval();

@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { createHash } from 'crypto';
 import {
   EnhancedCheckpointMetadata,
   EnhancedCheckpoint,
@@ -53,7 +54,7 @@ export class CheckpointPersistenceService
       const enrichedMetadata = this.enrichMetadata(threadId, metadata);
 
       // Create enhanced checkpoint with size and checksum
-      const enhancedCheckpoint = this.createEnhancedCheckpoint<T>(checkpoint, enrichedMetadata);
+      const enhancedCheckpoint = await this.createEnhancedCheckpoint<T>(checkpoint, enrichedMetadata);
 
       // Save to storage backend
       await saver.put(
@@ -123,7 +124,7 @@ export class CheckpointPersistenceService
         );
 
         // Verify checksum if available
-        this.verifyCheckpointIntegrity(checkpoint);
+        await this.verifyCheckpointIntegrity(checkpoint);
       } else {
         this.logger.debug(
           `No checkpoint found for thread ${threadId} (${duration}ms)`
@@ -211,15 +212,15 @@ export class CheckpointPersistenceService
   /**
    * Create enhanced checkpoint with size and checksum
    */
-  createEnhancedCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
+  async createEnhancedCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
     checkpoint: unknown,
     metadata: EnhancedCheckpointMetadata
-  ): EnhancedCheckpoint<T> {
+  ): Promise<EnhancedCheckpoint<T>> {
     return {
       ...(checkpoint as any),
       metadata,
       size: this.calculateCheckpointSize(checkpoint),
-      checksum: this.calculateChecksum(checkpoint),
+      checksum: await this.calculateChecksum(checkpoint),
       compression: 'none',
     } as EnhancedCheckpoint<T>;
   }
@@ -421,9 +422,9 @@ export class CheckpointPersistenceService
   /**
    * Verify checkpoint integrity
    */
-  private verifyCheckpointIntegrity<T>(checkpoint: EnhancedCheckpoint<T>): void {
+  private async verifyCheckpointIntegrity<T>(checkpoint: EnhancedCheckpoint<T>): Promise<void> {
     if (checkpoint.checksum) {
-      const calculatedChecksum = this.calculateChecksum(checkpoint);
+      const calculatedChecksum = await this.calculateChecksum(checkpoint);
       if (calculatedChecksum !== checkpoint.checksum) {
         this.logger.warn(
           `Checksum mismatch for checkpoint ${checkpoint.id}. Expected: ${checkpoint.checksum}, Calculated: ${calculatedChecksum}`
@@ -471,5 +472,20 @@ export class CheckpointPersistenceService
     loadError.cause = originalError;
 
     return loadError;
+  }
+
+  /**
+   * Calculate checksum for checkpoint data
+   */
+  protected override async calculateChecksum(checkpoint: unknown): Promise<string> {
+    const data = JSON.stringify(checkpoint);
+    return createHash('sha256').update(data).digest('hex');
+  }
+
+  /**
+   * Calculate checkpoint size in bytes
+   */
+  protected override calculateCheckpointSize(checkpoint: unknown): number {
+    return Buffer.byteLength(JSON.stringify(checkpoint), 'utf8');
   }
 }

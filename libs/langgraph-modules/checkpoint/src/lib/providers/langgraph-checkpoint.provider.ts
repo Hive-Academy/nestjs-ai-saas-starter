@@ -39,7 +39,7 @@ export class LangGraphCheckpointProvider {
         break;
 
       case 'postgres':
-        this.checkpointer = await this.createPostgresCheckpointer(config.storageConfig);
+        this.checkpointer = await this.createPostgresCheckpointer(config.storageConfig || {});
         break;
 
       case 'custom':
