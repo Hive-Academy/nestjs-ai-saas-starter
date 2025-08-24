@@ -1,5 +1,5 @@
 
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
 import {
   ChromaClient,
   Collection,
@@ -21,6 +21,7 @@ import {
 import { CollectionService } from './collection.service';
 import { EmbeddingService } from './embedding.service';
 import { ChromaAdminService } from './chroma-admin.service';
+import { TextSplitterService } from './text-splitter.service';
 import { sanitizeMetadata } from '../utils/metadata.utils';
 import { ChromaDBEmbeddingNotConfiguredError } from '../errors/chromadb.errors';
 
@@ -37,7 +38,8 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     private readonly client: ChromaClient,
     private readonly collectionService: CollectionService,
     private readonly embeddingService: EmbeddingService,
-    private readonly adminService: ChromaAdminService
+    private readonly adminService: ChromaAdminService,
+    @Optional() private readonly textSplitterService?: TextSplitterService,
   ) {}
 
   /**
@@ -126,35 +128,158 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   }
 
   /**
-   * Add documents to a collection with automatic embedding generation
+   * Add documents to a collection with automatic embedding generation and optional chunking
    */
   public async addDocuments(
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions
   ): Promise<void> {
-    const processedDocuments = await this.processDocumentsForEmbedding(
-      documents
-    );
+    let documentsToProcess = documents;
+
+    // Apply auto-chunking if enabled
+    if (options?.autoChunk && this.textSplitterService) {
+      documentsToProcess = await this.chunkDocuments(collectionName, documents, options);
+    }
+
+    const processedDocuments = await this.processDocumentsForEmbedding(documentsToProcess);
     const collection = await this.getCollection(collectionName);
 
-    const batchSize = options?.batchSize ?? DEFAULT_BATCH_SIZE;
+    const batchSize = options?.batchSize || DEFAULT_BATCH_SIZE;
     for (let i = 0; i < processedDocuments.length; i += batchSize) {
       const batch = processedDocuments.slice(i, i + batchSize);
 
       await collection.add({
-        ids: batch.map((doc) => doc.id),
-        documents: batch
-          .map((doc) => doc.document)
-          .filter((doc): doc is string => Boolean(doc)),
-        metadatas: batch
-          .map((doc) =>
-            doc.metadata ? (sanitizeMetadata(doc.metadata) as Metadata) : undefined
-          )
-          .filter(Boolean) as Metadata[],
-        embeddings: batch
-          .map((doc) => doc.embedding)
-          .filter((emb): emb is number[] => Boolean(emb)),
+        ids: batch.map(doc => doc.id),
+        documents: batch.map(doc => doc.document).filter((doc): doc is string => !!doc),
+        metadatas: batch.map(doc => doc.metadata ? sanitizeMetadata(doc.metadata) : undefined).filter(Boolean) as Metadata[],
+        embeddings: batch.map(doc => doc.embedding).filter((emb): emb is number[] => !!emb),
+      });
+    }
+  }
+
+  /**
+   * Chunk documents using the text splitter service
+   */
+  private async chunkDocuments(
+    collectionName: string,
+    documents: ChromaDocument[],
+    options: ChromaBulkOptions,
+  ): Promise<ChromaDocument[]> {
+    if (!this.textSplitterService) {
+      this.logger.warn('Text splitter service not available, skipping chunking');
+      return documents;
+    }
+
+    const strategy = options.chunkingStrategy || 'smart';
+    const chunkedDocuments: ChromaDocument[] = [];
+
+    for (const doc of documents) {
+      if (!doc.document) {
+        // No text content to chunk, keep as is
+        chunkedDocuments.push(doc);
+        continue;
+      }
+
+      try {
+        // Use smart split for automatic content type detection with metadata extraction
+        const chunks = await (strategy === 'smart'
+          ? this.textSplitterService.smartSplit(doc.document, doc.metadata, {
+              chunkSize: options.chunkSize,
+              chunkOverlap: options.chunkOverlap,
+              extractMetadata: options.extractMetadata,
+              extractTopics: options.extractTopics,
+              extractKeywords: options.extractKeywords,
+              analyzeComplexity: options.analyzeComplexity,
+              calculateReadingTime: options.calculateReadingTime,
+              detectCrossReferences: options.detectCrossReferences,
+              extractCodeMetadata: options.extractCodeMetadata,
+            })
+          : this.textSplitterService.splitDocuments(
+              [{ id: doc.id, content: doc.document, metadata: doc.metadata }],
+              {
+                strategy,
+                chunkSize: options.chunkSize,
+                chunkOverlap: options.chunkOverlap,
+                extractMetadata: options.extractMetadata,
+                extractTopics: options.extractTopics,
+                extractKeywords: options.extractKeywords,
+                analyzeComplexity: options.analyzeComplexity,
+                calculateReadingTime: options.calculateReadingTime,
+                detectCrossReferences: options.detectCrossReferences,
+                extractCodeMetadata: options.extractCodeMetadata,
+              }
+            ));
+
+        // Convert chunks to ChromaDocuments
+        for (const chunk of chunks) {
+          chunkedDocuments.push({
+            id: chunk.id,
+            document: chunk.content,
+            metadata: sanitizeMetadata({
+              ...doc.metadata,
+              ...chunk.metadata,
+              originalDocumentId: doc.id,
+            }),
+            embedding: doc.embedding, // Will be regenerated for chunk content
+          });
+        }
+
+        this.logger.debug(
+          `Chunked document ${doc.id} into ${chunks.length} pieces using ${strategy} strategy`,
+        );
+      } catch (error) {
+        this.logger.error(`Failed to chunk document ${doc.id}:`, error);
+        // On error, keep the original document
+        chunkedDocuments.push(doc);
+      }
+    }
+
+    // Store parent-child relationships if requested
+    if (options.preserveChunkRelationships) {
+      await this.storeChunkRelationships(collectionName, chunkedDocuments);
+    }
+
+    return chunkedDocuments;
+  }
+
+  /**
+   * Store parent-child relationships for chunked documents
+   */
+  private async storeChunkRelationships(
+    collectionName: string,
+    documents: ChromaDocument[],
+  ): Promise<void> {
+    // Group chunks by parent document
+    const parentGroups = new Map<string, ChromaDocument[]>();
+
+    for (const doc of documents) {
+      const parentId = (doc.metadata?.['originalDocumentId'] as string) || (doc.metadata?.['parentId'] as string);
+      if (parentId && typeof parentId === 'string') {
+        if (!parentGroups.has(parentId)) {
+          parentGroups.set(parentId, []);
+        }
+        parentGroups.get(parentId)!.push(doc);
+      }
+    }
+
+    // Store relationship metadata
+    for (const [parentId, chunks] of parentGroups) {
+      const relationshipDoc: ChromaDocument = {
+        id: `${parentId}-relationships`,
+        document: `Parent document ${parentId} has ${chunks.length} chunks`,
+        metadata: sanitizeMetadata({
+          documentType: 'chunk-relationship',
+          parentId,
+          chunkIds: chunks.map((c: ChromaDocument) => c.id),
+          chunkCount: chunks.length,
+          createdAt: new Date().toISOString(),
+        }),
+      };
+
+      // Store without chunking (it's metadata only)
+      await this.addDocuments(collectionName, [relationshipDoc], {
+        ...{ autoChunk: false },
       });
     }
   }
@@ -322,16 +447,10 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   /**
    * Similarity search with automatic embedding generation
    */
-  public async similaritySearch(
+  async similaritySearch(
     collectionName: string,
     query: string | number[],
-    options?: Omit<
-      ChromaSearchOptions,
-      | 'includeMetadata'
-      | 'includeDocuments'
-      | 'includeDistances'
-      | 'includeEmbeddings'
-    > & {
+    options?: Omit<ChromaSearchOptions, 'includeMetadata' | 'includeDocuments' | 'includeDistances' | 'includeEmbeddings'> & {
       limit?: number;
       filter?: Where;
       includeMetadata?: boolean;

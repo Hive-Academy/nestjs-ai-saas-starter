@@ -121,7 +121,9 @@
     "apps/*",
     "libs/*",
     "libs/langgraph-modules/*",
-    "libs/demo/*"
+    "libs/demo/*",
+    "libs/dev-brand/backend/*",
+    "libs/core/*"
   ],
   "overrides": {
     "chalk": {

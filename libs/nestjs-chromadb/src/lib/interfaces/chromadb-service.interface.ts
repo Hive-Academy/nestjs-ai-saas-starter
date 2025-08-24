@@ -1,4 +1,11 @@
-import type { Collection, ChromaClient, WhereDocument, Where, QueryResult, GetResult } from 'chromadb';
+import type {
+  Collection,
+  ChromaClient,
+  WhereDocument,
+  Where,
+  QueryResult,
+  GetResult,
+} from 'chromadb';
 
 /**
  * ChromaDB metadata type - supports string, number, boolean, and null values
@@ -10,7 +17,15 @@ export interface ChromaMetadata {
 /**
  * Metadata filter operators
  */
-export type MetadataFilterOperator = '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$in' | '$nin';
+export type MetadataFilterOperator =
+  | '$eq'
+  | '$ne'
+  | '$gt'
+  | '$gte'
+  | '$lt'
+  | '$lte'
+  | '$in'
+  | '$nin';
 
 /**
  * Single metadata filter condition
@@ -22,9 +37,12 @@ export type MetadataFilterCondition<T = string | number | boolean | null> = {
 /**
  * Metadata filter with type constraints
  */
-export type MetadataFilter<TMetadata extends ChromaMetadata = ChromaMetadata> = {
-  readonly [K in keyof TMetadata]?: TMetadata[K] | MetadataFilterCondition<TMetadata[K]>;
-};
+export type MetadataFilter<TMetadata extends ChromaMetadata = ChromaMetadata> =
+  {
+    readonly [K in keyof TMetadata]?:
+      | TMetadata[K]
+      | MetadataFilterCondition<TMetadata[K]>;
+  };
 
 /**
  * Document content filter
@@ -37,19 +55,25 @@ export interface DocumentFilter {
 /**
  * ChromaDB query parameters with proper typing
  */
-export interface ChromaQuery<TMetadata extends ChromaMetadata = ChromaMetadata> {
+export interface ChromaQuery<
+  TMetadata extends ChromaMetadata = ChromaMetadata
+> {
   readonly queryEmbeddings?: readonly number[][];
   readonly queryTexts?: readonly string[];
   readonly nResults?: number;
   readonly where?: MetadataFilter<TMetadata>;
   readonly whereDocument?: DocumentFilter;
-  readonly include?: ReadonlyArray<'metadatas' | 'documents' | 'distances' | 'embeddings'>;
+  readonly include?: ReadonlyArray<
+    'metadatas' | 'documents' | 'distances' | 'embeddings'
+  >;
 }
 
 /**
  * Document structure for ChromaDB operations
  */
-export interface ChromaDocument<TMetadata extends ChromaMetadata = ChromaMetadata> {
+export interface ChromaDocument<
+  TMetadata extends ChromaMetadata = ChromaMetadata
+> {
   readonly id: string;
   readonly document?: string;
   readonly metadata?: TMetadata;
@@ -59,12 +83,16 @@ export interface ChromaDocument<TMetadata extends ChromaMetadata = ChromaMetadat
 /**
  * Search result structure - using ChromaDB native types with proper metadata typing
  */
-export type ChromaSearchResult<TMetadata extends ChromaMetadata = ChromaMetadata> = QueryResult<TMetadata>;
+export type ChromaSearchResult<
+  TMetadata extends ChromaMetadata = ChromaMetadata
+> = QueryResult<TMetadata>;
 
 /**
  * Collection information structure
  */
-export interface ChromaCollectionInfo<TMetadata extends ChromaMetadata = ChromaMetadata> {
+export interface ChromaCollectionInfo<
+  TMetadata extends ChromaMetadata = ChromaMetadata
+> {
   readonly name: string;
   readonly id: string;
   readonly metadata?: TMetadata;
@@ -92,6 +120,25 @@ export interface ChromaBulkOptions {
   batchSize?: number;
   upsert?: boolean;
   validateIds?: boolean;
+  autoChunk?: boolean;
+  chunkingStrategy?:
+    | 'recursive'
+    | 'token'
+    | 'character'
+    | 'markdown'
+    | 'semantic'
+    | 'smart';
+  chunkSize?: number;
+  chunkOverlap?: number;
+  preserveChunkRelationships?: boolean;
+  // Enhanced metadata extraction options
+  extractMetadata?: boolean;
+  extractTopics?: boolean;
+  extractKeywords?: boolean;
+  analyzeComplexity?: boolean;
+  calculateReadingTime?: boolean;
+  detectCrossReferences?: boolean;
+  extractCodeMetadata?: boolean;
 }
 
 /**
@@ -148,7 +195,7 @@ export interface ChromaDBServiceInterface {
     name: string,
     metadata?: TMetadata,
     embeddingFunction?: unknown,
-    getOrCreate?: boolean,
+    getOrCreate?: boolean
   ) => Promise<Collection>;
 
   /**
@@ -156,7 +203,7 @@ export interface ChromaDBServiceInterface {
    */
   getCollection: (
     name: string,
-    embeddingFunction?: unknown,
+    embeddingFunction?: unknown
   ) => Promise<Collection>;
 
   /**
@@ -175,7 +222,7 @@ export interface ChromaDBServiceInterface {
   addDocuments: (
     collectionName: string,
     documents: ChromaDocument[],
-    options?: ChromaBulkOptions,
+    options?: ChromaBulkOptions
   ) => Promise<void>;
 
   /**
@@ -184,7 +231,7 @@ export interface ChromaDBServiceInterface {
   updateDocuments: (
     collectionName: string,
     documents: ChromaDocument[],
-    options?: ChromaBulkOptions,
+    options?: ChromaBulkOptions
   ) => Promise<void>;
 
   /**
@@ -193,7 +240,7 @@ export interface ChromaDBServiceInterface {
   upsertDocuments: (
     collectionName: string,
     documents: ChromaDocument[],
-    options?: ChromaBulkOptions,
+    options?: ChromaBulkOptions
   ) => Promise<void>;
 
   /**
@@ -201,7 +248,7 @@ export interface ChromaDBServiceInterface {
    */
   getDocuments: (
     collectionName: string,
-    options?: GetDocumentsOptions,
+    options?: GetDocumentsOptions
   ) => Promise<GetResult<ChromaMetadata>>;
 
   /**
@@ -211,7 +258,7 @@ export interface ChromaDBServiceInterface {
     collectionName: string,
     ids?: string[],
     where?: Where,
-    whereDocument?: WhereDocument,
+    whereDocument?: WhereDocument
   ) => Promise<void>;
 
   /**
@@ -221,7 +268,7 @@ export interface ChromaDBServiceInterface {
     collectionName: string,
     queryTexts?: string[],
     queryEmbeddings?: number[][],
-    options?: ChromaSearchOptions,
+    options?: ChromaSearchOptions
   ) => Promise<ChromaSearchResult>;
 
   /**
@@ -232,21 +279,20 @@ export interface ChromaDBServiceInterface {
   /**
    * Peek at documents in a collection
    */
-  peekDocuments: (
-    collectionName: string,
-    limit?: number,
-  ) => Promise<GetResult>;
+  peekDocuments: (collectionName: string, limit?: number) => Promise<GetResult>;
 
   /**
    * Get collection metadata
    */
-  getCollectionMetadata: (collectionName: string) => Promise<ChromaMetadata | null>;
+  getCollectionMetadata: (
+    collectionName: string
+  ) => Promise<ChromaMetadata | null>;
 
   /**
    * Update collection metadata
    */
   updateCollectionMetadata: (
     collectionName: string,
-    metadata: Record<string, unknown>,
+    metadata: Record<string, unknown>
   ) => Promise<void>;
 }

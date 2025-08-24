@@ -1,32 +1,23 @@
 {
-  "timestamp": "2025-08-24T18:30:03.984Z",
+  "timestamp": "2025-08-24T19:03:17.049Z",
   "summary": {
     "passed": 9,
-    "failed": 1,
-    "warnings": 1
+    "failed": 0,
+    "warnings": 0
   },
   "details": {
     "passed": [
       "nestjs-chromadb",
       "nestjs-neo4j",
+      "nestjs-langgraph",
       "langgraph-modules/checkpoint",
-      "langgraph-modules/memory",
       "langgraph-modules/time-travel",
       "langgraph-modules/multi-agent",
       "langgraph-modules/functional-api",
       "langgraph-modules/monitoring",
       "langgraph-modules/platform"
     ],
-    "failed": [
-      {
-        "library": "nestjs-langgraph",
-        "errors": [
-          "libs/nestjs-langgraph/src/lib/nestjs-langgraph.module.ts(36,45): error TS2345: Argument of type 'import(\"D:/projects/nestjs-ai-saas-starter/node_modules/@hive-academy/langgraph-core/src/lib/interfaces/module-options.interface\").LangGraphModuleOptions' is not assignable to parameter of type 'import(\"D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/module-options.interface\").LangGraphModuleOptions'.\r\n  Types of property 'defaultLLM' are incompatible.\r\n    Type 'import(\"D:/projects/nestjs-ai-saas-starter/node_modules/@hive-academy/langgraph-core/src/lib/interfaces/module-options.interface\").LLMProviderConfig | undefined' is not assignable to type 'import(\"D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/module-options.interface\").LLMProviderConfig | undefined'.\r\n      Property 'provider' is missing in type 'import(\"D:/projects/nestjs-ai-saas-starter/node_modules/@hive-academy/langgraph-core/src/lib/interfaces/module-options.interface\").LLMProviderConfig' but required in type 'import(\"D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/module-options.interface\").LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts(486,67): error TS18046: 'error' is of type 'unknown'.\r\nlibs/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts(523,66): error TS18046: 'requireError' is of type 'unknown'.\r\nlibs/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts(556,70): error TS18046: 'error' is of type 'unknown'.\r\nlibs/nestjs-langgraph/src/lib/providers/index.ts(14,15): error TS2307: Cannot find module './adapters' or its corresponding type declarations.\r\nlibs/nestjs-langgraph/src/lib/providers/infrastructure.providers.ts(3,69): error TS2307: Cannot find module './adapters' or its corresponding type declarations.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(21,16): error TS2339: Property 'factory' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(22,21): error TS2339: Property 'factory' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(26,20): error TS2339: Property 'type' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(40,21): error TS2339: Property 'factory' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(43,24): error TS2339: Property 'factory' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(46,66): error TS2339: Property 'type' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(57,27): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(58,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(59,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(60,17): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(74,27): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(75,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(76,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(77,17): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(91,27): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(92,31): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(93,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(94,17): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(108,27): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(109,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(110,25): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(112,17): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts(166,19): error TS2339: Property 'options' does not exist on type 'LLMProviderConfig'.\r\nlibs/nestjs-langgraph/src/lib/providers/module-exports.providers.ts(18,33): error TS2307: Cannot find module './adapters' or its corresponding type declarations.\r\n"
-        ]
-      }
-    ],
-    "warnings": [
-      "Library langgraph-modules/memory not found"
-    ]
+    "failed": [],
+    "warnings": []
   }
 }

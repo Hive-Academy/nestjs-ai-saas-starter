@@ -4,12 +4,6 @@
   "files": [],
   "references": [
     {
-      "path": "./apps/nestjs-ai-saas-starter-demo-e2e"
-    },
-    {
-      "path": "./apps/nestjs-ai-saas-starter-demo"
-    },
-    {
       "path": "./libs/nestjs-chromadb"
     },
     {
@@ -49,7 +43,13 @@
       "path": "./libs/langgraph-modules/core"
     },
     {
-      "path": "./libs/demo/agentic-memory"
+      "path": "./libs/dev-brand/backend/data-access"
+    },
+    {
+      "path": "./libs/dev-brand/backend/feature"
+    },
+    {
+      "path": "./apps/dev-brand-api"
     }
   ]
 }

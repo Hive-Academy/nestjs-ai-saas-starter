@@ -38,7 +38,9 @@
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*"
+        "libs/langgraph-modules/platform/*",
+        "libs/dev-brand/backend/data-access/*",
+        "libs/dev-brand/backend/feature/*"
       ]
     },
     {
@@ -76,7 +78,9 @@
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*"
+        "libs/langgraph-modules/platform/*",
+        "libs/dev-brand/backend/data-access/*",
+        "libs/dev-brand/backend/feature/*"
       ],
       "options": {
         "typecheck": {
