@@ -14,7 +14,8 @@
       "Bash(npx nx run-many:*)",
       "Read(/D:\\d\\projects\\nestjs-ai-saas-starter/**)",
       "Bash(npx nx show:*)",
-      "Bash(npx nx typecheck:*)"
+      "Bash(npx nx typecheck:*)",
+      "mcp__nx-mcp__nx_workspace"
     ],
     "additionalDirectories": [
       "D:\\projects\\nestjs-ai-saas-starter",

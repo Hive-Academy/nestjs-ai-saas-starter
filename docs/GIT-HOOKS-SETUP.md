@@ -37,11 +37,13 @@ npm run setup:git-hooks
 **File**: `.husky/pre-commit`
 
 **Actions**:
+
 1. Runs `lint-staged` on staged files
 2. Builds affected libraries to ensure they compile
 3. Validates package.json files
 
 **What gets checked**:
+
 - TypeScript/JavaScript files: ESLint + Prettier
 - JSON/Markdown files: Prettier
 - Package.json files: Custom validation
@@ -52,10 +54,12 @@ npm run setup:git-hooks
 **File**: `.husky/commit-msg`
 
 **Actions**:
+
 1. Validates commit message format using commitlint
 2. Ensures conventional commit format
 
 **Valid commit formats**:
+
 ```bash
 feat(chromadb): add new embedding service
 fix(neo4j): resolve connection timeout issue
@@ -68,6 +72,7 @@ chore(deps): update dependencies
 **File**: `.husky/pre-push`
 
 **Actions** (only for `main` and `develop` branches):
+
 1. Runs tests for affected projects
 2. Runs linting for affected projects
 3. Builds affected projects
@@ -133,6 +138,7 @@ chore(deps): update dependencies
 **File**: `scripts/validate-package-json.js`
 
 **Validates**:
+
 - Required fields: name, version, description, author, license
 - Package name starts with `@anubis/`
 - Semantic versioning format
@@ -206,16 +212,19 @@ git push --no-verify
 ### Hook Not Running
 
 1. Check if Husky is installed:
+
    ```bash
    ls -la .husky/
    ```
 
 2. Reinstall hooks:
+
    ```bash
    npm run setup:git-hooks
    ```
 
 3. Check Git hooks directory:
+
    ```bash
    git config core.hooksPath
    ```
@@ -223,11 +232,13 @@ git push --no-verify
 ### Lint-staged Issues
 
 1. Check configuration:
+
    ```bash
    npx lint-staged --debug
    ```
 
 2. Run manually:
+
    ```bash
    npx lint-staged
    ```
@@ -235,11 +246,13 @@ git push --no-verify
 ### Commitlint Issues
 
 1. Test commit message:
+
    ```bash
    echo "feat: test message" | npx commitlint
    ```
 
 2. Check configuration:
+
    ```bash
    npx commitlint --print-config
    ```
@@ -266,11 +279,13 @@ chmod +x .husky/pre-push
 ### VS Code
 
 Install recommended extensions:
+
 - ESLint
 - Prettier
 - Conventional Commits
 
 Add to `.vscode/settings.json`:
+
 ```json
 {
   "editor.formatOnSave": true,
@@ -309,6 +324,7 @@ The Git hooks work in conjunction with GitHub Actions:
 ### Adding New File Types
 
 Edit `.lintstagedrc.json`:
+
 ```json
 {
   "*.{vue,svelte}": ["prettier --write", "eslint --fix"]
@@ -318,6 +334,7 @@ Edit `.lintstagedrc.json`:
 ### Adding New Commit Scopes
 
 Edit `.commitlintrc.json`:
+
 ```json
 {
   "rules": {
@@ -329,6 +346,7 @@ Edit `.commitlintrc.json`:
 ### Modifying Hook Behavior
 
 Edit hook files in `.husky/` directory:
+
 ```bash
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"

@@ -164,7 +164,7 @@ class ModuleRegistryService {
     },
     {
       moduleId: 'memory',
-      className: 'LanggraphModulesMemoryModule',
+      className: 'AgenticMemoryModule',
       importPath: '@langgraph-modules/memory',
       optional: true,
       dependencies: [],
@@ -388,9 +388,10 @@ class DynamicModuleLoaderFacade {
     if (options.checkpoint?.enabled) {
       modules.push(['checkpoint', options.checkpoint]);
     }
-    if (options.memory) {
-      modules.push(['memory', options.memory]);
-    }
+    // REMOVED: memory module loading - now handled at app level
+    // if (options.memory) {
+    //   modules.push(['memory', options.memory]);
+    // }
     if (options.multiAgent) {
       modules.push(['multi-agent', options.multiAgent]);
     }
@@ -568,9 +569,10 @@ export class ChildModuleImportFactory {
     if (options.checkpoint?.enabled) {
       modules.push(['checkpoint', options.checkpoint]);
     }
-    if (options.memory) {
-      modules.push(['memory', options.memory]);
-    }
+    // REMOVED: memory module loading - now handled at app level
+    // if (options.memory) {
+    //   modules.push(['memory', options.memory]);
+    // }
     if (options.multiAgent) {
       modules.push(['multi-agent', options.multiAgent]);
     }

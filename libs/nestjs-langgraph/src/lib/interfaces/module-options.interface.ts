@@ -20,7 +20,7 @@ export interface LangGraphModuleOptions {
   checkpoint?: CheckpointConfig;
 
   // Memory Configuration
-  memory?: MemoryConfig;
+  memory?: MemoryDatabaseConfig;
 
   // Multi-Agent Configuration
   multiAgent?: {
@@ -71,7 +71,7 @@ export interface CheckpointConfig {
   saver?: any; // Custom checkpoint saver instance
 }
 
-export interface MemoryConfig {
+export interface MemoryDatabaseConfig {
   enabled?: boolean;
   chromadb?: {
     collection?: string;

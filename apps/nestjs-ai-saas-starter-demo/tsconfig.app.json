@@ -22,9 +22,6 @@
   ],
   "references": [
     {
-      "path": "../../libs/nestjs-langgraph/tsconfig.lib.json"
-    },
-    {
       "path": "../../libs/nestjs-neo4j/tsconfig.lib.json"
     },
     {

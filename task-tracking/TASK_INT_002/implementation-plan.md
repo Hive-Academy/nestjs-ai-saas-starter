@@ -284,7 +284,7 @@ class ModuleRegistryService {
     },
     {
       moduleId: 'memory',
-      className: 'LanggraphModulesMemoryModule',
+      className: 'AgenticMemoryModule',
       importPath: '@langgraph-modules/memory', 
       optional: true,
       dependencies: [],

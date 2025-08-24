@@ -4,9 +4,6 @@
   "include": [],
   "references": [
     {
-      "path": "../../libs/nestjs-langgraph"
-    },
-    {
       "path": "../../libs/nestjs-neo4j"
     },
     {

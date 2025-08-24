@@ -31,9 +31,6 @@
       "path": "./libs/langgraph-modules/functional-api"
     },
     {
-      "path": "./libs/langgraph-modules/memory"
-    },
-    {
       "path": "./libs/langgraph-modules/monitoring"
     },
     {
@@ -50,6 +47,12 @@
     },
     {
       "path": "./libs/langgraph-modules/core"
+    },
+    {
+      "path": "./libs/demo/supervisor-agent"
+    },
+    {
+      "path": "./libs/demo/agentic-memory"
     }
   ]
 }

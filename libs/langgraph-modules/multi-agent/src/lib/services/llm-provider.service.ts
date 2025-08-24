@@ -2,10 +2,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import type { BaseLanguageModelInterface } from '@langchain/core/language_models/base';
-import { 
-  MultiAgentModuleOptions,
-  SupervisorConfig,
-} from '../interfaces/multi-agent.interface';
+import * as multiAgentInterface from '../interfaces/multi-agent.interface';
 import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
 
 /**
@@ -19,16 +16,16 @@ export class LlmProviderService {
 
   constructor(
     @Inject(MULTI_AGENT_MODULE_OPTIONS)
-    private readonly options: MultiAgentModuleOptions
+    private readonly options: multiAgentInterface.MultiAgentModuleOptions
   ) {}
 
   /**
    * Get or create LLM instance with caching
    */
-  async getLLM(config?: SupervisorConfig['llm']): Promise<BaseLanguageModelInterface> {
+  async getLLM(config?: multiAgentInterface.SupervisorConfig['llm']): Promise<BaseLanguageModelInterface> {
     const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
     const cacheKey = this.createCacheKey(config);
-    
+
     if (this.llmCache.has(cacheKey)) {
       this.logger.debug(`Using cached LLM: ${model}`);
       return this.llmCache.get(cacheKey)!;
@@ -37,14 +34,14 @@ export class LlmProviderService {
     this.logger.debug(`Creating new LLM instance: ${model}`);
     const llm = await this.createLLM(config);
     this.llmCache.set(cacheKey, llm);
-    
+
     return llm;
   }
 
   /**
    * Create LLM instance based on provider
    */
-  private async createLLM(config?: SupervisorConfig['llm']): Promise<BaseLanguageModelInterface> {
+  private async createLLM(config?: multiAgentInterface.SupervisorConfig['llm']): Promise<BaseLanguageModelInterface> {
     const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
     const temperature = config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
     const maxTokens = config?.maxTokens || this.options.defaultLlm?.maxTokens;
@@ -54,19 +51,19 @@ export class LlmProviderService {
       return this.createOpenAILLM(model, temperature, maxTokens);
     } else if (model.startsWith('claude-')) {
       return this.createAnthropicLLM(model, temperature, maxTokens);
-    } 
+    }
       // Default to OpenAI for unknown models
       this.logger.warn(`Unknown model provider for ${model}, defaulting to OpenAI`);
       return this.createOpenAILLM(model, temperature, maxTokens);
-    
+
   }
 
   /**
    * Create OpenAI LLM instance
    */
   private createOpenAILLM(
-    model: string, 
-    temperature: number, 
+    model: string,
+    temperature: number,
     maxTokens?: number
   ): ChatOpenAI {
     return new ChatOpenAI({
@@ -82,8 +79,8 @@ export class LlmProviderService {
    * Create Anthropic LLM instance
    */
   private createAnthropicLLM(
-    model: string, 
-    temperature: number, 
+    model: string,
+    temperature: number,
     maxTokens?: number
   ): ChatAnthropic {
     return new ChatAnthropic({
@@ -98,11 +95,11 @@ export class LlmProviderService {
   /**
    * Create cache key for LLM configuration
    */
-  private createCacheKey(config?: SupervisorConfig['llm']): string {
+  private createCacheKey(config?: multiAgentInterface.SupervisorConfig['llm']): string {
     const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
     const temperature = config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
     const maxTokens = config?.maxTokens || this.options.defaultLlm?.maxTokens || 4000;
-    
+
     return `${model}_${temperature}_${maxTokens}`;
   }
 
@@ -116,9 +113,9 @@ export class LlmProviderService {
   /**
    * Validate model configuration
    */
-  validateModelConfig(config?: SupervisorConfig['llm']): boolean {
+  validateModelConfig(config?: multiAgentInterface.SupervisorConfig['llm']): boolean {
     const model = config?.model || this.options.defaultLlm?.model;
-    
+
     if (!model) {
       this.logger.error('No model specified in configuration');
       return false;
@@ -165,7 +162,7 @@ export class LlmProviderService {
    */
   async preloadModels(models: string[]): Promise<void> {
     this.logger.log(`Preloading ${models.length} models`);
-    
+
     const preloadPromises = models.map(async (model) => {
       try {
         await this.getLLM({ model });
@@ -182,16 +179,16 @@ export class LlmProviderService {
   /**
    * Test LLM connectivity
    */
-  async testLLM(config?: SupervisorConfig['llm']): Promise<boolean> {
+  async testLLM(config?: multiAgentInterface.SupervisorConfig['llm']): Promise<boolean> {
     try {
       const llm = await this.getLLM(config);
       const response = await llm.invoke([
         { role: 'user', content: 'Hello, this is a connectivity test. Please respond with "OK".' }
       ]);
-      
+
       const success = response.content.toString().toLowerCase().includes('ok');
       this.logger.debug(`LLM test result: ${success ? 'PASS' : 'FAIL'}`);
-      
+
       return success;
     } catch (error) {
       this.logger.error('LLM connectivity test failed:', error);
@@ -229,7 +226,7 @@ export class LlmProviderService {
         supportsStreaming: true,
         provider: 'anthropic',
       };
-    } 
+    }
       // Default capabilities
       return {
         maxTokens: 4000,
@@ -237,6 +234,6 @@ export class LlmProviderService {
         supportsStreaming: false,
         provider: 'unknown',
       };
-    
+
   }
 }

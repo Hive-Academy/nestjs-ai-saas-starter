@@ -884,12 +884,12 @@ The NestJS LangGraph library is designed to work seamlessly with specialized chi
 **Contextual memory management for AI agents**
 ```typescript
 // Import and configure memory module
-import { LanggraphModulesMemoryModule, MemoryFacadeService } from '@libs/langgraph-modules/memory';
+import { AgenticMemoryModule, MemoryFacadeService } from '@libs/langgraph-modules/memory';
 
 @Module({
   imports: [
     NestjsLanggraphModule.forRoot({...}),
-    LanggraphModulesMemoryModule.forRoot({
+    AgenticMemoryModule.forRoot({
       chromadb: { collection: 'agent_memory' },
       neo4j: { database: 'memory_graph' },
       retention: { maxEntries: 10000, ttlDays: 30 }
@@ -1165,7 +1165,7 @@ export class MonitoredMultiAgentWorkflow extends DeclarativeWorkflowBase {
     }),
     
     // All child modules
-    LanggraphModulesMemoryModule.forRoot({...}),
+    AgenticMemoryModule.forRoot({...}),
     CheckpointModule.forRoot({...}),
     MultiAgentModule.forRoot({...}),
     FunctionalApiModule.forRoot({...}),

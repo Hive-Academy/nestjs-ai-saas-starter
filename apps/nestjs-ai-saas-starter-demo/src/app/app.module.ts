@@ -3,14 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Library imports
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-import { LangGraphModule } from '@hive-academy/nestjs-langgraph';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 // Module imports
 import { DocumentsModule } from '../modules/documents/documents.module';
 import { GraphModule } from '../modules/graph/graph.module';
 import { HealthModule } from '../modules/health/health.module';
-import { WorkflowsModule } from '../modules/workflows/workflows.module';
+import { AgenticMemoryModule } from '@hive-academy/agentic-memory';
 
 @Module({
   imports: [
@@ -81,91 +80,25 @@ import { WorkflowsModule } from '../modules/workflows/workflows.module';
       }),
     }),
 
-    // LangGraph Module
-    LangGraphModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const llmProvider = configService.get('LLM_PROVIDER', 'openrouter');
-
-        // Configure based on selected provider
-        let llmConfig: any = {};
-
-        if (llmProvider === 'openrouter') {
-          // OpenRouter configuration (default)
-          llmConfig = {
-            provider: 'openai', // OpenRouter uses OpenAI-compatible API
-            apiKey: configService.get('OPENROUTER_API_KEY'),
-            baseUrl: configService.get(
-              'OPENROUTER_BASE_URL',
-              'https://openrouter.ai/api/v1'
-            ),
-            model: configService.get(
-              'OPENROUTER_MODEL',
-              'openai/gpt-3.5-turbo'
-            ),
-            options: {
-              temperature: parseFloat(
-                configService.get('OPENROUTER_TEMPERATURE', '0.7')
-              ),
-              maxTokens: parseInt(
-                configService.get('OPENROUTER_MAX_TOKENS', '2048')
-              ),
-              topP: parseFloat(configService.get('OPENROUTER_TOP_P', '0.9')),
-              headers: {
-                'HTTP-Referer': configService.get(
-                  'OPENROUTER_SITE_URL',
-                  'http://localhost:3000'
-                ),
-                'X-Title': configService.get(
-                  'OPENROUTER_APP_NAME',
-                  'NestJS AI SaaS Starter'
-                ),
-              },
-            },
-          };
-        } else if (llmProvider === 'ollama') {
-          // Ollama configuration (local)
-          llmConfig = {
-            provider: 'ollama',
-            baseUrl: configService.get(
-              'OLLAMA_BASE_URL',
-              'http://localhost:11434'
-            ),
-            model: configService.get('OLLAMA_MODEL', 'llama2'),
-            options: {
-              temperature: parseFloat(
-                configService.get('OLLAMA_TEMPERATURE', '0.7')
-              ),
-              numPredict: parseInt(
-                configService.get('OLLAMA_NUM_PREDICT', '256')
-              ),
-              topK: parseInt(configService.get('OLLAMA_TOP_K', '40')),
-              topP: parseFloat(configService.get('OLLAMA_TOP_P', '0.9')),
-            },
-          };
-        }
-
-        return {
-          llm: llmConfig,
-          debug: configService.get('LANGGRAPH_DEBUG', 'false') === 'true',
-          streaming: {
-            enabled: true,
-            returnIntermediateSteps: true,
-          },
-          hitl: {
-            enabled: true,
-            timeout: 30000,
-          },
-        };
+    // Memory Module - Now at app level, uses injected services
+    AgenticMemoryModule.forRoot({
+      enableSemanticSearch: true,
+      enableAutoSummarization: true,
+      retention: {
+        maxEntries: 10000,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       },
-      inject: [ConfigService],
     }),
 
     // Feature Modules
     DocumentsModule,
     GraphModule,
-    WorkflowsModule,
+
     HealthModule,
+  ],
+  exports: [
+    // Export AgenticMemoryModule so other modules can use it
+    AgenticMemoryModule,
   ],
 })
 export class AppModule {}
