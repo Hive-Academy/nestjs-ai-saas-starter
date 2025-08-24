@@ -15,7 +15,7 @@ import { getSupervisorAgentConfig } from './config/supervisor-agent.config';
  * - TimeTravelModule for debugging
  * - StreamingModule for real-time updates
  * - HITLModule for human approval workflows
- * 
+ *
  * Configuration is externalized to supervisor-agent.config.ts
  * and controlled via environment variables (see .env.example)
  */

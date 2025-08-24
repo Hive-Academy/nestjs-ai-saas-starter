@@ -22,8 +22,11 @@ export class LLMProviderFactory {
       return config.factory();
     }
 
+    // Support both 'type' (new) and 'provider' (legacy) properties
+    const providerType = config.type || (config.provider as any);
+    
     // Create provider based on type
-    switch (config.type) {
+    switch (providerType) {
       case 'openai':
         return this.createOpenAI(config);
 
@@ -43,7 +46,7 @@ export class LLMProviderFactory {
         return (config.factory as any)();
 
       default:
-        throw new Error(`Unsupported LLM provider type: ${config.type}`);
+        throw new Error(`Unsupported LLM provider type: ${providerType}`);
     }
   }
 

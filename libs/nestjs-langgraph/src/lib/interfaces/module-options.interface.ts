@@ -46,12 +46,22 @@ export interface LangGraphModuleOptions {
 }
 
 export interface LLMProviderConfig {
-  provider: 'openai' | 'anthropic' | 'custom';
+  // Provider type (openai, anthropic, google, azure, custom)
+  type: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
+  // API key for the provider
   apiKey?: string;
+  // Model name
   model?: string;
+  // Base URL for custom providers
+  baseURL?: string;
+  // Additional provider-specific options
+  options?: Record<string, any>;
+  // Custom provider factory
+  factory?: () => any; // Using any to avoid import of BaseChatModel here
+  // Legacy compatibility fields
   temperature?: number;
   maxTokens?: number;
-  baseURL?: string;
+  provider?: 'openai' | 'anthropic' | 'custom'; // Keep for backward compatibility
 }
 
 export interface CheckpointConfig {
@@ -59,7 +69,7 @@ export interface CheckpointConfig {
   provider?: 'memory' | 'redis' | 'postgresql';
   config?: Record<string, any>;
   // Additional properties used by checkpoint adapter
-  storage?: 'memory' | 'sqlite' | 'redis' | 'postgresql';
+  storage?: 'memory' | 'sqlite' | 'redis' | 'postgresql' | 'custom' | 'database';
   storageConfig?: {
     path?: string;
     host?: string;

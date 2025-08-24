@@ -16,10 +16,7 @@
   },
   "nx": {
     "name": "langgraph-modules/multi-agent",
-    "tags": [
-      "scope:langgraph",
-      "type:util"
-    ],
+  "tags": ["domain:langgraph", "type:feature", "module:multi-agent"],
     "targets": {
       "build": {
         "executor": "@nx/js:tsc",

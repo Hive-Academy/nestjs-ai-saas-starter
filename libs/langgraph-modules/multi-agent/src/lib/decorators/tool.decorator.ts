@@ -44,12 +44,12 @@ export interface ToolMetadata extends ToolOptions {
 
 /**
  * Decorator to mark a method as a LangGraph tool
- * 
+ *
  * @example
  * ```typescript
  * @Injectable()
  * export class SearchTools {
- *   
+ *
  *   @Tool({
  *     name: 'search_knowledge_base',
  *     description: 'Search the knowledge base for relevant information',
@@ -80,7 +80,7 @@ export interface ToolMetadata extends ToolOptions {
  *     // Tool implementation
  *     return this.vectorStore.search(query, { limit, filters });
  *   }
- *   
+ *
  *   @Tool({
  *     name: 'stream_search',
  *     description: 'Stream search results as they are found',
@@ -103,23 +103,23 @@ export function Tool(options: ToolOptions): MethodDecorator {
       handler: descriptor.value,
       className: target.constructor.name,
     };
-    
+
     // Get existing tools or initialize
     const existingTools = Reflect.getMetadata(WORKFLOW_TOOLS_KEY, target.constructor) || [];
-    
+
     // Add this tool
     existingTools.push(toolMetadata);
-    
+
     // Store updated tools
     Reflect.defineMetadata(WORKFLOW_TOOLS_KEY, existingTools, target.constructor);
-    
+
     // Also store on the method itself for direct access
     Reflect.defineMetadata('tool:metadata', toolMetadata, target, propertyKey);
-    
+
     // Wrap the original method to add validation and rate limiting
     const originalMethod = descriptor.value;
     const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-    
+
     descriptor.value = async function(this: any, ...args: any[]) {
       // Validate input with Zod schema if provided
       if (options.schema) {
@@ -134,13 +134,13 @@ export function Tool(options: ToolOptions): MethodDecorator {
           throw new Error(`Invalid input for tool ${options.name}: ${errorMessage}`);
         }
       }
-      
+
       // Check rate limiting
       if (options.rateLimit) {
         const now = Date.now();
         const key = `${toolMetadata.className}:${options.name}`;
         const limit = rateLimitMap.get(key);
-        
+
         if (limit && limit.resetTime > now) {
           if (limit.count >= options.rateLimit.requests) {
             const waitTime = Math.ceil((limit.resetTime - now) / 1000);
@@ -154,21 +154,21 @@ export function Tool(options: ToolOptions): MethodDecorator {
           });
         }
       }
-      
+
       // Log tool execution
       if (this.logger) {
         this.logger.debug(`Executing tool: ${options.name}`);
       }
-      
+
       // Execute the original method
       try {
         const result = await originalMethod.apply(this, args);
-        
+
         // Log success
         if (this.logger) {
           this.logger.debug(`Tool ${options.name} executed successfully`);
         }
-        
+
         return result;
       } catch (error) {
         // Log error
@@ -178,7 +178,7 @@ export function Tool(options: ToolOptions): MethodDecorator {
         throw error;
       }
     };
-    
+
     return descriptor;
   };
 }
@@ -209,7 +209,7 @@ export interface ComposedToolOptions extends ToolOptions {
 
 /**
  * Decorator for tools that compose multiple other tools
- * 
+ *
  * @example
  * ```typescript
  * @ComposedTool({
@@ -242,17 +242,17 @@ export function ComposedTool(options: ComposedToolOptions): MethodDecorator {
 export function DeprecatedTool(reason: string, alternative?: string): MethodDecorator {
   return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
-    
+
     descriptor.value = function(this: any, ...args: any[]) {
       if (this.logger) {
         this.logger.warn(
-          `Tool ${String(propertyKey)} is deprecated: ${reason}${ 
+          `Tool ${String(propertyKey)} is deprecated: ${reason}${
           alternative ? ` Use ${alternative} instead.` : ''}`
         );
       }
       return originalMethod.apply(this, args);
     };
-    
+
     return descriptor;
   };
 }

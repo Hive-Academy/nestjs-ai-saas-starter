@@ -483,7 +483,7 @@ export class ChildModuleImportFactory {
           this.logger.warn(`⚠️ Module ${moduleId} not available, graceful degradation enabled`);
         }
       } catch (error) {
-        this.logger.error(`❌ Failed to load module ${moduleId}:`, error.message);
+        this.logger.error(`❌ Failed to load module ${moduleId}:`, (error as any).message || error);
       }
     }
 
@@ -520,7 +520,7 @@ export class ChildModuleImportFactory {
           // Use require for synchronous loading
           moduleExports = require(modulePath);
         } catch (requireError) {
-          this.logger.debug(`Require failed for ${modulePath}:`, requireError.message);
+          this.logger.debug(`Require failed for ${modulePath}:`, (requireError as any).message || requireError);
           continue;
         }
 
@@ -553,7 +553,7 @@ export class ChildModuleImportFactory {
         return dynamicModule;
 
       } catch (error) {
-        this.logger.debug(`Failed to load from path ${modulePath}:`, error.message);
+        this.logger.debug(`Failed to load from path ${modulePath}:`, (error as any).message || error);
         continue;
       }
     }

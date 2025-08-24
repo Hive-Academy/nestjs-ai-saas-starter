@@ -9,7 +9,6 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 import { DocumentsModule } from '../modules/documents/documents.module';
 import { GraphModule } from '../modules/graph/graph.module';
 import { HealthModule } from '../modules/health/health.module';
-import { AgenticMemoryModule } from '@hive-academy/agentic-memory';
 
 @Module({
   imports: [

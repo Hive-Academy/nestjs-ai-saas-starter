@@ -15,7 +15,7 @@ import {
   INFRASTRUCTURE_EXPORTS,
 } from './index';
 
-import { ADAPTER_EXPORTS } from './adapters';
+import { ADAPTER_EXPORTS } from '../adapters';
 
 /**
  * Create all module exports in one organized function
