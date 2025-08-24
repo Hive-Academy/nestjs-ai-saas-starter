@@ -20,9 +20,9 @@ export type * from './lib/interfaces/module-options.interface'
 // Child modules should be imported directly from their respective packages
 // to avoid export conflicts. For example:
 //
-// import { MultiAgentCoordinatorService } from '@langgraph-modules/multi-agent';
-// import { MemoryFacadeService } from '@langgraph-modules/memory';
-// import { CheckpointManagerService } from '@langgraph-modules/checkpoint';
+// import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
+// import { MemoryFacadeService } from '@hive-academy/langgraph-memory';
+// import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 //
 // This ensures clean module boundaries and avoids symbol collisions.
 // =============================================================================

@@ -1,18 +1,45 @@
 {
-  "name": "@langgraph-modules/streaming",
+  "name": "@hive-academy/langgraph-streaming",
   "version": "0.0.1",
-  "private": true,
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "private": false,
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "types": "./src/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
     }
+  },
+  "nx": {
+    "name": "langgraph-modules/streaming",
+    "tags": [
+      "scope:langgraph",
+      "type:util"
+    ],
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "dist/libs/langgraph-modules/streaming",
+          "tsConfig": "libs/langgraph-modules/streaming/tsconfig.lib.json",
+          "packageJson": "libs/langgraph-modules/streaming/package.json",
+          "main": "libs/langgraph-modules/streaming/src/index.ts",
+          "assets": [
+            "libs/langgraph-modules/streaming/*.md"
+          ]
+        }
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "tslib": "^2.3.0",

@@ -1,7 +1,11 @@
 {
-  "name": "@langgraph-modules/workflow-engine",
+  "name": "@hive-academy/langgraph-workflow-engine",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -47,8 +51,8 @@
     "reflect-metadata": "^0.1.13",
     "@langchain/langgraph-checkpoint": "^0.1.0",
     "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
-    "@langgraph-modules/streaming": "0.0.1",
-    "@langgraph-modules/core": "0.0.1",
-    "@langgraph-modules/functional-api": "0.0.1"
+    "@hive-academy/langgraph-streaming": "0.0.1",
+    "@hive-academy/langgraph-core": "0.0.1",
+    "@hive-academy/langgraph-functional-api": "0.0.1"
   }
 }

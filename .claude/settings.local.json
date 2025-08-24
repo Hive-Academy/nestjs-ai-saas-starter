@@ -15,7 +15,10 @@
       "Read(/D:\\d\\projects\\nestjs-ai-saas-starter/**)",
       "Bash(npx nx show:*)",
       "Bash(npx nx typecheck:*)",
-      "mcp__nx-mcp__nx_workspace"
+      "mcp__nx-mcp__nx_workspace",
+      "Bash(git push:*)",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__filesystem__edit_file"
     ],
     "additionalDirectories": [
       "D:\\projects\\nestjs-ai-saas-starter",

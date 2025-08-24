@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { LanggraphModulesMonitoringModule as MonitoringModule } from './langgraph-modules/monitoring.module';
 import { MonitoringFacadeService } from './core/monitoring-facade.service';
 import { MetricsCollectorService } from './services/metrics-collector.service';

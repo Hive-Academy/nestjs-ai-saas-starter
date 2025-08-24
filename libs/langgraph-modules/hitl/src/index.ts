@@ -20,4 +20,4 @@ export * from './lib/decorators/approval.decorator';
 export * from './lib/constants';
 
 // Interfaces
-export * from './lib/interfaces/hitl.interface';
+export type * from './lib/interfaces/hitl.interface';

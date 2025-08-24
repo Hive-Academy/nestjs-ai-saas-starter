@@ -18,7 +18,7 @@ export const DEFAULT_MULTI_AGENT_OPTIONS = {
   },
   streaming: {
     enabled: false,
-    modes: ['values'] as const,
+    modes: ['values'] as Array<'values' | 'updates' | 'messages'>,
   },
   debug: {
     enabled: false,

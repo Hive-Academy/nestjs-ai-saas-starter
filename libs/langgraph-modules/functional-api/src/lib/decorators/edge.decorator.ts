@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { WORKFLOW_EDGES_KEY } from '@langgraph-modules/core';
+import { WORKFLOW_EDGES_KEY } from '@hive-academy/langgraph-core';
 
 /**
  * Options for @Edge decorator

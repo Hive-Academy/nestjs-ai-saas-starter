@@ -10,7 +10,7 @@ import {
   TokenStreamingService,
   WebSocketBridgeService,
   EventStreamProcessorService
-} from '@langgraph-modules/streaming';
+} from '@hive-academy/langgraph-streaming';
 import {
   WorkflowState,
 } from '../interfaces';
@@ -20,7 +20,7 @@ import {
   StreamTokenMetadata,
   StreamEventMetadata,
   StreamProgressMetadata,
-} from '@langgraph-modules/streaming';
+} from '@hive-academy/langgraph-streaming';
 
 /**
  * Streaming workflow execution context

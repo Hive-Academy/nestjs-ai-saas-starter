@@ -1,9 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
+import { DiscoveryService } from '@nestjs/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { ToolMetadata, getClassTools } from '../decorators/tool.decorator';
-import { WORKFLOW_TOOLS_KEY } from '../decorators/workflow.decorator';
 
 /**
  * Tool registration and discovery service
@@ -17,9 +16,7 @@ export class ToolRegistryService implements OnModuleInit {
   private readonly agentTools = new Map<string, Set<string>>();
 
   constructor(
-    private readonly discoveryService: DiscoveryService,
-    private readonly metadataScanner: MetadataScanner,
-    private readonly reflector: Reflector
+    private readonly discoveryService: DiscoveryService
   ) {}
 
   async onModuleInit() {
@@ -198,7 +195,7 @@ export class ToolRegistryService implements OnModuleInit {
     this.toolMetadata.delete(name);
 
     // Remove from agent associations
-    for (const [agent, toolSet] of this.agentTools.entries()) {
+    for (const [, toolSet] of this.agentTools.entries()) {
       toolSet.delete(name);
     }
 

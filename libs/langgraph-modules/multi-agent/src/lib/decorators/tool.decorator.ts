@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import type { z } from 'zod';
-import { WORKFLOW_TOOLS_KEY } from './workflow.decorator';
+import { WORKFLOW_TOOLS_KEY } from '@hive-academy/langgraph-core';
 
 /**
  * Options for @Tool decorator

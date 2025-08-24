@@ -5,7 +5,7 @@ import {
   LangGraphModuleOptions,
   LangGraphModuleAsyncOptions,
   LangGraphOptionsFactory,
-} from '@langgraph-modules/core';
+} from '@hive-academy/langgraph-core';
 import {
   LANGGRAPH_MODULE_OPTIONS,
   LANGGRAPH_MODULE_ID,

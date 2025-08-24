@@ -2,7 +2,7 @@
  * Foundation test for DirectLangGraphService
  * Verifies basic functionality without requiring full supervisor agent setup
  */
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { DirectLangGraphService } from './services/direct-langgraph.service';
 import { 
   DEFAULT_DIRECT_LANGGRAPH_CONFIG,

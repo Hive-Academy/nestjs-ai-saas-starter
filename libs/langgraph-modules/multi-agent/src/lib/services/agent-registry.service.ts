@@ -97,9 +97,10 @@ export class AgentRegistryService {
    * Get agents by capability
    */
   getAgentsByCapability(capability: string): AgentDefinition[] {
-    return this.getAllAgents().filter(agent => 
-      agent.metadata?.capabilities?.includes?.(capability)
-    );
+    return this.getAllAgents().filter(agent => {
+      const capabilities = agent.metadata?.capabilities;
+      return Array.isArray(capabilities) && capabilities.includes(capability);
+    });
   }
 
   /**

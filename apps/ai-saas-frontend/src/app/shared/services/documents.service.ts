@@ -75,7 +75,7 @@ export class DocumentsService {
   }
 
   deleteDocument(id: string): Observable<boolean> {
-    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete<boolean>(`${this.apiUrl}/${id}`).pipe(
       catchError((error) => {
         console.error(`Failed to delete document ${id}:`, error);
         return of(false);

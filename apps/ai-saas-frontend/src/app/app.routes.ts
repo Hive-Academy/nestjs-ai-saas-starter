@@ -17,20 +17,20 @@ export const routes: Routes = [
       ),
     title: 'Document Management',
   },
-  {
-    path: 'graph',
-    loadChildren: async () =>
-      import('./features/graph/graph.routes').then((m) => m.GRAPH_ROUTES),
-    title: 'Knowledge Graph',
-  },
-  {
-    path: 'workflows',
-    loadChildren: async () =>
-      import('./features/workflows/workflows.routes').then(
-        (m) => m.WORKFLOWS_ROUTES
-      ),
-    title: 'AI Workflows',
-  },
+  // {
+  //   path: 'graph',
+  //   loadChildren: async () =>
+  //     import('./features/graph/graph.routes').then((m) => m.GRAPH_ROUTES),
+  //   title: 'Knowledge Graph',
+  // },
+  // {
+  //   path: 'workflows',
+  //   loadChildren: async () =>
+  //     import('./features/workflows/workflows.routes').then(
+  //       (m) => m.WORKFLOWS_ROUTES
+  //     ),
+  //   title: 'AI Workflows',
+  // },
   {
     path: 'health',
     loadComponent: async () =>

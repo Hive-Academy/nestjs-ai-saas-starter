@@ -21,36 +21,39 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
-      "@langgraph-modules/checkpoint": [
+      "@hive-academy/langgraph-checkpoint": [
         "libs/langgraph-modules/checkpoint/src/index.ts"
       ],
-      "@langgraph-modules/core": ["libs/langgraph-modules/core/src/index.ts"],
-      "@langgraph-modules/functional-api": [
+      "@hive-academy/langgraph-core": [
+        "libs/langgraph-modules/core/src/index.ts"
+      ],
+      "@hive-academy/langgraph-functional-api": [
         "libs/langgraph-modules/functional-api/src/index.ts"
       ],
-      "@langgraph-modules/hitl": ["libs/langgraph-modules/hitl/src/index.ts"],
-      "@langgraph-modules/memory": [
-        "libs/langgraph-modules/memory/src/index.ts"
+      "@hive-academy/langgraph-hitl": [
+        "libs/langgraph-modules/hitl/src/index.ts"
       ],
-      "@langgraph-modules/monitoring": [
+      "@hive-academy/langgraph-monitoring": [
         "libs/langgraph-modules/monitoring/src/index.ts"
       ],
-      "@langgraph-modules/multi-agent": [
+      "@hive-academy/langgraph-multi-agent": [
         "libs/langgraph-modules/multi-agent/src/index.ts"
       ],
-      "@langgraph-modules/platform": [
+      "@hive-academy/langgraph-platform": [
         "libs/langgraph-modules/platform/src/index.ts"
       ],
-      "@langgraph-modules/streaming": [
+      "@hive-academy/langgraph-streaming": [
         "libs/langgraph-modules/streaming/src/index.ts"
       ],
-      "@langgraph-modules/time-travel": [
+      "@hive-academy/langgraph-time-travel": [
         "libs/langgraph-modules/time-travel/src/index.ts"
       ],
-      "@langgraph-modules/workflow-engine": [
+      "@hive-academy/langgraph-workflow-engine": [
         "libs/langgraph-modules/workflow-engine/src/index.ts"
       ],
-
+      "@langgraph-modules/memory": [
+        "libs/langgraph-modules/memory/src/index.ts"
+      ]
     }
   }
 }

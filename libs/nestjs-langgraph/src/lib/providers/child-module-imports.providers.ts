@@ -82,7 +82,7 @@ class PathResolutionService {
 
     // Primary paths using TypeScript path mapping
     const paths = [
-      `@langgraph-modules/${moduleId}`,
+      `@hive-academy/langgraph-${moduleId}`,
     ];
 
     // Development fallback paths
@@ -157,7 +157,7 @@ class ModuleRegistryService {
     {
       moduleId: 'checkpoint',
       className: 'LanggraphModulesCheckpointModule',
-      importPath: '@langgraph-modules/checkpoint',
+      importPath: '@hive-academy/langgraph-checkpoint',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -165,7 +165,7 @@ class ModuleRegistryService {
     {
       moduleId: 'memory',
       className: 'AgenticMemoryModule',
-      importPath: '@langgraph-modules/memory',
+      importPath: '@hive-academy/langgraph-memory',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -173,7 +173,7 @@ class ModuleRegistryService {
     {
       moduleId: 'multi-agent',
       className: 'MultiAgentModule',
-      importPath: '@langgraph-modules/multi-agent',
+      importPath: '@hive-academy/langgraph-multi-agent',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -181,7 +181,7 @@ class ModuleRegistryService {
     {
       moduleId: 'functional-api',
       className: 'FunctionalApiModule',
-      importPath: '@langgraph-modules/functional-api',
+      importPath: '@hive-academy/langgraph-functional-api',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -189,7 +189,7 @@ class ModuleRegistryService {
     {
       moduleId: 'platform',
       className: 'PlatformModule',
-      importPath: '@langgraph-modules/platform',
+      importPath: '@hive-academy/langgraph-platform',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -197,7 +197,7 @@ class ModuleRegistryService {
     {
       moduleId: 'time-travel',
       className: 'TimeTravelModule',
-      importPath: '@langgraph-modules/time-travel',
+      importPath: '@hive-academy/langgraph-time-travel',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -205,7 +205,7 @@ class ModuleRegistryService {
     {
       moduleId: 'monitoring',
       className: 'MonitoringModule',
-      importPath: '@langgraph-modules/monitoring',
+      importPath: '@hive-academy/langgraph-monitoring',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -213,7 +213,7 @@ class ModuleRegistryService {
     {
       moduleId: 'hitl',
       className: 'HitlModule',
-      importPath: '@langgraph-modules/hitl',
+      importPath: '@hive-academy/langgraph-hitl',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -221,7 +221,7 @@ class ModuleRegistryService {
     {
       moduleId: 'streaming',
       className: 'StreamingModule',
-      importPath: '@langgraph-modules/streaming',
+      importPath: '@hive-academy/langgraph-streaming',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'
@@ -229,7 +229,7 @@ class ModuleRegistryService {
     {
       moduleId: 'workflow-engine',
       className: 'WorkflowEngineModule',
-      importPath: '@langgraph-modules/workflow-engine',
+      importPath: '@hive-academy/langgraph-workflow-engine',
       optional: true,
       dependencies: [],
       loadingStrategy: 'sync'

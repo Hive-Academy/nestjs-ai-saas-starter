@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../../libs/demo/agentic-memory"
+    },
+    {
       "path": "../../libs/nestjs-neo4j"
     },
     {

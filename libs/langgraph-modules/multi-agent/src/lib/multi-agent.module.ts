@@ -145,8 +145,3 @@ export class MultiAgentModule {
 /**
  * Async configuration interface
  */
-export interface MultiAgentModuleAsyncOptions {
-  imports?: any[];
-  useFactory?: (...args: any[]) => Promise<MultiAgentModuleOptions> | MultiAgentModuleOptions;
-  inject?: any[];
-}

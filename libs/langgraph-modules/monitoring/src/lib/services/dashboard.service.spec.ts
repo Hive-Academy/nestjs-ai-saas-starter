@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { DashboardService } from './dashboard.service';
 import type {
   DashboardConfig,
@@ -14,7 +14,7 @@ import type {
 describe('DashboardService', () => {
   let service: DashboardService;
 
-  const createTestTimeRange = (hoursAgo: number = 1): TimeRange => ({
+  const createTestTimeRange = (hoursAgo = 1): TimeRange => ({
     start: new Date(Date.now() - hoursAgo * 3600000),
     end: new Date(),
   });

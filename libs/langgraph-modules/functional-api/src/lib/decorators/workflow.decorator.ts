@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import { SetMetadata } from '@nestjs/common';
-import type { WorkflowExecutionConfig } from '@langgraph-modules/core';
+import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
 import { 
-  WorkflowStateAnnotation,
+  type WorkflowStateAnnotation,
   WORKFLOW_METADATA_KEY,
   WORKFLOW_NODES_KEY,
   WORKFLOW_EDGES_KEY,
   WORKFLOW_TOOLS_KEY
-} from '@langgraph-modules/core';
+} from '@hive-academy/langgraph-core';
 
 /**
  * Options for @Workflow decorator
@@ -145,4 +145,4 @@ export function getWorkflowMetadata(target: any): WorkflowOptions | undefined {
 /**
  * Check if a class is decorated with @Workflow
  */
-// isWorkflow function is now exported from @langgraph-modules/core
+// isWorkflow function is now exported from @hive-academy/langgraph-core

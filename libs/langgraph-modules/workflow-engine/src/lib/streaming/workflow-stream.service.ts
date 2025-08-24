@@ -9,8 +9,8 @@ import {
   StreamMetadata,
   // StreamContext, // Currently unused
   TokenData,
-} from '@langgraph-modules/streaming';
-import { WorkflowStateAnnotation } from '@langgraph-modules/core';
+} from '@hive-academy/langgraph-streaming';
+import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import {
   StreamTokenMetadata,
@@ -19,7 +19,7 @@ import {
   getStreamTokenMetadata,
   getStreamEventMetadata,
   getStreamProgressMetadata,
-} from '@langgraph-modules/streaming';
+} from '@hive-academy/langgraph-streaming';
 
 /**
  * Service for managing multi-level streaming of workflow execution

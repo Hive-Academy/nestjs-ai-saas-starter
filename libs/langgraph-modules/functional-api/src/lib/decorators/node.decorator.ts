@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { WORKFLOW_NODES_KEY } from '@langgraph-modules/core';
+import { WORKFLOW_NODES_KEY } from '@hive-academy/langgraph-core';
 
 /**
  * Options for @Node decorator

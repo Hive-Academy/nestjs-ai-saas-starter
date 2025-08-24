@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
-import type { BaseLanguageModelInterface } from '@langchain/core/language_models/base';
+import { AIMessage } from '@langchain/core/messages';
+// BaseLanguageModelInterface import removed as it's not used
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { 
   AgentDefinition,
@@ -45,7 +45,7 @@ export class NodeFactoryService {
 
         // Create routing tool
         const routingTool = this.createRoutingTool(config);
-        const llmWithTools = llm.bindTools([routingTool]);
+        const llmWithTools = (llm as any).bindTools([routingTool]);
         
         const messages = [
           { role: 'system', content: systemPrompt },
@@ -335,7 +335,7 @@ export class NodeFactoryService {
     agentId: string,
     nodeType: 'supervisor' | 'worker' | 'swarm'
   ): T {
-    return (async (state: AgentState, config?: RunnableConfig) => {
+    const wrappedFunction = async (state: AgentState, config?: RunnableConfig) => {
       const startTime = Date.now();
       
       try {
@@ -365,6 +365,8 @@ export class NodeFactoryService {
 
         throw error;
       }
-    }) as T;
+    };
+
+    return wrappedFunction as unknown as T;
   }
 }
