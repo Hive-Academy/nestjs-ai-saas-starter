@@ -14,8 +14,10 @@ A comprehensive Neo4j integration module for NestJS applications, providing ente
 - 🔒 **Type Safety** - Full TypeScript support with comprehensive type definitions and interfaces
 - ⚡ **Performance Optimized** - Bulk operations, parallel query execution, and session management
 - 🛠️ **Query Builder** - Fluent Cypher query builder for type-safe query construction
-- 📈 **Metrics & Monitoring** - Built-in metrics collection for database performance
+- 📈 **Enhanced Metrics & Monitoring** - Advanced metrics with APOC integration and comprehensive health checks
 - 🔐 **Advanced Authentication** - Support for various authentication methods and SSL/TLS
+- 🛡️ **Type-Safe Query Results** - Enhanced notification handling and robust summary processing
+- ⚡ **Improved Performance** - Better connection pooling and query result optimization
 
 ## Installation
 
@@ -619,6 +621,138 @@ export class UserService {
 }
 ```
 
+## Latest Enhancements (v2024.12)
+
+### 🚀 Enhanced Type Safety & Query Processing
+
+The library now includes several important improvements for better reliability and developer experience:
+
+#### 1. **Improved Notification Handling**
+
+- **Type-Safe Notifications**: Proper TypeScript definitions for Neo4j query notifications
+- **Position Information**: Safe extraction of position data with runtime type checking
+- **Severity Mapping**: Standardized severity levels (`WARNING`, `INFORMATION`, `UNKNOWN`)
+
+```typescript
+// Enhanced notification processing with type safety
+const result = await neo4jService.run(query, params);
+result.summary.notifications.forEach((notification) => {
+  console.log(`${notification.severity}: ${notification.title}`);
+  if (notification.position) {
+    console.log(`At line ${notification.position.line}, column ${notification.position.column}`);
+  }
+});
+```
+
+#### 2. **Robust Summary Processing**
+
+- **Null Safety**: Graceful handling of undefined plan/profile data
+- **Enhanced Error Context**: Better error reporting with notification details
+- **Type-Safe Summary**: All summary properties now have proper TypeScript definitions
+
+```typescript
+const queryResult = await neo4jService.run(complexQuery, params);
+const summary = queryResult.summary;
+
+// Safe access to potentially undefined properties
+console.log('Execution plan:', summary.plan || 'No plan available');
+console.log('Profile data:', summary.profile || 'No profile data');
+```
+
+#### 3. **Advanced Health Monitoring**
+
+- **Extended Metrics Types**: Support for `Record<string, number | string | object>`
+- **APOC Integration**: Automatic detection and utilization of APOC procedures
+- **Better Error Handling**: Graceful fallback when APOC is not available
+
+```typescript
+const metrics = await neo4jHealthService.getMetrics();
+// Now supports complex metric data including APOC statistics
+console.log('Database metrics:', {
+  nodes: metrics.nodes,
+  relationships: metrics.relationships,
+  apocFeatures: metrics.apocStats || 'APOC not available',
+});
+```
+
+#### 4. **Enhanced Module Configuration**
+
+- **Stricter Type Definitions**: Improved `Neo4jModuleAsyncOptions` interface
+- **Dependency Injection**: Enhanced type safety for injection tokens
+- **Better Configuration Validation**: Runtime validation of configuration options
+
+#### 5. **Advanced Parameter Safety & Validation**
+
+- **@Neo4jSafe Decorator**: Automatic parameter serialization for Neo4j compatibility
+- **@ValidateNeo4jParams Decorator**: Input validation to prevent injection attacks
+- **Enhanced Query Builder**: Built-in parameter processing and type safety
+- **Centralized Serialization**: Advanced parameter serializer with circular reference protection
+
+```typescript
+@Injectable()
+export class UserRepository {
+  // Automatic parameter serialization and validation
+  @Neo4jSafe({ autoSerialize: true, autoInt: true })
+  @ValidateNeo4jParams({ preventInjection: true })
+  async createUser(userData: ComplexUserData) {
+    // userData.metadata automatically JSON.stringify'd
+    // userData.id automatically wrapped with int() if number
+    // All parameters validated for injection patterns
+    return this.neo4j.write(async (session) => {
+      const result = await session.run('CREATE (u:User $props) RETURN u', { props: userData });
+      return result.records[0]?.get('u');
+    });
+  }
+}
+```
+
+#### 6. **Enhanced Query Builder Features**
+
+- **Safe Parameter Processing**: Automatic Neo4j-compatible parameter transformation
+- **Template Queries**: Pre-built query templates for common operations
+- **Complex Object Handling**: Intelligent serialization of nested objects
+- **Circular Reference Protection**: Safe handling of complex object structures
+
+```typescript
+// Enhanced query builder with automatic safety
+const query = cypher()
+  .createNode(
+    'User',
+    {
+      id: 123, // Automatically wrapped with int()
+      metadata: complexObject, // Automatically JSON.stringify'd
+      createdAt: new Date(), // Automatically converted to ISO string
+    },
+    'u'
+  )
+  .return('u')
+  .buildSafe(); // Enhanced build with safety checks
+
+// Or use safe mode by default
+const safeQuery = safeCypher()
+  .match('(u:User)')
+  .where('u.active = $active')
+  .addParameter('active', true) // All parameters automatically processed
+  .return('u')
+  .build();
+```
+
+### 🔧 Migration Notes
+
+These enhancements are backward compatible, but you may want to update your code to take advantage of the new type safety:
+
+```typescript
+// Old approach (still works)
+const notifications = result.summary.notifications;
+
+// New approach (recommended for better type safety)
+const notifications: EnhancedNotification[] = result.summary.notifications;
+notifications.forEach((n) => {
+  // TypeScript now knows the exact shape of notifications
+  console.log(`${n.severity}: ${n.description}`);
+});
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -723,9 +857,9 @@ interface QueryResult<T = any> {
       containsUpdates: boolean;
       containsSystemUpdates: boolean;
     };
-    plan?: any;
-    profile?: any;
-    notifications: any[];
+    plan?: any; // Enhanced with null safety
+    profile?: any; // Enhanced with null safety
+    notifications: EnhancedNotification[]; // Enhanced with type safety
     server: {
       address: string;
       version: string;
@@ -737,18 +871,53 @@ interface QueryResult<T = any> {
     };
   };
 }
+
+// Enhanced notification interface with type-safe position information
+interface EnhancedNotification {
+  code: string;
+  title: string;
+  description: string;
+  severity: 'WARNING' | 'INFORMATION' | 'UNKNOWN';
+  position?: {
+    offset: number;
+    line: number;
+    column: number;
+  };
+}
 ```
 
 ### Decorators
 
-| Decorator                  | Description                               | Usage                |
-| -------------------------- | ----------------------------------------- | -------------------- |
-| `@InjectNeo4j(name?)`      | Inject Neo4j driver or named session      | Property/Constructor |
-| `@Transactional(options?)` | Mark method as transactional with options | Method               |
+| Decorator                        | Description                                        | Usage                |
+| -------------------------------- | -------------------------------------------------- | -------------------- |
+| `@InjectNeo4j(name?)`            | Inject Neo4j driver or named session               | Property/Constructor |
+| `@Transactional(options?)`       | Mark method as transactional with options          | Method               |
+| `@Neo4jSafe(options?)`           | Automatic parameter serialization for Neo4j safety | Method               |
+| `@ValidateNeo4jParams(options?)` | Validate parameters to prevent injection attacks   | Method               |
+
+#### New Decorator Options
+
+```typescript
+// Neo4jSafe decorator options
+interface Neo4jSafeOptions {
+  autoSerialize?: boolean; // Auto-serialize complex objects (default: true)
+  autoInt?: boolean; // Auto-wrap integers with int() (default: true)
+  validateParams?: boolean; // Validate parameters (default: true)
+  logTransformations?: boolean; // Log transformations for debugging (default: false)
+}
+
+// ValidateNeo4jParams decorator options
+interface Neo4jParamValidationOptions {
+  preventInjection?: boolean; // Check for Cypher injection patterns (default: true)
+  validateStructure?: boolean; // Validate parameter structure (default: true)
+  maxDepth?: number; // Max nesting depth (default: 10)
+  throwOnValidationError?: boolean; // Throw vs warn on errors (default: true)
+}
+```
 
 ### Neo4jHealthService
 
-The module provides comprehensive health checking capabilities:
+The module provides comprehensive health checking capabilities with enhanced metrics:
 
 ```typescript
 import { Neo4jHealthService } from '@hive-academy/nestjs-neo4j';
@@ -775,12 +944,15 @@ export class HealthService {
 
   async getMetrics() {
     const metrics = await this.neo4jHealth.getMetrics();
-    // Returns database statistics:
-    // - Node count
-    // - Relationship count
-    // - Property count
-    // - Label count
-    // - Connection pool info
+    // Enhanced metrics now support complex data types and APOC integration:
+    // Returns: {
+    //   nodes: number,
+    //   relationships: number,
+    //   propertyKeys: number,
+    //   labels: number,
+    //   relationshipTypes: number,
+    //   apocStats: object // APOC metadata if available
+    // }
     return metrics;
   }
 
@@ -789,6 +961,69 @@ export class HealthService {
     return { alive: isAlive };
   }
 }
+```
+
+### Parameter Serialization Utilities
+
+New utilities for handling complex parameter serialization:
+
+```typescript
+import { serializeNeo4jParams, serializeUpdateParams, createParameterSerializer } from '@hive-academy/nestjs-neo4j';
+
+// Basic parameter serialization
+const params = serializeNeo4jParams({
+  userId: 123, // Auto-wrapped with int()
+  metadata: complexObject, // Auto-serialized to JSON
+  createdAt: new Date(), // Auto-converted to ISO string
+  tags: ['tag1', 'tag2'], // Arrays preserved
+});
+
+// Custom serializer for specific use cases
+const userSerializer = createParameterSerializer({
+  dateFields: ['createdAt', 'updatedAt', 'lastLogin'],
+  jsonFields: ['preferences', 'settings', 'metadata'],
+  intFields: ['id', 'age', 'score'],
+});
+
+// Use the custom serializer
+const serialized = userSerializer(userData);
+
+// Generate SET clauses for updates
+const { setClause, params: updateParams } = serializeUpdateParams(
+  {
+    name: 'John Doe',
+    metadata: { role: 'admin' },
+    updatedAt: new Date(),
+  },
+  {
+    excludeFields: ['id'],
+    prefix: 'user',
+  }
+);
+// Results in: "user.name = $name, user.metadata = $metadata, user.updatedAt = datetime($updatedAt)"
+```
+
+### Enhanced Query Builder API
+
+The query builder now includes advanced parameter handling:
+
+```typescript
+import { cypher, safeCypher, Neo4jQueryTemplates } from '@hive-academy/nestjs-neo4j';
+
+// Enhanced query builder methods
+const builder = cypher()
+  .createNode('User', userData, 'u') // Auto-safe parameter handling
+  .createRelationship('u', 'OWNS', 'p', relationshipData) // Auto-safe relationships
+  .mergeNode('Product', matchProps, createProps, 'p') // Auto-safe merge operations
+  .addSafeParameter('customParam', complexValue) // Explicit safe parameters
+  .paginate(0, 20) // Safe pagination with int()
+  .buildSafe(); // Enhanced build with validation
+
+// Pre-built query templates
+const createUserQuery = Neo4jQueryTemplates.createUser(userData);
+const findQuery = Neo4jQueryTemplates.findByProperties('User', searchCriteria, 10);
+const updateQuery = Neo4jQueryTemplates.updateNode('User', userId, updateData);
+const relationshipQuery = Neo4jQueryTemplates.createRelationship('User', userId, 'FOLLOWS', 'User', targetUserId, { since: new Date() });
 ```
 
 ### Neo4jConnectionService
