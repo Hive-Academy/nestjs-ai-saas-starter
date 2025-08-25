@@ -14,7 +14,6 @@
     ],
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
-  "nxCloudId": "68997a1ba4b3df434911e532",
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
@@ -32,7 +31,16 @@
       "exclude": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/nestjs-langgraph/*"
+        "libs/nestjs-langgraph/*",
+        "libs/langgraph-modules/checkpoint/*",
+        "libs/langgraph-modules/time-travel/*",
+        "libs/langgraph-modules/multi-agent/*",
+        "libs/langgraph-modules/functional-api/*",
+        "libs/langgraph-modules/memory/*",
+        "libs/langgraph-modules/monitoring/*",
+        "libs/langgraph-modules/platform/*",
+        "libs/dev-brand/backend/data-access/*",
+        "libs/dev-brand/backend/feature/*"
       ]
     },
     {
@@ -63,7 +71,16 @@
       "include": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/nestjs-langgraph/*"
+        "libs/nestjs-langgraph/*",
+        "libs/langgraph-modules/checkpoint/*",
+        "libs/langgraph-modules/time-travel/*",
+        "libs/langgraph-modules/multi-agent/*",
+        "libs/langgraph-modules/functional-api/*",
+        "libs/langgraph-modules/memory/*",
+        "libs/langgraph-modules/monitoring/*",
+        "libs/langgraph-modules/platform/*",
+        "libs/dev-brand/backend/data-access/*",
+        "libs/dev-brand/backend/feature/*"
       ],
       "options": {
         "typecheck": {
@@ -80,6 +97,36 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    }
+  },
+  "release": {
+    "projects": [
+      "libs/nestjs-chromadb",
+      "libs/nestjs-neo4j",
+      "libs/nestjs-langgraph"
+    ],
+    "version": {
+      "conventionalCommits": true,
+      "git": {
+        "commit": true,
+        "tag": true,
+        "commitMessage": "chore(release): version {version}",
+        "tagMessage": "v{version}"
+      }
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": "github",
+        "file": "CHANGELOG.md"
+      },
+      "projectChangelogs": {
+        "createRelease": "github",
+        "file": "CHANGELOG.md"
+      },
+      "git": {
+        "commit": true,
+        "commitMessage": "chore(release): update changelog for {version}"
+      }
     }
   }
 }

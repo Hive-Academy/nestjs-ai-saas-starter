@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../langgraph-modules/core"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {

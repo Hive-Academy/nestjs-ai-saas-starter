@@ -14,7 +14,7 @@ import { CHROMADB_CLIENT } from '../constants';
  * }
  * ```
  */
-export const InjectChromaDB = () => Inject('ChromaDBService');
+export const InjectChromaDB = (): ParameterDecorator => Inject('ChromaDBService');
 
 /**
  * Decorator to inject ChromaDB client directly
@@ -29,4 +29,4 @@ export const InjectChromaDB = () => Inject('ChromaDBService');
  * }
  * ```
  */
-export const InjectChromaDBClient = () => Inject(CHROMADB_CLIENT);
+export const InjectChromaDBClient = (): ParameterDecorator => Inject(CHROMADB_CLIENT);

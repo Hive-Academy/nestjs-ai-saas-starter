@@ -1,3 +1,5 @@
+import type { Metadata } from 'chromadb';
+
 /**
  * Metadata utility functions for ChromaDB operations
  */
@@ -7,21 +9,26 @@
  */
 export function sanitizeMetadata(
   metadata: Record<string, any>
-): Record<string, string | number | boolean> {
-  const sanitized: Record<string, string | number | boolean> = {};
+): Metadata {
+  const sanitized: Metadata = {};
 
   for (const [key, value] of Object.entries(metadata)) {
-    // Skip null or undefined values
-    if (value === null || value === undefined) {
+    // Sanitize key (remove invalid characters)
+    const sanitizedKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
+    
+    // Skip undefined values, but allow null
+    if (value === undefined) {
+      continue;
+    }
+    
+    if (value === null) {
+      sanitized[sanitizedKey] = null;
       continue;
     }
 
-    // Sanitize key (remove invalid characters)
-    const sanitizedKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
-
     // Convert value to supported types
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      sanitized[sanitizedKey] = value;
+      sanitized[sanitizedKey] = value as string | number | boolean;
     } else if (typeof value === 'object') {
       // Convert objects to JSON strings
       sanitized[sanitizedKey] = JSON.stringify(value);

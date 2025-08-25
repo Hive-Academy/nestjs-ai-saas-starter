@@ -4,7 +4,7 @@
 services:
   neo4j:
     image: neo4j:5.26-community
-    container_name: anubis-neo4j-dev
+    container_name: hive-academy-neo4j-dev
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -14,11 +14,11 @@ services:
     volumes:
       - neo4j-data:/data
     networks:
-      - anubis-network
+      - hive-academy-network
 
   chromadb:
     image: chromadb/chroma:latest
-    container_name: anubis-chromadb-dev
+    container_name: hive-academy-chromadb-dev
     ports:
       - "8000:8000"
     environment:
@@ -29,21 +29,21 @@ services:
     volumes:
       - chromadb-data:/data/chromadb
     networks:
-      - anubis-network
+      - hive-academy-network
 
   redis:
     image: redis:latest
-    container_name: anubis-redis-dev
+    container_name: hive-academy-redis-dev
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
     networks:
-      - anubis-network
+      - hive-academy-network
 
 networks:
-  anubis-network:
+  hive-academy-network:
     driver: bridge
 
 volumes:

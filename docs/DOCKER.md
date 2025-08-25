@@ -7,6 +7,7 @@ Anubis uses a simplified Docker setup optimized for development speed. We run **
 ## Architecture Decision
 
 We **do NOT use Nx Docker integration** (`@nx/docker`) because:
+
 1. It adds unnecessary complexity for our use case
 2. We prioritize fast local development with hot reload
 3. Production deployments use standard Docker Compose, not Nx builds
@@ -28,13 +29,13 @@ npm run dev
 
 ### Available Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start databases + API together |
-| `npm run dev:services` | Start only database services |
-| `npm run dev:stop` | Stop all Docker services |
-| `npm run dev:reset` | Stop and remove all volumes (clean slate) |
-| `npm run dev:logs` | View Docker service logs |
+| Command                | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `npm run dev`          | Start databases + API together            |
+| `npm run dev:services` | Start only database services              |
+| `npm run dev:stop`     | Stop all Docker services                  |
+| `npm run dev:reset`    | Stop and remove all volumes (clean slate) |
+| `npm run dev:logs`     | View Docker service logs                  |
 
 ### Development Configuration
 
@@ -43,15 +44,15 @@ npm run dev
 ```yaml
 services:
   neo4j:
-    image: neo4j:5.26-community  # Latest LTS version
+    image: neo4j:5.26-community # Latest LTS version
     ports: 7474 (browser), 7687 (bolt)
     environment: Development password, graph-data-science plugin
-    
+
   chromadb:
     image: chromadb/chroma:latest
     ports: 8000
     environment: Telemetry disabled, debug logging
-    
+
   redis:
     image: redis:latest
     ports: 6379
@@ -103,11 +104,13 @@ FROM node:18-alpine AS runtime
 ### Production Deployment
 
 1. **Build the production image:**
+
 ```bash
-docker build -f docker/Dockerfile -t anubis-agent:latest .
+docker build -f docker/Dockerfile -t hive-academy-agent:latest .
 ```
 
 2. **Create production `.env.production`:**
+
 ```env
 # Database Configuration
 NEO4J_URI=bolt://neo4j:7687
@@ -131,6 +134,7 @@ CORS_ORIGINS=https://yourdomain.com
 ```
 
 3. **Use production docker-compose.yml:**
+
 ```bash
 docker compose -f docker-compose.yml --env-file .env.production up -d
 ```
@@ -140,7 +144,8 @@ docker compose -f docker-compose.yml --env-file .env.production up -d
 **File:** `docker-compose.yml`
 
 Key differences from development:
-- Uses built `anubis-agent:latest` image instead of local code
+
+- Uses built `hive-academy-agent:latest` image instead of local code
 - Configures proper resource limits
 - Includes health checks and restart policies
 - Uses named volumes for data persistence
@@ -160,21 +165,22 @@ Key differences from development:
 
 ## Key Differences: Dev vs Production
 
-| Aspect | Development | Production |
-|--------|-------------|------------|
-| **API** | Runs locally with hot reload | Runs in Docker container |
-| **Build** | No build needed, uses TypeScript | Pre-built JavaScript in dist/ |
-| **Volumes** | Local bind mounts | Named Docker volumes |
-| **Passwords** | Simple defaults | Strong, unique passwords |
-| **Logging** | Debug level | Info/Warning level |
-| **Resources** | No limits | Memory/CPU limits set |
-| **Restart** | Manual | Automatic (unless-stopped) |
+| Aspect        | Development                      | Production                    |
+| ------------- | -------------------------------- | ----------------------------- |
+| **API**       | Runs locally with hot reload     | Runs in Docker container      |
+| **Build**     | No build needed, uses TypeScript | Pre-built JavaScript in dist/ |
+| **Volumes**   | Local bind mounts                | Named Docker volumes          |
+| **Passwords** | Simple defaults                  | Strong, unique passwords      |
+| **Logging**   | Debug level                      | Info/Warning level            |
+| **Resources** | No limits                        | Memory/CPU limits set         |
+| **Restart**   | Manual                           | Automatic (unless-stopped)    |
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Ports already in use:**
+
 ```bash
 # Check what's using the port
 netstat -an | findstr :3001
@@ -184,6 +190,7 @@ PORT=3002
 ```
 
 **Database connection failures:**
+
 ```bash
 # Ensure services are running
 docker ps
@@ -196,6 +203,7 @@ npm run dev:reset
 ```
 
 **Permission issues on Linux:**
+
 ```bash
 # Add user to docker group
 sudo usermod -aG docker $USER
@@ -230,7 +238,7 @@ nx serve agent-api    # Start API
 npm run dev:stop      # Stop everything
 
 # Production workflow
-docker build -f docker/Dockerfile -t anubis-agent:latest .
+docker build -f docker/Dockerfile -t hive-academy-agent:latest .
 docker compose -f docker-compose.yml up -d
 
 # Debugging

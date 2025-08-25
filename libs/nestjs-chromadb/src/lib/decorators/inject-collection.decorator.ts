@@ -2,7 +2,7 @@ import { Inject } from '@nestjs/common';
 
 /**
  * Decorator to inject a specific ChromaDB collection
- * 
+ *
  * @example
  * ```typescript
  * @Injectable()
@@ -13,13 +13,13 @@ import { Inject } from '@nestjs/common';
  * }
  * ```
  */
-export const InjectCollection = (collectionName: string) => 
+export const InjectCollection = (collectionName: string): ParameterDecorator =>
   Inject(`COLLECTION_${collectionName.toUpperCase()}`);
 
 /**
  * Utility function to get collection from service
  * Use this instead of @WithCollection decorator for better type safety
- * 
+ *
  * @example
  * ```typescript
  * @Injectable()
@@ -27,7 +27,7 @@ export const InjectCollection = (collectionName: string) =>
  *   constructor(
  *     private readonly collectionService: CollectionService,
  *   ) {}
- * 
+ *
  *   async indexProduct(product: Product) {
  *     const collection = await this.withCollection('products');
  *     await collection.add({
@@ -36,30 +36,30 @@ export const InjectCollection = (collectionName: string) =>
  *       metadatas: [{ category: product.category }]
  *     });
  *   }
- * 
+ *
  *   private async withCollection(name: string) {
  *     return this.collectionService.getCollection(name);
  *   }
  * }
  * ```
  */
-export class CollectionHelper {
-  static async withCollection<T>(
-    collectionService: any,
+export const CollectionHelper = {
+  async withCollection<T>(
+    collectionService: CollectionAccessor,
     collectionName: string,
-    operation: (collection: any) => Promise<T>
+    operation: (collection: unknown) => Promise<T>
   ): Promise<T> {
     const collection = await collectionService.getCollection(collectionName);
     return operation(collection);
   }
-}
+};
 
 /**
  * Type-safe collection accessor mixin
  * Add this to your service class to get type-safe collection access
  */
 export interface CollectionAccessor {
-  getCollection(name: string): Promise<any>;
+  getCollection: (name: string) => Promise<unknown>;
 }
 
 /**
@@ -68,7 +68,7 @@ export interface CollectionAccessor {
 export async function withCollection<T>(
   collectionService: CollectionAccessor,
   collectionName: string,
-  operation: (collection: any) => Promise<T>
+  operation: (collection: unknown) => Promise<T>
 ): Promise<T> {
   try {
     const collection = await collectionService.getCollection(collectionName);

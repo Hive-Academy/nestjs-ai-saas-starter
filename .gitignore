@@ -44,3 +44,8 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 test-output
+.mcp.json
+
+.angular
+/.env
+/typescript-validation-report.json

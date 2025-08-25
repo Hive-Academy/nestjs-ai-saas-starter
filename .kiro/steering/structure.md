@@ -20,7 +20,9 @@
 ## Library Architecture
 
 ### Core Integration Libraries
+
 Each library follows NestJS module patterns with:
+
 - **Dynamic Module Configuration**: `forRoot()` and `forRootAsync()` methods
 - **Feature Modules**: `forFeature()` for specific configurations
 - **Dependency Injection**: Custom decorators for service injection
@@ -28,6 +30,7 @@ Each library follows NestJS module patterns with:
 - **TypeScript Support**: Full type definitions and interfaces
 
 ### Library Structure Pattern
+
 ```
 libs/<library-name>/
 ├── src/
@@ -47,6 +50,7 @@ libs/<library-name>/
 ## Application Structure
 
 ### Main Application Layout
+
 ```
 apps/nestjs-ai-saas-starter-demo/
 ├── src/
@@ -62,6 +66,7 @@ apps/nestjs-ai-saas-starter-demo/
 ## Configuration Files
 
 ### Root Level Configuration
+
 - **nx.json**: Nx workspace configuration with plugins and targets
 - **package.json**: Root dependencies and npm scripts
 - **tsconfig.base.json**: Base TypeScript configuration
@@ -70,6 +75,7 @@ apps/nestjs-ai-saas-starter-demo/
 - **.prettierrc**: Code formatting rules
 
 ### Docker Configuration
+
 - **docker-compose.dev.yml**: Development services (Neo4j, ChromaDB, Redis)
 - **docker-compose.yml**: Production deployment configuration
 - **docker/Dockerfile**: Production application container
@@ -77,16 +83,19 @@ apps/nestjs-ai-saas-starter-demo/
 ## Development Patterns
 
 ### Module Organization
+
 - **Feature Modules**: Group related functionality (e.g., user management, workflow processing)
 - **Shared Modules**: Common utilities and services
 - **Integration Modules**: Database and external service connections
 
 ### Service Patterns
+
 - **Repository Pattern**: Data access abstraction
 - **Factory Pattern**: Dynamic service creation
 - **Decorator Pattern**: Cross-cutting concerns (transactions, caching, logging)
 
 ### File Naming Conventions
+
 - **Modules**: `*.module.ts`
 - **Services**: `*.service.ts`
 - **Controllers**: `*.controller.ts`
@@ -98,14 +107,16 @@ apps/nestjs-ai-saas-starter-demo/
 ## Import Path Conventions
 
 ### Library Imports
+
 ```typescript
 // Import from published libraries
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
-import { Neo4jModule } from '@anubis/nestjs-neo4j';
-import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 ```
 
 ### Internal Imports
+
 ```typescript
 // Relative imports within same library/app
 import { SomeService } from './services/some.service';
@@ -115,7 +126,9 @@ import { SomeInterface } from '../interfaces/some.interface';
 ## Documentation Standards
 
 ### README Structure
+
 Each library includes comprehensive documentation with:
+
 - **Installation instructions**
 - **Quick start guide**
 - **API reference**
@@ -124,6 +137,7 @@ Each library includes comprehensive documentation with:
 - **Best practices**
 
 ### Code Documentation
+
 - **JSDoc comments** for all public APIs
 - **Interface documentation** with property descriptions
 - **Example usage** in method comments
@@ -132,6 +146,7 @@ Each library includes comprehensive documentation with:
 ## Testing Organization
 
 ### Test Structure
+
 ```
 src/
 ├── lib/
@@ -143,6 +158,7 @@ src/
 ```
 
 ### Test Categories
+
 - **Unit Tests**: Individual service and component testing
 - **Integration Tests**: Database and external service integration
 - **E2E Tests**: Full application workflow testing

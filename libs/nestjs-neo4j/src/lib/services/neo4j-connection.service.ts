@@ -1,8 +1,8 @@
 import { Injectable, Inject, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Driver } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
-import { Neo4jConnection } from '../interfaces/neo4j-connection.interface';
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+import type { Neo4jConnection } from '../interfaces/neo4j-connection.interface';
 
 @Injectable()
 export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, OnModuleDestroy {
@@ -24,8 +24,8 @@ export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, On
   }
 
   private async connect(): Promise<void> {
-    const maxRetries = this.options.retryAttempts || 5;
-    const retryDelay = this.options.retryDelay || 5000;
+    const maxRetries = this.options.retryAttempts ?? 5;
+    const retryDelay = this.options.retryDelay ?? 5000;
 
     while (this.retryCount < maxRetries) {
       try {
@@ -40,7 +40,7 @@ export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, On
         
         return;
       } catch (error) {
-        this.retryCount++;
+        this.retryCount += 1;
         const message = error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(
           `Failed to connect to Neo4j (attempt ${this.retryCount}/${maxRetries}): ${message}`
@@ -115,7 +115,7 @@ export class Neo4jConnectionService implements Neo4jConnection, OnModuleInit, On
     }
   }
 
-  private delay(ms: number): Promise<void> {
+  private async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 

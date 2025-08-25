@@ -68,12 +68,12 @@ export function dotProduct(vecA: number[], vecB: number[]): number {
  */
 export function normalize(vector: number[]): number[] {
   const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-  
+
   if (magnitude === 0) {
     return new Array(vector.length).fill(0);
   }
 
-  return vector.map(val => val / magnitude);
+  return vector.map((val) => val / magnitude);
 }
 
 /**
@@ -109,7 +109,7 @@ export function subtract(vecA: number[], vecB: number[]): number[] {
  * Multiply a vector by a scalar
  */
 export function scalarMultiply(vector: number[], scalar: number): number[] {
-  return vector.map(val => val * scalar);
+  return vector.map((val) => val * scalar);
 }
 
 /**
@@ -118,8 +118,8 @@ export function scalarMultiply(vector: number[], scalar: number): number[] {
 export function findMostSimilar(
   queryVector: number[],
   vectors: number[][],
-  topK: number = 5,
-  metric: 'cosine' | 'euclidean' = 'cosine'
+  topK = 5,
+  metric: 'cosine' | 'euclidean' = 'cosine',
 ): Array<{ index: number; similarity: number; distance: number }> {
   const results = vectors.map((vec, index) => {
     let similarity: number;
@@ -137,9 +137,7 @@ export function findMostSimilar(
   });
 
   // Sort by similarity (descending) and return top K
-  return results
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, topK);
+  return results.sort((a, b) => b.similarity - a.similarity).slice(0, topK);
 }
 
 /**
@@ -162,7 +160,7 @@ export function centroid(vectors: number[][]): number[] {
     }
   }
 
-  return result.map(val => val / vectors.length);
+  return result.map((val) => val / vectors.length);
 }
 
 /**
@@ -177,7 +175,7 @@ export function batchNormalize(vectors: number[][]): number[][] {
  */
 export function validateVector(
   vector: number[],
-  expectedDimensions?: number
+  expectedDimensions?: number,
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
@@ -190,7 +188,9 @@ export function validateVector(
   }
 
   if (expectedDimensions && vector.length !== expectedDimensions) {
-    errors.push(`Expected ${expectedDimensions} dimensions, got ${vector.length}`);
+    errors.push(
+      `Expected ${expectedDimensions} dimensions, got ${vector.length}`,
+    );
   }
 
   for (let i = 0; i < vector.length; i++) {
@@ -227,16 +227,17 @@ export function randomUnitVector(dimensions: number): number[] {
 export function distanceToSimilarity(
   distance: number,
   method: 'inverse' | 'negative_exp' | 'gaussian' = 'inverse',
-  sigma?: number
+  sigma?: number,
 ): number {
   switch (method) {
     case 'inverse':
       return 1 / (1 + distance);
     case 'negative_exp':
       return Math.exp(-distance);
-    case 'gaussian':
-      const s = sigma || 1;
+    case 'gaussian': {
+      const s = sigma ?? 1;
       return Math.exp(-(distance * distance) / (2 * s * s));
+    }
     default:
       throw new Error(`Unknown similarity method: ${method}`);
   }

@@ -1,0 +1,168 @@
+name: Release and Publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      dry_run:
+        description: 'Dry run (no actual publishing)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore(release)')"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+
+      - name: Build libraries
+        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet HEAD~1 HEAD -- libs/; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Version libraries (automatic)
+        if: github.event_name == 'push' && steps.changes.outputs.has_changes == 'true'
+        run: |
+          if git tag --list | grep -q "v"; then
+            npx nx release version --verbose
+          else
+            npx nx release version --first-release --verbose
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Version libraries (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ inputs.version }}" = "prerelease" ]; then
+            npx nx release version --specifier=prerelease --preid=beta --verbose
+          else
+            npx nx release version --specifier=${{ inputs.version }} --verbose
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to NPM (dry run)
+        if: inputs.dry_run == true || github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: |
+          npx nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to NPM
+        if: inputs.dry_run != true && (github.event_name == 'push' && steps.changes.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        run: |
+          npx nx run-many -t publish -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Generate changelog
+        if: steps.changes.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
+        run: npx nx release changelog --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.changes.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
+          release_name: Release ${{ env.NEW_VERSION }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: ${{ contains(env.NEW_VERSION, 'beta') || contains(env.NEW_VERSION, 'alpha') }}
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: release
+    if: always()
+
+    steps:
+      - name: Notify success
+        if: needs.release.result == 'success'
+        run: |
+          echo "✅ Libraries published successfully!"
+          echo "Check the packages at: https://www.npmjs.com/org/hive-academy"
+
+      - name: Notify failure
+        if: needs.release.result == 'failure'
+        run: |
+          echo "❌ Publishing failed!"
+          echo "Check the workflow logs for details."
+          exit 1
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'push'
+    needs: release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Rollback on failure
+        run: |
+          echo "🔄 Initiating rollback procedures..."
+          echo "Manual intervention may be required for NPM packages"
+          echo "Consider deprecating the failed version if it was published"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,51 @@
+{
+  "name": "@hive-academy/langgraph-core",
+  "version": "0.0.1",
+  "private": false,
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "nx": {
+    "name": "langgraph-modules/core",
+    "tags": [
+      "scope:langgraph",
+      "type:util"
+    ],
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "dist/libs/langgraph-modules/core",
+          "tsConfig": "libs/langgraph-modules/core/tsconfig.lib.json",
+          "packageJson": "libs/langgraph-modules/core/package.json",
+          "main": "libs/langgraph-modules/core/src/index.ts",
+          "assets": [
+            "libs/langgraph-modules/core/*.md"
+          ]
+        }
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0",
+    "@nestjs/common": "^11.0.0",
+    "@langchain/core": "^0.3.68",
+    "@langchain/langgraph": "^0.4.3",
+    "reflect-metadata": "^0.1.13"
+  }
+}

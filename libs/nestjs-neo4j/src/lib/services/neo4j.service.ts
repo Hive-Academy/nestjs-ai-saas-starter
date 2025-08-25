@@ -1,9 +1,18 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { Driver, Session, Transaction, Result, session as neo4jSession } from 'neo4j-driver';
+import {
+  Driver,
+  Session,
+  Transaction,
+  session as neo4jSession,
+} from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
-import { QueryResult, BulkOperation, BulkResult } from '../interfaces/query-result.interface';
-import { SessionOptions } from '../interfaces/neo4j-connection.interface';
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+import type {
+  QueryResult,
+  BulkOperation,
+  BulkResult,
+} from '../interfaces/query-result.interface';
+import type { SessionOptions } from '../interfaces/neo4j-connection.interface';
 
 @Injectable()
 export class Neo4jService {
@@ -22,7 +31,7 @@ export class Neo4jService {
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.READ,
     });
 
@@ -41,14 +50,14 @@ export class Neo4jService {
   /**
    * Execute a read query (legacy method for backward compatibility)
    */
-  async readQuery<T = any>(
+  async readQuery<T = Record<string, unknown>>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     database?: string
   ): Promise<T[]> {
     return this.read(async (session) => {
       const result = await session.run(cypher, params);
-      return result.records.map(record => record.toObject() as T);
+      return result.records.map((record) => record.toObject() as T);
     }, database);
   }
 
@@ -60,7 +69,7 @@ export class Neo4jService {
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.WRITE,
     });
 
@@ -79,39 +88,40 @@ export class Neo4jService {
   /**
    * Execute a write query (legacy method for backward compatibility)
    */
-  async writeQuery<T = any>(
+  async writeQuery<T = Record<string, unknown>>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     database?: string
   ): Promise<T[]> {
     return this.write(async (session) => {
       const result = await session.run(cypher, params);
-      return result.records.map(record => record.toObject() as T);
+      return result.records.map((record) => record.toObject() as T);
     }, database);
   }
 
   /**
    * Execute a query with full result details
    */
-  async run<T = any>(
+  async run<T = Record<string, unknown>>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     options?: SessionOptions
   ): Promise<QueryResult<T>> {
     const session = this.driver.session({
-      database: options?.database || this.options.database,
-      defaultAccessMode: options?.defaultAccessMode === 'READ' 
-        ? neo4jSession.READ 
-        : neo4jSession.WRITE,
+      database: options?.database ?? this.options.database,
+      defaultAccessMode:
+        options?.defaultAccessMode === 'READ'
+          ? neo4jSession.READ
+          : neo4jSession.WRITE,
       bookmarks: options?.bookmarks,
       fetchSize: options?.fetchSize,
     });
 
     try {
       const result = await session.run(cypher, params);
-      
+
       return {
-        records: result.records.map(record => record.toObject() as T),
+        records: result.records.map((record) => record.toObject() as T),
         summary: {
           query: {
             text: result.summary.query.text,
@@ -120,20 +130,36 @@ export class Neo4jService {
           counters: result.summary.counters.updates(),
           updateStatistics: {
             containsUpdates: result.summary.counters.containsUpdates(),
-            containsSystemUpdates: result.summary.counters.containsSystemUpdates?.() || false,
+            containsSystemUpdates:
+              result.summary.counters.containsSystemUpdates?.() || false,
           },
-          plan: result.summary.plan,
-          profile: result.summary.profile,
-          notifications: result.summary.notifications,
+          plan: result.summary.plan || undefined,
+          profile: result.summary.profile || undefined,
+          notifications: result.summary.notifications.map(n => ({
+            code: n.code,
+            title: n.title,
+            description: n.description,
+            severity: n.severity as 'WARNING' | 'INFORMATION' | 'UNKNOWN',
+            position: n.position && 'offset' in n.position &&
+                     typeof n.position.offset === 'number' &&
+                     typeof n.position.line === 'number' &&
+                     typeof n.position.column === 'number' ? {
+              offset: n.position.offset,
+              line: n.position.line,
+              column: n.position.column
+            } : undefined
+          })),
           server: {
-            address: result.summary.server.address || '',
-            version: result.summary.server.agent || '',
+            address: result.summary.server.address ?? '',
+            version: result.summary.server.agent ?? '',
           },
           resultConsumedAfter: result.summary.resultConsumedAfter.toNumber(),
           resultAvailableAfter: result.summary.resultAvailableAfter.toNumber(),
-          database: result.summary.database ? {
-            name: result.summary.database.name || '',
-          } : undefined,
+          database: result.summary.database
+            ? {
+                name: result.summary.database.name ?? '',
+              }
+            : undefined,
         },
       };
     } catch (error) {
@@ -149,12 +175,12 @@ export class Neo4jService {
   /**
    * Run operations in a transaction
    */
-  async runInTransaction<T>(
+  public async runInTransaction<T>(
     work: (session: Session) => Promise<T>,
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.WRITE,
     });
 
@@ -173,12 +199,12 @@ export class Neo4jService {
   /**
    * Run operations in a read transaction
    */
-  async runInReadTransaction<T>(
+  public async runInReadTransaction<T>(
     work: (tx: Transaction) => Promise<T>,
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.READ,
     });
 
@@ -198,12 +224,12 @@ export class Neo4jService {
   /**
    * Execute bulk operations with session callback
    */
-  async bulk<T>(
+  public async bulk<T>(
     operation: (session: Session) => Promise<T>,
     database?: string
   ): Promise<T> {
     const session = this.driver.session({
-      database: database || this.options.database,
+      database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.WRITE,
     });
 
@@ -222,7 +248,7 @@ export class Neo4jService {
   /**
    * Execute multiple operations in a single transaction (legacy method)
    */
-  async bulkOperations(operations: BulkOperation[]): Promise<BulkResult> {
+  public async bulkOperations(operations: BulkOperation[]): Promise<BulkResult> {
     const session = this.driver.session({
       database: this.options.database,
     });
@@ -230,11 +256,11 @@ export class Neo4jService {
 
     try {
       const results: QueryResult[] = [];
-      
+
       for (const op of operations) {
         const result = await tx.run(op.cypher, op.params);
         results.push({
-          records: result.records.map(r => r.toObject()),
+          records: result.records.map((r) => r.toObject()),
           summary: {
             query: {
               text: result.summary.query.text,
@@ -243,19 +269,34 @@ export class Neo4jService {
             counters: result.summary.counters.updates(),
             updateStatistics: {
               containsUpdates: result.summary.counters.containsUpdates(),
-              containsSystemUpdates: result.summary.counters.containsSystemUpdates?.() || false,
+              containsSystemUpdates:
+                result.summary.counters.containsSystemUpdates?.() || false,
             },
-            notifications: result.summary.notifications,
+            notifications: result.summary.notifications.map(n => ({
+              code: n.code,
+              title: n.title,
+              description: n.description,
+              severity: n.severity as 'WARNING' | 'INFORMATION' | 'UNKNOWN',
+              position: n.position && 'offset' in n.position &&
+                       typeof n.position.offset === 'number' &&
+                       typeof n.position.line === 'number' &&
+                       typeof n.position.column === 'number' ? {
+                offset: n.position.offset,
+                line: n.position.line,
+                column: n.position.column
+              } : undefined
+            })),
             server: {
-              address: result.summary.server.address || '',
-              version: result.summary.server.agent || '',
+              address: result.summary.server.address ?? '',
+              version: result.summary.server.agent ?? '',
             },
             resultConsumedAfter: result.summary.resultConsumedAfter.toNumber(),
-            resultAvailableAfter: result.summary.resultAvailableAfter.toNumber(),
+            resultAvailableAfter:
+              result.summary.resultAvailableAfter.toNumber(),
           },
         });
       }
-      
+
       await tx.commit();
       return { success: true, results };
     } catch (error) {
@@ -263,10 +304,10 @@ export class Neo4jService {
       const message = error instanceof Error ? error.message : 'Unknown error';
       const stack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Bulk operations failed: ${message}`, stack);
-      return { 
-        success: false, 
-        results: [], 
-        errors: [error instanceof Error ? error : new Error(message)] 
+      return {
+        success: false,
+        results: [],
+        errors: [error instanceof Error ? error : new Error(message)],
       };
     } finally {
       await session.close();
@@ -276,12 +317,13 @@ export class Neo4jService {
   /**
    * Get a session for manual control
    */
-  getSession(options?: SessionOptions): Session {
+  public getSession(options?: SessionOptions): Session {
     return this.driver.session({
-      database: options?.database || this.options.database,
-      defaultAccessMode: options?.defaultAccessMode === 'READ' 
-        ? neo4jSession.READ 
-        : neo4jSession.WRITE,
+      database: options?.database ?? this.options.database,
+      defaultAccessMode:
+        options?.defaultAccessMode === 'READ'
+          ? neo4jSession.READ
+          : neo4jSession.WRITE,
       bookmarks: options?.bookmarks,
       fetchSize: options?.fetchSize,
     });
@@ -290,7 +332,7 @@ export class Neo4jService {
   /**
    * Verify connectivity
    */
-  async verifyConnectivity(): Promise<boolean> {
+  public async verifyConnectivity(): Promise<boolean> {
     try {
       await this.driver.verifyConnectivity();
       return true;
@@ -304,14 +346,14 @@ export class Neo4jService {
   /**
    * Get driver instance for advanced operations
    */
-  getDriver(): Driver {
+  public getDriver(): Driver {
     return this.driver;
   }
 
   /**
    * Close the driver connection
    */
-  async close(): Promise<void> {
+  public async close(): Promise<void> {
     await this.driver.close();
   }
 }

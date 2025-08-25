@@ -18,7 +18,7 @@ export class ChromaAdminService {
   /**
    * Get ChromaDB server version
    */
-  async getVersion(): Promise<string> {
+  public async getVersion(): Promise<string> {
     try {
       return await this.client.version();
     } catch (error) {
@@ -30,7 +30,7 @@ export class ChromaAdminService {
   /**
    * Get heartbeat from ChromaDB server
    */
-  async heartbeat(): Promise<number> {
+  public async heartbeat(): Promise<number> {
     try {
       return await this.client.heartbeat();
     } catch (error) {
@@ -42,7 +42,7 @@ export class ChromaAdminService {
   /**
    * Check if ChromaDB server is healthy
    */
-  async isHealthy(): Promise<boolean> {
+  public async isHealthy(): Promise<boolean> {
     try {
       await this.heartbeat();
       return true;
@@ -54,7 +54,7 @@ export class ChromaAdminService {
   /**
    * Reset the entire ChromaDB instance (DANGEROUS!)
    */
-  async reset(): Promise<boolean> {
+  public async reset(): Promise<boolean> {
     try {
       this.logger.warn('Resetting entire ChromaDB instance - this will delete ALL data!');
       await this.client.reset();
@@ -68,12 +68,12 @@ export class ChromaAdminService {
   /**
    * Get database statistics
    */
-  async getStatistics(): Promise<{
+  public async getStatistics(): Promise<{
     collections: Array<{
       name: string;
       id: string;
       count: number;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }>;
     totalCollections: number;
     totalDocuments: number;
@@ -85,7 +85,7 @@ export class ChromaAdminService {
           name: string;
           id: string;
           count: number;
-          metadata?: Record<string, any>;
+          metadata?: Record<string, unknown>;
         }>,
         totalCollections: collections.length,
         totalDocuments: 0,
@@ -122,7 +122,7 @@ export class ChromaAdminService {
   /**
    * Perform database cleanup (remove empty collections)
    */
-  async cleanup(): Promise<{
+  public async cleanup(): Promise<{
     removedCollections: string[];
     errors: Array<{ collection: string; error: string }>;
   }> {
@@ -162,10 +162,10 @@ export class ChromaAdminService {
   /**
    * Backup collections metadata
    */
-  async backupMetadata(): Promise<Array<{
+  public async backupMetadata(): Promise<Array<{
     name: string;
     id: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>> {
     try {
       const collections = await this.client.listCollections();
@@ -183,7 +183,7 @@ export class ChromaAdminService {
   /**
    * Get server information
    */
-  async getServerInfo(): Promise<{
+  public async getServerInfo(): Promise<{
     version: string;
     healthy: boolean;
     collections: number;

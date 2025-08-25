@@ -27,6 +27,8 @@ import { ChromaAdminService } from './services/chroma-admin.service';
 import { ChromaDBService } from './services/chromadb.service';
 import { CollectionService } from './services/collection.service';
 import { EmbeddingService } from './services/embedding.service';
+import { TextSplitterService } from './services/text-splitter.service';
+import { MetadataExtractorService } from './services/metadata-extractor.service';
 
 @Global()
 @Module({})
@@ -82,6 +84,8 @@ export class ChromaDBModule {
         },
         inject: [CHROMADB_CLIENT],
       },
+      MetadataExtractorService,
+      TextSplitterService,
       ChromaDBService,
     ];
 
@@ -93,6 +97,8 @@ export class ChromaDBModule {
         CollectionService,
         EmbeddingService,
         ChromaAdminService,
+        TextSplitterService,
+        MetadataExtractorService,
         CHROMADB_CLIENT,
       ],
       global: true,
@@ -145,6 +151,8 @@ export class ChromaDBModule {
         },
         inject: [CHROMADB_CLIENT],
       },
+      MetadataExtractorService,
+      TextSplitterService,
       ChromaDBService,
     ];
 
@@ -157,6 +165,8 @@ export class ChromaDBModule {
         CollectionService,
         EmbeddingService,
         ChromaAdminService,
+        TextSplitterService,
+        MetadataExtractorService,
         CHROMADB_CLIENT,
       ],
       global: true,
@@ -224,9 +234,7 @@ export class ChromaDBModule {
           const config = await factory(...args);
           return this.mergeWithDefaults(config);
         },
-        inject: (options.inject ?? []) as Array<
-          InjectionToken | OptionalFactoryDependency
-        >,
+        inject: options.inject ?? [],
       };
     }
 

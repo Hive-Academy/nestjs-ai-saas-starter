@@ -1,4 +1,5 @@
-import { ModuleMetadata, Type } from '@nestjs/common';
+import type { ModuleMetadata, Type } from '@nestjs/common';
+import type { Config } from 'neo4j-driver';
 
 export interface Neo4jConfig {
   connectionAcquisitionTimeout?: number;
@@ -6,10 +7,13 @@ export interface Neo4jConfig {
   maxConnectionLifetime?: number;
   connectionTimeout?: number;
   maxTransactionRetryTime?: number;
-  encrypted?: any; // Neo4j driver accepts boolean or EncryptionLevel enum
-  trust?: any; // Neo4j TrustStrategy - complex type from driver
-  logging?: any; // Neo4j LoggingConfig - complex type
-  disableLosslessIntegers?: boolean; // Common option from example
+  encrypted?: boolean;
+  trust?: string;
+  logging?: {
+    level: string;
+    logger?: (level: string, message: string) => void;
+  };
+  disableLosslessIntegers?: boolean;
 }
 
 export interface Neo4jModuleOptions {
@@ -17,20 +21,20 @@ export interface Neo4jModuleOptions {
   username: string;
   password: string;
   database?: string;
-  config?: Neo4jConfig;
+  config?: Config;
   healthCheck?: boolean;
   retryAttempts?: number;
   retryDelay?: number;
 }
 
 export interface Neo4jModuleOptionsFactory {
-  createNeo4jOptions(): Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
+  createNeo4jOptions: () => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
 }
 
 export interface Neo4jModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   name?: string;
   useExisting?: Type<Neo4jModuleOptionsFactory>;
   useClass?: Type<Neo4jModuleOptionsFactory>;
-  useFactory?: (...args: any[]) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
-  inject?: any[];
+  useFactory?: (...args: unknown[]) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
+  inject?: Array<Type | string | symbol | { token: string | symbol; optional: boolean }>;
 }

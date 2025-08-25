@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Nx Library Business Logic Analyzer",
+  "description": "Analyzes Nx libraries for business logic completeness, identifies placeholders/stubbed methods, enforces coding standards (SOLID, KISS, DRY), validates service line limits, and ensures proper TypeScript typing",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "libs/**/*.ts",
+      "libs/**/*.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Perform a comprehensive business logic analysis on the modified Nx library files. Your analysis should include:\n\n1. **Business Logic Analysis**: \n   - Review the business logic implementation based on the user's requirements\n   - Identify any gaps between intended functionality and current implementation\n   - Suggest improvements for business rule enforcement\n\n2. **Placeholder & Stub Detection**:\n   - Search for TODO comments, placeholder methods, or stubbed implementations\n   - Identify methods that return hardcoded values or throw \"not implemented\" errors\n   - Flag incomplete business logic implementations\n\n3. **Missing Functionality Assessment**:\n   - Analyze if all required business operations are implemented\n   - Check for missing error handling, validation, or edge cases\n   - Identify incomplete CRUD operations or business workflows\n\n4. **Coding Standards Compliance**:\n   - **SOLID Principles**: Verify Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion\n   - **KISS Principle**: Check for overly complex methods or unnecessary abstractions\n   - **DRY Principle**: Identify code duplication and suggest refactoring opportunities\n\n5. **Service Size Validation**:\n   - Count lines of code in each service file\n   - Flag any service exceeding 500 lines and suggest decomposition strategies\n\n6. **TypeScript Type Safety**:\n   - Identify usage of `any` or `unknown` types\n   - Ensure proper type definitions for all parameters, return values, and properties\n   - Suggest specific interface or type definitions where generic types are used\n\n7. **NestJS Best Practices**:\n   - Verify proper dependency injection patterns\n   - Check module organization and provider configuration\n   - Ensure proper use of decorators and guards\n\nProvide specific, actionable recommendations for each identified issue, including code examples where helpful. Focus on maintainability, scalability, and adherence to enterprise-grade development standards."
+  }
+}

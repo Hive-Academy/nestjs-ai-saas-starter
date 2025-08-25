@@ -1,0 +1,9 @@
+{
+  "name": "langgraph-modules/checkpoint",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/checkpoint/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph", "type:data-access", "module:checkpoint"],
+  "// targets": "to see all targets run: nx show project langgraph-modules/checkpoint --web",
+  "targets": {}
+}

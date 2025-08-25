@@ -3,7 +3,7 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { LLMProviderConfig } from '../interfaces/module-options.interface';
+import type { LLMProviderConfig  } from '../interfaces/module-options.interface';
 
 /**
  * Factory for creating LLM providers based on configuration
@@ -11,7 +11,7 @@ import { LLMProviderConfig } from '../interfaces/module-options.interface';
 @Injectable()
 export class LLMProviderFactory {
   private readonly logger = new Logger(LLMProviderFactory.name);
-  private providers = new Map<string, BaseChatModel>();
+  private readonly providers = new Map<string, BaseChatModel>();
 
   /**
    * Create an LLM provider based on configuration
@@ -22,8 +22,11 @@ export class LLMProviderFactory {
       return config.factory();
     }
 
+    // Support both 'type' (new) and 'provider' (legacy) properties
+    const providerType = config.type || (config.provider as any);
+    
     // Create provider based on type
-    switch (config.type) {
+    switch (providerType) {
       case 'openai':
         return this.createOpenAI(config);
 
@@ -43,7 +46,7 @@ export class LLMProviderFactory {
         return (config.factory as any)();
 
       default:
-        throw new Error(`Unsupported LLM provider type: ${config.type}`);
+        throw new Error(`Unsupported LLM provider type: ${providerType}`);
     }
   }
 
@@ -54,9 +57,9 @@ export class LLMProviderFactory {
     const model = new ChatOpenAI({
       apiKey: config.apiKey,
       modelName: config.model || 'gpt-4-turbo-preview',
-      temperature: config.options?.['temperature'] || 0.7,
-      maxTokens: config.options?.['maxTokens'],
-      streaming: config.options?.['streaming'] || true,
+      temperature: config.options?.temperature || 0.7,
+      maxTokens: config.options?.maxTokens,
+      streaming: config.options?.streaming || true,
       ...config.options,
     });
 
@@ -71,9 +74,9 @@ export class LLMProviderFactory {
     const model = new ChatAnthropic({
       apiKey: config.apiKey,
       modelName: config.model || 'claude-3-opus-20240229',
-      temperature: config.options?.['temperature'] || 0.7,
-      maxTokens: config.options?.['maxTokens'] || 4096,
-      streaming: config.options?.['streaming'] || true,
+      temperature: config.options?.temperature || 0.7,
+      maxTokens: config.options?.maxTokens || 4096,
+      streaming: config.options?.streaming || true,
       ...config.options,
     });
 
@@ -88,9 +91,9 @@ export class LLMProviderFactory {
     const model = new ChatGoogleGenerativeAI({
       apiKey: config.apiKey,
       model: config.model || 'gemini-1.5-pro',
-      temperature: config.options?.['temperature'] || 0.7,
-      maxOutputTokens: config.options?.['maxTokens'],
-      streaming: config.options?.['streaming'] || true,
+      temperature: config.options?.temperature || 0.7,
+      maxOutputTokens: config.options?.maxTokens,
+      streaming: config.options?.streaming || true,
       ...config.options,
     });
 
@@ -105,9 +108,9 @@ export class LLMProviderFactory {
     // For Azure, use the base configuration with Azure-specific options
     const azureConfig: any = {
       openAIApiKey: config.apiKey,
-      temperature: config.options?.['temperature'] || 0.7,
-      maxTokens: config.options?.['maxTokens'],
-      streaming: config.options?.['streaming'] || true,
+      temperature: config.options?.temperature || 0.7,
+      maxTokens: config.options?.maxTokens,
+      streaming: config.options?.streaming || true,
       // Azure-specific configuration would go here
       ...config.options,
     };

@@ -236,7 +236,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 // 2. Internal library imports
-import { ChromaDBService } from '@anubis/nestjs-chromadb';
+import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 
 // 3. Relative imports (grouped by type)
 import { UserRepository } from './repositories/user.repository';

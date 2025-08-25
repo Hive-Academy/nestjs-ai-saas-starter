@@ -1,57 +1,35 @@
-# @anubis/nestjs-chromadb
+# @hive-academy/nestjs-chromadb
 
-A comprehensive ChromaDB integration module for NestJS applications, providing enterprise-grade features for vector database operations with full TypeScript support, intelligent embedding provider selection, and advanced decorator patterns.
+[![npm version](https://badge.fury.io/js/@hive-academy%2Fnestjs-chromadb.svg)](https://badge.fury.io/js/@hive-academy%2Fnestjs-chromadb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
+
+A comprehensive NestJS integration for ChromaDB vector database with full TypeScript support, designed for building AI-powered applications with semantic search capabilities.
 
 ## Features
 
-- 🚀 **Dynamic Module Configuration** - Support for both synchronous and asynchronous module configuration
-- 💉 **Dependency Injection** - Seamless integration with NestJS DI container
-- 🤖 **Intelligent Embedding Provider Selection** - Automatic fallback between OpenAI, HuggingFace, Cohere, and Custom providers
-- 🎯 **Collection Management** - Dedicated service for collection operations with caching
-- 🔄 **Batch Operations** - Optimized bulk document operations with automatic chunking
-- 📊 **Health Checks** - Built-in health indicators for monitoring connection and collection health
-- 🎪 **Multi-Collection Support** - Connect to multiple ChromaDB collections using `forFeature()`
-- 🔒 **Type Safety** - Full TypeScript support with comprehensive type definitions
-- ⚡ **Performance Optimized** - Vector operations, metadata utilities, and connection pooling
-- 🛠️ **Developer Friendly** - Intuitive API with advanced decorators and utility functions
-- 🔍 **Semantic Search** - Built-in similarity search with automatic embedding generation
-- 📈 **Administrative Tools** - Database statistics, cleanup, and backup operations
-- 🎨 **Decorator Pattern Support** - Easy injection of services and collections using decorators
-- 🔌 **Modular Architecture** - Split into focused services for maintainability
+- 🚀 **Easy Integration**: Seamless NestJS module integration with dependency injection
+- 🔧 **Configuration Flexibility**: Support for both synchronous and asynchronous configuration
+- 📊 **Multiple Embedding Providers**: Built-in support for OpenAI, Cohere, and HuggingFace embeddings
+- 🎯 **Type Safety**: Full TypeScript support with comprehensive type definitions
+- 🏥 **Health Checks**: Built-in health indicators for monitoring
+- 🔄 **Connection Management**: Automatic connection handling and retry logic
+- 📝 **Rich Querying**: Advanced querying capabilities with metadata filtering
+- 🧪 **Testing Support**: Comprehensive testing utilities and mocks
 
 ## Installation
 
 ```bash
-npm install @anubis/nestjs-chromadb chromadb
-# or
-yarn add @anubis/nestjs-chromadb chromadb
-# or
-pnpm add @anubis/nestjs-chromadb chromadb
-```
-
-### Peer Dependencies
-
-```bash
-# For OpenAI embeddings
-npm install openai
-
-# For HuggingFace embeddings
-npm install @huggingface/inference
-
-# For Cohere embeddings  
-npm install cohere-ai
-
-# For health checks
-npm install @nestjs/terminus
+npm install @hive-academy/nestjs-chromadb chromadb
 ```
 
 ## Quick Start
 
-### Basic Setup
+### 1. Import the Module
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
 @Module({
   imports: [
@@ -59,94 +37,10 @@ import { ChromaDBModule } from '@anubis/nestjs-chromadb';
       connection: {
         host: 'localhost',
         port: 8000,
-        ssl: false,
       },
       embedding: {
         provider: 'openai',
-        config: {
-          apiKey: 'your-openai-api-key',
-          model: 'text-embedding-3-small',
-          dimensions: 1536,
-        },
-      },
-      healthCheck: true,
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-### Async Configuration with Intelligent Provider Selection
-
-The module supports intelligent embedding provider selection based on available API keys, automatically falling back to alternative providers when needed.
-
-```typescript
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
-
-@Module({
-  imports: [
-    ChromaDBModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        // Intelligent embedding provider selection
-        const openaiKey = configService.get('OPENAI_API_KEY');
-        const cohereKey = configService.get('COHERE_API_KEY');
-        const huggingfaceKey = configService.get('HUGGINGFACE_API_KEY');
-        
-        let embeddingConfig;
-        
-        // Priority order: OpenAI -> Cohere -> HuggingFace (local)
-        if (openaiKey) {
-          embeddingConfig = {
-            provider: 'openai',
-            config: {
-              apiKey: openaiKey,
-              model: configService.get('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
-              dimensions: configService.get('EMBEDDING_DIMENSIONS', 1536),
-              user: configService.get('APP_NAME', 'my-app'),
-            },
-          };
-        } else if (cohereKey) {
-          embeddingConfig = {
-            provider: 'cohere',
-            config: {
-              apiKey: cohereKey,
-              model: configService.get('COHERE_MODEL', 'embed-english-v3.0'),
-              inputType: 'search_document',
-            },
-          };
-        } else {
-          // Fallback to local HuggingFace model (no API key required)
-          embeddingConfig = {
-            provider: 'huggingface',
-            config: {
-              apiKey: huggingfaceKey, // Optional for local models
-              model: configService.get('HF_MODEL', 'sentence-transformers/all-MiniLM-L6-v2'),
-              timeout: 30000,
-            },
-          };
-        }
-        
-        return {
-          connection: {
-            host: configService.get('CHROMA_HOST', 'localhost'),
-            port: configService.get('CHROMA_PORT', 8000),
-            ssl: configService.get('CHROMA_SSL', false),
-            tenant: configService.get('CHROMA_TENANT'),
-            database: configService.get('CHROMA_DATABASE'),
-          },
-          embedding: embeddingConfig,
-          enableHealthCheck: true,
-          healthCheckInterval: configService.get('HEALTH_CHECK_INTERVAL', 30000),
-          defaultCollection: configService.get('CHROMA_COLLECTION_NAME', 'documents'),
-          batchSize: configService.get('CHROMA_BATCH_SIZE', 100),
-          maxRetries: configService.get('CHROMA_MAX_RETRIES', 3),
-          retryDelay: configService.get('CHROMA_RETRY_DELAY', 1000),
-          logConnection: configService.get('LOG_CHROMA_CONNECTION', true),
-        };
+        apiKey: process.env.OPENAI_API_KEY,
       },
     }),
   ],
@@ -154,396 +48,140 @@ import { ChromaDBModule } from '@anubis/nestjs-chromadb';
 export class AppModule {}
 ```
 
-## Core Service Usage
-
-### Injecting ChromaDBService
+### 2. Use the Service
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { ChromaDBService } from '@anubis/nestjs-chromadb';
+import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 
 @Injectable()
 export class DocumentService {
-  constructor(private readonly chromaService: ChromaDBService) {}
+  constructor(private readonly chromaDB: ChromaDBService) {}
 
-  async addDocument(text: string, metadata: Record<string, any>) {
-    return this.chromaService.addDocuments('my-collection', [{
-      id: `doc-${Date.now()}`,
-      document: text,
-      metadata,
-    }]);
+  async addDocuments(documents: string[]) {
+    return this.chromaDB.addDocuments(
+      'my-collection',
+      documents.map((doc, i) => ({
+        id: `doc-${i}`,
+        document: doc,
+        metadata: { source: 'api' },
+      }))
+    );
   }
 
-  async searchSimilar(query: string, limit = 10) {
-    return this.chromaService.similaritySearch('my-collection', query, { limit });
+  async searchSimilar(query: string, limit = 5) {
+    return this.chromaDB.queryDocuments('my-collection', {
+      queryTexts: [query],
+      nResults: limit,
+    });
   }
 }
+```
+
+## Configuration
+
+### Basic Configuration
+
+```typescript
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+    ssl: false,
+  },
+  embedding: {
+    provider: 'openai',
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'text-embedding-ada-002',
+  },
+  batchSize: 100,
+  maxRetries: 3,
+  retryDelay: 1000,
+});
+```
+
+### Async Configuration
+
+```typescript
+ChromaDBModule.forRootAsync({
+  imports: [ConfigModule],
+  useFactory: async (configService: ConfigService) => ({
+    connection: {
+      host: configService.get('CHROMA_HOST'),
+      port: configService.get('CHROMA_PORT'),
+    },
+    embedding: {
+      provider: 'openai',
+      apiKey: configService.get('OPENAI_API_KEY'),
+    },
+  }),
+  inject: [ConfigService],
+});
+```
+
+### Feature Collections
+
+```typescript
+ChromaDBModule.forFeature([
+  {
+    name: 'documents',
+    metadata: { description: 'Document embeddings' },
+  },
+  {
+    name: 'images',
+    metadata: { description: 'Image embeddings' },
+  },
+]);
 ```
 
 ## Embedding Providers
 
-### OpenAI Embeddings
+### OpenAI
 
 ```typescript
-ChromaDBModule.forRoot({
-  connection: { host: 'localhost', port: 8000 },
+{
   embedding: {
     provider: 'openai',
-    config: {
-      apiKey: process.env.OPENAI_API_KEY,
-      model: 'text-embedding-3-small', // or text-embedding-3-large
-      dimensions: 1536,
-      user: 'your-app-name',
-    },
-  },
-})
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'text-embedding-ada-002', // or 'text-embedding-3-small', 'text-embedding-3-large'
+  }
+}
 ```
 
-### HuggingFace Embeddings
+### Cohere
 
 ```typescript
-ChromaDBModule.forRoot({
-  connection: { host: 'localhost', port: 8000 },
-  embedding: {
-    provider: 'huggingface',
-    config: {
-      apiKey: process.env.HUGGINGFACE_API_KEY, // optional for local models
-      model: 'sentence-transformers/all-MiniLM-L6-v2',
-      timeout: 30000,
-    },
-  },
-})
-```
-
-### Cohere Embeddings
-
-```typescript
-ChromaDBModule.forRoot({
-  connection: { host: 'localhost', port: 8000 },
+{
   embedding: {
     provider: 'cohere',
-    config: {
-      apiKey: process.env.COHERE_API_KEY,
-      model: 'embed-english-v3.0',
-      inputType: 'search_document',
-    },
-  },
-})
-```
-
-### Custom Embedding Provider
-
-```typescript
-import { CustomEmbeddingProvider } from '@anubis/nestjs-chromadb';
-
-class MyEmbeddingProvider extends CustomEmbeddingProvider {
-  async embed(texts: string[]): Promise<number[][]> {
-    // Your custom embedding logic
-    return texts.map(text => this.textToVector(text));
-  }
-
-  async embedSingle(text: string): Promise<number[]> {
-    return this.textToVector(text);
-  }
-
-  private textToVector(text: string): number[] {
-    // Your embedding implementation
-    return new Array(384).fill(0).map(() => Math.random());
+    apiKey: process.env.COHERE_API_KEY,
+    model: 'embed-english-v3.0',
   }
 }
+```
 
-// In your module
-ChromaDBModule.forRoot({
-  connection: { host: 'localhost', port: 8000 },
+### HuggingFace
+
+```typescript
+{
+  embedding: {
+    provider: 'huggingface',
+    apiKey: process.env.HUGGINGFACE_API_KEY,
+    model: 'sentence-transformers/all-MiniLM-L6-v2',
+  }
+}
+```
+
+### Custom Embedding Function
+
+```typescript
+{
   embedding: {
     provider: 'custom',
-    config: {
-      embeddingProvider: MyEmbeddingProvider,
-      dimensions: 384,
+    embeddingFunction: async (texts: string[]) => {
+      // Your custom embedding logic
+      return texts.map(text => Array.from({length: 384}, () => Math.random()));
     },
-  },
-})
-```
-
-## Decorator Usage Patterns
-
-### Service and Client Injection
-
-The module provides specialized decorators for injecting ChromaDB services and clients:
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { 
-  InjectChromaDB, 
-  InjectChromaDBClient,
-  InjectCollection 
-} from '@anubis/nestjs-chromadb';
-import { ChromaDBService, CollectionService } from '@anubis/nestjs-chromadb';
-
-@Injectable()
-export class MyService {
-  constructor(
-    // Inject the main ChromaDB service
-    @InjectChromaDB() private readonly chromaDB: ChromaDBService,
-    
-    // Inject the raw ChromaDB client for advanced operations
-    @InjectChromaDBClient() private readonly chromaClient: any,
-    
-    // Inject a specific collection (must be registered with forFeature)
-    @InjectCollection('products') private readonly productsCollection: any,
-  ) {}
-}
-```
-
-### Collection Registration with forFeature
-
-Register specific collections for dependency injection:
-
-```typescript
-import { Module } from '@nestjs/common';
-import { ChromaDBModule } from '@anubis/nestjs-chromadb';
-
-@Module({
-  imports: [
-    ChromaDBModule.forFeature([
-      {
-        name: 'products',
-        metadata: {
-          'hnsw:space': 'cosine',
-          'description': 'Product catalog embeddings',
-        },
-      },
-      {
-        name: 'documents',
-        metadata: {
-          'hnsw:space': 'ip',
-          'description': 'Document library embeddings',
-        },
-      },
-    ]),
-  ],
-})
-export class FeatureModule {}
-```
-
-### Collection Helper Utilities
-
-Use the collection helper for type-safe operations:
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { CollectionService, withCollection } from '@anubis/nestjs-chromadb';
-
-@Injectable()
-export class DocumentProcessor {
-  constructor(private readonly collectionService: CollectionService) {}
-
-  async processDocument(doc: any) {
-    // Type-safe collection operation with error handling
-    return withCollection(
-      this.collectionService,
-      'documents',
-      async (collection) => {
-        // Your collection operations here
-        await collection.add({
-          ids: [doc.id],
-          documents: [doc.content],
-          metadatas: [doc.metadata],
-        });
-        
-        return { success: true, id: doc.id };
-      }
-    );
-  }
-}
-```
-
-## Advanced Features
-
-### Collection Management
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { CollectionService } from '@anubis/nestjs-chromadb';
-
-@Injectable()
-export class CollectionManager {
-  constructor(private readonly collectionService: CollectionService) {}
-
-  async setupCollections() {
-    // Create collections with specific metadata
-    await this.collectionService.createCollection('products', {
-      metadata: { 
-        'hnsw:space': 'cosine',
-        'description': 'Product catalog',
-      },
-      getOrCreate: true,
-    });
-
-    await this.collectionService.createCollection('documents', {
-      metadata: { 
-        'hnsw:space': 'ip',
-        'description': 'Document library',
-      },
-    });
-  }
-
-  async getCollectionInfo() {
-    const collections = await this.collectionService.listCollections();
-    const stats = await Promise.all(
-      collections.map(async (col) => ({
-        name: col.name,
-        count: await this.collectionService.getCollectionCount(col.name),
-      }))
-    );
-    return stats;
-  }
-}
-```
-
-### Batch Operations with Embeddings
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { ChromaDBService, withBatchEmbeddings } from '@anubis/nestjs-chromadb';
-
-@Injectable()
-export class BulkDocumentService {
-  constructor(private readonly chromaService: ChromaDBService) {}
-
-  async indexProducts(products: Array<{id: string, description: string, category: string}>) {
-    const documents = products.map(product => ({
-      id: product.id,
-      document: product.description,
-      metadata: { 
-        category: product.category,
-        type: 'product',
-        indexed_at: new Date().toISOString(),
-      },
-    }));
-
-    // Batch add with automatic embedding generation
-    await this.chromaService.addDocuments('products', documents, {
-      batchSize: 100, // Process in chunks of 100
-    });
-
-    console.log(`Indexed ${products.length} products`);
-  }
-
-  async searchProducts(query: string, category?: string) {
-    const options = category ? {
-      limit: 20,
-      filter: { category },
-      includeMetadata: true,
-      includeDistances: true,
-    } : { limit: 20 };
-
-    return this.chromaService.similaritySearch('products', query, options);
-  }
-}
-```
-
-## Health Checks and Monitoring
-
-### Basic Health Check
-
-```typescript
-import { Controller, Get } from '@nestjs/common';
-import { ChromaDBHealthIndicator } from '@anubis/nestjs-chromadb';
-
-@Controller('health')
-export class HealthController {
-  constructor(private readonly chromaHealth: ChromaDBHealthIndicator) {}
-
-  @Get()
-  async check() {
-    return this.chromaHealth.isHealthy('chromadb');
-  }
-
-  @Get('detailed')
-  async checkDetailed() {
-    return this.chromaHealth.isHealthyDetailed('chromadb');
-  }
-
-  @Get('collection/:name')
-  async checkCollection(@Param('name') name: string) {
-    return this.chromaHealth.isCollectionHealthy('collection', name);
-  }
-}
-```
-
-### Integration with NestJS Terminus
-
-```typescript
-import { Module } from '@nestjs/common';
-import { TerminusModule } from '@nestjs/terminus';
-import { ChromaDBHealthIndicator } from '@anubis/nestjs-chromadb';
-
-@Module({
-  imports: [TerminusModule],
-  providers: [ChromaDBHealthIndicator],
-  controllers: [HealthController],
-})
-export class HealthModule {}
-```
-
-### Health Check Response Example
-
-```json
-{
-  "chromadb": {
-    "status": "up",
-    "heartbeat": 1234567890,
-    "version": "0.4.0",
-    "collections": {
-      "count": 3,
-      "names": ["products", "documents", "embeddings"]
-    }
-  }
-}
-```
-
-## Service Architecture
-
-The module is architected with separation of concerns, providing focused services for different aspects of ChromaDB operations:
-
-### Core Services
-
-1. **ChromaDBService** - Main service orchestrating all operations
-2. **CollectionService** - Dedicated collection management
-3. **EmbeddingService** - Embedding provider management and selection
-4. **ChromaAdminService** - Administrative operations and maintenance
-
-### Service Injection Examples
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { 
-  ChromaDBService,
-  CollectionService,
-  EmbeddingService,
-  ChromaAdminService 
-} from '@anubis/nestjs-chromadb';
-
-@Injectable()
-export class AdvancedService {
-  constructor(
-    private readonly chromaDB: ChromaDBService,
-    private readonly collections: CollectionService,
-    private readonly embeddings: EmbeddingService,
-    private readonly admin: ChromaAdminService,
-  ) {}
-
-  async getSystemInfo() {
-    const embeddingInfo = this.embeddings.getProviderInfo();
-    const collections = await this.collections.listCollections();
-    const stats = await this.admin.getDatabaseStats();
-    
-    return {
-      embedding: embeddingInfo,
-      collections: collections.length,
-      stats,
-    };
   }
 }
 ```
@@ -552,137 +190,251 @@ export class AdvancedService {
 
 ### ChromaDBService
 
-| Method | Description | Return Type |
-|--------|-------------|-------------|
-| `addDocuments(collection, docs, options?)` | Add documents to collection | `Promise<void>` |
-| `getDocuments(collection, ids?, where?, limit?)` | Get documents by criteria | `Promise<GetResult>` |
-| `updateDocuments(collection, docs, options?)` | Update existing documents | `Promise<void>` |
-| `deleteDocuments(collection, ids?, where?)` | Delete documents | `Promise<void>` |
-| `similaritySearch(collection, query, options?)` | Semantic similarity search | `Promise<SearchResult>` |
-| `createCollection(name, metadata?, embeddingFunction?, getOrCreate?)` | Create new collection | `Promise<Collection>` |
-| `getCollection(name, embeddingFunction?)` | Get existing collection | `Promise<Collection>` |
-| `listCollections()` | List all collections | `Promise<CollectionInfo[]>` |
-| `countDocuments(collection)` | Count documents in collection | `Promise<number>` |
-
-### EmbeddingService
-
-| Method | Description | Return Type |
-|--------|-------------|-------------|
-| `embed(texts)` | Generate embeddings for multiple texts | `Promise<number[][]>` |
-| `embedSingle(text)` | Generate embedding for single text | `Promise<number[]>` |
-| `isConfigured()` | Check if embedding provider is configured | `boolean` |
-| `getDimensions()` | Get embedding vector dimensions | `number` |
-
-## Best Practices and Recommendations
-
-### Error Handling
-
-The module provides comprehensive error handling with contextual information:
+#### Collection Management
 
 ```typescript
-import { Injectable, Logger } from '@nestjs/common';
-import { ChromaDBService } from '@anubis/nestjs-chromadb';
+// Create or get collection
+await chromaDB.getOrCreateCollection('my-collection');
 
-@Injectable()
-export class SafeDocumentService {
-  private readonly logger = new Logger(SafeDocumentService.name);
+// Delete collection
+await chromaDB.deleteCollection('my-collection');
 
-  constructor(private readonly chromaDB: ChromaDBService) {}
-
-  async addDocumentSafely(document: any) {
-    try {
-      const result = await this.chromaDB.addDocuments('my-collection', [document]);
-      return { success: true, result };
-    } catch (error) {
-      this.logger.error('Failed to add document', error);
-      
-      // Check for specific error types
-      if (error.message.includes('collection does not exist')) {
-        // Create collection and retry
-        await this.chromaDB.createCollection('my-collection');
-        return this.addDocumentSafely(document);
-      }
-      
-      throw error;
-    }
-  }
-}
+// List collections
+const collections = await chromaDB.listCollections();
 ```
 
-### Performance Optimization
-
-1. **Batch Operations** - Always use batch operations for multiple documents
-2. **Connection Pooling** - The module handles connection pooling automatically
-3. **Embedding Caching** - Consider caching frequently used embeddings
-4. **Metadata Indexing** - Use appropriate metadata for efficient filtering
+#### Document Operations
 
 ```typescript
-// Optimized batch processing
-async processBulkDocuments(documents: Document[]) {
-  const BATCH_SIZE = 100;
-  
-  for (let i = 0; i < documents.length; i += BATCH_SIZE) {
-    const batch = documents.slice(i, i + BATCH_SIZE);
-    await this.chromaDB.addDocuments('collection', batch, {
-      batchSize: BATCH_SIZE,
+// Add documents
+await chromaDB.addDocuments('collection', [{ id: '1', document: 'Hello world', metadata: { type: 'greeting' } }]);
+
+// Update documents
+await chromaDB.updateDocuments('collection', [{ id: '1', document: 'Updated content', metadata: { updated: true } }]);
+
+// Delete documents
+await chromaDB.deleteDocuments('collection', ['1', '2']);
+
+// Get documents
+const docs = await chromaDB.getDocuments('collection', ['1', '2']);
+```
+
+#### Querying
+
+```typescript
+// Query by text
+const results = await chromaDB.queryDocuments('collection', {
+  queryTexts: ['search query'],
+  nResults: 10,
+  where: { type: 'article' },
+  whereDocument: { $contains: 'keyword' },
+});
+
+// Query by embeddings
+const results = await chromaDB.queryDocuments('collection', {
+  queryEmbeddings: [[0.1, 0.2, 0.3, ...]],
+  nResults: 5,
+});
+```
+
+### CollectionService
+
+```typescript
+import { CollectionService } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class MyService {
+  constructor(private readonly collectionService: CollectionService) {}
+
+  async searchInCollection(collectionName: string, query: string) {
+    const collection = await this.collectionService.getCollection(collectionName);
+    return collection.query({
+      queryTexts: [query],
+      nResults: 10,
     });
   }
 }
 ```
 
-### Security Considerations
+## Advanced Usage
 
-1. **API Key Management** - Store API keys in environment variables
-2. **Connection Security** - Use SSL for production deployments
-3. **Data Sanitization** - Sanitize user input before storing
-4. **Access Control** - Implement proper access control for collections
+### Metadata Filtering
 
 ```typescript
-// Secure configuration
-ChromaDBModule.forRootAsync({
-  useFactory: (configService: ConfigService) => ({
-    connection: {
-      host: configService.get('CHROMA_HOST'),
-      port: configService.get('CHROMA_PORT'),
-      ssl: configService.get('NODE_ENV') === 'production',
-      auth: {
-        provider: 'token',
-        credentials: configService.get('CHROMA_AUTH_TOKEN'),
-      },
-    },
-    // ... other config
-  }),
-})
+// Complex metadata queries
+const results = await chromaDB.queryDocuments('collection', {
+  queryTexts: ['AI and machine learning'],
+  where: {
+    $and: [{ category: 'technology' }, { year: { $gte: 2020 } }, { tags: { $in: ['ai', 'ml'] } }],
+  },
+  nResults: 20,
+});
 ```
 
-## Development
+### Batch Operations
 
-### Building
+```typescript
+// Process large datasets in batches
+const documents = Array.from({ length: 10000 }, (_, i) => ({
+  id: `doc-${i}`,
+  document: `Document content ${i}`,
+  metadata: { batch: Math.floor(i / 100) },
+}));
 
-Run `nx build nestjs-chromadb` to build the library.
+await chromaDB.addDocuments('large-collection', documents);
+```
 
-### Running unit tests
+### Custom Collection Configuration
 
-Run `nx test nestjs-chromadb` to execute the unit tests via [Jest](https://jestjs.io).
+```typescript
+const collection = await chromaDB.getOrCreateCollection('custom-collection', {
+  metadata: {
+    description: 'Custom collection with specific settings',
+    indexing: 'hnsw',
+    distance: 'cosine',
+  },
+  embeddingFunction: customEmbeddingFunction,
+});
+```
+
+## Health Checks
+
+```typescript
+import { Module } from '@nestjs/common';
+import { TerminusModule } from '@nestjs/terminus';
+import { ChromaDBHealthIndicator } from '@hive-academy/nestjs-chromadb';
+
+@Module({
+  imports: [TerminusModule],
+  providers: [ChromaDBHealthIndicator],
+})
+export class HealthModule {}
+```
+
+## Testing
+
+### Unit Testing
+
+```typescript
+import { Test } from '@nestjs/testing';
+import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
+
+describe('DocumentService', () => {
+  let service: DocumentService;
+  let chromaDB: ChromaDBService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        DocumentService,
+        {
+          provide: ChromaDBService,
+          useValue: {
+            addDocuments: jest.fn(),
+            queryDocuments: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<DocumentService>(DocumentService);
+    chromaDB = module.get<ChromaDBService>(ChromaDBService);
+  });
+
+  it('should add documents', async () => {
+    const documents = ['doc1', 'doc2'];
+    await service.addDocuments(documents);
+
+    expect(chromaDB.addDocuments).toHaveBeenCalledWith('my-collection', expect.arrayContaining([expect.objectContaining({ document: 'doc1' }), expect.objectContaining({ document: 'doc2' })]));
+  });
+});
+```
+
+### Integration Testing
+
+```typescript
+import { Test } from '@nestjs/testing';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
+
+describe('ChromaDB Integration', () => {
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      imports: [
+        ChromaDBModule.forRoot({
+          connection: { host: 'localhost', port: 8000 },
+          embedding: { provider: 'custom', embeddingFunction: mockEmbedding },
+        }),
+      ],
+    }).compile();
+  });
+
+  // Integration tests...
+});
+```
+
+## Error Handling
+
+```typescript
+import { ChromaDBConnectionError, ChromaDBQueryError } from '@hive-academy/nestjs-chromadb';
+
+try {
+  await chromaDB.queryDocuments('collection', { queryTexts: ['test'] });
+} catch (error) {
+  if (error instanceof ChromaDBConnectionError) {
+    console.error('Connection failed:', error.message);
+  } else if (error instanceof ChromaDBQueryError) {
+    console.error('Query failed:', error.message);
+  }
+}
+```
+
+## Performance Tips
+
+1. **Batch Operations**: Use batch operations for large datasets
+2. **Connection Pooling**: Configure appropriate connection settings
+3. **Embedding Caching**: Cache embeddings for frequently queried content
+4. **Metadata Indexing**: Use metadata for efficient filtering
+5. **Collection Partitioning**: Split large datasets across multiple collections
+
+## Migration Guide
+
+### From v0.x to v1.x
+
+```typescript
+// Old way (v0.x)
+ChromaDBModule.forRoot({
+  host: 'localhost',
+  port: 8000,
+});
+
+// New way (v1.x)
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+  },
+  embedding: {
+    provider: 'openai',
+    apiKey: process.env.OPENAI_API_KEY,
+  },
+});
+```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for details.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
 
 ## Support
 
-- 📧 Email: support@anubis.dev
-- 🐛 Issues: [GitHub Issues](https://github.com/your-org/nestjs-chromadb/issues)
-- 📖 Docs: [Full Documentation](https://docs.anubis.dev/nestjs-chromadb)
+- 📖 [Documentation](https://hive-academy.github.io/nestjs-ai-saas-starter/nestjs-chromadb)
+- 🐛 [Issue Tracker](https://github.com/hive-academy/nestjs-ai-saas-starter/issues)
+- 💬 [Discussions](https://github.com/hive-academy/nestjs-ai-saas-starter/discussions)
 
-## Acknowledgments
+## Related Packages
 
-Built with ❤️ by the Anubis team. Special thanks to:
-- The NestJS team for the amazing framework
-- ChromaDB for the powerful vector database
-- OpenAI, HuggingFace, and Cohere for embedding APIs
-- Our contributors and community
-
----
-
-Made with ChromaDB and NestJS
+- [@hive-academy/nestjs-neo4j](https://www.npmjs.com/package/@hive-academy/nestjs-neo4j) - Neo4j integration
+- [@hive-academy/nestjs-langgraph](https://www.npmjs.com/package/@hive-academy/nestjs-langgraph) - LangGraph workflows

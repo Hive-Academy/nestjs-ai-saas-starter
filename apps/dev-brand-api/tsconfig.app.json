@@ -1,0 +1,48 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "types": ["node"],
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "target": "es2021",
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "out-tsc",
+    "dist",
+    "jest.config.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "eslint.config.js",
+    "eslint.config.cjs",
+    "eslint.config.mjs"
+  ],
+  "references": [
+    {
+      "path": "../../libs/langgraph-modules/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/nestjs-langgraph/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/dev-brand/backend/feature/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/dev-brand/backend/data-access/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/nestjs-neo4j/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/nestjs-chromadb/tsconfig.lib.json"
+    }
+  ]
+}

@@ -1,9 +1,9 @@
-import { Driver, Session, Transaction, Result } from 'neo4j-driver';
+import type { Driver } from 'neo4j-driver';
 
 export interface Neo4jConnection {
   driver: Driver;
-  isConnected(): Promise<boolean>;
-  close(): Promise<void>;
+  isConnected: () => Promise<boolean>;
+  close: () => Promise<void>;
 }
 
 export interface SessionOptions {
@@ -14,6 +14,6 @@ export interface SessionOptions {
 }
 
 export interface TransactionOptions {
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timeout?: number;
 }

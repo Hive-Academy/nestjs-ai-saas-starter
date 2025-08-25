@@ -1,407 +1,104 @@
-import { Type, ModuleMetadata } from '@nestjs/common';
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { BaseCheckpointSaver } from '@langchain/langgraph';
+import type { ModuleMetadata, Type } from '@nestjs/common';
 
 export interface LangGraphModuleOptions {
-  /**
-   * Default LLM provider configuration
-   */
+  // LLM Configuration
+  llm?: {
+    provider?: 'openai' | 'anthropic' | 'custom';
+    apiKey?: string;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+
+  // Default LLM Configuration
   defaultLLM?: LLMProviderConfig;
 
-  /**
-   * Multiple LLM providers configuration
-   */
+  // LLM Providers Configuration
   providers?: Record<string, LLMProviderConfig>;
 
-  /**
-   * Tool configuration
-   */
-  tools?: ToolsConfig;
-
-  /**
-   * Streaming configuration
-   */
-  streaming?: StreamingConfig;
-
-  /**
-   * Human-in-the-loop configuration
-   */
-  hitl?: HITLConfig;
-
-  /**
-   * Workflow configuration
-   */
-  workflows?: WorkflowConfig;
-
-  /**
-   * Checkpointing configuration
-   */
+  // Checkpointing Configuration
   checkpoint?: CheckpointConfig;
 
-  /**
-   * Observability configuration
-   */
-  observability?: ObservabilityConfig;
+  // Memory Configuration
+  memory?: MemoryDatabaseConfig;
 
-  /**
-   * Performance configuration
-   */
-  performance?: PerformanceConfig;
+  // Multi-Agent Configuration
+  multiAgent?: {
+    enabled?: boolean;
+    defaultCoordinationType?: 'supervisor' | 'swarm' | 'hierarchical';
+  };
+
+  // Streaming Configuration
+  streaming?: {
+    enabled?: boolean;
+    websocket?: {
+      enabled?: boolean;
+      port?: number;
+      cors?: boolean;
+    };
+  };
+
+  // Debug Configuration
+  debug?: {
+    enabled?: boolean;
+    logLevel?: 'debug' | 'info' | 'warn' | 'error';
+  };
 }
 
 export interface LLMProviderConfig {
-  /**
-   * Provider type (openai, anthropic, google, azure, custom)
-   */
+  // Provider type (openai, anthropic, google, azure, custom)
   type: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
-
-  /**
-   * API key for the provider
-   */
+  // API key for the provider
   apiKey?: string;
-
-  /**
-   * Model name
-   */
+  // Model name
   model?: string;
-
-  /**
-   * Base URL for custom providers
-   */
+  // Base URL for custom providers
   baseURL?: string;
-
-  /**
-   * Additional provider-specific options
-   */
+  // Additional provider-specific options
   options?: Record<string, any>;
-
-  /**
-   * Custom provider factory
-   */
-  factory?: () => BaseChatModel;
-}
-
-export interface ToolsConfig {
-  /**
-   * Auto-register tools from decorated methods
-   */
-  autoRegister?: boolean;
-
-  /**
-   * Directory to scan for tool definitions
-   */
-  directory?: string;
-
-  /**
-   * Tool namespaces for organization
-   */
-  namespaces?: string[];
-
-  /**
-   * Global tool timeout in milliseconds
-   */
-  timeout?: number;
-
-  /**
-   * Enable tool execution tracking
-   */
-  tracking?: boolean;
-
-  /**
-   * Tool validation configuration
-   */
-  validation?: {
-    /**
-     * Enable schema validation
-     */
-    enabled?: boolean;
-
-    /**
-     * Strict mode throws on validation errors
-     */
-    strict?: boolean;
-  };
-}
-
-export interface StreamingConfig {
-  /**
-   * Enable streaming support
-   */
-  enabled?: boolean;
-
-  /**
-   * Default stream mode
-   */
-  defaultMode?: 'values' | 'updates' | 'messages' | 'events' | 'debug' | 'multiple';
-
-  /**
-   * WebSocket configuration for real-time streaming
-   */
-  websocket?: {
-    /**
-     * Enable WebSocket bridge
-     */
-    enabled?: boolean;
-
-    /**
-     * WebSocket namespace
-     */
-    namespace?: string;
-
-    /**
-     * Event names to emit
-     */
-    events?: string[];
-  };
-
-  /**
-   * Stream buffer configuration
-   */
-  buffer?: {
-    /**
-     * Buffer size
-     */
-    size?: number;
-
-    /**
-     * Buffer strategy
-     */
-    strategy?: 'sliding' | 'dropping' | 'blocking';
-  };
-
-  /**
-   * Token streaming configuration
-   */
-  tokens?: {
-    /**
-     * Enable token-level streaming
-     */
-    enabled?: boolean;
-
-    /**
-     * Token buffer size
-     */
-    bufferSize?: number;
-
-    /**
-     * Batch tokens before emitting
-     */
-    batchSize?: number;
-  };
-}
-
-export interface HITLConfig {
-  /**
-   * Enable human-in-the-loop
-   */
-  enabled?: boolean;
-
-  /**
-   * Default approval timeout in milliseconds
-   */
-  timeout?: number;
-
-  /**
-   * Fallback strategy when timeout occurs
-   */
-  fallbackStrategy?: 'approve' | 'reject' | 'retry' | 'error';
-
-  /**
-   * Default confidence threshold for approval
-   */
-  confidenceThreshold?: number;
-
-  /**
-   * Risk levels that trigger approval
-   */
-  riskLevels?: ('low' | 'medium' | 'high' | 'critical')[];
-
-  /**
-   * Approval chain configuration
-   */
-  approvalChain?: {
-    /**
-     * Enable multi-level approvals
-     */
-    enabled?: boolean;
-
-    /**
-     * Maximum approval levels
-     */
-    maxLevels?: number;
-  };
-}
-
-export interface WorkflowConfig {
-  /**
-   * Enable workflow caching
-   */
-  cache?: boolean;
-
-  /**
-   * Cache TTL in milliseconds
-   */
-  cacheTTL?: number;
-
-  /**
-   * Maximum cached workflows
-   */
-  maxCached?: number;
-
-  /**
-   * Default interrupt behavior
-   */
-  interruptBehavior?: 'before' | 'after' | 'both';
-
-  /**
-   * Enable workflow metrics
-   */
-  metrics?: boolean;
-
-  /**
-   * Workflow timeout in milliseconds
-   */
-  timeout?: number;
-
-  /**
-   * Maximum retry attempts
-   */
-  maxRetries?: number;
-
-  /**
-   * Retry delay in milliseconds
-   */
-  retryDelay?: number;
+  // Custom provider factory
+  factory?: () => any; // Using any to avoid import of BaseChatModel here
+  // Legacy compatibility fields
+  temperature?: number;
+  maxTokens?: number;
+  provider?: 'openai' | 'anthropic' | 'custom'; // Keep for backward compatibility
 }
 
 export interface CheckpointConfig {
-  /**
-   * Enable checkpointing
-   */
   enabled?: boolean;
-
-  /**
-   * Checkpoint saver implementation
-   */
-  saver?: BaseCheckpointSaver;
-
-  /**
-   * Checkpoint storage type
-   */
-  storage?: 'memory' | 'redis' | 'database' | 'custom';
-
-  /**
-   * Storage configuration
-   */
-  storageConfig?: Record<string, any>;
-
-  /**
-   * Auto-checkpoint interval in milliseconds
-   */
-  interval?: number;
-
-  /**
-   * Maximum checkpoints to retain
-   */
-  maxCheckpoints?: number;
-}
-
-export interface ObservabilityConfig {
-  /**
-   * Enable tracing
-   */
-  tracing?: boolean;
-
-  /**
-   * Enable metrics collection
-   */
-  metrics?: boolean;
-
-  /**
-   * Enable logging
-   */
-  logging?: boolean;
-
-  /**
-   * Log level
-   */
-  logLevel?: 'debug' | 'info' | 'warn' | 'error';
-
-  /**
-   * Custom trace exporter
-   */
-  traceExporter?: any;
-
-  /**
-   * Custom metrics exporter
-   */
-  metricsExporter?: any;
-
-  /**
-   * Sampling rate for traces (0-1)
-   */
-  samplingRate?: number;
-}
-
-export interface PerformanceConfig {
-  /**
-   * Enable performance optimizations
-   */
-  enabled?: boolean;
-
-  /**
-   * Maximum concurrent workflows
-   */
-  maxConcurrent?: number;
-
-  /**
-   * Queue configuration
-   */
-  queue?: {
-    /**
-     * Enable queueing
-     */
-    enabled?: boolean;
-
-    /**
-     * Maximum queue size
-     */
-    maxSize?: number;
-
-    /**
-     * Queue strategy
-     */
-    strategy?: 'fifo' | 'lifo' | 'priority';
+  provider?: 'memory' | 'redis' | 'postgresql';
+  config?: Record<string, any>;
+  // Additional properties used by checkpoint adapter
+  storage?: 'memory' | 'sqlite' | 'redis' | 'postgresql' | 'custom' | 'database';
+  storageConfig?: {
+    path?: string;
+    host?: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password?: string;
   };
+  saver?: any; // Custom checkpoint saver instance
+}
 
-  /**
-   * Circuit breaker configuration
-   */
-  circuitBreaker?: {
-    /**
-     * Enable circuit breaker
-     */
-    enabled?: boolean;
-
-    /**
-     * Failure threshold
-     */
-    threshold?: number;
-
-    /**
-     * Reset timeout in milliseconds
-     */
-    resetTimeout?: number;
+export interface MemoryDatabaseConfig {
+  enabled?: boolean;
+  chromadb?: {
+    collection?: string;
+    embeddingFunction?: string;
+  };
+  neo4j?: {
+    database?: string;
   };
 }
 
 export interface LangGraphModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useFactory?: (...args: any[]) => Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
   inject?: any[];
-  useClass?: Type<LangGraphOptionsFactory>;
-  useExisting?: Type<LangGraphOptionsFactory>;
+  useClass?: Type<LangGraphModuleOptionsFactory>;
+  useExisting?: Type<LangGraphModuleOptionsFactory>;
 }
 
-export interface LangGraphOptionsFactory {
+export interface LangGraphModuleOptionsFactory {
   createLangGraphOptions(): Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
 }
