@@ -18,7 +18,8 @@
       "mcp__nx-mcp__nx_workspace",
       "Bash(git push:*)",
       "mcp__filesystem__read_multiple_files",
-      "mcp__filesystem__edit_file"
+      "mcp__filesystem__edit_file",
+      "mcp__nx-mcp__nx_docs"
     ],
     "additionalDirectories": [
       "D:\\projects\\nestjs-ai-saas-starter",
