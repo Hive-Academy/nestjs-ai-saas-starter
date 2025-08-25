@@ -9,10 +9,7 @@
           "projectType": "library",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "build",
-                "^typecheck"
-              ],
+              "dependsOn": ["build", "^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/workflow-engine",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -22,9 +19,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -46,20 +41,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -69,33 +58,22 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/langgraph-modules/workflow-engine",
                 "tsConfig": "libs/langgraph-modules/workflow-engine/tsconfig.lib.json",
                 "packageJson": "libs/langgraph-modules/workflow-engine/package.json",
                 "main": "libs/langgraph-modules/workflow-engine/src/index.ts",
-                "assets": [
-                  "libs/langgraph-modules/workflow-engine/*.md"
-                ]
+                "assets": ["libs/langgraph-modules/workflow-engine/*.md"]
               },
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "build-deps": {
-              "dependsOn": [
-                "^build"
-              ],
+              "dependsOn": ["^build"],
               "configurations": {},
               "options": {},
               "parallelism": true,
@@ -103,9 +81,7 @@
             },
             "watch-deps": {
               "continuous": true,
-              "dependsOn": [
-                "build-deps"
-              ],
+              "dependsOn": ["build-deps"],
               "executor": "nx:run-commands",
               "options": {
                 "command": "npx nx watch --projects langgraph-modules/workflow-engine --includeDependentProjects -- npx nx build-deps langgraph-modules/workflow-engine"
@@ -126,18 +102,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/workflow-engine/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -161,9 +131,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -180,27 +148,18 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             }
           },
           "name": "langgraph-modules/workflow-engine",
-          "tags": [
-            "npm:private",
-            "domain:langgraph"
-          ],
+          "tags": ["npm:private", "domain:langgraph"],
           "metadata": {
             "targetGroups": {},
             "js": {
@@ -240,18 +199,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/functional-api/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -275,9 +228,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -294,25 +245,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/functional-api",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -324,9 +267,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -350,20 +291,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -374,10 +309,7 @@
           },
           "projectType": "library",
           "name": "langgraph-modules/functional-api",
-          "tags": [
-            "npm:private",
-            "domain:langgraph type:data-access"
-          ],
+          "tags": ["npm:private", "domain:langgraph type:data-access"],
           "metadata": {
             "targetGroups": {},
             "js": {
@@ -399,17 +331,15 @@
           "implicitDependencies": []
         }
       },
-      "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e": {
-        "name": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e",
+      "dev-brand-api-e2e": {
+        "name": "dev-brand-api-e2e",
         "type": "lib",
         "data": {
           "root": "apps/nestjs-ai-saas-starter-demo-e2e",
           "projectType": "library",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "apps/nestjs-ai-saas-starter-demo-e2e",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -419,29 +349,21 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
-                "{projectRoot}/out-tsc/@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e/**/*.d.ts",
-                "{projectRoot}/out-tsc/@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/dev-brand-api-e2e/**/*.d.ts",
+                "{projectRoot}/out-tsc/dev-brand-api-e2e/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -462,18 +384,12 @@
                 "{workspaceRoot}/apps/nestjs-ai-saas-starter-demo-e2e/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -490,32 +406,23 @@
             },
             "e2e": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{projectRoot}/test-output/jest/coverage"
-              ],
+              "outputs": ["{projectRoot}/test-output/jest/coverage"],
               "options": {
                 "jestConfig": "apps/nestjs-ai-saas-starter-demo-e2e/jest.config.ts",
                 "passWithNoTests": true
               },
-              "dependsOn": [
-                "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:build",
-                "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:serve"
-              ],
+              "dependsOn": ["dev-brand-api:build", "dev-brand-api:serve"],
               "configurations": {},
               "parallelism": true
             }
           },
-          "name": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e",
-          "tags": [
-            "npm:private"
-          ],
-          "implicitDependencies": [
-            "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo"
-          ],
+          "name": "dev-brand-api-e2e",
+          "tags": ["npm:private"],
+          "implicitDependencies": ["dev-brand-api"],
           "metadata": {
             "targetGroups": {},
             "js": {
-              "packageName": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e",
+              "packageName": "dev-brand-api-e2e",
               "isInPackageManagerWorkspaces": true
             }
           }
@@ -540,18 +447,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/multi-agent/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -575,9 +476,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -594,25 +493,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/multi-agent",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -622,9 +513,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -646,20 +535,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -716,18 +599,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/time-travel/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -751,9 +628,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -770,25 +645,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/time-travel",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -800,9 +667,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -826,20 +691,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -896,18 +755,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/checkpoint/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -931,9 +784,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -950,25 +801,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/checkpoint",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -978,9 +821,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -1002,20 +843,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -1072,18 +907,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/monitoring/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -1107,9 +936,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -1126,25 +953,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/monitoring",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -1154,9 +973,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -1178,20 +995,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -1202,10 +1013,7 @@
           },
           "projectType": "library",
           "name": "langgraph-modules/monitoring",
-          "tags": [
-            "npm:private",
-            "domain:langgraph type:data-access"
-          ],
+          "tags": ["npm:private", "domain:langgraph type:data-access"],
           "metadata": {
             "targetGroups": {},
             "js": {
@@ -1227,17 +1035,15 @@
           "implicitDependencies": []
         }
       },
-      "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo": {
-        "name": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
+      "dev-brand-api": {
+        "name": "dev-brand-api",
         "type": "app",
         "data": {
           "root": "apps/nestjs-ai-saas-starter-demo",
           "projectType": "application",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "apps/nestjs-ai-saas-starter-demo",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -1249,9 +1055,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -1273,20 +1077,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -1296,25 +1094,19 @@
             },
             "build": {
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
+              "dependsOn": ["^build"],
               "inputs": [
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "webpack-cli"
-                  ]
+                  "externalDependencies": ["webpack-cli"]
                 }
               ],
               "outputs": [
                 "{workspaceRoot}/apps\\nestjs-ai-saas-starter-demo\\dist"
               ],
               "metadata": {
-                "technologies": [
-                  "webpack"
-                ],
+                "technologies": ["webpack"],
                 "description": "Runs Webpack build",
                 "help": {
                   "command": "npx webpack-cli build --help",
@@ -1322,28 +1114,20 @@
                     "options": {
                       "json": "stats.json"
                     },
-                    "args": [
-                      "--profile"
-                    ]
+                    "args": ["--profile"]
                   }
                 }
               },
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "executor": "nx:run-commands",
               "options": {
                 "cwd": "apps/nestjs-ai-saas-starter-demo",
-                "args": [
-                  "--node-env=production"
-                ],
+                "args": ["--node-env=production"],
                 "command": "webpack-cli build"
               },
               "configurations": {
                 "development": {
-                  "args": [
-                    "--node-env=development"
-                  ]
+                  "args": ["--node-env=development"]
                 }
               },
               "parallelism": true
@@ -1352,19 +1136,17 @@
               "continuous": true,
               "executor": "@nx/js:node",
               "defaultConfiguration": "development",
-              "dependsOn": [
-                "build"
-              ],
+              "dependsOn": ["build"],
               "options": {
-                "buildTarget": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:build",
+                "buildTarget": "dev-brand-api:build",
                 "runBuildTargetDependencies": false
               },
               "configurations": {
                 "development": {
-                  "buildTarget": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:build:development"
+                  "buildTarget": "dev-brand-api:build:development"
                 },
                 "production": {
-                  "buildTarget": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:build:production"
+                  "buildTarget": "dev-brand-api:build:production"
                 }
               },
               "parallelism": true
@@ -1373,55 +1155,40 @@
               "continuous": true,
               "options": {
                 "cwd": "apps/nestjs-ai-saas-starter-demo",
-                "args": [
-                  "--node-env=production"
-                ],
+                "args": ["--node-env=production"],
                 "command": "webpack-cli serve"
               },
               "metadata": {
-                "technologies": [
-                  "webpack"
-                ],
+                "technologies": ["webpack"],
                 "description": "Starts Webpack dev server in production mode",
                 "help": {
                   "command": "npx webpack-cli serve --help",
                   "example": {
                     "options": {
-                      "args": [
-                        "--client-progress",
-                        "--history-api-fallback "
-                      ]
+                      "args": ["--client-progress", "--history-api-fallback "]
                     }
                   }
                 }
               },
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true
             },
             "serve-static": {
               "continuous": true,
-              "dependsOn": [
-                "build"
-              ],
+              "dependsOn": ["build"],
               "executor": "@nx/web:file-server",
               "options": {
                 "buildTarget": "build",
                 "spa": true
               },
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "configurations": {},
               "parallelism": true
             },
             "build-deps": {
-              "dependsOn": [
-                "^build"
-              ],
+              "dependsOn": ["^build"],
               "configurations": {},
               "options": {},
               "parallelism": true,
@@ -1429,12 +1196,10 @@
             },
             "watch-deps": {
               "continuous": true,
-              "dependsOn": [
-                "build-deps"
-              ],
+              "dependsOn": ["build-deps"],
               "executor": "nx:run-commands",
               "options": {
-                "command": "npx nx watch --projects @nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo --includeDependentProjects -- npx nx build-deps @nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo"
+                "command": "npx nx watch --projects dev-brand-api --includeDependentProjects -- npx nx build-deps dev-brand-api"
               },
               "configurations": {},
               "parallelism": true
@@ -1452,18 +1217,12 @@
                 "{workspaceRoot}/apps/nestjs-ai-saas-starter-demo/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -1480,9 +1239,7 @@
             },
             "test": {
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -1499,14 +1256,10 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "options": {
                 "cwd": "apps/nestjs-ai-saas-starter-demo",
@@ -1518,22 +1271,18 @@
               },
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             }
           },
           "metadata": {
             "targetGroups": {},
             "js": {
-              "packageName": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
+              "packageName": "dev-brand-api",
               "isInPackageManagerWorkspaces": true
             }
           },
-          "name": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
-          "tags": [
-            "npm:private"
-          ],
+          "name": "dev-brand-api",
+          "tags": ["npm:private"],
           "implicitDependencies": []
         }
       },
@@ -1545,10 +1294,7 @@
           "projectType": "library",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "build",
-                "^typecheck"
-              ],
+              "dependsOn": ["build", "^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/streaming",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -1558,9 +1304,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -1582,20 +1326,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -1605,33 +1343,22 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/langgraph-modules/streaming",
                 "tsConfig": "libs/langgraph-modules/streaming/tsconfig.lib.json",
                 "packageJson": "libs/langgraph-modules/streaming/package.json",
                 "main": "libs/langgraph-modules/streaming/src/index.ts",
-                "assets": [
-                  "libs/langgraph-modules/streaming/*.md"
-                ]
+                "assets": ["libs/langgraph-modules/streaming/*.md"]
               },
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "build-deps": {
-              "dependsOn": [
-                "^build"
-              ],
+              "dependsOn": ["^build"],
               "configurations": {},
               "options": {},
               "parallelism": true,
@@ -1639,9 +1366,7 @@
             },
             "watch-deps": {
               "continuous": true,
-              "dependsOn": [
-                "build-deps"
-              ],
+              "dependsOn": ["build-deps"],
               "executor": "nx:run-commands",
               "options": {
                 "command": "npx nx watch --projects langgraph-modules/streaming --includeDependentProjects -- npx nx build-deps langgraph-modules/streaming"
@@ -1662,18 +1387,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/streaming/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -1697,9 +1416,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -1716,20 +1433,14 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             }
           },
           "name": "langgraph-modules/streaming",
@@ -1780,18 +1491,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/platform/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -1815,9 +1520,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -1834,25 +1537,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/platform",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -1862,9 +1557,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -1886,20 +1579,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -1910,10 +1597,7 @@
           },
           "projectType": "library",
           "name": "langgraph-modules/platform",
-          "tags": [
-            "npm:private",
-            "domain:langgraph type:data-access"
-          ],
+          "tags": ["npm:private", "domain:langgraph type:data-access"],
           "metadata": {
             "targetGroups": {},
             "js": {
@@ -1954,18 +1638,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/memory/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -1989,9 +1667,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -2008,25 +1684,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/memory",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -2038,9 +1706,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -2062,20 +1728,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -2121,10 +1781,7 @@
           "projectType": "library",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "build",
-                "^typecheck"
-              ],
+              "dependsOn": ["build", "^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/core",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -2134,9 +1791,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -2158,20 +1813,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -2181,33 +1830,22 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/langgraph-modules/core",
                 "tsConfig": "libs/langgraph-modules/core/tsconfig.lib.json",
                 "packageJson": "libs/langgraph-modules/core/package.json",
                 "main": "libs/langgraph-modules/core/src/index.ts",
-                "assets": [
-                  "libs/langgraph-modules/core/*.md"
-                ]
+                "assets": ["libs/langgraph-modules/core/*.md"]
               },
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "build-deps": {
-              "dependsOn": [
-                "^build"
-              ],
+              "dependsOn": ["^build"],
               "configurations": {},
               "options": {},
               "parallelism": true,
@@ -2215,9 +1853,7 @@
             },
             "watch-deps": {
               "continuous": true,
-              "dependsOn": [
-                "build-deps"
-              ],
+              "dependsOn": ["build-deps"],
               "executor": "nx:run-commands",
               "options": {
                 "command": "npx nx watch --projects langgraph-modules/core --includeDependentProjects -- npx nx build-deps langgraph-modules/core"
@@ -2238,18 +1874,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/core/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -2273,9 +1903,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -2292,27 +1920,18 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             }
           },
           "name": "langgraph-modules/core",
-          "tags": [
-            "npm:private",
-            "scope:langgraph"
-          ],
+          "tags": ["npm:private", "scope:langgraph"],
           "metadata": {
             "targetGroups": {},
             "js": {
@@ -2341,10 +1960,7 @@
           "projectType": "library",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "build",
-                "^typecheck"
-              ],
+              "dependsOn": ["build", "^typecheck"],
               "options": {
                 "cwd": "libs/langgraph-modules/hitl",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -2354,9 +1970,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -2378,20 +1992,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -2401,33 +2009,22 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/langgraph-modules/hitl",
                 "tsConfig": "libs/langgraph-modules/hitl/tsconfig.lib.json",
                 "packageJson": "libs/langgraph-modules/hitl/package.json",
                 "main": "libs/langgraph-modules/hitl/src/index.ts",
-                "assets": [
-                  "libs/langgraph-modules/hitl/*.md"
-                ]
+                "assets": ["libs/langgraph-modules/hitl/*.md"]
               },
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "build-deps": {
-              "dependsOn": [
-                "^build"
-              ],
+              "dependsOn": ["^build"],
               "configurations": {},
               "options": {},
               "parallelism": true,
@@ -2435,9 +2032,7 @@
             },
             "watch-deps": {
               "continuous": true,
-              "dependsOn": [
-                "build-deps"
-              ],
+              "dependsOn": ["build-deps"],
               "executor": "nx:run-commands",
               "options": {
                 "command": "npx nx watch --projects langgraph-modules/hitl --includeDependentProjects -- npx nx build-deps langgraph-modules/hitl"
@@ -2458,18 +2053,12 @@
                 "{workspaceRoot}/libs/langgraph-modules/hitl/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -2493,9 +2082,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -2512,20 +2099,14 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             }
           },
           "name": "langgraph-modules/hitl",
@@ -2565,9 +2146,7 @@
           "projectType": "application",
           "targets": {
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "apps/ai-saas-frontend",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -2577,9 +2156,7 @@
                 "production",
                 "^production",
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -2599,20 +2176,14 @@
                 "{workspaceRoot}/dist/out-tsc/**/*.d.ts",
                 "{workspaceRoot}/dist/out-tsc/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -2628,25 +2199,19 @@
             },
             "build": {
               "executor": "@angular-devkit/build-angular:browser",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/apps/ai-saas-frontend",
                 "index": "apps/ai-saas-frontend/src/index.html",
                 "main": "apps/ai-saas-frontend/src/main.ts",
-                "polyfills": [
-                  "zone.js"
-                ],
+                "polyfills": ["zone.js"],
                 "tsConfig": "apps/ai-saas-frontend/tsconfig.app.json",
                 "inlineStyleLanguage": "scss",
                 "assets": [
                   "apps/ai-saas-frontend/src/favicon.ico",
                   "apps/ai-saas-frontend/src/assets"
                 ],
-                "styles": [
-                  "apps/ai-saas-frontend/src/styles.scss"
-                ],
+                "styles": ["apps/ai-saas-frontend/src/styles.scss"],
                 "scripts": []
               },
               "configurations": {
@@ -2703,27 +2268,20 @@
             },
             "test": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "jestConfig": "apps/ai-saas-frontend/jest.config.ts"
               },
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             }
           },
           "name": "ai-saas-frontend",
           "$schema": "../../node_modules/nx/schemas/project-schema.json",
           "prefix": "app",
           "sourceRoot": "apps/ai-saas-frontend/src",
-          "tags": [
-            "scope:frontend",
-            "type:app"
-          ],
+          "tags": ["scope:frontend", "type:app"],
           "implicitDependencies": []
         }
       },
@@ -2746,18 +2304,12 @@
                 "{workspaceRoot}/libs/nestjs-langgraph/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -2781,9 +2333,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -2800,25 +2350,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/nestjs-langgraph",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -2830,9 +2372,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -2868,20 +2408,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -2891,18 +2425,14 @@
             },
             "nx-release-publish": {
               "executor": "@nx/js:release-publish",
-              "dependsOn": [
-                "^nx-release-publish"
-              ],
+              "dependsOn": ["^nx-release-publish"],
               "options": {},
               "configurations": {},
               "parallelism": true
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/nestjs-langgraph",
                 "main": "libs/nestjs-langgraph/src/index.ts",
@@ -2919,22 +2449,15 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "publish": {
               "executor": "nx:run-commands",
               "options": {
                 "command": "npm publish dist/libs/nestjs-langgraph --access public"
               },
-              "dependsOn": [
-                "build"
-              ],
+              "dependsOn": ["build"],
               "configurations": {},
               "parallelism": true
             },
@@ -3005,18 +2528,12 @@
                 "{workspaceRoot}/libs/nestjs-chromadb/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -3040,9 +2557,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -3059,25 +2574,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/nestjs-chromadb",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -3089,9 +2596,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -3111,20 +2616,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -3134,18 +2633,14 @@
             },
             "nx-release-publish": {
               "executor": "@nx/js:release-publish",
-              "dependsOn": [
-                "^nx-release-publish"
-              ],
+              "dependsOn": ["^nx-release-publish"],
               "options": {},
               "configurations": {},
               "parallelism": true
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/nestjs-chromadb",
                 "main": "libs/nestjs-chromadb/src/index.ts",
@@ -3162,22 +2657,15 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "publish": {
               "executor": "nx:run-commands",
               "options": {
                 "command": "npm publish dist/libs/nestjs-chromadb --access public"
               },
-              "dependsOn": [
-                "build"
-              ],
+              "dependsOn": ["build"],
               "configurations": {},
               "parallelism": true
             },
@@ -3247,18 +2735,12 @@
                 "{workspaceRoot}/libs/nestjs-neo4j/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
-                  "externalDependencies": [
-                    "eslint"
-                  ]
+                  "externalDependencies": ["eslint"]
                 }
               ],
-              "outputs": [
-                "{options.outputFile}"
-              ],
+              "outputs": ["{options.outputFile}"],
               "metadata": {
-                "technologies": [
-                  "eslint"
-                ],
+                "technologies": ["eslint"],
                 "description": "Runs ESLint on project",
                 "help": {
                   "command": "npx eslint --help",
@@ -3282,9 +2764,7 @@
                 "command": "jest"
               },
               "metadata": {
-                "technologies": [
-                  "jest"
-                ],
+                "technologies": ["jest"],
                 "description": "Run Jest Tests",
                 "help": {
                   "command": "npx jest --help",
@@ -3301,25 +2781,17 @@
                 "^production",
                 "{workspaceRoot}\\jest.preset.js",
                 {
-                  "externalDependencies": [
-                    "jest"
-                  ]
+                  "externalDependencies": ["jest"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}\\test-output\\jest\\coverage"
-              ],
+              "outputs": ["{projectRoot}\\test-output\\jest\\coverage"],
               "executor": "nx:run-commands",
               "configurations": {},
               "parallelism": true,
-              "dependsOn": [
-                "^build"
-              ]
+              "dependsOn": ["^build"]
             },
             "typecheck": {
-              "dependsOn": [
-                "^typecheck"
-              ],
+              "dependsOn": ["^typecheck"],
               "options": {
                 "cwd": "libs/nestjs-neo4j",
                 "command": "tsc --build --emitDeclarationOnly"
@@ -3331,9 +2803,7 @@
                   "dependentTasksOutputFiles": "**/*.d.ts"
                 },
                 {
-                  "externalDependencies": [
-                    "typescript"
-                  ]
+                  "externalDependencies": ["typescript"]
                 }
               ],
               "outputs": [
@@ -3353,20 +2823,14 @@
                 "{projectRoot}/out-tsc/jest/**/*.d.ts",
                 "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
               ],
-              "syncGenerators": [
-                "@nx/js:typescript-sync"
-              ],
+              "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
-                "technologies": [
-                  "typescript"
-                ],
+                "technologies": ["typescript"],
                 "description": "Runs type-checking for the project.",
                 "help": {
                   "command": "npx tsc --build --help",
                   "example": {
-                    "args": [
-                      "--force"
-                    ]
+                    "args": ["--force"]
                   }
                 }
               },
@@ -3376,18 +2840,14 @@
             },
             "nx-release-publish": {
               "executor": "@nx/js:release-publish",
-              "dependsOn": [
-                "^nx-release-publish"
-              ],
+              "dependsOn": ["^nx-release-publish"],
               "options": {},
               "configurations": {},
               "parallelism": true
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{options.outputPath}"
-              ],
+              "outputs": ["{options.outputPath}"],
               "options": {
                 "outputPath": "dist/libs/nestjs-neo4j",
                 "main": "libs/nestjs-neo4j/src/index.ts",
@@ -3404,22 +2864,15 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "dependsOn": [
-                "^build"
-              ],
-              "inputs": [
-                "production",
-                "^production"
-              ]
+              "dependsOn": ["^build"],
+              "inputs": ["production", "^production"]
             },
             "publish": {
               "executor": "nx:run-commands",
               "options": {
                 "command": "npm publish dist/libs/nestjs-neo4j --access public"
               },
-              "dependsOn": [
-                "build"
-              ],
+              "dependsOn": ["build"],
               "configurations": {},
               "parallelism": true
             },
@@ -3479,10 +2932,10 @@
           "type": "static"
         }
       ],
-      "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e": [
+      "dev-brand-api-e2e": [
         {
-          "source": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo-e2e",
-          "target": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
+          "source": "dev-brand-api-e2e",
+          "target": "dev-brand-api",
           "type": "implicit"
         }
       ],
@@ -3496,19 +2949,19 @@
       ],
       "langgraph-modules/checkpoint": [],
       "langgraph-modules/monitoring": [],
-      "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo": [
+      "dev-brand-api": [
         {
-          "source": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
+          "source": "dev-brand-api",
           "target": "nestjs-chromadb",
           "type": "static"
         },
         {
-          "source": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
+          "source": "dev-brand-api",
           "target": "nestjs-langgraph",
           "type": "static"
         },
         {
-          "source": "@nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo",
+          "source": "dev-brand-api",
           "target": "nestjs-neo4j",
           "type": "static"
         }

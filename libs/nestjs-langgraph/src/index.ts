@@ -22,7 +22,6 @@ export type * from './lib/interfaces/module-options.interface';
 // to avoid export conflicts. For example:
 //
 // import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
-// import { MemoryFacadeService } from '@hive-academy/langgraph-memory';
 // import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 //
 // This ensures clean module boundaries and avoids symbol collisions.

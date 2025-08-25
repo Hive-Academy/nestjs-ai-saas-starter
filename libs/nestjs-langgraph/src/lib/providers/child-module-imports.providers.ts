@@ -81,15 +81,19 @@ class PathResolutionService {
     const environment = process.env.NODE_ENV || 'development';
 
     // Primary paths using TypeScript path mapping
-    const paths = [
-      `@hive-academy/langgraph-${moduleId}`,
-    ];
+    const paths = [`@hive-academy/langgraph-${moduleId}`];
 
     // Development fallback paths
     if (environment === 'development') {
       paths.push(
-        path.resolve(__dirname, `../../../langgraph-modules/${moduleId}/src/index.ts`),
-        path.resolve(__dirname, `../../../langgraph-modules/${moduleId}/src/index.js`),
+        path.resolve(
+          __dirname,
+          `../../../../langgraph-modules/${moduleId}/src/index.ts`
+        ),
+        path.resolve(
+          __dirname,
+          `../../../../langgraph-modules/${moduleId}/src/index.js`
+        ),
         `./libs/langgraph-modules/${moduleId}/src/index`
       );
     }
@@ -97,7 +101,10 @@ class PathResolutionService {
     // Production fallback paths
     if (environment === 'production') {
       paths.push(
-        path.resolve(__dirname, `../../../langgraph-modules/${moduleId}/dist/index.js`),
+        path.resolve(
+          __dirname,
+          `../../../../langgraph-modules/${moduleId}/dist/index.js`
+        ),
         `./libs/langgraph-modules/${moduleId}/dist/index`
       );
     }
@@ -113,18 +120,23 @@ class PathResolutionService {
 class ModuleValidatorService {
   private static readonly logger = new Logger(ModuleValidatorService.name);
 
-  static async validateModule(module: any, metadata: ModuleMetadata): Promise<ModuleValidationResult> {
+  static async validateModule(
+    module: any,
+    metadata: ModuleMetadata
+  ): Promise<ModuleValidationResult> {
     const result: ModuleValidationResult = {
       valid: true,
       errors: [],
       warnings: [],
-      moduleInfo: { name: metadata.moduleId, exports: [] }
+      moduleInfo: { name: metadata.moduleId, exports: [] },
     };
 
     try {
       // Check if module has required forRoot method
       if (!module || typeof module.forRoot !== 'function') {
-        result.errors.push(`Module ${metadata.className} missing required forRoot method`);
+        result.errors.push(
+          `Module ${metadata.className} missing required forRoot method`
+        );
         result.valid = false;
         return result;
       }
@@ -132,16 +144,24 @@ class ModuleValidatorService {
       // Test module instantiation with empty config
       const testInstance = module.forRoot({});
       if (!testInstance || !testInstance.module) {
-        result.errors.push(`Module ${metadata.className} forRoot() does not return valid DynamicModule`);
+        result.errors.push(
+          `Module ${metadata.className} forRoot() does not return valid DynamicModule`
+        );
         result.valid = false;
       }
 
       // Extract module information
       result.moduleInfo.exports = Object.keys(module);
 
-      this.logger.debug(`Validation successful for module: ${metadata.moduleId}`);
+      this.logger.debug(
+        `Validation successful for module: ${metadata.moduleId}`
+      );
     } catch (error) {
-      result.errors.push(`Module instantiation failed: ${error instanceof Error ? error.message : String(error)}`);
+      result.errors.push(
+        `Module instantiation failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       result.valid = false;
     }
 
@@ -160,15 +180,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-checkpoint',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
-    },
-    {
-      moduleId: 'memory',
-      className: 'AgenticMemoryModule',
-      importPath: '@hive-academy/langgraph-memory',
-      optional: true,
-      dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'multi-agent',
@@ -176,7 +188,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-multi-agent',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'functional-api',
@@ -184,7 +196,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-functional-api',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'platform',
@@ -192,7 +204,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-platform',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'time-travel',
@@ -200,7 +212,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-time-travel',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'monitoring',
@@ -208,7 +220,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-monitoring',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'hitl',
@@ -216,7 +228,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-hitl',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'streaming',
@@ -224,7 +236,7 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-streaming',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
+      loadingStrategy: 'sync',
     },
     {
       moduleId: 'workflow-engine',
@@ -232,12 +244,12 @@ class ModuleRegistryService {
       importPath: '@hive-academy/langgraph-workflow-engine',
       optional: true,
       dependencies: [],
-      loadingStrategy: 'sync'
-    }
+      loadingStrategy: 'sync',
+    },
   ];
 
   static getModule(moduleId: string): ModuleMetadata | null {
-    return this.MODULE_DEFINITIONS.find(m => m.moduleId === moduleId) || null;
+    return this.MODULE_DEFINITIONS.find((m) => m.moduleId === moduleId) || null;
   }
 
   static getAllModules(): ModuleMetadata[] {
@@ -256,10 +268,15 @@ class ProductionLoadingStrategy implements IModuleLoadingStrategy {
     return ModuleRegistryService.getModule(moduleId) !== null;
   }
 
-  async loadModule<T>(moduleId: string, config: any): Promise<DynamicModule | null> {
+  async loadModule<T>(
+    moduleId: string,
+    config: any
+  ): Promise<DynamicModule | null> {
     const metadata = ModuleRegistryService.getModule(moduleId);
     if (!metadata) {
-      ProductionLoadingStrategy.logger.warn(`Module metadata not found: ${moduleId}`);
+      ProductionLoadingStrategy.logger.warn(
+        `Module metadata not found: ${moduleId}`
+      );
       return null;
     }
 
@@ -268,25 +285,36 @@ class ProductionLoadingStrategy implements IModuleLoadingStrategy {
 
     for (const modulePath of modulePaths) {
       try {
-        ProductionLoadingStrategy.logger.debug(`Attempting to load module from path: ${modulePath}`);
+        ProductionLoadingStrategy.logger.debug(
+          `Attempting to load module from path: ${modulePath}`
+        );
 
         // Use dynamic import with proper error handling
         const moduleExports = await import(modulePath);
 
         // Handle both default and named exports
-        const ModuleClass = moduleExports[metadata.className] ||
-                           moduleExports.default?.[metadata.className] ||
-                           moduleExports.default;
+        const ModuleClass =
+          moduleExports[metadata.className] ||
+          moduleExports.default?.[metadata.className] ||
+          moduleExports.default;
 
         if (!ModuleClass) {
-          ProductionLoadingStrategy.logger.debug(`Module class ${metadata.className} not found in ${modulePath}`);
+          ProductionLoadingStrategy.logger.debug(
+            `Module class ${metadata.className} not found in ${modulePath}`
+          );
           continue;
         }
 
         // Validate module before instantiation
-        const validationResult = await ModuleValidatorService.validateModule(ModuleClass, metadata);
+        const validationResult = await ModuleValidatorService.validateModule(
+          ModuleClass,
+          metadata
+        );
         if (!validationResult.valid) {
-          ProductionLoadingStrategy.logger.warn(`Module validation failed for ${moduleId}:`, validationResult.errors);
+          ProductionLoadingStrategy.logger.warn(
+            `Module validation failed for ${moduleId}:`,
+            validationResult.errors
+          );
           continue;
         }
 
@@ -294,17 +322,24 @@ class ProductionLoadingStrategy implements IModuleLoadingStrategy {
         const dynamicModule = ModuleClass.forRoot(config);
 
         const loadTime = Date.now() - startTime;
-        ProductionLoadingStrategy.logger.log(`✅ Successfully loaded module '${moduleId}' in ${loadTime}ms using path: ${modulePath}`);
+        ProductionLoadingStrategy.logger.log(
+          `✅ Successfully loaded module '${moduleId}' in ${loadTime}ms using path: ${modulePath}`
+        );
 
         return dynamicModule;
       } catch (error) {
-        ProductionLoadingStrategy.logger.debug(`Failed to load from path ${modulePath}:`, error instanceof Error ? error.message : String(error));
+        ProductionLoadingStrategy.logger.debug(
+          `Failed to load from path ${modulePath}:`,
+          error instanceof Error ? error.message : String(error)
+        );
         continue;
       }
     }
 
     const totalTime = Date.now() - startTime;
-    ProductionLoadingStrategy.logger.warn(`❌ Failed to load module '${moduleId}' after trying all paths (${totalTime}ms)`);
+    ProductionLoadingStrategy.logger.warn(
+      `❌ Failed to load module '${moduleId}' after trying all paths (${totalTime}ms)`
+    );
     return null;
   }
 }
@@ -320,8 +355,13 @@ class FallbackStrategy implements IModuleLoadingStrategy {
     return true; // Always can handle as last resort
   }
 
-  async loadModule<T>(moduleId: string, config: any): Promise<DynamicModule | null> {
-    FallbackStrategy.logger.warn(`⚠️ Using fallback implementation for module '${moduleId}'`);
+  async loadModule<T>(
+    moduleId: string,
+    config: any
+  ): Promise<DynamicModule | null> {
+    FallbackStrategy.logger.warn(
+      `⚠️ Using fallback implementation for module '${moduleId}'`
+    );
 
     // Return null to indicate graceful degradation
     // The main module will handle this gracefully
@@ -335,9 +375,7 @@ class FallbackStrategy implements IModuleLoadingStrategy {
 class DynamicModuleLoaderFacade {
   private static readonly logger = new Logger(DynamicModuleLoaderFacade.name);
 
-  constructor(
-    private readonly strategies: IModuleLoadingStrategy[]
-  ) {
+  constructor(private readonly strategies: IModuleLoadingStrategy[]) {
     // Sort strategies by priority (highest first)
     this.strategies.sort((a, b) => b.priority - a.priority);
   }
@@ -346,7 +384,9 @@ class DynamicModuleLoaderFacade {
     const modules: DynamicModule[] = [];
     const requiredModules = this.getRequiredModules(options);
 
-    DynamicModuleLoaderFacade.logger.log(`Loading ${requiredModules.length} child modules...`);
+    DynamicModuleLoaderFacade.logger.log(
+      `Loading ${requiredModules.length} child modules...`
+    );
 
     for (const [moduleId, config] of requiredModules) {
       try {
@@ -355,17 +395,25 @@ class DynamicModuleLoaderFacade {
           modules.push(module);
         }
       } catch (error) {
-        DynamicModuleLoaderFacade.logger.error(`Failed to load module ${moduleId}:`, error);
+        DynamicModuleLoaderFacade.logger.error(
+          `Failed to load module ${moduleId}:`,
+          error
+        );
         // Continue loading other modules
       }
     }
 
-    DynamicModuleLoaderFacade.logger.log(`Successfully loaded ${modules.length}/${requiredModules.length} child modules`);
+    DynamicModuleLoaderFacade.logger.log(
+      `Successfully loaded ${modules.length}/${requiredModules.length} child modules`
+    );
     return modules;
   }
 
-  private async loadSingleModule(moduleId: string, config: any): Promise<DynamicModule | null> {
-    const strategies = this.strategies.filter(s => s.canHandle(moduleId));
+  private async loadSingleModule(
+    moduleId: string,
+    config: any
+  ): Promise<DynamicModule | null> {
+    const strategies = this.strategies.filter((s) => s.canHandle(moduleId));
 
     for (const strategy of strategies) {
       try {
@@ -374,7 +422,10 @@ class DynamicModuleLoaderFacade {
           return module;
         }
       } catch (error) {
-        DynamicModuleLoaderFacade.logger.debug(`Strategy ${strategy.constructor.name} failed for ${moduleId}:`, error instanceof Error ? error.message : String(error));
+        DynamicModuleLoaderFacade.logger.debug(
+          `Strategy ${strategy.constructor.name} failed for ${moduleId}:`,
+          error instanceof Error ? error.message : String(error)
+        );
       }
     }
 
@@ -425,11 +476,13 @@ class DynamicModuleLoaderFacade {
  * Advanced child module import factory with sophisticated loading strategies
  */
 export class AdvancedChildModuleImportFactory {
-  private static readonly logger = new Logger(AdvancedChildModuleImportFactory.name);
+  private static readonly logger = new Logger(
+    AdvancedChildModuleImportFactory.name
+  );
 
   private static readonly loader = new DynamicModuleLoaderFacade([
     new ProductionLoadingStrategy(),
-    new FallbackStrategy()
+    new FallbackStrategy(),
   ]);
 
   /**
@@ -443,9 +496,13 @@ export class AdvancedChildModuleImportFactory {
       const modules = await this.loader.loadModules(options);
 
       const loadTime = Date.now() - startTime;
-      const loadedModules = modules.map(m => m.module?.name || 'Unknown').join(', ');
+      const loadedModules = modules
+        .map((m) => m.module?.name || 'Unknown')
+        .join(', ');
 
-      this.logger.log(`🚀 Child module loading completed in ${loadTime}ms. Loaded: [${loadedModules}]`);
+      this.logger.log(
+        `🚀 Child module loading completed in ${loadTime}ms. Loaded: [${loadedModules}]`
+      );
 
       return modules;
     } catch (error) {
@@ -467,11 +524,15 @@ export class ChildModuleImportFactory {
   /**
    * Create child module imports synchronously by pre-loading during module initialization
    */
-  static createChildModuleImports(options: LangGraphModuleOptions): DynamicModule[] {
+  static createChildModuleImports(
+    options: LangGraphModuleOptions
+  ): DynamicModule[] {
     const modules: DynamicModule[] = [];
     const requiredModules = this.getRequiredModules(options);
 
-    this.logger.log(`Attempting to load ${requiredModules.length} child modules synchronously...`);
+    this.logger.log(
+      `Attempting to load ${requiredModules.length} child modules synchronously...`
+    );
 
     for (const [moduleId, config] of requiredModules) {
       try {
@@ -480,21 +541,31 @@ export class ChildModuleImportFactory {
           modules.push(module);
           this.logger.log(`✅ Successfully loaded module: ${moduleId}`);
         } else {
-          this.logger.warn(`⚠️ Module ${moduleId} not available, graceful degradation enabled`);
+          this.logger.warn(
+            `⚠️ Module ${moduleId} not available, graceful degradation enabled`
+          );
         }
       } catch (error) {
-        this.logger.error(`❌ Failed to load module ${moduleId}:`, (error as any).message || error);
+        this.logger.error(
+          `❌ Failed to load module ${moduleId}:`,
+          (error as any).message || error
+        );
       }
     }
 
-    this.logger.log(`Loaded ${modules.length}/${requiredModules.length} child modules`);
+    this.logger.log(
+      `Loaded ${modules.length}/${requiredModules.length} child modules`
+    );
     return modules;
   }
 
   /**
    * Load module synchronously using require (for Node.js environments)
    */
-  private static loadModuleSync(moduleId: string, config: any): DynamicModule | null {
+  private static loadModuleSync(
+    moduleId: string,
+    config: any
+  ): DynamicModule | null {
     // Check cache first
     const cacheKey = `${moduleId}-${JSON.stringify(config)}`;
     if (this.loadedModules.has(cacheKey)) {
@@ -520,40 +591,54 @@ export class ChildModuleImportFactory {
           // Use require for synchronous loading
           moduleExports = require(modulePath);
         } catch (requireError) {
-          this.logger.debug(`Require failed for ${modulePath}:`, (requireError as any).message || requireError);
+          this.logger.debug(
+            `Require failed for ${modulePath}:`,
+            (requireError as any).message || requireError
+          );
           continue;
         }
 
         // Handle both CommonJS and ES module exports
-        const ModuleClass = moduleExports[metadata.className] ||
-                           moduleExports.default?.[metadata.className] ||
-                           moduleExports.default;
+        const ModuleClass =
+          moduleExports[metadata.className] ||
+          moduleExports.default?.[metadata.className] ||
+          moduleExports.default;
 
         if (!ModuleClass) {
-          this.logger.debug(`Module class ${metadata.className} not found in ${modulePath}`);
+          this.logger.debug(
+            `Module class ${metadata.className} not found in ${modulePath}`
+          );
           continue;
         }
 
         // Validate and instantiate module
         if (typeof ModuleClass.forRoot !== 'function') {
-          this.logger.debug(`Module ${metadata.className} missing forRoot method`);
+          this.logger.debug(
+            `Module ${metadata.className} missing forRoot method`
+          );
           continue;
         }
 
         const dynamicModule = ModuleClass.forRoot(config);
         if (!dynamicModule || !dynamicModule.module) {
-          this.logger.debug(`Module ${metadata.className} forRoot() returned invalid DynamicModule`);
+          this.logger.debug(
+            `Module ${metadata.className} forRoot() returned invalid DynamicModule`
+          );
           continue;
         }
 
         // Cache the loaded module
         this.loadedModules.set(cacheKey, dynamicModule);
 
-        this.logger.debug(`Successfully loaded module ${moduleId} from ${modulePath}`);
+        this.logger.debug(
+          `Successfully loaded module ${moduleId} from ${modulePath}`
+        );
         return dynamicModule;
-
       } catch (error) {
-        this.logger.debug(`Failed to load from path ${modulePath}:`, (error as any).message || error);
+        this.logger.debug(
+          `Failed to load from path ${modulePath}:`,
+          (error as any).message || error
+        );
         continue;
       }
     }
@@ -562,7 +647,9 @@ export class ChildModuleImportFactory {
     return null;
   }
 
-  private static getRequiredModules(options: LangGraphModuleOptions): [string, any][] {
+  private static getRequiredModules(
+    options: LangGraphModuleOptions
+  ): [string, any][] {
     const modules: [string, any][] = [];
 
     // Map options to module configurations

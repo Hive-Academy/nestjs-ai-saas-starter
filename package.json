@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "api": "npx nx run @nestjs-ai-saas-starter/nestjs-ai-saas-starter-demo:serve",
+    "api": "npx nx run dev-brand-api:serve",
     "start": "npx nx run ai-saas-frontend:serve:development",
     "dev:services": "docker compose -f docker-compose.dev.yml up -d",
     "dev:stop": "docker compose -f docker-compose.dev.yml down",

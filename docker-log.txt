@@ -1,0 +1,83 @@
+Fetching versions.json for Plugin 'graph-data-science' from https://graphdatascience.ninja/versions.json⁠
+
+Installing Plugin 'graph-data-science' from https://graphdatascience.ninja/neo4j-graph-data-science-2.13.5.jar⁠ to /var/lib/neo4j/plugins/graph-data-science.jar
+
+Applying default values for plugin graph-data-science to neo4j.conf
+
+Changed password for user 'neo4j'. IMPORTANT: this change will only take effect if performed before the database is started for the first time.
+
+2025-08-25 20:04:12.249+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+
+2025-08-25 20:04:12.294+0000 INFO  Starting...
+
+2025-08-25 20:04:15.839+0000 INFO  This instance is ServerId{94dca1b3} (94dca1b3-f3de-4cf7-a291-8d94b8d4370d)
+
+2025-08-25 20:04:17.092+0000 INFO  ======== Neo4j 5.26.10 ========
+
+2025-08-25 20:04:17.333+0000 INFO  GDS license file: null
+
+2025-08-25 20:04:17.334+0000 INFO  GDS license state: unlicensed
+
+2025-08-25 20:04:17.336+0000 INFO  Prometheus: disabled
+
+2025-08-25 20:04:17.336+0000 WARN  GDS metrics disabled
+
+2025-08-25 20:04:17.342+0000 INFO  Progress tracking: enabled
+
+2025-08-25 20:04:17.343+0000 INFO  Memory usage guard: minimum estimate
+
+2025-08-25 20:04:17.347+0000 INFO  Register GDS Memory Facade...
+
+2025-08-25 20:04:17.348+0000 INFO  GDS Memory Facade registered.
+
+2025-08-25 20:04:17.352+0000 INFO  Building Graph Data Science extension...
+
+2025-08-25 20:04:17.355+0000 INFO  Register Graph Data Science...
+
+2025-08-25 20:04:17.356+0000 INFO  Graph Data Science registered.
+
+2025-08-25 20:04:17.357+0000 INFO  Register Metrics...
+
+2025-08-25 20:04:17.358+0000 INFO  Metrics registered.
+
+2025-08-25 20:04:17.359+0000 INFO  Register Model Catalog...
+
+2025-08-25 20:04:17.360+0000 INFO  Model Catalog registered.
+
+2025-08-25 20:04:17.361+0000 INFO  Register Task Registry Factory...
+
+2025-08-25 20:04:17.362+0000 INFO  Task Registry Factory registered.
+
+2025-08-25 20:04:17.363+0000 INFO  Register Task Store...
+
+2025-08-25 20:04:17.364+0000 INFO  Task Store registered.
+
+2025-08-25 20:04:17.365+0000 INFO  Register User Log Registry Factory...
+
+2025-08-25 20:04:17.367+0000 INFO  User Log Registry Factory registered.
+
+2025-08-25 20:04:17.368+0000 INFO  Graph Data Science extension built.
+
+2025-08-25 20:04:17.369+0000 INFO  Building Graph Data Science Extras extension...
+
+2025-08-25 20:04:17.370+0000 INFO  Register Graph Data Science Extras...
+
+2025-08-25 20:04:17.371+0000 INFO  Graph Data Science Extras registered.
+
+2025-08-25 20:04:17.372+0000 INFO  Graph Data Science Extras extension built.
+
+2025-08-25 20:04:29.658+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/⁠
+
+2025-08-25 20:04:29.697+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+
+2025-08-25 20:04:30.728+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+
+2025-08-25 20:04:30.729+0000 INFO  Remote interface available at http://localhost:7474/⁠
+
+2025-08-25 20:04:30.732+0000 INFO  id: BC003C32CBEB80605C5B6777CA5E1AB29B434D2407D3EADDFDB2BF335AE8948C
+
+2025-08-25 20:04:30.733+0000 INFO  name: system
+
+2025-08-25 20:04:30.735+0000 INFO  creationDate: 2025-08-25T20:04:18.299Z
+
+2025-08-25 20:04:30.735+0000 INFO  Started.

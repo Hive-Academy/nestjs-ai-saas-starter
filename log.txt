@@ -1,41 +1,396 @@
+npx nx run dev-brand-api:serve
 
-src/lib/adapters/index.ts(29,3): error TS2724: '"./memory-adapter.provider"' has no exported member named 'createMemoryAdapterProvidersAsync'. Did you mean 'createMemoryAdapterProviders'?
-src/lib/adapters/index.ts(41,40): error TS2724: '"./memory-adapter.provider"' has no exported member named 'createMemoryAdapterProvidersAsync'. Did you mean 'createMemoryAdapterProviders'?
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(14,25): error TS2305: Module '"../memory.adapter"' has no exported member 'EnterpriseMemoryWrapper'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(21,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(27,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(28,42): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(263,24): error TS7006: Parameter 'result' implicitly has an 'any' type.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(263,32): error TS7006: Parameter 'index' implicitly has an 'any' type.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(404,15): error TS6133: 'status' is declared but its value is never read.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(405,15): error TS6133: 'memory' is declared but its value is never read.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(12,1): error TS6133: 'BaseMemory' is declared but its value is never read.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(17,25): error TS2305: Module '"../memory.adapter"' has no exported member 'EnterpriseMemoryWrapper'.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(24,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(28,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(34,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/constants/__tests__/memory-adapter-constants.spec.ts(21,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/interfaces/__tests__/memory-adapter-interface.spec.ts(12,3): error TS6133: 'IMemoryCoreService' is declared but its value is never read.
-src/lib/interfaces/__tests__/memory-adapter-interface.spec.ts(21,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-> tsc --build --emitDeclarationOnly
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
 
-src/lib/adapters/index.ts(29,3): error TS2724: '"./memory-adapter.provider"' has no exported member named 'createMemoryAdapterProvidersAsync'. Did you mean 'createMemoryAdapterProviders'?
-src/lib/adapters/index.ts(41,40): error TS2724: '"./memory-adapter.provider"' has no exported member named 'createMemoryAdapterProvidersAsync'. Did you mean 'createMemoryAdapterProviders'?
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(14,25): error TS2305: Module '"../memory.adapter"' has no exported member 'EnterpriseMemoryWrapper'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(21,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(27,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(28,42): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(263,24): error TS7006: Parameter 'result' implicitly has an 'any' type.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(263,32): error TS7006: Parameter 'index' implicitly has an 'any' type.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(404,15): error TS6133: 'status' is declared but its value is never read.
-src/lib/adapters/__tests__/memory-adapter-integration.spec.ts(405,15): error TS6133: 'memory' is declared but its value is never read.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(12,1): error TS6133: 'BaseMemory' is declared but its value is never read.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(17,25): error TS2305: Module '"../memory.adapter"' has no exported member 'EnterpriseMemoryWrapper'.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(24,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(28,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-src/lib/adapters/__tests__/memory-adapter.spec.ts(34,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/constants/__tests__/memory-adapter-constants.spec.ts(21,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/constants/memory-adapter.constants.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/constants/memory-adapter.constants.ts'.
-src/lib/interfaces/__tests__/memory-adapter-interface.spec.ts(12,3): error TS6133: 'IMemoryCoreService' is declared but its value is never read.
-src/lib/interfaces/__tests__/memory-adapter-interface.spec.ts(21,8): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/dist/lib/interfaces/memory-adapter.interface.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/libs/nestjs-langgraph/src/lib/interfaces/memory-adapter.interface.ts'.
-Warning: command "tsc --build --emitDeclarationOnly" exited with non-zero status code
-———————————————————————————————————————————————————————————————————————————————————————————
+ NX   Running target serve for project dev-brand-api and 5 tasks it depends on:
+
+——————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+> nx run nestjs-neo4j:build
+
+Compiling TypeScript files for project "nestjs-neo4j"...
+Done compiling TypeScript files for project "nestjs-neo4j".
+
+..\..\dist\libs\nestjs-neo4j\CLAUDE.md
+
+..\..\dist\libs\nestjs-neo4j\README.md
+
+..\..\dist\libs\nestjs-neo4j\.spec.swcrc
+
+..\..\dist\libs\nestjs-neo4j\CLAUDE.md
+
+..\..\dist\libs\nestjs-neo4j\eslint.config.mjs
+
+..\..\dist\libs\nestjs-neo4j\jest.config.ts
+
+..\..\dist\libs\nestjs-neo4j\package.json
+
+..\..\dist\libs\nestjs-neo4j\project.json
+
+..\..\dist\libs\nestjs-neo4j\README.md
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\decorators\inject-neo4j.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\decorators\neo4j-safe.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\decorators\transactional.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\decorators\validate-neo4j-params.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\interfaces\neo4j-connection.interface.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\interfaces\neo4j-module-options.interface.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\interfaces\query-result.interface.ts
+
+..\..\..\..\dist\libs\nestjs-neo4j\src\lib\neo4j.module.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\services\neo4j-connection.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\services\neo4j-health.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-neo4j\src\lib\services\neo4j.service.ts
+
+..\..\dist\libs\nestjs-neo4j\tsconfig.json
+
+..\..\dist\libs\nestjs-neo4j\tsconfig.lib.json
+
+..\..\dist\libs\nestjs-neo4j\tsconfig.spec.json
+
+..\..\dist\libs\nestjs-neo4j\typedoc.json
+
+> nx run langgraph-modules/core:build
+
+Compiling TypeScript files for project "langgraph-modules/core"...
+Done compiling TypeScript files for project "langgraph-modules/core".
+
+..\..\..\dist\libs\langgraph-modules\core\README.md
+
+> nx run nestjs-chromadb:build
+
+Compiling TypeScript files for project "nestjs-chromadb"...
+Done compiling TypeScript files for project "nestjs-chromadb".
+
+..\..\dist\libs\nestjs-chromadb\CLAUDE.md
+
+..\..\dist\libs\nestjs-chromadb\README.md
+
+..\..\dist\libs\nestjs-chromadb\.spec.swcrc
+
+..\..\dist\libs\nestjs-chromadb\CLAUDE.md
+
+..\..\dist\libs\nestjs-chromadb\eslint.config.mjs
+
+..\..\dist\libs\nestjs-chromadb\jest.config.ts
+
+..\..\dist\libs\nestjs-chromadb\package.json
+
+..\..\dist\libs\nestjs-chromadb\project.json
+
+..\..\dist\libs\nestjs-chromadb\README.md
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\decorators\embed.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\decorators\inject-chromadb.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\decorators\inject-collection.decorator.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\embeddings\base.embedding.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\embeddings\cohere.embedding.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\embeddings\custom.embedding.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\embeddings\huggingface.embedding.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\embeddings\openai.embedding.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\errors\chromadb.errors.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\health\chromadb.health.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\interfaces\chromadb-module-options.interface.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\interfaces\chromadb-service.interface.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\interfaces\embedding-function.interface.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\interfaces\embedding-service.interface.ts
+
+..\..\..\..\dist\libs\nestjs-chromadb\src\lib\nestjs-chromadb.module.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\services\chroma-admin.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\services\chromadb.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\services\collection.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\services\embedding.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\services\metadata-extractor.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\services\text-splitter.service.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\utils\error.utils.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\utils\metadata.utils.ts
+
+..\..\..\..\..\dist\libs\nestjs-chromadb\src\lib\utils\vector.utils.ts
+
+..\..\dist\libs\nestjs-chromadb\tsconfig.json
+
+..\..\dist\libs\nestjs-chromadb\tsconfig.lib.json
+
+..\..\dist\libs\nestjs-chromadb\tsconfig.spec.json
+
+..\..\dist\libs\nestjs-chromadb\tsconfig.tsbuildinfo
+
+..\..\dist\libs\nestjs-chromadb\typedoc.json
+
+> nx run nestjs-langgraph:build
+
+Compiling TypeScript files for project "nestjs-langgraph"...
+Done compiling TypeScript files for project "nestjs-langgraph".
+
+..\..\dist\libs\nestjs-langgraph\CLAUDE.md
+
+..\..\dist\libs\nestjs-langgraph\README.md
+
+..\..\dist\libs\nestjs-langgraph\.spec.swcrc
+
+..\..\dist\libs\nestjs-langgraph\CLAUDE.md
+
+..\..\dist\libs\nestjs-langgraph\eslint.config.mjs
+
+..\..\dist\libs\nestjs-langgraph\jest.config.ts
+
+..\..\dist\libs\nestjs-langgraph\package.json
+
+..\..\dist\libs\nestjs-langgraph\project.json
+
+..\..\dist\libs\nestjs-langgraph\README.md
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\checkpoint-adapter.provider.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\checkpoint.adapter.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\memory-adapter.provider.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\memory.adapter.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\multi-agent-adapter.provider.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\multi-agent.adapter.ts
+
+..\..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\adapters\__tests__\memory-integration-bridge.spec.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\config\memory-integration.config.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\constants\memory-adapter.constants.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\interfaces\module-options.interface.ts
+
+..\..\..\..\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\providers\infrastructure.providers.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\providers\llm-provider.factory.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\providers\llm.providers.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\providers\module-exports.providers.ts
+
+..\..\..\..\..\dist\libs\nestjs-langgraph\src\lib\providers\module.providers.ts
+
+..\..\dist\libs\nestjs-langgraph\tsconfig.json
+
+..\..\dist\libs\nestjs-langgraph\tsconfig.lib.json
+
+..\..\dist\libs\nestjs-langgraph\tsconfig.spec.json
+
+..\..\dist\libs\nestjs-langgraph\tsconfig.tsbuildinfo
+
+..\..\dist\libs\nestjs-langgraph\typedoc.json
+
+> nx run dev-brand-api:build
+
+> webpack-cli build --node-env=production
+
+chunk (runtime: main) main.js (main) 207 KiB [entry] [rendered]
+webpack compiled successfully (e8e4598a6e3ae390)
+
+> nx run dev-brand-api:serve:development
+
+NX Daemon is not running. Node process will not restart automatically after file changes.
+ NX   Running target build for project dev-brand-api and 4 tasks it depends on:
+> nx run langgraph-modules/core:build  [local cache]
+> nx run nestjs-chromadb:build  [local cache]
+> nx run nestjs-neo4j:build  [local cache]
+> nx run nestjs-langgraph:build  [local cache]
+> nx run dev-brand-api:build:development
+> webpack-cli build --node-env=development
+chunk (runtime: main) main.js (main) 207 KiB [entry] [rendered]
+webpack compiled successfully (e0a39cc6e1ebc921)
+ NX   Successfully ran target build for project dev-brand-api and 4 tasks it depends on
+Nx read the output from the cache instead of running the command for 4 out of 5 tasks.
+Debugger listening on ws://localhost:9229/0dbbe8f2-829c-4945-9dd7-26fc21e00511
+Debugger listening on ws://localhost:9229/0dbbe8f2-829c-4945-9dd7-26fc21e00511
+For help, see: https://nodejs.org/en/docs/inspector
+
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [ChildModuleImportFactory] Attempting to load 3 child modules synchronously...
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [PathResolutionService] Resolved paths for checkpoint:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [PathResolutionService] Array(4) [
+  '@hive-academy/langgraph-checkpoint',
+  'D:\\projects\\nestjs-ai-saas-starter\\dist\\libs\\nestjs-langgraph\\langgraph-modules\\checkpoint\\src\\index.ts',
+  'D:\\projects\\nestjs-ai-saas-starter\\dist\\libs\\nestjs-langgraph\\langgraph-modules\\checkpoint\\src\\index.js',
+  './libs/langgraph-modules/checkpoint/src/index'
+]
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: @hive-academy/langgraph-checkpoint
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for @hive-academy/langgraph-checkpoint:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-checkpoint\src\index.js'
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\checkpoint\src\index.ts
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\checkpoint\src\index.ts:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\checkpoint\src\index.ts'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\checkpoint\src\index.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\checkpoint\src\index.js:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\checkpoint\src\index.js'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: ./libs/langgraph-modules/checkpoint/src/index
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for ./libs/langgraph-modules/checkpoint/src/index:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module './libs/langgraph-modules/checkpoint/src/index'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM    WARN [ChildModuleImportFactory] All loading attempts failed for module: checkpoint
+[Nest] 120656  - 08/25/2025, 10:33:38 PM    WARN [ChildModuleImportFactory] ⚠️ Module checkpoint not available, graceful degradation enabled
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [PathResolutionService] Resolved paths for hitl:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [PathResolutionService] Array(4) [
+  '@hive-academy/langgraph-hitl',
+  'D:\\projects\\nestjs-ai-saas-starter\\dist\\libs\\nestjs-langgraph\\langgraph-modules\\hitl\\src\\index.ts',
+  'D:\\projects\\nestjs-ai-saas-starter\\dist\\libs\\nestjs-langgraph\\langgraph-modules\\hitl\\src\\index.js',
+  './libs/langgraph-modules/hitl/src/index'
+]
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: @hive-academy/langgraph-hitl
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for @hive-academy/langgraph-hitl:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-hitl\dist\index.js'
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\hitl\src\index.ts
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\hitl\src\index.ts:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\hitl\src\index.ts'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\hitl\src\index.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\hitl\src\index.js:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\hitl\src\index.js'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: ./libs/langgraph-modules/hitl/src/index
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for ./libs/langgraph-modules/hitl/src/index:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module './libs/langgraph-modules/hitl/src/index'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM    WARN [ChildModuleImportFactory] All loading attempts failed for module: hitl
+[Nest] 120656  - 08/25/2025, 10:33:38 PM    WARN [ChildModuleImportFactory] ⚠️ Module hitl not available, graceful degradation enabled
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [PathResolutionService] Resolved paths for streaming:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [PathResolutionService] Array(4) [
+  '@hive-academy/langgraph-streaming',
+  'D:\\projects\\nestjs-ai-saas-starter\\dist\\libs\\nestjs-langgraph\\langgraph-modules\\streaming\\src\\index.ts',
+  'D:\\projects\\nestjs-ai-saas-starter\\dist\\libs\\nestjs-langgraph\\langgraph-modules\\streaming\\src\\index.js',
+  './libs/langgraph-modules/streaming/src/index'
+]
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: @hive-academy/langgraph-streaming
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for @hive-academy/langgraph-streaming:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-streaming\src\index.js'
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\streaming\src\index.ts
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\streaming\src\index.ts:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\streaming\src\index.ts'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\streaming\src\index.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\streaming\src\index.js:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module 'D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\langgraph-modules\streaming\src\index.js'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Trying to load module from: ./libs/langgraph-modules/streaming/src/index
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Require failed for ./libs/langgraph-modules/streaming/src/index:
+[Nest] 120656  - 08/25/2025, 10:33:38 PM   DEBUG [ChildModuleImportFactory] Cannot find module './libs/langgraph-modules/streaming/src/index'
+Require stack:
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\child-module-imports.providers.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\providers\index.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\lib\nestjs-langgraph.module.js
+- D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-langgraph\src\index.js
+- D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js
+[Nest] 120656  - 08/25/2025, 10:33:38 PM    WARN [ChildModuleImportFactory] All loading attempts failed for module: streaming
+[Nest] 120656  - 08/25/2025, 10:33:38 PM    WARN [ChildModuleImportFactory] ⚠️ Module streaming not available, graceful degradation enabled
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [ChildModuleImportFactory] Loaded 0/3 child modules
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [NestFactory] Starting Nest application... +143ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [LLMProviderFactory] Created OpenAI provider with model: gpt-3.5-turbo
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] AppModule dependencies initialized +1ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] DevbrandBackendFeatureModule dependencies initialized +0ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] ConfigHostModule dependencies initialized +0ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] HttpModule dependencies initialized +0ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [CheckpointAdapter] Using fallback SQLite checkpoint implementation
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] DiscoveryModule dependencies initialized +1ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] ConfigModule dependencies initialized +2ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] ConfigModule dependencies initialized +0ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] EventEmitterModule dependencies initialized +0ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [EmbeddingService] Initialized huggingface embedding provider
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] Neo4jModule dependencies initialized +1ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] ChromaDBModule dependencies initialized +7ms
+[Nest] 120656  - 08/25/2025, 10:33:38 PM     LOG [InstanceLoader] AgenticMemoryModule dependencies initialized +0ms
+[Nest] 120656  - 08/25/2025, 10:33:39 PM     LOG [InstanceLoader] NestjsLanggraphModule dependencies initialized +273ms
+[Nest] 120656  - 08/25/2025, 10:33:39 PM    WARN [Neo4jConnectionService] Failed to connect to Neo4j (attempt 1/5): The client is unauthorized due to authentication failure.
+[Nest] 120656  - 08/25/2025, 10:33:44 PM    WARN [Neo4jConnectionService] Failed to connect to Neo4j (attempt 2/5): The client is unauthorized due to authentication failure.
+[Nest] 120656  - 08/25/2025, 10:33:49 PM    WARN [Neo4jConnectionService] Failed to connect to Neo4j (attempt 3/5): The client is unauthorized due to authentication failure.
+[Nest] 120656  - 08/25/2025, 10:33:54 PM    WARN [Neo4jConnectionService] Failed to connect to Neo4j (attempt 4/5): The client has provided incorrect authentication details too many times in a row.
+[Nest] 120656  - 08/25/2025, 10:34:00 PM    WARN [Neo4jConnectionService] Failed to connect to Neo4j (attempt 5/5): The client is unauthorized due to authentication failure.
+
+
+D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-neo4j\src\lib\services\neo4j-connection.service.js:42
+                    throw new Error(`Failed to connect to Neo4j after ${maxRetries} attempts: ${message}`);
+                          ^
+Error: Failed to connect to Neo4j after 5 attempts: The client is unauthorized due to authentication failure.
+    at Neo4jConnectionService.connect (D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-neo4j\src\lib\services\neo4j-connection.service.js:42:27)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Neo4jConnectionService.onModuleInit (D:\projects\nestjs-ai-saas-starter\dist\libs\nestjs-neo4j\src\lib\services\neo4j-connection.service.js:18:9)
+    at async Promise.all (index 0)
+    at callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+    at NestApplication.callInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application-context.js:242:13)
+    at NestApplication.init (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application.js:103:9)
+    at NestApplication.listen (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application.js:175:13)
+    at bootstrap (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\webpack:\@nestjs-ai-saas-starter\dev-brand-api\src\main.ts:37:1)

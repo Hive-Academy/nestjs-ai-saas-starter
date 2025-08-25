@@ -4,6 +4,23 @@
   "sourceRoot": "libs/langgraph-modules/checkpoint/src",
   "projectType": "library",
   "tags": ["domain:langgraph", "type:data-access", "module:checkpoint"],
-  "// targets": "to see all targets run: nx show project langgraph-modules/checkpoint --web",
-  "targets": {}
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/langgraph-modules/checkpoint",
+        "main": "libs/langgraph-modules/checkpoint/src/index.ts",
+        "tsConfig": "libs/langgraph-modules/checkpoint/tsconfig.lib.json",
+        "assets": [
+          "libs/langgraph-modules/checkpoint/*.md",
+          {
+            "input": "./libs/langgraph-modules/checkpoint",
+            "glob": "**/*.!(ts)",
+            "output": "./"
+          }
+        ]
+      }
+    }
+  }
 }
