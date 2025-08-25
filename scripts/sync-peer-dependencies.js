@@ -2,7 +2,7 @@
 
 /**
  * Sync Peer Dependencies Script
- * 
+ *
  * This script ensures that all publishable libraries have peer dependencies
  * that match the versions in the root package.json, preventing version
  * mismatches when libraries are published and consumed.
@@ -10,7 +10,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const chalk = require('chalk');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const rootPackagePath = path.join(ROOT_DIR, 'package.json');
@@ -19,7 +18,7 @@ const rootPackagePath = path.join(ROOT_DIR, 'package.json');
 const PUBLISHABLE_LIBRARIES = [
   'libs/nestjs-chromadb',
   'libs/nestjs-neo4j',
-  'libs/nestjs-langgraph'
+  'libs/nestjs-langgraph',
 ];
 
 // Dependencies that should be treated as peer dependencies for libraries
@@ -32,26 +31,26 @@ const PEER_DEPENDENCY_PATTERNS = [
   'langchain',
   '@langchain/',
   'openai',
-  'cohere-ai'
+  'cohere-ai',
 ];
 
 function log(message, type = 'info') {
   const timestamp = new Date().toISOString().substr(11, 8);
   const prefix = `[${timestamp}]`;
-  
+
   switch (type) {
     case 'success':
-      console.log(chalk.green(`${prefix} ✅ ${message}`));
+      console.log(`${prefix} ✅ ${message}`);
       break;
     case 'warning':
-      console.log(chalk.yellow(`${prefix} ⚠️  ${message}`));
+      console.log(`${prefix} ⚠️  ${message}`);
       break;
     case 'error':
-      console.log(chalk.red(`${prefix} ❌ ${message}`));
+      console.log(`${prefix} ❌ ${message}`);
       break;
     case 'info':
     default:
-      console.log(chalk.blue(`${prefix} ℹ️  ${message}`));
+      console.log(`${prefix} ℹ️  ${message}`);
       break;
   }
 }
@@ -76,12 +75,14 @@ function savePackageJson(packagePath, packageData) {
 }
 
 function shouldBePeerDependency(depName) {
-  return PEER_DEPENDENCY_PATTERNS.some(pattern => depName.startsWith(pattern));
+  return PEER_DEPENDENCY_PATTERNS.some((pattern) =>
+    depName.startsWith(pattern)
+  );
 }
 
 function syncLibraryDependencies(libPath, rootPackage) {
   const packagePath = path.join(ROOT_DIR, libPath, 'package.json');
-  
+
   if (!fs.existsSync(packagePath)) {
     log(`Package.json not found for ${libPath}`, 'warning');
     return false;
@@ -96,29 +97,41 @@ function syncLibraryDependencies(libPath, rootPackage) {
   }
 
   // Sync existing peer dependencies with root versions
-  for (const [depName, currentVersion] of Object.entries(libPackage.peerDependencies)) {
+  for (const [depName, currentVersion] of Object.entries(
+    libPackage.peerDependencies
+  )) {
     if (rootPackage.dependencies[depName]) {
       const rootVersion = rootPackage.dependencies[depName];
       if (currentVersion !== rootVersion) {
-        log(`${libPath}: Updating ${depName} from ${currentVersion} to ${rootVersion}`);
+        log(
+          `${libPath}: Updating ${depName} from ${currentVersion} to ${rootVersion}`
+        );
         libPackage.peerDependencies[depName] = rootVersion;
         hasChanges = true;
       }
     } else if (rootPackage.devDependencies[depName]) {
       const rootVersion = rootPackage.devDependencies[depName];
       if (currentVersion !== rootVersion) {
-        log(`${libPath}: Updating ${depName} from ${currentVersion} to ${rootVersion} (from devDependencies)`);
+        log(
+          `${libPath}: Updating ${depName} from ${currentVersion} to ${rootVersion} (from devDependencies)`
+        );
         libPackage.peerDependencies[depName] = rootVersion;
         hasChanges = true;
       }
     } else {
-      log(`${libPath}: Peer dependency ${depName} not found in root package.json`, 'warning');
+      log(
+        `${libPath}: Peer dependency ${depName} not found in root package.json`,
+        'warning'
+      );
     }
   }
 
   // Add missing peer dependencies from root dependencies
   for (const [depName, version] of Object.entries(rootPackage.dependencies)) {
-    if (shouldBePeerDependency(depName) && !libPackage.peerDependencies[depName]) {
+    if (
+      shouldBePeerDependency(depName) &&
+      !libPackage.peerDependencies[depName]
+    ) {
       log(`${libPath}: Adding missing peer dependency ${depName}@${version}`);
       libPackage.peerDependencies[depName] = version;
       hasChanges = true;
@@ -154,7 +167,7 @@ function syncLibraryDependencies(libPath, rootPackage) {
   const sortedPeerDeps = {};
   Object.keys(libPackage.peerDependencies)
     .sort()
-    .forEach(key => {
+    .forEach((key) => {
       sortedPeerDeps[key] = libPackage.peerDependencies[key];
     });
   libPackage.peerDependencies = sortedPeerDeps;
@@ -179,7 +192,7 @@ function validateDependencies(rootPackage) {
     '@nestjs/common',
     '@nestjs/core',
     'reflect-metadata',
-    'rxjs'
+    'rxjs',
   ];
 
   for (const dep of criticalDeps) {
@@ -190,9 +203,13 @@ function validateDependencies(rootPackage) {
 
   // Check for version conflicts in devDependencies vs dependencies
   for (const [depName, version] of Object.entries(rootPackage.dependencies)) {
-    if (rootPackage.devDependencies[depName] && 
-        rootPackage.devDependencies[depName] !== version) {
-      issues.push(`Version conflict for ${depName}: ${version} (deps) vs ${rootPackage.devDependencies[depName]} (devDeps)`);
+    if (
+      rootPackage.devDependencies[depName] &&
+      rootPackage.devDependencies[depName] !== version
+    ) {
+      issues.push(
+        `Version conflict for ${depName}: ${version} (deps) vs ${rootPackage.devDependencies[depName]} (devDeps)`
+      );
     }
   }
 
@@ -202,21 +219,21 @@ function validateDependencies(rootPackage) {
 function generateReport(results) {
   log('\n📊 Synchronization Report:', 'info');
   log('─'.repeat(50), 'info');
-  
-  const updatedLibs = results.filter(r => r.updated);
+
+  const updatedLibs = results.filter((r) => r.updated);
   const totalLibs = results.length;
-  
+
   log(`Total libraries processed: ${totalLibs}`);
   log(`Libraries updated: ${updatedLibs.length}`);
   log(`Libraries up-to-date: ${totalLibs - updatedLibs.length}`);
-  
+
   if (updatedLibs.length > 0) {
     log('\nUpdated libraries:', 'success');
-    updatedLibs.forEach(result => {
+    updatedLibs.forEach((result) => {
       log(`  • ${result.library}`, 'success');
     });
   }
-  
+
   log('─'.repeat(50), 'info');
 }
 
@@ -226,13 +243,17 @@ async function main() {
   try {
     // Load root package.json
     const rootPackage = loadPackageJson(rootPackagePath);
-    log(`Loaded root package.json (${Object.keys(rootPackage.dependencies || {}).length} dependencies)`);
+    log(
+      `Loaded root package.json (${
+        Object.keys(rootPackage.dependencies || {}).length
+      } dependencies)`
+    );
 
     // Validate root dependencies
     const validationIssues = validateDependencies(rootPackage);
     if (validationIssues.length > 0) {
       log('Validation issues found:', 'warning');
-      validationIssues.forEach(issue => log(`  • ${issue}`, 'warning'));
+      validationIssues.forEach((issue) => log(`  • ${issue}`, 'warning'));
     }
 
     // Process each publishable library
@@ -249,12 +270,13 @@ async function main() {
     // Final recommendations
     log('\n🔍 Next steps:', 'info');
     log('1. Run `npm run build:libs` to verify builds work');
-    log('2. Run `npx nx run-many -t lint --fix` to apply @nx/dependency-checks');
+    log(
+      '2. Run `npx nx run-many -t lint --fix` to apply @nx/dependency-checks'
+    );
     log('3. Run `npm run publish:dry-run` to test publishing');
     log('4. Consider running `npm audit` to check for security issues');
 
     log('\n✅ Peer dependency synchronization completed!', 'success');
-
   } catch (error) {
     log(`Synchronization failed: ${error.message}`, 'error');
     process.exit(1);
@@ -263,7 +285,7 @@ async function main() {
 
 // Run the script
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error('Unhandled error:', error);
     process.exit(1);
   });
@@ -272,5 +294,5 @@ if (require.main === module) {
 module.exports = {
   syncLibraryDependencies,
   validateDependencies,
-  shouldBePeerDependency
+  shouldBePeerDependency,
 };
