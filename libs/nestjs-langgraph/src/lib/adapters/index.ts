@@ -126,23 +126,41 @@ import type { LangGraphModuleOptions } from '../interfaces/module-options.interf
 
 /**
  * Create all adapter providers (sync)
+ * Simple approach: provide all adapters directly
  */
 export function createAdapterProviders(options?: LangGraphModuleOptions) {
   return [
-    ...createCheckpointAdapterProviders(options),
-    ...createMemoryAdapterProviders(),
-    ...createMultiAgentAdapterProviders(),
+    // Direct adapter providers - all adapters are self-contained
+    ...ADAPTER_EXPORTS,
+
+    // Only include complex providers for adapters that need them
+    ...createCheckpointAdapterProviders(options).filter(
+      (p) => p !== CheckpointAdapter
+    ),
+    ...createMemoryAdapterProviders().filter((p) => p !== MemoryAdapter),
+    ...createMultiAgentAdapterProviders().filter(
+      (p) => p !== MultiAgentAdapter
+    ),
   ];
 }
 
 /**
  * Create all adapter providers (async)
+ * Simple approach: provide all adapters directly
  */
 export function createAdapterProvidersAsync() {
   return [
-    ...createCheckpointAdapterProvidersAsync(),
-    ...createMemoryAdapterProvidersAsync(),
-    ...createMultiAgentAdapterProvidersAsync(),
+    // Direct adapter providers - all adapters are self-contained
+    ...ADAPTER_EXPORTS,
+
+    // Only include complex providers for adapters that need them
+    ...createCheckpointAdapterProvidersAsync().filter(
+      (p) => p !== CheckpointAdapter
+    ),
+    ...createMemoryAdapterProvidersAsync().filter((p) => p !== MemoryAdapter),
+    ...createMultiAgentAdapterProvidersAsync().filter(
+      (p) => p !== MultiAgentAdapter
+    ),
   ];
 }
 

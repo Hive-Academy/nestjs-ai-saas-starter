@@ -16,6 +16,10 @@ import { getNestLanggraphConfig } from './config/nestjs-langgraph.config';
 import { getChromaDBConfig } from './config/chromadb.config';
 import { getNeo4jConfig } from './config/neo4j.config';
 
+// Test services and controllers for Phase 1 verification
+import { AdapterTestService } from './services/adapter-test.service';
+import { AdapterTestController } from './controllers/adapter-test.controller';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -65,6 +69,14 @@ import { getNeo4jConfig } from './config/neo4j.config';
       }),
     }),
     DevbrandBackendFeatureModule,
+  ],
+  providers: [
+    // Phase 1 test service to verify adapter injection
+    AdapterTestService,
+  ],
+  controllers: [
+    // Phase 1 test controller to expose verification endpoints
+    AdapterTestController,
   ],
   exports: [
     // Export AgenticMemoryModule so other modules can use it

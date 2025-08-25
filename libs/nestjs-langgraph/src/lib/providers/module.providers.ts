@@ -1,15 +1,17 @@
 import type { Provider } from '@nestjs/common';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
-import {
-  LANGGRAPH_MODULE_OPTIONS,
-  LANGGRAPH_MODULE_ID,
-} from '../constants';
+import { LANGGRAPH_MODULE_OPTIONS, LANGGRAPH_MODULE_ID } from '../constants';
 
 import {
   createLLMProviders,
   createInfrastructureProviders,
   createInfrastructureProvidersAsync,
 } from './index';
+
+import {
+  createAdapterProviders,
+  createAdapterProvidersAsync,
+} from '../adapters';
 
 /**
  * Create all module providers in one organized function
@@ -34,7 +36,7 @@ export function createModuleProviders(
     moduleIdProvider,
     ...createLLMProviders(options),
     ...createInfrastructureProviders(options),
-    // Child module providers handled via adapters
+    ...createAdapterProviders(options), // Add adapter providers
   ];
 }
 
@@ -56,6 +58,6 @@ export function createModuleProvidersAsync(
     ...asyncProviders,
     ...createLLMProviders(options),
     ...createInfrastructureProvidersAsync(),
-    // Child module providers handled via adapters
+    ...createAdapterProvidersAsync(), // Add adapter providers for async config
   ];
 }
