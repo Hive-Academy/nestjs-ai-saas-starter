@@ -13,6 +13,9 @@ export * from './lib/providers';
 // Adapters for child module integration
 export * from './lib/adapters';
 
+// Memory architecture consolidation
+export * from './lib/memory';
+
 export type * from './lib/interfaces/module-options.interface';
 
 // =============================================================================
