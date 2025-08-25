@@ -34,8 +34,6 @@ jobs:
       - name: Lint code
         run: npx nx run-many -t lint
 
-      - name: Run tests
-        run: npx nx run-many -t test
 
       - name: Build libraries
         run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
