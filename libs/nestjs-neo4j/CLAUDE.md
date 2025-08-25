@@ -5,9 +5,11 @@ This file provides comprehensive guidance for working with the `@hive-academy/ne
 ## Business Domain and Purpose
 
 ### Core Purpose
+
 The `@hive-academy/nestjs-neo4j` library provides seamless integration between NestJS applications and Neo4j graph databases, enabling sophisticated relationship modeling and graph-based data operations for AI-powered applications.
 
 ### Key Value Propositions
+
 - **Graph Relationships**: Model complex relationships between entities with native graph traversal
 - **Real-time Analytics**: Perform complex graph analytics for recommendations and insights
 - **Knowledge Graphs**: Build AI knowledge graphs with semantic relationships
@@ -16,6 +18,7 @@ The `@hive-academy/nestjs-neo4j` library provides seamless integration between N
 - **Fraud Detection**: Identify suspicious patterns through relationship analysis
 
 ### Business Use Cases
+
 - **AI Agent Knowledge**: Store agent knowledge as interconnected concepts and relationships
 - **User Behavior Analysis**: Track user journeys and interaction patterns
 - **Content Recommendation**: Suggest content based on user preferences and similarity networks
@@ -26,7 +29,8 @@ The `@hive-academy/nestjs-neo4j` library provides seamless integration between N
 ## Technical Architecture
 
 ### Module Architecture Pattern
-The library follows NestJS module patterns with three configuration approaches:
+
+The library follows NestJS module patterns with three configuration approaches and enhanced type safety:
 
 ```typescript
 // Synchronous configuration
@@ -34,7 +38,7 @@ Neo4jModule.forRoot({
   uri: 'bolt://localhost:7687',
   username: 'neo4j',
   password: 'password',
-  database: 'neo4j'
+  database: 'neo4j',
 });
 
 // Asynchronous configuration
@@ -43,17 +47,33 @@ Neo4jModule.forRootAsync({
     uri: configService.get('NEO4J_URI'),
     username: configService.get('NEO4J_USERNAME'),
     password: configService.get('NEO4J_PASSWORD'),
-    database: configService.get('NEO4J_DATABASE')
+    database: configService.get('NEO4J_DATABASE'),
   }),
-  inject: [ConfigService]
+  inject: [ConfigService],
 });
 
 // Feature-specific databases
-Neo4jModule.forFeature(['users', 'analytics'])
+Neo4jModule.forFeature(['users', 'analytics']);
+```
+
+#### Enhanced Module Options Interface
+
+Recent improvements to the `Neo4jModuleAsyncOptions` interface provide better type safety:
+
+```typescript
+export interface Neo4jModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+  useExisting?: Type<Neo4jModuleOptionsFactory>;
+  useClass?: Type<Neo4jModuleOptionsFactory>;
+  useFactory?: (...args: unknown[]) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
+  // Enhanced with stricter type definition for dependency injection
+  inject?: Array<Type | string | symbol | { token: string | symbol; optional: boolean }>;
+}
 ```
 
 ### Connection Pooling Strategy
+
 The library implements sophisticated connection pooling with:
+
 - **Automatic Pool Management**: Configurable pool size and connection lifecycle
 - **Connection Health Monitoring**: Automatic health checks and retry mechanisms
 - **Resource Cleanup**: Proper session and transaction cleanup
@@ -70,7 +90,9 @@ const DEFAULT_NEO4J_CONFIG = {
 ```
 
 ### Transaction Management Architecture
+
 Multi-layer transaction support with:
+
 - **Declarative Transactions**: `@Transactional()` decorator for automatic transaction management
 - **Manual Transactions**: Direct session and transaction control
 - **Nested Transactions**: Context-aware transaction nesting
@@ -79,32 +101,24 @@ Multi-layer transaction support with:
 ## Core Patterns
 
 ### Repository Pattern Implementation
+
 Implement repositories for domain-specific graph operations:
 
 ```typescript
 @Injectable()
 export class UserRepository {
-  constructor(
-    @InjectNeo4j() private readonly neo4j: Neo4jService
-  ) {}
+  constructor(@InjectNeo4j() private readonly neo4j: Neo4jService) {}
 
   @Transactional()
   async createUser(userData: CreateUserDto): Promise<User> {
     return this.neo4j.write(async (session) => {
-      const result = await session.run(
-        'CREATE (u:User $props) RETURN u',
-        { props: userData }
-      );
+      const result = await session.run('CREATE (u:User $props) RETURN u', { props: userData });
       return result.records[0].get('u').properties;
     });
   }
 
   async findConnectedUsers(userId: string, hops = 2): Promise<User[]> {
-    const query = cypher()
-      .match('(u:User {id: $userId})')
-      .match(`(u)-[*1..${hops}]-(connected:User)`)
-      .return('DISTINCT connected')
-      .build();
+    const query = cypher().match('(u:User {id: $userId})').match(`(u)-[*1..${hops}]-(connected:User)`).return('DISTINCT connected').build();
 
     return this.neo4j.readQuery(query.cypher, query.parameters);
   }
@@ -112,13 +126,12 @@ export class UserRepository {
 ```
 
 ### @Transactional Decorator Pattern
+
 The `@Transactional` decorator provides declarative transaction management:
 
 ```typescript
 export class PostService {
-  constructor(
-    @InjectNeo4j() private readonly neo4j: Neo4jService
-  ) {}
+  constructor(@InjectNeo4j() private readonly neo4j: Neo4jService) {}
 
   @Transactional({ database: 'social' })
   async createPostWithTags(postData: CreatePostDto, tags: string[]): Promise<Post> {
@@ -138,20 +151,11 @@ export class PostService {
 ```
 
 ### Query Builder Pattern
+
 Fluent Cypher query construction with type safety:
 
 ```typescript
-const complexQuery = cypher()
-  .match('(u:User {active: true})')
-  .optionalMatch('(u)-[:FOLLOWS]->(following:User)')
-  .where('u.lastLogin > $minDate', { minDate: thirtyDaysAgo })
-  .andWhere('following.verified = true')
-  .with('u, count(following) as followingCount')
-  .orderBy('followingCount', 'DESC')
-  .skip(offset)
-  .limit(pageSize)
-  .return('u, followingCount')
-  .build();
+const complexQuery = cypher().match('(u:User {active: true})').optionalMatch('(u)-[:FOLLOWS]->(following:User)').where('u.lastLogin > $minDate', { minDate: thirtyDaysAgo }).andWhere('following.verified = true').with('u, count(following) as followingCount').orderBy('followingCount', 'DESC').skip(offset).limit(pageSize).return('u, followingCount').build();
 
 const results = await neo4jService.run(complexQuery.cypher, complexQuery.parameters);
 ```
@@ -159,6 +163,7 @@ const results = await neo4jService.run(complexQuery.cypher, complexQuery.paramet
 ## Best Practices for Graph Modeling
 
 ### Node Design Principles
+
 1. **Single Responsibility**: Each node type should represent one clear entity
 2. **Property Indexing**: Index frequently queried properties for performance
 3. **Label Strategy**: Use hierarchical labels for classification
@@ -177,6 +182,7 @@ CREATE (a:User:Admin:Person { ... })
 ```
 
 ### Relationship Modeling Best Practices
+
 1. **Relationship Direction**: Model natural direction of relationships
 2. **Relationship Properties**: Store relationship metadata as properties
 3. **Relationship Types**: Use descriptive, action-oriented relationship types
@@ -194,6 +200,7 @@ CREATE (u1:User)-[:FRIENDS_WITH { since: $date }]-(u2:User)
 ```
 
 ### Graph Schema Design
+
 1. **Avoid Deep Nesting**: Limit relationship chains to 3-4 hops for performance
 2. **Denormalization**: Duplicate frequently accessed properties
 3. **Aggregate Nodes**: Create summary nodes for heavy aggregations
@@ -210,30 +217,32 @@ CREATE (u:User)-[:HAS_STATS]->(stats:UserStats {
 ## Key Services
 
 ### Neo4jService - Core Operations
+
 Primary service for all graph operations:
 
 ```typescript
 @Injectable()
 export class GraphDataService {
-  constructor(
-    @InjectNeo4j() private readonly neo4j: Neo4jService
-  ) {}
+  constructor(@InjectNeo4j() private readonly neo4j: Neo4jService) {}
 
   // High-performance read operations
   async getRecommendations(userId: string): Promise<Recommendation[]> {
     return this.neo4j.read(async (session) => {
-      const result = await session.run(`
+      const result = await session.run(
+        `
         MATCH (u:User {id: $userId})-[:LIKES]->(p:Product)
         MATCH (p)<-[:LIKES]-(other:User)-[:LIKES]->(rec:Product)
         WHERE NOT (u)-[:LIKES]->(rec)
         RETURN rec, count(*) as score
         ORDER BY score DESC
         LIMIT 10
-      `, { userId });
-      
-      return result.records.map(r => ({
+      `,
+        { userId }
+      );
+
+      return result.records.map((r) => ({
         product: r.get('rec').properties,
-        score: r.get('score').toNumber()
+        score: r.get('score').toNumber(),
       }));
     });
   }
@@ -242,7 +251,7 @@ export class GraphDataService {
   async createRelationshipNetwork(operations: NetworkOperation[]): Promise<void> {
     await this.neo4j.write(async (session) => {
       const tx = session.beginTransaction();
-      
+
       try {
         for (const op of operations) {
           await tx.run(op.query, op.params);
@@ -258,6 +267,7 @@ export class GraphDataService {
 ```
 
 ### Neo4jConnectionService - Connection Management
+
 Handles database connections, health checks, and automatic retries:
 
 ```typescript
@@ -275,39 +285,104 @@ if (!isHealthy) {
 ```
 
 ### Neo4jHealthService - Health Monitoring
-Comprehensive health monitoring for production environments:
+
+Comprehensive health monitoring for production environments with enhanced metrics:
 
 ```typescript
 @Controller('health')
 export class HealthController {
-  constructor(
-    private readonly neo4jHealth: Neo4jHealthService
-  ) {}
+  constructor(private readonly neo4jHealth: Neo4jHealthService) {}
 
   @Get('neo4j')
   async checkNeo4jHealth() {
     const health = await this.neo4jHealth.checkHealth();
     // Returns: { name: 'neo4j', status: 'up', message: 'Neo4j is healthy', details: {...} }
-    
+
     return {
       status: health.status,
       database: health.details?.database,
       version: health.details?.version,
-      responseTime: health.details?.responseTime
+      responseTime: health.details?.responseTime,
     };
   }
 
   @Get('metrics')
   async getNeo4jMetrics() {
     return this.neo4jHealth.getMetrics();
-    // Returns: { nodes: 10000, relationships: 25000, labels: 5, ... }
+    // Enhanced metrics now support more complex data types and APOC integration
+    // Returns: {
+    //   nodes: 10000,
+    //   relationships: 25000,
+    //   labels: 5,
+    //   propertyKeys: 25,
+    //   relationshipTypes: 8,
+    //   apocStats: {...} // APOC metadata if available
+    // }
   }
 }
 ```
 
+#### Enhanced Health Monitoring Features
+
+The service now includes improved type safety and APOC integration:
+
+- **Extended Metrics Types**: Support for `Record<string, number | string | object>` allowing complex metric data
+- **APOC Integration**: Automatic detection and utilization of APOC procedures for advanced statistics
+- **Better Error Handling**: Graceful fallback when APOC is not available
+- **Improved Type Safety**: Enhanced TypeScript definitions for metrics and health data
+
+## Enhanced Query Result Processing
+
+### Improved Notification Handling
+
+The library now provides enhanced processing of Neo4j query notifications with better type safety:
+
+```typescript
+// Enhanced notification processing with type-safe position information
+interface EnhancedNotification {
+  code: string;
+  title: string;
+  description: string;
+  severity: 'WARNING' | 'INFORMATION' | 'UNKNOWN';
+  position?: {
+    offset: number;
+    line: number;
+    column: number;
+  };
+}
+
+// Automatic notification mapping in query results
+const result = await this.neo4j.run(query, params);
+console.log('Query notifications:', result.summary.notifications);
+// Each notification now includes proper type checking for position information
+```
+
+### Robust Summary Processing
+
+Enhanced query summary processing with null safety:
+
+```typescript
+// The service now handles undefined plan/profile data gracefully
+const queryResult = await this.neo4j.run(complexQuery, params);
+const summary = queryResult.summary;
+
+// These properties are now properly handled with null checks
+console.log('Execution plan:', summary.plan || 'No plan available');
+console.log('Profile data:', summary.profile || 'No profile data');
+console.log('Notifications:', summary.notifications.length, 'notifications received');
+```
+
+### Key Enhancements
+
+- **Type-Safe Notifications**: Proper TypeScript definitions for query notifications
+- **Position Information**: Safe extraction of position data from notifications
+- **Null Safety**: Graceful handling of undefined plan/profile data
+- **Enhanced Error Context**: Better error reporting with notification details
+
 ## Testing Strategies
 
 ### Unit Testing with Mocks
+
 Mock Neo4j services for isolated unit testing:
 
 ```typescript
@@ -323,10 +398,7 @@ describe('UserService', () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
-        UserService,
-        { provide: Neo4jService, useValue: mockNeo4jService },
-      ],
+      providers: [UserService, { provide: Neo4jService, useValue: mockNeo4jService }],
     }).compile();
 
     service = module.get<UserService>(UserService);
@@ -345,6 +417,7 @@ describe('UserService', () => {
 ```
 
 ### Integration Testing with TestContainers
+
 Test with real Neo4j instances using Docker containers:
 
 ```typescript
@@ -357,7 +430,7 @@ describe('Neo4j Integration', () => {
       .withExposedPorts(7687)
       .withEnvironment({
         NEO4J_AUTH: 'neo4j/testpassword',
-        NEO4J_PLUGINS: '["apoc"]'
+        NEO4J_PLUGINS: '["apoc"]',
       })
       .start();
 
@@ -366,10 +439,10 @@ describe('Neo4j Integration', () => {
         Neo4jModule.forRoot({
           uri: `bolt://localhost:${neo4jContainer.getMappedPort(7687)}`,
           username: 'neo4j',
-          password: 'testpassword'
-        })
+          password: 'testpassword',
+        }),
       ],
-      providers: [GraphService]
+      providers: [GraphService],
     }).compile();
 
     neo4jService = module.get<Neo4jService>(Neo4jService);
@@ -395,13 +468,14 @@ describe('Neo4j Integration', () => {
 ```
 
 ### Performance Testing
+
 Test graph operations under load:
 
 ```typescript
 describe('Performance Tests', () => {
   it('should handle concurrent reads efficiently', async () => {
     const startTime = Date.now();
-    const promises = Array.from({ length: 100 }, () => 
+    const promises = Array.from({ length: 100 }, () =>
       neo4jService.read(async (session) => {
         const result = await session.run('MATCH (n:User) RETURN count(n) as count');
         return result.records[0].get('count').toNumber();
@@ -420,6 +494,7 @@ describe('Performance Tests', () => {
 ## Performance Considerations
 
 ### Query Optimization Strategies
+
 1. **Index Critical Properties**: Create indexes on frequently queried node properties
 2. **Profile Queries**: Use PROFILE to identify bottlenecks
 3. **Limit Result Sets**: Always use LIMIT clauses for large datasets
@@ -443,6 +518,7 @@ WHERE u.active = true AND f.verified = true
 ```
 
 ### Connection Pooling Optimization
+
 Configure connection pools based on application load:
 
 ```typescript
@@ -451,25 +527,26 @@ Neo4jModule.forRoot({
   username: 'neo4j',
   password: 'password',
   config: {
-    maxConnectionPoolSize: 50,          // Adjust based on concurrent users
+    maxConnectionPoolSize: 50, // Adjust based on concurrent users
     connectionAcquisitionTimeout: 60000, // Wait time for connection
-    maxConnectionLifetime: 3600000,      // 1 hour connection lifetime
-    connectionTimeout: 30000,            // Connection establishment timeout
-    maxTransactionRetryTime: 30000,      // Transaction retry timeout
-  }
+    maxConnectionLifetime: 3600000, // 1 hour connection lifetime
+    connectionTimeout: 30000, // Connection establishment timeout
+    maxTransactionRetryTime: 30000, // Transaction retry timeout
+  },
 });
 ```
 
 ### Bulk Operations Performance
+
 Use batch operations for large datasets:
 
 ```typescript
 async bulkCreateUsers(users: CreateUserDto[]): Promise<void> {
   const batchSize = 1000;
-  
+
   for (let i = 0; i < users.length; i += batchSize) {
     const batch = users.slice(i, i + batchSize);
-    
+
     await this.neo4j.write(async (session) => {
       await session.run(`
         UNWIND $users AS userData
@@ -482,6 +559,7 @@ async bulkCreateUsers(users: CreateUserDto[]): Promise<void> {
 ```
 
 ### Indexing Best Practices
+
 Strategic indexing for optimal performance:
 
 ```cypher
@@ -502,6 +580,7 @@ CREATE INDEX follow_since FOR ()-[r:FOLLOWS]-() ON (r.since);
 ## Common Use Cases
 
 ### Social Network Implementation
+
 Model user connections and interactions:
 
 ```typescript
@@ -512,31 +591,40 @@ export class SocialNetworkService {
   @Transactional()
   async followUser(followerId: string, followeeId: string): Promise<void> {
     await this.neo4j.write(async (session) => {
-      await session.run(`
+      await session.run(
+        `
         MATCH (follower:User {id: $followerId})
         MATCH (followee:User {id: $followeeId})
         CREATE (follower)-[:FOLLOWS {
           since: timestamp(),
           notificationsEnabled: true
         }]->(followee)
-      `, { followerId, followeeId });
+      `,
+        { followerId, followeeId }
+      );
     });
   }
 
   async getMutualConnections(userId1: string, userId2: string): Promise<User[]> {
-    return this.neo4j.readQuery(`
+    return this.neo4j.readQuery(
+      `
       MATCH (u1:User {id: $userId1})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(u2:User {id: $userId2})
       RETURN mutual
       ORDER BY mutual.name
-    `, { userId1, userId2 });
+    `,
+      { userId1, userId2 }
+    );
   }
 
   async getInfluenceScore(userId: string): Promise<number> {
-    const result = await this.neo4j.readQuery(`
+    const result = await this.neo4j.readQuery(
+      `
       MATCH (u:User {id: $userId})<-[:FOLLOWS]-(follower)
       MATCH (follower)<-[:FOLLOWS]-(secondDegree)
       RETURN count(DISTINCT follower) + count(DISTINCT secondDegree) * 0.1 as score
-    `, { userId });
+    `,
+      { userId }
+    );
 
     return result[0]?.score || 0;
   }
@@ -544,6 +632,7 @@ export class SocialNetworkService {
 ```
 
 ### Recommendation Engine
+
 Build collaborative filtering recommendations:
 
 ```typescript
@@ -552,7 +641,8 @@ export class RecommendationService {
   constructor(@InjectNeo4j() private neo4j: Neo4jService) {}
 
   async getContentRecommendations(userId: string, limit = 10): Promise<Recommendation[]> {
-    return this.neo4j.readQuery(`
+    return this.neo4j.readQuery(
+      `
       MATCH (u:User {id: $userId})-[:LIKES]->(content)
       MATCH (content)<-[:LIKES]-(other:User)-[:LIKES]->(rec)
       WHERE NOT (u)-[:LIKES]->(rec)
@@ -569,23 +659,29 @@ export class RecommendationService {
       } as recommendation
       ORDER BY recommendation.recommendationScore DESC
       LIMIT $limit
-    `, { userId, limit });
+    `,
+      { userId, limit }
+    );
   }
 
   async getSimilarUsers(userId: string): Promise<User[]> {
-    return this.neo4j.readQuery(`
+    return this.neo4j.readQuery(
+      `
       MATCH (u:User {id: $userId})-[:LIKES]->(content)<-[:LIKES]-(similar:User)
       WHERE u <> similar
       WITH similar, count(content) as sharedInterests
       ORDER BY sharedInterests DESC
       LIMIT 10
       RETURN similar
-    `, { userId });
+    `,
+      { userId }
+    );
   }
 }
 ```
 
 ### Knowledge Graph Implementation
+
 Build AI knowledge graphs with semantic relationships:
 
 ```typescript
@@ -595,7 +691,8 @@ export class KnowledgeGraphService {
 
   async addConcept(concept: ConceptDto): Promise<void> {
     await this.neo4j.write(async (session) => {
-      await session.run(`
+      await session.run(
+        `
         CREATE (c:Concept {
           id: $id,
           name: $name,
@@ -604,17 +701,14 @@ export class KnowledgeGraphService {
           confidence: $confidence,
           createdAt: timestamp()
         })
-      `, concept);
+      `,
+        concept
+      );
     });
   }
 
   @Transactional()
-  async createSemanticRelationship(
-    fromConceptId: string,
-    toConceptId: string,
-    relationshipType: string,
-    strength: number
-  ): Promise<void> {
+  async createSemanticRelationship(fromConceptId: string, toConceptId: string, relationshipType: string, strength: number): Promise<void> {
     await this.neo4j.write(async (session) => {
       const relationshipQuery = `
         MATCH (from:Concept {id: $fromId})
@@ -626,17 +720,18 @@ export class KnowledgeGraphService {
         }]->(to)
         RETURN r
       `;
-      
+
       await session.run(relationshipQuery, {
         fromId: fromConceptId,
         toId: toConceptId,
-        strength
+        strength,
       });
     });
   }
 
   async findRelatedConcepts(conceptId: string, maxDepth = 3): Promise<ConceptPath[]> {
-    return this.neo4j.readQuery(`
+    return this.neo4j.readQuery(
+      `
       MATCH path = (start:Concept {id: $conceptId})-[*1..${maxDepth}]-(related:Concept)
       WHERE start <> related
       WITH related, 
@@ -653,27 +748,28 @@ export class KnowledgeGraphService {
       } as conceptPath
       ORDER BY conceptPath.pathStrength DESC, conceptPath.distance ASC
       LIMIT 50
-    `, { conceptId });
+    `,
+      { conceptId }
+    );
   }
 }
 ```
 
 ## Integration Patterns with Other Libraries
 
-### Integration with @anubis/nestjs-langgraph
+### Integration with @hive-academy/nestjs-langgraph
+
 Use Neo4j as memory backend for AI agents:
 
 ```typescript
 @Injectable()
 export class GraphMemoryService implements MemoryProvider {
-  constructor(
-    @InjectNeo4j() private neo4j: Neo4jService,
-    @InjectLangGraph() private langGraph: LangGraphService
-  ) {}
+  constructor(@InjectNeo4j() private neo4j: Neo4jService, @InjectLangGraph() private langGraph: LangGraphService) {}
 
   async storeAgentMemory(agentId: string, memory: AgentMemory): Promise<void> {
     await this.neo4j.write(async (session) => {
-      await session.run(`
+      await session.run(
+        `
         MERGE (agent:Agent {id: $agentId})
         CREATE (agent)-[:HAS_MEMORY]->(memory:Memory {
           id: $memoryId,
@@ -682,19 +778,22 @@ export class GraphMemoryService implements MemoryProvider {
           timestamp: timestamp(),
           importance: $importance
         })
-      `, {
-        agentId,
-        memoryId: memory.id,
-        content: memory.content,
-        type: memory.type,
-        importance: memory.importance
-      });
+      `,
+        {
+          agentId,
+          memoryId: memory.id,
+          content: memory.content,
+          type: memory.type,
+          importance: memory.importance,
+        }
+      );
     });
   }
 
   async getRelevantMemories(agentId: string, query: string): Promise<AgentMemory[]> {
     // Use full-text search to find relevant memories
-    return this.neo4j.readQuery(`
+    return this.neo4j.readQuery(
+      `
       MATCH (agent:Agent {id: $agentId})-[:HAS_MEMORY]->(memory:Memory)
       CALL db.index.fulltext.queryNodes('memory_content', $query) 
       YIELD node as matchedMemory, score
@@ -705,37 +804,40 @@ export class GraphMemoryService implements MemoryProvider {
       } as relevantMemory
       ORDER BY relevantMemory.importance DESC, relevantMemory.relevanceScore DESC
       LIMIT 10
-    `, { agentId, query });
+    `,
+      { agentId, query }
+    );
   }
 }
 ```
 
 ### Integration with @hive-academy/nestjs-chromadb
+
 Combine graph relationships with vector similarity:
 
 ```typescript
 @Injectable()
 export class HybridSearchService {
-  constructor(
-    @InjectNeo4j() private neo4j: Neo4jService,
-    @InjectChromaDB() private chromaDb: ChromaDBService
-  ) {}
+  constructor(@InjectNeo4j() private neo4j: Neo4jService, @InjectChromaDB() private chromaDb: ChromaDBService) {}
 
   async hybridRecommendation(userId: string, query: string): Promise<HybridResult[]> {
     // Get graph-based recommendations
-    const graphRecs = await this.neo4j.readQuery(`
+    const graphRecs = await this.neo4j.readQuery(
+      `
       MATCH (u:User {id: $userId})-[:LIKES]->(item)
       MATCH (item)<-[:LIKES]-(similar:User)-[:LIKES]->(rec)
       WHERE NOT (u)-[:LIKES]->(rec)
       RETURN rec.id as itemId, count(*) as graphScore
       ORDER BY graphScore DESC
       LIMIT 50
-    `, { userId });
+    `,
+      { userId }
+    );
 
     // Get semantic similarity from vector database
     const semanticResults = await this.chromaDb.query({
       queryTexts: [query],
-      nResults: 50
+      nResults: 50,
     });
 
     // Combine and rank results
@@ -747,12 +849,12 @@ export class HybridSearchService {
     // Implementation to merge graph and vector scores
     const resultMap = new Map<string, HybridResult>();
 
-    graphResults.forEach(result => {
+    graphResults.forEach((result) => {
       resultMap.set(result.itemId, {
         itemId: result.itemId,
         graphScore: result.graphScore,
         vectorScore: 0,
-        combinedScore: result.graphScore * 0.6
+        combinedScore: result.graphScore * 0.6,
       });
     });
 
@@ -762,7 +864,7 @@ export class HybridSearchService {
         itemId,
         graphScore: 0,
         vectorScore: 0,
-        combinedScore: 0
+        combinedScore: 0,
       };
 
       existing.vectorScore = 1 - (result.distance || 0);
@@ -778,6 +880,7 @@ export class HybridSearchService {
 ## Security Considerations
 
 ### Authentication and Authorization
+
 Secure database access with proper credentials management:
 
 ```typescript
@@ -791,13 +894,14 @@ Neo4jModule.forRootAsync({
       encrypted: true,
       trust: 'TRUST_SYSTEM_CA_SIGNED_CERTIFICATES',
       maxConnectionPoolSize: 50,
-    }
+    },
   }),
-  inject: [ConfigService]
+  inject: [ConfigService],
 });
 ```
 
 ### Query Injection Prevention
+
 Use parameterized queries to prevent Cypher injection:
 
 ```typescript
@@ -821,6 +925,7 @@ async badExample(email: string): Promise<User | null> {
 ```
 
 ### Data Privacy and Encryption
+
 Implement data privacy controls:
 
 ```typescript
@@ -835,7 +940,8 @@ export class SecureUserService {
       throw new ForbiddenException('Insufficient permissions');
     }
 
-    return this.neo4j.readQuery(`
+    return this.neo4j.readQuery(
+      `
       MATCH (u:User {id: $userId})
       RETURN {
         id: u.id,
@@ -843,17 +949,20 @@ export class SecureUserService {
         // Exclude sensitive fields in production
         createdAt: u.createdAt
       } as userData
-    `, { userId });
+    `,
+      { userId }
+    );
   }
 
   private async checkDataAccess(requesterId: string, targetUserId: string): Promise<boolean> {
     // Implement your permission logic
-    return requesterId === targetUserId || await this.isAdmin(requesterId);
+    return requesterId === targetUserId || (await this.isAdmin(requesterId));
   }
 }
 ```
 
 ### Network Security
+
 Configure secure network connections:
 
 ```typescript
@@ -871,6 +980,7 @@ const secureConfig = {
 ### Common Connection Issues
 
 #### Connection Timeout Errors
+
 ```typescript
 // Symptom: ServiceUnavailableError or connection timeouts
 // Solution: Increase timeout values
@@ -880,26 +990,31 @@ Neo4jModule.forRoot({
   password: 'password',
   config: {
     connectionAcquisitionTimeout: 120000, // Increase from default 60s
-    connectionTimeout: 60000,             // Increase connection timeout
-    maxTransactionRetryTime: 60000,       // Increase retry time
-  }
+    connectionTimeout: 60000, // Increase connection timeout
+    maxTransactionRetryTime: 60000, // Increase retry time
+  },
 });
 ```
 
 #### Database Not Found
+
 ```typescript
 // Symptom: Database does not exist error
 // Solution: Verify database configuration
 await this.neo4j.write(async (session) => {
   // Check if database exists
   const result = await session.run('SHOW DATABASES');
-  console.log('Available databases:', result.records.map(r => r.get('name')));
+  console.log(
+    'Available databases:',
+    result.records.map((r) => r.get('name'))
+  );
 });
 ```
 
 ### Performance Issues
 
 #### Slow Query Performance
+
 ```cypher
 -- Use PROFILE to identify bottlenecks
 PROFILE
@@ -917,6 +1032,7 @@ CREATE INDEX user_active IF NOT EXISTS FOR (u:User) ON (u.active);
 ```
 
 #### Memory Issues with Large Results
+
 ```typescript
 // Problem: Loading large result sets into memory
 // Solution: Use streaming or pagination
@@ -938,7 +1054,7 @@ async processAllUsers(batchProcessor: (users: User[]) => Promise<void>): Promise
 
   while (hasMore) {
     const batch = await this.getLotsOfUsers(offset, batchSize);
-    
+
     if (batch.length === 0) {
       hasMore = false;
     } else {
@@ -952,28 +1068,29 @@ async processAllUsers(batchProcessor: (users: User[]) => Promise<void>): Promise
 ### Transaction Issues
 
 #### Transaction Deadlocks
+
 ```typescript
 // Problem: Concurrent transactions causing deadlocks
 // Solution: Implement retry logic with exponential backoff
 async withRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error as Error;
-      
+
       if (error instanceof Error && error.message.includes('DeadlockDetected')) {
         const delay = Math.pow(2, attempt) * 100; // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
-      
+
       throw error; // Re-throw if not a deadlock
     }
   }
-  
+
   throw lastError;
 }
 
@@ -986,7 +1103,7 @@ async safeUpdateUser(userId: string, updates: Partial<User>): Promise<User> {
         SET u += $updates
         RETURN u
       `, { userId, updates });
-      
+
       return result.records[0]?.get('u').properties;
     });
   });
@@ -996,6 +1113,7 @@ async safeUpdateUser(userId: string, updates: Partial<User>): Promise<User> {
 ### Debugging Tips
 
 #### Enable Query Logging
+
 ```typescript
 // Add logging to see executed queries
 Neo4jModule.forRoot({
@@ -1007,20 +1125,18 @@ Neo4jModule.forRoot({
       level: 'debug',
       logger: (level: string, message: string) => {
         console.log(`[Neo4j ${level.toUpperCase()}] ${message}`);
-      }
-    }
-  }
+      },
+    },
+  },
 });
 ```
 
 #### Health Check Debugging
+
 ```typescript
 @Injectable()
 export class Neo4jDebugService {
-  constructor(
-    private readonly neo4jHealth: Neo4jHealthService,
-    private readonly neo4jConnection: Neo4jConnectionService
-  ) {}
+  constructor(private readonly neo4jHealth: Neo4jHealthService, private readonly neo4jConnection: Neo4jConnectionService) {}
 
   async diagnose(): Promise<DiagnosticReport> {
     const health = await this.neo4jHealth.checkHealth();
@@ -1032,7 +1148,7 @@ export class Neo4jDebugService {
       connectionInfo,
       metrics,
       timestamp: new Date(),
-      recommendations: this.generateRecommendations(health, metrics)
+      recommendations: this.generateRecommendations(health, metrics),
     };
   }
 

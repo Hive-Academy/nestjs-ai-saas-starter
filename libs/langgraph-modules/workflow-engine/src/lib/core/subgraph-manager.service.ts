@@ -4,7 +4,7 @@ import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import type { WorkflowState } from '../interfaces';
 import { CompilationCacheService } from './compilation-cache.service';
-import { WorkflowStateAnnotation } from '@langgraph-modules/core';
+import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
 
 export interface SubgraphOptions {
   /**

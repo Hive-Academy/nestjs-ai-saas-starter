@@ -14,7 +14,7 @@ import { WorkflowCommandType } from '../constants';
 import {
   WorkflowStateAnnotation,
   // createCustomStateAnnotation, // Currently unused
-} from '@langgraph-modules/core';
+} from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from './metadata-processor.service';
 
 export interface GraphBuilderOptions {

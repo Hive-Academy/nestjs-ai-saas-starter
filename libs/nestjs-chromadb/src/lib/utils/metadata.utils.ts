@@ -1,3 +1,5 @@
+import type { Metadata } from 'chromadb';
+
 /**
  * Metadata utility functions for ChromaDB operations
  */
@@ -6,22 +8,27 @@
  * Sanitize metadata to ensure ChromaDB compatibility
  */
 export function sanitizeMetadata(
-  metadata: Record<string, unknown>
-): Record<string, string | number | boolean> {
-  const sanitized: Record<string, string | number | boolean> = {};
+  metadata: Record<string, any>
+): Metadata {
+  const sanitized: Metadata = {};
 
   for (const [key, value] of Object.entries(metadata)) {
-    // Skip null or undefined values
-    if (value === null || value === undefined) {
+    // Sanitize key (remove invalid characters)
+    const sanitizedKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
+    
+    // Skip undefined values, but allow null
+    if (value === undefined) {
+      continue;
+    }
+    
+    if (value === null) {
+      sanitized[sanitizedKey] = null;
       continue;
     }
 
-    // Sanitize key (remove invalid characters)
-    const sanitizedKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
-
     // Convert value to supported types
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      sanitized[sanitizedKey] = value;
+      sanitized[sanitizedKey] = value as string | number | boolean;
     } else if (typeof value === 'object') {
       // Convert objects to JSON strings
       sanitized[sanitizedKey] = JSON.stringify(value);
@@ -38,11 +45,11 @@ export function sanitizeMetadata(
  * Validate metadata for ChromaDB compatibility
  */
 export function validateMetadata(
-  metadata: Record<string, unknown>
+  metadata: Record<string, any>
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (typeof metadata !== 'object') {
+  if (!metadata || typeof metadata !== 'object') {
     return { isValid: false, errors: ['Metadata must be an object'] };
   }
 
@@ -71,9 +78,9 @@ export function validateMetadata(
  * Merge multiple metadata objects with conflict resolution
  */
 export function mergeMetadata(
-  ...metadataObjects: Array<Record<string, unknown> | undefined>
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+  ...metadataObjects: Array<Record<string, any> | undefined>
+): Record<string, any> {
+  const result: Record<string, any> = {};
 
   for (const metadata of metadataObjects) {
     if (metadata && typeof metadata === 'object') {
@@ -88,10 +95,10 @@ export function mergeMetadata(
  * Filter metadata based on allowed keys
  */
 export function filterMetadata(
-  metadata: Record<string, unknown>,
+  metadata: Record<string, any>,
   allowedKeys: string[]
-): Record<string, unknown> {
-  const filtered: Record<string, unknown> = {};
+): Record<string, any> {
+  const filtered: Record<string, any> = {};
 
   for (const key of allowedKeys) {
     if (key in metadata) {
@@ -105,15 +112,15 @@ export function filterMetadata(
 /**
  * Extract specific fields from metadata
  */
-export function extractMetadataFields<T extends Record<string, unknown>>(
-  metadata: Record<string, unknown>,
+export function extractMetadataFields<T extends Record<string, any>>(
+  metadata: Record<string, any>,
   fields: Array<keyof T>
 ): Partial<T> {
   const extracted: Partial<T> = {};
 
   for (const field of fields) {
     if (field in metadata) {
-      extracted[field] = metadata[field as string] as T[keyof T];
+      extracted[field] = metadata[field as string];
     }
   }
 
@@ -124,10 +131,10 @@ export function extractMetadataFields<T extends Record<string, unknown>>(
  * Convert metadata to ChromaDB where clause
  */
 export function metadataToWhereClause(
-  metadata: Record<string, unknown>,
+  metadata: Record<string, any>,
   operator: 'and' | 'or' = 'and'
-): Record<string, unknown> {
-  const conditions: Array<Record<string, unknown>> = [];
+): Record<string, any> {
+  const conditions: Record<string, any>[] = [];
 
   for (const [key, value] of Object.entries(metadata)) {
     if (value === null || value === undefined) {
@@ -163,29 +170,29 @@ export function metadataToWhereClause(
  * Add default metadata fields
  */
 export function addDefaultMetadata(
-  metadata: Record<string, unknown> = {},
+  metadata: Record<string, any> = {},
   defaults: {
     timestamp?: boolean;
     version?: string;
     source?: string;
-    [key: string]: unknown;
+    [key: string]: any;
   } = {}
-): Record<string, unknown> {
+): Record<string, any> {
   const result = { ...metadata };
 
   // Add timestamp if requested
   if (defaults.timestamp) {
-    result.created_at = result.created_at ?? new Date().toISOString();
+    result['created_at'] = result['created_at'] || new Date().toISOString();
   }
 
   // Add version if provided
   if (defaults.version) {
-    result.version = result.version ?? defaults.version;
+    result['version'] = result['version'] || defaults.version;
   }
 
   // Add source if provided
   if (defaults.source) {
-    result.source = result.source ?? defaults.source;
+    result['source'] = result['source'] || defaults.source;
   }
 
   // Add any other default fields
@@ -202,27 +209,27 @@ export function addDefaultMetadata(
  * Convert metadata for display purposes
  */
 export function formatMetadataForDisplay(
-  metadata: Record<string, unknown>,
+  metadata: Record<string, any>,
   options: {
     maxStringLength?: number;
     parseJsonStrings?: boolean;
     formatDates?: boolean;
   } = {}
-): Record<string, unknown> {
+): Record<string, any> {
   const {
     maxStringLength = 100,
     parseJsonStrings = true,
     formatDates = true,
   } = options;
 
-  const formatted: Record<string, unknown> = {};
+  const formatted: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(metadata)) {
     let formattedValue = value;
 
     if (typeof value === 'string') {
       // Try to parse JSON strings if requested
-      if (parseJsonStrings && (value.startsWith('{') || value.startsWith('['))) {
+      if (parseJsonStrings && value.startsWith('{') || value.startsWith('[')) {
         try {
           formattedValue = JSON.parse(value);
         } catch {
@@ -241,7 +248,7 @@ export function formatMetadataForDisplay(
 
       // Truncate long strings
       if (typeof formattedValue === 'string' && formattedValue.length > maxStringLength) {
-        formattedValue = `${formattedValue.substring(0, maxStringLength)  }...`;
+        formattedValue = formattedValue.substring(0, maxStringLength) + '...';
       }
     }
 
@@ -258,7 +265,7 @@ export interface MetadataSchema {
   [key: string]: {
     type: 'string' | 'number' | 'boolean';
     required?: boolean;
-    enum?: unknown[];
+    enum?: any[];
     min?: number;
     max?: number;
     pattern?: RegExp;
@@ -270,7 +277,7 @@ export interface MetadataSchema {
  * Validate metadata against a schema
  */
 export function validateMetadataSchema(
-  metadata: Record<string, unknown>,
+  metadata: Record<string, any>,
   schema: MetadataSchema
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -285,7 +292,7 @@ export function validateMetadataSchema(
   // Validate existing fields
   for (const [field, value] of Object.entries(metadata)) {
     const config = schema[field];
-    if (config === undefined) {
+    if (!config) {
       // Allow additional fields not in schema
       continue;
     }
@@ -298,21 +305,21 @@ export function validateMetadataSchema(
 
     // Enum validation
     if (config.enum && !config.enum.includes(value)) {
-      errors.push(`Field "${field}" should be one of [${config.enum.join(', ')}], got "${String(value)}"`);
+      errors.push(`Field "${field}" should be one of [${config.enum.join(', ')}], got "${value}"`);
     }
 
     // Number range validation
-    if (config.type === 'number' && typeof value === 'number') {
+    if (config.type === 'number') {
       if (config.min !== undefined && value < config.min) {
-        errors.push(`Field "${field}" should be >= ${config.min}, got ${String(value)}`);
+        errors.push(`Field "${field}" should be >= ${config.min}, got ${value}`);
       }
       if (config.max !== undefined && value > config.max) {
-        errors.push(`Field "${field}" should be <= ${config.max}, got ${String(value)}`);
+        errors.push(`Field "${field}" should be <= ${config.max}, got ${value}`);
       }
     }
 
     // String pattern validation
-    if (config.type === 'string' && typeof value === 'string' && config.pattern && !config.pattern.test(value)) {
+    if (config.type === 'string' && config.pattern && !config.pattern.test(value)) {
       errors.push(`Field "${field}" does not match required pattern`);
     }
   }

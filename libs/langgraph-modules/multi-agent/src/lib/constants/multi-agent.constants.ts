@@ -4,6 +4,11 @@
 export const MULTI_AGENT_MODULE_OPTIONS = Symbol('MULTI_AGENT_MODULE_OPTIONS');
 
 /**
+ * Tool registry service token for dependency injection
+ */
+export const TOOL_REGISTRY = 'TOOL_REGISTRY';
+
+/**
  * Default configuration values
  */
 export const DEFAULT_MULTI_AGENT_OPTIONS = {
@@ -18,7 +23,7 @@ export const DEFAULT_MULTI_AGENT_OPTIONS = {
   },
   streaming: {
     enabled: false,
-    modes: ['values'] as const,
+    modes: ['values'] as Array<'values' | 'updates' | 'messages'>,
   },
   debug: {
     enabled: false,

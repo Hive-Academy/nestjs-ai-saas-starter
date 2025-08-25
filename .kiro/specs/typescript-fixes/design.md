@@ -16,18 +16,18 @@ graph TD
     B --> C[Phase 3: Advanced Modules]
     C --> D[Phase 4: Core Library]
     D --> E[Phase 5: Remaining Modules]
-    
+
     A1[nestjs-chromadb] --> A
     A2[nestjs-neo4j] --> A
-    
+
     B1[langgraph-checkpoint] --> B
     B2[langgraph-memory] --> B
-    
+
     C1[langgraph-time-travel] --> C
     C2[langgraph-multi-agent] --> C
-    
+
     D1[nestjs-langgraph] --> D
-    
+
     E1[langgraph-functional-api] --> E
     E2[langgraph-monitoring] --> E
     E3[langgraph-platform] --> E
@@ -63,7 +63,7 @@ interface CodeQualityEnforcer {
   addAccessibilityModifiers(classMembers: ClassMember[]): ClassMember[];
   reorderClassMembers(members: ClassMember[]): ClassMember[];
   replaceLogicalOrWithNullish(expressions: Expression[]): Expression[];
-  extractMagicNumbers(codeBlock: CodeBlock): { constants: Constant[], updatedCode: CodeBlock };
+  extractMagicNumbers(codeBlock: CodeBlock): { constants: Constant[]; updatedCode: CodeBlock };
 }
 ```
 
@@ -113,11 +113,8 @@ interface Neo4jQueryResult<TRecord = Record<string, unknown>> {
 }
 
 interface Neo4jSession {
-  run<TRecord = Record<string, unknown>>(
-    query: string,
-    parameters?: Record<string, unknown>
-  ): Promise<Neo4jQueryResult<TRecord>>;
-  
+  run<TRecord = Record<string, unknown>>(query: string, parameters?: Record<string, unknown>): Promise<Neo4jQueryResult<TRecord>>;
+
   beginTransaction(): Promise<Neo4jTransaction>;
   close(): Promise<void>;
 }
@@ -253,10 +250,10 @@ interface ProgressMetrics {
 
 ```typescript
 enum ErrorSeverity {
-  CRITICAL = 'critical',    // Blocks compilation
-  HIGH = 'high',           // Type safety issues
-  MEDIUM = 'medium',       // Code quality issues
-  LOW = 'low'              // Style issues
+  CRITICAL = 'critical', // Blocks compilation
+  HIGH = 'high', // Type safety issues
+  MEDIUM = 'medium', // Code quality issues
+  LOW = 'low', // Style issues
 }
 
 interface TypeScriptError {
@@ -315,7 +312,7 @@ const validMetadata: TestChromaMetadata = {
   category: 'document',
   score: 0.95,
   isActive: true,
-  tags: null
+  tags: null,
 };
 
 // This should cause a compilation error
@@ -363,8 +360,8 @@ interface TestingPipeline {
 
 **Target Libraries:**
 
-- `@anubis/langgraph-checkpoint` (~200 issues)
-- `@anubis/langgraph-memory` (~150 issues)
+- `@hive-academy/langgraph-checkpoint` (~200 issues)
+- `@hive-academy/langgraph-memory` (~150 issues)
 
 **Key Activities:**
 
@@ -377,8 +374,8 @@ interface TestingPipeline {
 
 **Target Libraries:**
 
-- `@anubis/langgraph-time-travel` (~143 issues)
-- `@anubis/langgraph-multi-agent` (~180 issues)
+- `@hive-academy/langgraph-time-travel` (~143 issues)
+- `@hive-academy/langgraph-multi-agent` (~180 issues)
 
 **Key Activities:**
 
@@ -391,7 +388,7 @@ interface TestingPipeline {
 
 **Target Library:**
 
-- `@anubis/nestjs-langgraph` (~1,800 issues)
+- `@hive-academy/nestjs-langgraph` (~1,800 issues)
 
 **Key Activities:**
 
@@ -405,9 +402,9 @@ interface TestingPipeline {
 
 **Target Libraries:**
 
-- `@anubis/langgraph-functional-api`
-- `@anubis/langgraph-monitoring`
-- `@anubis/langgraph-platform`
+- `@hive-academy/langgraph-functional-api`
+- `@hive-academy/langgraph-monitoring`
+- `@hive-academy/langgraph-platform`
 
 **Key Activities:**
 

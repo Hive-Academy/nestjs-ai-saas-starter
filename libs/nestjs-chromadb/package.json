@@ -22,16 +22,16 @@
   "bugs": {
     "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "types": "./src/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
     }
   },
   "files": [
@@ -43,11 +43,27 @@
     "access": "public"
   },
   "peerDependencies": {
+    "@langchain/anthropic": "^0.3.26",
+    "@langchain/core": "^0.3.68",
+    "@langchain/google-genai": "^0.2.16",
+    "@langchain/langgraph": "^0.4.3",
+    "@langchain/langgraph-checkpoint": "^0.1.0",
+    "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
+    "@langchain/openai": "^0.6.7",
     "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.0",
-    "chromadb": "^3.0.0",
+    "@nestjs/event-emitter": "^3.0.1",
+    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "11.2.0",
+    "@nestjs/terminus": "^11.0.0",
+    "chromadb": "^3.0.11",
+    "cohere-ai": "^7.18.0",
+    "langchain": "^0.3.30",
+    "neo4j-driver": "^5.28.1",
+    "openai": "^5.12.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
+    "rxjs": "7.8.2"
   },
   "dependencies": {
     "tslib": "^2.3.0"

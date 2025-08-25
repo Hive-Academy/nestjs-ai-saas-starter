@@ -8,7 +8,8 @@ Quick help guide for the `/orchestrate` command workflow system.
 /orchestrate [argument]
 ```
 
-### Arguments:
+### Arguments
+
 - **Task Description**: Start new task (e.g., "implement user authentication")
 - **TASK_ID**: Continue specific task (e.g., "TASK_CMD_009")
 - **"continue"**: Resume last incomplete task from registry
@@ -16,11 +17,13 @@ Quick help guide for the `/orchestrate` command workflow system.
 ## Workflow Phases
 
 ### 1. Pre-Flight (Automatic)
+
 - Checks git status and branch
 - Reviews task registry
 - Creates/loads task folder
 
 ### 2. Project Manager
+
 - Creates task-description.md
 - Defines acceptance criteria (BDD format)
 - Performs risk analysis
@@ -29,6 +32,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 **Quality Gate**: Validates all required sections present
 
 ### 3. Researcher (Conditional)
+
 - Conducts technical research
 - Evaluates approaches
 - Creates research-report.md
@@ -37,22 +41,25 @@ Quick help guide for the `/orchestrate` command workflow system.
 **Quality Gate**: Validates sources and analysis depth
 
 ### 4. Software Architect
+
 - Creates implementation-plan.md
 - Designs architecture
-- **MUST** search @anubis/shared for types
+- **MUST** search @hive-academy/shared for types
 - Breaks down into subtasks
 
 **Quality Gate**: Validates SOLID principles and type search
 
 ### 5. Senior Developer
+
 - Implements code
-- **MUST** use existing types from @anubis/shared
+- **MUST** use existing types from @hive-academy/shared
 - Zero 'any' types allowed
 - Updates progress.md
 
 **Quality Gate**: Validates compilation and type safety
 
 ### 6. Senior Tester
+
 - Creates comprehensive tests
 - Achieves >80% coverage
 - Tests all acceptance criteria
@@ -61,6 +68,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 **Quality Gate**: Validates coverage and AC verification
 
 ### 7. Code Reviewer
+
 - Final quality review
 - Security validation
 - Performance check
@@ -70,7 +78,8 @@ Quick help guide for the `/orchestrate` command workflow system.
 
 ## Quality Standards
 
-### Must Pass All Gates:
+### Must Pass All Gates
+
 - ✅ Type search protocol followed
 - ✅ Zero 'any' types
 - ✅ Functions < 30 lines
@@ -80,17 +89,20 @@ Quick help guide for the `/orchestrate` command workflow system.
 
 ## Common Commands
 
-### Check Status:
+### Check Status
+
 ```bash
 !cat task-tracking/registry.md | grep "🔄\|⚠️\|❌"
 ```
 
-### View Task Progress:
+### View Task Progress
+
 ```bash
 !cat task-tracking/TASK_CMD_009/progress.md
 ```
 
-### Validate Specific Phase:
+### Validate Specific Phase
+
 ```bash
 /validate-project-manager TASK_CMD_009
 /validate-architect TASK_CMD_009
@@ -101,19 +113,22 @@ Quick help guide for the `/orchestrate` command workflow system.
 
 ## Troubleshooting
 
-### If Validation Fails:
+### If Validation Fails
+
 1. Review the specific validation output
 2. Make required corrections
 3. Re-run the orchestrator from current phase
 
-### Memory Issues:
+### Memory Issues
+
 - Orchestrator runs sequentially (one agent at a time)
 - No parallel Task() invocations
 - Clear context between agents
 
-### Common Issues:
+### Common Issues
+
 - **Missing task-description.md**: Project manager didn't complete
-- **No type search**: Developer must document @anubis/shared search
+- **No type search**: Developer must document @hive-academy/shared search
 - **Low coverage**: Tester needs more test cases
 - **Build fails**: Developer must fix compilation errors
 
@@ -128,6 +143,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 ## Exit Criteria
 
 Task is complete when:
+
 - All phases passed
 - Code reviewer approves
 - Registry updated

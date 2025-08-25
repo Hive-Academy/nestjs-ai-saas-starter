@@ -18,14 +18,14 @@ graph TB
         RW[ResearcherWorkflow]
         AW[AnalyzerWorkflow]
     end
-    
+
     subgraph "NestJS-LangGraph Orchestration Layer"
         NLG[NestjsLanggraphModule.forRoot]
         WGB[WorkflowGraphBuilderService]
         TSS[TokenStreamingService]
         HAS[HumanApprovalService]
     end
-    
+
     subgraph "Our Powerful Child Modules (The Ferrari!)"
         CHK[CheckpointModule ✅]
         MEM[MemoryModule ✅]
@@ -35,7 +35,7 @@ graph TB
         STM[StreamingModule ✅]
         HTL[HITLModule ✅]
     end
-    
+
     SA --> NLG
     NLG --> CHK
     NLG --> MEM
@@ -44,7 +44,7 @@ graph TB
     NLG --> TTL
     NLG --> STM
     NLG --> HTL
-    
+
     SW --> WGB
     RW --> WGB
     AW --> WGB
@@ -71,61 +71,50 @@ graph TB
 ### Step 2: Create Workflow Using DeclarativeWorkflowBase
 
 ```typescript
-import { 
-  Workflow, 
-  Node, 
-  Edge,
-  StreamToken,
-  RequiresApproval,
-  DeclarativeWorkflowBase,
-  WorkflowState,
-  Command,
-  CommandType
-} from '@anubis/nestjs-langgraph';
+import { Workflow, Node, Edge, StreamToken, RequiresApproval, DeclarativeWorkflowBase, WorkflowState, Command, CommandType } from '@hive-academy/nestjs-langgraph';
 
 @Workflow({
   name: 'supervisor-coordination',
   pattern: 'supervisor',
   streaming: true,
-  hitl: { enabled: true }
+  hitl: { enabled: true },
 })
 export class SupervisorCoordinationWorkflow extends DeclarativeWorkflowBase {
-  
   @Node({ type: 'supervisor' })
   @StreamToken({ enabled: true })
   async supervisorNode(state: WorkflowState): Promise<Command<WorkflowState>> {
     // Uses MultiAgentCoordinatorService internally
     const task = state.task;
-    
+
     if (task.complexity === 'high') {
       return { type: CommandType.GOTO, goto: 'researcher' };
     }
     return { type: CommandType.GOTO, goto: 'analyzer' };
   }
-  
+
   @Node({ type: 'agent' })
   async researcherNode(state: WorkflowState) {
     // Automatically uses MemoryFacadeService for context
     const memories = await this.memoryService.retrieveContext(state.userId);
-    
+
     // Execute with CheckpointManagerService tracking
     const research = await this.llm.invoke({
-      messages: [...memories, state.prompt]
+      messages: [...memories, state.prompt],
     });
-    
+
     // Store in memory for future
     await this.memoryService.storeEntry({
       content: research,
-      metadata: { agent: 'researcher' }
+      metadata: { agent: 'researcher' },
     });
-    
+
     return { ...state, research };
   }
-  
+
   @Node({ type: 'human' })
   @RequiresApproval({
     confidenceThreshold: 0.8,
-    riskThreshold: 'medium'
+    riskThreshold: 'medium',
   })
   async approvalNode(state: WorkflowState) {
     // Uses HumanApprovalService with real streaming
@@ -141,33 +130,26 @@ import { MultiAgentCoordinatorService } from '@langgraph-modules/multi-agent';
 
 @Injectable()
 export class SupervisorAgentService {
-  constructor(
-    private readonly coordinator: MultiAgentCoordinatorService,
-    private readonly workflowBuilder: WorkflowGraphBuilderService,
-    private readonly monitoring: MonitoringFacadeService
-  ) {}
-  
+  constructor(private readonly coordinator: MultiAgentCoordinatorService, private readonly workflowBuilder: WorkflowGraphBuilderService, private readonly monitoring: MonitoringFacadeService) {}
+
   async executeSupervisorWorkflow(task: string) {
     // Start monitoring
     const metrics = this.monitoring.startWorkflowMetrics('supervisor-demo');
-    
+
     // Build workflow from decorators
-    const graph = await this.workflowBuilder.buildFromDecorators(
-      SupervisorCoordinationWorkflow,
-      {
-        checkpointer: true, // Uses CheckpointModule
-        streaming: true,    // Uses StreamingModule
-        interrupt: { before: ['approvalNode'] } // Uses HITLModule
-      }
-    );
-    
+    const graph = await this.workflowBuilder.buildFromDecorators(SupervisorCoordinationWorkflow, {
+      checkpointer: true, // Uses CheckpointModule
+      streaming: true, // Uses StreamingModule
+      interrupt: { before: ['approvalNode'] }, // Uses HITLModule
+    });
+
     // Execute with full infrastructure
     const result = await graph.invoke({
       task,
       executionId: `exec-${Date.now()}`,
-      userId: 'demo-user'
+      userId: 'demo-user',
     });
-    
+
     metrics.recordSuccess();
     return result;
   }
@@ -177,14 +159,11 @@ export class SupervisorAgentService {
 ### Step 4: Console Demo with Real Streaming
 
 ```typescript
-import { TokenStreamingService } from '@anubis/nestjs-langgraph';
+import { TokenStreamingService } from '@hive-academy/nestjs-langgraph';
 
 export class SupervisorConsoleDemo {
-  constructor(
-    private readonly streamingService: TokenStreamingService,
-    private readonly timeTravelService: TimeTravelService
-  ) {}
-  
+  constructor(private readonly streamingService: TokenStreamingService, private readonly timeTravelService: TimeTravelService) {}
+
   async runDemo(task: string) {
     console.log('🚀 Starting Supervisor Agent Demo with FULL Infrastructure');
     console.log('✅ CheckpointModule: Active');
@@ -194,10 +173,10 @@ export class SupervisorConsoleDemo {
     console.log('✅ TimeTravelModule: Active');
     console.log('✅ StreamingModule: Active');
     console.log('✅ HITLModule: Active\n');
-    
+
     // Execute workflow with streaming
     const executionId = `demo-${Date.now()}`;
-    
+
     // Initialize token streaming
     await this.streamingService.initializeTokenStream({
       executionId,
@@ -205,22 +184,22 @@ export class SupervisorConsoleDemo {
       config: {
         enabled: true,
         bufferSize: 30,
-        format: 'text'
-      }
+        format: 'text',
+      },
     });
-    
+
     // Subscribe to streaming events
     this.streamingService.subscribeToTokens(executionId, (token) => {
       process.stdout.write(token.content);
     });
-    
+
     // Execute workflow
     const result = await this.supervisorService.executeSupervisorWorkflow(task);
-    
+
     // Show time travel capabilities
     const snapshots = await this.timeTravelService.getSnapshots(executionId);
     console.log(`\n📸 Time Travel: ${snapshots.length} snapshots available for debugging`);
-    
+
     console.log('\n✅ Demo completed with FULL infrastructure!');
   }
 }
@@ -228,18 +207,18 @@ export class SupervisorConsoleDemo {
 
 ## 🎯 Key Differences from Original Plan
 
-| Aspect | ❌ Original (Wrong) | ✅ Revised (Correct) |
-|--------|-------------------|---------------------|
-| **Approach** | Created basic services from scratch | Uses NestjsLanggraphModule.forRoot() |
-| **Child Modules** | Imported ZERO modules | Imports ALL 7 child modules |
-| **LLM Integration** | Direct ChatOpenAI | Uses configured LLM provider |
-| **Checkpointing** | Basic MemorySaver | CheckpointManagerService |
-| **Memory** | None | MemoryFacadeService |
-| **Multi-Agent** | Manual coordination | MultiAgentCoordinatorService |
-| **Monitoring** | None | MonitoringFacadeService |
-| **Time Travel** | None | TimeTravelService |
-| **Streaming** | Basic implementation | TokenStreamingService |
-| **HITL** | Console prompts | HumanApprovalService |
+| Aspect              | ❌ Original (Wrong)                 | ✅ Revised (Correct)                 |
+| ------------------- | ----------------------------------- | ------------------------------------ |
+| **Approach**        | Created basic services from scratch | Uses NestjsLanggraphModule.forRoot() |
+| **Child Modules**   | Imported ZERO modules               | Imports ALL 7 child modules          |
+| **LLM Integration** | Direct ChatOpenAI                   | Uses configured LLM provider         |
+| **Checkpointing**   | Basic MemorySaver                   | CheckpointManagerService             |
+| **Memory**          | None                                | MemoryFacadeService                  |
+| **Multi-Agent**     | Manual coordination                 | MultiAgentCoordinatorService         |
+| **Monitoring**      | None                                | MonitoringFacadeService              |
+| **Time Travel**     | None                                | TimeTravelService                    |
+| **Streaming**       | Basic implementation                | TokenStreamingService                |
+| **HITL**            | Console prompts                     | HumanApprovalService                 |
 
 ## 📊 Success Metrics
 
@@ -287,14 +266,14 @@ export class SupervisorConsoleDemo {
 
 ```typescript
 // Required imports from our infrastructure
-import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 import { CheckpointManagerService } from '@langgraph-modules/checkpoint';
 import { MemoryFacadeService } from '@langgraph-modules/memory';
 import { MultiAgentCoordinatorService } from '@langgraph-modules/multi-agent';
 import { MonitoringFacadeService } from '@langgraph-modules/monitoring';
 import { TimeTravelService } from '@langgraph-modules/time-travel';
-import { TokenStreamingService } from '@anubis/nestjs-langgraph';
-import { HumanApprovalService } from '@anubis/nestjs-langgraph';
+import { TokenStreamingService } from '@hive-academy/nestjs-langgraph';
+import { HumanApprovalService } from '@hive-academy/nestjs-langgraph';
 ```
 
 ## ⚠️ Common Pitfalls to Avoid

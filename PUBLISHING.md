@@ -6,7 +6,7 @@ This document outlines the process for publishing the Anubis AI SaaS starter lib
 
 1. **NPM Account**: Ensure you have an NPM account with publishing permissions
 2. **Authentication**: Set up NPM authentication token
-3. **Scope Access**: Ensure you have access to publish under the `@anubis` scope
+3. **Scope Access**: Ensure you have access to publish under the `@hive-academy` scope
 
 ## Authentication Setup
 
@@ -53,7 +53,7 @@ npm run version:libs
 
 # Or manually specify version
 nx release version --specifier=patch
-nx release version --specifier=minor  
+nx release version --specifier=minor
 nx release version --specifier=major
 ```
 
@@ -96,13 +96,12 @@ nx build nestjs-neo4j
 nx run nestjs-neo4j:publish
 ```
 
-### @anubis/nestjs-langgraph
+### @hive-academy/nestjs-langgraph
 
 ```bash
 nx build nestjs-langgraph
 nx run nestjs-langgraph:publish
 ```
-
 
 ## Troubleshooting
 
@@ -119,11 +118,11 @@ npm login
 
 ### Permission Issues
 
-Ensure you have access to the `@anubis` scope:
+Ensure you have access to the `@hive-academy` scope:
 
 ```bash
 # Check scope access
-npm access list packages @anubis
+npm access list packages @hive-academy
 ```
 
 ### Build Issues
@@ -148,7 +147,7 @@ npm run build:libs
 The project includes GitHub Actions workflow for automated publishing:
 
 1. **Trigger**: Push to `main` branch or manual trigger
-2. **Process**: 
+2. **Process**:
    - Install dependencies
    - Build libraries
    - Run tests
@@ -180,6 +179,7 @@ npm unpublish @hive-academy/nestjs-chromadb@1.0.0
 ## Support
 
 For publishing issues:
+
 - Check GitHub Issues
 - Contact the maintainers
 - Review NPM documentation

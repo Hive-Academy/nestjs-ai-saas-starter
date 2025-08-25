@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { CheckpointManagerService } from '@langgraph-modules/checkpoint';
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 import {
   ReplayOptions,
   BranchOptions,

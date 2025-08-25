@@ -9,11 +9,11 @@ import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
-import { EventStreamProcessorService } from '@langgraph-modules/streaming';
+import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
 import {
   getWorkflowMetadata,
   isWorkflow,
-} from '@langgraph-modules/functional-api';
+} from '@hive-academy/langgraph-functional-api';
 
 /**
  * Base class for declarative workflows that use decorators

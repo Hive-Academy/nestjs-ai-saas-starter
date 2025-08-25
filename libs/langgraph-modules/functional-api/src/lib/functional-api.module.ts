@@ -1,6 +1,6 @@
 import { Module, DynamicModule, Provider, Global } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
-import { LanggraphModulesCheckpointModule } from '@langgraph-modules/checkpoint';
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import {
   FunctionalApiModuleOptions,
   FunctionalApiModuleAsyncOptions,

@@ -24,7 +24,7 @@ import {
   TaskTimeoutError,
   UnknownTaskError,
 } from '../errors/functional-workflow.errors';
-import { CheckpointManagerService } from '@langgraph-modules/checkpoint';
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 
 /**
  * Main service for executing functional workflows

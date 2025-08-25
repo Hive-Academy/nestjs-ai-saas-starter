@@ -91,7 +91,7 @@ nx show project <project-name>
 
 ```bash
 # Build production Docker image
-docker build -f docker/Dockerfile -t anubis-agent:latest .
+docker build -f docker/Dockerfile -t hive-academy-agent:latest .
 
 # Run production stack
 docker compose -f docker-compose.yml up -d

@@ -33,10 +33,10 @@ export interface MemoryConfig {
 
 /**
  * Adapter that bridges the main NestJS LangGraph library to the enterprise memory module
- * 
+ *
  * This adapter follows the Adapter pattern to provide seamless integration between
  * the main library's simple memory interface and the enterprise memory system.
- * 
+ *
  * Benefits:
  * - Maintains backward compatibility with existing memory APIs
  * - Delegates to enterprise memory module when available (845 lines of sophisticated logic)
@@ -48,10 +48,9 @@ export class MemoryAdapter {
   private readonly logger = new Logger(MemoryAdapter.name);
 
   constructor(
-    @Optional() @Inject('MemoryFacadeService')
-    private readonly memoryFacade?: any,
-    @Optional() @Inject('MemoryCoreService')
-    private readonly memoryCoreService?: any
+    @Optional()
+    @Inject('MEMORY_ADAPTER_FACADE_SERVICE')
+    private readonly memoryFacade?: any
   ) {}
 
   /**
@@ -60,12 +59,18 @@ export class MemoryAdapter {
    */
   create(config: MemoryConfig): BaseMemory | any {
     // Try enterprise memory module first for advanced capabilities
-    if (this.memoryFacade && (config.type === 'enterprise' || config.chromadb || config.neo4j)) {
+    if (
+      this.memoryFacade &&
+      (config.type === 'enterprise' || config.chromadb || config.neo4j)
+    ) {
       this.logger.log('Using enterprise memory module via adapter');
       try {
         return this.createEnterpriseMemory(config);
       } catch (error) {
-        this.logger.warn('Enterprise memory module failed, falling back to basic implementation:', error);
+        this.logger.warn(
+          'Enterprise memory module failed, falling back to basic implementation:',
+          error
+        );
       }
     }
 
@@ -86,7 +91,7 @@ export class MemoryAdapter {
       retention: {
         maxEntries: config.maxTokens || 1000,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      }
+      },
     };
 
     // Create wrapper that bridges enterprise memory to LangChain interface
@@ -94,7 +99,7 @@ export class MemoryAdapter {
       returnMessages: config.returnMessages ?? true,
       inputKey: config.inputKey,
       outputKey: config.outputKey,
-      memoryKey: config.memoryKey || 'history'
+      memoryKey: config.memoryKey || 'history',
     });
   }
 
@@ -158,16 +163,21 @@ export class MemoryAdapter {
     capabilities: string[];
   } {
     const enterpriseAvailable = this.isEnterpriseAvailable();
-    
+
     const capabilities = ['buffer', 'summary', 'buffer_window'];
     if (enterpriseAvailable) {
-      capabilities.push('enterprise', 'semantic_search', 'cross_thread_persistence', 'conversation_summarization');
+      capabilities.push(
+        'enterprise',
+        'semantic_search',
+        'cross_thread_persistence',
+        'conversation_summarization'
+      );
     }
 
     return {
       enterpriseAvailable,
       fallbackMode: !enterpriseAvailable,
-      capabilities
+      capabilities,
     };
   }
 }
@@ -198,7 +208,9 @@ class EnterpriseMemoryWrapper extends BaseMemory {
     return [this.memoryKey];
   }
 
-  async loadMemoryVariables(values: Record<string, any>): Promise<Record<string, any>> {
+  async loadMemoryVariables(
+    values: Record<string, any>
+  ): Promise<Record<string, any>> {
     try {
       // Use enterprise memory to retrieve conversation history
       const memories = await this.memoryFacade.retrieveContext(
@@ -211,13 +223,15 @@ class EnterpriseMemoryWrapper extends BaseMemory {
         return {
           [this.memoryKey]: memories.map((memory: any) => ({
             content: memory.content,
-            additional_kwargs: memory.metadata || {}
-          }))
+            additional_kwargs: memory.metadata || {},
+          })),
         };
       }
 
       return {
-        [this.memoryKey]: memories.map((memory: any) => memory.content).join('\n')
+        [this.memoryKey]: memories
+          .map((memory: any) => memory.content)
+          .join('\n'),
       };
     } catch (error) {
       // Fallback to empty history if enterprise memory fails
@@ -225,31 +239,42 @@ class EnterpriseMemoryWrapper extends BaseMemory {
     }
   }
 
-  async saveContext(inputValues: Record<string, any>, outputValues: Record<string, any>): Promise<void> {
+  async saveContext(
+    inputValues: Record<string, any>,
+    outputValues: Record<string, any>
+  ): Promise<void> {
     try {
       const input = inputValues[this.inputKey || 'input'] || '';
       const output = outputValues[this.outputKey || 'output'] || '';
 
       if (input) {
-        await this.memoryFacade.storeEntry({
-          content: input,
-          metadata: {
-            type: 'human',
-            threadId: this.config.threadId,
-            timestamp: new Date().toISOString()
-          }
-        }, this.config.userId, this.config.threadId);
+        await this.memoryFacade.storeEntry(
+          {
+            content: input,
+            metadata: {
+              type: 'human',
+              threadId: this.config.threadId,
+              timestamp: new Date().toISOString(),
+            },
+          },
+          this.config.userId,
+          this.config.threadId
+        );
       }
 
       if (output) {
-        await this.memoryFacade.storeEntry({
-          content: output,
-          metadata: {
-            type: 'ai',
-            threadId: this.config.threadId,
-            timestamp: new Date().toISOString()
-          }
-        }, this.config.userId, this.config.threadId);
+        await this.memoryFacade.storeEntry(
+          {
+            content: output,
+            metadata: {
+              type: 'ai',
+              threadId: this.config.threadId,
+              timestamp: new Date().toISOString(),
+            },
+          },
+          this.config.userId,
+          this.config.threadId
+        );
       }
     } catch (error) {
       // Log error but don't fail the operation

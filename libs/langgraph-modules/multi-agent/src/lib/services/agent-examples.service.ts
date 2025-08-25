@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { Injectable } from '@nestjs/common';
+import { AIMessage } from '@langchain/core/messages';
 import { 
   AgentDefinition, 
   AgentState, 
@@ -14,7 +14,7 @@ import {
  */
 @Injectable()
 export class AgentExamplesService {
-  private readonly logger = new Logger(AgentExamplesService.name);
+  // Logger removed as it was not used in the implementation
 
   /**
    * Create a simple research assistant supervisor network

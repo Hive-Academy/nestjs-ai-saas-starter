@@ -1,0 +1,31 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "../../libs/langgraph-modules/core"
+    },
+    {
+      "path": "../../libs/nestjs-langgraph"
+    },
+    {
+      "path": "../../libs/dev-brand/backend/feature"
+    },
+    {
+      "path": "../../libs/dev-brand/backend/data-access"
+    },
+    {
+      "path": "../../libs/nestjs-neo4j"
+    },
+    {
+      "path": "../../libs/nestjs-chromadb"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
+}

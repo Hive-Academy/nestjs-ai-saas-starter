@@ -17,7 +17,7 @@ const colors = {
   magenta: (text) => `\x1b[35m${text}\x1b[0m`,
   cyan: (text) => `\x1b[36m${text}\x1b[0m`,
   white: (text) => `\x1b[37m${text}\x1b[0m`,
-  gray: (text) => `\x1b[90m${text}\x1b[0m`
+  gray: (text) => `\x1b[90m${text}\x1b[0m`,
 };
 
 // Use colors instead of chalk
@@ -29,18 +29,17 @@ const LIBRARIES = [
   'nestjs-neo4j',
   'nestjs-langgraph',
   'langgraph-modules/checkpoint',
-  'langgraph-modules/memory',
   'langgraph-modules/time-travel',
   'langgraph-modules/multi-agent',
   'langgraph-modules/functional-api',
   'langgraph-modules/monitoring',
-  'langgraph-modules/platform'
+  'langgraph-modules/platform',
 ];
 
 const VALIDATION_RESULTS = {
   passed: [],
   failed: [],
-  warnings: []
+  warnings: [],
 };
 
 /**
@@ -51,13 +50,13 @@ function executeCommand(command, options = {}) {
     const result = execSync(command, {
       encoding: 'utf8',
       stdio: 'pipe',
-      ...options
+      ...options,
     });
     return { success: true, output: result };
   } catch (error) {
     return {
       success: false,
-      output: error.stdout || error.stderr || error.message
+      output: error.stdout || error.stderr || error.message,
     };
   }
 }
@@ -66,7 +65,9 @@ function executeCommand(command, options = {}) {
  * Validate TypeScript compilation for a library
  */
 function validateTypeScriptCompilation(library) {
-  console.log(chalk.blue(`🔍 Validating TypeScript compilation for ${library}...`));
+  console.log(
+    chalk.blue(`🔍 Validating TypeScript compilation for ${library}...`)
+  );
 
   const libPath = path.join('libs', library);
   if (!fs.existsSync(libPath)) {
@@ -77,8 +78,13 @@ function validateTypeScriptCompilation(library) {
   // Check if tsconfig.lib.json exists
   const tsconfigPath = path.join(libPath, 'tsconfig.lib.json');
   if (!fs.existsSync(tsconfigPath)) {
-    console.log(chalk.yellow(`⚠️  No tsconfig.lib.json found for ${library}, skipping...`));
-    return { success: true, warnings: [`No tsconfig.lib.json found for ${library}`] };
+    console.log(
+      chalk.yellow(`⚠️  No tsconfig.lib.json found for ${library}, skipping...`)
+    );
+    return {
+      success: true,
+      warnings: [`No tsconfig.lib.json found for ${library}`],
+    };
   }
 
   // Run TypeScript compilation check
@@ -130,14 +136,20 @@ function checkForAnyTypes(library) {
   }
 
   // Search for 'any' types in TypeScript files
-  const result = executeCommand(`grep -r "\\bany\\b" ${libPath} --include="*.ts" --exclude="*.spec.ts" --exclude="*.test.ts" || true`);
+  const result = executeCommand(
+    `grep -r "\\bany\\b" ${libPath} --include="*.ts" --exclude="*.spec.ts" --exclude="*.test.ts" || true`
+  );
 
   if (result.output.trim() === '') {
     console.log(chalk.green(`✅ ${library}: No 'any' types found`));
     return { success: true, anyCount: 0 };
   } else {
-    const anyCount = result.output.split('\n').filter(line => line.trim()).length;
-    console.log(chalk.yellow(`⚠️  ${library}: Found ${anyCount} instances of 'any' types`));
+    const anyCount = result.output
+      .split('\n')
+      .filter((line) => line.trim()).length;
+    console.log(
+      chalk.yellow(`⚠️  ${library}: Found ${anyCount} instances of 'any' types`)
+    );
     return { success: false, anyCount, details: result.output };
   }
 }
@@ -169,17 +181,19 @@ function generateReport() {
   console.log(chalk.cyan('='.repeat(50)));
 
   console.log(chalk.green(`✅ Passed: ${VALIDATION_RESULTS.passed.length}`));
-  VALIDATION_RESULTS.passed.forEach(lib => {
+  VALIDATION_RESULTS.passed.forEach((lib) => {
     console.log(chalk.green(`   - ${lib}`));
   });
 
   console.log(chalk.red(`❌ Failed: ${VALIDATION_RESULTS.failed.length}`));
-  VALIDATION_RESULTS.failed.forEach(lib => {
+  VALIDATION_RESULTS.failed.forEach((lib) => {
     console.log(chalk.red(`   - ${lib}`));
   });
 
-  console.log(chalk.yellow(`⚠️  Warnings: ${VALIDATION_RESULTS.warnings.length}`));
-  VALIDATION_RESULTS.warnings.forEach(warning => {
+  console.log(
+    chalk.yellow(`⚠️  Warnings: ${VALIDATION_RESULTS.warnings.length}`)
+  );
+  VALIDATION_RESULTS.warnings.forEach((warning) => {
     console.log(chalk.yellow(`   - ${warning}`));
   });
 
@@ -189,13 +203,18 @@ function generateReport() {
     summary: {
       passed: VALIDATION_RESULTS.passed.length,
       failed: VALIDATION_RESULTS.failed.length,
-      warnings: VALIDATION_RESULTS.warnings.length
+      warnings: VALIDATION_RESULTS.warnings.length,
     },
-    details: VALIDATION_RESULTS
+    details: VALIDATION_RESULTS,
   };
 
-  fs.writeFileSync('typescript-validation-report.json', JSON.stringify(report, null, 2));
-  console.log(chalk.cyan('\n📄 Report saved to typescript-validation-report.json'));
+  fs.writeFileSync(
+    'typescript-validation-report.json',
+    JSON.stringify(report, null, 2)
+  );
+  console.log(
+    chalk.cyan('\n📄 Report saved to typescript-validation-report.json')
+  );
 }
 
 /**
@@ -206,7 +225,8 @@ async function main() {
   console.log(chalk.cyan('='.repeat(50)));
 
   const validationTypes = process.argv.slice(2);
-  const runAll = validationTypes.length === 0 || validationTypes.includes('all');
+  const runAll =
+    validationTypes.length === 0 || validationTypes.includes('all');
 
   for (const library of LIBRARIES) {
     console.log(chalk.magenta(`\n📦 Processing library: ${library}`));
@@ -243,7 +263,9 @@ async function main() {
     if (runAll || validationTypes.includes('any-types')) {
       const anyResult = checkForAnyTypes(library);
       if (!anyResult.success && anyResult.anyCount > 0) {
-        libraryWarnings.push(`${library}: Found ${anyResult.anyCount} 'any' types`);
+        libraryWarnings.push(
+          `${library}: Found ${anyResult.anyCount} 'any' types`
+        );
       }
     }
 
@@ -262,7 +284,7 @@ async function main() {
     } else {
       VALIDATION_RESULTS.failed.push({
         library,
-        errors: libraryErrors
+        errors: libraryErrors,
       });
     }
 
@@ -274,7 +296,9 @@ async function main() {
   // Exit with appropriate code
   const hasFailures = VALIDATION_RESULTS.failed.length > 0;
   if (hasFailures) {
-    console.log(chalk.red('\n💥 Validation failed! Please fix the errors above.'));
+    console.log(
+      chalk.red('\n💥 Validation failed! Please fix the errors above.')
+    );
     process.exit(1);
   } else {
     console.log(chalk.green('\n🎉 All validations passed!'));
@@ -284,7 +308,7 @@ async function main() {
 
 // Handle CLI usage
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error(chalk.red('💥 Validation script failed:'), error);
     process.exit(1);
   });
@@ -294,5 +318,5 @@ module.exports = {
   validateTypeScriptCompilation,
   validateESLintCompliance,
   checkForAnyTypes,
-  validateBuild
+  validateBuild,
 };

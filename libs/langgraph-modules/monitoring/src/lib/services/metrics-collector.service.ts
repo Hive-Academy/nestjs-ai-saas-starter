@@ -328,7 +328,7 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
    * Export metrics to various formats
    */
   async exportMetrics(format: 'json' | 'csv' = 'json', filter?: { pattern?: string; tags?: MetricTags }): Promise<string> {
-    let allMetrics: Metric[] = [];
+    const allMetrics: Metric[] = [];
 
     // Collect all metrics
     for (const [name, buffer] of this.metricBuffer.entries()) {

@@ -21,7 +21,7 @@ import { GraphBuilderService } from './graph-builder.service';
 @Injectable()
 export class NetworkManagerService {
   private readonly logger = new Logger(NetworkManagerService.name);
-  private readonly networks = new Map<string, CompiledStateGraph<AgentState>>();
+  private readonly networks = new Map<string, CompiledStateGraph<any, any>>();
   private readonly networkConfigs = new Map<string, AgentNetwork>();
 
   constructor(
@@ -57,7 +57,7 @@ export class NetworkManagerService {
       );
 
       // Build the appropriate graph type
-      let graph: CompiledStateGraph<AgentState>;
+      let graph: CompiledStateGraph<any, any>;
 
       switch (networkConfig.type) {
         case 'supervisor':
@@ -169,7 +169,7 @@ export class NetworkManagerService {
       });
 
       // Execute the workflow
-      const result = await graph.invoke(initialState, {
+      const result = await (graph as any).invoke(initialState as any, {
         ...input.config,
         configurable: {
           ...input.config?.configurable,
@@ -192,11 +192,11 @@ export class NetworkManagerService {
       });
 
       return {
-        finalState: result,
+        finalState: result as any,
         executionPath,
         executionTime,
         success: true,
-        tokenUsage: this.extractTokenUsage(result),
+        tokenUsage: this.extractTokenUsage(result as any),
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -273,7 +273,7 @@ export class NetworkManagerService {
       let finalResult: AgentState | undefined;
       const executionPath: string[] = [];
 
-      for await (const chunk of graph.stream(initialState, {
+      for await (const chunk of (graph as any).stream(initialState as any, {
         ...input.config,
         streamMode,
         configurable: {
@@ -302,11 +302,11 @@ export class NetworkManagerService {
       });
 
       return {
-        finalState: finalResult || initialState,
+        finalState: (finalResult || initialState) as any,
         executionPath,
         executionTime,
         success: true,
-        tokenUsage: this.extractTokenUsage(finalResult),
+        tokenUsage: this.extractTokenUsage(finalResult as any),
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -339,7 +339,7 @@ export class NetworkManagerService {
   /**
    * Get network by ID
    */
-  getNetwork(networkId: string): CompiledStateGraph<AgentState> | undefined {
+  getNetwork(networkId: string): CompiledStateGraph<any, any> | undefined {
     return this.networks.get(networkId);
   }
 

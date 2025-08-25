@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
+import { DiscoveryService } from '@nestjs/core';
 import { ModuleRef } from '@nestjs/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
@@ -8,10 +8,8 @@ import { AgentType } from './agent-types';
 import {
   ToolMetadata,
   getClassTools,
-  getToolMetadata,
 } from '../decorators/tool.decorator';
 import { ToolRegistryService } from './tool-registry.service';
-import { MetadataProcessorService } from '../core/metadata-processor.service';
 
 /**
  * Statistics about discovered tools
@@ -88,11 +86,8 @@ export class ToolDiscoveryService implements OnModuleInit {
 
   constructor(
     private readonly discoveryService: DiscoveryService,
-    private readonly metadataScanner: MetadataScanner,
-    private readonly reflector: Reflector,
     private readonly moduleRef: ModuleRef,
-    private readonly toolRegistry: ToolRegistryService,
-    private readonly metadataProcessor: MetadataProcessorService
+    private readonly toolRegistry: ToolRegistryService
   ) {}
 
   async onModuleInit() {

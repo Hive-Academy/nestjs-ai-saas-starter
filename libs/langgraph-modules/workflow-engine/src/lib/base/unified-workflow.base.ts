@@ -5,12 +5,12 @@ import {
 } from '@langchain/langgraph';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StructuredToolInterface } from '@langchain/core/tools';
-import type { WorkflowExecutionConfig } from '@langgraph-modules/core';
+import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
-import { EventStreamProcessorService } from '@langgraph-modules/streaming';
-import { isWorkflow } from '@langgraph-modules/core';
+import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
+import { isWorkflow } from '@hive-academy/langgraph-core';
 import {
   WorkflowState,
   Command,

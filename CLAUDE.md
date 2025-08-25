@@ -27,14 +27,14 @@ This NestJS AI SaaS Starter is a sophisticated monorepo designed for building en
 ### 🔴 TOP PRIORITY RULES (VIOLATIONS = IMMEDIATE FAILURE)
 
 1. **ALWAYS USE AGENTS**: Every user request MUST go through appropriate agent - NO EXCEPTIONS unless user explicitly confirms "quick fix"
-2. **NEVER CREATE TYPES**: Search @anubis/shared FIRST, document search in progress.md, extend don't duplicate
+2. **NEVER CREATE TYPES**: Search @hive-academy/shared FIRST, document search in progress.md, extend don't duplicate
 3. **NO BACKWARD COMPATIBILITY**: Never work on or target backward compatibility unless verbally asked for by the user
 4. **NO RE-EXPORTS**: Never re-export a type or service from a library inside another library
 
 ### ENFORCEMENT RULES
 
 1. **Type Safety**: NO 'any' types - will fail code review
-2. **Import Aliases**: Always use @anubis/* paths
+2. **Import Aliases**: Always use @hive-academy/\* paths
 3. **File Limits**: Services < 200 lines, modules < 500 lines
 4. **Agent Protocol**: Never skip main thread orchestration
 5. **Progress Updates**: Per ⏰ Progress Rule (30 minutes)
@@ -54,7 +54,7 @@ This is an Nx monorepo organized into three main library categories:
 
 1. **@hive-academy/nestjs-chromadb** - Vector database for semantic search
 2. **@hive-academy/nestjs-neo4j** - Graph database for relationships
-3. **@anubis/nestjs-langgraph** - AI workflow orchestration (core)
+3. **@hive-academy/nestjs-langgraph** - AI workflow orchestration (core)
 
 #### LangGraph Specialized Modules (7)
 
@@ -74,7 +74,7 @@ Each library has its own comprehensive CLAUDE.md file with detailed guidance:
 
 - **ChromaDB**: [libs/nestjs-chromadb/CLAUDE.md](./libs/nestjs-chromadb/CLAUDE.md)
   - Vector database patterns, embedding strategies, semantic search
-- **Neo4j**: [libs/nestjs-neo4j/CLAUDE.md](./libs/nestjs-neo4j/CLAUDE.md)  
+- **Neo4j**: [libs/nestjs-neo4j/CLAUDE.md](./libs/nestjs-neo4j/CLAUDE.md)
   - Graph modeling, transaction patterns, Cypher optimization
 - **LangGraph Core**: [libs/nestjs-langgraph/CLAUDE.md](./libs/nestjs-langgraph/CLAUDE.md)
   - Workflow orchestration, streaming, tool autodiscovery, HITL
@@ -169,16 +169,20 @@ export class HybridSearchService {
   async searchWithContext(query: string) {
     // Semantic search via ChromaDB
     const vectorResults = await this.chromaDB.queryDocuments('knowledge', {
-      queryTexts: [query], nResults: 10
+      queryTexts: [query],
+      nResults: 10,
     });
-    
+
     // Graph traversal via Neo4j for relationships
-    const graphResults = await this.neo4j.run(`
+    const graphResults = await this.neo4j.run(
+      `
       MATCH (d:Document)-[r:RELATED_TO]->(related:Document)
       WHERE d.embeddingId IN $ids
       RETURN related
-    `, { ids: vectorResults.ids });
-    
+    `,
+      { ids: vectorResults.ids }
+    );
+
     return { vectorResults, graphResults };
   }
 }
@@ -189,7 +193,7 @@ export class HybridSearchService {
 ```typescript
 @Workflow({
   name: 'comprehensive-ai-workflow',
-  modules: ['memory', 'checkpoint', 'multi-agent', 'monitoring']
+  modules: ['memory', 'checkpoint', 'multi-agent', 'monitoring'],
 })
 export class ComprehensiveWorkflow extends DeclarativeWorkflowBase {
   // Leverages memory for context, checkpointing for persistence,
@@ -205,27 +209,31 @@ export class RAGPipelineService {
   async generateAnswer(query: string, userId: string) {
     // 1. Retrieve from memory module
     const memories = await this.memoryService.retrieveContext(userId);
-    
+
     // 2. Vector search via ChromaDB
     const vectorContext = await this.chromaDB.queryDocuments('knowledge', {
-      queryTexts: [query], nResults: 5
+      queryTexts: [query],
+      nResults: 5,
     });
-    
+
     // 3. Graph search via Neo4j
     const graphContext = await this.neo4j.getRelatedEntities(query);
-    
+
     // 4. LangGraph workflow for generation
     const workflow = new RAGWorkflow();
     const result = await workflow.execute({
-      query, memories, vectorContext, graphContext
+      query,
+      memories,
+      vectorContext,
+      graphContext,
     });
-    
+
     // 5. Store in memory for future context
     await this.memoryService.storeEntry({
       content: result.answer,
-      metadata: { userId, query }
+      metadata: { userId, query },
     });
-    
+
     return result;
   }
 }
@@ -320,7 +328,7 @@ For detailed implementation guidance, always refer to the specific library CLAUD
 
 - **NEVER create files unless they're absolutely necessary for achieving your goal**
 - **ALWAYS prefer editing an existing file to creating a new one**
-- **NEVER proactively create documentation files (*.md) or README files unless explicitly requested**
+- **NEVER proactively create documentation files (\*.md) or README files unless explicitly requested**
 - **Only use emojis if the user explicitly requests it**
 
 For library-specific work, always consult the relevant CLAUDE.md file first to understand the domain-specific patterns and best practices.
@@ -352,9 +360,9 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
 - Tracks progress automatically
 - Validates all outputs
 
-### 🔴 TYPE CREATION PRINCIPLE  
+### 🔴 TYPE CREATION PRINCIPLE
 
-**NEVER create new TypeScript types without FIRST searching @anubis/shared and documenting the search. Extend existing types rather than duplicating.**
+**NEVER create new TypeScript types without FIRST searching @hive-academy/shared and documenting the search. Extend existing types rather than duplicating.**
 
 ---
 
@@ -373,7 +381,7 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
    registry=$(cat task-tracking/registry.md)
    branch=$(git branch --show-current)
    status=$(git status --short)
-   
+
    # TASK ANALYSIS
    incomplete_tasks=$(grep -E "🔄|⚠️|❌" registry.md)
    ```
@@ -382,15 +390,17 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
 
    ```markdown
    📊 Current Context:
+
    - Branch: [current_branch]
    - Active Tasks: [count of incomplete]
    - Uncommitted: [X files]
-   
+
    Options:
-   1. Continue task → /orchestrate TASK_[ID]
+
+   1. Continue task → /orchestrate TASK\_[ID]
    2. Start new task → /orchestrate [description]
    3. Quick fix (no tracking) → Requires explicit confirmation
-   
+
    Use the orchestrator command for all agent workflows.
    ```
 
@@ -406,16 +416,16 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
 
 ### 📌 AGENT SELECTION MATRIX (USE FOR EVERY REQUEST)
 
-| User Request Type | Required Agent | Example Triggers |
-|------------------|----------------|------------------|
-| "Implement X" | project-manager → architect → developer | Any new feature/component |
-| "Fix bug in X" | project-manager → developer → tester | Bug reports, issues |
-| "Research how to X" | researcher-expert → architect | Technical questions, best practices |
-| "Review my code" | code-reviewer | Code quality checks |
-| "Test X functionality" | senior-tester | Testing requests |
-| "Plan architecture for X" | software-architect | Design questions |
-| "Continue working on X" | Check progress.md → last agent | Task continuation |
-| "Quick syntax question" | ASK USER: "Should I use researcher-expert agent?" | Simple queries |
+| User Request Type         | Required Agent                                    | Example Triggers                    |
+| ------------------------- | ------------------------------------------------- | ----------------------------------- |
+| "Implement X"             | project-manager → architect → developer           | Any new feature/component           |
+| "Fix bug in X"            | project-manager → developer → tester              | Bug reports, issues                 |
+| "Research how to X"       | researcher-expert → architect                     | Technical questions, best practices |
+| "Review my code"          | code-reviewer                                     | Code quality checks                 |
+| "Test X functionality"    | senior-tester                                     | Testing requests                    |
+| "Plan architecture for X" | software-architect                                | Design questions                    |
+| "Continue working on X"   | Check progress.md → last agent                    | Task continuation                   |
+| "Quick syntax question"   | ASK USER: "Should I use researcher-expert agent?" | Simple queries                      |
 
 **⚠️ DEFAULT RULE**: When uncertain, ALWAYS start with project-manager
 
@@ -428,19 +438,20 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
 
 ### Available Agents
 
-| Agent | Symbol | Primary Role | Invocation Trigger |
-|-------|--------|--------------|-------------------|
-| project-manager | 🪃 | Requirements, planning | Complex tasks |
-| researcher-expert | 🔎 | Technical research | Knowledge gaps |
-| software-architect | 🏗️ | Design, subtask breakdown | After requirements |
-| senior-developer | 💻 | Implementation | Execution phase |
-| senior-tester | 🧪 | Testing, validation | New components |
-| code-reviewer | 🔍 | Quality assurance | Before completion |
+| Agent              | Symbol | Primary Role              | Invocation Trigger |
+| ------------------ | ------ | ------------------------- | ------------------ |
+| project-manager    | 🪃     | Requirements, planning    | Complex tasks      |
+| researcher-expert  | 🔎     | Technical research        | Knowledge gaps     |
+| software-architect | 🏗️     | Design, subtask breakdown | After requirements |
+| senior-developer   | 💻     | Implementation            | Execution phase    |
+| senior-tester      | 🧪     | Testing, validation       | New components     |
+| code-reviewer      | 🔍     | Quality assurance         | Before completion  |
 
 ### Delegation Protocol
 
 ```markdown
 ## DELEGATION REQUEST
+
 **Next Agent**: [agent-name]
 **Task**: [specific task]
 **Artifacts**: [files to pass]
@@ -531,7 +542,7 @@ git push origin $(git branch --show-current)
 git checkout -b feature/TASK_[ID]-[description]
 git push -u origin feature/TASK_[ID]-[description]
 
-# Continue Task  
+# Continue Task
 git add . && git commit -m "chore: checkpoint"
 git checkout feature/TASK_[ID]-[description]
 git pull origin feature/TASK_[ID]-[description] --rebase

@@ -33,10 +33,10 @@
   },
   "private": true,
   "dependencies": {
-    "@angular-devkit/build-angular": "20.1.5",
+    "@angular-devkit/build-angular": "20.1.6",
     "@angular/animations": "20.1.6",
-    "@angular/cdk": "20.1.5",
-    "@angular/cli": "20.1.5",
+    "@angular/cdk": "20.1.6",
+    "@angular/cli": "20.1.6",
     "@angular/common": "20.1.6",
     "@angular/core": "20.1.6",
     "@angular/forms": "20.1.6",
@@ -72,23 +72,23 @@
     "zone.js": "0.15.1"
   },
   "devDependencies": {
-    "@angular-devkit/core": "~20.1.0",
+    "@angular-devkit/core": "~20.1.6",
     "@commitlint/cli": "^18.0.0",
     "@commitlint/config-conventional": "^18.0.0",
     "@eslint/js": "^9.8.0",
     "@nestjs/axios": "4.0.1",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
-    "@nx/angular": "21.3.11",
-    "@nx/eslint": "21.3.11",
-    "@nx/eslint-plugin": "21.3.11",
-    "@nx/jest": "21.3.11",
-    "@nx/js": "21.3.11",
-    "@nx/nest": "21.3.11",
-    "@nx/node": "21.3.11",
-    "@nx/web": "21.3.11",
-    "@nx/webpack": "21.3.11",
-    "@nx/workspace": "21.3.11",
+    "@nx/angular": "21.4.1",
+    "@nx/eslint": "21.4.1",
+    "@nx/eslint-plugin": "21.4.1",
+    "@nx/jest": "21.4.1",
+    "@nx/js": "21.4.1",
+    "@nx/nest": "21.4.1",
+    "@nx/node": "21.4.1",
+    "@nx/web": "21.4.1",
+    "@nx/webpack": "21.4.1",
+    "@nx/workspace": "21.4.1",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
@@ -106,7 +106,7 @@
     "jsonc-eslint-parser": "^2.1.0",
     "lint-staged": "^15.0.0",
     "madge": "8.0.0",
-    "nx": "21.3.11",
+    "nx": "21.4.1",
     "prettier": "^2.6.2",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
@@ -121,7 +121,9 @@
     "apps/*",
     "libs/*",
     "libs/langgraph-modules/*",
-    "libs/demo/*"
+    "libs/demo/*",
+    "libs/dev-brand/backend/*",
+    "libs/core/*"
   ],
   "overrides": {
     "chalk": {
@@ -129,6 +131,10 @@
     },
     "@angular-devkit/build-angular": {
       "jest": "$jest"
-    }
+    },
+    "@angular/compiler": "20.1.6",
+    "@angular/compiler-cli": "20.1.6",
+    "@angular/build": "20.1.6",
+    "@swc/core": "~1.5.7"
   }
 }

@@ -10,7 +10,7 @@ import {
   NetworkConfigurationError,
   MULTI_AGENT_CONSTANTS,
 } from '../interfaces/multi-agent.interface';
-import { AgentRegistryService } from './agent-registry.service';
+// AgentRegistryService import removed as it's no longer used
 import { NodeFactoryService } from './node-factory.service';
 
 /**
@@ -22,7 +22,6 @@ export class GraphBuilderService {
   private readonly logger = new Logger(GraphBuilderService.name);
 
   constructor(
-    private readonly agentRegistry: AgentRegistryService,
     private readonly nodeFactory: NodeFactoryService
   ) {}
 
@@ -33,7 +32,7 @@ export class GraphBuilderService {
     agents: readonly AgentDefinition[],
     config: SupervisorConfig,
     compilationOptions?: AgentNetwork['compilationOptions']
-  ): Promise<CompiledStateGraph<AgentState>> {
+  ): Promise<CompiledStateGraph<any, any>> {
     this.logger.debug('Building supervisor graph with agents:', agents.map(a => a.id));
 
     // Validate workers exist in agent list
@@ -45,7 +44,7 @@ export class GraphBuilderService {
       );
     }
 
-    const graph = new StateGraph<AgentState>({
+    const graph = new (StateGraph as any)({
       channels: this.createDefaultStateChannels(),
     });
 
@@ -54,24 +53,24 @@ export class GraphBuilderService {
       agents,
       config
     );
-    graph.addNode('supervisor', supervisorNode);
+    (graph as any).addNode('supervisor', supervisorNode);
 
     // Add worker nodes
     for (const agent of agents) {
       if (config.workers.includes(agent.id)) {
         const workerNode = await this.nodeFactory.createWorkerNode(agent, config);
-        graph.addNode(agent.id, workerNode);
+        (graph as any).addNode(agent.id, workerNode);
       }
     }
 
     // Add edges
-    this.addSupervisorEdges(graph, config.workers);
+    this.addSupervisorEdges(graph as any, config.workers);
 
     // Compile and return
-    return graph.compile({
-      checkpointer: compilationOptions?.checkpointer,
+    return (graph as any).compile({
+      checkpointer: compilationOptions?.checkpointer as any,
       debug: compilationOptions?.debug,
-      interruptBefore: compilationOptions?.enableInterrupts ? config.workers : undefined,
+      interruptBefore: compilationOptions?.enableInterrupts ? [...config.workers] : undefined,
     });
   }
 
@@ -82,24 +81,24 @@ export class GraphBuilderService {
     agents: readonly AgentDefinition[],
     config: SwarmConfig,
     compilationOptions?: AgentNetwork['compilationOptions']
-  ): Promise<CompiledStateGraph<AgentState>> {
+  ): Promise<CompiledStateGraph<any, any>> {
     this.logger.debug('Building swarm graph with agents:', agents.map(a => a.id));
 
-    const graph = new StateGraph<AgentState>({
+    const graph = new (StateGraph as any)({
       channels: this.createSwarmStateChannels(config),
     });
 
     // Add all agent nodes with handoff capabilities
     for (const agent of agents) {
       const swarmNode = await this.nodeFactory.createSwarmNode(agent, agents, config);
-      graph.addNode(agent.id, swarmNode);
+      (graph as any).addNode(agent.id, swarmNode);
     }
 
     // Add edges for swarm pattern
-    this.addSwarmEdges(graph, agents);
+    this.addSwarmEdges(graph as any, agents);
 
-    return graph.compile({
-      checkpointer: compilationOptions?.checkpointer,
+    return (graph as any).compile({
+      checkpointer: compilationOptions?.checkpointer as any,
       debug: compilationOptions?.debug,
     });
   }
@@ -111,7 +110,7 @@ export class GraphBuilderService {
     agents: readonly AgentDefinition[],
     config: HierarchicalConfig,
     compilationOptions?: AgentNetwork['compilationOptions']
-  ): Promise<CompiledStateGraph<AgentState>> {
+  ): Promise<CompiledStateGraph<any, any>> {
     this.logger.debug('Building hierarchical graph with levels:', config.levels);
 
     // For now, implement as supervisor with top-level agents
@@ -200,7 +199,7 @@ Route tasks to the appropriate level based on complexity and specialization.`,
    * Add edges for supervisor pattern
    */
   private addSupervisorEdges(
-    graph: StateGraph<AgentState>, 
+    graph: any, 
     workers: readonly string[]
   ): void {
     // Entry point to supervisor
@@ -223,7 +222,7 @@ Route tasks to the appropriate level based on complexity and specialization.`,
    * Add edges for swarm pattern
    */
   private addSwarmEdges(
-    graph: StateGraph<AgentState>,
+    graph: any,
     agents: readonly AgentDefinition[]
   ): void {
     // Entry point to first agent

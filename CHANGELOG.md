@@ -8,18 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial library publishing infrastructure
 - Nx Release configuration with conventional commits
-- NPM publishing configuration with @anubis scope
+- NPM publishing configuration with @hive-academy scope
 - Automated changelog generation
 - Git tagging and commit message templates
 
 ### Libraries
+
 - `@hive-academy/nestjs-chromadb` - NestJS integration for ChromaDB vector database
-- `@hive-academy/nestjs-neo4j` - NestJS integration for Neo4j graph database  
-- `@anubis/nestjs-langgraph` - NestJS integration for LangGraph AI workflows
+- `@hive-academy/nestjs-neo4j` - NestJS integration for Neo4j graph database
+- `@hive-academy/nestjs-langgraph` - NestJS integration for LangGraph AI workflows
 
 ### Infrastructure
+
 - Publishable library configurations
 - TypeScript build targets
 - Comprehensive package.json metadata
@@ -28,4 +31,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-*This changelog is automatically generated using [Nx Release](https://nx.dev/features/manage-releases) with conventional commits.*
+_This changelog is automatically generated using [Nx Release](https://nx.dev/features/manage-releases) with conventional commits._

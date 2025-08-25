@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { HealthCheckService } from './health-check.service';
 import type {
   HealthCheckFunction,

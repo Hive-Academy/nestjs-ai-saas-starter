@@ -4,10 +4,10 @@ import type { CheckpointConfig } from '../interfaces/module-options.interface';
 
 /**
  * Adapter that bridges the main NestJS LangGraph library to the enterprise checkpoint module
- * 
+ *
  * This adapter follows the Adapter pattern to provide seamless integration between
  * the main library and the specialized checkpoint module without breaking existing APIs.
- * 
+ *
  * Benefits:
  * - Maintains backward compatibility with existing checkpoint APIs
  * - Delegates to enterprise-grade checkpoint module when available
@@ -21,7 +21,7 @@ export class CheckpointAdapter {
   constructor(
     @Optional() @Inject('CheckpointManagerService')
     private readonly checkpointManager?: any,
-    @Optional() @Inject('LangGraphCheckpointProvider') 
+    @Optional() @Inject('LangGraphCheckpointProvider')
     private readonly langGraphProvider?: any
   ) {}
 
@@ -67,16 +67,17 @@ export class CheckpointAdapter {
   private convertToEnterpriseConfig(config: CheckpointConfig): any {
     const storageTypeMap: Record<string, string> = {
       'memory': 'memory',
-      'database': 'sqlite', 
+      'database': 'sqlite',
       'redis': 'redis',
       'custom': 'custom'
     };
 
+    const storageType = config.storage || 'memory';
     return {
-      type: storageTypeMap[config.storage] || 'memory',
+      type: storageTypeMap[storageType] || 'memory',
       name: 'main-library-adapter',
       default: true,
-      [config.storage]: config.storageConfig || {},
+      [storageType]: config.storageConfig || {},
       saver: config.saver
     };
   }
@@ -97,19 +98,21 @@ export class CheckpointAdapter {
     switch (config.storage) {
       case 'memory':
         return SqliteSaver.fromConnString(':memory:');
-      
-      case 'database':
+
+      case 'sqlite': {
         const dbPath = config.storageConfig?.path || './checkpoints.db';
         const saver = SqliteSaver.fromConnString(dbPath);
         await (saver as any).setup?.();
         return saver;
-      
-      case 'custom':
+      }
+
+      case 'custom': {
         if (config.saver) {
           return config.saver as any;
         }
         throw new Error('Custom storage type requires a saver implementation');
-      
+      }
+
       default:
         return SqliteSaver.fromConnString(':memory:');
     }
@@ -139,7 +142,7 @@ export class CheckpointAdapter {
   } {
     const enterpriseAvailable = this.isEnterpriseAvailable();
     const langGraphProviderAvailable = this.isLangGraphProviderAvailable();
-    
+
     return {
       enterpriseAvailable,
       langGraphProviderAvailable,

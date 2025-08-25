@@ -3,7 +3,7 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { Injectable, Logger } from '@nestjs/common';
 
-import { WorkflowState } from '../interfaces/workflow.interface';
+import { WorkflowState } from '@hive-academy/langgraph-core';
 import { ToolRegistryService } from './tool-registry.service';
 
 /**

@@ -5,6 +5,7 @@ This file provides comprehensive guidance to Claude Code when working with the m
 ## Business Domain
 
 ### Core Purpose
+
 The multi-agent module enables sophisticated AI agent coordination and orchestration for complex business workflows. It supports three primary coordination patterns:
 
 - **Supervisor Pattern**: Hierarchical agent coordination with intelligent routing decisions
@@ -12,6 +13,7 @@ The multi-agent module enables sophisticated AI agent coordination and orchestra
 - **Hierarchical Pattern**: Multi-level agent systems with escalation and parent graph navigation
 
 ### Target Use Cases
+
 - **Research Teams**: Multi-agent research workflows with specialized roles (researcher, analyst, writer)
 - **Content Creation**: Collaborative content generation with reviewers, editors, and publishers
 - **Customer Support**: Multi-tier support systems with escalation and specialization
@@ -20,6 +22,7 @@ The multi-agent module enables sophisticated AI agent coordination and orchestra
 - **Quality Assurance**: Multi-stage review and approval processes
 
 ### Business Value
+
 - **Specialization**: Agents can focus on specific domain expertise
 - **Scalability**: Distribute workload across multiple specialized agents
 - **Quality**: Multi-agent review and validation processes
@@ -31,7 +34,9 @@ The multi-agent module enables sophisticated AI agent coordination and orchestra
 ### Core Services Architecture
 
 #### MultiAgentCoordinatorService (Facade)
+
 The primary interface following the Facade pattern, providing:
+
 - Simplified API for common operations
 - Delegation to specialized services
 - Backward compatibility
@@ -44,7 +49,9 @@ const result = await coordinator.executeSimpleWorkflow('research-team', 'Analyze
 ```
 
 #### AgentRegistryService (Registry Pattern)
+
 Centralized agent lifecycle management:
+
 - Agent registration and validation
 - Health monitoring and status tracking
 - Capability-based agent discovery
@@ -61,21 +68,27 @@ agentRegistry.registerAgent({
 ```
 
 #### NetworkManagerService (Orchestrator)
+
 High-level network coordination:
+
 - Network creation and compilation
 - Workflow execution management
 - Streaming and real-time updates
 - Performance monitoring and metrics
 
 #### GraphBuilderService (Builder Pattern)
+
 Specialized graph construction for different patterns:
+
 - Supervisor graph compilation
 - Swarm graph with handoff tools
 - Hierarchical multi-level graphs
 - LangGraph integration and optimization
 
 #### LlmProviderService (Provider Pattern)
+
 LLM abstraction and management:
+
 - Multi-provider support (OpenAI, Anthropic, local models)
 - Caching and performance optimization
 - Token usage tracking
@@ -84,7 +97,9 @@ LLM abstraction and management:
 ### State Management
 
 #### AgentState Interface
+
 Following 2025 LangGraph patterns:
+
 ```typescript
 interface AgentState {
   messages: BaseMessage[];     // Core message history
@@ -97,6 +112,7 @@ interface AgentState {
 ```
 
 #### State Flow Patterns
+
 - **Supervisor**: Centralized routing with state aggregation
 - **Swarm**: Peer-to-peer state sharing with context isolation
 - **Hierarchical**: Multi-level state with escalation capabilities
@@ -104,6 +120,7 @@ interface AgentState {
 ## Multi-Agent Coordination Patterns
 
 ### 1. Supervisor Pattern
+
 Centralized coordination with intelligent routing:
 
 ```typescript
@@ -117,18 +134,21 @@ const supervisorConfig: SupervisorConfig = {
 ```
 
 **Key Features:**
+
 - Intelligent agent selection based on task context
 - Centralized decision making and coordination
 - Message forwarding to reduce token usage
 - Worker specialization and task delegation
 
 **Best Use Cases:**
+
 - Complex workflows requiring coordination
 - Quality control with review cycles
 - Resource allocation and load balancing
 - Sequential task processing
 
 ### 2. Swarm Pattern
+
 Decentralized peer-to-peer agent collaboration:
 
 ```typescript
@@ -147,18 +167,21 @@ const swarmConfig: SwarmConfig = {
 ```
 
 **Key Features:**
+
 - Dynamic handoffs between any agents
 - Context sharing and isolation controls
 - Agent attribution for message tracking
 - Flexible collaboration patterns
 
 **Best Use Cases:**
+
 - Creative collaboration workflows
 - Peer review and feedback systems
 - Brainstorming and ideation processes
 - Parallel processing with coordination
 
 ### 3. Hierarchical Pattern
+
 Multi-level agent systems with escalation:
 
 ```typescript
@@ -177,12 +200,14 @@ const hierarchicalConfig: HierarchicalConfig = {
 ```
 
 **Key Features:**
+
 - Multi-level agent hierarchy
 - Automatic escalation rules
 - Parent graph navigation
 - Command propagation
 
 **Best Use Cases:**
+
 - Enterprise approval workflows
 - Multi-tier decision systems
 - Complex organizational structures
@@ -191,6 +216,7 @@ const hierarchicalConfig: HierarchicalConfig = {
 ## Agent Design Best Practices
 
 ### Agent Definition Structure
+
 ```typescript
 const agentDefinition: AgentDefinition = {
   id: 'unique_agent_id',
@@ -214,6 +240,7 @@ const agentDefinition: AgentDefinition = {
 ### Node Function Best Practices
 
 #### 1. Input Validation
+
 ```typescript
 nodeFunction: async (state: AgentState, config?: RunnableConfig) => {
   // Validate required state
@@ -227,6 +254,7 @@ nodeFunction: async (state: AgentState, config?: RunnableConfig) => {
 ```
 
 #### 2. Error Handling
+
 ```typescript
 nodeFunction: async (state: AgentState) => {
   try {
@@ -243,6 +271,7 @@ nodeFunction: async (state: AgentState) => {
 ```
 
 #### 3. State Management
+
 ```typescript
 nodeFunction: async (state: AgentState) => {
   // Update scratchpad for collaboration
@@ -268,12 +297,14 @@ nodeFunction: async (state: AgentState) => {
 ### Message Flow Patterns
 
 #### Supervisor Message Flow
+
 1. **Human Message** → Supervisor Agent
 2. **Supervisor** analyzes task and routes to worker
 3. **Worker Agent** processes and responds
 4. **Supervisor** reviews and either continues or ends
 
 #### Swarm Message Flow
+
 1. **Agent A** receives task
 2. **Agent A** processes and determines handoff
 3. **Handoff Tool** transfers control to **Agent B**
@@ -281,6 +312,7 @@ nodeFunction: async (state: AgentState) => {
 5. Cycle continues until completion
 
 #### Hierarchical Message Flow
+
 1. **Request** enters at appropriate level
 2. **Processing** occurs at current level
 3. **Escalation** triggers if conditions met
@@ -289,6 +321,7 @@ nodeFunction: async (state: AgentState) => {
 ### Handoff Strategies
 
 #### Tool-Based Handoffs (Swarm)
+
 ```typescript
 const handoffTool: HandoffTool = {
   name: 'transfer_to_specialist',
@@ -308,6 +341,7 @@ const handoffTool: HandoffTool = {
 ```
 
 #### Command-Based Navigation (Hierarchical)
+
 ```typescript
 const parentCommand: AgentCommand = {
   goto: 'parent_supervisor',
@@ -321,6 +355,7 @@ const parentCommand: AgentCommand = {
 ### Performance Optimization
 
 #### Token Management
+
 ```typescript
 const performanceConfig = {
   tokenOptimization: true,        // Optimize token usage
@@ -334,6 +369,7 @@ const performanceConfig = {
 ```
 
 #### Caching Strategy
+
 - **LLM Response Caching**: Cache frequent responses
 - **Graph Compilation Caching**: Reuse compiled graphs
 - **State Checkpointing**: Persist intermediate states
@@ -341,6 +377,7 @@ const performanceConfig = {
 ### Load Balancing
 
 #### Agent Distribution
+
 ```typescript
 // Register multiple instances of the same agent type
 for (let i = 0; i < 3; i++) {
@@ -353,6 +390,7 @@ for (let i = 0; i < 3; i++) {
 ```
 
 #### Dynamic Routing
+
 ```typescript
 // Supervisor can route based on load
 const availableAgents = workers.filter(agentId => 
@@ -363,6 +401,7 @@ const availableAgents = workers.filter(agentId =>
 ## Fault Tolerance
 
 ### Agent Health Monitoring
+
 ```typescript
 // Continuous health monitoring
 setInterval(() => {
@@ -376,6 +415,7 @@ setInterval(() => {
 ### Error Recovery Patterns
 
 #### Graceful Degradation
+
 ```typescript
 nodeFunction: async (state: AgentState) => {
   try {
@@ -388,6 +428,7 @@ nodeFunction: async (state: AgentState) => {
 ```
 
 #### Circuit Breaker Pattern
+
 ```typescript
 class AgentCircuitBreaker {
   private failures = 0;
@@ -417,6 +458,7 @@ class AgentCircuitBreaker {
 ### Event-Driven Monitoring
 
 #### Network Events
+
 ```typescript
 // Network lifecycle events
 eventEmitter.on('network.created', (event) => {
@@ -429,6 +471,7 @@ eventEmitter.on('workflow.completed', (event) => {
 ```
 
 #### Agent Events
+
 ```typescript
 // Agent health and performance events
 eventEmitter.on('agent.health.changed', (event) => {
@@ -441,6 +484,7 @@ eventEmitter.on('agent.health.changed', (event) => {
 ### Metrics Collection
 
 #### Execution Metrics
+
 ```typescript
 interface ExecutionMetrics {
   networkId: string;
@@ -456,6 +500,7 @@ interface ExecutionMetrics {
 ```
 
 #### Performance Dashboards
+
 - Network execution times and success rates
 - Agent utilization and health status
 - Token usage and cost optimization
@@ -464,6 +509,7 @@ interface ExecutionMetrics {
 ## Integration with LangGraph Workflows
 
 ### Subgraph Integration
+
 ```typescript
 // Multi-agent network as subgraph
 const mainWorkflow = new StateGraph(AgentState)
@@ -473,6 +519,7 @@ const mainWorkflow = new StateGraph(AgentState)
 ```
 
 ### State Compilation
+
 ```typescript
 const compilationOptions = {
   enableInterrupts: true,        // Human-in-the-loop support
@@ -484,6 +531,7 @@ const compilationOptions = {
 ## Common Implementation Patterns
 
 ### Research Team Pattern
+
 ```typescript
 async function createResearchTeam() {
   const agents = [
@@ -507,6 +555,7 @@ async function createResearchTeam() {
 ```
 
 ### Content Creation Pipeline
+
 ```typescript
 async function createContentPipeline() {
   const network: AgentNetwork = {
@@ -530,6 +579,7 @@ async function createContentPipeline() {
 ```
 
 ### Customer Support Hierarchy
+
 ```typescript
 async function createSupportHierarchy() {
   const network: AgentNetwork = {
@@ -561,6 +611,7 @@ async function createSupportHierarchy() {
 ## Testing Strategies
 
 ### Unit Testing Agents
+
 ```typescript
 describe('ResearcherAgent', () => {
   it('should process research requests', async () => {
@@ -577,6 +628,7 @@ describe('ResearcherAgent', () => {
 ```
 
 ### Integration Testing Networks
+
 ```typescript
 describe('ResearchTeamNetwork', () => {
   it('should complete research workflow', async () => {
@@ -599,6 +651,7 @@ describe('ResearchTeamNetwork', () => {
 ```
 
 ### Performance Testing
+
 ```typescript
 describe('NetworkPerformance', () => {
   it('should handle concurrent executions', async () => {
@@ -617,6 +670,7 @@ describe('NetworkPerformance', () => {
 ## Configuration Management
 
 ### Environment-Based Configuration
+
 ```typescript
 const moduleConfig: MultiAgentModuleOptions = {
   defaultLlm: {
@@ -646,6 +700,7 @@ const moduleConfig: MultiAgentModuleOptions = {
 ```
 
 ### Module Registration
+
 ```typescript
 @Module({
   imports: [
@@ -669,6 +724,7 @@ export class AppModule {}
 ## Security Considerations
 
 ### Input Validation
+
 ```typescript
 // Validate agent definitions
 const validation = AgentDefinitionSchema.safeParse(definition);
@@ -678,6 +734,7 @@ if (!validation.success) {
 ```
 
 ### Access Control
+
 ```typescript
 // Role-based agent access
 class SecureAgentRegistry extends AgentRegistryService {
@@ -691,6 +748,7 @@ class SecureAgentRegistry extends AgentRegistryService {
 ```
 
 ### Audit Logging
+
 ```typescript
 // Track all agent operations
 eventEmitter.on('agent.registered', (event) => {

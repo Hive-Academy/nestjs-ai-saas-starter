@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import type { WorkflowState } from '@langgraph-modules/core';
+import type { WorkflowState } from '@hive-academy/langgraph-core';
 
 import type { HumanApprovalService } from '../services/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';

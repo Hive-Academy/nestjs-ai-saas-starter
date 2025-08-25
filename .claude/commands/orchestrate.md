@@ -19,14 +19,14 @@ Examples:
 ### 🔴 TOP PRIORITY RULES (VIOLATIONS = IMMEDIATE FAILURE)
 
 1. **ALWAYS USE AGENTS**: Every user request MUST go through appropriate agent - NO EXCEPTIONS unless user explicitly confirms "quick fix"
-2. **NEVER CREATE TYPES**: Search @anubis/shared FIRST, document search in progress.md, extend don't duplicate
+2. **NEVER CREATE TYPES**: Search @hive-academy/shared FIRST, document search in progress.md, extend don't duplicate
 3. **NO BACKWARD COMPATIBILITY**: Never work on or target backward compatibility unless verbally asked for by the user
 4. **NO RE-EXPORTS**: Never re-export a type or service from a library inside another library
 
 ### ENFORCEMENT RULES
 
 1. **Type Safety**: NO 'any' types - will fail code review
-2. **Import Aliases**: Always use @anubis/* paths
+2. **Import Aliases**: Always use @hive-academy/\* paths
 3. **File Limits**: Services < 200 lines, modules < 500 lines
 4. **Agent Protocol**: Never skip main thread orchestration
 5. **Progress Updates**: Per ⏰ Progress Rule (30 minutes)
@@ -124,7 +124,7 @@ DECISION POINT:
 
 Generate or retrieve TASK_ID following naming convention:
 
-- TASK_[DOMAIN]_[NUMBER]
+- TASK*[DOMAIN]*[NUMBER]
 - Domains: CMD (command center), INT (integration), WF (workflow), BUG (fixes), DOC (documentation)
 
 Create task folder structure if new:
@@ -208,12 +208,12 @@ After project-manager returns, validate output:
 
 ```typescript
 interface TaskDescriptionValidation {
-  hasBusinessValue: boolean;        // Must explain why
-  hasAcceptanceCriteria: boolean;   // Must be BDD format
-  hasRiskAnalysis: boolean;         // Must include mitigation
-  hasDependencies: boolean;         // Must list all deps
-  hasMetrics: boolean;              // Must be measurable
-  hasDelegation: boolean;           // Must specify next agent
+  hasBusinessValue: boolean; // Must explain why
+  hasAcceptanceCriteria: boolean; // Must be BDD format
+  hasRiskAnalysis: boolean; // Must include mitigation
+  hasDependencies: boolean; // Must list all deps
+  hasMetrics: boolean; // Must be measurable
+  hasDelegation: boolean; // Must specify next agent
 }
 ```
 
@@ -321,7 +321,7 @@ $RESEARCH_REPORT
    - Integration strategy for user's context
 
 3. CRITICAL: Follow Type Search Protocol
-   - Search @anubis/shared for existing types
+   - Search @hive-academy/shared for existing types
    - Document search results
    - Justify any new types
 
@@ -354,11 +354,11 @@ $RESEARCH_REPORT
 
 ```typescript
 interface ArchitectureValidation {
-  hasPatternJustification: boolean;  // Why this pattern?
-  followsSOLID: boolean;             // Each principle checked
-  appropriateComplexity: boolean;    // KISS principle
-  typeSearchDocumented: boolean;     // MANDATORY
-  subtasksActionable: boolean;       // Clear deliverables
+  hasPatternJustification: boolean; // Why this pattern?
+  followsSOLID: boolean; // Each principle checked
+  appropriateComplexity: boolean; // KISS principle
+  typeSearchDocumented: boolean; // MANDATORY
+  subtasksActionable: boolean; // Clear deliverables
 }
 ```
 
@@ -410,7 +410,7 @@ $PROGRESS
 
 1. Implement the backend features that the USER REQUESTED above
 2. MANDATORY: Execute Type Search Protocol
-   - Search @anubis/shared FIRST
+   - Search @hive-academy/shared FIRST
    - Check core/backend infrastructure services
    - Document findings in progress.md
    - Extend existing types, don't duplicate
@@ -454,8 +454,8 @@ $PROGRESS
 
 1. Implement the frontend features that the USER REQUESTED above
 2. MANDATORY: Execute Component Search Protocol
-   - Search @anubis-studio/shared/ui FIRST for components
-   - Check @anubis-studio/shared/data-access for services
+   - Search @hive-academy-studio/shared/ui FIRST for components
+   - Check @hive-academy-studio/shared/data-access for services
    - Document findings in progress.md
    - Extend existing components, don't duplicate
 
@@ -482,12 +482,14 @@ Return status showing which frontend requirements are complete.
 When a task requires both backend and frontend work:
 
 1. **First: Backend Developer**
+
    - Implement API endpoints, services, database logic
    - Create DTOs and interfaces
    - Set up data flow architecture
    - Document API contracts in progress.md
 
 2. **Then: Frontend Developer**
+
    - Consume the backend APIs
    - Create UI components and pages
    - Implement state management
@@ -504,7 +506,7 @@ When a task requires both backend and frontend work:
 **MANDATORY CHECKS:**
 
 - [ ] Code compiles (nx affected:build)
-- [ ] Zero 'any' types (grep -r "any" --include="*.ts")
+- [ ] Zero 'any' types (grep -r "any" --include="\*.ts")
 - [ ] Type search executed and documented
 - [ ] Functions under 30 lines
 - [ ] Error handling with context
@@ -676,6 +678,7 @@ Return APPROVED if user's requirements are met, otherwise NEEDS_REVISION.
 
 1. Update task registry with completion status
 2. Create completion-report.md with:
+
    - Executive summary
    - Metrics achieved
    - Lessons learned
@@ -693,15 +696,17 @@ git commit -m "feat(TASK_[ID]): [description]"
 ```markdown
 ## TASK COMPLETED SUCCESSFULLY
 
-**Task ID**: TASK_[ID]
+**Task ID**: TASK\_[ID]
 **Quality Score**: [X]/10
 **Coverage**: [X]%
 **Performance**: [Metrics]
 
 **Deliverables**:
+
 - [List of created/modified files]
 
 **Next Steps**:
+
 1. [Immediate actions]
 2. [Future enhancements]
 

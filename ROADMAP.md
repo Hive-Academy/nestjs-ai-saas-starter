@@ -13,6 +13,7 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 **Status**: ✅ Completed
 
 **Key Features**:
+
 - ✅ Core NestJS application structure
 - ✅ ChromaDB integration library
 - ✅ Neo4j integration library
@@ -28,6 +29,7 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 **Status**: 🔄 In Planning
 
 **Key Features**:
+
 - 🔄 Enhanced ChromaDB features
   - Advanced metadata filtering
   - Batch operations optimization
@@ -51,6 +53,7 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 **Status**: 📋 Planned
 
 **Key Features**:
+
 - 📋 Multi-agent orchestration
   - Agent communication protocols
   - Task delegation and coordination
@@ -74,6 +77,7 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 **Status**: 📋 Planned
 
 **Key Features**:
+
 - 📋 Authentication & Authorization
   - JWT-based authentication
   - Role-based access control (RBAC)
@@ -97,6 +101,7 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 **Status**: 📋 Planned
 
 **Key Features**:
+
 - 📋 Observability stack
   - Distributed tracing
   - Metrics collection
@@ -120,6 +125,7 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 **Status**: 💭 Conceptual
 
 **Key Features**:
+
 - 💭 Kubernetes deployment
   - Helm charts
   - Auto-scaling
@@ -143,16 +149,19 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 ### Core Libraries
 
 #### @hive-academy/nestjs-chromadb
+
 - **Current**: Basic CRUD operations, embedding providers
 - **Planned**: Advanced querying, batch operations, performance optimization
 - **Future**: Multi-modal embeddings, federated search, auto-scaling
 
 #### @hive-academy/nestjs-neo4j
+
 - **Current**: Basic connection management, simple queries
 - **Planned**: Advanced Cypher builder, graph algorithms, performance tuning
 - **Future**: Graph ML integration, real-time analytics, distributed graphs
 
-#### @anubis/nestjs-langgraph
+#### @hive-academy/nestjs-langgraph
+
 - **Current**: Basic workflow execution, streaming support
 - **Planned**: Advanced patterns, debugging tools, performance monitoring
 - **Future**: Visual workflow builder, marketplace integration, auto-optimization
@@ -160,18 +169,21 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 ### Infrastructure & DevOps
 
 #### Current
+
 - ✅ GitHub Actions CI/CD
 - ✅ Docker containerization
 - ✅ Nx monorepo management
 - ✅ Automated testing
 
 #### Planned
+
 - 📋 Kubernetes deployment
 - 📋 Infrastructure as Code (Terraform)
 - 📋 Multi-environment management
 - 📋 Blue-green deployments
 
 #### Future
+
 - 💭 Serverless deployment options
 - 💭 Edge computing support
 - 💭 Auto-scaling based on AI workloads
@@ -180,18 +192,21 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 ### Developer Experience
 
 #### Current
+
 - ✅ Comprehensive documentation
 - ✅ Code generation templates
 - ✅ Git hooks and quality tools
 - ✅ TypeScript support
 
 #### Planned
+
 - 📋 VS Code extension
 - 📋 CLI tools for scaffolding
 - 📋 Interactive tutorials
 - 📋 Performance profiling tools
 
 #### Future
+
 - 💭 AI-powered code suggestions
 - 💭 Automated refactoring tools
 - 💭 Visual debugging interface
@@ -200,18 +215,21 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 ## 🚀 Community & Ecosystem
 
 ### Current Initiatives
+
 - ✅ Open source foundation
 - ✅ Comprehensive documentation
 - ✅ Contributing guidelines
 - ✅ Issue tracking and support
 
 ### Planned Initiatives
+
 - 📋 Community forum
 - 📋 Regular webinars and workshops
 - 📋 Plugin ecosystem
 - 📋 Certification program
 
 ### Future Vision
+
 - 💭 Annual conference
 - 💭 Enterprise support program
 - 💭 Partner ecosystem
@@ -220,18 +238,21 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 ## 📈 Success Metrics
 
 ### Technical Metrics
+
 - **Performance**: Response time < 100ms for 95% of requests
 - **Reliability**: 99.9% uptime for core services
 - **Scalability**: Support for 10,000+ concurrent users
 - **Security**: Zero critical vulnerabilities
 
 ### Community Metrics
+
 - **Adoption**: 10,000+ NPM downloads per month
 - **Contributors**: 100+ active contributors
 - **Issues**: < 24 hour response time for critical issues
 - **Documentation**: 95%+ API coverage
 
 ### Business Metrics
+
 - **Time to Market**: 50% reduction in AI app development time
 - **Developer Productivity**: 3x faster feature development
 - **Cost Efficiency**: 40% reduction in infrastructure costs
@@ -240,18 +261,21 @@ To provide the most comprehensive, production-ready foundation for building AI-p
 ## 🤝 How to Contribute
 
 ### Immediate Opportunities
+
 - 🔧 Bug fixes and improvements
 - 📝 Documentation enhancements
 - 🧪 Test coverage improvements
 - 🎨 Example applications
 
 ### Medium-term Projects
+
 - 🔌 New integrations (databases, AI services)
 - 🛠️ Developer tools and utilities
 - 📊 Monitoring and analytics features
 - 🔐 Security enhancements
 
 ### Long-term Vision
+
 - 🌐 Cloud-native features
 - 🤖 Advanced AI capabilities
 - 📱 Mobile and edge support
@@ -263,7 +287,7 @@ We welcome feedback and suggestions for the roadmap:
 
 - **GitHub Discussions**: Share ideas and discuss features
 - **GitHub Issues**: Report bugs and request specific features
-- **Email**: roadmap@anubis.dev for strategic discussions
+- **Email**: <roadmap@hive-academy.dev> for strategic discussions
 - **Community Calls**: Monthly roadmap review sessions
 
 ## 📋 Roadmap Updates

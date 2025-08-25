@@ -23,30 +23,35 @@ Thank you for your interest in contributing to the NestJS AI SaaS Starter! This 
 ### Development Setup
 
 1. **Fork and Clone**
+
    ```bash
    git clone https://github.com/your-username/nestjs-ai-saas-starter.git
    cd nestjs-ai-saas-starter
    ```
 
 2. **Install Dependencies**
+
    ```bash
    npm install
    # This automatically sets up Git hooks and development environment
    ```
 
 3. **Environment Configuration**
+
    ```bash
    cp .env.example .env
    # Edit .env with your API keys and configuration
    ```
 
 4. **Start Development Services**
+
    ```bash
    npm run dev:services  # Start databases
    npx nx serve nestjs-ai-saas-starter-demo  # Start application
    ```
 
 5. **Verify Setup**
+
    ```bash
    curl http://localhost:3000/health
    npm run test  # Run tests
@@ -125,16 +130,19 @@ refactor/langgraph-workflow-builder
 ### Pull Request Process
 
 1. **Create Feature Branch**
+
    ```bash
    git checkout -b feat/your-feature-name
    ```
 
 2. **Make Changes**
+
    - Write code following our style guidelines
    - Add tests for new functionality
    - Update documentation as needed
 
 3. **Test Your Changes**
+
    ```bash
    npm run test                    # Run all tests
    npm run build:libs             # Build libraries
@@ -143,12 +151,14 @@ refactor/langgraph-workflow-builder
    ```
 
 4. **Commit Changes**
+
    ```bash
    git add .
    git commit -m "feat(scope): your descriptive message"
    ```
 
 5. **Push and Create PR**
+
    ```bash
    git push origin feat/your-feature-name
    # Create pull request on GitHub
@@ -188,10 +198,7 @@ describe('ChromaDBService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        ChromaDBService,
-        { provide: CHROMADB_CLIENT, useValue: mockClient },
-      ],
+      providers: [ChromaDBService, { provide: CHROMADB_CLIENT, useValue: mockClient }],
     }).compile();
 
     service = module.get<ChromaDBService>(ChromaDBService);
@@ -207,10 +214,12 @@ describe('ChromaDBService', () => {
 
     // Assert
     expect(result).toBeDefined();
-    expect(mockCollection.add).toHaveBeenCalledWith(expect.objectContaining({
-      ids: ['1'],
-      documents: ['test'],
-    }));
+    expect(mockCollection.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ids: ['1'],
+        documents: ['test'],
+      })
+    );
   });
 });
 ```
@@ -372,6 +381,7 @@ A clear and concise description of the bug.
 
 **To Reproduce**
 Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
@@ -384,6 +394,7 @@ A clear description of what you expected to happen.
 What actually happened.
 
 **Environment**
+
 - OS: [e.g. macOS 12.0]
 - Node.js: [e.g. 18.17.0]
 - npm: [e.g. 9.6.7]
@@ -462,7 +473,7 @@ Contributors are recognized in several ways:
 
 - **GitHub Discussions**: For questions and general discussion
 - **GitHub Issues**: For bug reports and feature requests
-- **Email**: support@anubis.dev for private inquiries
+- **Email**: <support@hive-academy.dev> for private inquiries
 
 ## 📄 License
 

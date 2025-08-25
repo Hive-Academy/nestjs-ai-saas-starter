@@ -1,7 +1,7 @@
 {
-  "name": "@langgraph-modules/hitl",
+  "name": "@hive-academy/langgraph-hitl",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,11 +39,14 @@
       }
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "tslib": "^2.3.0",
     "@nestjs/common": "^11.0.0",
     "reflect-metadata": "^0.1.13",
-    "@langgraph-modules/core": "0.0.1",
+    "@hive-academy/langgraph-core": "0.0.1",
     "@nestjs/event-emitter": "^3.0.1"
   }
 }

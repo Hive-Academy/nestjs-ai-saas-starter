@@ -1,6 +1,6 @@
 import type { Provider } from '@nestjs/common';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
-import { createAdapterProviders, createAdapterProvidersAsync } from './adapters';
+import { createAdapterProviders, createAdapterProvidersAsync } from '../adapters';
 
 /**
  * Infrastructure service providers for the LangGraph module (sync)
