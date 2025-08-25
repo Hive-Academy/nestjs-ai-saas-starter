@@ -286,6 +286,11 @@ export interface MemoryStats {
   activeThreads: number;
 
   /**
+   * Total number of threads
+   */
+  totalThreads: number;
+
+  /**
    * Average memory size in bytes
    */
   averageMemorySize: number;
@@ -314,6 +319,56 @@ export interface MemoryStats {
    * Cache hit rate
    */
   cacheHitRate: number;
+
+  /**
+   * Health status of the memory system
+   */
+  healthStatus?: {
+    overall: 'healthy' | 'warning' | 'error';
+    chromadb: 'healthy' | 'warning' | 'error';
+    neo4j: 'healthy' | 'warning' | 'error';
+  };
+
+  /**
+   * Operation metrics
+   */
+  operationMetrics?: MemoryOperationMetrics;
+
+  /**
+   * Performance metrics
+   */
+  performance?: {
+    averageResponseTime: number;
+    throughput: number;
+    errorRate: number;
+    p95ResponseTime?: number;
+    p99ResponseTime?: number;
+    queriesPerSecond?: number;
+  };
+}
+
+/**
+ * Memory operation metrics
+ */
+export interface MemoryOperationMetrics {
+  total: number;
+  successful: number;
+  failed: number;
+  averageLatency: number;
+  totalOperations?: number;
+  successRate?: number;
+  failureRate?: number;
+}
+
+/**
+ * Memory usage metrics
+ */
+export interface MemoryUsageMetrics {
+  totalMemories: number;
+  memoriesByType: Record<string, number>;
+  averageSize: number;
+  totalSize: number;
+  storageUtilization: number;
 }
 
 /**

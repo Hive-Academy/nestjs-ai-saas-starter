@@ -4,6 +4,12 @@
   "include": [],
   "references": [
     {
+      "path": "../../../nestjs-neo4j"
+    },
+    {
+      "path": "../../../nestjs-chromadb"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {

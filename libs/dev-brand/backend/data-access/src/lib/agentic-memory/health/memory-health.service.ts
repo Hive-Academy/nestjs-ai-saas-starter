@@ -200,26 +200,21 @@ export class MemoryHealthService extends HealthIndicator {
     const startTime = Date.now();
 
     try {
-      // Test embedding generation with a simple text
-      const testText = 'health check test';
-      const embeddings = await this.chromaDBService
-        .getEmbeddingService()
-        .embed([testText]);
+      // Note: ChromaDBService doesn't expose embedding service directly
+      // For health check, we'll just verify collection operations work
+      const collection = await this.chromaDBService.getCollection(
+        this.collectionName
+      );
       const responseTime = Date.now() - startTime;
 
-      if (
-        !embeddings ||
-        embeddings.length === 0 ||
-        !embeddings[0] ||
-        embeddings[0].length === 0
-      ) {
-        throw new Error('Embedding service returned empty results');
+      if (!collection) {
+        throw new Error('Collection not accessible');
       }
 
       return {
         status: true,
         responseTime,
-        provider: this.getEmbeddingProvider(),
+        provider: 'chromadb-default',
       };
     } catch (error) {
       const responseTime = Date.now() - startTime;
@@ -316,8 +311,6 @@ export class MemoryHealthService extends HealthIndicator {
       responseTime: number;
     };
   }> {
-    const startTime = Date.now();
-
     try {
       // Get ChromaDB metrics
       const chromaStartTime = Date.now();

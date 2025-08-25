@@ -476,6 +476,43 @@ export class MemoryTimeoutError extends MemoryError {
 }
 
 /**
+ * General memory operation error
+ * Used for operations that don't fit into specific error categories
+ */
+export class MemoryOperationError extends MemoryError {
+  constructor(
+    message: string,
+    context: MemoryErrorContext = {},
+    cause?: Error
+  ) {
+    super(message, context, cause);
+    this.name = 'MemoryOperationError';
+  }
+
+  /**
+   * Create error for general operation failures
+   */
+  static operationFailed(
+    operation: string,
+    service: MemoryErrorContext['service'],
+    threadId?: string,
+    cause?: Error
+  ): MemoryOperationError {
+    return new MemoryOperationError(
+      `Memory operation '${operation}' failed`,
+      {
+        operation,
+        service,
+        threadId,
+        timestamp: new Date(),
+        additionalInfo: { errorType: 'operation_failed' },
+      },
+      cause
+    );
+  }
+}
+
+/**
  * Utility function to wrap errors with memory context
  */
 export function wrapMemoryError(

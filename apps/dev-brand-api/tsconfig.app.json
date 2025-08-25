@@ -24,5 +24,25 @@
     "eslint.config.js",
     "eslint.config.cjs",
     "eslint.config.mjs"
+  ],
+  "references": [
+    {
+      "path": "../../libs/langgraph-modules/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/nestjs-langgraph/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/dev-brand/backend/feature/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/dev-brand/backend/data-access/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/nestjs-neo4j/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/nestjs-chromadb/tsconfig.lib.json"
+    }
   ]
 }

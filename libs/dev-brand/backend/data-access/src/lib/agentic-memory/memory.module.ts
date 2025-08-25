@@ -1,137 +1,88 @@
 import { HttpModule } from '@nestjs/axios';
-import { DynamicModule, Module, Provider } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 // Import refactored memory services that use external libraries
 import { MemoryConfig } from './interfaces/memory.interface';
-import { MemoryCoreService } from './services/memory-core.service';
 import { MemoryFacadeService } from './services/memory-facade.service';
 import { SemanticSearchService } from './services/semantic-search.service';
 import { SummarizationService } from './services/summarization.service';
-import { MemoryHealthService } from './health/memory-health.service';
+import { MemoryAdapterBridgeService } from './adapters/memory-adapter-bridge.service';
+// Import new specialized services (god service refactoring)
+import { MemoryStorageService } from './services/memory-storage.service';
+import { MemoryGraphService } from './services/memory-graph.service';
+import { MemoryRetentionService } from './services/memory-retention.service';
+import { MemoryStatsService } from './services/memory-stats.service';
+import { MemoryOrchestratorService } from './services/memory-orchestrator.service';
 
 /**
- * Memory module that uses injected ChromaDB and Neo4j services from the main app
- * No longer creates its own database connections
+ * Simplified Memory module for agent workflows
+ * Uses injected ChromaDB and Neo4j services from the main app
  */
 @Module({})
 export class AgenticMemoryModule {
   /**
-   * Configure memory module WITHOUT database connections
-   * Uses existing ChromaDB and Neo4j services via dependency injection
+   * Simple configuration for agent memory workflows
    */
-  public static forRoot(config?: Partial<MemoryConfig>): DynamicModule {
-    const memoryConfig: MemoryConfig = {
-      storage: { type: 'vector', vector: { provider: 'chromadb', config: {} } },
+  public static forAgent(config?: {
+    enableSemanticSearch?: boolean;
+    enableAutoSummarization?: boolean;
+    collection?: string;
+  }): DynamicModule {
+    const agentConfig = {
       enableSemanticSearch: true,
       enableAutoSummarization: true,
+      collection: 'agent-memory',
       ...config,
     };
 
-    const providers: Provider[] = [
-      {
-        provide: 'MEMORY_CONFIG',
-        useValue: memoryConfig,
+    const memoryConfig: MemoryConfig = {
+      storage: {
+        type: 'vector',
+        vector: {
+          provider: 'chromadb',
+          config: { collection: agentConfig.collection },
+        },
       },
-      // Core memory services that orchestrate external services
-      MemoryCoreService,
-      MemoryFacadeService,
-      SemanticSearchService,
-      SummarizationService,
-      MemoryHealthService,
-    ];
+      enableSemanticSearch: agentConfig.enableSemanticSearch,
+      enableAutoSummarization: agentConfig.enableAutoSummarization,
+    };
 
     return {
       module: AgenticMemoryModule,
-      imports: [
-        ConfigModule,
-        HttpModule,
-        // NO ChromaDBModule.forRoot() - uses injected service
-        // NO Neo4jModule.forRoot() - uses injected service
+      imports: [ConfigModule, HttpModule],
+      providers: [
+        { provide: 'MEMORY_CONFIG', useValue: memoryConfig },
+        MemoryFacadeService,
+
+        // New specialized services (god service refactoring)
+        MemoryStorageService,
+        MemoryGraphService,
+        MemoryRetentionService,
+        MemoryStatsService,
+        MemoryOrchestratorService,
+
+        // Optional services based on configuration
+        ...(agentConfig.enableSemanticSearch ? [SemanticSearchService] : []),
+        ...(agentConfig.enableAutoSummarization ? [SummarizationService] : []),
+
+        // Bridge service for nestjs-langgraph adapter integration
+        MemoryAdapterBridgeService,
+
+        // Export bridge service with the correct Symbol token for dependency injection
+        {
+          provide: 'MEMORY_ADAPTER_FACADE_SERVICE',
+          useExisting: MemoryAdapterBridgeService,
+        },
       ],
-      providers,
       exports: [
-        MemoryFacadeService, // Primary high-level memory interface
-        MemoryCoreService, // For MemoryAdapter compatibility
-        SemanticSearchService, // Advanced search capabilities
-        SummarizationService, // LLM-based summarization
-        MemoryHealthService, // Health checks and monitoring
-        // Also export with string tokens for MemoryAdapter
-        {
-          provide: 'MemoryFacadeService',
-          useExisting: MemoryFacadeService,
-        },
-        {
-          provide: 'MemoryCoreService',
-          useExisting: MemoryCoreService,
-        },
-      ],
-    };
-  }
-
-  /**
-   * Configure memory module asynchronously WITHOUT database connections
-   * Uses existing ChromaDB and Neo4j services via dependency injection
-   */
-  public static forRootAsync(options: {
-    imports?: Array<any>;
-    useFactory: (
-      ...args: unknown[]
-    ) => Promise<Partial<MemoryConfig>> | Partial<MemoryConfig>;
-    inject?: Array<any>;
-  }): DynamicModule {
-    const memoryConfigProvider: Provider = {
-      provide: 'MEMORY_CONFIG',
-      useFactory: async (...args: unknown[]) => {
-        const config = await options.useFactory(...args);
-        const memoryConfig: MemoryConfig = {
-          storage: {
-            type: 'vector',
-            vector: { provider: 'chromadb', config: {} },
-          },
-          enableSemanticSearch: true,
-          enableAutoSummarization: true,
-          ...config,
-        };
-        return memoryConfig;
-      },
-      inject: options.inject ?? [],
-    };
-
-    const providers: Provider[] = [
-      memoryConfigProvider,
-      // Core memory services that use injected database services
-      MemoryCoreService,
-      MemoryFacadeService,
-      SemanticSearchService,
-      SummarizationService,
-      MemoryHealthService,
-    ];
-
-    return {
-      module: AgenticMemoryModule,
-      imports: [
-        ConfigModule,
-        HttpModule,
-        // NO ChromaDBModule.forRootAsync() - uses injected service
-        // NO Neo4jModule.forRootAsync() - uses injected service
-        ...(options.imports ?? []),
-      ],
-      providers,
-      exports: [
-        MemoryFacadeService, // Primary high-level memory interface
-        MemoryCoreService, // For MemoryAdapter compatibility
-        SemanticSearchService, // Advanced search capabilities
-        SummarizationService, // LLM-based summarization
-        MemoryHealthService, // Health checks and monitoring
-        // Also export with string tokens for MemoryAdapter
-        {
-          provide: 'MemoryFacadeService',
-          useExisting: MemoryFacadeService,
-        },
-        {
-          provide: 'MemoryCoreService',
-          useExisting: MemoryCoreService,
-        },
+        MemoryFacadeService,
+        MemoryOrchestratorService,
+        MemoryStorageService,
+        MemoryGraphService,
+        MemoryRetentionService,
+        MemoryStatsService,
+        MemoryAdapterBridgeService,
+        'MEMORY_ADAPTER_FACADE_SERVICE',
       ],
     };
   }
