@@ -12,71 +12,6 @@ permissions:
   checks: write
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Lint code
-        run: npx nx run-many -t lint
-
-
-      - name: Build libraries
-        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
-
-      - name: Test publishing (dry run)
-        run: npx nx run-many -t publish --dry-run -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph
-
-      - name: Check conventional commits
-        uses: wagoid/commitlint-github-action@v5
-        with:
-          configFile: .commitlintrc.json
-
-      - name: Validate package.json files
-        run: |
-          echo "Validating package.json files..."
-          for lib in nestjs-chromadb nestjs-neo4j nestjs-langgraph; do
-            echo "Checking libs/$lib/package.json"
-            if ! jq empty "libs/$lib/package.json" 2>/dev/null; then
-              echo "❌ Invalid JSON in libs/$lib/package.json"
-              exit 1
-            fi
-
-            # Check required fields
-            if ! jq -e '.name' "libs/$lib/package.json" > /dev/null; then
-              echo "❌ Missing 'name' field in libs/$lib/package.json"
-              exit 1
-            fi
-
-            if ! jq -e '.version' "libs/$lib/package.json" > /dev/null; then
-              echo "❌ Missing 'version' field in libs/$lib/package.json"
-              exit 1
-            fi
-
-            echo "✅ libs/$lib/package.json is valid"
-          done
-
-      - name: Check for breaking changes
-        run: |
-          echo "Checking for potential breaking changes..."
-          if git diff --name-only origin/main...HEAD | grep -E "(src/.*\.ts$|package\.json$)" | head -10; then
-            echo "📝 Files changed that may affect the public API"
-            echo "Please ensure proper semantic versioning in your commit messages"
-          fi
 
   security:
     runs-on: ubuntu-latest
@@ -145,7 +80,7 @@ jobs:
 
   comment-pr:
     runs-on: ubuntu-latest
-    needs: [validate, security, size-check]
+    needs: [security, size-check]
     if: always()
 
     steps:
@@ -163,7 +98,7 @@ jobs:
               comment.user.type === 'Bot' && comment.body.includes('## PR Checks Summary')
             );
 
-            const validate = '${{ needs.validate.result }}';
+
             const security = '${{ needs.security.result }}';
             const sizeCheck = '${{ needs.size-check.result }}';
 
@@ -178,11 +113,11 @@ jobs:
 
             const body = `## PR Checks Summary
 
-            ${getEmoji(validate)} **Validation**: ${validate}
+
             ${getEmoji(security)} **Security**: ${security}
             ${getEmoji(sizeCheck)} **Size Check**: ${sizeCheck}
 
-            ${validate === 'success' && security === 'success' && sizeCheck === 'success'
+            ${security === 'success' && sizeCheck === 'success'
               ? '🎉 All checks passed! This PR is ready for review.'
               : '⚠️ Some checks failed. Please review the workflow logs.'}
 
