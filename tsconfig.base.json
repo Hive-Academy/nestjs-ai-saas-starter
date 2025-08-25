@@ -21,6 +21,12 @@
     "declaration": true,
     "baseUrl": ".",
     "paths": {
+      "@devbrand/backend-data-access": [
+        "libs/dev-brand/backend/data-access/src/index.ts"
+      ],
+      "@devbrand/backend-feature": [
+        "libs/dev-brand/backend/feature/src/index.ts"
+      ],
       "@hive-academy/langgraph-checkpoint": [
         "libs/langgraph-modules/checkpoint/src/index.ts"
       ],
@@ -51,6 +57,9 @@
       "@hive-academy/langgraph-workflow-engine": [
         "libs/langgraph-modules/workflow-engine/src/index.ts"
       ],
+      "@hive-academy/nestjs-chromadb": ["libs/nestjs-chromadb/src/index.ts"],
+      "@hive-academy/nestjs-langgraph": ["libs/nestjs-langgraph/src/index.ts"],
+      "@hive-academy/nestjs-neo4j": ["libs/nestjs-neo4j/src/index.ts"],
       "@langgraph-modules/memory": [
         "libs/langgraph-modules/memory/src/index.ts"
       ]

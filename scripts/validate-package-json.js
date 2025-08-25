@@ -36,9 +36,11 @@ function validatePackageJson(filePath) {
       }
     });
 
-    // Name should start with @anubis/
-    if (pkg.name && !pkg.name.startsWith('@anubis/')) {
-      errors.push(`Package name should start with @anubis/, got: ${pkg.name}`);
+    // Name should start with @hive-academy/
+    if (pkg.name && !pkg.name.startsWith('@hive-academy/')) {
+      errors.push(
+        `Package name should start with @hive-academy/, got: ${pkg.name}`
+      );
     }
 
     // Version should follow semver

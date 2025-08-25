@@ -2,7 +2,7 @@ import {
   LANGGRAPH_MODULE_OPTIONS,
   DEFAULT_LLM,
   TOOL_REGISTRY,
-  STREAM_MANAGER,
+  // STREAM_MANAGER, // Removed - provided by streaming module when available
 } from '../constants';
 
 import {
@@ -23,15 +23,15 @@ import { ADAPTER_EXPORTS } from '../adapters';
  */
 export function createModuleExports(): any[] {
   return [
-    // Core module tokens
+    // Core module tokens (only export tokens that have actual providers)
     LANGGRAPH_MODULE_OPTIONS,
     DEFAULT_LLM,
-    TOOL_REGISTRY,
-    STREAM_MANAGER,
-    
+    // TOOL_REGISTRY, // Removed - no corresponding provider exists
+    // STREAM_MANAGER, // Removed - no corresponding provider exists
+
     // Adapters for backward compatibility
     ...ADAPTER_EXPORTS,
-    
+
     // All service exports
     ...CORE_EXPORTS,
     ...STREAMING_EXPORTS,

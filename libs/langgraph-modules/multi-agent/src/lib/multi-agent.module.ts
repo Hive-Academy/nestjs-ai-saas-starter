@@ -7,13 +7,19 @@ import { GraphBuilderService } from './services/graph-builder.service';
 import { NodeFactoryService } from './services/node-factory.service';
 import { LlmProviderService } from './services/llm-provider.service';
 import { NetworkManagerService } from './services/network-manager.service';
-import { 
+// Tool services
+import { ToolRegistryService } from './tools/tool-registry.service';
+import { ToolDiscoveryService } from './tools/tool-discovery.service';
+import { ToolBuilderService } from './tools/tool-builder.service';
+import { ToolNodeService } from './tools/tool-node.service';
+import {
   MultiAgentModuleOptions,
   MultiAgentModuleAsyncOptions,
 } from './interfaces/multi-agent.interface';
-import { 
+import {
   MULTI_AGENT_MODULE_OPTIONS,
   DEFAULT_MULTI_AGENT_OPTIONS,
+  TOOL_REGISTRY,
 } from './constants/multi-agent.constants';
 
 /**
@@ -38,6 +44,16 @@ export class MultiAgentModule {
       NodeFactoryService,
       GraphBuilderService,
       NetworkManagerService,
+      // Tool services
+      ToolRegistryService,
+      ToolDiscoveryService,
+      ToolBuilderService,
+      ToolNodeService,
+      // Tool service aliases
+      {
+        provide: TOOL_REGISTRY,
+        useExisting: ToolRegistryService,
+      },
       // Facade and examples
       MultiAgentCoordinatorService,
       AgentExamplesService,
@@ -56,6 +72,13 @@ export class MultiAgentModule {
         LlmProviderService,
         GraphBuilderService,
         NodeFactoryService,
+        // Tool services
+        ToolRegistryService,
+        ToolDiscoveryService,
+        ToolBuilderService,
+        ToolNodeService,
+        // Tool service aliases
+        TOOL_REGISTRY,
         // Examples service
         AgentExamplesService,
       ],
@@ -82,13 +105,23 @@ export class MultiAgentModule {
       NodeFactoryService,
       GraphBuilderService,
       NetworkManagerService,
+      // Tool services
+      ToolRegistryService,
+      ToolDiscoveryService,
+      ToolBuilderService,
+      ToolNodeService,
+      // Tool service aliases
+      {
+        provide: TOOL_REGISTRY,
+        useExisting: ToolRegistryService,
+      },
       // Facade and examples
       MultiAgentCoordinatorService,
       AgentExamplesService,
     ];
 
     const imports = [EventEmitterModule.forRoot()];
-    
+
     if (options.imports) {
       imports.push(...options.imports);
     }
@@ -106,6 +139,13 @@ export class MultiAgentModule {
         LlmProviderService,
         GraphBuilderService,
         NodeFactoryService,
+        // Tool services
+        ToolRegistryService,
+        ToolDiscoveryService,
+        ToolBuilderService,
+        ToolNodeService,
+        // Tool service aliases
+        TOOL_REGISTRY,
         // Examples service
         AgentExamplesService,
       ],
@@ -116,7 +156,9 @@ export class MultiAgentModule {
   /**
    * Merge user options with defaults
    */
-  private static mergeWithDefaults(options: MultiAgentModuleOptions): MultiAgentModuleOptions {
+  private static mergeWithDefaults(
+    options: MultiAgentModuleOptions
+  ): MultiAgentModuleOptions {
     return {
       defaultLlm: {
         ...DEFAULT_MULTI_AGENT_OPTIONS.defaultLlm,
