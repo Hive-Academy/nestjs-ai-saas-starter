@@ -23,6 +23,8 @@ import type {
  *
  * This service implements configurable retention policies that can be
  * reused across different memory storage implementations and contexts.
+ * 
+ * No direct database dependencies - works with injected cleanup functions
  */
 @Injectable()
 export class MemoryRetentionService implements OnModuleInit, OnModuleDestroy {

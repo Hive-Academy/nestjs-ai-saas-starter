@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService, cypher } from '@hive-academy/nestjs-neo4j';
+import { DatabaseProviderFactory } from '../providers/database-provider.factory';
 import type { GetResult, Where } from 'chromadb';
 import type { ChromaSearchResult } from '@hive-academy/nestjs-chromadb';
 import type { Transaction } from 'neo4j-driver';
@@ -13,14 +14,15 @@ import {
 /**
  * Advanced semantic search service that combines vector similarity and graph relationships
  * This creates a hybrid search that leverages both ChromaDB and Neo4j capabilities
+ * 
+ * Uses DatabaseProviderFactory for flexible database access
  */
 @Injectable()
 export class SemanticSearchService {
   private readonly logger = new Logger(SemanticSearchService.name);
 
   constructor(
-    private readonly chromaDBService: ChromaDBService,
-    private readonly neo4jService: Neo4jService
+    private readonly providerFactory: DatabaseProviderFactory
   ) {}
 
   /**
@@ -39,6 +41,13 @@ export class SemanticSearchService {
       const vectorResults = await this.vectorSearch(options);
 
       if (!options.includeRelated || vectorResults.length === 0) {
+        return vectorResults;
+      }
+
+      // Check if Neo4j is available for relationship queries
+      const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+      if (!neo4jProvider?.connection) {
+        this.logger.warn('Neo4j not available - returning vector results only');
         return vectorResults;
       }
 
@@ -304,8 +313,6 @@ export class SemanticSearchService {
     }
   }
 
-  // Removed legacy helper methods that referenced deprecated services
-
   /**
    * Merge and deduplicate memory results
    */
@@ -360,12 +367,19 @@ export class SemanticSearchService {
   private async vectorSearch(
     options: MemorySearchOptions
   ): Promise<MemoryEntry[]> {
+    const chromaProvider = await this.providerFactory.getProvider('chromadb');
+    if (!chromaProvider?.connection) {
+      this.logger.warn('ChromaDB not available - returning empty results');
+      return [];
+    }
+
+    const chromaDB = chromaProvider.connection as ChromaDBService;
     const where: Where | undefined = this.buildWhereFilter(options);
 
     let memories: MemoryEntry[];
     if (options.query) {
       const searchResults: ChromaSearchResult =
-        await this.chromaDBService.searchDocuments(
+        await chromaDB.searchDocuments(
           'memory-entries',
           [options.query],
           undefined,
@@ -380,7 +394,7 @@ export class SemanticSearchService {
         );
       memories = this.convertToMemoryEntries(searchResults);
     } else {
-      const getResults = await this.chromaDBService.getDocuments(
+      const getResults = await chromaDB.getDocuments(
         'memory-entries',
         {
           where,
@@ -481,8 +495,16 @@ export class SemanticSearchService {
     if (!memoryIds.length) {
       return [];
     }
+
+    const chromaProvider = await this.providerFactory.getProvider('chromadb');
+    if (!chromaProvider?.connection) {
+      this.logger.warn('ChromaDB not available - cannot get memories by IDs');
+      return [];
+    }
+
     try {
-      const results = await this.chromaDBService.getDocuments(
+      const chromaDB = chromaProvider.connection as ChromaDBService;
+      const results = await chromaDB.getDocuments(
         'memory-entries',
         {
           ids: memoryIds,
@@ -510,8 +532,15 @@ export class SemanticSearchService {
     offset: number,
     limit: number
   ): Promise<MemoryEntry[]> {
+    const chromaProvider = await this.providerFactory.getProvider('chromadb');
+    if (!chromaProvider?.connection) {
+      this.logger.warn('ChromaDB not available - cannot get memories batch');
+      return [];
+    }
+
     try {
-      const results = await this.chromaDBService.getDocuments(
+      const chromaDB = chromaProvider.connection as ChromaDBService;
+      const results = await chromaDB.getDocuments(
         'memory-entries',
         {
           limit,
@@ -542,12 +571,19 @@ export class SemanticSearchService {
     similarity: number,
     relationshipType = 'SIMILAR_TO'
   ): Promise<void> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.warn('Neo4j not available - skipping relationship creation');
+      return;
+    }
+
     // Ensure relationship type is a valid Cypher identifier to avoid injection
     const relType = /^[A-Z_][A-Z0-9_]*$/.test(relationshipType)
       ? relationshipType
       : 'SIMILAR_TO';
 
-    await this.neo4jService.run(
+    const neo4j = neo4jProvider.connection as Neo4jService;
+    await neo4j.run(
       `MATCH (m1:Memory {id: $memory1Id})
        MATCH (m2:Memory {id: $memory2Id})
        MERGE (m1)-[r:${relType}]->(m2)
@@ -567,7 +603,14 @@ export class SemanticSearchService {
   ): Promise<
     Array<{ memoryId: string; relationshipPath: string[]; similarity: number }>
   > {
-    const result = await this.neo4jService.run<{
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.warn('Neo4j not available - returning empty related memories');
+      return [];
+    }
+
+    const neo4j = neo4jProvider.connection as Neo4jService;
+    const result = await neo4j.run<{
       memoryId: string;
       relationshipPath: string[];
       similarity: number;
@@ -607,7 +650,14 @@ export class SemanticSearchService {
       connections: string[];
     }>
   > {
-    const result = await this.neo4jService.run<{
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.warn('Neo4j not available - returning empty conversation flow');
+      return [];
+    }
+
+    const neo4j = neo4jProvider.connection as Neo4jService;
+    const result = await neo4j.run<{
       memoryId: string;
       content: string;
       type: string;
@@ -642,8 +692,25 @@ export class SemanticSearchService {
   public async getUserMemoryPatterns(
     userId: string
   ): Promise<UserMemoryPatterns> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.warn('Neo4j not available - returning empty user patterns');
+      return {
+        preferredTopics: [],
+        communicationStyle: [],
+        frequentInteractions: [],
+        memoryStats: {
+          totalMemories: 0,
+          averageImportance: 0,
+          mostActiveThreads: [],
+          recentActivity: new Date(),
+        },
+      };
+    }
+
+    const neo4j = neo4jProvider.connection as Neo4jService;
     const { topics, styles, stats } =
-      await this.neo4jService.runInReadTransaction(async (tx) => ({
+      await neo4j.runInReadTransaction(async (tx) => ({
         topics: await this.fetchUserTopics(tx, userId),
         styles: await this.fetchUserStyles(tx, userId),
         stats: await this.fetchUserStats(tx, userId),
@@ -748,9 +815,6 @@ export class SemanticSearchService {
   /**
    * Convert Chroma query/get results to MemoryEntry[]
    */
-  // The ChromaDB SDK returns different shapes for search vs get.
-  // We normalize both with careful parsing; suppressing some lint rules for SDK typings.
-
   private convertToMemoryEntries(
     results:
       | ChromaSearchResult

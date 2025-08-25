@@ -16,6 +16,7 @@ import {
 } from './index';
 
 import { ADAPTER_EXPORTS } from '../adapters';
+import { createMemoryExports } from './memory.providers';
 
 /**
  * Create all module exports in one organized function
@@ -28,6 +29,9 @@ export function createModuleExports(): any[] {
     DEFAULT_LLM,
     // TOOL_REGISTRY, // Removed - no corresponding provider exists
     // STREAM_MANAGER, // Removed - no corresponding provider exists
+
+    // Memory services for external injection
+    ...createMemoryExports(),
 
     // Adapters for backward compatibility
     ...ADAPTER_EXPORTS,

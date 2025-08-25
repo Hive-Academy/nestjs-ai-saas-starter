@@ -99,6 +99,7 @@ export {
 
 export {
   createMemoryAdapterProviders,
+  createMemoryAdapterProvidersWithServices,
   createMemoryAdapterProvidersAsync,
   MEMORY_ADAPTER_EXPORTS,
 } from './memory-adapter.provider';

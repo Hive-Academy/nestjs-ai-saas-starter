@@ -25,7 +25,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "./.claude/statusline.sh"
+    "command": "powershell.exe -ExecutionPolicy Bypass -File \"D:\\projects\\nestjs-ai-saas-starter\\.claude\\status-line.ps1\""
   },
   "enabledMcpjsonServers": [
     "browser",

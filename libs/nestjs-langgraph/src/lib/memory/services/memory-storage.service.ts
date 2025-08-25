@@ -5,6 +5,7 @@ import {
   EmbeddingService,
   type ChromaMetadata,
 } from '@hive-academy/nestjs-chromadb';
+import { DatabaseProviderFactory } from '../providers/database-provider.factory';
 import type { GetResult } from 'chromadb';
 import type {
   MemoryEntry,
@@ -27,8 +28,7 @@ import {
  * - Document format conversion and validation
  * - Storage-specific error handling with retries
  *
- * This service is framework-agnostic and can be reused in any application
- * requiring vector-based memory storage with semantic search capabilities.
+ * Uses DatabaseProviderFactory for flexible database access
  */
 @Injectable()
 export class MemoryStorageService implements OnModuleInit {
@@ -37,17 +37,25 @@ export class MemoryStorageService implements OnModuleInit {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly chromaDBService: ChromaDBService,
+    private readonly providerFactory: DatabaseProviderFactory,
     private readonly embeddingService: EmbeddingService
   ) {}
 
   async onModuleInit(): Promise<void> {
     try {
-      // Ensure ChromaDB collection exists
-      await this.chromaDBService.createCollection(this.collectionName);
-      this.logger.log(
-        'Memory storage service initialized with ChromaDB collection'
-      );
+      // Initialize ChromaDB collection if available
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      if (chromaProvider?.connection) {
+        const chromaDB = chromaProvider.connection as ChromaDBService;
+        await chromaDB.createCollection(this.collectionName);
+        this.logger.log(
+          'Memory storage service initialized with ChromaDB collection'
+        );
+      } else {
+        this.logger.warn(
+          'ChromaDB not available - storage service will operate in fallback mode'
+        );
+      }
     } catch (error) {
       this.logger.error('Failed to initialize memory storage service', error);
       throw error;
@@ -97,20 +105,26 @@ export class MemoryStorageService implements OnModuleInit {
         }
       }
 
-      // Store in ChromaDB with timeout protection
-      await this.executeChromaDBOperation(
-        async () =>
-          this.chromaDBService.addDocuments(this.collectionName, [
-            {
-              id: entry.id,
-              document: content,
-              metadata: this.convertMemoryToChromaMetadata(entry),
-              embedding: entry.embedding,
-            },
-          ]),
-        'addDocument',
-        threadId
-      );
+      // Store in ChromaDB with timeout protection if available
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      if (chromaProvider?.connection) {
+        const chromaDB = chromaProvider.connection as ChromaDBService;
+        await this.executeChromaDBOperation(
+          async () =>
+            chromaDB.addDocuments(this.collectionName, [
+              {
+                id: entry.id,
+                document: content,
+                metadata: this.convertMemoryToChromaMetadata(entry),
+                embedding: entry.embedding,
+              },
+            ]),
+          'addDocument',
+          threadId
+        );
+      } else {
+        this.logger.warn('ChromaDB not available - memory stored in memory only');
+      }
 
       this.logger.debug(
         `Stored memory entry ${entry.id} for thread ${threadId}`
@@ -185,8 +199,14 @@ export class MemoryStorageService implements OnModuleInit {
         }
       }
 
-      // Store all documents in ChromaDB
-      await this.chromaDBService.addDocuments(this.collectionName, documents);
+      // Store all documents in ChromaDB if available
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      if (chromaProvider?.connection) {
+        const chromaDB = chromaProvider.connection as ChromaDBService;
+        await chromaDB.addDocuments(this.collectionName, documents);
+      } else {
+        this.logger.warn('ChromaDB not available - memories stored in memory only');
+      }
 
       this.logger.debug(
         `Stored ${memoryEntries.length} memory entries for thread ${threadId}`
@@ -213,9 +233,16 @@ export class MemoryStorageService implements OnModuleInit {
     limit?: number
   ): Promise<readonly MemoryEntry[]> {
     try {
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      if (!chromaProvider?.connection) {
+        this.logger.warn('ChromaDB not available - cannot retrieve memories');
+        return [];
+      }
+
+      const chromaDB = chromaProvider.connection as ChromaDBService;
       const results = await this.executeChromaDBOperation(
         async () =>
-          this.chromaDBService.getDocuments(this.collectionName, {
+          chromaDB.getDocuments(this.collectionName, {
             where: { threadId },
             limit: limit ?? 1000,
             includeMetadata: true,
@@ -238,7 +265,7 @@ export class MemoryStorageService implements OnModuleInit {
         const updatedAccessCount = memory.accessCount + 1;
         const lastAccessedAt = new Date();
 
-        await this.chromaDBService.updateDocuments(this.collectionName, [
+        await chromaDB.updateDocuments(this.collectionName, [
           {
             id: memory.id,
             metadata: {
@@ -278,9 +305,17 @@ export class MemoryStorageService implements OnModuleInit {
     limit = 10
   ): Promise<readonly MemoryEntry[]> {
     try {
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      if (!chromaProvider?.connection) {
+        this.logger.warn('ChromaDB not available - cannot search memories');
+        return [];
+      }
+
+      const chromaDB = chromaProvider.connection as ChromaDBService;
+
       if (!queryText.trim() || !this.isSemanticSearchEnabled()) {
         // Fallback to basic filtering if no query or semantic search disabled
-        const results = await this.chromaDBService.getDocuments(
+        const results = await chromaDB.getDocuments(
           this.collectionName,
           {
             where: whereClause as any,
@@ -303,7 +338,7 @@ export class MemoryStorageService implements OnModuleInit {
       // Perform semantic search
       const searchResults = await this.executeChromaDBOperation(
         async () =>
-          this.chromaDBService.searchDocuments(
+          chromaDB.searchDocuments(
             this.collectionName,
             undefined,
             [...queryEmbedding],

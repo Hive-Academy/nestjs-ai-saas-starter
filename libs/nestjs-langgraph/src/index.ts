@@ -5,7 +5,6 @@
 // Core module and configuration
 export * from './lib/nestjs-langgraph.module';
 export * from './lib/constants';
-export * from './lib/config/memory-integration.config';
 
 // Orchestration layer - main library's core responsibility
 export * from './lib/providers';

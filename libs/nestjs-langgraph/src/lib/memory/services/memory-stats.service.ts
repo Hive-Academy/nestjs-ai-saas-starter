@@ -18,6 +18,8 @@ import type {
  *
  * This service is framework-agnostic and can be reused in any application
  * requiring memory performance monitoring and analytics.
+ * 
+ * No database dependencies - purely in-memory statistics tracking
  */
 @Injectable()
 export class MemoryStatsService {
@@ -166,42 +168,13 @@ export class MemoryStatsService {
 
     return {
       totalMemories: 0, // Will be populated by calling service
-      totalThreads: 0, // Will be populated by calling service
-      operationMetrics: {
-        totalOperations: this.usageStats.totalOperations,
-        storageOperations: this.usageStats.totalStorageOperations,
-        retrievalOperations: this.usageStats.totalRetrievalOperations,
-        searchOperations: this.usageStats.totalSearchOperations,
-        summarizationOperations: this.usageStats.totalSummarizationOperations,
-        errorCount: this.usageStats.totalErrors,
-        successRate: this.calculateOverallSuccessRate(),
-        averageLatency: Math.round(this.usageStats.averageLatency),
-        operationBreakdown,
-      },
-      usageMetrics: {
-        memoryUsageBytes: this.usageStats.peakMemoryUsage,
-        activeConnections: this.usageStats.currentConnections,
-        cacheHitRate: 0, // Will be implemented when cache is added
-        indexingStatus: 'healthy',
-        lastCleanupTime: new Date(), // Will be updated by retention service
-      },
-      healthStatus: {
-        overall: healthMetrics.overall,
-        storage: healthMetrics.storage,
-        embedding: healthMetrics.embedding,
-        search: healthMetrics.search,
-        graph: healthMetrics.graph,
-        lastHealthCheck: new Date(),
-        uptime: Date.now() - this.usageStats.lastResetTime.getTime(),
-      },
-      performance: {
-        p50Latency: this.calculatePercentileLatency(0.5),
-        p95Latency: this.calculatePercentileLatency(0.95),
-        p99Latency: this.calculatePercentileLatency(0.99),
-        throughputPerSecond: this.calculateThroughput(),
-        errorRate: this.calculateErrorRate(),
-        slowQueries: this.getSlowQueries(),
-      },
+      activeThreads: 0, // Will be populated by calling service
+      averageMemorySize: 0,
+      totalStorageUsed: 0,
+      searchCount: this.usageStats.totalSearchOperations,
+      averageSearchTime: this.usageStats.averageLatency,
+      summarizationCount: this.usageStats.totalSummarizationOperations,
+      cacheHitRate: 0,
     };
   }
 
@@ -449,28 +422,20 @@ Memory Performance Report
 ========================
 Generated: ${new Date().toISOString()}
 
-Overall Health: ${stats.healthStatus.overall}
-Uptime: ${Math.round(stats.healthStatus.uptime / 1000)} seconds
-
 Operations Summary:
-- Total Operations: ${stats.operationMetrics.totalOperations}
-- Success Rate: ${(stats.operationMetrics.successRate * 100).toFixed(2)}%
-- Average Latency: ${stats.operationMetrics.averageLatency}ms
-- Throughput: ${stats.performance.throughputPerSecond.toFixed(2)} ops/sec
-
-Latency Percentiles:
-- P50: ${stats.performance.p50Latency}ms
-- P95: ${stats.performance.p95Latency}ms
-- P99: ${stats.performance.p99Latency}ms
+- Total Operations: ${this.usageStats.totalOperations}
+- Success Rate: ${(this.calculateOverallSuccessRate() * 100).toFixed(2)}%
+- Average Latency: ${this.usageStats.averageLatency}ms
+- Throughput: ${this.calculateThroughput().toFixed(2)} ops/sec
 
 Active Operations: ${realtime.activeOperations}
 Peak Memory Usage: ${Math.round(realtime.peakMemoryUsage / 1024 / 1024)}MB
 
 ${
-  stats.performance.slowQueries.length > 0
+  this.getSlowQueries().length > 0
     ? `
 Slow Queries:
-${stats.performance.slowQueries
+${this.getSlowQueries()
   .map((q) => `- ${q.operation}: ${q.averageLatency}ms (${q.count} times)`)
   .join('\n')}
 `

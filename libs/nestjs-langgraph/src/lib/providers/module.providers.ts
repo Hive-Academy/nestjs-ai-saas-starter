@@ -13,6 +13,8 @@ import {
   createAdapterProvidersAsync,
 } from '../adapters';
 
+import { createMemoryProviders } from './memory.providers';
+
 /**
  * Create all module providers in one organized function
  * Following SOLID principles with single responsibility for module setup
@@ -36,6 +38,7 @@ export function createModuleProviders(
     moduleIdProvider,
     ...createLLMProviders(options),
     ...createInfrastructureProviders(options),
+    ...createMemoryProviders(options), // Add memory providers
     ...createAdapterProviders(options), // Add adapter providers
   ];
 }
@@ -58,6 +61,7 @@ export function createModuleProvidersAsync(
     ...asyncProviders,
     ...createLLMProviders(options),
     ...createInfrastructureProvidersAsync(),
+    ...createMemoryProviders({}), // Add memory providers for async config
     ...createAdapterProvidersAsync(), // Add adapter providers for async config
   ];
 }

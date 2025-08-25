@@ -1,47 +1,7 @@
-// Module exports
-export { AgenticMemoryModule } from './lib/agentic-memory/memory.module';
+// This library has been cleaned up after memory module migration
+// Memory services have been migrated to @hive-academy/nestjs-langgraph/memory
 
-// Public Memory Services (facade layer only)
-export { MemoryFacadeService } from './lib/agentic-memory/services/memory-facade.service';
-export { SemanticSearchService } from './lib/agentic-memory/services/semantic-search.service';
-export { SummarizationService } from './lib/agentic-memory/services/summarization.service';
-export { MemoryHealthService } from './lib/agentic-memory/health/memory-health.service';
+// Note: The agentic-memory module has been migrated to nestjs-langgraph library
+// Use imports from '@hive-academy/nestjs-langgraph/memory' instead
 
-// Interface and type exports
-export type {
-  MemoryEntry,
-  MemoryMetadata,
-  MemorySearchOptions,
-  MemorySummarizationOptions,
-  MemoryConfig,
-  MemoryStorageConfig,
-  MemoryRetentionPolicy,
-  MemoryStats,
-  MemoryServiceInterface,
-  UserMemoryPatterns,
-  StorageStats,
-  ChromaWhereClause,
-  ChromaQueryResults,
-} from './lib/agentic-memory/interfaces/memory.interface';
-
-// Validation schemas
-export {
-  MemoryEntrySchema,
-  MemorySearchOptionsSchema,
-} from './lib/agentic-memory/interfaces/memory.interface';
-
-// Error classes
-export {
-  MemoryError,
-  MemoryStorageError,
-  MemoryRelationshipError,
-  MemoryEmbeddingError,
-  MemorySummarizationError,
-  MemoryConfigurationError,
-  MemoryTimeoutError,
-  wrapMemoryError,
-  isMemoryError,
-  extractErrorMessage,
-} from './lib/agentic-memory/errors/memory-errors';
-
-export type { MemoryErrorContext } from './lib/agentic-memory/errors/memory-errors';
+export {}; // Empty export to keep this as a module

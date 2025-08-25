@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { BaseMessage } from '@langchain/core/messages';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
+import { DatabaseProviderFactory } from '../providers/database-provider.factory';
 import {
   MemoryEntry,
   MemoryMetadata,
@@ -32,6 +33,8 @@ interface ExtraFields {
  * Facade service that orchestrates the hybrid memory system
  * Combines ChromaDB vector storage with Neo4j graph relationships
  * Provides a unified interface for all memory operations
+ * 
+ * Uses DatabaseProviderFactory for flexible database access
  */
 @Injectable()
 export class MemoryFacadeService
@@ -42,8 +45,7 @@ export class MemoryFacadeService
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly chromaDB: ChromaDBService,
-    private readonly neo4j: Neo4jService,
+    private readonly providerFactory: DatabaseProviderFactory,
     private readonly summarizationService: SummarizationService,
     private readonly semanticSearch: SemanticSearchService
   ) {
@@ -59,48 +61,64 @@ export class MemoryFacadeService
   }
 
   /**
-   * Initialize the hybrid memory system
+   * Initialize the hybrid memory system with available providers
    */
   private async initialize(): Promise<void> {
     try {
-      // Ensure Chroma collection exists
-      await this.chromaDB.createCollection(
-        this.collectionName,
-        {
-          description: 'Agent conversation memories with semantic search',
-          created_at: new Date().toISOString(),
-        },
-        undefined,
-        true
-      );
+      // Get available providers
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      const neo4jProvider = await this.providerFactory.getProvider('neo4j');
 
-      // Initialize Neo4j graph schema (constraints and helpful indexes)
-      await this.neo4j.write(async (session: Session) => {
-        await session.run(`
-          CREATE CONSTRAINT memory_id_unique IF NOT EXISTS
-          FOR (m:Memory) REQUIRE m.id IS UNIQUE
-        `);
-        await session.run(`
-          CREATE CONSTRAINT thread_id_unique IF NOT EXISTS
-          FOR (t:Thread) REQUIRE t.id IS UNIQUE
-        `);
-        await session.run(`
-          CREATE CONSTRAINT user_id_unique IF NOT EXISTS
-          FOR (u:User) REQUIRE u.id IS UNIQUE
-        `);
-        await session.run(`
-          CREATE INDEX memory_thread_idx IF NOT EXISTS
-          FOR (m:Memory) ON (m.threadId)
-        `);
-        await session.run(`
-          CREATE INDEX memory_type_idx IF NOT EXISTS
-          FOR (m:Memory) ON (m.type)
-        `);
-        await session.run(`
-          CREATE INDEX memory_created_idx IF NOT EXISTS
-          FOR (m:Memory) ON (m.createdAt)
-        `);
-      });
+      // Initialize ChromaDB if available
+      if (chromaProvider?.connection) {
+        const chromaDB = chromaProvider.connection as ChromaDBService;
+        await chromaDB.createCollection(
+          this.collectionName,
+          {
+            description: 'Agent conversation memories with semantic search',
+            created_at: new Date().toISOString(),
+          },
+          undefined,
+          true
+        );
+        this.logger.log('ChromaDB collection initialized');
+      } else {
+        this.logger.warn('ChromaDB provider not available - vector operations disabled');
+      }
+
+      // Initialize Neo4j if available
+      if (neo4jProvider?.connection) {
+        const neo4j = neo4jProvider.connection as Neo4jService;
+        await neo4j.write(async (session: Session) => {
+          await session.run(`
+            CREATE CONSTRAINT memory_id_unique IF NOT EXISTS
+            FOR (m:Memory) REQUIRE m.id IS UNIQUE
+          `);
+          await session.run(`
+            CREATE CONSTRAINT thread_id_unique IF NOT EXISTS
+            FOR (t:Thread) REQUIRE t.id IS UNIQUE
+          `);
+          await session.run(`
+            CREATE CONSTRAINT user_id_unique IF NOT EXISTS
+            FOR (u:User) REQUIRE u.id IS UNIQUE
+          `);
+          await session.run(`
+            CREATE INDEX memory_thread_idx IF NOT EXISTS
+            FOR (m:Memory) ON (m.threadId)
+          `);
+          await session.run(`
+            CREATE INDEX memory_type_idx IF NOT EXISTS
+            FOR (m:Memory) ON (m.type)
+          `);
+          await session.run(`
+            CREATE INDEX memory_created_idx IF NOT EXISTS
+            FOR (m:Memory) ON (m.createdAt)
+          `);
+        });
+        this.logger.log('Neo4j schema initialized');
+      } else {
+        this.logger.warn('Neo4j provider not available - graph operations disabled');
+      }
 
       this.logger.log('Hybrid memory system initialized successfully');
     } catch (error) {
@@ -170,7 +188,14 @@ export class MemoryFacadeService
     limit?: number
   ): Promise<readonly MemoryEntry[]> {
     try {
-      const results = await this.chromaDB.getDocuments(this.collectionName, {
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      if (!chromaProvider?.connection) {
+        this.logger.warn('ChromaDB not available - cannot retrieve memories');
+        return [];
+      }
+
+      const chromaDB = chromaProvider.connection as ChromaDBService;
+      const results = await chromaDB.getDocuments(this.collectionName, {
         where: { threadId: { $eq: threadId } },
         limit: limit ?? 50,
         offset: 0,
@@ -319,47 +344,60 @@ export class MemoryFacadeService
   ): Promise<number> {
     try {
       let deletedCount = 0;
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      const neo4jProvider = await this.providerFactory.getProvider('neo4j');
 
       if (memoryIds) {
         // Delete specific memories
-        await this.chromaDB.deleteDocuments(this.collectionName, [
-          ...memoryIds,
-        ]);
-        await this.neo4j.run(
-          `UNWIND $ids as id
-           MATCH (m:Memory {id: id})
-           DETACH DELETE m`,
-          { ids: [...memoryIds] }
-        );
+        if (chromaProvider?.connection) {
+          const chromaDB = chromaProvider.connection as ChromaDBService;
+          await chromaDB.deleteDocuments(this.collectionName, [...memoryIds]);
+        }
+
+        if (neo4jProvider?.connection) {
+          const neo4j = neo4jProvider.connection as Neo4jService;
+          await neo4j.run(
+            `UNWIND $ids as id
+             MATCH (m:Memory {id: id})
+             DETACH DELETE m`,
+            { ids: [...memoryIds] }
+          );
+        }
         deletedCount = memoryIds.length;
       } else {
         // Delete all memories for thread
-        const existing = await this.chromaDB.getDocuments(this.collectionName, {
-          where: { threadId: { $eq: threadId } },
-          limit: 10000,
-        });
-        const ids = Array.isArray(existing.ids?.[0])
-          ? existing.ids?.[0] ?? []
-          : existing.ids ?? [];
-        deletedCount = ids.length;
+        if (chromaProvider?.connection) {
+          const chromaDB = chromaProvider.connection as ChromaDBService;
+          const existing = await chromaDB.getDocuments(this.collectionName, {
+            where: { threadId: { $eq: threadId } },
+            limit: 10000,
+          });
+          const ids = Array.isArray(existing.ids?.[0])
+            ? existing.ids?.[0] ?? []
+            : existing.ids ?? [];
+          deletedCount = ids.length;
 
-        await this.chromaDB.deleteDocuments(this.collectionName, undefined, {
-          threadId: { $eq: threadId },
-        });
+          await chromaDB.deleteDocuments(this.collectionName, undefined, {
+            threadId: { $eq: threadId },
+          });
+        }
 
-        await this.neo4j.write(async (session) => {
-          await session.run(
-            `MATCH (t:Thread {id: $threadId})-[:HAS_MEMORY]->(m:Memory)
-             DETACH DELETE m`,
-            { threadId }
-          );
-          await session.run(
-            `MATCH (t:Thread {id: $threadId})
-             WHERE NOT (t)-[:HAS_MEMORY]->()
-             DELETE t`,
-            { threadId }
-          );
-        });
+        if (neo4jProvider?.connection) {
+          const neo4j = neo4jProvider.connection as Neo4jService;
+          await neo4j.write(async (session) => {
+            await session.run(
+              `MATCH (t:Thread {id: $threadId})-[:HAS_MEMORY]->(m:Memory)
+               DETACH DELETE m`,
+              { threadId }
+            );
+            await session.run(
+              `MATCH (t:Thread {id: $threadId})
+               WHERE NOT (t)-[:HAS_MEMORY]->()
+               DELETE t`,
+              { threadId }
+            );
+          });
+        }
       }
 
       this.logger.debug(`Deleted ${deletedCount} memories from hybrid system`);
@@ -384,10 +422,16 @@ export class MemoryFacadeService
    */
   public async getStats(): Promise<MemoryStats> {
     try {
-      const [totalMemories, relationshipStats] = await Promise.all([
-        this.chromaDB.countDocuments(this.collectionName),
-        this.getRelationshipStats(),
-      ]);
+      const chromaProvider = await this.providerFactory.getProvider('chromadb');
+      let totalMemories = 0;
+      let relationshipStats = { activeThreads: 0, totalRelationships: 0, userPatterns: 0 };
+
+      if (chromaProvider?.connection) {
+        const chromaDB = chromaProvider.connection as ChromaDBService;
+        totalMemories = await chromaDB.countDocuments(this.collectionName);
+      }
+
+      relationshipStats = await this.getRelationshipStats();
 
       return {
         totalMemories,
@@ -419,8 +463,6 @@ export class MemoryFacadeService
       }
 
       const totalDeleted = 0;
-
-      // Potentially use relationship stats here (skipped for now)
 
       // Implement retention policy cleanup
       // This would involve querying both systems and removing old/unimportant memories
@@ -530,16 +572,26 @@ export class MemoryFacadeService
     userPatterns: number;
   }> {
     try {
+      const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+      if (!neo4jProvider?.connection) {
+        return {
+          activeThreads: 0,
+          totalRelationships: 0,
+          userPatterns: 0,
+        };
+      }
+
+      const neo4j = neo4jProvider.connection as Neo4jService;
       const [threadsRes, relsRes, patternsRes] = await Promise.all([
-        this.neo4j.run<{ count: number }>(
+        neo4j.run<{ count: number }>(
           `MATCH (t:Thread)-[:HAS_MEMORY]->(:Memory)
            RETURN count(DISTINCT t) as count`
         ),
-        this.neo4j.run<{ count: number }>(
+        neo4j.run<{ count: number }>(
           `MATCH (:Memory)-[r]-(:Memory)
            RETURN count(r) as count`
         ),
-        this.neo4j.run<{ count: number }>(
+        neo4j.run<{ count: number }>(
           `MATCH (:Thread)-[:HAS_PREFERENCE]->(:Memory)
            RETURN count(*) as count`
         ),
@@ -561,7 +613,7 @@ export class MemoryFacadeService
     }
   }
 
-  // Helpers to reduce method sizes and satisfy lint rules
+  // Private helper methods remain the same...
   private buildMemoryEntry(
     threadId: string,
     content: string,
@@ -585,7 +637,14 @@ export class MemoryFacadeService
   }
 
   private async saveToChroma(memory: MemoryEntry): Promise<void> {
-    await this.chromaDB.addDocuments(this.collectionName, [
+    const chromaProvider = await this.providerFactory.getProvider('chromadb');
+    if (!chromaProvider?.connection) {
+      this.logger.warn('ChromaDB not available - skipping vector storage');
+      return;
+    }
+
+    const chromaDB = chromaProvider.connection as ChromaDBService;
+    await chromaDB.addDocuments(this.collectionName, [
       {
         id: memory.id,
         document: memory.content,
@@ -610,7 +669,15 @@ export class MemoryFacadeService
     if (!memories.length) {
       return;
     }
-    await this.chromaDB.addDocuments(
+
+    const chromaProvider = await this.providerFactory.getProvider('chromadb');
+    if (!chromaProvider?.connection) {
+      this.logger.warn('ChromaDB not available - skipping vector storage');
+      return;
+    }
+
+    const chromaDB = chromaProvider.connection as ChromaDBService;
+    await chromaDB.addDocuments(
       this.collectionName,
       memories.map((memory) => ({
         id: memory.id,
@@ -635,7 +702,14 @@ export class MemoryFacadeService
     memory: MemoryEntry,
     userId?: string
   ): Promise<void> {
-    await this.neo4j.write(async (session: Session) => {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.warn('Neo4j not available - skipping graph storage');
+      return;
+    }
+
+    const neo4j = neo4jProvider.connection as Neo4jService;
+    await neo4j.write(async (session: Session) => {
       await session.run(
         `MERGE (m:Memory {id: $memoryId})
          SET m.threadId = $threadId,
@@ -698,7 +772,15 @@ export class MemoryFacadeService
     if (!memories.length) {
       return;
     }
-    await this.neo4j.write(async (session: Session) => {
+
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.warn('Neo4j not available - skipping graph storage');
+      return;
+    }
+
+    const neo4j = neo4jProvider.connection as Neo4jService;
+    await neo4j.write(async (session: Session) => {
       for (const memory of memories) {
         await session.run(
           `MERGE (m:Memory {id: $memoryId})

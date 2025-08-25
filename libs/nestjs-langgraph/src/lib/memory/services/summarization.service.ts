@@ -13,6 +13,8 @@ import { firstValueFrom } from 'rxjs';
 /**
  * Service for conversation summarization using LLM providers
  * Follows Single Responsibility Principle - only handles summarization
+ * 
+ * This service doesn't require database providers as it only uses external LLM APIs
  */
 @Injectable()
 export class SummarizationService {

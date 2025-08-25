@@ -23,6 +23,9 @@ import {
   ChildModuleImportFactory,
 } from './providers';
 
+// Memory provider module
+import { MemoryProviderModule } from './memory/providers/memory-provider.module';
+
 @Global()
 @Module({})
 export class NestjsLanggraphModule {
@@ -40,6 +43,8 @@ export class NestjsLanggraphModule {
       module: NestjsLanggraphModule,
       imports: [
         ...childModuleImports,
+        // Always include memory provider module for auto-detection
+        MemoryProviderModule.forRoot(),
         EventEmitterModule.forRoot({
           wildcard: true,
           delimiter: '.',
@@ -69,6 +74,8 @@ export class NestjsLanggraphModule {
       module: NestjsLanggraphModule,
       imports: [
         ...(options.imports || []),
+        // Always include memory provider module for auto-detection
+        MemoryProviderModule.forRoot(),
         EventEmitterModule.forRoot({
           wildcard: true,
           delimiter: '.',

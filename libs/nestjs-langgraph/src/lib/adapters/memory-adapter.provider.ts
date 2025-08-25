@@ -1,46 +1,28 @@
 import type { Provider } from '@nestjs/common';
 import { MemoryAdapter } from './memory.adapter';
-import {
-  MEMORY_ADAPTER_FACADE_TOKEN,
-  MEMORY_CORE_SERVICE_TOKEN,
-} from '../constants/memory-adapter.constants';
+import { MemoryFacadeService } from '../memory/services/memory-facade.service';
+import { DatabaseProviderFactory } from '../memory/providers/database-provider.factory';
 
 /**
- * Memory adapter provider configuration
- * Following SOLID principles with single responsibility for memory adapter setup
+ * Enhanced memory adapter provider configuration
+ * Uses direct service injection instead of bridge pattern
  */
 export function createMemoryAdapterProviders(): Provider[] {
   return [
     MemoryAdapter,
-    // These providers will be satisfied by the AgenticMemoryModule when imported
-    // The module exports MemoryFacadeService which implements IMemoryAdapterFacade
+    // Direct service providers - no bridge needed
   ];
 }
 
 /**
- * Create providers that bridge to the AgenticMemoryModule
- * This allows the memory adapter to work with the enterprise memory system
- * Async memory adapter provider configuration
+ * Memory adapter providers with memory services
+ * Includes the migrated memory services for full functionality
  */
-export function createMemoryBridgeProviders(): Provider[] {
+export function createMemoryAdapterProvidersWithServices(): Provider[] {
   return [
-    {
-      provide: 'MEMORY_ADAPTER_FACADE_SERVICE',
-      useFactory: (memoryFacade: any) => {
-        // The memoryFacade from AgenticMemoryModule will be injected here
-        return memoryFacade;
-      },
-      inject: ['MemoryFacadeService'], // This comes from AgenticMemoryModule exports
-    },
-    {
-      provide: MEMORY_ADAPTER_FACADE_TOKEN,
-      useFactory: (memoryFacade: any) => {
-        // The memoryFacade from AgenticMemoryModule will be injected here
-        return memoryFacade;
-      },
-      inject: ['MemoryFacadeService'], // This comes from AgenticMemoryModule exports
-    },
     MemoryAdapter,
+    MemoryFacadeService,
+    DatabaseProviderFactory,
   ];
 }
 
@@ -54,4 +36,8 @@ export function createMemoryAdapterProvidersAsync(): Provider[] {
 /**
  * Memory adapter exports
  */
-export const MEMORY_ADAPTER_EXPORTS = [MemoryAdapter];
+export const MEMORY_ADAPTER_EXPORTS = [
+  MemoryAdapter,
+  MemoryFacadeService,
+  DatabaseProviderFactory,
+];

@@ -4,6 +4,8 @@ import { BufferMemory } from 'langchain/memory';
 import { ConversationSummaryMemory } from 'langchain/memory';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { BaseModuleAdapter } from './base/base.adapter';
+import { MemoryFacadeService } from '../memory/services/memory-facade.service';
+import { DatabaseProviderFactory } from '../memory/providers/database-provider.factory';
 import type {
   ICreatableAdapter,
   ExtendedAdapterStatus,
@@ -37,16 +39,13 @@ export interface MemoryConfig {
 }
 
 /**
- * Adapter that bridges the main NestJS LangGraph library to the enterprise memory module
+ * Enhanced Memory Adapter with direct service integration
  *
- * This adapter follows the Adapter pattern to provide seamless integration between
- * the main library's simple memory interface and the enterprise memory system.
- *
- * Benefits:
- * - Maintains backward compatibility with existing memory APIs
- * - Delegates to enterprise memory module when available (845 lines of sophisticated logic)
- * - Provides fallback to basic LangChain memory when child module not installed
- * - Follows SOLID principles with single responsibility (bridge interface)
+ * This adapter provides seamless integration with the memory system using:
+ * - Direct injection of MemoryFacadeService for enterprise memory operations
+ * - DatabaseProviderFactory for automatic database service detection
+ * - Backward compatibility with existing memory APIs
+ * - Graceful fallback to basic LangChain memory when services unavailable
  */
 @Injectable()
 export class MemoryAdapter
@@ -57,20 +56,22 @@ export class MemoryAdapter
 
   constructor(
     @Optional()
-    @Inject('MEMORY_ADAPTER_FACADE_SERVICE')
-    private readonly memoryFacade?: any
+    private readonly memoryFacade?: MemoryFacadeService,
+    @Optional()
+    private readonly providerFactory?: DatabaseProviderFactory
   ) {
     super();
   }
 
   /**
-   * Create a memory instance - delegates to enterprise module if available
-   * Falls back to basic LangChain memory if enterprise module not installed
+   * Create a memory instance - uses direct services for enterprise capabilities
+   * Falls back to basic LangChain memory if services unavailable
    */
   create(config: MemoryConfig): BaseMemory | any {
-    // Try enterprise memory module first for advanced capabilities
+    // Try enterprise memory with direct service access
     if (
       this.memoryFacade &&
+      this.providerFactory &&
       (config.type === 'enterprise' || config.chromadb || config.neo4j)
     ) {
       this.logEnterpriseUsage('memory creation');
@@ -78,21 +79,25 @@ export class MemoryAdapter
         return this.createEnterpriseMemory(config);
       } catch (error) {
         this.logger.warn(
-          'Enterprise memory module failed, falling back to basic implementation:',
+          'Enterprise memory creation failed, falling back to basic implementation:',
           error
         );
       }
     }
 
     // Fallback to basic LangChain memory
-    this.logFallbackUsage('memory creation', 'enterprise module not available');
+    this.logFallbackUsage('memory creation', 'enterprise services not available');
     return this.createBasicMemory(config);
   }
 
   /**
-   * Create enterprise memory wrapper that provides LangChain-compatible interface
+   * Create enterprise memory wrapper using direct services
    */
   private createEnterpriseMemory(config: MemoryConfig): any {
+    if (!this.memoryFacade || !this.providerFactory) {
+      throw new Error('Enterprise memory services not available');
+    }
+
     const enterpriseConfig = {
       userId: config.userId || 'default-user',
       threadId: config.threadId || 'default-thread',
@@ -104,13 +109,18 @@ export class MemoryAdapter
       },
     };
 
-    // Create wrapper that bridges enterprise memory to LangChain interface
-    return new EnterpriseMemoryWrapper(this.memoryFacade, enterpriseConfig, {
-      returnMessages: config.returnMessages ?? true,
-      inputKey: config.inputKey,
-      outputKey: config.outputKey,
-      memoryKey: config.memoryKey || 'history',
-    });
+    // Create wrapper with direct service access
+    return new EnterpriseMemoryWrapper(
+      this.memoryFacade, 
+      this.providerFactory,
+      enterpriseConfig, 
+      {
+        returnMessages: config.returnMessages ?? true,
+        inputKey: config.inputKey,
+        outputKey: config.outputKey,
+        memoryKey: config.memoryKey || 'history',
+      }
+    );
   }
 
   /**
@@ -158,10 +168,10 @@ export class MemoryAdapter
   }
 
   /**
-   * Check if enterprise memory module is available
+   * Check if enterprise memory services are available
    */
   isEnterpriseAvailable(): boolean {
-    return !!this.memoryFacade;
+    return !!(this.memoryFacade && this.providerFactory);
   }
 
   /**
@@ -194,8 +204,8 @@ export class MemoryAdapter
 }
 
 /**
- * Wrapper that bridges enterprise memory facade to LangChain BaseMemory interface
- * This allows enterprise memory to be used wherever LangChain memory is expected
+ * Enhanced wrapper that bridges enterprise memory services to LangChain BaseMemory interface
+ * Uses direct service access for improved performance and reliability
  */
 class EnterpriseMemoryWrapper extends BaseMemory {
   memoryKey = 'history';
@@ -204,7 +214,8 @@ class EnterpriseMemoryWrapper extends BaseMemory {
   returnMessages = true;
 
   constructor(
-    private memoryFacade: any,
+    private memoryFacade: MemoryFacadeService,
+    private providerFactory: DatabaseProviderFactory,
     private config: any,
     private options: any
   ) {
@@ -223,16 +234,15 @@ class EnterpriseMemoryWrapper extends BaseMemory {
     values: Record<string, any>
   ): Promise<Record<string, any>> {
     try {
-      // Use enterprise memory to retrieve conversation history
-      const memories = await this.memoryFacade.retrieveContext(
-        this.config.userId,
+      // Use direct service access for memory retrieval
+      const memories = await this.memoryFacade.retrieve(
         this.config.threadId,
-        { limit: 50, includeMetadata: true }
+        50
       );
 
       if (this.returnMessages) {
         return {
-          [this.memoryKey]: memories.map((memory: any) => ({
+          [this.memoryKey]: memories.map((memory) => ({
             content: memory.content,
             additional_kwargs: memory.metadata || {},
           })),
@@ -241,11 +251,11 @@ class EnterpriseMemoryWrapper extends BaseMemory {
 
       return {
         [this.memoryKey]: memories
-          .map((memory: any) => memory.content)
+          .map((memory) => memory.content)
           .join('\n'),
       };
     } catch (error) {
-      // Fallback to empty history if enterprise memory fails
+      // Fallback to empty history if memory service fails
       return { [this.memoryKey]: this.returnMessages ? [] : '' };
     }
   }
@@ -259,32 +269,28 @@ class EnterpriseMemoryWrapper extends BaseMemory {
       const output = outputValues[this.outputKey || 'output'] || '';
 
       if (input) {
-        await this.memoryFacade.storeEntry(
+        await this.memoryFacade.store(
+          this.config.threadId,
+          input,
           {
-            content: input,
-            metadata: {
-              type: 'human',
-              threadId: this.config.threadId,
-              timestamp: new Date().toISOString(),
-            },
+            type: 'conversation',
+            source: 'human',
+            importance: 0.5,
           },
-          this.config.userId,
-          this.config.threadId
+          this.config.userId
         );
       }
 
       if (output) {
-        await this.memoryFacade.storeEntry(
+        await this.memoryFacade.store(
+          this.config.threadId,
+          output,
           {
-            content: output,
-            metadata: {
-              type: 'ai',
-              threadId: this.config.threadId,
-              timestamp: new Date().toISOString(),
-            },
+            type: 'conversation',
+            source: 'ai',
+            importance: 0.5,
           },
-          this.config.userId,
-          this.config.threadId
+          this.config.userId
         );
       }
     } catch (error) {
@@ -293,9 +299,13 @@ class EnterpriseMemoryWrapper extends BaseMemory {
     }
   }
 
-  clear(): Promise<void> {
-    // Enterprise memory doesn't support full clear for safety
-    // Could implement thread-specific clear if needed
-    return Promise.resolve();
+  async clear(): Promise<void> {
+    try {
+      // Use direct service access for clearing thread-specific memories
+      await this.memoryFacade.clear(this.config.threadId);
+    } catch (error) {
+      // Log error but resolve successfully
+      console.warn('Failed to clear enterprise memory:', error);
+    }
   }
 }

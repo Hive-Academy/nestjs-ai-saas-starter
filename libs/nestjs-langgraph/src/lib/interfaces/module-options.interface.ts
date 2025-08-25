@@ -121,6 +121,36 @@ export interface CheckpointConfig {
 
 export interface MemoryDatabaseConfig {
   enabled?: boolean;
+  type?: 'basic' | 'enterprise';
+  databases?: {
+    vector?: {
+      type: 'chromadb';
+      autoDetect?: boolean;
+      config?: {
+        collection?: string;
+        embeddingFunction?: string;
+        host?: string;
+        port?: number;
+      };
+    };
+    graph?: {
+      type: 'neo4j';
+      autoDetect?: boolean;
+      config?: {
+        database?: string;
+        uri?: string;
+        username?: string;
+        password?: string;
+      };
+    };
+  };
+  features?: {
+    summarization?: boolean;
+    semanticSearch?: boolean;
+    retention?: boolean;
+    crossThreadPersistence?: boolean;
+  };
+  // Legacy support - will be deprecated
   chromadb?: {
     collection?: string;
     embeddingFunction?: string;

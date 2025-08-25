@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
+import { DatabaseProviderFactory } from '../providers/database-provider.factory';
 import type { MemoryEntry } from '../interfaces/memory.interface';
 import { MemoryRelationshipError } from '../errors/memory-errors';
 
@@ -14,19 +15,25 @@ import { MemoryRelationshipError } from '../errors/memory-errors';
  * - Temporal relationship creation
  * - Graph-based memory discovery
  *
- * This service is framework-agnostic and provides reusable graph patterns
- * for memory relationship tracking in any application context.
+ * Uses DatabaseProviderFactory for flexible database access
  */
 @Injectable()
 export class MemoryGraphService implements OnModuleInit {
   private readonly logger = new Logger(MemoryGraphService.name);
 
-  constructor(private readonly neo4jService: Neo4jService) {}
+  constructor(
+    private readonly providerFactory: DatabaseProviderFactory
+  ) {}
 
   async onModuleInit(): Promise<void> {
     try {
-      await this.initializeGraphSchema();
-      this.logger.log('Memory graph service initialized with Neo4j schema');
+      const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+      if (neo4jProvider?.connection) {
+        await this.initializeGraphSchema();
+        this.logger.log('Memory graph service initialized with Neo4j schema');
+      } else {
+        this.logger.warn('Neo4j not available - graph operations will be disabled');
+      }
     } catch (error) {
       this.logger.warn(
         'Failed to initialize Neo4j schema (may already exist)',
@@ -40,8 +47,15 @@ export class MemoryGraphService implements OnModuleInit {
    * Track a memory entry in the graph with relationships
    */
   async trackMemory(entry: MemoryEntry): Promise<void> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - skipping graph tracking');
+      return;
+    }
+
     try {
-      await this.neo4jService.write(async (session) => {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      await neo4j.write(async (session) => {
         // Create or update the memory node
         await session.run(
           `
@@ -100,14 +114,16 @@ export class MemoryGraphService implements OnModuleInit {
       });
     } catch (error) {
       const neo4jError = MemoryRelationshipError.graphStorage(
-        'trackMemory',
-        entry.threadId,
-        entry.id,
-        error instanceof Error ? error : new Error(String(error))
+        `Failed to track memory ${entry.id} in Neo4j graph`,
+        {
+          operation: 'trackMemory',
+          threadId: entry.threadId,
+          memoryId: entry.id,
+        }
       );
       this.logger.error(
         `Failed to track memory ${entry.id} in graph`,
-        neo4jError.toJSON()
+        { error: neo4jError.message, context: neo4jError.context }
       );
       // Don't throw - Neo4j failures shouldn't prevent ChromaDB storage
     }
@@ -119,8 +135,15 @@ export class MemoryGraphService implements OnModuleInit {
   async trackMemoriesBatch(entries: readonly MemoryEntry[]): Promise<void> {
     if (entries.length === 0) return;
 
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - skipping batch graph tracking');
+      return;
+    }
+
     try {
-      await this.neo4jService.write(async (session) => {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      await neo4j.write(async (session) => {
         for (const entry of entries) {
           // Create memory node
           await session.run(
@@ -181,14 +204,16 @@ export class MemoryGraphService implements OnModuleInit {
       });
     } catch (error) {
       const neo4jError = MemoryRelationshipError.graphStorage(
-        'trackMemoriesBatch',
-        entries[0]?.threadId ?? 'unknown',
-        'batch',
-        error instanceof Error ? error : new Error(String(error))
+        'Failed to track batch memories in Neo4j graph',
+        {
+          operation: 'trackMemoriesBatch',
+          threadId: entries[0]?.threadId ?? 'unknown',
+          batchSize: entries.length,
+        }
       );
       this.logger.error(
         'Failed to track batch memories in graph',
-        neo4jError.toJSON()
+        { error: neo4jError.message, context: neo4jError.context }
       );
       // Don't throw - Neo4j failures shouldn't prevent ChromaDB storage
     }
@@ -201,8 +226,15 @@ export class MemoryGraphService implements OnModuleInit {
     memoryId: string,
     relationshipTypes?: string[]
   ): Promise<any[]> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - returning empty related memories');
+      return [];
+    }
+
     try {
-      const result = await this.neo4jService.read(async (session) => {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      const result = await neo4j.read(async (session) => {
         const typeFilter = relationshipTypes
           ? `WHERE type(r) IN $relationshipTypes`
           : '';
@@ -240,8 +272,15 @@ export class MemoryGraphService implements OnModuleInit {
    * Get conversation flow for a thread
    */
   async getConversationFlow(threadId: string): Promise<any[]> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - returning empty conversation flow');
+      return [];
+    }
+
     try {
-      const result = await this.neo4jService.read(async (session) => {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      const result = await neo4j.read(async (session) => {
         return await session.run(
           `
           MATCH (t:Thread {id: $threadId})-[:HAS_MEMORY]->(m:Memory)
@@ -274,8 +313,15 @@ export class MemoryGraphService implements OnModuleInit {
   async removeMemories(memoryIds: readonly string[]): Promise<void> {
     if (memoryIds.length === 0) return;
 
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - skipping graph cleanup');
+      return;
+    }
+
     try {
-      await this.neo4jService.write(async (session) => {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      await neo4j.write(async (session) => {
         // Delete memory nodes and their relationships
         await session.run(
           `
@@ -297,15 +343,62 @@ export class MemoryGraphService implements OnModuleInit {
       this.logger.debug(`Removed ${memoryIds.length} memories from graph`);
     } catch (error) {
       const neo4jError = MemoryRelationshipError.relationshipQuery(
-        'removeMemories',
-        'unknown',
-        error instanceof Error ? error : new Error(String(error))
+        'Failed to remove memories from Neo4j graph',
+        {
+          operation: 'removeMemories',
+          memoryCount: memoryIds.length,
+        }
       );
       this.logger.error(
         'Failed to remove memories from graph',
-        neo4jError.toJSON()
+        { error: neo4jError.message, context: neo4jError.context }
       );
       // Don't throw - Neo4j failures shouldn't prevent cleanup
+    }
+  }
+
+  /**
+   * Build semantic relationships between memories based on content similarity
+   */
+  async buildSemanticRelationships(): Promise<void> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - skipping semantic relationship building');
+      return;
+    }
+
+    try {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      await neo4j.write(async (session) => {
+        // Find memories with similar tags and create semantic relationships
+        await session.run(`
+          MATCH (m1:Memory), (m2:Memory)
+          WHERE m1 <> m2
+            AND ANY(tag IN m1.tags WHERE tag IN m2.tags)
+            AND NOT (m1)-[:SIMILAR_TO]-(m2)
+          WITH m1, m2, size([tag IN m1.tags WHERE tag IN m2.tags]) as commonTags
+          WHERE commonTags > 0
+          MERGE (m1)-[r:SIMILAR_TO]-(m2)
+          SET r.commonTags = commonTags, r.createdAt = datetime()
+        `);
+
+        // Create importance-based relationships
+        await session.run(`
+          MATCH (m1:Memory), (m2:Memory)
+          WHERE m1 <> m2
+            AND m1.threadId = m2.threadId
+            AND m1.importance > 0.7
+            AND m2.importance > 0.7
+            AND NOT (m1)-[:IMPORTANT_WITH]-(m2)
+          MERGE (m1)-[r:IMPORTANT_WITH]-(m2)
+          SET r.createdAt = datetime()
+        `);
+
+        this.logger.log('Successfully built semantic relationships between memories');
+      });
+    } catch (error) {
+      this.logger.error('Failed to build semantic relationships', error);
+      // Don't throw - this is a non-critical enhancement operation
     }
   }
 
@@ -318,8 +411,20 @@ export class MemoryGraphService implements OnModuleInit {
     totalRelationships: number;
     memoryTypes: Record<string, number>;
   }> {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      this.logger.debug('Neo4j not available - returning empty stats');
+      return {
+        totalMemories: 0,
+        totalThreads: 0,
+        totalRelationships: 0,
+        memoryTypes: {},
+      };
+    }
+
     try {
-      const result = await this.neo4jService.read(async (session) => {
+      const neo4j = neo4jProvider.connection as Neo4jService;
+      const result = await neo4j.read(async (session) => {
         const stats = await session.run(`
           MATCH (m:Memory)
           WITH count(m) as totalMemories
@@ -372,7 +477,13 @@ export class MemoryGraphService implements OnModuleInit {
    * Initialize Neo4j schema for memory storage
    */
   private async initializeGraphSchema(): Promise<void> {
-    await this.neo4jService.write(async (session) => {
+    const neo4jProvider = await this.providerFactory.getProvider('neo4j');
+    if (!neo4jProvider?.connection) {
+      return;
+    }
+
+    const neo4j = neo4jProvider.connection as Neo4jService;
+    await neo4j.write(async (session) => {
       // Create constraints for unique memory IDs
       await session.run(`
         CREATE CONSTRAINT memory_id_unique IF NOT EXISTS
