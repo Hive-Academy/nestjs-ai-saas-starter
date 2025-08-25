@@ -31,11 +31,60 @@ export {
   type MultiAgentConfig,
   type MultiAgentResult,
 } from './multi-agent.adapter';
+export {
+  HitlAdapter,
+  createHitlProvider,
+  type HitlConfig,
+  type HitlResult,
+} from './hitl.adapter';
+export {
+  StreamingAdapter,
+  createStreamingProvider,
+  type StreamingConfig,
+  type StreamingResult,
+} from './streaming.adapter';
+export {
+  FunctionalApiAdapter,
+  createFunctionalApiProvider,
+  type FunctionalApiConfig,
+  type FunctionalApiResult,
+} from './functional-api.adapter';
+export {
+  PlatformAdapter,
+  createPlatformProvider,
+  type PlatformConfig,
+  type PlatformResult,
+} from './platform.adapter';
+export {
+  TimeTravelAdapter,
+  createTimeTravelProvider,
+  type TimeTravelConfig,
+  type TimeTravelResult,
+} from './time-travel.adapter';
+export {
+  MonitoringAdapter,
+  createMonitoringProvider,
+  type MonitoringConfig,
+  type MonitoringResult,
+} from './monitoring.adapter';
+export {
+  WorkflowEngineAdapter,
+  createWorkflowEngineProvider,
+  type WorkflowEngineConfig,
+  type WorkflowEngineResult,
+} from './workflow-engine.adapter';
 
 // Re-export for backward compatibility
 export { CheckpointAdapter as CheckpointProvider } from './checkpoint.adapter';
 export { MemoryAdapter as MemoryProvider } from './memory.adapter';
 export { MultiAgentAdapter as MultiAgentCoordinator } from './multi-agent.adapter';
+export { HitlAdapter as HitlProvider } from './hitl.adapter';
+export { StreamingAdapter as StreamingProvider } from './streaming.adapter';
+export { FunctionalApiAdapter as FunctionalApiProvider } from './functional-api.adapter';
+export { PlatformAdapter as PlatformProvider } from './platform.adapter';
+export { TimeTravelAdapter as TimeTravelProvider } from './time-travel.adapter';
+export { MonitoringAdapter as MonitoringProvider } from './monitoring.adapter';
+export { WorkflowEngineAdapter as WorkflowEngineProvider } from './workflow-engine.adapter';
 
 /**
  * Adapter provider exports for clean module organization
@@ -101,6 +150,13 @@ export function createAdapterProvidersAsync() {
 import { CheckpointAdapter } from './checkpoint.adapter';
 import { MemoryAdapter } from './memory.adapter';
 import { MultiAgentAdapter } from './multi-agent.adapter';
+import { HitlAdapter } from './hitl.adapter';
+import { StreamingAdapter } from './streaming.adapter';
+import { FunctionalApiAdapter } from './functional-api.adapter';
+import { PlatformAdapter } from './platform.adapter';
+import { TimeTravelAdapter } from './time-travel.adapter';
+import { MonitoringAdapter } from './monitoring.adapter';
+import { WorkflowEngineAdapter } from './workflow-engine.adapter';
 
 /**
  * All adapter exports
@@ -109,4 +165,11 @@ export const ADAPTER_EXPORTS = [
   CheckpointAdapter,
   MemoryAdapter,
   MultiAgentAdapter,
+  HitlAdapter,
+  StreamingAdapter,
+  FunctionalApiAdapter,
+  PlatformAdapter,
+  TimeTravelAdapter,
+  MonitoringAdapter,
+  WorkflowEngineAdapter,
 ];
