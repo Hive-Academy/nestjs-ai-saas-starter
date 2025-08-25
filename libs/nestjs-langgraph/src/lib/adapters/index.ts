@@ -5,9 +5,32 @@
  * library with specialized enterprise modules while maintaining backward compatibility.
  */
 
-export { CheckpointAdapter, createCheckpointProvider } from './checkpoint.adapter';
+// Adapter foundation interfaces and base classes
+export {
+  type IModuleAdapter,
+  type ICreatableAdapter,
+  type IExecutableAdapter,
+  type IStreamableAdapter,
+  type ICleanableAdapter,
+  type IFullAdapter,
+  type AdapterStatus,
+  type BaseAdapterStatus,
+  type ExtendedAdapterStatus,
+} from './interfaces/adapter.interface';
+
+export { BaseModuleAdapter } from './base/base.adapter';
+
+// Concrete adapter implementations
+export {
+  CheckpointAdapter,
+  createCheckpointProvider,
+} from './checkpoint.adapter';
 export { MemoryAdapter, type MemoryConfig } from './memory.adapter';
-export { MultiAgentAdapter, type MultiAgentConfig, type MultiAgentResult } from './multi-agent.adapter';
+export {
+  MultiAgentAdapter,
+  type MultiAgentConfig,
+  type MultiAgentResult,
+} from './multi-agent.adapter';
 
 // Re-export for backward compatibility
 export { CheckpointAdapter as CheckpointProvider } from './checkpoint.adapter';
@@ -20,26 +43,36 @@ export { MultiAgentAdapter as MultiAgentCoordinator } from './multi-agent.adapte
  */
 
 export {
-  CHECKPOINT_ADAPTER_EXPORTS, createCheckpointAdapterProviders,
-  createCheckpointAdapterProvidersAsync
+  CHECKPOINT_ADAPTER_EXPORTS,
+  createCheckpointAdapterProviders,
+  createCheckpointAdapterProvidersAsync,
 } from './checkpoint-adapter.provider';
 
 export {
   createMemoryAdapterProviders,
   createMemoryAdapterProvidersAsync,
-  MEMORY_ADAPTER_EXPORTS
+  MEMORY_ADAPTER_EXPORTS,
 } from './memory-adapter.provider';
 
 export {
   createMultiAgentAdapterProviders,
   createMultiAgentAdapterProvidersAsync,
-  MULTI_AGENT_ADAPTER_EXPORTS
+  MULTI_AGENT_ADAPTER_EXPORTS,
 } from './multi-agent-adapter.provider';
 
 // Combined provider factory
-import { createCheckpointAdapterProviders, createCheckpointAdapterProvidersAsync } from './checkpoint-adapter.provider';
-import { createMemoryAdapterProviders, createMemoryAdapterProvidersAsync } from './memory-adapter.provider';
-import { createMultiAgentAdapterProviders, createMultiAgentAdapterProvidersAsync } from './multi-agent-adapter.provider';
+import {
+  createCheckpointAdapterProviders,
+  createCheckpointAdapterProvidersAsync,
+} from './checkpoint-adapter.provider';
+import {
+  createMemoryAdapterProviders,
+  createMemoryAdapterProvidersAsync,
+} from './memory-adapter.provider';
+import {
+  createMultiAgentAdapterProviders,
+  createMultiAgentAdapterProvidersAsync,
+} from './multi-agent-adapter.provider';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
 
 /**

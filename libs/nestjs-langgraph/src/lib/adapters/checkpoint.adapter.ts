@@ -1,6 +1,11 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import type { CheckpointConfig } from '../interfaces/module-options.interface';
+import { BaseModuleAdapter } from './base/base.adapter';
+import type {
+  ICreatableAdapter,
+  ExtendedAdapterStatus,
+} from './interfaces/adapter.interface';
 
 /**
  * Adapter that bridges the main NestJS LangGraph library to the enterprise checkpoint module
@@ -15,15 +20,22 @@ import type { CheckpointConfig } from '../interfaces/module-options.interface';
  * - Follows SOLID principles with single responsibility (bridge interface)
  */
 @Injectable()
-export class CheckpointAdapter {
-  private readonly logger = new Logger(CheckpointAdapter.name);
+export class CheckpointAdapter
+  extends BaseModuleAdapter<CheckpointConfig, BaseCheckpointSaver>
+  implements ICreatableAdapter<CheckpointConfig, BaseCheckpointSaver>
+{
+  protected readonly serviceName = 'checkpoint';
 
   constructor(
-    @Optional() @Inject('CheckpointManagerService')
+    @Optional()
+    @Inject('CheckpointManagerService')
     private readonly checkpointManager?: any,
-    @Optional() @Inject('LangGraphCheckpointProvider')
+    @Optional()
+    @Inject('LangGraphCheckpointProvider')
     private readonly langGraphProvider?: any
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Create a checkpoint saver - delegates to enterprise module if available
@@ -36,13 +48,18 @@ export class CheckpointAdapter {
 
     // Try enterprise checkpoint module first
     if (this.checkpointManager) {
-      this.logger.log('Using enterprise checkpoint module via adapter');
+      this.logEnterpriseUsage('checkpoint creation');
       try {
         // Convert config format and delegate to enterprise module
         const enterpriseConfig = this.convertToEnterpriseConfig(config);
-        return await this.checkpointManager.createLangGraphSaver(enterpriseConfig);
+        return await this.checkpointManager.createLangGraphSaver(
+          enterpriseConfig
+        );
       } catch (error) {
-        this.logger.warn('Enterprise checkpoint module failed, falling back to basic implementation:', error);
+        this.logger.warn(
+          'Enterprise checkpoint module failed, falling back to basic implementation:',
+          error
+        );
       }
     }
 
@@ -52,12 +69,18 @@ export class CheckpointAdapter {
       try {
         return await this.langGraphProvider.create(config);
       } catch (error) {
-        this.logger.warn('LangGraph checkpoint provider failed, falling back to basic implementation:', error);
+        this.logger.warn(
+          'LangGraph checkpoint provider failed, falling back to basic implementation:',
+          error
+        );
       }
     }
 
     // Fallback to basic SQLite implementation
-    this.logger.log('Using fallback SQLite checkpoint implementation');
+    this.logFallbackUsage(
+      'checkpoint creation',
+      'no enterprise services available'
+    );
     return this.createFallbackCheckpointer(config);
   }
 
@@ -66,10 +89,10 @@ export class CheckpointAdapter {
    */
   private convertToEnterpriseConfig(config: CheckpointConfig): any {
     const storageTypeMap: Record<string, string> = {
-      'memory': 'memory',
-      'database': 'sqlite',
-      'redis': 'redis',
-      'custom': 'custom'
+      memory: 'memory',
+      database: 'sqlite',
+      redis: 'redis',
+      custom: 'custom',
     };
 
     const storageType = config.storage || 'memory';
@@ -78,21 +101,27 @@ export class CheckpointAdapter {
       name: 'main-library-adapter',
       default: true,
       [storageType]: config.storageConfig || {},
-      saver: config.saver
+      saver: config.saver,
     };
   }
 
   /**
    * Fallback checkpoint implementation when enterprise module unavailable
    */
-  private async createFallbackCheckpointer(config: CheckpointConfig): Promise<BaseCheckpointSaver> {
+  private async createFallbackCheckpointer(
+    config: CheckpointConfig
+  ): Promise<BaseCheckpointSaver> {
     // Dynamic import to avoid hard dependency
     let SqliteSaver;
     try {
-      const sqliteModule = await import('@langchain/langgraph-checkpoint-sqlite');
+      const sqliteModule = await import(
+        '@langchain/langgraph-checkpoint-sqlite'
+      );
       SqliteSaver = sqliteModule.SqliteSaver;
     } catch (error) {
-      throw new Error('No checkpoint implementation available. Install @langchain/langgraph-checkpoint-sqlite or @libs/langgraph-modules/checkpoint');
+      throw new Error(
+        'No checkpoint implementation available. Install @langchain/langgraph-checkpoint-sqlite or @libs/langgraph-modules/checkpoint'
+      );
     }
 
     switch (config.storage) {
@@ -135,18 +164,31 @@ export class CheckpointAdapter {
   /**
    * Get adapter status for diagnostics
    */
-  getAdapterStatus(): {
-    enterpriseAvailable: boolean;
-    langGraphProviderAvailable: boolean;
-    fallbackMode: boolean;
-  } {
+  getAdapterStatus(): ExtendedAdapterStatus {
     const enterpriseAvailable = this.isEnterpriseAvailable();
     const langGraphProviderAvailable = this.isLangGraphProviderAvailable();
+    const fallbackMode = !enterpriseAvailable && !langGraphProviderAvailable;
+
+    const capabilities = this.getBaseCapabilities();
+    capabilities.push('sqlite_fallback', 'memory_storage', 'database_storage');
+
+    if (enterpriseAvailable) {
+      capabilities.push(
+        'enterprise_checkpoint',
+        'advanced_storage',
+        'redis_storage'
+      );
+    }
+
+    if (langGraphProviderAvailable) {
+      capabilities.push('langgraph_provider', 'native_integration');
+    }
 
     return {
       enterpriseAvailable,
       langGraphProviderAvailable,
-      fallbackMode: !enterpriseAvailable && !langGraphProviderAvailable
+      fallbackMode,
+      capabilities,
     };
   }
 }

@@ -1,6 +1,13 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import { BaseModuleAdapter } from './base/base.adapter';
+import type {
+  IExecutableAdapter,
+  IStreamableAdapter,
+  ICleanableAdapter,
+  ExtendedAdapterStatus,
+} from './interfaces/adapter.interface';
 
 /**
  * Multi-agent configuration interface for adapter
@@ -28,10 +35,10 @@ export interface MultiAgentResult {
 
 /**
  * Adapter that bridges the main NestJS LangGraph library to the enterprise multi-agent module
- * 
+ *
  * This adapter follows the Adapter pattern to provide seamless integration between
  * the main library and the sophisticated multi-agent coordination system.
- * 
+ *
  * Benefits:
  * - Provides consistent interface for multi-agent operations
  * - Delegates to enterprise multi-agent module when available
@@ -39,17 +46,64 @@ export interface MultiAgentResult {
  * - Follows SOLID principles with single responsibility (bridge interface)
  */
 @Injectable()
-export class MultiAgentAdapter {
-  private readonly logger = new Logger(MultiAgentAdapter.name);
+export class MultiAgentAdapter
+  extends BaseModuleAdapter<MultiAgentConfig, MultiAgentResult>
+  implements
+    IExecutableAdapter<any, MultiAgentResult>,
+    IStreamableAdapter<any, any>,
+    ICleanableAdapter
+{
+  protected readonly serviceName = 'multi-agent';
 
   constructor(
-    @Optional() @Inject('MultiAgentCoordinatorService')
+    @Optional()
+    @Inject('MultiAgentCoordinatorService')
     private readonly coordinator?: any,
-    @Optional() @Inject('NetworkManagerService')
+    @Optional()
+    @Inject('NetworkManagerService')
     private readonly networkManager?: any,
-    @Optional() @Inject('AgentRegistryService')
+    @Optional()
+    @Inject('AgentRegistryService')
     private readonly agentRegistry?: any
-  ) {}
+  ) {
+    super();
+  }
+
+  /**
+   * Execute method required by IExecutableAdapter interface
+   * Delegates to executeSimpleWorkflow for compatibility
+   */
+  async execute(input: any, options?: any): Promise<MultiAgentResult> {
+    if (typeof input === 'string') {
+      return this.executeSimpleWorkflow(input, input, options);
+    }
+
+    if (input.networkId && input.message) {
+      return this.executeSimpleWorkflow(
+        input.networkId,
+        input.message,
+        options
+      );
+    }
+
+    throw new Error(
+      'Invalid input for multi-agent execution. Expected string or {networkId, message}'
+    );
+  }
+
+  /**
+   * Stream method required by IStreamableAdapter interface
+   * Delegates to streamWorkflow for compatibility
+   */
+  stream(input: any, options?: any): AsyncGenerator<any, void, unknown> {
+    if (!this.coordinator) {
+      throw new Error(
+        'Multi-agent module not available. Install @libs/langgraph-modules/multi-agent'
+      );
+    }
+
+    return this.coordinator.streamWorkflow(input.networkId, input);
+  }
 
   /**
    * Setup a multi-agent network - delegates to enterprise module
@@ -61,13 +115,20 @@ export class MultiAgentAdapter {
     config?: any
   ): Promise<string> {
     if (!this.coordinator) {
-      throw new Error('Multi-agent module not available. Install @libs/langgraph-modules/multi-agent');
+      throw new Error(
+        'Multi-agent module not available. Install @libs/langgraph-modules/multi-agent'
+      );
     }
 
     this.logger.log(`Setting up ${networkType} network: ${networkId}`);
-    
+
     try {
-      return await this.coordinator.setupNetwork(networkId, agents, networkType, config);
+      return await this.coordinator.setupNetwork(
+        networkId,
+        agents,
+        networkType,
+        config
+      );
     } catch (error) {
       this.logger.error(`Failed to setup network ${networkId}:`, error);
       throw error;
@@ -87,14 +148,20 @@ export class MultiAgentAdapter {
     }
   ): Promise<MultiAgentResult> {
     if (!this.coordinator) {
-      throw new Error('Multi-agent module not available. Install @libs/langgraph-modules/multi-agent');
+      throw new Error(
+        'Multi-agent module not available. Install @libs/langgraph-modules/multi-agent'
+      );
     }
 
     this.logger.log(`Executing workflow on network: ${networkId}`);
-    
+
     try {
       const startTime = Date.now();
-      const result = await this.coordinator.executeSimpleWorkflow(networkId, message, options);
+      const result = await this.coordinator.executeSimpleWorkflow(
+        networkId,
+        message,
+        options
+      );
       const executionTime = Date.now() - startTime;
 
       return {
@@ -102,13 +169,16 @@ export class MultiAgentAdapter {
         result,
         executionTime,
         executionPath: result.executionPath || [],
-        finalState: result.finalState
+        finalState: result.finalState,
       };
     } catch (error) {
-      this.logger.error(`Failed to execute workflow on network ${networkId}:`, error);
+      this.logger.error(
+        `Failed to execute workflow on network ${networkId}:`,
+        error
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -125,7 +195,9 @@ export class MultiAgentAdapter {
     }
   ): Promise<MultiAgentResult> {
     if (!this.coordinator) {
-      throw new Error('Multi-agent module not available. Install @libs/langgraph-modules/multi-agent');
+      throw new Error(
+        'Multi-agent module not available. Install @libs/langgraph-modules/multi-agent'
+      );
     }
 
     try {
@@ -138,13 +210,16 @@ export class MultiAgentAdapter {
         result,
         executionTime,
         executionPath: result.executionPath || [],
-        finalState: result.finalState
+        finalState: result.finalState,
       };
     } catch (error) {
-      this.logger.error(`Failed to execute workflow on network ${networkId}:`, error);
+      this.logger.error(
+        `Failed to execute workflow on network ${networkId}:`,
+        error
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -161,7 +236,9 @@ export class MultiAgentAdapter {
     }
   ): AsyncGenerator<any, MultiAgentResult, unknown> | never {
     if (!this.coordinator) {
-      throw new Error('Multi-agent module not available. Install @libs/langgraph-modules/multi-agent');
+      throw new Error(
+        'Multi-agent module not available. Install @libs/langgraph-modules/multi-agent'
+      );
     }
 
     return this.coordinator.streamWorkflow(networkId, input);
@@ -172,7 +249,9 @@ export class MultiAgentAdapter {
    */
   registerAgent(agentDefinition: any): void {
     if (!this.coordinator) {
-      throw new Error('Multi-agent module not available. Install @libs/langgraph-modules/multi-agent');
+      throw new Error(
+        'Multi-agent module not available. Install @libs/langgraph-modules/multi-agent'
+      );
     }
 
     this.coordinator.registerAgent(agentDefinition);
@@ -256,13 +335,13 @@ export class MultiAgentAdapter {
       return {
         agents: { total: 0, healthy: 0, unhealthy: 0 },
         networks: { total: 0, types: {} },
-        available: false
+        available: false,
       };
     }
 
     return {
       ...this.coordinator.getSystemStatus(),
-      available: true
+      available: true,
     };
   }
 
@@ -291,20 +370,15 @@ export class MultiAgentAdapter {
   /**
    * Get adapter status for diagnostics
    */
-  getAdapterStatus(): {
-    enterpriseAvailable: boolean;
-    coordinatorAvailable: boolean;
-    networkManagerAvailable: boolean;
-    agentRegistryAvailable: boolean;
-    capabilities: string[];
-  } {
+  getAdapterStatus(): ExtendedAdapterStatus {
     const enterpriseAvailable = this.isEnterpriseAvailable();
-    
-    const capabilities = [];
+    const fallbackMode = !enterpriseAvailable;
+
+    const capabilities = this.getBaseCapabilities();
     if (enterpriseAvailable) {
       capabilities.push(
         'supervisor_networks',
-        'swarm_networks', 
+        'swarm_networks',
         'hierarchical_networks',
         'agent_registry',
         'network_management',
@@ -319,7 +393,8 @@ export class MultiAgentAdapter {
       coordinatorAvailable: !!this.coordinator,
       networkManagerAvailable: !!this.networkManager,
       agentRegistryAvailable: !!this.agentRegistry,
-      capabilities
+      fallbackMode,
+      capabilities,
     };
   }
 }

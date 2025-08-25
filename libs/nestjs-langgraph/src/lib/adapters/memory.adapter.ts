@@ -1,8 +1,13 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { BaseMemory } from '@langchain/core/memory';
 import { BufferMemory } from 'langchain/memory';
 import { ConversationSummaryMemory } from 'langchain/memory';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { BaseModuleAdapter } from './base/base.adapter';
+import type {
+  ICreatableAdapter,
+  ExtendedAdapterStatus,
+} from './interfaces/adapter.interface';
 
 /**
  * Memory configuration interface for adapter
@@ -44,14 +49,19 @@ export interface MemoryConfig {
  * - Follows SOLID principles with single responsibility (bridge interface)
  */
 @Injectable()
-export class MemoryAdapter {
-  private readonly logger = new Logger(MemoryAdapter.name);
+export class MemoryAdapter
+  extends BaseModuleAdapter<MemoryConfig, BaseMemory | any>
+  implements ICreatableAdapter<MemoryConfig, BaseMemory | any>
+{
+  protected readonly serviceName = 'memory';
 
   constructor(
     @Optional()
     @Inject('MEMORY_ADAPTER_FACADE_SERVICE')
     private readonly memoryFacade?: any
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Create a memory instance - delegates to enterprise module if available
@@ -63,7 +73,7 @@ export class MemoryAdapter {
       this.memoryFacade &&
       (config.type === 'enterprise' || config.chromadb || config.neo4j)
     ) {
-      this.logger.log('Using enterprise memory module via adapter');
+      this.logEnterpriseUsage('memory creation');
       try {
         return this.createEnterpriseMemory(config);
       } catch (error) {
@@ -75,7 +85,7 @@ export class MemoryAdapter {
     }
 
     // Fallback to basic LangChain memory
-    this.logger.log('Using basic LangChain memory implementation');
+    this.logFallbackUsage('memory creation', 'enterprise module not available');
     return this.createBasicMemory(config);
   }
 
@@ -157,26 +167,27 @@ export class MemoryAdapter {
   /**
    * Get adapter status for diagnostics
    */
-  getAdapterStatus(): {
-    enterpriseAvailable: boolean;
-    fallbackMode: boolean;
-    capabilities: string[];
-  } {
+  getAdapterStatus(): ExtendedAdapterStatus {
     const enterpriseAvailable = this.isEnterpriseAvailable();
+    const fallbackMode = !enterpriseAvailable;
 
-    const capabilities = ['buffer', 'summary', 'buffer_window'];
+    const capabilities = this.getBaseCapabilities();
+    capabilities.push('buffer', 'summary', 'buffer_window');
+
     if (enterpriseAvailable) {
       capabilities.push(
         'enterprise',
         'semantic_search',
         'cross_thread_persistence',
-        'conversation_summarization'
+        'conversation_summarization',
+        'chromadb_storage',
+        'neo4j_storage'
       );
     }
 
     return {
       enterpriseAvailable,
-      fallbackMode: !enterpriseAvailable,
+      fallbackMode,
       capabilities,
     };
   }
