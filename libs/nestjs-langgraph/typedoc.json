@@ -1,6 +1,6 @@
 {
   "extends": "../../typedoc.base.json",
-  "name": "@anubis/nestjs-langgraph",
+  "name": "@hive-academy/nestjs-langgraph",
   "out": "../../docs/api/nestjs-langgraph",
   "entryPoints": ["src/index.ts"],
   "tsconfig": "tsconfig.lib.json",
@@ -8,9 +8,9 @@
   "includeVersion": true,
   "gitRevision": "main",
   "gitRemote": "origin",
-  "sourceLinkTemplate": "https://github.com/anubis/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-langgraph/{path}#L{line}",
+  "sourceLinkTemplate": "https://github.com/hive-academy/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-langgraph/{path}#L{line}",
   "navigationLinks": {
-    "GitHub": "https://github.com/anubis/nestjs-ai-saas-starter",
-    "NPM": "https://www.npmjs.com/package/@anubis/nestjs-langgraph"
+    "GitHub": "https://github.com/hive-academy/nestjs-ai-saas-starter",
+    "NPM": "https://www.npmjs.com/package/@hive-academy/nestjs-langgraph"
   }
 }

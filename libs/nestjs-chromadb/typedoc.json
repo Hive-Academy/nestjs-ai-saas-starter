@@ -8,9 +8,9 @@
   "includeVersion": true,
   "gitRevision": "main",
   "gitRemote": "origin",
-  "sourceLinkTemplate": "https://github.com/anubis/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-chromadb/{path}#L{line}",
+  "sourceLinkTemplate": "https://github.com/hive-academy/nestjs-ai-saas-starter/blob/{gitRevision}/libs/nestjs-chromadb/{path}#L{line}",
   "navigationLinks": {
-    "GitHub": "https://github.com/anubis/nestjs-ai-saas-starter",
+    "GitHub": "https://github.com/hive-academy/nestjs-ai-saas-starter",
     "NPM": "https://www.npmjs.com/package/@hive-academy/nestjs-chromadb"
   }
 }

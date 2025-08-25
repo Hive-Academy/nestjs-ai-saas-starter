@@ -757,7 +757,7 @@ export class KnowledgeGraphService {
 
 ## Integration Patterns with Other Libraries
 
-### Integration with @anubis/nestjs-langgraph
+### Integration with @hive-academy/nestjs-langgraph
 
 Use Neo4j as memory backend for AI agents:
 

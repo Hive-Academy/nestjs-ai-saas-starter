@@ -140,7 +140,7 @@ chore(deps): update dependencies
 **Validates**:
 
 - Required fields: name, version, description, author, license
-- Package name starts with `@anubis/`
+- Package name starts with `@hive-academy/`
 - Semantic versioning format
 - Proper exports configuration
 - Entry points (main, module, types)
@@ -292,16 +292,7 @@ Add to `.vscode/settings.json`:
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
-  "conventionalCommits.scopes": [
-    "chromadb",
-    "neo4j", 
-    "langgraph",
-    "shared",
-    "deps",
-    "release",
-    "ci",
-    "docs"
-  ]
+  "conventionalCommits.scopes": ["chromadb", "neo4j", "langgraph", "shared", "deps", "release", "ci", "docs"]
 }
 ```
 

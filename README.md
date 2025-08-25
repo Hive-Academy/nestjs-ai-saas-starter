@@ -79,7 +79,7 @@ nestjs-ai-saas-starter/
 
 ```bash
 # Clone the repository
-git clone https://github.com/anubis/nestjs-ai-saas-starter.git
+git clone https://github.com/hive-academy/nestjs-ai-saas-starter.git
 cd nestjs-ai-saas-starter
 
 # Install dependencies
@@ -201,7 +201,7 @@ git commit -m "docs: update installation guide"
 
 ## 📦 Published Libraries
 
-This workspace publishes three NPM packages under the `@anubis` scope:
+This workspace publishes three NPM packages under the `@hive-academy` scope:
 
 ### [@hive-academy/nestjs-chromadb](https://www.npmjs.com/package/@hive-academy/nestjs-chromadb)
 
@@ -262,16 +262,16 @@ export class AppModule {}
 - Health monitoring
 - Cypher query builder utilities
 
-### [@anubis/nestjs-langgraph](https://www.npmjs.com/package/@anubis/nestjs-langgraph)
+### [@hive-academy/nestjs-langgraph](https://www.npmjs.com/package/@hive-academy/nestjs-langgraph)
 
 **AI Agent Workflows**
 
 ```bash
-npm install @anubis/nestjs-langgraph @langchain/langgraph
+npm install @hive-academy/nestjs-langgraph @langchain/langgraph
 ```
 
 ```typescript
-import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
 @Module({
   imports: [
@@ -297,11 +297,11 @@ export class AppModule {}
 
 ```bash
 # Build production image
-docker build -f docker/Dockerfile -t anubis-agent:latest .
+docker build -f docker/Dockerfile -t hive-academy-agent:latest .
 
 # Run production stack
 docker compose -f docker-compose.yml up -d
-````
+```
 
 ### Environment Configuration
 
@@ -493,10 +493,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support & Community
 
-- **📖 Documentation**: [Full documentation site](https://anubis.github.io/nestjs-ai-saas-starter)
-- **🐛 Issues**: [GitHub Issues](https://github.com/anubis/nestjs-ai-saas-starter/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/anubis/nestjs-ai-saas-starter/discussions)
-- **📧 Email**: support@anubis.dev
+- **📖 Documentation**: [Full documentation site](https://hive-academy.github.io/nestjs-ai-saas-starter)
+- **🐛 Issues**: [GitHub Issues](https://github.com/hive-academy/nestjs-ai-saas-starter/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/hive-academy/nestjs-ai-saas-starter/discussions)
+- **📧 Email**: <support@hive-academy.dev>
 
 ## 🙏 Acknowledgments
 
@@ -513,7 +513,7 @@ Built with amazing open-source technologies:
 
 <div align="center">
 
-**[⭐ Star this repo](https://github.com/anubis/nestjs-ai-saas-starter) if you find it helpful!**
+**[⭐ Star this repo](https://github.com/hive-academy/nestjs-ai-saas-starter) if you find it helpful!**
 
 Made with ❤️ by the Anubis team
 

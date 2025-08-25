@@ -1065,10 +1065,10 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- 📧 Email: support@anubis.dev
-- 💬 Discord: [Join our community](https://discord.gg/anubis)
+- 📧 Email: <support@hive-academy.dev>
+- 💬 Discord: [Join our community](https://discord.gg/hive-academy)
 - 🐛 Issues: [GitHub Issues](https://github.com/your-org/nestjs-neo4j/issues)
-- 📖 Docs: [Full Documentation](https://docs.anubis.dev/nestjs-neo4j)
+- 📖 Docs: [Full Documentation](https://docs.hive-academy.dev/nestjs-neo4j)
 
 ## Acknowledgments
 

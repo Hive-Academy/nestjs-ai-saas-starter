@@ -1,6 +1,6 @@
 # @hive-academy/nestjs-chromadb
 
-[![npm version](https://badge.fury.io/js/@anubis%2Fnestjs-chromadb.svg)](https://badge.fury.io/js/@anubis%2Fnestjs-chromadb)
+[![npm version](https://badge.fury.io/js/@hive-academy%2Fnestjs-chromadb.svg)](https://badge.fury.io/js/@hive-academy%2Fnestjs-chromadb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 
@@ -430,9 +430,9 @@ This project is licensed under the MIT License - see the [LICENSE](../../LICENSE
 
 ## Support
 
-- 📖 [Documentation](https://anubis.github.io/nestjs-ai-saas-starter/nestjs-chromadb)
-- 🐛 [Issue Tracker](https://github.com/anubis/nestjs-ai-saas-starter/issues)
-- 💬 [Discussions](https://github.com/anubis/nestjs-ai-saas-starter/discussions)
+- 📖 [Documentation](https://hive-academy.github.io/nestjs-ai-saas-starter/nestjs-chromadb)
+- 🐛 [Issue Tracker](https://github.com/hive-academy/nestjs-ai-saas-starter/issues)
+- 💬 [Discussions](https://github.com/hive-academy/nestjs-ai-saas-starter/discussions)
 
 ## Related Packages
 

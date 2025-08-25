@@ -14,12 +14,14 @@ The CI/CD pipeline consists of three main workflows:
 
 ### 1. NPM Token Setup
 
-1. Create an NPM account and join the `@anubis` organization
+1. Create an NPM account and join the `@hive-academy` organization
 2. Generate an automation token:
+
    ```bash
    npm login
    npm token create --type=automation
    ```
+
 3. Add the token to GitHub Secrets as `NPM_TOKEN`
 
 ### 2. GitHub Token Setup
@@ -44,6 +46,7 @@ Set up branch protection for the `main` branch:
    - Include administrators
 
 Required status checks:
+
 - `validate`
 - `security`
 - `size-check`
@@ -53,10 +56,12 @@ Required status checks:
 ### CI Workflow (`ci.yml`)
 
 **Triggers:**
+
 - Push to `main` branch
 - Pull requests
 
 **Actions:**
+
 - Install dependencies
 - Run linting
 - Run tests
@@ -66,10 +71,12 @@ Required status checks:
 ### Release Workflow (`release.yml`)
 
 **Triggers:**
+
 - Push to `main` branch (automatic release)
 - Manual workflow dispatch (manual release)
 
 **Automatic Release Process:**
+
 1. Detects changes in `libs/` directory
 2. Runs tests and builds libraries
 3. Uses conventional commits to determine version bump
@@ -80,6 +87,7 @@ Required status checks:
 8. Creates GitHub release
 
 **Manual Release Process:**
+
 1. Allows specifying version bump type (patch/minor/major/prerelease)
 2. Optional dry-run mode
 3. Same publishing process as automatic
@@ -87,9 +95,11 @@ Required status checks:
 ### PR Checks Workflow (`pr-checks.yml`)
 
 **Triggers:**
+
 - Pull request events (opened, synchronized, reopened)
 
 **Checks:**
+
 1. **Validation**: Linting, testing, building, publish dry-run
 2. **Security**: NPM audit, vulnerability scanning
 3. **Size Check**: Bundle size analysis
@@ -101,6 +111,7 @@ Required status checks:
 ### `.commitlintrc.json`
 
 Enforces conventional commit format:
+
 ```json
 {
   "extends": ["@commitlint/config-conventional"],
@@ -135,9 +146,11 @@ Enforces conventional commit format:
 
 1. Make changes to libraries
 2. Commit with conventional commit format:
+
    ```bash
    git commit -m "feat(chromadb): add new embedding service"
    ```
+
 3. Push to `main` branch
 4. Pipeline automatically detects changes and publishes
 
@@ -187,11 +200,13 @@ git commit -m "chore(release): prepare for v1.0.0"
 ### Publishing Failures
 
 1. **NPM Token Issues**:
+
    - Verify token has correct permissions
    - Check token expiration
    - Ensure organization access
 
 2. **Version Conflicts**:
+
    - Check if version already exists on NPM
    - Verify git tags are in sync
 
@@ -203,16 +218,19 @@ git commit -m "chore(release): prepare for v1.0.0"
 ### Rollback Procedures
 
 1. **Deprecate Published Version**:
+
    ```bash
    npm deprecate @hive-academy/nestjs-chromadb@1.0.0 "This version has critical bugs"
    ```
 
 2. **Unpublish (within 72 hours)**:
+
    ```bash
    npm unpublish @hive-academy/nestjs-chromadb@1.0.0
    ```
 
 3. **Revert Git Changes**:
+
    ```bash
    git revert <commit-hash>
    git push origin main
@@ -236,11 +254,13 @@ git commit -m "chore(release): prepare for v1.0.0"
 ## Security Considerations
 
 1. **Token Security**:
+
    - Use automation tokens, not personal tokens
    - Regularly rotate tokens
    - Limit token scope to necessary permissions
 
 2. **Dependency Security**:
+
    - Regular security audits
    - Automated vulnerability scanning
    - Dependency update automation

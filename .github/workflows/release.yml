@@ -134,7 +134,7 @@ jobs:
         if: needs.release.result == 'success'
         run: |
           echo "✅ Libraries published successfully!"
-          echo "Check the packages at: https://www.npmjs.com/org/anubis"
+          echo "Check the packages at: https://www.npmjs.com/org/hive-academy"
 
       - name: Notify failure
         if: needs.release.result == 'failure'

@@ -22,7 +22,7 @@
 
   - Configure .npmrc with proper registry and access settings
   - Set up NPM authentication tokens for CI/CD
-  - Configure package scoping and access levels (@anubis scope)
+  - Configure package scoping and access levels (@hive-academy scope)
   - Test publishing process with dry-run mode
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.6_
 

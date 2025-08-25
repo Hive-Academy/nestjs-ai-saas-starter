@@ -9,9 +9,9 @@ This document shows the complete integration between AgenticMemoryModule and Nes
 ```typescript
 // apps/dev-brand-api/src/app/app.module.ts
 import { Module } from '@nestjs/common';
-import { NestjsLanggraphModule } from '@anubis/nestjs-langgraph';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 import { AgenticMemoryModule } from '@libs/dev-brand/backend/data-access';
-import { configureMemoryIntegration } from '@anubis/nestjs-langgraph';
+import { configureMemoryIntegration } from '@hive-academy/nestjs-langgraph';
 
 @Module({
   imports: [
@@ -61,8 +61,8 @@ export class AppModule {}
 ```typescript
 // apps/dev-brand-api/src/workflows/customer-support.workflow.ts
 import { Injectable } from '@nestjs/common';
-import { DeclarativeWorkflowBase, Node, Workflow } from '@anubis/nestjs-langgraph';
-import { MemoryAdapter } from '@anubis/nestjs-langgraph';
+import { DeclarativeWorkflowBase, Node, Workflow } from '@hive-academy/nestjs-langgraph';
+import { MemoryAdapter } from '@hive-academy/nestjs-langgraph';
 
 @Injectable()
 @Workflow({
@@ -142,7 +142,7 @@ interface WorkflowState {
 // apps/dev-brand-api/src/services/customer-support.service.ts
 import { Injectable } from '@nestjs/common';
 import { CustomerSupportWorkflow } from '../workflows/customer-support.workflow';
-import { WorkflowGraphBuilderService } from '@anubis/nestjs-langgraph';
+import { WorkflowGraphBuilderService } from '@hive-academy/nestjs-langgraph';
 
 @Injectable()
 export class CustomerSupportService {

@@ -32,7 +32,7 @@ export * from './lib/embeddings/custom.embedding';
 // Utilities
 export * from './lib/utils/vector.utils';
 export * from './lib/utils/metadata.utils';
-// Error utils now consolidated in @anubis/shared
+// Error utils now consolidated in @hive-academy/shared
 
 // Constants
 export * from './lib/constants';

@@ -13,10 +13,10 @@ graph TB
     subgraph "Published Libraries"
         A["@hive-academy/nestjs-chromadb"]
         B["@hive-academy/nestjs-neo4j"]
-        C["@anubis/nestjs-langgraph"]
-        D["@anubis/shared"]
+        C["@hive-academy/nestjs-langgraph"]
+        D["@hive-academy/shared"]
     end
-    
+
     subgraph "Enterprise Starter Applications"
         E[Legal Document Intelligence]
         F[Customer Service Intelligence]
@@ -24,14 +24,14 @@ graph TB
         H[Healthcare Diagnostic Assistant]
         I[DevOps Intelligence Platform]
     end
-    
+
     subgraph "Infrastructure"
         J[Nx Workspace]
         K[CI/CD Pipeline]
         L[Documentation Site]
         M[Docker Containers]
     end
-    
+
     A --> E
     A --> G
     A --> H
@@ -50,7 +50,7 @@ graph TB
     D --> G
     D --> H
     D --> I
-    
+
     J --> A
     J --> B
     J --> C
@@ -77,7 +77,7 @@ graph TB
   "release": {
     "projects": [
       "libs/nestjs-chromadb",
-      "libs/nestjs-neo4j", 
+      "libs/nestjs-neo4j",
       "libs/nestjs-langgraph",
       "libs/shared"
     ],
@@ -291,17 +291,17 @@ export interface ComponentLibrary {
   // Graph Visualization
   GraphVisualization: React.ComponentType<GraphVisualizationProps>;
   NetworkDiagram: React.ComponentType<NetworkDiagramProps>;
-  
+
   // AI Workflow Components
   WorkflowDesigner: React.ComponentType<WorkflowDesignerProps>;
   AgentCard: React.ComponentType<AgentCardProps>;
   StreamingOutput: React.ComponentType<StreamingOutputProps>;
-  
+
   // Document Processing
   DocumentUploader: React.ComponentType<DocumentUploaderProps>;
   SearchInterface: React.ComponentType<SearchInterfaceProps>;
   ResultsList: React.ComponentType<ResultsListProps>;
-  
+
   // Common UI
   LoadingSpinner: React.ComponentType<LoadingSpinnerProps>;
   ErrorBoundary: React.ComponentType<ErrorBoundaryProps>;
@@ -317,62 +317,54 @@ export interface ComponentLibrary {
 // Example: Document Processing Service
 @Injectable()
 export class DocumentProcessingService {
-  constructor(
-    @InjectChromaDB() private chromaDB: ChromaDBService,
-    @InjectNeo4j() private neo4j: Neo4jService,
-    private workflowService: WorkflowGraphBuilderService,
-  ) {}
+  constructor(@InjectChromaDB() private chromaDB: ChromaDBService, @InjectNeo4j() private neo4j: Neo4jService, private workflowService: WorkflowGraphBuilderService) {}
 
   async processDocument(file: Express.Multer.File): Promise<ProcessingResult> {
     // 1. Create AI workflow for document processing
-    const workflow = this.workflowService
-      .createWorkflow('document-processing')
-      .addNode('extract-text', this.extractText)
-      .addNode('extract-entities', this.extractEntities)
-      .addNode('store-embeddings', this.storeEmbeddings)
-      .addNode('create-relationships', this.createRelationships)
-      .addEdge('extract-text', 'extract-entities')
-      .addEdge('extract-entities', 'store-embeddings')
-      .addEdge('extract-entities', 'create-relationships')
-      .build();
+    const workflow = this.workflowService.createWorkflow('document-processing').addNode('extract-text', this.extractText).addNode('extract-entities', this.extractEntities).addNode('store-embeddings', this.storeEmbeddings).addNode('create-relationships', this.createRelationships).addEdge('extract-text', 'extract-entities').addEdge('extract-entities', 'store-embeddings').addEdge('extract-entities', 'create-relationships').build();
 
     // 2. Execute workflow
     const result = await workflow.execute({ file });
-    
+
     return result;
   }
 
   private async storeEmbeddings(state: WorkflowState) {
     const { text, entities } = state;
-    
+
     // Store document embeddings in ChromaDB
-    await this.chromaDB.addDocuments('documents', [{
-      id: state.documentId,
-      document: text,
-      metadata: { entities, timestamp: new Date() }
-    }]);
-    
+    await this.chromaDB.addDocuments('documents', [
+      {
+        id: state.documentId,
+        document: text,
+        metadata: { entities, timestamp: new Date() },
+      },
+    ]);
+
     return { ...state, embeddingsStored: true };
   }
 
   private async createRelationships(state: WorkflowState) {
     const { entities } = state;
-    
+
     // Create entity relationships in Neo4j
     await this.neo4j.write(async (session) => {
       for (const entity of entities) {
-        await session.run(`
+        await session.run(
+          `
           MERGE (e:Entity {name: $name, type: $type})
           MERGE (d:Document {id: $docId})
           MERGE (d)-[:CONTAINS]->(e)
-        `, {
-          name: entity.name,
-          type: entity.type,
-          docId: state.documentId
-        });
+        `,
+          {
+            name: entity.name,
+            type: entity.type,
+            docId: state.documentId,
+          }
+        );
       }
     });
-    
+
     return { ...state, relationshipsCreated: true };
   }
 }
@@ -390,7 +382,7 @@ interface DocumentProcessingFlow {
     content: string;
     metadata: DocumentMetadata;
   };
-  
+
   // ChromaDB Storage
   embeddings: {
     collection: 'documents';
@@ -401,19 +393,19 @@ interface DocumentProcessingFlow {
       timestamp: Date;
     };
   };
-  
+
   // Neo4j Storage
   graph: {
     nodes: {
-      Document: { id: string; title: string; type: string; };
-      Entity: { name: string; type: string; confidence: number; };
+      Document: { id: string; title: string; type: string };
+      Entity: { name: string; type: string; confidence: number };
     };
     relationships: {
-      CONTAINS: { from: 'Document'; to: 'Entity'; };
-      RELATES_TO: { from: 'Entity'; to: 'Entity'; strength: number; };
+      CONTAINS: { from: 'Document'; to: 'Entity' };
+      RELATES_TO: { from: 'Entity'; to: 'Entity'; strength: number };
     };
   };
-  
+
   // LangGraph Workflow
   workflow: {
     state: WorkflowState;
@@ -436,7 +428,7 @@ interface AgentWorkflowSystem {
     edges: WorkflowEdge[];
     agents: AgentAssignment[];
   };
-  
+
   // Execution State
   execution: {
     id: string;
@@ -447,7 +439,7 @@ interface AgentWorkflowSystem {
     history: ExecutionStep[];
     approvals: ApprovalRequest[];
   };
-  
+
   // Agent Definitions
   agents: {
     [AgentType.RESEARCHER]: {
@@ -471,11 +463,8 @@ interface AgentWorkflowSystem {
 export abstract class AnubisError extends Error {
   abstract readonly code: string;
   abstract readonly category: ErrorCategory;
-  
-  constructor(
-    message: string,
-    public readonly context?: Record<string, any>
-  ) {
+
+  constructor(message: string, public readonly context?: Record<string, any>) {
     super(message);
     this.name = this.constructor.name;
   }
@@ -548,11 +537,7 @@ describe('ChromaDB + Neo4j + LangGraph Integration', () => {
 
   beforeEach(async () => {
     testingModule = await Test.createTestingModule({
-      imports: [
-        ChromaDBModule.forRoot(testChromaConfig),
-        Neo4jModule.forRoot(testNeo4jConfig),
-        NestjsLanggraphModule.forRoot(testLangGraphConfig),
-      ],
+      imports: [ChromaDBModule.forRoot(testChromaConfig), Neo4jModule.forRoot(testNeo4jConfig), NestjsLanggraphModule.forRoot(testLangGraphConfig)],
     }).compile();
 
     chromaService = testingModule.get<ChromaDBService>(ChromaDBService);
@@ -564,19 +549,17 @@ describe('ChromaDB + Neo4j + LangGraph Integration', () => {
     // Test complete integration flow
     const document = createTestDocument();
     const workflow = createDocumentProcessingWorkflow();
-    
+
     const result = await workflow.execute({ document });
-    
+
     // Verify ChromaDB storage
     const embeddings = await chromaService.getDocuments('test-collection', [document.id]);
     expect(embeddings).toHaveLength(1);
-    
+
     // Verify Neo4j storage
-    const graphData = await neo4jService.read(session => 
-      session.run('MATCH (d:Document {id: $id}) RETURN d', { id: document.id })
-    );
+    const graphData = await neo4jService.read((session) => session.run('MATCH (d:Document {id: $id}) RETURN d', { id: document.id }));
     expect(graphData.records).toHaveLength(1);
-    
+
     // Verify workflow completion
     expect(result.status).toBe('completed');
   });
@@ -595,7 +578,7 @@ describe('Document Processing App E2E', () => {
     // Start backend
     app = await createTestApp();
     await app.listen(3001);
-    
+
     // Start frontend
     angularApp = await createAngularTestApp();
   });
@@ -603,19 +586,19 @@ describe('Document Processing App E2E', () => {
   it('should complete document upload and processing flow', async () => {
     // 1. Upload document via frontend
     await angularApp.uploadDocument('test-document.pdf');
-    
+
     // 2. Verify processing started
     const processingStatus = await angularApp.getProcessingStatus();
     expect(processingStatus).toBe('processing');
-    
+
     // 3. Wait for completion
     await angularApp.waitForProcessingComplete();
-    
+
     // 4. Verify results displayed
     const results = await angularApp.getProcessingResults();
     expect(results.entities).toHaveLength(greaterThan(0));
     expect(results.relationships).toHaveLength(greaterThan(0));
-    
+
     // 5. Test search functionality
     const searchResults = await angularApp.searchSimilarDocuments('test query');
     expect(searchResults).toHaveLength(greaterThan(0));
@@ -650,14 +633,14 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    
+
     // Check user permissions for AI operations
     return this.checkAIPermissions(user, request.route);
   }
-  
+
   private checkAIPermissions(user: User, route: string): boolean {
     const requiredPermissions = this.getRoutePermissions(route);
-    return user.permissions.some(p => requiredPermissions.includes(p));
+    return user.permissions.some((p) => requiredPermissions.includes(p));
   }
 }
 ```
@@ -707,20 +690,20 @@ spec:
         app: ai-saas-starter
     spec:
       containers:
-      - name: api
-        image: anubis/ai-saas-starter:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
+        - name: api
+          image: hive-academy/ai-saas-starter:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '250m'
+            limits:
+              memory: '1Gi'
+              cpu: '500m'
 ```
 
 This design provides a comprehensive foundation for building the AI SaaS starter ecosystem with proper separation of concerns, scalability, and maintainability.
