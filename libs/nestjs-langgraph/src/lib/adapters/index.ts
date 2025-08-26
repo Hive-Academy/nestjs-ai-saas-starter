@@ -25,7 +25,7 @@ export {
   CheckpointAdapter,
   createCheckpointProvider,
 } from './checkpoint.adapter';
-export { MemoryAdapter, type MemoryConfig } from './memory.adapter';
+// Memory adapter removed - using @hive-academy/nestjs-memory instead
 export {
   MultiAgentAdapter,
   type MultiAgentConfig,
@@ -76,7 +76,7 @@ export {
 
 // Re-export for backward compatibility
 export { CheckpointAdapter as CheckpointProvider } from './checkpoint.adapter';
-export { MemoryAdapter as MemoryProvider } from './memory.adapter';
+// Memory adapter removed - using @hive-academy/nestjs-memory instead
 export { MultiAgentAdapter as MultiAgentCoordinator } from './multi-agent.adapter';
 export { HitlAdapter as HitlProvider } from './hitl.adapter';
 export { StreamingAdapter as StreamingProvider } from './streaming.adapter';
@@ -97,12 +97,7 @@ export {
   createCheckpointAdapterProvidersAsync,
 } from './checkpoint-adapter.provider';
 
-export {
-  createMemoryAdapterProviders,
-  createMemoryAdapterProvidersWithServices,
-  createMemoryAdapterProvidersAsync,
-  MEMORY_ADAPTER_EXPORTS,
-} from './memory-adapter.provider';
+// Memory adapter providers removed - using @hive-academy/nestjs-memory instead
 
 export {
   createMultiAgentAdapterProviders,
@@ -115,10 +110,7 @@ import {
   createCheckpointAdapterProviders,
   createCheckpointAdapterProvidersAsync,
 } from './checkpoint-adapter.provider';
-import {
-  createMemoryAdapterProviders,
-  createMemoryAdapterProvidersAsync,
-} from './memory-adapter.provider';
+// Memory adapter providers removed - using @hive-academy/nestjs-memory instead
 import {
   createMultiAgentAdapterProviders,
   createMultiAgentAdapterProvidersAsync,
@@ -138,7 +130,7 @@ export function createAdapterProviders(options?: LangGraphModuleOptions) {
     ...createCheckpointAdapterProviders(options).filter(
       (p) => p !== CheckpointAdapter
     ),
-    ...createMemoryAdapterProviders().filter((p) => p !== MemoryAdapter),
+    // Memory adapter removed - using @hive-academy/nestjs-memory instead
     ...createMultiAgentAdapterProviders().filter(
       (p) => p !== MultiAgentAdapter
     ),
@@ -158,7 +150,7 @@ export function createAdapterProvidersAsync() {
     ...createCheckpointAdapterProvidersAsync().filter(
       (p) => p !== CheckpointAdapter
     ),
-    ...createMemoryAdapterProvidersAsync().filter((p) => p !== MemoryAdapter),
+    // Memory adapter removed - using @hive-academy/nestjs-memory instead
     ...createMultiAgentAdapterProvidersAsync().filter(
       (p) => p !== MultiAgentAdapter
     ),
@@ -167,7 +159,7 @@ export function createAdapterProvidersAsync() {
 
 // Re-export actual adapter classes
 import { CheckpointAdapter } from './checkpoint.adapter';
-import { MemoryAdapter } from './memory.adapter';
+// Memory adapter removed - using @hive-academy/nestjs-memory instead
 import { MultiAgentAdapter } from './multi-agent.adapter';
 import { HitlAdapter } from './hitl.adapter';
 import { StreamingAdapter } from './streaming.adapter';
@@ -182,7 +174,7 @@ import { WorkflowEngineAdapter } from './workflow-engine.adapter';
  */
 export const ADAPTER_EXPORTS = [
   CheckpointAdapter,
-  MemoryAdapter,
+  // MemoryAdapter, // Removed - using @hive-academy/nestjs-memory instead
   MultiAgentAdapter,
   HitlAdapter,
   StreamingAdapter,

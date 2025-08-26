@@ -23,8 +23,7 @@ import {
   ChildModuleImportFactory,
 } from './providers';
 
-// Memory provider module
-import { MemoryProviderModule } from './memory/providers/memory-provider.module';
+// Memory provider module - REMOVED: Old memory system eliminated in Phase 1 clean cutover
 
 @Global()
 @Module({})
@@ -33,7 +32,8 @@ export class NestjsLanggraphModule {
     const moduleId = randomUUID();
 
     // Create child module imports dynamically based on configuration
-    const childModuleImports = ChildModuleImportFactory.createChildModuleImports(options);
+    const childModuleImports =
+      ChildModuleImportFactory.createChildModuleImports(options);
 
     // Use organized provider factories
     const providers = createModuleProviders(options, moduleId);
@@ -43,8 +43,7 @@ export class NestjsLanggraphModule {
       module: NestjsLanggraphModule,
       imports: [
         ...childModuleImports,
-        // Always include memory provider module for auto-detection
-        MemoryProviderModule.forRoot(),
+        // Memory provider module - REMOVED: Using new @hive-academy/nestjs-memory instead
         EventEmitterModule.forRoot({
           wildcard: true,
           delimiter: '.',
@@ -74,8 +73,7 @@ export class NestjsLanggraphModule {
       module: NestjsLanggraphModule,
       imports: [
         ...(options.imports || []),
-        // Always include memory provider module for auto-detection
-        MemoryProviderModule.forRoot(),
+        // Memory provider module - REMOVED: Using new @hive-academy/nestjs-memory instead
         EventEmitterModule.forRoot({
           wildcard: true,
           delimiter: '.',
@@ -89,7 +87,6 @@ export class NestjsLanggraphModule {
     };
   }
 
-
   static forFeature(workflows: Array<Type<unknown>>): DynamicModule {
     const providers = workflows.map((workflow) => ({
       provide: workflow,
@@ -102,7 +99,6 @@ export class NestjsLanggraphModule {
       exports: providers,
     };
   }
-
 
   private static createAsyncProviders(
     options: LangGraphModuleAsyncOptions

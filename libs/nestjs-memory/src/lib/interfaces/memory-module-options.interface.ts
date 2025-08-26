@@ -2,13 +2,16 @@ import type { ModuleMetadata, Type } from '@nestjs/common';
 import type { MemoryConfig } from './memory.interface';
 
 // Standard NestJS module options interface
-export interface MemoryModuleOptions extends MemoryConfig {}
+export type MemoryModuleOptions = MemoryConfig;
 
 // Async module options following NestJS patterns
-export interface MemoryModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+export interface MemoryModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
   useExisting?: Type<MemoryOptionsFactory>;
   useClass?: Type<MemoryOptionsFactory>;
-  useFactory?: (...args: unknown[]) => Promise<MemoryModuleOptions> | MemoryModuleOptions;
+  useFactory?: (
+    ...args: unknown[]
+  ) => Promise<MemoryModuleOptions> | MemoryModuleOptions;
   inject?: unknown[];
 }
 

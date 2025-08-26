@@ -11,10 +11,10 @@ import { randomUUID } from 'crypto';
 
 /**
  * Memory storage service providing direct ChromaDB integration
- * 
+ *
  * Handles:
  * - Vector storage and retrieval
- * - Semantic similarity search  
+ * - Semantic similarity search
  * - Memory entry persistence
  * - Embedding generation
  */
@@ -39,7 +39,7 @@ export class MemoryStorageService {
     try {
       const id = randomUUID();
       const now = new Date();
-      
+
       const entry: MemoryEntry = {
         id,
         threadId,
@@ -58,21 +58,23 @@ export class MemoryStorageService {
       // Store in ChromaDB with automatic embedding generation
       await this.chromaDB.addDocuments(
         this.config.collection || 'memory_store',
-        [{
-          id,
-          document: content,
-          metadata: {
-            threadId,
-            type: entry.metadata.type,
-            importance: entry.metadata.importance || null,
-            persistent: entry.metadata.persistent || null,
-            userId: userId || undefined,
-            createdAt: now.toISOString(),
-            accessCount: 0,
-            source: entry.metadata.source || undefined,
-            tags: entry.metadata.tags || undefined,
+        [
+          {
+            id,
+            document: content,
+            metadata: {
+              threadId,
+              type: entry.metadata.type,
+              importance: entry.metadata.importance || null,
+              persistent: entry.metadata.persistent || null,
+              userId: userId || null,
+              createdAt: now.toISOString(),
+              accessCount: 0,
+              source: entry.metadata.source || null,
+              tags: entry.metadata.tags || null,
+            },
           },
-        }]
+        ]
       );
 
       this.logger.debug(`Stored memory ${id} for thread ${threadId}`);
@@ -114,7 +116,7 @@ export class MemoryStorageService {
       }));
 
       // Batch store in ChromaDB
-      const chromaDocuments = memoryEntries.map(entry => ({
+      const chromaDocuments = memoryEntries.map((entry) => ({
         id: entry.id,
         document: entry.content,
         metadata: {
@@ -135,10 +137,15 @@ export class MemoryStorageService {
         chromaDocuments
       );
 
-      this.logger.debug(`Batch stored ${entries.length} memories for thread ${threadId}`);
+      this.logger.debug(
+        `Batch stored ${entries.length} memories for thread ${threadId}`
+      );
       return memoryEntries;
     } catch (error) {
-      this.logger.error(`Failed to batch store memories for thread ${threadId}`, error);
+      this.logger.error(
+        `Failed to batch store memories for thread ${threadId}`,
+        error
+      );
       throw wrapMemoryError('storeBatch', error);
     }
   }
@@ -146,7 +153,10 @@ export class MemoryStorageService {
   /**
    * Retrieve memories by thread ID
    */
-  async retrieve(threadId: string, limit = 100): Promise<readonly MemoryEntry[]> {
+  async retrieve(
+    threadId: string,
+    limit = 100
+  ): Promise<readonly MemoryEntry[]> {
     try {
       const results = await this.chromaDB.getDocuments(
         this.config.collection || 'memory_store',
@@ -158,30 +168,38 @@ export class MemoryStorageService {
         }
       );
 
-      const memories: MemoryEntry[] = results.documents?.map((doc, index) => {
-        const metadata = results.metadatas?.[index] || {};
-        return {
-          id: results.ids[index],
-          threadId: metadata.threadId as string,
-          content: doc || '',
-          metadata: {
-            type: (metadata.type as MemoryMetadata['type']) || 'conversation',
-            importance: metadata.importance as number || undefined,
-            persistent: metadata.persistent as boolean || undefined,
-            userId: metadata.userId as string || undefined,
-            source: metadata.source as string || undefined,
-            tags: metadata.tags as string || undefined,
-          },
-          createdAt: new Date(metadata.createdAt as string),
-          lastAccessedAt: metadata.lastAccessedAt ? new Date(metadata.lastAccessedAt as string) : undefined,
-          accessCount: (metadata.accessCount as number) || 0,
-        };
-      }) || [];
+      const memories: MemoryEntry[] =
+        results.documents?.map((doc, index) => {
+          const metadata = results.metadatas?.[index] || {};
+          return {
+            id: results.ids[index],
+            threadId: metadata.threadId as string,
+            content: doc || '',
+            metadata: {
+              type: (metadata.type as MemoryMetadata['type']) || 'conversation',
+              importance: (metadata.importance as number) || undefined,
+              persistent: (metadata.persistent as boolean) || undefined,
+              userId: (metadata.userId as string) || undefined,
+              source: (metadata.source as string) || undefined,
+              tags: (metadata.tags as string) || undefined,
+            },
+            createdAt: new Date(metadata.createdAt as string),
+            lastAccessedAt: metadata.lastAccessedAt
+              ? new Date(metadata.lastAccessedAt as string)
+              : undefined,
+            accessCount: (metadata.accessCount as number) || 0,
+          };
+        }) || [];
 
-      this.logger.debug(`Retrieved ${memories.length} memories for thread ${threadId}`);
+      this.logger.debug(
+        `Retrieved ${memories.length} memories for thread ${threadId}`
+      );
       return memories;
     } catch (error) {
-      this.logger.error(`Failed to retrieve memories for thread ${threadId}`, error);
+      this.logger.error(
+        `Failed to retrieve memories for thread ${threadId}`,
+        error
+      );
       throw wrapMemoryError('retrieve', error);
     }
   }
@@ -213,21 +231,23 @@ export class MemoryStorageService {
       const memories: MemoryEntry[] = results.documents[0].map((doc, index) => {
         const metadata = results.metadatas?.[0]?.[index] || {};
         const distance = results.distances?.[0]?.[index] || 1;
-        
+
         return {
           id: results.ids[0][index],
           threadId: metadata.threadId as string,
           content: doc || '',
           metadata: {
             type: (metadata.type as MemoryMetadata['type']) || 'conversation',
-            importance: metadata.importance as number || undefined,
-            persistent: metadata.persistent as boolean || undefined,
-            userId: metadata.userId as string || undefined,
-            source: metadata.source as string || undefined,
-            tags: metadata.tags as string || undefined,
+            importance: (metadata.importance as number) || undefined,
+            persistent: (metadata.persistent as boolean) || undefined,
+            userId: (metadata.userId as string) || undefined,
+            source: (metadata.source as string) || undefined,
+            tags: (metadata.tags as string) || undefined,
           },
           createdAt: new Date(metadata.createdAt as string),
-          lastAccessedAt: metadata.lastAccessedAt ? new Date(metadata.lastAccessedAt as string) : undefined,
+          lastAccessedAt: metadata.lastAccessedAt
+            ? new Date(metadata.lastAccessedAt as string)
+            : undefined,
           accessCount: (metadata.accessCount as number) || 0,
           relevanceScore: Math.max(0, 1 - distance), // Convert distance to similarity
         };
@@ -291,7 +311,7 @@ export class MemoryStorageService {
           limit: 1,
         }
       );
-      
+
       return results.ids.length;
     } catch (error) {
       this.logger.error(`Failed to get count for thread ${threadId}`, error);

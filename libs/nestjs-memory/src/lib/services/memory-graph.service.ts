@@ -6,7 +6,7 @@ import { MEMORY_CONFIG } from '../constants/memory.constants';
 
 /**
  * Memory graph service providing direct Neo4j integration
- * 
+ *
  * Handles:
  * - Memory relationship tracking
  * - Thread graph building
@@ -19,7 +19,7 @@ export class MemoryGraphService {
 
   constructor(
     private readonly neo4j: Neo4jService,
-    @Inject(MEMORY_CONFIG) private readonly _config: MemoryConfig // Prefixed with _ to indicate intentionally unused
+    @Inject(MEMORY_CONFIG) private readonly _config: MemoryConfig // Reserved for future use
   ) {
     // Graph service initialized - config reserved for future use
   }
@@ -40,10 +40,14 @@ export class MemoryGraphService {
             m.createdAt = datetime($createdAt),
             m.accessCount = $accessCount
         MERGE (t)-[:CONTAINS]->(m)
-        ${memory.metadata.userId ? `
+        ${
+          memory.metadata.userId
+            ? `
           MERGE (u:User {id: $userId})
           MERGE (u)-[:HAS_MEMORY]->(m)
-        ` : ''}
+        `
+            : ''
+        }
         RETURN m.id as memoryId
       `;
 
@@ -87,7 +91,7 @@ export class MemoryGraphService {
         RETURN count(m) as created
       `;
 
-      const memoryData = memories.map(memory => ({
+      const memoryData = memories.map((memory) => ({
         threadId: memory.threadId,
         memoryId: memory.id,
         content: memory.content.substring(0, 1000), // Limit content length
@@ -152,11 +156,14 @@ export class MemoryGraphService {
       `;
 
       const result = await this.neo4j.run(cypher);
-      const recordValue = result.records[0]?.get('relationshipsCreated');
-      const count = typeof recordValue === 'object' && recordValue && 'toNumber' in recordValue
-        ? (recordValue as any).toNumber()
-        : (recordValue as number) || 0;
-      
+      const recordValue = result.records[0]?.get('relationshipsCreated') as any;
+      const count =
+        typeof recordValue === 'object' &&
+        recordValue &&
+        'toNumber' in recordValue
+          ? recordValue.toNumber()
+          : (recordValue as number) || 0;
+
       this.logger.debug(`Built ${count} semantic relationships`);
     } catch (error) {
       this.logger.warn(`Failed to build semantic relationships`, error);
@@ -185,10 +192,11 @@ export class MemoryGraphService {
 
       const result = await this.neo4j.run(cypher);
       const record = result.records[0];
-      
-      const totalMemories = Number(record?.get('totalMemories')) || 0;
-      const totalThreads = Number(record?.get('totalThreads')) || 1;
-      const totalRelationships = Number(record?.get('totalRelationships')) || 0;
+
+      const totalMemories = Number(record?.get('totalMemories') as any) || 0;
+      const totalThreads = Number(record?.get('totalThreads') as any) || 1;
+      const totalRelationships =
+        Number(record?.get('totalRelationships') as any) || 0;
 
       return {
         totalMemories,
@@ -224,9 +232,14 @@ export class MemoryGraphService {
       `;
 
       const result = await this.neo4j.run(cypher, { memoryId, depth });
-      return result.records.map(record => String(record.get('connectedId')));
+      return result.records.map((record) =>
+        String(record.get('connectedId') as any)
+      );
     } catch (error) {
-      this.logger.warn(`Failed to find connections for memory ${memoryId}`, error);
+      this.logger.warn(
+        `Failed to find connections for memory ${memoryId}`,
+        error
+      );
       return [];
     }
   }
@@ -234,13 +247,15 @@ export class MemoryGraphService {
   /**
    * Get conversation flow for a thread
    */
-  async getThreadFlow(threadId: string): Promise<ReadonlyArray<{
-    memoryId: string;
-    content: string;
-    type: string;
-    createdAt: Date;
-    connections: readonly string[];
-  }>> {
+  async getThreadFlow(threadId: string): Promise<
+    ReadonlyArray<{
+      memoryId: string;
+      content: string;
+      type: string;
+      createdAt: Date;
+      connections: readonly string[];
+    }>
+  > {
     try {
       const cypher = `
         MATCH (t:Thread {id: $threadId})-[:CONTAINS]->(m:Memory)
@@ -252,13 +267,15 @@ export class MemoryGraphService {
       `;
 
       const result = await this.neo4j.run(cypher, { threadId });
-      
-      return result.records.map(record => ({
-        memoryId: String(record.get('memoryId')),
-        content: String(record.get('content')),
-        type: String(record.get('type')),
-        createdAt: new Date(String(record.get('createdAt'))),
-        connections: Array.isArray(record.get('connections')) ? record.get('connections') as string[] : [],
+
+      return result.records.map((record) => ({
+        memoryId: String(record.get('memoryId') as any),
+        content: String(record.get('content') as any),
+        type: String(record.get('type') as any),
+        createdAt: new Date(String(record.get('createdAt') as any)),
+        connections: Array.isArray(record.get('connections') as any)
+          ? (record.get('connections') as any as string[])
+          : [],
       }));
     } catch (error) {
       this.logger.warn(`Failed to get thread flow for ${threadId}`, error);

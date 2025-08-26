@@ -16,7 +16,7 @@ import {
 } from './index';
 
 import { ADAPTER_EXPORTS } from '../adapters';
-import { createMemoryExports } from './memory.providers';
+// Memory exports removed - using @hive-academy/nestjs-memory instead
 
 /**
  * Create all module exports in one organized function
@@ -30,8 +30,7 @@ export function createModuleExports(): any[] {
     // TOOL_REGISTRY, // Removed - no corresponding provider exists
     // STREAM_MANAGER, // Removed - no corresponding provider exists
 
-    // Memory services for external injection
-    ...createMemoryExports(),
+    // Memory services removed - using @hive-academy/nestjs-memory instead
 
     // Adapters for backward compatibility
     ...ADAPTER_EXPORTS,

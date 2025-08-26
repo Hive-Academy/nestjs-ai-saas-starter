@@ -12,8 +12,7 @@ export * from './lib/providers';
 // Adapters for child module integration
 export * from './lib/adapters';
 
-// Memory architecture consolidation
-export * from './lib/memory';
+// Memory architecture consolidation - REMOVED: Memory functionality moved to @hive-academy/nestjs-memory
 
 export type * from './lib/interfaces/module-options.interface';
 
