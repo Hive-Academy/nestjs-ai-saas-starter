@@ -7,6 +7,15 @@
       "path": "../../libs/langgraph-modules/core"
     },
     {
+      "path": "../../libs/langgraph-modules/hitl"
+    },
+    {
+      "path": "../../libs/langgraph-modules/streaming"
+    },
+    {
+      "path": "../../libs/langgraph-modules/checkpoint"
+    },
+    {
       "path": "../../libs/nestjs-langgraph"
     },
     {

@@ -30,6 +30,15 @@
       "path": "../../libs/langgraph-modules/core/tsconfig.lib.json"
     },
     {
+      "path": "../../libs/langgraph-modules/hitl/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/langgraph-modules/streaming/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/langgraph-modules/checkpoint/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/nestjs-langgraph/tsconfig.lib.json"
     },
     {
