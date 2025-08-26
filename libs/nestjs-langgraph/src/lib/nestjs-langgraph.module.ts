@@ -20,7 +20,6 @@ import {
   createModuleProviders,
   createModuleProvidersAsync,
   createModuleExports,
-  ChildModuleImportFactory,
 } from './providers';
 
 // Memory provider module - REMOVED: Old memory system eliminated in Phase 1 clean cutover
@@ -31,10 +30,6 @@ export class NestjsLanggraphModule {
   static forRoot(options: LangGraphModuleOptions = {}): DynamicModule {
     const moduleId = randomUUID();
 
-    // Create child module imports dynamically based on configuration
-    const childModuleImports =
-      ChildModuleImportFactory.createChildModuleImports(options);
-
     // Use organized provider factories
     const providers = createModuleProviders(options, moduleId);
     const exports = createModuleExports();
@@ -42,8 +37,7 @@ export class NestjsLanggraphModule {
     return {
       module: NestjsLanggraphModule,
       imports: [
-        ...childModuleImports,
-        // Memory provider module - REMOVED: Using new @hive-academy/nestjs-memory instead
+        // Child modules now imported directly by consumers using ModuleName.forRoot() pattern
         EventEmitterModule.forRoot({
           wildcard: true,
           delimiter: '.',

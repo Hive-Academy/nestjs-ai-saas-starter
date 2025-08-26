@@ -8,8 +8,7 @@ export * from './llm-provider.factory';
 // Organized module providers
 export * from './module.providers';
 export * from './module-exports.providers';
-// Use simplified child module loading (replaces complex 700+ line system)
-export * from './child-module-loading';
+// Child module loading removed - consumers use direct imports
 
 // Export groups for module configuration
 export const CORE_EXPORTS = [];
