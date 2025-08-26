@@ -15,13 +15,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    {
-      "path": "../../../nestjs-neo4j/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../nestjs-chromadb/tsconfig.lib.json"
-    }
-  ],
+  "references": [],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

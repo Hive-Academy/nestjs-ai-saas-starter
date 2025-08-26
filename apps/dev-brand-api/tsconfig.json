@@ -13,9 +13,6 @@
       "path": "../../libs/dev-brand/backend/feature"
     },
     {
-      "path": "../../libs/dev-brand/backend/data-access"
-    },
-    {
       "path": "../../libs/nestjs-neo4j"
     },
     {

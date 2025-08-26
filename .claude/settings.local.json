@@ -19,13 +19,13 @@
       "mcp__filesystem__read_multiple_files",
       "mcp__filesystem__edit_file",
       "mcp__nx-mcp__nx_docs",
-      "mcp__filesystem__create_directory"
+      "mcp__filesystem__create_directory",
+      "Bash(git commit:*)",
+      "Bash(npx nx test:*)"
     ],
-    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "powershell.exe -ExecutionPolicy Bypass -File \"D:\\projects\\nestjs-ai-saas-starter\\.claude\\status-line.ps1\""
+    "additionalDirectories": [
+      "d:\\projects\\nestjs-ai-saas-starter"
+    ]
   },
   "enabledMcpjsonServers": [
     "browser",
@@ -35,5 +35,9 @@
     "angular-cli",
     "neo4j-graph-data-modeling",
     "chroma"
-  ]
+  ],
+  "statusLine": {
+    "type": "command",
+    "command": "powershell.exe -ExecutionPolicy Bypass -File \"D:\\projects\\nestjs-ai-saas-starter\\.claude\\status-line.ps1\""
+  }
 }

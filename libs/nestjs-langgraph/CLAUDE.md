@@ -5,7 +5,9 @@ This file provides Claude Code with comprehensive guidance for working with the 
 ## Business Domain & Purpose
 
 ### Core Mission
+
 The NestJS LangGraph library enables building sophisticated AI agent workflows with:
+
 - **Declarative Workflow Definition**: Use TypeScript decorators to define complex AI workflows
 - **Real-time Streaming**: Token, event, and progress streaming for responsive user experiences  
 - **Human-in-the-Loop (HITL)**: Sophisticated approval workflows with risk assessment
@@ -13,6 +15,7 @@ The NestJS LangGraph library enables building sophisticated AI agent workflows w
 - **Production-Ready**: Enterprise features including monitoring, checkpointing, and error handling
 
 ### Target Use Cases
+
 - **Multi-agent AI Systems**: Coordinate multiple specialized AI agents
 - **Document Processing Pipelines**: Complex document analysis and transformation workflows
 - **Customer Support Automation**: AI-powered support with human escalation
@@ -25,6 +28,7 @@ The NestJS LangGraph library enables building sophisticated AI agent workflows w
 ### High-Level Design Patterns
 
 #### 1. Decorator-Driven Architecture
+
 ```typescript
 @Workflow({
   name: 'content-review-workflow',
@@ -51,13 +55,16 @@ export class ContentReviewWorkflow extends DeclarativeWorkflowBase {
 ```
 
 #### 2. Streaming-First Design
+
 The library is built around real-time streaming capabilities:
+
 - **Token Streaming**: Real-time token delivery with buffering and batching
 - **Event Streaming**: Lifecycle and custom events throughout workflow execution
 - **Progress Streaming**: Granular progress updates with ETA calculations
 - **WebSocket Bridge**: Seamless real-time communication with frontend clients
 
 #### 3. Compilation and Caching System
+
 ```typescript
 // Workflows are compiled once and cached for performance
 const compiled = await workflowGraphBuilder.buildFromDecorators(MyWorkflow);
@@ -67,8 +74,10 @@ const cachedGraph = compilationCache.get(workflowId);
 ### Core Service Architecture
 
 #### 1. WorkflowGraphBuilderService
+
 **Purpose**: Compiles decorator-based workflows into executable LangGraph StateGraphs
 **Key Features**:
+
 - Metadata extraction from decorators
 - Graph topology validation
 - Command pattern support (GOTO, UPDATE, END, RETRY, ERROR)
@@ -76,6 +85,7 @@ const cachedGraph = compilationCache.get(workflowId);
 - Pattern implementations (supervisor, pipeline, parallel)
 
 **Usage Pattern**:
+
 ```typescript
 const graph = await workflowGraphBuilder.buildFromDecorators(
   WorkflowClass,
@@ -89,16 +99,19 @@ const graph = await workflowGraphBuilder.buildFromDecorators(
 #### 2. Streaming Services Ecosystem
 
 **TokenStreamingService**:
+
 - Manages token-level streaming with configurable buffering
 - Supports filtering, batching, and custom token processing
 - Real-time statistics and performance monitoring
 
 **EventStreamProcessorService**:
+
 - Handles workflow lifecycle events
 - Custom event registration and routing
 - Event filtering and transformation
 
 **WorkflowStreamService**:
+
 - Orchestrates multiple streaming types
 - Stream lifecycle management
 - Integration with WebSocket bridge
@@ -106,11 +119,13 @@ const graph = await workflowGraphBuilder.buildFromDecorators(
 #### 3. Tool Registry and Discovery
 
 **ToolDiscoveryService**:
+
 - Automatic tool discovery via reflection
 - Agent-tool mapping based on capabilities
 - Tool validation and schema enforcement
 
 **ToolRegistryService**:
+
 - Central repository for all available tools
 - Dynamic tool loading and unloading
 - Tool versioning and compatibility checking
@@ -118,12 +133,14 @@ const graph = await workflowGraphBuilder.buildFromDecorators(
 #### 4. Human-in-the-Loop (HITL) System
 
 **HumanApprovalService**:
+
 - Sophisticated approval workflows with timeout handling
 - Risk assessment and confidence evaluation
 - Multi-level approval chains with escalation
 - Real-time approval streaming
 
 **ConfidenceEvaluatorService**:
+
 - AI confidence assessment using multiple factors
 - Risk evaluation with customizable criteria
 - Dynamic threshold adjustment
@@ -133,6 +150,7 @@ const graph = await workflowGraphBuilder.buildFromDecorators(
 ### 1. Base Class Hierarchy
 
 #### UnifiedWorkflowBase
+
 ```typescript
 export abstract class UnifiedWorkflowBase {
   protected workflowConfig: WorkflowConfig;
@@ -146,6 +164,7 @@ export abstract class UnifiedWorkflowBase {
 ```
 
 #### DeclarativeWorkflowBase
+
 ```typescript
 export class DeclarativeWorkflowBase extends UnifiedWorkflowBase {
   // Decorator-driven workflow implementation
@@ -155,6 +174,7 @@ export class DeclarativeWorkflowBase extends UnifiedWorkflowBase {
 ```
 
 #### StreamingWorkflowBase
+
 ```typescript
 export class StreamingWorkflowBase extends DeclarativeWorkflowBase {
   // Enhanced streaming capabilities
@@ -164,6 +184,7 @@ export class StreamingWorkflowBase extends DeclarativeWorkflowBase {
 ```
 
 #### AgentNodeBase
+
 ```typescript
 export abstract class AgentNodeBase {
   abstract agentType: AgentType;
@@ -178,6 +199,7 @@ export abstract class AgentNodeBase {
 ### 2. Workflow Design Patterns
 
 #### Supervisor Pattern
+
 ```typescript
 @Workflow({ pattern: 'supervisor' })
 export class SupervisorWorkflow extends DeclarativeWorkflowBase {
@@ -202,6 +224,7 @@ export class SupervisorWorkflow extends DeclarativeWorkflowBase {
 ```
 
 #### Pipeline Pattern
+
 ```typescript
 @Workflow({ pattern: 'pipeline' })
 export class DataProcessingPipeline extends DeclarativeWorkflowBase {
@@ -222,6 +245,7 @@ export class DataProcessingPipeline extends DeclarativeWorkflowBase {
 ```
 
 #### Map-Reduce Pattern
+
 ```typescript
 @Workflow({ pattern: 'map-reduce' })
 export class ParallelProcessingWorkflow extends DeclarativeWorkflowBase {
@@ -246,6 +270,7 @@ export class ParallelProcessingWorkflow extends DeclarativeWorkflowBase {
 ### 3. Streaming Architecture Patterns
 
 #### Progressive Streaming
+
 ```typescript
 @Node({ type: 'llm' })
 @StreamAll({
@@ -259,6 +284,7 @@ async comprehensiveGeneration(state: WorkflowState) {
 ```
 
 #### Conditional Streaming
+
 ```typescript
 @Node({ type: 'analysis' })
 @StreamToken({
@@ -280,6 +306,7 @@ async analyzeWithConditionalStreaming(state: WorkflowState) {
 ### 4. Tool Integration Patterns
 
 #### Basic Tool Definition
+
 ```typescript
 @Tool({
   name: 'semantic_search',
@@ -301,6 +328,7 @@ async semanticSearch({ query, limit, threshold }) {
 ```
 
 #### Composed Tool System
+
 ```typescript
 @ComposedTool({
   name: 'research_pipeline',
@@ -317,6 +345,7 @@ async researchPipeline({ topic }: { topic: string }) {
 ### 5. HITL Implementation Patterns
 
 #### Risk-Based Approval
+
 ```typescript
 @Node({ type: 'human' })
 @RequiresApproval({
@@ -340,6 +369,7 @@ async publishContent(state: WorkflowState) {
 ```
 
 #### Approval Chain Configuration
+
 ```typescript
 // Define approval chains in module configuration
 const approvalChains = {
@@ -360,7 +390,9 @@ const approvalChains = {
 ## Key Services Deep Dive
 
 ### WorkflowGraphBuilderService
+
 **Responsibilities**:
+
 - Extract workflow metadata from decorators
 - Build LangGraph StateGraph instances
 - Validate workflow topology
@@ -368,6 +400,7 @@ const approvalChains = {
 - Support subgraph composition
 
 **Key Methods**:
+
 ```typescript
 buildFromDecorators<T>(workflowClass: any, options?: GraphBuilderOptions): StateGraph<T>
 buildSupervisorGraph<T>(name: string, supervisor: NodeHandler<T>, workers: Record<string, NodeHandler<T>>): StateGraph<T>
@@ -375,23 +408,29 @@ buildPipelineGraph<T>(name: string, stages: Array<{id: string, handler: NodeHand
 ```
 
 ### CompilationCacheService
+
 **Purpose**: Optimize workflow compilation through intelligent caching
 **Features**:
+
 - LRU cache with configurable size limits
 - Invalidation on workflow changes
 - Performance metrics tracking
 - Memory usage optimization
 
 ### MetadataProcessorService
+
 **Responsibilities**:
+
 - Extract decorator metadata using Reflection API
 - Validate workflow definitions
 - Generate workflow summaries
 - Process node and edge configurations
 
 ### SubgraphManagerService
+
 **Purpose**: Enable complex workflow composition
 **Capabilities**:
+
 - Nested workflow execution
 - State transformation between parent and child workflows
 - Resource isolation
@@ -400,6 +439,7 @@ buildPipelineGraph<T>(name: string, stages: Array<{id: string, handler: NodeHand
 ### Streaming Services
 
 #### TokenStreamingService
+
 ```typescript
 // Initialize token streaming for a node
 await tokenStreamingService.initializeTokenStream({
@@ -423,8 +463,10 @@ tokenStreamingService.streamToken(
 ```
 
 #### WebSocketBridgeService
+
 **Purpose**: Bridge internal streaming to WebSocket connections
 **Features**:
+
 - Connection pooling and management
 - Event routing and filtering
 - Automatic reconnection handling
@@ -433,6 +475,7 @@ tokenStreamingService.streamToken(
 ### Tool Services
 
 #### ToolRegistryService
+
 ```typescript
 // Register tools dynamically
 await toolRegistry.registerTool({
@@ -447,7 +490,9 @@ const tools = toolRegistry.getToolsForAgent(AgentType.RESEARCHER);
 ```
 
 #### ToolDiscoveryService
+
 **Automatic Discovery Process**:
+
 1. Scan modules for @Tool decorated methods
 2. Extract tool metadata and schemas
 3. Validate tool implementations
@@ -457,13 +502,16 @@ const tools = toolRegistry.getToolsForAgent(AgentType.RESEARCHER);
 ### HITL Services
 
 #### HumanApprovalService
+
 **Workflow Management**:
+
 - Request creation and tracking
 - Timeout handling with configurable strategies
 - Response processing and state updates
 - Real-time streaming of approval status
 
 **Key Features**:
+
 ```typescript
 // Request approval with risk assessment
 const request = await humanApprovalService.requestApproval(
@@ -481,14 +529,18 @@ const request = await humanApprovalService.requestApproval(
 ```
 
 #### ApprovalChainService
+
 **Multi-Level Approval**:
+
 - Chain definition and configuration
 - Level-by-level processing
 - Escalation handling
 - Delegation support
 
 #### FeedbackProcessorService
+
 **Human Feedback Integration**:
+
 - Feedback collection and analysis
 - Learning from approval patterns
 - Confidence adjustment based on feedback
@@ -497,7 +549,9 @@ const request = await humanApprovalService.requestApproval(
 ## Testing Strategies
 
 ### WorkflowTestBuilder
+
 **Fluent Testing API**:
+
 ```typescript
 const testBuilder = new WorkflowTestBuilder()
   .withWorkflow(MyWorkflow)
@@ -513,7 +567,9 @@ const result = await testBuilder.execute();
 ```
 
 ### MockAgentFactory
+
 **Agent Mocking**:
+
 ```typescript
 const mockAgent = MockAgentFactory.create({
   type: AgentType.RESEARCHER,
@@ -528,6 +584,7 @@ const mockAgent = MockAgentFactory.create({
 ### Testing Patterns
 
 #### Unit Testing Nodes
+
 ```typescript
 describe('ContentGeneratorWorkflow', () => {
   let workflow: ContentGeneratorWorkflow;
@@ -552,6 +609,7 @@ describe('ContentGeneratorWorkflow', () => {
 ```
 
 #### Integration Testing
+
 ```typescript
 describe('Complete Workflow Integration', () => {
   it('should execute full workflow with streaming', async () => {
@@ -575,6 +633,7 @@ describe('Complete Workflow Integration', () => {
 ```
 
 #### HITL Testing
+
 ```typescript
 describe('Human Approval Flow', () => {
   it('should handle approval timeout correctly', async () => {
@@ -598,6 +657,7 @@ describe('Human Approval Flow', () => {
 ## Performance Optimization
 
 ### Compilation Caching
+
 ```typescript
 // Configure compilation cache
 NestjsLanggraphModule.forRoot({
@@ -610,6 +670,7 @@ NestjsLanggraphModule.forRoot({
 ```
 
 ### Stream Optimization
+
 ```typescript
 // Optimized streaming configuration
 @StreamToken({
@@ -625,6 +686,7 @@ NestjsLanggraphModule.forRoot({
 ```
 
 ### Memory Management
+
 ```typescript
 // Cleanup stale resources
 @Node({ type: 'cleanup' })
@@ -643,6 +705,7 @@ async cleanupResources(state: WorkflowState) {
 ## Common Use Cases & Implementation Patterns
 
 ### 1. Multi-Agent Research System
+
 ```typescript
 @Workflow({ 
   name: 'research-system',
@@ -673,6 +736,7 @@ export class ResearchSystemWorkflow extends DeclarativeWorkflowBase {
 ```
 
 ### 2. Content Generation with Approval
+
 ```typescript
 @Workflow({ 
   name: 'content-pipeline',
@@ -701,6 +765,7 @@ export class ContentPipelineWorkflow extends DeclarativeWorkflowBase {
 ```
 
 ### 3. RAG Pipeline with Graph Integration
+
 ```typescript
 @Workflow({ name: 'rag-pipeline' })
 export class RAGPipelineWorkflow extends DeclarativeWorkflowBase {
@@ -745,6 +810,7 @@ export class RAGPipelineWorkflow extends DeclarativeWorkflowBase {
 ## Integration Patterns
 
 ### WebSocket Real-time Integration
+
 ```typescript
 // Setup WebSocket gateway
 @WebSocketGateway(3001, { cors: true })
@@ -765,6 +831,7 @@ export class WorkflowGateway {
 ```
 
 ### Database Checkpoint Integration
+
 ```typescript
 // Configure persistent checkpointing
 NestjsLanggraphModule.forRoot({
@@ -780,6 +847,7 @@ NestjsLanggraphModule.forRoot({
 ```
 
 ### External API Integration
+
 ```typescript
 @Tool({
   name: 'external_api_call',
@@ -805,6 +873,7 @@ async callExternalAPI({ endpoint, payload }) {
 ## Configuration and Module Setup
 
 ### Complete Module Configuration
+
 ```typescript
 @Module({
   imports: [
@@ -881,7 +950,9 @@ The NestJS LangGraph library is designed to work seamlessly with specialized chi
 ### Available LangGraph Modules
 
 #### 1. Memory Module (`@libs/langgraph-modules/memory`)
+
 **Contextual memory management for AI agents**
+
 ```typescript
 // Import and configure memory module
 import { AgenticMemoryModule, MemoryFacadeService } from '@libs/langgraph-modules/memory';
@@ -912,7 +983,9 @@ async rememberContext(state: WorkflowState) {
 ```
 
 #### 2. Checkpoint Module (`@libs/langgraph-modules/checkpoint`)
+
 **Advanced state persistence and recovery**
+
 ```typescript
 import { CheckpointModule, CheckpointManagerService } from '@libs/langgraph-modules/checkpoint';
 
@@ -937,7 +1010,9 @@ async processWithCheckpoint(state: WorkflowState) {
 ```
 
 #### 3. Multi-Agent Module (`@libs/langgraph-modules/multi-agent`)
+
 **Multi-agent coordination and orchestration**
+
 ```typescript
 import { MultiAgentModule, MultiAgentCoordinatorService } from '@libs/langgraph-modules/multi-agent';
 
@@ -966,7 +1041,9 @@ export class ResearchCoordinationWorkflow extends DeclarativeWorkflowBase {
 ```
 
 #### 4. Functional API Module (`@libs/langgraph-modules/functional-api`)
+
 **Functional programming patterns for workflows**
+
 ```typescript
 import { FunctionalApiModule } from '@libs/langgraph-modules/functional-api';
 import { Entrypoint, Task } from '@libs/langgraph-modules/functional-api';
@@ -1001,7 +1078,9 @@ export class DataProcessingPipeline {
 ```
 
 #### 5. Platform Module (`@libs/langgraph-modules/platform`)
+
 **LangGraph Platform integration**
+
 ```typescript
 import { PlatformModule, PlatformClientService } from '@libs/langgraph-modules/platform';
 
@@ -1030,7 +1109,9 @@ async deployToCloud(state: WorkflowState) {
 ```
 
 #### 6. Time Travel Module (`@libs/langgraph-modules/time-travel`)
+
 **Workflow debugging and state history**
+
 ```typescript
 import { TimeTravelModule, TimeTravelService } from '@libs/langgraph-modules/time-travel';
 
@@ -1060,7 +1141,9 @@ const replay = await timeTravelService.replayFrom('exec-123', 'debug-point');
 ```
 
 #### 7. Monitoring Module (`@libs/langgraph-modules/monitoring`)
+
 **Production observability and metrics**
+
 ```typescript
 import { MonitoringModule, MonitoringFacadeService } from '@libs/langgraph-modules/monitoring';
 
@@ -1096,6 +1179,7 @@ async monitoredGeneration(state: WorkflowState) {
 ### Module Integration Patterns
 
 #### 1. Combined Memory and Checkpointing
+
 ```typescript
 @Workflow({ 
   name: 'persistent-conversation',
@@ -1124,6 +1208,7 @@ export class PersistentConversationWorkflow extends DeclarativeWorkflowBase {
 ```
 
 #### 2. Multi-Agent with Monitoring
+
 ```typescript
 @Workflow({
   name: 'monitored-multi-agent',
@@ -1155,6 +1240,7 @@ export class MonitoredMultiAgentWorkflow extends DeclarativeWorkflowBase {
 ```
 
 #### 3. Full-Stack Integration
+
 ```typescript
 @Module({
   imports: [
@@ -1204,6 +1290,7 @@ export class EnterpriseWorkflow extends DeclarativeWorkflowBase {
 ### Module Dependencies
 
 Some modules work particularly well together:
+
 - **Memory + Neo4j**: Enhanced relationship tracking
 - **Checkpoint + Redis**: Distributed state persistence  
 - **Multi-Agent + Monitoring**: Production agent coordination

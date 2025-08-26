@@ -1,16 +1,17 @@
-import type { ChromaDBService } from '@hive-academy/nestjs-chromadb';
-import type { Neo4jService } from '@hive-academy/nestjs-neo4j';
+import type { IVectorDatabase } from './vector-database.interface';
+import type { IGraphDatabase } from './graph-database.interface';
 
 /**
  * Database connection provider interface for memory module
  * Supports ChromaDB (vector database) and Neo4j (graph database) providers
+ * Uses interfaces to avoid direct coupling with specific implementations
  */
 export interface IDatabaseConnectionProvider {
   /** Type of database provider */
   type: 'chromadb' | 'neo4j' | 'custom';
 
-  /** Database service connection instance */
-  connection: ChromaDBService | Neo4jService | any;
+  /** Database service connection instance (using interfaces to avoid coupling) */
+  connection: IVectorDatabase | IGraphDatabase | any;
 
   /** Check if the connection is healthy and available */
   isHealthy(): Promise<boolean>;

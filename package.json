@@ -94,7 +94,7 @@
     "@swc/helpers": "~0.5.11",
     "@swc/jest": "~0.2.38",
     "@types/jest": "^30.0.0",
-    "@types/node": "~18.16.9",
+    "@types/node": "20.19.9",
     "@types/uuid": "^10.0.0",
     "chalk": "5.5.0",
     "eslint": "^9.8.0",
@@ -115,6 +115,7 @@
     "typedoc-plugin-markdown": "^4.0.0",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.29.0",
+    "verdaccio": "^6.0.5",
     "webpack-cli": "^5.1.4"
   },
   "workspaces": [
@@ -136,5 +137,18 @@
     "@angular/compiler-cli": "20.1.6",
     "@angular/build": "20.1.6",
     "@swc/core": "~1.5.7"
+  },
+  "nx": {
+    "includedScripts": [],
+    "targets": {
+      "local-registry": {
+        "executor": "@nx/js:verdaccio",
+        "options": {
+          "port": 4873,
+          "config": ".verdaccio/config.yml",
+          "storage": "tmp/local-registry/storage"
+        }
+      }
+    }
   }
 }

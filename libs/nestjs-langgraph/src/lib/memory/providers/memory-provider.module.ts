@@ -1,5 +1,7 @@
 import { Module, DynamicModule, Provider } from '@nestjs/common';
 import { DatabaseProviderFactory } from './database-provider.factory';
+import { ChromaDBVectorAdapter } from '../adapters/chromadb-vector.adapter';
+import { Neo4jGraphAdapter } from '../adapters/neo4j-graph.adapter';
 import {
   IDatabaseProviderFactory,
   MemoryDetectionResult,
@@ -60,6 +62,10 @@ export class MemoryProviderModule {
    */
   private static createProviders(): Provider[] {
     return [
+      // Database adapters (always available, they handle missing services gracefully)
+      ChromaDBVectorAdapter,
+      Neo4jGraphAdapter,
+
       // Main database provider factory
       {
         provide: DATABASE_PROVIDER_FACTORY,
@@ -83,7 +89,7 @@ export class MemoryProviderModule {
         inject: [DATABASE_PROVIDER_FACTORY],
       },
 
-      // Direct export of the factory class
+      // Direct export of the factory and adapter classes
       DatabaseProviderFactory,
     ];
   }
@@ -93,17 +99,25 @@ export class MemoryProviderModule {
    */
   private static createAsyncProviders(): Provider[] {
     return [
+      // Database adapters (always available)
+      ChromaDBVectorAdapter,
+      Neo4jGraphAdapter,
+
       // Async factory for database provider factory
       {
         provide: DATABASE_PROVIDER_FACTORY,
-        useFactory: async (): Promise<DatabaseProviderFactory> => {
-          const factory = new DatabaseProviderFactory();
+        useFactory: async (
+          chromaAdapter: ChromaDBVectorAdapter,
+          neo4jAdapter: Neo4jGraphAdapter
+        ): Promise<DatabaseProviderFactory> => {
+          const factory = new DatabaseProviderFactory(chromaAdapter, neo4jAdapter);
 
           // Perform any async initialization here if needed
           await factory.getAvailableProviders(); // Prime the factory
 
           return factory;
         },
+        inject: [ChromaDBVectorAdapter, Neo4jGraphAdapter],
       },
 
       // Interface-based provider

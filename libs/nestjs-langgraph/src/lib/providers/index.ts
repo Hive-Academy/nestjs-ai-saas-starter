@@ -9,7 +9,7 @@ export * from './llm-provider.factory';
 export * from './module.providers';
 export * from './module-exports.providers';
 // Use simplified child module loading (replaces complex 700+ line system)
-export * from './simplified-child-module-loading';
+export * from './child-module-loading';
 
 // Export groups for module configuration
 export const CORE_EXPORTS = [];

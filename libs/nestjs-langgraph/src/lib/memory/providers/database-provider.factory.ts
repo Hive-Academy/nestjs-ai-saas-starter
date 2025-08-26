@@ -1,6 +1,6 @@
-import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
-import { Neo4jService } from '@hive-academy/nestjs-neo4j';
+import { Injectable, Logger } from '@nestjs/common';
+import { ChromaDBVectorAdapter } from '../adapters/chromadb-vector.adapter';
+import { Neo4jGraphAdapter } from '../adapters/neo4j-graph.adapter';
 import {
   IDatabaseConnectionProvider,
   IDatabaseProviderFactory,
@@ -23,13 +23,8 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
   private readonly logger = new Logger(DatabaseProviderFactory.name);
 
   constructor(
-    @Optional()
-    @Inject(ChromaDBService)
-    private readonly chromaDBService?: ChromaDBService,
-
-    @Optional()
-    @Inject(Neo4jService)
-    private readonly neo4jService?: Neo4jService
+    private readonly chromaDBAdapter: ChromaDBVectorAdapter,
+    private readonly neo4jAdapter: Neo4jGraphAdapter
   ) {
     this.logger.log('DatabaseProviderFactory initialized');
     this.logAvailableServices();
@@ -41,10 +36,10 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
   async getAvailableProviders(): Promise<IDatabaseConnectionProvider[]> {
     const providers: IDatabaseConnectionProvider[] = [];
 
-    // Check ChromaDB availability
-    if (this.chromaDBService) {
+    // Check ChromaDB availability via adapter
+    if (this.chromaDBAdapter.isAvailable()) {
       try {
-        const isHealthy = await this.chromaDBService.isHealthy();
+        const isHealthy = await this.chromaDBAdapter.healthCheck();
         if (isHealthy) {
           providers.push(this.createChromaDBProvider());
           this.logger.log('ChromaDB provider added (healthy)');
@@ -56,10 +51,10 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
       }
     }
 
-    // Check Neo4j availability
-    if (this.neo4jService) {
+    // Check Neo4j availability via adapter
+    if (this.neo4jAdapter.isAvailable()) {
       try {
-        const isHealthy = await this.neo4jService.verifyConnectivity();
+        const isHealthy = await this.neo4jAdapter.healthCheck();
         if (isHealthy) {
           providers.push(this.createNeo4jProvider());
           this.logger.log('Neo4j provider added (healthy)');
@@ -92,9 +87,9 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
   ): Promise<IDatabaseConnectionProvider | null> {
     switch (type) {
       case 'chromadb':
-        if (this.chromaDBService) {
+        if (this.chromaDBAdapter.isAvailable()) {
           try {
-            const isHealthy = await this.chromaDBService.isHealthy();
+            const isHealthy = await this.chromaDBAdapter.healthCheck();
             return isHealthy ? this.createChromaDBProvider() : null;
           } catch {
             return null;
@@ -103,9 +98,9 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
         return null;
 
       case 'neo4j':
-        if (this.neo4jService) {
+        if (this.neo4jAdapter.isAvailable()) {
           try {
-            const isHealthy = await this.neo4jService.verifyConnectivity();
+            const isHealthy = await this.neo4jAdapter.healthCheck();
             return isHealthy ? this.createNeo4jProvider() : null;
           } catch {
             return null;
@@ -139,13 +134,10 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
   async getProvidersStatus(): Promise<DatabaseProviderStatus[]> {
     const statuses: DatabaseProviderStatus[] = [];
 
-    // ChromaDB status
-    if (this.chromaDBService) {
+    // ChromaDB status via adapter
+    if (this.chromaDBAdapter.isAvailable()) {
       try {
-        const isHealthy = await this.chromaDBService.isHealthy();
-        const version = await this.chromaDBService
-          .version()
-          .catch(() => 'unknown');
+        const isHealthy = await this.chromaDBAdapter.healthCheck();
 
         statuses.push({
           type: 'chromadb',
@@ -153,8 +145,7 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
           healthy: isHealthy,
           capabilities: ['vector_storage', 'semantic_search', 'embeddings'],
           metadata: {
-            version,
-            service: 'ChromaDBService',
+            service: 'ChromaDBVectorAdapter',
           },
         });
       } catch (error) {
@@ -172,14 +163,14 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
         available: false,
         healthy: false,
         capabilities: [],
-        error: 'ChromaDBService not injected - module not imported',
+        error: 'ChromaDB not available - module not imported',
       });
     }
 
-    // Neo4j status
-    if (this.neo4jService) {
+    // Neo4j status via adapter
+    if (this.neo4jAdapter.isAvailable()) {
       try {
-        const isHealthy = await this.neo4jService.verifyConnectivity();
+        const isHealthy = await this.neo4jAdapter.healthCheck();
 
         statuses.push({
           type: 'neo4j',
@@ -191,7 +182,7 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
             'graph_traversal',
           ],
           metadata: {
-            service: 'Neo4jService',
+            service: 'Neo4jGraphAdapter',
           },
         });
       } catch (error) {
@@ -209,7 +200,7 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
         available: false,
         healthy: false,
         capabilities: [],
-        error: 'Neo4jService not injected - module not imported',
+        error: 'Neo4j not available - module not imported',
       });
     }
 
@@ -293,23 +284,23 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
    * Create ChromaDB provider instance
    */
   private createChromaDBProvider(): IDatabaseConnectionProvider {
-    if (!this.chromaDBService) {
-      throw new Error('ChromaDB service not available');
+    if (!this.chromaDBAdapter.isAvailable()) {
+      throw new Error('ChromaDB adapter not available');
     }
 
     return {
       type: 'chromadb',
-      connection: this.chromaDBService,
+      connection: this.chromaDBAdapter,
       isHealthy: async () => {
         try {
-          return await this.chromaDBService!.isHealthy();
+          return await this.chromaDBAdapter.healthCheck();
         } catch {
           return false;
         }
       },
       metadata: {
         collectionName: 'agent-memory',
-        service: 'ChromaDBService',
+        service: 'ChromaDBVectorAdapter',
       },
     };
   }
@@ -318,23 +309,23 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
    * Create Neo4j provider instance
    */
   private createNeo4jProvider(): IDatabaseConnectionProvider {
-    if (!this.neo4jService) {
-      throw new Error('Neo4j service not available');
+    if (!this.neo4jAdapter.isAvailable()) {
+      throw new Error('Neo4j adapter not available');
     }
 
     return {
       type: 'neo4j',
-      connection: this.neo4jService,
+      connection: this.neo4jAdapter,
       isHealthy: async () => {
         try {
-          return await this.neo4jService!.verifyConnectivity();
+          return await this.neo4jAdapter.healthCheck();
         } catch {
           return false;
         }
       },
       metadata: {
         database: 'neo4j',
-        service: 'Neo4jService',
+        service: 'Neo4jGraphAdapter',
       },
     };
   }
@@ -345,11 +336,11 @@ export class DatabaseProviderFactory implements IDatabaseProviderFactory {
   private logAvailableServices(): void {
     const services: string[] = [];
 
-    if (this.chromaDBService) {
+    if (this.chromaDBAdapter.isAvailable()) {
       services.push('ChromaDB');
     }
 
-    if (this.neo4jService) {
+    if (this.neo4jAdapter.isAvailable()) {
       services.push('Neo4j');
     }
 

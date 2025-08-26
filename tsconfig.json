@@ -50,6 +50,9 @@
     },
     {
       "path": "./apps/dev-brand-api"
+    },
+    {
+      "path": "./libs/nestjs-memory"
     }
   ]
 }

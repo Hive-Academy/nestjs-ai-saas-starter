@@ -1,6 +1,12 @@
 // Interfaces
 export type * from './interfaces/database-provider.interface';
 export type * from './interfaces/memory.interface';
+export type * from './interfaces/vector-database.interface';
+export type * from './interfaces/graph-database.interface';
+
+// Adapters
+export * from './adapters/chromadb-vector.adapter';
+export * from './adapters/neo4j-graph.adapter';
 
 // Providers
 export * from './providers/database-provider.factory';

@@ -95,8 +95,8 @@ const CHILD_MODULE_REGISTRY: ModuleConfigMapping[] = [
  * - If it fails, gracefully degrade (adapters handle this)
  * - No complex validation, path resolution, or fallback strategies needed
  */
-export class SimplifiedChildModuleLoader {
-  private static readonly logger = new Logger(SimplifiedChildModuleLoader.name);
+export class ChildModuleLoader {
+  private static readonly logger = new Logger(ChildModuleLoader.name);
 
   /**
    * Load child modules based on user configuration
@@ -221,7 +221,7 @@ export class ChildModuleImportFactory {
     this.logger.log(
       '🚀 Using simplified child module loading (adapter pattern)'
     );
-    return SimplifiedChildModuleLoader.loadChildModules(options);
+    return ChildModuleLoader.loadChildModules(options);
   }
 
   static async createChildModuleImportsAsync(

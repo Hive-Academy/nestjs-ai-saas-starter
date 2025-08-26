@@ -440,7 +440,7 @@ options.threadId
     userId?: string
   ): Promise<{
     relevantMemories: MemoryEntry[];
-    userPatterns: import('../interfaces/memory.interface').UserMemoryPatterns | null;
+    userPatterns: UserMemoryPatterns | null;
     confidence: number;
   }> {
     const operationId = `searchContext_${Date.now()}`;
@@ -492,7 +492,7 @@ options.threadId
   /**
    * Get user patterns and behavior analysis
    */
-  async getUserPatterns(userId: string): Promise<import('../interfaces/memory.interface').UserMemoryPatterns> {
+  async getUserPatterns(userId: string): Promise<UserMemoryPatterns> {
     const operationId = `userPatterns_${Date.now()}`;
     this.statsService.recordOperationStart(operationId, 'userPatterns');
 
@@ -555,7 +555,7 @@ options.threadId
   private analyzeUserPatterns(
     userId: string, 
     memories: readonly MemoryEntry[]
-  ): import('../interfaces/memory.interface').UserMemoryPatterns {
+  ): UserMemoryPatterns {
     const topics = new Set<string>();
     const interactions: Record<string, number> = {};
     const memoryTypes: Record<string, number> = {};
