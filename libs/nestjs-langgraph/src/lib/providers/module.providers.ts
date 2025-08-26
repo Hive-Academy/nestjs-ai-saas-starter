@@ -8,10 +8,7 @@ import {
   createInfrastructureProvidersAsync,
 } from './index';
 
-import {
-  createAdapterProviders,
-  createAdapterProvidersAsync,
-} from '../adapters';
+// Adapter providers removed - child modules work directly through module loading
 
 // Memory providers removed - using @hive-academy/nestjs-memory instead
 
@@ -39,7 +36,7 @@ export function createModuleProviders(
     ...createLLMProviders(options),
     ...createInfrastructureProviders(options),
     // Memory providers removed - using @hive-academy/nestjs-memory instead
-    ...createAdapterProviders(options), // Add adapter providers
+    // Adapter providers removed - child modules work directly through module loading
   ];
 }
 
@@ -62,6 +59,6 @@ export function createModuleProvidersAsync(
     ...createLLMProviders(options),
     ...createInfrastructureProvidersAsync(),
     // Memory providers removed - using @hive-academy/nestjs-memory instead
-    ...createAdapterProvidersAsync(), // Add adapter providers for async config
+    // Adapter providers removed - child modules work directly through module loading
   ];
 }

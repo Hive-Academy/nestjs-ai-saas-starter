@@ -15,7 +15,7 @@ import {
   INFRASTRUCTURE_EXPORTS,
 } from './index';
 
-import { ADAPTER_EXPORTS } from '../adapters';
+// Adapter exports removed - child modules work directly
 // Memory exports removed - using @hive-academy/nestjs-memory instead
 
 /**
@@ -32,8 +32,7 @@ export function createModuleExports(): any[] {
 
     // Memory services removed - using @hive-academy/nestjs-memory instead
 
-    // Adapters for backward compatibility
-    ...ADAPTER_EXPORTS,
+    // Adapters removed - child modules work directly through module loading
 
     // All service exports
     ...CORE_EXPORTS,

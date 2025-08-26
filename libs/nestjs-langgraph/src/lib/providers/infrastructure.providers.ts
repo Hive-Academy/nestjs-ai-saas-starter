@@ -1,6 +1,6 @@
 import type { Provider } from '@nestjs/common';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
-import { createAdapterProviders, createAdapterProvidersAsync } from '../adapters';
+// Adapter providers removed - child modules work directly through module loading
 
 /**
  * Infrastructure service providers for the LangGraph module (sync)
@@ -9,8 +9,7 @@ export function createInfrastructureProviders(
   options: LangGraphModuleOptions
 ): Provider[] {
   return [
-    // Use modular adapter providers
-    ...createAdapterProviders(options),
+    // Infrastructure providers simplified - adapters removed
     // TODO: Add testing utilities when implemented
     // WorkflowTestBuilder,
     // MockAgentFactory,
@@ -22,8 +21,7 @@ export function createInfrastructureProviders(
  */
 export function createInfrastructureProvidersAsync(): Provider[] {
   return [
-    // Use modular adapter providers
-    ...createAdapterProvidersAsync(),
+    // Infrastructure providers simplified - adapters removed
     // TODO: Add testing utilities when implemented
     // WorkflowTestBuilder,
     // MockAgentFactory,
