@@ -30,7 +30,7 @@ class TestGraphService extends IGraphService {
   async createNode(data: GraphNodeData): Promise<string> {
     this.validateNodeData(data);
     
-    const id = data.id || `node_${Date.now()}`;
+    const id = data.id || `node_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     this.nodes.set(id, {
       id,
       labels: data.labels,
@@ -48,7 +48,7 @@ class TestGraphService extends IGraphService {
     this.validateNodeId(toNodeId, 'toNodeId');
     this.validateRelationshipData(data);
     
-    const id = `rel_${Date.now()}`;
+    const id = `rel_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     this.relationships.set(id, { id, ...data, fromNodeId, toNodeId });
     return id;
   }

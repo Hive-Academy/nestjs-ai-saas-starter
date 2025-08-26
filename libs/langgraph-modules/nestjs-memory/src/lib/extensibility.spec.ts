@@ -27,6 +27,7 @@ import { MEMORY_CONFIG } from './constants/memory.constants';
 @Injectable()
 class InMemoryVectorAdapter extends IVectorService {
   private storage = new Map<string, Map<string, VectorStoreData & { id: string }>>();
+  private idCounter = 0;
 
   async store(collection: string, data: VectorStoreData): Promise<string> {
     this.validateCollection(collection);
@@ -36,7 +37,7 @@ class InMemoryVectorAdapter extends IVectorService {
       this.storage.set(collection, new Map());
     }
 
-    const id = data.id || `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = data.id || `mem_${++this.idCounter}_${Math.random().toString(36).substr(2, 9)}`;
     this.storage.get(collection)!.set(id, { ...data, id });
 
     return id;
@@ -194,11 +195,13 @@ class InMemoryVectorAdapter extends IVectorService {
 class InMemoryGraphAdapter extends IGraphService {
   private nodes = new Map<string, any>();
   private relationships = new Map<string, any>();
+  private nodeIdCounter = 0;
+  private relIdCounter = 0;
 
   async createNode(data: GraphNodeData): Promise<string> {
     this.validateNodeData(data);
 
-    const id = data.id || `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = data.id || `node_${++this.nodeIdCounter}_${Math.random().toString(36).substr(2, 9)}`;
     
     this.nodes.set(id, {
       id,
@@ -222,7 +225,7 @@ class InMemoryGraphAdapter extends IGraphService {
       throw new Error('Both nodes must exist before creating relationship');
     }
 
-    const id = `rel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `rel_${++this.relIdCounter}_${Math.random().toString(36).substr(2, 9)}`;
     
     this.relationships.set(id, {
       id,

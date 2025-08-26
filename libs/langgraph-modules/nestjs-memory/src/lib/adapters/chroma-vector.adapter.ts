@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import { ChromaApi, Collection } from 'chromadb';
+// NOTE: Direct ChromaDB API import instead of NestJS service for self-contained adapter
 import {
   IVectorService,
   VectorStoreData,
@@ -16,22 +17,59 @@ import { MEMORY_CONFIG } from '../constants/memory.constants';
 import type { MemoryConfig } from '../interfaces/memory.interface';
 
 /**
- * ChromaDB implementation of vector service adapter
+ * Self-contained ChromaDB implementation of vector service adapter
  *
- * Provides a standardized interface over ChromaDBService while maintaining
- * 100% functional parity with existing MemoryStorageService operations.
- * Implements efficient delegation pattern with error standardization.
+ * This adapter manages its own ChromaDB connection and does not depend on
+ * the NestJS ChromaDBModule, making it truly self-contained and following
+ * proper adapter pattern principles.
  */
 @Injectable()
 export class ChromaVectorAdapter extends IVectorService {
   private readonly logger = new Logger(ChromaVectorAdapter.name);
+  private chromaClient: ChromaApi | null = null;
+  private readonly collections = new Map<string, Collection>();
 
   constructor(
-    private readonly chromaDB: ChromaDBService,
     @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {
     super();
-    this.logger.debug('ChromaVectorAdapter initialized');
+    this.logger.debug('ChromaVectorAdapter initialized as self-contained');
+  }
+
+  /**
+   * Initialize ChromaDB client connection
+   */
+  private async getChromaClient(): Promise<ChromaApi> {
+    if (!this.chromaClient) {
+      const { ChromaApi } = await import('chromadb');
+      const host = process.env.CHROMADB_HOST || 'localhost';
+      const port = parseInt(process.env.CHROMADB_PORT || '8000');
+      
+      this.chromaClient = new ChromaApi({
+        path: `http://${host}:${port}`,
+      });
+      
+      this.logger.debug(`Connected to ChromaDB at http://${host}:${port}`);
+    }
+    return this.chromaClient;
+  }
+
+  /**
+   * Get or create collection
+   */
+  private async getCollection(name: string): Promise<Collection> {
+    if (!this.collections.has(name)) {
+      const client = await this.getChromaClient();
+      try {
+        const collection = await client.getOrCreateCollection({ name });
+        this.collections.set(name, collection);
+        this.logger.debug(`Collection '${name}' ready`);
+      } catch (error) {
+        this.logger.error(`Failed to get/create collection '${name}'`, error);
+        throw error;
+      }
+    }
+    return this.collections.get(name)!;
   }
 
   /**
@@ -43,15 +81,14 @@ export class ChromaVectorAdapter extends IVectorService {
 
     try {
       const id = data.id || this.generateId();
+      const col = await this.getCollection(collection);
       
-      await this.chromaDB.addDocuments(collection, [
-        {
-          id,
-          document: data.document,
-          metadata: data.metadata || {},
-          embedding: data.embedding as number[] | undefined,
-        },
-      ]);
+      await col.add({
+        ids: [id],
+        documents: [data.document],
+        metadatas: [data.metadata || {}],
+        embeddings: data.embedding ? [data.embedding as number[]] : undefined,
+      });
 
       this.logger.debug(`Stored document ${id} in collection ${collection}`);
       return id;
@@ -93,16 +130,21 @@ export class ChromaVectorAdapter extends IVectorService {
     });
 
     try {
-      const documentsWithIds = data.map((item) => ({
-        id: item.id || this.generateId(),
-        document: item.document,
-        metadata: item.metadata || {},
-        embedding: item.embedding as number[] | undefined,
-      }));
+      const col = await this.getCollection(collection);
+      const ids = data.map((item) => item.id || this.generateId());
+      const documents = data.map((item) => item.document);
+      const metadatas = data.map((item) => item.metadata || {});
+      const embeddings = data.some(item => item.embedding) 
+        ? data.map((item) => item.embedding as number[] || null)
+        : undefined;
 
-      await this.chromaDB.addDocuments(collection, documentsWithIds);
+      await col.add({
+        ids,
+        documents,
+        metadatas,
+        embeddings: embeddings?.filter((e): e is number[] => e !== null),
+      });
 
-      const ids = documentsWithIds.map((doc) => doc.id);
       this.logger.debug(
         `Batch stored ${ids.length} documents in collection ${collection}`
       );
@@ -137,23 +179,17 @@ export class ChromaVectorAdapter extends IVectorService {
     }
 
     try {
-      const queryTexts = query.queryText ? [query.queryText] : undefined;
-      const queryEmbeddings = query.queryEmbedding
-        ? [query.queryEmbedding as number[]]
-        : undefined;
-
-      const results = await this.chromaDB.searchDocuments(
-        collection,
-        queryTexts,
-        queryEmbeddings,
-        {
-          nResults: query.limit || 10,
-          where: query.filter as any,
-          includeMetadata: true,
-          includeDocuments: true,
-          includeDistances: true,
-        }
-      );
+      const col = await this.getCollection(collection);
+      
+      const results = await col.query({
+        queryTexts: query.queryText ? [query.queryText] : undefined,
+        queryEmbeddings: query.queryEmbedding 
+          ? [query.queryEmbedding as number[]] 
+          : undefined,
+        nResults: query.limit || 10,
+        where: query.filter as any,
+        include: ['documents', 'metadatas', 'distances'],
+      });
 
       if (!results.documents?.[0]) {
         return [];
@@ -206,7 +242,8 @@ export class ChromaVectorAdapter extends IVectorService {
     this.validateIds(ids);
 
     try {
-      await this.chromaDB.deleteDocuments(collection, [...ids]);
+      const col = await this.getCollection(collection);
+      await col.delete({ ids: [...ids] });
       
       this.logger.debug(
         `Deleted ${ids.length} documents from collection ${collection}`
@@ -238,18 +275,19 @@ export class ChromaVectorAdapter extends IVectorService {
     }
 
     try {
+      const col = await this.getCollection(collection);
+      
       // ChromaDB requires IDs for deletion, so we first query for matching documents
-      const matchingDocs = await this.chromaDB.getDocuments(collection, {
+      const matchingDocs = await col.get({
         where: filter as any,
-        includeDocuments: false,
-        includeMetadata: false,
+        include: ['documents'], // Get minimal data
       });
 
       if (matchingDocs.ids.length === 0) {
         return 0;
       }
 
-      await this.chromaDB.deleteDocuments(collection, matchingDocs.ids);
+      await col.delete({ ids: matchingDocs.ids });
       
       this.logger.debug(
         `Deleted ${matchingDocs.ids.length} documents by filter from collection ${collection}`
@@ -276,18 +314,13 @@ export class ChromaVectorAdapter extends IVectorService {
     this.validateCollection(collection);
 
     try {
-      // Get basic count by retrieving all documents with minimal data
-      const result = await this.chromaDB.getDocuments(collection, {
-        limit: 1,
-        includeDocuments: false,
-        includeMetadata: false,
-      });
-
-      // For now, we can only get document count. Other stats would need ChromaDB API extensions
-      const documentCount = result.ids.length;
+      const col = await this.getCollection(collection);
+      
+      // Get collection count
+      const count = await col.count();
 
       return {
-        documentCount,
+        documentCount: count,
         collectionSize: 0, // Not available from ChromaDB API
         lastUpdated: new Date(),
         dimensions: undefined, // Would need to inspect embeddings
@@ -315,14 +348,19 @@ export class ChromaVectorAdapter extends IVectorService {
     this.validateCollection(collection);
 
     try {
-      const result = await this.chromaDB.getDocuments(collection, {
+      const col = await this.getCollection(collection);
+      
+      const include = [];
+      if (options.includeDocuments !== false) include.push('documents');
+      if (options.includeMetadata !== false) include.push('metadatas');
+      if (options.includeEmbeddings) include.push('embeddings');
+      
+      const result = await col.get({
         ids: options.ids as string[] | undefined,
         where: options.where as any,
         limit: options.limit,
         offset: options.offset,
-        includeDocuments: options.includeDocuments ?? true,
-        includeMetadata: options.includeMetadata ?? true,
-        // ChromaDB doesn't support includeEmbeddings in getDocuments
+        include: include as any,
       });
 
       this.logger.debug(
@@ -333,7 +371,7 @@ export class ChromaVectorAdapter extends IVectorService {
         ids: result.ids,
         documents: options.includeDocuments !== false ? result.documents : undefined,
         metadatas: options.includeMetadata !== false ? result.metadatas : undefined,
-        embeddings: undefined, // Not supported by ChromaDB getDocuments
+        embeddings: options.includeEmbeddings ? result.embeddings : undefined,
       };
     } catch (error) {
       this.logger.error(

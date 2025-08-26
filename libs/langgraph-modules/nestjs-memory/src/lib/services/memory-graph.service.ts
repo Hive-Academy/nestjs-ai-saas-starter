@@ -52,7 +52,7 @@ export class MemoryGraphService {
         RETURN m.id as memoryId
       `;
 
-      await this.neo4j.run(cypher, {
+      await this.graphService.executeCypher(cypher, {
         threadId: memory.threadId,
         memoryId: memory.id,
         content: memory.content,
@@ -102,7 +102,7 @@ export class MemoryGraphService {
         accessCount: memory.accessCount,
       }));
 
-      await this.neo4j.run(cypher, { memories: memoryData });
+      await this.graphService.executeCypher(cypher, { memories: memoryData });
 
       this.logger.debug(`Batch tracked ${memories.length} memories in graph`);
     } catch (error) {
@@ -124,7 +124,7 @@ export class MemoryGraphService {
         RETURN count(m) as deleted
       `;
 
-      await this.neo4j.run(cypher, { memoryIds: [...memoryIds] });
+      await this.graphService.executeCypher(cypher, { memoryIds: [...memoryIds] });
 
       this.logger.debug(`Removed ${memoryIds.length} memories from graph`);
     } catch (error) {
@@ -156,14 +156,9 @@ export class MemoryGraphService {
         RETURN count(*) as relationshipsCreated
       `;
 
-      const result = await this.neo4j.run(cypher);
-      const recordValue = result.records[0]?.get('relationshipsCreated') as any;
-      const count =
-        typeof recordValue === 'object' &&
-        recordValue &&
-        'toNumber' in recordValue
-          ? recordValue.toNumber()
-          : (recordValue as number) || 0;
+      const result = await this.graphService.executeCypher(cypher);
+      const recordValue = result.records[0]?.relationshipsCreated;
+      const count = typeof recordValue === 'number' ? recordValue : 0;
 
       this.logger.debug(`Built ${count} semantic relationships`);
     } catch (error) {
@@ -191,13 +186,12 @@ export class MemoryGraphService {
           count(DISTINCT r) as totalRelationships
       `;
 
-      const result = await this.neo4j.run(cypher);
+      const result = await this.graphService.executeCypher(cypher);
       const record = result.records[0];
 
-      const totalMemories = Number(record?.get('totalMemories') as any) || 0;
-      const totalThreads = Number(record?.get('totalThreads') as any) || 1;
-      const totalRelationships =
-        Number(record?.get('totalRelationships') as any) || 0;
+      const totalMemories = Number(record?.totalMemories) || 0;
+      const totalThreads = Number(record?.totalThreads) || 1;
+      const totalRelationships = Number(record?.totalRelationships) || 0;
 
       return {
         totalMemories,
@@ -232,9 +226,9 @@ export class MemoryGraphService {
         LIMIT 10
       `;
 
-      const result = await this.neo4j.run(cypher, { memoryId, depth });
+      const result = await this.graphService.executeCypher(cypher, { memoryId, depth });
       return result.records.map((record) =>
-        String(record.get('connectedId') as any)
+        String(record.connectedId)
       );
     } catch (error) {
       this.logger.warn(
@@ -267,15 +261,15 @@ export class MemoryGraphService {
         ORDER BY m.createdAt
       `;
 
-      const result = await this.neo4j.run(cypher, { threadId });
+      const result = await this.graphService.executeCypher(cypher, { threadId });
 
       return result.records.map((record) => ({
-        memoryId: String(record.get('memoryId') as any),
-        content: String(record.get('content') as any),
-        type: String(record.get('type') as any),
-        createdAt: new Date(String(record.get('createdAt') as any)),
-        connections: Array.isArray(record.get('connections') as any)
-          ? (record.get('connections') as any as string[])
+        memoryId: String(record.memoryId),
+        content: String(record.content),
+        type: String(record.type),
+        createdAt: new Date(String(record.createdAt)),
+        connections: Array.isArray(record.connections)
+          ? (record.connections as string[])
           : [],
       }));
     } catch (error) {

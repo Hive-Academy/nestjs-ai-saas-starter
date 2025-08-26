@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { Neo4jService } from '@hive-academy/nestjs-neo4j';
+import neo4j, { Driver, Session, Result } from 'neo4j-driver';
+// NOTE: Direct Neo4j driver import instead of NestJS service for self-contained adapter
 import {
   IGraphService,
   GraphNodeData,
@@ -24,22 +25,78 @@ import { MEMORY_CONFIG } from '../constants/memory.constants';
 import type { MemoryConfig } from '../interfaces/memory.interface';
 
 /**
- * Neo4j implementation of graph service adapter
+ * Self-contained Neo4j implementation of graph service adapter
  *
- * Provides a standardized interface over Neo4jService while maintaining
- * 100% functional parity with existing MemoryGraphService operations.
- * Implements efficient delegation pattern with transaction support.
+ * This adapter manages its own Neo4j driver connection and does not depend on
+ * the NestJS Neo4jModule, making it truly self-contained and following
+ * proper adapter pattern principles.
  */
 @Injectable()
 export class Neo4jGraphAdapter extends IGraphService {
   private readonly logger = new Logger(Neo4jGraphAdapter.name);
+  private driver: Driver | null = null;
 
   constructor(
-    private readonly neo4j: Neo4jService,
     @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {
     super();
-    this.logger.debug('Neo4jGraphAdapter initialized');
+    this.logger.debug('Neo4jGraphAdapter initialized as self-contained');
+  }
+
+  /**
+   * Initialize Neo4j driver connection
+   */
+  private async getDriver(): Promise<Driver> {
+    if (!this.driver) {
+      const uri = process.env.NEO4J_URI || 'bolt://localhost:7687';
+      const username = process.env.NEO4J_USERNAME || 'neo4j';
+      const password = process.env.NEO4J_PASSWORD || 'password';
+      
+      this.driver = neo4j.driver(uri, neo4j.auth.basic(username, password));
+      
+      // Test connection
+      try {
+        const session = this.driver.session();
+        await session.run('RETURN 1');
+        await session.close();
+        this.logger.debug(`Connected to Neo4j at ${uri}`);
+      } catch (error) {
+        this.logger.error('Failed to connect to Neo4j', error);
+        throw error;
+      }
+    }
+    return this.driver;
+  }
+
+  /**
+   * Create a Neo4j session for query execution
+   */
+  private async createSession(): Promise<Session> {
+    const driver = await this.getDriver();
+    return driver.session();
+  }
+
+  /**
+   * Execute a Cypher query with parameters
+   */
+  private async runCypher(cypher: string, params: Record<string, unknown> = {}): Promise<Result> {
+    const session = await this.createSession();
+    try {
+      return await session.run(cypher, params);
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Cleanup resources when adapter is destroyed
+   */
+  async onModuleDestroy(): Promise<void> {
+    if (this.driver) {
+      await this.driver.close();
+      this.driver = null;
+      this.logger.debug('Neo4j driver connection closed');
+    }
   }
 
   /**
@@ -58,7 +115,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN n.id as id
       `;
 
-      const result = await this.neo4j.run(cypher, {
+      const result = await this.runCypher(cypher, {
         nodeId,
         properties: data.properties,
       });
@@ -99,7 +156,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN r.id as id
       `;
 
-      const result = await this.neo4j.run(cypher, {
+      const result = await this.runCypher(cypher, {
         fromNodeId,
         toNodeId,
         relationshipId,
@@ -139,7 +196,7 @@ export class Neo4jGraphAdapter extends IGraphService {
       const propertyFilter = this.buildPropertyFilter(spec.filter);
       
       const cypher = `
-        MATCH path = (start {id: $startNodeId})${direction}[r${relationshipFilter}*1..${depth}]${direction}(end${nodeFilter})
+        MATCH path = (start {id: $startNodeId})${direction.start}[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})
         ${propertyFilter ? `WHERE ${propertyFilter}` : ''}
         ${spec.limit ? `LIMIT ${spec.limit}` : 'LIMIT 100'}
         RETURN 
@@ -148,7 +205,7 @@ export class Neo4jGraphAdapter extends IGraphService {
           path
       `;
 
-      const result = await this.neo4j.run(cypher, { startNodeId });
+      const result = await this.runCypher(cypher, { startNodeId });
 
       const nodes: GraphNode[] = [];
       const relationships: GraphRelationship[] = [];
@@ -197,7 +254,7 @@ export class Neo4jGraphAdapter extends IGraphService {
     this.validateCypherQuery(query);
 
     try {
-      const result = await this.neo4j.run(query, params);
+      const result = await this.runCypher(query, params);
       
       const records = result.records.map((record) => {
         const recordData: Record<string, unknown> = {};
@@ -246,7 +303,7 @@ export class Neo4jGraphAdapter extends IGraphService {
           count(DISTINCT labels(n)) as labelCount
       `;
 
-      const result = await this.neo4j.run(cypher);
+      const result = await this.runCypher(cypher);
       const record = result.records[0];
 
       const nodeCount = this.extractNumber(record?.get('nodeCount')) || 0;
@@ -340,7 +397,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         ${criteria.limit ? `LIMIT ${criteria.limit}` : 'LIMIT 1000'}
       `;
 
-      const result = await this.neo4j.run(cypher);
+      const result = await this.runCypher(cypher);
       const nodes = result.records.map((record) =>
         this.extractNode(record.get('n') as any)
       );
@@ -371,7 +428,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN count(n) as deletedCount
       `;
 
-      const result = await this.neo4j.run(cypher, { nodeIds: [...nodeIds] });
+      const result = await this.runCypher(cypher, { nodeIds: [...nodeIds] });
       const deletedCount = this.extractNumber(result.records[0]?.get('deletedCount')) || 0;
 
       this.logger.debug(`Deleted ${deletedCount} nodes`);
@@ -400,7 +457,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN count(r) as deletedCount
       `;
 
-      const result = await this.neo4j.run(cypher, {
+      const result = await this.runCypher(cypher, {
         relationshipIds: [...relationshipIds],
       });
       const deletedCount = this.extractNumber(result.records[0]?.get('deletedCount')) || 0;
@@ -452,12 +509,12 @@ export class Neo4jGraphAdapter extends IGraphService {
     return { error: String(error) };
   }
 
-  private getTraversalDirection(direction?: 'IN' | 'OUT' | 'BOTH'): string {
+  private getTraversalDirection(direction?: 'IN' | 'OUT' | 'BOTH'): { start: string; end: string } {
     switch (direction) {
-      case 'IN': return '<-';
-      case 'OUT': return '-';
-      case 'BOTH': return '-';
-      default: return '-';
+      case 'IN': return { start: '<-', end: '-' };
+      case 'OUT': return { start: '-', end: '->' };
+      case 'BOTH': return { start: '-', end: '-' };
+      default: return { start: '-', end: '-' };
     }
   }
 
@@ -593,7 +650,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN label, count(*) as count
       `;
       
-      const result = await this.neo4j.run(cypher);
+      const result = await this.runCypher(cypher);
       const counts: Record<string, number> = {};
       
       result.records.forEach((record) => {
@@ -616,7 +673,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN type(r) as relType, count(*) as count
       `;
       
-      const result = await this.neo4j.run(cypher);
+      const result = await this.runCypher(cypher);
       const counts: Record<string, number> = {};
       
       result.records.forEach((record) => {

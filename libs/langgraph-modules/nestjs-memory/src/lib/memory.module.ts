@@ -1,7 +1,6 @@
 import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
+// NOTE: Removed ChromaDBModule and Neo4jModule imports - adapters handle their own DB dependencies
 
 import { MemoryService } from './services/memory.service';
 import { MemoryStorageService } from './services/memory-storage.service';
@@ -50,32 +49,8 @@ export class MemoryModule {
     const hasCustomVectorAdapter = !!options.adapters?.vector;
     const hasCustomGraphAdapter = !!options.adapters?.graph;
 
-    // Build conditional imports based on adapter configuration
-    const conditionalImports = [];
-
-    // Import ChromaDB module only if not using custom vector adapter
-    if (!hasCustomVectorAdapter) {
-      conditionalImports.push(
-        ChromaDBModule.forRoot({
-          connection: {
-            host: process.env.CHROMADB_HOST || 'localhost',
-            port: parseInt(process.env.CHROMADB_PORT || '8000'),
-          },
-        })
-      );
-    }
-
-    // Import Neo4j module only if not using custom graph adapter
-    if (!hasCustomGraphAdapter) {
-      conditionalImports.push(
-        Neo4jModule.forRoot({
-          uri: process.env.NEO4J_URI || 'bolt://localhost:7687',
-          username: process.env.NEO4J_USERNAME || 'neo4j',
-          password: process.env.NEO4J_PASSWORD || 'password',
-          database: config.neo4j?.database || 'neo4j',
-        })
-      );
-    }
+    // NOTE: Removed conditional database imports - adapters are now self-contained
+    // Each adapter handles its own database connection and dependencies
 
     // Create adapter providers
     const adapterProviders = this.createAdapterProviders(options);
@@ -84,7 +59,7 @@ export class MemoryModule {
       module: MemoryModule,
       imports: [
         ConfigModule,
-        ...conditionalImports,
+        // NOTE: No database module imports - pure adapter pattern
       ],
       providers: [
         // Configuration provider
@@ -114,29 +89,24 @@ export class MemoryModule {
 
   /**
    * Configure module with asynchronous options
+   * NOTE: Updated to follow adapter pattern - no direct database imports
    */
   static forRootAsync(options: MemoryModuleAsyncOptions): DynamicModule {
+    // Apply same adapter pattern as forRoot
+    const adapterProviders = this.createAdapterProvidersAsync(options);
+
     return {
       module: MemoryModule,
       imports: [
         ConfigModule,
-        ChromaDBModule.forRoot({
-          connection: {
-            host: process.env.CHROMADB_HOST || 'localhost',
-            port: parseInt(process.env.CHROMADB_PORT || '8000'),
-          },
-        }),
-        Neo4jModule.forRoot({
-          uri: process.env.NEO4J_URI || 'bolt://localhost:7687',
-          username: process.env.NEO4J_USERNAME || 'neo4j',
-          password: process.env.NEO4J_PASSWORD || 'password',
-          database: process.env.NEO4J_DATABASE || 'neo4j',
-        }),
+        // NOTE: No database module imports - adapters handle their own connections
         ...(options.imports || []),
       ],
       providers: [
         // Async configuration provider
         ...this.createAsyncProviders(options),
+        // Adapter providers (self-contained)
+        ...adapterProviders,
         // Core services
         MemoryStorageService,
         MemoryGraphService,
@@ -147,6 +117,9 @@ export class MemoryModule {
         MemoryStorageService,
         MemoryGraphService,
         MEMORY_CONFIG,
+        // Export adapter interfaces for external use
+        IVectorService,
+        IGraphService,
       ],
       global: false,
     };
@@ -273,6 +246,29 @@ export class MemoryModule {
         useClass: Neo4jGraphAdapter,
       });
     }
+
+    return providers;
+  }
+
+  /**
+   * Create adapter providers for async configuration
+   * Uses default adapters if none specified
+   */
+  private static createAdapterProvidersAsync(options: MemoryModuleAsyncOptions): Provider[] {
+    const providers: Provider[] = [];
+
+    // For async configuration, use default adapters since we don't have adapter options yet
+    // TODO: Extend MemoryModuleAsyncOptions to support adapter configuration if needed
+    providers.push(
+      {
+        provide: IVectorService,
+        useClass: ChromaVectorAdapter,
+      },
+      {
+        provide: IGraphService,
+        useClass: Neo4jGraphAdapter,
+      }
+    );
 
     return providers;
   }

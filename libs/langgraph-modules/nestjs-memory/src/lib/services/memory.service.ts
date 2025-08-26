@@ -33,6 +33,27 @@ export class MemoryService implements MemoryServiceInterface {
 
   /**
    * Store a memory entry with vector and graph tracking
+   * Alias for store method to support expected API naming
+   */
+  async storeMemoryEntry(
+    collection: string,
+    entry: {
+      content: string;
+      metadata?: Partial<MemoryMetadata>;
+      threadId?: string;
+      userId?: string;
+    }
+  ): Promise<MemoryEntry> {
+    return this.store(
+      entry.threadId || 'default',
+      entry.content,
+      entry.metadata,
+      entry.userId
+    );
+  }
+
+  /**
+   * Store a memory entry with vector and graph tracking
    */
   async store(
     threadId: string,

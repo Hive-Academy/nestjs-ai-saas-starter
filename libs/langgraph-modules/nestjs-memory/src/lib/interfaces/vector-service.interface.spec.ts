@@ -28,7 +28,7 @@ class TestVectorService extends IVectorService {
       this.storage.set(collection, new Map());
     }
     
-    const id = data.id || `test_${Date.now()}`;
+    const id = data.id || `test_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     this.storage.get(collection)!.set(id, { ...data, id });
     return id;
   }

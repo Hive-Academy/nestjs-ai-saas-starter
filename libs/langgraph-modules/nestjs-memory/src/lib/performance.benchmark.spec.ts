@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { performance } from 'perf_hooks';
+import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 
 import { ChromaVectorAdapter } from './adapters/chroma-vector.adapter';
 import { Neo4jGraphAdapter } from './adapters/neo4j-graph.adapter';
@@ -66,8 +68,8 @@ describe('Performance Benchmarks - Adapter Pattern vs Direct Usage', () => {
       providers: [
         ChromaVectorAdapter,
         Neo4jGraphAdapter,
-        { provide: 'ChromaDBService', useValue: mockChromaDB },
-        { provide: 'Neo4jService', useValue: mockNeo4j },
+        { provide: ChromaDBService, useValue: mockChromaDB },
+        { provide: Neo4jService, useValue: mockNeo4j },
         { provide: MEMORY_CONFIG, useValue: mockConfig },
       ],
     }).compile();
