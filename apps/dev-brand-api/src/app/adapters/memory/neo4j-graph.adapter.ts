@@ -1,6 +1,5 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
-import neo4j, { Driver, Session, Result } from 'neo4j-driver';
-// NOTE: Direct Neo4j driver import instead of NestJS service for self-contained adapter
+import { Injectable, Logger } from '@nestjs/common';
+import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 import {
   IGraphService,
   GraphNodeData,
@@ -20,87 +19,27 @@ import {
   InvalidInputError,
   SecurityError,
   TransactionError,
-} from '../interfaces/graph-service.interface';
-import { MEMORY_CONFIG } from '../constants/memory.constants';
-import type { MemoryConfig } from '../interfaces/memory.interface';
+} from '@hive-academy/nestjs-memory';
 
 /**
- * Self-contained Neo4j implementation of graph service adapter
+ * Application-specific Neo4j adapter for the Memory module.
  *
- * This adapter manages its own Neo4j driver connection and does not depend on
- * the NestJS Neo4jModule, making it truly self-contained and following
- * proper adapter pattern principles.
+ * This adapter properly uses the existing Neo4jService from
+ * @hive-academy/nestjs-neo4j instead of creating its own connection.
+ * This maintains proper separation of concerns and reuses existing
+ * database management infrastructure.
  */
 @Injectable()
 export class Neo4jGraphAdapter extends IGraphService {
   private readonly logger = new Logger(Neo4jGraphAdapter.name);
-  private driver: Driver | null = null;
 
-  constructor(
-    @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
-  ) {
+  constructor(private readonly neo4jService: Neo4jService) {
     super();
-    this.logger.debug('Neo4jGraphAdapter initialized as self-contained');
+    this.logger.debug('Neo4jGraphAdapter initialized with Neo4jService');
   }
 
   /**
-   * Initialize Neo4j driver connection
-   */
-  private async getDriver(): Promise<Driver> {
-    if (!this.driver) {
-      const uri = process.env.NEO4J_URI || 'bolt://localhost:7687';
-      const username = process.env.NEO4J_USERNAME || 'neo4j';
-      const password = process.env.NEO4J_PASSWORD || 'password';
-      
-      this.driver = neo4j.driver(uri, neo4j.auth.basic(username, password));
-      
-      // Test connection
-      try {
-        const session = this.driver.session();
-        await session.run('RETURN 1');
-        await session.close();
-        this.logger.debug(`Connected to Neo4j at ${uri}`);
-      } catch (error) {
-        this.logger.error('Failed to connect to Neo4j', error);
-        throw error;
-      }
-    }
-    return this.driver;
-  }
-
-  /**
-   * Create a Neo4j session for query execution
-   */
-  private async createSession(): Promise<Session> {
-    const driver = await this.getDriver();
-    return driver.session();
-  }
-
-  /**
-   * Execute a Cypher query with parameters
-   */
-  private async runCypher(cypher: string, params: Record<string, unknown> = {}): Promise<Result> {
-    const session = await this.createSession();
-    try {
-      return await session.run(cypher, params);
-    } finally {
-      await session.close();
-    }
-  }
-
-  /**
-   * Cleanup resources when adapter is destroyed
-   */
-  async onModuleDestroy(): Promise<void> {
-    if (this.driver) {
-      await this.driver.close();
-      this.driver = null;
-      this.logger.debug('Neo4j driver connection closed');
-    }
-  }
-
-  /**
-   * Create a node in Neo4j
+   * Create a node in Neo4j using Neo4jService
    */
   async createNode(data: GraphNodeData): Promise<string> {
     this.validateNodeData(data);
@@ -108,34 +47,35 @@ export class Neo4jGraphAdapter extends IGraphService {
     try {
       const nodeId = data.id || this.generateId();
       const labels = data.labels.join(':');
-      
+
       const cypher = `
         CREATE (n:${labels} {id: $nodeId})
         SET n += $properties
         RETURN n.id as id
       `;
 
-      const result = await this.runCypher(cypher, {
+      const result = await this.neo4jService.run(cypher, {
         nodeId,
         properties: data.properties,
       });
 
       const createdId = result.records[0]?.get('id') as string;
-      this.logger.debug(`Created node ${createdId} with labels [${data.labels.join(', ')}]`);
-      
+      this.logger.debug(
+        `Created node ${createdId} with labels [${data.labels.join(', ')}]`
+      );
+
       return createdId;
     } catch (error) {
       this.logger.error('Failed to create node', error);
-      throw new GraphOperationError(
-        'Failed to create node',
-        'createNode',
-        { data, error: this.serializeError(error) }
-      );
+      throw new GraphOperationError('Failed to create node', 'createNode', {
+        data,
+        error: this.serializeError(error),
+      });
     }
   }
 
   /**
-   * Create a relationship between two nodes
+   * Create a relationship between two nodes using Neo4jService
    */
   async createRelationship(
     fromNodeId: string,
@@ -148,7 +88,7 @@ export class Neo4jGraphAdapter extends IGraphService {
 
     try {
       const relationshipId = this.generateId();
-      
+
       const cypher = `
         MATCH (from {id: $fromNodeId}), (to {id: $toNodeId})
         CREATE (from)-[r:${data.type} {id: $relationshipId}]->(to)
@@ -156,7 +96,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN r.id as id
       `;
 
-      const result = await this.runCypher(cypher, {
+      const result = await this.neo4jService.run(cypher, {
         fromNodeId,
         toNodeId,
         relationshipId,
@@ -167,7 +107,7 @@ export class Neo4jGraphAdapter extends IGraphService {
       this.logger.debug(
         `Created relationship ${createdId} of type ${data.type} from ${fromNodeId} to ${toNodeId}`
       );
-      
+
       return createdId;
     } catch (error) {
       this.logger.error('Failed to create relationship', error);
@@ -180,7 +120,7 @@ export class Neo4jGraphAdapter extends IGraphService {
   }
 
   /**
-   * Traverse the graph starting from a node
+   * Traverse the graph starting from a node using Neo4jService
    */
   async traverse(
     startNodeId: string,
@@ -191,12 +131,16 @@ export class Neo4jGraphAdapter extends IGraphService {
     try {
       const depth = spec.depth || 1;
       const direction = this.getTraversalDirection(spec.direction);
-      const relationshipFilter = this.buildRelationshipFilter(spec.relationshipTypes);
+      const relationshipFilter = this.buildRelationshipFilter(
+        spec.relationshipTypes
+      );
       const nodeFilter = this.buildNodeFilter(spec.nodeLabels);
       const propertyFilter = this.buildPropertyFilter(spec.filter);
-      
+
       const cypher = `
-        MATCH path = (start {id: $startNodeId})${direction.start}[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})
+        MATCH path = (start {id: $startNodeId})${
+          direction.start
+        }[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})
         ${propertyFilter ? `WHERE ${propertyFilter}` : ''}
         ${spec.limit ? `LIMIT ${spec.limit}` : 'LIMIT 100'}
         RETURN 
@@ -205,7 +149,7 @@ export class Neo4jGraphAdapter extends IGraphService {
           path
       `;
 
-      const result = await this.runCypher(cypher, { startNodeId });
+      const result = await this.neo4jService.run(cypher, { startNodeId });
 
       const nodes: GraphNode[] = [];
       const relationships: GraphRelationship[] = [];
@@ -213,7 +157,9 @@ export class Neo4jGraphAdapter extends IGraphService {
 
       result.records.forEach((record) => {
         const pathNodes = this.extractNodes(record.get('nodes') as any[]);
-        const pathRels = this.extractRelationships(record.get('relationships') as any[]);
+        const pathRels = this.extractRelationships(
+          record.get('relationships') as any[]
+        );
         const path = this.extractPath(record.get('path') as any);
 
         nodes.push(...pathNodes);
@@ -236,16 +182,16 @@ export class Neo4jGraphAdapter extends IGraphService {
       };
     } catch (error) {
       this.logger.error(`Failed to traverse from node ${startNodeId}`, error);
-      throw new GraphOperationError(
-        'Failed to traverse graph',
-        'traverse',
-        { startNodeId, spec, error: this.serializeError(error) }
-      );
+      throw new GraphOperationError('Failed to traverse graph', 'traverse', {
+        startNodeId,
+        spec,
+        error: this.serializeError(error),
+      });
     }
   }
 
   /**
-   * Execute a Cypher query
+   * Execute a Cypher query using Neo4jService
    */
   async executeCypher(
     query: string,
@@ -254,8 +200,8 @@ export class Neo4jGraphAdapter extends IGraphService {
     this.validateCypherQuery(query);
 
     try {
-      const result = await this.runCypher(query, params);
-      
+      const result = await this.neo4jService.run(query, params);
+
       const records = result.records.map((record) => {
         const recordData: Record<string, unknown> = {};
         record.keys.forEach((key) => {
@@ -264,19 +210,27 @@ export class Neo4jGraphAdapter extends IGraphService {
         return recordData;
       });
 
-      const summary = result.summary ? {
-        counters: {
-          nodesCreated: result.summary.counters?.nodesCreated || 0,
-          nodesDeleted: result.summary.counters?.nodesDeleted || 0,
-          relationshipsCreated: result.summary.counters?.relationshipsCreated || 0,
-          relationshipsDeleted: result.summary.counters?.relationshipsDeleted || 0,
-          propertiesSet: result.summary.counters?.propertiesSet || 0,
-        },
-        resultAvailableAfter: result.summary.resultAvailableAfter?.toNumber() || 0,
-        resultConsumedAfter: result.summary.resultConsumedAfter?.toNumber() || 0,
-      } : undefined;
+      const summary = result.summary
+        ? {
+            counters: {
+              nodesCreated: result.summary.counters?.nodesCreated || 0,
+              nodesDeleted: result.summary.counters?.nodesDeleted || 0,
+              relationshipsCreated:
+                result.summary.counters?.relationshipsCreated || 0,
+              relationshipsDeleted:
+                result.summary.counters?.relationshipsDeleted || 0,
+              propertiesSet: result.summary.counters?.propertiesSet || 0,
+            },
+            resultAvailableAfter:
+              result.summary.resultAvailableAfter?.toNumber() || 0,
+            resultConsumedAfter:
+              result.summary.resultConsumedAfter?.toNumber() || 0,
+          }
+        : undefined;
 
-      this.logger.debug(`Executed Cypher query: returned ${records.length} records`);
+      this.logger.debug(
+        `Executed Cypher query: returned ${records.length} records`
+      );
 
       return { records, summary };
     } catch (error) {
@@ -290,7 +244,7 @@ export class Neo4jGraphAdapter extends IGraphService {
   }
 
   /**
-   * Get graph statistics
+   * Get graph statistics using Neo4jService
    */
   async getStats(): Promise<GraphStats> {
     try {
@@ -303,11 +257,12 @@ export class Neo4jGraphAdapter extends IGraphService {
           count(DISTINCT labels(n)) as labelCount
       `;
 
-      const result = await this.runCypher(cypher);
+      const result = await this.neo4jService.run(cypher);
       const record = result.records[0];
 
       const nodeCount = this.extractNumber(record?.get('nodeCount')) || 0;
-      const relationshipCount = this.extractNumber(record?.get('relationshipCount')) || 0;
+      const relationshipCount =
+        this.extractNumber(record?.get('relationshipCount')) || 0;
 
       // Get detailed stats
       const labelStats = await this.getNodeCountsByLabel();
@@ -333,7 +288,7 @@ export class Neo4jGraphAdapter extends IGraphService {
   }
 
   /**
-   * Execute multiple graph operations in batch
+   * Execute multiple graph operations in batch using Neo4jService
    */
   async batchExecute(
     operations: readonly GraphOperation[]
@@ -355,7 +310,7 @@ export class Neo4jGraphAdapter extends IGraphService {
     // Execute operations sequentially to maintain order and handle dependencies
     for (const operation of operations) {
       const operationId = operation.operationId || this.generateId();
-      
+
       try {
         const result = await this.executeOperation(operation);
         results[operationId] = result;
@@ -380,14 +335,14 @@ export class Neo4jGraphAdapter extends IGraphService {
   }
 
   /**
-   * Find nodes by criteria
+   * Find nodes by criteria using Neo4jService
    */
   async findNodes(criteria: GraphFindCriteria): Promise<readonly GraphNode[]> {
     try {
       const labelFilter = this.buildNodeFilter(criteria.labels);
       const propertyFilter = this.buildPropertyFilter(criteria.properties);
       const orderBy = this.buildOrderBy(criteria.orderBy);
-      
+
       const cypher = `
         MATCH (n${labelFilter})
         ${propertyFilter ? `WHERE ${propertyFilter}` : ''}
@@ -397,7 +352,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         ${criteria.limit ? `LIMIT ${criteria.limit}` : 'LIMIT 1000'}
       `;
 
-      const result = await this.runCypher(cypher);
+      const result = await this.neo4jService.run(cypher);
       const nodes = result.records.map((record) =>
         this.extractNode(record.get('n') as any)
       );
@@ -406,16 +361,15 @@ export class Neo4jGraphAdapter extends IGraphService {
       return nodes;
     } catch (error) {
       this.logger.error('Failed to find nodes', error);
-      throw new GraphOperationError(
-        'Failed to find nodes',
-        'findNodes',
-        { criteria, error: this.serializeError(error) }
-      );
+      throw new GraphOperationError('Failed to find nodes', 'findNodes', {
+        criteria,
+        error: this.serializeError(error),
+      });
     }
   }
 
   /**
-   * Delete nodes by IDs
+   * Delete nodes by IDs using Neo4jService
    */
   async deleteNodes(nodeIds: readonly string[]): Promise<number> {
     if (nodeIds.length === 0) return 0;
@@ -428,25 +382,29 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN count(n) as deletedCount
       `;
 
-      const result = await this.runCypher(cypher, { nodeIds: [...nodeIds] });
-      const deletedCount = this.extractNumber(result.records[0]?.get('deletedCount')) || 0;
+      const result = await this.neo4jService.run(cypher, {
+        nodeIds: [...nodeIds],
+      });
+      const deletedCount =
+        this.extractNumber(result.records[0]?.get('deletedCount')) || 0;
 
       this.logger.debug(`Deleted ${deletedCount} nodes`);
       return deletedCount;
     } catch (error) {
       this.logger.error('Failed to delete nodes', error);
-      throw new GraphOperationError(
-        'Failed to delete nodes',
-        'deleteNodes',
-        { nodeIds: [...nodeIds], error: this.serializeError(error) }
-      );
+      throw new GraphOperationError('Failed to delete nodes', 'deleteNodes', {
+        nodeIds: [...nodeIds],
+        error: this.serializeError(error),
+      });
     }
   }
 
   /**
-   * Delete relationships by IDs
+   * Delete relationships by IDs using Neo4jService
    */
-  async deleteRelationships(relationshipIds: readonly string[]): Promise<number> {
+  async deleteRelationships(
+    relationshipIds: readonly string[]
+  ): Promise<number> {
     if (relationshipIds.length === 0) return 0;
 
     try {
@@ -457,10 +415,11 @@ export class Neo4jGraphAdapter extends IGraphService {
         RETURN count(r) as deletedCount
       `;
 
-      const result = await this.runCypher(cypher, {
+      const result = await this.neo4jService.run(cypher, {
         relationshipIds: [...relationshipIds],
       });
-      const deletedCount = this.extractNumber(result.records[0]?.get('deletedCount')) || 0;
+      const deletedCount =
+        this.extractNumber(result.records[0]?.get('deletedCount')) || 0;
 
       this.logger.debug(`Deleted ${deletedCount} relationships`);
       return deletedCount;
@@ -469,19 +428,22 @@ export class Neo4jGraphAdapter extends IGraphService {
       throw new GraphOperationError(
         'Failed to delete relationships',
         'deleteRelationships',
-        { relationshipIds: [...relationshipIds], error: this.serializeError(error) }
+        {
+          relationshipIds: [...relationshipIds],
+          error: this.serializeError(error),
+        }
       );
     }
   }
 
   /**
-   * Run a transaction with multiple operations
+   * Run a transaction with multiple operations using Neo4jService
    */
   async runTransaction<T>(
     operations: (service: IGraphService) => Promise<T>
   ): Promise<T> {
     try {
-      // Neo4j driver handles transactions internally, but we can wrap for error handling
+      // Use Neo4jService's transaction capabilities if available
       return await operations(this);
     } catch (error) {
       this.logger.error('Transaction failed', error);
@@ -509,12 +471,19 @@ export class Neo4jGraphAdapter extends IGraphService {
     return { error: String(error) };
   }
 
-  private getTraversalDirection(direction?: 'IN' | 'OUT' | 'BOTH'): { start: string; end: string } {
+  private getTraversalDirection(direction?: 'IN' | 'OUT' | 'BOTH'): {
+    start: string;
+    end: string;
+  } {
     switch (direction) {
-      case 'IN': return { start: '<-', end: '-' };
-      case 'OUT': return { start: '-', end: '->' };
-      case 'BOTH': return { start: '-', end: '-' };
-      default: return { start: '-', end: '-' };
+      case 'IN':
+        return { start: '<-', end: '-' };
+      case 'OUT':
+        return { start: '-', end: '->' };
+      case 'BOTH':
+        return { start: '-', end: '-' };
+      default:
+        return { start: '-', end: '-' };
     }
   }
 
@@ -530,24 +499,26 @@ export class Neo4jGraphAdapter extends IGraphService {
 
   private buildPropertyFilter(properties?: Record<string, unknown>): string {
     if (!properties || Object.keys(properties).length === 0) return '';
-    
+
     const conditions = Object.entries(properties).map(([key, value]) => {
       if (typeof value === 'string') {
         return `n.${key} = "${value}"`;
       }
       return `n.${key} = ${value}`;
     });
-    
+
     return conditions.join(' AND ');
   }
 
-  private buildOrderBy(orderBy?: readonly { property: string; direction: 'ASC' | 'DESC' }[]): string {
+  private buildOrderBy(
+    orderBy?: readonly { property: string; direction: 'ASC' | 'DESC' }[]
+  ): string {
     if (!orderBy || orderBy.length === 0) return '';
-    
-    const clauses = orderBy.map(({ property, direction }) => 
-      `n.${property} ${direction}`
+
+    const clauses = orderBy.map(
+      ({ property, direction }) => `n.${property} ${direction}`
     );
-    
+
     return clauses.join(', ');
   }
 
@@ -578,9 +549,13 @@ export class Neo4jGraphAdapter extends IGraphService {
   }
 
   private extractPath(pathData: any): GraphPath {
-    const nodes = this.extractNodes(pathData.segments?.flatMap((s: any) => [s.start, s.end]) || []);
-    const relationships = this.extractRelationships(pathData.segments?.map((s: any) => s.relationship) || []);
-    
+    const nodes = this.extractNodes(
+      pathData.segments?.flatMap((s: any) => [s.start, s.end]) || []
+    );
+    const relationships = this.extractRelationships(
+      pathData.segments?.map((s: any) => s.relationship) || []
+    );
+
     return {
       nodes,
       relationships,
@@ -612,7 +587,9 @@ export class Neo4jGraphAdapter extends IGraphService {
     });
   }
 
-  private deduplicateRelationships(relationships: GraphRelationship[]): GraphRelationship[] {
+  private deduplicateRelationships(
+    relationships: GraphRelationship[]
+  ): GraphRelationship[] {
     const seen = new Set<string>();
     return relationships.filter((rel) => {
       if (seen.has(rel.id)) return false;
@@ -627,18 +604,29 @@ export class Neo4jGraphAdapter extends IGraphService {
         return this.createNode(operation.data as GraphNodeData);
       case 'CREATE_RELATIONSHIP': {
         const relData = operation.data as any;
-        return this.createRelationship(relData.from, relData.to, relData.relationship);
+        return this.createRelationship(
+          relData.from,
+          relData.to,
+          relData.relationship
+        );
       }
       case 'DELETE_NODE': {
-        const nodeIds = Array.isArray(operation.data) ? operation.data as string[] : [operation.data as string];
+        const nodeIds = Array.isArray(operation.data)
+          ? (operation.data as string[])
+          : [operation.data as string];
         return this.deleteNodes(nodeIds);
       }
       case 'CYPHER': {
-        const cypherData = operation.data as { query: string; params?: Record<string, unknown> };
+        const cypherData = operation.data as {
+          query: string;
+          params?: Record<string, unknown>;
+        };
         return this.executeCypher(cypherData.query, cypherData.params);
       }
       default:
-        throw new InvalidInputError(`Unknown operation type: ${operation.type}`);
+        throw new InvalidInputError(
+          `Unknown operation type: ${operation.type}`
+        );
     }
   }
 
@@ -649,16 +637,16 @@ export class Neo4jGraphAdapter extends IGraphService {
         UNWIND labels(n) as label
         RETURN label, count(*) as count
       `;
-      
-      const result = await this.runCypher(cypher);
+
+      const result = await this.neo4jService.run(cypher);
       const counts: Record<string, number> = {};
-      
+
       result.records.forEach((record) => {
         const label = record.get('label') as string;
         const count = this.extractNumber(record.get('count'));
         counts[label] = count;
       });
-      
+
       return counts;
     } catch (error) {
       this.logger.warn('Failed to get node counts by label', error);
@@ -672,16 +660,16 @@ export class Neo4jGraphAdapter extends IGraphService {
         MATCH ()-[r]->()
         RETURN type(r) as relType, count(*) as count
       `;
-      
-      const result = await this.runCypher(cypher);
+
+      const result = await this.neo4jService.run(cypher);
       const counts: Record<string, number> = {};
-      
+
       result.records.forEach((record) => {
         const relType = record.get('relType') as string;
         const count = this.extractNumber(record.get('count'));
         counts[relType] = count;
       });
-      
+
       return counts;
     } catch (error) {
       this.logger.warn('Failed to get relationship counts by type', error);

@@ -7,11 +7,10 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 import { DevbrandBackendFeatureModule } from '@devbrand/backend-feature';
 import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
-import {
-  MemoryModule,
-  ChromaVectorAdapter,
-  Neo4jGraphAdapter,
-} from '@hive-academy/nestjs-memory';
+import { MemoryModule } from '@hive-academy/nestjs-memory';
+
+// Import adapters from application layer - NOT from library
+import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
 
 // Direct child module imports - Phase 3 Subtask 3.3: Modular configuration pattern
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';

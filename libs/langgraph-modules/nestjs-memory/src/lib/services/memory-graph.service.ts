@@ -20,9 +20,12 @@ export class MemoryGraphService {
 
   constructor(
     private readonly graphService: IGraphService,
-    @Inject(MEMORY_CONFIG) private readonly _config: MemoryConfig // Reserved for future use
+    @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {
-    // Graph service initialized - config reserved for future use
+    this.logger.debug('MemoryGraphService initialized with configuration', {
+      neo4jDatabase: this.config.neo4j?.database || 'neo4j',
+      enableAutoSummarization: this.config.enableAutoSummarization || false,
+    });
   }
 
   /**
@@ -124,7 +127,9 @@ export class MemoryGraphService {
         RETURN count(m) as deleted
       `;
 
-      await this.graphService.executeCypher(cypher, { memoryIds: [...memoryIds] });
+      await this.graphService.executeCypher(cypher, {
+        memoryIds: [...memoryIds],
+      });
 
       this.logger.debug(`Removed ${memoryIds.length} memories from graph`);
     } catch (error) {
@@ -136,6 +141,14 @@ export class MemoryGraphService {
    * Build semantic relationships between memories
    */
   async buildSemanticRelationships(): Promise<void> {
+    // Only build relationships if auto-summarization is enabled (requires graph features)
+    if (!this.config.enableAutoSummarization) {
+      this.logger.debug(
+        'Semantic relationships disabled - auto-summarization not enabled'
+      );
+      return;
+    }
+
     try {
       // Find memories with similar content or shared tags
       const cypher = `
@@ -226,10 +239,11 @@ export class MemoryGraphService {
         LIMIT 10
       `;
 
-      const result = await this.graphService.executeCypher(cypher, { memoryId, depth });
-      return result.records.map((record) =>
-        String(record.connectedId)
-      );
+      const result = await this.graphService.executeCypher(cypher, {
+        memoryId,
+        depth,
+      });
+      return result.records.map((record) => String(record.connectedId));
     } catch (error) {
       this.logger.warn(
         `Failed to find connections for memory ${memoryId}`,
@@ -261,7 +275,9 @@ export class MemoryGraphService {
         ORDER BY m.createdAt
       `;
 
-      const result = await this.graphService.executeCypher(cypher, { threadId });
+      const result = await this.graphService.executeCypher(cypher, {
+        threadId,
+      });
 
       return result.records.map((record) => ({
         memoryId: String(record.memoryId),

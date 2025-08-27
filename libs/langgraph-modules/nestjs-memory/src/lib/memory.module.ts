@@ -6,9 +6,7 @@ import { MemoryService } from './services/memory.service';
 import { MemoryStorageService } from './services/memory-storage.service';
 import { MemoryGraphService } from './services/memory-graph.service';
 
-// Import adapters and interfaces
-import { ChromaVectorAdapter } from './adapters/chroma-vector.adapter';
-import { Neo4jGraphAdapter } from './adapters/neo4j-graph.adapter';
+// Import interfaces only - adapters moved to application layer
 import { IVectorService } from './interfaces/vector-service.interface';
 import { IGraphService } from './interfaces/graph-service.interface';
 
@@ -44,10 +42,6 @@ export class MemoryModule {
 
     // Validate adapter configuration if provided
     this.validateAdapters(options);
-
-    // Determine if custom adapters are provided
-    const hasCustomVectorAdapter = !!options.adapters?.vector;
-    const hasCustomGraphAdapter = !!options.adapters?.graph;
 
     // NOTE: Removed conditional database imports - adapters are now self-contained
     // Each adapter handles its own database connection and dependencies
@@ -194,7 +188,9 @@ export class MemoryModule {
    * Create adapter providers based on options
    * Handles both default adapters and custom adapter injection
    */
-  private static createAdapterProviders(options: MemoryModuleOptions): Provider[] {
+  private static createAdapterProviders(
+    options: MemoryModuleOptions
+  ): Provider[] {
     const providers: Provider[] = [];
 
     // Vector service adapter provider
@@ -215,11 +211,10 @@ export class MemoryModule {
         });
       }
     } else {
-      // Use default ChromaDB adapter
-      providers.push({
-        provide: IVectorService,
-        useClass: ChromaVectorAdapter,
-      });
+      // No default adapter - applications must provide their own adapters
+      throw new Error(
+        'MemoryModule requires a vector adapter. Please provide options.adapters.vector or import adapters in your application module.'
+      );
     }
 
     // Graph service adapter provider
@@ -240,11 +235,10 @@ export class MemoryModule {
         });
       }
     } else {
-      // Use default Neo4j adapter
-      providers.push({
-        provide: IGraphService,
-        useClass: Neo4jGraphAdapter,
-      });
+      // No default adapter - applications must provide their own adapters
+      throw new Error(
+        'MemoryModule requires a graph adapter. Please provide options.adapters.graph or import adapters in your application module.'
+      );
     }
 
     return providers;
@@ -252,25 +246,17 @@ export class MemoryModule {
 
   /**
    * Create adapter providers for async configuration
-   * Uses default adapters if none specified
+   * Applications must provide adapters - no defaults available
    */
-  private static createAdapterProvidersAsync(options: MemoryModuleAsyncOptions): Provider[] {
-    const providers: Provider[] = [];
-
-    // For async configuration, use default adapters since we don't have adapter options yet
-    // TODO: Extend MemoryModuleAsyncOptions to support adapter configuration if needed
-    providers.push(
-      {
-        provide: IVectorService,
-        useClass: ChromaVectorAdapter,
-      },
-      {
-        provide: IGraphService,
-        useClass: Neo4jGraphAdapter,
-      }
+  private static createAdapterProvidersAsync(
+    options: MemoryModuleAsyncOptions
+  ): Provider[] {
+    // For async configuration, applications must provide adapters through dependency injection
+    // or extend MemoryModuleAsyncOptions to support adapter configuration
+    throw new Error(
+      'MemoryModule.forRootAsync() requires adapters to be provided through dependency injection. ' +
+        'Please ensure IVectorService and IGraphService are provided in your application module.'
     );
-
-    return providers;
   }
 
   /**
@@ -285,7 +271,13 @@ export class MemoryModule {
         // NestJS will handle this during injection
       } else {
         // For instances, check if it has required methods
-        const requiredMethods = ['store', 'storeBatch', 'search', 'delete', 'getStats'];
+        const requiredMethods = [
+          'store',
+          'storeBatch',
+          'search',
+          'delete',
+          'getStats',
+        ];
         for (const method of requiredMethods) {
           if (typeof (vectorAdapter as any)[method] !== 'function') {
             throw new Error(
@@ -303,7 +295,13 @@ export class MemoryModule {
         // NestJS will handle this during injection
       } else {
         // For instances, check if it has required methods
-        const requiredMethods = ['createNode', 'createRelationship', 'traverse', 'executeCypher', 'getStats'];
+        const requiredMethods = [
+          'createNode',
+          'createRelationship',
+          'traverse',
+          'executeCypher',
+          'getStats',
+        ];
         for (const method of requiredMethods) {
           if (typeof (graphAdapter as any)[method] !== 'function') {
             throw new Error(

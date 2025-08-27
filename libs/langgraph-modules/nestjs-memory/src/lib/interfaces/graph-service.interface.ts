@@ -54,7 +54,9 @@ export abstract class IGraphService {
   /**
    * Find nodes by criteria
    */
-  abstract findNodes(criteria: GraphFindCriteria): Promise<readonly GraphNode[]>;
+  abstract findNodes(
+    criteria: GraphFindCriteria
+  ): Promise<readonly GraphNode[]>;
 
   /**
    * Delete nodes by IDs
@@ -64,7 +66,9 @@ export abstract class IGraphService {
   /**
    * Delete relationships by IDs
    */
-  abstract deleteRelationships(relationshipIds: readonly string[]): Promise<number>;
+  abstract deleteRelationships(
+    relationshipIds: readonly string[]
+  ): Promise<number>;
 
   /**
    * Run a transaction with multiple operations
@@ -85,9 +89,7 @@ export abstract class IGraphService {
     }
 
     if (nodeId.length > 100) {
-      throw new InvalidNodeError(
-        `${paramName} cannot exceed 100 characters`
-      );
+      throw new InvalidNodeError(`${paramName} cannot exceed 100 characters`);
     }
   }
 
@@ -95,7 +97,11 @@ export abstract class IGraphService {
    * Common validation for node data
    */
   protected validateNodeData(data: GraphNodeData): void {
-    if (!data.labels || !Array.isArray(data.labels) || data.labels.length === 0) {
+    if (
+      !data.labels ||
+      !Array.isArray(data.labels) ||
+      data.labels.length === 0
+    ) {
       throw new InvalidInputError('Node must have at least one label');
     }
 
@@ -114,11 +120,15 @@ export abstract class IGraphService {
    */
   protected validateRelationshipData(data: GraphRelationshipData): void {
     if (!data.type?.trim()) {
-      throw new InvalidInputError('Relationship type is required and cannot be empty');
+      throw new InvalidInputError(
+        'Relationship type is required and cannot be empty'
+      );
     }
 
     if (data.type.length > 50) {
-      throw new InvalidInputError('Relationship type cannot exceed 50 characters');
+      throw new InvalidInputError(
+        'Relationship type cannot exceed 50 characters'
+      );
     }
 
     if (!/^[A-Z_][A-Z0-9_]*$/.test(data.type)) {
@@ -128,7 +138,9 @@ export abstract class IGraphService {
     }
 
     if (data.properties && typeof data.properties !== 'object') {
-      throw new InvalidInputError('Relationship properties must be a valid object');
+      throw new InvalidInputError(
+        'Relationship properties must be a valid object'
+      );
     }
   }
 
@@ -137,13 +149,15 @@ export abstract class IGraphService {
    */
   protected validateCypherQuery(query: string): void {
     if (!query?.trim()) {
-      throw new InvalidInputError('Cypher query is required and cannot be empty');
+      throw new InvalidInputError(
+        'Cypher query is required and cannot be empty'
+      );
     }
 
     // Basic security checks
     const dangerousKeywords = ['DROP', 'DELETE ALL', 'REMOVE ALL'];
     const upperQuery = query.toUpperCase();
-    
+
     for (const keyword of dangerousKeywords) {
       if (upperQuery.includes(keyword)) {
         throw new SecurityError(
@@ -160,10 +174,10 @@ export abstract class IGraphService {
 export interface GraphNodeData {
   /** Optional node ID - if not provided, will be auto-generated */
   readonly id?: string;
-  
+
   /** Node labels (at least one required) */
   readonly labels: readonly string[];
-  
+
   /** Node properties */
   readonly properties: Record<string, unknown>;
 }
@@ -174,7 +188,7 @@ export interface GraphNodeData {
 export interface GraphRelationshipData {
   /** Relationship type (SCREAMING_SNAKE_CASE) */
   readonly type: string;
-  
+
   /** Optional relationship properties */
   readonly properties?: Record<string, unknown>;
 }
@@ -185,19 +199,19 @@ export interface GraphRelationshipData {
 export interface TraversalSpec {
   /** Maximum depth to traverse */
   readonly depth?: number;
-  
+
   /** Traversal direction */
   readonly direction?: 'IN' | 'OUT' | 'BOTH';
-  
+
   /** Filter by relationship types */
   readonly relationshipTypes?: readonly string[];
-  
+
   /** Filter by node labels */
   readonly nodeLabels?: readonly string[];
-  
+
   /** Property filter criteria */
   readonly filter?: Record<string, unknown>;
-  
+
   /** Maximum number of results */
   readonly limit?: number;
 }
@@ -208,10 +222,10 @@ export interface TraversalSpec {
 export interface GraphTraversalResult {
   /** Found nodes */
   readonly nodes: readonly GraphNode[];
-  
+
   /** Found relationships */
   readonly relationships: readonly GraphRelationship[];
-  
+
   /** Complete paths from start node */
   readonly paths: readonly GraphPath[];
 }
@@ -222,10 +236,10 @@ export interface GraphTraversalResult {
 export interface GraphNode {
   /** Node ID */
   readonly id: string;
-  
+
   /** Node labels */
   readonly labels: readonly string[];
-  
+
   /** Node properties */
   readonly properties: Record<string, unknown>;
 }
@@ -236,16 +250,16 @@ export interface GraphNode {
 export interface GraphRelationship {
   /** Relationship ID */
   readonly id: string;
-  
+
   /** Relationship type */
   readonly type: string;
-  
+
   /** Source node ID */
   readonly startNodeId: string;
-  
+
   /** Target node ID */
   readonly endNodeId: string;
-  
+
   /** Relationship properties */
   readonly properties?: Record<string, unknown>;
 }
@@ -256,10 +270,10 @@ export interface GraphRelationship {
 export interface GraphPath {
   /** Nodes in the path */
   readonly nodes: readonly GraphNode[];
-  
+
   /** Relationships connecting the nodes */
   readonly relationships: readonly GraphRelationship[];
-  
+
   /** Path length (number of relationships) */
   readonly length: number;
 }
@@ -270,7 +284,7 @@ export interface GraphPath {
 export interface GraphQueryResult {
   /** Query result records */
   readonly records: readonly Record<string, unknown>[];
-  
+
   /** Query execution summary */
   readonly summary?: {
     readonly counters?: {
@@ -291,22 +305,22 @@ export interface GraphQueryResult {
 export interface GraphStats {
   /** Total number of nodes */
   readonly nodeCount: number;
-  
+
   /** Total number of relationships */
   readonly relationshipCount: number;
-  
+
   /** Number of indexes */
   readonly indexCount: number;
-  
+
   /** Database size in bytes */
   readonly databaseSize?: number;
-  
+
   /** When statistics were last updated */
   readonly lastUpdated: Date;
-  
+
   /** Node counts by label */
   readonly nodeCountsByLabel?: Record<string, number>;
-  
+
   /** Relationship counts by type */
   readonly relationshipCountsByType?: Record<string, number>;
 }
@@ -316,11 +330,16 @@ export interface GraphStats {
  */
 export interface GraphOperation {
   /** Operation type */
-  readonly type: 'CREATE_NODE' | 'CREATE_RELATIONSHIP' | 'UPDATE_NODE' | 'DELETE_NODE' | 'CYPHER';
-  
+  readonly type:
+    | 'CREATE_NODE'
+    | 'CREATE_RELATIONSHIP'
+    | 'UPDATE_NODE'
+    | 'DELETE_NODE'
+    | 'CYPHER';
+
   /** Operation data */
   readonly data: unknown;
-  
+
   /** Optional operation ID for result correlation */
   readonly operationId?: string;
 }
@@ -331,13 +350,13 @@ export interface GraphOperation {
 export interface GraphBatchResult {
   /** Number of successful operations */
   readonly successCount: number;
-  
+
   /** Number of failed operations */
   readonly errorCount: number;
-  
+
   /** Results keyed by operation ID */
   readonly results: Record<string, unknown>;
-  
+
   /** Errors keyed by operation ID */
   readonly errors: Record<string, Error>;
 }
@@ -348,16 +367,16 @@ export interface GraphBatchResult {
 export interface GraphFindCriteria {
   /** Filter by node labels */
   readonly labels?: readonly string[];
-  
+
   /** Property filter criteria */
   readonly properties?: Record<string, unknown>;
-  
+
   /** Maximum number of results */
   readonly limit?: number;
-  
+
   /** Number of results to skip */
   readonly skip?: number;
-  
+
   /** Sort order */
   readonly orderBy?: readonly {
     readonly property: string;
@@ -413,7 +432,7 @@ export class GraphOperationError extends Error {
  * Error thrown when transactions fail
  */
 export class TransactionError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(message: string, public override readonly cause?: Error) {
     super(message);
     this.name = 'TransactionError';
   }

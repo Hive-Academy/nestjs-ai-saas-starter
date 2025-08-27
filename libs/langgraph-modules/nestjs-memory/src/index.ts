@@ -55,8 +55,8 @@ export type {
 } from './lib/interfaces/graph-service.interface';
 
 // Adapter Implementations
-export { ChromaVectorAdapter } from './lib/adapters/chroma-vector.adapter';
-export { Neo4jGraphAdapter } from './lib/adapters/neo4j-graph.adapter';
+// NOTE: Adapters have been moved to application layer for proper separation of concerns
+// Applications should implement their own adapters extending IVectorService and IGraphService
 
 // Adapter Error Types
 export {
