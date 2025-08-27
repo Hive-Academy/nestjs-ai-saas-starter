@@ -16,6 +16,27 @@
       "path": "../../libs/langgraph-modules/checkpoint"
     },
     {
+      "path": "../../libs/langgraph-modules/functional-api"
+    },
+    {
+      "path": "../../libs/langgraph-modules/nestjs-memory"
+    },
+    {
+      "path": "../../libs/langgraph-modules/monitoring"
+    },
+    {
+      "path": "../../libs/langgraph-modules/workflow-engine"
+    },
+    {
+      "path": "../../libs/langgraph-modules/time-travel"
+    },
+    {
+      "path": "../../libs/langgraph-modules/platform"
+    },
+    {
+      "path": "../../libs/langgraph-modules/multi-agent"
+    },
+    {
       "path": "../../libs/nestjs-langgraph"
     },
     {

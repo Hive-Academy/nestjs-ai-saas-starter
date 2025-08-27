@@ -8,13 +8,5 @@
     "emitDeclarationOnly": false,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
-  "references": [
-    {
-      "path": "../nestjs-neo4j/tsconfig.lib.json"
-    },
-    {
-      "path": "../nestjs-chromadb/tsconfig.lib.json"
-    }
-  ]
+  "include": ["src/**/*.ts"]
 }

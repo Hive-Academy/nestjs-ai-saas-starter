@@ -7,11 +7,10 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 import { DevbrandBackendFeatureModule } from '@devbrand/backend-feature';
 import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
-// TASK_INT_012: Memory Module with Adapter Pattern
 import {
   MemoryModule,
   ChromaVectorAdapter,
-  Neo4jGraphAdapter
+  Neo4jGraphAdapter,
 } from '@hive-academy/nestjs-memory';
 
 // Direct child module imports - Phase 3 Subtask 3.3: Modular configuration pattern
@@ -81,8 +80,8 @@ import { AdapterTestController } from './controllers/adapter-test.controller';
       ...getMemoryConfig(),
       adapters: {
         vector: ChromaVectorAdapter, // Uses existing ChromaDB configuration
-        graph: Neo4jGraphAdapter,   // Uses existing Neo4j configuration
-      }
+        graph: Neo4jGraphAdapter, // Uses existing Neo4j configuration
+      },
     }),
 
     // Direct child module imports - Independent module usage

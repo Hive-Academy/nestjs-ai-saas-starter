@@ -61,7 +61,7 @@
       "@hive-academy/nestjs-langgraph": ["libs/nestjs-langgraph/src/index.ts"],
       "@hive-academy/nestjs-neo4j": ["libs/nestjs-neo4j/src/index.ts"],
       "@hive-academy/nestjs-memory": [
-        "libs/langgraph-modules/memory/src/index.ts"
+        "libs/langgraph-modules/nestjs-memory/src/index.ts"
       ]
     }
   }
