@@ -103,9 +103,11 @@
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/nestjs-langgraph"
+      "libs/nestjs-langgraph",
+      "nestjs-memory"
     ],
     "version": {
+      "preVersionCommand": "npx nx run-many -t build",
       "conventionalCommits": true,
       "git": {
         "commit": true,

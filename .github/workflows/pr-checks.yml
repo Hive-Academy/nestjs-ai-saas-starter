@@ -27,7 +27,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm i
 
       - name: Run security audit
         run: npm audit --audit-level=moderate
@@ -57,7 +57,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm i
 
       - name: Build libraries
         run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared

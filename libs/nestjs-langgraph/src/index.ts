@@ -5,13 +5,13 @@
 // Core module and configuration
 export * from './lib/nestjs-langgraph.module';
 export * from './lib/constants';
-export * from './lib/config/memory-integration.config';
 
 // Orchestration layer - main library's core responsibility
 export * from './lib/providers';
 
-// Adapters for child module integration
-export * from './lib/adapters';
+// Adapters removed - child modules work directly through module loading
+
+// Memory architecture consolidation - REMOVED: Memory functionality moved to @hive-academy/nestjs-memory
 
 export type * from './lib/interfaces/module-options.interface';
 

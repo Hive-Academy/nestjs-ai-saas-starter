@@ -43,6 +43,38 @@ export interface LangGraphModuleOptions {
     enabled?: boolean;
     logLevel?: 'debug' | 'info' | 'warn' | 'error';
   };
+
+  // Child Module Configurations
+  // Each child module can be configured independently
+  functionalApi?: {
+    enabled?: boolean;
+    [key: string]: any;
+  };
+
+  platform?: {
+    enabled?: boolean;
+    [key: string]: any;
+  };
+
+  timeTravel?: {
+    enabled?: boolean;
+    [key: string]: any;
+  };
+
+  monitoring?: {
+    enabled?: boolean;
+    [key: string]: any;
+  };
+
+  hitl?: {
+    enabled?: boolean;
+    [key: string]: any;
+  };
+
+  workflowEngine?: {
+    enabled?: boolean;
+    [key: string]: any;
+  };
 }
 
 export interface LLMProviderConfig {
@@ -69,7 +101,13 @@ export interface CheckpointConfig {
   provider?: 'memory' | 'redis' | 'postgresql';
   config?: Record<string, any>;
   // Additional properties used by checkpoint adapter
-  storage?: 'memory' | 'sqlite' | 'redis' | 'postgresql' | 'custom' | 'database';
+  storage?:
+    | 'memory'
+    | 'sqlite'
+    | 'redis'
+    | 'postgresql'
+    | 'custom'
+    | 'database';
   storageConfig?: {
     path?: string;
     host?: string;
@@ -83,6 +121,36 @@ export interface CheckpointConfig {
 
 export interface MemoryDatabaseConfig {
   enabled?: boolean;
+  type?: 'basic' | 'enterprise';
+  databases?: {
+    vector?: {
+      type: 'chromadb';
+      autoDetect?: boolean;
+      config?: {
+        collection?: string;
+        embeddingFunction?: string;
+        host?: string;
+        port?: number;
+      };
+    };
+    graph?: {
+      type: 'neo4j';
+      autoDetect?: boolean;
+      config?: {
+        database?: string;
+        uri?: string;
+        username?: string;
+        password?: string;
+      };
+    };
+  };
+  features?: {
+    summarization?: boolean;
+    semanticSearch?: boolean;
+    retention?: boolean;
+    crossThreadPersistence?: boolean;
+  };
+  // Legacy support - will be deprecated
   chromadb?: {
     collection?: string;
     embeddingFunction?: string;
@@ -92,13 +160,18 @@ export interface MemoryDatabaseConfig {
   };
 }
 
-export interface LangGraphModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
-  useFactory?: (...args: any[]) => Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
+export interface LangGraphModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
   inject?: any[];
   useClass?: Type<LangGraphModuleOptionsFactory>;
   useExisting?: Type<LangGraphModuleOptionsFactory>;
 }
 
 export interface LangGraphModuleOptionsFactory {
-  createLangGraphOptions(): Promise<LangGraphModuleOptions> | LangGraphModuleOptions;
+  createLangGraphOptions():
+    | Promise<LangGraphModuleOptions>
+    | LangGraphModuleOptions;
 }

@@ -1,15 +1,16 @@
 import type { Provider } from '@nestjs/common';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
-import {
-  LANGGRAPH_MODULE_OPTIONS,
-  LANGGRAPH_MODULE_ID,
-} from '../constants';
+import { LANGGRAPH_MODULE_OPTIONS, LANGGRAPH_MODULE_ID } from '../constants';
 
 import {
   createLLMProviders,
   createInfrastructureProviders,
   createInfrastructureProvidersAsync,
 } from './index';
+
+// Adapter providers removed - child modules work directly through module loading
+
+// Memory providers removed - using @hive-academy/nestjs-memory instead
 
 /**
  * Create all module providers in one organized function
@@ -34,7 +35,8 @@ export function createModuleProviders(
     moduleIdProvider,
     ...createLLMProviders(options),
     ...createInfrastructureProviders(options),
-    // Child module providers handled via adapters
+    // Memory providers removed - using @hive-academy/nestjs-memory instead
+    // Adapter providers removed - child modules work directly through module loading
   ];
 }
 
@@ -56,6 +58,7 @@ export function createModuleProvidersAsync(
     ...asyncProviders,
     ...createLLMProviders(options),
     ...createInfrastructureProvidersAsync(),
-    // Child module providers handled via adapters
+    // Memory providers removed - using @hive-academy/nestjs-memory instead
+    // Adapter providers removed - child modules work directly through module loading
   ];
 }

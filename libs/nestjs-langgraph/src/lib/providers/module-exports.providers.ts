@@ -15,7 +15,8 @@ import {
   INFRASTRUCTURE_EXPORTS,
 } from './index';
 
-import { ADAPTER_EXPORTS } from '../adapters';
+// Adapter exports removed - child modules work directly
+// Memory exports removed - using @hive-academy/nestjs-memory instead
 
 /**
  * Create all module exports in one organized function
@@ -29,8 +30,9 @@ export function createModuleExports(): any[] {
     // TOOL_REGISTRY, // Removed - no corresponding provider exists
     // STREAM_MANAGER, // Removed - no corresponding provider exists
 
-    // Adapters for backward compatibility
-    ...ADAPTER_EXPORTS,
+    // Memory services removed - using @hive-academy/nestjs-memory instead
+
+    // Adapters removed - child modules work directly through module loading
 
     // All service exports
     ...CORE_EXPORTS,
