@@ -6,17 +6,23 @@
   "tags": ["domain:chromadb", "type:data-access"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/nestjs-chromadb",
         "main": "libs/nestjs-chromadb/src/index.ts",
         "tsConfig": "libs/nestjs-chromadb/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
         "assets": [
-          "libs/nestjs-chromadb/*.md",
           {
             "input": "./libs/nestjs-chromadb",
-            "glob": "**/*.!(ts)",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/nestjs-chromadb",
+            "glob": "package.json",
             "output": "./"
           }
         ]

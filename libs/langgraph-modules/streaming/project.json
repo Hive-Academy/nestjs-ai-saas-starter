@@ -6,14 +6,26 @@
   "tags": ["domain:langgraph", "type:data-access", "module:streaming"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/streaming",
         "tsConfig": "libs/langgraph-modules/streaming/tsconfig.lib.json",
-        "packageJson": "libs/langgraph-modules/streaming/package.json",
         "main": "libs/langgraph-modules/streaming/src/index.ts",
-        "assets": ["libs/langgraph-modules/streaming/*.md"]
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "assets": [
+          {
+            "input": "./libs/langgraph-modules/streaming",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/streaming",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
       }
     }
   }

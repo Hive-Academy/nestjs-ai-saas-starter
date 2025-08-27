@@ -1,0 +1,32 @@
+{
+  "name": "langgraph-modules/workflow-engine",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/workflow-engine/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph", "type:feature", "module:workflow-engine"],
+  "targets": {
+    "build": {
+      "executor": "@nx/rollup:rollup",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/langgraph-modules/workflow-engine",
+        "main": "libs/langgraph-modules/workflow-engine/src/index.ts",
+        "tsConfig": "libs/langgraph-modules/workflow-engine/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "assets": [
+          {
+            "input": "./libs/langgraph-modules/workflow-engine",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/workflow-engine",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
+      }
+    }
+  }
+}

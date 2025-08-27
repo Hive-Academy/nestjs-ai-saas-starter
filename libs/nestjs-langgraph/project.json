@@ -6,17 +6,23 @@
   "tags": ["domain:langgraph", "type:data-access"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/nestjs-langgraph",
         "main": "libs/nestjs-langgraph/src/index.ts",
         "tsConfig": "libs/nestjs-langgraph/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
         "assets": [
-          "libs/nestjs-langgraph/*.md",
           {
             "input": "./libs/nestjs-langgraph",
-            "glob": "**/*.!(ts)",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/nestjs-langgraph",
+            "glob": "package.json",
             "output": "./"
           }
         ]

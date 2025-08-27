@@ -5,5 +5,29 @@
   "projectType": "library",
   "tags": ["scope:devbrand type:data-access platform:backend"],
   "// targets": "to see all targets run: nx show project devbrand-backend-feature --web",
-  "targets": {}
+  "targets": {
+    "build": {
+      "executor": "@nx/rollup:rollup",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/dev-brand/backend/feature",
+        "main": "libs/dev-brand/backend/feature/src/index.ts",
+        "tsConfig": "libs/dev-brand/backend/feature/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "assets": [
+          {
+            "input": "./libs/dev-brand/backend/feature",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/dev-brand/backend/feature",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
+      }
+    }
+  }
 }

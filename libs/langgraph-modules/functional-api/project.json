@@ -5,5 +5,29 @@
   "projectType": "library",
   "tags": ["domain:langgraph type:data-access"],
   "// targets": "to see all targets run: nx show project langgraph-modules/functional-api --web",
-  "targets": {}
+  "targets": {
+    "build": {
+      "executor": "@nx/rollup:rollup",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/langgraph-modules/functional-api",
+        "main": "libs/langgraph-modules/functional-api/src/index.ts",
+        "tsConfig": "libs/langgraph-modules/functional-api/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "assets": [
+          {
+            "input": "./libs/langgraph-modules/functional-api",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/functional-api",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
+      }
+    }
+  }
 }

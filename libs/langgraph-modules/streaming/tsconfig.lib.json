@@ -9,6 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
     "target": "es2021",
+    "module": "ES2022",
+    "moduleResolution": "node",
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,

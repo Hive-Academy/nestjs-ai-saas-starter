@@ -8,14 +8,26 @@
   ],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/hitl",
-        "tsConfig": "libs/langgraph-modules/hitl/tsconfig.lib.json",
-        "packageJson": "libs/langgraph-modules/hitl/package.json",
         "main": "libs/langgraph-modules/hitl/src/index.ts",
-        "assets": ["libs/langgraph-modules/hitl/*.md"]
+        "tsConfig": "libs/langgraph-modules/hitl/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "assets": [
+          {
+            "input": "./libs/langgraph-modules/hitl",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/hitl",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
       }
     }
   },

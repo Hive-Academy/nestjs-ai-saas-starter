@@ -6,6 +6,8 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
+    "module": "ES2022",
+    "moduleResolution": "node",
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

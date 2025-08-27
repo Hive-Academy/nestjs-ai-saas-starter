@@ -24,9 +24,12 @@
       "Bash(npx nx test:*)",
       "Bash(mkdir:*)",
       "Bash(npx nx:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm publish:*)"
     ],
-    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
+    "additionalDirectories": [
+      "d:\\projects\\nestjs-ai-saas-starter"
+    ]
   },
   "enabledMcpjsonServers": [
     "browser",

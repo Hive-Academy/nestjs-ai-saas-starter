@@ -1,0 +1,32 @@
+{
+  "name": "langgraph-modules/core",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/core/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph", "type:data-access", "module:core"],
+  "targets": {
+    "build": {
+      "executor": "@nx/rollup:rollup",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/langgraph-modules/core",
+        "main": "libs/langgraph-modules/core/src/index.ts",
+        "tsConfig": "libs/langgraph-modules/core/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "assets": [
+          {
+            "input": "./libs/langgraph-modules/core",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/core",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
+      }
+    }
+  }
+}

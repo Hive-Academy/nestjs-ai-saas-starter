@@ -1,9 +1,0 @@
-{
-  "name": "devbrand-backend-feature",
-  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/dev-brand/backend/feature/src",
-  "projectType": "library",
-  "tags": ["scope:devbrand type:data-access platform:backend"],
-  "// targets": "to see all targets run: nx show project devbrand-backend-feature --web",
-  "targets": {}
-}
