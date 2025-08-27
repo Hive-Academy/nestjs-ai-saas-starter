@@ -46,6 +46,10 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 import { AdapterTestService } from './services/adapter-test.service';
 import { AdapterTestController } from './controllers/adapter-test.controller';
 
+// Health check imports for Phase 1 Subtask 1.3
+import { TerminusModule } from '@nestjs/terminus';
+import { HealthController } from './controllers/health.controller';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -96,6 +100,9 @@ import { AdapterTestController } from './controllers/adapter-test.controller';
     TimeTravelModule.forRoot(getTimeTravelConfig()),
     WorkflowEngineModule.forRoot(getWorkflowEngineConfig()),
 
+    // Health checks module for Phase 1 Subtask 1.3
+    TerminusModule,
+
     DevbrandBackendFeatureModule,
   ],
   providers: [
@@ -105,6 +112,9 @@ import { AdapterTestController } from './controllers/adapter-test.controller';
   controllers: [
     // Phase 1 test controller to expose verification endpoints
     AdapterTestController,
+
+    // Phase 1 health check controller for Subtask 1.3
+    HealthController,
   ],
   exports: [
     // TASK_INT_012: Export Memory Module services for other modules
