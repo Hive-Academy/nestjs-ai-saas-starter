@@ -1,0 +1,9 @@
+{
+  "name": "langgraph-modules/functional-api",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/functional-api/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph type:data-access"],
+  "// targets": "to see all targets run: nx show project langgraph-modules/functional-api --web",
+  "targets": {}
+}
