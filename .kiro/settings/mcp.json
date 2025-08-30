@@ -13,6 +13,30 @@
       "autoApprove": [
         "nx_docs"
       ]
+    },
+
+    "angular-cli": {
+      "command": "cmd.exe",
+      "args": ["/c", "npx", "-y", "@angular/cli", "mcp"]
+    },
+
+    "neo4j-graph-data-modeling": {
+      "command": "uvx",
+      "args": ["mcp-neo4j-data-modeling@0.1.1"],
+      "disabled": true
+    },
+
+    "chroma": {
+      "command": "uvx",
+      "args": [
+        "chroma-mcp",
+        "--client-type",
+        "persistent",
+        "--data-dir",
+        "/data/chromadb"
+      ],
+      "disabled": true
     }
+
   }
 }

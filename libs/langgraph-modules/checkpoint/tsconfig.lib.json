@@ -10,7 +10,7 @@
     "types": ["node"],
     "target": "es2021",
     "module": "ES2022",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,

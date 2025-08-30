@@ -6,25 +6,15 @@
   "tags": ["domain:langgraph", "type:data-access", "module:checkpoint"],
   "targets": {
     "build": {
-      "executor": "@nx/rollup:rollup",
+      "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/checkpoint",
-        "main": "libs/langgraph-modules/checkpoint/src/index.ts",
         "tsConfig": "libs/langgraph-modules/checkpoint/tsconfig.lib.json",
-        "format": ["cjs"],
-        "useLegacyTypescriptPlugin": false,
+        "packageJson": "libs/langgraph-modules/checkpoint/package.json",
+        "main": "libs/langgraph-modules/checkpoint/src/index.ts",
         "assets": [
-          {
-            "input": "./libs/langgraph-modules/checkpoint",
-            "glob": "*.md",
-            "output": "./"
-          },
-          {
-            "input": "./libs/langgraph-modules/checkpoint",
-            "glob": "package.json",
-            "output": "./"
-          }
+          "libs/langgraph-modules/checkpoint/*.md"
         ]
       }
     }

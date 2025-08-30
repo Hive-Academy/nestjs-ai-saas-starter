@@ -13,6 +13,8 @@
         "main": "libs/langgraph-modules/workflow-engine/src/index.ts",
         "tsConfig": "libs/langgraph-modules/workflow-engine/tsconfig.lib.json",
         "format": ["cjs", "esm"],
+        "buildLibsFromSource": true,
+        "external": ["@hive-academy/langgraph-streaming"],
         "useLegacyTypescriptPlugin": false,
         "assets": [
           {

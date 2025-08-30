@@ -9,12 +9,11 @@ import {
 } from '../interfaces';
 import {
   getWorkflowMetadata,
-} from '@hive-academy/langgraph-functional-api';
-import { NodeMetadata, getWorkflowNodes } from '@hive-academy/langgraph-functional-api';
-import { EdgeMetadata, getWorkflowEdges } from '@hive-academy/langgraph-functional-api';
-import {
+  getWorkflowNodes,
+  getWorkflowEdges,
   getAllStreamingMetadata,
 } from '@hive-academy/langgraph-functional-api';
+import type { NodeMetadata, EdgeMetadata } from '@hive-academy/langgraph-functional-api';
 
 // Placeholder types for streaming metadata
 interface StreamTokenMetadata {

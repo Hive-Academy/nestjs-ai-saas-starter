@@ -1,21 +1,24 @@
 // Module
 export * from './lib/core.module';
 
-// Constants
+// Constants (runtime exports)
 export * from './lib/constants';
 
-// Shared Interfaces (used by all modules)
+// Interfaces (type-only exports)
 export type * from './lib/interfaces/workflow.interface';
-export type * from './lib/interfaces/workflow-config.interface';
 export type * from './lib/interfaces/node.interface';
 export type * from './lib/interfaces/state-management.interface';
 export type * from './lib/interfaces/module-options.interface';
 
-// Annotations
+// Workflow config interface (both type and runtime export for WorkflowExecutionConfig)
+export type { WorkflowExecutionConfig } from './lib/interfaces/workflow-config.interface';
+
+// Enums and runtime values from interfaces
+export { CommandType } from './lib/interfaces';
+export type { NodeHandler } from './lib/interfaces';
+
+// Annotations (runtime exports)
 export * from './lib/annotations';
 
-// Utils
+// Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';
-
-// Re-export all interfaces
-export * from './lib/interfaces';

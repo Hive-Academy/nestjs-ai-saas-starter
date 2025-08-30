@@ -14,6 +14,8 @@
         "main": "libs/langgraph-modules/time-travel/src/index.ts",
         "tsConfig": "libs/langgraph-modules/time-travel/tsconfig.lib.json",
         "format": ["cjs", "esm"],
+        "buildLibsFromSource": true,
+        "external": ["@hive-academy/langgraph-checkpoint"],
         "useLegacyTypescriptPlugin": false,
         "assets": [
           {

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState } from '@hive-academy/langgraph-core';
+import type { WorkflowState } from '@hive-academy/langgraph-core';
 
 /**
  * Feedback type enumeration

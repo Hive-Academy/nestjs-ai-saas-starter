@@ -2,13 +2,15 @@
   "name": "@devbrand/backend-feature",
   "version": "0.0.1",
   "private": true,
-  "main": "./dist/index.ts",
-  "types": "./dist/index.ts",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.ts",
-      "import": "./dist/index.ts",
-      "default": "./dist/index.ts"
+      "types": "./index.d.ts",
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js",
+      "default": "./index.cjs.js"
     },
     "./package.json": "./package.json"
   },

@@ -1,8 +1,8 @@
 // Module
-export * from './lib/langgraph-modules/checkpoint.module';
+export { LanggraphModulesCheckpointModule } from './lib/langgraph-modules/checkpoint.module';
 
 // Core services (SOLID architecture)
-export * from './lib/core/checkpoint-manager.service';
+export { CheckpointManagerService } from './lib/core/checkpoint-manager.service';
 export * from './lib/core/checkpoint-saver.factory';
 export * from './lib/core/checkpoint-registry.service';
 export * from './lib/core/checkpoint-persistence.service';

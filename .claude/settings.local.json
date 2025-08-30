@@ -25,7 +25,8 @@
       "Bash(mkdir:*)",
       "Bash(npx nx:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm publish:*)"
+      "Bash(npm publish:*)",
+      "Bash(git add:*)"
     ],
     "additionalDirectories": [
       "d:\\projects\\nestjs-ai-saas-starter"

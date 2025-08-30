@@ -73,12 +73,9 @@ import { HealthController } from './controllers/health.controller';
         getNeo4jConfig(configService),
     }),
 
-    // Phase 3 Subtask 3.3: Direct module imports replacing centralized orchestration
-    // Core LangGraph Module with minimal essential configuration
     NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
 
-    // TASK_INT_012: Memory Module with Adapter Pattern
-    // Uses existing ChromaDB/Neo4j through adapters - NO direct database coupling!
+
     MemoryModule.forRoot({
       ...getMemoryConfig(),
       adapters: {
@@ -117,9 +114,6 @@ import { HealthController } from './controllers/health.controller';
     HealthController,
   ],
   exports: [
-    // TASK_INT_012: Export Memory Module services for other modules
-    // These services now use the adapter pattern with ChromaDB/Neo4j
-    // MemoryService, MemoryStorageService, MemoryGraphService are available
   ],
 })
 export class AppModule {}

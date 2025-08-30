@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
+import type { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
 
 /**
  * Proposed action for human approval

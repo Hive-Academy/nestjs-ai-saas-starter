@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WorkflowState } from '@hive-academy/langgraph-core';
+import type { WorkflowState } from '@hive-academy/langgraph-core';
 
 /**
  * Service for handling workflow routing logic

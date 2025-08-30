@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState } from '@hive-academy/langgraph-core';
+import type { WorkflowState } from '@hive-academy/langgraph-core';
 import { ApprovalRiskLevel } from '../decorators/approval.decorator';
 import { HITL_EVENTS, RISK_WEIGHTS } from '../constants';
 
