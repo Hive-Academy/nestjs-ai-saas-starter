@@ -6,17 +6,24 @@
   "tags": ["domain:neo4j", "type:data-access"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/nestjs-neo4j",
         "main": "libs/nestjs-neo4j/src/index.ts",
         "tsConfig": "libs/nestjs-neo4j/tsconfig.lib.json",
+        "rollupConfig": "libs/nestjs-neo4j/rollup.config.js",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
         "assets": [
-          "libs/nestjs-neo4j/*.md",
           {
             "input": "./libs/nestjs-neo4j",
-            "glob": "**/*.!(ts)",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/nestjs-neo4j",
+            "glob": "package.json",
             "output": "./"
           }
         ]

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import type { LangGraphModuleOptions } from '@hive-academy/langgraph-core';
 import { Inject, Optional } from '@nestjs/common';
+import type { LangGraphModuleOptions } from '@hive-academy/langgraph-core';
 import { LANGGRAPH_MODULE_OPTIONS } from '@hive-academy/langgraph-core';
 
 export interface CacheEntry<T = any> {

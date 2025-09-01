@@ -34,7 +34,7 @@
   private async generateEmbedding(text: string): Promise<readonly number[]> {
     return Array.from({ length: dimension }, () => Math.random());
   }
-  
+
   // Line 542: Doesn't use LLM for summarization
   private createSimpleSummary(messages: BaseMessage[]): string {
     return `Summary of ${messages.length} messages...`;
@@ -115,7 +115,7 @@ Feature: NestJS LangGraph Enhancement Completion
 
   Scenario: AC1 - Child Module Integration Works
     Given the main library is configured with child modules
-    When I import @libs/nestjs-langgraph
+    When I import @libs/langgraph-modules/nestjs-langgraph
     Then all configured child modules should load successfully
     And child module services should be available for injection
 
@@ -146,12 +146,12 @@ Feature: NestJS LangGraph Enhancement Completion
 
 ## Risk Analysis Matrix
 
-| Risk | Probability | Impact | Mitigation Strategy |
-|------|------------|--------|-------------------|
-| Integration complexity | High | High | Start with single module integration, test incrementally |
-| Memory service LLM costs | Medium | Medium | Implement provider abstraction with fallback to local models |
-| Time-Travel refactoring breaking existing functionality | Medium | High | Implement facade pattern to maintain backward compatibility |
-| Monitoring module scope creep | Low | Medium | Focus on core metrics first, build incrementally |
+| Risk                                                    | Probability | Impact | Mitigation Strategy                                          |
+| ------------------------------------------------------- | ----------- | ------ | ------------------------------------------------------------ |
+| Integration complexity                                  | High        | High   | Start with single module integration, test incrementally     |
+| Memory service LLM costs                                | Medium      | Medium | Implement provider abstraction with fallback to local models |
+| Time-Travel refactoring breaking existing functionality | Medium      | High   | Implement facade pattern to maintain backward compatibility  |
+| Monitoring module scope creep                           | Low         | Medium | Focus on core metrics first, build incrementally             |
 
 ## Dependencies & Constraints
 

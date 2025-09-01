@@ -3,7 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/dev-brand-api/src",
   "projectType": "application",
-  "tags": [],
+  "tags": ["scope:devbrand", "type:app", "platform:backend"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
@@ -18,10 +18,37 @@
       }
     },
     "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": [],
+      "options": {
+        "buildTarget": "dev-brand-api:build-dev",
+        "watch": true,
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "buildTarget": "dev-brand-api:build"
+        }
+      }
+    },
+    "build-dev": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "dependsOn": [],
+      "options": {
+        "outputPath": "dist/apps/dev-brand-api",
+        "main": "apps/dev-brand-api/src/main.ts",
+        "tsConfig": "apps/dev-brand-api/tsconfig.app.json",
+        "assets": ["apps/dev-brand-api/src/assets"],
+        "clean": false
+      }
+    },
+    "serve:webpack": {
       "continuous": true,
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": ["build"],
       "options": {
         "buildTarget": "dev-brand-api:build",
         "runBuildTargetDependencies": false

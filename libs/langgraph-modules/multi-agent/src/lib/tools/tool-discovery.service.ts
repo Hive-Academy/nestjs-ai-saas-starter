@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@nestjs/core';
+import { DiscoveryService } from '@nestjs-plus/discovery';
 import { ModuleRef } from '@nestjs/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
@@ -495,7 +495,10 @@ export class ToolDiscoveryService implements OnModuleInit {
   // Private helper methods
 
   private async discoverFromAllProviders(): Promise<ProviderDiscoveryResult[]> {
-    const providers = this.discoveryService.getProviders();
+    // Discover all providers that have instances
+    const providers = await this.discoveryService.providers(
+      (discoveredClass) => discoveredClass.instance != null
+    );
     const results: ProviderDiscoveryResult[] = [];
 
     // Process providers in batches to respect concurrency limits
@@ -700,8 +703,8 @@ export class ToolDiscoveryService implements OnModuleInit {
   }
 
   private async registerToolWithRegistry(
-    metadata: ToolMetadata,
-    instance: any
+    _metadata: ToolMetadata,
+    _instance: any
   ): Promise<void> {
     // The ToolRegistryService handles the actual registration logic
     // This is a placeholder for any additional processing needed

@@ -2,16 +2,17 @@
   "name": "@hive-academy/langgraph-checkpoint",
   "version": "0.0.1",
   "private": false,
-  "main": "./src/index.js",
-  "module": "./src/index.js",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
   "types": "./src/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
       "types": "./src/index.d.ts",
-      "import": "./src/index.js",
-      "default": "./src/index.js"
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js",
+      "default": "./index.esm.js"
     }
   },
   "nx": {
@@ -43,7 +44,8 @@
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
-    "@langchain/langgraph": "^0.4.0"
+    "@langchain/langgraph": "^0.4.0",
+    "@hive-academy/langgraph-core": "0.0.1"
   },
   "optionalDependencies": {
     "ioredis": "^5.0.0",
@@ -52,7 +54,6 @@
     "sqlite3": "^5.0.0"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@hive-academy/langgraph-core": "0.0.1"
+    "tslib": "^2.3.0"
   }
 }

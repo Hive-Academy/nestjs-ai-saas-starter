@@ -1,25 +1,33 @@
-import { Inject, Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BaseMessage } from '@langchain/core/messages';
 import { StateGraph } from '@langchain/langgraph';
 import { Observable, Subject, filter, map, Subscription } from 'rxjs';
-import {
+import type {
   StreamUpdate,
-  StreamEventType,
   StreamMetadata,
-  // StreamContext, // Currently unused
   TokenData,
-} from '@hive-academy/langgraph-streaming';
-import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
-import { MetadataProcessorService } from '../core/metadata-processor.service';
-import {
   StreamTokenMetadata,
   StreamEventMetadata,
   StreamProgressMetadata,
+} from '@hive-academy/langgraph-streaming';
+import {
+  StreamEventType,
   getStreamTokenMetadata,
   getStreamEventMetadata,
   getStreamProgressMetadata,
+  StreamTokenDecoratorMetadata,
+  StreamEventDecoratorMetadata,
+  StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
+import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
+import { MetadataProcessorService } from '../core/metadata-processor.service';
 
 /**
  * Service for managing multi-level streaming of workflow execution
@@ -31,15 +39,24 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WorkflowStreamService.name);
   private readonly streams = new Map<string, Subject<StreamUpdate>>();
   private readonly sequenceCounters = new Map<string, number>();
-  private readonly tokenStreamConfigs = new Map<string, StreamTokenMetadata>();
-  private readonly eventStreamConfigs = new Map<string, StreamEventMetadata>();
-  private readonly progressStreamConfigs = new Map<string, StreamProgressMetadata>();
+  private readonly tokenStreamConfigs = new Map<
+    string,
+    StreamTokenDecoratorMetadata
+  >();
+  private readonly eventStreamConfigs = new Map<
+    string,
+    StreamEventDecoratorMetadata
+  >();
+  private readonly progressStreamConfigs = new Map<
+    string,
+    StreamProgressDecoratorMetadata
+  >();
   private readonly activeSubscriptions = new Set<Subscription>();
   private readonly streamingEnabled = new Map<string, boolean>();
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
-    private readonly metadataProcessor: MetadataProcessorService,
+    private readonly metadataProcessor: MetadataProcessorService
   ) {}
 
   /**
@@ -82,24 +99,48 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     workflowClass: any,
-    methodName: string,
+    methodName: string
   ): void {
-    const tokenMetadata = getStreamTokenMetadata(workflowClass.prototype, methodName);
+    const tokenMetadata = getStreamTokenMetadata(
+      workflowClass.prototype,
+      methodName
+    );
     if (tokenMetadata?.enabled) {
       this.tokenStreamConfigs.set(`${executionId}:${nodeId}`, tokenMetadata);
-      this.logger.debug(`Configured token streaming for ${nodeId}: ${JSON.stringify(tokenMetadata)}`);
+      this.logger.debug(
+        `Configured token streaming for ${nodeId}: ${JSON.stringify(
+          tokenMetadata
+        )}`
+      );
     }
 
-    const eventMetadata = getStreamEventMetadata(workflowClass.prototype, methodName);
+    const eventMetadata = getStreamEventMetadata(
+      workflowClass.prototype,
+      methodName
+    );
     if (eventMetadata?.enabled) {
       this.eventStreamConfigs.set(`${executionId}:${nodeId}`, eventMetadata);
-      this.logger.debug(`Configured event streaming for ${nodeId}: ${JSON.stringify(eventMetadata)}`);
+      this.logger.debug(
+        `Configured event streaming for ${nodeId}: ${JSON.stringify(
+          eventMetadata
+        )}`
+      );
     }
 
-    const progressMetadata = getStreamProgressMetadata(workflowClass.prototype, methodName);
+    const progressMetadata = getStreamProgressMetadata(
+      workflowClass.prototype,
+      methodName
+    );
     if (progressMetadata?.enabled) {
-      this.progressStreamConfigs.set(`${executionId}:${nodeId}`, progressMetadata);
-      this.logger.debug(`Configured progress streaming for ${nodeId}: ${JSON.stringify(progressMetadata)}`);
+      this.progressStreamConfigs.set(
+        `${executionId}:${nodeId}`,
+        progressMetadata
+      );
+      this.logger.debug(
+        `Configured progress streaming for ${nodeId}: ${JSON.stringify(
+          progressMetadata
+        )}`
+      );
     }
   }
 
@@ -108,13 +149,14 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   initializeStreamingFromDefinition(
     executionId: string,
-    workflowClass: any,
+    workflowClass: any
   ): void {
     try {
-      const definition = this.metadataProcessor.extractWorkflowDefinition(workflowClass);
+      const definition =
+        this.metadataProcessor.extractWorkflowDefinition(workflowClass);
 
       // Configure streaming for each node that has streaming metadata
-      definition.nodes.forEach(node => {
+      definition.nodes.forEach((node) => {
         const streamingMetadata = node.config?.metadata?.streaming;
         if (streamingMetadata) {
           const nodeKey = `${executionId}:${node.id}`;
@@ -131,10 +173,18 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         }
       });
 
-      this.streamingEnabled.set(executionId, definition.config?.streaming || false);
-      this.logger.log(`Initialized streaming configuration for execution ${executionId}`);
+      this.streamingEnabled.set(
+        executionId,
+        definition.config?.streaming || false
+      );
+      this.logger.log(
+        `Initialized streaming configuration for execution ${executionId}`
+      );
     } catch (error) {
-      this.logger.error(`Failed to initialize streaming configuration for ${executionId}:`, error);
+      this.logger.error(
+        `Failed to initialize streaming configuration for ${executionId}:`,
+        error
+      );
     }
   }
 
@@ -146,7 +196,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     input: any,
     config: any,
     executionId: string,
-    workflowClass?: any,
+    workflowClass?: any
   ): AsyncGenerator<StreamUpdate> {
     const stream = this.streams.get(executionId);
     if (!stream) {
@@ -163,7 +213,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       yield this.createUpdate(
         StreamEventType.NODE_START,
         { message: 'Workflow execution started' },
-        executionId,
+        executionId
       );
 
       // Get the compiled graph
@@ -183,7 +233,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           yield this.createUpdate(
             StreamEventType.VALUES,
             chunk.values,
-            executionId,
+            executionId
           );
         }
 
@@ -191,7 +241,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           yield this.createUpdate(
             StreamEventType.UPDATES,
             chunk.updates,
-            executionId,
+            executionId
           );
         }
 
@@ -203,14 +253,19 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
             if (tokenConfig?.enabled && message.content) {
               // Stream tokens if enabled
-              yield* this.streamMessageTokens(executionId, nodeId, message, tokenConfig);
+              yield* this.streamMessageTokens(
+                executionId,
+                nodeId,
+                message,
+                tokenConfig
+              );
             } else {
               // Stream regular message
               yield this.createUpdate(
                 StreamEventType.MESSAGES,
                 message,
                 executionId,
-                { nodeId },
+                { nodeId }
               );
             }
           }
@@ -222,21 +277,27 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           const eventConfig = this.getEventStreamConfig(executionId, nodeId);
 
           if (eventConfig?.enabled) {
-            const filteredEvents = this.filterEvents(chunk.events as any[], eventConfig);
-            const transformedEvents = this.transformEvents(filteredEvents, eventConfig);
+            const filteredEvents = this.filterEvents(
+              chunk.events as any[],
+              eventConfig
+            );
+            const transformedEvents = this.transformEvents(
+              filteredEvents,
+              eventConfig
+            );
 
             yield this.createUpdate(
               StreamEventType.EVENTS,
               transformedEvents,
               executionId,
-              { nodeId, eventConfig: eventConfig },
+              { nodeId, eventConfig: eventConfig }
             );
           } else {
             yield this.createUpdate(
               StreamEventType.EVENTS,
               chunk.events,
               executionId,
-              { nodeId },
+              { nodeId }
             );
           }
         }
@@ -245,7 +306,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           yield this.createUpdate(
             StreamEventType.DEBUG,
             chunk.debug,
-            executionId,
+            executionId
           );
         }
 
@@ -255,25 +316,22 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
       // Get final state
       const finalState = await compiledGraph.invoke(input, config);
-      yield this.createUpdate(
-        StreamEventType.FINAL,
-        finalState,
-        executionId,
-      );
+      yield this.createUpdate(StreamEventType.FINAL, finalState, executionId);
 
       yield this.createUpdate(
         StreamEventType.NODE_COMPLETE,
         { message: 'Workflow execution completed' },
-        executionId,
+        executionId
       );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Stream error for ${executionId}:`, error);
       yield this.createUpdate(
         StreamEventType.ERROR,
         { error: errorMessage, stack: errorStack },
-        executionId,
+        executionId
       );
       throw error;
     } finally {
@@ -288,13 +346,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     message: any,
-    config: StreamTokenMetadata,
+    config: StreamTokenMetadata
   ): AsyncGenerator<StreamUpdate> {
     if (!message.content || typeof message.content !== 'string') {
       return;
     }
 
-    const {content} = message;
+    const { content } = message;
     const tokens = this.tokenizeContent(content, config);
     let accumulatedContent = '';
 
@@ -331,7 +389,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
             tokenConfig: config,
             accumulated: accumulatedContent,
             progress: ((i + 1) / tokens.length) * 100,
-          },
+          }
         );
 
         yield update;
@@ -345,7 +403,9 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         // Apply flush interval throttling
         if (config.flushInterval && config.flushInterval > 0) {
-          await new Promise(resolve => setTimeout(resolve, config.flushInterval));
+          await new Promise((resolve) =>
+            setTimeout(resolve, config.flushInterval)
+          );
         }
       }
 
@@ -356,7 +416,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         tokenCount: tokens.length,
       });
     } catch (error) {
-      this.logger.error(`Token streaming error for ${executionId}:${nodeId}:`, error);
+      this.logger.error(
+        `Token streaming error for ${executionId}:${nodeId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -368,9 +431,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     llmStream: AsyncGenerator<any>,
-    config?: StreamTokenMetadata,
+    config?: StreamTokenMetadata
   ): AsyncGenerator<StreamUpdate> {
-    const tokenConfig = config || this.getTokenStreamConfig(executionId, nodeId);
+    const tokenConfig =
+      config || this.getTokenStreamConfig(executionId, nodeId);
     if (!tokenConfig?.enabled) {
       // Fallback to simple token streaming if no config
       yield* this.streamSimpleTokens(executionId, nodeId, llmStream);
@@ -384,7 +448,9 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     try {
       for await (const chunk of llmStream) {
         const content = chunk.content || '';
-        if (!content) {continue;}
+        if (!content) {
+          continue;
+        }
 
         // Add to buffer
         tokenBuffer.push(content);
@@ -397,7 +463,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         // Process token if processor is configured
         const processedContent = tokenConfig.processor
-          ? tokenConfig.processor(content, { index: tokenIndex, nodeId, executionId })
+          ? tokenConfig.processor(content, {
+              index: tokenIndex,
+              nodeId,
+              executionId,
+            })
           : content;
 
         const tokenData: TokenData = {
@@ -415,7 +485,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
             nodeId,
             tokenConfig,
             bufferSize: tokenBuffer.length,
-          },
+          }
         );
 
         yield update;
@@ -429,19 +499,31 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         // Flush buffer if needed
         if (tokenBuffer.length >= (tokenConfig.bufferSize || 50)) {
-          await this.flushTokenBuffer(executionId, nodeId, tokenBuffer, tokenConfig);
+          await this.flushTokenBuffer(
+            executionId,
+            nodeId,
+            tokenBuffer,
+            tokenConfig
+          );
           tokenBuffer.length = 0;
         }
 
         // Apply throttling
         if (tokenConfig.flushInterval && tokenConfig.flushInterval > 0) {
-          await new Promise(resolve => setTimeout(resolve, tokenConfig.flushInterval));
+          await new Promise((resolve) =>
+            setTimeout(resolve, tokenConfig.flushInterval)
+          );
         }
       }
 
       // Flush remaining buffer
       if (tokenBuffer.length > 0) {
-        await this.flushTokenBuffer(executionId, nodeId, tokenBuffer, tokenConfig);
+        await this.flushTokenBuffer(
+          executionId,
+          nodeId,
+          tokenBuffer,
+          tokenConfig
+        );
       }
 
       // Emit complete message
@@ -451,7 +533,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         tokenCount: tokenIndex,
       });
     } catch (error) {
-      this.logger.error(`Enhanced token stream error for ${executionId}:`, error);
+      this.logger.error(
+        `Enhanced token stream error for ${executionId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -462,7 +547,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private async *streamSimpleTokens(
     executionId: string,
     nodeId: string,
-    llmStream: AsyncGenerator<any>,
+    llmStream: AsyncGenerator<any>
   ): AsyncGenerator<StreamUpdate> {
     let tokenIndex = 0;
     let totalContent = '';
@@ -481,7 +566,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           StreamEventType.TOKEN,
           tokenData,
           executionId,
-          { nodeId },
+          { nodeId }
         );
 
         yield update;
@@ -508,12 +593,12 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     progress: number,
     message?: string,
-    metadata?: any,
+    metadata?: any
   ): void {
     const update = this.createUpdate(
       StreamEventType.PROGRESS,
       { progress, message, ...metadata },
-      executionId,
+      executionId
     );
 
     const stream = this.streams.get(executionId);
@@ -527,15 +612,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Emit milestone
    */
-  emitMilestone(
-    executionId: string,
-    milestone: string,
-    metadata?: any,
-  ): void {
+  emitMilestone(executionId: string, milestone: string, metadata?: any): void {
     const update = this.createUpdate(
       StreamEventType.MILESTONE,
       { milestone, ...metadata },
-      executionId,
+      executionId
     );
 
     const stream = this.streams.get(executionId);
@@ -551,12 +632,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   getFilteredStream(
     executionId: string,
-    eventTypes: StreamEventType[],
+    eventTypes: StreamEventType[]
   ): Observable<StreamUpdate> {
     const stream = this.createStream(executionId);
-    return stream.pipe(
-      filter((update) => eventTypes.includes(update.type)),
-    );
+    return stream.pipe(filter((update) => eventTypes.includes(update.type)));
   }
 
   /**
@@ -564,7 +643,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   getMessagesStream(executionId: string): Observable<BaseMessage> {
     return this.getFilteredStream(executionId, [StreamEventType.MESSAGES]).pipe(
-      map((update) => update.data as BaseMessage),
+      map((update) => update.data as BaseMessage)
     );
   }
 
@@ -573,7 +652,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   getTokensStream(executionId: string): Observable<TokenData> {
     return this.getFilteredStream(executionId, [StreamEventType.TOKEN]).pipe(
-      map((update) => update.data as TokenData),
+      map((update) => update.data as TokenData)
     );
   }
 
@@ -584,7 +663,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     type: StreamEventType,
     data: any,
     executionId: string,
-    additionalMetadata?: Partial<StreamMetadata>,
+    additionalMetadata?: Partial<StreamMetadata>
   ): StreamUpdate {
     const sequenceNumber = this.getNextSequence(executionId);
 
@@ -655,7 +734,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    keysToRemove.forEach(key => {
+    keysToRemove.forEach((key) => {
       this.tokenStreamConfigs.delete(key);
       this.eventStreamConfigs.delete(key);
       this.progressStreamConfigs.delete(key);
@@ -703,7 +782,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Unsubscribe from all subscriptions
-    this.activeSubscriptions.forEach(subscription => {
+    this.activeSubscriptions.forEach((subscription) => {
       subscription.unsubscribe();
     });
     this.activeSubscriptions.clear();
@@ -720,14 +799,20 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get token stream configuration for a node
    */
-  private getTokenStreamConfig(executionId: string, nodeId: string): StreamTokenMetadata | undefined {
+  private getTokenStreamConfig(
+    executionId: string,
+    nodeId: string
+  ): StreamTokenMetadata | undefined {
     return this.tokenStreamConfigs.get(`${executionId}:${nodeId}`);
   }
 
   /**
    * Get event stream configuration for a node
    */
-  private getEventStreamConfig(executionId: string, nodeId: string): StreamEventMetadata | undefined {
+  private getEventStreamConfig(
+    executionId: string,
+    nodeId: string
+  ): StreamEventMetadata | undefined {
     return this.eventStreamConfigs.get(`${executionId}:${nodeId}`);
   }
 
@@ -755,9 +840,12 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Tokenize content based on configuration
    */
-  private tokenizeContent(content: string, config: StreamTokenMetadata): string[] {
+  private tokenizeContent(
+    content: string,
+    config: StreamTokenMetadata
+  ): string[] {
     // Simple word-based tokenization - can be enhanced with proper tokenizers
-    const tokens = content.split(/\s+/).filter(token => token.length > 0);
+    const tokens = content.split(/\s+/).filter((token) => token.length > 0);
 
     // Apply batch size if configured
     if (config.batchSize && config.batchSize > 1) {
@@ -774,7 +862,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Check if token should be included based on filter configuration
    */
-  private shouldIncludeToken(token: string, config: StreamTokenMetadata): boolean {
+  private shouldIncludeToken(
+    token: string,
+    config: StreamTokenMetadata
+  ): boolean {
     if (!config.filter) {
       return true;
     }
@@ -808,8 +899,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       return events;
     }
 
-    return events.filter(event => {
-      if (config.filter!.eventTypes && !config.filter!.eventTypes.includes(event.type)) {
+    return events.filter((event) => {
+      if (
+        config.filter!.eventTypes &&
+        !config.filter!.eventTypes.includes(event.type)
+      ) {
         return false;
       }
 
@@ -817,7 +911,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         return false;
       }
 
-      if (!config.filter!.includeDebug && event.type === StreamEventType.DEBUG) {
+      if (
+        !config.filter!.includeDebug &&
+        event.type === StreamEventType.DEBUG
+      ) {
         return false;
       }
 
@@ -833,7 +930,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       return events;
     }
 
-    return events.map(event => config.transformer!(event));
+    return events.map((event) => config.transformer!(event));
   }
 
   /**
@@ -843,7 +940,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     buffer: string[],
-    config: StreamTokenMetadata,
+    config: StreamTokenMetadata
   ): Promise<void> {
     if (buffer.length === 0) {
       return;
@@ -859,7 +956,9 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       config,
     });
 
-    this.logger.debug(`Flushed token buffer for ${executionId}:${nodeId} - ${buffer.length} tokens`);
+    this.logger.debug(
+      `Flushed token buffer for ${executionId}:${nodeId} - ${buffer.length} tokens`
+    );
   }
 
   /**

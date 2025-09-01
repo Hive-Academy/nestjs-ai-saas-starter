@@ -17,12 +17,17 @@ export interface BaseWorkflowState {
 /**
  * State transformer function type for modifying state during transitions
  */
-export type StateTransformer<TState = unknown> = (currentState: TState, incomingState: Partial<TState>) => TState;
+export type StateTransformer<TState = unknown> = (
+  currentState: TState,
+  incomingState: Partial<TState>
+) => TState;
 
 /**
  * State validator function type for validating state changes
  */
-export type StateValidator<TState = unknown> = (state: TState) => Promise<boolean>;
+export type StateValidator<TState = unknown> = (
+  state: TState
+) => Promise<boolean>;
 
 /**
  * State persistence options
@@ -85,7 +90,9 @@ export interface StateManager<TState = unknown> {
   /**
    * Subscribe to state changes
    */
-  onStateChange: (callback: (event: StateChangeEvent<TState>) => void) => () => void;
+  onStateChange: (
+    callback: (event: StateChangeEvent<TState>) => void
+  ) => () => void;
 
   /**
    * Get state history if persistence is enabled
@@ -117,4 +124,100 @@ export interface StateRecoveryOptions {
   readonly version?: number;
   readonly timestamp?: Date;
   readonly validateAfterRecovery?: boolean;
+}
+
+/**
+ * Human feedback interface for state management
+ */
+export interface HumanFeedback {
+  readonly approved: boolean;
+  readonly status: 'approved' | 'rejected' | 'needs_revision' | 'pending';
+  readonly confidence?: number;
+  readonly timestamp: Date;
+  readonly metadata?: Record<string, unknown>;
+}
+
+/**
+ * Risk assessment interface for workflow state
+ */
+export interface WorkflowRisk {
+  readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  readonly type: string;
+  readonly description: string;
+}
+
+/**
+ * Workflow error interface for state management
+ */
+export interface WorkflowError {
+  readonly id: string;
+  readonly nodeId: string;
+  readonly type:
+    | 'execution'
+    | 'validation'
+    | 'timeout'
+    | 'permission'
+    | 'unknown';
+  readonly message: string;
+  readonly stackTrace?: string;
+  readonly context?: Record<string, unknown>;
+  readonly isRecoverable: boolean;
+  readonly suggestedRecovery?: string;
+  readonly timestamp: Date;
+}
+
+/**
+ * Workflow timestamps interface
+ */
+export interface WorkflowTimestamps {
+  readonly started: Date;
+  readonly updated?: Date;
+  readonly completed?: Date;
+}
+
+/**
+ * Workflow state interface that extends BaseWorkflowState with comprehensive workflow properties
+ * This interface is used for state management in workflows and includes all properties needed for workflow execution
+ */
+export interface WorkflowState extends BaseWorkflowState {
+  // Core workflow properties
+  readonly executionId: string;
+  readonly status:
+    | 'pending'
+    | 'active'
+    | 'paused'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
+  readonly confidence: number;
+  readonly retryCount: number;
+  readonly startedAt: Date;
+  readonly completedAt?: Date;
+  readonly timestamps: WorkflowTimestamps;
+
+  // Node and routing properties
+  readonly currentNode?: string;
+  readonly previousNode?: string;
+  readonly nextNode?: string;
+  readonly completedNodes: string[];
+
+  // Human-in-the-loop properties
+  readonly humanFeedback?: HumanFeedback;
+  readonly requiresApproval?: boolean;
+  readonly approvalReceived?: boolean;
+  readonly waitingForApproval?: boolean;
+  readonly rejectionReason?: string;
+
+  // Error handling properties
+  readonly error?: WorkflowError;
+  readonly lastError?: WorkflowError;
+
+  // Risk and assessment properties
+  readonly risks?: WorkflowRisk[];
+
+  // Messages and data (using any for compatibility with existing code)
+  readonly messages?: any[];
+
+  // Allow additional custom properties for extensibility
+  readonly [key: string]: unknown;
 }

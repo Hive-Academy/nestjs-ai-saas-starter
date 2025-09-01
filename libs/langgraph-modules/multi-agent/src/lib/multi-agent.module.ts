@@ -1,26 +1,28 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { MultiAgentCoordinatorService } from './services/multi-agent-coordinator.service';
 import { AgentExamplesService } from './services/agent-examples.service';
 import { AgentRegistryService } from './services/agent-registry.service';
 import { GraphBuilderService } from './services/graph-builder.service';
-import { NodeFactoryService } from './services/node-factory.service';
 import { LlmProviderService } from './services/llm-provider.service';
+import { MultiAgentCoordinatorService } from './services/multi-agent-coordinator.service';
 import { NetworkManagerService } from './services/network-manager.service';
+import { NodeFactoryService } from './services/node-factory.service';
 // Tool services
-import { ToolRegistryService } from './tools/tool-registry.service';
-import { ToolDiscoveryService } from './tools/tool-discovery.service';
-import { ToolBuilderService } from './tools/tool-builder.service';
-import { ToolNodeService } from './tools/tool-node.service';
+import { DiscoveryModule } from '@nestjs-plus/discovery';
 import {
-  MultiAgentModuleOptions,
-  MultiAgentModuleAsyncOptions,
-} from './interfaces/multi-agent.interface';
-import {
-  MULTI_AGENT_MODULE_OPTIONS,
   DEFAULT_MULTI_AGENT_OPTIONS,
+  MULTI_AGENT_MODULE_OPTIONS,
   TOOL_REGISTRY,
 } from './constants/multi-agent.constants';
+import {
+  MultiAgentModuleAsyncOptions,
+  MultiAgentModuleOptions,
+} from './interfaces/multi-agent.interface';
+import { ToolBuilderService } from './tools/tool-builder.service';
+import { ToolDiscoveryService } from './tools/tool-discovery.service';
+import { ToolNodeService } from './tools/tool-node.service';
+import { ToolRegistryService } from './tools/tool-registry.service';
+
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -61,7 +63,7 @@ export class MultiAgentModule {
 
     return {
       module: MultiAgentModule,
-      imports: [EventEmitterModule.forRoot()],
+      imports: [EventEmitterModule.forRoot(), DiscoveryModule],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -120,7 +122,7 @@ export class MultiAgentModule {
       AgentExamplesService,
     ];
 
-    const imports = [EventEmitterModule.forRoot()];
+    const imports = [EventEmitterModule.forRoot(), DiscoveryModule];
 
     if (options.imports) {
       imports.push(...options.imports);

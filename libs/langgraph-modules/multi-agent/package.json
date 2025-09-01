@@ -2,21 +2,26 @@
   "name": "@hive-academy/langgraph-multi-agent",
   "version": "0.0.1",
   "private": false,
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
+  "types": "./src/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./src/index.d.ts",
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js",
+      "default": "./index.esm.js"
     }
   },
   "nx": {
     "name": "langgraph-modules/multi-agent",
-  "tags": ["domain:langgraph", "type:feature", "module:multi-agent"],
+    "tags": [
+      "domain:langgraph",
+      "type:feature",
+      "module:multi-agent"
+    ],
     "targets": {
       "build": {
         "executor": "@nx/js:tsc",
@@ -39,11 +44,14 @@
     "access": "public"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@langchain/core": "^0.3.68",
     "@langchain/langgraph": "^0.4.3",
     "reflect-metadata": "^0.1.13",
-    "@hive-academy/langgraph-core": "0.0.1"
+    "@hive-academy/langgraph-core": "0.0.1",
+    "@nestjs-plus/discovery": "2.0.2"
   }
 }

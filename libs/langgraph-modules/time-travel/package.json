@@ -6,19 +6,20 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
+  "types": "./src/index.d.ts",
   "exports": {
+    "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./package.json": "./package.json"
+      "types": "./src/index.d.ts",
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js",
+      "default": "./index.esm.js"
+    }
   },
-  "dependencies": {
+  "peerDependencies": {
     "tslib": "^2.3.0",
     "@nestjs/common": "^11.0.0",
     "rxjs": "7.8.2",

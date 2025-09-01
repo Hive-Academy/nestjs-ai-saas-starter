@@ -1,4 +1,10 @@
-import type { ModuleMetadata, Type, Provider, InjectionToken, OptionalFactoryDependency } from '@nestjs/common';
+import type {
+  ModuleMetadata,
+  Type,
+  Provider,
+  InjectionToken,
+  OptionalFactoryDependency,
+} from '@nestjs/common';
 import type { EmbeddingFunction, CollectionMetadata } from 'chromadb';
 
 /**
@@ -43,7 +49,11 @@ export interface ChromaDBClientOptions {
 /**
  * Embedding provider types
  */
-export type EmbeddingProviderType = 'openai' | 'huggingface' | 'cohere' | 'custom';
+export type EmbeddingProviderType =
+  | 'openai'
+  | 'huggingface'
+  | 'cohere'
+  | 'custom';
 
 /**
  * OpenAI embedding configuration
@@ -155,16 +165,21 @@ export interface ChromaDBModuleOptions {
  * Factory interface for creating ChromaDB module options
  */
 export interface ChromaDBOptionsFactory {
-  createChromaDBOptions: () => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
+  createChromaDBOptions: () =>
+    | Promise<ChromaDBModuleOptions>
+    | ChromaDBModuleOptions;
 }
 
 /**
  * Asynchronous configuration options for ChromaDB module
  */
-export interface ChromaDBModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+export interface ChromaDBModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
   useExisting?: Type<ChromaDBOptionsFactory>;
   useClass?: Type<ChromaDBOptionsFactory>;
-  useFactory?: (...args: unknown[]) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
   inject?: Array<InjectionToken | OptionalFactoryDependency>;
   extraProviders?: Provider[];
 }

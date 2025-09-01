@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
+import type { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
 import { ApprovalChainService, Approver } from './approval-chain.service';
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';

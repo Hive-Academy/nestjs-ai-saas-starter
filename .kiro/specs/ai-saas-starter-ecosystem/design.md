@@ -78,7 +78,7 @@ graph TB
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/nestjs-langgraph",
+      "libs/langgraph-modules/nestjs-langgraph",
       "libs/shared"
     ],
     "version": {
@@ -661,7 +661,7 @@ export class AuthGuard implements CanActivate {
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm i --only=production
 
 FROM node:18-alpine AS runtime
 WORKDIR /app

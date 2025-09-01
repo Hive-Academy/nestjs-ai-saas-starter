@@ -9,17 +9,20 @@ The new architecture follows SOLID principles with clear separation of concerns,
 ## Current Architecture Status (Updated: 2025-01-16)
 
 ### Major Achievements ✅ COMPLETED
+
 - **Modular Architecture**: Successfully decomposed into 11 specialized child modules
-- **File Recovery**: Recovered and properly distributed 30+ deleted files 
+- **File Recovery**: Recovered and properly distributed 30+ deleted files
 - **Circular Dependencies**: Resolved streaming ↔ workflow-engine circular dependency
 - **Build Infrastructure**: Core, streaming, and workflow-engine modules building successfully
 
 ### Current Module Structure
 
 **Main Orchestrator:**
-- `@libs/nestjs-langgraph` (orchestration layer)
+
+- `@libs/langgraph-modules/nestjs-langgraph` (orchestration layer)
 
 **Child Modules (11 Total):**
+
 - `@libs/langgraph-modules/core` (shared interfaces) ✅ **Building Successfully**
 - `@libs/langgraph-modules/memory` 🔄 **In Progress**
 - `@libs/langgraph-modules/checkpoint` 🔄 **In Progress**
@@ -33,6 +36,7 @@ The new architecture follows SOLID principles with clear separation of concerns,
 - `@libs/langgraph-modules/workflow-engine` (compilation, base classes, workflow-stream) ✅ **Building Successfully**
 
 ### Critical Issues Remaining 🔴
+
 - **TypeScript Compilation**: Neo4j and ChromaDB type compatibility issues
 - **Inter-Module Imports**: Child modules cannot import from each other yet
 - **Integration Testing**: Module communication not validated
@@ -47,8 +51,9 @@ The new architecture follows SOLID principles with clear separation of concerns,
 Successfully recovered and distributed 30+ deleted files:
 
 #### Multi-Agent Module (7 files)
+
 - `discovery/tool-discovery.service.ts`
-- `discovery/tool-registry.service.ts` 
+- `discovery/tool-registry.service.ts`
 - `tools/base-tool.abstract.ts`
 - `tools/tool-executor.service.ts`
 - `tools/tool-metadata.decorator.ts`
@@ -56,11 +61,13 @@ Successfully recovered and distributed 30+ deleted files:
 - `tools/types/tool.types.ts`
 
 #### Functional-API Module (3 files)
+
 - `decorators/workflow.decorator.ts`
 - `decorators/node.decorator.ts`
 - `decorators/tool.decorator.ts`
 
 #### HITL Module (7 files)
+
 - `human-approval.node.ts`
 - `workflow-routing.service.ts`
 - `routing/command-processor.service.ts`
@@ -70,10 +77,12 @@ Successfully recovered and distributed 30+ deleted files:
 - `routing/route-registry.service.ts`
 
 #### Streaming Module (6 files) + Workflow-Engine Migration
+
 - Original streaming files + `workflow-stream.service.ts` moved to workflow-engine
 - Resolved circular dependency: `streaming → workflow-engine` (one-way)
 
 #### Workflow-Engine Module (9 files)
+
 - Core compilation and execution services
 - Base workflow classes
 - `workflow-stream.service.ts` (moved from streaming)
@@ -81,21 +90,26 @@ Successfully recovered and distributed 30+ deleted files:
 ### Architectural Solutions ✅ COMPLETED
 
 #### 1. Circular Dependency Resolution
+
 ```
 Before: streaming ↔ workflow-engine (circular)
 After:  streaming → workflow-engine (one-way)
 ```
+
 **Solution**: Moved `workflow-stream.service.ts` to workflow-engine module
 
 #### 2. Shared Interfaces Strategy
+
 ```
 @libs/langgraph-modules/core (shared foundation)
     ↑
 All child modules can depend on core
 ```
+
 **Solution**: Created core module with CommandType, StreamEventType, and shared interfaces
 
 #### 3. Provider System Cleanup
+
 - Deleted broken `core.providers.ts` and `routing.providers.ts`
 - Fixed `infrastructure.providers.ts` imports
 - Updated `module.providers.ts` to only use existing providers
@@ -105,7 +119,7 @@ All child modules can depend on core
 ```
 Main App
     ↓
-@libs/nestjs-langgraph (Orchestrator)
+@libs/langgraph-modules/nestjs-langgraph (Orchestrator)
     ↓
 Child Modules (11)
     ↓
@@ -113,6 +127,7 @@ Child Modules (11)
 ```
 
 **Dependency Rules:**
+
 - All child modules can depend on `core` module
 - Child modules should not directly depend on each other
 - Inter-module communication goes through the orchestrator
@@ -129,6 +144,7 @@ Child Modules (11)
 **Status**: ✅ **FULLY IMPLEMENTED** with SOLID architecture and comprehensive enterprise features
 
 **Plug-and-Play APIs**:
+
 ```typescript
 // Simple API - Zero configuration required
 await checkpointManager.saveCheckpoint(threadId, checkpoint, metadata);
@@ -142,6 +158,7 @@ const report = await checkpointManager.getSystemReport();
 ```
 
 **Enterprise Architecture (SOLID)**:
+
 - ✅ **CheckpointSaverFactory**: Creates and manages checkpoint savers (Memory, Redis, PostgreSQL, SQLite)
 - ✅ **CheckpointRegistryService**: Centralized saver registry with health monitoring
 - ✅ **CheckpointPersistenceService**: Core save/load/list operations with error handling
@@ -151,6 +168,7 @@ const report = await checkpointManager.getSystemReport();
 - ✅ **CheckpointManagerService**: Facade providing simple API for all operations
 
 **Enterprise Features**:
+
 - Multi-backend persistence with automatic failover
 - Built-in health monitoring and diagnostics
 - Performance metrics and optimization recommendations
@@ -165,6 +183,7 @@ const report = await checkpointManager.getSystemReport();
 **Status**: ⏳ **PLANNED** - Structure exists but needs full implementation
 
 **Target Plug-and-Play APIs**:
+
 ```typescript
 // Simple replay operations
 const result = await timeTravel.replayFromCheckpoint(threadId, checkpointId);
@@ -181,6 +200,7 @@ const bottlenecks = await timeTravel.identifyBottlenecks(threadId);
 ```
 
 **Planned Enterprise Architecture (SOLID)**:
+
 - ⏳ **TimeTravelService**: Facade providing simple API for all time travel operations
 - ⏳ **ReplayService**: Workflow replay with state modification capabilities
 - ⏳ **BranchManagerService**: Execution branching and branch management
@@ -189,6 +209,7 @@ const bottlenecks = await timeTravel.identifyBottlenecks(threadId);
 - ⏳ **DebugInsightsService**: Performance analysis and bottleneck identification
 
 **Target Enterprise Features**:
+
 - Workflow replay from any checkpoint with state modifications
 - Execution branching for testing alternative paths
 - Comprehensive execution history with timeline visualization
@@ -203,6 +224,7 @@ const bottlenecks = await timeTravel.identifyBottlenecks(threadId);
 **Status**: ✅ **FULLY IMPLEMENTED** with SOLID architecture and 2025 LangGraph patterns
 
 **Plug-and-Play APIs**:
+
 ```typescript
 // Simple setup - Complete networks in 3 lines
 await multiAgent.setupNetwork('my-network', agents, 'supervisor');
@@ -219,6 +241,7 @@ const health = await multiAgent.healthCheck('my-network');
 ```
 
 **Enterprise Architecture (SOLID)**:
+
 - ✅ **MultiAgentCoordinatorService**: Facade providing simple API for all operations
 - ✅ **AgentRegistryService**: Centralized agent management with health monitoring
 - ✅ **NetworkManagerService**: High-level workflow orchestration and execution
@@ -227,6 +250,7 @@ const health = await multiAgent.healthCheck('my-network');
 - ✅ **LlmProviderService**: LLM provider management with caching and optimization
 
 **Enterprise Features**:
+
 - Complete network types: supervisor, swarm, hierarchical (plug-and-play)
 - Built-in event system for monitoring and observability
 - Comprehensive error handling and recovery mechanisms
@@ -241,6 +265,7 @@ const health = await multiAgent.healthCheck('my-network');
 **Status**: ✅ **PRODUCTION READY** - Complete with LangGraph StateGraph generation and checkpoint integration
 
 **Target Plug-and-Play APIs**:
+
 ```typescript
 // Decorator-based workflow definition
 @Injectable()
@@ -266,17 +291,20 @@ const result = await functionalApi.executeWorkflow('processDocument', document);
 ```
 
 **Current Status**:
+
 - ✅ **FunctionalWorkflowService**: Core workflow execution and management
 - ✅ **WorkflowDiscoveryService**: Automatic discovery of decorated methods
 - ✅ **Decorator System**: @Entrypoint and @Task decorators working
 - 🔴 **Checkpoint Integration**: Currently stubbed, needs real implementation
 
 **Critical Issues to Fix**:
+
 - 🔴 **Complete Checkpoint Integration**: Remove stubs and implement real state persistence
 - 🔴 **Automatic Graph Generation**: Build LangGraph StateGraphs from decorator metadata
 - 🔴 **Error Handling**: Implement comprehensive error handling and retry mechanisms
 
 **Target Enterprise Features**:
+
 - Automatic workflow graph generation from decorators
 - Built-in state persistence using checkpoint module
 - Comprehensive error handling and retry mechanisms
@@ -291,6 +319,7 @@ const result = await functionalApi.executeWorkflow('processDocument', document);
 **Status**: ✅ **PRODUCTION READY** - Complete memory management with ChromaDB vector storage and Neo4j graph relationships
 
 **Target Plug-and-Play APIs**:
+
 ```typescript
 // Simple memory operations
 await memory.addMemory(threadId, 'User prefers morning meetings');
@@ -303,6 +332,7 @@ const usage = await memory.getMemoryUsage();
 ```
 
 **Enterprise Architecture (SOLID)**:
+
 - ✅ **MemoryFacadeService**: Simple API facade for all memory operations
 - ✅ **MemoryStorageService**: Core storage operations with ChromaDB persistence
 - ✅ **EmbeddingService**: Real embedding providers (OpenAI, Cohere, HuggingFace)
@@ -312,6 +342,7 @@ const usage = await memory.getMemoryUsage();
 - ✅ **AdvancedMemoryService**: Integration with ChromaDB and Neo4j databases
 
 **Enterprise Features Delivered**:
+
 - ✅ Real embedding generation with multiple provider support
 - ✅ LLM-based conversation summarization with context preservation
 - ✅ Semantic search with similarity scoring and filtering via ChromaDB
@@ -329,6 +360,7 @@ const usage = await memory.getMemoryUsage();
 **Status**: ✅ **PRODUCTION READY** - Complete with webhook service and deployment capabilities
 
 **Target Plug-and-Play APIs**:
+
 ```typescript
 // Simple assistant management
 const assistantId = await platform.createAssistant(config);
@@ -349,6 +381,7 @@ const status = await platform.getDeploymentStatus(deploymentId);
 ```
 
 **Planned Enterprise Architecture (SOLID)**:
+
 - ⏳ **PlatformService**: Facade providing simple API for all platform operations
 - ⏳ **AssistantManagerService**: Complete assistant lifecycle management
 - ⏳ **ThreadManagerService**: Thread operations with history management
@@ -357,6 +390,7 @@ const status = await platform.getDeploymentStatus(deploymentId);
 - ⏳ **MonitoringService**: Platform monitoring and health checks
 
 **Target Enterprise Features**:
+
 - Complete assistant lifecycle management with versioning
 - Thread operations with history management and copying
 - Webhook handling with signature verification and retry policies
@@ -371,11 +405,12 @@ const status = await platform.getDeploymentStatus(deploymentId);
 **Status**: ⏳ **PLANNED** - Minimal implementation exists, needs comprehensive development
 
 **Target Plug-and-Play APIs**:
+
 ```typescript
 // Simple monitoring setup
-await monitoring.enableMonitoring({ 
+await monitoring.enableMonitoring({
   metrics: ['performance', 'errors', 'usage'],
-  alerts: ['failures', 'performance_degradation']
+  alerts: ['failures', 'performance_degradation'],
 });
 
 // Real-time insights
@@ -390,6 +425,7 @@ const recommendations = await monitoring.getOptimizationRecommendations();
 ```
 
 **Planned Enterprise Architecture (SOLID)**:
+
 - ⏳ **MonitoringService**: Facade providing simple API for all monitoring operations
 - ⏳ **MetricsCollectorService**: Comprehensive metrics collection and aggregation
 - ⏳ **PerformanceAnalyzer**: Performance tracking and bottleneck identification
@@ -399,6 +435,7 @@ const recommendations = await monitoring.getOptimizationRecommendations();
 - ⏳ **DashboardService**: Integration with monitoring tools (Prometheus, Grafana)
 
 **Target Enterprise Features**:
+
 - Automatic metrics collection for all workflow executions
 - Performance monitoring with bottleneck identification
 - Intelligent alerting with configurable thresholds and escalation
@@ -805,7 +842,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   private readonly logger = new Logger(TimeTravelService.name);
   private readonly branches = new Map<string, BranchInfo>();
   private readonly executionHistory = new Map<string, ExecutionHistoryNode[]>();
-  
+
   constructor(
     private readonly configService: ConfigService,
     @Inject(CheckpointManagerService) private readonly checkpointManager: CheckpointManagerService
@@ -820,7 +857,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   - getBranchInfo(branchId: string): BranchInfo | undefined
   - mergeBranch<T>(branchId: string, targetThreadId: string)
   - deleteBranch(branchId: string): boolean
-  
+
   // Note: Needs to be split into focused services for SOLID compliance
 ```
 
@@ -831,6 +868,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
 **Actual Implementation Status**: 🔴 566-line monolithic service with critical issues
 
 **Critical Placeholders Found**:
+
 ```typescript
 // Line 438-441: PLACEHOLDER - Returns random vectors instead of real embeddings
 private async generateEmbedding(text: string): Promise<readonly number[]> {
@@ -846,6 +884,7 @@ private createSimpleSummary(messages: BaseMessage[]): string {
 ```
 
 **Planned SOLID Refactoring** (Not yet implemented):
+
 1. **MemoryStorageService** - Core storage operations
 2. **EmbeddingService** - Real embedding providers (OpenAI/Cohere/HuggingFace)
 3. **SummarizationService** - LLM-based summarization
@@ -1026,13 +1065,7 @@ private createSimpleSummary(messages: BaseMessage[]): string {
 // Current Facade Implementation with 2025 Patterns
 @Injectable()
 export class MultiAgentCoordinatorService {
-  constructor(
-    private readonly agentRegistry: AgentRegistryService,
-    private readonly graphBuilder: GraphBuilderService,
-    private readonly nodeFactory: NodeFactoryService,
-    private readonly llmProvider: LlmProviderService,
-    private readonly networkManager: NetworkManagerService
-  )
+  constructor(private readonly agentRegistry: AgentRegistryService, private readonly graphBuilder: GraphBuilderService, private readonly nodeFactory: NodeFactoryService, private readonly llmProvider: LlmProviderService, private readonly networkManager: NetworkManagerService);
 
   /**
    * Register agent with comprehensive configuration
@@ -1765,12 +1798,14 @@ This comprehensive design provides the foundation for implementing a production-
 ### Major Implementations Completed ✅
 
 #### Checkpoint Module (100% of design)
+
 - ✅ StateTransformerService with Zod validation
 - ✅ CheckpointManagerService split into 6 SOLID services
 - ✅ All 4 checkpoint savers (Memory, Redis, PostgreSQL, SQLite)
 - ✅ Comprehensive error handling and recovery
 
 #### Multi-Agent Module (100% of design + enhancements)
+
 - ✅ MultiAgentCoordinatorService split into 6 SOLID services
 - ✅ Updated to 2025 LangGraph patterns (Command-based handoffs)
 - ✅ Supervisor, Swarm, and Hierarchical patterns
@@ -1779,16 +1814,19 @@ This comprehensive design provides the foundation for implementing a production-
 ### Partial Implementations 🔄
 
 #### Functional API Module (~80% of design)
+
 - ✅ @Entrypoint and @Task decorators
 - ✅ WorkflowDiscoveryService
 - ❌ Checkpoint integration (stubbed, not functional)
 
 #### Memory Module (~40% of design)
+
 - ✅ Basic structure and interfaces
 - ❌ Still monolithic (not SOLID)
 - ❌ Placeholder implementations for embeddings and summarization
 
 #### Platform Module (~60% of design)
+
 - ✅ All services created
 - ❓ Needs verification against LangGraph Platform API
 - ❓ May need SOLID refactoring
@@ -1796,12 +1834,14 @@ This comprehensive design provides the foundation for implementing a production-
 ### Minimal/Missing Implementations ⏳
 
 #### Time-Travel Module (~10% of design)
+
 - ✅ Module structure
 - ❌ TimeTravelService not implemented
 - ❌ ExecutionHistoryService not created
 - ❌ BranchManagerService not created
 
 #### Monitoring Module (~5% of design)
+
 - ✅ Module file only
 - ❌ No services implemented
 - ❌ No cross-module observability
@@ -1809,11 +1849,13 @@ This comprehensive design provides the foundation for implementing a production-
 ### Critical Deviations from Design 🔴
 
 1. **Memory Module Placeholders**:
+
    - Design specified real embedding providers
    - Currently returns random vectors
    - No LLM integration for summarization
 
 2. **Functional API Stub**:
+
    - Design required full checkpoint integration
    - Currently has non-functional stub
 
@@ -1831,6 +1873,7 @@ This comprehensive design provides the foundation for implementing a production-
 ### Alignment with Original Architecture
 
 The implemented modules follow the designed architecture closely:
+
 - ✅ Dependency structure as planned
 - ✅ Service organization matches design
 - ✅ Interface definitions align with specifications
@@ -1853,12 +1896,14 @@ While the architecture and structure closely follow the original design, signifi
 
 ### What Was Built Better Than Designed ✨
 
-1. **Checkpoint Module**: 
+1. **Checkpoint Module**:
+
    - Design: Single CheckpointManagerService
    - Reality: 6 focused SOLID services with clear separation
    - Enhancement: Added metrics, health monitoring, and cleanup services
 
 2. **Multi-Agent Module**:
+
    - Design: Basic agent coordination
    - Reality: Full 2025 LangGraph patterns with Command-based handoffs
    - Enhancement: Added LLM provider abstraction and network management
@@ -1877,21 +1922,25 @@ While the architecture and structure closely follow the original design, signifi
 ### What's Missing or Incomplete ❌
 
 1. **Memory Module**:
+
    - Design: Full embedding and LLM integration
    - Reality: Placeholder implementations returning random data
    - Gap: Critical functionality missing
 
 2. **Functional API**:
+
    - Design: Full checkpoint integration
    - Reality: Stubbed saveCheckpoint method
    - Gap: State persistence not functional
 
 3. **Time-Travel Module**:
+
    - Design: Split into multiple services
    - Reality: Monolithic service (works but not SOLID)
    - Gap: Needs refactoring
 
 4. **Monitoring Module**:
+
    - Design: Comprehensive observability
    - Reality: Only module file exists
    - Gap: ~95% of functionality missing
@@ -1910,15 +1959,15 @@ While the architecture and structure closely follow the original design, signifi
 
 ### Code Quality Reality Check
 
-| Module | TypeScript | ESLint | Tests | SOLID | Production Ready |
-|--------|------------|--------|-------|-------|-----------------|
-| Checkpoint | ✅ | ⚠️ | ⚠️ | ✅ | ✅ |
-| Multi-Agent | ✅ | ✅ | ⚠️ | ✅ | ✅ |
-| Functional-API | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Memory | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Time-Travel | ⚠️ | ⚠️ | ❌ | ❌ | ⚠️ |
-| Platform | ⚠️ | ⚠️ | ❌ | ❌ | ⚠️ |
-| Monitoring | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Module         | TypeScript | ESLint | Tests | SOLID | Production Ready |
+| -------------- | ---------- | ------ | ----- | ----- | ---------------- |
+| Checkpoint     | ✅         | ⚠️     | ⚠️    | ✅    | ✅               |
+| Multi-Agent    | ✅         | ✅     | ⚠️    | ✅    | ✅               |
+| Functional-API | ❌         | ❌     | ❌    | ❌    | ❌               |
+| Memory         | ❌         | ❌     | ❌    | ❌    | ❌               |
+| Time-Travel    | ⚠️         | ⚠️     | ❌    | ❌    | ⚠️               |
+| Platform       | ⚠️         | ⚠️     | ❌    | ❌    | ⚠️               |
+| Monitoring     | ❌         | ❌     | ❌    | ❌    | ❌               |
 
 ### Effort Required to Complete Design
 

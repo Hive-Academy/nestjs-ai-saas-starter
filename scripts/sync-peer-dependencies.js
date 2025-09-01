@@ -18,7 +18,7 @@ const rootPackagePath = path.join(ROOT_DIR, 'package.json');
 const PUBLISHABLE_LIBRARIES = [
   'libs/nestjs-chromadb',
   'libs/nestjs-neo4j',
-  'libs/nestjs-langgraph',
+  'libs/langgraph-modules/nestjs-langgraph',
 ];
 
 // Dependencies that should be treated as peer dependencies for libraries

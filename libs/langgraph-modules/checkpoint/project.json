@@ -6,17 +6,38 @@
   "tags": ["domain:langgraph", "type:data-access", "module:checkpoint"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/checkpoint",
         "main": "libs/langgraph-modules/checkpoint/src/index.ts",
         "tsConfig": "libs/langgraph-modules/checkpoint/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/checkpoint/rollup.config.js",
+        "format": ["cjs", "esm"],
+        "useLegacyTypescriptPlugin": false,
+        "external": [
+          "@langchain/core",
+          "@langchain/langgraph",
+          "@langchain/langgraph-checkpoint-redis",
+          "@langchain/langgraph-checkpoint-postgres",
+          "@nestjs/common",
+          "@nestjs/config",
+          "reflect-metadata",
+          "@hive-academy/langgraph-core",
+          "ioredis",
+          "pg",
+          "sqlite",
+          "sqlite3"
+        ],
         "assets": [
-          "libs/langgraph-modules/checkpoint/*.md",
           {
             "input": "./libs/langgraph-modules/checkpoint",
-            "glob": "**/*.!(ts)",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/checkpoint",
+            "glob": "package.json",
             "output": "./"
           }
         ]

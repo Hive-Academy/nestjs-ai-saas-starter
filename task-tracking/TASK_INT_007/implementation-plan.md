@@ -178,7 +178,7 @@ const validTasks = allTasks.filter(isTaskMetadata);
 
 #### 2.3 Fix Core Library Exports
 
-**File**: `libs/nestjs-langgraph/src/index.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/index.ts`
 
 ```typescript
 // Fix missing exports
@@ -193,7 +193,7 @@ export * from './lib/base';
 
 ```typescript
 // Create proper interface exports
-// libs/nestjs-langgraph/src/lib/interfaces/index.ts
+// libs/langgraph-modules/nestjs-langgraph/src/lib/interfaces/index.ts
 export * from './workflow.interface';
 export * from './agent.interface';
 export * from './streaming.interface';

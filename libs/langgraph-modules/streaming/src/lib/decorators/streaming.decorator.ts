@@ -34,9 +34,9 @@ export interface StreamTokenOptions {
 }
 
 /**
- * Metadata stored for token streaming
+ * Metadata stored for token streaming (decorator configuration)
  */
-export interface StreamTokenMetadata extends StreamTokenOptions {
+export interface StreamTokenDecoratorMetadata extends StreamTokenOptions {
   nodeId?: string;
   methodName: string;
   enabled: boolean;
@@ -68,9 +68,9 @@ export interface StreamEventOptions {
 }
 
 /**
- * Metadata stored for event streaming
+ * Metadata stored for event streaming (decorator configuration)
  */
-export interface StreamEventMetadata extends StreamEventOptions {
+export interface StreamEventDecoratorMetadata extends StreamEventOptions {
   nodeId?: string;
   methodName: string;
   enabled: boolean;
@@ -94,7 +94,11 @@ export interface StreamProgressOptions {
   /** Progress milestones to report */
   milestones?: number[];
   /** Custom progress calculator */
-  calculator?: (current: number, total: number, metadata?: Record<string, unknown>) => number;
+  calculator?: (
+    current: number,
+    total: number,
+    metadata?: Record<string, unknown>
+  ) => number;
   /** Progress format configuration */
   format?: {
     showPercentage?: boolean;
@@ -106,9 +110,9 @@ export interface StreamProgressOptions {
 }
 
 /**
- * Metadata stored for progress streaming
+ * Metadata stored for progress streaming (decorator configuration)
  */
-export interface StreamProgressMetadata extends StreamProgressOptions {
+export interface StreamProgressDecoratorMetadata extends StreamProgressOptions {
   nodeId?: string;
   methodName: string;
   enabled: boolean;
@@ -116,14 +120,14 @@ export interface StreamProgressMetadata extends StreamProgressOptions {
 
 /**
  * Decorator to enable token-level streaming for a method or node
- * 
+ *
  * @example
  * ```typescript
  * @Workflow({ name: 'ai-writing', streaming: true })
  * export class AIWritingWorkflow extends DeclarativeWorkflowBase {
- *   
+ *
  *   @Node({ type: 'llm' })
- *   @StreamToken({ 
+ *   @StreamToken({
  *     enabled: true,
  *     bufferSize: 50,
  *     format: 'text',
@@ -134,7 +138,7 @@ export interface StreamProgressMetadata extends StreamProgressOptions {
  *     const response = await this.llm.invoke(state.prompt);
  *     return { content: response };
  *   }
- *   
+ *
  *   @Node({ type: 'stream' })
  *   @StreamToken({
  *     enabled: true,
@@ -149,9 +153,13 @@ export interface StreamProgressMetadata extends StreamProgressOptions {
  * ```
  */
 export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
-  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (
+    target: object,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Create token streaming metadata
-    const tokenMetadata: StreamTokenMetadata = {
+    const tokenMetadata: StreamTokenDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
@@ -163,14 +171,21 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
     };
 
     // Store metadata on the method
-    Reflect.defineMetadata(STREAM_TOKEN_METADATA_KEY, tokenMetadata, target, propertyKey);
+    Reflect.defineMetadata(
+      STREAM_TOKEN_METADATA_KEY,
+      tokenMetadata,
+      target,
+      propertyKey
+    );
 
     // Wrap the original method to add token streaming context
     const originalMethod = descriptor.value;
-    descriptor.value = async function(this: any, ...args: unknown[]) {
+    descriptor.value = async function (this: any, ...args: unknown[]) {
       // Log token streaming initialization
-      if ((this).logger) {
-        (this).logger.debug(`Initializing token streaming for: ${tokenMetadata.methodName}`);
+      if (this.logger) {
+        this.logger.debug(
+          `Initializing token streaming for: ${tokenMetadata.methodName}`
+        );
       }
 
       // Add token streaming context to state if available
@@ -183,8 +198,8 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
       }
 
       // Initialize token stream if streaming service is available
-      if ((this).streamingService && tokenMetadata.enabled) {
-        await (this).streamingService.initializeTokenStream({
+      if (this.streamingService && tokenMetadata.enabled) {
+        await this.streamingService.initializeTokenStream({
           executionId: (args[0] as any)?.executionId,
           nodeId: (args[0] as any)?.currentNode || tokenMetadata.methodName,
           config: tokenMetadata,
@@ -195,8 +210,8 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
       const result = await originalMethod.apply(this, args);
 
       // Handle token streaming results
-      if ((this).streamingService && tokenMetadata.enabled && result) {
-        await (this).streamingService.processTokenResult(result, tokenMetadata);
+      if (this.streamingService && tokenMetadata.enabled && result) {
+        await this.streamingService.processTokenResult(result, tokenMetadata);
       }
 
       return result;
@@ -208,14 +223,14 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
 
 /**
  * Decorator to enable event-based streaming for a method or node
- * 
+ *
  * @example
  * ```typescript
  * @Workflow({ name: 'data-processing', streaming: true })
  * export class DataProcessingWorkflow extends DeclarativeWorkflowBase {
- *   
+ *
  *   @Node({ type: 'tool' })
- *   @StreamEvent({ 
+ *   @StreamEvent({
  *     events: [StreamEventType.TOOL_START, StreamEventType.TOOL_COMPLETE, StreamEventType.PROGRESS],
  *     bufferSize: 100,
  *     delivery: 'at-least-once'
@@ -224,7 +239,7 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
  *     // Tool execution with detailed event streaming
  *     return await this.dataProcessor.process(state.dataset);
  *   }
- *   
+ *
  *   @Node({ type: 'condition' })
  *   @StreamEvent({
  *     events: [StreamEventType.VALUES, StreamEventType.UPDATES],
@@ -239,27 +254,42 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
  * ```
  */
 export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
-  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (
+    target: object,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Create event streaming metadata
-    const eventMetadata: StreamEventMetadata = {
+    const eventMetadata: StreamEventDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
-      events: options.events ?? [StreamEventType.VALUES, StreamEventType.UPDATES, StreamEventType.EVENTS],
+      events: options.events ?? [
+        StreamEventType.VALUES,
+        StreamEventType.UPDATES,
+        StreamEventType.EVENTS,
+      ],
       bufferSize: options.bufferSize ?? 100,
       batchSize: options.batchSize ?? 10,
       delivery: options.delivery ?? 'at-least-once',
     };
 
     // Store metadata on the method
-    Reflect.defineMetadata(STREAM_EVENT_METADATA_KEY, eventMetadata, target, propertyKey);
+    Reflect.defineMetadata(
+      STREAM_EVENT_METADATA_KEY,
+      eventMetadata,
+      target,
+      propertyKey
+    );
 
     // Wrap the original method to add event streaming context
     const originalMethod = descriptor.value;
-    descriptor.value = async function(this: any, ...args: unknown[]) {
+    descriptor.value = async function (this: any, ...args: unknown[]) {
       // Log event streaming initialization
-      if ((this).logger) {
-        (this).logger.debug(`Initializing event streaming for: ${eventMetadata.methodName}`);
+      if (this.logger) {
+        this.logger.debug(
+          `Initializing event streaming for: ${eventMetadata.methodName}`
+        );
       }
 
       // Add event streaming context to state if available
@@ -272,8 +302,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       }
 
       // Initialize event stream if streaming service is available
-      if ((this).streamingService && eventMetadata.enabled) {
-        await (this).streamingService.initializeEventStream({
+      if (this.streamingService && eventMetadata.enabled) {
+        await this.streamingService.initializeEventStream({
           executionId: (args[0] as any)?.executionId,
           nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
           config: eventMetadata,
@@ -281,11 +311,11 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       }
 
       // Emit node start event
-      if ((this).streamingService && eventMetadata.enabled) {
-        await (this).streamingService.emitEvent(StreamEventType.NODE_START, {
+      if (this.streamingService && eventMetadata.enabled) {
+        await this.streamingService.emitEvent(StreamEventType.NODE_START, {
           nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
           timestamp: new Date(),
-          metadata: args[0]
+          metadata: args[0],
         });
       }
 
@@ -294,24 +324,24 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
         const result = await originalMethod.apply(this, args);
 
         // Emit node complete event
-        if ((this).streamingService && eventMetadata.enabled) {
-          await (this).streamingService.emitEvent(StreamEventType.NODE_COMPLETE, {
+        if (this.streamingService && eventMetadata.enabled) {
+          await this.streamingService.emitEvent(StreamEventType.NODE_COMPLETE, {
             nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
             timestamp: new Date(),
             result,
-            metadata: args[0]
+            metadata: args[0],
           });
         }
 
         return result;
       } catch (error) {
         // Emit error event
-        if ((this).streamingService && eventMetadata.enabled) {
-          await (this).streamingService.emitEvent(StreamEventType.ERROR, {
+        if (this.streamingService && eventMetadata.enabled) {
+          await this.streamingService.emitEvent(StreamEventType.ERROR, {
             nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
             timestamp: new Date(),
             error: (error as Error).message,
-            metadata: args[0]
+            metadata: args[0],
           });
         }
         throw error;
@@ -324,14 +354,14 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
 
 /**
  * Decorator to enable progress tracking and streaming for a method or node
- * 
+ *
  * @example
  * ```typescript
  * @Workflow({ name: 'file-processing', streaming: true })
  * export class FileProcessingWorkflow extends DeclarativeWorkflowBase {
- *   
+ *
  *   @Node({ type: 'tool' })
- *   @StreamProgress({ 
+ *   @StreamProgress({
  *     enabled: true,
  *     interval: 500,
  *     granularity: 'fine',
@@ -342,21 +372,21 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
  *     // File processing with detailed progress tracking
  *     const files = state.files;
  *     const results = [];
- *     
+ *
  *     for (let i = 0; i < files.length; i++) {
  *       // Progress is automatically tracked and streamed
  *       const result = await this.processFile(files[i]);
  *       results.push(result);
- *       
+ *
  *       // Manual progress update (optional)
  *       if (this.progressTracker) {
  *         await this.progressTracker.update(i + 1, files.length);
  *       }
  *     }
- *     
+ *
  *     return { processedFiles: results };
  *   }
- *   
+ *
  *   @Node({ type: 'llm' })
  *   @StreamProgress({
  *     enabled: true,
@@ -374,10 +404,16 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
  * }
  * ```
  */
-export function StreamProgress(options: StreamProgressOptions = {}): MethodDecorator {
-  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+export function StreamProgress(
+  options: StreamProgressOptions = {}
+): MethodDecorator {
+  return (
+    target: object,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Create progress streaming metadata
-    const progressMetadata: StreamProgressMetadata = {
+    const progressMetadata: StreamProgressDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
@@ -397,14 +433,21 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
     };
 
     // Store metadata on the method
-    Reflect.defineMetadata(STREAM_PROGRESS_METADATA_KEY, progressMetadata, target, propertyKey);
+    Reflect.defineMetadata(
+      STREAM_PROGRESS_METADATA_KEY,
+      progressMetadata,
+      target,
+      propertyKey
+    );
 
     // Wrap the original method to add progress streaming context
     const originalMethod = descriptor.value;
-    descriptor.value = async function(this: any, ...args: unknown[]) {
+    descriptor.value = async function (this: any, ...args: unknown[]) {
       // Log progress streaming initialization
-      if ((this).logger) {
-        (this).logger.debug(`Initializing progress streaming for: ${progressMetadata.methodName}`);
+      if (this.logger) {
+        this.logger.debug(
+          `Initializing progress streaming for: ${progressMetadata.methodName}`
+        );
       }
 
       // Add progress streaming context to state if available
@@ -417,8 +460,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
       }
 
       // Initialize progress tracker if streaming service is available
-      if ((this).streamingService && progressMetadata.enabled) {
-        await (this).streamingService.initializeProgressTracker({
+      if (this.streamingService && progressMetadata.enabled) {
+        await this.streamingService.initializeProgressTracker({
           executionId: (args[0] as any)?.executionId,
           nodeId: (args[0] as any)?.currentNode || progressMetadata.methodName,
           config: progressMetadata,
@@ -433,8 +476,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
       };
 
       // Emit progress start event
-      if ((this).streamingService && progressMetadata.enabled) {
-        await (this).streamingService.emitProgress(StreamEventType.PROGRESS, {
+      if (this.streamingService && progressMetadata.enabled) {
+        await this.streamingService.emitProgress(StreamEventType.PROGRESS, {
           nodeId: progressContext.nodeId,
           progress: 0,
           status: 'started',
@@ -447,8 +490,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
         const result = await originalMethod.apply(this, args);
 
         // Emit progress complete event
-        if ((this).streamingService && progressMetadata.enabled) {
-          await (this).streamingService.emitProgress(StreamEventType.PROGRESS, {
+        if (this.streamingService && progressMetadata.enabled) {
+          await this.streamingService.emitProgress(StreamEventType.PROGRESS, {
             nodeId: progressContext.nodeId,
             progress: 100,
             status: 'completed',
@@ -460,8 +503,8 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
         return result;
       } catch (error) {
         // Emit progress error event
-        if ((this).streamingService && progressMetadata.enabled) {
-          await (this).streamingService.emitProgress(StreamEventType.PROGRESS, {
+        if (this.streamingService && progressMetadata.enabled) {
+          await this.streamingService.emitProgress(StreamEventType.PROGRESS, {
             nodeId: progressContext.nodeId,
             progress: -1,
             status: 'failed',
@@ -480,28 +523,40 @@ export function StreamProgress(options: StreamProgressOptions = {}): MethodDecor
 /**
  * Get token streaming metadata from a method
  */
-export function getStreamTokenMetadata(target: object, propertyKey: string | symbol): StreamTokenMetadata | undefined {
+export function getStreamTokenMetadata(
+  target: object,
+  propertyKey: string | symbol
+): StreamTokenDecoratorMetadata | undefined {
   return Reflect.getMetadata(STREAM_TOKEN_METADATA_KEY, target, propertyKey);
 }
 
 /**
  * Get event streaming metadata from a method
  */
-export function getStreamEventMetadata(target: object, propertyKey: string | symbol): StreamEventMetadata | undefined {
+export function getStreamEventMetadata(
+  target: object,
+  propertyKey: string | symbol
+): StreamEventDecoratorMetadata | undefined {
   return Reflect.getMetadata(STREAM_EVENT_METADATA_KEY, target, propertyKey);
 }
 
 /**
  * Get progress streaming metadata from a method
  */
-export function getStreamProgressMetadata(target: object, propertyKey: string | symbol): StreamProgressMetadata | undefined {
+export function getStreamProgressMetadata(
+  target: object,
+  propertyKey: string | symbol
+): StreamProgressDecoratorMetadata | undefined {
   return Reflect.getMetadata(STREAM_PROGRESS_METADATA_KEY, target, propertyKey);
 }
 
 /**
  * Check if a method has token streaming enabled
  */
-export function hasTokenStreaming(target: object, propertyKey: string | symbol): boolean {
+export function hasTokenStreaming(
+  target: object,
+  propertyKey: string | symbol
+): boolean {
   const metadata = getStreamTokenMetadata(target, propertyKey);
   return metadata?.enabled === true;
 }
@@ -509,7 +564,10 @@ export function hasTokenStreaming(target: object, propertyKey: string | symbol):
 /**
  * Check if a method has event streaming enabled
  */
-export function hasEventStreaming(target: object, propertyKey: string | symbol): boolean {
+export function hasEventStreaming(
+  target: object,
+  propertyKey: string | symbol
+): boolean {
   const metadata = getStreamEventMetadata(target, propertyKey);
   return metadata?.enabled === true;
 }
@@ -517,7 +575,10 @@ export function hasEventStreaming(target: object, propertyKey: string | symbol):
 /**
  * Check if a method has progress streaming enabled
  */
-export function hasProgressStreaming(target: object, propertyKey: string | symbol): boolean {
+export function hasProgressStreaming(
+  target: object,
+  propertyKey: string | symbol
+): boolean {
   const metadata = getStreamProgressMetadata(target, propertyKey);
   return metadata?.enabled === true;
 }
@@ -525,10 +586,13 @@ export function hasProgressStreaming(target: object, propertyKey: string | symbo
 /**
  * Get all streaming metadata from a method
  */
-export function getAllStreamingMetadata(target: object, propertyKey: string | symbol): {
-  token?: StreamTokenMetadata;
-  event?: StreamEventMetadata;
-  progress?: StreamProgressMetadata;
+export function getAllStreamingMetadata(
+  target: object,
+  propertyKey: string | symbol
+): {
+  token?: StreamTokenDecoratorMetadata;
+  event?: StreamEventDecoratorMetadata;
+  progress?: StreamProgressDecoratorMetadata;
 } {
   return {
     token: getStreamTokenMetadata(target, propertyKey),
@@ -539,7 +603,7 @@ export function getAllStreamingMetadata(target: object, propertyKey: string | sy
 
 /**
  * Combined decorator for comprehensive streaming capabilities
- * 
+ *
  * @example
  * ```typescript
  * @Node({ type: 'llm' })
@@ -559,7 +623,11 @@ export function StreamAll(options: {
   event?: StreamEventOptions;
   progress?: StreamProgressOptions;
 }): MethodDecorator {
-  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (
+    target: object,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Apply all streaming decorators
     if (options.token) {
       StreamToken(options.token)(target, propertyKey, descriptor);
@@ -570,7 +638,7 @@ export function StreamAll(options: {
     if (options.progress) {
       StreamProgress(options.progress)(target, propertyKey, descriptor);
     }
-    
+
     return descriptor;
   };
 }

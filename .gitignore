@@ -49,3 +49,4 @@ test-output
 .angular
 /.env
 /typescript-validation-report.json
+tsconfig.lib.tsbuildinfo

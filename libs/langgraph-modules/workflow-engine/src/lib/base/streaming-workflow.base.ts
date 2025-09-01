@@ -11,16 +11,16 @@ import {
   WebSocketBridgeService,
   EventStreamProcessorService
 } from '@hive-academy/langgraph-streaming';
-import {
+import type {
   WorkflowState,
 } from '../interfaces';
-import {
+import type {
   StreamUpdate,
-  StreamEventType,
   StreamTokenMetadata,
   StreamEventMetadata,
   StreamProgressMetadata,
 } from '@hive-academy/langgraph-streaming';
+import { StreamEventType } from '@hive-academy/langgraph-streaming';
 
 /**
  * Streaming workflow execution context

@@ -230,11 +230,6 @@ export default [
               ],
             },
 
-            // ===== FALLBACK RULE =====
-            {
-              sourceTag: '*',
-              onlyDependOnLibsWithTags: ['*'],
-            },
           ],
         },
       ],

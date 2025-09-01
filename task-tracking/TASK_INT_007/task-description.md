@@ -6,7 +6,7 @@
 **Priority**: P0 - CRITICAL BLOCKER  
 **Status**: 🔴 ACTIVE  
 **Created**: 2025-01-21  
-**Estimated Duration**: 3-4 days  
+**Estimated Duration**: 3-4 days
 
 ## Problem Statement
 
@@ -67,7 +67,7 @@ The project currently has **100+ TypeScript errors** preventing compilation and 
 
 #### 4. Core Library Exports (CRITICAL)
 
-**Location**: `libs/nestjs-langgraph`
+**Location**: `libs/langgraph-modules/nestjs-langgraph`
 
 - [ ] Export LangGraphModule correctly
 - [ ] Fix interface imports and exports
@@ -121,9 +121,11 @@ The project currently has **100+ TypeScript errors** preventing compilation and 
 ### High Risks
 
 1. **Hidden Dependencies**: Fixing one issue may reveal others
+
    - **Mitigation**: Fix systematically, test incrementally
 
 2. **Breaking Changes**: Fixes might break working modules
+
    - **Mitigation**: Comprehensive test suite before changes
 
 3. **Scope Creep**: Temptation to add features while fixing
@@ -132,6 +134,7 @@ The project currently has **100+ TypeScript errors** preventing compilation and 
 ### Medium Risks
 
 1. **Time Overrun**: Issues more complex than estimated
+
    - **Mitigation**: Daily progress checkpoints
 
 2. **Integration Issues**: Modules may not work together

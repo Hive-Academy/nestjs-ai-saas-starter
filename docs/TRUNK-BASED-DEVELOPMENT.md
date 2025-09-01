@@ -153,7 +153,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm i
 
       - name: Run affected tests
         run: npx nx affected -t test --base=origin/main

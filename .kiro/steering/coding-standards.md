@@ -42,9 +42,17 @@
 ```typescript
 // ✅ Good: Focused library with clear boundaries
 libs/
-├── nestjs-chromadb/          # Vector database operations
-├── nestjs-neo4j/             # Graph database operations  
-└── nestjs-langgraph/         # AI workflow orchestration
+├── nestjs-chromadb/          # Vector database operations (@hive-academy/nestjs-chromadb)
+├── nestjs-neo4j/             # Graph database operations (@hive-academy/nestjs-neo4j)
+├── nestjs-langgraph/         # AI workflow orchestration (@hive-academy/nestjs-langgraph)
+├── langgraph-modules/        # Specialized AI workflow modules
+│   ├── checkpoint/           # State persistence and recovery
+│   ├── multi-agent/          # Multi-agent coordination
+│   ├── time-travel/          # Debugging with state time-travel
+│   └── workflow-engine/      # Core workflow execution
+└── dev-brand/backend/        # Domain-specific libraries
+    ├── data-access/          # Repository patterns
+    └── feature/              # Business logic modules
 
 // ❌ Bad: Monolithic library with mixed concerns
 libs/
@@ -98,6 +106,24 @@ export class MyModule {
     // Group related providers logically
   }
 }
+
+// ✅ Good: LangGraph module integration pattern
+@Module({
+  imports: [
+    NestjsLanggraphModule.forRoot({
+      defaultLLM: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY },
+    }),
+    CheckpointModule.forFeature({
+      storage: 'sqlite',
+      path: './checkpoints.db',
+    }),
+    MultiAgentModule.forFeature({
+      coordinationStrategy: 'round-robin',
+      maxAgents: 5,
+    }),
+  ],
+})
+export class WorkflowModule {}
 ```
 
 ### Service Implementation
@@ -235,10 +261,17 @@ user.decorator.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-// 2. Internal library imports
+// 2. Published library imports
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import { Neo4jService } from '@hive-academy/nestjs-neo4j';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
-// 3. Relative imports (grouped by type)
+// 3. Workspace library imports
+import { CheckpointService } from '@libs/langgraph-modules/checkpoint';
+import { MultiAgentCoordinator } from '@libs/langgraph-modules/multi-agent';
+import { DataAccessModule } from '@libs/dev-brand/backend/data-access';
+
+// 4. Relative imports (grouped by type)
 import { UserRepository } from './repositories/user.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './interfaces/user.interface';
@@ -318,6 +351,57 @@ describe('UserService', () => {
 
       // Act & Assert
       await expect(service.createUser(userData)).rejects.toThrow('Database error');
+    });
+  });
+});
+```
+
+### AI Workflow Testing Patterns
+```typescript
+// ✅ Good: Testing LangGraph workflow components
+describe('WorkflowService', () => {
+  let service: WorkflowService;
+  let mockCheckpointService: jest.Mocked<CheckpointService>;
+  let mockMultiAgentCoordinator: jest.Mocked<MultiAgentCoordinator>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      imports: [
+        NestjsLanggraphModule.forRoot({
+          defaultLLM: { provider: 'mock' },
+        }),
+      ],
+      providers: [
+        WorkflowService,
+        {
+          provide: CheckpointService,
+          useValue: createMockCheckpointService(),
+        },
+        {
+          provide: MultiAgentCoordinator,
+          useValue: createMockMultiAgentCoordinator(),
+        },
+      ],
+    }).compile();
+
+    service = module.get<WorkflowService>(WorkflowService);
+    mockCheckpointService = module.get(CheckpointService);
+    mockMultiAgentCoordinator = module.get(MultiAgentCoordinator);
+  });
+
+  describe('executeWorkflow', () => {
+    it('should execute workflow with checkpoint recovery', async () => {
+      // Arrange
+      const workflowConfig = { id: 'test-workflow', steps: ['step1', 'step2'] };
+      const checkpoint = { stepIndex: 1, state: { data: 'test' } };
+      mockCheckpointService.loadCheckpoint.mockResolvedValue(checkpoint);
+
+      // Act
+      const result = await service.executeWorkflow(workflowConfig);
+
+      // Assert
+      expect(result.resumedFromCheckpoint).toBe(true);
+      expect(mockCheckpointService.loadCheckpoint).toHaveBeenCalledWith('test-workflow');
     });
   });
 });

@@ -5,23 +5,18 @@
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "emitDeclarationOnly": true,
+    "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
     "target": "es2021",
+    "module": "node16",
+    "moduleResolution": "node16",
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    {
-      "path": "../../../nestjs-neo4j/tsconfig.lib.json"
-    },
-    {
-      "path": "../../../nestjs-chromadb/tsconfig.lib.json"
-    }
-  ],
+  "references": [],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

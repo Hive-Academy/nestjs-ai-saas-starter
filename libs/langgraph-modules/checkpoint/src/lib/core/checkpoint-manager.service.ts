@@ -4,6 +4,7 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Inject,
+  Optional,
 } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type {
@@ -36,24 +37,94 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CheckpointManagerService.name);
 
   constructor(
-    private readonly configService: ConfigService,
+    @Optional() private readonly configService?: ConfigService,
     @Inject('ICheckpointSaverFactory')
-    private readonly saverFactory: ICheckpointSaverFactory,
+    private readonly saverFactory?: ICheckpointSaverFactory,
     @Inject('ICheckpointRegistryService')
-    private readonly registryService: ICheckpointRegistryService,
+    private readonly registryService?: ICheckpointRegistryService,
     @Inject('ICheckpointPersistenceService')
-    private readonly persistenceService: ICheckpointPersistenceService,
+    private readonly persistenceService?: ICheckpointPersistenceService,
     @Inject('ICheckpointMetricsService')
-    private readonly metricsService: ICheckpointMetricsService,
+    private readonly metricsService?: ICheckpointMetricsService,
     @Inject('ICheckpointCleanupService')
-    private readonly cleanupService: ICheckpointCleanupService,
+    private readonly cleanupService?: ICheckpointCleanupService,
     @Inject('ICheckpointHealthService')
-    private readonly healthService: ICheckpointHealthService
+    private readonly healthService?: ICheckpointHealthService
   ) {}
 
+  // ========================================
+  // Capability Detection Methods
+  // ========================================
+
+  /**
+   * Check if configuration service is available for enhanced features
+   */
+  public isConfigServiceAvailable(): boolean {
+    return !!this.configService;
+  }
+
+  /**
+   * Check if all core services are available
+   */
+  public isCoreServicesAvailable(): boolean {
+    return !!(
+      this.saverFactory &&
+      this.registryService &&
+      this.persistenceService
+    );
+  }
+
+  /**
+   * Check if monitoring services are available
+   */
+  public isMonitoringAvailable(): boolean {
+    return !!(this.metricsService && this.healthService);
+  }
+
+  /**
+   * Check if cleanup services are available
+   */
+  public isCleanupAvailable(): boolean {
+    return !!this.cleanupService;
+  }
+
+  /**
+   * Get available capabilities summary
+   */
+  public getCapabilities(): {
+    configService: boolean;
+    coreServices: boolean;
+    monitoring: boolean;
+    cleanup: boolean;
+    summary: string[];
+  } {
+    const configService = this.isConfigServiceAvailable();
+    const coreServices = this.isCoreServicesAvailable();
+    const monitoring = this.isMonitoringAvailable();
+    const cleanup = this.isCleanupAvailable();
+
+    const summary: string[] = [];
+    if (configService) summary.push('Enhanced configuration');
+    if (coreServices) summary.push('Full checkpoint operations');
+    if (monitoring) summary.push('Metrics and health monitoring');
+    if (cleanup) summary.push('Automated cleanup');
+
+    if (summary.length === 0) {
+      summary.push('Limited standalone mode - basic operations only');
+    }
+
+    return { configService, coreServices, monitoring, cleanup, summary };
+  }
+
   public async onModuleInit(): Promise<void> {
-    await this.initializeCheckpointSavers();
-    this.startServices();
+    if (this.isCoreServicesAvailable()) {
+      await this.initializeCheckpointSavers();
+      this.startServices();
+    } else {
+      this.logger.warn(
+        'Core services not available - running in limited standalone mode'
+      );
+    }
   }
 
   public async onModuleDestroy(): Promise<void> {
@@ -67,6 +138,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Save checkpoint with metadata and thread management
    * Delegates to persistence service for actual save operation
+   * Returns early with warning if core services not available
    */
   public async saveCheckpoint<
     T extends Record<string, unknown> = Record<string, unknown>
@@ -76,6 +148,13 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     metadata?: EnhancedCheckpointMetadata,
     saverName?: string
   ): Promise<void> {
+    if (!this.persistenceService) {
+      this.logger.warn(
+        'Persistence service not available - checkpoint save skipped'
+      );
+      return;
+    }
+
     return this.persistenceService.saveCheckpoint<T>(
       threadId,
       checkpoint,
@@ -87,6 +166,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Load checkpoint with version support
    * Delegates to persistence service for actual load operation
+   * Returns null if core services not available
    */
   public async loadCheckpoint<
     T extends Record<string, unknown> = Record<string, unknown>
@@ -95,6 +175,11 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     checkpointId?: string,
     saverName?: string
   ): Promise<EnhancedCheckpoint<T> | null> {
+    if (!this.persistenceService) {
+      this.logger.warn('Persistence service not available - returning null');
+      return null;
+    }
+
     return this.persistenceService.loadCheckpoint<T>(
       threadId,
       checkpointId,
@@ -105,12 +190,20 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * List checkpoints for time travel with enhanced filtering
    * Delegates to persistence service for actual list operation
+   * Returns empty array if persistence service not available
    */
   public async listCheckpoints(
     threadId: string,
     options: ListCheckpointsOptions = {},
     saverName?: string
   ): Promise<EnhancedCheckpointTuple[]> {
+    if (!this.persistenceService) {
+      this.logger.warn(
+        'Persistence service not available - returning empty array'
+      );
+      return [];
+    }
+
     return this.persistenceService.listCheckpoints(
       threadId,
       options,
@@ -125,38 +218,59 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get available checkpoint savers
    * Delegates to registry service
+   * Returns empty array if registry service not available
    */
   getAvailableSavers(): string[] {
+    if (!this.registryService) {
+      this.logger.warn(
+        'Registry service not available - returning empty array'
+      );
+      return [];
+    }
     return this.registryService.getAvailableSavers();
   }
 
   /**
    * Get default saver name
+   * Returns null if registry service not available
    */
   getDefaultSaverName(): string | null {
+    if (!this.registryService) {
+      return null;
+    }
     return this.registryService.getDefaultSaverName();
   }
 
   /**
    * Get saver information
+   * Returns null if registry service not available
    */
-  getSaverInfo(
-    saverName?: string
-  ): ReturnType<typeof this.registryService.getSaverInfo> {
+  getSaverInfo(saverName?: string) {
+    if (!this.registryService) {
+      return null;
+    }
     return this.registryService.getSaverInfo(saverName);
   }
 
   /**
    * Get all savers information
+   * Returns empty array if registry service not available
    */
-  getAllSaversInfo(): ReturnType<typeof this.registryService.getAllSaversInfo> {
+  getAllSaversInfo() {
+    if (!this.registryService) {
+      return [];
+    }
     return this.registryService.getAllSaversInfo();
   }
 
   /**
    * Get registry statistics
+   * Returns default stats if registry service not available
    */
-  getRegistryStats(): ReturnType<typeof this.registryService.getRegistryStats> {
+  getRegistryStats() {
+    if (!this.registryService) {
+      return { totalSavers: 0, defaultSaver: null, healthySavers: 0 };
+    }
     return this.registryService.getRegistryStats();
   }
 
@@ -167,44 +281,77 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get checkpoint statistics for monitoring
    * Combines metrics from multiple services
+   * Returns basic stats if health service not available
    */
   async getCheckpointStats(saverName?: string): Promise<CheckpointStats> {
+    if (!this.healthService) {
+      // Return basic stats structure when health service unavailable
+      return {
+        overall: {
+          totalSavers: 0,
+          healthySavers: 0,
+          degradedSavers: 0,
+          unhealthySavers: 0,
+        },
+        savers: {},
+        recommendations: [
+          'Health service not available - install checkpoint module with health monitoring',
+        ],
+      } as any;
+    }
     return this.healthService.getHealthStats();
   }
 
   /**
    * Get performance metrics for a specific saver
+   * Returns null if metrics service not available
    */
-  getMetrics(
-    saverName?: string
-  ): ReturnType<typeof this.metricsService.getMetrics> {
+  getMetrics(saverName?: string) {
+    if (!this.metricsService) {
+      return null;
+    }
     const actualSaverName =
-      saverName || this.registryService.getDefaultSaverName() || 'default';
+      saverName || this.registryService?.getDefaultSaverName() || 'default';
     return this.metricsService.getMetrics(actualSaverName);
   }
 
   /**
    * Get aggregated metrics across all savers
+   * Returns null if metrics service not available
    */
-  getAggregatedMetrics(): ReturnType<
-    typeof this.metricsService.getAggregatedMetrics
-  > {
+  getAggregatedMetrics() {
+    if (!this.metricsService) {
+      return null;
+    }
     return this.metricsService.getAggregatedMetrics();
   }
 
   /**
    * Get performance insights and recommendations
+   * Returns empty insights if metrics service not available
    */
-  getPerformanceInsights(): ReturnType<
-    typeof this.metricsService.getPerformanceInsights
-  > {
+  getPerformanceInsights() {
+    if (!this.metricsService) {
+      return {
+        recommendations: [
+          'Metrics service not available - install checkpoint module with metrics monitoring',
+        ],
+        slowestSavers: [],
+        errorProneSavers: [],
+      };
+    }
     return this.metricsService.getPerformanceInsights();
   }
 
   /**
    * Reset metrics for a specific saver or all savers
+   * Does nothing if metrics service not available
    */
   resetMetrics(saverName?: string): void {
+    if (!this.metricsService) {
+      this.logger.warn('Metrics service not available - cannot reset metrics');
+      return;
+    }
     this.metricsService.resetMetrics(saverName);
   }
 
@@ -215,55 +362,83 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Cleanup old checkpoints
    * Delegates to cleanup service
+   * Returns 0 if cleanup service not available
    */
   async cleanupCheckpoints(
     options: CheckpointCleanupOptions = {},
     saverName?: string
   ): Promise<number> {
+    if (!this.cleanupService) {
+      this.logger.warn('Cleanup service not available - no cleanup performed');
+      return 0;
+    }
     return this.cleanupService.cleanup(options, saverName);
   }
 
   /**
    * Cleanup checkpoints across all savers
+   * Returns 0 if cleanup service not available
    */
   async cleanupAllCheckpoints(
     options: CheckpointCleanupOptions = {}
   ): Promise<number> {
+    if (!this.cleanupService) {
+      this.logger.warn('Cleanup service not available - no cleanup performed');
+      return 0;
+    }
     return this.cleanupService.cleanupAll(options);
   }
 
   /**
    * Get cleanup statistics
+   * Returns empty stats if cleanup service not available
    */
-  getCleanupStats(): ReturnType<typeof this.cleanupService.getCleanupStats> {
+  getCleanupStats() {
+    if (!this.cleanupService) {
+      return { totalCleanupRuns: 0, lastCleanup: null };
+    }
     return this.cleanupService.getCleanupStats();
   }
 
   /**
    * Get cleanup policies
+   * Returns empty policies if cleanup service not available
    */
-  getCleanupPolicies(): ReturnType<
-    typeof this.cleanupService.getCleanupPolicies
-  > {
+  getCleanupPolicies() {
+    if (!this.cleanupService) {
+      return [];
+    }
     return this.cleanupService.getCleanupPolicies();
   }
 
   /**
    * Update cleanup policies
+   * Does nothing if cleanup service not available
    */
-  updateCleanupPolicies(
-    policies: Parameters<typeof this.cleanupService.updateCleanupPolicies>[0]
-  ): void {
+  updateCleanupPolicies(policies: any): void {
+    if (!this.cleanupService) {
+      this.logger.warn(
+        'Cleanup service not available - cannot update policies'
+      );
+      return;
+    }
     this.cleanupService.updateCleanupPolicies(policies);
   }
 
   /**
    * Perform dry run cleanup to see what would be cleaned
+   * Returns empty result if cleanup service not available
    */
   async dryRunCleanup(
     options: CheckpointCleanupOptions = {},
     saverName?: string
-  ): Promise<ReturnType<typeof this.cleanupService.dryRunCleanup>> {
+  ): Promise<any> {
+    if (!this.cleanupService) {
+      this.logger.warn(
+        'Cleanup service not available - returning empty dry run result'
+      );
+      return { wouldDelete: 0, items: [] };
+    }
     return this.cleanupService.dryRunCleanup(options, saverName);
   }
 
@@ -274,49 +449,79 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Health check for checkpoint storage
    * Delegates to health service
+   * Returns false if health service not available
    */
   async healthCheck(saverName?: string): Promise<boolean> {
+    if (!this.healthService) {
+      this.logger.warn('Health service not available - returning false');
+      return false;
+    }
     return this.healthService.healthCheck(saverName);
   }
 
   /**
    * Perform health checks on all savers
+   * Returns empty record if health service not available
    */
   async healthCheckAll(): Promise<Record<string, boolean>> {
+    if (!this.healthService) {
+      this.logger.warn('Health service not available - returning empty record');
+      return {};
+    }
     return this.healthService.healthCheckAll();
   }
 
   /**
    * Get detailed health status
+   * Returns null if health service not available
    */
-  async getHealthStatus(
-    saverName?: string
-  ): Promise<ReturnType<typeof this.healthService.getHealthStatus>> {
+  async getHealthStatus(saverName?: string): Promise<any> {
+    if (!this.healthService) {
+      return null;
+    }
     return this.healthService.getHealthStatus(saverName);
   }
 
   /**
    * Get health summary report
+   * Returns basic summary if health service not available
    */
-  getHealthSummary(): ReturnType<typeof this.healthService.getHealthSummary> {
+  getHealthSummary() {
+    if (!this.healthService) {
+      return {
+        overall: {
+          totalSavers: 0,
+          healthySavers: 0,
+          degradedSavers: 0,
+          unhealthySavers: 0,
+        },
+        recommendations: [
+          'Health service not available - install checkpoint module with health monitoring',
+        ],
+      };
+    }
     return this.healthService.getHealthSummary();
   }
 
   /**
    * Get health history
+   * Returns empty array if health service not available
    */
-  getHealthHistory(
-    saverName?: string
-  ): ReturnType<typeof this.healthService.getHealthHistory> {
+  getHealthHistory(saverName?: string) {
+    if (!this.healthService) {
+      return [];
+    }
     return this.healthService.getHealthHistory(saverName);
   }
 
   /**
    * Get diagnostic information
+   * Returns null if health service not available
    */
-  async getDiagnosticInfo(
-    saverName?: string
-  ): Promise<ReturnType<typeof this.healthService.getDiagnosticInfo>> {
+  async getDiagnosticInfo(saverName?: string): Promise<any> {
+    if (!this.healthService) {
+      return null;
+    }
     return this.healthService.getDiagnosticInfo(saverName);
   }
 
@@ -328,28 +533,18 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Get comprehensive system report
    * Combines data from all services
    */
-  getSystemReport(): {
-    timestamp: Date;
-    registry: ReturnType<ICheckpointRegistryService['getRegistryStats']>;
-    metrics: ReturnType<ICheckpointMetricsService['getAggregatedMetrics']>;
-    health: ReturnType<ICheckpointHealthService['getHealthSummary']>;
-    cleanup: ReturnType<ICheckpointCleanupService['getCleanupStats']>;
-    performance: ReturnType<
-      ICheckpointMetricsService['getPerformanceInsights']
-    >;
-    recommendations: string[];
-  } {
+  getSystemReport(): any {
     const timestamp = new Date();
-    const registry = this.registryService.getRegistryStats();
-    const metrics = this.metricsService.getAggregatedMetrics();
-    const health = this.healthService.getHealthSummary();
-    const cleanup = this.cleanupService.getCleanupStats();
-    const performance = this.metricsService.getPerformanceInsights();
+    const registry = this.getRegistryStats();
+    const metrics = this.getAggregatedMetrics();
+    const health = this.getHealthSummary();
+    const cleanup = this.getCleanupStats();
+    const performance = this.getPerformanceInsights();
 
     // Combine recommendations from all services
     const recommendations = [
-      ...performance.recommendations,
-      ...health.recommendations,
+      ...(performance.recommendations || []),
+      ...(health.recommendations || []),
     ];
 
     return {
@@ -365,6 +560,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Validate entire system configuration and health
+   * Uses available services, gracefully handles missing services
    */
   validateSystem(): {
     valid: boolean;
@@ -380,49 +576,80 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     const issues: string[] = [];
     const warnings: string[] = [];
 
-    // Validate registry
-    const registryValidation = this.registryService.validateSavers();
-    issues.push(...registryValidation.issues);
-    warnings.push(...registryValidation.warnings);
-
-    // Validate cleanup policies
-    const cleanupValidation = this.cleanupService.validatePolicies();
-    issues.push(...cleanupValidation.issues);
-    warnings.push(...cleanupValidation.warnings);
-
-    // Check health status
-    const healthSummary = this.healthService.getHealthSummary();
-    if (healthSummary.overall.unhealthySavers > 0) {
-      issues.push(
-        `${healthSummary.overall.unhealthySavers} saver(s) are unhealthy`
-      );
-    }
-    if (healthSummary.overall.degradedSavers > 0) {
-      warnings.push(
-        `${healthSummary.overall.degradedSavers} saver(s) show degraded performance`
-      );
+    // Validate registry if available
+    let registryValidation: {
+      valid: boolean;
+      issues: string[];
+      warnings: string[];
+    } = { valid: true, issues: [], warnings: [] };
+    if (this.registryService) {
+      registryValidation = this.registryService.validateSavers();
+      issues.push(...registryValidation.issues);
+      warnings.push(...registryValidation.warnings);
+    } else {
+      warnings.push('Registry service not available - cannot validate savers');
     }
 
-    // Check performance
-    const performance = this.metricsService.getPerformanceInsights();
-    if (performance.slowestSavers.length > 0) {
+    // Validate cleanup policies if available
+    let cleanupValidation: {
+      valid: boolean;
+      issues: string[];
+      warnings: string[];
+    } = { valid: true, issues: [], warnings: [] };
+    if (this.cleanupService) {
+      cleanupValidation = this.cleanupService.validatePolicies();
+      issues.push(...cleanupValidation.issues);
+      warnings.push(...cleanupValidation.warnings);
+    } else {
+      warnings.push('Cleanup service not available - cannot validate policies');
+    }
+
+    // Check health status if available
+    const healthSummary = this.getHealthSummary();
+    if (healthSummary.overall && typeof healthSummary.overall === 'object') {
+      if (healthSummary.overall.unhealthySavers > 0) {
+        issues.push(
+          `${healthSummary.overall.unhealthySavers} saver(s) are unhealthy`
+        );
+      }
+      if (healthSummary.overall.degradedSavers > 0) {
+        warnings.push(
+          `${healthSummary.overall.degradedSavers} saver(s) show degraded performance`
+        );
+      }
+    }
+
+    // Check performance if available
+    const performance = this.getPerformanceInsights();
+    if (
+      performance &&
+      performance.slowestSavers &&
+      performance.slowestSavers.length > 0
+    ) {
       warnings.push(
         `Slow performance detected in ${performance.slowestSavers.length} saver(s)`
       );
     }
-    if (performance.errorProneSavers.length > 0) {
+    if (
+      performance &&
+      performance.errorProneSavers &&
+      performance.errorProneSavers.length > 0
+    ) {
       issues.push(
         `High error rates detected in ${performance.errorProneSavers.length} saver(s)`
       );
     }
 
     const summary = {
-      totalSavers: healthSummary.overall.totalSavers,
-      healthySavers: healthSummary.overall.healthySavers,
+      totalSavers:
+        (healthSummary.overall && healthSummary.overall.totalSavers) || 0,
+      healthySavers:
+        (healthSummary.overall && healthSummary.overall.healthySavers) || 0,
       configurationValid: registryValidation.valid && cleanupValidation.valid,
       performanceAcceptable:
-        performance.slowestSavers.length === 0 &&
-        performance.errorProneSavers.length === 0,
+        !performance ||
+        (performance.slowestSavers?.length === 0 &&
+          performance.errorProneSavers?.length === 0),
     };
 
     return {
@@ -440,12 +667,12 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Initialize checkpoint savers from configuration
    * Uses factory and registry services for setup
+   * Falls back to default configuration if ConfigService not available
    */
   private async initializeCheckpointSavers(): Promise<void> {
-    const configs = this.configService.get<CheckpointConfig[]>(
-      'checkpoint.savers',
-      []
-    );
+    const configs =
+      this.configService?.get<CheckpointConfig[]>('checkpoint.savers', []) ??
+      [];
 
     if (configs.length === 0) {
       // Create default memory saver if no configuration provided
@@ -459,7 +686,13 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
     for (const config of configs) {
       try {
-        // Create saver using factory
+        // Check if factory and registry services are available
+        if (!this.saverFactory || !this.registryService) {
+          this.logger.warn(
+            `Cannot initialize ${config.type} saver - required services not available`
+          );
+          continue;
+        }
 
         // Create saver using factory
         const saver = await this.saverFactory.createCheckpointSaver(config);
@@ -479,46 +712,80 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // Validate that we have at least one saver
-    const validation = this.registryService.validateSavers();
-    if (!validation.valid) {
-      throw new Error(
-        `Checkpoint saver initialization failed: ${validation.issues.join(
-          ', '
-        )}`
+    // Validate that we have at least one saver if registry service is available
+    if (this.registryService) {
+      const validation = this.registryService.validateSavers();
+      if (!validation.valid) {
+        throw new Error(
+          `Checkpoint saver initialization failed: ${validation.issues.join(
+            ', '
+          )}`
+        );
+      }
+
+      this.logger.log(
+        `Checkpoint system initialized with ${
+          this.registryService.getAvailableSavers().length
+        } saver(s)`
+      );
+    } else {
+      this.logger.warn(
+        'Registry service not available - cannot validate initialization'
       );
     }
-
-    this.logger.log(
-      `Checkpoint system initialized with ${
-        this.registryService.getAvailableSavers().length
-      } saver(s)`
-    );
   }
 
   /**
    * Start background services
+   * Only starts services that are available
    */
   private startServices(): void {
-    // Start cleanup scheduler
-    this.cleanupService.startScheduledCleanup();
+    const startedServices: string[] = [];
 
-    // Start health monitoring
-    this.healthService.startHealthMonitoring();
+    // Start cleanup scheduler if available
+    if (this.cleanupService) {
+      this.cleanupService.startScheduledCleanup();
+      startedServices.push('cleanup');
+    }
 
-    this.logger.log('Checkpoint background services started');
+    // Start health monitoring if available
+    if (this.healthService) {
+      this.healthService.startHealthMonitoring();
+      startedServices.push('health monitoring');
+    }
+
+    if (startedServices.length > 0) {
+      this.logger.log(
+        `Checkpoint background services started: ${startedServices.join(', ')}`
+      );
+    } else {
+      this.logger.warn('No background services available to start');
+    }
   }
 
   /**
    * Stop background services
+   * Only stops services that are available
    */
   private stopServices(): void {
-    // Stop cleanup scheduler
-    this.cleanupService.stopScheduledCleanup();
+    const stoppedServices: string[] = [];
 
-    // Stop health monitoring
-    this.healthService.stopHealthMonitoring();
+    // Stop cleanup scheduler if available
+    if (this.cleanupService) {
+      this.cleanupService.stopScheduledCleanup();
+      stoppedServices.push('cleanup');
+    }
 
-    this.logger.log('Checkpoint background services stopped');
+    // Stop health monitoring if available
+    if (this.healthService) {
+      this.healthService.stopHealthMonitoring();
+      stoppedServices.push('health monitoring');
+    }
+
+    if (stoppedServices.length > 0) {
+      this.logger.log(
+        `Checkpoint background services stopped: ${stoppedServices.join(', ')}`
+      );
+    }
   }
 }

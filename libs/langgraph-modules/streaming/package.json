@@ -2,16 +2,17 @@
   "name": "@hive-academy/langgraph-streaming",
   "version": "0.0.1",
   "private": false,
-  "main": "./src/index.js",
-  "module": "./src/index.js",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
   "types": "./src/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
       "types": "./src/index.d.ts",
-      "import": "./src/index.js",
-      "default": "./src/index.js"
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js",
+      "default": "./index.esm.js"
     }
   },
   "nx": {
@@ -41,11 +42,16 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "tslib": "^2.3.0",
+  "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "reflect-metadata": "^0.1.13",
     "@nestjs/event-emitter": "^3.0.1",
     "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "rollup": "4.49.0",
+    "@rollup/plugin-typescript": "12.1.4",
+    "rollup-plugin-dts": "6.2.3",
+    "@nestjs/testing": "^11.0.0"
   }
 }

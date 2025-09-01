@@ -35,3 +35,75 @@ export interface TokenData {
   index?: number;
   totalTokens?: number;
 }
+
+export interface StreamTokenMetadata extends StreamMetadata {
+  tokenIndex: number;
+  totalTokens?: number;
+  role?: string;
+}
+
+export interface StreamEventMetadata extends StreamMetadata {
+  eventType: string;
+  eventData?: any;
+}
+
+export interface StreamProgressMetadata extends StreamMetadata {
+  progress: number;
+  total?: number;
+  stage?: string;
+}
+
+// Helper functions for creating metadata
+export function getStreamTokenMetadata(
+  executionId: string,
+  nodeId: string,
+  tokenIndex: number,
+  totalTokens?: number,
+  role?: string
+): StreamTokenMetadata {
+  return {
+    timestamp: new Date(),
+    sequenceNumber: tokenIndex,
+    executionId,
+    nodeId,
+    tokenIndex,
+    totalTokens,
+    role,
+  };
+}
+
+export function getStreamEventMetadata(
+  executionId: string,
+  nodeId: string,
+  eventType: string,
+  eventData?: any
+): StreamEventMetadata {
+  return {
+    timestamp: new Date(),
+    sequenceNumber: Date.now(),
+    executionId,
+    nodeId,
+    eventType,
+    eventData,
+  };
+}
+
+export function getStreamProgressMetadata(
+  executionId: string,
+  nodeId: string,
+  progress: number,
+  total?: number,
+  stage?: string
+): StreamProgressMetadata {
+  return {
+    timestamp: new Date(),
+    sequenceNumber: Date.now(),
+    executionId,
+    nodeId,
+    progress,
+    total,
+    stage,
+  };
+}
+
+

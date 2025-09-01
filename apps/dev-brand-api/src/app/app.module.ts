@@ -4,17 +4,51 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 // Library imports
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
-import { AgenticMemoryModule } from '@devbrand/backend-data-access';
 import { DevbrandBackendFeatureModule } from '@devbrand/backend-feature';
-import {
-  NestjsLanggraphModule,
-  configureMemoryIntegration,
-} from '@hive-academy/nestjs-langgraph';
+import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
+
+import { MemoryModule } from '@hive-academy/langgraph-memory';
+
+// Import adapters from application layer - NOT from library
+import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
+
+// Direct child module imports - Phase 3 Subtask 3.3: Modular configuration pattern
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
+import { HitlModule } from '@hive-academy/langgraph-hitl';
+
+// Additional LangGraph child modules for complete demo
+import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
+import { PlatformModule } from '@hive-academy/langgraph-platform';
+import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 
 // Configuration imports
-import { getNestLanggraphConfig } from './config/nestjs-langgraph.config';
 import { getChromaDBConfig } from './config/chromadb.config';
 import { getNeo4jConfig } from './config/neo4j.config';
+import { getLangGraphCoreConfig } from './config/langgraph-core.config';
+import { getCheckpointConfig } from './config/checkpoint.config';
+import { getStreamingConfig } from './config/streaming.config';
+import { getHitlConfig } from './config/hitl.config';
+
+// Additional configuration functions for new modules
+import { getMemoryConfig } from './config/memory.config';
+import { getFunctionalApiConfig } from './config/functional-api.config';
+import { getMultiAgentConfig } from './config/multi-agent.config';
+import { getMonitoringConfig } from './config/monitoring.config';
+import { getPlatformConfig } from './config/platform.config';
+import { getTimeTravelConfig } from './config/time-travel.config';
+import { getWorkflowEngineConfig } from './config/workflow-engine.config';
+
+// Test services and controllers for Phase 1 verification
+import { AdapterTestService } from './services/adapter-test.service';
+import { AdapterTestController } from './controllers/adapter-test.controller';
+
+// Health check imports for Phase 1 Subtask 1.3
+import { TerminusModule } from '@nestjs/terminus';
+import { HealthController } from './controllers/health.controller';
 
 @Module({
   imports: [
@@ -39,36 +73,45 @@ import { getNeo4jConfig } from './config/neo4j.config';
         getNeo4jConfig(configService),
     }),
 
-    // Memory Module - Simplified agent configuration
-    AgenticMemoryModule.forAgent({
-      enableSemanticSearch: true,
-      enableAutoSummarization: true,
-      collection: 'agent-memory',
+    NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
+    MemoryModule.forRoot({
+      ...getMemoryConfig(),
+      adapters: {
+        vector: ChromaVectorAdapter, // Uses existing ChromaDB configuration
+        graph: Neo4jGraphAdapter, // Uses existing Neo4j configuration
+      },
     }),
 
-    // LangGraph Module with Memory Integration
-    NestjsLanggraphModule.forRoot({
-      ...getNestLanggraphConfig(),
+    // Direct child module imports - Independent module usage
+    LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
+    StreamingModule.forRoot(getStreamingConfig()),
+    HitlModule.forRoot(getHitlConfig()),
 
-      // Memory integration using contract interface
-      memory: configureMemoryIntegration({
-        enabled: true,
-        memoryModule: AgenticMemoryModule.forAgent({
-          enableSemanticSearch: true,
-          enableAutoSummarization: true,
-          collection: 'agent-memory',
-        }),
-        config: {
-          useEnterpriseMemory: true,
-          defaultMemoryType: 'enterprise',
-        },
-      }),
-    }),
+    // Additional LangGraph modules for comprehensive demo
+    FunctionalApiModule.forRoot(getFunctionalApiConfig()),
+    MultiAgentModule.forRoot(getMultiAgentConfig()),
+    MonitoringModule.forRoot(getMonitoringConfig()),
+    PlatformModule.forRoot(getPlatformConfig()),
+    TimeTravelModule.forRoot(getTimeTravelConfig()),
+    WorkflowEngineModule.forRoot(getWorkflowEngineConfig()),
+
+    // Health checks module for Phase 1 Subtask 1.3
+    TerminusModule,
+
     DevbrandBackendFeatureModule,
   ],
-  exports: [
-    // Export AgenticMemoryModule so other modules can use it
-    AgenticMemoryModule,
+  providers: [
+    // Phase 1 test service to verify adapter injection
+    AdapterTestService,
   ],
+  controllers: [
+    // Phase 1 test controller to expose verification endpoints
+    AdapterTestController,
+
+    // Phase 1 health check controller for Subtask 1.3
+    HealthController,
+  ],
+  exports: [],
 })
 export class AppModule {}
