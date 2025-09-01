@@ -12,8 +12,11 @@
         "outputPath": "dist/libs/nestjs-langgraph",
         "main": "libs/nestjs-langgraph/src/index.ts",
         "tsConfig": "libs/nestjs-langgraph/tsconfig.lib.json",
+        "rollupConfig": "libs/nestjs-langgraph/rollup.config.js",
         "format": ["cjs", "esm"],
         "useLegacyTypescriptPlugin": false,
+
+        "external": ["@hive-academy/langgraph-core"],
         "assets": [
           {
             "input": "./libs/nestjs-langgraph",

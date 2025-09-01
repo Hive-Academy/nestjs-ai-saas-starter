@@ -12,6 +12,7 @@
         "outputPath": "dist/libs/nestjs-chromadb",
         "main": "libs/nestjs-chromadb/src/index.ts",
         "tsConfig": "libs/nestjs-chromadb/tsconfig.lib.json",
+        "rollupConfig": "libs/nestjs-chromadb/rollup.config.js",
         "format": ["cjs", "esm"],
         "useLegacyTypescriptPlugin": false,
         "assets": [

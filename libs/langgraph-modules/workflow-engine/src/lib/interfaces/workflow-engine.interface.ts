@@ -3,7 +3,13 @@
 
 export interface WorkflowState {
   executionId: string;
-  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  status:
+    | 'pending'
+    | 'active'
+    | 'paused'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
   currentNode?: string;
   completedNodes: string[];
   confidence: number;
@@ -174,6 +180,7 @@ export const LANGGRAPH_MODULE_OPTIONS = 'LANGGRAPH_MODULE_OPTIONS';
 
 // Placeholder functions - these will be replaced by actual imports at runtime
 export const WorkflowStateAnnotation = {} as any;
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 export const createCustomStateAnnotation = (() => {}) as any;
 export const isWorkflow = (() => false) as any;
 

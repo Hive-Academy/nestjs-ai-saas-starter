@@ -44,7 +44,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 
 - Creates implementation-plan.md
 - Designs architecture
-- **MUST** search @hive-academy/shared for types
+- **MUST** search project's shared types and components
 - Breaks down into subtasks
 
 **Quality Gate**: Validates SOLID principles and type search
@@ -52,7 +52,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 ### 5. Senior Developer
 
 - Implements code
-- **MUST** use existing types from @hive-academy/shared
+- **MUST** use existing types from project's shared libraries
 - Zero 'any' types allowed
 - Updates progress.md
 
@@ -128,7 +128,7 @@ Quick help guide for the `/orchestrate` command workflow system.
 ### Common Issues
 
 - **Missing task-description.md**: Project manager didn't complete
-- **No type search**: Developer must document @hive-academy/shared search
+- **No type search**: Developer must document shared type discovery
 - **Low coverage**: Tester needs more test cases
 - **Build fails**: Developer must fix compilation errors
 

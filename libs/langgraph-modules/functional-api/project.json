@@ -3,7 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/functional-api/src",
   "projectType": "library",
-  "tags": ["domain:langgraph type:data-access"],
+  "tags": ["domain:langgraph", "type:data-access"],
   "// targets": "to see all targets run: nx show project langgraph-modules/functional-api --web",
   "targets": {
     "build": {
@@ -13,10 +13,14 @@
         "outputPath": "dist/libs/langgraph-modules/functional-api",
         "main": "libs/langgraph-modules/functional-api/src/index.ts",
         "tsConfig": "libs/langgraph-modules/functional-api/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/functional-api/rollup.config.js",
         "format": ["cjs", "esm"],
-        "buildLibsFromSource": true,
-        "external": ["@hive-academy/langgraph-core", "@hive-academy/langgraph-checkpoint"],
         "useLegacyTypescriptPlugin": false,
+
+        "external": [
+          "@hive-academy/langgraph-core",
+          "@hive-academy/langgraph-checkpoint"
+        ],
         "assets": [
           {
             "input": "./libs/langgraph-modules/functional-api",

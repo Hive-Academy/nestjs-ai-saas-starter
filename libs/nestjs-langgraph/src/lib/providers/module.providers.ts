@@ -2,11 +2,11 @@ import type { Provider } from '@nestjs/common';
 import type { LangGraphModuleOptions } from '../interfaces/module-options.interface';
 import { LANGGRAPH_MODULE_OPTIONS, LANGGRAPH_MODULE_ID } from '../constants';
 
+import { createLLMProviders } from './llm.providers';
 import {
-  createLLMProviders,
   createInfrastructureProviders,
   createInfrastructureProvidersAsync,
-} from './index';
+} from './infrastructure.providers';
 
 // Adapter providers removed - child modules work directly through module loading
 

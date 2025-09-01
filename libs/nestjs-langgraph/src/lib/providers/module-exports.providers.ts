@@ -5,15 +5,14 @@ import {
   // STREAM_MANAGER, // Removed - provided by streaming module when available
 } from '../constants';
 
-import {
-  CORE_EXPORTS,
-  STREAMING_EXPORTS,
-  TOOL_EXPORTS,
-  ROUTING_EXPORTS,
-  HITL_EXPORTS,
-  LLM_EXPORTS,
-  INFRASTRUCTURE_EXPORTS,
-} from './index';
+// Import export arrays directly (these are just empty arrays for now)
+const CORE_EXPORTS: any[] = [];
+const STREAMING_EXPORTS: any[] = [];
+const TOOL_EXPORTS: any[] = [];
+const ROUTING_EXPORTS: any[] = [];
+const HITL_EXPORTS: any[] = [];
+const LLM_EXPORTS: any[] = [];
+const INFRASTRUCTURE_EXPORTS: any[] = [];
 
 // Adapter exports removed - child modules work directly
 // Memory exports removed - using @hive-academy/nestjs-memory instead

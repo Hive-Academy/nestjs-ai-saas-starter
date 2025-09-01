@@ -11,6 +11,7 @@
 **Before reviewing security, understand the threat landscape:**
 
 1. **Application Type & Attack Surface**:
+
    - Web application, API service, desktop app, mobile app, or library
    - Public-facing vs internal/private deployment
    - Authentication requirements and user data handling
@@ -29,6 +30,7 @@ Apply these technology-agnostic security assessments:
 ### 1. Credential & Secret Management
 
 **Critical security exposures to identify:**
+
 - Hardcoded API keys, passwords, tokens, or certificates
 - Database connection strings with embedded credentials
 - Cloud service keys and access tokens in source code
@@ -39,6 +41,7 @@ Apply these technology-agnostic security assessments:
 ### 2. Input Validation & Sanitization
 
 **Data integrity and injection prevention:**
+
 - SQL injection vulnerabilities in database queries
 - Cross-site scripting (XSS) risks in user input handling
 - Command injection through system calls or shell execution
@@ -49,6 +52,7 @@ Apply these technology-agnostic security assessments:
 ### 3. Authentication & Authorization
 
 **Access control security assessment:**
+
 - Authentication bypass opportunities
 - Session management vulnerabilities
 - Privilege escalation possibilities
@@ -59,6 +63,7 @@ Apply these technology-agnostic security assessments:
 ### 4. Data Protection & Privacy
 
 **Sensitive information handling:**
+
 - Personal data exposure in logs or error messages
 - Sensitive data transmission without encryption
 - Improper data storage or caching of sensitive information
@@ -69,6 +74,7 @@ Apply these technology-agnostic security assessments:
 ### 5. Network Security & Communications
 
 **Transmission and communication security:**
+
 - Unencrypted communications (HTTP instead of HTTPS)
 - Certificate validation bypassing
 - Insecure TLS/SSL configuration
@@ -79,6 +85,7 @@ Apply these technology-agnostic security assessments:
 ### 6. Business Logic Security
 
 **Application-specific security flaws:**
+
 - Race condition vulnerabilities in critical operations
 - Business rule bypasses through parameter manipulation
 - Insufficient rate limiting on sensitive operations
@@ -91,26 +98,31 @@ Apply these technology-agnostic security assessments:
 **Adapt security analysis based on detected technology stack:**
 
 ### Web Applications
+
 - **Frontend**: XSS prevention, Content Security Policy, secure cookie handling
 - **Backend**: CSRF protection, request validation, secure session management
 - **API**: Rate limiting, input validation, response data filtering
 
 ### Database Security
+
 - **SQL Databases**: Parameterized queries, least privilege access, encryption at rest
 - **NoSQL Databases**: Injection prevention, access control, data validation
 - **ORM Security**: Proper query construction, relationship security, mass assignment protection
 
 ### Cloud & Container Security
+
 - **AWS/GCP/Azure**: IAM configuration, resource access controls, encryption settings
 - **Docker/Kubernetes**: Container security, secrets management, network policies
 - **Serverless**: Function permissions, environment variable security, execution context
 
 ### Mobile & Desktop Applications
+
 - **Mobile**: Certificate pinning, local data encryption, API security
 - **Desktop**: File system permissions, inter-process communication, update security
 - **Electron/Web**: Context isolation, CSP implementation, secure IPC
 
 ### Language-Specific Security
+
 - **JavaScript/Node.js**: Prototype pollution, dependency vulnerabilities, eval() usage
 - **Python**: Pickle/deserialization, SQL injection, code injection
 - **Java**: Deserialization vulnerabilities, XXE, path traversal
@@ -120,8 +132,10 @@ Apply these technology-agnostic security assessments:
 ## Security Assessment Process
 
 ### Step 1: Threat Modeling
+
 ```markdown
 ## Security Threat Analysis
+
 **Application Type**: [web app, API, desktop, mobile, library]
 **Attack Surface**: [public, internal, hybrid]
 **Sensitive Data Types**: [PII, financial, health, proprietary]
@@ -130,7 +144,9 @@ Apply these technology-agnostic security assessments:
 ```
 
 ### Step 2: Vulnerability Scanning
+
 For each file and configuration:
+
 - Scan for hardcoded secrets and credentials
 - Analyze input handling and validation patterns
 - Review authentication and authorization logic
@@ -138,6 +154,7 @@ For each file and configuration:
 - Evaluate external service integrations
 
 ### Step 3: Security Control Assessment
+
 - Verify implementation of required security controls
 - Check for security best practices adoption
 - Assess defense-in-depth implementation
@@ -147,6 +164,7 @@ For each file and configuration:
 ## Critical Vulnerability Categories
 
 ### CRITICAL (Immediate Fix Required)
+
 - Hardcoded production credentials or API keys
 - SQL injection vulnerabilities
 - Authentication bypass opportunities
@@ -154,6 +172,7 @@ For each file and configuration:
 - Sensitive data exposure in logs or responses
 
 ### HIGH (Fix Before Production)
+
 - XSS vulnerabilities
 - Privilege escalation opportunities
 - Insecure direct object references
@@ -161,6 +180,7 @@ For each file and configuration:
 - Insecure cryptographic implementations
 
 ### MEDIUM (Address in Security Sprint)
+
 - Missing security headers
 - Insufficient logging of security events
 - Weak session management
@@ -168,6 +188,7 @@ For each file and configuration:
 - Rate limiting gaps
 
 ### LOW (Security Hardening)
+
 - Information disclosure in error messages
 - Missing security documentation
 - Suboptimal cryptographic choices
@@ -187,7 +208,7 @@ For each file and configuration:
 
 ## Required Output Format
 
-```markdown
+````markdown
 ## 🔒 SECURITY REVIEW RESULTS
 
 **Application Type**: [Detected application type and attack surface]
@@ -196,6 +217,7 @@ For each file and configuration:
 **Files Analyzed**: [X files]
 
 ### 📋 Security Context Analysis
+
 - **Application Type**: [web app, API, desktop, etc.]
 - **Attack Surface**: [public-facing, internal, hybrid]
 - **Technology Stack**: [primary technologies and frameworks]
@@ -203,6 +225,7 @@ For each file and configuration:
 - **Compliance Requirements**: [regulatory requirements if applicable]
 
 ### ✅ Security Strengths
+
 - [Implemented security controls and best practices]
 - [Proper security patterns identified]
 - [Good security design decisions]
@@ -210,12 +233,14 @@ For each file and configuration:
 ### 🚨 Security Vulnerabilities
 
 **CRITICAL Issue [N]: [Vulnerability Type]**
+
 - **Location**: `file.ext:line`
 - **Vulnerability**: [Specific security issue description]
 - **Severity**: CRITICAL
 - **Risk**: [Potential impact and attack vector]
 - **Exploit Scenario**: [How an attacker could exploit this]
-- **Remediation**: 
+- **Remediation**:
+
 ```[language]
 // Current (vulnerable)
 [vulnerable code example]
@@ -223,9 +248,12 @@ For each file and configuration:
 // Secure implementation
 [secure code example]
 ```
+````
+
 - **Verification**: [How to verify the fix works]
 
 **HIGH Issue [N]: [Vulnerability Type]**
+
 - **Location**: `file.ext:line`
 - **Vulnerability**: [Security issue description]
 - **Severity**: HIGH
@@ -237,20 +265,24 @@ For each file and configuration:
 ### 🛡️ Security Recommendations
 
 #### Immediate Actions (Critical/High)
+
 - [Critical security fixes required before production]
 - [High-priority security improvements]
 
 #### Security Hardening (Medium/Low)
+
 - [Security improvements to implement]
 - [Best practices to adopt]
 - [Preventive measures to implement]
 
 #### Security Testing & Monitoring
+
 - [Security testing recommendations]
 - [Monitoring and alerting suggestions]
 - [Incident response preparations]
 
 ### 📊 Security Metrics
+
 - **Credential Security**: [X/10] - [Secret management assessment]
 - **Input Validation**: [X/10] - [Data handling security]
 - **Authentication/Authorization**: [X/10] - [Access control security]
@@ -259,15 +291,18 @@ For each file and configuration:
 - **Business Logic Security**: [X/10] - [Application-specific security]
 
 ### 🎯 Technology-Specific Security Considerations
+
 - [Security recommendations specific to detected technology stack]
 - [Framework-specific security best practices]
 - [Deployment environment security considerations]
 
 ### 🚀 Production Security Readiness
+
 - **Safe for Production**: [YES/NO/WITH FIXES]
 - **Critical Issues**: [X issues blocking deployment]
 - **Security Risk Level**: [MINIMAL/LOW/MEDIUM/HIGH/CRITICAL]
 - **Recommended Actions**: [Next steps for security improvement]
+
 ```
 
 ## Adaptive Security Assessment
@@ -306,8 +341,9 @@ For each file and configuration:
 **Recommend appropriate security testing approaches:**
 
 - **Static Analysis**: Code scanning for vulnerability patterns
-- **Dynamic Analysis**: Runtime security testing and fuzzing  
+- **Dynamic Analysis**: Runtime security testing and fuzzing
 - **Interactive Analysis**: Combination of static and dynamic testing
 - **Dependency Scanning**: Third-party library vulnerability assessment
 - **Infrastructure Scanning**: Configuration and deployment security
 - **Penetration Testing**: Manual security assessment for critical applications
+```

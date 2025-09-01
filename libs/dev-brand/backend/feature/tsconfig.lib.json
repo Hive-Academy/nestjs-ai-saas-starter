@@ -1,24 +1,12 @@
 {
   "extends": "../../../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "src",
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "emitDeclarationOnly": false,
     "declaration": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
-    "lib": ["es2022", "dom"],
-    "target": "es2021",
-    "module": "node16",
-    "moduleResolution": "node16",
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": false
+    "declarationMap": true
   },
   "include": ["src/**/*.ts"],
-  "references": [],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }

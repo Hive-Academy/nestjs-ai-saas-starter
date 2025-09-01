@@ -42,10 +42,13 @@
     "access": "public"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
     "@nestjs/common": "^11.0.0",
     "reflect-metadata": "^0.1.13",
     "@nestjs/event-emitter": "^3.0.1",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "rollup": "4.49.0",
+    "@rollup/plugin-typescript": "12.1.4",
+    "rollup-plugin-dts": "6.2.3",
+    "@nestjs/testing": "^11.0.0"
   }
 }

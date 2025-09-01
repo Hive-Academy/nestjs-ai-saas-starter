@@ -6,13 +6,21 @@
   "module": "./index.esm.js",
   "types": "./index.d.ts",
   "exports": {
+    "./package.json": "./package.json",
     ".": {
+      "development": "./src/index.ts",
       "types": "./index.d.ts",
       "import": "./index.esm.js",
       "require": "./index.cjs.js",
       "default": "./index.cjs.js"
-    },
-    "./package.json": "./package.json"
+    }
   },
-  "dependencies": {}
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0",
+    "@nestjs/common": "^11.0.0",
+    "reflect-metadata": "^0.1.13"
+  }
 }

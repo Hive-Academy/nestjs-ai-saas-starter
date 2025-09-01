@@ -12,6 +12,7 @@
         "outputPath": "dist/libs/nestjs-neo4j",
         "main": "libs/nestjs-neo4j/src/index.ts",
         "tsConfig": "libs/nestjs-neo4j/tsconfig.lib.json",
+        "rollupConfig": "libs/nestjs-neo4j/rollup.config.js",
         "format": ["cjs", "esm"],
         "useLegacyTypescriptPlugin": false,
         "assets": [

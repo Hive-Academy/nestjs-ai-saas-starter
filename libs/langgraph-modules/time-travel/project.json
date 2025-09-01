@@ -13,8 +13,9 @@
         "outputPath": "dist/libs/langgraph-modules/time-travel",
         "main": "libs/langgraph-modules/time-travel/src/index.ts",
         "tsConfig": "libs/langgraph-modules/time-travel/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/time-travel/rollup.config.js",
         "format": ["cjs", "esm"],
-        "buildLibsFromSource": true,
+
         "external": ["@hive-academy/langgraph-checkpoint"],
         "useLegacyTypescriptPlugin": false,
         "assets": [

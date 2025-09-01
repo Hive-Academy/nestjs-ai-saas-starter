@@ -1,5 +1,6 @@
 import type { BaseMessage } from '@langchain/core/messages';
 import type { StateGraph, StateGraphArgs } from '@langchain/langgraph';
+import type { WorkflowError } from './state-management.interface';
 
 export interface WorkflowState {
   /**
@@ -10,7 +11,13 @@ export interface WorkflowState {
   /**
    * Current workflow status
    */
-  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  status:
+    | 'pending'
+    | 'active'
+    | 'paused'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
 
   /**
    * Current node being executed
@@ -35,7 +42,7 @@ export interface WorkflowState {
   /**
    * Error information if workflow failed
    */
-  error?: WorkflowError;
+  error?: WorkflowExecutionError;
 
   /**
    * Human feedback if HITL is enabled
@@ -104,7 +111,7 @@ export interface WorkflowState {
   /**
    * Last error
    */
-  lastError?: WorkflowError;
+  lastError?: WorkflowExecutionError;
 
   /**
    * Risk assessments
@@ -121,7 +128,7 @@ export interface WorkflowState {
   [key: string]: any;
 }
 
-export interface WorkflowError {
+export interface WorkflowExecutionError {
   /**
    * Error ID
    */
@@ -622,12 +629,18 @@ export interface CompiledWorkflow<TState = WorkflowState> {
   /**
    * Invoke the workflow with initial state
    */
-  invoke: (state: Partial<TState>, options?: WorkflowExecutionOptions) => Promise<TState>;
+  invoke: (
+    state: Partial<TState>,
+    options?: WorkflowExecutionOptions
+  ) => Promise<TState>;
 
   /**
    * Stream workflow execution
    */
-  stream: (state: Partial<TState>, options?: WorkflowExecutionOptions) => AsyncIterableIterator<TState>;
+  stream: (
+    state: Partial<TState>,
+    options?: WorkflowExecutionOptions
+  ) => AsyncIterableIterator<TState>;
 
   /**
    * Get workflow graph

@@ -11,6 +11,7 @@
 **Before reviewing code quality, analyze the codebase to understand:**
 
 1. **Primary Language & Framework Detection**:
+
    - Examine package.json, requirements.txt, go.mod, Cargo.toml, etc.
    - Identify main dependencies and frameworks
    - Analyze file extensions and project structure
@@ -27,34 +28,40 @@
 Apply these language-agnostic principles regardless of technology stack:
 
 ### 1. Type Safety & Data Integrity
+
 - **Typed Languages**: Comprehensive type definitions, avoid escape hatches (any, Object, etc.)
 - **Dynamic Languages**: Runtime validation, schema definitions, proper error handling
 - **All Languages**: Input validation, data sanitization, proper null/undefined handling
 
 ### 2. Single Responsibility Principle
+
 - Each class/function/module has one clear responsibility
 - Avoid god objects and functions doing too many things
 - Clear separation of concerns across architectural layers
 
 ### 3. KISS Principle (Keep It Simple)
+
 - Avoid unnecessary complexity and over-engineering
 - Prefer readable code over clever solutions
 - Clear, descriptive naming conventions
 - Avoid deeply nested conditional logic
 
 ### 4. DRY Principle (Don't Repeat Yourself)
+
 - Identify code duplication and repeated patterns
 - Extract common functionality to reusable utilities
 - Abstract shared business logic appropriately
 - Avoid copy-paste programming
 
 ### 5. Error Handling & Resilience
+
 - Comprehensive error handling strategies
 - Proper exception/error propagation
 - Graceful degradation patterns
 - Appropriate logging and monitoring hooks
 
 ### 6. Code Organization & Maintainability
+
 - Consistent file and folder structure
 - Clear module boundaries and dependencies
 - Proper separation of configuration from logic
@@ -65,12 +72,14 @@ Apply these language-agnostic principles regardless of technology stack:
 **Dynamically apply based on detected stack:**
 
 ### Frontend Frameworks
+
 - **React**: Component composition, hooks usage, state management patterns, performance optimization
 - **Vue**: Composition API usage, reactivity patterns, component lifecycle management
 - **Angular**: Dependency injection, change detection strategies, reactive forms, lifecycle hooks
 - **Svelte**: Store patterns, component communication, reactivity declarations
 
 ### Backend Frameworks
+
 - **Node.js/Express**: Middleware patterns, async/await usage, error handling middleware
 - **NestJS**: Decorator usage, module organization, dependency injection, guards/interceptors
 - **Django**: Model design, view patterns, middleware usage, ORM best practices
@@ -79,12 +88,14 @@ Apply these language-agnostic principles regardless of technology stack:
 - **Spring Boot**: Annotation usage, bean management, AOP patterns
 
 ### Database & ORM Patterns
+
 - **TypeORM/Prisma**: Entity relationships, migration patterns, query optimization
 - **SQLAlchemy**: Session management, relationship definitions, query construction
 - **Mongoose**: Schema design, middleware hooks, population patterns
 - **Sequelize**: Model associations, transaction handling, validation patterns
 
 ### Language-Specific Patterns
+
 - **TypeScript**: Advanced type usage, generic constraints, utility types
 - **Python**: PEP compliance, async/await patterns, context managers, decorators
 - **JavaScript**: Module patterns, promise handling, functional programming concepts
@@ -95,8 +106,10 @@ Apply these language-agnostic principles regardless of technology stack:
 ## Review Process
 
 ### Step 1: Codebase Analysis
+
 ```markdown
 ## Technology Stack Analysis
+
 **Primary Language**: [detected language]
 **Framework/Platform**: [detected framework]
 **Architecture Pattern**: [detected pattern - MVC, microservices, etc.]
@@ -105,7 +118,9 @@ Apply these language-agnostic principles regardless of technology stack:
 ```
 
 ### Step 2: Universal Quality Assessment
+
 For each file, evaluate:
+
 - Type safety and data validation approaches
 - Function/class size and complexity
 - Code duplication and abstraction opportunities
@@ -113,7 +128,9 @@ For each file, evaluate:
 - Naming conventions and code clarity
 
 ### Step 3: Stack-Specific Evaluation
+
 Apply framework-specific best practices based on detected technology:
+
 - Framework-specific anti-patterns
 - Performance considerations for the stack
 - Security patterns relevant to the technology
@@ -122,6 +139,7 @@ Apply framework-specific best practices based on detected technology:
 ## Feedback Format
 
 For each issue found, provide:
+
 - **Location**: Specific file and line numbers
 - **Problem**: Clear explanation of the issue
 - **Context**: Why this matters for the detected technology stack
@@ -141,7 +159,7 @@ For each issue found, provide:
 
 ## Required Output Format
 
-```markdown
+````markdown
 ## 🔍 CODE QUALITY REVIEW RESULTS
 
 **Technology Stack**: [Primary language/framework detected]
@@ -150,23 +168,27 @@ For each issue found, provide:
 **Files Analyzed**: [X files]
 
 ### 📋 Stack Analysis
+
 - **Primary Language**: [language]
 - **Framework/Platform**: [framework]
 - **Architecture**: [detected pattern]
 - **Key Technologies**: [list of major dependencies]
 
 ### ✅ Strengths Found
+
 - [Specific examples with file:line references]
 - [Framework-specific good practices identified]
 
 ### ⚠️ Issues Identified
 
 **Issue [N]: [Issue Type]**
+
 - **Location**: `file.ext:line`
 - **Problem**: [Specific issue description]
 - **Framework Context**: [Why this matters for detected stack]
 - **Impact**: [Effect on maintainability/performance/security]
-- **Solution**: 
+- **Solution**:
+
 ```[language]
 // Current (problematic)
 [current code]
@@ -174,9 +196,12 @@ For each issue found, provide:
 // Recommended ([framework] best practice)
 [improved code]
 ```
+````
+
 - **Why**: [Explanation tailored to detected technology]
 
 ### 📊 Quality Metrics
+
 - **Type Safety**: [X/10] - [Language-specific assessment]
 - **Single Responsibility**: [X/10]
 - **KISS Principle**: [X/10]
@@ -186,9 +211,11 @@ For each issue found, provide:
 - **Code Organization**: [X/10]
 
 ### 🎯 Framework-Specific Recommendations
+
 - [Recommendations specific to detected technology stack]
 - [Performance optimizations relevant to the framework]
 - [Security considerations for the platform]
+
 ```
 
 ## Adaptive File Targeting
@@ -196,7 +223,7 @@ For each issue found, provide:
 **Instead of hardcoded file patterns, dynamically target based on project structure:**
 
 - **Web Projects**: Components, services, utilities, configuration files
-- **API Projects**: Controllers, models, middleware, routing files  
+- **API Projects**: Controllers, models, middleware, routing files
 - **Library Projects**: Core modules, interfaces, utility functions
 - **CLI Projects**: Command handlers, configuration, core logic
 - **Desktop Apps**: Main processes, renderers, native modules
@@ -206,3 +233,4 @@ For each issue found, provide:
 2. Identify file types based on extensions and content
 3. Focus review on business logic and architectural components
 4. Include configuration files that affect code quality (tsconfig, eslint, etc.)
+```

@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
+import type {
+  WorkflowState,
+  HumanFeedback,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Proposed action for human approval
@@ -148,7 +151,9 @@ export class HumanApprovalNode {
   private readonly logger = new Logger(HumanApprovalNode.name);
   private readonly pendingApprovals = new Map<string, HumanApprovalRequest>();
 
-  constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
+  ) {}
 
   /**
    * Execute human approval checkpoint
@@ -160,14 +165,16 @@ export class HumanApprovalNode {
       autoApproveThreshold?: number;
       timeoutMs?: number;
       skipCondition?: (state: TState) => boolean;
-    },
+    }
   ): Promise<Partial<TState>> {
-    const {executionId} = state;
+    const { executionId } = state;
 
     // Check skip condition
     if (options?.skipCondition?.(state)) {
-      this.logger.debug(`Skipping human approval for ${executionId} - condition met`);
-      return {};
+      this.logger.debug(
+        `Skipping human approval for ${executionId} - condition met`
+      );
+      return {} as Partial<TState>;
     }
 
     // Check auto-approve threshold
@@ -175,7 +182,9 @@ export class HumanApprovalNode {
     const autoApproveThreshold = options?.autoApproveThreshold ?? 0.95;
 
     if (confidence >= autoApproveThreshold) {
-      this.logger.log(`Auto-approving ${executionId} - confidence ${confidence} exceeds threshold`);
+      this.logger.log(
+        `Auto-approving ${executionId} - confidence ${confidence} exceeds threshold`
+      );
       return {
         humanFeedback: {
           approved: true,
@@ -219,7 +228,10 @@ export class HumanApprovalNode {
     this.pendingApprovals.set(executionId, approvalRequest);
 
     // Emit event for external systems
-    await this.eventEmitter.emit('workflow.human.approval.requested', approvalRequest);
+    await this.eventEmitter.emit(
+      'workflow.human.approval.requested',
+      approvalRequest
+    );
 
     this.logger.log(`Approval request details:
       - Execution: ${executionId}
@@ -250,9 +262,9 @@ export class HumanApprovalNode {
    */
   processHumanFeedback<TState extends WorkflowState = WorkflowState>(
     state: TState,
-    response: HumanApprovalResponse,
+    response: HumanApprovalResponse
   ): Partial<TState> {
-    const {executionId} = state;
+    const { executionId } = state;
 
     // Remove from pending approvals
     this.pendingApprovals.delete(executionId);
@@ -278,9 +290,12 @@ export class HumanApprovalNode {
     const stateUpdate: Partial<TState> = {
       humanFeedback: {
         approved: response.decision === 'approved',
-        status: response.decision === 'retry' ? 'pending' :
-                response.decision === 'modify' ? 'needs_revision' :
-                response.decision,
+        status:
+          response.decision === 'retry'
+            ? 'pending'
+            : response.decision === 'modify'
+            ? 'needs_revision'
+            : response.decision,
         approver: response.approver || { id: 'unknown' },
         message: response.feedback,
         timestamp: response.timestamp,
@@ -289,13 +304,14 @@ export class HumanApprovalNode {
       confidence: newConfidence,
       waitingForApproval: false,
       approvalReceived: response.decision === 'approved',
-      rejectionReason: response.decision === 'rejected' ? response.feedback : undefined,
+      rejectionReason:
+        response.decision === 'rejected' ? response.feedback : undefined,
     } as unknown as Partial<TState>;
 
     // Add modifications to metadata if provided
     if (response.modifications) {
       (stateUpdate as any).metadata = {
-        ...(state.metadata || {}),
+        ...(state.metadata || ({} as Record<string, unknown>)),
         humanModifications: response.modifications,
       };
     }
@@ -314,10 +330,10 @@ export class HumanApprovalNode {
    * Extract default proposed actions from state
    */
   private extractDefaultActions<TState extends WorkflowState>(
-    state: TState,
+    state: TState
   ): ProposedAction[] {
     const actions: ProposedAction[] = [];
-    const metadata = state.metadata || {};
+    const metadata = state.metadata || ({} as Record<string, unknown>);
 
     // Check for various action types in metadata
     if (metadata.codeGeneration) {
@@ -325,7 +341,7 @@ export class HumanApprovalNode {
         type: 'code_generation',
         description: 'Generate code files',
         impact: 'medium',
-        details: metadata.codeGeneration,
+        details: metadata.codeGeneration as Record<string, unknown>,
       });
     }
 
@@ -334,7 +350,7 @@ export class HumanApprovalNode {
         type: 'file_modification',
         description: 'Modify files',
         impact: 'high',
-        details: metadata.fileOperations,
+        details: metadata.fileOperations as Record<string, unknown>,
       });
     }
 
@@ -343,7 +359,7 @@ export class HumanApprovalNode {
         type: 'api_call',
         description: 'Make external API calls',
         impact: 'medium',
-        details: metadata.apiCalls,
+        details: metadata.apiCalls as Record<string, unknown>,
       });
     }
 

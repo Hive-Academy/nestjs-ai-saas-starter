@@ -13,6 +13,7 @@
         "outputPath": "dist/libs/dev-brand/backend/feature",
         "main": "libs/dev-brand/backend/feature/src/index.ts",
         "tsConfig": "libs/dev-brand/backend/feature/tsconfig.lib.json",
+        "rollupConfig": "libs/dev-brand/backend/feature/rollup.config.js",
         "format": ["cjs", "esm"],
         "useLegacyTypescriptPlugin": false,
         "assets": [

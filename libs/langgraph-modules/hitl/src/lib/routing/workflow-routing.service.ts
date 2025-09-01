@@ -44,7 +44,7 @@ export class WorkflowRoutingService {
       requiresHumanApproval?: boolean;
       autoApproveThreshold?: number;
       lowConfidenceRoute?: string;
-    },
+    }
   ): string {
     const confidenceThreshold = options?.confidenceThreshold ?? 0.8;
     const requiresHumanApproval = options?.requiresHumanApproval ?? false;
@@ -53,7 +53,9 @@ export class WorkflowRoutingService {
 
     const confidence = state.confidence || 0;
 
-    this.logger.debug(`Routing based on confidence: ${confidence} (threshold: ${confidenceThreshold})`);
+    this.logger.debug(
+      `Routing based on confidence: ${confidence} (threshold: ${confidenceThreshold})`
+    );
 
     // High confidence - auto approve if enabled
     if (confidence >= autoApproveThreshold) {
@@ -64,16 +66,21 @@ export class WorkflowRoutingService {
     // Medium confidence - human approval if required
     if (confidence >= confidenceThreshold) {
       if (requiresHumanApproval) {
-        this.logger.log(`Medium confidence (${confidence}) - requiring human approval`);
+        this.logger.log(
+          `Medium confidence (${confidence}) - requiring human approval`
+        );
         return 'human_approval';
       }
-        this.logger.log(`Medium confidence (${confidence}) - proceeding to next node`);
-        return nextNode;
-
+      this.logger.log(
+        `Medium confidence (${confidence}) - proceeding to next node`
+      );
+      return nextNode;
     }
 
     // Low confidence - use configured route
-    this.logger.log(`Low confidence (${confidence}) - routing to ${lowConfidenceRoute}`);
+    this.logger.log(
+      `Low confidence (${confidence}) - routing to ${lowConfidenceRoute}`
+    );
     return lowConfidenceRoute;
   }
 
@@ -86,7 +93,7 @@ export class WorkflowRoutingService {
       maxRetries?: number;
       pausedRoute?: string;
       waitingRoute?: string;
-    },
+    }
   ): string {
     const maxRetries = options?.maxRetries ?? 3;
     const pausedRoute = options?.pausedRoute ?? 'human_approval';
@@ -120,7 +127,7 @@ export class WorkflowRoutingService {
       maxRetries?: number;
       retryRoute?: string;
       errorRoute?: string;
-    },
+    }
   ): string {
     const maxRetries = options?.maxRetries ?? 3;
     const retryRoute = options?.retryRoute ?? 'retry';
@@ -128,21 +135,23 @@ export class WorkflowRoutingService {
 
     const retryCount = state.retryCount || 0;
 
-    this.logger.debug(`Routing on error: ${error.message} (retry ${retryCount}/${maxRetries})`);
+    this.logger.debug(
+      `Routing on error: ${error.message} (retry ${retryCount}/${maxRetries})`
+    );
 
     // Check if error is recoverable
     if (this.isRecoverableError(error)) {
       if (retryCount < maxRetries) {
-        this.logger.log(`Recoverable error, retrying (attempt ${retryCount + 1})`);
+        this.logger.log(
+          `Recoverable error, retrying (attempt ${retryCount + 1})`
+        );
         return retryRoute;
       }
-        this.logger.log(`Max retries exceeded, routing to ${errorRoute}`);
-        return errorRoute;
-
-    }
-      this.logger.log(`Non-recoverable error, routing to ${errorRoute}`);
+      this.logger.log(`Max retries exceeded, routing to ${errorRoute}`);
       return errorRoute;
-
+    }
+    this.logger.log(`Non-recoverable error, routing to ${errorRoute}`);
+    return errorRoute;
   }
 
   /**
@@ -159,7 +168,7 @@ export class WorkflowRoutingService {
       /retry/i,
     ];
 
-    return recoverablePatterns.some(pattern => pattern.test(error.message));
+    return recoverablePatterns.some((pattern) => pattern.test(error.message));
   }
 
   /**
@@ -195,7 +204,7 @@ export class WorkflowRoutingService {
     options?: {
       includeDefaults?: boolean;
       defaultRoutes?: Record<string, string>;
-    },
+    }
   ): Record<string, string> {
     const includeDefaults = options?.includeDefaults ?? true;
     const defaultRoutes = options?.defaultRoutes ?? this.getDefaultRouting();
@@ -219,14 +228,16 @@ export class WorkflowRoutingService {
    */
   validateRouting(
     routingMap: Record<string, string>,
-    availableNodes: string[],
+    availableNodes: string[]
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     const nodeSet = new Set(availableNodes);
 
     Object.entries(routingMap).forEach(([condition, target]) => {
       if (!nodeSet.has(target) && !['end', '__end__'].includes(target)) {
-        errors.push(`Invalid routing target '${target}' for condition '${condition}'`);
+        errors.push(
+          `Invalid routing target '${target}' for condition '${condition}'`
+        );
       }
     });
 
@@ -245,16 +256,16 @@ export class WorkflowRoutingService {
    */
   getDefaultRouting(): Record<string, string> {
     return {
-      'approved': 'continue',
-      'rejected': 'end',
-      'retry': 'retry',
-      'error': 'human_approval',
-      'timeout': 'retry',
-      'success': 'end',
-      'failure': 'human_approval',
-      'continue': 'continue',
-      'skip': 'skip',
-      'end': 'end',
+      approved: 'continue',
+      rejected: 'end',
+      retry: 'retry',
+      error: 'human_approval',
+      timeout: 'retry',
+      success: 'end',
+      failure: 'human_approval',
+      continue: 'continue',
+      skip: 'skip',
+      end: 'end',
     };
   }
 
@@ -262,7 +273,7 @@ export class WorkflowRoutingService {
    * Create a conditional routing function
    */
   createConditionalRouter<TState extends WorkflowState = WorkflowState>(
-    routingLogic: (state: TState) => string,
+    routingLogic: (state: TState) => string
   ): (state: TState) => string {
     return (state: TState) => {
       try {
@@ -284,7 +295,7 @@ export class WorkflowRoutingService {
       condition: (state: TState) => boolean;
       route: string;
     }>,
-    defaultRoute = 'continue',
+    defaultRoute = 'continue'
   ): (state: TState) => string {
     return (state: TState) => {
       for (const { condition, route } of conditions) {
@@ -294,11 +305,16 @@ export class WorkflowRoutingService {
             return route;
           }
         } catch (error) {
-          this.logger.warn(`Error evaluating condition for route ${route}:`, error);
+          this.logger.warn(
+            `Error evaluating condition for route ${route}:`,
+            error
+          );
         }
       }
 
-      this.logger.debug(`No conditions matched, using default: ${defaultRoute}`);
+      this.logger.debug(
+        `No conditions matched, using default: ${defaultRoute}`
+      );
       return defaultRoute;
     };
   }
@@ -307,7 +323,7 @@ export class WorkflowRoutingService {
    * Create a weighted random router for A/B testing
    */
   createWeightedRouter(
-    routes: Array<{ route: string; weight: number }>,
+    routes: Array<{ route: string; weight: number }>
   ): () => string {
     const totalWeight = routes.reduce((sum, r) => sum + r.weight, 0);
 
@@ -318,7 +334,9 @@ export class WorkflowRoutingService {
       for (const { route, weight } of routes) {
         accumulated += weight;
         if (random < accumulated) {
-          this.logger.debug(`Weighted routing selected: ${route} (weight: ${weight})`);
+          this.logger.debug(
+            `Weighted routing selected: ${route} (weight: ${weight})`
+          );
           return route;
         }
       }
@@ -336,10 +354,10 @@ export class WorkflowRoutingService {
     options?: {
       loop?: boolean;
       skipCondition?: (state: TState) => boolean;
-    },
+    }
   ): (state: TState) => string {
     return (state: TState) => {
-      const currentIndex = sequence.indexOf(state.currentNodeId || '');
+      const currentIndex = sequence.indexOf(state.currentNode || '');
 
       // Check skip condition
       if (options?.skipCondition?.(state)) {
@@ -361,7 +379,11 @@ export class WorkflowRoutingService {
       }
 
       const nextRoute = sequence[nextIndex];
-      this.logger.debug(`Sequential routing: ${nextRoute} (step ${nextIndex + 1}/${sequence.length})`);
+      this.logger.debug(
+        `Sequential routing: ${nextRoute} (step ${nextIndex + 1}/${
+          sequence.length
+        })`
+      );
       return nextRoute;
     };
   }

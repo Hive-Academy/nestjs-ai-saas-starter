@@ -21,7 +21,8 @@
   "nx": {
     "name": "langgraph-modules/functional-api",
     "tags": [
-      "domain:langgraph"
+      "domain:langgraph",
+      "type:data-access"
     ],
     "targets": {
       "build": {

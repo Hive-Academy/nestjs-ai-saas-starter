@@ -12,8 +12,15 @@
         "outputPath": "dist/libs/langgraph-modules/core",
         "main": "libs/langgraph-modules/core/src/index.ts",
         "tsConfig": "libs/langgraph-modules/core/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/core/rollup.config.js",
         "format": ["cjs", "esm"],
         "useLegacyTypescriptPlugin": false,
+        "external": [
+          "@langchain/core",
+          "@langchain/langgraph",
+          "@nestjs/common",
+          "reflect-metadata"
+        ],
         "assets": [
           {
             "input": "./libs/langgraph-modules/core",

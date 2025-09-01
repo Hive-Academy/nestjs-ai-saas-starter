@@ -1,12 +1,12 @@
 import 'reflect-metadata';
 import { SetMetadata } from '@nestjs/common';
 import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
-import { 
+import {
   type WorkflowStateAnnotation,
   WORKFLOW_METADATA_KEY,
   WORKFLOW_NODES_KEY,
   WORKFLOW_EDGES_KEY,
-  WORKFLOW_TOOLS_KEY
+  WORKFLOW_TOOLS_KEY,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -47,7 +47,7 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
 
 /**
  * Decorator to mark a class as a LangGraph workflow
- * 
+ *
  * @example
  * ```typescript
  * @Workflow({
@@ -66,10 +66,10 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
   return (target: any) => {
     // Store workflow metadata
     Reflect.defineMetadata(WORKFLOW_METADATA_KEY, options, target);
-    
+
     // Apply NestJS metadata for DI
     SetMetadata(WORKFLOW_METADATA_KEY, options)(target);
-    
+
     // Initialize node and edge collectors if not present
     if (!Reflect.hasMetadata(WORKFLOW_NODES_KEY, target)) {
       Reflect.defineMetadata(WORKFLOW_NODES_KEY, [], target);
@@ -80,14 +80,14 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
     if (!Reflect.hasMetadata(WORKFLOW_TOOLS_KEY, target)) {
       Reflect.defineMetadata(WORKFLOW_TOOLS_KEY, [], target);
     }
-    
+
     // Enhance the class with workflow capabilities
     const originalConstructor = target;
-    
+
     // Create new constructor that applies workflow configuration
     const newConstructor: any = function (...args: any[]) {
       const instance = new originalConstructor(...args);
-      
+
       // Apply workflow configuration
       if (!instance.workflowConfig) {
         instance.workflowConfig = {
@@ -102,35 +102,35 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
           hitl: options.hitl,
         };
       }
-      
+
       // Apply channels if provided
       if (options.channels && !instance.channels) {
         instance.channels = options.channels;
       }
-      
+
       // Apply pattern if provided
       if (options.pattern && !instance.pattern) {
         instance.pattern = options.pattern;
       }
-      
+
       return instance;
     };
-    
+
     // Copy prototype
     newConstructor.prototype = originalConstructor.prototype;
-    
+
     // Copy static properties and methods
     Object.setPrototypeOf(newConstructor, originalConstructor);
-    
+
     // Copy metadata
-    Reflect.getMetadataKeys(originalConstructor).forEach(key => {
+    Reflect.getMetadataKeys(originalConstructor).forEach((key) => {
       const value = Reflect.getMetadata(key, originalConstructor);
       Reflect.defineMetadata(key, value, newConstructor);
     });
-    
+
     // Store workflow metadata on the new constructor
     Reflect.defineMetadata(WORKFLOW_METADATA_KEY, options, newConstructor);
-    
+
     return newConstructor;
   };
 }

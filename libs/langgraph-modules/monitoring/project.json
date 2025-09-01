@@ -13,6 +13,7 @@
         "outputPath": "dist/libs/langgraph-modules/monitoring",
         "main": "libs/langgraph-modules/monitoring/src/index.ts",
         "tsConfig": "libs/langgraph-modules/monitoring/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/monitoring/rollup.config.js",
         "format": ["cjs", "esm"],
         "useLegacyTypescriptPlugin": false,
         "assets": [

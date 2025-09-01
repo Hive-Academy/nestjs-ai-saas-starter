@@ -2,16 +2,16 @@
   "name": "@hive-academy/nestjs-memory",
   "version": "1.0.0",
   "description": "Standalone NestJS Memory Module With Adapters for VectorStore service and GraphMemory service",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
+  "types": "./index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./index.d.ts",
+      "import": "./index.esm.js",
+      "default": "./index.cjs.js"
     }
   },
   "files": [

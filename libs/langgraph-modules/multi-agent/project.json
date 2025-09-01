@@ -13,8 +13,9 @@
         "outputPath": "dist/libs/langgraph-modules/multi-agent",
         "main": "libs/langgraph-modules/multi-agent/src/index.ts",
         "tsConfig": "libs/langgraph-modules/multi-agent/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/multi-agent/rollup.config.js",
         "format": ["cjs", "esm"],
-        "buildLibsFromSource": true,
+
         "external": ["@hive-academy/langgraph-core"],
         "useLegacyTypescriptPlugin": false,
         "assets": [

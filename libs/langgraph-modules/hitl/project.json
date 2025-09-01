@@ -1,11 +1,7 @@
 {
   "name": "langgraph-modules/hitl",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "tags": [
-    "domain:langgraph",
-    "type:data-access",
-    "module:checkpoint"
-  ],
+  "tags": ["domain:langgraph", "type:data-access", "module:checkpoint"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
@@ -14,10 +10,10 @@
         "outputPath": "dist/libs/langgraph-modules/hitl",
         "main": "libs/langgraph-modules/hitl/src/index.ts",
         "tsConfig": "libs/langgraph-modules/hitl/tsconfig.lib.json",
+        "rollupConfig": "libs/langgraph-modules/hitl/rollup.config.js",
         "format": ["cjs", "esm"],
-        "buildLibsFromSource": true,
-        "external": ["@hive-academy/langgraph-core"],
         "useLegacyTypescriptPlugin": false,
+        "external": ["@hive-academy/langgraph-core"],
         "assets": [
           {
             "input": "./libs/langgraph-modules/hitl",

@@ -11,8 +11,10 @@ export const WorkflowStateAnnotation = Annotation.Root({
     reducer: (x, y) => y ?? x,
     default: () => `exec_${Date.now()}`,
   }),
-  
-  status: Annotation<'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled'>({
+
+  status: Annotation<
+    'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled'
+  >({
     reducer: (x, y) => y ?? x,
     default: () => 'pending',
   }),
@@ -23,7 +25,10 @@ export const WorkflowStateAnnotation = Annotation.Root({
   }),
 
   completedNodes: Annotation<string[]>({
-    reducer: (current, update) => [...new Set([...current, ...update])],
+    reducer: (current, update) => {
+      const combined = [...current, ...update];
+      return Array.from(new Set(combined));
+    },
     default: () => [],
   }),
 
