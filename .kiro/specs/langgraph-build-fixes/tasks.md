@@ -287,7 +287,7 @@
 
   - [ ] 15.1 Restructure provider exports
 
-    - Fix circular dependency in libs/nestjs-langgraph/src/lib/providers/index.ts
+    - Fix circular dependency in libs/langgraph-modules/nestjs-langgraph/src/lib/providers/index.ts
     - Separate module.providers.ts and module-exports.providers.ts imports
     - Create proper provider hierarchy without circular references
     - _Requirements: 3.1, 3.2_

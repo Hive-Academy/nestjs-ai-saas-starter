@@ -130,9 +130,9 @@ apps/dev-brand-api/src/app/adapters/
 
 **Backend Developer Handoff**:
 
-- **Source File**: `/libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.ts`
+- **Source File**: `/libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.ts`
 - **Destination**: `/apps/dev-brand-api/src/app/adapters/chroma-vector.adapter.ts`
-- **Import Updates**: Update interface imports from `../interfaces/` to `@hive-academy/nestjs-memory`
+- **Import Updates**: Update interface imports from `../interfaces/` to `@hive-academy/langgraph-memory`
 - **Dependencies**: Ensure ChromaDB connection logic remains intact
 
 **Specific Implementation Steps**:
@@ -145,7 +145,7 @@ apps/dev-brand-api/src/app/adapters/
    import { IVectorService, VectorStoreData, ... } from '../interfaces/vector-service.interface';
 
    // NEW (library import)
-   import { IVectorService, VectorStoreData, ... } from '@hive-academy/nestjs-memory';
+   import { IVectorService, VectorStoreData, ... } from '@hive-academy/langgraph-memory';
    ```
 
 3. Verify adapter still extends IVectorService properly
@@ -167,9 +167,9 @@ apps/dev-brand-api/src/app/adapters/
 
 **Backend Developer Handoff**:
 
-- **Source File**: `/libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.ts`
+- **Source File**: `/libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.ts`
 - **Destination**: `/apps/dev-brand-api/src/app/adapters/neo4j-graph.adapter.ts`
-- **Import Updates**: Update interface imports from `../interfaces/` to `@hive-academy/nestjs-memory`
+- **Import Updates**: Update interface imports from `../interfaces/` to `@hive-academy/langgraph-memory`
 - **Dependencies**: Ensure Neo4j driver connection logic remains intact
 
 **Specific Implementation Steps**:
@@ -182,7 +182,7 @@ apps/dev-brand-api/src/app/adapters/
    import { IGraphService, GraphNodeData, ... } from '../interfaces/graph-service.interface';
 
    // NEW (library import)
-   import { IGraphService, GraphNodeData, ... } from '@hive-academy/nestjs-memory';
+   import { IGraphService, GraphNodeData, ... } from '@hive-academy/langgraph-memory';
    ```
 
 3. Verify adapter still extends IGraphService properly
@@ -217,7 +217,7 @@ apps/dev-brand-api/src/app/adapters/
 
    ```typescript
    // OLD (library import)
-   import { ChromaVectorAdapter, Neo4jGraphAdapter } from '@hive-academy/nestjs-memory';
+   import { ChromaVectorAdapter, Neo4jGraphAdapter } from '@hive-academy/langgraph-memory';
 
    // NEW (local application import)
    import { ChromaVectorAdapter } from './adapters/chroma-vector.adapter';
@@ -298,7 +298,7 @@ apps/dev-brand-api/src/app/adapters/
 
 **Backend Developer Handoff**:
 
-- **File**: `/libs/langgraph-modules/nestjs-memory/src/index.ts`
+- **File**: `/libs/langgraph-modules/memory/src/index.ts`
 - **Target Lines**: Lines 58-59 (adapter exports)
 - **Preserve**: All interface exports and error type exports
 - **Remove**: Only concrete adapter class exports
@@ -324,6 +324,7 @@ apps/dev-brand-api/src/app/adapters/
    ```
 
 3. Keep error type exports (required for proper error handling):
+
    ```typescript
    // KEEP all error exports
    export { InvalidCollectionError, InvalidInputError, VectorOperationError, ... }
@@ -346,10 +347,10 @@ apps/dev-brand-api/src/app/adapters/
 **Backend Developer Handoff**:
 
 - **Files to Remove**:
-  - `/libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.ts`
-  - `/libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.ts`
-  - `/libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.spec.ts`
-  - `/libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.spec.ts`
+  - `/libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.ts`
+  - `/libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.ts`
+  - `/libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.spec.ts`
+  - `/libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.spec.ts`
 - **Preserve**: Interface files, test files for interfaces
 - **Verification**: Ensure no internal library code references removed files
 
@@ -359,7 +360,7 @@ apps/dev-brand-api/src/app/adapters/
 
    ```bash
    # Search for any remaining references
-   cd libs/langgraph-modules/nestjs-memory/src
+   cd libs/langgraph-modules/memory/src
    grep -r "chroma-vector.adapter" . --exclude="*.spec.ts"
    grep -r "neo4j-graph.adapter" . --exclude="*.spec.ts"
    ```
@@ -374,8 +375,9 @@ apps/dev-brand-api/src/app/adapters/
    ```
 
 3. Verify library still compiles:
+
    ```bash
-   npx nx build nestjs-memory
+   npx nx build memory
    ```
 
 **Quality Gates**:
@@ -394,7 +396,7 @@ apps/dev-brand-api/src/app/adapters/
 
 **Backend Developer Handoff**:
 
-- **File**: `/libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts`
+- **File**: `/libs/langgraph-modules/memory/src/lib/memory.module.ts`
 - **Target Method**: `createAdapterProviders()` (lines 197-251)
 - **Objective**: Remove default adapter fallbacks, require explicit provider configuration
 - **Error Handling**: Add meaningful error messages when adapters not provided
@@ -458,10 +460,10 @@ apps/dev-brand-api/src/app/adapters/
 1. Build library in complete isolation:
 
    ```bash
-   cd libs/langgraph-modules/nestjs-memory
+   cd libs/langgraph-modules/memory
    rm -rf node_modules  # Clean slate test
    npm install --production  # Install only production deps
-   npx nx build nestjs-memory
+   npx nx build memory
    ```
 
 2. Create and test minimal mock adapters in application:
@@ -479,8 +481,9 @@ apps/dev-brand-api/src/app/adapters/
 3. Verify library works with mock adapters (proves database independence)
 
 4. Analyze final bundle for any database dependencies:
+
    ```bash
-   npx webpack-bundle-analyzer dist/libs/nestjs-memory/bundle.js
+   npx webpack-bundle-analyzer dist/libs/memory/bundle.js
    ```
 
 **Quality Gates**:
@@ -508,7 +511,7 @@ apps/dev-brand-api/src/app/adapters/
 1. Run existing performance benchmarks:
 
    ```bash
-   npx nx test nestjs-memory --testNamePattern="performance"
+   npx nx test memory --testNamePattern="performance"
    ```
 
 2. Compare memory usage and operation times:
@@ -549,14 +552,14 @@ apps/dev-brand-api/src/app/adapters/
 **Dependencies**: None - can start immediately
 **Risk Level**: LOW (file movement with well-defined paths)
 
-### Quality Assurance Requirements:
+### Quality Assurance Requirements
 
 - **Checkpoint Commits**: Every 30 minutes during implementation
 - **Phase Completion Verification**: Each phase must pass quality gates before proceeding
 - **Integration Testing**: Verify existing functionality preserved at each step
 - **Documentation Updates**: Update progress.md with completion status
 
-### Emergency Rollback Plan:
+### Emergency Rollback Plan
 
 1. **Instant Rollback**: Git reset to pre-refactoring commit
 2. **Partial Rollback**: Use feature flags to switch between old/new provider configuration
@@ -564,21 +567,21 @@ apps/dev-brand-api/src/app/adapters/
 
 ## 🎯 Success Metrics & Monitoring
 
-### Architecture Quality Metrics (Evidence-Based):
+### Architecture Quality Metrics (Evidence-Based)
 
 - **Library Independence**: ✅ 0 database dependencies (Requirement 1.1)
 - **Interface Compliance**: ✅ 100% contract preservation (Requirements 4.1-4.2)
 - **Provider Injection**: ✅ NestJS DI patterns followed (Requirements 3.1-3.5)
 - **Error Handling**: ✅ Comprehensive validation and messaging (Requirement 1.4)
 
-### Runtime Performance Targets (Research-Backed):
+### Runtime Performance Targets (Research-Backed)
 
 - **Module Initialization**: <0.1ms overhead for provider injection
 - **Operation Latency**: 0ms degradation in existing operations
 - **Memory Footprint**: No increase from current baseline
 - **Error Rate**: <0.1% during migration (should be 0%)
 
-### Business Value Delivered:
+### Business Value Delivered
 
 - **Architecture Compliance**: ✅ Proper adapter pattern implementation
 - **Consumer Flexibility**: ✅ Applications control persistence strategies

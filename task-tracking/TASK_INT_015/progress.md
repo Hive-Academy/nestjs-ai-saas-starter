@@ -26,7 +26,7 @@
 - [x] Test builds of all affected libraries
 - [x] Validate dist structure matches package.json paths
 
-### Libraries Fixed (16 total):
+### Libraries Fixed (16 total)
 
 **Core Libraries (3):**
 
@@ -36,7 +36,7 @@
 
 **LangGraph Modules (11):**
 
-- [x] nestjs-memory - package.json entry points fixed
+- [x] memory - package.json entry points fixed
 - [x] checkpoint - package.json entry points fixed
 - [x] core - package.json entry points fixed
 - [x] functional-api - package.json entry points fixed
@@ -107,7 +107,7 @@
 - [x] Install @nx/rollup and rollup dependencies
 - [x] Create standardized project.json template for @nx/rollup configuration
 - [x] Migrate Core Libraries (3): nestjs-chromadb, nestjs-neo4j, nestjs-langgraph
-- 🔄 Migrate LangGraph Modules (11): 3/11 completed - nestjs-memory✅, checkpoint✅, streaming✅, functional-api, hitl, monitoring, multi-agent, platform, time-travel, (core, workflow-engine need checking)
+- 🔄 Migrate LangGraph Modules (11): 3/11 completed - memory✅, checkpoint✅, streaming✅, functional-api, hitl, monitoring, multi-agent, platform, time-travel, (core, workflow-engine need checking)
 - [x] Migrate Dev-Brand Libraries (2): backend-data-access✅, backend-feature✅
 - [x] Test build of all migrated libraries
 - [x] Verify dist structure is correct (files at dist root, not src/ subdirectory)
@@ -148,7 +148,7 @@
 
 **LangGraph Modules (3/11) ✅**
 
-- [x] nestjs-memory - 48KB cjs, 47KB esm - PERFECT ✅
+- [x] memory - 48KB cjs, 47KB esm - PERFECT ✅
 - [x] checkpoint - Complex dependencies, multiple chunks (expected) ✅
 - [x] streaming - 60KB cjs, 59KB esm - PERFECT ✅
 
@@ -384,7 +384,7 @@
 
 **LangGraph Modules (10/11) ✅**
 
-- nestjs-memory: 48KB → 47KB (Phase 2) ✅
+- memory: 48KB → 47KB (Phase 2) ✅
 - checkpoint: Multi-chunk dependencies (Phase 2) ✅
 - streaming: 60KB → 59KB (Phase 2) ✅
 - hitl: 83KB → 82KB (Phase 3) ✅

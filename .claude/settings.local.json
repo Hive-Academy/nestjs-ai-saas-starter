@@ -14,7 +14,7 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(npx nx build:*)",
-      "Bash(for module in hitl monitoring multi-agent nestjs-memory platform time-travel)",
+      "Bash(for module in hitl monitoring multi-agent memory platform time-travel)",
       "Bash(do)",
       "Bash(ls:*)",
       "Bash(echo:*)",

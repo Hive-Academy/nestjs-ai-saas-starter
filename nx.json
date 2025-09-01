@@ -31,7 +31,7 @@
       "exclude": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/nestjs-langgraph/*",
+        "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/time-travel/*",
         "libs/langgraph-modules/multi-agent/*",
@@ -71,7 +71,7 @@
       "include": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/nestjs-langgraph/*",
+        "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/time-travel/*",
         "libs/langgraph-modules/multi-agent/*",
@@ -103,8 +103,7 @@
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/nestjs-langgraph",
-      "nestjs-memory"
+      "libs/langgraph-modules/nestjs-langgraph"
     ],
     "version": {
       "preVersionCommand": "npx nx run-many -t build",

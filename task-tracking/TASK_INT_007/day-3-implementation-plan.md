@@ -214,7 +214,7 @@ nodeId: String(metadata?.step ?? 0), // Explicit conversion
 
    ```typescript
    // Replace wildcard exports with selective exports
-   // File: libs/nestjs-langgraph/src/index.ts
+   // File: libs/langgraph-modules/nestjs-langgraph/src/index.ts
 
    // Core exports (highest priority)
    export { WorkflowDefinition, NodeMetadata, CommandType, DEFAULT_CONFIG, LANGGRAPH_MODULE_ID } from '@langgraph-modules/core';

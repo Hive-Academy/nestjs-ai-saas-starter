@@ -18,7 +18,7 @@
 │   │   ├── memory/                    # Memory management
 │   │   ├── monitoring/                # Workflow monitoring
 │   │   ├── multi-agent/               # Multi-agent systems
-│   │   ├── nestjs-memory/             # NestJS memory integration
+│   │   ├── memory/             # NestJS memory integration
 │   │   ├── platform/                  # Platform utilities
 │   │   ├── streaming/                 # Streaming capabilities
 │   │   ├── time-travel/               # Time-travel debugging
@@ -57,7 +57,7 @@ The `libs/langgraph-modules/` directory contains specialized modules for AI work
 - **memory/**: Memory management and context handling
 - **monitoring/**: Workflow execution monitoring and observability
 - **multi-agent/**: Multi-agent coordination and communication
-- **nestjs-memory/**: NestJS-specific memory integration
+- **memory/**: NestJS-specific memory integration
 - **platform/**: Platform-specific utilities and adapters
 - **streaming/**: Real-time streaming and WebSocket support
 - **time-travel/**: Debugging with state time-travel capabilities
@@ -179,7 +179,7 @@ import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 import { CheckpointService } from '@libs/langgraph-modules/checkpoint';
 import { MultiAgentCoordinator } from '@libs/langgraph-modules/multi-agent';
 import { WorkflowEngine } from '@libs/langgraph-modules/workflow-engine';
-import { NestjsMemoryModule } from '@libs/langgraph-modules/nestjs-memory';
+import { NestjsMemoryModule } from '@libs/langgraph-modules/memory';
 ```
 
 ### Internal Imports

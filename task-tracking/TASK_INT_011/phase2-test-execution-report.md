@@ -13,7 +13,7 @@
 #### AC1: Adapter System Elimination Complete
 
 - **Status**: ✅ PASSED
-- **Validation**: No adapter files or directories found in `/libs/nestjs-langgraph/src/`
+- **Validation**: No adapter files or directories found in `/libs/langgraph-modules/nestjs-langgraph/src/`
 - **Search Results**: `grep -r "class.*Adapter"` returned zero matches
 - **Architecture**: Direct child module loading implemented without adapter layer
 
@@ -56,7 +56,7 @@ npx nx affected:build --base=HEAD~2 --head=HEAD
 ### 2. Bundle Size Analysis ✅
 
 ```bash
-find libs/nestjs-langgraph/src -name "*.ts" -exec wc -l {} + | tail -1
+find libs/langgraph-modules/nestjs-langgraph/src -name "*.ts" -exec wc -l {} + | tail -1
 # Result: 1190 total lines
 ```
 
@@ -71,15 +71,15 @@ find libs/nestjs-langgraph/src -name "*.ts" -exec wc -l {} + | tail -1
 
 ```bash
 # Directory structure verification
-ls libs/nestjs-langgraph/src/lib/adapters/
+ls libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/
 # Result: No such file or directory ✅
 
 # Code reference verification
-grep -r "class.*Adapter" libs/nestjs-langgraph/src/
+grep -r "class.*Adapter" libs/langgraph-modules/nestjs-langgraph/src/
 # Result: No adapter classes found ✅
 
 # File system verification
-find libs/nestjs-langgraph/src -name "*adapter*" -type f
+find libs/langgraph-modules/nestjs-langgraph/src -name "*adapter*" -type f
 # Result: No adapter files found ✅
 ```
 

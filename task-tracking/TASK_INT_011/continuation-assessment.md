@@ -142,7 +142,7 @@
 1. **Remove Old Memory System Integration**
 
    - Update `nestjs-langgraph.module.ts` to remove MemoryProviderModule imports
-   - Delete `libs/nestjs-langgraph/src/lib/memory/` directory (7,434 lines)
+   - Delete `libs/langgraph-modules/nestjs-langgraph/src/lib/memory/` directory (7,434 lines)
    - Update all adapter references to direct imports
 
 2. **Eliminate Adapter Pattern**
@@ -153,7 +153,7 @@
 
 3. **Update Export Surface**
    - Remove memory-related exports from nestjs-langgraph index
-   - Update documentation to reference standalone @hive-academy/nestjs-memory
+   - Update documentation to reference standalone @hive-academy/langgraph-memory
 
 **Success Criteria**:
 
@@ -170,7 +170,7 @@
 
 1. **Update Consumer Applications**
 
-   - Migrate dev-brand-api to use @hive-academy/nestjs-memory directly
+   - Migrate dev-brand-api to use @hive-academy/langgraph-memory directly
    - Remove old configuration patterns
    - Validate functionality preservation
 
@@ -221,14 +221,14 @@
 
 **Files Requiring Immediate Attention**:
 
-- `libs/nestjs-langgraph/src/lib/nestjs-langgraph.module.ts` (remove MemoryProviderModule)
-- `libs/nestjs-langgraph/src/lib/memory/` (entire directory for removal)
-- `libs/nestjs-langgraph/src/index.ts` (update exports)
+- `libs/langgraph-modules/nestjs-langgraph/src/lib/nestjs-langgraph.module.ts` (remove MemoryProviderModule)
+- `libs/langgraph-modules/nestjs-langgraph/src/lib/memory/` (entire directory for removal)
+- `libs/langgraph-modules/nestjs-langgraph/src/index.ts` (update exports)
 - Consumer app configurations requiring migration
 
 **Reference Implementation**:
 
-- `libs/nestjs-memory/` as target architecture pattern
+- `libs/memory/` as target architecture pattern
 - `libs/nestjs-chromadb/` as direct integration example
 
 ---

@@ -19,7 +19,7 @@
       "path": "../../libs/langgraph-modules/functional-api"
     },
     {
-      "path": "../../libs/langgraph-modules/nestjs-memory"
+      "path": "../../libs/langgraph-modules/memory"
     },
     {
       "path": "../../libs/langgraph-modules/monitoring"
@@ -37,7 +37,7 @@
       "path": "../../libs/langgraph-modules/multi-agent"
     },
     {
-      "path": "../../libs/nestjs-langgraph"
+      "path": "../../libs/langgraph-modules/nestjs-langgraph"
     },
     {
       "path": "../../libs/dev-brand/backend/feature"

@@ -2289,19 +2289,19 @@
         "name": "nestjs-langgraph",
         "type": "lib",
         "data": {
-          "root": "libs/nestjs-langgraph",
+          "root": "libs/langgraph-modules/nestjs-langgraph",
           "targets": {
             "lint": {
               "cache": true,
               "options": {
-                "cwd": "libs/nestjs-langgraph",
+                "cwd": "libs/langgraph-modules/nestjs-langgraph",
                 "command": "eslint ."
               },
               "inputs": [
                 "default",
                 "^default",
                 "{workspaceRoot}/eslint.config.mjs",
-                "{workspaceRoot}/libs/nestjs-langgraph/eslint.config.mjs",
+                "{workspaceRoot}/libs/langgraph-modules/nestjs-langgraph/eslint.config.mjs",
                 "{workspaceRoot}/tools/eslint-rules/**/*",
                 {
                   "externalDependencies": ["eslint"]
@@ -2326,7 +2326,7 @@
             },
             "test": {
               "options": {
-                "cwd": "libs/nestjs-langgraph",
+                "cwd": "libs/langgraph-modules/nestjs-langgraph",
                 "env": {
                   "TS_NODE_COMPILER_OPTIONS": "{\"moduleResolution\":\"node10\",\"module\":\"commonjs\",\"customConditions\":null}"
                 },
@@ -2362,7 +2362,7 @@
             "typecheck": {
               "dependsOn": ["^typecheck"],
               "options": {
-                "cwd": "libs/nestjs-langgraph",
+                "cwd": "libs/langgraph-modules/nestjs-langgraph",
                 "command": "tsc --build --emitDeclarationOnly"
               },
               "cache": true,
@@ -2434,13 +2434,13 @@
               "executor": "@nx/js:tsc",
               "outputs": ["{options.outputPath}"],
               "options": {
-                "outputPath": "dist/libs/nestjs-langgraph",
-                "main": "libs/nestjs-langgraph/src/index.ts",
-                "tsConfig": "libs/nestjs-langgraph/tsconfig.lib.json",
+                "outputPath": "dist/libs/langgraph-modules/nestjs-langgraph",
+                "main": "libs/langgraph-modules/nestjs-langgraph/src/index.ts",
+                "tsConfig": "libs/langgraph-modules/nestjs-langgraph/tsconfig.lib.json",
                 "assets": [
-                  "libs/nestjs-langgraph/*.md",
+                  "libs/langgraph-modules/nestjs-langgraph/*.md",
                   {
-                    "input": "./libs/nestjs-langgraph",
+                    "input": "./libs/langgraph-modules/nestjs-langgraph",
                     "glob": "**/*.!(ts)",
                     "output": "./"
                   }
@@ -2455,7 +2455,7 @@
             "publish": {
               "executor": "nx:run-commands",
               "options": {
-                "command": "npm publish dist/libs/nestjs-langgraph --access public"
+                "command": "npm publish dist/libs/langgraph-modules/nestjs-langgraph --access public"
               },
               "dependsOn": ["build"],
               "configurations": {},
@@ -2465,7 +2465,7 @@
               "executor": "nx:run-commands",
               "options": {
                 "command": "typedoc --options typedoc.json",
-                "cwd": "libs/nestjs-langgraph"
+                "cwd": "libs/langgraph-modules/nestjs-langgraph"
               },
               "configurations": {},
               "parallelism": true
@@ -2505,7 +2505,7 @@
             }
           },
           "$schema": "../../node_modules/nx/schemas/project-schema.json",
-          "sourceRoot": "libs/nestjs-langgraph/src",
+          "sourceRoot": "libs/langgraph-modules/nestjs-langgraph/src",
           "implicitDependencies": []
         }
       },

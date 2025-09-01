@@ -1,8 +1,8 @@
-import type { MemoryModuleOptions } from '@hive-academy/langgraph-modules-nestjs-memory';
+import type { MemoryModuleOptions } from '@hive-academy/langgraph-modules-memory';
 
 /**
  * Memory Module Configuration for dev-brand-api
- * 
+ *
  * TASK_INT_012: Adapter Pattern Implementation
  * - Uses ChromaVectorAdapter with existing ChromaDB setup
  * - Uses Neo4jGraphAdapter with existing Neo4j setup
@@ -14,29 +14,36 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
     retention: {
       maxEntries: parseInt(process.env.MEMORY_MAX_ENTRIES || '10000'),
       ttlSeconds: parseInt(process.env.MEMORY_TTL_SECONDS || '86400'), // 24 hours
-      evictionStrategy: process.env.MEMORY_EVICTION_STRATEGY as any || 'lru',
+      evictionStrategy: (process.env.MEMORY_EVICTION_STRATEGY as any) || 'lru',
     },
-    
+
     // Summarization settings
     summarization: {
       enabled: process.env.MEMORY_SUMMARIZATION_ENABLED === 'true',
-      strategy: process.env.MEMORY_SUMMARIZATION_STRATEGY as any || 'extractive',
-      maxSummaryLength: parseInt(process.env.MEMORY_MAX_SUMMARY_LENGTH || '500'),
+      strategy:
+        (process.env.MEMORY_SUMMARIZATION_STRATEGY as any) || 'extractive',
+      maxSummaryLength: parseInt(
+        process.env.MEMORY_MAX_SUMMARY_LENGTH || '500'
+      ),
       triggerThreshold: parseInt(process.env.MEMORY_TRIGGER_THRESHOLD || '100'),
     },
-    
+
     // ChromaDB collection settings (used by ChromaVectorAdapter)
     chromadb: {
-      collectionName: process.env.MEMORY_CHROMADB_COLLECTION || 'memory-entries',
+      collectionName:
+        process.env.MEMORY_CHROMADB_COLLECTION || 'memory-entries',
       embeddingFunction: process.env.MEMORY_EMBEDDING_FUNCTION || 'default',
     },
-    
+
     // Neo4j database settings (used by Neo4jGraphAdapter)
     neo4j: {
-      database: process.env.MEMORY_NEO4J_DATABASE || process.env.NEO4J_DATABASE || 'neo4j',
+      database:
+        process.env.MEMORY_NEO4J_DATABASE ||
+        process.env.NEO4J_DATABASE ||
+        'neo4j',
       nodeLabels: {
         user: 'User',
-        memory: 'MemoryEntry', 
+        memory: 'MemoryEntry',
         context: 'Context',
       },
       relationshipTypes: {
@@ -45,7 +52,7 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
         inContext: 'IN_CONTEXT',
       },
     },
-    
+
     // Performance settings
     performance: {
       batchSize: parseInt(process.env.MEMORY_BATCH_SIZE || '100'),
@@ -53,12 +60,13 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
       cacheEnabled: process.env.MEMORY_CACHE_ENABLED !== 'false',
       cacheTtlSeconds: parseInt(process.env.MEMORY_CACHE_TTL_SECONDS || '300'), // 5 minutes
     },
-    
+
     // Feature flags
     features: {
       vectorSearch: process.env.MEMORY_VECTOR_SEARCH_ENABLED !== 'false',
       graphTraversal: process.env.MEMORY_GRAPH_TRAVERSAL_ENABLED !== 'false',
-      contextAwareness: process.env.MEMORY_CONTEXT_AWARENESS_ENABLED !== 'false',
+      contextAwareness:
+        process.env.MEMORY_CONTEXT_AWARENESS_ENABLED !== 'false',
       realTimeUpdates: process.env.MEMORY_REAL_TIME_UPDATES_ENABLED === 'true',
     },
   };
@@ -70,7 +78,7 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
  */
 export function getMemoryDevConfig(): Omit<MemoryModuleOptions, 'adapters'> {
   const baseConfig = getMemoryConfig();
-  
+
   return {
     ...baseConfig,
     retention: {

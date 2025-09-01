@@ -14,9 +14,9 @@
 
 ## Current Architecture Analysis
 
-- Main library: `libs/nestjs-langgraph`
-- Adapter pattern: `libs/nestjs-langgraph/src/lib/adapters/`
-- Complex dynamic loading: `libs/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts`
+- Main library: `libs/langgraph-modules/nestjs-langgraph`
+- Adapter pattern: `libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/`
+- Complex dynamic loading: `libs/langgraph-modules/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts`
 - Child modules: `libs/langgraph-modules/*`
 
 ## Goal

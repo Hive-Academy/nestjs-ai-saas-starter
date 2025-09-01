@@ -92,7 +92,7 @@ Feature: NestJS LangGraph Library Architecture Analysis
 
 **Technical Dependencies**:
 
-- Current nestjs-langgraph library (libs/nestjs-langgraph)
+- Current nestjs-langgraph library (libs/langgraph-modules/nestjs-langgraph)
 - 10 child modules in libs/langgraph-modules/
 - Consumer application configuration (apps/dev-brand-api/src/app/config/nestjs-langgraph.config.ts)
 - ChromaDB and Neo4j database integrations
@@ -142,7 +142,7 @@ Feature: NestJS LangGraph Library Architecture Analysis
 
 ### 4. Memory Module Special Case
 
-- Current memory module embedded in nestjs-langgraph (libs/nestjs-langgraph/src/lib/memory/)
+- Current memory module embedded in nestjs-langgraph (libs/langgraph-modules/nestjs-langgraph/src/lib/memory/)
 - Separate langgraph-modules packages don't include memory
 - Memory module integration with ChromaDB and Neo4j services
 - Evaluation of extracting memory as standalone child module

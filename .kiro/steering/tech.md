@@ -149,6 +149,6 @@ npm run docker:prod
 
 - **Apps**: Main applications (dev-brand-api, devbrand-ui)
 - **Core Libs**: Published libraries (nestjs-chromadb, nestjs-langgraph, nestjs-neo4j)
-- **LangGraph Modules**: Specialized modules (checkpoint, time-travel, multi-agent, functional-api, memory, monitoring, platform, streaming, workflow-engine, hitl, core, nestjs-memory)
+- **LangGraph Modules**: Specialized modules (checkpoint, time-travel, multi-agent, functional-api, memory, monitoring, platform, streaming, workflow-engine, hitl, core, memory)
 - **Dev Brand**: Backend libraries (data-access, feature)
 - **Shared**: Common TypeScript configuration and utilities

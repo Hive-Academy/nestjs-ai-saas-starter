@@ -11,7 +11,7 @@ import {
   VectorOperationError,
   InvalidCollectionError,
   InvalidInputError,
-} from '@hive-academy/nestjs-memory';
+} from '@hive-academy/langgraph-memory';
 
 /**
  * Application-specific ChromaDB adapter for the Memory module.

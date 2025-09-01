@@ -229,12 +229,12 @@
 
 - @hive-academy/nestjs-chromadb: "0.0.1" (✅ Exists in libs/nestjs-chromadb)
 - @hive-academy/nestjs-neo4j: "0.0.1" (✅ Exists in libs/nestjs-neo4j)
-- @hive-academy/nestjs-langgraph: "0.0.1" (✅ Exists in libs/nestjs-langgraph)
+- @hive-academy/nestjs-langgraph: "0.0.1" (✅ Exists in libs/langgraph-modules/nestjs-langgraph)
 
 **Found in LangGraph Modules**:
 
 - @hive-academy/langgraph-checkpoint: "0.0.1" (✅ Exists)
-- @hive-academy/nestjs-memory: "1.0.0" (✅ Exists)
+- @hive-academy/langgraph-memory: "1.0.0" (✅ Exists)
 - @hive-academy/langgraph-multi-agent: "0.0.1" (✅ Exists)
 - Additional modules discovered: 7 more LangGraph modules exist
 
@@ -265,7 +265,7 @@
 - Confirmed project.json configuration is correct for webpack-cli integration
 - Identified SYSTEMIC ISSUE: LangGraph modules have incorrect "main" paths in built package.json files
 - ROOT CAUSE: Build process copies source package.json with "./dist/index.js" paths, but in dist folder this becomes "./dist/dist/index.js"
-- TEMPORARY FIX: Updated source package.json for nestjs-memory module from "./dist/index.js" to "./src/index.js"
+- TEMPORARY FIX: Updated source package.json for memory module from "./dist/index.js" to "./src/index.js"
 - RECOMMENDATION: Fix all LangGraph module package.json files or modify build process
 
 ### ✅ Subtask 1.3: Health Check Implementation - COMPLETED

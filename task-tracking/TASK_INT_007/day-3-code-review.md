@@ -164,7 +164,7 @@ interface LLMProviderConfig {
 
 #### Issue 2: Missing Property Dependencies (HIGH SEVERITY)
 
-**Location**: `libs/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts`
+**Location**: `libs/langgraph-modules/nestjs-langgraph/src/lib/providers/llm-provider.factory.ts`
 **Problem**: Code expects `options` and `streaming` properties not defined in interface
 
 ```typescript

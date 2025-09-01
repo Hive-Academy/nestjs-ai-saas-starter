@@ -39,7 +39,7 @@
       "path": "../../libs/langgraph-modules/checkpoint/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/langgraph-modules/nestjs-memory/tsconfig.lib.json"
+      "path": "../../libs/langgraph-modules/memory/tsconfig.lib.json"
     },
     {
       "path": "../../libs/langgraph-modules/functional-api/tsconfig.lib.json"
@@ -60,7 +60,7 @@
       "path": "../../libs/langgraph-modules/multi-agent/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/nestjs-langgraph/tsconfig.lib.json"
+      "path": "../../libs/langgraph-modules/nestjs-langgraph/tsconfig.lib.json"
     },
     {
       "path": "../../libs/dev-brand/backend/feature/tsconfig.lib.json"

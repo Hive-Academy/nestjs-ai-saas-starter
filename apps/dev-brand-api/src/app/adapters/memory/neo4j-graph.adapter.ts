@@ -19,7 +19,7 @@ import {
   InvalidInputError,
   SecurityError,
   TransactionError,
-} from '@hive-academy/nestjs-memory';
+} from '@hive-academy/langgraph-memory';
 
 /**
  * Application-specific Neo4j adapter for the Memory module.
@@ -143,7 +143,7 @@ export class Neo4jGraphAdapter extends IGraphService {
         }[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})
         ${propertyFilter ? `WHERE ${propertyFilter}` : ''}
         ${spec.limit ? `LIMIT ${spec.limit}` : 'LIMIT 100'}
-        RETURN 
+        RETURN
           nodes(path) as nodes,
           relationships(path) as relationships,
           path
@@ -251,7 +251,7 @@ export class Neo4jGraphAdapter extends IGraphService {
       const cypher = `
         MATCH (n)
         OPTIONAL MATCH ()-[r]->()
-        RETURN 
+        RETURN
           count(DISTINCT n) as nodeCount,
           count(DISTINCT r) as relationshipCount,
           count(DISTINCT labels(n)) as labelCount

@@ -78,7 +78,7 @@ graph TB
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/nestjs-langgraph",
+      "libs/langgraph-modules/nestjs-langgraph",
       "libs/shared"
     ],
     "version": {

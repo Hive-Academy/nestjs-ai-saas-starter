@@ -127,7 +127,7 @@ export const ADAPTER_EXPORTS = [CheckpointAdapter, MemoryAdapter, MultiAgentAdap
 **Current Architecture**:
 
 ```
-libs/nestjs-langgraph/
+libs/langgraph-modules/nestjs-langgraph/
 ├── adapters/memory.adapter.ts (302 lines) - Bridge only
 ├── adapters/memory-adapter.provider.ts - Provider setup
 
@@ -211,7 +211,7 @@ NestjsLanggraphModule.forRoot({
 **Approach**: Move `agentic-memory` functionality INTO `nestjs-langgraph`
 
 ```
-libs/nestjs-langgraph/src/lib/
+libs/langgraph-modules/nestjs-langgraph/src/lib/
 ├── adapters/
 │   └── memory.adapter.ts (Enhanced - becomes full implementation)
 ├── memory/ (NEW - moved from dev-brand)
@@ -286,7 +286,7 @@ export class MemoryAdapter {
 
 #### Subtask 1.1: Export All Adapters
 
-**File**: `libs/nestjs-langgraph/src/lib/nestjs-langgraph.module.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/nestjs-langgraph.module.ts`
 
 - Add all 10 adapters to module exports
 - Test injection in dev-brand-api
@@ -294,7 +294,7 @@ export class MemoryAdapter {
 
 #### Subtask 1.2: Update Adapter Index
 
-**File**: `libs/nestjs-langgraph/src/lib/adapters/index.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/index.ts`
 
 - Complete ADAPTER_EXPORTS array
 - Ensure clean re-exports for consumers
@@ -302,7 +302,7 @@ export class MemoryAdapter {
 
 #### Subtask 1.3: Create Usage Examples
 
-**File**: `libs/nestjs-langgraph/src/lib/examples/adapter-injection.examples.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/examples/adapter-injection.examples.ts`
 
 - Document injection patterns
 - Show enterprise vs fallback usage
@@ -315,7 +315,7 @@ export class MemoryAdapter {
 #### Subtask 2.1: Move Memory Services
 
 **Source**: `libs/dev-brand/backend/data-access/src/lib/agentic-memory/`  
-**Target**: `libs/nestjs-langgraph/src/lib/memory/`
+**Target**: `libs/langgraph-modules/nestjs-langgraph/src/lib/memory/`
 
 - Move all memory services (845+ lines)
 - Update import paths
@@ -323,7 +323,7 @@ export class MemoryAdapter {
 
 #### Subtask 2.2: Create Database Provider Interface
 
-**File**: `libs/nestjs-langgraph/src/lib/memory/interfaces/database-provider.interface.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/memory/interfaces/database-provider.interface.ts`
 
 - Define clean database connection interface
 - Support ChromaDB and Neo4j providers
@@ -331,7 +331,7 @@ export class MemoryAdapter {
 
 #### Subtask 2.3: Enhance Memory Adapter
 
-**File**: `libs/nestjs-langgraph/src/lib/adapters/memory.adapter.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/memory.adapter.ts`
 
 - Remove bridge pattern (simplify from 302 lines)
 - Implement direct memory service usage
@@ -339,7 +339,7 @@ export class MemoryAdapter {
 
 #### Subtask 2.4: Create Database Connection Providers
 
-**File**: `libs/nestjs-langgraph/src/lib/providers/memory-database.providers.ts`
+**File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/providers/memory-database.providers.ts`
 
 - Auto-inject ChromaDB and Neo4j services
 - Handle connection lifecycle
@@ -349,8 +349,8 @@ export class MemoryAdapter {
 
 **Files**:
 
-- `libs/nestjs-langgraph/src/lib/interfaces/module-options.interface.ts`
-- `libs/nestjs-langgraph/src/lib/providers/module.providers.ts`
+- `libs/langgraph-modules/nestjs-langgraph/src/lib/interfaces/module-options.interface.ts`
+- `libs/langgraph-modules/nestjs-langgraph/src/lib/providers/module.providers.ts`
 - Simplify memory configuration interface
 - Remove need for separate memory module setup
 - Maintain backward compatibility

@@ -15,7 +15,7 @@
 - [x] 1.2 Move ChromaVectorAdapter to Application
 
   - [x] Relocate adapter from library to application adapters directory
-  - [x] Update all import paths from relative to @hive-academy/nestjs-memory library imports
+  - [x] Update all import paths from relative to @hive-academy/langgraph-memory library imports
   - [x] Verify interface contract inheritance remains intact
   - [x] Test compilation in application context without errors
   - [x] Expected deliverables: /apps/dev-brand-api/src/app/adapters/chroma-vector.adapter.ts
@@ -25,7 +25,7 @@
 
 - [x] 1.3 Move Neo4jGraphAdapter to Application
   - [x] Relocate adapter from library to application adapters directory
-  - [x] Update all import paths from relative to @hive-academy/nestjs-memory library imports
+  - [x] Update all import paths from relative to @hive-academy/langgraph-memory library imports
   - [x] Verify interface contract inheritance remains intact
   - [x] Test compilation in application context without errors
   - [x] Expected deliverables: /apps/dev-brand-api/src/app/adapters/neo4j-graph.adapter.ts
@@ -65,7 +65,7 @@
   - [Preserve all interface exports (IVectorService, IGraphService)]
   - [Keep all type exports and error type exports for proper contracts]
   - [Verify library public API only exposes interfaces and types]
-  - [Expected deliverables: Updated /libs/langgraph-modules/nestjs-memory/src/index.ts]
+  - [Expected deliverables: Updated /libs/langgraph-modules/memory/src/index.ts]
   - _Requirements: 1.1, 1.3, 4.1, 4.2_
   - _Estimated: 1.5 hours_
   - ⏳ Pending
@@ -86,7 +86,7 @@
   - [Update createAdapterProviders() to require explicit adapter configuration]
   - [Add meaningful error messages when adapters not provided in configuration]
   - [Remove all fallback provider creation logic]
-  - [Expected deliverables: Updated /libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts]
+  - [Expected deliverables: Updated /libs/langgraph-modules/memory/src/lib/memory.module.ts]
   - _Requirements: 1.4, 3.4, 4.4_
   - _Estimated: 2.5 hours_
   - ⏳ Pending
@@ -165,7 +165,7 @@ _No active blockers identified at this time._
 **Implementation**: Successfully moved ChromaVectorAdapter and Neo4jGraphAdapter to application
 **Technical Details**:
 
-- Updated imports to use @hive-academy/nestjs-memory library interfaces
+- Updated imports to use @hive-academy/langgraph-memory library interfaces
 - Maintained self-contained adapter pattern with direct database client connections
 - Preserved all validation methods and error handling from base classes
 - Created clean export structure in application adapters directory

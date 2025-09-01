@@ -7,11 +7,13 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
 ## Current Workspace Analysis
 
 ### ✅ Ready for Publishing (3 packages)
+
 - `@hive-academy/nestjs-chromadb` - Vector database integration
-- `@hive-academy/nestjs-neo4j` - Graph database integration  
+- `@hive-academy/nestjs-neo4j` - Graph database integration
 - `@hive-academy/nestjs-langgraph` - AI workflow orchestration (main package)
 
 ### 🔄 Child Modules to Publish (7 packages)
+
 - `@hive-academy/langgraph-checkpoint` - State persistence & recovery
 - `@hive-academy/langgraph-multi-agent` - Multi-agent coordination
 - `@hive-academy/langgraph-monitoring` - Production observability
@@ -21,6 +23,7 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
 - `@hive-academy/langgraph-streaming` - Real-time capabilities
 
 ### 📁 Demo/Testing (Non-publishable)
+
 - `@libs/demo/agentic-memory` - Demo implementation
 - `@libs/demo/supervisor-agent` - Demo workflows
 - Demo applications in `apps/`
@@ -28,6 +31,7 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
 ## Strategy 1: Separate Child Packages (Chosen Approach)
 
 ### Benefits
+
 - ✅ Users install only needed modules
 - ✅ Independent versioning per module
 - ✅ Clear dependency tree
@@ -35,6 +39,7 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
 - ✅ Maximum flexibility for end users
 
 ### Package Ecosystem Structure
+
 ```
 @hive-academy/nestjs-chromadb     (Core - Vector DB)
 @hive-academy/nestjs-neo4j        (Core - Graph DB)
@@ -53,12 +58,15 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
 ### Phase 1: Child Module Configuration ⏳
 
 #### Task 1.1: Update Child Module Package Names
+
 **Objective**: Change internal package names to publishable scoped names
 
 **Files to Update**:
+
 - `libs/langgraph-modules/*/package.json` (7 files)
 
 **Changes**:
+
 ```json
 // Before
 {
@@ -66,9 +74,9 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
   "private": true
 }
 
-// After  
+// After
 {
-  "name": "@hive-academy/langgraph-checkpoint", 
+  "name": "@hive-academy/langgraph-checkpoint",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -77,14 +85,17 @@ This document outlines the comprehensive strategy for publishing the NestJS AI S
 ```
 
 #### Task 1.2: Update TypeScript Path Mappings
+
 **Objective**: Update all import paths to use new package names
 
 **Files to Update**:
+
 - `tsconfig.base.json` - Update paths configuration
-- `libs/nestjs-langgraph/src/**/*.ts` - Update import statements
+- `libs/langgraph-modules/nestjs-langgraph/src/**/*.ts` - Update import statements
 - `libs/langgraph-modules/*/src/**/*.ts` - Update cross-references
 
 **Changes**:
+
 ```typescript
 // Before
 import { CheckpointModule } from '@langgraph-modules/checkpoint';
@@ -93,19 +104,23 @@ import { CheckpointModule } from '@langgraph-modules/checkpoint';
 import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 ```
 
-#### Task 1.3: Update NX Project Configuration  
+#### Task 1.3: Update NX Project Configuration
+
 **Objective**: Add child modules to NX release pipeline
 
 **Files to Update**:
+
 - `nx.json` - Add to release.projects array
 - `package.json` - Update build and publish scripts
 
 ### Phase 2: Dependency Resolution ⏳
 
 #### Task 2.1: Configure Peer Dependencies
+
 **Objective**: Set proper peer dependency relationships
 
 **Child Module Pattern**:
+
 ```json
 {
   "peerDependencies": {
@@ -120,17 +135,20 @@ import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 ```
 
 #### Task 2.2: Update Child Module Loading Logic
+
 **Objective**: Update dynamic module loading to use published packages
 
 **Files to Update**:
-- `libs/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts`
+
+- `libs/langgraph-modules/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts`
 
 **Changes**:
+
 ```typescript
 // Update module paths in ModuleRegistryService.MODULE_DEFINITIONS
 {
   moduleId: 'checkpoint',
-  className: 'CheckpointModule', 
+  className: 'CheckpointModule',
   importPath: '@hive-academy/langgraph-checkpoint',  // Updated path
 }
 ```
@@ -138,21 +156,26 @@ import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 ### Phase 3: Demo Application Updates ⏳
 
 #### Task 3.1: Update Demo Library Dependencies
+
 **Objective**: Fix demo library configurations to use proper import paths
 
 **Files to Update**:
+
 - `libs/demo/*/package.json` - Add dependency declarations
 - `libs/demo/*/src/**/*.ts` - Update import statements
 - `apps/*/src/**/*.ts` - Update import statements
 
 #### Task 3.2: Configure Demo Applications
+
 **Objective**: Ensure demo apps use workspace dependencies correctly
 
 **Apps to Update**:
+
 - `apps/nestjs-ai-saas-starter-demo/`
 - Any other demo applications
 
 **Configuration Pattern**:
+
 ```json
 {
   "dependencies": {
@@ -167,12 +190,15 @@ import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 ### Phase 4: Build System Updates ⏳
 
 #### Task 4.1: Add Build Targets for Child Modules
+
 **Objective**: Ensure all child modules have proper build configurations
 
 **Files to Update**:
+
 - `libs/langgraph-modules/*/project.json` (7 files)
 
 **Standard Build Config**:
+
 ```json
 {
   "targets": {
@@ -197,12 +223,15 @@ import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 ```
 
 #### Task 4.2: Update Root Package Scripts
+
 **Objective**: Update build and publish scripts to handle all packages
 
 **Files to Update**:
+
 - `package.json` - Update scripts section
 
 **New Scripts**:
+
 ```json
 {
   "scripts": {
@@ -218,22 +247,27 @@ import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 ### Phase 5: Testing & Validation ⏳
 
 #### Task 5.1: Build Validation
+
 **Objective**: Ensure all packages build successfully
 
 **Commands to Run**:
+
 ```bash
 npm run build:all
 ```
 
 **Validation Points**:
+
 - All 10 packages build without errors
 - Proper TypeScript declarations generated
 - Package.json files copied to dist/
 
 #### Task 5.2: Dependency Validation
+
 **Objective**: Verify import paths and dependencies work correctly
 
 **Test Commands**:
+
 ```bash
 # Test import resolution
 npx tsc --noEmit --project tsconfig.base.json
@@ -243,9 +277,11 @@ npx nx build nestjs-ai-saas-starter-demo
 ```
 
 #### Task 5.3: Publishing Pipeline Test
+
 **Objective**: Test the publishing pipeline without actually publishing
 
 **Commands**:
+
 ```bash
 # Dry run version bump
 npx nx release version --dry-run
@@ -256,44 +292,52 @@ npx nx release publish --dry-run
 # Pack test packages
 npm run build:all
 cd dist/libs/nestjs-chromadb && npm pack
-cd dist/libs/nestjs-neo4j && npm pack  
-cd dist/libs/nestjs-langgraph && npm pack
+cd dist/libs/nestjs-neo4j && npm pack
+cd dist/libs/langgraph-modules/nestjs-langgraph && npm pack
 # ... etc for child modules
 ```
 
 ### Phase 6: Documentation Updates ⏳
 
 #### Task 6.1: Update README Files
+
 **Objective**: Update installation and usage documentation
 
 **Files to Update**:
+
 - Root `README.md`
 - `libs/*/README.md` for each publishable package
 
 #### Task 6.2: Create Migration Guide
+
 **Objective**: Help users migrate from workspace setup to published packages
 
 **New File**: `docs/MIGRATION_GUIDE.md`
 
 #### Task 6.3: Update CLAUDE.md Files
+
 **Objective**: Update guidance documentation with new package names
 
 **Files to Update**:
+
 - `libs/*/CLAUDE.md` for each package
 
 ## Risk Mitigation
 
 ### Backward Compatibility
+
 - Keep old import paths working during transition period
 - Provide clear migration timeline
 - Support both workspace and published usage patterns
 
 ### Testing Strategy
+
 - Test with packed versions before publishing
 - Validate all demo applications work with published packages
 - Run comprehensive integration tests
 
 ### Rollback Plan
+
 - Keep current workspace setup functional during transition
 - Ability to revert package names if needed
 - Staged rollout approach (core packages first, then child modules)
@@ -301,6 +345,7 @@ cd dist/libs/nestjs-langgraph && npm pack
 ## Success Criteria
 
 ### Technical Metrics
+
 - ✅ All 10 packages build successfully
 - ✅ All demo applications work with published packages
 - ✅ Import paths resolve correctly
@@ -308,7 +353,8 @@ cd dist/libs/nestjs-langgraph && npm pack
 - ✅ TypeScript compilation passes
 - ✅ Test suites pass
 
-### Publishing Metrics  
+### Publishing Metrics
+
 - ✅ Packages can be published to npm registry
 - ✅ Dependencies resolve correctly for end users
 - ✅ Package sizes are reasonable
@@ -317,11 +363,13 @@ cd dist/libs/nestjs-langgraph && npm pack
 ## Post-Implementation
 
 ### Monitoring
+
 - Track npm download statistics
 - Monitor GitHub issues for integration problems
 - Watch for community feedback
 
 ### Maintenance
+
 - Regular dependency updates
 - Coordinated releases across packages
 - Version compatibility management

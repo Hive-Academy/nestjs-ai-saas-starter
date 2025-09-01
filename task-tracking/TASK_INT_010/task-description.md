@@ -107,7 +107,7 @@ Feature: Standardized Adapter Pattern for All Child Libraries
 
 - **Technical Dependencies**:
   - All 9 child modules in `libs/langgraph-modules/*`
-  - Existing adapter pattern in `libs/nestjs-langgraph/src/lib/adapters/`
+  - Existing adapter pattern in `libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/`
   - NestJS dependency injection system
 - **Business Dependencies**: None (internal refactoring)
 

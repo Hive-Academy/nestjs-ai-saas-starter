@@ -161,12 +161,12 @@ The memory module (7,405 lines) represents mature, extraction-ready functionalit
 
 ### Phase 1: Memory Module Extraction (HIGH PRIORITY)
 
-**Target**: Create `@hive-academy/nestjs-memory` as standalone package
+**Target**: Create `@hive-academy/langgraph-memory` as standalone package
 
 #### Memory Module Architecture
 
 ```typescript
-// Target Structure: @hive-academy/nestjs-memory
+// Target Structure: @hive-academy/langgraph-memory
 @Module({})
 export class NestjsMemoryModule {
   static forRoot(options: MemoryModuleOptions): DynamicModule {
@@ -314,7 +314,7 @@ interface ChildModuleStrategy {
 class MemoryModuleStrategy implements ChildModuleStrategy {
   isAvailable(): boolean {
     try {
-      require('@hive-academy/nestjs-memory');
+      require('@hive-academy/langgraph-memory');
       return true;
     } catch {
       return false;
@@ -357,7 +357,7 @@ export class ChildModuleFactory {
 
 **Deliverables**:
 
-1. Create `@hive-academy/nestjs-memory` package structure
+1. Create `@hive-academy/langgraph-memory` package structure
 2. Extract all memory functionality from nestjs-langgraph
 3. Implement direct database integration (no adapters)
 4. Create comprehensive test suite
@@ -439,7 +439,7 @@ export class ChildModuleFactory {
 ### Memory Module Package Structure
 
 ```
-@hive-academy/nestjs-memory/
+@hive-academy/langgraph-memory/
 ├── src/
 │   ├── lib/
 │   │   ├── core/
@@ -452,7 +452,7 @@ export class ChildModuleFactory {
 │   │   ├── interfaces/
 │   │   │   ├── memory-config.interface.ts (extends @hive-academy/shared)
 │   │   │   └── memory-capabilities.interface.ts
-│   │   └── nestjs-memory.module.ts
+│   │   └── memory.module.ts
 │   └── index.ts
 ├── package.json
 └── README.md
@@ -477,7 +477,7 @@ export class ChildModuleFactory {
 
 ### Phase 1: Extract Memory Module (Week 1-2)
 
-1. **Create Package**: Set up @hive-academy/nestjs-memory
+1. **Create Package**: Set up @hive-academy/langgraph-memory
 2. **Migrate Code**: Move all memory functionality
 3. **Update Imports**: Fix dependency paths
 4. **Test Integration**: Ensure standalone functionality
@@ -543,7 +543,7 @@ The nestjs-langgraph library evolves from a complex orchestration system to a **
 
 **ABSOLUTELY**:
 
-`@hive-academy/nestjs-memory` becomes a flagship standalone module:
+`@hive-academy/langgraph-memory` becomes a flagship standalone module:
 
 - **Independent Usage**: RAG applications without full orchestration
 - **Direct Integration**: No adapter complexity
@@ -552,7 +552,7 @@ The nestjs-langgraph library evolves from a complex orchestration system to a **
 
 ## 🏁 Next Steps
 
-1. **Memory Extraction** - Create @hive-academy/nestjs-memory (Priority 1)
+1. **Memory Extraction** - Create @hive-academy/langgraph-memory (Priority 1)
 2. **Orchestration Simplification** - Remove adapter layer (Priority 2)
 3. **Consumer Migration** - Update dev-brand-api (Priority 3)
 4. **Documentation** - Migration guides and new patterns (Priority 4)
@@ -560,7 +560,7 @@ The nestjs-langgraph library evolves from a complex orchestration system to a **
 ## 🤖 Agent Handoff
 
 **Next Agent**: backend-developer  
-**First Subtask**: Extract memory module as @hive-academy/nestjs-memory  
+**First Subtask**: Extract memory module as @hive-academy/langgraph-memory  
 **Context**: User's architectural vision validated - standalone modules superior to current approach  
 **Critical Success Factor**: Maintain full functionality while eliminating architectural complexity  
-**Expected Outcome**: Functional @hive-academy/nestjs-memory package with direct database integration
+**Expected Outcome**: Functional @hive-academy/langgraph-memory package with direct database integration

@@ -117,7 +117,7 @@ export class HealthController {
           version: '0.0.1',
           integration: 'configured',
         },
-        'nestjs-memory': {
+        memory: {
           status: 'available',
           version: '1.0.0',
           integration: 'configured',
@@ -242,7 +242,7 @@ export class HealthController {
       '@hive-academy/nestjs-chromadb',
       '@hive-academy/nestjs-neo4j',
       '@hive-academy/nestjs-langgraph',
-      '@hive-academy/nestjs-memory',
+      '@hive-academy/langgraph-memory',
     ];
 
     const availableLibraries: Record<string, unknown> = {};

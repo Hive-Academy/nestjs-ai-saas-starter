@@ -8,7 +8,7 @@
   - Create VectorStoreData, VectorSearchQuery, VectorSearchResult, VectorStats supporting interfaces
   - Implement abstract class as NestJS injection token pattern for type-safe runtime injection
   - Add template methods for common validation logic and error handling contracts
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/interfaces/vector-service.interface.ts
+  - File paths: /libs/langgraph-modules/memory/src/lib/interfaces/vector-service.interface.ts
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Estimated: 4.0 hours_
   - ⏳ Pending
@@ -18,7 +18,7 @@
   - Create GraphNodeData, GraphRelationshipData, TraversalSpec, GraphStats supporting interfaces
   - Implement command pattern for graph operations with batch execution support
   - Add template methods for node ID validation and transaction management
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/interfaces/graph-service.interface.ts
+  - File paths: /libs/langgraph-modules/memory/src/lib/interfaces/graph-service.interface.ts
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Estimated: 4.0 hours_
   - ⏳ Pending
@@ -31,7 +31,7 @@
   - Wrap ChromaDBService with standardized error handling and performance monitoring
   - Add connection health monitoring and metrics collection for production observability
   - Ensure <5% performance overhead through efficient delegation patterns
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.ts
+  - File paths: /libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.ts
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   - _Estimated: 6.0 hours_
   - ⏳ Pending
@@ -41,7 +41,7 @@
   - Add transaction management and Cypher query optimization for batch operations
   - Implement error standardization and graceful degradation patterns
   - Preserve all existing MemoryGraphService functionality and behavior
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.ts
+  - File paths: /libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.ts
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   - _Estimated: 6.0 hours_
   - ⏳ Pending
@@ -54,7 +54,7 @@
   - Implement factory pattern with conditional imports based on adapter choice
   - Add adapter validation and clear error messages for incorrect configuration
   - Ensure 100% backward compatibility - existing MemoryModule.forRoot() continues unchanged
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts (modify existing)
+  - File paths: /libs/langgraph-modules/memory/src/lib/memory.module.ts (modify existing)
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   - _Estimated: 5.0 hours_
   - ⏳ Pending
@@ -64,7 +64,7 @@
   - Update MemoryGraphService to inject IGraphService instead of Neo4jService directly
   - Maintain all existing public APIs and behavior - zero breaking changes
   - Preserve error handling, logging patterns, and performance characteristics
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/services/\*.service.ts (modify existing)
+  - File paths: /libs/langgraph-modules/memory/src/lib/services/\*.service.ts (modify existing)
   - _Requirements: Maintain all existing functionality_
   - _Estimated: 4.0 hours_
   - ⏳ Pending
@@ -77,7 +77,7 @@
   - Implement mock adapters for isolated unit testing of memory services
   - Add integration tests with real ChromaDB and Neo4j using testcontainers
   - Performance benchmark current vs adapter implementation (<5% degradation target)
-  - File paths: /libs/langgraph-modules/nestjs-memory/src/lib/\*_/_.spec.ts
+  - File paths: /libs/langgraph-modules/memory/src/lib/\*_/_.spec.ts
   - _Requirements: Quality and reliability standards_
   - _Estimated: 4.0 hours_
   - ⏳ Pending
@@ -87,7 +87,7 @@
   - Document custom adapter implementation patterns and best practices
   - Provide migration guide for advanced users (optional enhancement)
   - Include troubleshooting guide and configuration examples
-  - File paths: /libs/langgraph-modules/nestjs-memory/ADAPTER_DEVELOPMENT.md
+  - File paths: /libs/langgraph-modules/memory/ADAPTER_DEVELOPMENT.md
   - _Requirements: 4.3, 4.4, 4.5_
   - _Estimated: 3.0 hours_
   - ⏳ Pending
@@ -196,7 +196,7 @@ MemoryModule.forRoot({
 
 **1. REMOVED ALL Database Module Imports from MemoryModule**
 
-- File: `libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts`
+- File: `libs/langgraph-modules/memory/src/lib/memory.module.ts`
 - Removed: `ChromaDBModule` and `Neo4jModule` imports
 - Result: Memory module now depends ONLY on abstractions (IVectorService, IGraphService)
 
@@ -204,14 +204,14 @@ MemoryModule.forRoot({
 
 **ChromaVectorAdapter**:
 
-- File: `libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.ts`
+- File: `libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.ts`
 - **BEFORE**: Injected `ChromaDBService` dependency
 - **AFTER**: Creates its own ChromaDB client using direct `chromadb` library
 - **Self-contained**: Manages its own connection lifecycle
 
 **Neo4jGraphAdapter**:
 
-- File: `libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.ts`
+- File: `libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.ts`
 - **BEFORE**: Injected `Neo4jService` dependency
 - **AFTER**: Creates its own Neo4j driver using direct `neo4j-driver` library
 - **Self-contained**: Manages its own connection lifecycle with cleanup
@@ -223,7 +223,7 @@ MemoryModule.forRoot({
 
 **4. CREATED Validation Test**
 
-- File: `libs/langgraph-modules/nestjs-memory/src/lib/adapters/__tests__/custom-adapter-integration.spec.ts`
+- File: `libs/langgraph-modules/memory/src/lib/adapters/__tests__/custom-adapter-integration.spec.ts`
 - **Purpose**: Proves memory module works with completely custom adapters
 - **Validates**: Zero database dependencies, proper adapter injection
 
@@ -291,16 +291,16 @@ MemoryModule.forRoot({
 
 **Core Module**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts` - Removed all database imports
+- `libs/langgraph-modules/memory/src/lib/memory.module.ts` - Removed all database imports
 
 **Self-Contained Adapters**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.ts` - Direct ChromaDB client
-- `libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.ts` - Direct Neo4j driver
+- `libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.ts` - Direct ChromaDB client
+- `libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.ts` - Direct Neo4j driver
 
 **Validation**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/adapters/__tests__/custom-adapter-integration.spec.ts` - Custom adapter test
+- `libs/langgraph-modules/memory/src/lib/adapters/__tests__/custom-adapter-integration.spec.ts` - Custom adapter test
 
 This architectural fix completely resolves the tight coupling issue and implements the proper adapter pattern as requested by the user.
 
@@ -331,20 +331,20 @@ This architectural fix completely resolves the tight coupling issue and implemen
 
 **New Interface Files**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/interfaces/vector-service.interface.ts`
-- `libs/langgraph-modules/nestjs-memory/src/lib/interfaces/graph-service.interface.ts`
+- `libs/langgraph-modules/memory/src/lib/interfaces/vector-service.interface.ts`
+- `libs/langgraph-modules/memory/src/lib/interfaces/graph-service.interface.ts`
 
 **New Adapter Files**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/adapters/chroma-vector.adapter.ts`
-- `libs/langgraph-modules/nestjs-memory/src/lib/adapters/neo4j-graph.adapter.ts`
+- `libs/langgraph-modules/memory/src/lib/adapters/chroma-vector.adapter.ts`
+- `libs/langgraph-modules/memory/src/lib/adapters/neo4j-graph.adapter.ts`
 
 **Modified Files**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts` (enhanced with adapter support)
-- `libs/langgraph-modules/nestjs-memory/src/lib/interfaces/memory-module-options.interface.ts` (adapter options added)
-- `libs/langgraph-modules/nestjs-memory/src/lib/services/memory-storage.service.ts` (migrated to adapter pattern)
-- `libs/langgraph-modules/nestjs-memory/src/lib/services/memory-graph.service.ts` (constructor updated)
+- `libs/langgraph-modules/memory/src/lib/memory.module.ts` (enhanced with adapter support)
+- `libs/langgraph-modules/memory/src/lib/interfaces/memory-module-options.interface.ts` (adapter options added)
+- `libs/langgraph-modules/memory/src/lib/services/memory-storage.service.ts` (migrated to adapter pattern)
+- `libs/langgraph-modules/memory/src/lib/services/memory-graph.service.ts` (constructor updated)
 
 ### Usage Examples Enabled
 
@@ -388,7 +388,7 @@ MemoryModule.forRoot({
 
 1. **✅ Adapter Exports Removed from Library**
 
-   - Removed `ChromaVectorAdapter` and `Neo4jGraphAdapter` exports from `libs/langgraph-modules/nestjs-memory/src/index.ts`
+   - Removed `ChromaVectorAdapter` and `Neo4jGraphAdapter` exports from `libs/langgraph-modules/memory/src/index.ts`
    - Added note explaining adapters moved to application layer
    - Library now only exports interfaces and contracts
 
@@ -425,12 +425,12 @@ MemoryModule.forRoot({
 
 **Library Exports Cleaned**:
 
-- `libs/langgraph-modules/nestjs-memory/src/index.ts` - Removed adapter exports
+- `libs/langgraph-modules/memory/src/index.ts` - Removed adapter exports
 
 **Library Implementation Cleaned**:
 
-- `libs/langgraph-modules/nestjs-memory/src/lib/memory.module.ts` - Removed adapter imports and default implementations
-- Removed: `libs/langgraph-modules/nestjs-memory/src/lib/adapters/` (entire directory)
+- `libs/langgraph-modules/memory/src/lib/memory.module.ts` - Removed adapter imports and default implementations
+- Removed: `libs/langgraph-modules/memory/src/lib/adapters/` (entire directory)
 
 **Application Layer Verified**:
 
@@ -450,7 +450,7 @@ MemoryModule.forRoot({
 The architectural refactoring has achieved perfect separation of concerns:
 
 ```typescript
-// LIBRARY - Interface only (libs/langgraph-modules/nestjs-memory/src/index.ts)
+// LIBRARY - Interface only (libs/langgraph-modules/memory/src/index.ts)
 export { IVectorService } from './lib/interfaces/vector-service.interface';
 export { IGraphService } from './lib/interfaces/graph-service.interface';
 // NOTE: Adapters have been moved to application layer for proper separation of concerns

@@ -236,10 +236,7 @@ Add to your ESLint config:
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": [
-          "libs/nestjs-chromadb/**/*.ts",
-          "libs/nestjs-chromadb/package.json"
-        ]
+        "lintFilePatterns": ["libs/nestjs-chromadb/**/*.ts", "libs/nestjs-chromadb/package.json"]
       }
     }
   }
@@ -255,23 +252,19 @@ const fs = require('fs');
 const path = require('path');
 
 const rootPackage = require('../package.json');
-const libraries = [
-  'libs/nestjs-chromadb',
-  'libs/nestjs-neo4j', 
-  'libs/nestjs-langgraph'
-];
+const libraries = ['libs/nestjs-chromadb', 'libs/nestjs-neo4j', 'libs/langgraph-modules/nestjs-langgraph'];
 
-libraries.forEach(libPath => {
+libraries.forEach((libPath) => {
   const packagePath = path.join(libPath, 'package.json');
   const libPackage = require(`../${packagePath}`);
-  
+
   // Update peer dependencies to match root versions
-  Object.keys(libPackage.peerDependencies).forEach(dep => {
+  Object.keys(libPackage.peerDependencies).forEach((dep) => {
     if (rootPackage.dependencies[dep]) {
       libPackage.peerDependencies[dep] = rootPackage.dependencies[dep];
     }
   });
-  
+
   fs.writeFileSync(packagePath, JSON.stringify(libPackage, null, 2));
   console.log(`Updated ${packagePath}`);
 });
@@ -476,7 +469,7 @@ node scripts/sync-peer-dependencies.js
   "exports": {
     ".": {
       "development": "./src/index.ts",
-      "types": "./src/index.d.ts", 
+      "types": "./src/index.d.ts",
       "import": "./src/index.js",
       "default": "./src/index.js"
     }

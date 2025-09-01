@@ -7,7 +7,7 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 import { DevbrandBackendFeatureModule } from '@devbrand/backend-feature';
 import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
-import { MemoryModule } from '@hive-academy/nestjs-memory';
+import { MemoryModule } from '@hive-academy/langgraph-memory';
 
 // Import adapters from application layer - NOT from library
 import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
@@ -75,7 +75,6 @@ import { HealthController } from './controllers/health.controller';
 
     NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
 
-
     MemoryModule.forRoot({
       ...getMemoryConfig(),
       adapters: {
@@ -113,7 +112,6 @@ import { HealthController } from './controllers/health.controller';
     // Phase 1 health check controller for Subtask 1.3
     HealthController,
   ],
-  exports: [
-  ],
+  exports: [],
 })
 export class AppModule {}

@@ -1,0 +1,16 @@
+{
+  "extends": "../../../typedoc.base.json",
+  "name": "@hive-academy/nestjs-langgraph",
+  "out": "../../../docs/api/nestjs-langgraph",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.lib.json",
+  "readme": "README.md",
+  "includeVersion": true,
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/hive-academy/nestjs-ai-saas-starter/blob/{gitRevision}/libs/langgraph-modules/nestjs-langgraph/{path}#L{line}",
+  "navigationLinks": {
+    "GitHub": "https://github.com/hive-academy/nestjs-ai-saas-starter",
+    "NPM": "https://www.npmjs.com/package/@hive-academy/nestjs-langgraph"
+  }
+}

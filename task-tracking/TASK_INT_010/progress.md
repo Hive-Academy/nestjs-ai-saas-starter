@@ -10,11 +10,11 @@
 
 ```bash
 # Searched for existing adapter interfaces
-find "libs/nestjs-langgraph/src" -name "*.ts" -exec grep -l "interface.*Adapter" {} \;
+find "libs/langgraph-modules/nestjs-langgraph/src" -name "*.ts" -exec grep -l "interface.*Adapter" {} \;
 # Result: No existing adapter interfaces found
 
 # Searched for base adapter classes
-find "libs/nestjs-langgraph/src" -name "*.ts" -exec grep -l "class.*Base.*Adapter\|abstract.*Adapter" {} \;
+find "libs/langgraph-modules/nestjs-langgraph/src" -name "*.ts" -exec grep -l "class.*Base.*Adapter\|abstract.*Adapter" {} \;
 # Result: No base adapter classes found
 
 # Searched @hive-academy/shared for adapter types
@@ -24,7 +24,7 @@ find "libs/shared/src/lib/types" -name "*.ts" -exec grep -l -i "adapter\|Adapter
 
 #### Existing Adapters Analysis:
 
-- Found in `libs/nestjs-langgraph/src/lib/adapters/`:
+- Found in `libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/`:
   - checkpoint.adapter.ts (152 lines) ✅
   - memory.adapter.ts (291 lines) ✅
   - multi-agent.adapter.ts (325 lines) ✅
@@ -71,14 +71,14 @@ find "libs/shared/src/lib/types" -name "*.ts" -exec grep -l -i "adapter\|Adapter
 
 #### Created Files:
 
-1. **`libs/nestjs-langgraph/src/lib/adapters/interfaces/adapter.interface.ts`**:
+1. **`libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/interfaces/adapter.interface.ts`**:
 
    - `IModuleAdapter<TConfig, TResult>` - Base interface for all adapters
    - `ICreatableAdapter`, `IExecutableAdapter`, `IStreamableAdapter`, `ICleanableAdapter` - Specialized interfaces
    - `IFullAdapter` - Comprehensive interface combining all capabilities
    - `AdapterStatus`, `BaseAdapterStatus`, `ExtendedAdapterStatus` - Diagnostic types
 
-2. **`libs/nestjs-langgraph/src/lib/adapters/base/base.adapter.ts`**:
+2. **`libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/base/base.adapter.ts`**:
    - `BaseModuleAdapter<TConfig, TResult>` - Abstract base class (95 lines)
    - Common logging, error handling, and diagnostic patterns
    - Template methods for consistent behavior across adapters
@@ -123,12 +123,12 @@ find "libs/shared/src/lib/types" -name "*.ts" -exec grep -l -i "adapter\|Adapter
 
 ```bash
 # Verified foundation is ready
-grep -r "BaseModuleAdapter" libs/nestjs-langgraph/src/lib/adapters/
-grep -r "IModuleAdapter" libs/nestjs-langgraph/src/lib/adapters/
-grep -r "ExtendedAdapterStatus" libs/nestjs-langgraph/src/lib/adapters/
+grep -r "BaseModuleAdapter" libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/
+grep -r "IModuleAdapter" libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/
+grep -r "ExtendedAdapterStatus" libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/
 
 # Confirmed checkpoint.adapter.ts pattern to follow
-cat libs/nestjs-langgraph/src/lib/adapters/checkpoint.adapter.ts
+cat libs/langgraph-modules/nestjs-langgraph/src/lib/adapters/checkpoint.adapter.ts
 ```
 
 ### Implementation Results:
@@ -250,7 +250,7 @@ Each adapter provides enterprise capabilities when services are available:
 
 ### Starting Subtask 3 [2025-01-25 15:45:00]
 
-**Target File**: `libs/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts` (850+ lines)
+**Target File**: `libs/langgraph-modules/nestjs-langgraph/src/lib/providers/child-module-imports.providers.ts` (850+ lines)
 
 **Goal**: Replace complex dynamic loading system with simple adapter pattern usage
 
@@ -283,7 +283,7 @@ Each adapter provides enterprise capabilities when services are available:
 
 ```bash
 # Searched for existing database provider interfaces
-find "libs/nestjs-langgraph/src" -name "*.ts" -exec grep -l "DatabaseProvider\|IDatabaseProvider" {} \;
+find "libs/langgraph-modules/nestjs-langgraph/src" -name "*.ts" -exec grep -l "DatabaseProvider\|IDatabaseProvider" {} \;
 # Result: No existing database provider interfaces found
 
 # Searched @hive-academy/shared for database types
@@ -291,7 +291,7 @@ grep -r "interface.*Database.*Provider" libs/shared/src/lib/types/
 # Result: No database provider types found in shared
 
 # Examined existing memory structure
-ls -la libs/nestjs-langgraph/src/lib/memory/
+ls -la libs/langgraph-modules/nestjs-langgraph/src/lib/memory/
 # Result: Directory does not exist - needs creation
 
 # Reviewed ChromaDB and Neo4j service interfaces
@@ -316,7 +316,7 @@ cat libs/nestjs-neo4j/src/lib/services/neo4j.service.ts
 
 #### Created Files:
 
-1. **`libs/nestjs-langgraph/src/lib/memory/interfaces/database-provider.interface.ts`** (128 lines):
+1. **`libs/langgraph-modules/nestjs-langgraph/src/lib/memory/interfaces/database-provider.interface.ts`** (128 lines):
 
    - `IDatabaseConnectionProvider` - Core provider interface
    - `MemoryDatabaseConfig` - Configuration interface for auto-detection
@@ -324,7 +324,7 @@ cat libs/nestjs-neo4j/src/lib/services/neo4j.service.ts
    - `IDatabaseProviderFactory` - Factory pattern interface
    - `MemoryDetectionResult` - Comprehensive detection results
 
-2. **`libs/nestjs-langgraph/src/lib/memory/providers/database-provider.factory.ts`** (189 lines):
+2. **`libs/langgraph-modules/nestjs-langgraph/src/lib/memory/providers/database-provider.factory.ts`** (189 lines):
 
    - `DatabaseProviderFactory` - Main factory implementation
    - Auto-detection of ChromaDB and Neo4j services using @Optional() @Inject()
@@ -332,20 +332,20 @@ cat libs/nestjs-neo4j/src/lib/services/neo4j.service.ts
    - Graceful fallback when services not available
    - Comprehensive logging and error handling
 
-3. **`libs/nestjs-langgraph/src/lib/memory/providers/memory-provider.module.ts`** (147 lines):
+3. **`libs/langgraph-modules/nestjs-langgraph/src/lib/memory/providers/memory-provider.module.ts`** (147 lines):
 
    - `MemoryProviderModule` - NestJS module configuration
    - Provider factories for sync and async initialization
    - Feature flag providers based on detected capabilities
    - Token exports for dependency injection
 
-4. **`libs/nestjs-langgraph/src/lib/memory/index.ts`** (10 lines):
+4. **`libs/langgraph-modules/nestjs-langgraph/src/lib/memory/index.ts`** (10 lines):
    - Clean exports for all memory interfaces and providers
    - Re-export of commonly used tokens
 
 #### Updated Files:
 
-5. **`libs/nestjs-langgraph/src/index.ts`**:
+5. **`libs/langgraph-modules/nestjs-langgraph/src/index.ts`**:
    - Added memory module to main library exports
    - Maintained clean export structure
 
