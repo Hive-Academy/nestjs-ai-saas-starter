@@ -11,7 +11,6 @@
 **Before reviewing code quality, analyze the codebase to understand:**
 
 1. **Primary Language & Framework Detection**:
-
    - Examine package.json, requirements.txt, go.mod, Cargo.toml, etc.
    - Identify main dependencies and frameworks
    - Analyze file extensions and project structure

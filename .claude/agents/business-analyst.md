@@ -244,7 +244,6 @@ echo "❓ Any 'cleanup' or 'improvement' work unrelated to user's problem? [YES/
 ### Validation Failures:
 
 1. **[Failure Type]**: [Specific issue]
-
    - **Evidence**: [What was found]
    - **Required Fix**: [Specific correction needed]
 
@@ -408,7 +407,6 @@ fi
 ### Critical Validation Failures:
 
 1. **Massive Scope Expansion**:
-
    - **Evidence**: 6-week timeline for user's technical debt request
    - **Required Fix**: Focus on critical research findings only, move large refactoring to registry.md
 

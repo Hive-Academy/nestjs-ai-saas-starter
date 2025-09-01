@@ -11,7 +11,6 @@
 **Before reviewing security, understand the threat landscape:**
 
 1. **Application Type & Attack Surface**:
-
    - Web application, API service, desktop app, mobile app, or library
    - Public-facing vs internal/private deployment
    - Authentication requirements and user data handling

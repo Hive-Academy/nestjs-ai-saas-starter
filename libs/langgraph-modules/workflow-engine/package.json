@@ -42,7 +42,7 @@
       }
     }
   },
-  "dependencies": {
+  "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@langchain/core": "^0.3.68",
     "@nestjs/event-emitter": "^3.0.1",
@@ -53,7 +53,9 @@
     "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
     "@hive-academy/langgraph-streaming": "0.0.1",
     "@hive-academy/langgraph-core": "0.0.1",
-    "@hive-academy/langgraph-functional-api": "0.0.1",
+    "@hive-academy/langgraph-functional-api": "0.0.1"
+  },
+  "devDependencies": {
     "rollup": "4.49.0",
     "@rollup/plugin-typescript": "12.1.4",
     "rollup-plugin-dts": "6.2.3"

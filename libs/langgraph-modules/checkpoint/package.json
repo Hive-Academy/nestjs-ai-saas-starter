@@ -44,7 +44,8 @@
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
-    "@langchain/langgraph": "^0.4.0"
+    "@langchain/langgraph": "^0.4.0",
+    "@hive-academy/langgraph-core": "0.0.1"
   },
   "optionalDependencies": {
     "ioredis": "^5.0.0",
@@ -53,7 +54,6 @@
     "sqlite3": "^5.0.0"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@hive-academy/langgraph-core": "0.0.1"
+    "tslib": "^2.3.0"
   }
 }

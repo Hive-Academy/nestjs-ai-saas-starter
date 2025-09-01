@@ -4,6 +4,8 @@
   "license": "MIT",
   "scripts": {
     "api": "npx nx run dev-brand-api:serve",
+    "api:dev": "npx nx run dev-brand-api:serve",
+    "api:build": "npx nx run dev-brand-api:serve:webpack",
     "start": "npx nx run ai-saas-frontend:serve:development",
     "dev:services": "docker compose -f docker-compose.dev.yml up -d",
     "dev:stop": "docker compose -f docker-compose.dev.yml down",
@@ -117,6 +119,7 @@
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "2.8.1",
+    "tsx": "4.20.5",
     "typedoc": "^0.28.10",
     "typedoc-plugin-markdown": "^4.0.0",
     "typescript": "~5.8.2",

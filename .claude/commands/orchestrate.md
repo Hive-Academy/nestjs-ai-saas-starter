@@ -32,6 +32,8 @@ Phase 5: senior-tester → business-analyst → [CONTINUE/REWORK]
 Phase 6: code-reviewer → business-analyst → [CONTINUE/REWORK]
     ↓
 Phase 7: Task Completion (PR Creation + Registry Update)
+    ↓
+Phase 8: Future Work Consolidation (project-manager)
 ```
 
 ---
@@ -531,6 +533,75 @@ echo "Next Steps:"
 echo "1. Review and merge PR: $PR_URL"
 echo "2. Deploy changes if approved"
 echo "3. Close task branch after merge"
+```
+
+---
+
+## Phase 8: Future Work Consolidation
+
+### 8.1 Invoke Modernization Detector for Future Work Consolidation
+
+```bash
+Use the Task tool to invoke the modernization-detector agent:
+
+**Prompt:**
+```
+
+You are the modernization-detector for $TASK_ID.
+
+## ORIGINAL USER REQUEST
+
+$USER_REQUEST
+
+## YOUR SINGLE RESPONSIBILITY
+
+Consolidate all future work opportunities from task deliverables and identify additional modernization opportunities from implemented code.
+
+## DELIVERABLES
+
+1. Create: task-tracking/$TASK_ID/future-enhancements.md
+2. Update: task-tracking/registry.md with properly categorized future tasks
+3. Create/Update: task-tracking/future-work-dashboard.md (project-wide view)
+
+### 8.2 Validate Future Work Consolidation
+
+```bash
+Use the Task tool to invoke the business-analyst agent:
+
+**Prompt:**
+```
+
+You are the business-analyst for $TASK_ID - Future Work Consolidation Validation Phase.
+
+## VALIDATION TARGET
+
+**Agent**: modernization-detector
+**Deliverable**: task-tracking/$TASK_ID/future-enhancements.md
+
+## VALIDATION FOCUS
+
+1. **Completeness**: All future recommendations from task deliverables captured?
+2. **Visibility**: Future work properly categorized and prioritized?
+3. **Actionability**: Each item has clear effort estimates and business value?
+
+## VALIDATION DECISION REQUIRED
+
+- APPROVE ✅: Future work properly consolidated and visible
+- REJECT ❌: Re-delegate to modernization-detector with consolidation improvements
+
+Return validation decision confirming future work visibility.
+
+### 8.3 Process Future Work Validation
+
+```bash
+if [VALIDATION_RESULT == "APPROVE"]; then
+    echo "✅ Future work consolidation complete - highly visible for planning"
+    echo "📋 Future enhancements documented in: task-tracking/$TASK_ID/future-enhancements.md"
+    echo "🎯 Registry updated with prioritized future tasks"
+else
+    echo "❌ Future work consolidation failed - re-delegating"
+    # Re-invoke modernization-detector with business-analyst feedback
+fi
 ```
 
 ---

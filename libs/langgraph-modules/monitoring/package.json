@@ -43,7 +43,10 @@
     "access": "public"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@nestjs/common": "^11.0.0"
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "reflect-metadata": "^0.1.13"
   }
 }

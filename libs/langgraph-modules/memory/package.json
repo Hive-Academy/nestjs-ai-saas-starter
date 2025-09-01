@@ -37,19 +37,14 @@
     "name": "memory"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
-    "@nestjs/config": "^3.0.0",
-    "@langchain/core": "^0.1.0",
-    "zod": "^3.22.0",
-    "rxjs": "^7.8.0",
-    "reflect-metadata": "^0.1.13"
+    "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/core": "^10.0.0",
-    "@nestjs/config": "^3.0.0",
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^10.0.0 || ^11.0.0",
+    "@nestjs/config": "^3.0.0 || ^4.0.0",
+    "@langchain/core": "^0.1.0 || ^0.3.0",
+    "zod": "^3.22.0",
     "rxjs": "^7.0.0",
     "reflect-metadata": "^0.1.12"
   }
