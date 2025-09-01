@@ -79,6 +79,7 @@
     "@nestjs/axios": "4.0.1",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
+    "@nestjs/websockets": "11.1.6",
     "@nx/angular": "21.4.1",
     "@nx/eslint": "21.4.1",
     "@nx/eslint-plugin": "21.4.1",

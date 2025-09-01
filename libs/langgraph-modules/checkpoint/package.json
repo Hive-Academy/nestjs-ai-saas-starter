@@ -2,17 +2,17 @@
   "name": "@hive-academy/langgraph-checkpoint",
   "version": "0.0.1",
   "private": false,
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
-  "types": "./dist/libs/langgraph-modules/checkpoint/src/index.d.ts",
+  "main": "./index.cjs.js",
+  "module": "./index.esm.js",
+  "types": "./src/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "development": "./src/index.ts",
-      "types": "./dist/libs/langgraph-modules/checkpoint/src/index.d.ts",
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs.js",
-      "default": "./dist/index.esm.js"
+      "types": "./src/index.d.ts",
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js",
+      "default": "./index.esm.js"
     }
   },
   "nx": {
