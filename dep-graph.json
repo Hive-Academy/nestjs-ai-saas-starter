@@ -35,11 +35,9 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -283,13 +281,12 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
                 "{workspaceRoot}/libs/langgraph-modules/checkpoint/dist/**/*.d.ts",
                 "{workspaceRoot}/libs/langgraph-modules/checkpoint/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -352,10 +349,7 @@
                   "externalDependencies": ["typescript"]
                 }
               ],
-              "outputs": [
-                "{projectRoot}/out-tsc/dev-brand-api-e2e/**/*.d.ts",
-                "{projectRoot}/out-tsc/dev-brand-api-e2e/tsconfig.tsbuildinfo"
-              ],
+              "outputs": ["{projectRoot}/out-tsc/dev-brand-api-e2e/**/*.d.ts"],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
                 "technologies": ["typescript"],
@@ -529,11 +523,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -683,13 +676,12 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
                 "{workspaceRoot}/libs/langgraph-modules/checkpoint/dist/**/*.d.ts",
                 "{workspaceRoot}/libs/langgraph-modules/checkpoint/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -837,11 +829,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -989,11 +980,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -1071,11 +1061,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.app.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -1320,11 +1309,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -1573,11 +1561,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -1722,11 +1709,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -1807,11 +1793,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -1986,11 +1971,10 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -2172,9 +2156,7 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
-                "{workspaceRoot}/dist/out-tsc/**/*.d.ts",
-                "{workspaceRoot}/dist/out-tsc/tsconfig.tsbuildinfo"
+                "{workspaceRoot}/dist/out-tsc/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -2388,7 +2370,7 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
+
                 "{projectRoot}/dist/**/*.d.ts",
                 "{projectRoot}/dist/tsconfig.lib.tsbuildinfo",
                 "{workspaceRoot}/libs/langgraph-modules/monitoring/dist/**/*.d.ts",
@@ -2405,8 +2387,7 @@
                 "{workspaceRoot}/libs/langgraph-modules/functional-api/dist/tsconfig.lib.tsbuildinfo",
                 "{workspaceRoot}/libs/langgraph-modules/multi-agent/dist/**/*.d.ts",
                 "{workspaceRoot}/libs/langgraph-modules/multi-agent/dist/tsconfig.lib.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -2612,9 +2593,8 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {
@@ -2819,9 +2799,8 @@
                 "{projectRoot}/**/*.d.ts.map",
                 "{projectRoot}/**/*.d.cts.map",
                 "{projectRoot}/**/*.d.mts.map",
-                "{projectRoot}/tsconfig.tsbuildinfo",
-                "{projectRoot}/out-tsc/jest/**/*.d.ts",
-                "{projectRoot}/out-tsc/jest/tsconfig.tsbuildinfo"
+
+                "{projectRoot}/out-tsc/jest/**/*.d.ts"
               ],
               "syncGenerators": ["@nx/js:typescript-sync"],
               "metadata": {

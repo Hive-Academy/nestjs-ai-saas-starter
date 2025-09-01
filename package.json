@@ -51,6 +51,7 @@
     "@langchain/langgraph-checkpoint": "^0.1.0",
     "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
     "@langchain/openai": "^0.6.7",
+    "@nestjs-plus/discovery": "2.0.2",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "4.0.2",
     "@nestjs/core": "^11.0.0",
@@ -125,11 +126,7 @@
   },
   "workspaces": [
     "apps/*",
-    "libs/*",
-    "libs/langgraph-modules/*",
-    "libs/demo/*",
-    "libs/dev-brand/backend/*",
-    "libs/core/*"
+    "libs/*"
   ],
   "overrides": {
     "chalk": {

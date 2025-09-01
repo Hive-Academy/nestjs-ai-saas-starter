@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DiscoveryService, MetadataScanner } from '@nestjs/core';
+import {  MetadataScanner } from '@nestjs/core';
 import {
   FunctionalWorkflowDefinition,
   TaskDefinition,
@@ -17,6 +17,7 @@ import {
   DuplicateWorkflowError,
 } from '../errors/functional-workflow.errors';
 import { WorkflowValidator } from '../validation/workflow-validator';
+import { DiscoveryService } from '@nestjs-plus/discovery';
 
 /**
  * Service for discovering and registering functional workflows from decorated classes
@@ -39,7 +40,10 @@ export class WorkflowDiscoveryService {
   async discoverWorkflows(): Promise<void> {
     this.logger.log('Starting workflow discovery');
 
-    const providers = this.discoveryService.getProviders();
+    // Discover all providers that have instances
+    const providers = await this.discoveryService.providers(
+      (discoveredClass) => discoveredClass.instance != null
+    );
     let discoveredCount = 0;
 
     for (const provider of providers) {

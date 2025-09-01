@@ -34,6 +34,7 @@ export default defineConfig([
       '@hive-academy/langgraph-checkpoint',
       '@nestjs/common',
       'reflect-metadata',
+      '@nestjs-plus/discovery',
     ],
   },
   // TypeScript definitions bundle
@@ -49,6 +50,7 @@ export default defineConfig([
       '@hive-academy/langgraph-checkpoint',
       '@nestjs/common',
       'reflect-metadata',
+      '@nestjs-plus/discovery',
     ],
   },
 ]);

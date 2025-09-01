@@ -49,6 +49,7 @@
     "@langchain/core": "^0.3.68",
     "@langchain/langgraph": "^0.4.3",
     "reflect-metadata": "^0.1.13",
-    "@hive-academy/langgraph-core": "0.0.1"
+    "@hive-academy/langgraph-core": "0.0.1",
+    "@nestjs-plus/discovery":"2.0.2"
   }
 }

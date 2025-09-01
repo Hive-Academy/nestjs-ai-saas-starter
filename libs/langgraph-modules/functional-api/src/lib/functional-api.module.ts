@@ -1,5 +1,4 @@
 import { Module, DynamicModule, Provider, Global } from '@nestjs/common';
-import { DiscoveryModule } from '@nestjs/core';
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import {
   FunctionalApiModuleOptions,
@@ -10,6 +9,8 @@ import { FunctionalWorkflowService } from './services/functional-workflow.servic
 import { WorkflowDiscoveryService } from './services/workflow-discovery.service';
 import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
+import { DiscoveryModule } from '@nestjs-plus/discovery';
+
 
 /**
  * Module options injection token

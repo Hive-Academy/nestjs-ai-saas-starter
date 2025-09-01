@@ -35,6 +35,7 @@ export default defineConfig([
       '@langchain/langgraph',
       '@nestjs/common',
       'reflect-metadata',
+      '@nestjs-plus/discovery',
     ],
   },
   // TypeScript definitions bundle
@@ -51,6 +52,7 @@ export default defineConfig([
       '@langchain/langgraph',
       '@nestjs/common',
       'reflect-metadata',
+      '@nestjs-plus/discovery',
     ],
   },
 ]);

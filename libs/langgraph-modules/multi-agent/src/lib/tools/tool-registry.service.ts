@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@nestjs/core';
+import { DiscoveryService } from '@nestjs-plus/discovery';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { ToolMetadata, getClassTools } from '../decorators/tool.decorator';
@@ -27,7 +27,10 @@ export class ToolRegistryService implements OnModuleInit {
    * Discover all tools in the application
    */
   private async discoverTools() {
-    const providers = this.discoveryService.getProviders();
+    // Discover all providers that have instances (filter out undefined instances)
+    const providers = await this.discoveryService.providers(
+      (discoveredClass) => discoveredClass.instance != null
+    );
 
     for (const wrapper of providers) {
       const { instance } = wrapper;
