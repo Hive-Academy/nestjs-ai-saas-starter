@@ -19,7 +19,8 @@
       "plugin": "@nx/js/typescript",
       "options": {
         "typecheck": {
-          "targetName": "typecheck"
+          "targetName": "typecheck",
+          "command": "tsc --noEmit --skipLibCheck"
         },
         "build": {
           "targetName": "build",
@@ -84,7 +85,11 @@
       ],
       "options": {
         "typecheck": {
-          "targetName": "typecheck"
+          "targetName": "typecheck",
+          "executor": "nx:run-commands",
+          "options": {
+            "command": "tsc --noEmit --skipLibCheck"
+          }
         }
       }
     }
@@ -97,6 +102,14 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --skipLibCheck"
+      },
+      "dependsOn": ["^typecheck"],
+      "cache": true
     }
   },
   "release": {

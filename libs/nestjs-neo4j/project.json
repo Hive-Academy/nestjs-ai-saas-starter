@@ -36,6 +36,15 @@
       },
       "dependsOn": ["build"]
     },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.lib.json",
+        "cwd": "libs/nestjs-neo4j"
+      },
+      "dependsOn": ["^typecheck"],
+      "cache": true
+    },
     "docs": {
       "executor": "nx:run-commands",
       "options": {

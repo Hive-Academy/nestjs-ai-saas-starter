@@ -14,13 +14,18 @@
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/memory",
         "main": "libs/langgraph-modules/memory/src/index.ts",
         "tsConfig": "libs/langgraph-modules/memory/tsconfig.lib.json",
         "rollupConfig": "libs/langgraph-modules/memory/rollup.config.js",
-        "format": ["cjs", "esm"],
+        "format": [
+          "cjs",
+          "esm"
+        ],
         "useLegacyTypescriptPlugin": false,
         "assets": [
           {
@@ -38,7 +43,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{options.outputFile}"],
+      "outputs": [
+        "{options.outputFile}"
+      ],
       "options": {
         "jestConfig": "libs/langgraph-modules/memory/jest.config.ts",
         "passWithNoTests": true
@@ -49,6 +56,17 @@
           "coverage": true
         }
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.lib.json",
+        "cwd": "libs/langgraph-modules/memory"
+      },
+      "dependsOn": [
+        "^typecheck"
+      ],
+      "cache": true
     }
   }
 }

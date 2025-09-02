@@ -65,7 +65,8 @@
     "neo4j-driver": "^5.28.1",
     "openai": "^5.12.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "@hive-academy/langgraph-core": "0.0.1"
   },
   "dependencies": {
     "tslib": "^2.3.0"

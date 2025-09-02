@@ -3,7 +3,7 @@
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/dev-brand/backend/feature/src",
   "projectType": "library",
-  "tags": ["scope:devbrand type:data-access platform:backend"],
+  "tags": ["scope:devbrand", "type:data-access", "platform:backend"],
   "// targets": "to see all targets run: nx show project devbrand-backend-feature --web",
   "targets": {
     "build": {
@@ -29,6 +29,15 @@
           }
         ]
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.lib.json",
+        "cwd": "libs/dev-brand/backend/feature"
+      },
+      "dependsOn": ["^typecheck"],
+      "cache": true
     }
   }
 }

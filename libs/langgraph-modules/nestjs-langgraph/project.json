@@ -3,19 +3,29 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/nestjs-langgraph/src",
   "projectType": "library",
-  "tags": ["domain:langgraph", "type:data-access"],
+  "tags": [
+    "domain:langgraph",
+    "type:data-access"
+  ],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/nestjs-langgraph",
         "main": "libs/langgraph-modules/nestjs-langgraph/src/index.ts",
         "tsConfig": "libs/langgraph-modules/nestjs-langgraph/tsconfig.lib.json",
         "rollupConfig": "libs/langgraph-modules/nestjs-langgraph/rollup.config.js",
-        "format": ["cjs", "esm"],
+        "format": [
+          "cjs",
+          "esm"
+        ],
         "useLegacyTypescriptPlugin": false,
-        "external": ["@hive-academy/langgraph-core"],
+        "external": [
+          "@hive-academy/langgraph-core"
+        ],
         "assets": [
           {
             "input": "./libs/langgraph-modules/nestjs-langgraph",
@@ -35,7 +45,9 @@
       "options": {
         "command": "npm publish dist/libs/langgraph-modules/nestjs-langgraph --access public"
       },
-      "dependsOn": ["build"]
+      "dependsOn": [
+        "build"
+      ]
     },
     "docs": {
       "executor": "nx:run-commands",
@@ -43,6 +55,17 @@
         "command": "typedoc --options typedoc.json",
         "cwd": "libs/langgraph-modules/nestjs-langgraph"
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.lib.json",
+        "cwd": "libs/langgraph-modules/nestjs-langgraph"
+      },
+      "dependsOn": [
+        "^typecheck"
+      ],
+      "cache": true
     }
   }
 }

@@ -3,20 +3,27 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/functional-api/src",
   "projectType": "library",
-  "tags": ["domain:langgraph", "type:data-access"],
+  "tags": [
+    "domain:langgraph",
+    "type:data-access"
+  ],
   "// targets": "to see all targets run: nx show project langgraph-modules/functional-api --web",
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/libs/langgraph-modules/functional-api",
         "main": "libs/langgraph-modules/functional-api/src/index.ts",
         "tsConfig": "libs/langgraph-modules/functional-api/tsconfig.lib.json",
         "rollupConfig": "libs/langgraph-modules/functional-api/rollup.config.js",
-        "format": ["cjs", "esm"],
+        "format": [
+          "cjs",
+          "esm"
+        ],
         "useLegacyTypescriptPlugin": false,
-
         "external": [
           "@hive-academy/langgraph-core",
           "@hive-academy/langgraph-checkpoint"
@@ -34,6 +41,17 @@
           }
         ]
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.lib.json",
+        "cwd": "libs/langgraph-modules/functional-api"
+      },
+      "dependsOn": [
+        "^typecheck"
+      ],
+      "cache": true
     }
   }
 }
