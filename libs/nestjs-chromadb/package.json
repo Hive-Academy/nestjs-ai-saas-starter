@@ -22,19 +22,6 @@
   "bugs": {
     "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
   },
-  "main": "./index.cjs.js",
-  "module": "./index.esm.js",
-  "types": "./index.d.ts",
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "development": "./src/index.ts",
-      "types": "./index.d.ts",
-      "import": "./index.esm.js",
-      "require": "./index.cjs.js",
-      "default": "./index.cjs.js"
-    }
-  },
   "files": [
     "dist",
     "README.md",
@@ -71,5 +58,74 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./index.esm.js",
+      "require": "./index.cjs.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "nx": {
+    "tags": [
+      "domain:chromadb",
+      "type:feature"
+    ],
+    "targets": {
+      "build": {
+        "executor": "@nx/rollup:rollup",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "dist/libs/nestjs-chromadb",
+          "main": "libs/nestjs-chromadb/src/index.ts",
+          "tsConfig": "libs/nestjs-chromadb/tsconfig.lib.json",
+          "format": [
+            "cjs",
+            "esm"
+          ],
+          "assets": [
+            {
+              "input": "./libs/nestjs-chromadb",
+              "glob": "*.md",
+              "output": "./"
+            },
+            {
+              "input": "./libs/nestjs-chromadb",
+              "glob": "package.json",
+              "output": "./"
+            }
+          ]
+        }
+      },
+      "publish": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "npm publish dist/libs/nestjs-chromadb --access public"
+        },
+        "dependsOn": [
+          "build"
+        ]
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc --noEmit --project tsconfig.lib.json",
+          "cwd": "libs/nestjs-chromadb"
+        },
+        "dependsOn": [
+          "^typecheck"
+        ],
+        "cache": true
+      },
+      "docs": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "typedoc --options typedoc.json",
+          "cwd": "libs/nestjs-chromadb"
+        }
+      }
+    }
   }
 }

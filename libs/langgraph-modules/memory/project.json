@@ -1,32 +1,18 @@
 {
-  "name": "langgraph-modules/memory",
+  "name": "@hive-academy/langgraph-memory",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "tags": [
-    "memory",
-    "database",
-    "nestjs",
-    "domain:langgraph",
-    "type:data-access",
-    "module:memory"
-  ],
   "sourceRoot": "libs/langgraph-modules/memory/src",
   "projectType": "library",
+  "tags": ["domain:langgraph", "type:feature", "module:memory"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-modules/memory",
+        "outputPath": "dist/libs/langgraph-memory",
         "main": "libs/langgraph-modules/memory/src/index.ts",
         "tsConfig": "libs/langgraph-modules/memory/tsconfig.lib.json",
-        "rollupConfig": "libs/langgraph-modules/memory/rollup.config.js",
-        "format": [
-          "cjs",
-          "esm"
-        ],
-        "useLegacyTypescriptPlugin": false,
+        "format": ["cjs", "esm"],
         "assets": [
           {
             "input": "./libs/langgraph-modules/memory",
@@ -41,31 +27,13 @@
         ]
       }
     },
-    "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": [
-        "{options.outputFile}"
-      ],
-      "options": {
-        "jestConfig": "libs/langgraph-modules/memory/jest.config.ts",
-        "passWithNoTests": true
-      },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "coverage": true
-        }
-      }
-    },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
         "command": "tsc --noEmit --project tsconfig.lib.json",
         "cwd": "libs/langgraph-modules/memory"
       },
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "cache": true
     }
   }

@@ -1,33 +1,18 @@
 {
-  "name": "langgraph-modules/time-travel",
+  "name": "@hive-academy/langgraph-time-travel",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/time-travel/src",
   "projectType": "library",
-  "tags": [
-    "domain:langgraph",
-    "type:feature",
-    "module:time-travel"
-  ],
-  "// targets": "to see all targets run: nx show project langgraph-modules/time-travel --web",
+  "tags": ["domain:langgraph", "type:feature", "module:time-travel"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-modules/time-travel",
+        "outputPath": "dist/libs/langgraph-time-travel",
         "main": "libs/langgraph-modules/time-travel/src/index.ts",
         "tsConfig": "libs/langgraph-modules/time-travel/tsconfig.lib.json",
-        "rollupConfig": "libs/langgraph-modules/time-travel/rollup.config.js",
-        "format": [
-          "cjs",
-          "esm"
-        ],
-        "external": [
-          "@hive-academy/langgraph-checkpoint"
-        ],
-        "useLegacyTypescriptPlugin": false,
+        "format": ["cjs", "esm"],
         "assets": [
           {
             "input": "./libs/langgraph-modules/time-travel",
@@ -48,9 +33,7 @@
         "command": "tsc --noEmit --project tsconfig.lib.json",
         "cwd": "libs/langgraph-modules/time-travel"
       },
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "cache": true
     }
   }

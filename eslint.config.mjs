@@ -40,6 +40,7 @@ export default [
             {
               sourceTag: 'type:feature',
               onlyDependOnLibsWithTags: [
+                'type:feature',
                 'type:data-access',
                 'type:ui',
                 'type:util',

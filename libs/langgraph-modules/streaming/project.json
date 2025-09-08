@@ -1,32 +1,18 @@
 {
-  "name": "langgraph-modules/streaming",
+  "name": "@hive-academy/langgraph-streaming",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/streaming/src",
   "projectType": "library",
-  "tags": [
-    "domain:langgraph",
-    "type:data-access",
-    "module:streaming"
-  ],
+  "tags": ["domain:langgraph", "type:feature", "module:streaming"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-modules/streaming",
+        "outputPath": "dist/libs/langgraph-streaming",
         "main": "libs/langgraph-modules/streaming/src/index.ts",
         "tsConfig": "libs/langgraph-modules/streaming/tsconfig.lib.json",
-        "rollupConfig": "libs/langgraph-modules/streaming/rollup.config.js",
-        "format": [
-          "cjs",
-          "esm"
-        ],
-        "useLegacyTypescriptPlugin": false,
-        "external": [
-          "@hive-academy/langgraph-core"
-        ],
+        "format": ["cjs", "esm"],
         "assets": [
           {
             "input": "./libs/langgraph-modules/streaming",
@@ -47,9 +33,7 @@
         "command": "tsc --noEmit --project tsconfig.lib.json",
         "cwd": "libs/langgraph-modules/streaming"
       },
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "cache": true
     }
   }

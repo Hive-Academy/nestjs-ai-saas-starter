@@ -19,30 +19,6 @@
       "default": "./index.esm.js"
     }
   },
-  "nx": {
-    "name": "langgraph-modules/functional-api",
-    "tags": [
-      "domain:langgraph",
-      "type:data-access"
-    ],
-    "targets": {
-      "build": {
-        "executor": "@nx/js:tsc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "options": {
-          "outputPath": "dist/libs/langgraph-modules/functional-api",
-          "tsConfig": "libs/langgraph-modules/functional-api/tsconfig.lib.json",
-          "packageJson": "libs/langgraph-modules/functional-api/package.json",
-          "main": "libs/langgraph-modules/functional-api/src/index.ts",
-          "assets": [
-            "libs/langgraph-modules/functional-api/*.md"
-          ]
-        }
-      }
-    }
-  },
   "dependencies": {
     "tslib": "^2.3.0"
   },

@@ -34,14 +34,16 @@
         "libs/nestjs-neo4j/*",
         "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
+        "libs/langgraph-modules/core/*",
+        "libs/langgraph-modules/hitl/*",
+        "libs/langgraph-modules/streaming/*",
+        "libs/langgraph-modules/workflow-engine/*",
         "libs/langgraph-modules/time-travel/*",
         "libs/langgraph-modules/multi-agent/*",
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*",
-        "libs/dev-brand/backend/data-access/*",
-        "libs/dev-brand/backend/feature/*"
+        "libs/langgraph-modules/platform/*"
       ]
     },
     {
@@ -74,14 +76,16 @@
         "libs/nestjs-neo4j/*",
         "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
+        "libs/langgraph-modules/core/*",
+        "libs/langgraph-modules/hitl/*",
+        "libs/langgraph-modules/streaming/*",
+        "libs/langgraph-modules/workflow-engine/*",
         "libs/langgraph-modules/time-travel/*",
         "libs/langgraph-modules/multi-agent/*",
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*",
-        "libs/dev-brand/backend/data-access/*",
-        "libs/dev-brand/backend/feature/*"
+        "libs/langgraph-modules/platform/*"
       ],
       "options": {
         "typecheck": {
@@ -116,7 +120,18 @@
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/langgraph-modules/nestjs-langgraph"
+      "libs/langgraph-modules/nestjs-langgraph",
+      "libs/langgraph-modules/checkpoint",
+      "libs/langgraph-modules/core",
+      "libs/langgraph-modules/hitl",
+      "libs/langgraph-modules/streaming",
+      "libs/langgraph-modules/workflow-engine",
+      "libs/langgraph-modules/time-travel",
+      "libs/langgraph-modules/multi-agent",
+      "libs/langgraph-modules/functional-api",
+      "libs/langgraph-modules/memory",
+      "libs/langgraph-modules/monitoring",
+      "libs/langgraph-modules/platform"
     ],
     "version": {
       "preVersionCommand": "npx nx run-many -t build",

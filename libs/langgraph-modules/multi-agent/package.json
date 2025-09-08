@@ -15,31 +15,6 @@
       "default": "./index.esm.js"
     }
   },
-  "nx": {
-    "name": "langgraph-modules/multi-agent",
-    "tags": [
-      "domain:langgraph",
-      "type:feature",
-      "module:multi-agent"
-    ],
-    "targets": {
-      "build": {
-        "executor": "@nx/js:tsc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "options": {
-          "outputPath": "dist/libs/langgraph-modules/multi-agent",
-          "tsConfig": "libs/langgraph-modules/multi-agent/tsconfig.lib.json",
-          "packageJson": "libs/langgraph-modules/multi-agent/package.json",
-          "main": "libs/langgraph-modules/multi-agent/src/index.ts",
-          "assets": [
-            "libs/langgraph-modules/multi-agent/*.md"
-          ]
-        }
-      }
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

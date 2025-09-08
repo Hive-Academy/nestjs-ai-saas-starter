@@ -5,7 +5,8 @@
     "moduleResolution": "bundler",
     "emitDeclarationOnly": false,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "outDir": "../../../dist/libs/langgraph-modules/core"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]

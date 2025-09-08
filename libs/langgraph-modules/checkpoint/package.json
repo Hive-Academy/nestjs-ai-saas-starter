@@ -15,29 +15,6 @@
       "default": "./index.esm.js"
     }
   },
-  "nx": {
-    "name": "langgraph-modules/checkpoint",
-    "tags": [
-      "domain:langgraph"
-    ],
-    "targets": {
-      "build": {
-        "executor": "@nx/js:tsc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "options": {
-          "outputPath": "dist/libs/langgraph-modules/checkpoint",
-          "tsConfig": "libs/langgraph-modules/checkpoint/tsconfig.lib.json",
-          "packageJson": "libs/langgraph-modules/checkpoint/package.json",
-          "main": "libs/langgraph-modules/checkpoint/src/index.ts",
-          "assets": [
-            "libs/langgraph-modules/checkpoint/*.md"
-          ]
-        }
-      }
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

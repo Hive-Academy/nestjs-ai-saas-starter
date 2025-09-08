@@ -1,35 +1,18 @@
 {
-  "name": "langgraph-modules/core",
+  "name": "@hive-academy/langgraph-core",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/core/src",
   "projectType": "library",
-  "tags": [
-    "domain:langgraph",
-    "type:data-access",
-    "module:core"
-  ],
+  "tags": ["domain:langgraph", "type:feature", "module:core"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-modules/core",
+        "outputPath": "dist/libs/langgraph-core",
         "main": "libs/langgraph-modules/core/src/index.ts",
         "tsConfig": "libs/langgraph-modules/core/tsconfig.lib.json",
-        "rollupConfig": "libs/langgraph-modules/core/rollup.config.js",
-        "format": [
-          "cjs",
-          "esm"
-        ],
-        "useLegacyTypescriptPlugin": false,
-        "external": [
-          "@langchain/core",
-          "@langchain/langgraph",
-          "@nestjs/common",
-          "reflect-metadata"
-        ],
+        "format": ["cjs", "esm"],
         "assets": [
           {
             "input": "./libs/langgraph-modules/core",
@@ -50,9 +33,7 @@
         "command": "tsc --noEmit --project tsconfig.lib.json",
         "cwd": "libs/langgraph-modules/core"
       },
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "cache": true
     }
   }

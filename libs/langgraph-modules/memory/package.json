@@ -28,14 +28,6 @@
   ],
   "author": "Hive Academy",
   "license": "MIT",
-  "nx": {
-    "tags": [
-      "memory",
-      "database",
-      "nestjs"
-    ],
-    "name": "memory"
-  },
   "dependencies": {
     "tslib": "^2.3.0"
   },

@@ -1,43 +1,18 @@
 {
-  "name": "langgraph-modules/checkpoint",
+  "name": "@hive-academy/langgraph-checkpoint",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/checkpoint/src",
   "projectType": "library",
-  "tags": [
-    "domain:langgraph",
-    "type:data-access",
-    "module:checkpoint"
-  ],
+  "tags": ["domain:langgraph", "type:feature", "module:checkpoint"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-modules/checkpoint",
+        "outputPath": "dist/libs/langgraph-checkpoint",
         "main": "libs/langgraph-modules/checkpoint/src/index.ts",
         "tsConfig": "libs/langgraph-modules/checkpoint/tsconfig.lib.json",
-        "rollupConfig": "libs/langgraph-modules/checkpoint/rollup.config.js",
-        "format": [
-          "cjs",
-          "esm"
-        ],
-        "useLegacyTypescriptPlugin": false,
-        "external": [
-          "@langchain/core",
-          "@langchain/langgraph",
-          "@langchain/langgraph-checkpoint-redis",
-          "@langchain/langgraph-checkpoint-postgres",
-          "@nestjs/common",
-          "@nestjs/config",
-          "reflect-metadata",
-          "@hive-academy/langgraph-core",
-          "ioredis",
-          "pg",
-          "sqlite",
-          "sqlite3"
-        ],
+        "format": ["cjs", "esm"],
         "assets": [
           {
             "input": "./libs/langgraph-modules/checkpoint",
@@ -58,9 +33,7 @@
         "command": "tsc --noEmit --project tsconfig.lib.json",
         "cwd": "libs/langgraph-modules/checkpoint"
       },
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "cache": true
     }
   }

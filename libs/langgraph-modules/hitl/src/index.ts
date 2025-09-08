@@ -19,4 +19,5 @@ export * from './lib/decorators/approval.decorator';
 // Constants
 export * from './lib/constants';
 
-// Interfaces (none currently defined)
+// Interfaces
+export type * from './lib/interfaces/hitl.interface';

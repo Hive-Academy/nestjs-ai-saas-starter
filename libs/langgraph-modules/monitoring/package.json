@@ -15,30 +15,6 @@
       "default": "./index.esm.js"
     }
   },
-  "nx": {
-    "name": "langgraph-modules/monitoring",
-    "tags": [
-      "scope:langgraph",
-      "type:util"
-    ],
-    "targets": {
-      "build": {
-        "executor": "@nx/js:tsc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "options": {
-          "outputPath": "dist/libs/langgraph-modules/monitoring",
-          "tsConfig": "libs/langgraph-modules/monitoring/tsconfig.lib.json",
-          "packageJson": "libs/langgraph-modules/monitoring/package.json",
-          "main": "libs/langgraph-modules/monitoring/src/index.ts",
-          "assets": [
-            "libs/langgraph-modules/monitoring/*.md"
-          ]
-        }
-      }
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

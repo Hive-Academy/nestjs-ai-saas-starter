@@ -15,30 +15,6 @@
       "default": "./index.esm.js"
     }
   },
-  "nx": {
-    "name": "langgraph-modules/platform",
-    "tags": [
-      "scope:langgraph",
-      "type:util"
-    ],
-    "targets": {
-      "build": {
-        "executor": "@nx/js:tsc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "options": {
-          "outputPath": "dist/libs/langgraph-modules/platform",
-          "tsConfig": "libs/langgraph-modules/platform/tsconfig.lib.json",
-          "packageJson": "libs/langgraph-modules/platform/package.json",
-          "main": "libs/langgraph-modules/platform/src/index.ts",
-          "assets": [
-            "libs/langgraph-modules/platform/*.md"
-          ]
-        }
-      }
-    }
-  },
   "publishConfig": {
     "access": "public"
   },

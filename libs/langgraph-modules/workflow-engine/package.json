@@ -19,29 +19,6 @@
       "default": "./index.esm.js"
     }
   },
-  "nx": {
-    "name": "langgraph-modules/workflow-engine",
-    "tags": [
-      "domain:langgraph"
-    ],
-    "targets": {
-      "build": {
-        "executor": "@nx/js:tsc",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "options": {
-          "outputPath": "dist/libs/langgraph-modules/workflow-engine",
-          "tsConfig": "libs/langgraph-modules/workflow-engine/tsconfig.lib.json",
-          "packageJson": "libs/langgraph-modules/workflow-engine/package.json",
-          "main": "libs/langgraph-modules/workflow-engine/src/index.ts",
-          "assets": [
-            "libs/langgraph-modules/workflow-engine/*.md"
-          ]
-        }
-      }
-    }
-  },
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@langchain/core": "^0.3.68",
