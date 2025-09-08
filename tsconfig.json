@@ -43,12 +43,6 @@
       "path": "./libs/langgraph-modules/core"
     },
     {
-      "path": "./libs/dev-brand/backend/data-access"
-    },
-    {
-      "path": "./libs/dev-brand/backend/feature"
-    },
-    {
       "path": "./apps/dev-brand-api"
     },
     {

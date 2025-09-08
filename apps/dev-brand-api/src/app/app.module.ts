@@ -4,7 +4,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 // Library imports
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
-import { DevbrandBackendFeatureModule } from '@devbrand/backend-feature';
 import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
 import { MemoryModule } from '@hive-academy/langgraph-memory';
@@ -98,8 +97,6 @@ import { HealthController } from './controllers/health.controller';
 
     // Health checks module for Phase 1 Subtask 1.3
     TerminusModule,
-
-    DevbrandBackendFeatureModule,
   ],
   providers: [
     // Phase 1 test service to verify adapter injection
