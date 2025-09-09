@@ -13,6 +13,7 @@
         "main": "libs/langgraph-modules/time-travel/src/index.ts",
         "tsConfig": "libs/langgraph-modules/time-travel/tsconfig.lib.json",
         "format": ["cjs", "esm"],
+        "external": "all",
         "assets": [
           {
             "input": "./libs/langgraph-modules/time-travel",
@@ -35,6 +36,12 @@
       },
       "dependsOn": ["^typecheck"],
       "cache": true
+    },
+    "nx-release-publish": {
+      "executor": "@nx/js:release-publish",
+      "options": {
+        "packageRoot": "dist/libs/langgraph-time-travel"
+      }
     }
   }
 }

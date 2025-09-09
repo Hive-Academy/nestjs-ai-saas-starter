@@ -34,4 +34,9 @@ export const DEFAULT_MULTI_AGENT_OPTIONS = {
     contextWindowManagement: true,
     enableMessageForwarding: true,
   },
+  checkpointing: {
+    enabled: true,
+    enableForAllNetworks: true,
+    defaultThreadPrefix: 'multi-agent',
+  },
 };

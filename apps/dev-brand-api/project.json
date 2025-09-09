@@ -6,31 +6,53 @@
   "tags": ["type:app"],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"]
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/dev-brand-api/dist",
+        "main": "apps/dev-brand-api/src/main.ts",
+        "tsConfig": "apps/dev-brand-api/tsconfig.app.json",
+        "assets": ["apps/dev-brand-api/src/assets"],
+        "isolatedConfig": true,
+        "webpackConfig": "apps/dev-brand-api/webpack.config.js"
       },
       "configurations": {
         "development": {
-          "args": ["--node-env=development"]
+          "extractLicenses": false,
+          "optimization": false,
+          "sourceMap": true,
+          "vendorChunk": false
+        },
+        "production": {
+          "extractLicenses": false,
+          "optimization": true,
+          "sourceMap": false,
+          "vendorChunk": false
         }
       }
     },
     "serve": {
-      "continuous": true,
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
         "buildTarget": "dev-brand-api:build",
-        "runBuildTargetDependencies": false
+        "runBuildTargetDependencies": false,
+        "inspect": false,
+        "runtimeArgs": []
       },
       "configurations": {
         "development": {
-          "buildTarget": "dev-brand-api:build:development"
+          "buildTarget": "dev-brand-api:build:development",
+          "inspect": false,
+          "runtimeArgs": []
         },
         "production": {
-          "buildTarget": "dev-brand-api:build:production"
+          "buildTarget": "dev-brand-api:build:production",
+          "inspect": false,
+          "runtimeArgs": []
         }
       }
     },

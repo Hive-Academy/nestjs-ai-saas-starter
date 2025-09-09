@@ -8,7 +8,7 @@ import { MultiAgentCoordinatorService } from './services/multi-agent-coordinator
 import { NetworkManagerService } from './services/network-manager.service';
 import { NodeFactoryService } from './services/node-factory.service';
 // Tool services
-import { DiscoveryModule } from '@nestjs-plus/discovery';
+import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
   MULTI_AGENT_MODULE_OPTIONS,
@@ -22,7 +22,6 @@ import { ToolBuilderService } from './tools/tool-builder.service';
 import { ToolDiscoveryService } from './tools/tool-discovery.service';
 import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
-
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -181,6 +180,10 @@ export class MultiAgentModule {
       performance: {
         ...DEFAULT_MULTI_AGENT_OPTIONS.performance,
         ...options.performance,
+      },
+      checkpointing: {
+        ...DEFAULT_MULTI_AGENT_OPTIONS.checkpointing,
+        ...options.checkpointing,
       },
     };
   }

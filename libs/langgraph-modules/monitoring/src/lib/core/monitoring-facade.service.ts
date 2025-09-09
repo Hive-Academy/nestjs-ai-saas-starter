@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import type {
   IMonitoringFacade,
   IMetricsCollector,
@@ -20,14 +20,14 @@ import type {
 
 /**
  * MonitoringFacadeService - Unified interface for all monitoring operations
- * 
+ *
  * Implements the Facade pattern to provide a single entry point for:
  * - Metrics collection and querying
  * - Alerting management
  * - Health monitoring
  * - Performance tracking
  * - Dashboard operations
- * 
+ *
  * Critical Design Principle: Monitoring failures MUST NOT break workflows
  */
 @Injectable()
@@ -35,11 +35,14 @@ export class MonitoringFacadeService implements IMonitoringFacade {
   private readonly logger = new Logger(MonitoringFacadeService.name);
 
   constructor(
+    @Inject('IMetricsCollector')
     private readonly metricsCollector: IMetricsCollector,
+    @Inject('IAlertingService')
     private readonly alertingService: IAlertingService,
-    private readonly healthCheck: IHealthCheck,
+    @Inject('IHealthCheck') private readonly healthCheck: IHealthCheck,
+    @Inject('IPerformanceTracker')
     private readonly performanceTracker: IPerformanceTracker,
-    private readonly dashboardService: IDashboard,
+    @Inject('IDashboard') private readonly dashboardService: IDashboard
   ) {
     this.logger.log('MonitoringFacadeService initialized');
   }
@@ -48,18 +51,27 @@ export class MonitoringFacadeService implements IMonitoringFacade {
   // METRICS OPERATIONS
   // ================================
 
-  async recordMetric(name: string, value: number, tags?: MetricTags): Promise<void> {
-    await this.safeOperation(
-      async () => {
-        await this.metricsCollector.collect(name, value, tags);
-        // Track the metric collection performance
-        await this.performanceTracker.trackExecution(`metrics.collection.${name}`, 1, { value, tags });
-      },
-      `recordMetric(${name}, ${value})`
-    );
+  async recordMetric(
+    name: string,
+    value: number,
+    tags?: MetricTags
+  ): Promise<void> {
+    await this.safeOperation(async () => {
+      await this.metricsCollector.collect(name, value, tags);
+      // Track the metric collection performance
+      await this.performanceTracker.trackExecution(
+        `metrics.collection.${name}`,
+        1,
+        { value, tags }
+      );
+    }, `recordMetric(${name}, ${value})`);
   }
 
-  async recordTimer(name: string, duration: number, tags?: MetricTags): Promise<void> {
+  async recordTimer(
+    name: string,
+    duration: number,
+    tags?: MetricTags
+  ): Promise<void> {
     const timerTags = { ...tags, metric_type: 'timer' };
     await this.safeOperation(
       () => this.metricsCollector.collect(name, duration, timerTags),
@@ -67,7 +79,11 @@ export class MonitoringFacadeService implements IMonitoringFacade {
     );
   }
 
-  async recordCounter(name: string, increment = 1, tags?: MetricTags): Promise<void> {
+  async recordCounter(
+    name: string,
+    increment = 1,
+    tags?: MetricTags
+  ): Promise<void> {
     const counterTags = { ...tags, metric_type: 'counter' };
     await this.safeOperation(
       () => this.metricsCollector.collect(name, increment, counterTags),
@@ -75,7 +91,11 @@ export class MonitoringFacadeService implements IMonitoringFacade {
     );
   }
 
-  async recordGauge(name: string, value: number, tags?: MetricTags): Promise<void> {
+  async recordGauge(
+    name: string,
+    value: number,
+    tags?: MetricTags
+  ): Promise<void> {
     const gaugeTags = { ...tags, metric_type: 'gauge' };
     await this.safeOperation(
       () => this.metricsCollector.collect(name, value, gaugeTags),
@@ -83,7 +103,11 @@ export class MonitoringFacadeService implements IMonitoringFacade {
     );
   }
 
-  async recordHistogram(name: string, value: number, tags?: MetricTags): Promise<void> {
+  async recordHistogram(
+    name: string,
+    value: number,
+    tags?: MetricTags
+  ): Promise<void> {
     const histogramTags = { ...tags, metric_type: 'histogram' };
     await this.safeOperation(
       () => this.metricsCollector.collect(name, value, histogramTags),
@@ -95,7 +119,10 @@ export class MonitoringFacadeService implements IMonitoringFacade {
   // HEALTH CHECK OPERATIONS
   // ================================
 
-  async registerHealthCheck(name: string, check: HealthCheckFunction): Promise<void> {
+  async registerHealthCheck(
+    name: string,
+    check: HealthCheckFunction
+  ): Promise<void> {
     await this.safeOperation(
       () => this.healthCheck.register(name, check),
       `registerHealthCheck(${name})`
@@ -136,32 +163,29 @@ export class MonitoringFacadeService implements IMonitoringFacade {
       rule.id,
       `createAlertRule(${rule.name})`
     );
-    
+
     return ruleId;
   }
 
-  async updateAlertRule(ruleId: string, updates: Partial<AlertRule>): Promise<void> {
-    await this.safeOperation(
-      async () => {
-        await this.alertingService.updateRule(ruleId, updates);
-        await this.recordCounter('monitoring.alert_rules.updated', 1, {
-          rule_id: ruleId,
-        });
-      },
-      `updateAlertRule(${ruleId})`
-    );
+  async updateAlertRule(
+    ruleId: string,
+    updates: Partial<AlertRule>
+  ): Promise<void> {
+    await this.safeOperation(async () => {
+      await this.alertingService.updateRule(ruleId, updates);
+      await this.recordCounter('monitoring.alert_rules.updated', 1, {
+        rule_id: ruleId,
+      });
+    }, `updateAlertRule(${ruleId})`);
   }
 
   async deleteAlertRule(ruleId: string): Promise<void> {
-    await this.safeOperation(
-      async () => {
-        await this.alertingService.deleteRule(ruleId);
-        await this.recordCounter('monitoring.alert_rules.deleted', 1, {
-          rule_id: ruleId,
-        });
-      },
-      `deleteAlertRule(${ruleId})`
-    );
+    await this.safeOperation(async () => {
+      await this.alertingService.deleteRule(ruleId);
+      await this.recordCounter('monitoring.alert_rules.deleted', 1, {
+        rule_id: ruleId,
+      });
+    }, `deleteAlertRule(${ruleId})`);
   }
 
   async getActiveAlerts(): Promise<Alert[]> {
@@ -182,12 +206,12 @@ export class MonitoringFacadeService implements IMonitoringFacade {
         const startTime = Date.now();
         const results = await this.dashboardService.queryMetrics(query);
         const duration = Date.now() - startTime;
-        
+
         await this.recordTimer('monitoring.query.duration', duration, {
           metric: query.metric,
           aggregation: query.aggregation,
         });
-        
+
         return results;
       },
       [],
@@ -240,28 +264,33 @@ export class MonitoringFacadeService implements IMonitoringFacade {
 
       // In a real implementation, this would update the configuration
       // of the individual services. For now, we'll just log the update.
-      
+
       if (config.metrics) {
         this.logger.debug('Metrics configuration updated', config.metrics);
       }
-      
+
       if (config.alerting) {
         this.logger.debug('Alerting configuration updated', config.alerting);
       }
-      
+
       if (config.healthChecks) {
-        this.logger.debug('Health checks configuration updated', config.healthChecks);
+        this.logger.debug(
+          'Health checks configuration updated',
+          config.healthChecks
+        );
       }
-      
+
       if (config.performance) {
-        this.logger.debug('Performance tracking configuration updated', config.performance);
+        this.logger.debug(
+          'Performance tracking configuration updated',
+          config.performance
+        );
       }
 
       // Record the configuration update
       await this.recordCounter('monitoring.config.updated', 1, {
         components: Object.keys(config).join(','),
       });
-      
     }, 'updateConfiguration');
   }
 
@@ -298,10 +327,13 @@ export class MonitoringFacadeService implements IMonitoringFacade {
     try {
       return await operation();
     } catch (error) {
-      this.logger.warn(`Monitoring operation failed, using fallback: ${operationName}`, {
-        error: error instanceof Error ? error.message : String(error),
-        fallback: typeof fallback,
-      });
+      this.logger.warn(
+        `Monitoring operation failed, using fallback: ${operationName}`,
+        {
+          error: error instanceof Error ? error.message : String(error),
+          fallback: typeof fallback,
+        }
+      );
       return fallback;
     }
   }

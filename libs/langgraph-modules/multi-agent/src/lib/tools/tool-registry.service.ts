@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@nestjs-plus/discovery';
+import { DiscoveryService } from '@golevelup/nestjs-discovery';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { ToolMetadata, getClassTools } from '../decorators/tool.decorator';
@@ -15,9 +15,7 @@ export class ToolRegistryService implements OnModuleInit {
   private readonly toolMetadata = new Map<string, ToolMetadata>();
   private readonly agentTools = new Map<string, Set<string>>();
 
-  constructor(
-    private readonly discoveryService: DiscoveryService
-  ) {}
+  constructor(private readonly discoveryService: DiscoveryService) {}
 
   async onModuleInit() {
     await this.discoverTools();
@@ -27,10 +25,8 @@ export class ToolRegistryService implements OnModuleInit {
    * Discover all tools in the application
    */
   private async discoverTools() {
-    // Discover all providers that have instances (filter out undefined instances)
-    const providers = await this.discoveryService.providers(
-      (discoveredClass) => discoveredClass.instance != null
-    );
+    // Get all providers from the discovery service
+    const providers = await this.discoveryService.providers;
 
     for (const wrapper of providers) {
       const { instance } = wrapper;
@@ -158,7 +154,7 @@ export class ToolRegistryService implements OnModuleInit {
     tool: DynamicStructuredTool,
     metadata?: Partial<ToolMetadata>
   ): void {
-    const {name} = tool;
+    const { name } = tool;
     this.tools.set(name, tool);
 
     if (metadata) {
@@ -237,4 +233,3 @@ export class ToolRegistryService implements OnModuleInit {
     this.logger.debug('Cleared all tools');
   }
 }
-

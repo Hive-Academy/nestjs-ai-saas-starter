@@ -2,10 +2,6 @@
   "name": "@hive-academy/langgraph-functional-api",
   "version": "0.0.1",
   "private": false,
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
   "types": "./src/index.d.ts",
@@ -19,6 +15,16 @@
       "default": "./index.esm.js"
     }
   },
+  "files": [
+    "index.*.js",
+    "index.*.js.map",
+    "index.d.ts",
+    "index.d.ts.map",
+    "src/**/*.d.ts",
+    "src/**/*.d.ts.map",
+    "*.md",
+    "!*.tsbuildinfo"
+  ],
   "dependencies": {
     "tslib": "^2.3.0"
   },
@@ -30,6 +36,6 @@
     "@langchain/langgraph": "^0.4.3",
     "reflect-metadata": "^0.1.13",
     "@hive-academy/langgraph-core": "0.0.1",
-    "@nestjs-plus/discovery": "2.0.2"
+    "@golevelup/nestjs-discovery": "^5.0.0"
   }
 }

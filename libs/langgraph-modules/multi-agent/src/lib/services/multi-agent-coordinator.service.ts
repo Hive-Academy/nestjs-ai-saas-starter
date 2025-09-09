@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 import {
   AgentDefinition,
   AgentNetwork,
@@ -14,7 +15,7 @@ import { LlmProviderService } from './llm-provider.service';
 /**
  * Main facade service for multi-agent coordination
  * Provides a simplified API by delegating to specialized services
- * 
+ *
  * This service acts as a facade pattern implementation, providing:
  * - Simple API for common operations
  * - Backward compatibility
@@ -27,19 +28,24 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   constructor(
     private readonly agentRegistry: AgentRegistryService,
     private readonly networkManager: NetworkManagerService,
-    private readonly llmProvider: LlmProviderService
+    private readonly llmProvider: LlmProviderService,
+    @Optional() private readonly checkpointManager?: CheckpointManagerService
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.logger.log('Multi-agent coordinator service initialized with SOLID architecture');
-    
+    this.logger.log(
+      'Multi-agent coordinator service initialized with SOLID architecture'
+    );
+
     // Test LLM connectivity on startup
     try {
       const isConnected = await this.llmProvider.testLLM();
       if (isConnected) {
         this.logger.log('LLM connectivity verified');
       } else {
-        this.logger.warn('LLM connectivity test failed - workflows may not function properly');
+        this.logger.warn(
+          'LLM connectivity test failed - workflows may not function properly'
+        );
       }
     } catch (error) {
       this.logger.warn('Unable to test LLM connectivity on startup:', error);
@@ -193,7 +199,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
 
     // Create default configuration based on type
     let networkConfig: AgentNetwork;
-    
+
     switch (networkType) {
       case 'supervisor':
         networkConfig = {
@@ -201,13 +207,15 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           type: 'supervisor',
           agents,
           config: {
-            systemPrompt: `You are a supervisor coordinating ${agents.length} agents: ${agents.map(a => a.name).join(', ')}.`,
-            workers: agents.map(a => a.id),
+            systemPrompt: `You are a supervisor coordinating ${
+              agents.length
+            } agents: ${agents.map((a) => a.name).join(', ')}.`,
+            workers: agents.map((a) => a.id),
             ...config,
           },
         };
         break;
-      
+
       case 'swarm':
         networkConfig = {
           id: networkId,
@@ -226,14 +234,14 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           },
         };
         break;
-      
+
       case 'hierarchical':
         networkConfig = {
           id: networkId,
           type: 'hierarchical',
           agents,
           config: {
-            levels: [agents.map(a => a.id)],
+            levels: [agents.map((a) => a.id)],
             ...config,
           },
         };
@@ -312,20 +320,231 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    */
   async cleanup(): Promise<void> {
     this.logger.log('Cleaning up multi-agent coordinator resources');
-    
+
     // Clear agent registry
     this.agentRegistry.clearAll();
-    
+
     // Remove all networks
     const networks = this.networkManager.listNetworks();
     for (const network of networks) {
       this.networkManager.removeNetwork(network.id);
     }
-    
+
     // Clear LLM cache
     this.llmProvider.clearCache();
-    
+
     this.logger.log('Cleanup completed');
+  }
+
+  // ============================================================================
+  // CHECKPOINT MANAGEMENT (Delegates to CheckpointManagerService)
+  // ============================================================================
+
+  /**
+   * Get checkpoints for a specific network
+   */
+  async getNetworkCheckpoints(
+    networkId: string,
+    options: {
+      limit?: number;
+      before?: string;
+      metadata?: Record<string, unknown>;
+    } = {}
+  ): Promise<any[]> {
+    if (!this.checkpointManager) {
+      this.logger.warn(
+        'CheckpointManager not available - returning empty checkpoints'
+      );
+      return [];
+    }
+
+    try {
+      const threadId = this.generateThreadId(networkId);
+      const checkpoints = await this.checkpointManager.listCheckpoints(
+        threadId,
+        {
+          limit: options.limit || 10,
+          before: options.before,
+          metadata: options.metadata,
+        }
+      );
+
+      this.logger.debug(
+        `Retrieved ${checkpoints.length} checkpoints for network ${networkId}`
+      );
+
+      return checkpoints;
+    } catch (error) {
+      this.logger.error(
+        `Failed to get checkpoints for network ${networkId}:`,
+        error
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Resume a network from a specific checkpoint
+   */
+  async resumeFromCheckpoint(
+    networkId: string,
+    checkpointId: string,
+    input?: {
+      messages?: string[] | HumanMessage[];
+      config?: RunnableConfig;
+    }
+  ): Promise<MultiAgentResult> {
+    if (!this.checkpointManager) {
+      throw new Error(
+        'CheckpointManager not available - cannot resume from checkpoint'
+      );
+    }
+
+    try {
+      const threadId = this.generateThreadId(networkId);
+      const checkpoint = await this.checkpointManager.loadCheckpoint(
+        threadId,
+        checkpointId
+      );
+
+      if (!checkpoint) {
+        throw new Error(
+          `Checkpoint ${checkpointId} not found for network ${networkId}`
+        );
+      }
+
+      this.logger.debug(
+        `Resuming network ${networkId} from checkpoint ${checkpointId}`
+      );
+
+      // If input is provided, execute workflow with restored state
+      if (input?.messages) {
+        const config = {
+          ...input.config,
+          configurable: {
+            ...input.config?.configurable,
+            thread_id: threadId,
+            checkpoint_id: checkpointId,
+          },
+        };
+
+        return this.executeWorkflow(networkId, {
+          messages: input.messages,
+          config,
+        });
+      }
+
+      // Return the checkpoint state as a result
+      return {
+        finalState: checkpoint.checkpoint as AgentState,
+        executionPath: [],
+        executionTime: 0,
+        success: true,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to resume from checkpoint ${checkpointId} for network ${networkId}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Clear all checkpoints for a network
+   */
+  async clearNetworkCheckpoints(networkId: string): Promise<number> {
+    if (!this.checkpointManager) {
+      this.logger.warn(
+        'CheckpointManager not available - no checkpoints to clear'
+      );
+      return 0;
+    }
+
+    try {
+      const threadId = this.generateThreadId(networkId);
+
+      // Get all checkpoints for the network
+      const checkpoints = await this.checkpointManager.listCheckpoints(
+        threadId
+      );
+
+      if (checkpoints.length === 0) {
+        this.logger.debug(`No checkpoints found for network ${networkId}`);
+        return 0;
+      }
+
+      // Use cleanup service to remove checkpoints for this specific thread
+      const cleaned = await this.checkpointManager.cleanupCheckpoints({
+        threadIds: [threadId],
+      });
+
+      this.logger.log(
+        `Cleared ${cleaned} checkpoints for network ${networkId}`
+      );
+
+      return cleaned;
+    } catch (error) {
+      this.logger.error(
+        `Failed to clear checkpoints for network ${networkId}:`,
+        error
+      );
+      return 0;
+    }
+  }
+
+  /**
+   * Get checkpoint statistics for a network
+   */
+  async getNetworkCheckpointStats(networkId: string): Promise<{
+    totalCheckpoints: number;
+    oldestCheckpoint?: Date;
+    newestCheckpoint?: Date;
+    totalSize?: number;
+  }> {
+    if (!this.checkpointManager) {
+      return { totalCheckpoints: 0 };
+    }
+
+    try {
+      const threadId = this.generateThreadId(networkId);
+      const checkpoints = await this.checkpointManager.listCheckpoints(
+        threadId
+      );
+
+      if (checkpoints.length === 0) {
+        return { totalCheckpoints: 0 };
+      }
+
+      const timestamps = checkpoints
+        .map((cp) => cp.metadata?.timestamp)
+        .filter(Boolean)
+        .map((ts) => new Date(ts as string))
+        .sort((a, b) => a.getTime() - b.getTime());
+
+      return {
+        totalCheckpoints: checkpoints.length,
+        oldestCheckpoint: timestamps[0],
+        newestCheckpoint: timestamps[timestamps.length - 1],
+        totalSize: checkpoints.reduce(
+          (sum, cp) => sum + (cp.metadata?.size || 0),
+          0
+        ),
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get checkpoint stats for network ${networkId}:`,
+        error
+      );
+      return { totalCheckpoints: 0 };
+    }
+  }
+
+  /**
+   * Generate thread ID for a network (consistent naming)
+   */
+  private generateThreadId(networkId: string): string {
+    return `multi-agent_${networkId}`;
   }
 
   // ============================================================================
@@ -340,18 +559,18 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     workerAgents: readonly string[],
     options: any = {}
   ): Promise<string> {
-    this.logger.warn('createSupervisorWorkflow is deprecated, use setupNetwork instead');
-    
+    this.logger.warn(
+      'createSupervisorWorkflow is deprecated, use setupNetwork instead'
+    );
+
     const agents = [supervisorAgent, ...workerAgents]
-      .map(id => this.agentRegistry.findAgent(id))
+      .map((id) => this.agentRegistry.findAgent(id))
       .filter(Boolean) as AgentDefinition[];
 
-    return this.setupNetwork(
-      `supervisor_${Date.now()}`,
-      agents,
-      'supervisor',
-      { workers: [...workerAgents], ...options }
-    );
+    return this.setupNetwork(`supervisor_${Date.now()}`, agents, 'supervisor', {
+      workers: [...workerAgents],
+      ...options,
+    });
   }
 
   /**
@@ -362,15 +581,17 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     agents: readonly AgentDefinition[],
     topology: any
   ): Promise<string> {
-    this.logger.warn('createAgentNetwork is deprecated, use createNetwork instead');
-    
+    this.logger.warn(
+      'createAgentNetwork is deprecated, use createNetwork instead'
+    );
+
     return this.createNetwork({
       id: `network_${name}_${Date.now()}`,
       type: 'supervisor',
       agents,
       config: {
         systemPrompt: `Network ${name} coordinator`,
-        workers: agents.map(a => a.id),
+        workers: agents.map((a) => a.id),
       },
     });
   }

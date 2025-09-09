@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
 import type { CheckpointStats } from '../interfaces/checkpoint.interface';
+import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
 import type {
   ICheckpointHealthService,
   ICheckpointRegistryService,
@@ -51,10 +51,11 @@ export class CheckpointHealthService
     private readonly registryService: ICheckpointRegistryService,
     @Inject('ICheckpointMetricsService')
     private readonly metricsService: ICheckpointMetricsService,
-    private readonly configService: ConfigService
+    @Inject('CHECKPOINT_MODULE_OPTIONS')
+    private readonly moduleOptions: CheckpointModuleOptions = {}
   ) {
     super(CheckpointHealthService.name);
-    
+
     this.healthConfig = this.loadHealthConfig();
   }
 
@@ -72,7 +73,8 @@ export class CheckpointHealthService
 
     try {
       const saver = this.registryService.getSaver(saverName);
-      const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+      const actualSaverName =
+        saverName || this.registryService.getDefaultSaverName() || 'default';
 
       if (saver.healthCheck) {
         healthy = await saver.healthCheck();
@@ -85,16 +87,20 @@ export class CheckpointHealthService
       this.updateHealthStatus(actualSaverName, healthy, responseTime);
       this.recordHealthCheck(actualSaverName, healthy, responseTime);
 
-      this.logger.debug(`Health check for ${actualSaverName}: ${healthy ? 'healthy' : 'unhealthy'} (${responseTime}ms)`);
-
+      this.logger.debug(
+        `Health check for ${actualSaverName}: ${
+          healthy ? 'healthy' : 'unhealthy'
+        } (${responseTime}ms)`
+      );
     } catch (err) {
       error = (err as Error).message;
       const responseTime = Date.now() - startTime;
-      const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
-      
+      const actualSaverName =
+        saverName || this.registryService.getDefaultSaverName() || 'default';
+
       this.updateHealthStatus(actualSaverName, false, responseTime, error);
       this.recordHealthCheck(actualSaverName, false, responseTime, error);
-      
+
       this.logger.error(`Health check failed for ${actualSaverName}:`, err);
     }
 
@@ -124,11 +130,12 @@ export class CheckpointHealthService
    * Get detailed health status
    */
   public async getHealthStatus(saverName?: string): Promise<HealthStatus> {
-    const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
-    
+    const actualSaverName =
+      saverName || this.registryService.getDefaultSaverName() || 'default';
+
     // Get current status or create new one
     let status = this.currentHealthStatus.get(actualSaverName);
-    
+
     if (!status) {
       // Perform initial health check
       await this.healthCheck(actualSaverName);
@@ -189,7 +196,9 @@ export class CheckpointHealthService
     const interval = intervalMs || this.healthConfig.checkInterval;
 
     if (this.healthMonitoringInterval) {
-      this.logger.warn('Health monitoring is already running. Stopping existing monitoring.');
+      this.logger.warn(
+        'Health monitoring is already running. Stopping existing monitoring.'
+      );
       this.stopHealthMonitoring();
     }
 
@@ -250,7 +259,9 @@ export class CheckpointHealthService
    */
   public getHealthHistory(saverName?: string): HealthRecord[] {
     if (saverName) {
-      return this.healthHistory.filter(record => record.saverName === saverName);
+      return this.healthHistory.filter(
+        (record) => record.saverName === saverName
+      );
     }
     return [...this.healthHistory];
   }
@@ -266,12 +277,15 @@ export class CheckpointHealthService
       degradedSavers: number;
       unhealthySavers: number;
     };
-    savers: Record<string, {
-      status: HealthStatus;
-      uptime: number;
-      averageResponseTime: number;
-      recentErrors: number;
-    }>;
+    savers: Record<
+      string,
+      {
+        status: HealthStatus;
+        uptime: number;
+        averageResponseTime: number;
+        recentErrors: number;
+      }
+    >;
     trends: {
       healthTrend: 'improving' | 'stable' | 'degrading';
       responseTimeTrend: 'improving' | 'stable' | 'degrading';
@@ -284,12 +298,15 @@ export class CheckpointHealthService
     let degradedSavers = 0;
     let unhealthySavers = 0;
 
-    const saverDetails: Record<string, {
-      status: HealthStatus;
-      uptime: number;
-      averageResponseTime: number;
-      recentErrors: number;
-    }> = {};
+    const saverDetails: Record<
+      string,
+      {
+        status: HealthStatus;
+        uptime: number;
+        averageResponseTime: number;
+        recentErrors: number;
+      }
+    > = {};
 
     for (const saverName of availableSavers) {
       const status = this.currentHealthStatus.get(saverName);
@@ -328,7 +345,11 @@ export class CheckpointHealthService
     };
 
     const trends = this.analyzeTrends();
-    const recommendations = this.generateRecommendations(overall, saverDetails, trends);
+    const recommendations = this.generateRecommendations(
+      overall,
+      saverDetails,
+      trends
+    );
 
     return {
       overall,
@@ -352,8 +373,18 @@ export class CheckpointHealthService
     };
     metrics: {
       operations: {
-        save: { totalTime: number; count: number; successCount: number; errorCount: number };
-        load: { totalTime: number; count: number; successCount: number; errorCount: number };
+        save: {
+          totalTime: number;
+          count: number;
+          successCount: number;
+          errorCount: number;
+        };
+        load: {
+          totalTime: number;
+          count: number;
+          successCount: number;
+          errorCount: number;
+        };
       };
       performance: {
         averageSaveTime: number;
@@ -363,7 +394,8 @@ export class CheckpointHealthService
     issues: string[];
     suggestions: string[];
   }> {
-    const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+    const actualSaverName =
+      saverName || this.registryService.getDefaultSaverName() || 'default';
     const saver = this.registryService.getSaver(actualSaverName);
     const status = await this.getHealthStatus(actualSaverName);
 
@@ -372,7 +404,10 @@ export class CheckpointHealthService
       try {
         storageInfo = await saver.getStorageInfo();
       } catch (error) {
-        this.logger.warn(`Failed to get storage info for ${actualSaverName}:`, error);
+        this.logger.warn(
+          `Failed to get storage info for ${actualSaverName}:`,
+          error
+        );
       }
     }
 
@@ -388,7 +423,9 @@ export class CheckpointHealthService
 
     if (status.responseTime > this.healthConfig.degradedThreshold) {
       issues.push(`High response time: ${status.responseTime}ms`);
-      suggestions.push('Consider optimizing storage backend or scaling resources');
+      suggestions.push(
+        'Consider optimizing storage backend or scaling resources'
+      );
     }
 
     if (metrics.save.errorCount > 0 || metrics.load.errorCount > 0) {
@@ -403,8 +440,14 @@ export class CheckpointHealthService
       metrics: {
         operations: metrics,
         performance: {
-          averageSaveTime: metrics.save.count > 0 ? metrics.save.totalTime / metrics.save.count : 0,
-          averageLoadTime: metrics.load.count > 0 ? metrics.load.totalTime / metrics.load.count : 0,
+          averageSaveTime:
+            metrics.save.count > 0
+              ? metrics.save.totalTime / metrics.save.count
+              : 0,
+          averageLoadTime:
+            metrics.load.count > 0
+              ? metrics.load.totalTime / metrics.load.count
+              : 0,
         },
       },
       issues,
@@ -416,19 +459,12 @@ export class CheckpointHealthService
    * Load health monitoring configuration
    */
   private loadHealthConfig(): HealthConfig {
+    const healthConfig = this.moduleOptions.checkpoint?.health || {};
+
     return {
-      checkInterval: this.configService.get<number>(
-        'checkpoint.health.checkInterval',
-        60000 // 1 minute
-      ),
-      unhealthyThreshold: this.configService.get<number>(
-        'checkpoint.health.unhealthyThreshold',
-        5000 // 5 seconds
-      ),
-      degradedThreshold: this.configService.get<number>(
-        'checkpoint.health.degradedThreshold',
-        2000 // 2 seconds
-      ),
+      checkInterval: healthConfig.checkInterval || 60000, // 1 minute
+      unhealthyThreshold: healthConfig.unhealthyThreshold || 5000, // 5 seconds
+      degradedThreshold: healthConfig.degradedThreshold || 2000, // 2 seconds
     };
   }
 
@@ -436,7 +472,10 @@ export class CheckpointHealthService
    * Perform basic health check using simple operations
    */
   private async performBasicHealthCheck(saver: {
-    list?: (config: { configurable: { thread_id: string } }, options?: { limit: number }) => AsyncIterableIterator<unknown>;
+    list?: (
+      config: { configurable: { thread_id: string } },
+      options?: { limit: number }
+    ) => AsyncIterableIterator<unknown>;
   }): Promise<boolean> {
     try {
       const testConfig = { configurable: { thread_id: 'health-check' } };
@@ -444,7 +483,7 @@ export class CheckpointHealthService
         return false;
       }
       const generator = saver.list(testConfig, { limit: 1 });
-      
+
       // Try to get first item from generator
       await generator.next();
       return true;
@@ -476,9 +515,16 @@ export class CheckpointHealthService
   /**
    * Determine health status based on response time and health
    */
-  private determineHealthStatus(healthy: boolean, responseTime: number): 'healthy' | 'degraded' | 'unhealthy' {
-    if (!healthy) {return 'unhealthy';}
-    if (responseTime > this.healthConfig.degradedThreshold) {return 'degraded';}
+  private determineHealthStatus(
+    healthy: boolean,
+    responseTime: number
+  ): 'healthy' | 'degraded' | 'unhealthy' {
+    if (!healthy) {
+      return 'unhealthy';
+    }
+    if (responseTime > this.healthConfig.degradedThreshold) {
+      return 'degraded';
+    }
     return 'healthy';
   }
 
@@ -501,7 +547,10 @@ export class CheckpointHealthService
 
     // Trim history if it gets too large
     if (this.healthHistory.length > this.maxHistorySize) {
-      this.healthHistory.splice(0, this.healthHistory.length - this.maxHistorySize);
+      this.healthHistory.splice(
+        0,
+        this.healthHistory.length - this.maxHistorySize
+      );
     }
   }
 
@@ -518,10 +567,14 @@ export class CheckpointHealthService
    */
   private calculateUptime(saverName: string): number {
     const recentHistory = this.getRecentHealthHistory(saverName, 3600000); // Last hour
-    
-    if (recentHistory.length === 0) {return 100;} // No data, assume healthy
-    
-    const healthyChecks = recentHistory.filter(record => record.healthy).length;
+
+    if (recentHistory.length === 0) {
+      return 100;
+    } // No data, assume healthy
+
+    const healthyChecks = recentHistory.filter(
+      (record) => record.healthy
+    ).length;
     return (healthyChecks / recentHistory.length) * 100;
   }
 
@@ -530,10 +583,15 @@ export class CheckpointHealthService
    */
   private calculateAverageResponseTime(saverName: string): number {
     const recentHistory = this.getRecentHealthHistory(saverName, 3600000); // Last hour
-    
-    if (recentHistory.length === 0) {return 0;}
-    
-    const totalTime = recentHistory.reduce((sum, record) => sum + record.responseTime, 0);
+
+    if (recentHistory.length === 0) {
+      return 0;
+    }
+
+    const totalTime = recentHistory.reduce(
+      (sum, record) => sum + record.responseTime,
+      0
+    );
     return totalTime / recentHistory.length;
   }
 
@@ -542,16 +600,19 @@ export class CheckpointHealthService
    */
   private getRecentErrorCount(saverName: string): number {
     const recentHistory = this.getRecentHealthHistory(saverName, 3600000); // Last hour
-    return recentHistory.filter(record => !record.healthy).length;
+    return recentHistory.filter((record) => !record.healthy).length;
   }
 
   /**
    * Get recent health history for a saver
    */
-  private getRecentHealthHistory(saverName: string, timeframeMs: number): HealthRecord[] {
+  private getRecentHealthHistory(
+    saverName: string,
+    timeframeMs: number
+  ): HealthRecord[] {
     const cutoff = new Date(Date.now() - timeframeMs);
     return this.healthHistory.filter(
-      record => record.saverName === saverName && record.timestamp >= cutoff
+      (record) => record.saverName === saverName && record.timestamp >= cutoff
     );
   }
 
@@ -565,7 +626,7 @@ export class CheckpointHealthService
   } {
     // Simplified trend analysis - could be enhanced with more sophisticated algorithms
     const recentHistory = this.healthHistory.slice(-50); // Last 50 checks
-    
+
     if (recentHistory.length < 10) {
       return {
         healthTrend: 'stable',
@@ -579,8 +640,10 @@ export class CheckpointHealthService
     const secondHalf = recentHistory.slice(midpoint);
 
     // Health trend
-    const firstHalfHealthy = firstHalf.filter(r => r.healthy).length / firstHalf.length;
-    const secondHalfHealthy = secondHalf.filter(r => r.healthy).length / secondHalf.length;
+    const firstHalfHealthy =
+      firstHalf.filter((r) => r.healthy).length / firstHalf.length;
+    const secondHalfHealthy =
+      secondHalf.filter((r) => r.healthy).length / secondHalf.length;
     let healthTrend: 'improving' | 'stable' | 'degrading' = 'stable';
     if (secondHalfHealthy > firstHalfHealthy + 0.1) {
       healthTrend = 'improving';
@@ -589,8 +652,11 @@ export class CheckpointHealthService
     }
 
     // Response time trend
-    const firstHalfAvgTime = firstHalf.reduce((sum, r) => sum + r.responseTime, 0) / firstHalf.length;
-    const secondHalfAvgTime = secondHalf.reduce((sum, r) => sum + r.responseTime, 0) / secondHalf.length;
+    const firstHalfAvgTime =
+      firstHalf.reduce((sum, r) => sum + r.responseTime, 0) / firstHalf.length;
+    const secondHalfAvgTime =
+      secondHalf.reduce((sum, r) => sum + r.responseTime, 0) /
+      secondHalf.length;
     let responseTimeTrend: 'improving' | 'stable' | 'degrading' = 'stable';
     if (secondHalfAvgTime < firstHalfAvgTime * 0.9) {
       responseTimeTrend = 'improving';
@@ -599,8 +665,10 @@ export class CheckpointHealthService
     }
 
     // Error trend
-    const firstHalfErrors = firstHalf.filter(r => !r.healthy).length / firstHalf.length;
-    const secondHalfErrors = secondHalf.filter(r => !r.healthy).length / secondHalf.length;
+    const firstHalfErrors =
+      firstHalf.filter((r) => !r.healthy).length / firstHalf.length;
+    const secondHalfErrors =
+      secondHalf.filter((r) => !r.healthy).length / secondHalf.length;
     let errorTrend: 'improving' | 'stable' | 'degrading' = 'stable';
     if (secondHalfErrors < firstHalfErrors - 0.05) {
       errorTrend = 'improving';
@@ -626,12 +694,15 @@ export class CheckpointHealthService
       degradedSavers: number;
       unhealthySavers: number;
     },
-    saverDetails: Record<string, {
-      status: HealthStatus;
-      uptime: number;
-      averageResponseTime: number;
-      recentErrors: number;
-    }>,
+    saverDetails: Record<
+      string,
+      {
+        status: HealthStatus;
+        uptime: number;
+        averageResponseTime: number;
+        recentErrors: number;
+      }
+    >,
     trends: {
       healthTrend: 'improving' | 'stable' | 'degrading';
       responseTimeTrend: 'improving' | 'stable' | 'degrading';
@@ -641,27 +712,39 @@ export class CheckpointHealthService
     const recommendations: string[] = [];
 
     if (overall.unhealthySavers > 0) {
-      recommendations.push(`${overall.unhealthySavers} saver(s) are unhealthy - immediate attention required`);
+      recommendations.push(
+        `${overall.unhealthySavers} saver(s) are unhealthy - immediate attention required`
+      );
     }
 
     if (overall.degradedSavers > 0) {
-      recommendations.push(`${overall.degradedSavers} saver(s) show degraded performance - monitor closely`);
+      recommendations.push(
+        `${overall.degradedSavers} saver(s) show degraded performance - monitor closely`
+      );
     }
 
     if (trends.healthTrend === 'degrading') {
-      recommendations.push('Health trend is degrading - investigate potential issues');
+      recommendations.push(
+        'Health trend is degrading - investigate potential issues'
+      );
     }
 
     if (trends.responseTimeTrend === 'degrading') {
-      recommendations.push('Response times are increasing - consider performance optimization');
+      recommendations.push(
+        'Response times are increasing - consider performance optimization'
+      );
     }
 
     if (trends.errorTrend === 'degrading') {
-      recommendations.push('Error rates are increasing - review system logs and configurations');
+      recommendations.push(
+        'Error rates are increasing - review system logs and configurations'
+      );
     }
 
     if (overall.totalSavers === 0) {
-      recommendations.push('No checkpoint savers configured - add at least one storage backend');
+      recommendations.push(
+        'No checkpoint savers configured - add at least one storage backend'
+      );
     }
 
     if (recommendations.length === 0) {

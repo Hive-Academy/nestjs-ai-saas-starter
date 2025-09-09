@@ -19,7 +19,8 @@
       "Bash(ls:*)",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(npm run api:*)"
+      "Bash(npm run api:*)",
+      "Bash(npx nx test:*)"
     ],
     "deny": [],
     "ask": [],

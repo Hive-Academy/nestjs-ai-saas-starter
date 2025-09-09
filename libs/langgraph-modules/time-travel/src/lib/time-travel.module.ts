@@ -30,11 +30,18 @@ export class TimeTravelModule {
       providers.push(BranchManagerService);
     }
 
+    const exports: Array<Type | Provider> = [TimeTravelService];
+
+    // Only export BranchManagerService if it's included in providers
+    if (config?.enableBranching) {
+      exports.push(BranchManagerService);
+    }
+
     return {
       module: TimeTravelModule,
       imports: [ConfigModule],
       providers,
-      exports: [TimeTravelService, BranchManagerService],
+      exports,
     };
   }
 
@@ -88,7 +95,7 @@ export class TimeTravelModule {
       module: TimeTravelModule,
       imports: [ConfigModule, ...(options.imports ?? [])],
       providers,
-      exports: [TimeTravelService, BranchManagerService],
+      exports: providers, // Export all providers that were created
     };
   }
 }

@@ -6,48 +6,81 @@ import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agen
  */
 export function getMultiAgentConfig(): MultiAgentModuleOptions {
   return {
-    // Agent coordination settings
-    coordination: {
-      maxAgents: parseInt(process.env.MULTI_AGENT_MAX_AGENTS || '10'),
-      communicationTimeout: parseInt(
-        process.env.MULTI_AGENT_COMMUNICATION_TIMEOUT || '30000'
+    // Default LLM configuration
+    defaultLlm: {
+      model:
+        process.env.MULTI_AGENT_LLM_MODEL ||
+        process.env.LLM_MODEL ||
+        'gpt-3.5-turbo',
+      apiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
+      temperature: parseFloat(
+        process.env.MULTI_AGENT_LLM_TEMPERATURE ||
+          process.env.LLM_TEMPERATURE ||
+          '0.7'
       ),
-      consensusThreshold: parseFloat(
-        process.env.MULTI_AGENT_CONSENSUS_THRESHOLD || '0.7'
+      maxTokens: parseInt(
+        process.env.MULTI_AGENT_LLM_MAX_TOKENS ||
+          process.env.LLM_MAX_TOKENS ||
+          '4000'
       ),
     },
 
-    // Network topology settings
-    topology: {
-      type: process.env.MULTI_AGENT_TOPOLOGY || 'mesh', // mesh, star, ring
-      maxConnections: parseInt(process.env.MULTI_AGENT_MAX_CONNECTIONS || '5'),
-      heartbeatInterval: parseInt(
-        process.env.MULTI_AGENT_HEARTBEAT_INTERVAL || '5000'
-      ),
+    // Message history limits
+    messageHistory: {
+      maxMessages: parseInt(process.env.MULTI_AGENT_MAX_MESSAGES || '50'),
+      pruneStrategy:
+        (process.env.MULTI_AGENT_PRUNE_STRATEGY as
+          | 'fifo'
+          | 'lifo'
+          | 'summarize') || 'fifo',
     },
 
-    // Message routing settings
-    messaging: {
-      queueSize: parseInt(process.env.MULTI_AGENT_QUEUE_SIZE || '100'),
+    // Streaming configuration
+    streaming: {
+      enabled: process.env.MULTI_AGENT_STREAMING_ENABLED !== 'false',
+      modes: ['values', 'updates', 'messages'] as const,
+    },
+
+    // Debug configuration
+    debug: {
+      enabled:
+        process.env.NODE_ENV === 'development' ||
+        process.env.MULTI_AGENT_DEBUG_ENABLED === 'true',
+      logLevel:
+        (process.env.MULTI_AGENT_LOG_LEVEL as
+          | 'debug'
+          | 'info'
+          | 'warn'
+          | 'error') || 'info',
+    },
+
+    // Performance configuration
+    performance: {
+      tokenOptimization: process.env.MULTI_AGENT_OPTIMIZE_TOKENS !== 'false',
+      contextWindowManagement:
+        process.env.MULTI_AGENT_MANAGE_CONTEXT !== 'false',
+      enableMessageForwarding:
+        process.env.MULTI_AGENT_ENABLE_FORWARDING !== 'false',
+    },
+
+    // Checkpointing configuration
+    checkpointing: {
+      enabled: process.env.MULTI_AGENT_CHECKPOINTING_ENABLED !== 'false',
+      enableForAllNetworks:
+        process.env.MULTI_AGENT_CHECKPOINT_ALL_NETWORKS !== 'false',
+      defaultThreadPrefix:
+        process.env.MULTI_AGENT_CHECKPOINT_THREAD_PREFIX || 'multi-agent',
+    },
+
+    // Network configuration (optional)
+    network: {
+      maxConcurrentAgents: parseInt(
+        process.env.MULTI_AGENT_MAX_CONCURRENT || '10'
+      ),
+      executionTimeout: parseInt(
+        process.env.MULTI_AGENT_EXECUTION_TIMEOUT || '300000'
+      ), // 5 minutes
       retryAttempts: parseInt(process.env.MULTI_AGENT_RETRY_ATTEMPTS || '3'),
-      compressionEnabled:
-        process.env.MULTI_AGENT_COMPRESSION_ENABLED === 'true',
-    },
-
-    // Load balancing settings
-    loadBalancing: {
-      strategy: process.env.MULTI_AGENT_LOAD_BALANCING || 'round-robin', // round-robin, least-load, random
-      healthCheckInterval: parseInt(
-        process.env.MULTI_AGENT_HEALTH_CHECK_INTERVAL || '10000'
-      ),
-      failoverEnabled: process.env.MULTI_AGENT_FAILOVER_ENABLED !== 'false',
-    },
-
-    // Development features for demo
-    demo: {
-      enableDashboard: process.env.NODE_ENV === 'development',
-      logAgentCommunication: process.env.NODE_ENV === 'development',
-      simulatedLatency: process.env.NODE_ENV === 'development' ? 100 : 0,
     },
   };
 }

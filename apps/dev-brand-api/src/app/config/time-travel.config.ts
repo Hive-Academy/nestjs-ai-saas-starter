@@ -6,67 +6,59 @@ import type { TimeTravelConfig } from '@hive-academy/langgraph-time-travel';
  */
 export function getTimeTravelConfig(): TimeTravelConfig {
   return {
-    // State history settings
-    history: {
-      enabled: process.env.TIME_TRAVEL_HISTORY_ENABLED !== 'false',
-      maxStates: parseInt(process.env.TIME_TRAVEL_MAX_STATES || '1000'),
-      compressionEnabled:
-        process.env.TIME_TRAVEL_COMPRESSION_ENABLED !== 'false',
-      retentionDays: parseInt(process.env.TIME_TRAVEL_RETENTION_DAYS || '7'),
-    },
+    // Maximum number of checkpoints to keep per thread
+    maxCheckpointsPerThread: parseInt(
+      process.env.TIME_TRAVEL_MAX_CHECKPOINTS_PER_THREAD || '100'
+    ),
 
-    // Snapshot settings
-    snapshots: {
-      autoSnapshot: process.env.TIME_TRAVEL_AUTO_SNAPSHOT !== 'false',
-      snapshotInterval: parseInt(
-        process.env.TIME_TRAVEL_SNAPSHOT_INTERVAL || '60000'
-      ), // 1 minute
-      maxSnapshots: parseInt(process.env.TIME_TRAVEL_MAX_SNAPSHOTS || '100'),
-      includeMetadata: process.env.TIME_TRAVEL_INCLUDE_METADATA !== 'false',
-    },
+    // Maximum age of checkpoints in milliseconds
+    maxCheckpointAge: parseInt(
+      process.env.TIME_TRAVEL_MAX_CHECKPOINT_AGE || '604800000' // 7 days
+    ),
 
-    // Replay settings
-    replay: {
-      enabled: process.env.TIME_TRAVEL_REPLAY_ENABLED !== 'false',
-      speedMultiplier: parseFloat(
-        process.env.TIME_TRAVEL_SPEED_MULTIPLIER || '1.0'
-      ),
-      pauseOnErrors: process.env.TIME_TRAVEL_PAUSE_ON_ERRORS === 'true',
-      validateStates: process.env.TIME_TRAVEL_VALIDATE_STATES !== 'false',
-    },
+    // Whether to enable automatic checkpoint creation
+    enableAutoCheckpoint: process.env.TIME_TRAVEL_AUTO_CHECKPOINT !== 'false',
 
-    // Debugging features
-    debugging: {
-      breakpoints: process.env.TIME_TRAVEL_BREAKPOINTS_ENABLED === 'true',
-      stepExecution: process.env.TIME_TRAVEL_STEP_EXECUTION_ENABLED === 'true',
-      variableInspection:
-        process.env.TIME_TRAVEL_VARIABLE_INSPECTION_ENABLED !== 'false',
-      callStackTrace:
-        process.env.TIME_TRAVEL_CALL_STACK_TRACE_ENABLED !== 'false',
-    },
+    // Checkpoint creation interval in milliseconds
+    checkpointInterval: parseInt(
+      process.env.TIME_TRAVEL_CHECKPOINT_INTERVAL || '60000' // 1 minute
+    ),
 
-    // Storage settings
+    // Whether to enable branch management
+    enableBranching: process.env.TIME_TRAVEL_ENABLE_BRANCHING !== 'false',
+
+    // Maximum number of branches per thread
+    maxBranchesPerThread: parseInt(
+      process.env.TIME_TRAVEL_MAX_BRANCHES_PER_THREAD || '10'
+    ),
+
+    // Storage backend configuration
     storage: {
-      backend: process.env.TIME_TRAVEL_STORAGE_BACKEND || 'memory', // memory, file, database
-      persistToDisk: process.env.TIME_TRAVEL_PERSIST_TO_DISK === 'true',
-      storagePath: process.env.TIME_TRAVEL_STORAGE_PATH || './time-travel-data',
-      compression: process.env.TIME_TRAVEL_STORAGE_COMPRESSION || 'gzip',
-    },
+      type:
+        (process.env.TIME_TRAVEL_STORAGE_TYPE as
+          | 'memory'
+          | 'redis'
+          | 'postgres'
+          | 'sqlite') || 'memory',
+      config: {
+        // Redis configuration (if using redis)
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
 
-    // Performance settings
-    performance: {
-      indexingEnabled: process.env.TIME_TRAVEL_INDEXING_ENABLED !== 'false',
-      lazyLoading: process.env.TIME_TRAVEL_LAZY_LOADING !== 'false',
-      cacheSize: parseInt(process.env.TIME_TRAVEL_CACHE_SIZE || '500'),
-      batchSize: parseInt(process.env.TIME_TRAVEL_BATCH_SIZE || '50'),
-    },
+        // PostgreSQL configuration (if using postgres)
+        database:
+          process.env.TIME_TRAVEL_POSTGRES_DB ||
+          process.env.POSTGRES_DB ||
+          'timetravel',
+        username:
+          process.env.TIME_TRAVEL_POSTGRES_USER || process.env.POSTGRES_USER,
+        password:
+          process.env.TIME_TRAVEL_POSTGRES_PASSWORD ||
+          process.env.POSTGRES_PASSWORD,
 
-    // Development features for demo
-    demo: {
-      enableUI: process.env.NODE_ENV === 'development',
-      visualizationEnabled: process.env.NODE_ENV === 'development',
-      mockTimeTravel: process.env.TIME_TRAVEL_MOCK_MODE === 'true',
-      debugVerbose: process.env.NODE_ENV === 'development',
+        // SQLite configuration (if using sqlite)
+        path: process.env.TIME_TRAVEL_SQLITE_PATH || './data/timetravel.db',
+      },
     },
   };
 }

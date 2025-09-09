@@ -88,13 +88,24 @@ export class CheckpointSaverFactory
     config?: MemoryCheckpointConfig
   ): Promise<EnhancedBaseCheckpointSaver> {
     try {
-      // Use official LangGraph SQLite in-memory saver for memory checkpointing
-      const { SqliteSaver } = await import('@langchain/langgraph-checkpoint-sqlite');
+      // Dynamic import of optional dependency
+      const { SqliteSaver } = await import(
+        '@langchain/langgraph-checkpoint-sqlite'
+      );
 
-      const saver = SqliteSaver.fromConnString(':memory:') as EnhancedBaseCheckpointSaver;
+      const saver = SqliteSaver.fromConnString(
+        ':memory:'
+      ) as EnhancedBaseCheckpointSaver;
       this.logger.debug('Memory checkpoint saver created successfully');
       return saver;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'MODULE_NOT_FOUND') {
+        throw this.createError(
+          'Memory checkpoint requires @langchain/langgraph-checkpoint-sqlite package. Install it with: npm install @langchain/langgraph-checkpoint-sqlite',
+          'MEMORY_SAVER_DEPENDENCY_MISSING',
+          error as Error
+        );
+      }
       throw this.createError(
         'Failed to create memory checkpoint saver',
         'MEMORY_SAVER_CREATION_FAILED',
@@ -113,16 +124,20 @@ export class CheckpointSaverFactory
       // Try to use official LangGraph Redis saver
       let RedisSaver;
       try {
-        // @ts-expect-error - Dynamic import of optional dependency
-        const redisModule = await import('@langchain/langgraph-checkpoint-redis');
+        const redisPackage = '@langchain/langgraph-checkpoint-redis';
+        const redisModule = await import(redisPackage);
         RedisSaver = redisModule.RedisSaver;
       } catch (importError) {
-        this.logger.warn('Official LangGraph Redis package not available, falling back to SQLite');
+        this.logger.warn(
+          'Redis checkpoint requires @langchain/langgraph-checkpoint-redis package. Install it with: npm install @langchain/langgraph-checkpoint-redis. Falling back to in-memory SQLite.'
+        );
         return this.createMemoryCheckpointSaver();
       }
 
       const redisConfig = {
-        url: config.url || `redis://${config.host || 'localhost'}:${config.port || 6379}`,
+        url:
+          config.url ||
+          `redis://${config.host || 'localhost'}:${config.port || 6379}`,
         ...config,
       };
 
@@ -130,7 +145,9 @@ export class CheckpointSaverFactory
       this.logger.debug('Redis checkpoint saver created successfully');
       return saver;
     } catch (error) {
-      this.logger.warn('Failed to create Redis checkpoint saver, falling back to SQLite');
+      this.logger.warn(
+        'Failed to create Redis checkpoint saver, falling back to SQLite'
+      );
       return this.createMemoryCheckpointSaver();
     }
   }
@@ -145,11 +162,13 @@ export class CheckpointSaverFactory
       // Try to use official LangGraph Postgres saver
       let PostgresSaver;
       try {
-        // @ts-expect-error - Dynamic import of optional dependency
-        const pgModule = await import('@langchain/langgraph-checkpoint-postgres');
+        const pgPackage = '@langchain/langgraph-checkpoint-postgres';
+        const pgModule = await import(pgPackage);
         PostgresSaver = pgModule.PostgresSaver;
       } catch (importError) {
-        this.logger.warn('Official LangGraph Postgres package not available, falling back to SQLite');
+        this.logger.warn(
+          'Postgres checkpoint requires @langchain/langgraph-checkpoint-postgres package. Install it with: npm install @langchain/langgraph-checkpoint-postgres. Falling back to in-memory SQLite.'
+        );
         return this.createMemoryCheckpointSaver();
       }
 
@@ -167,7 +186,9 @@ export class CheckpointSaverFactory
       this.logger.debug('PostgreSQL checkpoint saver created successfully');
       return saver;
     } catch (error) {
-      this.logger.warn('Failed to create PostgreSQL checkpoint saver, falling back to SQLite');
+      this.logger.warn(
+        'Failed to create PostgreSQL checkpoint saver, falling back to SQLite'
+      );
       return this.createMemoryCheckpointSaver();
     }
   }
@@ -180,14 +201,26 @@ export class CheckpointSaverFactory
   ): Promise<EnhancedBaseCheckpointSaver> {
     try {
       // Use official LangGraph SQLite saver
-      const { SqliteSaver } = await import('@langchain/langgraph-checkpoint-sqlite');
+      const { SqliteSaver } = await import(
+        '@langchain/langgraph-checkpoint-sqlite'
+      );
 
       const dbPath = config.databasePath || './checkpoints.db';
-      const saver = SqliteSaver.fromConnString(dbPath) as EnhancedBaseCheckpointSaver;
+      const saver = SqliteSaver.fromConnString(
+        dbPath
+      ) as EnhancedBaseCheckpointSaver;
 
       this.logger.debug('SQLite checkpoint saver created successfully');
       return saver;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'MODULE_NOT_FOUND') {
+        throw this.createError(
+          'SQLite checkpoint requires @langchain/langgraph-checkpoint-sqlite package. Install it with: npm install @langchain/langgraph-checkpoint-sqlite',
+          'SQLITE_SAVER_DEPENDENCY_MISSING',
+          error as Error,
+          { config: this.sanitizeConfig(config) }
+        );
+      }
       throw this.createError(
         'Failed to create SQLite checkpoint saver',
         'SQLITE_SAVER_CREATION_FAILED',
@@ -204,7 +237,12 @@ export class CheckpointSaverFactory
     const sanitized = { ...config };
 
     // Remove sensitive fields
-    const sensitiveFields = ['password', 'connectionString', 'apiKey', 'secret'];
+    const sensitiveFields = [
+      'password',
+      'connectionString',
+      'apiKey',
+      'secret',
+    ];
     for (const field of sensitiveFields) {
       if (sanitized[field]) {
         sanitized[field] = '***';
@@ -228,7 +266,9 @@ export class CheckpointSaverFactory
     const supportedTypes = ['memory', 'redis', 'postgres', 'sqlite'];
     if (!supportedTypes.includes(config.type)) {
       throw this.createError(
-        `Unsupported checkpoint saver type: ${config.type}. Supported types: ${supportedTypes.join(', ')}`,
+        `Unsupported checkpoint saver type: ${
+          config.type
+        }. Supported types: ${supportedTypes.join(', ')}`,
         'INVALID_SAVER_TYPE'
       );
     }

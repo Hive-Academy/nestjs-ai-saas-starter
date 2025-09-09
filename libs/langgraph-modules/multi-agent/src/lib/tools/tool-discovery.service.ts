@@ -1,14 +1,11 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@nestjs-plus/discovery';
+import { DiscoveryService } from '@golevelup/nestjs-discovery';
 import { ModuleRef } from '@nestjs/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { AgentType } from './agent-types';
 
-import {
-  ToolMetadata,
-  getClassTools,
-} from '../decorators/tool.decorator';
+import { ToolMetadata, getClassTools } from '../decorators/tool.decorator';
 import { ToolRegistryService } from './tool-registry.service';
 
 /**
@@ -290,7 +287,9 @@ export class ToolDiscoveryService implements OnModuleInit {
     // Analyze each tool
     for (const tool of allTools) {
       const metadata = this.toolRegistry.getToolMetadata(tool.name);
-      if (!metadata) {continue;}
+      if (!metadata) {
+        continue;
+      }
 
       // Check for composed tools
       if (metadata.tags?.includes('composed')) {
@@ -316,7 +315,7 @@ export class ToolDiscoveryService implements OnModuleInit {
       }
 
       // Check for orphaned tools (tools with no assigned agents)
-      const {agents} = metadata;
+      const { agents } = metadata;
       if (!agents || (Array.isArray(agents) && agents.length === 0)) {
         orphanedTools.push(tool.name);
       }
@@ -495,9 +494,11 @@ export class ToolDiscoveryService implements OnModuleInit {
   // Private helper methods
 
   private async discoverFromAllProviders(): Promise<ProviderDiscoveryResult[]> {
-    // Discover all providers that have instances
+    // Get all providers from the discovery service
+    // Filter providers to only include those that are injectable services
     const providers = await this.discoveryService.providers(
-      (discoveredClass) => discoveredClass.instance != null
+      (discovered) =>
+        discovered.instance && typeof discovered.instance === 'object'
     );
     const results: ProviderDiscoveryResult[] = [];
 
@@ -509,15 +510,7 @@ export class ToolDiscoveryService implements OnModuleInit {
 
       const batchResults = await Promise.allSettled(
         batch.map(async (wrapper) => {
-          if (wrapper.instance && typeof wrapper.instance === 'object') {
-            return this.discoverFromProvider(wrapper.instance.constructor);
-          }
-          return Promise.resolve({
-            providerName: 'unknown',
-            toolsFound: [],
-            errors: ['No valid instance'],
-            scanTime: 0,
-          });
+          return this.discoverFromProvider(wrapper.instance.constructor);
         })
       );
 

@@ -1,5 +1,4 @@
 import { Module, DynamicModule, Provider, Global } from '@nestjs/common';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import {
   FunctionalApiModuleOptions,
   FunctionalApiModuleAsyncOptions,
@@ -9,8 +8,7 @@ import { FunctionalWorkflowService } from './services/functional-workflow.servic
 import { WorkflowDiscoveryService } from './services/workflow-discovery.service';
 import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
-import { DiscoveryModule } from '@nestjs-plus/discovery';
-
+import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 
 /**
  * Module options injection token
@@ -27,27 +25,15 @@ export class FunctionalApiModule {
    * Configures the module synchronously
    */
   static forRoot(options: FunctionalApiModuleOptions = {}): DynamicModule {
+    const normalizedOptions = this.normalizeOptions(options);
     const optionsProvider: Provider = {
       provide: FUNCTIONAL_API_MODULE_OPTIONS,
-      useValue: this.normalizeOptions(options),
+      useValue: normalizedOptions,
     };
 
     return {
       module: FunctionalApiModule,
-      imports: [
-        DiscoveryModule,
-        LanggraphModulesCheckpointModule.forRoot({
-          checkpoint: {
-            savers: [
-              {
-                name: 'memory',
-                type: 'memory',
-                default: true,
-              },
-            ],
-          },
-        }),
-      ],
+      imports: [DiscoveryModule],
       providers: [
         optionsProvider,
         WorkflowValidator,
@@ -73,21 +59,7 @@ export class FunctionalApiModule {
 
     return {
       module: FunctionalApiModule,
-      imports: [
-        DiscoveryModule,
-        LanggraphModulesCheckpointModule.forRoot({
-          checkpoint: {
-            savers: [
-              {
-                name: 'memory',
-                type: 'memory',
-                default: true,
-              },
-            ],
-          },
-        }),
-        ...(options.imports || []),
-      ],
+      imports: [DiscoveryModule, ...(options.imports || [])],
       providers: [
         ...asyncProviders,
         WorkflowValidator,
@@ -108,7 +80,9 @@ export class FunctionalApiModule {
   /**
    * Creates async providers for module configuration
    */
-  private static createAsyncProviders(options: FunctionalApiModuleAsyncOptions): Provider[] {
+  private static createAsyncProviders(
+    options: FunctionalApiModuleAsyncOptions
+  ): Provider[] {
     if (options.useExisting || options.useFactory) {
       return [this.createAsyncOptionsProvider(options)];
     }
@@ -129,7 +103,9 @@ export class FunctionalApiModule {
   /**
    * Creates async options provider
    */
-  private static createAsyncOptionsProvider(options: FunctionalApiModuleAsyncOptions): Provider {
+  private static createAsyncOptionsProvider(
+    options: FunctionalApiModuleAsyncOptions
+  ): Provider {
     if (options.useFactory) {
       return {
         provide: FUNCTIONAL_API_MODULE_OPTIONS,
@@ -169,7 +145,9 @@ export class FunctionalApiModule {
   /**
    * Normalizes and validates module options
    */
-  private static normalizeOptions(options: FunctionalApiModuleOptions): Required<FunctionalApiModuleOptions> {
+  private static normalizeOptions(
+    options: FunctionalApiModuleOptions
+  ): Required<FunctionalApiModuleOptions> {
     return {
       defaultTimeout: options.defaultTimeout ?? 30000,
       defaultRetryCount: options.defaultRetryCount ?? 3,

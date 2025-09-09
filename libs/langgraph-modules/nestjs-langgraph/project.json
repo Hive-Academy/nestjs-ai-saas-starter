@@ -1,5 +1,5 @@
 {
-  "name": "@hive-academy/langgraph-nestjs-langgraph",
+  "name": "@hive-academy/nestjs-langgraph",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-modules/nestjs-langgraph/src",
   "projectType": "library",
@@ -9,10 +9,11 @@
       "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-nestjs-langgraph",
+        "outputPath": "dist/libs/nestjs-langgraph",
         "main": "libs/langgraph-modules/nestjs-langgraph/src/index.ts",
         "tsConfig": "libs/langgraph-modules/nestjs-langgraph/tsconfig.lib.json",
         "format": ["cjs", "esm"],
+        "external": "all",
         "assets": [
           {
             "input": "./libs/langgraph-modules/nestjs-langgraph",
@@ -35,6 +36,12 @@
       },
       "dependsOn": ["^typecheck"],
       "cache": true
+    },
+    "nx-release-publish": {
+      "executor": "@nx/js:release-publish",
+      "options": {
+        "packageRoot": "dist/libs/nestjs-langgraph"
+      }
     }
   }
 }

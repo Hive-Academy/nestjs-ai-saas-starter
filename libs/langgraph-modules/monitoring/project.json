@@ -13,6 +13,7 @@
         "main": "libs/langgraph-modules/monitoring/src/index.ts",
         "tsConfig": "libs/langgraph-modules/monitoring/tsconfig.lib.json",
         "format": ["cjs", "esm"],
+        "external": "all",
         "assets": [
           {
             "input": "./libs/langgraph-modules/monitoring",
@@ -35,6 +36,12 @@
       },
       "dependsOn": ["^typecheck"],
       "cache": true
+    },
+    "nx-release-publish": {
+      "executor": "@nx/js:release-publish",
+      "options": {
+        "packageRoot": "dist/libs/langgraph-monitoring"
+      }
     }
   }
 }

@@ -41,7 +41,7 @@ import { getPlatformConfig } from './config/platform.config';
 import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
-// Test services and controllers for Phase 1 verification
+// Test services and controllers for child module verification
 import { AdapterTestService } from './services/adapter-test.service';
 import { AdapterTestController } from './controllers/adapter-test.controller';
 
@@ -83,7 +83,13 @@ import { HealthController } from './controllers/health.controller';
     }),
 
     // Direct child module imports - Independent module usage
-    LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
+    // Global checkpoint module configured once at application level
+    LanggraphModulesCheckpointModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        getCheckpointConfig(configService),
+    }),
     StreamingModule.forRoot(getStreamingConfig()),
     HitlModule.forRoot(getHitlConfig()),
 
@@ -99,14 +105,14 @@ import { HealthController } from './controllers/health.controller';
     TerminusModule,
   ],
   providers: [
-    // Phase 1 test service to verify adapter injection
+    // Test service to verify child module service injection
     AdapterTestService,
   ],
   controllers: [
-    // Phase 1 test controller to expose verification endpoints
+    // Test controller to expose child module verification endpoints
     AdapterTestController,
 
-    // Phase 1 health check controller for Subtask 1.3
+    // Health check controller
     HealthController,
   ],
   exports: [],

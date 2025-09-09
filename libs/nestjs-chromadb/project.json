@@ -1,27 +1,27 @@
 {
-  "name": "@hive-academy/langgraph-multi-agent",
-  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/langgraph-modules/multi-agent/src",
+  "name": "@hive-academy/nestjs-chromadb",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/nestjs-chromadb/src",
   "projectType": "library",
-  "tags": ["domain:langgraph", "type:feature", "module:multi-agent"],
+  "tags": ["domain:chromadb", "type:feature"],
   "targets": {
     "build": {
       "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-multi-agent",
-        "main": "libs/langgraph-modules/multi-agent/src/index.ts",
-        "tsConfig": "libs/langgraph-modules/multi-agent/tsconfig.lib.json",
+        "outputPath": "dist/libs/nestjs-chromadb",
+        "main": "libs/nestjs-chromadb/src/index.ts",
+        "tsConfig": "libs/nestjs-chromadb/tsconfig.lib.json",
         "format": ["cjs", "esm"],
         "external": "all",
         "assets": [
           {
-            "input": "./libs/langgraph-modules/multi-agent",
+            "input": "./libs/nestjs-chromadb",
             "glob": "*.md",
             "output": "./"
           },
           {
-            "input": "./libs/langgraph-modules/multi-agent",
+            "input": "./libs/nestjs-chromadb",
             "glob": "package.json",
             "output": "./"
           }
@@ -32,15 +32,22 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "tsc --noEmit --project tsconfig.lib.json",
-        "cwd": "libs/langgraph-modules/multi-agent"
+        "cwd": "libs/nestjs-chromadb"
       },
       "dependsOn": ["^typecheck"],
       "cache": true
     },
+    "docs": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "typedoc --options typedoc.json",
+        "cwd": "libs/nestjs-chromadb"
+      }
+    },
     "nx-release-publish": {
       "executor": "@nx/js:release-publish",
       "options": {
-        "packageRoot": "dist/libs/langgraph-multi-agent"
+        "packageRoot": "dist/libs/nestjs-chromadb"
       }
     }
   }

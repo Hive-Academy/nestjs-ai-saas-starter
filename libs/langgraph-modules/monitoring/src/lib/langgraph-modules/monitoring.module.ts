@@ -11,7 +11,7 @@ import { MonitoringConfig } from '../interfaces/monitoring.interface';
 
 /**
  * LangGraph Monitoring Module
- * 
+ *
  * Provides comprehensive monitoring capabilities:
  * - Metrics collection and aggregation
  * - Rule-based alerting with multi-channel notifications
@@ -50,7 +50,7 @@ export class LanggraphModulesMonitoringModule {
       healthChecks: {
         enabled: true,
         interval: 60000, // 1 minute
-        timeout: 5000,   // 5 seconds
+        timeout: 5000, // 5 seconds
         retries: 3,
         gracefulShutdownTimeout: 30000,
       },
@@ -85,16 +85,38 @@ export class LanggraphModulesMonitoringModule {
           provide: 'MONITORING_CONFIG',
           useValue: mergedConfig,
         },
-        // Core services
+        // Core services - provided as concrete classes and interface tokens
         MetricsCollectorService,
         AlertingService,
         HealthCheckService,
         PerformanceTrackerService,
         DashboardService,
-        
+
+        // Interface mappings for dependency injection
+        {
+          provide: 'IMetricsCollector',
+          useExisting: MetricsCollectorService,
+        },
+        {
+          provide: 'IAlertingService',
+          useExisting: AlertingService,
+        },
+        {
+          provide: 'IHealthCheck',
+          useExisting: HealthCheckService,
+        },
+        {
+          provide: 'IPerformanceTracker',
+          useExisting: PerformanceTrackerService,
+        },
+        {
+          provide: 'IDashboard',
+          useExisting: DashboardService,
+        },
+
         // Facade service
         MonitoringFacadeService,
-        
+
         // Legacy providers (for backward compatibility)
         MetricsProvider,
         TraceProvider,
@@ -118,7 +140,9 @@ export class LanggraphModulesMonitoringModule {
    */
   static forRootAsync(options: {
     imports?: any[];
-    useFactory: (...args: any[]) => MonitoringConfig | Promise<MonitoringConfig>;
+    useFactory: (
+      ...args: any[]
+    ) => MonitoringConfig | Promise<MonitoringConfig>;
     inject?: any[];
   }): DynamicModule {
     return {
@@ -130,16 +154,38 @@ export class LanggraphModulesMonitoringModule {
           useFactory: options.useFactory,
           inject: options.inject || [],
         },
-        // Core services
+        // Core services - provided as concrete classes and interface tokens
         MetricsCollectorService,
         AlertingService,
         HealthCheckService,
         PerformanceTrackerService,
         DashboardService,
-        
+
+        // Interface mappings for dependency injection
+        {
+          provide: 'IMetricsCollector',
+          useExisting: MetricsCollectorService,
+        },
+        {
+          provide: 'IAlertingService',
+          useExisting: AlertingService,
+        },
+        {
+          provide: 'IHealthCheck',
+          useExisting: HealthCheckService,
+        },
+        {
+          provide: 'IPerformanceTracker',
+          useExisting: PerformanceTrackerService,
+        },
+        {
+          provide: 'IDashboard',
+          useExisting: DashboardService,
+        },
+
         // Facade service
         MonitoringFacadeService,
-        
+
         // Legacy providers
         MetricsProvider,
         TraceProvider,

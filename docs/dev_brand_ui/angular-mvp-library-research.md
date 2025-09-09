@@ -2,6 +2,10 @@
 
 ## 🎯 Executive Summary
 
+```bash
+ npx nx generate @nx/angular:application --directory=apps/dev-brand-ui --name=dev-brand-ui --addTailwind=true --backendProject=dev-brand-api --prefix=brand --setParserOptionsProject=true --no-interactive --dry-run
+```
+
 Based on extensive 2025 research, here are the **top-tier libraries** that will accelerate your DevBrand Chat Studio MVP development while maintaining cutting-edge functionality and performance.
 
 **Key Finding**: Focus on **proven, Angular-compatible libraries** with active 2025 communities rather than experimental tools. This approach reduces risk while maximizing development velocity.

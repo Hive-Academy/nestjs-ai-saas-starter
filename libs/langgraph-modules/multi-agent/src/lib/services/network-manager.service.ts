@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CompiledStateGraph } from '@langchain/langgraph';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 import {
   AgentNetwork,
   AgentState,
@@ -10,9 +11,11 @@ import {
   NetworkConfigurationError,
   AgentNotFoundError,
   AgentNetworkSchema,
+  MultiAgentModuleOptions,
 } from '../interfaces/multi-agent.interface';
 import { AgentRegistryService } from './agent-registry.service';
 import { GraphBuilderService } from './graph-builder.service';
+import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
 
 /**
  * High-level service for managing agent networks and workflow execution
@@ -27,7 +30,10 @@ export class NetworkManagerService {
   constructor(
     private readonly agentRegistry: AgentRegistryService,
     private readonly graphBuilder: GraphBuilderService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    @Optional() private readonly checkpointManager?: CheckpointManagerService,
+    @Inject(MULTI_AGENT_MODULE_OPTIONS)
+    private readonly options?: MultiAgentModuleOptions
   ) {}
 
   /**
@@ -56,6 +62,12 @@ export class NetworkManagerService {
         networkConfig.type
       );
 
+      // Prepare compilation options with checkpointer if enabled
+      const compilationOptions = await this.prepareCompilationOptions(
+        networkConfig.compilationOptions,
+        networkConfig.id
+      );
+
       // Build the appropriate graph type
       let graph: CompiledStateGraph<any, any>;
 
@@ -64,26 +76,26 @@ export class NetworkManagerService {
           graph = await this.graphBuilder.buildSupervisorGraph(
             networkConfig.agents,
             networkConfig.config as any,
-            networkConfig.compilationOptions
+            compilationOptions
           );
           break;
-        
+
         case 'swarm':
           graph = await this.graphBuilder.buildSwarmGraph(
             networkConfig.agents,
             networkConfig.config as any,
-            networkConfig.compilationOptions
+            compilationOptions
           );
           break;
-        
+
         case 'hierarchical':
           graph = await this.graphBuilder.buildHierarchicalGraph(
             networkConfig.agents,
             networkConfig.config as any,
-            networkConfig.compilationOptions
+            compilationOptions
           );
           break;
-        
+
         default:
           throw new NetworkConfigurationError(
             `Unsupported network type: ${networkConfig.type}`
@@ -108,13 +120,15 @@ export class NetworkManagerService {
       return networkConfig.id;
     } catch (error) {
       this.logger.error(`Failed to create network ${networkConfig.id}:`, error);
-      
+
       // Cleanup on failure
       this.networks.delete(networkConfig.id);
       this.networkConfigs.delete(networkConfig.id);
-      
+
       throw new NetworkConfigurationError(
-        `Failed to create network: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to create network: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
         error
       );
     }
@@ -134,21 +148,21 @@ export class NetworkManagerService {
     const startTime = Date.now();
     const graph = this.networks.get(networkId);
     const networkConfig = this.networkConfigs.get(networkId);
-    
+
     if (!graph || !networkConfig) {
       throw new AgentNotFoundError(`Network not found: ${networkId}`);
     }
 
     try {
       // Prepare initial state
-      const messages = input.messages.map(msg => 
+      const messages = input.messages.map((msg) =>
         typeof msg === 'string' ? new HumanMessage(msg) : msg
       );
 
       const initialState: AgentState = {
         messages,
-        metadata: { 
-          networkId, 
+        metadata: {
+          networkId,
           networkType: networkConfig.type,
           startTime,
           executionId: this.generateExecutionId(),
@@ -200,9 +214,12 @@ export class NetworkManagerService {
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      
-      this.logger.error(`Workflow execution failed for network ${networkId}:`, error);
-      
+
+      this.logger.error(
+        `Workflow execution failed for network ${networkId}:`,
+        error
+      );
+
       this.eventEmitter.emit('workflow.failed', {
         networkId,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -211,17 +228,19 @@ export class NetworkManagerService {
       });
 
       return {
-        finalState: { 
-          messages: [], 
-          metadata: { 
+        finalState: {
+          messages: [],
+          metadata: {
             error: true,
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-          } 
+            errorMessage:
+              error instanceof Error ? error.message : 'Unknown error',
+          },
         },
         executionPath: [],
         executionTime,
         success: false,
-        error: error instanceof Error ? error : new Error('Unknown execution error'),
+        error:
+          error instanceof Error ? error : new Error('Unknown execution error'),
       };
     }
   }
@@ -239,20 +258,20 @@ export class NetworkManagerService {
   ): AsyncGenerator<Partial<AgentState>, MultiAgentResult, unknown> {
     const graph = this.networks.get(networkId);
     const networkConfig = this.networkConfigs.get(networkId);
-    
+
     if (!graph || !networkConfig) {
       throw new AgentNotFoundError(`Network not found: ${networkId}`);
     }
 
     const startTime = Date.now();
-    const messages = input.messages.map(msg => 
+    const messages = input.messages.map((msg) =>
       typeof msg === 'string' ? new HumanMessage(msg) : msg
     );
 
     const initialState: AgentState = {
       messages,
-      metadata: { 
-        networkId, 
+      metadata: {
+        networkId,
         networkType: networkConfig.type,
         startTime,
         executionId: this.generateExecutionId(),
@@ -261,7 +280,7 @@ export class NetworkManagerService {
 
     try {
       const streamMode = input.streamMode || 'values';
-      
+
       this.eventEmitter.emit('workflow.stream.started', {
         networkId,
         executionId: initialState.metadata?.executionId,
@@ -310,9 +329,12 @@ export class NetworkManagerService {
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      
-      this.logger.error(`Streaming workflow failed for network ${networkId}:`, error);
-      
+
+      this.logger.error(
+        `Streaming workflow failed for network ${networkId}:`,
+        error
+      );
+
       this.eventEmitter.emit('workflow.stream.failed', {
         networkId,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -321,17 +343,19 @@ export class NetworkManagerService {
       });
 
       return {
-        finalState: { 
-          messages: [], 
-          metadata: { 
+        finalState: {
+          messages: [],
+          metadata: {
             error: true,
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-          } 
+            errorMessage:
+              error instanceof Error ? error.message : 'Unknown error',
+          },
         },
         executionPath: [],
         executionTime,
         success: false,
-        error: error instanceof Error ? error : new Error('Unknown streaming error'),
+        error:
+          error instanceof Error ? error : new Error('Unknown streaming error'),
       };
     }
   }
@@ -354,7 +378,7 @@ export class NetworkManagerService {
    * List all networks
    */
   listNetworks(): Array<{ id: string; type: string; agentCount: number }> {
-    return Array.from(this.networkConfigs.values()).map(config => ({
+    return Array.from(this.networkConfigs.values()).map((config) => ({
       id: config.id,
       type: config.type,
       agentCount: config.agents.length,
@@ -366,7 +390,7 @@ export class NetworkManagerService {
    */
   removeNetwork(networkId: string): boolean {
     const networkConfig = this.networkConfigs.get(networkId);
-    
+
     if (!networkConfig) {
       return false;
     }
@@ -374,27 +398,29 @@ export class NetworkManagerService {
     // Remove from both maps
     this.networks.delete(networkId);
     this.networkConfigs.delete(networkId);
-    
+
     this.logger.log(`Removed network: ${networkId}`);
-    
-    this.eventEmitter.emit('network.removed', { 
+
+    this.eventEmitter.emit('network.removed', {
       networkId,
       type: networkConfig.type,
       timestamp: new Date().toISOString(),
     });
-    
+
     return true;
   }
 
   /**
    * Get network statistics
    */
-  getNetworkStats(networkId: string): {
-    agentCount: number;
-    type: string;
-    created: boolean;
-    agents: string[];
-  } | undefined {
+  getNetworkStats(networkId: string):
+    | {
+        agentCount: number;
+        type: string;
+        created: boolean;
+        agents: string[];
+      }
+    | undefined {
     const config = this.networkConfigs.get(networkId);
     if (!config) {
       return undefined;
@@ -404,7 +430,7 @@ export class NetworkManagerService {
       agentCount: config.agents.length,
       type: config.type,
       created: this.networks.has(networkId),
-      agents: config.agents.map(a => a.id),
+      agents: config.agents.map((a) => a.id),
     };
   }
 
@@ -418,7 +444,7 @@ export class NetworkManagerService {
   }> {
     const config = this.networkConfigs.get(networkId);
     const graph = this.networks.get(networkId);
-    
+
     if (!config || !graph) {
       return {
         healthy: false,
@@ -434,7 +460,7 @@ export class NetworkManagerService {
     for (const agent of config.agents) {
       const health = this.agentRegistry.getAgentHealth(agent.id);
       agentHealth[agent.id] = health;
-      
+
       if (!health) {
         issues.push(`Agent ${agent.id} is unhealthy`);
       }
@@ -452,27 +478,120 @@ export class NetworkManagerService {
    */
   private extractExecutionPath(result: AgentState): string[] {
     const path: string[] = [];
-    
+
     if (result.metadata?.executionPath) {
       return result.metadata.executionPath as string[];
     }
-    
+
     if (result.metadata?.lastAgent) {
       path.push(result.metadata.lastAgent as string);
     }
-    
+
     return path;
   }
 
   /**
    * Extract token usage from result
    */
-  private extractTokenUsage(result?: AgentState): MultiAgentResult['tokenUsage'] {
+  private extractTokenUsage(
+    result?: AgentState
+  ): MultiAgentResult['tokenUsage'] {
     if (!result?.metadata?.tokenUsage) {
       return undefined;
     }
 
     return result.metadata.tokenUsage as MultiAgentResult['tokenUsage'];
+  }
+
+  /**
+   * Create checkpointer for network if checkpoint configuration is enabled
+   */
+  private async createCheckpointerForNetwork(
+    networkId: string
+  ): Promise<unknown | null> {
+    if (!this.checkpointManager) {
+      this.logger.debug(
+        'CheckpointManager not available - checkpointing disabled'
+      );
+      return null;
+    }
+
+    if (!this.isCheckpointingEnabled()) {
+      this.logger.debug('Checkpointing disabled in configuration');
+      return null;
+    }
+
+    try {
+      // Check if core services are available
+      if (!this.checkpointManager.isCoreServicesAvailable()) {
+        this.logger.warn(
+          'Checkpoint core services not available - using in-memory fallback'
+        );
+        return null;
+      }
+
+      // Get default saver for the network
+      const defaultSaver = this.checkpointManager.getDefaultSaverName();
+      if (!defaultSaver) {
+        this.logger.warn('No default checkpoint saver available');
+        return null;
+      }
+
+      // The checkpointer will be managed internally by the CheckpointManager
+      // We return a simple identifier that LangGraph can use with thread IDs
+      return {
+        saverId: defaultSaver,
+        threadPrefix: this.getCheckpointThreadPrefix(),
+        networkId,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create checkpointer for network ${networkId}:`,
+        error
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Prepare compilation options with checkpointer integration
+   */
+  private async prepareCompilationOptions(
+    originalOptions: AgentNetwork['compilationOptions'],
+    networkId: string
+  ): Promise<AgentNetwork['compilationOptions']> {
+    const options = { ...originalOptions };
+
+    // Add checkpointer if not already specified and checkpointing is enabled
+    if (!options.checkpointer && this.isCheckpointingEnabled()) {
+      const checkpointer = await this.createCheckpointerForNetwork(networkId);
+      if (checkpointer) {
+        options.checkpointer = checkpointer;
+        this.logger.debug(
+          `Added checkpointer to network ${networkId} compilation options`
+        );
+      }
+    }
+
+    return options;
+  }
+
+  /**
+   * Check if checkpointing is enabled in configuration
+   */
+  private isCheckpointingEnabled(): boolean {
+    if (!this.options?.checkpointing) {
+      return false;
+    }
+
+    return this.options.checkpointing.enabled !== false;
+  }
+
+  /**
+   * Get checkpoint thread prefix for this configuration
+   */
+  private getCheckpointThreadPrefix(): string {
+    return this.options?.checkpointing?.defaultThreadPrefix || 'multi-agent';
   }
 
   /**

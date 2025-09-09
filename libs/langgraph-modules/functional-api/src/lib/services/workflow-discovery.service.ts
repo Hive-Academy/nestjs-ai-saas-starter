@@ -1,23 +1,19 @@
+import { DiscoveryService } from '@golevelup/nestjs-discovery';
 import { Injectable, Logger } from '@nestjs/common';
-import {  MetadataScanner } from '@nestjs/core';
+import {
+  EntrypointMetadata,
+  getEntrypointMetadata,
+} from '../decorators/entrypoint.decorator';
+import { getTaskMetadata, TaskMetadata } from '../decorators/task.decorator';
+import {
+  DuplicateWorkflowError,
+  InvalidWorkflowDefinitionError,
+} from '../errors/functional-workflow.errors';
 import {
   FunctionalWorkflowDefinition,
   TaskDefinition,
 } from '../interfaces/functional-workflow.interface';
-import {
-  getEntrypointMetadata,
-  EntrypointMetadata,
-} from '../decorators/entrypoint.decorator';
-import {
-  getTaskMetadata,
-  TaskMetadata,
-} from '../decorators/task.decorator';
-import {
-  InvalidWorkflowDefinitionError,
-  DuplicateWorkflowError,
-} from '../errors/functional-workflow.errors';
 import { WorkflowValidator } from '../validation/workflow-validator';
-import { DiscoveryService } from '@nestjs-plus/discovery';
 
 /**
  * Service for discovering and registering functional workflows from decorated classes
@@ -30,8 +26,7 @@ export class WorkflowDiscoveryService {
 
   constructor(
     private readonly discoveryService: DiscoveryService,
-    private readonly metadataScanner: MetadataScanner,
-    private readonly workflowValidator: WorkflowValidator,
+    private readonly workflowValidator: WorkflowValidator
   ) {}
 
   /**
@@ -40,18 +35,39 @@ export class WorkflowDiscoveryService {
   async discoverWorkflows(): Promise<void> {
     this.logger.log('Starting workflow discovery');
 
-    // Discover all providers that have instances
-    const providers = await this.discoveryService.providers(
-      (discoveredClass) => discoveredClass.instance != null
-    );
+    // Get all providers from the discovery service
+    // Filter providers to only include those that are injectable services
+    const providers = await this.discoveryService.providers((discovered) => {
+      try {
+        return (
+          discovered.instance &&
+          typeof discovered.instance === 'object' &&
+          // Avoid circular dependency by excluding our own services
+          discovered.instance.constructor !== WorkflowDiscoveryService &&
+          discovered.instance.constructor.name !== 'FunctionalWorkflowService'
+        );
+      } catch (error) {
+        this.logger.warn(`Failed to filter provider ${discovered.name}`, error);
+        return false;
+      }
+    });
     let discoveredCount = 0;
 
     for (const provider of providers) {
-      if (!provider.instance || typeof provider.instance !== 'object') {
-        continue;
-      }
-
       try {
+        // Additional safety checks
+        if (!provider.instance || typeof provider.instance !== 'object') {
+          continue;
+        }
+
+        // Skip if instance doesn't have a constructor or name
+        if (
+          !provider.instance.constructor ||
+          !provider.instance.constructor.name
+        ) {
+          continue;
+        }
+
         const workflows = this.extractWorkflowsFromInstance(provider.instance);
 
         for (const workflow of workflows) {
@@ -59,10 +75,13 @@ export class WorkflowDiscoveryService {
           discoveredCount++;
         }
       } catch (error) {
-        this.logger.error(
-          `Failed to extract workflows from ${provider.name}`,
-          error instanceof Error ? error.stack : String(error)
+        this.logger.warn(
+          `Failed to extract workflows from ${
+            provider.name || 'unknown provider'
+          }`,
+          error instanceof Error ? error.message : String(error)
         );
+        // Continue processing other providers instead of failing completely
       }
     }
 
@@ -96,106 +115,143 @@ export class WorkflowDiscoveryService {
   private extractWorkflowsFromInstance(
     instance: object
   ): Array<{ definition: FunctionalWorkflowDefinition; instance: object }> {
-    const methodNames = this.metadataScanner.getAllMethodNames(
-      Object.getPrototypeOf(instance) as object
-    );
-
-    const entrypoints = new Map<string, EntrypointMetadata>();
-    const tasks = new Map<string, TaskMetadata>();
-
-    // Collect all decorated methods
-    for (const methodName of methodNames) {
-      const entrypointMeta = getEntrypointMetadata(instance, methodName);
-      if (entrypointMeta) {
-        entrypoints.set(entrypointMeta.name, entrypointMeta);
+    try {
+      const prototype = Object.getPrototypeOf(instance) as object;
+      if (!prototype) {
+        return [];
       }
 
-      const taskMeta = getTaskMetadata(instance, methodName);
-      if (taskMeta) {
-        tasks.set(taskMeta.name, taskMeta);
-      }
-    }
-
-    // If no decorated methods found, return empty array
-    if (entrypoints.size === 0 && tasks.size === 0) {
-      return [];
-    }
-
-    // If we have tasks but no entrypoint, skip this class
-    if (entrypoints.size === 0 && tasks.size > 0) {
-      return [];
-    }
-
-    // Validate that we have exactly one entrypoint
-    if (entrypoints.size !== 1) {
-      throw new InvalidWorkflowDefinitionError(
-        `Class ${instance.constructor.name} must have exactly one @Entrypoint method, found ${entrypoints.size}`,
-        { className: instance.constructor.name, entrypointCount: entrypoints.size }
+      const methodNames = Object.getOwnPropertyNames(prototype).filter(
+        (name) => {
+          try {
+            return (
+              name !== 'constructor' &&
+              typeof (prototype as any)[name] === 'function'
+            );
+          } catch (error) {
+            // Skip methods that cause errors when accessed
+            return false;
+          }
+        }
       );
-    }
 
-    const entrypoint = Array.from(entrypoints.values())[0];
-    const workflowName = instance.constructor.name;
+      const entrypoints = new Map<string, EntrypointMetadata>();
+      const tasks = new Map<string, TaskMetadata>();
 
-    // Build task definitions
-    const allTasks = new Map<string, TaskDefinition>();
+      // Collect all decorated methods
+      for (const methodName of methodNames) {
+        try {
+          const entrypointMeta = getEntrypointMetadata(instance, methodName);
+          if (entrypointMeta) {
+            entrypoints.set(entrypointMeta.name, entrypointMeta);
+          }
 
-    // Add entrypoint as a task
-    allTasks.set(entrypoint.name, {
-      name: entrypoint.name,
-      methodName: entrypoint.methodName,
-      dependencies: [],
-      isEntrypoint: true,
-      timeout: entrypoint.timeout,
-      retryCount: entrypoint.retryCount,
-      errorHandler: entrypoint.errorHandler,
-      metadata: entrypoint.metadata,
-    });
-
-    // Add all other tasks
-    for (const task of tasks.values()) {
-      allTasks.set(task.name, {
-        name: task.name,
-        methodName: task.methodName,
-        dependencies: task.dependsOn,
-        isEntrypoint: false,
-        timeout: task.timeout,
-        retryCount: task.retryCount,
-        errorHandler: task.errorHandler,
-        metadata: task.metadata,
-      });
-    }
-
-    // Build dependencies map
-    const dependencies = new Map<string, readonly string[]>();
-    for (const [taskName, task] of allTasks) {
-      dependencies.set(taskName, task.dependencies);
-    }
-
-    // Build error handlers map
-    const errorHandlers = new Map<string, string>();
-    for (const [taskName, task] of allTasks) {
-      if (task.errorHandler) {
-        errorHandlers.set(taskName, task.errorHandler);
+          const taskMeta = getTaskMetadata(instance, methodName);
+          if (taskMeta) {
+            tasks.set(taskMeta.name, taskMeta);
+          }
+        } catch (error) {
+          // Skip methods that cause errors when getting metadata
+          continue;
+        }
       }
+
+      // If no decorated methods found, return empty array
+      if (entrypoints.size === 0 && tasks.size === 0) {
+        return [];
+      }
+
+      // If we have tasks but no entrypoint, skip this class
+      if (entrypoints.size === 0 && tasks.size > 0) {
+        return [];
+      }
+
+      // Validate that we have exactly one entrypoint
+      if (entrypoints.size !== 1) {
+        throw new InvalidWorkflowDefinitionError(
+          `Class ${instance.constructor.name} must have exactly one @Entrypoint method, found ${entrypoints.size}`,
+          {
+            className: instance.constructor.name,
+            entrypointCount: entrypoints.size,
+          }
+        );
+      }
+
+      const entrypoint = Array.from(entrypoints.values())[0];
+      const workflowName = instance.constructor.name;
+
+      // Build task definitions
+      const allTasks = new Map<string, TaskDefinition>();
+
+      // Add entrypoint as a task
+      allTasks.set(entrypoint.name, {
+        name: entrypoint.name,
+        methodName: entrypoint.methodName,
+        dependencies: [],
+        isEntrypoint: true,
+        timeout: entrypoint.timeout,
+        retryCount: entrypoint.retryCount,
+        errorHandler: entrypoint.errorHandler,
+        metadata: entrypoint.metadata,
+      });
+
+      // Add all other tasks
+      for (const task of tasks.values()) {
+        allTasks.set(task.name, {
+          name: task.name,
+          methodName: task.methodName,
+          dependencies: task.dependsOn,
+          isEntrypoint: false,
+          timeout: task.timeout,
+          retryCount: task.retryCount,
+          errorHandler: task.errorHandler,
+          metadata: task.metadata,
+        });
+      }
+
+      // Build dependencies map
+      const dependencies = new Map<string, readonly string[]>();
+      for (const [taskName, task] of allTasks) {
+        dependencies.set(taskName, task.dependencies);
+      }
+
+      // Build error handlers map
+      const errorHandlers = new Map<string, string>();
+      for (const [taskName, task] of allTasks) {
+        if (task.errorHandler) {
+          errorHandlers.set(taskName, task.errorHandler);
+        }
+      }
+
+      const definition: FunctionalWorkflowDefinition = {
+        name: workflowName,
+        entrypoint: entrypoint.name,
+        tasks: allTasks,
+        dependencies,
+        errorHandlers,
+        metadata: {},
+      };
+
+      return [{ definition, instance }];
+    } catch (error) {
+      // Return empty array if any error occurs during extraction
+      this.logger.debug(
+        `Error extracting workflows from ${
+          instance.constructor?.name || 'unknown'
+        }:`,
+        error
+      );
+      return [];
     }
-
-    const definition: FunctionalWorkflowDefinition = {
-      name: workflowName,
-      entrypoint: entrypoint.name,
-      tasks: allTasks,
-      dependencies,
-      errorHandlers,
-      metadata: {},
-    };
-
-    return [{ definition, instance }];
   }
 
   /**
    * Registers a workflow definition
    */
-  private registerWorkflow(definition: FunctionalWorkflowDefinition, instance: object): void {
+  private registerWorkflow(
+    definition: FunctionalWorkflowDefinition,
+    instance: object
+  ): void {
     if (this.workflows.has(definition.name)) {
       throw new DuplicateWorkflowError(definition.name, {
         existingWorkflow: this.workflows.get(definition.name),

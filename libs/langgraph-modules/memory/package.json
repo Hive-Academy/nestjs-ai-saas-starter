@@ -1,6 +1,6 @@
 {
   "name": "@hive-academy/langgraph-memory",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Standalone NestJS Memory Module With Adapters for VectorStore service and GraphMemory service",
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
@@ -15,8 +15,14 @@
     }
   },
   "files": [
-    "dist",
-    "!**/*.tsbuildinfo"
+    "index.*.js",
+    "index.*.js.map",
+    "index.d.ts",
+    "index.d.ts.map",
+    "src/**/*.d.ts",
+    "src/**/*.d.ts.map",
+    "*.md",
+    "!*.tsbuildinfo"
   ],
   "keywords": [
     "nestjs",

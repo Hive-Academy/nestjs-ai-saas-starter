@@ -134,7 +134,7 @@
       "libs/langgraph-modules/platform"
     ],
     "version": {
-      "preVersionCommand": "npx nx run-many -t build",
+      "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",
       "conventionalCommits": true,
       "git": {
         "commit": true,

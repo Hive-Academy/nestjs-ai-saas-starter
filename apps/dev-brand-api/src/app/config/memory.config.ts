@@ -1,4 +1,4 @@
-import type { MemoryModuleOptions } from '@hive-academy/langgraph-modules-memory';
+import type { MemoryModuleOptions } from '@hive-academy/langgraph-memory';
 
 /**
  * Memory Module Configuration for dev-brand-api
@@ -13,26 +13,35 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
     // Memory configuration options
     retention: {
       maxEntries: parseInt(process.env.MEMORY_MAX_ENTRIES || '10000'),
-      ttlSeconds: parseInt(process.env.MEMORY_TTL_SECONDS || '86400'), // 24 hours
-      evictionStrategy: (process.env.MEMORY_EVICTION_STRATEGY as any) || 'lru',
+      maxAge: parseInt(process.env.MEMORY_MAX_AGE_MS || '86400000'), // 24 hours in milliseconds
+      maxPerThread: parseInt(process.env.MEMORY_MAX_PER_THREAD || '1000'),
+      maxTotal: parseInt(process.env.MEMORY_MAX_TOTAL || '50000'),
+      cleanupInterval: parseInt(
+        process.env.MEMORY_CLEANUP_INTERVAL_MS || '3600000'
+      ), // 1 hour in milliseconds
+      evictionStrategy:
+        (process.env.MEMORY_EVICTION_STRATEGY as
+          | 'lru'
+          | 'lfu'
+          | 'fifo'
+          | 'importance') || 'lru',
     },
 
-    // Summarization settings
+    // Auto-summarization settings
+    enableAutoSummarization:
+      process.env.MEMORY_SUMMARIZATION_ENABLED === 'true',
     summarization: {
-      enabled: process.env.MEMORY_SUMMARIZATION_ENABLED === 'true',
+      maxMessages: parseInt(process.env.MEMORY_MAX_MESSAGES || '100'),
       strategy:
-        (process.env.MEMORY_SUMMARIZATION_STRATEGY as any) || 'extractive',
-      maxSummaryLength: parseInt(
-        process.env.MEMORY_MAX_SUMMARY_LENGTH || '500'
-      ),
-      triggerThreshold: parseInt(process.env.MEMORY_TRIGGER_THRESHOLD || '100'),
+        (process.env.MEMORY_SUMMARIZATION_STRATEGY as
+          | 'recent'
+          | 'important'
+          | 'balanced') || 'balanced',
     },
 
     // ChromaDB collection settings (used by ChromaVectorAdapter)
     chromadb: {
-      collectionName:
-        process.env.MEMORY_CHROMADB_COLLECTION || 'memory-entries',
-      embeddingFunction: process.env.MEMORY_EMBEDDING_FUNCTION || 'default',
+      collection: process.env.MEMORY_CHROMADB_COLLECTION || 'memory-entries',
     },
 
     // Neo4j database settings (used by Neo4jGraphAdapter)
@@ -41,34 +50,10 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
         process.env.MEMORY_NEO4J_DATABASE ||
         process.env.NEO4J_DATABASE ||
         'neo4j',
-      nodeLabels: {
-        user: 'User',
-        memory: 'MemoryEntry',
-        context: 'Context',
-      },
-      relationshipTypes: {
-        hasMemory: 'HAS_MEMORY',
-        relatedTo: 'RELATED_TO',
-        inContext: 'IN_CONTEXT',
-      },
     },
 
-    // Performance settings
-    performance: {
-      batchSize: parseInt(process.env.MEMORY_BATCH_SIZE || '100'),
-      concurrencyLimit: parseInt(process.env.MEMORY_CONCURRENCY_LIMIT || '10'),
-      cacheEnabled: process.env.MEMORY_CACHE_ENABLED !== 'false',
-      cacheTtlSeconds: parseInt(process.env.MEMORY_CACHE_TTL_SECONDS || '300'), // 5 minutes
-    },
-
-    // Feature flags
-    features: {
-      vectorSearch: process.env.MEMORY_VECTOR_SEARCH_ENABLED !== 'false',
-      graphTraversal: process.env.MEMORY_GRAPH_TRAVERSAL_ENABLED !== 'false',
-      contextAwareness:
-        process.env.MEMORY_CONTEXT_AWARENESS_ENABLED !== 'false',
-      realTimeUpdates: process.env.MEMORY_REAL_TIME_UPDATES_ENABLED === 'true',
-    },
+    // Collection name for memory entries
+    collection: process.env.MEMORY_COLLECTION_NAME || 'dev-brand-memory',
   };
 }
 
@@ -81,28 +66,24 @@ export function getMemoryDevConfig(): Omit<MemoryModuleOptions, 'adapters'> {
 
   return {
     ...baseConfig,
+    collection: 'dev-brand-memory-dev',
+    enableAutoSummarization: true, // Always enabled in dev
     retention: {
       ...baseConfig.retention,
       maxEntries: 1000, // Smaller limit for dev
-      ttlSeconds: 3600, // 1 hour for dev
+      maxAge: 3600000, // 1 hour for dev (in milliseconds)
+      maxPerThread: 100, // Lower limit for dev
+      cleanupInterval: 600000, // 10 minutes for dev
     },
     summarization: {
-      ...baseConfig.summarization,
-      enabled: true, // Always enabled in dev
-      triggerThreshold: 10, // Lower threshold for testing
+      maxMessages: 10, // Lower threshold for testing
+      strategy: 'balanced',
     },
-    performance: {
-      ...baseConfig.performance,
-      batchSize: 10, // Smaller batches for dev
-      concurrencyLimit: 3, // Lower concurrency for dev
-      cacheEnabled: true,
-      cacheTtlSeconds: 60, // 1 minute cache for rapid dev
+    chromadb: {
+      collection: 'memory-entries-dev',
     },
-    features: {
-      vectorSearch: true,
-      graphTraversal: true,
-      contextAwareness: true,
-      realTimeUpdates: true, // All features enabled for demo
+    neo4j: {
+      database: 'neo4j',
     },
   };
 }

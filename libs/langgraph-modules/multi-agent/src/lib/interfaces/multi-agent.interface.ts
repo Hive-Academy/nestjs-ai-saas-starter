@@ -10,27 +10,27 @@ export interface AgentState {
    * Message history - core component of LangGraph multi-agent systems
    */
   messages: BaseMessage[];
-  
+
   /**
    * Next agent to execute (used by supervisor pattern)
    */
   next?: string;
-  
+
   /**
    * Current agent executing
    */
   current?: string;
-  
+
   /**
    * Shared scratch pad for agent collaboration
    */
   scratchpad?: string;
-  
+
   /**
    * Task description passed between agents
    */
   task?: string;
-  
+
   /**
    * Agent metadata and context
    */
@@ -53,12 +53,12 @@ export interface AgentCommand {
    * Target node/agent to navigate to
    */
   goto: string;
-  
+
   /**
    * State updates to apply
    */
   update?: Partial<AgentState>;
-  
+
   /**
    * Graph context (PARENT, current, etc.)
    */
@@ -73,12 +73,12 @@ export interface RoutingDecision {
    * Next agent to execute
    */
   next: string;
-  
+
   /**
    * Reasoning for the decision
    */
   reasoning?: string;
-  
+
   /**
    * Task description for next agent
    */
@@ -138,22 +138,22 @@ export interface HandoffTool {
    * Tool name (e.g., "transfer_to_researcher")
    */
   name: string;
-  
+
   /**
    * Tool description for LLM
    */
   description: string;
-  
+
   /**
    * Target agent for handoff
    */
   targetAgent: string;
-  
+
   /**
    * Tool schema for validation
    */
   schema?: z.ZodSchema;
-  
+
   /**
    * Context filter function
    */
@@ -168,12 +168,12 @@ export interface SupervisorConfig {
    * Supervisor system prompt
    */
   systemPrompt: string;
-  
+
   /**
    * Worker agents managed by supervisor
    */
   workers: readonly string[];
-  
+
   /**
    * LLM configuration for routing decisions
    */
@@ -182,7 +182,7 @@ export interface SupervisorConfig {
     temperature?: number;
     maxTokens?: number;
   };
-  
+
   /**
    * Routing tool configuration
    */
@@ -190,12 +190,12 @@ export interface SupervisorConfig {
     name: string;
     description: string;
   };
-  
+
   /**
    * Enable forward message tool
    */
   enableForwardMessage?: boolean;
-  
+
   /**
    * Remove handoff messages from worker context
    */
@@ -210,7 +210,7 @@ export interface SwarmConfig {
    * Enable dynamic handoffs between any agents
    */
   enableDynamicHandoffs: boolean;
-  
+
   /**
    * Message history management
    */
@@ -219,18 +219,18 @@ export interface SwarmConfig {
      * Remove handoff messages from agent context
      */
     removeHandoffMessages: boolean;
-    
+
     /**
      * Add agent attribution to messages
      */
     addAgentAttribution: boolean;
-    
+
     /**
      * Maximum message history per agent
      */
     maxMessages?: number;
   };
-  
+
   /**
    * Context isolation settings
    */
@@ -239,7 +239,7 @@ export interface SwarmConfig {
      * Enable per-agent memory isolation
      */
     enabled: boolean;
-    
+
     /**
      * Shared context keys accessible to all agents
      */
@@ -255,12 +255,12 @@ export interface HierarchicalConfig {
    * Hierarchy levels (top-level supervisors to leaf workers)
    */
   levels: ReadonlyArray<readonly string[]>;
-  
+
   /**
    * Escalation rules
    */
   escalationRules?: EscalationRule[];
-  
+
   /**
    * Parent graph navigation rules
    */
@@ -275,12 +275,12 @@ export interface EscalationRule {
    * Condition for escalation
    */
   condition: (state: AgentState) => boolean;
-  
+
   /**
    * Target level for escalation
    */
   targetLevel: number;
-  
+
   /**
    * Escalation message
    */
@@ -295,12 +295,12 @@ export interface ParentGraphRule {
    * Condition for parent navigation
    */
   condition: (state: AgentState) => boolean;
-  
+
   /**
    * Target agent in parent graph
    */
   targetAgent: string;
-  
+
   /**
    * Command to execute
    */
@@ -315,27 +315,27 @@ export interface AgentNetwork {
    * Network identifier
    */
   id: string;
-  
+
   /**
    * Network type
    */
   type: 'supervisor' | 'swarm' | 'hierarchical';
-  
+
   /**
    * Agent definitions in the network
    */
   agents: readonly AgentDefinition[];
-  
+
   /**
    * Network-specific configuration
    */
   config: SupervisorConfig | SwarmConfig | HierarchicalConfig;
-  
+
   /**
    * State schema definition
    */
   stateSchema?: z.ZodSchema<AgentState>;
-  
+
   /**
    * Graph compilation options
    */
@@ -344,17 +344,37 @@ export interface AgentNetwork {
      * Enable state interrupts for human-in-the-loop
      */
     enableInterrupts?: boolean;
-    
+
     /**
      * Checkpointer for persistence
      */
     checkpointer?: unknown;
-    
+
     /**
      * Debug mode
      */
     debug?: boolean;
   };
+}
+
+/**
+ * Checkpointing configuration for multi-agent networks
+ */
+export interface CheckpointingConfig {
+  /**
+   * Enable checkpointing globally
+   */
+  enabled: boolean;
+
+  /**
+   * Enable checkpointing for all networks by default
+   */
+  enableForAllNetworks: boolean;
+
+  /**
+   * Default thread prefix for checkpoint storage
+   */
+  defaultThreadPrefix: string;
 }
 
 /**
@@ -370,7 +390,7 @@ export interface MultiAgentModuleOptions {
     temperature?: number;
     maxTokens?: number;
   };
-  
+
   /**
    * Message history limits
    */
@@ -378,7 +398,7 @@ export interface MultiAgentModuleOptions {
     maxMessages?: number;
     pruneStrategy?: 'fifo' | 'lifo' | 'summarize';
   };
-  
+
   /**
    * Streaming configuration
    */
@@ -386,7 +406,7 @@ export interface MultiAgentModuleOptions {
     enabled: boolean;
     modes?: Array<'values' | 'updates' | 'messages'>;
   };
-  
+
   /**
    * Debug configuration
    */
@@ -394,7 +414,7 @@ export interface MultiAgentModuleOptions {
     enabled: boolean;
     logLevel?: 'debug' | 'info' | 'warn' | 'error';
   };
-  
+
   /**
    * Performance optimizations
    */
@@ -403,17 +423,22 @@ export interface MultiAgentModuleOptions {
      * Enable token optimization
      */
     tokenOptimization?: boolean;
-    
+
     /**
      * Enable context window management
      */
     contextWindowManagement?: boolean;
-    
+
     /**
      * Enable message forwarding for supervisors
      */
     enableMessageForwarding?: boolean;
   };
+
+  /**
+   * Checkpointing configuration
+   */
+  checkpointing?: CheckpointingConfig;
 }
 
 /**
@@ -421,7 +446,9 @@ export interface MultiAgentModuleOptions {
  */
 export interface MultiAgentModuleAsyncOptions {
   imports?: any[];
-  useFactory?: (...args: any[]) => Promise<MultiAgentModuleOptions> | MultiAgentModuleOptions;
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<MultiAgentModuleOptions> | MultiAgentModuleOptions;
   inject?: any[];
 }
 
@@ -433,27 +460,27 @@ export interface MultiAgentResult {
    * Final state of the workflow
    */
   finalState: AgentState;
-  
+
   /**
    * Execution path taken
    */
   executionPath: string[];
-  
+
   /**
    * Total execution time
    */
   executionTime: number;
-  
+
   /**
    * Success status
    */
   success: boolean;
-  
+
   /**
    * Error if execution failed
    */
   error?: Error;
-  
+
   /**
    * Token usage statistics
    */
@@ -472,7 +499,7 @@ export const MULTI_AGENT_CONSTANTS = {
    * Special node name for ending execution
    */
   END: '__end__',
-  
+
   /**
    * Default supervisor system prompt (2025 optimized)
    */
@@ -485,17 +512,17 @@ When finished, respond with FINISH.
 
 Workers:
 {worker_descriptions}`,
-  
+
   /**
    * Default routing tool name
    */
   DEFAULT_ROUTING_TOOL: 'route',
-  
+
   /**
    * Default handoff tool prefix
    */
   DEFAULT_HANDOFF_TOOL_PREFIX: 'transfer_to_',
-  
+
   /**
    * Default forward message tool
    */
@@ -549,13 +576,17 @@ export const AgentDefinitionSchema = z.object({
   description: z.string().min(1),
   systemPrompt: z.string().optional(),
   tools: z.array(z.unknown()).optional(),
-  handoffTools: z.array(z.object({
-    name: z.string(),
-    description: z.string(),
-    targetAgent: z.string(),
-    schema: z.unknown().optional(),
-    contextFilter: z.function().optional(),
-  })).optional(),
+  handoffTools: z
+    .array(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        targetAgent: z.string(),
+        schema: z.unknown().optional(),
+        contextFilter: z.function().optional(),
+      })
+    )
+    .optional(),
   nodeFunction: z.function(),
   metadata: z.record(z.unknown()).optional(),
 });
@@ -563,15 +594,19 @@ export const AgentDefinitionSchema = z.object({
 export const SupervisorConfigSchema = z.object({
   systemPrompt: z.string(),
   workers: z.array(z.string()).min(1),
-  llm: z.object({
-    model: z.string(),
-    temperature: z.number().optional(),
-    maxTokens: z.number().optional(),
-  }).optional(),
-  routingTool: z.object({
-    name: z.string(),
-    description: z.string(),
-  }).optional(),
+  llm: z
+    .object({
+      model: z.string(),
+      temperature: z.number().optional(),
+      maxTokens: z.number().optional(),
+    })
+    .optional(),
+  routingTool: z
+    .object({
+      name: z.string(),
+      description: z.string(),
+    })
+    .optional(),
   enableForwardMessage: z.boolean().optional(),
   removeHandoffMessages: z.boolean().optional(),
 });
@@ -599,11 +634,13 @@ export const AgentNetworkSchema = z.object({
     z.object({ levels: z.array(z.array(z.string())) }), // Simplified hierarchical
   ]),
   stateSchema: z.unknown().optional(),
-  compilationOptions: z.object({
-    enableInterrupts: z.boolean().optional(),
-    checkpointer: z.unknown().optional(),
-    debug: z.boolean().optional(),
-  }).optional(),
+  compilationOptions: z
+    .object({
+      enableInterrupts: z.boolean().optional(),
+      checkpointer: z.unknown().optional(),
+      debug: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const RoutingDecisionSchema = z.object({
