@@ -25,3 +25,9 @@ export interface ConfidenceThreshold {
   medium: number;
   high: number;
 }
+
+export interface HitlModuleOptions {
+  defaultTimeout?: number;
+  confidenceThreshold?: number;
+  enabled?: boolean;
+}

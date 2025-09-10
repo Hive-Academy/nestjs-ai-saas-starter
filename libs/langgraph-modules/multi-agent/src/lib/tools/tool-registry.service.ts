@@ -26,7 +26,10 @@ export class ToolRegistryService implements OnModuleInit {
    */
   private async discoverTools() {
     // Get all providers from the discovery service
-    const providers = await this.discoveryService.providers;
+    const providers = await this.discoveryService.providers(
+      (discovered) =>
+        discovered.instance && typeof discovered.instance === 'object'
+    );
 
     for (const wrapper of providers) {
       const { instance } = wrapper;

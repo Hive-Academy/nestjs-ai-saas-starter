@@ -1,24 +1,32 @@
-import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable } from 'rxjs';
 import { DeclarativeWorkflowBase } from './declarative-workflow.base';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import { WorkflowGraphBuilderService, GraphBuilderOptions } from '../core/workflow-graph-builder.service';
+import {
+  WorkflowGraphBuilderService,
+  GraphBuilderOptions,
+} from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import {
   TokenStreamingService,
   WebSocketBridgeService,
-  EventStreamProcessorService
+  EventStreamProcessorService,
 } from '@hive-academy/langgraph-streaming';
-import type {
-  WorkflowState,
-} from '../interfaces';
+import type { WorkflowState } from '../interfaces';
 import type {
   StreamUpdate,
   StreamTokenMetadata,
   StreamEventMetadata,
   StreamProgressMetadata,
+  StreamTokenDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
 import { StreamEventType } from '@hive-academy/langgraph-streaming';
 
@@ -136,7 +144,10 @@ export abstract class StreamingWorkflowBase<
 {
   protected override readonly logger: Logger;
   private streamingConfiguration?: StreamingConfiguration;
-  private readonly executionContexts = new Map<string, StreamingExecutionContext>();
+  private readonly executionContexts = new Map<
+    string,
+    StreamingExecutionContext
+  >();
 
   constructor(
     @Inject(EventEmitter2)
@@ -160,7 +171,14 @@ export abstract class StreamingWorkflowBase<
     @Inject(WebSocketBridgeService)
     protected readonly webSocketBridgeService?: WebSocketBridgeService
   ) {
-    super(eventEmitter, graphBuilder, subgraphManager, metadataProcessor, streamService, eventProcessor);
+    super(
+      eventEmitter,
+      graphBuilder,
+      subgraphManager,
+      metadataProcessor,
+      streamService,
+      eventProcessor
+    );
     this.logger = new Logger(this.constructor.name);
   }
 
@@ -262,7 +280,10 @@ export abstract class StreamingWorkflowBase<
 
       // Get workflow definition and build graph
       const definition = this.getWorkflowDefinition();
-      const graph = await this.graphBuilder.buildFromDefinition(definition, this.getGraphBuilderOptions());
+      const graph = await this.graphBuilder.buildFromDefinition(
+        definition,
+        this.getGraphBuilderOptions()
+      );
 
       // Stream execution with enhanced workflow stream service
       yield* this.streamService.streamExecution(
@@ -558,10 +579,17 @@ export abstract class StreamingWorkflowBase<
       if (context.tokenStreaming && this.tokenStreamingService) {
         for (const [nodeId, config] of this.streamingConfiguration!
           .tokenStreaming.nodes) {
+          // Convert StreamTokenMetadata to StreamTokenDecoratorMetadata
+          const decoratorConfig: StreamTokenDecoratorMetadata = {
+            ...config,
+            methodName: nodeId, // Use nodeId as methodName for workflow nodes
+            enabled: config.enabled ?? true, // Default to enabled if not specified
+          };
+
           await this.tokenStreamingService.initializeTokenStream({
             executionId,
             nodeId,
-            config,
+            config: decoratorConfig,
           });
         }
       }

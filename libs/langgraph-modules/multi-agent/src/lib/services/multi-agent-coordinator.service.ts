@@ -370,7 +370,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         `Retrieved ${checkpoints.length} checkpoints for network ${networkId}`
       );
 
-      return checkpoints;
+      return [...checkpoints]; // Convert readonly array to mutable array
     } catch (error) {
       this.logger.error(
         `Failed to get checkpoints for network ${networkId}:`,
@@ -497,7 +497,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         oldestCheckpoint: timestamps[0],
         newestCheckpoint: timestamps[timestamps.length - 1],
         totalSize: checkpoints.reduce(
-          (sum, [, , metadata]) => sum + (metadata?.size || 0),
+          (sum, [, , metadata]) =>
+            sum + (typeof metadata?.size === 'number' ? metadata.size : 0),
           0
         ),
       };

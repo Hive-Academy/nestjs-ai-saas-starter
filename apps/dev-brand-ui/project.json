@@ -27,15 +27,34 @@
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "500kb",
-              "maximumError": "1mb"
+              "maximumWarning": "800kb",
+              "maximumError": "1.5mb"
             },
             {
               "type": "anyComponentStyle",
               "maximumWarning": "4kb",
               "maximumError": "8kb"
+            },
+            {
+              "type": "bundle",
+              "name": "three",
+              "maximumWarning": "500kb",
+              "maximumError": "800kb"
+            },
+            {
+              "type": "bundle",
+              "name": "d3",
+              "maximumWarning": "200kb",
+              "maximumError": "400kb"
             }
           ],
+          "optimization": {
+            "scripts": true,
+            "styles": true,
+            "fonts": true
+          },
+          "namedChunks": true,
+          "extractLicenses": false,
           "outputHashing": "all"
         },
         "development": {
@@ -87,6 +106,26 @@
         "port": 4200,
         "staticFilePath": "dist/apps/dev-brand-ui/browser",
         "spa": true
+      }
+    },
+    "analyze": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/dev-brand-ui",
+        "browser": "apps/dev-brand-ui/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/dev-brand-ui/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/dev-brand-ui/public"
+          }
+        ],
+        "styles": ["apps/dev-brand-ui/src/styles.css"],
+        "namedChunks": true,
+        "outputHashing": "none",
+        "verbose": true
       }
     }
   }

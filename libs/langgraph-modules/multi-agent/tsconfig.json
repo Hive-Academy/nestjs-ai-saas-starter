@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../checkpoint"
+    },
+    {
       "path": "../core"
     },
     {

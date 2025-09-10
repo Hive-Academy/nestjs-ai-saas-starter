@@ -12,9 +12,6 @@
   "references": [
     {
       "path": "../core/tsconfig.lib.json"
-    },
-    {
-      "path": "../checkpoint/tsconfig.lib.json"
     }
   ]
 }
