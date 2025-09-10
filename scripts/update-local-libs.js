@@ -107,16 +107,6 @@ function copyDirectory(src, dest) {
   }
 }
 
-function getAffectedLibraries() {
-  log('Getting affected libraries...', 'info');
-
-  // For now, always return all libraries to ensure consistent builds
-  // The nx print-affected command requires proper git configuration
-  // and base/head references which may not be available in all scenarios
-  log('Building all libraries to ensure consistency', 'info');
-  return HIVE_LIBRARIES;
-}
-
 function verifyLibraryStructure(librariesToCheck = HIVE_LIBRARIES) {
   log('Verifying library structure...', 'info');
 
@@ -315,7 +305,7 @@ Examples:
 This script will:
 1. Detect affected libraries using Nx (or build all with --force)
 2. Build only the changed/affected libraries
-3. Remove old packages from node_modules/@hive-academy  
+3. Remove old packages from node_modules/@hive-academy
 4. Copy fresh builds from dist/libs
 5. Verify the installation
 

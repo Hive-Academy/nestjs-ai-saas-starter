@@ -1,0 +1,373 @@
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
+
+> @nestjs-ai-saas-starter/source@0.0.0 api
+> cd apps/dev-brand-api && npm run build && npm run start
+
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
+
+> @nestjs-ai-saas-starter/dev-brand-api@0.0.1 build
+> npx nx run dev-brand-api:build
+
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
+(node:38928) [DEP0180] DeprecationWarning: fs.Stats constructor is deprecated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+> nx run dev-brand-api:build:production
+
+assets by path *.json 212 KiB
+  asset package-lock.json 210 KiB [emitted]
+  asset package.json 1.75 KiB [emitted]
+asset main.js 60.9 KiB [emitted] [minimized] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: src/assets/.gitkeep] [copied]
+runtime modules 88 bytes 1 module
+modules by path ./src/ 131 KiB 24 modules
+modules by path external "@hive-academy/ 546 bytes
+  external "@hive-academy/nestjs-chromadb" 42 bytes [built] [code generated]
+  external "@hive-academy/nestjs-neo4j" 42 bytes [built] [code generated]
+  external "@hive-academy/nestjs-langgraph" 42 bytes [built] [code generated]
+  + 10 modules
+modules by path external "@nestjs/ 210 bytes
+  external "@nestjs/common" 42 bytes [built] [code generated]
+  external "@nestjs/core" 42 bytes [built] [code generated]
+  external "@nestjs/swagger" 42 bytes [built] [code generated]
+  external "@nestjs/config" 42 bytes [built] [code generated]
+  external "@nestjs/terminus" 42 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+WARNING in ./src/app/controllers/health.controller.ts 198:16-36
+Critical dependency: the request of a dependency is an expression
+ @ ./src/app/app.module.ts 48:28-70
+ @ ./src/main.ts 10:21-48
+1 warning has detailed information that is not shown.
+Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.
+webpack 5.101.3 compiled with 1 warning in 1924 ms
+
+
+
+ NX   Successfully ran target build for project dev-brand-api
+
+
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
+
+> @nestjs-ai-saas-starter/dev-brand-api@0.0.1 start
+> node dist/main.js
+
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[MetricsCollectorService] [39m[32mMetricsCollectorService initialized with batch processing[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[AlertingService] [39m[32mAlertingService initialized with 30s evaluation interval[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[HealthCheckService] [39m[32mHealth check registered: memory[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[HealthCheckService] [39m[32mHealth check registered: cpu[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[HealthCheckService] [39m[32mHealth check registered: uptime[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [95m  DEBUG[39m [38;5;3m[HealthCheckService] [39m[95mDefault system health checks registered[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[HealthCheckService] [39m[32mHealthCheckService initialized with 60s monitoring interval[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[PerformanceTrackerService] [39m[32mPerformanceTrackerService initialized[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [95m  DEBUG[39m [38;5;3m[DashboardService] [39m[95mMock metric data initialized[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[DashboardService] [39m[32mDashboardService initialized[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[LLMProviderFactory] [39m[32mCreated OpenAI provider with model: gpt-3.5-turbo[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[MonitoringFacadeService] [39m[32mMonitoringFacadeService initialized[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mNestjsLanggraphModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHttpModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDiscoveryModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLanggraphModulesMonitoringModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEventEmitterModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mEventEmitterModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTerminusModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[EmbeddingService] [39m[32mInitialized huggingface embedding provider[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStreamingModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHitlModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPlatformModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mWorkflowEngineModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [95m  DEBUG[39m [38;5;3m[Neo4jGraphAdapter] [39m[95mNeo4jGraphAdapter initialized with Neo4jService[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mNeo4jModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [95m  DEBUG[39m [38;5;3m[MemoryGraphService] [39m[95mMemoryGraphService initialized with configuration[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [95m  DEBUG[39m [38;5;3m[MemoryGraphService] [39mObject(2) {
+  neo4jDatabase: [32m'neo4j'[39m,
+  enableAutoSummarization: [33mfalse[39m
+}
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLanggraphModulesCheckpointModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mFunctionalApiModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTimeTravelModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMultiAgentModule dependencies initialized[39m[38;5;3m +0ms[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [95m  DEBUG[39m [38;5;3m[ChromaVectorAdapter] [39m[95mChromaVectorAdapter initialized with ChromaDBService[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChromaDBModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[AdapterTestService] [39m[32m✅ 10/10 child module services injected successfully![39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[AdapterTestService] [39m[32mAvailable services: checkpoint, memory, multiAgent, hitl, streaming, functionalApi, platform, timeTravel, monitoring, workflowEngine[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMemoryModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAdapterTestController {/api/test/modules}:[39m[38;5;3m +178ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/test/modules/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/test/modules/comprehensive, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/test/modules/injection, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/test/modules/memory, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/test/modules/checkpoint, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCheckpointExamplesController {/api/checkpoint-demo}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/enabled, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/disabled, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/multi-agent, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/time-travel, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/comparison, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/checkpoint-demo/info, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/api/api/health}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/api/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/api/health/detailed, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/api/health/libraries, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:42 AM [32m    LOG[39m [38;5;3m[Neo4jConnectionService] [39m[32mSuccessfully connected to Neo4j database[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:46 AM [95m  DEBUG[39m [38;5;3m[CheckpointSaverFactory] [39m[95mCreating checkpoint saver of type: memory[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[CheckpointSaverFactory] [39m[95mMemory checkpoint saver created successfully[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointRegistryService] [39m[32mSet default checkpoint saver: default[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointRegistryService] [39m[32mRegistered checkpoint saver: default (default)[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointManagerService] [39m[32mInitialized memory checkpoint saver: default[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointManagerService] [39m[32mCheckpoint system initialized with 1 saver(s)[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointCleanupService] [39m[32mCheckpoint cleanup scheduler started (interval: 1000ms)[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointHealthService] [39m[32mHealth monitoring started (interval: 30000ms)[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[CheckpointManagerService] [39m[32mCheckpoint background services started: cleanup, health monitoring[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[WorkflowDiscoveryService] [39m[32mStarting workflow discovery[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[WorkflowDiscoveryService] [39m[32mDiscovered 0 functional workflows[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[TokenStreamingService] [39m[32mInitializing TokenStreamingService[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[WebSocketBridgeService] [39m[32mInitializing WebSocketBridgeService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[WebSocketBridgeService] [39m[95mToken stream integration setup completed[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[WebSocketBridgeService] [39m[95mWorkflow stream integration setup completed[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[HumanApprovalService] [39m[32mHuman Approval Service initialized[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[ConfidenceEvaluatorService] [39m[32mConfidence Evaluator Service initialized[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ConfidenceEvaluatorService] [39m[95mLoaded 2 historical patterns[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[ToolDiscoveryService] [39m[32mStarting comprehensive tool discovery[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[MultiAgentCoordinatorService] [39m[32mMulti-agent coordinator service initialized with SOLID architecture[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[LlmProviderService] [39m[95mCreating new LLM instance: gpt-3.5-turbo[39m
+[32m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [32m    LOG[39m [38;5;3m[ToolRegistryService] [39m[32mDiscovered and registered 0 tools[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: InternalCoreModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Reflector[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Reflector[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ExternalContextCreator[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ModulesContainer[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HttpAdapterHost[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LazyModuleLoader[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: SerializedGraph[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: AppModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: AdapterTestService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointExamplesService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfigModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfigService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfigHostModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfigService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ChromaDBModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ChromaClient[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EmbeddingService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CollectionService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ChromaAdminService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetadataExtractorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TextSplitterService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ChromaDBService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfigModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfigService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Neo4jModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Driver[39m
+[31m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [31m  ERROR[39m [38;5;3m[ToolDiscoveryService] [39m[31mFailed to discover from Driver: Cannot read properties of undefined (reading 'typename')[39m
+[31m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [31m  ERROR[39m [38;5;3m[ToolDiscoveryService] [39mTypeError: Cannot read properties of undefined (reading 'typename')
+    at Driver._afterConstruction (D:\projects\nestjs-ai-saas-starter\node_modules\[4mneo4j-driver-core[24m\lib\driver.js:768:45)
+    at Driver (D:\projects\nestjs-ai-saas-starter\node_modules\[4mneo4j-driver-core[24m\lib\driver.js:446:14)
+    at new Driver (D:\projects\nestjs-ai-saas-starter\node_modules\[4mneo4j-driver[24m\lib\driver.js:57:42)
+    at ToolDiscoveryService.discoverFromProvider (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@hive-academy[24m\langgraph-multi-agent\index.cjs3.js:18711:28)
+    at D:\projects\nestjs-ai-saas-starter\node_modules\[4m@hive-academy[24m\langgraph-multi-agent\index.cjs3.js:18968:21
+    at Array.map (<anonymous>)
+    at ToolDiscoveryService.discoverFromAllProviders (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@hive-academy[24m\langgraph-multi-agent\index.cjs3.js:18967:59)
+    at async ToolDiscoveryService.performFullDiscovery (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@hive-academy[24m\langgraph-multi-agent\index.cjs3.js:18678:32)
+    at async ToolDiscoveryService.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@hive-academy[24m\langgraph-multi-agent\index.cjs3.js:18655:7)
+    at async Promise.all (index 1)
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Neo4jService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Neo4jConnectionService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Neo4jHealthService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: NestjsLanggraphModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[31m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [31m  ERROR[39m [38;5;3m[LlmProviderService] [39m[31mLLM connectivity test failed:[39m
+[31m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [31m  ERROR[39m [38;5;3m[LlmProviderService] [39mOpenAIError: The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option, like new OpenAI({ apiKey: 'My API Key' }).
+    at new OpenAI (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\openai\node_modules\[4mopenai[24m\client.js:86:19)
+    at ChatOpenAICompletions._getClientOptions (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\openai\dist\chat_models.cjs:691:27)
+    at ChatOpenAICompletions.completionWithRetry (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\openai\dist\chat_models.cjs:2003:36)
+    at ChatOpenAICompletions._streamResponseChunks (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\openai\dist\chat_models.cjs:1914:43)
+    at _streamResponseChunks.next (<anonymous>)
+    at ChatOpenAICompletions._generate (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\openai\dist\chat_models.cjs:1794:30)
+    at ChatOpenAI._generate (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\openai\dist\chat_models.cjs:2765:33)
+    at D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\core\dist\language_models\chat_models.cjs:254:96
+    at Array.map (<anonymous>)
+    at ChatOpenAI._generateUncached (D:\projects\nestjs-ai-saas-starter\node_modules\[4m@langchain[24m\core\dist\language_models\chat_models.cjs:254:67)
+[33m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [33m   WARN[39m [38;5;3m[MultiAgentCoordinatorService] [39m[33mLLM connectivity test failed - workflows may not function properly[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LLMProviderFactory[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ChatOpenAI[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventEmitterModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventSubscribersLoader[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventsMetadataAccessor[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventEmitterReadinessWatcher[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventEmitter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: DiscoveryModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetadataScanner[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: DiscoveryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MemoryModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ChromaVectorAdapter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ChromaVectorAdapter] [39m[95mChromaVectorAdapter initialized with ChromaDBService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Neo4jGraphAdapter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[Neo4jGraphAdapter] [39m[95mNeo4jGraphAdapter initialized with Neo4jService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MemoryStorageService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MemoryGraphService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MemoryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LanggraphModulesCheckpointModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointSaverFactory[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointRegistryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointMetricsService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointCleanupService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointHealthService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointPersistenceService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LangGraphCheckpointProvider[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointSaverFactory[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointRegistryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointPersistenceService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointMetricsService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointCleanupService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointHealthService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LangGraphCheckpointProvider[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointManagerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: StateTransformerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: StreamingModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TokenStreamingService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventStreamProcessorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: WebSocketBridgeService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HitlModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HumanApprovalService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ConfidenceEvaluatorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApprovalChainService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: FeedbackProcessorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: FunctionalApiModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointManagerAdapter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: WorkflowValidator[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: WorkflowDiscoveryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: GraphGeneratorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: FunctionalWorkflowService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: DiscoveryModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: DiscoveryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetadataScanner[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MultiAgentModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointManagerAdapter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: AgentRegistryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LlmProviderService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: NodeFactoryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: GraphBuilderService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: NetworkManagerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ToolRegistryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ToolDiscoveryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ToolBuilderService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ToolNodeService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ToolRegistryService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MultiAgentCoordinatorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: AgentExamplesService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventEmitterModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventSubscribersLoader[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventsMetadataAccessor[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventEmitterReadinessWatcher[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: EventEmitter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TimeTravelModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CheckpointManagerAdapter[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TimeTravelService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: BranchManagerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: LanggraphModulesMonitoringModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetricsCollectorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: AlertingService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HealthCheckService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: PerformanceTrackerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: DashboardService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetricsCollectorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: AlertingService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HealthCheckService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: PerformanceTrackerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: DashboardService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MonitoringFacadeService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetricsProvider[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TraceProvider[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: PlatformModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: PlatformClientService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: WebhookService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HttpModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HttpService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: WorkflowEngineModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: WorkflowGraphBuilderService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: CompilationCacheService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: MetadataProcessorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: SubgraphManagerService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: Object[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TerminusModule[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: [39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: ApplicationConfig[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: JsonErrorLogger[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: PrettyErrorLogger[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HealthIndicatorService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HealthCheckExecutor[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: HealthCheckService[39m
+[95m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [95m  DEBUG[39m [38;5;3m[ToolDiscoveryService] [39m[95mDiscovering tools from provider: TypeOrmHealthIndicator[39m
+[31m[Nest] 23136  - [39m09/11/2025, 1:27:47 AM [31m  ERROR[39m [38;5;3m[PackageLoader] [39m[31mThe "@nestjs/typeorm", "typeorm" packages are missing. Please, make sure to install the libraries ($ npm install @nestjs/typeorm typeorm) to take advantage of TypeOrmHealthIndicator.[39m
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api
+npm error workspace @nestjs-ai-saas-starter/dev-brand-api@0.0.1
+npm error location D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c node dist/main.js

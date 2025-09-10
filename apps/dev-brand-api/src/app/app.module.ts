@@ -188,8 +188,11 @@ import { HealthController } from './controllers/health.controller';
     // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
     // Behavior: Basic workflow execution without state tracking
 
-    // Health checks module for Phase 1 Subtask 1.3
-    TerminusModule,
+    // Health checks module for Phase 1 Subtask 1.3 - Configure without auto health indicator discovery
+    TerminusModule.forRoot({
+      logger: false, // Disable excessive logging
+      errorLogStyle: 'pretty',
+    }),
   ],
   providers: [
     // Test service to verify child module service injection

@@ -35,22 +35,15 @@ export class WorkflowDiscoveryService {
   async discoverWorkflows(): Promise<void> {
     this.logger.log('Starting workflow discovery');
 
-    // Get all providers from the discovery service
-    // Filter providers to only include those that are injectable services
-    const providers = await this.discoveryService.providers((discovered) => {
-      try {
-        return (
-          discovered.instance &&
-          typeof discovered.instance === 'object' &&
-          // Avoid circular dependency by excluding our own services
-          discovered.instance.constructor !== WorkflowDiscoveryService &&
-          discovered.instance.constructor.name !== 'FunctionalWorkflowService'
-        );
-      } catch (error) {
-        this.logger.warn(`Failed to filter provider ${discovered.name}`, error);
-        return false;
-      }
-    });
+    // Import the discovery filter utility
+    const { DiscoveryFilterUtil } = await import('../utils/discovery-filter.util');
+    
+    // Use intelligent filtering to only scan providers with @Entrypoint/@Task decorated methods
+    const providers = await this.discoveryService.providers(
+      DiscoveryFilterUtil.createWorkflowFilter(['WorkflowDiscoveryService', 'FunctionalWorkflowService'])
+    );
+
+    this.logger.debug(`Scanning ${providers.length} workflow providers (intelligently filtered)`);
     let discoveredCount = 0;
 
     for (const provider of providers) {

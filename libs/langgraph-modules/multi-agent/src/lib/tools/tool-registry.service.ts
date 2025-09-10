@@ -25,11 +25,15 @@ export class ToolRegistryService implements OnModuleInit {
    * Discover all tools in the application
    */
   private async discoverTools() {
-    // Get all providers from the discovery service
+    // Import the discovery filter utility
+    const { DiscoveryFilterUtil } = await import('../utils/discovery-filter.util');
+    
+    // Use intelligent filtering to only scan providers with @Tool decorated methods
     const providers = await this.discoveryService.providers(
-      (discovered) =>
-        discovered.instance && typeof discovered.instance === 'object'
+      DiscoveryFilterUtil.createToolFilter(['ToolRegistryService'])
     );
+
+    this.logger.debug(`Scanning ${providers.length} tool providers (filtered from all available providers)`);
 
     for (const wrapper of providers) {
       const { instance } = wrapper;
@@ -45,7 +49,7 @@ export class ToolRegistryService implements OnModuleInit {
       }
     }
 
-    this.logger.log(`Discovered and registered ${this.tools.size} tools`);
+    this.logger.log(`Discovered and registered ${this.tools.size} tools from ${providers.length} providers`);
   }
 
   /**

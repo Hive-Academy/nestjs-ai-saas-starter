@@ -494,12 +494,15 @@ export class ToolDiscoveryService implements OnModuleInit {
   // Private helper methods
 
   private async discoverFromAllProviders(): Promise<ProviderDiscoveryResult[]> {
-    // Get all providers from the discovery service
-    // Filter providers to only include those that are injectable services
+    // Import the discovery filter utility
+    const { DiscoveryFilterUtil } = await import('../utils/discovery-filter.util');
+    
+    // Use intelligent filtering to only scan providers with @Tool decorated methods
     const providers = await this.discoveryService.providers(
-      (discovered) =>
-        discovered.instance && typeof discovered.instance === 'object'
+      DiscoveryFilterUtil.createToolFilter(['ToolDiscoveryService', 'ToolRegistryService'])
     );
+
+    this.logger.debug(`Scanning ${providers.length} tool providers (intelligently filtered)`);
     const results: ProviderDiscoveryResult[] = [];
 
     // Process providers in batches to respect concurrency limits
@@ -701,5 +704,19 @@ export class ToolDiscoveryService implements OnModuleInit {
   ): Promise<void> {
     // The ToolRegistryService handles the actual registration logic
     // This is a placeholder for any additional processing needed
+  }
+
+  /**
+   * Check if a provider class has any methods decorated with @Tool
+   */
+  private isValidToolProvider(providerClass: any): boolean {
+    try {
+      // Check if the class has any tool metadata
+      const tools = getClassTools(providerClass);
+      return tools.length > 0;
+    } catch (error) {
+      // If we can't get metadata, it's not a valid tool provider
+      return false;
+    }
   }
 }
