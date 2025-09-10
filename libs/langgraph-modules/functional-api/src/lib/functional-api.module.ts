@@ -9,6 +9,10 @@ import { WorkflowDiscoveryService } from './services/workflow-discovery.service'
 import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
+import {
+  CHECKPOINT_ADAPTER_TOKEN,
+  NoOpCheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Module options injection token
@@ -36,6 +40,12 @@ export class FunctionalApiModule {
       imports: [DiscoveryModule],
       providers: [
         optionsProvider,
+        // Checkpoint adapter provider - either provided or no-op
+        {
+          provide: CHECKPOINT_ADAPTER_TOKEN,
+          useValue:
+            normalizedOptions.checkpointAdapter || new NoOpCheckpointAdapter(),
+        },
         WorkflowValidator,
         WorkflowDiscoveryService,
         GraphGeneratorService,
@@ -62,6 +72,18 @@ export class FunctionalApiModule {
       imports: [DiscoveryModule, ...(options.imports || [])],
       providers: [
         ...asyncProviders,
+        // Checkpoint adapter provider - async factory
+        {
+          provide: CHECKPOINT_ADAPTER_TOKEN,
+          useFactory: async (...args: unknown[]) => {
+            const opts = await options.useFactory!(...args);
+            const normalizedOpts = this.normalizeOptions(opts);
+            return (
+              normalizedOpts.checkpointAdapter || new NoOpCheckpointAdapter()
+            );
+          },
+          inject: options.inject || [],
+        },
         WorkflowValidator,
         WorkflowDiscoveryService,
         GraphGeneratorService,
@@ -147,7 +169,8 @@ export class FunctionalApiModule {
    */
   private static normalizeOptions(
     options: FunctionalApiModuleOptions
-  ): Required<FunctionalApiModuleOptions> {
+  ): Required<Omit<FunctionalApiModuleOptions, 'checkpointAdapter'>> &
+    Pick<FunctionalApiModuleOptions, 'checkpointAdapter'> {
     return {
       defaultTimeout: options.defaultTimeout ?? 30000,
       defaultRetryCount: options.defaultRetryCount ?? 3,
@@ -157,6 +180,7 @@ export class FunctionalApiModule {
       maxConcurrentTasks: options.maxConcurrentTasks ?? 10,
       enableCycleDetection: options.enableCycleDetection ?? true,
       globalMetadata: options.globalMetadata ?? {},
+      checkpointAdapter: options.checkpointAdapter,
     };
   }
 }

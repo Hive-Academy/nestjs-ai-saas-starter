@@ -12,7 +12,11 @@ import { MemoryModule } from '@hive-academy/langgraph-memory';
 import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
 
 // Direct child module imports - Phase 3 Subtask 3.3: Modular configuration pattern
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import {
+  LanggraphModulesCheckpointModule,
+  CheckpointManagerService,
+  CheckpointManagerAdapter,
+} from '@hive-academy/langgraph-checkpoint';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
 
@@ -45,10 +49,40 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 import { AdapterTestService } from './services/adapter-test.service';
 import { AdapterTestController } from './controllers/adapter-test.controller';
 
+// Checkpoint DI pattern demonstration
+import { CheckpointExamplesService } from './services/checkpoint-examples.service';
+import { CheckpointExamplesController } from './controllers/checkpoint-examples.controller';
+
 // Health check imports for Phase 1 Subtask 1.3
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
 
+/**
+ * Demo Application Module - Showcasing Optional Checkpoint DI Pattern
+ *
+ * This module demonstrates the new dependency injection pattern for optional
+ * checkpoint integration across consumer libraries. It showcases two scenarios:
+ *
+ * SCENARIO A: Checkpoint-enabled libraries
+ * - Use forRootAsync() with CheckpointManagerAdapter injection
+ * - Enable persistent state management and recovery capabilities
+ * - Examples: FunctionalApiModule, MultiAgentModule, TimeTravelModule
+ *
+ * SCENARIO B: Checkpoint-disabled libraries
+ * - Use forRoot() without checkpointAdapter (defaults to NoOpCheckpointAdapter)
+ * - In-memory operation only, no persistent state
+ * - Examples: MonitoringModule, PlatformModule, WorkflowEngineModule
+ *
+ * Benefits of this pattern:
+ * - Optional dependency: checkpoint functionality not required for basic operation
+ * - Backward compatibility: existing code works without changes
+ * - Flexible deployment: enable/disable checkpointing per environment
+ * - Clear separation: checkpoint concerns isolated to adapter layer
+ * - Type safety: Full TypeScript support for both scenarios
+ *
+ * Dependencies flow:
+ * library → core ← checkpoint (optional)
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -83,23 +117,76 @@ import { HealthController } from './controllers/health.controller';
     }),
 
     // Direct child module imports - Independent module usage
-    // Global checkpoint module configured once at application level
+    // 🎯 CHECKPOINT MODULE: Configure checkpoint storage once at application level
+    // This provides CheckpointManagerService for dependency injection into consumer libraries
     LanggraphModulesCheckpointModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>
         getCheckpointConfig(configService),
     }),
+
+    // Other core modules (checkpoint-independent)
     StreamingModule.forRoot(getStreamingConfig()),
     HitlModule.forRoot(getHitlConfig()),
 
-    // Additional LangGraph modules for comprehensive demo
-    FunctionalApiModule.forRoot(getFunctionalApiConfig()),
-    MultiAgentModule.forRoot(getMultiAgentConfig()),
+    // 🔥 CHECKPOINT INTEGRATION DEMO: Showcasing both scenarios
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENARIO A: CHECKPOINT-ENABLED MODULES
+    // ═══════════════════════════════════════════════════════════════
+    // Pattern: forRootAsync + CheckpointManagerAdapter injection
+    // Behavior: Persistent state, automatic recovery, debugging capabilities
+    // Use case: Production workflows requiring reliability and observability
+
+    FunctionalApiModule.forRootAsync({
+      useFactory: (checkpointManager: CheckpointManagerService) => ({
+        ...getFunctionalApiConfig(),
+        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+      }),
+      inject: [CheckpointManagerService],
+      // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
+      // Enables: Workflow state persistence, step-by-step recovery, execution replay
+    }),
+
+    MultiAgentModule.forRootAsync({
+      useFactory: (checkpointManager: CheckpointManagerService) => ({
+        ...getMultiAgentConfig(),
+        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+      }),
+      inject: [CheckpointManagerService],
+      // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
+      // Enables: Agent network state, communication history, coordinated recovery
+    }),
+
+    TimeTravelModule.forRootAsync({
+      useFactory: (checkpointManager: CheckpointManagerService) => ({
+        ...getTimeTravelConfig(),
+        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+      }),
+      inject: [CheckpointManagerService],
+      // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
+      // Enables: Timeline branching, state snapshots, workflow debugging
+    }),
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENARIO B: CHECKPOINT-DISABLED MODULES
+    // ═══════════════════════════════════════════════════════════════
+    // Pattern: forRoot without checkpointAdapter
+    // Behavior: In-memory operation, no persistent state, faster execution
+    // Use case: Development environments, lightweight deployments, monitoring-only
+
     MonitoringModule.forRoot(getMonitoringConfig()),
+    // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
+    // Behavior: Metrics collection without state persistence
+
     PlatformModule.forRoot(getPlatformConfig()),
-    TimeTravelModule.forRoot(getTimeTravelConfig()),
+    // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
+    // Behavior: Platform operations without checkpoint overhead
+
     WorkflowEngineModule.forRoot(getWorkflowEngineConfig()),
+    // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
+    // Behavior: Basic workflow execution without state tracking
 
     // Health checks module for Phase 1 Subtask 1.3
     TerminusModule,
@@ -107,10 +194,16 @@ import { HealthController } from './controllers/health.controller';
   providers: [
     // Test service to verify child module service injection
     AdapterTestService,
+
+    // Checkpoint DI pattern demonstration service
+    CheckpointExamplesService,
   ],
   controllers: [
     // Test controller to expose child module verification endpoints
     AdapterTestController,
+
+    // Checkpoint DI pattern demonstration controller
+    CheckpointExamplesController,
 
     // Health check controller
     HealthController,

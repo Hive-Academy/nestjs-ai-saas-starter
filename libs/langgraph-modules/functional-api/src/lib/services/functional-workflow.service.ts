@@ -1,9 +1,6 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { Observable, Subject, throwError, from, EMPTY } from 'rxjs';
-import {
-  switchMap,
-  catchError,
-} from 'rxjs/operators';
+import { switchMap, catchError } from 'rxjs/operators';
 import {
   FunctionalWorkflowState,
   TaskExecutionContext,
@@ -24,7 +21,13 @@ import {
   TaskTimeoutError,
   UnknownTaskError,
 } from '../errors/functional-workflow.errors';
-import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+import {
+  CHECKPOINT_ADAPTER_TOKEN,
+  ICheckpointAdapter,
+  BaseCheckpoint,
+  BaseCheckpointMetadata,
+  BaseCheckpointTuple,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Main service for executing functional workflows
@@ -41,7 +44,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
     private readonly discoveryService: WorkflowDiscoveryService,
     private readonly graphGenerator: GraphGeneratorService,
     private readonly validator: WorkflowValidator,
-    private readonly checkpointManager: CheckpointManagerService,
+    @Inject(CHECKPOINT_ADAPTER_TOKEN)
+    private readonly checkpointAdapter: ICheckpointAdapter
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -51,7 +55,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
   /**
    * Executes a workflow by name
    */
-  async executeWorkflow<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
+  async executeWorkflow<
+    TState extends FunctionalWorkflowState = FunctionalWorkflowState
+  >(
     workflowName: string,
     options: WorkflowExecutionOptions = {}
   ): Promise<WorkflowExecutionResult<TState>> {
@@ -59,7 +65,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
     const executionId = `exec_${++this.executionCounter}_${Date.now()}`;
 
     try {
-      this.logger.log(`Starting workflow execution: ${workflowName} (${executionId})`);
+      this.logger.log(
+        `Starting workflow execution: ${workflowName} (${executionId})`
+      );
 
       const definition = this.discoveryService.getWorkflow(workflowName);
       if (!definition) {
@@ -133,7 +141,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
           // Handle checkpointing
           if (
             this.options.enableCheckpointing &&
-            (result.shouldCheckpoint || this.shouldAutoCheckpoint(checkpointCount))
+            (result.shouldCheckpoint ||
+              this.shouldAutoCheckpoint(checkpointCount))
           ) {
             await this.saveCheckpoint(executionId, currentState);
             checkpointCount++;
@@ -146,9 +155,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
             timestamp: new Date(),
             metadata: { executionId, workflowName },
           });
-
         } catch (error) {
-          const taskError = error instanceof Error ? error : new Error(String(error));
+          const taskError =
+            error instanceof Error ? error : new Error(String(error));
 
           this.emitStreamEvent({
             type: 'task_error',
@@ -188,17 +197,17 @@ export class FunctionalWorkflowService implements OnModuleInit {
       );
 
       return result;
-
     } catch (error) {
-      const executionError = error instanceof WorkflowExecutionError
-        ? error
-        : new WorkflowExecutionError(
-            workflowName,
-            'Workflow execution failed',
-            undefined,
-            error instanceof Error ? error : new Error(String(error)),
-            { executionId }
-          );
+      const executionError =
+        error instanceof WorkflowExecutionError
+          ? error
+          : new WorkflowExecutionError(
+              workflowName,
+              'Workflow execution failed',
+              undefined,
+              error instanceof Error ? error : new Error(String(error)),
+              { executionId }
+            );
 
       this.emitStreamEvent({
         type: 'workflow_error',
@@ -219,7 +228,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
   /**
    * Streams workflow execution events
    */
-  streamWorkflow<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
+  streamWorkflow<
+    TState extends FunctionalWorkflowState = FunctionalWorkflowState
+  >(
     workflowName: string,
     options: WorkflowExecutionOptions = {}
   ): Observable<WorkflowStreamEvent<TState>> {
@@ -236,8 +247,12 @@ export class FunctionalWorkflowService implements OnModuleInit {
   /**
    * Gets the stream of workflow events
    */
-  getEventStream<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(): Observable<WorkflowStreamEvent<TState>> {
-    return this.streamSubject.asObservable() as Observable<WorkflowStreamEvent<TState>>;
+  getEventStream<
+    TState extends FunctionalWorkflowState = FunctionalWorkflowState
+  >(): Observable<WorkflowStreamEvent<TState>> {
+    return this.streamSubject.asObservable() as Observable<
+      WorkflowStreamEvent<TState>
+    >;
   }
 
   /**
@@ -269,7 +284,10 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
       const executeWithRetry = async (attempt: number): Promise<void> => {
         try {
-          const result = await method.call(instance, context) as TaskExecutionResult;
+          const result = (await method.call(
+            instance,
+            context
+          )) as TaskExecutionResult;
           clearTimeout(timeoutId);
 
           // Validate result
@@ -284,17 +302,21 @@ export class FunctionalWorkflowService implements OnModuleInit {
         } catch (error) {
           if (attempt < retries) {
             this.logger.warn(
-              `Task '${taskDefinition.name}' failed (attempt ${attempt + 1}/${retries + 1}), retrying...`
+              `Task '${taskDefinition.name}' failed (attempt ${attempt + 1}/${
+                retries + 1
+              }), retrying...`
             );
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
             await executeWithRetry(attempt + 1);
           } else {
             clearTimeout(timeoutId);
-            reject(new TaskExecutionError(
-              taskDefinition.name,
-              `Task failed after ${retries + 1} attempts`,
-              error instanceof Error ? error : new Error(String(error))
-            ));
+            reject(
+              new TaskExecutionError(
+                taskDefinition.name,
+                `Task failed after ${retries + 1} attempts`,
+                error instanceof Error ? error : new Error(String(error))
+              )
+            );
           }
         }
       };
@@ -317,7 +339,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
       }
 
       if (visiting.has(taskName)) {
-        throw new Error(`Circular dependency detected involving task '${taskName}'`);
+        throw new Error(
+          `Circular dependency detected involving task '${taskName}'`
+        );
       }
 
       visiting.add(taskName);
@@ -356,20 +380,19 @@ export class FunctionalWorkflowService implements OnModuleInit {
   }
 
   /**
-   * Saves a checkpoint using the CheckpointManagerService
+   * Saves a checkpoint using the ICheckpointAdapter
    */
-  private async saveCheckpoint(executionId: string, state: FunctionalWorkflowState): Promise<void> {
+  private async saveCheckpoint(
+    executionId: string,
+    state: FunctionalWorkflowState
+  ): Promise<void> {
     try {
-      const checkpoint = {
+      const checkpoint: BaseCheckpoint<FunctionalWorkflowState> = {
         id: `checkpoint_${executionId}_${Date.now()}`,
         channel_values: state,
-        channel_versions: {},
-        versions_seen: {},
-        pending_sends: [],
-        version: '1.0.0',
       };
 
-      const metadata = {
+      const metadata: BaseCheckpointMetadata = {
         executionId,
         timestamp: new Date().toISOString(),
         source: 'input' as const,
@@ -379,7 +402,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         currentTask: state.currentTask,
       };
 
-      await this.checkpointManager.saveCheckpoint(
+      await this.checkpointAdapter.saveCheckpoint(
         executionId,
         checkpoint,
         metadata
@@ -393,7 +416,10 @@ export class FunctionalWorkflowService implements OnModuleInit {
         metadata: { executionId, checkpointId: checkpoint.id },
       });
     } catch (error) {
-      this.logger.error(`Failed to save checkpoint for execution ${executionId}`, error);
+      this.logger.error(
+        `Failed to save checkpoint for execution ${executionId}`,
+        error
+      );
       // Don't throw - checkpoint failures shouldn't stop workflow execution
     }
   }
@@ -411,7 +437,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Lists all available workflows
    */
   listWorkflows(): string[] {
-    return this.discoveryService.getAllWorkflows().map(w => w.name);
+    return this.discoveryService.getAllWorkflows().map((w) => w.name);
   }
 
   /**
@@ -424,16 +450,20 @@ export class FunctionalWorkflowService implements OnModuleInit {
   /**
    * Resumes workflow execution from a checkpoint
    */
-  async resumeFromCheckpoint<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
+  async resumeFromCheckpoint<
+    TState extends FunctionalWorkflowState = FunctionalWorkflowState
+  >(
     executionId: string,
     checkpointId?: string,
     options: WorkflowExecutionOptions = {}
   ): Promise<WorkflowExecutionResult<TState>> {
     try {
-      this.logger.log(`Resuming workflow execution from checkpoint: ${executionId}`);
+      this.logger.log(
+        `Resuming workflow execution from checkpoint: ${executionId}`
+      );
 
       // Load checkpoint
-      const checkpoint = await this.checkpointManager.loadCheckpoint<TState>(
+      const checkpoint = await this.checkpointAdapter.loadCheckpoint<TState>(
         executionId,
         checkpointId
       );
@@ -448,12 +478,12 @@ export class FunctionalWorkflowService implements OnModuleInit {
         );
       }
 
-      // Extract workflow name from checkpoint metadata
-      const workflowName = checkpoint.metadata?.workflowName as string;
+      // Extract workflow name from checkpoint state (since BaseCheckpoint doesn't have metadata field)
+      const workflowName = checkpoint.channel_values?.workflowName as string;
       if (!workflowName) {
         throw new WorkflowExecutionError(
           'unknown',
-          'Checkpoint metadata missing workflow name',
+          'Checkpoint missing workflow name in channel values',
           undefined,
           undefined,
           { executionId, checkpointId }
@@ -468,7 +498,6 @@ export class FunctionalWorkflowService implements OnModuleInit {
           ...options.initialState,
         },
         metadata: {
-          ...checkpoint.metadata,
           ...options.metadata,
           resumedFromCheckpoint: checkpointId || 'latest',
           resumedAt: new Date().toISOString(),
@@ -477,7 +506,10 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
       return await this.executeWorkflow<TState>(workflowName, resumeOptions);
     } catch (error) {
-      this.logger.error(`Failed to resume workflow from checkpoint: ${executionId}`, error);
+      this.logger.error(
+        `Failed to resume workflow from checkpoint: ${executionId}`,
+        error
+      );
       throw error;
     }
   }
@@ -485,23 +517,29 @@ export class FunctionalWorkflowService implements OnModuleInit {
   /**
    * Lists available checkpoints for an execution
    */
-  async listCheckpoints(executionId: string): Promise<Array<{
-    id: string;
-    timestamp: string;
-    step: number;
-    metadata?: Record<string, unknown>;
-  }>> {
+  async listCheckpoints(executionId: string): Promise<
+    Array<{
+      id: string;
+      timestamp: string;
+      step: number;
+      metadata?: Record<string, unknown>;
+    }>
+  > {
     try {
-      const checkpoints = await this.checkpointManager.listCheckpoints(executionId);
+      const checkpoints: readonly BaseCheckpointTuple[] =
+        await this.checkpointAdapter.listCheckpoints(executionId);
 
-      return checkpoints.map(([_config, checkpoint, metadata]: [any, any, any]) => ({
+      return checkpoints.map(([_config, checkpoint, metadata]) => ({
         id: checkpoint.id,
-        timestamp: metadata?.timestamp as string || new Date().toISOString(),
-        step: metadata?.step as number || 0,
+        timestamp: metadata?.timestamp || new Date().toISOString(),
+        step: metadata?.step || 0,
         metadata: metadata || {},
       }));
     } catch (error) {
-      this.logger.error(`Failed to list checkpoints for execution: ${executionId}`, error);
+      this.logger.error(
+        `Failed to list checkpoints for execution: ${executionId}`,
+        error
+      );
       return [];
     }
   }
@@ -510,15 +548,20 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Executes a workflow using LangGraph StateGraph
    * This is the new implementation that generates and runs LangGraph graphs
    */
-  async executeWorkflowWithLangGraph<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
+  async executeWorkflowWithLangGraph<
+    TState extends FunctionalWorkflowState = FunctionalWorkflowState
+  >(
     workflowName: string,
     options: WorkflowExecutionOptions = {}
   ): Promise<WorkflowExecutionResult<TState>> {
     const startTime = Date.now();
-    const executionId = `langgraph_exec_${++this.executionCounter}_${Date.now()}`;
+    const executionId = `langgraph_exec_${++this
+      .executionCounter}_${Date.now()}`;
 
     try {
-      this.logger.log(`Starting LangGraph workflow execution: ${workflowName} (${executionId})`);
+      this.logger.log(
+        `Starting LangGraph workflow execution: ${workflowName} (${executionId})`
+      );
 
       // Get workflow definition and instance
       const definition = this.discoveryService.getWorkflow(workflowName);
@@ -544,7 +587,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
       }
 
       // Validate workflow can be converted to graph
-      const validation = this.graphGenerator.validateWorkflowForGraphGeneration(definition);
+      const validation =
+        this.graphGenerator.validateWorkflowForGraphGeneration(definition);
       if (!validation.valid) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -556,10 +600,10 @@ export class FunctionalWorkflowService implements OnModuleInit {
       }
 
       // Generate LangGraph StateGraph
-      const stateGraph = await this.graphGenerator.generateStateGraph<TState>(
+      const stateGraph = (await this.graphGenerator.generateStateGraph<TState>(
         definition,
         instance
-      ) as any;
+      )) as any;
 
       // Prepare initial state
       const initialState: TState = {
@@ -572,10 +616,10 @@ export class FunctionalWorkflowService implements OnModuleInit {
       this.emitStreamEvent({
         type: 'workflow_start',
         timestamp: new Date(),
-        metadata: { 
-          executionId, 
+        metadata: {
+          executionId,
           workflowName,
-          executionType: 'langgraph' 
+          executionType: 'langgraph',
         },
       });
 
@@ -597,7 +641,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       // Run the graph with checkpointing if enabled
       let finalState: TState;
       let checkpointCount = 0;
-      
+
       if (this.options.enableCheckpointing) {
         // Stream execution for checkpoint opportunities
         const stream = await stateGraph.stream(initialState, config);
@@ -605,18 +649,18 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
         for await (const update of stream) {
           lastState = { ...lastState, ...update } as TState;
-          
+
           // Save checkpoint at intervals
           if (this.shouldAutoCheckpoint(checkpointCount)) {
             await this.saveCheckpoint(executionId, lastState);
             checkpointCount++;
           }
         }
-        
+
         finalState = lastState;
       } else {
         // Execute without checkpointing
-        finalState = await stateGraph.invoke(initialState, config) as TState;
+        finalState = (await stateGraph.invoke(initialState, config)) as TState;
       }
 
       const executionTime = Date.now() - startTime;
@@ -625,8 +669,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
       const executionPath: string[] = [];
       if (finalState.metadata) {
         Object.keys(finalState.metadata)
-          .filter(key => key.endsWith('_completed'))
-          .forEach(key => {
+          .filter((key) => key.endsWith('_completed'))
+          .forEach((key) => {
             const taskName = key.replace('_completed', '');
             executionPath.push(taskName);
           });
@@ -643,11 +687,11 @@ export class FunctionalWorkflowService implements OnModuleInit {
         type: 'workflow_complete',
         state: finalState,
         timestamp: new Date(),
-        metadata: { 
-          executionId, 
-          workflowName, 
+        metadata: {
+          executionId,
+          workflowName,
           executionTime,
-          executionType: 'langgraph' 
+          executionType: 'langgraph',
         },
       });
 
@@ -656,26 +700,26 @@ export class FunctionalWorkflowService implements OnModuleInit {
       );
 
       return result;
-
     } catch (error) {
-      const executionError = error instanceof WorkflowExecutionError
-        ? error
-        : new WorkflowExecutionError(
-            workflowName,
-            'LangGraph workflow execution failed',
-            undefined,
-            error instanceof Error ? error : new Error(String(error)),
-            { executionId }
-          );
+      const executionError =
+        error instanceof WorkflowExecutionError
+          ? error
+          : new WorkflowExecutionError(
+              workflowName,
+              'LangGraph workflow execution failed',
+              undefined,
+              error instanceof Error ? error : new Error(String(error)),
+              { executionId }
+            );
 
       this.emitStreamEvent({
         type: 'workflow_error',
         error: executionError,
         timestamp: new Date(),
-        metadata: { 
-          executionId, 
+        metadata: {
+          executionId,
           workflowName,
-          executionType: 'langgraph' 
+          executionType: 'langgraph',
         },
       });
 

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 
 /**
  * LangGraph-compatible agent state following 2025 best practices
@@ -359,6 +360,7 @@ export interface AgentNetwork {
 
 /**
  * Checkpointing configuration for multi-agent networks
+ * Uses the new optional DI pattern with CheckpointIntegrationConfig
  */
 export interface CheckpointingConfig {
   /**
@@ -375,6 +377,29 @@ export interface CheckpointingConfig {
    * Default thread prefix for checkpoint storage
    */
   defaultThreadPrefix: string;
+
+  /**
+   * Default saver name to use
+   */
+  defaultSaver?: string;
+
+  /**
+   * Automatic checkpoint configuration
+   */
+  autoCheckpoint?: {
+    enabled: boolean;
+    interval?: number;
+    after?: Array<'task' | 'node' | 'error' | 'decision' | 'custom'>;
+  };
+
+  /**
+   * Error handling configuration
+   */
+  errorHandling?: {
+    continueOnCheckpointFailure: boolean;
+    logErrors: boolean;
+    maxRetries: number;
+  };
 }
 
 /**
@@ -439,6 +464,12 @@ export interface MultiAgentModuleOptions {
    * Checkpointing configuration
    */
   checkpointing?: CheckpointingConfig;
+
+  /**
+   * Optional checkpoint adapter for dependency injection
+   * If provided, enables checkpointing features
+   */
+  checkpointAdapter?: ICheckpointAdapter;
 }
 
 /**

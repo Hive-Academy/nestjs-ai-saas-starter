@@ -5,14 +5,12 @@
     "moduleResolution": "bundler",
     "emitDeclarationOnly": false,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "outDir": "../../../dist/libs/langgraph-functional-api"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
-    {
-      "path": "../checkpoint/tsconfig.lib.json"
-    },
     {
       "path": "../core/tsconfig.lib.json"
     }

@@ -1,4 +1,8 @@
 import type { ModuleMetadata, Type } from '@nestjs/common';
+import type {
+  ICheckpointAdapter,
+  AsyncModuleFactory,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Configuration options for the Functional API module
@@ -50,21 +54,30 @@ export interface FunctionalApiModuleOptions {
    * Global metadata to be included in all workflow executions
    */
   readonly globalMetadata?: Record<string, unknown>;
+
+  /**
+   * Optional checkpoint adapter for state persistence
+   * If not provided, checkpointing will be disabled (uses NoOpCheckpointAdapter)
+   */
+  readonly checkpointAdapter?: ICheckpointAdapter;
 }
 
 /**
  * Options factory interface for async module configuration
  */
 export interface FunctionalApiOptionsFactory {
-  createFunctionalApiOptions: () => Promise<FunctionalApiModuleOptions> | FunctionalApiModuleOptions;
+  createFunctionalApiOptions: () =>
+    | Promise<FunctionalApiModuleOptions>
+    | FunctionalApiModuleOptions;
 }
 
 /**
  * Async module options
  */
-export interface FunctionalApiModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
+export interface FunctionalApiModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
   useExisting?: Type<FunctionalApiOptionsFactory>;
   useClass?: Type<FunctionalApiOptionsFactory>;
-  useFactory?: (...args: unknown[]) => Promise<FunctionalApiModuleOptions> | FunctionalApiModuleOptions;
+  useFactory?: AsyncModuleFactory<FunctionalApiModuleOptions>;
   inject?: Array<Type | string | symbol>;
 }

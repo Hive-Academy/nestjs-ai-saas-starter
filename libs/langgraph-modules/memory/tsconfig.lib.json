@@ -3,9 +3,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "rootDir": "src",
-    "outDir": "dist",
+    "outDir": "../../../dist/libs/langgraph-memory",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "emitDeclarationOnly": false,
+    "declaration": true,
+    "declarationMap": true,
     "module": "ES2022",
     "moduleResolution": "bundler",
     "types": ["node"]

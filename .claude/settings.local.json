@@ -20,7 +20,10 @@
       "Bash(echo:*)",
       "Bash(done)",
       "Bash(npm run api:*)",
-      "Bash(npx nx test:*)"
+      "Bash(npx nx test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(npx nx typecheck:*)"
     ],
     "deny": [],
     "ask": [],

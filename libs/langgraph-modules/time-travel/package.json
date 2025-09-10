@@ -30,6 +30,6 @@
     "@nestjs/common": "^11.0.0",
     "rxjs": "7.8.2",
     "reflect-metadata": "^0.1.13",
-    "@hive-academy/langgraph-checkpoint": "0.0.1"
+    "@hive-academy/langgraph-core": "0.0.1"
   }
 }

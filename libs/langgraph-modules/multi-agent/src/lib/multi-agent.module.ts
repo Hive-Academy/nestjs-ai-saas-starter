@@ -22,6 +22,10 @@ import { ToolBuilderService } from './tools/tool-builder.service';
 import { ToolDiscoveryService } from './tools/tool-discovery.service';
 import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
+import {
+  CHECKPOINT_ADAPTER_TOKEN,
+  NoOpCheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -38,6 +42,11 @@ export class MultiAgentModule {
       {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useValue: mergedOptions,
+      },
+      // Checkpoint adapter provider - either provided or no-op
+      {
+        provide: CHECKPOINT_ADAPTER_TOKEN,
+        useValue: options.checkpointAdapter || new NoOpCheckpointAdapter(),
       },
       // Core services
       AgentRegistryService,
@@ -97,6 +106,15 @@ export class MultiAgentModule {
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
           return this.mergeWithDefaults(moduleOptions);
+        },
+        inject: options.inject || [],
+      },
+      // Checkpoint adapter provider - async factory
+      {
+        provide: CHECKPOINT_ADAPTER_TOKEN,
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.checkpointAdapter || new NoOpCheckpointAdapter();
         },
         inject: options.inject || [],
       },

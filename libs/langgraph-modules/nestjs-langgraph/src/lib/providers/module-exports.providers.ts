@@ -1,7 +1,6 @@
 import {
   LANGGRAPH_MODULE_OPTIONS,
   DEFAULT_LLM,
-  TOOL_REGISTRY,
   // STREAM_MANAGER, // Removed - provided by streaming module when available
 } from '../constants';
 

@@ -37,6 +37,11 @@ export interface CheckpointModuleOptions {
     maxPerThread?: number;
 
     /**
+     * Thread patterns to exclude from cleanup
+     */
+    excludeThreads?: string[];
+
+    /**
      * Health monitoring configuration
      */
     health?: {
@@ -79,10 +84,10 @@ export class LanggraphModulesCheckpointModule {
         CheckpointCleanupService,
         CheckpointHealthService,
         CheckpointPersistenceService,
-        
+
         // Official LangGraph checkpoint provider
         LangGraphCheckpointProvider,
-        
+
         // Interface tokens for dependency injection
         {
           provide: 'ICheckpointSaverFactory',
@@ -112,10 +117,10 @@ export class LanggraphModulesCheckpointModule {
           provide: 'ILangGraphCheckpointProvider',
           useExisting: LangGraphCheckpointProvider,
         },
-        
+
         // Facade service
         CheckpointManagerService,
-        
+
         // Legacy service
         StateTransformerService,
       ],
@@ -169,10 +174,10 @@ export class LanggraphModulesCheckpointModule {
         CheckpointCleanupService,
         CheckpointHealthService,
         CheckpointPersistenceService,
-        
+
         // Official LangGraph checkpoint provider
         LangGraphCheckpointProvider,
-        
+
         // Interface tokens for dependency injection
         {
           provide: 'ICheckpointSaverFactory',
@@ -202,10 +207,10 @@ export class LanggraphModulesCheckpointModule {
           provide: 'ILangGraphCheckpointProvider',
           useExisting: LangGraphCheckpointProvider,
         },
-        
+
         // Facade service
         CheckpointManagerService,
-        
+
         // Legacy service
         StateTransformerService,
       ],

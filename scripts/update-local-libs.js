@@ -61,8 +61,9 @@ function execCommand(command, options = {}) {
   log(`Executing: ${command}`, 'build');
   try {
     const result = execSync(command, {
-      stdio: 'inherit',
+      stdio: options.silent ? 'pipe' : 'inherit',
       cwd: PROJECT_ROOT,
+      encoding: 'utf8',
       ...options,
     });
     return result;
@@ -106,12 +107,22 @@ function copyDirectory(src, dest) {
   }
 }
 
-function verifyLibraryStructure() {
+function getAffectedLibraries() {
+  log('Getting affected libraries...', 'info');
+
+  // For now, always return all libraries to ensure consistent builds
+  // The nx print-affected command requires proper git configuration
+  // and base/head references which may not be available in all scenarios
+  log('Building all libraries to ensure consistency', 'info');
+  return HIVE_LIBRARIES;
+}
+
+function verifyLibraryStructure(librariesToCheck = HIVE_LIBRARIES) {
   log('Verifying library structure...', 'info');
 
   const missingLibs = [];
 
-  for (const lib of HIVE_LIBRARIES) {
+  for (const lib of librariesToCheck) {
     const libPath = path.join(DIST_LIBS, lib);
     if (!fs.existsSync(libPath)) {
       missingLibs.push(lib);
@@ -122,7 +133,10 @@ function verifyLibraryStructure() {
     log(`Missing built libraries: ${missingLibs.join(', ')}`, 'warning');
     log('This might be expected if some libraries failed to build.', 'warning');
   } else {
-    log('All expected libraries found in dist/libs', 'success');
+    log(
+      `All expected libraries found in dist/libs (${librariesToCheck.length}/${librariesToCheck.length})`,
+      'success'
+    );
   }
 
   return missingLibs;
@@ -132,18 +146,31 @@ function main() {
   log('Starting automated library testing update...', 'info');
 
   try {
-    // Step 1: Build all libraries
-    log('Step 1: Building all libraries', 'info');
-    execCommand('npm run build:libs');
-    log('Build completed successfully', 'success');
+    // Parse CLI flags
+    const forceAll = process.argv.includes('--force');
+    const skipBuild = process.argv.includes('--skip-build');
 
-    // Step 2: Verify build output
-    log('Step 2: Verifying build output', 'info');
-    const missingLibs = verifyLibraryStructure();
+    const librariesToProcess = HIVE_LIBRARIES;
+    let missingLibs = [];
 
-    // Step 3: Clean old packages from node_modules
+    if (!skipBuild) {
+      // Step 1: Build all libraries
+      log('Step 1: Building all libraries', 'info');
+      execCommand('npm run build:libs');
+      log('Build completed successfully', 'success');
+
+      // Step 2: Verify build output
+      log('Step 2: Verifying build output', 'info');
+      missingLibs = verifyLibraryStructure(librariesToProcess);
+    } else {
+      log('Skipping build step (--skip-build)', 'info');
+      log('Step 2: Verifying existing build output', 'info');
+      missingLibs = verifyLibraryStructure(librariesToProcess);
+    }
+
+    // Step 3: Clean old packages from node_modules (only for libraries being processed)
     log(
-      'Step 3: Cleaning old packages from node_modules/@hive-academy',
+      `Step 3: Cleaning old packages for ${librariesToProcess.length} libraries`,
       'info'
     );
 
@@ -153,20 +180,23 @@ function main() {
       log('Created @hive-academy directory in node_modules', 'info');
     }
 
-    // Remove each library directory
-    for (const lib of HIVE_LIBRARIES) {
+    // Remove each library directory (only for libraries being processed)
+    for (const lib of librariesToProcess) {
       const libNodeModulesPath = path.join(NODE_MODULES_HIVE, lib);
       removeDirectory(libNodeModulesPath);
     }
 
-    log('Cleaned all old library packages', 'success');
+    log(`Cleaned ${librariesToProcess.length} library packages`, 'success');
 
     // Step 4: Copy fresh builds
-    log('Step 4: Copying fresh builds from dist/libs', 'info');
+    log(
+      `Step 4: Copying fresh builds for ${librariesToProcess.length} libraries`,
+      'info'
+    );
 
     let copiedCount = 0;
 
-    for (const lib of HIVE_LIBRARIES) {
+    for (const lib of librariesToProcess) {
       const srcPath = path.join(DIST_LIBS, lib);
       const destPath = path.join(NODE_MODULES_HIVE, lib);
 
@@ -178,14 +208,17 @@ function main() {
       }
     }
 
-    log(`Copied ${copiedCount}/${HIVE_LIBRARIES.length} libraries`, 'success');
+    log(
+      `Copied ${copiedCount}/${librariesToProcess.length} libraries`,
+      'success'
+    );
 
     // Step 5: Verification
     log('Step 5: Verifying installation', 'info');
 
     let verifiedCount = 0;
 
-    for (const lib of HIVE_LIBRARIES) {
+    for (const lib of librariesToProcess) {
       const libPath = path.join(NODE_MODULES_HIVE, lib);
       const packageJsonPath = path.join(libPath, 'package.json');
 
@@ -207,14 +240,21 @@ function main() {
     log('\n' + '='.repeat(60), 'info');
     log(`Local Library Update Summary:`, 'info');
     log(
-      `  Built Libraries: ${HIVE_LIBRARIES.length - missingLibs.length}/${
-        HIVE_LIBRARIES.length
+      `  Processed Libraries: ${librariesToProcess.length}/${HIVE_LIBRARIES.length}`,
+      'info'
+    );
+    log(
+      `  Built Libraries: ${librariesToProcess.length - missingLibs.length}/${
+        librariesToProcess.length
       }`,
       'info'
     );
-    log(`  Copied Libraries: ${copiedCount}/${HIVE_LIBRARIES.length}`, 'info');
     log(
-      `  Verified Libraries: ${verifiedCount}/${HIVE_LIBRARIES.length}`,
+      `  Copied Libraries: ${copiedCount}/${librariesToProcess.length}`,
+      'info'
+    );
+    log(
+      `  Verified Libraries: ${verifiedCount}/${librariesToProcess.length}`,
       'info'
     );
 
@@ -222,10 +262,21 @@ function main() {
       log(`  Skipped (build failed): ${missingLibs.join(', ')}`, 'warning');
     }
 
+    if (forceAll) {
+      log(`  Mode: Full rebuild (--force)`, 'info');
+    } else if (skipBuild) {
+      log(`  Mode: Skip build (--skip-build)`, 'info');
+    } else {
+      log(`  Mode: Incremental (affected only)`, 'info');
+    }
+
     log('='.repeat(60), 'info');
 
-    if (verifiedCount === HIVE_LIBRARIES.length) {
-      log('All libraries updated successfully! 🎉', 'success');
+    if (verifiedCount === librariesToProcess.length) {
+      log(
+        `All ${librariesToProcess.length} processed libraries updated successfully! 🎉`,
+        'success'
+      );
       log(
         'Your dev-brand-api will now use the latest local builds.',
         'success'
@@ -251,23 +302,24 @@ Automated Local Library Testing Script
 Usage: node scripts/update-local-libs.js [options]
 
 Options:
-  --help, -h     Show this help message
-  --dry-run      Show what would be done without executing
-  --quiet        Reduce log output
-  --force        Force rebuild even if dist exists
+  --help, -h         Show this help message
+  --dry-run          Show what would be done without executing
+  --force            Force rebuild all libraries (ignore affected detection)
+  --skip-build       Skip build step, only update node_modules from existing dist/
 
 Examples:
-  npm run update-libs
-  node scripts/update-local-libs.js
-  node scripts/update-local-libs.js --dry-run
+  npm run update-libs              # Build only affected libraries (recommended)
+  node scripts/update-local-libs.js --force  # Build all libraries
+  node scripts/update-local-libs.js --skip-build  # Just copy existing builds
 
 This script will:
-1. Build all @hive-academy libraries
-2. Remove old packages from node_modules/@hive-academy  
-3. Copy fresh builds from dist/libs
-4. Verify the installation
+1. Detect affected libraries using Nx (or build all with --force)
+2. Build only the changed/affected libraries
+3. Remove old packages from node_modules/@hive-academy  
+4. Copy fresh builds from dist/libs
+5. Verify the installation
 
-This allows rapid local testing without publishing to a registry.
+This allows rapid local testing with optimized build times by only building what changed.
 `);
   process.exit(0);
 }

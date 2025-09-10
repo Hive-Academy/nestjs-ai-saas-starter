@@ -206,7 +206,7 @@ export class CheckpointIntegrationExample {
       } catch (error) {
         this.logger.warn(
           'Could not resume from checkpoint (this is expected in demo):',
-          error.message
+          error instanceof Error ? error.message : String(error)
         );
       }
     }
@@ -309,7 +309,9 @@ export class CheckpointIntegrationExample {
 
       // Step 2: Execute workflow with automatic checkpointing
       const result = await this.executePersistentWorkflow(networkId);
-      this.logger.log('✅ Workflow execution successful');
+      this.logger.log('✅ Workflow execution successful', {
+        resultKeys: Object.keys(result),
+      });
 
       // Step 3: Demonstrate checkpoint management
       await this.demonstrateCheckpointManagement(networkId);
@@ -319,6 +321,7 @@ export class CheckpointIntegrationExample {
       let streamSteps = 0;
       for await (const step of this.streamPersistentWorkflow(networkId)) {
         streamSteps++;
+        this.logger.debug('Stream step:', step);
         if (streamSteps >= 3) break; // Limit for demo
       }
 
@@ -331,7 +334,10 @@ export class CheckpointIntegrationExample {
     } catch (error) {
       this.logger.error('Example execution failed:', error);
 
-      if (error.message.includes('CheckpointManager not available')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('CheckpointManager not available')
+      ) {
         this.logger.warn(
           '💡 Checkpoint integration requires the global CheckpointModule to be imported in your application'
         );

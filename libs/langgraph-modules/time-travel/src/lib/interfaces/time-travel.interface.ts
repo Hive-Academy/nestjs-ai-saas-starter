@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import type { ModuleMetadata, Type } from '@nestjs/common';
+import type {
+  ICheckpointAdapter,
+  AsyncModuleFactory,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Replay options for time travel operations
@@ -348,6 +353,12 @@ export interface TimeTravelConfig {
     type: 'memory' | 'redis' | 'postgres' | 'sqlite';
     config?: Record<string, unknown>;
   };
+
+  /**
+   * Optional checkpoint adapter for dependency injection
+   * If provided, enables checkpointing features
+   */
+  checkpointAdapter?: ICheckpointAdapter;
 }
 
 /**
@@ -477,7 +488,7 @@ export interface BranchInfo {
  */
 export class CheckpointNotFoundError extends Error {
   public readonly code = 'CHECKPOINT_NOT_FOUND';
-  
+
   constructor(
     message: string,
     public readonly threadId?: string,
@@ -493,7 +504,7 @@ export class CheckpointNotFoundError extends Error {
  */
 export class BranchNotFoundError extends Error {
   public readonly code = 'BRANCH_NOT_FOUND';
-  
+
   constructor(
     message: string,
     public readonly threadId?: string,
@@ -527,12 +538,34 @@ export const BranchOptionsSchema = z.object({
 export const HistoryOptionsSchema = z.object({
   limit: z.number().positive().optional(),
   offset: z.number().nonnegative().optional(),
-  nodeType: z.enum(['start', 'end', 'task', 'decision', 'parallel', 'error']).optional(),
+  nodeType: z
+    .enum(['start', 'end', 'task', 'decision', 'parallel', 'error'])
+    .optional(),
   workflowName: z.string().optional(),
   branchName: z.string().optional(),
   includeChildren: z.boolean().optional(),
-  dateRange: z.object({
-    from: z.date().optional(),
-    to: z.date().optional(),
-  }).optional(),
+  dateRange: z
+    .object({
+      from: z.date().optional(),
+      to: z.date().optional(),
+    })
+    .optional(),
 });
+
+/**
+ * Time travel options factory interface
+ */
+export interface TimeTravelOptionsFactory {
+  createTimeTravelOptions: () => Promise<TimeTravelConfig> | TimeTravelConfig;
+}
+
+/**
+ * Async module options for TimeTravelModule
+ */
+export interface TimeTravelModuleAsyncOptions
+  extends Pick<ModuleMetadata, 'imports'> {
+  useExisting?: Type<TimeTravelOptionsFactory>;
+  useClass?: Type<TimeTravelOptionsFactory>;
+  useFactory?: AsyncModuleFactory<TimeTravelConfig>;
+  inject?: Array<Type | string | symbol>;
+}

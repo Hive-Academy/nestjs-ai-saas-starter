@@ -32,6 +32,7 @@ export type {
   LangGraphModuleOptions,
   LangGraphModuleAsyncOptions,
   LangGraphOptionsFactory,
+  AsyncModuleFactory,
 } from './lib/interfaces/module-options.interface';
 
 // Export workflow interfaces with explicit naming to avoid conflicts
@@ -72,3 +73,23 @@ export {
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
+
+// Checkpoint integration exports for consumer libraries
+export {
+  CHECKPOINT_ADAPTER_TOKEN,
+  NoOpCheckpointAdapter,
+  ICheckpointAdapter,
+} from './lib/interfaces/checkpoint-adapter.interface';
+
+export type {
+  CheckpointIntegrationConfig,
+  BaseCheckpoint,
+  BaseCheckpointMetadata,
+  BaseCheckpointTuple,
+  CheckpointListOptions,
+  CheckpointCleanupOptions,
+} from './lib/interfaces/checkpoint-adapter.interface';
+export {
+  CheckpointIntegrationHelper,
+  createCheckpointIntegration,
+} from './lib/utils/checkpoint-integration.helper';

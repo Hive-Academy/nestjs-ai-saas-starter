@@ -1,7 +1,11 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+import {
+  CHECKPOINT_ADAPTER_TOKEN,
+  BaseCheckpointTuple,
+} from '@hive-academy/langgraph-core';
+import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 import {
   ReplayOptions,
   BranchOptions,
@@ -24,7 +28,9 @@ import {
  * Time travel service for workflow replay and debugging
  */
 @Injectable()
-export class TimeTravelService implements TimeTravelServiceInterface, OnModuleInit {
+export class TimeTravelService
+  implements TimeTravelServiceInterface, OnModuleInit
+{
   private readonly logger = new Logger(TimeTravelService.name);
   private readonly branches = new Map<string, BranchInfo>();
   private readonly executionHistory = new Map<string, ExecutionHistoryNode[]>();
@@ -32,8 +38,8 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
 
   constructor(
     private readonly configService: ConfigService,
-    @Inject(CheckpointManagerService)
-    private readonly checkpointManager: CheckpointManagerService
+    @Inject(CHECKPOINT_ADAPTER_TOKEN)
+    private readonly checkpointAdapter: ICheckpointAdapter
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -45,17 +51,17 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
    */
   private async initialize(): Promise<void> {
     const config = this.configService.get<TimeTravelConfig>('timeTravel');
-    
+
     if (config?.enableBranching) {
       this.logger.log('Branch management enabled for time travel');
     }
-    
+
     if (config?.enableAutoCheckpoint) {
       this.logger.log(
         `Auto-checkpoint enabled with interval: ${config.checkpointInterval}ms`
       );
     }
-    
+
     this.logger.log('Time travel service initialized');
   }
 
@@ -78,7 +84,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     }
 
     // Load the target checkpoint
-    const checkpoint = await this.checkpointManager.loadCheckpoint<T>(
+    const checkpoint = await this.checkpointAdapter.loadCheckpoint<T>(
       threadId,
       checkpointId
     );
@@ -92,7 +98,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     }
 
     // Create new execution context
-    const replayThreadId = 
+    const replayThreadId =
       options.newThreadId ?? `${threadId}_replay_${Date.now()}`;
     const executionId = `exec_${uuidv4()}`;
 
@@ -105,10 +111,10 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
       };
     }
 
-    // Get workflow definition
-    const workflowName = checkpoint.metadata?.workflowName as string;
+    // Get workflow definition from checkpoint state (since BaseCheckpoint doesn't have metadata field)
+    const workflowName = checkpoint.channel_values?.workflowName as string;
     if (!workflowName) {
-      throw new Error('Checkpoint metadata missing workflow name');
+      throw new Error('Checkpoint state missing workflow name');
     }
 
     const workflow = this.workflowRegistry.get(workflowName);
@@ -165,7 +171,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
       throw new Error(`Invalid branch options: ${validation.error.message}`);
     }
 
-    const checkpoint = await this.checkpointManager.loadCheckpoint<T>(
+    const checkpoint = await this.checkpointAdapter.loadCheckpoint<T>(
       threadId,
       fromCheckpointId
     );
@@ -198,11 +204,11 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     };
 
     // Save branch checkpoint with branch metadata
-    await this.checkpointManager.saveCheckpoint(
+    await this.checkpointAdapter.saveCheckpoint(
       branchThreadId,
       branchCheckpoint,
       {
-        ...checkpoint.metadata,
+        timestamp: new Date().toISOString(),
         branchName: branchOptions.name,
         parentThreadId: threadId,
         parentCheckpointId: fromCheckpointId,
@@ -248,29 +254,30 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
       throw new Error(`Invalid history options: ${validation.error.message}`);
     }
 
-    const checkpoints = await this.checkpointManager.listCheckpoints(
-      threadId,
-      {
-        limit: options.limit ?? 100,
-        offset: options.offset ?? 0,
-      }
-    );
+    const checkpoints = await this.checkpointAdapter.listCheckpoints(threadId, {
+      limit: options.limit ?? 100,
+      offset: options.offset ?? 0,
+    });
 
     const historyNodes: ExecutionHistoryNode[] = checkpoints.map(
-      ([config, checkpoint, metadata]) => ({
-        checkpointId: checkpoint.id,
-        threadId: (config as any)?.configurable?.thread_id as string ?? threadId,
-        nodeId: String(metadata?.step ?? 'unknown'),
-        timestamp: new Date(metadata?.timestamp ?? Date.now()),
-        state: checkpoint.channel_values,
-        parentCheckpointId: metadata?.parent_checkpoint_id as string,
-        branchId: metadata?.branch_id as string,
-        branchName: metadata?.branch_name as string,
-        workflowName: metadata?.workflowName as string,
-        executionDuration: metadata?.execution_duration as number,
-        nodeType: metadata?.node_type as ExecutionHistoryNode['nodeType'],
-        error: metadata?.error as ExecutionHistoryNode['error'],
-      })
+      (tuple: BaseCheckpointTuple) => {
+        const [config, checkpoint, metadata] = tuple;
+        return {
+          checkpointId: checkpoint.id,
+          threadId:
+            ((config as any)?.configurable?.thread_id as string) ?? threadId,
+          nodeId: String(metadata?.step ?? 'unknown'),
+          timestamp: new Date(metadata?.timestamp ?? Date.now()),
+          state: checkpoint.channel_values,
+          parentCheckpointId: metadata?.parent_checkpoint_id as string,
+          branchId: metadata?.branch_id as string,
+          branchName: metadata?.branch_name as string,
+          workflowName: metadata?.workflowName as string,
+          executionDuration: metadata?.execution_duration as number,
+          nodeType: metadata?.node_type as ExecutionHistoryNode['nodeType'],
+          error: metadata?.error as ExecutionHistoryNode['error'],
+        };
+      }
     );
 
     // Apply filters
@@ -278,35 +285,34 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
 
     if (options.nodeType) {
       filteredNodes = filteredNodes.filter(
-        node => node.nodeType === options.nodeType
+        (node) => node.nodeType === options.nodeType
       );
     }
 
     if (options.workflowName) {
       filteredNodes = filteredNodes.filter(
-        node => node.workflowName === options.workflowName
+        (node) => node.workflowName === options.workflowName
       );
     }
 
     if (options.branchName) {
       filteredNodes = filteredNodes.filter(
-        node => node.branchName === options.branchName
+        (node) => node.branchName === options.branchName
       );
     }
 
     if (options.dateRange) {
       const { from, to } = options.dateRange;
-      filteredNodes = filteredNodes.filter(node => {
+      filteredNodes = filteredNodes.filter((node) => {
         const date = node.timestamp.getTime();
-        return (!from || date >= from.getTime()) && 
-               (!to || date <= to.getTime());
+        return (
+          (!from || date >= from.getTime()) && (!to || date <= to.getTime())
+        );
       });
     }
 
     // Sort by timestamp for chronological order
-    filteredNodes.sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-    );
+    filteredNodes.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
     // Build tree structure if includeChildren is true
     if (options.includeChildren) {
@@ -325,8 +331,8 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     checkpointId2: string
   ): Promise<StateComparison<T>> {
     const [checkpoint1, checkpoint2] = await Promise.all([
-      this.checkpointManager.loadCheckpoint<T>(threadId, checkpointId1),
-      this.checkpointManager.loadCheckpoint<T>(threadId, checkpointId2),
+      this.checkpointAdapter.loadCheckpoint<T>(threadId, checkpointId1),
+      this.checkpointAdapter.loadCheckpoint<T>(threadId, checkpointId2),
     ]);
 
     if (!checkpoint1 || !checkpoint2) {
@@ -347,18 +353,16 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
    */
   async listBranches(threadId: string): Promise<readonly BranchInfo[]> {
     const branches: BranchInfo[] = [];
-    
+
     for (const branch of this.branches.values()) {
       if (branch.parentThreadId === threadId) {
         branches.push(branch);
       }
     }
-    
+
     // Sort by creation date
-    branches.sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-    );
-    
+    branches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
     return branches;
   }
 
@@ -371,7 +375,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     mergeStrategy: 'overwrite' | 'merge' | 'custom' = 'merge'
   ): Promise<void> {
     const branch = this.branches.get(branchId);
-    
+
     if (!branch) {
       throw new BranchNotFoundError(
         `Branch ${branchId} not found`,
@@ -379,18 +383,20 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
         branchId
       );
     }
-    
+
     if (branch.status !== 'active') {
-      throw new Error(`Branch ${branchId} is not active (status: ${branch.status})`);
+      throw new Error(
+        `Branch ${branchId} is not active (status: ${branch.status})`
+      );
     }
-    
+
     // In a real implementation, this would merge the branch state
     // back to the main thread based on the merge strategy
-    
+
     // Update branch status
     branch.status = 'merged';
     branch.updatedAt = new Date();
-    
+
     this.logger.log(
       `Merged branch ${branchId} into thread ${threadId} using ${mergeStrategy} strategy`
     );
@@ -401,7 +407,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
    */
   async deleteBranch(threadId: string, branchId: string): Promise<void> {
     const branch = this.branches.get(branchId);
-    
+
     if (!branch) {
       throw new BranchNotFoundError(
         `Branch ${branchId} not found`,
@@ -409,15 +415,15 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
         branchId
       );
     }
-    
+
     if (branch.status === 'merged') {
       throw new Error(`Cannot delete merged branch ${branchId}`);
     }
-    
+
     // Update status to abandoned
     branch.status = 'abandoned';
     branch.updatedAt = new Date();
-    
+
     this.logger.log(`Deleted branch ${branchId}`);
   }
 
@@ -431,17 +437,17 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     const history = await this.getExecutionHistory(threadId, {
       includeChildren: true,
     });
-    
+
     switch (format) {
       case 'json':
         return JSON.stringify(history, null, 2);
-        
+
       case 'csv':
         return this.exportHistoryAsCSV(history);
-        
+
       case 'mermaid':
         return this.exportHistoryAsMermaid(history);
-        
+
       default:
         return JSON.stringify(history, null, 2);
     }
@@ -457,12 +463,10 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
     const modified: string[] = [];
 
     // Deep comparison implementation
-    const compareObjects = (
-      obj1: unknown,
-      obj2: unknown,
-      path = ''
-    ): void => {
-      if (obj1 === obj2) {return;}
+    const compareObjects = (obj1: unknown, obj2: unknown, path = ''): void => {
+      if (obj1 === obj2) {
+        return;
+      }
 
       const type1 = typeof obj1;
       const type2 = typeof obj2;
@@ -572,10 +576,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   /**
    * Add history node
    */
-  private addHistoryNode(
-    threadId: string,
-    node: ExecutionHistoryNode
-  ): void {
+  private addHistoryNode(threadId: string, node: ExecutionHistoryNode): void {
     const history = this.executionHistory.get(threadId) ?? [];
     history.push(node);
     this.executionHistory.set(threadId, history);
@@ -584,9 +585,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
   /**
    * Export history as CSV
    */
-  private exportHistoryAsCSV(
-    history: readonly ExecutionHistoryNode[]
-  ): string {
+  private exportHistoryAsCSV(history: readonly ExecutionHistoryNode[]): string {
     const headers = [
       'Checkpoint ID',
       'Thread ID',
@@ -598,7 +597,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
       'Error',
     ];
 
-    const rows = history.map(node => [
+    const rows = history.map((node) => [
       node.checkpointId,
       node.threadId,
       node.nodeId,
@@ -611,7 +610,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
 
     return [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
     ].join('\n');
   }
 
@@ -627,7 +626,7 @@ export class TimeTravelService implements TimeTravelServiceInterface, OnModuleIn
       const nodeId = node.checkpointId.replace(/-/g, '');
       const label = `${node.nodeId}\\n${node.timestamp.toISOString()}`;
       const spacing = '  '.repeat(indent);
-      
+
       lines.push(`${spacing}${nodeId}["${label}"]`);
 
       if (node.children) {

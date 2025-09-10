@@ -31,13 +31,12 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc --noEmit --project tsconfig.lib.json",
+        "command": "tsc --noEmit --project tsconfig.lib.json --strict",
         "cwd": "libs/langgraph-modules/hitl"
       },
       "dependsOn": ["^typecheck"],
-      "cache": true
+      "cache": false
     },
-
     "nx-release-publish": {
       "executor": "@nx/js:release-publish",
       "options": {

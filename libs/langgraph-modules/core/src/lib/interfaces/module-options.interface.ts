@@ -413,6 +413,16 @@ export interface LangGraphModuleAsyncOptions
 }
 
 export interface LangGraphOptionsFactory {
-  createLangGraphOptions: () => | Promise<LangGraphModuleOptions>
+  createLangGraphOptions: () =>
+    | Promise<LangGraphModuleOptions>
     | LangGraphModuleOptions;
 }
+
+/**
+ * Generic factory function type for async module configuration
+ * Supports dependency injection with type-safe parameters
+ */
+export type AsyncModuleFactory<
+  TOptions = any,
+  TDeps extends readonly unknown[] = readonly unknown[]
+> = (...deps: TDeps) => Promise<TOptions> | TOptions;

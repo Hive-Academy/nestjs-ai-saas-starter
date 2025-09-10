@@ -1,7 +1,10 @@
-import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+import {
+  CHECKPOINT_ADAPTER_TOKEN,
+  ICheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentNetwork,
@@ -29,7 +32,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     private readonly agentRegistry: AgentRegistryService,
     private readonly networkManager: NetworkManagerService,
     private readonly llmProvider: LlmProviderService,
-    @Optional() private readonly checkpointManager?: CheckpointManagerService
+    @Inject(CHECKPOINT_ADAPTER_TOKEN)
+    private readonly checkpointAdapter: ICheckpointAdapter
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -351,16 +355,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       metadata?: Record<string, unknown>;
     } = {}
   ): Promise<any[]> {
-    if (!this.checkpointManager) {
-      this.logger.warn(
-        'CheckpointManager not available - returning empty checkpoints'
-      );
-      return [];
-    }
-
     try {
       const threadId = this.generateThreadId(networkId);
-      const checkpoints = await this.checkpointManager.listCheckpoints(
+      const checkpoints = await this.checkpointAdapter.listCheckpoints(
         threadId,
         {
           limit: options.limit || 10,
@@ -394,15 +391,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       config?: RunnableConfig;
     }
   ): Promise<MultiAgentResult> {
-    if (!this.checkpointManager) {
-      throw new Error(
-        'CheckpointManager not available - cannot resume from checkpoint'
-      );
-    }
-
     try {
       const threadId = this.generateThreadId(networkId);
-      const checkpoint = await this.checkpointManager.loadCheckpoint(
+      const checkpoint = await this.checkpointAdapter.loadCheckpoint(
         threadId,
         checkpointId
       );
@@ -436,7 +427,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
 
       // Return the checkpoint state as a result
       return {
-        finalState: checkpoint.checkpoint as AgentState,
+        finalState: checkpoint.channel_values as AgentState,
         executionPath: [],
         executionTime: 0,
         success: true,
@@ -454,28 +445,11 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    * Clear all checkpoints for a network
    */
   async clearNetworkCheckpoints(networkId: string): Promise<number> {
-    if (!this.checkpointManager) {
-      this.logger.warn(
-        'CheckpointManager not available - no checkpoints to clear'
-      );
-      return 0;
-    }
-
     try {
       const threadId = this.generateThreadId(networkId);
 
-      // Get all checkpoints for the network
-      const checkpoints = await this.checkpointManager.listCheckpoints(
-        threadId
-      );
-
-      if (checkpoints.length === 0) {
-        this.logger.debug(`No checkpoints found for network ${networkId}`);
-        return 0;
-      }
-
       // Use cleanup service to remove checkpoints for this specific thread
-      const cleaned = await this.checkpointManager.cleanupCheckpoints({
+      const cleaned = await this.checkpointAdapter.cleanupCheckpoints({
         threadIds: [threadId],
       });
 
@@ -502,13 +476,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     newestCheckpoint?: Date;
     totalSize?: number;
   }> {
-    if (!this.checkpointManager) {
-      return { totalCheckpoints: 0 };
-    }
-
     try {
       const threadId = this.generateThreadId(networkId);
-      const checkpoints = await this.checkpointManager.listCheckpoints(
+      const checkpoints = await this.checkpointAdapter.listCheckpoints(
         threadId
       );
 
@@ -517,7 +487,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       }
 
       const timestamps = checkpoints
-        .map((cp) => cp.metadata?.timestamp)
+        .map(([, , metadata]) => metadata?.timestamp)
         .filter(Boolean)
         .map((ts) => new Date(ts as string))
         .sort((a, b) => a.getTime() - b.getTime());
@@ -527,7 +497,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         oldestCheckpoint: timestamps[0],
         newestCheckpoint: timestamps[timestamps.length - 1],
         totalSize: checkpoints.reduce(
-          (sum, cp) => sum + (cp.metadata?.size || 0),
+          (sum, [, , metadata]) => sum + (metadata?.size || 0),
           0
         ),
       };

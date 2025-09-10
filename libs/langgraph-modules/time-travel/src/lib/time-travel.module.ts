@@ -2,7 +2,15 @@ import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TimeTravelService } from './services/time-travel.service';
 import { BranchManagerService } from './services/branch-manager.service';
-import { TimeTravelConfig } from './interfaces/time-travel.interface';
+import {
+  TimeTravelConfig,
+  TimeTravelModuleAsyncOptions,
+} from './interfaces/time-travel.interface';
+import {
+  CHECKPOINT_ADAPTER_TOKEN,
+  NoOpCheckpointAdapter,
+  ICheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 /**
  * Time travel module for workflow replay and debugging capabilities
  */
@@ -21,6 +29,11 @@ export class TimeTravelModule {
           maxCheckpointsPerThread: 100,
           maxBranchesPerThread: 10,
         },
+      },
+      // Checkpoint adapter provider - either provided or no-op
+      {
+        provide: CHECKPOINT_ADAPTER_TOKEN,
+        useValue: config?.checkpointAdapter || new NoOpCheckpointAdapter(),
       },
       TimeTravelService,
     ];
@@ -48,24 +61,30 @@ export class TimeTravelModule {
   /**
    * Configure time travel module asynchronously
    */
-  static forRootAsync(options: {
-    imports?: Array<Type | DynamicModule>;
-    useFactory: (
-      ...args: unknown[]
-    ) => Promise<TimeTravelConfig> | TimeTravelConfig;
-    inject?: Array<Type | string | symbol>;
-  }): DynamicModule {
+  static forRootAsync(options: TimeTravelModuleAsyncOptions): DynamicModule {
     const providers: Provider[] = [
       {
         provide: 'TIME_TRAVEL_CONFIG',
-        useFactory: options.useFactory,
+        useFactory: options.useFactory!,
         inject: options.inject ?? [],
+      },
+      // Checkpoint adapter provider - async factory
+      {
+        provide: CHECKPOINT_ADAPTER_TOKEN,
+        useFactory: async (...args: unknown[]) => {
+          const timeTravelConfig = await options.useFactory!(...args);
+          return (
+            timeTravelConfig?.checkpointAdapter || new NoOpCheckpointAdapter()
+          );
+        },
+        inject: options.inject || [],
       },
       {
         provide: TimeTravelService,
         useFactory: (
           configService: ConfigService,
-          timeTravelConfig: TimeTravelConfig
+          timeTravelConfig: TimeTravelConfig,
+          checkpointAdapter: ICheckpointAdapter
         ) => {
           // Merge config service values with provided config
           const mergedConfig = {
@@ -76,11 +95,9 @@ export class TimeTravelModule {
           // Store merged config back in ConfigService
           configService.set('timeTravel', mergedConfig);
 
-          // Create service with dependencies
-          const checkpointManager = configService.get('checkpointManager');
-          return new TimeTravelService(configService, checkpointManager);
+          return new TimeTravelService(configService, checkpointAdapter);
         },
-        inject: [ConfigService, 'TIME_TRAVEL_CONFIG'],
+        inject: [ConfigService, 'TIME_TRAVEL_CONFIG', CHECKPOINT_ADAPTER_TOKEN],
       },
       {
         provide: BranchManagerService,
