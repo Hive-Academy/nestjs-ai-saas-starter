@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 
 // Direct child module imports - Phase 3 validation
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';

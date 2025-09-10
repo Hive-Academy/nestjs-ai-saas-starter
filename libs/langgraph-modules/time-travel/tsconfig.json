@@ -4,7 +4,7 @@
   "include": [],
   "references": [
     {
-      "path": "../checkpoint"
+      "path": "../core"
     },
     {
       "path": "./tsconfig.lib.json"

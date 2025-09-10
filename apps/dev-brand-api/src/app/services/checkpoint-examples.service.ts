@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FunctionalWorkflowService } from '@hive-academy/langgraph-functional-api';
-import { MultiAgentService } from '@hive-academy/langgraph-multi-agent';
+import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
 import { TimeTravelService } from '@hive-academy/langgraph-time-travel';
-import { MonitoringService } from '@hive-academy/langgraph-monitoring';
+import { MonitoringFacadeService } from '@hive-academy/langgraph-monitoring';
 
 /**
  * Demonstration service showcasing the new optional checkpoint DI pattern
@@ -19,11 +19,11 @@ export class CheckpointExamplesService {
   constructor(
     // Checkpoint-enabled services (injected via forRootAsync with CheckpointManagerAdapter)
     private readonly functionalWorkflowService: FunctionalWorkflowService,
-    private readonly multiAgentService: MultiAgentService,
+    private readonly multiAgentService: MultiAgentCoordinatorService,
     private readonly timeTravelService: TimeTravelService,
 
     // Checkpoint-disabled service (injected via forRoot without checkpointAdapter)
-    private readonly monitoringService: MonitoringService
+    private readonly monitoringService: MonitoringFacadeService
   ) {}
 
   /**
@@ -49,7 +49,7 @@ export class CheckpointExamplesService {
       };
 
       const result = await this.functionalWorkflowService.executeWorkflow(
-        workflow,
+        JSON.stringify(workflow),
         {
           enableCheckpointing: true,
           threadId: `demo-${Date.now()}`,
@@ -163,21 +163,21 @@ export class CheckpointExamplesService {
 
       // This will create branches and snapshots in checkpoint storage
       // because TimeTravelModule was configured with CheckpointManagerAdapter
-      const timeline = await this.timeTravelService.createTimeline(
-        workflowState,
-        {
-          threadId: `time-travel-${Date.now()}`,
-          enableBranching: true,
-          maxBranches: 3,
-        }
+      const threadId = `time-travel-${Date.now()}`;
+      const checkpointId = 'initial-checkpoint';
+
+      // Create initial checkpoint
+      const timeline = await this.timeTravelService.getExecutionHistory(
+        threadId
       );
 
       // Demonstrate branching
-      await this.timeTravelService.createBranch(
-        timeline.id,
-        'experiment-branch'
-      );
-      await this.timeTravelService.createBranch(timeline.id, 'rollback-branch');
+      await this.timeTravelService.createBranch(threadId, checkpointId, {
+        name: 'experiment-branch',
+      });
+      await this.timeTravelService.createBranch(threadId, checkpointId, {
+        name: 'rollback-branch',
+      });
 
       return {
         timeline,

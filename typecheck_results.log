@@ -1,0 +1,566 @@
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
+
+ NX   Running target typecheck for 17 projects:
+
+- @hive-academy/nestjs-langgraph
+- @hive-academy/langgraph-workflow-engine
+- @hive-academy/langgraph-functional-api
+- @hive-academy/langgraph-multi-agent
+- @hive-academy/langgraph-time-travel
+- @hive-academy/langgraph-checkpoint
+- @hive-academy/langgraph-monitoring
+- @hive-academy/langgraph-streaming
+- @hive-academy/langgraph-platform
+- @hive-academy/langgraph-memory
+- @hive-academy/langgraph-core
+- @hive-academy/langgraph-hitl
+- dev-brand-ui-e2e
+- @hive-academy/nestjs-chromadb
+- dev-brand-api
+- @hive-academy/nestjs-neo4j
+- dev-brand-ui
+
+
+
+> nx run @hive-academy/langgraph-streaming:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-core:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-monitoring:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+(node:37728) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run @hive-academy/langgraph-platform:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-checkpoint:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-functional-api:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-hitl:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+(node:37728) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGINT listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:37728) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGTERM listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:37728) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGHUP listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+> nx run @hive-academy/nestjs-langgraph:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-time-travel:typecheck
+
+> npx tsc --noEmit --project tsconfig.lib.json --strict --skipLibCheck
+
+
+> nx run @hive-academy/langgraph-multi-agent:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run dev-brand-ui:typecheck
+
+> tsc --build --emitDeclarationOnly
+
+src/app/app.spec.ts(2,21): error TS6307: File 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/app.ts' is not listed within the file list of project 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/tsconfig.spec.json'. Projects must list all files or use an 'include' pattern.
+src/app/app.ts(3,27): error TS6307: File 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/nx-welcome.ts' is not listed within the file list of project 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/tsconfig.spec.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './nx-welcome' from file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/app.ts'
+    Imported via './nx-welcome' from file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/app.spec.ts'
+tsconfig.spec.json(3,3): error TS5098: Option 'customConditions' can only be used when 'moduleResolution' is set to 'node16', 'nodenext', or 'bundler'.
+> tsc --build --emitDeclarationOnly
+
+src/app/app.spec.ts(2,21): error TS6307: File 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/app.ts' is not listed within the file list of project 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/tsconfig.spec.json'. Projects must list all files or use an 'include' pattern.
+src/app/app.ts(3,27): error TS6307: File 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/nx-welcome.ts' is not listed within the file list of project 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/tsconfig.spec.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via './nx-welcome' from file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/app.ts'
+    Imported via './nx-welcome' from file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-ui/src/app/app.spec.ts'
+tsconfig.spec.json(3,3): error TS5098: Option 'customConditions' can only be used when 'moduleResolution' is set to 'node16', 'nodenext', or 'bundler'.
+Warning: command "tsc --build --emitDeclarationOnly" exited with non-zero status code
+> nx run @hive-academy/langgraph-workflow-engine:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-memory:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/nestjs-chromadb:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/nestjs-neo4j:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run dev-brand-api:typecheck
+
+> tsc --build --emitDeclarationOnly
+
+../../libs/langgraph-modules/nestjs-langgraph/src/lib/nestjs-langgraph.module.spec.ts(1,1): error TS6192: All imports in import declaration are unused.
+../../libs/langgraph-modules/nestjs-langgraph/src/lib/nestjs-langgraph.module.spec.ts(35,57): error TS2345: Argument of type '{ useFactory: () => { checkpoint: { enabled: boolean; }; }; inject: never[]; }' is not assignable to parameter of type 'LangGraphModuleAsyncOptions'.
+  Property 'defaultLLM' is missing in type '{ useFactory: () => { checkpoint: { enabled: boolean; }; }; inject: never[]; }' but required in type 'LangGraphModuleAsyncOptions'.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(2,1): error TS6133: 'ConfigService' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(112,13): error TS6133: 'threadId' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(113,13): error TS6133: 'checkpointNs' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(179,13): error TS6133: 'threadId' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(180,13): error TS6133: 'checkpointNs' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(200,13): error TS2353: Object literal may only specify known properties, and 'providers' does not exist in type 'CheckpointModuleOptions'.
+../../libs/langgraph-modules/monitoring/src/lib/core/monitoring-facade.service.spec.ts(1,16): error TS6133: 'TestingModule' is declared but its value is never read.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(155,42): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AlertRule'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(197,44): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AlertRule'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(244,44): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AlertRule'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(475,59): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(476,59): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(483,68): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(513,54): error TS2554: Expected 0 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(518,20): error TS2339: Property 'totalAlerts' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; ruleEvaluationTime: number; alertsProcessed: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(519,20): error TS2339: Property 'averageAlertsPerHour' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; ruleEvaluationTime: number; alertsProcessed: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(520,20): error TS2339: Property 'peakAlertPeriod' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; ruleEvaluationTime: number; alertsProcessed: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(527,13): error TS6133: 'rules' is declared but its value is never read.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(551,20): error TS2339: Property 'ruleEvaluationTime' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(584,20): error TS2339: Property 'alertsProcessed' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(613,38): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(640,59): error TS2345: Argument of type '"prometheus"' is not assignable to parameter of type '"json" | "csv" | undefined'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(659,68): error TS2554: Expected 1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(5,3): error TS6196: 'DashboardData' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(7,3): error TS6196: 'MetricData' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(9,3): error TS6196: 'WidgetPosition' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(192,15): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(451,82): error TS2345: Argument of type '{ name: string; customization: { refreshInterval: number; tags: { environment: string; }; }; }' is not assignable to parameter of type 'string'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(559,25): error TS2339: Property 'memoryUsage' does not exist on type '{ size: number; entries: { key: string; timestamp: Date; ttl: number; dataPoints: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(585,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(585,35): error TS7006: Parameter 'update' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(590,15): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(606,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(614,63): error TS2554: Expected 1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(616,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(616,34): error TS7006: Parameter 'batch' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(622,17): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(638,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(659,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(659,27): error TS7006: Parameter 'error' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(663,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(663,35): error TS7006: Parameter 'update' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(668,15): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(680,21): error TS2339: Property 'destroyed' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(682,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(698,20): error TS2339: Property 'views' does not exist on type '{ totalQueries: number; avgQueryTime: number; cacheHitRate: number; lastAccessed: Date; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(700,20): error TS2339: Property 'averageLoadTime' does not exist on type '{ totalQueries: number; avgQueryTime: number; cacheHitRate: number; lastAccessed: Date; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(701,20): error TS2339: Property 'mostViewedWidgets' does not exist on type '{ totalQueries: number; avgQueryTime: number; cacheHitRate: number; lastAccessed: Date; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(723,23): error TS2339: Property 'loadTime' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(724,23): error TS2339: Property 'widgetCount' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(725,23): error TS2339: Property 'optimization' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(726,23): error TS2339: Property 'recommendations' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(5,3): error TS6196: 'ServiceHealth' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(6,3): error TS6196: 'HealthStatus' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(7,3): error TS6196: 'HealthState' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(335,20): error TS2339: Property 'direction' does not exist on type '{ trend: "stable" | "degrading" | "improving"; healthyCount: number; degradedCount: number; unhealthyCount: number; avgResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(336,20): error TS2339: Property 'confidence' does not exist on type '{ trend: "stable" | "degrading" | "improving"; healthyCount: number; degradedCount: number; unhealthyCount: number; avgResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(355,56): error TS2554: Expected 0 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(356,23): error TS2339: Property 'pattern' does not exist on type '{ systemStability: "high" | "medium" | "low"; recommendations: string[]; criticalServices: string[]; avgSystemResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(357,23): error TS2339: Property 'reliability' does not exist on type '{ systemStability: "high" | "medium" | "low"; recommendations: string[]; criticalServices: string[]; avgSystemResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(414,42): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(485,66): error TS2345: Argument of type '"prometheus"' is not assignable to parameter of type '"json" | "csv" | undefined'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(503,44): error TS2345: Argument of type '{ url: string; onStateChange: boolean; includeDiagnostics: boolean; }' is not assignable to parameter of type '{ url: string; headers?: Record<string, string> | undefined; enabled: boolean; triggers: HealthState[]; }'.
+  Type '{ url: string; onStateChange: boolean; includeDiagnostics: boolean; }' is missing the following properties from type '{ url: string; headers?: Record<string, string> | undefined; enabled: boolean; triggers: HealthState[]; }': enabled, triggers
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(522,30): error TS2339: Property 'trigger' does not exist on type '{ timestamp: Date; serviceName: string; state: HealthState; success: boolean; responseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(523,30): error TS2339: Property 'service' does not exist on type '{ timestamp: Date; serviceName: string; state: HealthState; success: boolean; responseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(6,3): error TS6196: 'MetricTags' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(126,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(127,20): error TS2339: Property 'droppedMetrics' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(208,42): error TS2339: Property 'backendErrors' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(233,43): error TS2345: Argument of type 'MetricQuery' is not assignable to parameter of type 'string'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(253,20): error TS2339: Property 'invalidMetrics' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(283,20): error TS2339: Property 'lastError' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(284,20): error TS2339: Property 'lastError' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(306,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(307,20): error TS2339: Property 'droppedMetrics' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(355,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(359,13): error TS6133: 'startTime' is declared but its value is never read.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(365,20): error TS2339: Property 'avgProcessingTime' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(366,20): error TS2339: Property 'avgProcessingTime' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(367,20): error TS2339: Property 'avgProcessingTime' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(382,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(391,60): error TS2345: Argument of type '"prometheus"' is not assignable to parameter of type '"json" | "csv" | undefined'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(159,25): error TS2339: Property 'resource' does not exist on type '{ bottleneck: "memory" | "cpu" | "disk" | "network" | "none"; utilization: number; threshold: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(160,25): error TS2339: Property 'severity' does not exist on type '{ bottleneck: "memory" | "cpu" | "disk" | "network" | "none"; utilization: number; threshold: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(161,25): error TS2339: Property 'averageUtilization' does not exist on type '{ bottleneck: "memory" | "cpu" | "disk" | "network" | "none"; utilization: number; threshold: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(178,12): error TS2554: Expected 2 arguments, but got 3.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(181,77): error TS2345: Argument of type 'string' is not assignable to parameter of type 'TimeRange'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(182,22): error TS2551: Property 'hasPattern' does not exist on type '{ pattern: "stable" | "increasing" | "decreasing" | "volatile" | "cyclic"; confidence: number; peak_hours: number[]; avg_utilization: { cpu: number; memory: number; disk: number; network: number; }; }'. Did you mean 'pattern'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(183,22): error TS2339: Property 'patternType' does not exist on type '{ pattern: "stable" | "increasing" | "decreasing" | "volatile" | "cyclic"; confidence: number; peak_hours: number[]; avg_utilization: { cpu: number; memory: number; disk: number; network: number; }; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(184,22): error TS2339: Property 'peakPeriods' does not exist on type '{ pattern: "stable" | "increasing" | "decreasing" | "volatile" | "cyclic"; confidence: number; peak_hours: number[]; avg_utilization: { cpu: number; memory: number; disk: number; network: number; }; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(274,84): error TS2345: Argument of type 'TimeRange' is not assignable to parameter of type 'number[]'.
+  Type 'TimeRange' is missing the following properties from type 'number[]': length, pop, push, concat, and 29 more.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(323,79): error TS2554: Expected 1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(419,76): error TS2345: Argument of type '{ forecastHours: number; confidenceInterval: number; }' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(424,25): error TS2339: Property 'expectedValue' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(425,25): error TS2339: Property 'confidenceRange' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(425,72): error TS2339: Property 'expectedValue' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(426,25): error TS2339: Property 'confidenceRange' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(426,75): error TS2339: Property 'expectedValue' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(427,25): error TS2339: Property 'reliability' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(450,29): error TS2339: Property 'step' does not exist on type '{ component: string; severity: "high" | "medium" | "low"; impact: string; recommendation: string; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(480,23): error TS2551: Property 'currentUtilization' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'. Did you mean 'current_utilization'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(481,23): error TS2339: Property 'projectedCapacity' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(481,67): error TS2339: Property 'currentPeak' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(482,23): error TS2339: Property 'recommendedScaling' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(483,23): error TS2339: Property 'timeToCapacity' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(500,74): error TS2345: Argument of type '{ target: number; timeWindow: string; }' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(505,26): error TS2551: Property 'complianceRate' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'. Did you mean 'compliance_rate'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(506,26): error TS2339: Property 'violationCount' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(507,26): error TS2339: Property 'averageViolationSeverity' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(508,26): error TS2551: Property 'worstViolation' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'. Did you mean 'worst_violation'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(531,36): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(557,28): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(575,20): error TS2339: Property 'totalMetrics' does not exist on type '{ trackedMetrics: number; totalDataPoints: number; baselines: number; anomalies: number; resourceMetrics: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(576,20): error TS2339: Property 'memoryUsage' does not exist on type '{ trackedMetrics: number; totalDataPoints: number; baselines: number; anomalies: number; resourceMetrics: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(586,77): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(592,76): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(608,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<{ timestamp: Date; value: number; }>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(609,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<{ timestamp: Date; value: number; }>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(625,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<{ timestamp: Date; value: number; }>'.
+src/app/adapters/memory/chroma-vector.adapter.ts(2,33): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
+src/app/adapters/memory/chroma-vector.adapter.ts(12,3): error TS6133: 'InvalidCollectionError' is declared but its value is never read.
+src/app/adapters/memory/chroma-vector.adapter.ts(14,8): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/adapters/memory/chroma-vector.adapter.ts(37,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(38,10): error TS2339: Property 'validateStoreData' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(74,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(83,14): error TS2339: Property 'validateStoreData' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(129,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(150,15): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/app/adapters/memory/chroma-vector.adapter.ts(150,19): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/adapters/memory/chroma-vector.adapter.ts(167,18): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/app/adapters/memory/chroma-vector.adapter.ts(190,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(191,10): error TS2339: Property 'validateIds' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(219,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(260,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(294,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(2,30): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
+src/app/adapters/memory/neo4j-graph.adapter.ts(18,3): error TS6133: 'InvalidNodeError' is declared but its value is never read.
+src/app/adapters/memory/neo4j-graph.adapter.ts(20,3): error TS6133: 'SecurityError' is declared but its value is never read.
+src/app/adapters/memory/neo4j-graph.adapter.ts(22,8): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/adapters/memory/neo4j-graph.adapter.ts(45,10): error TS2339: Property 'validateNodeData' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(85,10): error TS2339: Property 'validateNodeId' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(86,10): error TS2339: Property 'validateNodeId' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(87,10): error TS2339: Property 'validateRelationshipData' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(129,10): error TS2339: Property 'validateNodeId' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(158,31): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(200,10): error TS2339: Property 'validateCypherQuery' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(205,43): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(207,30): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(356,41): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(644,31): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(667,31): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/app.module.ts(5,32): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
+src/app/app.module.ts(6,29): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
+src/app/app.module.ts(7,39): error TS2307: Cannot find module '@hive-academy/nestjs-langgraph' or its corresponding type declarations.
+src/app/app.module.ts(9,30): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/app.module.ts(19,8): error TS2307: Cannot find module '@hive-academy/langgraph-checkpoint' or its corresponding type declarations.
+src/app/app.module.ts(20,33): error TS2307: Cannot find module '@hive-academy/langgraph-streaming' or its corresponding type declarations.
+src/app/app.module.ts(21,28): error TS2307: Cannot find module '@hive-academy/langgraph-hitl' or its corresponding type declarations.
+src/app/app.module.ts(24,37): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/app.module.ts(25,34): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/app.module.ts(26,34): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/app.module.ts(27,32): error TS2307: Cannot find module '@hive-academy/langgraph-platform' or its corresponding type declarations.
+src/app/app.module.ts(28,34): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/app.module.ts(29,38): error TS2307: Cannot find module '@hive-academy/langgraph-workflow-engine' or its corresponding type declarations.
+src/app/app.module.ts(126,29): error TS2554: Expected 0 arguments, but got 1.
+src/app/config/checkpoint.config.ts(1,46): error TS2307: Cannot find module '@hive-academy/langgraph-checkpoint' or its corresponding type declarations.
+src/app/config/checkpoint.config.ts(19,5): error TS2367: This comparison appears to be unintentional because the types '"memory" | "redis" | "postgres" | "sqlite"' and '"postgresql"' have no overlap.
+src/app/config/chromadb.config.ts(2,44): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
+src/app/config/functional-api.config.ts(1,49): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/config/hitl.config.ts(1,40): error TS2307: Cannot find module '@hive-academy/langgraph-hitl' or its corresponding type declarations.
+src/app/config/langgraph-core.config.ts(1,45): error TS2307: Cannot find module '@hive-academy/langgraph-core' or its corresponding type declarations.
+src/app/config/memory.config.ts(1,42): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/config/monitoring.config.ts(1,39): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/config/multi-agent.config.ts(1,46): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/config/neo4j.config.ts(1,41): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
+src/app/config/nestjs-langgraph.config.ts(1,45): error TS2307: Cannot find module '@hive-academy/langgraph-core' or its corresponding type declarations.
+src/app/config/platform.config.ts(1,44): error TS2307: Cannot find module '@hive-academy/langgraph-platform' or its corresponding type declarations.
+src/app/config/streaming.config.ts(1,45): error TS2307: Cannot find module '@hive-academy/langgraph-streaming' or its corresponding type declarations.
+src/app/config/time-travel.config.ts(1,39): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/config/workflow-engine.config.ts(1,50): error TS2307: Cannot find module '@hive-academy/langgraph-workflow-engine' or its corresponding type declarations.
+src/app/controllers/health.controller.ts(222,9): error TS2322: Type '"up" | "degraded"' is not assignable to type 'HealthIndicatorStatus'.
+  Type '"degraded"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(268,9): error TS2322: Type '"up" | "partial"' is not assignable to type 'HealthIndicatorStatus'.
+  Type '"partial"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(283,9): error TS2322: Type '"configured"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(308,9): error TS2322: Type '"configured"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(333,9): error TS2322: Type '"configured"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/services/adapter-test.service.ts(14,42): error TS2307: Cannot find module '@hive-academy/langgraph-checkpoint' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(15,31): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(16,46): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(17,38): error TS2307: Cannot find module '@hive-academy/langgraph-hitl' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(18,39): error TS2307: Cannot find module '@hive-academy/langgraph-streaming' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(19,43): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(20,39): error TS2307: Cannot find module '@hive-academy/langgraph-platform' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(21,35): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(22,41): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(23,45): error TS2307: Cannot find module '@hive-academy/langgraph-workflow-engine' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(201,15): error TS6133: 'stats' is declared but its value is never read.
+src/app/services/adapter-test.service.ts(221,17): error TS6133: 'results_search' is declared but its value is never read.
+src/app/services/adapter-test.service.ts(262,17): error TS6133: 'stats' is declared but its value is never read.
+src/app/services/checkpoint-examples.service.ts(2,43): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/services/checkpoint-examples.service.ts(3,35): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/services/checkpoint-examples.service.ts(4,35): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/services/checkpoint-examples.service.ts(5,35): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/tests/modular-architecture.integration.spec.ts(2,24): error TS6133: 'ConfigService' is declared but its value is never read.
+src/app/tests/modular-architecture.integration.spec.ts(11,40): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/langgraph-core.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/langgraph-core.config.ts'.
+src/app/tests/modular-architecture.integration.spec.ts(12,37): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/checkpoint.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/checkpoint.config.ts'.
+src/app/tests/modular-architecture.integration.spec.ts(13,36): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/streaming.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/streaming.config.ts'.
+src/app/tests/modular-architecture.integration.spec.ts(14,31): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/hitl.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/hitl.config.ts'.
+> tsc --build --emitDeclarationOnly
+
+../../libs/langgraph-modules/nestjs-langgraph/src/lib/nestjs-langgraph.module.spec.ts(1,1): error TS6192: All imports in import declaration are unused.
+../../libs/langgraph-modules/nestjs-langgraph/src/lib/nestjs-langgraph.module.spec.ts(35,57): error TS2345: Argument of type '{ useFactory: () => { checkpoint: { enabled: boolean; }; }; inject: never[]; }' is not assignable to parameter of type 'LangGraphModuleAsyncOptions'.
+  Property 'defaultLLM' is missing in type '{ useFactory: () => { checkpoint: { enabled: boolean; }; }; inject: never[]; }' but required in type 'LangGraphModuleAsyncOptions'.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(2,1): error TS6133: 'ConfigService' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(112,13): error TS6133: 'threadId' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(113,13): error TS6133: 'checkpointNs' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(179,13): error TS6133: 'threadId' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(180,13): error TS6133: 'checkpointNs' is declared but its value is never read.
+../../libs/langgraph-modules/checkpoint/src/lib/tests/checkpoint.independence.spec.ts(200,13): error TS2353: Object literal may only specify known properties, and 'providers' does not exist in type 'CheckpointModuleOptions'.
+../../libs/langgraph-modules/monitoring/src/lib/core/monitoring-facade.service.spec.ts(1,16): error TS6133: 'TestingModule' is declared but its value is never read.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(155,42): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AlertRule'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(197,44): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AlertRule'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(244,44): error TS2345: Argument of type 'string' is not assignable to parameter of type 'AlertRule'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(475,59): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(476,59): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(483,68): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(513,54): error TS2554: Expected 0 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(518,20): error TS2339: Property 'totalAlerts' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; ruleEvaluationTime: number; alertsProcessed: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(519,20): error TS2339: Property 'averageAlertsPerHour' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; ruleEvaluationTime: number; alertsProcessed: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(520,20): error TS2339: Property 'peakAlertPeriod' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; ruleEvaluationTime: number; alertsProcessed: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(527,13): error TS6133: 'rules' is declared but its value is never read.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(551,20): error TS2339: Property 'ruleEvaluationTime' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(584,20): error TS2339: Property 'alertsProcessed' does not exist on type '{ totalRules: number; activeRules: number; evaluationCount: number; alertCount: number; activeAlerts: number; notificationProviders: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(613,38): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(640,59): error TS2345: Argument of type '"prometheus"' is not assignable to parameter of type '"json" | "csv" | undefined'.
+../../libs/langgraph-modules/monitoring/src/lib/services/alerting.service.spec.ts(659,68): error TS2554: Expected 1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(5,3): error TS6196: 'DashboardData' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(7,3): error TS6196: 'MetricData' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(9,3): error TS6196: 'WidgetPosition' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(192,15): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(451,82): error TS2345: Argument of type '{ name: string; customization: { refreshInterval: number; tags: { environment: string; }; }; }' is not assignable to parameter of type 'string'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(559,25): error TS2339: Property 'memoryUsage' does not exist on type '{ size: number; entries: { key: string; timestamp: Date; ttl: number; dataPoints: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(585,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(585,35): error TS7006: Parameter 'update' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(590,15): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(606,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(614,63): error TS2554: Expected 1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(616,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(616,34): error TS7006: Parameter 'batch' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(622,17): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(638,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(659,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(659,27): error TS7006: Parameter 'error' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(663,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(663,35): error TS7006: Parameter 'update' implicitly has an 'any' type.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(668,15): error TS2554: Expected 2 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(680,21): error TS2339: Property 'destroyed' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(682,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<DashboardData>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(698,20): error TS2339: Property 'views' does not exist on type '{ totalQueries: number; avgQueryTime: number; cacheHitRate: number; lastAccessed: Date; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(700,20): error TS2339: Property 'averageLoadTime' does not exist on type '{ totalQueries: number; avgQueryTime: number; cacheHitRate: number; lastAccessed: Date; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(701,20): error TS2339: Property 'mostViewedWidgets' does not exist on type '{ totalQueries: number; avgQueryTime: number; cacheHitRate: number; lastAccessed: Date; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(723,23): error TS2339: Property 'loadTime' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(724,23): error TS2339: Property 'widgetCount' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(725,23): error TS2339: Property 'optimization' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/dashboard.service.spec.ts(726,23): error TS2339: Property 'recommendations' does not exist on type '{ performance: string; suggestions: string[]; trends: { metric: string; trend: "stable" | "up" | "down"; change: number; }[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(5,3): error TS6196: 'ServiceHealth' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(6,3): error TS6196: 'HealthStatus' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(7,3): error TS6196: 'HealthState' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(335,20): error TS2339: Property 'direction' does not exist on type '{ trend: "stable" | "degrading" | "improving"; healthyCount: number; degradedCount: number; unhealthyCount: number; avgResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(336,20): error TS2339: Property 'confidence' does not exist on type '{ trend: "stable" | "degrading" | "improving"; healthyCount: number; degradedCount: number; unhealthyCount: number; avgResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(355,56): error TS2554: Expected 0 arguments, but got 1.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(356,23): error TS2339: Property 'pattern' does not exist on type '{ systemStability: "high" | "medium" | "low"; recommendations: string[]; criticalServices: string[]; avgSystemResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(357,23): error TS2339: Property 'reliability' does not exist on type '{ systemStability: "high" | "medium" | "low"; recommendations: string[]; criticalServices: string[]; avgSystemResponseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(414,42): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(485,66): error TS2345: Argument of type '"prometheus"' is not assignable to parameter of type '"json" | "csv" | undefined'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(503,44): error TS2345: Argument of type '{ url: string; onStateChange: boolean; includeDiagnostics: boolean; }' is not assignable to parameter of type '{ url: string; headers?: Record<string, string> | undefined; enabled: boolean; triggers: HealthState[]; }'.
+  Type '{ url: string; onStateChange: boolean; includeDiagnostics: boolean; }' is missing the following properties from type '{ url: string; headers?: Record<string, string> | undefined; enabled: boolean; triggers: HealthState[]; }': enabled, triggers
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(522,30): error TS2339: Property 'trigger' does not exist on type '{ timestamp: Date; serviceName: string; state: HealthState; success: boolean; responseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/health-check.service.spec.ts(523,30): error TS2339: Property 'service' does not exist on type '{ timestamp: Date; serviceName: string; state: HealthState; success: boolean; responseTime: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(6,3): error TS6196: 'MetricTags' is declared but never used.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(126,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(127,20): error TS2339: Property 'droppedMetrics' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(208,42): error TS2339: Property 'backendErrors' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(233,43): error TS2345: Argument of type 'MetricQuery' is not assignable to parameter of type 'string'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(253,20): error TS2339: Property 'invalidMetrics' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(283,20): error TS2339: Property 'lastError' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(284,20): error TS2339: Property 'lastError' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(306,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(307,20): error TS2339: Property 'droppedMetrics' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(355,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(359,13): error TS6133: 'startTime' is declared but its value is never read.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(365,20): error TS2339: Property 'avgProcessingTime' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(366,20): error TS2339: Property 'avgProcessingTime' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(367,20): error TS2339: Property 'avgProcessingTime' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(382,20): error TS2339: Property 'bufferSize' does not exist on type '{ processedMetrics: number; failedMetrics: number; bufferedMetrics: number; registeredBackends: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/metrics-collector.service.spec.ts(391,60): error TS2345: Argument of type '"prometheus"' is not assignable to parameter of type '"json" | "csv" | undefined'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(159,25): error TS2339: Property 'resource' does not exist on type '{ bottleneck: "memory" | "cpu" | "disk" | "network" | "none"; utilization: number; threshold: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(160,25): error TS2339: Property 'severity' does not exist on type '{ bottleneck: "memory" | "cpu" | "disk" | "network" | "none"; utilization: number; threshold: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(161,25): error TS2339: Property 'averageUtilization' does not exist on type '{ bottleneck: "memory" | "cpu" | "disk" | "network" | "none"; utilization: number; threshold: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(178,12): error TS2554: Expected 2 arguments, but got 3.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(181,77): error TS2345: Argument of type 'string' is not assignable to parameter of type 'TimeRange'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(182,22): error TS2551: Property 'hasPattern' does not exist on type '{ pattern: "stable" | "increasing" | "decreasing" | "volatile" | "cyclic"; confidence: number; peak_hours: number[]; avg_utilization: { cpu: number; memory: number; disk: number; network: number; }; }'. Did you mean 'pattern'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(183,22): error TS2339: Property 'patternType' does not exist on type '{ pattern: "stable" | "increasing" | "decreasing" | "volatile" | "cyclic"; confidence: number; peak_hours: number[]; avg_utilization: { cpu: number; memory: number; disk: number; network: number; }; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(184,22): error TS2339: Property 'peakPeriods' does not exist on type '{ pattern: "stable" | "increasing" | "decreasing" | "volatile" | "cyclic"; confidence: number; peak_hours: number[]; avg_utilization: { cpu: number; memory: number; disk: number; network: number; }; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(274,84): error TS2345: Argument of type 'TimeRange' is not assignable to parameter of type 'number[]'.
+  Type 'TimeRange' is missing the following properties from type 'number[]': length, pop, push, concat, and 29 more.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(323,79): error TS2554: Expected 1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(419,76): error TS2345: Argument of type '{ forecastHours: number; confidenceInterval: number; }' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(424,25): error TS2339: Property 'expectedValue' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(425,25): error TS2339: Property 'confidenceRange' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(425,72): error TS2339: Property 'expectedValue' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(426,25): error TS2339: Property 'confidenceRange' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(426,75): error TS2339: Property 'expectedValue' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(427,25): error TS2339: Property 'reliability' does not exist on type '{ predictions: { time: Date; value: number; confidence: number; }[]; accuracy: number; trend_direction: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(450,29): error TS2339: Property 'step' does not exist on type '{ component: string; severity: "high" | "medium" | "low"; impact: string; recommendation: string; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(480,23): error TS2551: Property 'currentUtilization' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'. Did you mean 'current_utilization'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(481,23): error TS2339: Property 'projectedCapacity' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(481,67): error TS2339: Property 'currentPeak' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(482,23): error TS2339: Property 'recommendedScaling' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(483,23): error TS2339: Property 'timeToCapacity' does not exist on type '{ current_utilization: number; projected_utilization: number; capacity_limit: number; time_to_limit: string; recommendations: string[]; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(500,74): error TS2345: Argument of type '{ target: number; timeWindow: string; }' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(505,26): error TS2551: Property 'complianceRate' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'. Did you mean 'compliance_rate'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(506,26): error TS2339: Property 'violationCount' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(507,26): error TS2339: Property 'averageViolationSeverity' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(508,26): error TS2551: Property 'worstViolation' does not exist on type '{ compliance_rate: number; violations: number; total_measurements: number; worst_violation: { timestamp: Date; value: number; }; trend: "stable" | "degrading" | "improving"; }'. Did you mean 'worst_violation'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(531,36): error TS2345: Argument of type 'Date' is not assignable to parameter of type 'number'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(557,28): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(575,20): error TS2339: Property 'totalMetrics' does not exist on type '{ trackedMetrics: number; totalDataPoints: number; baselines: number; anomalies: number; resourceMetrics: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(576,20): error TS2339: Property 'memoryUsage' does not exist on type '{ trackedMetrics: number; totalDataPoints: number; baselines: number; anomalies: number; resourceMetrics: number; }'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(586,77): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(592,76): error TS2554: Expected 0-1 arguments, but got 2.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(608,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<{ timestamp: Date; value: number; }>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(609,14): error TS2339: Property 'on' does not exist on type 'AsyncIterable<{ timestamp: Date; value: number; }>'.
+../../libs/langgraph-modules/monitoring/src/lib/services/performance-tracker.service.spec.ts(625,14): error TS2339: Property 'destroy' does not exist on type 'AsyncIterable<{ timestamp: Date; value: number; }>'.
+src/app/adapters/memory/chroma-vector.adapter.ts(2,33): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
+src/app/adapters/memory/chroma-vector.adapter.ts(12,3): error TS6133: 'InvalidCollectionError' is declared but its value is never read.
+src/app/adapters/memory/chroma-vector.adapter.ts(14,8): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/adapters/memory/chroma-vector.adapter.ts(37,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(38,10): error TS2339: Property 'validateStoreData' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(74,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(83,14): error TS2339: Property 'validateStoreData' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(129,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(150,15): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/app/adapters/memory/chroma-vector.adapter.ts(150,19): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/adapters/memory/chroma-vector.adapter.ts(167,18): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/app/adapters/memory/chroma-vector.adapter.ts(190,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(191,10): error TS2339: Property 'validateIds' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(219,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(260,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/chroma-vector.adapter.ts(294,10): error TS2339: Property 'validateCollection' does not exist on type 'ChromaVectorAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(2,30): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
+src/app/adapters/memory/neo4j-graph.adapter.ts(18,3): error TS6133: 'InvalidNodeError' is declared but its value is never read.
+src/app/adapters/memory/neo4j-graph.adapter.ts(20,3): error TS6133: 'SecurityError' is declared but its value is never read.
+src/app/adapters/memory/neo4j-graph.adapter.ts(22,8): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/adapters/memory/neo4j-graph.adapter.ts(45,10): error TS2339: Property 'validateNodeData' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(85,10): error TS2339: Property 'validateNodeId' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(86,10): error TS2339: Property 'validateNodeId' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(87,10): error TS2339: Property 'validateRelationshipData' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(129,10): error TS2339: Property 'validateNodeId' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(158,31): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(200,10): error TS2339: Property 'validateCypherQuery' does not exist on type 'Neo4jGraphAdapter'.
+src/app/adapters/memory/neo4j-graph.adapter.ts(205,43): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(207,30): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(356,41): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(644,31): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/adapters/memory/neo4j-graph.adapter.ts(667,31): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/app/app.module.ts(5,32): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
+src/app/app.module.ts(6,29): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
+src/app/app.module.ts(7,39): error TS2307: Cannot find module '@hive-academy/nestjs-langgraph' or its corresponding type declarations.
+src/app/app.module.ts(9,30): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/app.module.ts(19,8): error TS2307: Cannot find module '@hive-academy/langgraph-checkpoint' or its corresponding type declarations.
+src/app/app.module.ts(20,33): error TS2307: Cannot find module '@hive-academy/langgraph-streaming' or its corresponding type declarations.
+src/app/app.module.ts(21,28): error TS2307: Cannot find module '@hive-academy/langgraph-hitl' or its corresponding type declarations.
+src/app/app.module.ts(24,37): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/app.module.ts(25,34): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/app.module.ts(26,34): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/app.module.ts(27,32): error TS2307: Cannot find module '@hive-academy/langgraph-platform' or its corresponding type declarations.
+src/app/app.module.ts(28,34): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/app.module.ts(29,38): error TS2307: Cannot find module '@hive-academy/langgraph-workflow-engine' or its corresponding type declarations.
+src/app/app.module.ts(126,29): error TS2554: Expected 0 arguments, but got 1.
+src/app/config/checkpoint.config.ts(1,46): error TS2307: Cannot find module '@hive-academy/langgraph-checkpoint' or its corresponding type declarations.
+src/app/config/checkpoint.config.ts(19,5): error TS2367: This comparison appears to be unintentional because the types '"memory" | "redis" | "postgres" | "sqlite"' and '"postgresql"' have no overlap.
+src/app/config/chromadb.config.ts(2,44): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
+src/app/config/functional-api.config.ts(1,49): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/config/hitl.config.ts(1,40): error TS2307: Cannot find module '@hive-academy/langgraph-hitl' or its corresponding type declarations.
+src/app/config/langgraph-core.config.ts(1,45): error TS2307: Cannot find module '@hive-academy/langgraph-core' or its corresponding type declarations.
+src/app/config/memory.config.ts(1,42): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/config/monitoring.config.ts(1,39): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/config/multi-agent.config.ts(1,46): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/config/neo4j.config.ts(1,41): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
+src/app/config/nestjs-langgraph.config.ts(1,45): error TS2307: Cannot find module '@hive-academy/langgraph-core' or its corresponding type declarations.
+src/app/config/platform.config.ts(1,44): error TS2307: Cannot find module '@hive-academy/langgraph-platform' or its corresponding type declarations.
+src/app/config/streaming.config.ts(1,45): error TS2307: Cannot find module '@hive-academy/langgraph-streaming' or its corresponding type declarations.
+src/app/config/time-travel.config.ts(1,39): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/config/workflow-engine.config.ts(1,50): error TS2307: Cannot find module '@hive-academy/langgraph-workflow-engine' or its corresponding type declarations.
+src/app/controllers/health.controller.ts(222,9): error TS2322: Type '"up" | "degraded"' is not assignable to type 'HealthIndicatorStatus'.
+  Type '"degraded"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(268,9): error TS2322: Type '"up" | "partial"' is not assignable to type 'HealthIndicatorStatus'.
+  Type '"partial"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(283,9): error TS2322: Type '"configured"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(308,9): error TS2322: Type '"configured"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/controllers/health.controller.ts(333,9): error TS2322: Type '"configured"' is not assignable to type 'HealthIndicatorStatus'.
+src/app/services/adapter-test.service.ts(14,42): error TS2307: Cannot find module '@hive-academy/langgraph-checkpoint' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(15,31): error TS2307: Cannot find module '@hive-academy/langgraph-memory' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(16,46): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(17,38): error TS2307: Cannot find module '@hive-academy/langgraph-hitl' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(18,39): error TS2307: Cannot find module '@hive-academy/langgraph-streaming' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(19,43): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(20,39): error TS2307: Cannot find module '@hive-academy/langgraph-platform' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(21,35): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(22,41): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(23,45): error TS2307: Cannot find module '@hive-academy/langgraph-workflow-engine' or its corresponding type declarations.
+src/app/services/adapter-test.service.ts(201,15): error TS6133: 'stats' is declared but its value is never read.
+src/app/services/adapter-test.service.ts(221,17): error TS6133: 'results_search' is declared but its value is never read.
+src/app/services/adapter-test.service.ts(262,17): error TS6133: 'stats' is declared but its value is never read.
+src/app/services/checkpoint-examples.service.ts(2,43): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+src/app/services/checkpoint-examples.service.ts(3,35): error TS2307: Cannot find module '@hive-academy/langgraph-multi-agent' or its corresponding type declarations.
+src/app/services/checkpoint-examples.service.ts(4,35): error TS2307: Cannot find module '@hive-academy/langgraph-time-travel' or its corresponding type declarations.
+src/app/services/checkpoint-examples.service.ts(5,35): error TS2307: Cannot find module '@hive-academy/langgraph-monitoring' or its corresponding type declarations.
+src/app/tests/modular-architecture.integration.spec.ts(2,24): error TS6133: 'ConfigService' is declared but its value is never read.
+src/app/tests/modular-architecture.integration.spec.ts(11,40): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/langgraph-core.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/langgraph-core.config.ts'.
+src/app/tests/modular-architecture.integration.spec.ts(12,37): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/checkpoint.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/checkpoint.config.ts'.
+src/app/tests/modular-architecture.integration.spec.ts(13,36): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/streaming.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/streaming.config.ts'.
+src/app/tests/modular-architecture.integration.spec.ts(14,31): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/config/hitl.config.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/config/hitl.config.ts'.
+Warning: command "tsc --build --emitDeclarationOnly" exited with non-zero status code
+
+
+ NX   Running target typecheck for 17 projects failed
+
+Tasks not run because their dependencies failed or --nx-bail=true:
+
+- dev-brand-ui-e2e:typecheck
+
+Failed tasks:
+
+- dev-brand-ui:typecheck
+- dev-brand-api:typecheck
+

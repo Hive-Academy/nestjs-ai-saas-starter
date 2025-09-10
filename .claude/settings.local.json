@@ -23,7 +23,14 @@
       "Bash(npx nx test:*)",
       "Bash(npx tsc:*)",
       "Bash(node:*)",
-      "Bash(npx nx typecheck:*)"
+      "Bash(npx nx typecheck:*)",
+      "Bash(npx nx run @hive-academy/nestjs-chromadb:typecheck)",
+      "Bash(npx nx run @hive-academy/nestjs-neo4j:typecheck)",
+      "Bash(npx nx run @hive-academy/langgraph-checkpoint:typecheck)",
+      "Bash(npx nx run-many:*)",
+      "Bash(npm install:*)",
+      "Bash(npx nx serve:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": [],

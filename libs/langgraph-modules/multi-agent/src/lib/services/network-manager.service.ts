@@ -11,8 +11,8 @@ import {
   NetworkConfigurationError,
   AgentNotFoundError,
   AgentNetworkSchema,
-  MultiAgentModuleOptions,
 } from '../interfaces/multi-agent.interface';
+import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
 import { AgentRegistryService } from './agent-registry.service';
 import { GraphBuilderService } from './graph-builder.service';
 import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';

@@ -219,7 +219,7 @@ export class HealthController {
 
     return {
       system: {
-        status: isHealthy ? 'up' : 'degraded',
+        status: isHealthy ? 'up' : 'down',
         responseTime: `${responseTimeMs.toFixed(2)}ms`,
         memory: {
           used: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
@@ -265,7 +265,7 @@ export class HealthController {
 
     return {
       libraries: {
-        status: isHealthy ? 'up' : 'partial',
+        status: isHealthy ? 'up' : 'down',
         available: availableLibraries,
         unavailable: unavailableLibraries,
         totalConfigured: libraryPaths.length,
@@ -280,18 +280,18 @@ export class HealthController {
   private async coreLibrariesCheck(): Promise<HealthIndicatorResult> {
     return {
       coreLibraries: {
-        status: 'configured',
+        status: 'up',
         libraries: {
           chromadb: {
-            status: 'configured',
+            status: 'up',
             purpose: 'Vector database for semantic search',
           },
           neo4j: {
-            status: 'configured',
+            status: 'up',
             purpose: 'Graph database for relationships',
           },
           langgraph: {
-            status: 'configured',
+            status: 'up',
             purpose: 'AI workflow orchestration',
           },
         },
@@ -305,7 +305,7 @@ export class HealthController {
   private async langgraphModulesCheck(): Promise<HealthIndicatorResult> {
     return {
       langgraphModules: {
-        status: 'configured',
+        status: 'up',
         count: 11,
         modules: {
           checkpoint: 'State persistence and recovery',
@@ -330,20 +330,20 @@ export class HealthController {
   private async databaseConnectionsCheck(): Promise<HealthIndicatorResult> {
     return {
       databases: {
-        status: 'configured',
+        status: 'up',
         connections: {
           chromadb: {
-            status: 'configured',
+            status: 'up',
             url: 'http://localhost:8000',
             purpose: 'Vector embeddings and semantic search',
           },
           neo4j: {
-            status: 'configured',
+            status: 'up',
             url: 'bolt://localhost:7687',
             purpose: 'Graph relationships and complex queries',
           },
           redis: {
-            status: 'configured',
+            status: 'up',
             url: 'redis://localhost:6379',
             purpose: 'Cache and session storage',
           },

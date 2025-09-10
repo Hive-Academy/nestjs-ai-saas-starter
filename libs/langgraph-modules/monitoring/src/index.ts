@@ -4,6 +4,7 @@ export { LanggraphModulesMonitoringModule as MonitoringModule } from './lib/lang
 
 // Core Services
 export { MonitoringFacadeService } from './lib/core/monitoring-facade.service';
+export { MonitoringFacadeService as MonitoringService } from './lib/core/monitoring-facade.service';
 export { MetricsCollectorService } from './lib/services/metrics-collector.service';
 export { AlertingService } from './lib/services/alerting.service';
 export { HealthCheckService } from './lib/services/health-check.service';

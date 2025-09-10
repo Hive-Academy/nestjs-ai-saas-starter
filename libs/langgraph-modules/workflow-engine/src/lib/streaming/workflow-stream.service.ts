@@ -13,9 +13,6 @@ import type {
   StreamUpdate,
   StreamMetadata,
   TokenData,
-  StreamTokenMetadata,
-  StreamEventMetadata,
-  StreamProgressMetadata,
 } from '@hive-academy/langgraph-streaming';
 import {
   StreamEventType,
@@ -346,7 +343,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     message: any,
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): AsyncGenerator<StreamUpdate> {
     if (!message.content || typeof message.content !== 'string') {
       return;
@@ -431,7 +428,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     llmStream: AsyncGenerator<any>,
-    config?: StreamTokenMetadata
+    config?: StreamTokenDecoratorMetadata
   ): AsyncGenerator<StreamUpdate> {
     const tokenConfig =
       config || this.getTokenStreamConfig(executionId, nodeId);
@@ -802,7 +799,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private getTokenStreamConfig(
     executionId: string,
     nodeId: string
-  ): StreamTokenMetadata | undefined {
+  ): StreamTokenDecoratorMetadata | undefined {
     return this.tokenStreamConfigs.get(`${executionId}:${nodeId}`);
   }
 
@@ -812,7 +809,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private getEventStreamConfig(
     executionId: string,
     nodeId: string
-  ): StreamEventMetadata | undefined {
+  ): StreamEventDecoratorMetadata | undefined {
     return this.eventStreamConfigs.get(`${executionId}:${nodeId}`);
   }
 
@@ -842,7 +839,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   private tokenizeContent(
     content: string,
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): string[] {
     // Simple word-based tokenization - can be enhanced with proper tokenizers
     const tokens = content.split(/\s+/).filter((token) => token.length > 0);
@@ -864,7 +861,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   private shouldIncludeToken(
     token: string,
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): boolean {
     if (!config.filter) {
       return true;
@@ -894,7 +891,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Filter events based on configuration
    */
-  private filterEvents(events: any[], config: StreamEventMetadata): any[] {
+  private filterEvents(
+    events: any[],
+    config: StreamEventDecoratorMetadata
+  ): any[] {
     if (!config.filter) {
       return events;
     }
@@ -925,7 +925,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Transform events using configuration
    */
-  private transformEvents(events: any[], config: StreamEventMetadata): any[] {
+  private transformEvents(
+    events: any[],
+    config: StreamEventDecoratorMetadata
+  ): any[] {
     if (!config.transformer) {
       return events;
     }
@@ -940,7 +943,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     buffer: string[],
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): Promise<void> {
     if (buffer.length === 0) {
       return;

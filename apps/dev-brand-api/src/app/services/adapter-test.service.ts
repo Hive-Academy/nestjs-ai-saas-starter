@@ -198,7 +198,7 @@ export class AdapterTestService {
     try {
       // Test basic memory service functionality
       if (typeof this.memory.getStats === 'function') {
-        const stats = await this.memory.getStats();
+        await this.memory.getStats();
         results.canGetStats = true;
         this.logger.log('✅ Memory stats retrieval successful');
       }
@@ -218,7 +218,7 @@ export class AdapterTestService {
 
       if (typeof this.memory.search === 'function') {
         try {
-          const results_search = await this.memory.search({
+          await this.memory.search({
             query: 'test query',
             limit: 3,
 
@@ -259,7 +259,7 @@ export class AdapterTestService {
       // Test checkpoint stats
       if (typeof this.checkpoint.getCheckpointStats === 'function') {
         try {
-          const stats = await this.checkpoint.getCheckpointStats();
+          await this.checkpoint.getCheckpointStats();
           results.canListCheckpoints = true;
           this.logger.log('✅ Checkpoint stats successful');
         } catch (error: any) {

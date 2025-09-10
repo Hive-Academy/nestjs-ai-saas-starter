@@ -9,7 +9,6 @@ import {
   VectorGetOptions,
   VectorGetResult,
   VectorOperationError,
-  InvalidCollectionError,
   InvalidInputError,
 } from '@hive-academy/langgraph-memory';
 
@@ -45,7 +44,7 @@ export class ChromaVectorAdapter extends IVectorService {
         {
           id,
           document: data.document,
-          metadata: data.metadata || {},
+          metadata: this.sanitizeMetadata(data.metadata || {}),
           embedding: data.embedding,
         },
       ]);
@@ -92,7 +91,7 @@ export class ChromaVectorAdapter extends IVectorService {
       const documents = data.map((item) => ({
         id: item.id || this.generateId(),
         document: item.document,
-        metadata: item.metadata || {},
+        metadata: this.sanitizeMetadata(item.metadata || {}),
         embedding: item.embedding,
       }));
 
@@ -135,36 +134,39 @@ export class ChromaVectorAdapter extends IVectorService {
     }
 
     try {
-      // Use ChromaDBService's query method
-      const results = await this.chromaDBService.queryDocuments(collection, {
-        queryTexts: query.queryText ? [query.queryText] : undefined,
-        queryEmbeddings: query.queryEmbedding
-          ? [query.queryEmbedding]
-          : undefined,
-        nResults: query.limit || 10,
-        where: query.filter,
-      });
+      // Use ChromaDBService's searchDocuments method
+      const results = await this.chromaDBService.searchDocuments(
+        collection,
+        query.queryText ? [query.queryText] : undefined,
+        query.queryEmbedding ? [Array.from(query.queryEmbedding)] : undefined,
+        {
+          nResults: query.limit || 10,
+          where: query.filter as any,
+        }
+      );
 
       // Map ChromaDB results to our interface
-      const searchResults: VectorSearchResult[] = results.ids[0]
-        .map((id, index) => {
-          const distance = results.distances?.[0]?.[index] || 1;
+      const searchResults: VectorSearchResult[] = [];
+
+      if (results.ids && results.ids.length > 0) {
+        for (let i = 0; i < results.ids[0].length; i++) {
+          const distance = results.distances?.[0]?.[i] || 1;
           const relevanceScore = Math.max(0, 1 - distance);
 
           // Filter by minimum score if specified
           if (query.minScore && relevanceScore < query.minScore) {
-            return null;
+            continue;
           }
 
-          return {
-            id,
-            document: results.documents[0][index] || '',
-            metadata: results.metadatas?.[0]?.[index] || {},
+          searchResults.push({
+            id: results.ids[0][i],
+            document: results.documents?.[0]?.[i] || '',
+            metadata: results.metadatas?.[0]?.[i] || {},
             distance,
             relevanceScore,
-          };
-        })
-        .filter((result): result is VectorSearchResult => result !== null);
+          });
+        }
+      }
 
       this.logger.debug(
         `Found ${searchResults.length} similar documents in collection ${collection}`
@@ -261,7 +263,7 @@ export class ChromaVectorAdapter extends IVectorService {
 
     try {
       // Use ChromaDBService to get collection info
-      const collectionInfo = await this.chromaDBService.getCollectionInfo(
+      const collectionInfo = await this.chromaDBService.getCollection(
         collection
       );
 
@@ -296,7 +298,7 @@ export class ChromaVectorAdapter extends IVectorService {
     try {
       const result = await this.chromaDBService.getDocuments(collection, {
         ids: options.ids as string[] | undefined,
-        where: options.where,
+        where: options.where as any,
         limit: options.limit,
         offset: options.offset,
         include: [
@@ -336,6 +338,31 @@ export class ChromaVectorAdapter extends IVectorService {
    */
   private generateId(): string {
     return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Sanitize metadata to match ChromaMetadata constraints
+   */
+  private sanitizeMetadata(
+    metadata: Record<string, unknown>
+  ): Record<string, string | number | boolean | null> {
+    const sanitized: Record<string, string | number | boolean | null> = {};
+
+    for (const [key, value] of Object.entries(metadata)) {
+      if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        value === null
+      ) {
+        sanitized[key] = value;
+      } else if (value !== undefined) {
+        // Convert other types to string
+        sanitized[key] = String(value);
+      }
+    }
+
+    return sanitized;
   }
 
   /**
