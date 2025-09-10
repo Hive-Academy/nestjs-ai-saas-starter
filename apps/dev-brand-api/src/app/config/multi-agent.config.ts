@@ -72,15 +72,13 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
         process.env.MULTI_AGENT_CHECKPOINT_THREAD_PREFIX || 'multi-agent',
     },
 
-    // Network configuration (optional)
-    network: {
-      maxConcurrentAgents: parseInt(
-        process.env.MULTI_AGENT_MAX_CONCURRENT || '10'
-      ),
-      executionTimeout: parseInt(
-        process.env.MULTI_AGENT_EXECUTION_TIMEOUT || '300000'
-      ), // 5 minutes
-      retryAttempts: parseInt(process.env.MULTI_AGENT_RETRY_ATTEMPTS || '3'),
-    },
+    // Agent network limits
+    maxConcurrentAgents: parseInt(
+      process.env.MULTI_AGENT_MAX_CONCURRENT || '10'
+    ),
+    executionTimeout: parseInt(
+      process.env.MULTI_AGENT_EXECUTION_TIMEOUT || '300000'
+    ), // 5 minutes
+    retryAttempts: parseInt(process.env.MULTI_AGENT_RETRY_ATTEMPTS || '3'),
   };
 }

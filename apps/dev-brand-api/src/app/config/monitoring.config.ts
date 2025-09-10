@@ -43,7 +43,7 @@ export function getMonitoringConfig(): MonitoringConfig {
           enabled: !!process.env.MONITORING_WEBHOOK_URL,
         },
       ],
-      rules: [
+      defaultRules: [
         {
           name: 'high-error-rate',
           description: 'Alert when error rate exceeds threshold',
@@ -96,7 +96,6 @@ export function getMonitoringConfig(): MonitoringConfig {
 
     // Dashboard settings
     dashboard: {
-      enabled: process.env.MONITORING_DASHBOARD_ENABLED !== 'false',
       port: parseInt(process.env.MONITORING_DASHBOARD_PORT || '3001'),
       refreshInterval: parseInt(
         process.env.MONITORING_REFRESH_INTERVAL || '5000'

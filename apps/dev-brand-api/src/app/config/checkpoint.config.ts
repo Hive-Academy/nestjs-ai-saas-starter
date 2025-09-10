@@ -14,9 +14,8 @@ export const getCheckpointConfig = (): CheckpointModuleOptions => {
       | 'postgres'
       | 'sqlite') || 'memory';
 
-  // Map 'postgresql' to 'postgres' for consistency
-  const mappedStorageType =
-    storageType === 'postgresql' ? 'postgres' : storageType;
+  // Ensure valid storage type
+  const mappedStorageType = storageType;
 
   const saverConfig = {
     type: mappedStorageType,
