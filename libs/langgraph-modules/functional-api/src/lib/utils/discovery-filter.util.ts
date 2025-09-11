@@ -1,4 +1,4 @@
-import { DiscoveredClass } from '@golevelup/nestjs-discovery';
+import type { DiscoveredClass } from '@golevelup/nestjs-discovery';
 import { Logger } from '@nestjs/common';
 import { ENTRYPOINT_METADATA_KEY } from '../decorators/entrypoint.decorator';
 import { TASK_METADATA_KEY } from '../decorators/task.decorator';
@@ -24,7 +24,7 @@ export class DiscoveryFilterUtil {
     'EntityManager',
     'QueryRunner',
     'DataSource',
-    
+
     // NestJS core
     'HealthCheckService',
     'TerminusLogger',
@@ -32,39 +32,39 @@ export class DiscoveryFilterUtil {
     'DiskHealthIndicator',
     'MemoryHealthIndicator',
     'MicroserviceHealthIndicator',
-    
+
     // Discovery and core services that would cause circular deps
     'DiscoveryService',
     'ModuleRef',
     'ApplicationContext',
     'NestContainer',
-    
+
     // Configuration and environment
     'ConfigService',
     'ConfigModule',
     'Logger',
     'LoggerService',
-    
+
     // Redis/Cache related
     'RedisHealthIndicator',
     'CacheModule',
     'RedisModule',
-    
+
     // HTTP/Network related
     'HttpModule',
     'HttpService',
     'AxiosInstance',
-    
+
     // Neo4j specific
     'Neo4jService',
     'Neo4jHealthIndicator',
     'Neo4jDriver',
     'Session',
-    
+
     // ChromaDB specific
     'ChromaClient',
     'ChromaHealthIndicator',
-    
+
     // Monitoring and metrics
     'PrometheusModule',
     'MetricsModule',
@@ -75,7 +75,9 @@ export class DiscoveryFilterUtil {
    * Safe filter for Entrypoint-decorated providers
    * Only includes providers that have @Entrypoint or @Task decorated methods
    */
-  static createWorkflowFilter(excludeServiceNames: string[] = []): (discovered: DiscoveredClass) => boolean {
+  static createWorkflowFilter(
+    excludeServiceNames: string[] = []
+  ): (discovered: DiscoveredClass) => boolean {
     return (discovered: DiscoveredClass) => {
       try {
         // Basic safety checks
@@ -84,7 +86,10 @@ export class DiscoveryFilterUtil {
         }
 
         // Check constructor and name existence
-        if (!discovered.instance.constructor || !discovered.instance.constructor.name) {
+        if (
+          !discovered.instance.constructor ||
+          !discovered.instance.constructor.name
+        ) {
           return false;
         }
 
@@ -101,8 +106,10 @@ export class DiscoveryFilterUtil {
         }
 
         // Pre-filter: Only include classes that have workflow decorators
-        const hasWorkflowMethods = this.hasWorkflowDecorators(discovered.instance.constructor);
-        
+        const hasWorkflowMethods = this.hasWorkflowDecorators(
+          discovered.instance.constructor
+        );
+
         if (hasWorkflowMethods) {
           this.logger.debug(`Including workflow provider: ${className}`);
         }
@@ -110,7 +117,10 @@ export class DiscoveryFilterUtil {
         return hasWorkflowMethods;
       } catch (error) {
         // If any error occurs during filtering, exclude the provider
-        this.logger.warn(`Failed to filter provider ${discovered.name || 'unknown'}:`, error instanceof Error ? error.message : String(error));
+        this.logger.warn(
+          `Failed to filter provider ${discovered.name || 'unknown'}:`,
+          error instanceof Error ? error.message : String(error)
+        );
         return false;
       }
     };
@@ -120,7 +130,7 @@ export class DiscoveryFilterUtil {
    * Check if a class name matches excluded patterns
    */
   private static isExcludedClass(className: string): boolean {
-    return this.EXCLUDED_PATTERNS.some(pattern => {
+    return this.EXCLUDED_PATTERNS.some((pattern) => {
       // Support both exact matches and pattern matching
       if (pattern.includes('*')) {
         const regex = new RegExp(pattern.replace(/\*/g, '.*'));
@@ -136,13 +146,15 @@ export class DiscoveryFilterUtil {
   private static hasWorkflowDecorators(targetClass: any): boolean {
     try {
       // Check for entrypoint metadata
-      const entrypointMethods = Reflect.getMetadata(ENTRYPOINT_METADATA_KEY, targetClass) || [];
+      const entrypointMethods =
+        Reflect.getMetadata(ENTRYPOINT_METADATA_KEY, targetClass) || [];
       if (entrypointMethods.length > 0) {
         return true;
       }
 
       // Check for task metadata
-      const taskMethods = Reflect.getMetadata(TASK_METADATA_KEY, targetClass) || [];
+      const taskMethods =
+        Reflect.getMetadata(TASK_METADATA_KEY, targetClass) || [];
       if (taskMethods.length > 0) {
         return true;
       }
@@ -156,11 +168,19 @@ export class DiscoveryFilterUtil {
       const methodNames = Object.getOwnPropertyNames(prototype);
       for (const methodName of methodNames) {
         if (methodName === 'constructor') continue;
-        
+
         // Check if method has entrypoint or task metadata
-        const hasEntrypoint = Reflect.hasMetadata(ENTRYPOINT_METADATA_KEY, prototype, methodName);
-        const hasTask = Reflect.hasMetadata(TASK_METADATA_KEY, prototype, methodName);
-        
+        const hasEntrypoint = Reflect.hasMetadata(
+          ENTRYPOINT_METADATA_KEY,
+          prototype,
+          methodName
+        );
+        const hasTask = Reflect.hasMetadata(
+          TASK_METADATA_KEY,
+          prototype,
+          methodName
+        );
+
         if (hasEntrypoint || hasTask) {
           return true;
         }
@@ -177,7 +197,9 @@ export class DiscoveryFilterUtil {
    * Create a general purpose safe provider filter
    * This can be used as a fallback when specific decorator filtering isn't needed
    */
-  static createSafeFilter(excludeServiceNames: string[] = []): (discovered: DiscoveredClass) => boolean {
+  static createSafeFilter(
+    excludeServiceNames: string[] = []
+  ): (discovered: DiscoveredClass) => boolean {
     return (discovered: DiscoveredClass) => {
       try {
         // Basic safety checks
@@ -186,7 +208,10 @@ export class DiscoveryFilterUtil {
         }
 
         // Check constructor and name existence
-        if (!discovered.instance.constructor || !discovered.instance.constructor.name) {
+        if (
+          !discovered.instance.constructor ||
+          !discovered.instance.constructor.name
+        ) {
           return false;
         }
 
@@ -205,7 +230,10 @@ export class DiscoveryFilterUtil {
         return true;
       } catch (error) {
         // If any error occurs during filtering, exclude the provider
-        this.logger.warn(`Failed to filter provider ${discovered.name || 'unknown'}:`, error instanceof Error ? error.message : String(error));
+        this.logger.warn(
+          `Failed to filter provider ${discovered.name || 'unknown'}:`,
+          error instanceof Error ? error.message : String(error)
+        );
         return false;
       }
     };

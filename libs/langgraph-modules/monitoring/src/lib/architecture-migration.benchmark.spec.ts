@@ -6,7 +6,6 @@ import { performance } from 'perf_hooks';
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
-import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
 describe('Architecture Migration Performance Benchmarks', () => {
   describe('TASK_INT_011 Phase 3 Performance Validation', () => {
@@ -32,9 +31,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 isGlobal: true,
                 envFilePath: '.env.test',
               }),
-              NestjsLanggraphModule.forRoot({
-                llm: { provider: 'openai' },
-              }),
+
               LanggraphModulesCheckpointModule.forRoot({
                 providers: ['memory'],
                 configs: { memory: { maxSizeBytes: 1024 * 1024 } },
@@ -64,7 +61,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
 
         console.log(`Startup Performance Results:
           Average: ${averageStartupTime.toFixed(2)}ms
-          Min: ${minStartupTime.toFixed(2)}ms  
+          Min: ${minStartupTime.toFixed(2)}ms
           Max: ${maxStartupTime.toFixed(2)}ms
           Target: <${PERFORMANCE_TARGETS.STARTUP_TIME_MS}ms`);
 
@@ -78,11 +75,6 @@ describe('Architecture Migration Performance Benchmarks', () => {
 
       it('should validate individual module initialization times', async () => {
         const moduleConfigs = [
-          {
-            name: 'NestjsLanggraphModule',
-            factory: () =>
-              NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
-          },
           {
             name: 'CheckpointModule',
             factory: () =>
@@ -153,9 +145,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
               isGlobal: true,
               envFilePath: '.env.test',
             }),
-            NestjsLanggraphModule.forRoot({
-              llm: { provider: 'openai' },
-            }),
+
             LanggraphModulesCheckpointModule.forRoot({
               providers: ['memory'],
               configs: { memory: { maxSizeBytes: 1024 * 1024 } },
@@ -210,7 +200,6 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 isGlobal: true,
                 envFilePath: '.env.test',
               }),
-              NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
             ],
             expectedMaxMB: 15,
           },
@@ -221,7 +210,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 isGlobal: true,
                 envFilePath: '.env.test',
               }),
-              NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
+
               LanggraphModulesCheckpointModule.forRoot({
                 providers: ['memory'],
                 configs: { memory: { maxSizeBytes: 1024 * 1024 } },
@@ -236,7 +225,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 isGlobal: true,
                 envFilePath: '.env.test',
               }),
-              NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
+
               StreamingModule.forRoot({ enabled: true, bufferSize: 1024 }),
             ],
             expectedMaxMB: 18,
@@ -248,7 +237,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 isGlobal: true,
                 envFilePath: '.env.test',
               }),
-              NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
+
               HitlModule.forRoot({ enabled: true, defaultTimeout: 30000 }),
             ],
             expectedMaxMB: 18,
@@ -299,7 +288,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
 
         console.log(`Bundle Size Reduction Results:
           Original size: ${PHASE_RESULTS.originalSize} lines
-          Current size: ${PHASE_RESULTS.currentSize} lines  
+          Current size: ${PHASE_RESULTS.currentSize} lines
           Reduction achieved: ${PHASE_RESULTS.actualReduction}%
           Target reduction: ${PERFORMANCE_TARGETS.BUNDLE_SIZE_REDUCTION}%
           Status: ✅ EXCEEDED TARGET`);
@@ -342,7 +331,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                   isGlobal: true,
                   envFilePath: '.env.test',
                 }),
-                NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
+
                 LanggraphModulesCheckpointModule.forRoot({
                   providers: ['memory'],
                   configs: { memory: { maxSizeBytes: 1024 * 1024 } },
@@ -385,7 +374,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 isGlobal: true,
                 envFilePath: '.env.test',
               }),
-              NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
+
               LanggraphModulesCheckpointModule.forRoot({
                 providers: ['memory'],
                 configs: { memory: { maxSizeBytes: 1024 * 1024 } },
@@ -443,7 +432,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
 
         console.log(`Phase 3 Final Results:
           ✅ Dynamic loading eliminated: ${PHASE_3_ACHIEVEMENTS.dynamicLoadingEliminated}
-          ✅ Optional dependencies implemented: ${PHASE_3_ACHIEVEMENTS.optionalDependencyPattern}  
+          ✅ Optional dependencies implemented: ${PHASE_3_ACHIEVEMENTS.optionalDependencyPattern}
           ✅ Consumer config migrated: ${PHASE_3_ACHIEVEMENTS.consumerConfigMigrated}
           ✅ Core library reduction: ${PHASE_3_ACHIEVEMENTS.coreLibraryReduction}%
           ✅ Config reduction: ${PHASE_3_ACHIEVEMENTS.configReduction}%

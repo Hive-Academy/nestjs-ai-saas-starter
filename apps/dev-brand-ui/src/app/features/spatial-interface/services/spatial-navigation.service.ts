@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  signal,
-  computed,
-  inject,
-  DestroyRef,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 // Using Three.js built-in animation capabilities instead of GSAP for now
@@ -55,13 +48,12 @@ export interface NavigationTarget {
 })
 export class SpatialNavigationService {
   private readonly threeService = inject(ThreeIntegrationService);
-  private readonly destroyRef = inject(DestroyRef);
 
   // Service state
   private readonly isInitialized = signal(false);
   private readonly isAnimating = signal(false);
   private readonly cameraStates = signal<CameraState[]>([]);
-  
+
   // Configuration
   private config: SpatialNavigationConfig | null = null;
   private controls: OrbitControls | null = null;
@@ -70,13 +62,18 @@ export class SpatialNavigationService {
 
   // Enhanced navigation state
   private momentum = new THREE.Vector3();
-  private targetPosition = new THREE.Vector3();
-  private targetLookAt = new THREE.Vector3();
   private keyboardState = new Map<string, boolean>();
-  
+
   // Touch handling
   private touchStartDistance = 0;
   private touchStartPosition = new THREE.Vector2();
+
+  // Event handler references for cleanup
+  private handleKeyDown!: (event: KeyboardEvent) => void;
+  private handleKeyUp!: (event: KeyboardEvent) => void;
+  private handleTouchStart!: (event: TouchEvent) => void;
+  private handleTouchMove!: (event: TouchEvent) => void;
+  private handleTouchEnd!: (event: TouchEvent) => void;
   private lastTouchTime = 0;
 
   // Animation handling
@@ -90,7 +87,9 @@ export class SpatialNavigationService {
   private animationResolver: (() => void) | null = null;
 
   // Public reactive state
-  readonly isNavigating = computed(() => this.isAnimating() || this.momentum.length() > 0.001);
+  readonly isNavigating = computed(
+    () => this.isAnimating() || this.momentum.length() > 0.001
+  );
   readonly currentCameraState = computed(() => {
     const states = this.cameraStates();
     return states.length > 0 ? states[states.length - 1] : null;
@@ -106,7 +105,7 @@ export class SpatialNavigationService {
     }
 
     this.config = config;
-    
+
     const sceneInstance = this.threeService.getScene(config.sceneId);
     if (!sceneInstance) {
       throw new Error(`Scene ${config.sceneId} not found`);
@@ -114,13 +113,13 @@ export class SpatialNavigationService {
 
     this.camera = sceneInstance.camera;
     this.container = sceneInstance.container;
-    
+
     this.setupEnhancedControls();
     this.setupKeyboardControls();
     this.setupTouchControls();
     this.setupAnimationLoop();
     this.loadCameraState();
-    
+
     this.isInitialized.set(true);
     console.log('SpatialNavigationService initialized with enhanced controls');
   }
@@ -134,17 +133,23 @@ export class SpatialNavigationService {
     }
 
     this.isAnimating.set(true);
-    
+
     return new Promise((resolve) => {
       this.animationStartPosition.copy(this.camera!.position);
-      this.animationStartTarget.copy(this.controls?.target || new THREE.Vector3());
-      
+      this.animationStartTarget.copy(
+        this.controls?.target || new THREE.Vector3()
+      );
+
       // Calculate optimal camera position for target
-      this.animationEndPosition.copy(this.calculateOptimalCameraPosition(target));
+      this.animationEndPosition.copy(
+        this.calculateOptimalCameraPosition(target)
+      );
       this.animationEndTarget.copy(target.target);
-      
+
       this.animationStartTime = Date.now();
-      this.animationDuration = this.config.focusTransition.duration * 1000; // Convert to milliseconds
+      this.animationDuration = this.config?.focusTransition.duration
+        ? this.config.focusTransition.duration * 1000
+        : 1000; // Convert to milliseconds
       this.animationResolver = () => {
         this.isAnimating.set(false);
         this.saveCameraState();
@@ -156,20 +161,24 @@ export class SpatialNavigationService {
   /**
    * Move camera to specific position with smooth transition
    */
-  moveToPosition(position: THREE.Vector3, target?: THREE.Vector3, duration = 1.0): Promise<void> {
+  moveToPosition(
+    position: THREE.Vector3,
+    target?: THREE.Vector3,
+    duration = 1.0
+  ): Promise<void> {
     if (!this.camera || !this.controls) {
       return Promise.reject('Navigation service not initialized');
     }
 
     this.isAnimating.set(true);
-    
+
     return new Promise((resolve) => {
       this.animationStartPosition.copy(this.camera!.position);
       this.animationStartTarget.copy(this.controls!.target);
-      
+
       this.animationEndPosition.copy(position);
       this.animationEndTarget.copy(target || this.controls!.target);
-      
+
       this.animationStartTime = Date.now();
       this.animationDuration = duration * 1000; // Convert to milliseconds
       this.animationResolver = () => {
@@ -212,7 +221,7 @@ export class SpatialNavigationService {
       .clone()
       .sub(this.controls.target)
       .normalize();
-    
+
     const targetPosition = this.controls.target
       .clone()
       .add(direction.multiplyScalar(distance));
@@ -250,7 +259,7 @@ export class SpatialNavigationService {
     this.stopAnimation();
     this.saveCameraState();
     this.removeEventListeners();
-    
+
     if (this.controls) {
       this.controls.dispose();
       this.controls = null;
@@ -259,7 +268,7 @@ export class SpatialNavigationService {
     this.momentum.set(0, 0, 0);
     this.keyboardState.clear();
     this.isInitialized.set(false);
-    
+
     console.log('SpatialNavigationService cleaned up');
   }
 
@@ -270,20 +279,20 @@ export class SpatialNavigationService {
     if (!this.camera || !this.container || !this.config) return;
 
     this.controls = new OrbitControls(this.camera, this.container);
-    
+
     // Basic orbit controls configuration
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
     this.controls.screenSpacePanning = false;
     this.controls.autoRotate = false;
-    
+
     // Apply camera limits
     const limits = this.config.cameraLimits;
     this.controls.minDistance = limits.minDistance;
     this.controls.maxDistance = limits.maxDistance;
     this.controls.minPolarAngle = limits.minPolarAngle;
     this.controls.maxPolarAngle = limits.maxPolarAngle;
-    
+
     // Set default target
     this.controls.target.set(0, 0, 0);
     this.controls.update();
@@ -304,7 +313,7 @@ export class SpatialNavigationService {
 
     let lastControlsChange = 0;
     let isDragging = false;
-    
+
     // Track control changes for momentum
     this.controls.addEventListener('change', () => {
       lastControlsChange = Date.now();
@@ -312,7 +321,7 @@ export class SpatialNavigationService {
         // Calculate momentum based on recent movement
         const now = Date.now();
         const deltaTime = (now - lastControlsChange) / 1000;
-        
+
         if (deltaTime > 0) {
           // Simple momentum calculation - can be enhanced
           const speed = Math.min(1 / deltaTime, this.config.maxMoveSpeed);
@@ -337,24 +346,24 @@ export class SpatialNavigationService {
   private setupKeyboardControls(): void {
     if (!this.config?.enableKeyboardControls || !this.container) return;
 
-    const onKeyDown = (event: KeyboardEvent) => {
+    this.handleKeyDown = (event: KeyboardEvent) => {
       this.keyboardState.set(event.code, true);
-      
+
       // Prevent default for navigation keys
       if (this.isNavigationKey(event.code)) {
         event.preventDefault();
       }
     };
 
-    const onKeyUp = (event: KeyboardEvent) => {
+    this.handleKeyUp = (event: KeyboardEvent) => {
       this.keyboardState.set(event.code, false);
     };
 
     // Focus container to receive keyboard events
     this.container.tabIndex = 0;
-    this.container.addEventListener('keydown', onKeyDown);
-    this.container.addEventListener('keyup', onKeyUp);
-    
+    this.container.addEventListener('keydown', this.handleKeyDown);
+    this.container.addEventListener('keyup', this.handleKeyUp);
+
     console.log('Keyboard navigation controls enabled');
   }
 
@@ -364,9 +373,12 @@ export class SpatialNavigationService {
   private setupTouchControls(): void {
     if (!this.config?.enableTouchControls || !this.container) return;
 
-    const onTouchStart = (event: TouchEvent) => {
+    this.handleTouchStart = (event: TouchEvent) => {
       if (event.touches.length === 1) {
-        this.touchStartPosition.set(event.touches[0].clientX, event.touches[0].clientY);
+        this.touchStartPosition.set(
+          event.touches[0].clientX,
+          event.touches[0].clientY
+        );
       } else if (event.touches.length === 2) {
         const dx = event.touches[0].clientX - event.touches[1].clientX;
         const dy = event.touches[0].clientY - event.touches[1].clientY;
@@ -375,30 +387,33 @@ export class SpatialNavigationService {
       this.lastTouchTime = Date.now();
     };
 
-    const onTouchMove = (event: TouchEvent) => {
+    this.handleTouchMove = (event: TouchEvent) => {
       if (event.touches.length === 2 && this.controls) {
         // Pinch-to-zoom gesture
         const dx = event.touches[0].clientX - event.touches[1].clientX;
         const dy = event.touches[0].clientY - event.touches[1].clientY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (this.touchStartDistance > 0) {
           const scale = distance / this.touchStartDistance;
           const currentDistance = this.getCameraDistance();
           const newDistance = Math.max(
             this.config!.cameraLimits.minDistance,
-            Math.min(this.config!.cameraLimits.maxDistance, currentDistance / scale)
+            Math.min(
+              this.config!.cameraLimits.maxDistance,
+              currentDistance / scale
+            )
           );
-          
+
           // Apply zoom smoothly
           this.setCameraDistance(newDistance, 0.1);
         }
       }
     };
 
-    const onTouchEnd = (event: TouchEvent) => {
+    this.handleTouchEnd = (event: TouchEvent) => {
       const touchDuration = Date.now() - this.lastTouchTime;
-      
+
       // Double-tap detection for focus
       if (touchDuration < 300 && event.changedTouches.length === 1) {
         // Could trigger focus on agent if one is under touch point
@@ -406,10 +421,10 @@ export class SpatialNavigationService {
       }
     };
 
-    this.container.addEventListener('touchstart', onTouchStart);
-    this.container.addEventListener('touchmove', onTouchMove);
-    this.container.addEventListener('touchend', onTouchEnd);
-    
+    this.container.addEventListener('touchstart', this.handleTouchStart);
+    this.container.addEventListener('touchmove', this.handleTouchMove);
+    this.container.addEventListener('touchend', this.handleTouchEnd);
+
     console.log('Touch gesture controls enabled');
   }
 
@@ -422,10 +437,10 @@ export class SpatialNavigationService {
       this.updateKeyboardMovement();
       this.updateMomentum();
       this.updateControls();
-      
+
       this.animationId = requestAnimationFrame(animate);
     };
-    
+
     animate();
   }
 
@@ -438,23 +453,32 @@ export class SpatialNavigationService {
     const now = Date.now();
     const elapsed = now - this.animationStartTime;
     const progress = Math.min(elapsed / this.animationDuration, 1);
-    
+
     // Use smooth easing function (similar to power2.inOut)
-    const eased = progress < 0.5 
-      ? 2 * progress * progress 
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    const eased =
+      progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
     // Interpolate camera position
-    this.camera.position.lerpVectors(this.animationStartPosition, this.animationEndPosition, eased);
-    
+    this.camera.position.lerpVectors(
+      this.animationStartPosition,
+      this.animationEndPosition,
+      eased
+    );
+
     // Interpolate camera target
-    this.controls.target.lerpVectors(this.animationStartTarget, this.animationEndTarget, eased);
-    
+    this.controls.target.lerpVectors(
+      this.animationStartTarget,
+      this.animationEndTarget,
+      eased
+    );
+
     // Check if animation is complete
     if (progress >= 1) {
       this.camera.position.copy(this.animationEndPosition);
       this.controls.target.copy(this.animationEndTarget);
-      
+
       if (this.animationResolver) {
         const resolver = this.animationResolver;
         this.animationResolver = null;
@@ -470,14 +494,13 @@ export class SpatialNavigationService {
     if (!this.config?.enableKeyboardControls || !this.controls) return;
 
     const moveSpeed = 0.1;
-    const rotateSpeed = 0.02;
-    
+
     // Get camera direction vectors
     const camera = this.camera as THREE.PerspectiveCamera;
     const direction = new THREE.Vector3();
     const right = new THREE.Vector3();
     const up = new THREE.Vector3(0, 1, 0);
-    
+
     camera.getWorldDirection(direction);
     right.crossVectors(direction, up).normalize();
 
@@ -486,18 +509,21 @@ export class SpatialNavigationService {
       this.controls.target.add(direction.clone().multiplyScalar(moveSpeed));
       camera.position.add(direction.clone().multiplyScalar(moveSpeed));
     }
-    
+
     if (this.keyboardState.get('KeyS') || this.keyboardState.get('ArrowDown')) {
       this.controls.target.sub(direction.clone().multiplyScalar(moveSpeed));
       camera.position.sub(direction.clone().multiplyScalar(moveSpeed));
     }
-    
+
     if (this.keyboardState.get('KeyA') || this.keyboardState.get('ArrowLeft')) {
       this.controls.target.sub(right.clone().multiplyScalar(moveSpeed));
       camera.position.sub(right.clone().multiplyScalar(moveSpeed));
     }
-    
-    if (this.keyboardState.get('KeyD') || this.keyboardState.get('ArrowRight')) {
+
+    if (
+      this.keyboardState.get('KeyD') ||
+      this.keyboardState.get('ArrowRight')
+    ) {
       this.controls.target.add(right.clone().multiplyScalar(moveSpeed));
       camera.position.add(right.clone().multiplyScalar(moveSpeed));
     }
@@ -505,12 +531,18 @@ export class SpatialNavigationService {
     // Zoom controls
     if (this.keyboardState.get('KeyQ')) {
       const distance = this.getCameraDistance();
-      this.setCameraDistance(Math.max(this.config.cameraLimits.minDistance, distance * 0.95), 0.1);
+      this.setCameraDistance(
+        Math.max(this.config.cameraLimits.minDistance, distance * 0.95),
+        0.1
+      );
     }
-    
+
     if (this.keyboardState.get('KeyE')) {
       const distance = this.getCameraDistance();
-      this.setCameraDistance(Math.min(this.config.cameraLimits.maxDistance, distance * 1.05), 0.1);
+      this.setCameraDistance(
+        Math.min(this.config.cameraLimits.maxDistance, distance * 1.05),
+        0.1
+      );
     }
   }
 
@@ -522,7 +554,7 @@ export class SpatialNavigationService {
 
     // Apply momentum decay
     this.momentum.multiplyScalar(this.config.momentumDecay);
-    
+
     // Apply momentum to camera (very subtle effect)
     if (this.controls && this.momentum.length() > 0.001) {
       this.controls.target.add(this.momentum.clone().multiplyScalar(0.01));
@@ -542,16 +574,18 @@ export class SpatialNavigationService {
   /**
    * Calculate optimal camera position for focusing on target
    */
-  private calculateOptimalCameraPosition(target: NavigationTarget): THREE.Vector3 {
+  private calculateOptimalCameraPosition(
+    target: NavigationTarget
+  ): THREE.Vector3 {
     const distance = target.distance || 8; // Default focus distance
-    
+
     // Get current camera direction or use default
     let direction = new THREE.Vector3(0, 1, 1).normalize();
-    
+
     if (this.camera) {
       direction = this.camera.position.clone().sub(target.target).normalize();
     }
-    
+
     return target.target.clone().add(direction.multiplyScalar(distance));
   }
 
@@ -560,9 +594,16 @@ export class SpatialNavigationService {
    */
   private isNavigationKey(code: string): boolean {
     const navigationKeys = [
-      'KeyW', 'KeyA', 'KeyS', 'KeyD',
-      'KeyQ', 'KeyE',
-      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
+      'KeyW',
+      'KeyA',
+      'KeyS',
+      'KeyD',
+      'KeyQ',
+      'KeyE',
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
     ];
     return navigationKeys.includes(code);
   }
@@ -571,7 +612,12 @@ export class SpatialNavigationService {
    * Save current camera state to local storage
    */
   private saveCameraState(): void {
-    if (!this.config?.enableCameraStateStorage || !this.camera || !this.controls) return;
+    if (
+      !this.config?.enableCameraStateStorage ||
+      !this.camera ||
+      !this.controls
+    )
+      return;
 
     const state: CameraState = {
       position: this.camera.position.clone(),
@@ -584,7 +630,7 @@ export class SpatialNavigationService {
       const states = this.cameraStates();
       const newStates = [...states, state].slice(-10); // Keep last 10 states
       this.cameraStates.set(newStates);
-      
+
       localStorage.setItem(
         `spatialNavigation_${this.config.sceneId}`,
         JSON.stringify(state)
@@ -598,18 +644,25 @@ export class SpatialNavigationService {
    * Load camera state from local storage
    */
   private loadCameraState(): void {
-    if (!this.config?.enableCameraStateStorage || !this.camera || !this.controls) return;
+    if (
+      !this.config?.enableCameraStateStorage ||
+      !this.camera ||
+      !this.controls
+    )
+      return;
 
     try {
-      const saved = localStorage.getItem(`spatialNavigation_${this.config.sceneId}`);
+      const saved = localStorage.getItem(
+        `spatialNavigation_${this.config.sceneId}`
+      );
       if (saved) {
         const state: CameraState = JSON.parse(saved);
-        
+
         // Restore camera position and target
         this.camera.position.copy(state.position);
         this.controls.target.copy(state.target);
         this.controls.update();
-        
+
         console.log('Camera state restored from storage');
       }
     } catch (error) {
@@ -625,12 +678,12 @@ export class SpatialNavigationService {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
-    
+
     if (this.animationResolver) {
       this.animationResolver();
       this.animationResolver = null;
     }
-    
+
     this.isAnimating.set(false);
   }
 
@@ -639,11 +692,22 @@ export class SpatialNavigationService {
    */
   private removeEventListeners(): void {
     if (this.container) {
-      this.container.removeEventListener('keydown', () => {});
-      this.container.removeEventListener('keyup', () => {});
-      this.container.removeEventListener('touchstart', () => {});
-      this.container.removeEventListener('touchmove', () => {});
-      this.container.removeEventListener('touchend', () => {});
+      // Remove event listeners using stored references
+      if (this.handleKeyDown) {
+        this.container.removeEventListener('keydown', this.handleKeyDown);
+      }
+      if (this.handleKeyUp) {
+        this.container.removeEventListener('keyup', this.handleKeyUp);
+      }
+      if (this.handleTouchStart) {
+        this.container.removeEventListener('touchstart', this.handleTouchStart);
+      }
+      if (this.handleTouchMove) {
+        this.container.removeEventListener('touchmove', this.handleTouchMove);
+      }
+      if (this.handleTouchEnd) {
+        this.container.removeEventListener('touchend', this.handleTouchEnd);
+      }
     }
   }
 }

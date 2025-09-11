@@ -19,11 +19,13 @@ async function bootstrap() {
   app.enableCors();
 
   // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    })
+  );
 
   // Swagger documentation
   const config = new DocumentBuilder()
@@ -39,12 +41,18 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   // Start server
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
   await app.listen(port);
 
-  Logger.log(`🚀 Application is running on: http://localhost:${port}/${globalPrefix}`);
-  Logger.log(`📚 API Documentation available at: http://localhost:${port}/docs`);
-  Logger.log(`🔧 Health check available at: http://localhost:${port}/${globalPrefix}/health`);
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+  );
+  Logger.log(
+    `📚 API Documentation available at: http://localhost:${port}/docs`
+  );
+  Logger.log(
+    `🔧 Health check available at: http://localhost:${port}/${globalPrefix}/health`
+  );
 }
 
 bootstrap();

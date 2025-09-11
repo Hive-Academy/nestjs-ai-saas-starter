@@ -10,9 +10,11 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
-import { SpatialNavigationService, NavigationTarget } from '../services/spatial-navigation.service';
+import {
+  SpatialNavigationService,
+  NavigationTarget,
+} from '../services/spatial-navigation.service';
 
 export interface NavigationControlsConfig {
   showZoomControls: boolean;
@@ -35,64 +37,92 @@ export interface NavigationControlsConfig {
     <div class="navigation-controls" [class]="positionClass()">
       <!-- Zoom Controls -->
       <div class="control-group zoom-controls" *ngIf="config?.showZoomControls">
-        <button 
+        <button
           class="nav-button zoom-in"
           (click)="zoomIn()"
           [disabled]="!canZoomIn()"
           title="Zoom In (Q)"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-            <line x1="8" y1="11" x2="14" y2="11"/>
-            <line x1="11" y1="8" x2="11" y2="14"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+            <line x1="8" y1="11" x2="14" y2="11" />
+            <line x1="11" y1="8" x2="11" y2="14" />
           </svg>
         </button>
-        
-        <button 
+
+        <button
           class="nav-button zoom-out"
           (click)="zoomOut()"
           [disabled]="!canZoomOut()"
           title="Zoom Out (E)"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-            <line x1="8" y1="11" x2="14" y2="11"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+            <line x1="8" y1="11" x2="14" y2="11" />
           </svg>
         </button>
       </div>
 
       <!-- Reset and Focus Controls -->
       <div class="control-group action-controls">
-        <button 
+        <button
           class="nav-button reset-camera"
           (click)="resetCamera()"
           [disabled]="isNavigating()"
           title="Reset Camera"
           *ngIf="config?.showResetButton"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-            <path d="M3 21v-5h5"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M3 21v-5h5" />
           </svg>
         </button>
 
-        <button 
+        <button
           class="nav-button focus-constellation"
           (click)="focusConstellation()"
           [disabled]="isNavigating()"
           title="Focus Constellation"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <circle cx="12" cy="12" r="1"/>
-            <circle cx="4.5" cy="4.5" r="1"/>
-            <circle cx="19.5" cy="19.5" r="1"/>
-            <circle cx="4.5" cy="19.5" r="1"/>
-            <circle cx="19.5" cy="4.5" r="1"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="4.5" cy="4.5" r="1" />
+            <circle cx="19.5" cy="19.5" r="1" />
+            <circle cx="4.5" cy="19.5" r="1" />
+            <circle cx="19.5" cy="4.5" r="1" />
           </svg>
         </button>
       </div>
@@ -100,7 +130,10 @@ export interface NavigationControlsConfig {
       <!-- Navigation Hints -->
       <div class="control-group navigation-hints" *ngIf="showHints()">
         <!-- Keyboard Hints -->
-        <div class="hint-section keyboard-hints" *ngIf="config?.showKeyboardHints">
+        <div
+          class="hint-section keyboard-hints"
+          *ngIf="config?.showKeyboardHints"
+        >
           <div class="hint-title">Keyboard</div>
           <div class="hint-items">
             <div class="hint-item">
@@ -119,7 +152,10 @@ export interface NavigationControlsConfig {
         </div>
 
         <!-- Touch Hints -->
-        <div class="hint-section touch-hints" *ngIf="config?.showTouchHints && isTouchDevice()">
+        <div
+          class="hint-section touch-hints"
+          *ngIf="config?.showTouchHints && isTouchDevice()"
+        >
           <div class="hint-title">Touch</div>
           <div class="hint-items">
             <div class="hint-item">
@@ -308,8 +344,12 @@ export interface NavigationControlsConfig {
       }
 
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
       /* Mobile Responsive */
@@ -353,7 +393,7 @@ export interface NavigationControlsConfig {
     `,
   ],
 })
-export class NavigationControlsComponent implements OnInit, OnDestroy {
+export class NavigationControlsComponent implements OnInit {
   private readonly spatialNavigation = inject(SpatialNavigationService);
 
   @Input() config: NavigationControlsConfig | null = null;
@@ -375,11 +415,15 @@ export class NavigationControlsComponent implements OnInit, OnDestroy {
   });
 
   readonly canZoomIn = computed(() => {
-    return this.currentDistance() > this.cameraLimits().min && !this.isNavigating();
+    return (
+      this.currentDistance() > this.cameraLimits().min && !this.isNavigating()
+    );
   });
 
   readonly canZoomOut = computed(() => {
-    return this.currentDistance() < this.cameraLimits().max && !this.isNavigating();
+    return (
+      this.currentDistance() < this.cameraLimits().max && !this.isNavigating()
+    );
   });
 
   constructor() {
@@ -402,9 +446,9 @@ export class NavigationControlsComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    // Component cleanup handled by parent
-  }
+  // ngOnDestroy(): void {
+  //   // Component cleanup handled by parent
+  // }
 
   /**
    * Zoom camera in (closer to constellation)
@@ -447,7 +491,7 @@ export class NavigationControlsComponent implements OnInit, OnDestroy {
       target: new THREE.Vector3(0, 0, 0),
       distance: 15,
     };
-    
+
     this.spatialNavigation.focusOnTarget(target);
     this.focusRequested.emit(target);
   }
@@ -461,7 +505,7 @@ export class NavigationControlsComponent implements OnInit, OnDestroy {
       target: agentPosition.clone(),
       distance: 8,
     };
-    
+
     this.spatialNavigation.focusOnTarget(target);
     this.focusRequested.emit(target);
   }
@@ -479,7 +523,6 @@ export class NavigationControlsComponent implements OnInit, OnDestroy {
   getNavigationState() {
     return {
       config: this.config,
-      isNavigating: this.isNavigating(),
       currentDistance: this.currentDistance(),
       cameraLimits: this.cameraLimits(),
       isTouchDevice: this.isTouchDevice(),

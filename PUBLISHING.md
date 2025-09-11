@@ -96,13 +96,6 @@ nx build nestjs-neo4j
 nx run nestjs-neo4j:publish
 ```
 
-### @hive-academy/nestjs-langgraph
-
-```bash
-nx build nestjs-langgraph
-nx run nestjs-langgraph:publish
-```
-
 ## Troubleshooting
 
 ### Authentication Issues

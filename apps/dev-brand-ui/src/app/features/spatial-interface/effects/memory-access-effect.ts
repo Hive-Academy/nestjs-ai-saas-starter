@@ -19,17 +19,17 @@ export class MemoryAccessEffect {
   private config: MemoryAccessConfig;
   private isActive = false;
   private isCompleted = false;
-  
+
   // Three.js objects
   private pulseRing: THREE.Mesh | null = null;
   private glowSphere: THREE.Mesh | null = null;
   private particleSystem: THREE.Points | null = null;
-  
+
   // Animation properties
   private startTime = 0;
   private pulseTween: gsap.core.Tween | null = null;
   private glowTween: gsap.core.Tween | null = null;
-  
+
   // Shader uniforms for optimized rendering
   private pulseUniforms = {
     time: { value: 0 },
@@ -58,8 +58,8 @@ export class MemoryAccessEffect {
   private createPulseRing(): void {
     const agentSize = this.getAgentSize();
     const ringGeometry = new THREE.RingGeometry(
-      agentSize * 1.2, 
-      agentSize * 2.0, 
+      agentSize * 1.2,
+      agentSize * 2.0,
       32
     );
 
@@ -115,7 +115,7 @@ export class MemoryAccessEffect {
   private createGlowSphere(): void {
     const agentSize = this.getAgentSize();
     const sphereGeometry = new THREE.SphereGeometry(agentSize * 1.5, 16, 8);
-    
+
     const glowMaterial = new THREE.ShaderMaterial({
       uniforms: {
         time: { value: 0 },
@@ -166,18 +166,18 @@ export class MemoryAccessEffect {
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const sizes = new Float32Array(particleCount);
-    
+
     const color = this.getMemoryColor();
     const agentSize = this.getAgentSize();
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      
+
       // Random positions around the agent in a sphere
       const radius = agentSize * (2.0 + Math.random() * 1.0);
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      
+
       positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
       positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
       positions[i3 + 2] = radius * Math.cos(phi);
@@ -185,13 +185,19 @@ export class MemoryAccessEffect {
       colors[i3] = color.r;
       colors[i3 + 1] = color.g;
       colors[i3 + 2] = color.b;
-      
+
       sizes[i] = 0.02 + Math.random() * 0.03;
     }
 
     const particleGeometry = new THREE.BufferGeometry();
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particleGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(positions, 3)
+    );
+    particleGeometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(colors, 3)
+    );
     particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
     const particleMaterial = new THREE.ShaderMaterial({
@@ -251,9 +257,9 @@ export class MemoryAccessEffect {
     // Set colors based on memory type
     const color = this.getMemoryColor();
     this.pulseUniforms.color.value.copy(color);
-    
+
     if (this.glowSphere?.material instanceof THREE.ShaderMaterial) {
-      this.glowSphere.material.uniforms.color.value.copy(color);
+      this.glowSphere.material.uniforms['color'].value.copy(color);
     }
 
     // Show visual elements
@@ -262,33 +268,35 @@ export class MemoryAccessEffect {
     if (this.particleSystem) this.particleSystem.visible = true;
 
     // Animate pulse ring
-    this.pulseTween = gsap.fromTo(this.pulseUniforms.opacity, 
+    this.pulseTween = gsap.fromTo(
+      this.pulseUniforms.opacity,
       { value: 0 },
       {
         value: 1,
-        duration: this.config.duration / 1000 * 0.2, // 20% of duration for fade in
+        duration: (this.config.duration / 1000) * 0.2, // 20% of duration for fade in
         ease: 'power2.out',
         onComplete: () => {
           // Hold for middle 60% of duration
           gsap.to(this.pulseUniforms.opacity, {
             value: 0,
-            duration: this.config.duration / 1000 * 0.2, // 20% for fade out
-            delay: this.config.duration / 1000 * 0.6, // After 60% hold
+            duration: (this.config.duration / 1000) * 0.2, // 20% for fade out
+            delay: (this.config.duration / 1000) * 0.6, // After 60% hold
             ease: 'power2.in',
             onComplete: () => {
               this.complete();
-            }
+            },
           });
-        }
+        },
       }
     );
 
     // Animate intensity
-    gsap.fromTo(this.pulseUniforms.intensity,
+    gsap.fromTo(
+      this.pulseUniforms.intensity,
       { value: 0 },
       {
         value: this.config.intensity,
-        duration: this.config.duration / 1000 * 0.3,
+        duration: (this.config.duration / 1000) * 0.3,
         ease: 'power2.out',
       }
     );
@@ -303,17 +311,18 @@ export class MemoryAccessEffect {
     if (!this.isActive) return;
 
     const elapsed = (Date.now() - this.startTime) / 1000;
-    
+
     // Update shader time uniforms
     this.pulseUniforms.time.value = elapsed;
-    
+
     if (this.glowSphere?.material instanceof THREE.ShaderMaterial) {
-      this.glowSphere.material.uniforms.time.value = elapsed;
+      this.glowSphere.material.uniforms['time'].value = elapsed;
     }
-    
+
     if (this.particleSystem?.material instanceof THREE.ShaderMaterial) {
-      this.particleSystem.material.uniforms.time.value = elapsed;
-      this.particleSystem.material.uniforms.intensity.value = this.pulseUniforms.intensity.value;
+      this.particleSystem.material.uniforms['time'].value = elapsed;
+      this.particleSystem.material.uniforms['intensity'].value =
+        this.pulseUniforms.intensity.value;
     }
 
     // Auto-complete if duration exceeded (fallback)
@@ -352,7 +361,7 @@ export class MemoryAccessEffect {
   /**
    * Check if effect is completed
    */
-  isCompleted(): boolean {
+  getIsCompleted(): boolean {
     return this.isCompleted;
   }
 
@@ -397,13 +406,13 @@ export class MemoryAccessEffect {
   private getMemoryColor(): THREE.Color {
     switch (this.config.memoryType) {
       case 'chromadb':
-        return new THREE.Color(0x4A90E2); // Blue
+        return new THREE.Color(0x4a90e2); // Blue
       case 'neo4j':
-        return new THREE.Color(0x7ED321); // Green
+        return new THREE.Color(0x7ed321); // Green
       case 'workflow':
-        return new THREE.Color(0x9013FE); // Purple
+        return new THREE.Color(0x9013fe); // Purple
       default:
-        return new THREE.Color(0x50E3C2); // Teal
+        return new THREE.Color(0x50e3c2); // Teal
     }
   }
 
@@ -413,17 +422,21 @@ export class MemoryAccessEffect {
   private getAgentSize(): number {
     // Find the core mesh to determine size
     let size = 0.5; // Default size
-    
+
     this.config.agentMesh.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.geometry instanceof THREE.BufferGeometry) {
+      if (
+        child instanceof THREE.Mesh &&
+        child.geometry instanceof THREE.BufferGeometry
+      ) {
         const box = new THREE.Box3().setFromObject(child);
         const agentSize = box.getSize(new THREE.Vector3()).length() / 2;
-        if (agentSize > 0.1) { // Reasonable size check
+        if (agentSize > 0.1) {
+          // Reasonable size check
           size = agentSize;
         }
       }
     });
-    
+
     return size;
   }
 }

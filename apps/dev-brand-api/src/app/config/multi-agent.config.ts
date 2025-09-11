@@ -5,24 +5,41 @@ import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agen
  * Enables coordination between multiple AI agents
  */
 export function getMultiAgentConfig(): MultiAgentModuleOptions {
+  // Detect if we're using OpenRouter based on API key or explicit provider setting
+  const isOpenRouter =
+    process.env.LLM_PROVIDER === 'openrouter' ||
+    (!!process.env.OPENROUTER_API_KEY && !process.env.OPENAI_API_KEY);
+
   return {
-    // Default LLM configuration
+    // Default LLM configuration - centralized for all agents
     defaultLlm: {
       model:
-        process.env.MULTI_AGENT_LLM_MODEL ||
+        process.env.OPENROUTER_MODEL ||
         process.env.LLM_MODEL ||
         'gpt-3.5-turbo',
-      apiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
+      apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
       temperature: parseFloat(
-        process.env.MULTI_AGENT_LLM_TEMPERATURE ||
+        process.env.OPENROUTER_TEMPERATURE ||
           process.env.LLM_TEMPERATURE ||
           '0.7'
       ),
       maxTokens: parseInt(
-        process.env.MULTI_AGENT_LLM_MAX_TOKENS ||
+        process.env.OPENROUTER_MAX_TOKENS ||
           process.env.LLM_MAX_TOKENS ||
-          '4000'
+          '2048'
       ),
+      // Support OpenRouter configuration when detected
+      baseURL: isOpenRouter
+        ? process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
+        : undefined,
+      defaultHeaders: isOpenRouter
+        ? {
+            'HTTP-Referer':
+              process.env.OPENROUTER_SITE_URL || 'http://localhost:3000',
+            'X-Title':
+              process.env.OPENROUTER_APP_NAME || 'NestJS AI SaaS Starter',
+          }
+        : undefined,
     },
 
     // Message history limits

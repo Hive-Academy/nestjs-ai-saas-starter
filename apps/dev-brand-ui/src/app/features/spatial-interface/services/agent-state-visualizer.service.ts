@@ -1,22 +1,13 @@
-import {
-  Injectable,
-  inject,
-  signal,
-  computed,
-  DestroyRef,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import * as THREE from 'three';
-import { 
-  AgentState, 
-  MemoryUpdateMessage, 
+import {
+  MemoryUpdateMessage,
   ToolExecutionMessage,
   AgentUpdateMessage,
   WebSocketMessage,
   MemoryContext,
-  ToolExecution 
+  ToolExecution,
 } from '../../../core/interfaces/agent-state.interface';
-import { AgentCommunicationService } from '../../../core/services/agent-communication.service';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
 import { MemoryAccessEffect } from '../effects/memory-access-effect';
 import { ToolExecutionRing } from '../effects/tool-execution-ring';
@@ -49,13 +40,13 @@ export interface ActiveVisualEffect {
   providedIn: 'root',
 })
 export class AgentStateVisualizerService {
-  private readonly agentCommunication = inject(AgentCommunicationService);
   private readonly threeService = inject(ThreeIntegrationService);
-  private readonly destroyRef = inject(DestroyRef);
 
   // Service state
   private readonly isInitialized = signal(false);
-  private readonly activeEffects = signal<Map<string, ActiveVisualEffect>>(new Map());
+  private readonly activeEffects = signal<Map<string, ActiveVisualEffect>>(
+    new Map()
+  );
   private readonly effectConfig = signal<VisualEffectConfig | null>(null);
 
   // WebSocket connection for Mock API
@@ -101,7 +92,7 @@ export class AgentStateVisualizerService {
   private connectToMockApi(): void {
     try {
       this.mockApiSocket = new WebSocket('ws://localhost:3001');
-      
+
       this.mockApiSocket.onopen = () => {
         console.log('Connected to Mock API WebSocket');
         this.isConnectedToMockApi.set(true);
@@ -122,7 +113,6 @@ export class AgentStateVisualizerService {
         console.error('Mock API WebSocket error:', error);
         this.isConnectedToMockApi.set(false);
       };
-
     } catch (error) {
       console.error('Failed to connect to Mock API:', error);
       this.scheduleReconnect();
@@ -191,7 +181,10 @@ export class AgentStateVisualizerService {
   /**
    * Trigger memory access visual effect
    */
-  private triggerMemoryAccessEffect(agentId: string, memoryContext: MemoryContext): void {
+  private triggerMemoryAccessEffect(
+    agentId: string,
+    memoryContext: MemoryContext
+  ): void {
     const agentMesh = this.getAgentMesh(agentId);
     if (!agentMesh) return;
 
@@ -220,22 +213,30 @@ export class AgentStateVisualizerService {
     // Start the effect
     effect.start();
 
-    console.log(`Memory access effect triggered: ${memoryContext.source} for agent ${agentId}`);
+    console.log(
+      `Memory access effect triggered: ${memoryContext.source} for agent ${agentId}`
+    );
   }
 
   /**
    * Trigger tool execution progress ring
    */
-  private triggerToolExecutionRing(agentId: string, toolExecution: ToolExecution): void {
+  private triggerToolExecutionRing(
+    agentId: string,
+    toolExecution: ToolExecution
+  ): void {
     const agentMesh = this.getAgentMesh(agentId);
     if (!agentMesh) return;
 
     const effectId = `tool-${agentId}-${toolExecution.id}`;
-    
+
     // Check if effect already exists and update it
     const existingEffect = this.activeEffects().get(effectId);
     if (existingEffect && existingEffect.effect instanceof ToolExecutionRing) {
-      existingEffect.effect.updateProgress(toolExecution.progress, toolExecution.status);
+      existingEffect.effect.updateProgress(
+        toolExecution.progress,
+        toolExecution.status
+      );
       return;
     }
 
@@ -264,20 +265,25 @@ export class AgentStateVisualizerService {
     // Start the effect
     effect.start();
 
-    console.log(`Tool execution ring triggered: ${toolExecution.toolName} for agent ${agentId}`);
+    console.log(
+      `Tool execution ring triggered: ${toolExecution.toolName} for agent ${agentId}`
+    );
   }
 
   /**
    * Trigger communication stream between agents
    */
-  private triggerCommunicationStream(fromAgentId: string, taskDescription: string): void {
+  private triggerCommunicationStream(
+    fromAgentId: string,
+    taskDescription: string
+  ): void {
     // Find related agents based on task description
     const relatedAgents = this.findRelatedAgents(fromAgentId, taskDescription);
-    
+
     relatedAgents.forEach((toAgentId) => {
       const fromMesh = this.getAgentMesh(fromAgentId);
       const toMesh = this.getAgentMesh(toAgentId);
-      
+
       if (!fromMesh || !toMesh) return;
 
       const effectId = `comm-${fromAgentId}-${toAgentId}-${Date.now()}`;
@@ -306,7 +312,9 @@ export class AgentStateVisualizerService {
       // Start the effect
       effect.start();
 
-      console.log(`Communication stream triggered: ${fromAgentId} -> ${toAgentId}`);
+      console.log(
+        `Communication stream triggered: ${fromAgentId} -> ${toAgentId}`
+      );
     });
   }
 
@@ -315,7 +323,7 @@ export class AgentStateVisualizerService {
    */
   updateEffects(deltaTime: number): void {
     const startTime = performance.now();
-    
+
     this.activeEffects().forEach((activeEffect, effectId) => {
       // Update the effect
       activeEffect.effect.update(deltaTime);
@@ -350,7 +358,7 @@ export class AgentStateVisualizerService {
 
     this.isInitialized.set(false);
     this.isConnectedToMockApi.set(false);
-    
+
     console.log('AgentStateVisualizerService cleaned up');
   }
 
@@ -377,12 +385,14 @@ export class AgentStateVisualizerService {
   /**
    * Get memory effect duration based on source type
    */
-  private getMemoryEffectDuration(source: 'chromadb' | 'neo4j' | 'workflow'): number {
+  private getMemoryEffectDuration(
+    source: 'chromadb' | 'neo4j' | 'workflow'
+  ): number {
     switch (source) {
       case 'chromadb':
         return 100 + Math.random() * 400; // 100-500ms
       case 'neo4j':
-        return 50 + Math.random() * 150;  // 50-200ms
+        return 50 + Math.random() * 150; // 50-200ms
       case 'workflow':
         return 200 + Math.random() * 300; // 200-500ms
       default:
@@ -395,38 +405,49 @@ export class AgentStateVisualizerService {
    */
   private getToolColor(toolName: string): string {
     if (toolName.includes('analysis')) return '#4A90E2'; // Blue
-    if (toolName.includes('create') || toolName.includes('generate')) return '#7ED321'; // Green
-    if (toolName.includes('communication') || toolName.includes('message')) return '#F5A623'; // Orange
-    if (toolName.includes('coordination') || toolName.includes('manage')) return '#9013FE'; // Purple
+    if (toolName.includes('create') || toolName.includes('generate'))
+      return '#7ED321'; // Green
+    if (toolName.includes('communication') || toolName.includes('message'))
+      return '#F5A623'; // Orange
+    if (toolName.includes('coordination') || toolName.includes('manage'))
+      return '#9013FE'; // Purple
     return '#50E3C2'; // Default teal
   }
 
   /**
    * Find related agents for communication streams
    */
-  private findRelatedAgents(fromAgentId: string, taskDescription: string): string[] {
+  private findRelatedAgents(
+    fromAgentId: string,
+    taskDescription: string
+  ): string[] {
     // This would typically analyze the task and find related agents
     // For now, return a simple mock based on task keywords
     const relatedAgents: string[] = [];
-    
+
     if (taskDescription.includes('coordinate')) {
       // Find coordinator agents
       relatedAgents.push('coordinator-agent');
     }
-    
+
     if (taskDescription.includes('analyze')) {
       // Find analyst agents
       relatedAgents.push('analyst-agent');
     }
-    
-    return relatedAgents.filter(id => id !== fromAgentId);
+
+    return relatedAgents.filter((id) => id !== fromAgentId);
   }
 
   /**
    * Determine communication type from task description
    */
-  private getCommunicationType(taskDescription: string): 'coordination' | 'data_sharing' | 'error_reporting' {
-    if (taskDescription.includes('error') || taskDescription.includes('problem')) {
+  private getCommunicationType(
+    taskDescription: string
+  ): 'coordination' | 'data_sharing' | 'error_reporting' {
+    if (
+      taskDescription.includes('error') ||
+      taskDescription.includes('problem')
+    ) {
       return 'error_reporting';
     }
     if (taskDescription.includes('share') || taskDescription.includes('data')) {
@@ -439,8 +460,16 @@ export class AgentStateVisualizerService {
    * Check if task involves coordination
    */
   private isCoordinationTask(taskDescription: string): boolean {
-    const coordinationKeywords = ['coordinate', 'collaborate', 'sync', 'share', 'communicate'];
-    return coordinationKeywords.some(keyword => taskDescription.toLowerCase().includes(keyword));
+    const coordinationKeywords = [
+      'coordinate',
+      'collaborate',
+      'sync',
+      'share',
+      'communicate',
+    ];
+    return coordinationKeywords.some((keyword) =>
+      taskDescription.toLowerCase().includes(keyword)
+    );
   }
 
   /**
@@ -449,17 +478,17 @@ export class AgentStateVisualizerService {
   private shouldRemoveEffect(activeEffect: ActiveVisualEffect): boolean {
     const now = new Date().getTime();
     const effectAge = now - activeEffect.startTime.getTime();
-    
+
     // Remove if effect has explicit duration and has exceeded it
     if (activeEffect.duration && effectAge > activeEffect.duration) {
       return true;
     }
-    
+
     // Remove if effect reports completion
-    if (activeEffect.effect.isCompleted()) {
+    if (activeEffect.effect.getIsCompleted()) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -469,7 +498,7 @@ export class AgentStateVisualizerService {
   private removeEffect(effectId: string): void {
     const effects = new Map(this.activeEffects());
     const effect = effects.get(effectId);
-    
+
     if (effect) {
       effect.effect.dispose();
       effects.delete(effectId);
@@ -483,17 +512,16 @@ export class AgentStateVisualizerService {
   private setupCleanupInterval(): void {
     setInterval(() => {
       const effectsToRemove: string[] = [];
-      
+
       this.activeEffects().forEach((effect, effectId) => {
         if (this.shouldRemoveEffect(effect)) {
           effectsToRemove.push(effectId);
         }
       });
-      
+
       effectsToRemove.forEach((effectId) => {
         this.removeEffect(effectId);
       });
-      
     }, 1000); // Check every second
   }
 
@@ -508,9 +536,11 @@ export class AgentStateVisualizerService {
 
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     this.reconnectAttempts++;
-    
+
     setTimeout(() => {
-      console.log(`Attempting to reconnect to Mock API (attempt ${this.reconnectAttempts})`);
+      console.log(
+        `Attempting to reconnect to Mock API (attempt ${this.reconnectAttempts})`
+      );
       this.connectToMockApi();
     }, delay);
   }

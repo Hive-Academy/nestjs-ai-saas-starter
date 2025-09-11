@@ -414,6 +414,8 @@ export interface MultiAgentModuleOptions {
     apiKey?: string;
     temperature?: number;
     maxTokens?: number;
+    baseURL?: string;
+    defaultHeaders?: Record<string, string>;
   };
 
   /**

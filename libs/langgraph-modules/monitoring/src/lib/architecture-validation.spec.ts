@@ -2,7 +2,6 @@ import { Test } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 
 // Core library test imports
-import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
@@ -11,7 +10,6 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
   describe('Build System Integration Tests', () => {
     it('should validate that all modules are buildable and importable', () => {
       // Test that all module imports resolve correctly at compile time
-      expect(NestjsLanggraphModule).toBeDefined();
       expect(LanggraphModulesCheckpointModule).toBeDefined();
       expect(StreamingModule).toBeDefined();
       expect(HitlModule).toBeDefined();
@@ -21,7 +19,6 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
     it('should validate that modules have correct static methods', () => {
       // Test that the direct import pattern works
-      expect(typeof NestjsLanggraphModule.forRoot).toBe('function');
       expect(typeof LanggraphModulesCheckpointModule.forRoot).toBe('function');
       expect(typeof StreamingModule.forRoot).toBe('function');
       expect(typeof HitlModule.forRoot).toBe('function');
@@ -36,7 +33,6 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
       const streamingConfig = { enabled: true, bufferSize: 1024 };
       const hitlConfig = { enabled: true, defaultTimeout: 30000 };
 
-      expect(() => NestjsLanggraphModule.forRoot(coreConfig)).not.toThrow();
       expect(() =>
         LanggraphModulesCheckpointModule.forRoot(checkpointConfig)
       ).not.toThrow();
@@ -53,7 +49,6 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
       // The fact that we can import modules directly proves the dynamic system is eliminated
 
       const moduleConfigs = [
-        NestjsLanggraphModule.forRoot({ llm: { provider: 'openai' } }),
         LanggraphModulesCheckpointModule.forRoot({
           checkpoint: { maxPerThread: 100 },
         }),
@@ -75,7 +70,6 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
     it('should validate Phase 3 Subtask 3.2 - Optional Dependency Pattern', () => {
       // Test that modules can work with minimal or empty configurations
       expect(() => {
-        NestjsLanggraphModule.forRoot({});
         LanggraphModulesCheckpointModule.forRoot({});
         StreamingModule.forRoot({});
         HitlModule.forRoot({});
@@ -148,11 +142,11 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
       console.log(`
         🎉 TASK_INT_011 SUCCESS SUMMARY:
-        
+
         Phase 1: ${TASK_ACHIEVEMENTS.phase1.achievement}
         Phase 2: ${TASK_ACHIEVEMENTS.phase2.achievement}
         Phase 3: ${TASK_ACHIEVEMENTS.phase3.achievement}
-        
+
         ✅ All phases completed successfully
         ✅ 94% core library reduction achieved (14,705 → 936 lines)
         ✅ Direct import pattern implemented
@@ -197,12 +191,12 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
       console.log(`
         📊 PERFORMANCE IMPROVEMENTS:
-        
+
         Bundle Size: ${IMPROVEMENTS.bundleSize.improvement}% reduction (target: ${IMPROVEMENTS.bundleSize.target}%)
         Configuration: ${IMPROVEMENTS.configuration.improvement}% reduction (target: ${IMPROVEMENTS.configuration.target}%)
         Architecture Pattern: ${IMPROVEMENTS.architecture.pattern}
         Module Independence: ${IMPROVEMENTS.architecture.independence}
-        
+
         ✅ All performance targets exceeded
       `);
     });
@@ -222,13 +216,13 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
       console.log(`
         🚀 PRODUCTION READINESS CONFIRMED:
-        
+
         ✅ Build System: All modules build successfully
         ✅ Module Independence: Direct import pattern working
         ✅ Configuration: Simplified modular approach
-        ✅ Performance: 94% size reduction achieved  
+        ✅ Performance: 94% size reduction achieved
         ✅ Migration: Consumer applications updated
-        
+
         TASK_INT_011 IS COMPLETE AND READY FOR DEPLOYMENT
       `);
     });
@@ -289,15 +283,15 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
       console.log(`
         🎯 SUBTASK 3.4 - CREATE INDEPENDENCE TESTS: COMPLETED
-        
+
         Test Suites Created: ${SUBTASK_3_4_COMPLETION.testSuitesCreated.length}
         Validation Types: ${SUBTASK_3_4_COMPLETION.validationTypes.length}
-        
+
         ✅ Child module independence validated
         ✅ Consumer application integration confirmed
         ✅ Performance benchmarks created
         ✅ Architecture migration verified
-        
+
         PHASE 3 COMPLETE - ALL SUBTASKS FINISHED
         TASK_INT_011 READY FOR COMPLETION
       `);

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EnvPathResolver } from './utils/env-path-resolver.util';
 
 // Library imports
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
-import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
 import { MemoryModule } from '@hive-academy/langgraph-memory';
 
@@ -31,7 +31,6 @@ import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 // Configuration imports
 import { getChromaDBConfig } from './config/chromadb.config';
 import { getNeo4jConfig } from './config/neo4j.config';
-import { getLangGraphCoreConfig } from './config/langgraph-core.config';
 import { getCheckpointConfig } from './config/checkpoint.config';
 import { getStreamingConfig } from './config/streaming.config';
 import { getHitlConfig } from './config/hitl.config';
@@ -87,7 +86,7 @@ import { HealthController } from './controllers/health.controller';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: EnvPathResolver.getValidatedEnvPath(),
     }),
 
     // ChromaDB Module with extracted configuration
@@ -105,8 +104,6 @@ import { HealthController } from './controllers/health.controller';
       useFactory: (configService: ConfigService) =>
         getNeo4jConfig(configService),
     }),
-
-    NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
 
     MemoryModule.forRoot({
       ...getMemoryConfig(),

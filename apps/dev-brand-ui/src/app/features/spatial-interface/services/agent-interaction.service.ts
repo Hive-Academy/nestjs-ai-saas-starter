@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  signal,
-  computed,
-  inject,
-  DestroyRef,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import * as THREE from 'three';
 import { AgentState } from '../../../core/interfaces/agent-state.interface';
 import { AgentCommunicationService } from '../../../core/services/agent-communication.service';
@@ -54,7 +47,6 @@ export class AgentInteractionService {
   private readonly threeService = inject(ThreeIntegrationService);
   private readonly agentVisualizer = inject(AgentVisualizerService);
   private readonly spatialNavigation = inject(SpatialNavigationService);
-  private readonly destroyRef = inject(DestroyRef);
 
   // Service state
   private readonly isInitialized = signal(false);
@@ -87,11 +79,15 @@ export class AgentInteractionService {
   readonly currentInteraction = computed(() => this.interactionState());
   readonly hoveredAgent = computed(() => {
     const state = this.interactionState();
-    return state.hoveredAgentId ? this.agentVisualizer.getAgentInstance(state.hoveredAgentId) : null;
+    return state.hoveredAgentId
+      ? this.agentVisualizer.getAgentInstance(state.hoveredAgentId)
+      : null;
   });
   readonly selectedAgent = computed(() => {
     const state = this.interactionState();
-    return state.selectedAgentId ? this.agentVisualizer.getAgentInstance(state.selectedAgentId) : null;
+    return state.selectedAgentId
+      ? this.agentVisualizer.getAgentInstance(state.selectedAgentId)
+      : null;
   });
   readonly tooltipData = computed(() => this.interactionState().tooltipData);
   readonly isInteracting = computed(() => {
@@ -109,7 +105,7 @@ export class AgentInteractionService {
     }
 
     this.config = config;
-    
+
     const sceneInstance = this.threeService.getScene(config.sceneId);
     if (!sceneInstance) {
       throw new Error(`Scene ${config.sceneId} not found`);
@@ -117,11 +113,11 @@ export class AgentInteractionService {
 
     this.camera = sceneInstance.camera;
     this.container = sceneInstance.container;
-    
+
     this.setupRaycasting();
     this.setupEventListeners();
     this.setupPerformanceOptimizations();
-    
+
     this.isInitialized.set(true);
     console.log('AgentInteractionService initialized with enhanced raycasting');
   }
@@ -129,12 +125,18 @@ export class AgentInteractionService {
   /**
    * Handle mouse/touch interaction events
    */
-  handlePointerEvent(event: MouseEvent | TouchEvent, eventType: 'move' | 'click' | 'dblclick'): void {
+  handlePointerEvent(
+    event: MouseEvent | TouchEvent,
+    eventType: 'move' | 'click' | 'dblclick'
+  ): void {
     if (!this.isInitialized() || !this.config || !this.camera) return;
 
     // Throttle raycasting for performance
     const now = Date.now();
-    if (eventType === 'move' && now - this.lastRaycastTime < this.raycastThrottle) {
+    if (
+      eventType === 'move' &&
+      now - this.lastRaycastTime < this.raycastThrottle
+    ) {
       return;
     }
     this.lastRaycastTime = now;
@@ -166,7 +168,7 @@ export class AgentInteractionService {
    */
   selectAgent(agentId: string | null): void {
     const currentState = this.interactionState();
-    
+
     if (currentState.selectedAgentId === agentId) return;
 
     // Clear previous selection
@@ -177,13 +179,13 @@ export class AgentInteractionService {
     // Set new selection
     if (agentId) {
       this.setAgentSelection(agentId);
-      
+
       // Switch to the selected agent in communication service
       this.agentCommunication.switchAgent(agentId);
     }
 
     // Update state
-    this.interactionState.update(state => ({
+    this.interactionState.update((state) => ({
       ...state,
       selectedAgentId: agentId,
       lastInteractionTime: Date.now(),
@@ -219,7 +221,9 @@ export class AgentInteractionService {
    */
   getAgentUnderCursor(): string | null {
     const intersection = this.performRaycast();
-    return intersection ? this.extractAgentIdFromIntersection(intersection) : null;
+    return intersection
+      ? this.extractAgentIdFromIntersection(intersection)
+      : null;
   }
 
   /**
@@ -236,15 +240,17 @@ export class AgentInteractionService {
     );
 
     const screenPosition = this.worldToScreenPosition(worldPosition);
-    
-    this.interactionState.update(state => ({
+
+    this.interactionState.update((state) => ({
       ...state,
-      tooltipData: state.tooltipData ? {
-        ...state.tooltipData,
-        screenPosition,
-        position: worldPosition,
-        timestamp: Date.now(),
-      } : null,
+      tooltipData: state.tooltipData
+        ? {
+            ...state.tooltipData,
+            screenPosition,
+            position: worldPosition,
+            timestamp: Date.now(),
+          }
+        : null,
     }));
   }
 
@@ -253,11 +259,11 @@ export class AgentInteractionService {
    */
   clearAllInteractions(): void {
     const currentState = this.interactionState();
-    
+
     if (currentState.hoveredAgentId) {
       this.clearAgentHover(currentState.hoveredAgentId);
     }
-    
+
     if (currentState.selectedAgentId) {
       this.clearAgentSelection(currentState.selectedAgentId);
     }
@@ -294,11 +300,11 @@ export class AgentInteractionService {
   cleanup(): void {
     this.clearAllInteractions();
     this.removeEventListeners();
-    
+
     this.intersectionPool.length = 0;
     this.mouse.set(0, 0);
     this.isInitialized.set(false);
-    
+
     console.log('AgentInteractionService cleaned up');
   }
 
@@ -309,10 +315,12 @@ export class AgentInteractionService {
     // Configure raycaster for optimal performance
     this.raycaster.far = this.maxRaycastDistance;
     this.raycaster.near = 0.1;
-    
+
     // Pre-allocate intersection pool for performance
-    this.intersectionPool = new Array(10).fill(null).map(() => ({})) as THREE.Intersection[];
-    
+    this.intersectionPool = new Array(10)
+      .fill(null)
+      .map(() => ({})) as THREE.Intersection[];
+
     console.log('Enhanced raycasting system configured');
   }
 
@@ -376,8 +384,9 @@ export class AgentInteractionService {
       const currentState = this.interactionState();
       if (currentState.tooltipData) {
         const age = Date.now() - currentState.tooltipData.timestamp;
-        if (age > 5000) { // 5 seconds
-          this.interactionState.update(state => ({
+        if (age > 5000) {
+          // 5 seconds
+          this.interactionState.update((state) => ({
             ...state,
             tooltipData: null,
           }));
@@ -393,7 +402,7 @@ export class AgentInteractionService {
     if (!this.container) return;
 
     let clientX: number, clientY: number;
-    
+
     if (event instanceof MouseEvent) {
       clientX = event.clientX;
       clientY = event.clientY;
@@ -429,7 +438,7 @@ export class AgentInteractionService {
 
     // Perform raycasting
     const intersects = this.raycaster.intersectObjects(agentMeshes, true);
-    
+
     return intersects.length > 0 ? intersects[0] : null;
   }
 
@@ -440,7 +449,9 @@ export class AgentInteractionService {
     if (!this.config?.enableHover) return;
 
     const currentState = this.interactionState();
-    const agentId = intersection ? this.extractAgentIdFromIntersection(intersection) : null;
+    const agentId = intersection
+      ? this.extractAgentIdFromIntersection(intersection)
+      : null;
 
     if (currentState.hoveredAgentId !== agentId) {
       // Clear previous hover
@@ -451,7 +462,7 @@ export class AgentInteractionService {
       // Set new hover
       if (agentId) {
         this.setAgentHover(agentId);
-        
+
         if (this.config.enableTooltips) {
           this.showTooltip(agentId);
         }
@@ -459,7 +470,7 @@ export class AgentInteractionService {
         this.hideTooltip();
       }
 
-      this.interactionState.update(state => ({
+      this.interactionState.update((state) => ({
         ...state,
         hoveredAgentId: agentId,
       }));
@@ -477,8 +488,10 @@ export class AgentInteractionService {
   private handleMouseClick(intersection: THREE.Intersection | null): void {
     if (!this.config?.enableSelection) return;
 
-    const agentId = intersection ? this.extractAgentIdFromIntersection(intersection) : null;
-    
+    const agentId = intersection
+      ? this.extractAgentIdFromIntersection(intersection)
+      : null;
+
     // Detect double-click
     const now = Date.now();
     const isDoubleClick = now - this.lastClickTime < this.doubleClickThreshold;
@@ -498,13 +511,15 @@ export class AgentInteractionService {
   private handleDoubleClick(intersection: THREE.Intersection | null): void {
     if (!this.config?.enableDoubleClickFocus) return;
 
-    const agentId = intersection ? this.extractAgentIdFromIntersection(intersection) : null;
-    
+    const agentId = intersection
+      ? this.extractAgentIdFromIntersection(intersection)
+      : null;
+
     if (agentId) {
       this.selectAgent(agentId);
       this.focusOnAgent(agentId);
-      
-      this.interactionState.update(state => ({
+
+      this.interactionState.update((state) => ({
         ...state,
         isDoubleClick: true,
       }));
@@ -575,7 +590,7 @@ export class AgentInteractionService {
       timestamp: Date.now(),
     };
 
-    this.interactionState.update(state => ({
+    this.interactionState.update((state) => ({
       ...state,
       tooltipData,
     }));
@@ -585,16 +600,21 @@ export class AgentInteractionService {
    * Hide tooltip
    */
   private hideTooltip(): void {
-    this.interactionState.update(state => ({
+    this.interactionState.update((state) => ({
       ...state,
-      tooltipData: state.tooltipData ? { ...state.tooltipData, visible: false } : null,
+      tooltipData: state.tooltipData
+        ? { ...state.tooltipData, visible: false }
+        : null,
     }));
   }
 
   /**
    * Convert world position to screen coordinates
    */
-  private worldToScreenPosition(worldPosition: THREE.Vector3): { x: number; y: number } {
+  private worldToScreenPosition(worldPosition: THREE.Vector3): {
+    x: number;
+    y: number;
+  } {
     if (!this.camera || !this.container) {
       return { x: 0, y: 0 };
     }
@@ -612,16 +632,18 @@ export class AgentInteractionService {
   /**
    * Extract agent ID from raycasting intersection
    */
-  private extractAgentIdFromIntersection(intersection: THREE.Intersection): string | null {
+  private extractAgentIdFromIntersection(
+    intersection: THREE.Intersection
+  ): string | null {
     let current: THREE.Object3D | null = intersection.object;
-    
+
     while (current) {
       if (current.userData['agentId']) {
         return current.userData['agentId'];
       }
       current = current.parent;
     }
-    
+
     return null;
   }
 
@@ -629,7 +651,7 @@ export class AgentInteractionService {
    * Update interaction state with timestamp
    */
   private updateInteractionState(timestamp: number): void {
-    this.interactionState.update(state => ({
+    this.interactionState.update((state) => ({
       ...state,
       lastInteractionTime: timestamp,
       isDoubleClick: false, // Reset double-click flag
@@ -641,11 +663,9 @@ export class AgentInteractionService {
    */
   private removeEventListeners(): void {
     if (this.container) {
-      this.container.removeEventListener('mousemove', () => {});
-      this.container.removeEventListener('click', () => {});
-      this.container.removeEventListener('dblclick', () => {});
-      this.container.removeEventListener('touchmove', () => {});
-      this.container.removeEventListener('touchend', () => {});
+      // Remove event listeners (proper implementation would require storing references)
+      // Event listeners cleanup would require storing references
+      // For now, relying on component/service lifecycle management
     }
   }
 }

@@ -27,7 +27,6 @@ const NODE_MODULES_HIVE = path.join(
 const HIVE_LIBRARIES = [
   'nestjs-chromadb',
   'nestjs-neo4j',
-  'nestjs-langgraph',
   'langgraph-checkpoint',
   'langgraph-core',
   'langgraph-functional-api',
@@ -219,7 +218,7 @@ function main() {
           );
           log(`✓ ${lib} v${packageJson.version}`, 'success');
           verifiedCount++;
-        } catch (error) {
+        } catch {
           log(`✗ ${lib} - Invalid package.json`, 'error');
         }
       } else {

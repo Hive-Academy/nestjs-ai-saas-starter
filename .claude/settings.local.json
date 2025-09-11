@@ -30,7 +30,10 @@
       "Bash(npx nx run-many:*)",
       "Bash(npm install:*)",
       "Bash(npx nx serve:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx nx run:*)",
+      "Bash(npm run build:libs:*)"
     ],
     "deny": [],
     "ask": [],

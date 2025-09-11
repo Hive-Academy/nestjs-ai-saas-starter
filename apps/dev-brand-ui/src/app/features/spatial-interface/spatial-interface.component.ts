@@ -12,14 +12,34 @@ import {
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
-import { ThreeIntegrationService, SceneInstance } from '../../core/services/three-integration.service';
+import {
+  ThreeIntegrationService,
+  SceneInstance,
+} from '../../core/services/three-integration.service';
 import { AgentCommunicationService } from '../../core/services/agent-communication.service';
 import { AgentVisualizerService } from './services/agent-visualizer.service';
 import { ConstellationLayoutService } from './services/constellation-layout.service';
-import { SpatialNavigationService, SpatialNavigationConfig } from './services/spatial-navigation.service';
-import { AgentInteractionService, AgentInteractionConfig } from './services/agent-interaction.service';
-import { NavigationControlsComponent, NavigationControlsConfig } from './components/navigation-controls.component';
-import { AgentTooltipComponent, TooltipConfig } from './components/agent-tooltip.component';
+import {
+  SpatialNavigationService,
+  SpatialNavigationConfig,
+} from './services/spatial-navigation.service';
+import {
+  AgentInteractionService,
+  AgentInteractionConfig,
+} from './services/agent-interaction.service';
+import {
+  AgentStateVisualizerService,
+  VisualEffectConfig,
+} from './services/agent-state-visualizer.service';
+import { PerformanceMonitorService } from './services/performance-monitor.service';
+import {
+  NavigationControlsComponent,
+  NavigationControlsConfig,
+} from './components/navigation-controls.component';
+import {
+  AgentTooltipComponent,
+  TooltipConfig,
+} from './components/agent-tooltip.component';
 import { AgentState } from '../../core/interfaces/agent-state.interface';
 
 /**
@@ -35,17 +55,26 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
     <div class="spatial-interface" #containerRef>
       <!-- 3D Scene Container -->
       <div class="scene-container" #sceneContainer></div>
-      
+
       <!-- UI Overlay -->
       <div class="ui-overlay">
         <!-- Agent Information Panel -->
-        <div class="agent-info-panel" *ngIf="selectedAgent() as selectedAgentData">
+        <div
+          class="agent-info-panel"
+          *ngIf="selectedAgent() as selectedAgentData"
+        >
           <h3>{{ selectedAgentData.agent.name }}</h3>
           <div class="agent-details">
             <p><strong>Type:</strong> {{ selectedAgentData.agent.type }}</p>
             <p><strong>Status:</strong> {{ selectedAgentData.agent.status }}</p>
-            <p><strong>Capabilities:</strong> {{ selectedAgentData.agent.capabilities.join(', ') }}</p>
-            <div class="agent-tools" *ngIf="selectedAgentData.agent.currentTools.length">
+            <p>
+              <strong>Capabilities:</strong>
+              {{ selectedAgentData.agent.capabilities.join(', ') }}
+            </p>
+            <div
+              class="agent-tools"
+              *ngIf="selectedAgentData.agent.currentTools.length"
+            >
               <strong>Active Tools:</strong>
               <ul>
                 <li *ngFor="let tool of selectedAgentData.agent.currentTools">
@@ -64,7 +93,19 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
           </div>
           <div class="stat-item">
             <span class="stat-label">FPS:</span>
-            <span class="stat-value">{{ frameRate() }}</span>
+            <span
+              class="stat-value"
+              [class.warning]="performanceMetrics().frameRate < 45"
+              [class.error]="performanceMetrics().frameRate < 30"
+            >
+              {{ performanceMetrics().frameRate }}
+            </span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Effects:</span>
+            <span class="stat-value">{{
+              performanceMetrics().activeEffects
+            }}</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Connected:</span>
@@ -78,14 +119,17 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
         <div class="instructions" *ngIf="!selectedAgent()">
           <p>🌌 <strong>Agent Constellation</strong></p>
           <p>Click on agents to interact • Mouse to orbit • Scroll to zoom</p>
-          <p *ngIf="agentCount() === 0">Waiting for agents to join the constellation...</p>
+          <p *ngIf="agentCount() === 0">
+            Waiting for agents to join the constellation...
+          </p>
         </div>
 
         <!-- Enhanced Navigation Controls -->
         <brand-navigation-controls
           [config]="navigationControlsConfig()"
           (focusRequested)="onFocusRequested($event)"
-          (resetRequested)="onResetRequested()">
+          (resetRequested)="onResetRequested()"
+        >
         </brand-navigation-controls>
 
         <!-- Enhanced Agent Tooltip -->
@@ -93,7 +137,8 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
           [tooltipData]="currentTooltip()"
           [config]="tooltipConfig()"
           (focusAgent)="onTooltipFocusAgent($event)"
-          (startChat)="onTooltipStartChat($event)">
+          (startChat)="onTooltipStartChat($event)"
+        >
         </brand-agent-tooltip>
       </div>
 
@@ -112,7 +157,11 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
         position: relative;
         width: 100%;
         height: 100vh;
-        background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0a 100%);
+        background: radial-gradient(
+          ellipse at center,
+          #1a1a2e 0%,
+          #0a0a0a 100%
+        );
         overflow: hidden;
       }
 
@@ -208,6 +257,14 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
         color: #10b981;
       }
 
+      .stat-value.warning {
+        color: #ffaa00;
+      }
+
+      .stat-value.error {
+        color: #ff4444;
+      }
+
       .instructions {
         position: absolute;
         bottom: 30px;
@@ -252,8 +309,12 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
       }
 
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
       /* Responsive Design */
@@ -290,10 +351,13 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
   private readonly constellationLayout = inject(ConstellationLayoutService);
   private readonly spatialNavigation = inject(SpatialNavigationService);
   private readonly agentInteraction = inject(AgentInteractionService);
+  private readonly agentStateVisualizer = inject(AgentStateVisualizerService);
+  private readonly performanceMonitor = inject(PerformanceMonitorService);
   private readonly viewContainerRef = inject(ViewContainerRef);
 
   // Template references
-  @ViewChild('sceneContainer', { static: true }) sceneContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('sceneContainer', { static: true })
+  sceneContainer!: ElementRef<HTMLDivElement>;
 
   // Scene management
   private readonly sceneId = 'spatial-constellation';
@@ -310,6 +374,8 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
   readonly isConnected = this.agentCommunication.isConnected;
   readonly isNavigating = this.spatialNavigation.isNavigating;
   readonly currentTooltip = this.agentInteraction.tooltipData;
+  readonly visualEffectsActive = this.agentStateVisualizer.visualEffectsActive;
+  readonly performanceMetrics = this.performanceMonitor.performanceMetrics;
 
   // Navigation controls configuration
   readonly navigationControlsConfig = signal<NavigationControlsConfig>({
@@ -413,6 +479,12 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
         },
       });
 
+      // Initialize visual effects system
+      this.initializeVisualEffects();
+
+      // Initialize performance monitoring
+      this.initializePerformanceMonitoring();
+
       // Start render loop with animation updates
       this.threeService.activateScene(this.sceneId, () => {
         this.updateAnimations();
@@ -420,7 +492,6 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
 
       this.isSceneReady.set(true);
       console.log('Spatial interface initialized successfully');
-
     } catch (error) {
       console.error('Failed to initialize spatial interface:', error);
     }
@@ -435,10 +506,10 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
     const scene = this.sceneInstance.scene;
 
     // Clear default lighting
-    const lightsToRemove = scene.children.filter(child => 
-      child instanceof THREE.Light
+    const lightsToRemove = scene.children.filter(
+      (child) => child instanceof THREE.Light
     );
-    lightsToRemove.forEach(light => scene.remove(light));
+    lightsToRemove.forEach((light) => scene.remove(light));
 
     // Ambient light for base illumination
     const ambientLight = new THREE.AmbientLight(0x404080, 0.4);
@@ -480,8 +551,10 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
 
     try {
       // Dynamically import OrbitControls to avoid bundle size issues
-      const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js');
-      
+      const { OrbitControls } = await import(
+        'three/examples/jsm/controls/OrbitControls.js'
+      );
+
       this.controls = new OrbitControls(
         this.sceneInstance.camera,
         this.sceneInstance.renderer.domElement
@@ -491,15 +564,15 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.05;
       this.controls.screenSpacePanning = false;
-      
+
       // Limit zoom and distance
       this.controls.minDistance = 5;
       this.controls.maxDistance = 50;
-      
+
       // Limit vertical rotation
       this.controls.maxPolarAngle = Math.PI;
       this.controls.minPolarAngle = 0;
-      
+
       // Set target to constellation center
       this.controls.target.set(0, 0, 0);
       this.controls.update();
@@ -514,12 +587,24 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
    * Setup agent communication and real-time updates
    */
   private setupAgentCommunication(): void {
+    console.log('🔌 Setting up agent communication...');
+
     // Connect to agent system
     this.agentCommunication.connect();
 
+    // Log connection status
+    setInterval(() => {
+      console.log(
+        '📡 Connection status:',
+        this.agentCommunication.isConnected()
+      );
+    }, 2000);
+
     // Handle existing agents
     const existingAgents = this.agentCommunication.availableAgents();
-    existingAgents.forEach(agent => {
+    console.log('👥 Existing agents found:', existingAgents.length);
+    existingAgents.forEach((agent) => {
+      console.log('🤖 Adding agent to visualization:', agent.name);
       this.agentVisualizer.visualizeAgent(agent);
     });
 
@@ -527,7 +612,26 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
     this.agentCommunication.agentUpdates$
       .pipe(takeUntilDestroyed())
       .subscribe((agent: AgentState) => {
+        console.log('🔄 Agent update received:', agent.name, agent.status);
         this.agentVisualizer.visualizeAgent(agent);
+      });
+
+    // Subscribe to memory updates
+    this.agentCommunication.memoryUpdates$
+      .pipe(takeUntilDestroyed())
+      .subscribe((contexts) => {
+        console.log('🧠 Memory update received:', contexts.length, 'contexts');
+      });
+
+    // Subscribe to tool executions
+    this.agentCommunication.toolExecutions$
+      .pipe(takeUntilDestroyed())
+      .subscribe((execution) => {
+        console.log(
+          '🔧 Tool execution received:',
+          execution.toolName,
+          execution.status
+        );
       });
   }
 
@@ -542,6 +646,15 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
 
     // Update agent animations
     this.agentVisualizer.updateAnimations();
+
+    // Update visual effects
+    this.agentStateVisualizer.updateEffects(0.016); // ~60fps
+
+    // Update performance monitoring
+    this.performanceMonitor.updateMetrics(
+      0.016,
+      this.performanceMetrics().activeEffects
+    );
 
     // Handle mouse interactions
     this.handleMouseInteractions();
@@ -676,6 +789,39 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Initialize visual effects system
+   */
+  private initializeVisualEffects(): void {
+    const visualEffectConfig: VisualEffectConfig = {
+      sceneId: this.sceneId,
+      enableMemoryEffects: true,
+      enableToolRings: true,
+      enableCommunicationStreams: true,
+      effectQuality: 'high',
+      maxConcurrentEffects: 20,
+    };
+
+    this.agentStateVisualizer.initialize(visualEffectConfig);
+    console.log('Visual effects system initialized');
+  }
+
+  /**
+   * Initialize performance monitoring
+   */
+  private initializePerformanceMonitoring(): void {
+    this.performanceMonitor.initialize(this.sceneId);
+
+    // Register quality adjustment callback
+    this.performanceMonitor.registerQualityCallback((quality) => {
+      console.log('Performance quality adjusted:', quality);
+      // Notify visual effects system of quality change
+      // This could update effect parameters based on performance
+    });
+
+    console.log('Performance monitoring initialized');
+  }
+
+  /**
    * Clean up scene and resources
    */
   private cleanupScene(): void {
@@ -683,7 +829,9 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
     this.constellationLayout.cleanup();
     this.spatialNavigation.cleanup();
     this.agentInteraction.cleanup();
-    
+    this.agentStateVisualizer.cleanup();
+    this.performanceMonitor.cleanup();
+
     if (this.controls) {
       this.controls.dispose();
       this.controls = null;

@@ -36,7 +36,6 @@
       "exclude": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/core/*",
         "libs/langgraph-modules/hitl/*",
@@ -78,7 +77,6 @@
       "include": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/core/*",
         "libs/langgraph-modules/hitl/*",
@@ -135,7 +133,6 @@
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/langgraph-modules/nestjs-langgraph",
       "libs/langgraph-modules/checkpoint",
       "libs/langgraph-modules/core",
       "libs/langgraph-modules/hitl",

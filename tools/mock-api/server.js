@@ -12,29 +12,32 @@ const AgentBehaviorSimulator = require('./simulators/agent-behavior.simulator');
 class MockAPIServer {
   constructor(options = {}) {
     this.port = options.port || 3001;
-    this.corsOrigin = options.corsOrigin || ['http://localhost:4200', 'http://localhost:3000'];
-    
+    this.corsOrigin = options.corsOrigin || [
+      'http://localhost:4200',
+      'http://localhost:3000',
+    ];
+
     // Initialize Express app
     this.app = express();
     this.server = createServer(this.app);
-    
+
     // Initialize Socket.IO
     this.io = new Server(this.server, {
       cors: {
         origin: this.corsOrigin,
         methods: ['GET', 'POST'],
-        credentials: true
+        credentials: true,
       },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
     });
-    
+
     // Initialize behavior simulator
     this.behaviorSimulator = new AgentBehaviorSimulator(this.io);
-    
+
     // Connection tracking
     this.connectedClients = new Map();
     this.connectionCount = 0;
-    
+
     this.setupMiddleware();
     this.setupRoutes();
     this.setupWebSocketHandlers();
@@ -44,14 +47,16 @@ class MockAPIServer {
    * Setup Express middleware
    */
   setupMiddleware() {
-    this.app.use(cors({
-      origin: this.corsOrigin,
-      credentials: true
-    }));
-    
+    this.app.use(
+      cors({
+        origin: this.corsOrigin,
+        credentials: true,
+      })
+    );
+
     this.app.use(express.json());
     this.app.use(express.static('public'));
-    
+
     // Request logging
     this.app.use((req, res, next) => {
       console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -69,7 +74,7 @@ class MockAPIServer {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        simulation: this.behaviorSimulator.getSimulationStatus()
+        simulation: this.behaviorSimulator.getSimulationStatus(),
       });
     });
 
@@ -77,7 +82,7 @@ class MockAPIServer {
     this.app.get('/api/agents', (req, res) => {
       res.json({
         agents: this.behaviorSimulator.getAllAgents(),
-        count: this.behaviorSimulator.getAllAgents().length
+        count: this.behaviorSimulator.getAllAgents().length,
       });
     });
 
@@ -93,12 +98,18 @@ class MockAPIServer {
     // Simulation controls
     this.app.post('/api/simulation/start', (req, res) => {
       this.behaviorSimulator.startSimulation();
-      res.json({ message: 'Simulation started', status: this.behaviorSimulator.getSimulationStatus() });
+      res.json({
+        message: 'Simulation started',
+        status: this.behaviorSimulator.getSimulationStatus(),
+      });
     });
 
     this.app.post('/api/simulation/stop', (req, res) => {
       this.behaviorSimulator.stopSimulation();
-      res.json({ message: 'Simulation stopped', status: this.behaviorSimulator.getSimulationStatus() });
+      res.json({
+        message: 'Simulation stopped',
+        status: this.behaviorSimulator.getSimulationStatus(),
+      });
     });
 
     this.app.get('/api/simulation/status', (req, res) => {
@@ -112,19 +123,31 @@ class MockAPIServer {
     // Agent control endpoints
     this.app.post('/api/agents/:id/transition', (req, res) => {
       const { state } = req.body;
-      const result = this.behaviorSimulator.forceAgentTransition(req.params.id, state);
-      res.json({ message: `Agent transition requested`, agentId: req.params.id, newState: state });
+      const result = this.behaviorSimulator.forceAgentTransition(
+        req.params.id,
+        state
+      );
+      res.json({
+        message: `Agent transition requested`,
+        agentId: req.params.id,
+        newState: state,
+        result,
+      });
     });
 
     this.app.post('/api/agents/:id/activity', (req, res) => {
       const { activityType, params } = req.body;
-      const result = this.behaviorSimulator.triggerAgentActivity(req.params.id, activityType, params);
-      res.json({ 
-        message: `Activity triggered`, 
-        agentId: req.params.id, 
-        activityType, 
+      const result = this.behaviorSimulator.triggerAgentActivity(
+        req.params.id,
+        activityType,
+        params
+      );
+      res.json({
+        message: `Activity triggered`,
+        agentId: req.params.id,
+        activityType,
         success: !!result,
-        result 
+        result,
       });
     });
 
@@ -133,17 +156,17 @@ class MockAPIServer {
       res.json({
         totalConnections: this.connectionCount,
         activeConnections: this.connectedClients.size,
-        clients: Array.from(this.connectedClients.values()).map(client => ({
+        clients: Array.from(this.connectedClients.values()).map((client) => ({
           id: client.id,
           connectedAt: client.connectedAt,
-          userAgent: client.userAgent
-        }))
+          userAgent: client.userAgent,
+        })),
       });
     });
 
     // Catch-all for unknown routes
     this.app.use('*', (req, res) => {
-      res.status(404).json({ 
+      res.status(404).json({
         error: 'Endpoint not found',
         availableEndpoints: [
           'GET /health',
@@ -155,8 +178,8 @@ class MockAPIServer {
           'GET /api/simulation/metrics',
           'POST /api/agents/:id/transition',
           'POST /api/agents/:id/activity',
-          'GET /api/connections'
-        ]
+          'GET /api/connections',
+        ],
       });
     });
   }
@@ -170,13 +193,15 @@ class MockAPIServer {
       const clientInfo = {
         id: socket.id,
         connectedAt: new Date(),
-        userAgent: socket.handshake.headers['user-agent'] || 'Unknown'
+        userAgent: socket.handshake.headers['user-agent'] || 'Unknown',
       };
-      
+
       this.connectedClients.set(socket.id, clientInfo);
-      
-      console.log(`Client connected: ${socket.id} (Total: ${this.connectedClients.size})`);
-      
+
+      console.log(
+        `Client connected: ${socket.id} (Total: ${this.connectedClients.size})`
+      );
+
       // Send initial system status
       socket.emit('system_status', {
         type: 'system_status',
@@ -187,9 +212,9 @@ class MockAPIServer {
           serverInfo: {
             version: '1.0.0',
             uptime: process.uptime(),
-            nodeVersion: process.version
-          }
-        }
+            nodeVersion: process.version,
+          },
+        },
       });
 
       // Send current agent states
@@ -204,15 +229,15 @@ class MockAPIServer {
       socket.on('request_agent_data', (data) => {
         const { agentId } = data;
         const agent = this.behaviorSimulator.getAgent(agentId);
-        
+
         if (agent) {
           socket.emit('agent_update', {
             type: 'agent_update',
             timestamp: new Date(),
             data: {
               agentId,
-              state: agent
-            }
+              state: agent,
+            },
           });
         }
       });
@@ -220,27 +245,29 @@ class MockAPIServer {
       // Handle simulation control from client
       socket.on('simulation_control', (data) => {
         const { action } = data;
-        
+
         if (action === 'start') {
           this.behaviorSimulator.startSimulation();
         } else if (action === 'stop') {
           this.behaviorSimulator.stopSimulation();
         }
-        
+
         // Broadcast status update
         this.io.emit('system_status', {
           type: 'system_status',
           timestamp: new Date(),
           data: {
-            simulationStatus: this.behaviorSimulator.getSimulationStatus()
-          }
+            simulationStatus: this.behaviorSimulator.getSimulationStatus(),
+          },
         });
       });
 
       // Handle client disconnect
       socket.on('disconnect', (reason) => {
         this.connectedClients.delete(socket.id);
-        console.log(`Client disconnected: ${socket.id} (${reason}) (Remaining: ${this.connectedClients.size})`);
+        console.log(
+          `Client disconnected: ${socket.id} (${reason}) (Remaining: ${this.connectedClients.size})`
+        );
       });
 
       // Handle client errors
@@ -273,17 +300,21 @@ class MockAPIServer {
             timestamp: new Date(),
             data: {
               agentId,
-              state: { isActive: true }
-            }
+              state: { isActive: true },
+            },
           });
           break;
 
         case 'execute_tool':
           if (toolName) {
-            this.behaviorSimulator.triggerAgentActivity(agentId, 'tool_execution', {
-              toolName,
-              inputs: parameters
-            });
+            this.behaviorSimulator.triggerAgentActivity(
+              agentId,
+              'tool_execution',
+              {
+                toolName,
+                inputs: parameters,
+              }
+            );
           }
           break;
 
@@ -294,8 +325,8 @@ class MockAPIServer {
             timestamp: new Date(),
             data: {
               id: workflowId,
-              status: 'paused'
-            }
+              status: 'paused',
+            },
           });
           break;
 
@@ -306,8 +337,8 @@ class MockAPIServer {
             timestamp: new Date(),
             data: {
               id: workflowId,
-              status: 'executing'
-            }
+              status: 'executing',
+            },
           });
           break;
 
@@ -319,7 +350,7 @@ class MockAPIServer {
       socket.emit('error', {
         type: 'command_error',
         message: 'Failed to process agent command',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -332,22 +363,32 @@ class MockAPIServer {
       try {
         // Initialize agents
         this.behaviorSimulator.initializeAgents();
-        
+
         // Start the server
         this.server.listen(this.port, () => {
           console.log(`🚀 Mock API Server running on port ${this.port}`);
           console.log(`📡 WebSocket endpoint: ws://localhost:${this.port}`);
           console.log(`🔗 Health check: http://localhost:${this.port}/health`);
-          console.log(`📊 Metrics: http://localhost:${this.port}/api/simulation/metrics`);
-          console.log(`\n🤖 ${this.behaviorSimulator.getAllAgents().length} agents initialized:`);
-          
-          this.behaviorSimulator.getAllAgents().forEach(agent => {
-            console.log(`   • ${agent.name} (${agent.type}): ${agent.capabilities.slice(0, 2).join(', ')}...`);
+          console.log(
+            `📊 Metrics: http://localhost:${this.port}/api/simulation/metrics`
+          );
+          console.log(
+            `\n🤖 ${
+              this.behaviorSimulator.getAllAgents().length
+            } agents initialized:`
+          );
+
+          this.behaviorSimulator.getAllAgents().forEach((agent) => {
+            console.log(
+              `   • ${agent.name} (${agent.type}): ${agent.capabilities
+                .slice(0, 2)
+                .join(', ')}...`
+            );
           });
-          
+
           console.log(`\n🎮 Starting simulation...`);
           this.behaviorSimulator.startSimulation();
-          
+
           resolve();
         });
 
@@ -355,7 +396,6 @@ class MockAPIServer {
           console.error('Server error:', error);
           reject(error);
         });
-
       } catch (error) {
         console.error('Failed to start server:', error);
         reject(error);
@@ -369,13 +409,13 @@ class MockAPIServer {
   stop() {
     return new Promise((resolve) => {
       console.log('🛑 Stopping Mock API Server...');
-      
+
       // Stop simulation
       this.behaviorSimulator.stopSimulation();
-      
+
       // Close WebSocket connections
       this.io.close();
-      
+
       // Close HTTP server
       this.server.close(() => {
         console.log('✅ Mock API Server stopped');
@@ -389,9 +429,9 @@ class MockAPIServer {
 if (require.main === module) {
   const server = new MockAPIServer({
     port: process.env.MOCK_API_PORT || 3001,
-    corsOrigin: process.env.MOCK_API_CORS_ORIGIN ? 
-      process.env.MOCK_API_CORS_ORIGIN.split(',') : 
-      ['http://localhost:4200', 'http://localhost:3000']
+    corsOrigin: process.env.MOCK_API_CORS_ORIGIN
+      ? process.env.MOCK_API_CORS_ORIGIN.split(',')
+      : ['http://localhost:4200', 'http://localhost:3000'],
   });
 
   // Graceful shutdown

@@ -3,9 +3,7 @@ import {
   Input,
   Output,
   EventEmitter,
-  inject,
   signal,
-  computed,
   OnInit,
   OnDestroy,
   OnChanges,
@@ -14,8 +12,6 @@ import {
   ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AgentState } from '../../../core/interfaces/agent-state.interface';
 import { TooltipData } from '../services/agent-interaction.service';
 
 export interface TooltipConfig {
@@ -49,7 +45,7 @@ export interface ActivityItem {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div 
+    <div
       #tooltipElement
       class="agent-tooltip"
       [class.visible]="isVisible()"
@@ -64,9 +60,16 @@ export interface ActivityItem {
       <div class="tooltip-header">
         <div class="agent-identity">
           <div class="agent-avatar" [class]="getAgentTypeClass()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/>
-              <circle cx="12" cy="12" r="1"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <circle cx="12" cy="12" r="1" />
             </svg>
           </div>
           <div class="agent-info">
@@ -74,7 +77,7 @@ export interface ActivityItem {
             <div class="agent-type">{{ tooltipData.agent.type }}</div>
           </div>
         </div>
-        
+
         <div class="agent-status" [class]="getStatusClass()">
           <div class="status-indicator"></div>
           <span class="status-text">{{ getStatusText() }}</span>
@@ -82,16 +85,26 @@ export interface ActivityItem {
       </div>
 
       <!-- Agent Capabilities -->
-      <div class="tooltip-section capabilities-section" *ngIf="config?.showCapabilities && hasCapabilities()">
+      <div
+        class="tooltip-section capabilities-section"
+        *ngIf="config?.showCapabilities && hasCapabilities()"
+      >
         <div class="section-header">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10" />
           </svg>
           <span>Capabilities</span>
         </div>
         <div class="capabilities-list">
-          <div 
-            class="capability-item" 
+          <div
+            class="capability-item"
             *ngFor="let capability of tooltipData.agent.capabilities"
             [title]="capability"
           >
@@ -101,16 +114,28 @@ export interface ActivityItem {
       </div>
 
       <!-- Current Tools -->
-      <div class="tooltip-section tools-section" *ngIf="config?.showTools && hasActiveTools()">
+      <div
+        class="tooltip-section tools-section"
+        *ngIf="config?.showTools && hasActiveTools()"
+      >
         <div class="section-header">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+            />
           </svg>
           <span>Active Tools</span>
         </div>
         <div class="tools-list">
-          <div 
-            class="tool-item" 
+          <div
+            class="tool-item"
             *ngFor="let tool of tooltipData.agent.currentTools"
             [class]="getToolStatusClass(tool.status)"
           >
@@ -118,7 +143,10 @@ export interface ActivityItem {
             <div class="tool-status">{{ tool.status }}</div>
             <div class="tool-progress" *ngIf="tool.progress !== undefined">
               <div class="progress-bar">
-                <div class="progress-fill" [style.width.%]="tool.progress"></div>
+                <div
+                  class="progress-fill"
+                  [style.width.%]="tool.progress"
+                ></div>
               </div>
               <span class="progress-text">{{ tool.progress }}%</span>
             </div>
@@ -127,10 +155,20 @@ export interface ActivityItem {
       </div>
 
       <!-- Performance Metrics -->
-      <div class="tooltip-section performance-section" *ngIf="config?.showPerformance && hasPerformanceData()">
+      <div
+        class="tooltip-section performance-section"
+        *ngIf="config?.showPerformance && hasPerformanceData()"
+      >
         <div class="section-header">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />
           </svg>
           <span>Performance</span>
         </div>
@@ -151,21 +189,33 @@ export interface ActivityItem {
       </div>
 
       <!-- Recent Activity -->
-      <div class="tooltip-section activity-section" *ngIf="config?.showRecentActivity && hasRecentActivity()">
+      <div
+        class="tooltip-section activity-section"
+        *ngIf="config?.showRecentActivity && hasRecentActivity()"
+      >
         <div class="section-header">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12,6 12,12 16,14"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12,6 12,12 16,14" />
           </svg>
           <span>Recent Activity</span>
         </div>
         <div class="activity-list">
-          <div 
-            class="activity-item" 
+          <div
+            class="activity-item"
             *ngFor="let activity of getRecentActivities()"
             [class]="getActivityStatusClass(activity.status)"
           >
-            <div class="activity-time">{{ formatActivityTime(activity.timestamp) }}</div>
+            <div class="activity-time">
+              {{ formatActivityTime(activity.timestamp) }}
+            </div>
             <div class="activity-description">{{ activity.description }}</div>
           </div>
         </div>
@@ -173,27 +223,43 @@ export interface ActivityItem {
 
       <!-- Quick Actions -->
       <div class="tooltip-actions">
-        <button 
+        <button
           class="action-button focus-button"
           (click)="onFocusAgent()"
           title="Focus Camera on Agent"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <circle cx="12" cy="12" r="1"/>
-            <circle cx="4.5" cy="4.5" r="1"/>
-            <circle cx="19.5" cy="19.5" r="1"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="4.5" cy="4.5" r="1" />
+            <circle cx="19.5" cy="19.5" r="1" />
           </svg>
           Focus
         </button>
-        
-        <button 
+
+        <button
           class="action-button chat-button"
           (click)="onStartChat()"
           title="Start Conversation"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            />
           </svg>
           Chat
         </button>
@@ -516,8 +582,13 @@ export interface ActivityItem {
       }
 
       @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
       }
 
       /* Scrollbar styling */
@@ -628,6 +699,7 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnDestroy(): void {
     // Component cleanup handled by parent
+    this.isVisible.set(false);
   }
 
   /**
@@ -658,22 +730,24 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
    * Check if agent has capabilities to display
    */
   hasCapabilities(): boolean {
-    return this.tooltipData?.agent.capabilities.length > 0;
+    return (this.tooltipData?.agent.capabilities?.length ?? 0) > 0;
   }
 
   /**
    * Check if agent has active tools
    */
   hasActiveTools(): boolean {
-    return this.tooltipData?.agent.currentTools.length > 0;
+    return (this.tooltipData?.agent.currentTools?.length ?? 0) > 0;
   }
 
   /**
    * Check if agent has performance data
    */
   hasPerformanceData(): boolean {
-    return this.tooltipData?.agent.lastResponse !== undefined ||
-           this.tooltipData?.agent.memoryUsage !== undefined;
+    return (
+      this.tooltipData?.agent.lastResponse !== undefined ||
+      this.tooltipData?.agent.memoryUsage !== undefined
+    );
   }
 
   /**
@@ -711,7 +785,7 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
   getMemoryUsage(): string {
     if (!this.tooltipData?.agent.memoryUsage) return 'N/A';
     const usage = this.tooltipData.agent.memoryUsage;
-    return `${Math.round(usage / 1024 / 1024)}MB`;
+    return `${usage.current}${usage.unit}`;
   }
 
   /**
@@ -719,10 +793,11 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
    */
   getUptime(): string {
     if (!this.tooltipData?.agent.connectedAt) return 'N/A';
-    const uptime = Date.now() - new Date(this.tooltipData.agent.connectedAt).getTime();
+    const uptime =
+      Date.now() - new Date(this.tooltipData.agent.connectedAt).getTime();
     const minutes = Math.floor(uptime / 60000);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes % 60}m`;
     }
@@ -744,7 +819,7 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
     const diff = now - timestamp.getTime();
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
-    
+
     if (minutes > 0) {
       return `${minutes}m ago`;
     }
@@ -801,12 +876,16 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
 
     // Adjust horizontal position if tooltip would go off-screen
     if (x + tooltipWidth > viewportWidth) {
-      x = this.tooltipData.screenPosition.x - tooltipWidth - this.config.offset.x;
+      x =
+        this.tooltipData.screenPosition.x - tooltipWidth - this.config.offset.x;
     }
 
     // Adjust vertical position if tooltip would go off-screen
     if (y + tooltipHeight > viewportHeight) {
-      y = this.tooltipData.screenPosition.y - tooltipHeight - this.config.offset.y;
+      y =
+        this.tooltipData.screenPosition.y -
+        tooltipHeight -
+        this.config.offset.y;
     }
 
     // Ensure minimum margins
@@ -816,10 +895,10 @@ export class AgentTooltipComponent implements OnInit, OnDestroy, OnChanges {
     this.position.set({ x, y });
 
     // Calculate arrow position relative to tooltip
-    const arrowX = Math.max(10, Math.min(
-      this.tooltipData.screenPosition.x - x,
-      tooltipWidth - 20
-    ));
+    const arrowX = Math.max(
+      10,
+      Math.min(this.tooltipData.screenPosition.x - x, tooltipWidth - 20)
+    );
     this.arrowPosition.set(arrowX);
   }
 }

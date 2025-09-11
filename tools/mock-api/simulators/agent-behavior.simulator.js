@@ -13,42 +13,42 @@ class AgentBehaviorSimulator {
     this.io = io;
     this.agents = new Map();
     this.stateMachines = new Map();
-    
+
     // Initialize subsystems
     this.memorySimulator = new MemoryOperationsSimulator(io);
     this.toolSimulator = new ToolExecutionSimulator(io);
     this.coordinationSimulator = new CoordinationSimulator(io, []);
-    
+
     // Activity scheduling
     this.activityIntervals = new Map();
     this.isSimulationRunning = false;
-    
+
     // Agent behavior profiles
     this.behaviorProfiles = {
       coordinator: {
         activityFrequency: 0.7, // High activity
         coordinationInitiation: 0.8, // Often initiates coordination
         toolUsageFrequency: 0.4, // Moderate tool usage
-        memoryAccessFrequency: 0.6 // Frequent memory access
+        memoryAccessFrequency: 0.6, // Frequent memory access
       },
       specialist: {
         activityFrequency: 0.8, // Very high activity
         coordinationInitiation: 0.2, // Rarely initiates coordination
         toolUsageFrequency: 0.9, // Heavy tool usage
-        memoryAccessFrequency: 0.7 // High memory access
+        memoryAccessFrequency: 0.7, // High memory access
       },
       analyst: {
         activityFrequency: 0.6, // Moderate activity
         coordinationInitiation: 0.3, // Occasional coordination
         toolUsageFrequency: 0.7, // High tool usage
-        memoryAccessFrequency: 0.9 // Very high memory access
+        memoryAccessFrequency: 0.9, // Very high memory access
       },
       creator: {
         activityFrequency: 0.5, // Moderate activity
         coordinationInitiation: 0.4, // Some coordination
         toolUsageFrequency: 0.8, // High tool usage
-        memoryAccessFrequency: 0.5 // Moderate memory access
-      }
+        memoryAccessFrequency: 0.5, // Moderate memory access
+      },
     };
   }
 
@@ -62,116 +62,166 @@ class AgentBehaviorSimulator {
         id: 'agent_coordinator_001',
         name: 'Nova Prime',
         type: 'coordinator',
-        capabilities: ['workflow_management', 'agent_coordination', 'task_delegation', 'decision_making'],
+        capabilities: [
+          'workflow_management',
+          'agent_coordination',
+          'task_delegation',
+          'decision_making',
+        ],
         personality: {
           color: '#FFD700', // Gold
-          description: 'Primary coordinator responsible for orchestrating multi-agent workflows'
+          description:
+            'Primary coordinator responsible for orchestrating multi-agent workflows',
         },
-        position: { x: 0, y: 0, z: 0 } // Center position
+        position: { x: 0, y: 0, z: 0 }, // Center position
       },
-      
+
       // Specialists (2-3)
       {
         id: 'agent_specialist_backend',
         name: 'Apex Engine',
         type: 'specialist',
-        capabilities: ['backend_development', 'api_design', 'database_optimization', 'system_architecture'],
+        capabilities: [
+          'backend_development',
+          'api_design',
+          'database_optimization',
+          'system_architecture',
+        ],
         personality: {
           color: '#FF6B6B', // Red
-          description: 'Backend specialist focusing on server-side development and optimization'
+          description:
+            'Backend specialist focusing on server-side development and optimization',
         },
-        position: { x: 5, y: 0, z: 2 }
+        position: { x: 5, y: 0, z: 2 },
       },
       {
         id: 'agent_specialist_ui',
         name: 'Vector Interface',
         type: 'specialist',
-        capabilities: ['frontend_development', 'ui_design', '3d_visualization', 'user_experience'],
+        capabilities: [
+          'frontend_development',
+          'ui_design',
+          '3d_visualization',
+          'user_experience',
+        ],
         personality: {
           color: '#4ECDC4', // Teal
-          description: 'UI specialist focused on frontend development and user interface design'
+          description:
+            'UI specialist focused on frontend development and user interface design',
         },
-        position: { x: -3, y: 4, z: 1 }
+        position: { x: -3, y: 4, z: 1 },
       },
       {
         id: 'agent_specialist_data',
         name: 'Quantum Processor',
         type: 'specialist',
-        capabilities: ['data_processing', 'machine_learning', 'analytics', 'model_training'],
+        capabilities: [
+          'data_processing',
+          'machine_learning',
+          'analytics',
+          'model_training',
+        ],
         personality: {
           color: '#45B7D1', // Blue
-          description: 'Data specialist handling ML operations and data processing workflows'
+          description:
+            'Data specialist handling ML operations and data processing workflows',
         },
-        position: { x: 2, y: -5, z: -1 }
+        position: { x: 2, y: -5, z: -1 },
       },
-      
+
       // Analysts (1-2)
       {
         id: 'agent_analyst_system',
         name: 'Insight Engine',
         type: 'analyst',
-        capabilities: ['system_analysis', 'performance_monitoring', 'pattern_recognition', 'reporting'],
+        capabilities: [
+          'system_analysis',
+          'performance_monitoring',
+          'pattern_recognition',
+          'reporting',
+        ],
         personality: {
           color: '#96CEB4', // Green
-          description: 'System analyst monitoring performance and identifying optimization opportunities'
+          description:
+            'System analyst monitoring performance and identifying optimization opportunities',
         },
-        position: { x: -4, y: -2, z: 3 }
+        position: { x: -4, y: -2, z: 3 },
       },
       {
         id: 'agent_analyst_user',
         name: 'Behavior Decoder',
         type: 'analyst',
-        capabilities: ['user_behavior', 'interaction_analysis', 'feedback_processing', 'sentiment_analysis'],
+        capabilities: [
+          'user_behavior',
+          'interaction_analysis',
+          'feedback_processing',
+          'sentiment_analysis',
+        ],
         personality: {
           color: '#FFEAA7', // Yellow
-          description: 'User behavior analyst tracking interaction patterns and user feedback'
+          description:
+            'User behavior analyst tracking interaction patterns and user feedback',
         },
-        position: { x: 4, y: 3, z: -2 }
+        position: { x: 4, y: 3, z: -2 },
       },
-      
+
       // Creators (1-2)
       {
         id: 'agent_creator_003d',
         name: 'Dimension Forge',
         type: 'creator',
-        capabilities: ['3d_modeling', 'visualization_design', 'creative_generation', 'spatial_interfaces'],
+        capabilities: [
+          '3d_modeling',
+          'visualization_design',
+          'creative_generation',
+          'spatial_interfaces',
+        ],
         personality: {
           color: '#DDA0DD', // Purple
-          description: '3D creator specializing in spatial interfaces and immersive visualizations'
+          description:
+            '3D creator specializing in spatial interfaces and immersive visualizations',
         },
-        position: { x: -1, y: 5, z: 4 }
+        position: { x: -1, y: 5, z: 4 },
       },
       {
         id: 'agent_creator_content',
         name: 'Narrative Synthesizer',
         type: 'creator',
-        capabilities: ['content_generation', 'documentation', 'creative_writing', 'communication'],
+        capabilities: [
+          'content_generation',
+          'documentation',
+          'creative_writing',
+          'communication',
+        ],
         personality: {
           color: '#F39C12', // Orange
-          description: 'Content creator generating documentation and communication materials'
+          description:
+            'Content creator generating documentation and communication materials',
         },
-        position: { x: 3, y: -1, z: -3 }
-      }
+        position: { x: 3, y: -1, z: -3 },
+      },
     ];
 
     // Initialize agents
-    agentConfigs.forEach(config => {
+    agentConfigs.forEach((config) => {
       const agent = {
         ...config,
         status: 'idle',
         currentTask: null,
         isActive: true,
         lastActiveTime: new Date(),
-        currentTools: []
+        currentTools: [],
       };
 
       this.agents.set(agent.id, agent);
-      
+
       // Create state machine for each agent
       const stateMachine = new AgentStateMachine(agent.id, agent.type, this.io);
       this.stateMachines.set(agent.id, stateMachine);
 
-      console.log(`Initialized agent: ${agent.name} (${agent.id}) - ${agent.type}`);
+      console.log(
+        `Initialized agent: ${agent.name} (${agent.id}) - ${agent.type}`
+      );
     });
 
     // Update coordination simulator with agent list
@@ -186,12 +236,12 @@ class AgentBehaviorSimulator {
    */
   startSimulation() {
     if (this.isSimulationRunning) return;
-    
+
     this.isSimulationRunning = true;
     console.log('Starting agent behavior simulation...');
 
     // Start state machines
-    this.stateMachines.forEach(stateMachine => {
+    this.stateMachines.forEach((stateMachine) => {
       stateMachine.start();
     });
 
@@ -209,17 +259,17 @@ class AgentBehaviorSimulator {
    */
   stopSimulation() {
     if (!this.isSimulationRunning) return;
-    
+
     this.isSimulationRunning = false;
     console.log('Stopping agent behavior simulation...');
 
     // Stop state machines
-    this.stateMachines.forEach(stateMachine => {
+    this.stateMachines.forEach((stateMachine) => {
       stateMachine.stop();
     });
 
     // Clear activity intervals
-    this.activityIntervals.forEach(interval => {
+    this.activityIntervals.forEach((interval) => {
       clearInterval(interval);
     });
     this.activityIntervals.clear();
@@ -233,21 +283,21 @@ class AgentBehaviorSimulator {
   schedulePeriodicActivities() {
     this.agents.forEach((agent, agentId) => {
       const profile = this.behaviorProfiles[agent.type];
-      
+
       // Tool execution activity
       const toolInterval = setInterval(() => {
         if (Math.random() < profile.toolUsageFrequency) {
           this.toolSimulator.generateRandomToolExecution(agentId, agent.type);
         }
       }, 8000 + Math.random() * 12000); // 8-20 seconds
-      
+
       // Memory access activity
       const memoryInterval = setInterval(() => {
         if (Math.random() < profile.memoryAccessFrequency) {
           this.memorySimulator.generateRandomMemoryActivity(agentId);
         }
       }, 5000 + Math.random() * 10000); // 5-15 seconds
-      
+
       this.activityIntervals.set(`${agentId}_tools`, toolInterval);
       this.activityIntervals.set(`${agentId}_memory`, memoryInterval);
     });
@@ -260,14 +310,19 @@ class AgentBehaviorSimulator {
     const coordinationInterval = setInterval(() => {
       if (this.isSimulationRunning) {
         // Find coordinator agents
-        const coordinators = Array.from(this.agents.values()).filter(agent => agent.type === 'coordinator');
-        
-        if (coordinators.length > 0 && Math.random() < 0.3) { // 30% chance every interval
-          this.coordinationSimulator.generateRandomCoordination(Array.from(this.agents.values()));
+        const coordinators = Array.from(this.agents.values()).filter(
+          (agent) => agent.type === 'coordinator'
+        );
+
+        if (coordinators.length > 0 && Math.random() < 0.3) {
+          // 30% chance every interval
+          this.coordinationSimulator.generateRandomCoordination(
+            Array.from(this.agents.values())
+          );
         }
       }
     }, 15000 + Math.random() * 25000); // 15-40 seconds
-    
+
     this.activityIntervals.set('coordination', coordinationInterval);
   }
 
@@ -281,8 +336,8 @@ class AgentBehaviorSimulator {
         timestamp: new Date(),
         data: {
           agentId,
-          state: agent
-        }
+          state: agent,
+        },
       });
     });
   }
@@ -303,8 +358,8 @@ class AgentBehaviorSimulator {
       timestamp: new Date(),
       data: {
         agentId,
-        state: updates
-      }
+        state: updates,
+      },
     });
   }
 
@@ -329,10 +384,12 @@ class AgentBehaviorSimulator {
     return {
       isRunning: this.isSimulationRunning,
       agentCount: this.agents.size,
-      activeStateMachines: Array.from(this.stateMachines.values()).filter(sm => sm.isRunning).length,
+      activeStateMachines: Array.from(this.stateMachines.values()).filter(
+        (sm) => sm.isRunning
+      ).length,
       activeToolExecutions: this.toolSimulator.getActiveExecutions().length,
       activeWorkflows: this.coordinationSimulator.getActiveWorkflows().length,
-      uptime: this.isSimulationRunning ? 'Running' : 'Stopped'
+      uptime: this.isSimulationRunning ? 'Running' : 'Stopped',
     };
   }
 
@@ -355,20 +412,29 @@ class AgentBehaviorSimulator {
 
     switch (activityType) {
       case 'tool_execution':
-        return this.toolSimulator.startToolExecution(agentId, params.toolName || 'web_search', params.inputs);
-      
+        return this.toolSimulator.startToolExecution(
+          agentId,
+          params.toolName || 'web_search',
+          params.inputs
+        );
+
       case 'memory_query':
         return this.memorySimulator.generateRandomMemoryActivity(agentId);
-      
-      case 'coordination':
-        const participants = params.participants || Array.from(this.agents.keys()).filter(id => id !== agentId).slice(0, 2);
+
+      case 'coordination': {
+        const participants =
+          params.participants ||
+          Array.from(this.agents.keys())
+            .filter((id) => id !== agentId)
+            .slice(0, 2);
         return this.coordinationSimulator.startWorkflowCoordination(
           `manual_${Date.now()}`,
           agentId,
           participants,
           params.workflowType || 'analysis'
         );
-      
+      }
+
       default:
         return false;
     }
@@ -383,18 +449,20 @@ class AgentBehaviorSimulator {
       agents: {
         total: this.agents.size,
         byType: this.getAgentDistribution(),
-        active: Array.from(this.agents.values()).filter(agent => agent.isActive).length
+        active: Array.from(this.agents.values()).filter(
+          (agent) => agent.isActive
+        ).length,
       },
       activities: {
         toolExecutions: this.toolSimulator.getActiveExecutions(),
         workflows: this.coordinationSimulator.getActiveWorkflows(),
-        communications: this.coordinationSimulator.getCommunicationHistory(10)
+        communications: this.coordinationSimulator.getCommunicationHistory(10),
       },
       performance: {
         averageResponseTime: '150ms', // Mock metric
         messagesThroughput: Math.floor(Math.random() * 50) + 20, // Mock metric
-        memoryUsage: `${Math.floor(Math.random() * 100) + 50}MB` // Mock metric
-      }
+        memoryUsage: `${Math.floor(Math.random() * 100) + 50}MB`, // Mock metric
+      },
     };
   }
 
@@ -403,7 +471,7 @@ class AgentBehaviorSimulator {
    */
   getAgentDistribution() {
     const distribution = {};
-    this.agents.forEach(agent => {
+    this.agents.forEach((agent) => {
       distribution[agent.type] = (distribution[agent.type] || 0) + 1;
     });
     return distribution;
