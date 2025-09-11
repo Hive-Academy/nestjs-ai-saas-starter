@@ -1,0 +1,216 @@
+{
+  "scenarios": {
+    "default": {
+      "name": "Standard Operation",
+      "description": "Normal agent activity with balanced tool usage and coordination",
+      "config": {
+        "activityLevel": "medium",
+        "toolErrorRate": 0.05,
+        "coordinationFrequency": 0.3,
+        "agentTypes": {
+          "coordinator": 1,
+          "specialist": 3,
+          "analyst": 2,
+          "creator": 2
+        }
+      }
+    },
+    
+    "high_activity": {
+      "name": "High Activity Simulation",
+      "description": "Intensive agent activity for stress testing UI performance",
+      "config": {
+        "activityLevel": "high",
+        "toolErrorRate": 0.08,
+        "coordinationFrequency": 0.6,
+        "agentTypes": {
+          "coordinator": 2,
+          "specialist": 4,
+          "analyst": 3,
+          "creator": 3
+        }
+      }
+    },
+    
+    "error_testing": {
+      "name": "Error Scenarios",
+      "description": "Higher error rates to test error handling and recovery",
+      "config": {
+        "activityLevel": "medium",
+        "toolErrorRate": 0.25,
+        "coordinationFrequency": 0.2,
+        "memoryFailureRate": 0.15,
+        "agentTypes": {
+          "coordinator": 1,
+          "specialist": 2,
+          "analyst": 1,
+          "creator": 1
+        }
+      }
+    },
+    
+    "minimal": {
+      "name": "Minimal Activity",
+      "description": "Low activity for basic functionality testing",
+      "config": {
+        "activityLevel": "low",
+        "toolErrorRate": 0.02,
+        "coordinationFrequency": 0.1,
+        "agentTypes": {
+          "coordinator": 1,
+          "specialist": 1,
+          "analyst": 1,
+          "creator": 0
+        }
+      }
+    },
+    
+    "coordination_focus": {
+      "name": "Coordination Intensive",
+      "description": "Heavy multi-agent coordination workflows for testing communication visualization",
+      "config": {
+        "activityLevel": "medium",
+        "toolErrorRate": 0.03,
+        "coordinationFrequency": 0.8,
+        "workflowComplexity": "high",
+        "agentTypes": {
+          "coordinator": 2,
+          "specialist": 3,
+          "analyst": 2,
+          "creator": 1
+        }
+      }
+    },
+    
+    "memory_intensive": {
+      "name": "Memory Operations Focus",
+      "description": "Heavy memory access patterns for testing memory visualization",
+      "config": {
+        "activityLevel": "medium",
+        "toolErrorRate": 0.04,
+        "coordinationFrequency": 0.2,
+        "memoryAccessFrequency": 0.9,
+        "agentTypes": {
+          "coordinator": 1,
+          "specialist": 2,
+          "analyst": 4,
+          "creator": 1
+        }
+      }
+    },
+    
+    "creative_workflow": {
+      "name": "Creative Generation Workflow",
+      "description": "Creator-focused workflow with generation tools and creative processes",
+      "config": {
+        "activityLevel": "medium",
+        "toolErrorRate": 0.06,
+        "coordinationFrequency": 0.4,
+        "creativeToolPriority": true,
+        "agentTypes": {
+          "coordinator": 1,
+          "specialist": 1,
+          "analyst": 1,
+          "creator": 4
+        }
+      }
+    },
+    
+    "performance_test": {
+      "name": "Performance Testing",
+      "description": "Maximum load scenario for performance validation",
+      "config": {
+        "activityLevel": "high",
+        "toolErrorRate": 0.10,
+        "coordinationFrequency": 0.7,
+        "maxConcurrentOperations": 50,
+        "agentTypes": {
+          "coordinator": 3,
+          "specialist": 6,
+          "analyst": 4,
+          "creator": 3
+        }
+      }
+    }
+  },
+  
+  "workflowTemplates": {
+    "data_analysis": {
+      "name": "Data Analysis Workflow",
+      "steps": [
+        { "name": "Data Collection", "duration": 3000, "requiredAgentTypes": ["specialist"] },
+        { "name": "Data Processing", "duration": 5000, "requiredAgentTypes": ["specialist", "analyst"] },
+        { "name": "Analysis Execution", "duration": 7000, "requiredAgentTypes": ["analyst"] },
+        { "name": "Results Synthesis", "duration": 4000, "requiredAgentTypes": ["coordinator", "analyst"] }
+      ]
+    },
+    
+    "content_generation": {
+      "name": "Content Generation Workflow",
+      "steps": [
+        { "name": "Requirements Gathering", "duration": 2000, "requiredAgentTypes": ["coordinator"] },
+        { "name": "Research Phase", "duration": 4000, "requiredAgentTypes": ["analyst"] },
+        { "name": "Content Creation", "duration": 8000, "requiredAgentTypes": ["creator"] },
+        { "name": "Review & Refinement", "duration": 3000, "requiredAgentTypes": ["coordinator", "creator"] },
+        { "name": "Final Assembly", "duration": 2000, "requiredAgentTypes": ["specialist"] }
+      ]
+    },
+    
+    "system_optimization": {
+      "name": "System Optimization Workflow",
+      "steps": [
+        { "name": "Performance Analysis", "duration": 4000, "requiredAgentTypes": ["analyst"] },
+        { "name": "Bottleneck Identification", "duration": 3000, "requiredAgentTypes": ["specialist", "analyst"] },
+        { "name": "Solution Implementation", "duration": 6000, "requiredAgentTypes": ["specialist"] },
+        { "name": "Validation Testing", "duration": 5000, "requiredAgentTypes": ["specialist", "analyst"] }
+      ]
+    }
+  },
+  
+  "toolProfiles": {
+    "development": {
+      "web_search": { "frequency": 0.8, "errorRate": 0.03, "avgDuration": 3000 },
+      "data_analysis": { "frequency": 0.6, "errorRate": 0.08, "avgDuration": 8000 },
+      "code_generation": { "frequency": 0.7, "errorRate": 0.06, "avgDuration": 12000 },
+      "database_query": { "frequency": 0.9, "errorRate": 0.02, "avgDuration": 1000 }
+    },
+    
+    "testing": {
+      "web_search": { "frequency": 0.5, "errorRate": 0.01, "avgDuration": 1000 },
+      "data_analysis": { "frequency": 0.3, "errorRate": 0.02, "avgDuration": 3000 },
+      "code_generation": { "frequency": 0.2, "errorRate": 0.01, "avgDuration": 5000 },
+      "database_query": { "frequency": 0.7, "errorRate": 0.005, "avgDuration": 500 }
+    }
+  },
+  
+  "presets": {
+    "demo": {
+      "scenario": "default",
+      "autoStart": true,
+      "displayMetrics": true,
+      "enableLogging": false
+    },
+    
+    "development": {
+      "scenario": "high_activity",
+      "autoStart": true,
+      "displayMetrics": true,
+      "enableLogging": true
+    },
+    
+    "testing": {
+      "scenario": "minimal",
+      "autoStart": false,
+      "displayMetrics": false,
+      "enableLogging": false
+    },
+    
+    "presentation": {
+      "scenario": "coordination_focus",
+      "autoStart": true,
+      "displayMetrics": false,
+      "enableLogging": false,
+      "visualEffects": "enhanced"
+    }
+  }
+}

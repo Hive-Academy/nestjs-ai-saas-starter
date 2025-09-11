@@ -10,7 +10,7 @@ import { HealthCheckError } from '../interfaces/monitoring.interface';
 
 /**
  * HealthCheckService - System health monitoring with dependency validation
- * 
+ *
  * Features:
  * - Comprehensive dependency monitoring
  * - Configurable health check intervals
@@ -36,25 +36,29 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
   constructor() {
     // Start periodic health monitoring (every minute)
     this.monitoringInterval = setInterval(() => {
-      this.performScheduledHealthCheck().catch(error => {
+      this.performScheduledHealthCheck().catch((error) => {
         this.logger.error('Scheduled health check failed:', error);
       });
     }, 60000);
 
     // Register default system checks
     this.registerDefaultChecks();
-    
-    this.logger.log('HealthCheckService initialized with 60s monitoring interval');
+
+    this.logger.log(
+      'HealthCheckService initialized with 60s monitoring interval'
+    );
   }
 
   async onModuleDestroy(): Promise<void> {
     this.isShuttingDown = true;
-    
+
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
     }
-    
-    this.logger.log(`HealthCheckService shutdown - Total checks: ${this.totalChecks}, Failed: ${this.failedChecks}`);
+
+    this.logger.log(
+      `HealthCheckService shutdown - Total checks: ${this.totalChecks}, Failed: ${this.failedChecks}`
+    );
   }
 
   // ================================
@@ -65,10 +69,10 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     if (this.healthChecks.has(name)) {
       this.logger.warn(`Health check already exists: ${name}, replacing...`);
     }
-    
+
     this.healthChecks.set(name, check);
     this.logger.log(`Health check registered: ${name}`);
-    
+
     // Perform initial check
     try {
       await this.check(name);
@@ -83,17 +87,18 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       this.healthHistory.delete(name);
       this.logger.log(`Health check unregistered: ${name}`);
     } else {
-      this.logger.warn(`Attempted to unregister non-existent health check: ${name}`);
+      this.logger.warn(
+        `Attempted to unregister non-existent health check: ${name}`
+      );
     }
   }
 
   async check(name: string): Promise<ServiceHealth> {
     const healthCheck = this.healthChecks.get(name);
     if (!healthCheck) {
-      throw new HealthCheckError(
-        `Health check not found: ${name}`,
-        { serviceName: name }
-      );
+      throw new HealthCheckError(`Health check not found: ${name}`, {
+        serviceName: name,
+      });
     }
 
     // Check cache first
@@ -104,11 +109,11 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
 
     // Perform actual health check
     const health = await this.executeHealthCheck(name, healthCheck);
-    
+
     // Update cache and history
     this.healthCache.set(name, health);
     this.updateHealthHistory(name, health);
-    
+
     this.totalChecks++;
     if (health.state !== 'healthy') {
       this.failedChecks++;
@@ -126,7 +131,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       return this.createShutdownHealthStatus();
     }
 
-    const checkPromises = Array.from(this.healthChecks.keys()).map(name =>
+    const checkPromises = Array.from(this.healthChecks.keys()).map((name) =>
       this.checkWithErrorHandling(name)
     );
 
@@ -137,15 +142,18 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     // Process results
     healthResults.forEach((result, index) => {
       const serviceName = Array.from(this.healthChecks.keys())[index];
-      
+
       if (result.status === 'fulfilled') {
         const serviceHealth = result.value;
         services[serviceName] = serviceHealth;
-        
+
         // Determine overall state using priority: unhealthy > degraded > healthy
         if (serviceHealth.state === 'unhealthy') {
           overallState = 'unhealthy';
-        } else if (serviceHealth.state === 'degraded' && overallState === 'healthy') {
+        } else if (
+          serviceHealth.state === 'degraded' &&
+          overallState === 'healthy'
+        ) {
           overallState = 'degraded';
         }
       } else {
@@ -175,38 +183,67 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
   /**
    * Execute individual health check with timeout protection
    */
-  private async executeHealthCheck(name: string, check: HealthCheckFunction): Promise<ServiceHealth> {
+  private async executeHealthCheck(
+    name: string,
+    check: HealthCheckFunction
+  ): Promise<ServiceHealth> {
     const startTime = Date.now();
-    
+
     try {
-      const isHealthy = await Promise.race([
+      const result = await Promise.race([
         check(),
         this.createTimeoutPromise(this.checkTimeout),
       ]);
 
       const responseTime = Date.now() - startTime;
-      
+
+      // Handle different result types from health checks
+      let state: 'healthy' | 'degraded' | 'unhealthy';
+      let metadata: any = {
+        checkName: name,
+        executionTime: responseTime,
+      };
+
+      if (typeof result === 'boolean') {
+        // Simple boolean result (legacy checks)
+        state = result ? 'healthy' : 'degraded';
+      } else if (result && typeof result === 'object' && 'healthy' in result) {
+        // Detailed result object (new memory check format)
+        if (result.unhealthy) {
+          state = 'unhealthy';
+        } else if (result.degraded) {
+          state = 'degraded';
+        } else {
+          state = 'healthy';
+        }
+        // Include detailed metadata from the check
+        metadata = { ...metadata, ...result };
+      } else {
+        // Fallback for other result types
+        state = result ? 'healthy' : 'degraded';
+      }
+
       return {
-        state: isHealthy ? 'healthy' : 'degraded',
+        state,
         lastCheck: new Date(),
         responseTime,
-        metadata: {
-          checkName: name,
-          executionTime: responseTime,
-        },
+        metadata,
       };
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       return {
         state: 'unhealthy',
-        error: (error instanceof Error ? error.message : String(error)) || 'Health check failed',
+        error:
+          (error instanceof Error ? error.message : String(error)) ||
+          'Health check failed',
         lastCheck: new Date(),
         responseTime,
         metadata: {
           checkName: name,
           executionTime: responseTime,
-          errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+          errorType:
+            error instanceof Error ? error.constructor.name : 'Unknown',
         },
       };
     }
@@ -222,7 +259,9 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       this.logger.error(`Health check error for ${name}:`, error);
       return {
         state: 'unhealthy',
-        error: `Health check system error: ${error instanceof Error ? error.message : String(error)}`,
+        error: `Health check system error: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
         lastCheck: new Date(),
         responseTime: 0,
       };
@@ -253,14 +292,14 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
    */
   private updateHealthHistory(name: string, health: ServiceHealth): void {
     let history = this.healthHistory.get(name) || [];
-    
+
     history.push(health);
-    
+
     // Limit history size
     if (history.length > this.maxHistorySize) {
       history = history.slice(-this.maxHistorySize);
     }
-    
+
     this.healthHistory.set(name, history);
   }
 
@@ -273,20 +312,27 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     }
 
     this.logger.debug('Performing scheduled health check...');
-    
+
     try {
       const health = await this.getSystemHealth();
-      
+
       if (health.overall !== 'healthy') {
         this.logger.warn('System health degraded:', {
           overall: health.overall,
           unhealthyServices: Object.entries(health.services)
             .filter(([_, service]) => service.state !== 'healthy')
-            .map(([name, service]) => ({ name, state: service.state, error: service.error })),
+            .map(([name, service]) => ({
+              name,
+              state: service.state,
+              error: service.error,
+            })),
         });
       }
     } catch (error) {
-      this.logger.error('Scheduled health check failed:', error instanceof Error ? error.message : String(error));
+      this.logger.error(
+        'Scheduled health check failed:',
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 
@@ -294,24 +340,31 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
    * Register default system health checks
    */
   private registerDefaultChecks(): void {
-    // Memory usage check
+    // Memory usage check with proper state differentiation
     this.register('memory', async () => {
       const memUsage = process.memoryUsage();
       const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
       const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
       const usagePercent = (heapUsedMB / heapTotalMB) * 100;
-      
-      // Consider degraded if memory usage > 80%, unhealthy if > 90%
-      return usagePercent < 90;
+
+      // Return object to allow for detailed state determination
+      return {
+        healthy: usagePercent < 80,
+        degraded: usagePercent >= 80 && usagePercent < 90,
+        unhealthy: usagePercent >= 90,
+        usagePercent,
+        heapUsedMB: Math.round(heapUsedMB),
+        heapTotalMB: Math.round(heapTotalMB),
+      };
     });
 
     // CPU availability check (simplified)
     this.register('cpu', async () => {
       // Simple check - if we can execute this quickly, CPU is available
       const start = process.hrtime.bigint();
-      await new Promise(resolve => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
       const duration = Number(process.hrtime.bigint() - start) / 1000000; // Convert to ms
-      
+
       // If it takes more than 100ms for a simple setImmediate, CPU might be overloaded
       return duration < 100;
     });
@@ -357,7 +410,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     state?: HealthState;
     responseTime?: number;
   }> {
-    return Array.from(this.healthChecks.keys()).map(name => {
+    return Array.from(this.healthChecks.keys()).map((name) => {
       const cached = this.healthCache.get(name);
       return {
         name,
@@ -387,7 +440,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     avgResponseTime: number;
   } {
     const history = this.getHealthHistory(serviceName);
-    
+
     if (history.length === 0) {
       return {
         trend: 'stable',
@@ -398,16 +451,19 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       };
     }
 
-    const healthyCount = history.filter(h => h.state === 'healthy').length;
-    const degradedCount = history.filter(h => h.state === 'degraded').length;
-    const unhealthyCount = history.filter(h => h.state === 'unhealthy').length;
-    
-    const avgResponseTime = history.reduce((sum, h) => sum + h.responseTime, 0) / history.length;
+    const healthyCount = history.filter((h) => h.state === 'healthy').length;
+    const degradedCount = history.filter((h) => h.state === 'degraded').length;
+    const unhealthyCount = history.filter(
+      (h) => h.state === 'unhealthy'
+    ).length;
+
+    const avgResponseTime =
+      history.reduce((sum, h) => sum + h.responseTime, 0) / history.length;
 
     // Simple trend analysis based on recent vs older entries
     const recent = history.slice(-10);
     const older = history.slice(0, -10);
-    
+
     if (older.length === 0) {
       return {
         trend: 'stable',
@@ -418,9 +474,11 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       };
     }
 
-    const recentHealthyRatio = recent.filter(h => h.state === 'healthy').length / recent.length;
-    const olderHealthyRatio = older.filter(h => h.state === 'healthy').length / older.length;
-    
+    const recentHealthyRatio =
+      recent.filter((h) => h.state === 'healthy').length / recent.length;
+    const olderHealthyRatio =
+      older.filter((h) => h.state === 'healthy').length / older.length;
+
     let trend: 'improving' | 'degrading' | 'stable' = 'stable';
     if (recentHealthyRatio > olderHealthyRatio + 0.1) {
       trend = 'improving';
@@ -452,7 +510,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     let responseTimeCount = 0;
     let healthyServices = 0;
 
-    allServices.forEach(serviceName => {
+    allServices.forEach((serviceName) => {
       const trend = this.analyzeHealthTrend(serviceName);
       if (trend.unhealthyCount > trend.healthyCount) {
         criticalServices.push(serviceName);
@@ -476,13 +534,17 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
 
     const recommendations: string[] = [];
     if (criticalServices.length > 0) {
-      recommendations.push(`Review critical services: ${criticalServices.join(', ')}`);
+      recommendations.push(
+        `Review critical services: ${criticalServices.join(', ')}`
+      );
     }
     if (totalResponseTime / responseTimeCount > 1000) {
       recommendations.push('Consider optimizing slow health checks');
     }
     if (this.failedChecks / this.totalChecks > 0.1) {
-      recommendations.push('High failure rate detected - investigate infrastructure');
+      recommendations.push(
+        'High failure rate detected - investigate infrastructure'
+      );
     }
     if (recommendations.length === 0) {
       recommendations.push('System health is optimal');
@@ -492,7 +554,10 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       systemStability,
       recommendations,
       criticalServices,
-      avgSystemResponseTime: responseTimeCount > 0 ? Math.round(totalResponseTime / responseTimeCount) : 0,
+      avgSystemResponseTime:
+        responseTimeCount > 0
+          ? Math.round(totalResponseTime / responseTimeCount)
+          : 0,
     };
   }
 
@@ -505,8 +570,8 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
 
     this.healthHistory.forEach((history, serviceName) => {
       const initialLength = history.length;
-      const filteredHistory = history.filter(h => h.lastCheck > cutoffTime);
-      
+      const filteredHistory = history.filter((h) => h.lastCheck > cutoffTime);
+
       if (filteredHistory.length !== initialLength) {
         this.healthHistory.set(serviceName, filteredHistory);
         totalRemoved += initialLength - filteredHistory.length;
@@ -523,7 +588,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
   async exportHealthMetrics(format: 'json' | 'csv' = 'json'): Promise<string> {
     const systemHealth = await this.getSystemHealth();
     const allHistory = new Map<string, ServiceHealth[]>();
-    
+
     this.healthHistory.forEach((history, serviceName) => {
       allHistory.set(serviceName, history);
     });
@@ -541,20 +606,22 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     } else if (format === 'csv') {
       const csvRows: string[] = [];
       csvRows.push('Service,State,Error,LastCheck,ResponseTime');
-      
+
       Object.entries(systemHealth.services).forEach(([serviceName, health]) => {
-        csvRows.push([
-          serviceName,
-          health.state,
-          health.error || '',
-          health.lastCheck.toISOString(),
-          health.responseTime.toString(),
-        ].join(','));
+        csvRows.push(
+          [
+            serviceName,
+            health.state,
+            health.error || '',
+            health.lastCheck.toISOString(),
+            health.responseTime.toString(),
+          ].join(',')
+        );
       });
-      
+
       return csvRows.join('\n');
     }
-    
+
     throw new Error(`Unsupported export format: ${format}`);
   }
 
@@ -572,7 +639,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       enabled: config.enabled,
       triggers: config.triggers,
     });
-    
+
     // Store webhook configuration (placeholder implementation)
     // In a real implementation, this would store the config and set up webhook notifications
   }
@@ -609,8 +676,10 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
     cacheSize: number;
     successRate: number;
   } {
-    const successRate = this.totalChecks > 0 ? 
-      ((this.totalChecks - this.failedChecks) / this.totalChecks) * 100 : 0;
+    const successRate =
+      this.totalChecks > 0
+        ? ((this.totalChecks - this.failedChecks) / this.totalChecks) * 100
+        : 0;
 
     return {
       totalChecks: this.totalChecks,

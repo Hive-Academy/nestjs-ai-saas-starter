@@ -184,8 +184,8 @@ export class WebSocketService {
   private getWebSocketUrl(): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = window.location.hostname === 'localhost' ? ':3000' : '';
-    return `${protocol}//${host}${port}/ws`;
+    const port = window.location.hostname === 'localhost' ? ':3001' : '';
+    return `${protocol}//${host}${port}`;
   }
 
   /**

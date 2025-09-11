@@ -46,6 +46,17 @@ export interface AgentState {
     avatar?: string;
     description: string;
   };
+  // Optional performance metrics
+  lastResponse?: {
+    responseTime: number;
+    timestamp: Date;
+  };
+  memoryUsage?: {
+    current: number;
+    peak: number;
+    unit: 'MB' | 'GB';
+  };
+  connectedAt?: Date;
 }
 
 export interface MemoryContext {

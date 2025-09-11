@@ -17,7 +17,7 @@ const colors = {
   magenta: (text) => `\x1b[35m${text}\x1b[0m`,
   cyan: (text) => `\x1b[36m${text}\x1b[0m`,
   white: (text) => `\x1b[37m${text}\x1b[0m`,
-  gray: (text) => `\x1b[90m${text}\x1b[0m`
+  gray: (text) => `\x1b[90m${text}\x1b[0m`,
 };
 
 const chalk = colors;
@@ -27,30 +27,29 @@ const {
   validateTypeScriptCompilation,
   validateESLintCompliance,
   checkForAnyTypes,
-  validateBuild
+  // validateBuild - currently unused
 } = require('./validate-types.js');
 
 // Configuration
 const LIBRARIES = [
   'nestjs-chromadb',
   'nestjs-neo4j',
-  'nestjs-langgraph',
   'langgraph-modules/checkpoint',
   'langgraph-modules/memory',
   'langgraph-modules/time-travel',
   'langgraph-modules/multi-agent',
   'langgraph-modules/functional-api',
   'langgraph-modules/monitoring',
-  'langgraph-modules/platform'
+  'langgraph-modules/platform',
 ];
 
 const QUALITY_GATES = {
-  maxAnyTypes: 0,           // Zero 'any' types allowed
-  maxESLintErrors: 0,       // Zero ESLint errors allowed
-  maxTSErrors: 0,           // Zero TypeScript errors allowed
-  minTypeCoverage: 95,      // Minimum 95% type coverage
-  maxBuildTime: 300000,     // Max 5 minutes build time per library
-  maxBundleIncrease: 5      // Max 5% bundle size increase
+  maxAnyTypes: 0, // Zero 'any' types allowed
+  maxESLintErrors: 0, // Zero ESLint errors allowed
+  maxTSErrors: 0, // Zero TypeScript errors allowed
+  minTypeCoverage: 95, // Minimum 95% type coverage
+  maxBuildTime: 300000, // Max 5 minutes build time per library
+  maxBundleIncrease: 5, // Max 5% bundle size increase
 };
 
 /**
@@ -65,7 +64,7 @@ function executeCommand(command, options = {}) {
       encoding: 'utf8',
       stdio: 'pipe',
       timeout,
-      ...options
+      ...options,
     });
     const duration = Date.now() - startTime;
 
@@ -73,7 +72,7 @@ function executeCommand(command, options = {}) {
       success: true,
       output: result,
       duration,
-      command
+      command,
     };
   } catch (error) {
     const duration = Date.now() - (options.startTime || Date.now());
@@ -84,7 +83,7 @@ function executeCommand(command, options = {}) {
       duration,
       command,
       exitCode: error.status,
-      signal: error.signal
+      signal: error.signal,
     };
   }
 }
@@ -97,7 +96,11 @@ function checkTypeCoverage(library) {
 
   const libPath = path.join('libs', library, 'src');
   if (!fs.existsSync(libPath)) {
-    return { success: true, coverage: 100, warnings: [`Library ${library} src not found`] };
+    return {
+      success: true,
+      coverage: 100,
+      warnings: [`Library ${library} src not found`],
+    };
   }
 
   try {
@@ -120,14 +123,16 @@ function checkTypeCoverage(library) {
     const anyLines = parseInt(anyLinesResult.output.trim()) || 0;
     const coverage = Math.max(0, ((totalLines - anyLines) / totalLines) * 100);
 
-    console.log(chalk.green(`✅ ${library}: Type coverage ${coverage.toFixed(1)}%`));
+    console.log(
+      chalk.green(`✅ ${library}: Type coverage ${coverage.toFixed(1)}%`)
+    );
 
     return {
       success: true,
       coverage: coverage,
       totalLines,
       anyLines,
-      meetsThreshold: coverage >= QUALITY_GATES.minTypeCoverage
+      meetsThreshold: coverage >= QUALITY_GATES.minTypeCoverage,
     };
   } catch (error) {
     return { success: false, error: error.message };
@@ -146,7 +151,11 @@ function measureBundleSize(library) {
   // Build the library
   const buildResult = executeCommand(`npx nx build ${projectName}`);
   if (!buildResult.success) {
-    return { success: false, error: 'Build failed', buildOutput: buildResult.output };
+    return {
+      success: false,
+      error: 'Build failed',
+      buildOutput: buildResult.output,
+    };
   }
 
   // Measure bundle size
@@ -158,12 +167,16 @@ function measureBundleSize(library) {
     const sizeResult = executeCommand(`du -sb ${distPath} | cut -f1`);
     const bundleSize = parseInt(sizeResult.output.trim()) || 0;
 
-    console.log(chalk.green(`✅ ${library}: Bundle size ${(bundleSize / 1024).toFixed(1)} KB`));
+    console.log(
+      chalk.green(
+        `✅ ${library}: Bundle size ${(bundleSize / 1024).toFixed(1)} KB`
+      )
+    );
 
     return {
       success: true,
       bundleSize,
-      buildTime: buildResult.duration
+      buildTime: buildResult.duration,
     };
   } catch (error) {
     return { success: false, error: error.message };
@@ -182,7 +195,7 @@ async function validateLibrary(library) {
     passed: true,
     errors: [],
     warnings: [],
-    metrics: {}
+    metrics: {},
   };
 
   // 1. TypeScript Compilation
@@ -191,7 +204,9 @@ async function validateLibrary(library) {
   results.metrics.typescript = tsResult;
   if (!tsResult.success) {
     results.passed = false;
-    results.errors.push(`TypeScript compilation failed: ${tsResult.errors?.join(', ')}`);
+    results.errors.push(
+      `TypeScript compilation failed: ${tsResult.errors?.join(', ')}`
+    );
   }
 
   // 2. ESLint Validation
@@ -200,7 +215,9 @@ async function validateLibrary(library) {
   results.metrics.eslint = eslintResult;
   if (!eslintResult.success) {
     results.passed = false;
-    results.errors.push(`ESLint validation failed: ${eslintResult.errors?.join(', ')}`);
+    results.errors.push(
+      `ESLint validation failed: ${eslintResult.errors?.join(', ')}`
+    );
   }
 
   // 3. Any Types Check
@@ -209,7 +226,9 @@ async function validateLibrary(library) {
   results.metrics.anyTypes = anyResult;
   if (!anyResult.success && anyResult.anyCount > QUALITY_GATES.maxAnyTypes) {
     results.passed = false;
-    results.errors.push(`Found ${anyResult.anyCount} 'any' types (max allowed: ${QUALITY_GATES.maxAnyTypes})`);
+    results.errors.push(
+      `Found ${anyResult.anyCount} 'any' types (max allowed: ${QUALITY_GATES.maxAnyTypes})`
+    );
   }
 
   // 4. Type Coverage Check
@@ -218,7 +237,11 @@ async function validateLibrary(library) {
   results.metrics.typeCoverage = coverageResult;
   if (coverageResult.success && !coverageResult.meetsThreshold) {
     results.passed = false;
-    results.errors.push(`Type coverage ${coverageResult.coverage.toFixed(1)}% below threshold ${QUALITY_GATES.minTypeCoverage}%`);
+    results.errors.push(
+      `Type coverage ${coverageResult.coverage.toFixed(1)}% below threshold ${
+        QUALITY_GATES.minTypeCoverage
+      }%`
+    );
   }
 
   // 5. Build Validation
@@ -229,15 +252,19 @@ async function validateLibrary(library) {
     results.passed = false;
     results.errors.push(`Build failed: ${buildResult.error}`);
   } else if (buildResult.buildTime > QUALITY_GATES.maxBuildTime) {
-    results.warnings.push(`Build time ${buildResult.buildTime}ms exceeds threshold ${QUALITY_GATES.maxBuildTime}ms`);
+    results.warnings.push(
+      `Build time ${buildResult.buildTime}ms exceeds threshold ${QUALITY_GATES.maxBuildTime}ms`
+    );
   }
 
   // Add warnings
-  [tsResult, eslintResult, anyResult, coverageResult, buildResult].forEach(result => {
-    if (result.warnings) {
-      results.warnings.push(...result.warnings);
+  [tsResult, eslintResult, anyResult, coverageResult, buildResult].forEach(
+    (result) => {
+      if (result.warnings) {
+        results.warnings.push(...result.warnings);
+      }
     }
-  });
+  );
 
   return results;
 }
@@ -249,21 +276,25 @@ function generateCIReport(results) {
   console.log(chalk.cyan('\n📊 CI/CD VALIDATION REPORT'));
   console.log(chalk.cyan('='.repeat(60)));
 
-  const passed = results.filter(r => r.passed);
-  const failed = results.filter(r => !r.passed);
+  const passed = results.filter((r) => r.passed);
+  const failed = results.filter((r) => !r.passed);
   const totalWarnings = results.reduce((sum, r) => sum + r.warnings.length, 0);
 
   // Summary
-  console.log(chalk.green(`✅ Passed: ${passed.length}/${results.length} libraries`));
-  console.log(chalk.red(`❌ Failed: ${failed.length}/${results.length} libraries`));
+  console.log(
+    chalk.green(`✅ Passed: ${passed.length}/${results.length} libraries`)
+  );
+  console.log(
+    chalk.red(`❌ Failed: ${failed.length}/${results.length} libraries`)
+  );
   console.log(chalk.yellow(`⚠️  Total Warnings: ${totalWarnings}`));
 
   // Failed libraries details
   if (failed.length > 0) {
     console.log(chalk.red('\n❌ FAILED LIBRARIES:'));
-    failed.forEach(result => {
+    failed.forEach((result) => {
       console.log(chalk.red(`\n  📦 ${result.library}:`));
-      result.errors.forEach(error => {
+      result.errors.forEach((error) => {
         console.log(chalk.red(`    • ${error}`));
       });
     });
@@ -271,10 +302,11 @@ function generateCIReport(results) {
 
   // Quality metrics summary
   console.log(chalk.cyan('\n📈 QUALITY METRICS:'));
-  results.forEach(result => {
+  results.forEach((result) => {
     if (result.metrics.typeCoverage?.success) {
       const coverage = result.metrics.typeCoverage.coverage.toFixed(1);
-      const color = coverage >= QUALITY_GATES.minTypeCoverage ? chalk.green : chalk.red;
+      const color =
+        coverage >= QUALITY_GATES.minTypeCoverage ? chalk.green : chalk.red;
       console.log(color(`  ${result.library}: ${coverage}% type coverage`));
     }
   });
@@ -286,14 +318,19 @@ function generateCIReport(results) {
       total: results.length,
       passed: passed.length,
       failed: failed.length,
-      warnings: totalWarnings
+      warnings: totalWarnings,
     },
     qualityGates: QUALITY_GATES,
-    results: results
+    results: results,
   };
 
-  fs.writeFileSync('ci-validation-report.json', JSON.stringify(report, null, 2));
-  console.log(chalk.cyan('\n📄 Detailed report saved to ci-validation-report.json'));
+  fs.writeFileSync(
+    'ci-validation-report.json',
+    JSON.stringify(report, null, 2)
+  );
+  console.log(
+    chalk.cyan('\n📄 Detailed report saved to ci-validation-report.json')
+  );
 
   return failed.length === 0;
 }
@@ -320,13 +357,15 @@ async function main() {
         passed: false,
         errors: [`Validation script error: ${error.message}`],
         warnings: [],
-        metrics: {}
+        metrics: {},
       });
     }
   }
 
   const totalTime = Date.now() - startTime;
-  console.log(chalk.cyan(`\n⏱️  Total validation time: ${(totalTime / 1000).toFixed(1)}s`));
+  console.log(
+    chalk.cyan(`\n⏱️  Total validation time: ${(totalTime / 1000).toFixed(1)}s`)
+  );
 
   // Generate report and determine exit code
   const allPassed = generateCIReport(results);
@@ -335,14 +374,16 @@ async function main() {
     console.log(chalk.green('\n🎉 All CI/CD validations passed!'));
     process.exit(0);
   } else {
-    console.log(chalk.red('\n💥 CI/CD validation failed! Please fix the errors above.'));
+    console.log(
+      chalk.red('\n💥 CI/CD validation failed! Please fix the errors above.')
+    );
     process.exit(1);
   }
 }
 
 // Handle CLI usage
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error(chalk.red('💥 CI validation script failed:'), error);
     process.exit(1);
   });
@@ -352,5 +393,5 @@ module.exports = {
   validateLibrary,
   checkTypeCoverage,
   measureBundleSize,
-  QUALITY_GATES
+  QUALITY_GATES,
 };

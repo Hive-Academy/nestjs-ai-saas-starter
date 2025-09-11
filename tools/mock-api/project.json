@@ -1,0 +1,15 @@
+{
+  "name": "mock-api-server",
+  "projectType": "application",
+  "sourceRoot": "tools/mock-api",
+  "targets": {
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node server.js",
+        "cwd": "tools/mock-api"
+      }
+    }
+  },
+  "tags": ["tools", "mock", "api"]
+}

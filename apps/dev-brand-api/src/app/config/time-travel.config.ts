@@ -1,5 +1,4 @@
 import type { TimeTravelConfig } from '@hive-academy/langgraph-time-travel';
-import type { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 
 /**
  * Time Travel Module Configuration for dev-brand-api

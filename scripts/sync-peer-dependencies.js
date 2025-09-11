@@ -15,11 +15,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const rootPackagePath = path.join(ROOT_DIR, 'package.json');
 
 // Publishable libraries that need peer dependency sync
-const PUBLISHABLE_LIBRARIES = [
-  'libs/nestjs-chromadb',
-  'libs/nestjs-neo4j',
-  'libs/langgraph-modules/nestjs-langgraph',
-];
+const PUBLISHABLE_LIBRARIES = ['libs/nestjs-chromadb', 'libs/nestjs-neo4j'];
 
 // Dependencies that should be treated as peer dependencies for libraries
 const PEER_DEPENDENCY_PATTERNS = [

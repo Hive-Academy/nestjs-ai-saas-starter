@@ -60,12 +60,12 @@ jobs:
         run: npm i
 
       - name: Build libraries
-        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,nestjs-langgraph,shared
+        run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j,shared
 
       - name: Check bundle sizes
         run: |
           echo "📦 Checking bundle sizes..."
-          for lib in nestjs-chromadb nestjs-neo4j nestjs-langgraph shared; do
+          for lib in nestjs-chromadb nestjs-neo4j  shared; do
             if [ -d "dist/libs/$lib" ]; then
               size=$(du -sh "dist/libs/$lib" | cut -f1)
               echo "📊 @hive-academy/$lib: $size"

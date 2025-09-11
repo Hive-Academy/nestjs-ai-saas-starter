@@ -5,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
-import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
 // Configuration imports
 import { getLangGraphCoreConfig } from '../config/langgraph-core.config';
@@ -34,7 +33,6 @@ describe('Modular Architecture Integration Tests', () => {
           }),
 
           // Core LangGraph Module with minimal configuration
-          NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
 
           // Direct child module imports - the new architectural pattern
           LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
@@ -51,7 +49,6 @@ describe('Modular Architecture Integration Tests', () => {
       expect(initTime).toBeLessThan(300);
 
       // All modules should be available
-      expect(module.get(NestjsLanggraphModule)).toBeDefined();
       expect(module.get(LanggraphModulesCheckpointModule)).toBeDefined();
       expect(module.get(StreamingModule)).toBeDefined();
       expect(module.get(HitlModule)).toBeDefined();
@@ -65,7 +62,7 @@ describe('Modular Architecture Integration Tests', () => {
             isGlobal: true,
             envFilePath: '.env.test',
           }),
-          NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
           LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
         ],
       }).compile();
@@ -84,7 +81,7 @@ describe('Modular Architecture Integration Tests', () => {
             isGlobal: true,
             envFilePath: '.env.test',
           }),
-          NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
           StreamingModule.forRoot(getStreamingConfig()),
         ],
       }).compile();
@@ -101,7 +98,7 @@ describe('Modular Architecture Integration Tests', () => {
             isGlobal: true,
             envFilePath: '.env.test',
           }),
-          NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
           HitlModule.forRoot(getHitlConfig()),
         ],
       }).compile();
@@ -157,7 +154,6 @@ describe('Modular Architecture Integration Tests', () => {
           }),
 
           // Minimal configurations
-          NestjsLanggraphModule.forRoot({}),
           LanggraphModulesCheckpointModule.forRoot({}),
           StreamingModule.forRoot({}),
           HitlModule.forRoot({}),
@@ -167,7 +163,6 @@ describe('Modular Architecture Integration Tests', () => {
       expect(module).toBeDefined();
 
       // All modules should work with empty configs
-      expect(module.get(NestjsLanggraphModule)).toBeDefined();
       expect(module.get(LanggraphModulesCheckpointModule)).toBeDefined();
       expect(module.get(StreamingModule)).toBeDefined();
       expect(module.get(HitlModule)).toBeDefined();
@@ -196,7 +191,7 @@ describe('Modular Architecture Integration Tests', () => {
               isGlobal: true,
               envFilePath: '.env.test',
             }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
             LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
             StreamingModule.forRoot(getStreamingConfig()),
             HitlModule.forRoot(getHitlConfig()),
@@ -227,7 +222,7 @@ describe('Modular Architecture Integration Tests', () => {
             isGlobal: true,
             envFilePath: '.env.test',
           }),
-          NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
           LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
           StreamingModule.forRoot(getStreamingConfig()),
           HitlModule.forRoot(getHitlConfig()),
@@ -258,7 +253,7 @@ describe('Modular Architecture Integration Tests', () => {
               isGlobal: true,
               envFilePath: '.env.test',
             }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
             LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
             StreamingModule.forRoot(getStreamingConfig()),
             HitlModule.forRoot(getHitlConfig()),
@@ -279,7 +274,6 @@ describe('Modular Architecture Integration Tests', () => {
       // All modules should initialize successfully
       modules.forEach((mod) => {
         expect(mod).toBeDefined();
-        expect(mod.get(NestjsLanggraphModule)).toBeDefined();
         expect(mod.get(LanggraphModulesCheckpointModule)).toBeDefined();
         expect(mod.get(StreamingModule)).toBeDefined();
         expect(mod.get(HitlModule)).toBeDefined();
@@ -307,7 +301,7 @@ describe('Modular Architecture Integration Tests', () => {
           }),
 
           // NEW PATTERN: Direct module imports with focused configs
-          NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
           LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
           StreamingModule.forRoot(getStreamingConfig()),
           HitlModule.forRoot(getHitlConfig()),
@@ -317,7 +311,6 @@ describe('Modular Architecture Integration Tests', () => {
       expect(testModule).toBeDefined();
 
       // Validate that all modules are independently configured and loaded
-      expect(testModule.get(NestjsLanggraphModule)).toBeDefined();
       expect(testModule.get(LanggraphModulesCheckpointModule)).toBeDefined();
       expect(testModule.get(StreamingModule)).toBeDefined();
       expect(testModule.get(HitlModule)).toBeDefined();
@@ -365,7 +358,7 @@ describe('Modular Architecture Integration Tests', () => {
               isGlobal: true,
               envFilePath: '.env.test',
             }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
             LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
             StreamingModule.forRoot(getStreamingConfig()),
             HitlModule.forRoot(getHitlConfig()),
@@ -381,14 +374,13 @@ describe('Modular Architecture Integration Tests', () => {
         {
           imports: [
             ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env.test' }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
           ],
         },
         // Core + Checkpoint
         {
           imports: [
             ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env.test' }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
             LanggraphModulesCheckpointModule.forRoot(getCheckpointConfig()),
           ],
         },
@@ -396,7 +388,7 @@ describe('Modular Architecture Integration Tests', () => {
         {
           imports: [
             ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env.test' }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
             StreamingModule.forRoot(getStreamingConfig()),
           ],
         },
@@ -404,7 +396,7 @@ describe('Modular Architecture Integration Tests', () => {
         {
           imports: [
             ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env.test' }),
-            NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+
             HitlModule.forRoot(getHitlConfig()),
           ],
         },
