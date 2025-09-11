@@ -1,19 +1,18 @@
+import { CommonModule } from '@angular/common';
 import {
   Component,
-  Input,
-  Output,
+  computed,
   EventEmitter,
   inject,
-  signal,
-  computed,
+  Input,
   OnInit,
-  OnDestroy,
+  Output,
+  signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import {
-  SpatialNavigationService,
   NavigationTarget,
+  SpatialNavigationService,
 } from '../services/spatial-navigation.service';
 
 export interface NavigationControlsConfig {
