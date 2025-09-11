@@ -37,7 +37,7 @@ export class LanggraphModulesMonitoringModule {
         retention: '24h',
         defaultTags: {
           service: 'langgraph-monitoring',
-          environment: process.env.NODE_ENV || 'development',
+          environment: 'development',
         },
       },
       alerting: {

@@ -2,44 +2,116 @@ import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agen
 
 /**
  * Multi-Agent Module Configuration for dev-brand-api
- * Enables coordination between multiple AI agents
+ * Simple and consistent LLM provider configuration
  */
 export function getMultiAgentConfig(): MultiAgentModuleOptions {
-  // Detect if we're using OpenRouter based on API key or explicit provider setting
-  const isOpenRouter =
-    process.env.LLM_PROVIDER === 'openrouter' ||
-    (!!process.env.OPENROUTER_API_KEY && !process.env.OPENAI_API_KEY);
+  // Simple provider selection - explicit from LLM_PROVIDER environment variable
+  const provider =
+    (process.env.LLM_PROVIDER as
+      | 'openai'
+      | 'anthropic'
+      | 'openrouter'
+      | 'google'
+      | 'local'
+      | 'azure-openai'
+      | 'cohere') || 'openai';
+
+  // Get model from provider-specific or universal env vars
+  const getModel = (): string => {
+    switch (provider) {
+      case 'anthropic':
+        return (
+          process.env.ANTHROPIC_MODEL ||
+          process.env.LLM_MODEL ||
+          'claude-3-sonnet-20240229'
+        );
+      case 'openrouter':
+        return (
+          process.env.OPENROUTER_MODEL ||
+          process.env.LLM_MODEL ||
+          'openai/gpt-3.5-turbo'
+        );
+      case 'google':
+        return (
+          process.env.GOOGLE_MODEL || process.env.LLM_MODEL || 'gemini-pro'
+        );
+      case 'local':
+        return process.env.LOCAL_MODEL || process.env.LLM_MODEL || 'llama2';
+      case 'azure-openai':
+        return (
+          process.env.AZURE_OPENAI_MODEL ||
+          process.env.LLM_MODEL ||
+          'gpt-35-turbo'
+        );
+      case 'cohere':
+        return process.env.COHERE_MODEL || process.env.LLM_MODEL || 'command';
+      case 'openai':
+      default:
+        return (
+          process.env.OPENAI_MODEL || process.env.LLM_MODEL || 'gpt-3.5-turbo'
+        );
+    }
+  };
 
   return {
-    // Default LLM configuration - centralized for all agents
+    // Simple and consistent LLM configuration
     defaultLlm: {
-      model:
-        process.env.OPENROUTER_MODEL ||
-        process.env.LLM_MODEL ||
-        'gpt-3.5-turbo',
-      apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
-      temperature: parseFloat(
-        process.env.OPENROUTER_TEMPERATURE ||
-          process.env.LLM_TEMPERATURE ||
-          '0.7'
-      ),
-      maxTokens: parseInt(
-        process.env.OPENROUTER_MAX_TOKENS ||
-          process.env.LLM_MAX_TOKENS ||
-          '2048'
-      ),
-      // Support OpenRouter configuration when detected
-      baseURL: isOpenRouter
-        ? process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
-        : undefined,
-      defaultHeaders: isOpenRouter
-        ? {
-            'HTTP-Referer':
-              process.env.OPENROUTER_SITE_URL || 'http://localhost:3000',
-            'X-Title':
-              process.env.OPENROUTER_APP_NAME || 'NestJS AI SaaS Starter',
-          }
-        : undefined,
+      // Explicit provider selection - no detection logic
+      provider,
+      model: getModel(),
+      temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
+      maxTokens: parseInt(process.env.LLM_MAX_TOKENS || '2048'),
+
+      // Universal API keys - users provide all they want to use
+      openaiApiKey: process.env.OPENAI_API_KEY,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      openrouterApiKey: process.env.OPENROUTER_API_KEY,
+      googleApiKey: process.env.GOOGLE_API_KEY,
+      azureOpenaiApiKey: process.env.AZURE_OPENAI_API_KEY,
+      cohereApiKey: process.env.COHERE_API_KEY,
+
+      // Provider-specific configuration
+      openai: {
+        organization: process.env.OPENAI_ORGANIZATION,
+        project: process.env.OPENAI_PROJECT,
+      },
+
+      anthropic: {
+        version: process.env.ANTHROPIC_VERSION || '2023-06-01',
+      },
+
+      openrouter: {
+        baseUrl:
+          process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+        siteName: process.env.OPENROUTER_APP_NAME || 'NestJS AI SaaS Starter',
+        siteUrl: process.env.OPENROUTER_SITE_URL || 'http://localhost:3000',
+        appName: process.env.OPENROUTER_APP_NAME || 'NestJS AI SaaS Starter',
+      },
+
+      google: {
+        location: process.env.GOOGLE_LOCATION || 'us-central1',
+        project: process.env.GOOGLE_PROJECT_ID,
+      },
+
+      local: {
+        baseUrl: process.env.LOCAL_LLM_BASE_URL || 'http://localhost:11434/v1',
+      },
+
+      azureOpenai: {
+        endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+        deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
+        apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-01',
+      },
+
+      cohere: {
+        version: process.env.COHERE_VERSION,
+      },
+
+      // Backward compatibility - deprecated
+      apiKey: process.env.OPENAI_API_KEY,
+      llmProvider: (['openai', 'anthropic', 'openrouter'].includes(provider)
+        ? provider
+        : 'openai') as 'openai' | 'anthropic' | 'openrouter',
     },
 
     // Message history limits
@@ -55,7 +127,11 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
     // Streaming configuration
     streaming: {
       enabled: process.env.MULTI_AGENT_STREAMING_ENABLED !== 'false',
-      modes: ['values', 'updates', 'messages'] as const,
+      modes: ['values', 'updates', 'messages'] as (
+        | 'values'
+        | 'updates'
+        | 'messages'
+      )[],
     },
 
     // Debug configuration
@@ -88,14 +164,5 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
       defaultThreadPrefix:
         process.env.MULTI_AGENT_CHECKPOINT_THREAD_PREFIX || 'multi-agent',
     },
-
-    // Agent network limits
-    maxConcurrentAgents: parseInt(
-      process.env.MULTI_AGENT_MAX_CONCURRENT || '10'
-    ),
-    executionTimeout: parseInt(
-      process.env.MULTI_AGENT_EXECUTION_TIMEOUT || '300000'
-    ), // 5 minutes
-    retryAttempts: parseInt(process.env.MULTI_AGENT_RETRY_ATTEMPTS || '3'),
   };
 }

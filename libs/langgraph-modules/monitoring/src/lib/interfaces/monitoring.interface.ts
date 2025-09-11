@@ -7,7 +7,12 @@
 // CORE METRIC TYPES
 // ================================
 
-export type MetricType = 'counter' | 'gauge' | 'histogram' | 'timer' | 'summary';
+export type MetricType =
+  | 'counter'
+  | 'gauge'
+  | 'histogram'
+  | 'timer'
+  | 'summary';
 export type HealthState = 'healthy' | 'degraded' | 'unhealthy';
 export type AlertSeverity = 'info' | 'warning' | 'error' | 'critical';
 
@@ -32,9 +37,17 @@ export interface IMonitoringFacade {
   // Metric recording operations
   recordMetric(name: string, value: number, tags?: MetricTags): Promise<void>;
   recordTimer(name: string, duration: number, tags?: MetricTags): Promise<void>;
-  recordCounter(name: string, increment?: number, tags?: MetricTags): Promise<void>;
+  recordCounter(
+    name: string,
+    increment?: number,
+    tags?: MetricTags
+  ): Promise<void>;
   recordGauge(name: string, value: number, tags?: MetricTags): Promise<void>;
-  recordHistogram(name: string, value: number, tags?: MetricTags): Promise<void>;
+  recordHistogram(
+    name: string,
+    value: number,
+    tags?: MetricTags
+  ): Promise<void>;
 
   // Health check operations
   registerHealthCheck(name: string, check: HealthCheckFunction): Promise<void>;
@@ -115,7 +128,14 @@ export interface AlertCondition {
 }
 
 export type ComparisonOperator = 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'ne';
-export type AggregationType = 'avg' | 'sum' | 'min' | 'max' | 'count' | 'p95' | 'p99';
+export type AggregationType =
+  | 'avg'
+  | 'sum'
+  | 'min'
+  | 'max'
+  | 'count'
+  | 'p95'
+  | 'p99';
 
 export interface Alert {
   readonly id: string;
@@ -154,7 +174,16 @@ export interface IHealthCheck {
   getSystemHealth(): Promise<HealthStatus>;
 }
 
-export type HealthCheckFunction = () => Promise<boolean>;
+export interface DetailedHealthCheckResult {
+  healthy: boolean;
+  degraded: boolean;
+  unhealthy: boolean;
+  [key: string]: unknown;
+}
+
+export type HealthCheckFunction = () => Promise<
+  boolean | DetailedHealthCheckResult
+>;
 
 export interface ServiceHealth {
   readonly state: HealthState;
@@ -176,12 +205,22 @@ export interface HealthStatus {
 // ================================
 
 export interface IPerformanceTracker {
-  trackExecution(name: string, duration: number, metadata?: Record<string, unknown>): Promise<void>;
+  trackExecution(
+    name: string,
+    duration: number,
+    metadata?: Record<string, unknown>
+  ): Promise<void>;
   trackMemoryUsage(name: string, usage: number): Promise<void>;
-  trackResourceUtilization(name: string, utilization: ResourceUtilization): Promise<void>;
+  trackResourceUtilization(
+    name: string,
+    utilization: ResourceUtilization
+  ): Promise<void>;
   detectAnomalies(metric: string): Promise<Anomaly[]>;
   getPerformanceBaseline(metric: string): Promise<PerformanceBaseline>;
-  analyzePerformanceTrend(metric: string, timeRange: TimeRange): Promise<TrendAnalysis>;
+  analyzePerformanceTrend(
+    metric: string,
+    timeRange: TimeRange
+  ): Promise<TrendAnalysis>;
 }
 
 export interface ResourceUtilization {
@@ -228,7 +267,10 @@ export interface TrendAnalysis {
 
 export interface IDashboard {
   createDashboard(config: DashboardConfig): Promise<string>;
-  updateDashboard(dashboardId: string, updates: Partial<DashboardConfig>): Promise<void>;
+  updateDashboard(
+    dashboardId: string,
+    updates: Partial<DashboardConfig>
+  ): Promise<void>;
   deleteDashboard(dashboardId: string): Promise<void>;
   getDashboard(dashboardId: string): Promise<DashboardConfig>;
   getDashboardData(dashboardId: string): Promise<DashboardData>;
