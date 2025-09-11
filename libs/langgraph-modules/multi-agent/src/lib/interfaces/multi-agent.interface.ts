@@ -407,15 +407,74 @@ export interface CheckpointingConfig {
  */
 export interface MultiAgentModuleOptions {
   /**
-   * Default LLM configuration
+   * Default LLM configuration with simple provider selection
    */
   defaultLlm?: {
+    // Simple provider selection - explicit, not model-name detection
+    provider:
+      | 'openai'
+      | 'anthropic'
+      | 'openrouter'
+      | 'google'
+      | 'local'
+      | 'azure-openai'
+      | 'cohere';
     model: string;
-    apiKey?: string;
     temperature?: number;
     maxTokens?: number;
+
+    // Universal API keys - users provide all they want to use
+    openaiApiKey?: string;
+    anthropicApiKey?: string;
+    openrouterApiKey?: string;
+    googleApiKey?: string;
+    azureOpenaiApiKey?: string;
+    cohereApiKey?: string;
+
+    // Provider-specific configuration
+    openai?: {
+      organization?: string;
+      project?: string;
+    };
+
+    anthropic?: {
+      version?: string;
+    };
+
+    openrouter?: {
+      baseUrl?: string;
+      siteName?: string;
+      siteUrl?: string;
+      appName?: string;
+    };
+
+    google?: {
+      location?: string;
+      project?: string;
+    };
+
+    local?: {
+      baseUrl?: string;
+    };
+
+    azureOpenai?: {
+      endpoint?: string;
+      deploymentName?: string;
+      apiVersion?: string;
+    };
+
+    cohere?: {
+      version?: string;
+    };
+
+    // Deprecated - for backward compatibility only
+    apiKey?: string;
     baseURL?: string;
     defaultHeaders?: Record<string, string>;
+    llmProvider?: 'openai' | 'anthropic' | 'openrouter';
+    openrouterBaseUrl?: string;
+    openrouterSiteUrl?: string;
+    openrouterAppName?: string;
   };
 
   /**

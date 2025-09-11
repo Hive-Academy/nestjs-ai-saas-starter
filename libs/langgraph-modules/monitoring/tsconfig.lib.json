@@ -8,5 +8,16 @@
     "outDir": "../../../dist/libs/langgraph-monitoring"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../hitl/tsconfig.lib.json"
+    },
+    {
+      "path": "../streaming/tsconfig.lib.json"
+    },
+    {
+      "path": "../checkpoint/tsconfig.lib.json"
+    }
+  ]
 }

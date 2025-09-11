@@ -47,6 +47,6 @@ test-output
 .mcp.json
 
 .angular
-/.env
+/.env.**
 /typescript-validation-report.json
 tsconfig.lib.tsbuildinfo

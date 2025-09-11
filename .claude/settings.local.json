@@ -33,7 +33,8 @@
       "Bash(npm test:*)",
       "Bash(npm run lint:*)",
       "Bash(npx nx run:*)",
-      "Bash(npm run build:libs:*)"
+      "Bash(npm run build:libs:*)",
+      "Bash(npx nx show:*)"
     ],
     "deny": [],
     "ask": [],
