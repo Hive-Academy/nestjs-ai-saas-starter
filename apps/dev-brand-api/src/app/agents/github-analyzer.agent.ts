@@ -1,11 +1,37 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { AIMessage } from '@langchain/core/messages';
 import type {
   AgentDefinition,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
 import { GitHubAnalyzerTool } from '../tools/github-analyzer.tool';
 import { AchievementExtractorTool } from '../tools/achievement-extractor.tool';
+import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
+
+// Enhanced agent state with thread support
+interface EnhancedAgentState extends AgentState {
+  thread_id?: string;
+  workflow?: string;
+  stepNumber?: number;
+  timestamp?: string;
+}
+
+// Technical memory metadata with proper generic constraints
+interface TechnicalMemoryMetadata<T = Record<string, unknown>> {
+  technicalData?: {
+    repositories?: string[];
+    technologies?: string[];
+    skillLevel?: string;
+    projectType?: string;
+  };
+  brandContext?: {
+    userId: string;
+    analysisVersion?: string;
+    confidenceScore: number;
+  };
+  importance: number;
+  [key: string]: string | number | boolean | null | undefined | T;
+}
 
 /**
  * GitHub Analyzer Agent for DevBrand Showcase
@@ -23,7 +49,8 @@ export class GitHubAnalyzerAgent {
 
   constructor(
     private readonly githubAnalyzerTool: GitHubAnalyzerTool,
-    private readonly achievementExtractorTool: AchievementExtractorTool
+    private readonly achievementExtractorTool: AchievementExtractorTool,
+    private readonly brandMemoryService: PersonalBrandMemoryService
   ) {}
 
   /**
@@ -65,6 +92,7 @@ Your primary responsibilities:
 3. **Contribution Analysis**: Analyze commit patterns, collaboration style, and project involvement
 4. **Achievement Identification**: Extract notable technical accomplishments and project highlights
 5. **Technology Profiling**: Build comprehensive technical skill profiles from repository data
+6. **Memory Integration**: Store and retrieve contextual brand memories for personalized analysis
 
 When analyzing repositories, focus on:
 - Programming languages and their usage patterns
@@ -100,16 +128,37 @@ Always provide actionable insights that can be used for personal brand content c
    * Create the agent node function for workflow integration
    */
   private createNodeFunction() {
-    return async (state: AgentState): Promise<Partial<AgentState>> => {
+    return async (
+      state: EnhancedAgentState
+    ): Promise<Partial<EnhancedAgentState>> => {
       this.logger.log('GitHub Analyzer: Starting repository analysis');
 
       try {
-        // Extract GitHub-related tasks from the current context
+        // Extract user context from state
+        const userId = state.metadata?.userId || 'demo-user';
         const lastMessage = state.messages[state.messages.length - 1];
+
+        // Get contextual brand memories for GitHub analysis
+        const brandContext = await this.getBrandMemoryContext(
+          userId,
+          String(lastMessage.content || '')
+        );
+
+        // Extract GitHub-related tasks from the current context
         const analysis = await this.analyzeRepositoryContext(
           lastMessage,
-          state
+          state,
+          brandContext
         );
+
+        // Store analysis results in brand memory
+        if (analysis.data && !analysis.data.mockAnalysis) {
+          await this.storeBrandMemoryFromAnalysis(
+            userId,
+            state.thread_id || 'analysis',
+            analysis
+          );
+        }
 
         // Create response message with analysis results
         const responseMessage = new AIMessage({
@@ -118,6 +167,7 @@ Always provide actionable insights that can be used for personal brand content c
             analysis_data: analysis.data,
             agent: 'github-analyzer',
             timestamp: new Date().toISOString(),
+            memory_context: brandContext?.contextSummary,
           },
         });
 
@@ -131,6 +181,7 @@ Always provide actionable insights that can be used for personal brand content c
             ...state.metadata,
             github_analysis: analysis.data,
             last_analyzer_run: new Date().toISOString(),
+            memory_context_used: brandContext?.relevantMemories.length || 0,
           },
         };
       } catch (error) {
@@ -167,11 +218,97 @@ Always provide actionable insights that can be used for personal brand content c
   }
 
   /**
-   * Analyze repository context from message and state
+   * Get brand memory context for GitHub analysis
+   */
+  private async getBrandMemoryContext(userId: string, currentTask: string) {
+    try {
+      return await this.brandMemoryService.getBrandContextForAgent(
+        userId,
+        'github-analyzer',
+        currentTask,
+        {
+          maxMemories: 10,
+          timeWindow: 30, // Last 30 days
+          includeValidatedOnly: false,
+        }
+      );
+    } catch (error) {
+      this.logger.warn('Failed to get brand memory context', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store analysis results as brand memories
+   */
+  private async storeBrandMemoryFromAnalysis(
+    userId: string,
+    threadId: string,
+    analysis: { summary: string; data: any; scratchpad: string }
+  ): Promise<void> {
+    try {
+      // Store main analysis as dev achievement
+      if (analysis.data.repositories?.length > 0) {
+        await this.brandMemoryService.storeBrandMemory(
+          userId,
+          threadId,
+          `GitHub Analysis: ${analysis.summary.substring(0, 200)}...`,
+          'dev_achievement',
+          analysis.data,
+          {
+            technicalData: {
+              repositories: analysis.data.repositories.map((r: any) => r.name),
+              technologies: analysis.data.skillProfile
+                ? Object.keys(analysis.data.skillProfile.frameworks || {})
+                : [],
+            },
+            brandContext: {
+              userId,
+              analysisVersion: `github_${Date.now()}`,
+              confidenceScore: 0.9,
+            },
+            importance: 0.8,
+          } as TechnicalMemoryMetadata
+        );
+      }
+
+      // Store skill profile separately
+      if (analysis.data.skillProfile) {
+        await this.brandMemoryService.storeBrandMemory(
+          userId,
+          threadId,
+          `Skill Profile Updated: ${Object.keys(
+            analysis.data.skillProfile.languages || {}
+          ).join(', ')}`,
+          'skill_profile',
+          analysis.data.skillProfile,
+          {
+            technicalData: {
+              technologies: Object.keys(
+                analysis.data.skillProfile.frameworks || {}
+              ),
+              skillLevel: 'advanced', // Default based on analysis depth
+            },
+            brandContext: {
+              userId,
+              confidenceScore: 0.85,
+            },
+            importance: 0.7,
+          } as TechnicalMemoryMetadata
+        );
+      }
+    } catch (error) {
+      this.logger.error('Failed to store brand memory from analysis', error);
+    }
+  }
+
+  /**
+   * Analyze repository context from message and state with memory context
    */
   private async analyzeRepositoryContext(
     message: any,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;
@@ -187,24 +324,44 @@ Always provide actionable insights that can be used for personal brand content c
       messageContent.toLowerCase().includes('code');
 
     if (isGitHubAnalysisRequest) {
-      return this.performRepositoryAnalysis(messageContent, state);
+      return this.performRepositoryAnalysis(
+        messageContent,
+        state,
+        brandContext
+      );
     } else {
-      return this.generateContextualAnalysis(messageContent, state);
+      return this.generateContextualAnalysis(
+        messageContent,
+        state,
+        brandContext
+      );
     }
   }
 
   /**
-   * Perform detailed repository analysis
+   * Perform detailed repository analysis with brand context
    */
   private async performRepositoryAnalysis(
     request: string,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;
     scratchpad: string;
   }> {
-    this.logger.log('Performing detailed repository analysis');
+    this.logger.log(
+      'Performing detailed repository analysis with brand context'
+    );
+
+    // Enhanced analysis based on brand memory context
+    const hasRecentAnalysis = brandContext?.relevantMemories?.some(
+      (m: any) => m.metadata.type === 'dev_achievement'
+    );
+    const previousTechnologies =
+      brandContext?.relevantMemories
+        ?.filter((m: any) => m.metadata.technicalData?.technologies)
+        ?.flatMap((m: any) => m.metadata.technicalData.technologies) || [];
 
     // Mock repository analysis data
     const analysisData = {
@@ -271,9 +428,32 @@ Always provide actionable insights that can be used for personal brand content c
       },
     };
 
+    // Enhanced summary with brand context insights
+    let contextInsights = '';
+    if (brandContext?.contextSummary) {
+      contextInsights = `\n🧠 **Brand Context**: ${brandContext.contextSummary.substring(
+        0,
+        150
+      )}...`;
+    }
+    if (hasRecentAnalysis) {
+      contextInsights +=
+        '\n🔄 **Recent Analysis**: Building on previous GitHub analysis findings';
+    }
+    if (previousTechnologies.length > 0) {
+      const newTechnologies = Object.keys(
+        analysisData.skillProfile.frameworks || {}
+      ).filter((tech) => !previousTechnologies.includes(tech));
+      if (newTechnologies.length > 0) {
+        contextInsights += `\n🆕 **New Technologies**: ${newTechnologies.join(
+          ', '
+        )}`;
+      }
+    }
+
     const summary = `GitHub Analysis Complete: Analyzed ${
       analysisData.repositories.length
-    } repositories. 
+    } repositories. ${contextInsights}
 
 Key Findings:
 🎯 **Technical Expertise**: Expert-level TypeScript/NestJS with advanced AI/ML integration
@@ -304,17 +484,28 @@ Ready to proceed with content creation based on this technical profile.`;
   }
 
   /**
-   * Generate contextual analysis based on current conversation
+   * Generate contextual analysis based on current conversation and brand memory
    */
   private generateContextualAnalysis(
     request: string,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;
     scratchpad: string;
   }> {
-    const summary = `GitHub Analyzer ready to assist with repository analysis. Current context suggests focus on personal brand development.
+    let contextualInsights = '';
+    if (brandContext?.relevantMemories?.length > 0) {
+      contextualInsights = `\n\n🧠 **Brand Memory Context**: Found ${brandContext.relevantMemories.length} relevant memories from previous analyses.`;
+      if (brandContext.suggestedActions?.length > 0) {
+        contextualInsights += `\n💡 **Suggestions**: ${brandContext.suggestedActions
+          .slice(0, 2)
+          .join(', ')}`;
+      }
+    }
+
+    const summary = `GitHub Analyzer ready to assist with repository analysis. Current context suggests focus on personal brand development.${contextualInsights}
 
 I can help analyze:
 🔍 Repository structure and code quality

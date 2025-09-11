@@ -56,6 +56,16 @@ import { CheckpointExamplesController } from './controllers/checkpoint-examples.
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
 
+// DevBrand API Surface Layer - External Interface Components
+import { DevBrandController } from './controllers/devbrand.controller';
+import { DevBrandWebSocketGateway } from './gateways/devbrand-websocket.gateway';
+import { DevBrandSupervisorWorkflow } from './workflows/devbrand-supervisor.workflow';
+import { PersonalBrandMemoryService } from './services/personal-brand-memory.service';
+import { GitHubAnalyzerAgent } from './agents/github-analyzer.agent';
+import { ContentCreatorAgent } from './agents/content-creator.agent';
+import { BrandStrategistAgent } from './agents/brand-strategist.agent';
+import { GitHubIntegrationService } from './services/github-integration.service';
+
 /**
  * Demo Application Module - Showcasing Optional Checkpoint DI Pattern
  *
@@ -119,7 +129,7 @@ import { HealthController } from './controllers/health.controller';
     LanggraphModulesCheckpointModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
+      useFactory: async (configService: ConfigService) =>
         getCheckpointConfig(configService),
     }),
 
@@ -137,7 +147,7 @@ import { HealthController } from './controllers/health.controller';
     // Use case: Production workflows requiring reliability and observability
 
     FunctionalApiModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
+      useFactory: async (checkpointManager: CheckpointManagerService) => ({
         ...getFunctionalApiConfig(),
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
@@ -147,7 +157,7 @@ import { HealthController } from './controllers/health.controller';
     }),
 
     MultiAgentModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
+      useFactory: async (checkpointManager: CheckpointManagerService) => ({
         ...getMultiAgentConfig(),
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
@@ -157,7 +167,7 @@ import { HealthController } from './controllers/health.controller';
     }),
 
     TimeTravelModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
+      useFactory: async (checkpointManager: CheckpointManagerService) => ({
         ...getTimeTravelConfig(),
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
@@ -197,6 +207,17 @@ import { HealthController } from './controllers/health.controller';
 
     // Checkpoint DI pattern demonstration service
     CheckpointExamplesService,
+
+    // DevBrand API Surface Layer - Services and Workflows
+    DevBrandSupervisorWorkflow,
+    PersonalBrandMemoryService,
+    GitHubAnalyzerAgent,
+    ContentCreatorAgent,
+    BrandStrategistAgent,
+    GitHubIntegrationService,
+
+    // DevBrand WebSocket Gateway
+    DevBrandWebSocketGateway,
   ],
   controllers: [
     // Test controller to expose child module verification endpoints
@@ -207,6 +228,9 @@ import { HealthController } from './controllers/health.controller';
 
     // Health check controller
     HealthController,
+
+    // DevBrand API Surface Layer - External REST Endpoints
+    DevBrandController,
   ],
   exports: [],
 })

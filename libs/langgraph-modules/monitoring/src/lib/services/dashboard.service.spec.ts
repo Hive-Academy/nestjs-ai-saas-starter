@@ -2,7 +2,6 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { DashboardService } from './dashboard.service';
 import type {
   DashboardConfig,
-  DashboardData,
   DashboardQuery,
   MetricData,
   Widget,
@@ -33,7 +32,9 @@ describe('DashboardService', () => {
     ...overrides,
   });
 
-  const createTestDashboard = (overrides?: Partial<DashboardConfig>): DashboardConfig => ({
+  const createTestDashboard = (
+    overrides?: Partial<DashboardConfig>
+  ): DashboardConfig => ({
     id: 'dashboard-123',
     name: 'System Overview',
     description: 'Main system metrics dashboard',
@@ -60,9 +61,9 @@ describe('DashboardService', () => {
   describe('Dashboard Management (AC6 Verification)', () => {
     it('should create dashboards successfully', async () => {
       const config = createTestDashboard();
-      
+
       const dashboardId = await service.createDashboard(config);
-      
+
       expect(dashboardId).toBeDefined();
       expect(typeof dashboardId).toBe('string');
       expect(dashboardId).toBe(config.id);
@@ -71,9 +72,9 @@ describe('DashboardService', () => {
     it('should retrieve dashboard configurations', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const retrieved = await service.getDashboard(config.id);
-      
+
       expect(retrieved).toEqual(config);
       expect(retrieved.name).toBe(config.name);
       expect(retrieved.widgets).toHaveLength(1);
@@ -82,15 +83,15 @@ describe('DashboardService', () => {
     it('should update dashboard configurations', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const updates = {
         name: 'Updated Dashboard',
         description: 'Updated description',
         refreshInterval: 60000, // 60 seconds in milliseconds
       };
-      
+
       await service.updateDashboard(config.id, updates);
-      
+
       const updated = await service.getDashboard(config.id);
       expect(updated.name).toBe('Updated Dashboard');
       expect(updated.description).toBe('Updated description');
@@ -101,10 +102,12 @@ describe('DashboardService', () => {
     it('should delete dashboards', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       await service.deleteDashboard(config.id);
-      
-      await expect(service.getDashboard(config.id)).rejects.toThrow('Dashboard not found');
+
+      await expect(service.getDashboard(config.id)).rejects.toThrow(
+        'Dashboard not found'
+      );
     });
 
     it('should validate dashboard configuration', async () => {
@@ -120,9 +123,16 @@ describe('DashboardService', () => {
 
   describe('Widget Management', () => {
     it('should support all widget types', async () => {
-      const widgetTypes: Array<Widget['type']> = ['line', 'bar', 'pie', 'gauge', 'table', 'stat'];
-      
-      const widgets = widgetTypes.map((type, index) => 
+      const widgetTypes: Array<Widget['type']> = [
+        'line',
+        'bar',
+        'pie',
+        'gauge',
+        'table',
+        'stat',
+      ];
+
+      const widgets = widgetTypes.map((type, index) =>
         createTestWidget({
           id: `widget-${type}`,
           type,
@@ -137,7 +147,7 @@ describe('DashboardService', () => {
 
       await service.createDashboard(config);
       const retrieved = await service.getDashboard(config.id);
-      
+
       expect(retrieved.widgets).toHaveLength(widgetTypes.length);
       retrieved.widgets.forEach((widget, index) => {
         expect(widget.type).toBe(widgetTypes[index]);
@@ -146,13 +156,13 @@ describe('DashboardService', () => {
 
     it('should validate widget positioning', async () => {
       const overlappingWidgets = [
-        createTestWidget({ 
-          id: 'widget-1', 
-          position: { x: 0, y: 0, width: 4, height: 4 }
+        createTestWidget({
+          id: 'widget-1',
+          position: { x: 0, y: 0, width: 4, height: 4 },
         }),
-        createTestWidget({ 
-          id: 'widget-2', 
-          position: { x: 2, y: 2, width: 4, height: 4 } // Overlapping
+        createTestWidget({
+          id: 'widget-2',
+          position: { x: 2, y: 2, width: 4, height: 4 }, // Overlapping
         }),
       ];
 
@@ -160,7 +170,9 @@ describe('DashboardService', () => {
         widgets: overlappingWidgets,
       });
 
-      await expect(service.createDashboard(config)).rejects.toThrow('Widget positions overlap');
+      await expect(service.createDashboard(config)).rejects.toThrow(
+        'Widget positions overlap'
+      );
     });
 
     it('should support widget configuration options', async () => {
@@ -181,7 +193,7 @@ describe('DashboardService', () => {
 
       await service.createDashboard(config);
       const retrieved = await service.getDashboard(config.id);
-      
+
       expect(retrieved.widgets[0].config).toEqual(configuredWidget.config);
     });
   });
@@ -239,7 +251,7 @@ describe('DashboardService', () => {
         };
 
         const results = await service.queryMetrics(query);
-        
+
         expect(results).toBeDefined();
         expect(results).toBeInstanceOf(Array);
         // Specific validation would depend on the aggregation type
@@ -255,11 +267,12 @@ describe('DashboardService', () => {
       };
 
       const results = await service.queryMetrics(query);
-      
+
       expect(results).toBeInstanceOf(Array);
       // Results should be grouped by time buckets
       if (results.length > 1) {
-        const timeDiff = results[1].timestamp.getTime() - results[0].timestamp.getTime();
+        const timeDiff =
+          results[1].timestamp.getTime() - results[0].timestamp.getTime();
         expect(timeDiff).toBeCloseTo(300000, -30000); // ~5 minutes
       }
     });
@@ -273,9 +286,9 @@ describe('DashboardService', () => {
       };
 
       const results = await service.queryMetrics(query);
-      
+
       expect(results).toBeInstanceOf(Array);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.tags.host).toBe('server-1');
       });
     });
@@ -288,7 +301,7 @@ describe('DashboardService', () => {
       };
 
       const results = await service.queryMetrics(query);
-      
+
       expect(results).toEqual([]);
     });
 
@@ -301,7 +314,7 @@ describe('DashboardService', () => {
       };
 
       const results = await service.queryMetrics(query);
-      
+
       expect(results.length).toBeLessThanOrEqual(2);
     });
   });
@@ -331,9 +344,9 @@ describe('DashboardService', () => {
       });
 
       await service.createDashboard(config);
-      
+
       const dashboardData = await service.getDashboardData(config.id);
-      
+
       expect(dashboardData.dashboardId).toBe(config.id);
       expect(dashboardData.widgets).toHaveProperty('cpu-widget');
       expect(dashboardData.widgets).toHaveProperty('memory-widget');
@@ -344,33 +357,33 @@ describe('DashboardService', () => {
     it('should use caching for dashboard data (30s TTL)', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const queryMetricsSpy = jest.spyOn(service, 'queryMetrics');
-      
+
       // First call
       const data1 = await service.getDashboardData(config.id);
       expect(queryMetricsSpy).toHaveBeenCalledTimes(1);
-      
+
       // Second call within TTL should use cache
       const data2 = await service.getDashboardData(config.id);
       expect(queryMetricsSpy).toHaveBeenCalledTimes(1); // Still 1, used cache
-      
+
       expect(data1.timestamp.getTime()).toBe(data2.timestamp.getTime());
     });
 
     it('should refresh cache after TTL expires', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const queryMetricsSpy = jest.spyOn(service, 'queryMetrics');
-      
+
       // First call
       await service.getDashboardData(config.id);
       expect(queryMetricsSpy).toHaveBeenCalledTimes(1);
-      
+
       // Simulate TTL expiration (30 seconds)
       jest.advanceTimersByTime(31000);
-      
+
       // Second call should refresh cache
       await service.getDashboardData(config.id);
       expect(queryMetricsSpy).toHaveBeenCalledTimes(2);
@@ -399,9 +412,9 @@ describe('DashboardService', () => {
       });
 
       await service.createDashboard(config);
-      
+
       const dashboardData = await service.getDashboardData(config.id);
-      
+
       // Should still return data for working widgets
       expect(dashboardData.widgets).toHaveProperty('working-widget');
       expect(dashboardData.widgets).toHaveProperty('failing-widget');
@@ -414,9 +427,9 @@ describe('DashboardService', () => {
     it('should export dashboard data in JSON format', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const jsonExport = await service.exportDashboard(config.id, 'json');
-      
+
       const parsedExport = JSON.parse(jsonExport);
       expect(parsedExport.dashboard).toEqual(config);
       expect(parsedExport.data).toBeDefined();
@@ -426,20 +439,22 @@ describe('DashboardService', () => {
     it('should export dashboard data in CSV format', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const csvExport = await service.exportDashboard(config.id, 'csv');
-      
+
       expect(csvExport).toContain('widget_id,timestamp,metric,value,tags');
       expect(csvExport).toContain(config.widgets[0].id);
     });
 
     it('should provide dashboard templates for common use cases', async () => {
       const templates = await service.getDashboardTemplates();
-      
+
       expect(templates).toBeInstanceOf(Array);
       expect(templates.length).toBeGreaterThan(0);
-      
-      const systemTemplate = templates.find(t => t.name === 'System Overview');
+
+      const systemTemplate = templates.find(
+        (t) => t.name === 'System Overview'
+      );
       expect(systemTemplate).toBeDefined();
       expect(systemTemplate?.widgets.length).toBeGreaterThan(0);
     });
@@ -447,15 +462,18 @@ describe('DashboardService', () => {
     it('should create dashboard from template', async () => {
       const templates = await service.getDashboardTemplates();
       const template = templates[0];
-      
-      const dashboardId = await service.createDashboardFromTemplate(template.id, {
-        name: 'My System Dashboard',
-        customization: {
-          refreshInterval: 60,
-          tags: { environment: 'production' },
-        },
-      });
-      
+
+      const dashboardId = await service.createDashboardFromTemplate(
+        template.id,
+        {
+          name: 'My System Dashboard',
+          customization: {
+            refreshInterval: 60,
+            tags: { environment: 'production' },
+          },
+        }
+      );
+
       const dashboard = await service.getDashboard(dashboardId);
       expect(dashboard.name).toBe('My System Dashboard');
       expect(dashboard.refreshInterval).toBe(60);
@@ -468,25 +486,27 @@ describe('DashboardService', () => {
       // Create multiple dashboards
       const dashboards = await Promise.all(
         Array.from({ length: 10 }, (_, i) =>
-          service.createDashboard(createTestDashboard({
-            id: `concurrent-dashboard-${i}`,
-            name: `Dashboard ${i}`,
-          }))
+          service.createDashboard(
+            createTestDashboard({
+              id: `concurrent-dashboard-${i}`,
+              name: `Dashboard ${i}`,
+            })
+          )
         )
       );
 
       const startTime = Date.now();
-      
+
       // Request data from all dashboards concurrently
-      const dataPromises = dashboards.map(id => service.getDashboardData(id));
+      const dataPromises = dashboards.map((id) => service.getDashboardData(id));
       const results = await Promise.all(dataPromises);
-      
+
       const duration = Date.now() - startTime;
-      
+
       expect(results).toHaveLength(10);
       expect(duration).toBeLessThan(2000); // Should complete within 2 seconds
-      
-      results.forEach(data => {
+
+      results.forEach((data) => {
         expect(data).toBeDefined();
         expect(data.dashboardId).toBeDefined();
       });
@@ -508,23 +528,23 @@ describe('DashboardService', () => {
       });
 
       await service.createDashboard(config);
-      
+
       const startTime = Date.now();
       const data = await service.getDashboardData(config.id);
       const queryTime = Date.now() - startTime;
-      
+
       expect(queryTime).toBeLessThan(1000); // Should complete within 1 second
       expect(data).toBeDefined();
     });
 
     it('should manage memory efficiently with dashboard cache', async () => {
       const initialMemory = process.memoryUsage().heapUsed;
-      
+
       // Create many dashboards and request their data
       for (let i = 0; i < 50; i++) {
         const config = createTestDashboard({
           id: `memory-test-${i}`,
-          widgets: Array.from({ length: 5 }, (_, j) => 
+          widgets: Array.from({ length: 5 }, (_, j) =>
             createTestWidget({
               id: `widget-${i}-${j}`,
               query: {
@@ -535,14 +555,14 @@ describe('DashboardService', () => {
             })
           ),
         });
-        
+
         await service.createDashboard(config);
         await service.getDashboardData(config.id);
       }
-      
+
       const afterMemory = process.memoryUsage().heapUsed;
       const memoryIncrease = afterMemory - initialMemory;
-      
+
       // Should use reasonable memory (< 100MB for 50 dashboards with 250 widgets)
       expect(memoryIncrease).toBeLessThan(100 * 1024 * 1024);
     });
@@ -550,25 +570,25 @@ describe('DashboardService', () => {
     it('should implement automatic cache cleanup to prevent memory leaks', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       // Fill cache with data
       await service.getDashboardData(config.id);
-      
+
       let cacheStats = service.getCacheStats();
       expect(cacheStats.entries).toBe(1);
       expect(cacheStats.memoryUsage).toBeGreaterThan(0);
-      
+
       // Trigger cache cleanup
       await service.cleanupExpiredCache();
-      
+
       cacheStats = service.getCacheStats();
       // Cache should still have entries if not expired
       expect(cacheStats.entries).toBe(1);
-      
+
       // Simulate cache expiration and cleanup
       jest.advanceTimersByTime(31000); // Beyond TTL
       await service.cleanupExpiredCache();
-      
+
       cacheStats = service.getCacheStats();
       expect(cacheStats.entries).toBe(0);
     });
@@ -578,14 +598,14 @@ describe('DashboardService', () => {
     it('should support real-time dashboard updates via WebSocket', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const updates: any[] = [];
       const stream = service.createDashboardStream(config.id);
-      
+
       stream.on('widget_update', (update) => {
         updates.push(update);
       });
-      
+
       // Simulate new metric data
       service.addMockMetricData([
         {
@@ -595,28 +615,31 @@ describe('DashboardService', () => {
           tags: { host: 'server-1' },
         },
       ]);
-      
+
       // Wait for stream processing
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       expect(updates.length).toBeGreaterThan(0);
       expect(updates[0].widgetId).toBe(config.widgets[0].id);
       expect(updates[0].data).toBeDefined();
-      
+
       stream.destroy();
     });
 
     it('should batch real-time updates for performance', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       const batchUpdates: any[] = [];
-      const stream = service.createDashboardStream(config.id, { batchSize: 5, batchInterval: 100 });
-      
+      const stream = service.createDashboardStream(config.id, {
+        batchSize: 5,
+        batchInterval: 100,
+      });
+
       stream.on('batch_update', (batch) => {
         batchUpdates.push(batch);
       });
-      
+
       // Add multiple metric data points rapidly
       for (let i = 0; i < 10; i++) {
         service.addMockMetricData([
@@ -628,13 +651,13 @@ describe('DashboardService', () => {
           },
         ]);
       }
-      
+
       // Wait for batch processing
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
       expect(batchUpdates.length).toBeGreaterThan(0);
       expect(batchUpdates[0].updates.length).toBeGreaterThan(1);
-      
+
       stream.destroy();
     });
 
@@ -650,20 +673,20 @@ describe('DashboardService', () => {
           }),
         ],
       });
-      
+
       await service.createDashboard(config);
-      
+
       const errors: any[] = [];
       const stream = service.createDashboardStream(config.id);
-      
+
       stream.on('error', (error) => {
         errors.push(error);
       });
-      
+
       stream.on('widget_update', (update) => {
         // Should still receive updates for valid parts
       });
-      
+
       // Add data that will cause widget query to fail
       service.addMockMetricData([
         {
@@ -673,12 +696,12 @@ describe('DashboardService', () => {
           tags: {},
         },
       ]);
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Stream should continue operating despite errors
       expect(stream.destroyed).toBe(false);
-      
+
       stream.destroy();
     });
   });
@@ -687,14 +710,14 @@ describe('DashboardService', () => {
     it('should track dashboard usage statistics', async () => {
       const config = createTestDashboard();
       await service.createDashboard(config);
-      
+
       // Simulate dashboard usage
       for (let i = 0; i < 10; i++) {
         await service.getDashboardData(config.id);
       }
-      
+
       const usage = await service.getDashboardUsage(config.id);
-      
+
       expect(usage.views).toBe(10);
       expect(usage.lastAccessed).toBeInstanceOf(Date);
       expect(usage.averageLoadTime).toBeGreaterThan(0);
@@ -703,7 +726,7 @@ describe('DashboardService', () => {
 
     it('should provide dashboard performance insights', async () => {
       const config = createTestDashboard({
-        widgets: Array.from({ length: 20 }, (_, i) => 
+        widgets: Array.from({ length: 20 }, (_, i) =>
           createTestWidget({
             id: `widget-${i}`,
             query: {
@@ -714,12 +737,12 @@ describe('DashboardService', () => {
           })
         ),
       });
-      
+
       await service.createDashboard(config);
       await service.getDashboardData(config.id);
-      
+
       const insights = await service.getDashboardInsights(config.id);
-      
+
       expect(insights.loadTime).toBeGreaterThan(0);
       expect(insights.widgetCount).toBe(20);
       expect(insights.optimization).toBeDefined();
@@ -729,22 +752,27 @@ describe('DashboardService', () => {
     it('should suggest dashboard optimizations', async () => {
       const config = createTestDashboard({
         refreshInterval: 1, // Too frequent
-        widgets: Array.from({ length: 50 }, (_, i) => // Too many widgets
-          createTestWidget({
-            id: `widget-${i}`,
-            query: {
-              metric: `high.cardinality.metric.${i}`,
-              timeRange: createTestTimeRange(24 * 30), // 30 days - large range
-              aggregation: 'avg',
-            },
-          })
+        widgets: Array.from(
+          { length: 50 },
+          (
+            _,
+            i // Too many widgets
+          ) =>
+            createTestWidget({
+              id: `widget-${i}`,
+              query: {
+                metric: `high.cardinality.metric.${i}`,
+                timeRange: createTestTimeRange(24 * 30), // 30 days - large range
+                aggregation: 'avg',
+              },
+            })
         ),
       });
-      
+
       await service.createDashboard(config);
-      
+
       const optimizations = await service.suggestOptimizations(config.id);
-      
+
       expect(optimizations).toContainEqual(
         expect.objectContaining({
           type: 'refresh_interval',
@@ -753,7 +781,7 @@ describe('DashboardService', () => {
           impact: expect.any(String),
         })
       );
-      
+
       expect(optimizations).toContainEqual(
         expect.objectContaining({
           type: 'widget_count',

@@ -736,10 +736,11 @@ export class AchievementExtractorTool extends StructuredTool {
 
   private identifyPrimaryStrengths(categories: any): string[] {
     return Object.entries(categories)
-      .filter(([, achievements]: [string, any[]]) => achievements.length > 0)
-      .sort(
-        ([, a]: [string, any[]], [, b]: [string, any[]]) => b.length - a.length
+      .filter(
+        ([_, achievements]) =>
+          Array.isArray(achievements) && achievements.length > 0
       )
+      .sort(([_, a], [__, b]) => (b as any[]).length - (a as any[]).length)
       .slice(0, 3)
       .map(([category]) => category);
   }

@@ -1,5 +1,4 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { LanggraphModulesCheckpointModule } from '../langgraph-modules/checkpoint.module';
 import { CheckpointManagerService } from '../core/checkpoint-manager.service';
 
@@ -109,9 +108,6 @@ describe('Checkpoint Module Independence Tests', () => {
 
     it('should handle missing dependencies gracefully in core operations', async () => {
       // Test that core checkpoint operations work even with minimal dependencies
-      const threadId = 'test-thread-123';
-      const checkpointNs = 'test-namespace';
-
       // These should not throw errors, even if some services are unavailable
       expect(() => {
         checkpointManager.isConfigServiceAvailable();
@@ -175,10 +171,6 @@ describe('Checkpoint Module Independence Tests', () => {
       // Core services should be available with memory provider
       expect(capabilities.coreServices).toBe(true);
 
-      // Memory provider should enable basic checkpoint functionality
-      const threadId = 'memory-test-thread';
-      const checkpointNs = 'memory-test-ns';
-
       // Basic operations should not throw
       expect(() => {
         checkpointManager.isConfigServiceAvailable();
@@ -197,9 +189,10 @@ describe('Checkpoint Module Independence Tests', () => {
       const module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            providers: ['memory'],
-            configs: {
-              memory: {},
+            checkpoint: {
+              cleanupInterval: 60000,
+              maxAge: 3600000,
+              maxPerThread: 50,
             },
           }),
         ],

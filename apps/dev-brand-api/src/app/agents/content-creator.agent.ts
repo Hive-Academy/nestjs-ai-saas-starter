@@ -1,9 +1,35 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { AIMessage } from '@langchain/core/messages';
 import type {
   AgentDefinition,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
+import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
+
+// Enhanced agent state with thread support
+interface EnhancedAgentState extends AgentState {
+  thread_id?: string;
+  workflow?: string;
+  stepNumber?: number;
+  timestamp?: string;
+}
+
+// Content memory metadata with proper generic constraints
+interface ContentMemoryMetadata<T = Record<string, unknown>> {
+  contentData?: {
+    platforms?: string[];
+    contentType?: string;
+    targetAudience?: string[];
+    engagementScore?: number;
+  };
+  brandContext?: {
+    userId: string;
+    contentVersion?: string;
+    confidenceScore: number;
+  };
+  importance: number;
+  [key: string]: string | number | boolean | null | undefined | T;
+}
 
 /**
  * Content Creator Agent for DevBrand Showcase
@@ -18,6 +44,10 @@ import type {
 @Injectable()
 export class ContentCreatorAgent {
   private readonly logger = new Logger(ContentCreatorAgent.name);
+
+  constructor(
+    private readonly brandMemoryService: PersonalBrandMemoryService
+  ) {}
 
   /**
    * Get the agent definition for multi-agent coordination
@@ -88,13 +118,37 @@ Always focus on authentic, valuable content that positions the individual as a t
    * Create the agent node function for workflow integration
    */
   private createNodeFunction() {
-    return async (state: AgentState): Promise<Partial<AgentState>> => {
+    return async (
+      state: EnhancedAgentState
+    ): Promise<Partial<EnhancedAgentState>> => {
       this.logger.log('Content Creator: Starting content generation');
 
       try {
-        // Extract content requirements from current context
+        // Extract user context from state
+        const userId = state.metadata?.userId || 'demo-user';
         const lastMessage = state.messages[state.messages.length - 1];
-        const content = await this.generateBrandContent(lastMessage, state);
+
+        // Get brand memory context for content creation
+        const brandContext = await this.getBrandMemoryContext(
+          userId,
+          String(lastMessage.content || '')
+        );
+
+        // Extract content requirements from current context
+        const content = await this.generateBrandContent(
+          lastMessage,
+          state,
+          brandContext
+        );
+
+        // Store generated content in brand memory
+        if (content.data && content.data.contents) {
+          await this.storeBrandMemoryFromContent(
+            userId,
+            state.thread_id || 'content',
+            content
+          );
+        }
 
         // Create response message with content results
         const responseMessage = new AIMessage({
@@ -103,6 +157,7 @@ Always focus on authentic, valuable content that positions the individual as a t
             generated_content: content.data,
             agent: 'content-creator',
             timestamp: new Date().toISOString(),
+            memory_context: brandContext?.contextSummary,
           },
         });
 
@@ -116,6 +171,7 @@ Always focus on authentic, valuable content that positions the individual as a t
             ...state.metadata,
             generated_content: content.data,
             last_content_generation: new Date().toISOString(),
+            memory_context_used: brandContext?.relevantMemories.length || 0,
           },
         };
       } catch (error) {
@@ -152,11 +208,79 @@ Always focus on authentic, valuable content that positions the individual as a t
   }
 
   /**
-   * Generate brand content based on analysis data and context
+   * Get brand memory context for content creation
+   */
+  private async getBrandMemoryContext(userId: string, currentTask: string) {
+    try {
+      return await this.brandMemoryService.getBrandContextForAgent(
+        userId,
+        'content-creator',
+        currentTask,
+        {
+          maxMemories: 15,
+          timeWindow: 7, // Last week for recent content context
+          includeValidatedOnly: false,
+        }
+      );
+    } catch (error) {
+      this.logger.warn('Failed to get brand memory context', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store generated content as brand memories
+   */
+  private async storeBrandMemoryFromContent(
+    userId: string,
+    threadId: string,
+    content: { summary: string; data: any; scratchpad: string }
+  ): Promise<void> {
+    try {
+      // Store each piece of content as separate memory entries
+      if (content.data.contents) {
+        for (const [platform, platformContent] of Object.entries(
+          content.data.contents
+        )) {
+          if (typeof platformContent === 'object' && platformContent) {
+            await this.brandMemoryService.storeBrandMemory(
+              userId,
+              threadId,
+              `${platform.toUpperCase()} Content: ${
+                (platformContent as any).title ||
+                (platformContent as any).content?.substring(0, 100)
+              }...`,
+              'content_performance',
+              platformContent,
+              {
+                contentData: {
+                  platforms: [platform],
+                  contentType: 'generated',
+                  engagementScore: 0.8,
+                },
+                brandContext: {
+                  userId,
+                  contentVersion: `${platform}_${Date.now()}`,
+                  confidenceScore: 0.8,
+                },
+                importance: 0.7,
+              } as ContentMemoryMetadata
+            );
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error('Failed to store brand memory from content', error);
+    }
+  }
+
+  /**
+   * Generate brand content based on analysis data and context with memory integration
    */
   private async generateBrandContent(
     message: any,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;
@@ -173,26 +297,44 @@ Always focus on authentic, valuable content that positions the individual as a t
       return this.createContentFromAnalysis(
         githubAnalysis,
         messageContent,
-        state
+        state,
+        brandContext
       );
     } else {
-      return this.createGenericBrandContent(messageContent, state);
+      return this.createGenericBrandContent(
+        messageContent,
+        state,
+        brandContext
+      );
     }
   }
 
   /**
-   * Create content from GitHub analysis data
+   * Create content from GitHub analysis data with brand memory context
    */
   private async createContentFromAnalysis(
     analysis: any,
     request: string,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;
     scratchpad: string;
   }> {
-    this.logger.log('Creating content from GitHub analysis data');
+    this.logger.log(
+      'Creating content from GitHub analysis data with brand memory context'
+    );
+
+    // Use brand context to enhance content generation
+    const recentContentCount =
+      brandContext?.relevantMemories?.filter(
+        (m: any) => m.metadata.type === 'content_performance'
+      )?.length || 0;
+    const strategyContext =
+      brandContext?.relevantMemories?.filter(
+        (m: any) => m.metadata.type === 'brand_strategy'
+      )?.[0]?.content || 'No strategy context available';
 
     const contentData = {
       platforms: {
@@ -390,7 +532,8 @@ Ready for review and approval. All content maintains consistent brand voice whil
    */
   private createGenericBrandContent(
     request: string,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;

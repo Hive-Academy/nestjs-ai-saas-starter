@@ -220,10 +220,10 @@ export class GitHubAnalyzerTool extends StructuredTool {
     brandingTips: string[];
   } {
     const insights = {
-      strengths: [],
-      opportunities: [],
-      recommendations: [],
-      brandingTips: [],
+      strengths: [] as string[],
+      opportunities: [] as string[],
+      recommendations: [] as string[],
+      brandingTips: [] as string[],
     };
 
     // Analyze strengths

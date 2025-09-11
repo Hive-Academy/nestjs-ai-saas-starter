@@ -392,7 +392,7 @@ Route to the most appropriate agent based on the current task and maintain workf
       id: agent.id,
       name: agent.name,
       healthy: this.multiAgentCoordinator.getAgentHealth(agent.id),
-      capabilities: agent.metadata?.capabilities || [],
+      capabilities: (agent.metadata?.capabilities as string[]) || [],
     }));
 
     const networkStats = this.multiAgentCoordinator.getNetworkStats(

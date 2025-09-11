@@ -1,9 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { AIMessage } from '@langchain/core/messages';
 import type {
   AgentDefinition,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
+import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
+
+// Enhanced agent state with thread support
+interface EnhancedAgentState extends AgentState {
+  thread_id?: string;
+  workflow?: string;
+  stepNumber?: number;
+  timestamp?: string;
+}
+
+// Brand memory metadata with proper generic constraints
+interface BrandMemoryMetadata<T = Record<string, unknown>> {
+  strategicData?: {
+    targetAudience?: string[];
+    marketSegment?: string;
+    brandPillars?: string[];
+    careerGoals?: string[];
+    competitivePosition?: string;
+  };
+  brandContext?: {
+    userId: string;
+    strategyVersion?: string;
+    confidenceScore: number;
+  };
+  importance: number;
+  [key: string]: any;
+}
 
 /**
  * Brand Strategist Agent for DevBrand Showcase
@@ -18,6 +45,10 @@ import type {
 @Injectable()
 export class BrandStrategistAgent {
   private readonly logger = new Logger(BrandStrategistAgent.name);
+
+  constructor(
+    private readonly brandMemoryService: PersonalBrandMemoryService
+  ) {}
 
   /**
    * Get the agent definition for multi-agent coordination
@@ -94,15 +125,39 @@ Always provide actionable, data-driven strategic recommendations that drive meas
    * Create the agent node function for workflow integration
    */
   private createNodeFunction() {
-    return async (state: AgentState): Promise<Partial<AgentState>> => {
+    return async (
+      state: EnhancedAgentState
+    ): Promise<Partial<EnhancedAgentState>> => {
       this.logger.log(
         'Brand Strategist: Starting strategic analysis and coordination'
       );
 
       try {
-        // Extract strategic context from current conversation
+        // Extract user context from state
+        const userId = state.metadata?.userId || 'demo-user';
         const lastMessage = state.messages[state.messages.length - 1];
-        const strategy = await this.developBrandStrategy(lastMessage, state);
+
+        // Get brand memory context for strategic analysis
+        const brandContext = await this.getBrandMemoryContext(
+          userId,
+          String(lastMessage.content || '')
+        );
+
+        // Extract strategic context from current conversation
+        const strategy = await this.developBrandStrategy(
+          lastMessage,
+          state,
+          brandContext
+        );
+
+        // Store strategic insights in brand memory
+        if (strategy.data && strategy.data.strategicRecommendations) {
+          await this.storeBrandMemoryFromStrategy(
+            userId,
+            state.thread_id || 'strategy',
+            strategy
+          );
+        }
 
         // Create response message with strategic recommendations
         const responseMessage = new AIMessage({
@@ -111,6 +166,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
             brand_strategy: strategy.data,
             agent: 'brand-strategist',
             timestamp: new Date().toISOString(),
+            memory_context: brandContext?.contextSummary,
           },
         });
 
@@ -124,6 +180,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
             ...state.metadata,
             brand_strategy: strategy.data,
             last_strategy_update: new Date().toISOString(),
+            memory_context_used: brandContext?.relevantMemories.length || 0,
           },
         };
       } catch (error) {
@@ -160,11 +217,123 @@ Always provide actionable, data-driven strategic recommendations that drive meas
   }
 
   /**
-   * Develop comprehensive brand strategy from analysis data
+   * Get brand memory context for strategic analysis
+   */
+  private async getBrandMemoryContext(userId: string, currentTask: string) {
+    try {
+      return await this.brandMemoryService.getBrandContextForAgent(
+        userId,
+        'brand-strategist',
+        currentTask,
+        {
+          maxMemories: 20,
+          timeWindow: 90, // Last 90 days for strategic context
+          includeValidatedOnly: false,
+        }
+      );
+    } catch (error) {
+      this.logger.warn('Failed to get brand memory context', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store strategic insights as brand memories
+   */
+  private async storeBrandMemoryFromStrategy(
+    userId: string,
+    threadId: string,
+    strategy: { summary: string; data: any; scratchpad: string }
+  ): Promise<void> {
+    try {
+      // Store main strategic recommendations
+      if (strategy.data.strategicRecommendations) {
+        await this.brandMemoryService.storeBrandMemory(
+          userId,
+          threadId,
+          `Brand Strategy Update: ${strategy.summary.substring(0, 200)}...`,
+          'brand_strategy',
+          strategy.data,
+          {
+            strategicData: {
+              targetAudience: strategy.data.positioning?.targetAudiences || [],
+              marketSegment:
+                strategy.data.positioning?.marketSegment || 'technology',
+              brandPillars: strategy.data.coreElements?.brandPillars || [],
+              careerGoals: strategy.data.careerAlignment?.objectives || [],
+            },
+            brandContext: {
+              userId,
+              strategyVersion: `v${Date.now()}`,
+              confidenceScore: 0.9,
+            },
+            importance: 0.9,
+          } as BrandMemoryMetadata
+        );
+      }
+
+      // Store market insights separately
+      if (strategy.data.marketAnalysis) {
+        await this.brandMemoryService.storeBrandMemory(
+          userId,
+          threadId,
+          `Market Analysis: ${
+            strategy.data.marketAnalysis.industryTrends
+              ?.slice(0, 2)
+              .join(', ') || 'Industry insights'
+          }`,
+          'market_insight',
+          strategy.data.marketAnalysis,
+          {
+            strategicData: {
+              marketSegment:
+                strategy.data.marketAnalysis.marketSegment || 'technology',
+              competitivePosition:
+                strategy.data.marketAnalysis.competitivePosition || 'emerging',
+            },
+            brandContext: {
+              userId,
+              confidenceScore: 0.85,
+            },
+            importance: 0.8,
+          } as BrandMemoryMetadata
+        );
+      }
+
+      // Store career milestones if identified
+      if (strategy.data.careerAlignment?.milestones) {
+        await this.brandMemoryService.storeBrandMemory(
+          userId,
+          threadId,
+          `Career Milestone Planning: ${strategy.data.careerAlignment.milestones
+            .slice(0, 2)
+            .join(', ')}`,
+          'career_milestone',
+          strategy.data.careerAlignment,
+          {
+            strategicData: {
+              careerGoals: strategy.data.careerAlignment.objectives || [],
+            },
+            brandContext: {
+              userId,
+              confidenceScore: 0.8,
+            },
+            importance: 0.75,
+          } as BrandMemoryMetadata
+        );
+      }
+    } catch (error) {
+      this.logger.error('Failed to store brand memory from strategy', error);
+    }
+  }
+
+  /**
+   * Develop comprehensive brand strategy from analysis data with memory context
    */
   private async developBrandStrategy(
     message: any,
-    state: AgentState
+    state: EnhancedAgentState,
+    brandContext?: any
   ): Promise<{
     summary: string;
     data: any;
@@ -203,7 +372,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
     githubAnalysis: any,
     generatedContent: any,
     request: string,
-    state: AgentState
+    state: EnhancedAgentState
   ): Promise<{
     summary: string;
     data: any;
@@ -421,7 +590,7 @@ Strategy provides clear path from current technical excellence to recognized ind
   private createTechnicalStrategy(
     githubAnalysis: any,
     request: string,
-    state: AgentState
+    state: EnhancedAgentState
   ): Promise<{
     summary: string;
     data: any;
@@ -463,7 +632,7 @@ Focus areas identified for maximum impact based on technical analysis.`;
    */
   private createInitialStrategy(
     request: string,
-    state: AgentState
+    state: EnhancedAgentState
   ): Promise<{
     summary: string;
     data: any;
