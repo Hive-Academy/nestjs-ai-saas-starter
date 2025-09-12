@@ -32,7 +32,7 @@
 ## Foundation Context
 
 - **Complete Implementation**: All Phase 1-4 components created
-- **Mock API Server**: Available at ws://localhost:3001
+- **Mock API Server**: Available at ws://localhost:3000
 - **Angular 20**: Standalone component architecture
 - **Three.js**: WebGL rendering with performance optimization
 - **TypeScript**: Strict mode compliance required

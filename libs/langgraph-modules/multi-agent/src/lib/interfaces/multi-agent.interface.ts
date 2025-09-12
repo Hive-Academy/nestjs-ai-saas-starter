@@ -403,9 +403,39 @@ export interface CheckpointingConfig {
 }
 
 /**
- * Multi-agent module configuration (2025 pattern)
+ * Tool provider type for explicit registration
+ */
+export type ToolProvider = new (...args: any[]) => any;
+
+/**
+ * Workflow provider type for explicit registration
+ */
+export type WorkflowProvider = new (...args: any[]) => any;
+
+/**
+ * Agent provider type for explicit registration
+ */
+export type AgentProvider = new (...args: any[]) => any;
+
+/**
+ * Multi-agent module configuration (2025 pattern with explicit registration)
  */
 export interface MultiAgentModuleOptions {
+  /**
+   * Explicitly registered tool providers (replaces discovery)
+   */
+  tools?: ToolProvider[];
+
+  /**
+   * Explicitly registered workflow providers (replaces discovery)
+   */
+  workflows?: WorkflowProvider[];
+
+  /**
+   * Explicitly registered agent providers (replaces discovery)
+   */
+  agents?: AgentProvider[];
+
   /**
    * Default LLM configuration with simple provider selection
    */

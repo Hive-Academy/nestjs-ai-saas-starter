@@ -122,10 +122,26 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
     // Copy static properties and methods
     Object.setPrototypeOf(newConstructor, originalConstructor);
 
-    // Copy metadata
+    // Copy metadata from constructor
     Reflect.getMetadataKeys(originalConstructor).forEach((key) => {
       const value = Reflect.getMetadata(key, originalConstructor);
       Reflect.defineMetadata(key, value, newConstructor);
+    });
+
+    // Copy metadata from prototype methods (this is critical for @Entrypoint and @Task decorators)
+    const originalPrototype = originalConstructor.prototype;
+    const newPrototype = newConstructor.prototype;
+
+    Object.getOwnPropertyNames(originalPrototype).forEach((propertyName) => {
+      if (propertyName === 'constructor') return;
+
+      // Copy all metadata from each method
+      const metadataKeys =
+        Reflect.getMetadataKeys(originalPrototype, propertyName) || [];
+      metadataKeys.forEach((key) => {
+        const value = Reflect.getMetadata(key, originalPrototype, propertyName);
+        Reflect.defineMetadata(key, value, newPrototype, propertyName);
+      });
     });
 
     // Store workflow metadata on the new constructor

@@ -2,12 +2,13 @@
 
 ## User's Request
 
-**Original Request**: "lets orchestarte phase 4 to start seeing actual ui" 
+**Original Request**: "lets orchestarte phase 4 to start seeing actual ui"
 **Core Need**: Implement real-time state visualization with rich visual feedback using the sophisticated Mock API from Phase 3, bringing the 3D Agent Constellation to life with meaningful visual effects and smooth performance.
 
 ## Phase Context
 
 **Phases 1-3 Status**: ✅ ALL COMPLETED
+
 - **Phase 1**: 3D Agent Constellation Foundation with Three.js integration, agent meshes, and spatial layout
 - **Phase 2**: Enhanced spatial navigation with orbital camera controls and smooth agent interaction
 - **Phase 3**: Complete Mock API system with 8 realistic agents, sophisticated behavior simulation, and WebSocket communication
@@ -21,6 +22,7 @@
 **User Story**: As a user interacting with the 3D Agent Constellation, I want to see real-time visual feedback that clearly shows what each agent is doing (memory access, tool execution, communication), so that I can understand agent activity patterns and system behavior at a glance.
 
 **Acceptance Criteria**:
+
 - WHEN agents access memory (ChromaDB/Neo4j via Mock API) THEN visual indicators show pulsing effects around agents
 - WHEN agents execute tools THEN progress rings display incremental completion (0-100%) with tool-specific colors
 - WHEN agents communicate with each other THEN particle streams visualize data flow between agent positions
@@ -32,6 +34,7 @@
 **User Story**: As a user running the 3D interface with multiple active agents and visual effects, I want the system to maintain smooth 60fps performance even with rich visual feedback, so that the immersive experience enhances rather than hinders my interaction with the agents.
 
 **Acceptance Criteria**:
+
 - WHEN multiple agents are simultaneously active THEN frame rate remains stable at 60fps
 - WHEN visual effects are rendering THEN level-of-detail optimization reduces complexity for distant agents
 - WHEN memory usage grows during extended sessions THEN garbage collection prevents memory leaks
@@ -59,7 +62,7 @@
 
 **Technical Implementation Details**:
 
-- WebSocket integration with Phase 3 Mock API (ws://localhost:3001)
+- WebSocket integration with Phase 3 Mock API (ws://localhost:3000)
 - Three.js shader materials for efficient visual effects
 - Particle systems using THREE.Points for communication streams
 - GSAP animations for smooth state transitions
@@ -72,18 +75,21 @@
 ## Success Metrics
 
 **Visual Impact Validation**:
+
 - Rich visual feedback clearly communicates different types of agent activity
 - Memory access operations visually distinct from tool execution and communication
 - Visual effects enhance understanding rather than creating visual noise
 - Agent state changes feel responsive and meaningful
 
 **Performance Validation**:
+
 - Consistent 60fps rendering with all visual effects active
 - Memory usage remains stable during extended sessions with multiple agents
 - Visual effect LOD system maintains quality while optimizing performance
 - Frame rate monitoring provides automatic quality adjustment
 
 **Integration Success**:
+
 - Mock API data seamlessly drives visual effects without lag
 - Visual effects accurately represent Mock API timing (100-500ms memory, 2-20s tools)
 - Error states and recovery scenarios handled gracefully in visuals
@@ -92,19 +98,22 @@
 ## Dependencies & Constraints
 
 **Foundation Dependencies**:
+
 - **Phase 1**: 3D Agent Constellation with Three.js scene and agent meshes
 - **Phase 2**: Spatial navigation and agent interaction patterns
 - **Phase 3**: Mock API server with 8 agents and sophisticated behavior simulation
 - **WebSocket Communication**: Real-time data flow patterns established
 
 **Technical Requirements**:
-- Mock API server running at ws://localhost:3001 with agent behavior simulation
+
+- Mock API server running at ws://localhost:3000 with agent behavior simulation
 - Three.js performance optimization features for visual effects
 - GSAP for smooth animation transitions
 - NgRx SignalStore integration for state management
 - WebGL support for shader-based visual effects
 
 **Performance Constraints**:
+
 - Must maintain 60fps target with multiple agents and visual effects
 - Memory management required for extended sessions
 - Mobile/tablet optimization for touch-based navigation
@@ -115,6 +124,7 @@
 ### Task 4.1: Agent State Visual Feedback (2 days)
 
 **Sub-tasks**:
+
 - Memory access pulsing effects (ChromaDB: blue pulse, Neo4j: green pulse)
 - Tool execution progress rings with tool-specific colors and incremental updates
 - Communication particle streams between coordinating agents
@@ -124,6 +134,7 @@
 ### Task 4.2: Performance Optimization (1 day)
 
 **Sub-tasks**:
+
 - Level-of-detail system for visual effects based on camera distance
 - Instanced rendering for repeated visual elements (particles, progress rings)
 - Memory leak prevention with proper cleanup of visual effects
@@ -142,13 +153,15 @@
 4. **Performance Critical** - Requires optimization expertise with Three.js and WebGL
 
 **Key Context for Next Agent**:
+
 - Build on existing Three.js scene from Phases 1-2
-- Integrate with Phase 3 Mock API WebSocket data (ws://localhost:3001)
+- Integrate with Phase 3 Mock API WebSocket data (ws://localhost:3000)
 - Use established agent mesh objects as foundation for visual effects
 - Maintain 60fps performance standard with multiple visual effects
 - Focus on meaningful visual feedback that enhances user understanding
 
 **Implementation Priority**:
+
 1. Memory access visual effects (pulsing indicators)
 2. Tool execution progress visualization (dynamic rings)
 3. Inter-agent communication streams (particle effects)

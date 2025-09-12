@@ -10,7 +10,7 @@
 
 - **Phase 1**: ✅ 3D Agent Constellation with Agent3DComponent, ConstellationLayoutService, AgentVisualizerService
 - **Phase 2**: ✅ Spatial navigation with SpatialNavigationService, AgentInteractionService, rich tooltips
-- **Phase 3**: ✅ Mock API system at ws://localhost:3001 with 8 realistic agents
+- **Phase 3**: ✅ Mock API system at ws://localhost:3000 with 8 realistic agents
 
 ## Task 4.1: Agent State Visual Effects (2 days)
 
@@ -22,7 +22,7 @@
 
 **Responsibilities**:
 
-- ✅ WebSocket integration with Mock API at ws://localhost:3001
+- ✅ WebSocket integration with Mock API at ws://localhost:3000
 - ✅ Coordinate all visual effects based on agent state updates
 - ✅ Manage effect lifecycle and cleanup
 - ✅ Performance monitoring and optimization
@@ -108,7 +108,7 @@
 
 ### Mock API Integration
 
-- **WebSocket Endpoint**: ws://localhost:3001
+- **WebSocket Endpoint**: ws://localhost:3000
 - **Message Types to Handle**:
   - `'memory_update'`: Triggers memory access visual effects
   - `'tool_execution'`: Drives progress ring animations

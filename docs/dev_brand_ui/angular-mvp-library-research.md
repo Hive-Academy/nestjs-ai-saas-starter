@@ -98,7 +98,7 @@ export class GestureService {
 ```typescript
 @Injectable()
 export class AgentCommunicationService {
-  private ws$ = new WebSocketSubject('ws://localhost:3001');
+  private ws$ = new WebSocketSubject('ws://localhost:3000');
 
   agentMessages$ = this.ws$.asObservable();
 

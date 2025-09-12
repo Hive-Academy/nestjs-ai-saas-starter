@@ -1,372 +1,451 @@
-# CLAUDE.md - @hive-academy/nestjs-chromadb
+# ChromaDB Module - User Manual
 
-## Business Domain & Purpose
+## Overview
 
-This library provides enterprise-grade vector database integration for semantic search and AI-powered applications. ChromaDB serves as the vector storage backend for embedding-based operations, enabling:
+The **@hive-academy/nestjs-chromadb** module provides enterprise-grade ChromaDB integration for NestJS applications, enabling semantic search, RAG systems, and AI-powered document management with advanced text processing and multiple embedding providers.
 
-- **Semantic Search**: Find similar documents based on meaning rather than keywords
-- **RAG Applications**: Retrieve relevant context for AI language models
-- **Document Clustering**: Group similar documents automatically
-- **Recommendation Systems**: Find related content based on embeddings
-- **Knowledge Management**: Store and query organizational knowledge bases
+**Key Features:**
 
-## Technical Architecture
+- **Multi-Provider Embeddings** - OpenAI, HuggingFace, Cohere, Custom providers
+- **Intelligent Text Processing** - Automatic chunking with relationship preservation
+- **Enterprise Error Handling** - Comprehensive error types and recovery
+- **Health Monitoring** - Built-in health indicators and diagnostics
+- **Batch Operations** - Efficient bulk processing with configurable batching
+- **Type Safety** - Full TypeScript support with Zod validation
 
-### Core Design Patterns
+## Quick Start
 
-1. **Service Orchestration Pattern**
-   - `ChromaDBService`: Main facade orchestrating collection, embedding, and admin services
-   - `CollectionService`: Manages ChromaDB collections lifecycle
-   - `EmbeddingService`: Handles multiple embedding providers via strategy pattern
-   - `ChromaAdminService`: Administrative operations and maintenance
+### Installation & Setup
 
-2. **Strategy Pattern for Embeddings**
-   ```typescript
-   BaseEmbeddingProvider (abstract)
-   ├── OpenAIEmbeddingProvider
-   ├── CohereEmbeddingProvider
-   ├── HuggingFaceEmbeddingProvider
-   └── CustomEmbeddingProvider
-   ```
-
-3. **Dependency Injection Pattern**
-   - Custom decorators: `@InjectChromaDB()`, `@InjectCollection()`
-   - Token-based injection for flexibility
-   - Async factory pattern for configuration
-
-### Module Structure
-
+```bash
+npm install @hive-academy/nestjs-chromadb
 ```
-nestjs-chromadb/
-├── decorators/          # DI and method decorators
-├── embeddings/          # Embedding provider implementations
-├── errors/              # Custom error classes
-├── health/              # Health check indicators
-├── interfaces/          # TypeScript interfaces
-├── services/            # Core service implementations
-├── utils/               # Utility functions
-└── validation/          # Type guards and validators
-```
-
-## Best Practices & Guidelines
-
-### 1. Collection Management
 
 ```typescript
-// GOOD: Use descriptive collection names with environment prefixes
-const collectionName = `${env}_user_documents`;
+import { Module } from '@nestjs/common';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
-// GOOD: Always sanitize metadata before storage
-const sanitized = sanitizeMetadata(userMetadata);
-
-// BAD: Don't create collections in service constructors
-// Collections should be created explicitly or via migrations
-```
-
-### 2. Embedding Strategy Selection
-
-```typescript
-// GOOD: Configure embedding provider based on use case
-ChromaDBModule.forRoot({
-  embedding: {
-    provider: 'openai',        // For production quality
-    model: 'text-embedding-3-small',  // Balance cost/performance
-    dimensions: 1536,          // Match model output
-  }
+@Module({
+  imports: [
+    ChromaDBModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 8000,
+        ssl: false,
+      },
+      embedding: {
+        provider: 'openai',
+        config: {
+          apiKey: process.env.OPENAI_API_KEY,
+          model: 'text-embedding-3-small',
+        },
+      },
+    }),
+  ],
 })
-
-// GOOD: Use custom embeddings for domain-specific models
-ChromaDBModule.forRoot({
-  embedding: {
-    provider: 'custom',
-    customFunction: async (texts) => {
-      // Your domain-specific embedding logic
-    }
-  }
-})
-```
-
-### 3. Batch Operations
-
-```typescript
-// GOOD: Use bulk operations for large datasets
-await chromaDB.addDocumentsBatch('collection', documents, {
-  batchSize: 100,  // Optimal batch size
-  parallel: true,   // Enable parallel processing
-});
-
-// BAD: Don't add documents one by one in a loop
-for (const doc of documents) {
-  await chromaDB.addDocument('collection', doc); // Inefficient
-}
-```
-
-### 4. Query Optimization
-
-```typescript
-// GOOD: Use metadata filtering to reduce search space
-const results = await chromaDB.queryDocuments('collection', {
-  queryTexts: ['search query'],
-  where: { category: 'technical', status: 'published' },
-  whereDocument: { $contains: 'NestJS' },
-  nResults: 10
-});
-
-// GOOD: Use embedding caching for repeated queries
-const cachedEmbedding = await embeddingService.getCachedEmbedding(query);
-```
-
-### 5. Error Handling
-
-```typescript
-// GOOD: Use specific error types
-try {
-  await chromaDB.createCollection(name);
-} catch (error) {
-  if (error instanceof ChromaDBCollectionError) {
-    // Handle collection-specific errors
-  } else if (error instanceof ChromaDBConnectionError) {
-    // Handle connection issues
-  }
-}
-
-// GOOD: Implement retry logic for transient failures
-@Injectable()
-export class DocumentService {
-  async addWithRetry(doc: Document, retries = 3) {
-    return retryAsync(
-      () => this.chromaDB.addDocument('collection', doc),
-      { attempts: retries, delay: 1000 }
-    );
-  }
-}
-```
-
-### 6. Metadata Management
-
-```typescript
-// GOOD: Define metadata schemas
-interface DocumentMetadata {
-  source: string;
-  timestamp: number;
-  author?: string;
-  tags?: string[];
-}
-
-// GOOD: Validate metadata before storage
-const validated = validateMetadataSchema(metadata, schema);
-
-// GOOD: Use metadata utilities
-const merged = mergeMetadata(defaultMeta, userMeta);
-const filtered = filterMetadata(metadata, allowedKeys);
+export class AppModule {}
 ```
 
 ## Core Services
 
-### ChromaDBService
-- **Purpose**: Main service facade for all ChromaDB operations
-- **Responsibilities**:
-  - Document CRUD operations
-  - Similarity search and querying
-  - Collection management delegation
-  - Embedding orchestration
+### ChromaDBService - Main Facade
 
-### CollectionService
-- **Purpose**: Manages ChromaDB collections lifecycle
-- **Responsibilities**:
-  - Collection creation/deletion
-  - Collection configuration
-  - Metadata schema management
-  - Collection statistics
+**Primary interface** for all ChromaDB operations:
 
-### EmbeddingService
-- **Purpose**: Handles text-to-vector conversions
-- **Responsibilities**:
-  - Provider strategy selection
-  - Embedding generation
-  - Batch embedding operations
-  - Embedding caching
-
-### ChromaAdminService
-- **Purpose**: Administrative and maintenance operations
-- **Responsibilities**:
-  - Database health checks
-  - Performance metrics
-  - Cleanup operations
-  - Migration support
-
-## Testing Strategies
-
-### Unit Testing
 ```typescript
-describe('ChromaDBService', () => {
-  let service: ChromaDBService;
-  let mockClient: jest.Mocked<ChromaClient>;
+// Document operations
+addDocument(collection: string, document: ChromaDocument): Promise<void>
+addDocuments(collection: string, documents: ChromaDocument[], options?: ChromaBulkOptions): Promise<void>
+updateDocument(collection: string, id: string, document: Partial<ChromaDocument>): Promise<void>
+deleteDocument(collection: string, id: string): Promise<void>
 
-  beforeEach(() => {
-    mockClient = createMockChromaClient();
-    service = new ChromaDBService(mockClient, ...);
-  });
+// Search operations
+searchDocuments(collection: string, queryTexts: string[], embeddings?: number[][], options?: ChromaSearchOptions): Promise<ChromaQueryResult>
+similaritySearch(collection: string, query: string, options?: { limit?: number }): Promise<ChromaQueryResult>
+getDocuments(collection: string, options?: ChromaSearchOptions): Promise<ChromaQueryResult>
 
-  it('should handle collection not found', async () => {
-    mockClient.getCollection.mockRejectedValue(new Error('Not found'));
-    await expect(service.queryDocuments('missing', {}))
-      .rejects.toThrow(ChromaDBCollectionError);
-  });
+// Semantic operations
+findSimilarDocuments(collection: string, documentId: string, limit?: number): Promise<ChromaQueryResult>
+searchWithFilters(collection: string, query: string, filters: ChromaFilters): Promise<ChromaQueryResult>
+```
+
+### CollectionService - Collection Management
+
+```typescript
+// Collection lifecycle
+createCollection(name: string, metadata?: ChromaMetadata): Promise<void>
+deleteCollection(name: string): Promise<void>
+collectionExists(name: string): Promise<boolean>
+listCollections(): Promise<readonly string[]>
+
+// Collection information
+getCollectionInfo(name: string): Promise<CollectionInfo>
+getCollectionCount(name: string): Promise<number>
+```
+
+### Complete Usage Example
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { ChromaDBService, ChromaDocument, ChromaBulkOptions } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class KnowledgeService {
+  constructor(private readonly chromaDB: ChromaDBService) {}
+
+  async indexKnowledgeBase(documents: Array<{ content: string; source: string }>) {
+    const chromaDocs: ChromaDocument[] = documents.map((doc, idx) => ({
+      id: `kb-${idx}`,
+      document: doc.content,
+      metadata: {
+        source: doc.source,
+        indexed_at: new Date().toISOString(),
+        type: 'knowledge',
+      },
+    }));
+
+    const bulkOptions: ChromaBulkOptions = {
+      batchSize: 100,
+      autoChunk: true,
+      chunkingStrategy: 'smart',
+      extractMetadata: true,
+      preserveChunkRelationships: true,
+    };
+
+    return this.chromaDB.addDocuments('knowledge', chromaDocs, bulkOptions);
+  }
+
+  async searchKnowledge(query: string, filters?: any) {
+    return this.chromaDB.searchDocuments('knowledge', [query], undefined, {
+      nResults: 10,
+      where: filters,
+      includeMetadata: true,
+      includeDistances: true,
+    });
+  }
+
+  async getRAGContext(query: string, maxTokens: number = 4000) {
+    const results = await this.chromaDB.similaritySearch('knowledge', query, {
+      limit: 15,
+    });
+
+    // Truncate to token limit for RAG context
+    return this.truncateToTokenLimit(results, maxTokens);
+  }
+}
+```
+
+## Configuration
+
+### Basic Configuration
+
+```typescript
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+    ssl: false,
+    timeout: 30000,
+    retries: 3,
+  },
+  embedding: {
+    provider: 'openai',
+    config: {
+      apiKey: process.env.OPENAI_API_KEY,
+      model: 'text-embedding-3-small',
+      dimensions: 1536,
+    },
+  },
+  defaultCollection: 'documents',
+  batchSize: 100,
 });
 ```
 
-### Integration Testing
-```typescript
-// Test with real ChromaDB instance
-describe('ChromaDB Integration', () => {
-  let module: TestingModule;
+### Async Configuration
 
-  beforeAll(async () => {
-    module = await Test.createTestingModule({
+```typescript
+ChromaDBModule.forRootAsync({
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => ({
+    connection: {
+      host: configService.get('CHROMA_HOST', 'localhost'),
+      port: configService.get('CHROMA_PORT', 8000),
+    },
+    embedding: {
+      provider: configService.get('EMBEDDING_PROVIDER', 'openai'),
+      config: {
+        apiKey: configService.get('OPENAI_API_KEY'),
+        model: configService.get('EMBEDDING_MODEL', 'text-embedding-3-small'),
+      },
+    },
+  }),
+  inject: [ConfigService],
+});
+```
+
+### Embedding Provider Configurations
+
+```typescript
+// OpenAI Configuration
+embedding: {
+  provider: 'openai',
+  config: {
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'text-embedding-3-small',
+    dimensions: 1536
+  }
+}
+
+// HuggingFace Configuration
+embedding: {
+  provider: 'huggingface',
+  config: {
+    apiKey: process.env.HUGGINGFACE_API_KEY,
+    model: 'sentence-transformers/all-MiniLM-L6-v2'
+  }
+}
+
+// Cohere Configuration
+embedding: {
+  provider: 'cohere',
+  config: {
+    apiKey: process.env.COHERE_API_KEY,
+    model: 'embed-english-v3.0'
+  }
+}
+```
+
+## Advanced Features
+
+### Intelligent Document Chunking
+
+```typescript
+// Smart chunking with relationship preservation
+const options: ChromaBulkOptions = {
+  autoChunk: true,
+  chunkingStrategy: 'smart', // 'recursive' | 'token' | 'semantic' | 'smart'
+  chunkSize: 1000,
+  chunkOverlap: 200,
+  preserveChunkRelationships: true,
+  extractMetadata: true,
+};
+
+await this.chromaDB.addDocuments('documents', docs, options);
+```
+
+### Advanced Search Operations
+
+```typescript
+// Hybrid search with multiple filters
+const results = await this.chromaDB.searchDocuments('documents', ['AI development'], undefined, {
+  nResults: 20,
+  where: {
+    category: 'technical',
+    status: 'published',
+    author: { $in: ['john', 'jane'] },
+  },
+  whereDocument: {
+    $and: [{ $contains: 'NestJS' }, { $not_contains: 'deprecated' }],
+  },
+  includeMetadata: true,
+  includeDistances: true,
+});
+
+// Semantic similarity with threshold filtering
+const similarDocs = await this.chromaDB.findSimilarDocuments('documents', 'doc-123', 10);
+const filteredResults = similarDocs.documents?.filter(
+  (_, idx) => (similarDocs.distances?.[0][idx] || 0) < 0.8 // similarity threshold
+);
+```
+
+### Metadata Management
+
+```typescript
+import { sanitizeMetadata, validateMetadata, validateMetadataSchema } from '@hive-academy/nestjs-chromadb';
+
+// Sanitize metadata for ChromaDB compatibility
+const sanitized = sanitizeMetadata({
+  tags: ['ai', 'ml'],
+  score: 0.95,
+  nested: { invalid: 'object' }, // Will be JSON stringified
+});
+
+// Validate with schema
+const schema = {
+  category: { type: 'string', required: true, enum: ['tech', 'business'] },
+  score: { type: 'number', min: 0, max: 1 },
+};
+const validation = validateMetadataSchema(metadata, schema);
+```
+
+## Dependency Injection
+
+```typescript
+import { InjectChromaDB, InjectChromaDBClient, InjectCollection } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class DocumentService {
+  constructor(@InjectChromaDB() private chromaDB: ChromaDBService, @InjectChromaDBClient() private client: ChromaApi, @InjectCollection('documents') private collection: Collection) {}
+}
+```
+
+## Core Interfaces
+
+### ChromaDocument Structure
+
+```typescript
+interface ChromaDocument {
+  readonly id: string;
+  readonly document?: string;
+  readonly metadata?: ChromaMetadata;
+  readonly embedding?: readonly number[];
+}
+
+interface ChromaMetadata {
+  [key: string]: string | number | boolean;
+}
+```
+
+### Search Options
+
+```typescript
+interface ChromaSearchOptions {
+  nResults?: number;
+  where?: Where;
+  whereDocument?: WhereDocument;
+  includeMetadata?: boolean;
+  includeDocuments?: boolean;
+  includeDistances?: boolean;
+}
+
+interface ChromaBulkOptions {
+  batchSize?: number;
+  autoChunk?: boolean;
+  chunkingStrategy?: 'recursive' | 'token' | 'semantic' | 'smart';
+  extractMetadata?: boolean;
+  preserveChunkRelationships?: boolean;
+}
+```
+
+## Health Monitoring
+
+```typescript
+import { ChromaDBHealthIndicator } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class HealthService {
+  constructor(private chromaHealth: ChromaDBHealthIndicator) {}
+
+  async checkHealth() {
+    const basic = await this.chromaHealth.isHealthy('chromadb');
+    const detailed = await this.chromaHealth.isHealthyDetailed('chromadb');
+
+    return {
+      basic,
+      detailed: {
+        connection: detailed.connection,
+        collections: detailed.collections,
+        embedding: detailed.embedding,
+      },
+    };
+  }
+}
+```
+
+## Error Handling
+
+```typescript
+import { ChromaDBConnectionError, ChromaDBCollectionError, ChromaDBEmbeddingNotConfiguredError, ChromaDBConfigurationError } from '@hive-academy/nestjs-chromadb';
+
+try {
+  await this.chromaDB.addDocument('collection', document);
+} catch (error) {
+  if (error instanceof ChromaDBConnectionError) {
+    // Handle connection issues
+    this.logger.error('ChromaDB connection failed', error.message);
+  } else if (error instanceof ChromaDBCollectionError) {
+    // Handle collection-specific errors
+    this.logger.error('Collection operation failed', error.message);
+  } else if (error instanceof ChromaDBEmbeddingNotConfiguredError) {
+    // Handle missing embedding configuration
+    this.logger.error('Embedding provider not configured', error.message);
+  }
+}
+```
+
+## Testing
+
+### Unit Testing
+
+```typescript
+import { Test } from '@nestjs/testing';
+import { ChromaDBModule, ChromaDBService } from '@hive-academy/nestjs-chromadb';
+
+describe('DocumentService', () => {
+  let service: DocumentService;
+  let chromaDB: ChromaDBService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
       imports: [
         ChromaDBModule.forRoot({
           connection: { host: 'localhost', port: 8000 },
-          testMode: true  // Use test database
-        })
-      ]
+          embedding: { provider: 'openai', config: { apiKey: 'test-key' } },
+        }),
+      ],
+      providers: [DocumentService],
     }).compile();
+
+    service = module.get<DocumentService>(DocumentService);
+    chromaDB = module.get<ChromaDBService>(ChromaDBService);
+  });
+
+  it('should index documents with metadata', async () => {
+    const documents = [{ content: 'Test document', source: 'test' }];
+
+    await service.indexKnowledgeBase(documents);
+    const results = await chromaDB.getCollectionCount('knowledge');
+
+    expect(results).toBeGreaterThan(0);
   });
 });
 ```
 
-## Performance Considerations
-
-1. **Embedding Caching**: Cache frequently used embeddings to reduce API calls
-2. **Batch Processing**: Process documents in batches of 100-500
-3. **Connection Pooling**: Reuse HTTP connections to ChromaDB
-4. **Metadata Indexing**: Keep metadata fields minimal and indexed
-5. **Async Operations**: Use async/await properly, avoid blocking operations
-6. **Memory Management**: Stream large datasets instead of loading in memory
-
-## Common Use Cases
-
-### 1. Document Search System
-```typescript
-@Injectable()
-export class SearchService {
-  async semanticSearch(query: string, filters?: SearchFilters) {
-    const results = await this.chromaDB.queryDocuments('docs', {
-      queryTexts: [query],
-      where: this.buildWhereClause(filters),
-      nResults: 20,
-      include: ['metadatas', 'documents', 'distances']
-    });
-    return this.rankResults(results);
-  }
-}
-```
-
-### 2. RAG Context Retrieval
-```typescript
-@Injectable()
-export class RAGService {
-  async getContext(query: string, maxTokens: number) {
-    const similar = await this.chromaDB.queryDocuments('knowledge', {
-      queryTexts: [query],
-      nResults: 10
-    });
-    return this.truncateToTokenLimit(similar, maxTokens);
-  }
-}
-```
-
-### 3. Document Deduplication
-```typescript
-@Injectable()
-export class DeduplicationService {
-  async findDuplicates(document: string, threshold = 0.95) {
-    const results = await this.chromaDB.queryDocuments('docs', {
-      queryTexts: [document],
-      where: { distance: { $lt: 1 - threshold } }
-    });
-    return results.filter(r => r.distance > threshold);
-  }
-}
-```
-
-## Security Considerations
-
-1. **API Key Management**: Store embedding API keys in secure vaults
-2. **Data Sanitization**: Always sanitize user-provided metadata
-3. **Access Control**: Implement collection-level access controls
-4. **Rate Limiting**: Implement rate limiting for embedding APIs
-5. **Data Encryption**: Enable TLS for ChromaDB connections
-6. **PII Handling**: Implement PII detection and masking
-
-## Integration Patterns
-
-### With LangGraph Workflows
-```typescript
-@Node('retrieve-context')
-async retrieveContext(state: WorkflowState) {
-  const context = await this.chromaDB.queryDocuments('knowledge', {
-    queryTexts: [state.query],
-    nResults: 5
-  });
-  return { ...state, context: context.documents };
-}
-```
-
-### With Neo4j Graph Database
-```typescript
-// Store embeddings in ChromaDB, relationships in Neo4j
-async storeDocument(doc: Document) {
-  // Store embedding in ChromaDB
-  const embedding = await this.chromaDB.addDocument('docs', doc);
-  
-  // Store relationships in Neo4j
-  await this.neo4j.run(`
-    CREATE (d:Document {id: $id, embeddingId: $embeddingId})
-  `, { id: doc.id, embeddingId: embedding.id });
-}
-```
-
-## Troubleshooting Guide
+## Troubleshooting
 
 ### Common Issues
 
-1. **Connection Refused**
-   - Check ChromaDB is running: `docker ps | grep chromadb`
-   - Verify port 8000 is accessible
-   - Check firewall rules
+#### 1. Connection Timeouts
 
-2. **Embedding Dimension Mismatch**
-   - Ensure collection dimension matches embedding model output
-   - Recreate collection if dimensions changed
+```typescript
+// Solution: Increase timeout values
+connection: {
+  host: 'localhost',
+  port: 8000,
+  timeout: 60000, // Increase timeout
+  retries: 5      // Increase retries
+}
+```
 
-3. **Slow Query Performance**
-   - Reduce result count (`nResults`)
-   - Add metadata filters to reduce search space
-   - Consider using approximate search
+#### 2. Embedding Rate Limits
 
-4. **Memory Issues with Large Datasets**
-   - Use batch processing
-   - Enable streaming for large results
-   - Increase Node.js memory: `--max-old-space-size=4096`
+```typescript
+// Solution: Implement batch processing with delays
+const options: ChromaBulkOptions = {
+  batchSize: 50, // Reduce batch size
+  delayBetweenBatches: 1000, // Add delay between batches
+};
+```
 
-## Development Guidelines
+#### 3. Memory Usage
 
-- Always use TypeScript strict mode
-- Implement proper error boundaries
-- Add comprehensive logging for debugging
-- Write unit tests for new features
-- Document breaking changes in CHANGELOG
-- Follow NestJS naming conventions
-- Use dependency injection for all services
-- Implement health checks for production
+```typescript
+// Solution: Process documents in smaller chunks
+const chunkSize = 100;
+for (let i = 0; i < documents.length; i += chunkSize) {
+  const chunk = documents.slice(i, i + chunkSize);
+  await this.chromaDB.addDocuments('collection', chunk);
+}
+```
 
-## Future Enhancements
-
-- Hybrid search (keyword + semantic)
-- Multi-modal embeddings (text + image)
-- Distributed ChromaDB cluster support
-- Advanced caching strategies
-- Real-time index updates
-- Custom similarity metrics
-- Embedding fine-tuning support
+This comprehensive module provides production-ready ChromaDB integration with advanced features for building sophisticated AI-powered applications with semantic search capabilities.

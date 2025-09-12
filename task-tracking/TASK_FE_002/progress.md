@@ -426,7 +426,7 @@
 **✅ Real WebSocket Connection**:
 
 - **Fixed WebSocket URL**: Now connects to `ws://localhost:3000/devbrand` (real TASK_API_001 backend)
-- **Removed Mock API**: Eliminated all `ws://localhost:3001` mock connections
+- **Removed Mock API**: Eliminated all `ws://localhost:3000` mock connections
 - **DevBrand Namespace**: Connects to actual TASK_API_001 WebSocket gateway `/devbrand`
 - **Real-time Communication**: Subscribes to agent-constellation room for live updates
 
@@ -450,7 +450,7 @@
 **✅ Complete Mock Code Removal**:
 
 - **AgentVisualizerService**: Removed all `mockMessage` objects and simulation code
-- **WebSocket Service**: Fixed to connect to port 3000 (not 3001 mock)
+- **WebSocket Service**: Fixed to connect to port 3000 (not 3000 mock)
 - **Agent Communication**: Handles real TASK_API_001 message formats
 - **State Effects**: Updated to work with actual backend data structures
 
@@ -488,7 +488,7 @@
 
 **Critical Success Metrics Achieved**:
 
-- ❌ **Mock API Completely Removed**: No `ws://localhost:3001`, no `mockMessage` objects, no simulated data
+- ❌ **Mock API Completely Removed**: No `ws://localhost:3000`, no `mockMessage` objects, no simulated data
 - ✅ **Real TASK_API_001 Integration**: Connected to actual DevBrand multi-agent system at `/devbrand`
 - ✅ **Authentic Agent Visualization**: Shows real GitHub analysis, content creation, brand strategy workflows
 - ✅ **Production Error Handling**: Robust connectivity management and graceful backend failure handling
@@ -496,7 +496,7 @@
 
 **Files Modified for Real Backend Integration**:
 
-- `WebSocketService`: Fixed connection URL from port 3001 to 3000
+- `WebSocketService`: Fixed connection URL from port 3000 to 3000
 - `AgentCommunicationService`: Added TASK_API_001 WebSocket event handlers and agent mapping
 - `AgentVisualizerService`: Removed all mock API code and updated for real data handling
 - `SpatialInterfaceComponent`: Enhanced with TASK_API_001 connectivity monitoring and error handling

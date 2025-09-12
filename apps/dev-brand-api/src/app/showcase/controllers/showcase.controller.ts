@@ -54,7 +54,7 @@ import type {
  * This is the API that makes developers and investors say "WOW!" 🤯
  */
 @ApiTags('🚀 Ultimate Showcase Platform')
-@Controller('api/v1/showcase')
+@Controller('v1/showcase')
 export class ShowcaseController {
   constructor(
     private readonly supervisorWorkflow: SupervisorShowcaseWorkflow,

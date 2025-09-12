@@ -1,22 +1,5 @@
 import { Module } from '@nestjs/common';
 
-// Import ALL 13 libraries for MAXIMUM utilization demonstration
-import { MemoryModule } from '@hive-academy/langgraph-memory';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
-import { HitlModule } from '@hive-academy/langgraph-hitl';
-import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
-import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { PlatformModule } from '@hive-academy/langgraph-platform';
-import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-
-// Import core libraries for types only
-
-// Import adapters
-import { ChromaVectorAdapter, Neo4jGraphAdapter } from '../adapters';
-
 // Import showcase workflows demonstrating ALL patterns
 import { SupervisorShowcaseWorkflow } from './workflows/supervisor-showcase.workflow';
 import { SwarmShowcaseWorkflow } from './workflows/swarm-showcase.workflow';
@@ -34,15 +17,19 @@ import { ShowcaseCoordinatorService } from './services/showcase-coordinator.serv
 import { ShowcaseMetricsService } from './services/showcase-metrics.service';
 import { ShowcaseStreamingService } from './services/showcase-streaming.service';
 
+// Import showcase tools - Demonstrates @Tool decorator system
+import { ShowcaseAnalysisTools } from './tools/showcase-analysis.tools';
+import { ShowcaseIntegrationTools } from './tools/showcase-integration.tools';
+
 // Import showcase controllers
 import { ShowcaseController } from './controllers/showcase.controller';
 
 /**
- * 🎯 SHOWCASE MODULE - ULTIMATE DEMONSTRATION PLATFORM
+ * 🎯 SHOWCASE MODULE - CLEAN DEMONSTRATION PLATFORM
  *
- * This module demonstrates 100% utilization of our sophisticated langgraph-modules
- * ecosystem. It serves as the definitive example of how to build enterprise-grade
- * AI applications using our advanced decorator-driven architecture.
+ * This module demonstrates the decorator-driven architecture for building
+ * enterprise-grade AI applications. It relies on the parent app.module.ts
+ * for all library configurations to avoid duplication and maintain consistency.
  *
  * 🚀 FEATURES DEMONSTRATED:
  *
@@ -60,101 +47,24 @@ import { ShowcaseController } from './controllers/showcase.controller';
  *    - @Approval for human-in-the-loop
  *
  * 3. Enterprise Capabilities:
- *    - State persistence via checkpoint adapters
- *    - Real-time streaming with WebSocket integration
+ *    - Tools registered via explicit registration (no discovery)
+ *    - State persistence via parent module checkpoint configuration
+ *    - Real-time streaming with parent WebSocket integration
  *    - Human-in-the-loop approval workflows
  *    - Advanced monitoring and metrics
- *    - Time-travel debugging and branching
- *    - Memory intelligence (vector + graph)
  *
- * 4. Production-Ready Patterns:
- *    - Dependency injection with factory patterns
- *    - Error handling and recovery
- *    - Performance monitoring
- *    - Scalable architecture
+ * 4. Clean Architecture Principles:
+ *    - No duplicated module imports
+ *    - Relies on parent app.module.ts configurations
+ *    - Single source of truth for library settings
+ *    - Focused on business logic, not infrastructure
  *
- * This is the platform that makes developers and investors say "WOW!"
+ * This demonstrates the power of our explicit registration system!
  */
 @Module({
   imports: [
-    // Memory system with hybrid intelligence
-    MemoryModule.forRoot({
-      collection: 'showcase_memory',
-      enableAutoSummarization: true,
-      chromadb: {
-        collection: 'showcase_memory',
-      },
-      adapters: {
-        vector: ChromaVectorAdapter,
-        graph: Neo4jGraphAdapter,
-      },
-    }),
-
-    // Checkpoint system for state persistence
-    LanggraphModulesCheckpointModule.forRoot({
-      checkpoint: {
-        savers: [
-          {
-            type: 'postgres',
-            enabled: true,
-            postgres: {
-              connectionString: `postgresql://${
-                process.env.NEO4J_USERNAME || 'neo4j'
-              }:${
-                process.env.NEO4J_PASSWORD || 'password'
-              }@localhost:5432/showcase_checkpoints`,
-            },
-          },
-        ],
-      },
-    }),
-
-    // Streaming for real-time communication
-    StreamingModule.forRoot({
-      websocket: {
-        enabled: true,
-        port: 3001,
-      },
-      defaultBufferSize: 1000,
-    }),
-
-    // Human-in-the-loop for approval workflows
-    HitlModule.forRoot({
-      defaultTimeout: 300000, // 5 minutes
-      confidenceThreshold: 0.7,
-    }),
-
-    // Functional API for declarative workflows
-    FunctionalApiModule.forRoot({
-      defaultTimeout: 60000,
-    }),
-
-    // Multi-agent coordination
-    MultiAgentModule.forRoot({
-      defaultLlm: {
-        provider: 'openai',
-        model: 'gpt-4',
-      },
-    }),
-
-    // Monitoring for production observability
-    MonitoringModule.forRoot({}),
-
-    // Platform utilities
-    PlatformModule.forRoot({}),
-
-    // Time-travel for debugging
-    TimeTravelModule.forRoot({}),
-
-    // Workflow engine
-    WorkflowEngineModule.forRoot({
-      cache: {
-        enabled: true,
-        maxSize: 100,
-        ttl: 3600000, // 1 hour
-      },
-      debug: false,
-    }),
+    // No module imports - relies on parent app.module.ts configuration
+    // This ensures no duplication and maintains consistency
   ],
   providers: [
     // Showcase workflows demonstrating all patterns
@@ -172,6 +82,10 @@ import { ShowcaseController } from './controllers/showcase.controller';
     ShowcaseCoordinatorService,
     ShowcaseMetricsService,
     ShowcaseStreamingService,
+
+    // Showcase tools - Demonstrates @Tool decorator capabilities
+    ShowcaseAnalysisTools,
+    ShowcaseIntegrationTools,
   ],
   controllers: [ShowcaseController],
   exports: [
@@ -180,6 +94,8 @@ import { ShowcaseController } from './controllers/showcase.controller';
     SwarmShowcaseWorkflow,
     ShowcaseCoordinatorService,
     ShowcaseMetricsService,
+    ShowcaseAnalysisTools,
+    ShowcaseIntegrationTools,
   ],
 })
 export class ShowcaseModule {}

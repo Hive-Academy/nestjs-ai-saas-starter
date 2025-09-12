@@ -5,13 +5,10 @@ import * as THREE from 'three';
  * Provides high-performance GPU-based visual effects for real-time feedback
  */
 
+export type ShaderUniform<T = any> = { value: T };
+
 export interface ShaderUniforms {
-  time: { value: number };
-  resolution: { value: THREE.Vector2 };
-  color: { value: THREE.Color };
-  intensity: { value: number };
-  progress: { value: number };
-  [key: string]: { value: unknown };
+  [key: string]: ShaderUniform;
 }
 
 /**
@@ -447,7 +444,7 @@ export class AgentShaderFactory {
   static createMemoryAccessMaterial(
     uniforms: Partial<ShaderUniforms> = {}
   ): THREE.ShaderMaterial {
-    const defaultUniforms: ShaderUniforms = {
+    const defaultUniforms = {
       time: { value: 0 },
       intensity: { value: 1.0 },
       color: { value: new THREE.Color(0x00ff00) },

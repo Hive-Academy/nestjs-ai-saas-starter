@@ -11,8 +11,8 @@ export { LlmProviderService } from './lib/services/llm-provider.service';
 export { NetworkManagerService } from './lib/services/network-manager.service';
 export { AgentExamplesService } from './lib/services/agent-examples.service';
 
-// Tools System (moved from main library)
-export { ToolDiscoveryService } from './lib/tools/tool-discovery.service';
+// Tools System (explicit registration replaces discovery)
+export { ToolRegistrationService } from './lib/services/tool-registration.service';
 export { ToolRegistryService } from './lib/tools/tool-registry.service';
 export { ToolBuilderService } from './lib/tools/tool-builder.service';
 export { ToolNodeService } from './lib/tools/tool-node.service';

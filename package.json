@@ -11,7 +11,7 @@
     "dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
     "docker:prod": "docker compose -f docker-compose.yml up -d",
     "build:libs": "nx run-many -t build --exclude dev-brand-api,dev-brand-ui",
-    "update-libs": "node scripts/update-local-libs.js",
+    "update:libs": "node scripts/update-local-libs.js",
     "publish:dry-run": "npm run build:libs && nx run-many -t publish --dry-run --exclude dev-brand-api,dev-brand-ui",
     "publish:libs": "npm run build:libs && nx run-many -t publish --exclude dev-brand-api,dev-brand-ui ",
     "version:libs": "nx release version",

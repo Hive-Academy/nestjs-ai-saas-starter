@@ -1,7 +1,15 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Subject, Subscription, filter, merge } from 'rxjs';
-import { StreamUpdate, StreamEventType } from '../interfaces/streaming.interface';
+import {
+  StreamUpdate,
+  StreamEventType,
+} from '../interfaces/streaming.interface';
 import { TokenStreamingService } from './token-streaming.service';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
@@ -41,11 +49,11 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   private readonly rooms = new Map<string, StreamingRoom>();
   private readonly activeSubscriptions = new Set<Subscription>();
   private cleanupInterval?: NodeJS.Timeout;
+  private gatewayInstance?: any; // StreamingWebSocketGateway instance
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
-    private readonly tokenStreamingService?: TokenStreamingService,
-    // WorkflowStreamService removed - now in workflow-engine module
+    private readonly tokenStreamingService?: TokenStreamingService // WorkflowStreamService removed - now in workflow-engine module
   ) {}
 
   /**
@@ -75,7 +83,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
       executionId?: string;
       rooms?: string[];
       metadata?: Record<string, unknown>;
-    } = {},
+    } = {}
   ): Subject<StreamUpdate> {
     if (this.clients.has(clientId)) {
       this.logger.warn(`Client ${clientId} already registered`);
@@ -99,14 +107,18 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Join specified rooms
-    options.rooms?.forEach(roomId => {
+    options.rooms?.forEach((roomId) => {
       this.joinRoom(clientId, roomId);
     });
 
     // Setup client stream integration
     this.setupClientStreamIntegration(client);
 
-    this.logger.log(`Registered client ${clientId} with rooms: [${Array.from(client.rooms).join(', ')}]`);
+    this.logger.log(
+      `Registered client ${clientId} with rooms: [${Array.from(
+        client.rooms
+      ).join(', ')}]`
+    );
     return client.subject;
   }
 
@@ -138,7 +150,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Leave all rooms
-    client.rooms.forEach(roomId => {
+    client.rooms.forEach((roomId) => {
       this.leaveRoom(clientId, roomId);
     });
 
@@ -149,36 +161,30 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   /**
    * Subscribe client to specific event types
    */
-  subscribeToEvents(
-    clientId: string,
-    eventTypes: StreamEventType[],
-  ): void {
+  subscribeToEvents(clientId: string, eventTypes: StreamEventType[]): void {
     const client = this.clients.get(clientId);
     if (!client) {
       throw new Error(`Client ${clientId} not found`);
     }
 
-    eventTypes.forEach(type => client.subscriptions.add(type));
+    eventTypes.forEach((type) => client.subscriptions.add(type));
     this.logger.debug(
-      `Client ${clientId} subscribed to: ${eventTypes.join(', ')}`,
+      `Client ${clientId} subscribed to: ${eventTypes.join(', ')}`
     );
   }
 
   /**
    * Unsubscribe client from event types
    */
-  unsubscribeFromEvents(
-    clientId: string,
-    eventTypes: StreamEventType[],
-  ): void {
+  unsubscribeFromEvents(clientId: string, eventTypes: StreamEventType[]): void {
     const client = this.clients.get(clientId);
     if (!client) {
       return;
     }
 
-    eventTypes.forEach(type => client.subscriptions.delete(type));
+    eventTypes.forEach((type) => client.subscriptions.delete(type));
     this.logger.debug(
-      `Client ${clientId} unsubscribed from: ${eventTypes.join(', ')}`,
+      `Client ${clientId} unsubscribed from: ${eventTypes.join(', ')}`
     );
   }
 
@@ -204,23 +210,37 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Register WebSocket gateway instance for integration
+   */
+  registerGateway(gateway: any): void {
+    this.gatewayInstance = gateway;
+    this.logger.debug('WebSocket gateway registered with bridge service');
+  }
+
+  /**
    * Broadcast update to all clients watching an execution
    */
-  broadcastToExecution(
-    executionId: string,
-    update: StreamUpdate,
-  ): void {
+  broadcastToExecution(executionId: string, update: StreamUpdate): void {
     const clientIds = this.executionToClients.get(executionId);
     if (!clientIds) {
       return;
     }
 
-    clientIds.forEach(clientId => {
+    // Broadcast to registered clients (existing functionality)
+    clientIds.forEach((clientId) => {
       const client = this.clients.get(clientId);
       if (client && this.shouldSendToClient(client, update)) {
         client.subject.next(update);
       }
     });
+
+    // Also broadcast through WebSocket gateway if available
+    if (
+      this.gatewayInstance &&
+      typeof this.gatewayInstance.broadcastStreamUpdate === 'function'
+    ) {
+      this.gatewayInstance.broadcastStreamUpdate(update);
+    }
   }
 
   /**
@@ -236,10 +256,14 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   /**
    * Join a streaming room
    */
-  joinRoom(clientId: string, roomId: string, config?: {
-    requireAuth?: boolean;
-    metadata?: Record<string, unknown>;
-  }): void {
+  joinRoom(
+    clientId: string,
+    roomId: string,
+    config?: {
+      requireAuth?: boolean;
+      metadata?: Record<string, unknown>;
+    }
+  ): void {
     const client = this.clients.get(clientId);
     if (!client) {
       throw new Error(`Client ${clientId} not found`);
@@ -321,7 +345,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    room.clients.forEach(clientId => {
+    room.clients.forEach((clientId) => {
       this.sendToClient(clientId, update);
     });
 
@@ -333,7 +357,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
    */
   private shouldSendToClient(
     client: WebSocketClient,
-    update: StreamUpdate,
+    update: StreamUpdate
   ): boolean {
     // Update client activity
     client.lastActivity = new Date();
@@ -352,7 +376,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
    */
   @OnEvent('stream.processed')
   handleStreamProcessed(data: any): void {
-    const {executionId} = data;
+    const { executionId } = data;
     if (!executionId) {
       return;
     }
@@ -576,7 +600,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     clientCount: number;
     lastActivity: Date;
   }> {
-    return Array.from(this.rooms.values()).map(room => ({
+    return Array.from(this.rooms.values()).map((room) => ({
       id: room.id,
       clientCount: room.clients.size,
       lastActivity: room.lastActivity,
@@ -594,8 +618,12 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     const tokenSubscription = this.tokenStreamingService
       .getGlobalTokenStream()
       .subscribe({
-        next: (update) => { this.handleTokenStreamUpdate(update); },
-        error: (error) => { this.logger.error('Token stream integration error:', error); },
+        next: (update) => {
+          this.handleTokenStreamUpdate(update);
+        },
+        error: (error) => {
+          this.logger.error('Token stream integration error:', error);
+        },
       });
 
     this.activeSubscriptions.add(tokenSubscription);
@@ -632,14 +660,20 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     const streams: any[] = [];
 
     // Add token stream if available and client is interested
-    if (this.tokenStreamingService && client.subscriptions.has(StreamEventType.TOKEN)) {
+    if (
+      this.tokenStreamingService &&
+      client.subscriptions.has(StreamEventType.TOKEN)
+    ) {
       streams.push(
-        this.tokenStreamingService.getGlobalTokenStream().pipe(
-          filter(update =>
-            !client.executionId ||
-            update.metadata?.executionId === client.executionId
+        this.tokenStreamingService
+          .getGlobalTokenStream()
+          .pipe(
+            filter(
+              (update) =>
+                !client.executionId ||
+                update.metadata?.executionId === client.executionId
+            )
           )
-        )
       );
     }
 
@@ -695,7 +729,7 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    disconnected.forEach(clientId => {
+    disconnected.forEach((clientId) => {
       this.unregisterClient(clientId);
     });
 
@@ -713,12 +747,15 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     const staleRooms: string[] = [];
 
     this.rooms.forEach((room, roomId) => {
-      if (room.clients.size === 0 && now - room.lastActivity.getTime() > staleThreshold) {
+      if (
+        room.clients.size === 0 &&
+        now - room.lastActivity.getTime() > staleThreshold
+      ) {
         staleRooms.push(roomId);
       }
     });
 
-    staleRooms.forEach(roomId => {
+    staleRooms.forEach((roomId) => {
       this.rooms.delete(roomId);
     });
 
@@ -738,12 +775,12 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
 
     // Unregister all clients
     const clientIds = Array.from(this.clients.keys());
-    clientIds.forEach(clientId => {
+    clientIds.forEach((clientId) => {
       this.unregisterClient(clientId);
     });
 
     // Unsubscribe from all subscriptions
-    this.activeSubscriptions.forEach(subscription => {
+    this.activeSubscriptions.forEach((subscription) => {
       subscription.unsubscribe();
     });
     this.activeSubscriptions.clear();

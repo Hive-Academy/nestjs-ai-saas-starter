@@ -21,7 +21,6 @@ import {
 import { AgentCommunicationService } from '../../../core/services/agent-communication.service';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
 import { AgentStateEffects } from '../effects/agent-state-effects';
-import { filter } from 'rxjs/operators';
 
 export interface AgentVisualizerConfig {
   sceneId: string;

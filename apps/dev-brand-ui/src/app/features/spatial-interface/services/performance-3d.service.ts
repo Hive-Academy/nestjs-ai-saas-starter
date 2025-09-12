@@ -70,7 +70,6 @@ export class Performance3DService {
   // LOD system
   private lodLevels: Map<string, LODLevel[]> = new Map();
   private currentLOD: Map<string, number> = new Map();
-  private lodUpdateThreshold = 100; // ms
 
   // Instanced rendering
   private instancedGroups: Map<string, InstancedRenderGroup> = new Map();
@@ -78,8 +77,6 @@ export class Performance3DService {
 
   // Performance monitoring
   private frameCount = 0;
-  private lastFrameTime = 0;
-  private lastLODUpdate = 0;
   private renderer: THREE.WebGLRenderer | null = null;
 
   // Memory management
@@ -278,7 +275,7 @@ export class Performance3DService {
    */
   updatePerformanceMetrics(deltaTime: number): void {
     this.frameCount++;
-    this.lastFrameTime = deltaTime;
+    // this._lastFrameTime = deltaTime;
 
     // Calculate FPS
     const fps = 1000 / deltaTime;
@@ -473,7 +470,7 @@ export class Performance3DService {
   private initializeLODSystem(): void {
     // LOD levels will be created when agents are added
     this.currentLOD.clear();
-    this.lastLODUpdate = performance.now();
+    // this._lastLODUpdate = performance.now();
   }
 
   /**
@@ -568,7 +565,7 @@ export class Performance3DService {
       // Convert complex shader to basic material
       return new THREE.MeshBasicMaterial({
         color:
-          (baseMaterial.uniforms.baseColor?.value as THREE.Color) ||
+          (baseMaterial.uniforms['baseColor']?.value as THREE.Color) ||
           new THREE.Color(0x888888),
         transparent: true,
         opacity: 0.8 * complexity,
