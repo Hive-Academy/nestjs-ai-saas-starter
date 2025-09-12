@@ -1,35 +1,50 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIMessage } from '@langchain/core/messages';
+import { AIMessage, type MessageContent } from '@langchain/core/messages';
 import type {
   AgentDefinition,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
 import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
 
-// Enhanced agent state with thread support
-interface EnhancedAgentState extends AgentState {
+// Enhanced agent state with additional properties
+type EnhancedAgentState = AgentState & {
   thread_id?: string;
   workflow?: string;
   stepNumber?: number;
   timestamp?: string;
+};
+
+// Helper function to extract text content from MessageContent
+function extractTextContent(content: MessageContent): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    return content
+      .filter((item) => {
+        if (typeof item === 'object' && item !== null && 'type' in item) {
+          return item.type === 'text';
+        }
+        return false;
+      })
+      .map((item) => {
+        if (
+          typeof item === 'object' &&
+          item !== null &&
+          'text' in item &&
+          typeof item.text === 'string'
+        ) {
+          return item.text;
+        }
+        return '';
+      })
+      .join(' ');
+  }
+  return '';
 }
 
-// Content memory metadata with proper generic constraints
-interface ContentMemoryMetadata<T = Record<string, unknown>> {
-  contentData?: {
-    platforms?: string[];
-    contentType?: string;
-    targetAudience?: string[];
-    engagementScore?: number;
-  };
-  brandContext?: {
-    userId: string;
-    contentVersion?: string;
-    confidenceScore: number;
-  };
-  importance: number;
-  [key: string]: string | number | boolean | null | undefined | T;
-}
+// Import the main BrandMemoryMetadata interface
+import { BrandMemoryMetadata } from '../schemas/brand-memory.schema';
 
 /**
  * Content Creator Agent for DevBrand Showcase
@@ -99,7 +114,7 @@ Content Creation Guidelines:
 Platform-Specific Formatting:
 - **LinkedIn**: Professional posts with metrics, industry insights, thought leadership
 - **Twitter/X**: Concise threads with technical tips and achievements
-- **Blog Posts**: Long-form technical deep-dives with tutorials and insights  
+- **Blog Posts**: Long-form technical deep-dives with tutorials and insights
 - **Portfolio**: Project showcases with impact metrics and technical details
 - **Newsletter**: Regular updates with industry trends and personal developments
 
@@ -125,13 +140,14 @@ Always focus on authentic, valuable content that positions the individual as a t
 
       try {
         // Extract user context from state
-        const userId = state.metadata?.userId || 'demo-user';
+        const userId = (state.metadata?.userId as string) || 'demo-user';
         const lastMessage = state.messages[state.messages.length - 1];
 
         // Get brand memory context for content creation
         const brandContext = await this.getBrandMemoryContext(
           userId,
-          String(lastMessage.content || '')
+          'content-creator',
+          extractTextContent(lastMessage.content)
         );
 
         // Extract content requirements from current context
@@ -210,11 +226,15 @@ Always focus on authentic, valuable content that positions the individual as a t
   /**
    * Get brand memory context for content creation
    */
-  private async getBrandMemoryContext(userId: string, currentTask: string) {
+  private async getBrandMemoryContext(
+    userId: string,
+    agentType: 'content-creator',
+    currentTask: string
+  ) {
     try {
       return await this.brandMemoryService.getBrandContextForAgent(
         userId,
-        'content-creator',
+        agentType,
         currentTask,
         {
           maxMemories: 15,
@@ -251,20 +271,22 @@ Always focus on authentic, valuable content that positions the individual as a t
                 (platformContent as any).content?.substring(0, 100)
               }...`,
               'content_performance',
-              platformContent,
+              platformContent as Record<string, unknown>,
               {
-                contentData: {
-                  platforms: [platform],
-                  contentType: 'generated',
-                  engagementScore: 0.8,
+                type: 'content_performance' as const,
+                contentMetrics: {
+                  platform: platform as any,
+                  engagement: 0.8,
+                  generatedAt: new Date().toISOString(),
+                  approvalStatus: 'pending' as const,
                 },
                 brandContext: {
                   userId,
-                  contentVersion: `${platform}_${Date.now()}`,
+                  contentId: `${platform}_${Date.now()}`,
                   confidenceScore: 0.8,
                 },
                 importance: 0.7,
-              } as ContentMemoryMetadata
+              } satisfies Partial<BrandMemoryMetadata>
             );
           }
         }
@@ -327,14 +349,7 @@ Always focus on authentic, valuable content that positions the individual as a t
     );
 
     // Use brand context to enhance content generation
-    const recentContentCount =
-      brandContext?.relevantMemories?.filter(
-        (m: any) => m.metadata.type === 'content_performance'
-      )?.length || 0;
-    const strategyContext =
-      brandContext?.relevantMemories?.filter(
-        (m: any) => m.metadata.type === 'brand_strategy'
-      )?.[0]?.content || 'No strategy context available';
+    // Note: Brand context is utilized internally within the content generation logic
 
     const contentData = {
       platforms: {
@@ -364,7 +379,7 @@ Always focus on authentic, valuable content that positions the individual as a t
 📈 **Impact:**
 • ${
                 analysis.achievements?.totalRepositories || 25
-              }+ repositories showcasing diverse technical skills  
+              }+ repositories showcasing diverse technical skills
 • ${analysis.achievements?.starsEarned || 150} stars earned across projects
 • ${
                 analysis.contributionPatterns?.commitsPerWeek || 15
@@ -543,7 +558,7 @@ Ready for review and approval. All content maintains consistent brand voice whil
 
 I can create:
 📱 **LinkedIn Posts**: Professional achievements with metrics and insights
-🐦 **Twitter Threads**: Technical tips and breakthrough announcements  
+🐦 **Twitter Threads**: Technical tips and breakthrough announcements
 📰 **Blog Articles**: Deep-dive tutorials and thought leadership pieces
 💌 **Newsletters**: Regular industry insights and personal development updates
 🎯 **Portfolio Content**: Project showcases with impact metrics

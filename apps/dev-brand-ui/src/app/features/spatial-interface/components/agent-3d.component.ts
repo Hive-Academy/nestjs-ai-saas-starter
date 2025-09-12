@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { AgentState } from '../../../core/interfaces/agent-state.interface';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
+import { AgentShaderFactory } from '../shaders/agent-state.shader';
 
 export interface Agent3DConfig {
   geometryType: 'sphere' | 'octahedron' | 'dodecahedron' | 'icosahedron';
@@ -51,6 +52,10 @@ export class Agent3DComponent implements OnInit, OnDestroy {
 
   // Animation properties
   private clock = new THREE.Clock();
+
+  // Enhanced materials for state visualization
+  private enhancedCoreMaterial: THREE.ShaderMaterial | null = null;
+  private memoryActivityVector = new THREE.Vector3(0, 0, 0);
 
   // Component state
   private readonly isInitialized = signal(false);
@@ -156,7 +161,9 @@ export class Agent3DComponent implements OnInit, OnDestroy {
   private initializeAgent3D(): void {
     const sceneInstance = this.threeService.getScene(this.sceneId);
     if (!sceneInstance) {
-      console.error(`Scene ${this.sceneId} not found for agent ${this.agent.id}`);
+      console.error(
+        `Scene ${this.sceneId} not found for agent ${this.agent.id}`
+      );
       return;
     }
 
@@ -214,14 +221,16 @@ export class Agent3DComponent implements OnInit, OnDestroy {
         geometry = new THREE.SphereGeometry(config.size, 32, 16);
     }
 
-    const material = new THREE.MeshPhongMaterial({
-      color: config.baseColor,
-      shininess: 100,
-      transparent: true,
-      opacity: 0.9,
-    });
+    // Create enhanced shader material for better visual feedback
+    this.enhancedCoreMaterial =
+      AgentShaderFactory.createEnhancedAgentCoreMaterial({
+        baseColor: { value: new THREE.Color(config.baseColor) },
+        opacity: { value: 0.9 },
+        agentStatus: { value: this.getStatusIndex(this.agent.status) },
+        memoryActivity: { value: this.memoryActivityVector },
+      });
 
-    this.coreMesh = new THREE.Mesh(geometry, material);
+    this.coreMesh = new THREE.Mesh(geometry, this.enhancedCoreMaterial);
     this.coreMesh.castShadow = true;
     this.coreMesh.receiveShadow = true;
 
@@ -236,7 +245,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
 
     const config = this.agentConfig();
     const glowGeometry = this.coreMesh.geometry.clone();
-    
+
     const glowMaterial = new THREE.ShaderMaterial({
       uniforms: {
         time: { value: 0 },
@@ -283,8 +292,12 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     if (!this.agentMesh) return;
 
     const config = this.agentConfig();
-    const ringGeometry = new THREE.RingGeometry(config.size * 1.5, config.size * 1.7, 32);
-    
+    const ringGeometry = new THREE.RingGeometry(
+      config.size * 1.5,
+      config.size * 1.7,
+      32
+    );
+
     const ringMaterial = new THREE.MeshBasicMaterial({
       color: config.baseColor,
       transparent: true,
@@ -310,7 +323,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      
+
       // Random positions around the agent
       positions[i3] = (Math.random() - 0.5) * 4;
       positions[i3 + 1] = (Math.random() - 0.5) * 4;
@@ -322,8 +335,14 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     }
 
     const particleGeometry = new THREE.BufferGeometry();
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particleGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(positions, 3)
+    );
+    particleGeometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(colors, 3)
+    );
 
     const particleMaterial = new THREE.PointsMaterial({
       size: 0.02,
@@ -343,20 +362,22 @@ export class Agent3DComponent implements OnInit, OnDestroy {
    */
   private updateVisualEffects(): void {
     const effects = this.statusEffects();
-    
-    if (this.coreMesh?.material instanceof THREE.MeshPhongMaterial) {
-      this.coreMesh.material.opacity = effects.coreOpacity;
-      
-      // Handle error state color
-      if (effects.errorColor) {
-        this.coreMesh.material.color.setHex(parseInt(effects.errorColor.replace('#', ''), 16));
-      } else {
-        this.coreMesh.material.color.setHex(parseInt(this.agentConfig().baseColor.replace('#', ''), 16));
-      }
+
+    // Update enhanced shader material
+    if (this.enhancedCoreMaterial) {
+      this.enhancedCoreMaterial.uniforms['opacity'].value = effects.coreOpacity;
+      this.enhancedCoreMaterial.uniforms['agentStatus'].value =
+        this.getStatusIndex(this.agent.status);
+
+      // Update memory activity indicators
+      this.updateMemoryActivity();
+      this.enhancedCoreMaterial.uniforms['memoryActivity'].value =
+        this.memoryActivityVector;
     }
 
     if (this.glowMesh?.material instanceof THREE.ShaderMaterial) {
-      this.glowMesh.material.uniforms['intensity'].value = effects.glowIntensity;
+      this.glowMesh.material.uniforms['intensity'].value =
+        effects.glowIntensity;
     }
 
     if (this.particleSystem) {
@@ -377,6 +398,11 @@ export class Agent3DComponent implements OnInit, OnDestroy {
 
     const delta = this.clock.getDelta();
     const elapsed = this.clock.getElapsedTime();
+
+    // Update enhanced core material
+    if (this.enhancedCoreMaterial) {
+      this.enhancedCoreMaterial.uniforms['time'].value = elapsed;
+    }
 
     // Update glow animation
     if (this.glowMesh?.material instanceof THREE.ShaderMaterial) {
@@ -406,16 +432,17 @@ export class Agent3DComponent implements OnInit, OnDestroy {
   private animateParticles(elapsed: number): void {
     if (!this.particleSystem) return;
 
-    const positions = this.particleSystem.geometry.attributes['position'].array as Float32Array;
+    const positions = this.particleSystem.geometry.attributes['position']
+      .array as Float32Array;
     const particleCount = positions.length / 3;
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      
+
       // Orbital motion around the agent
       const radius = 2 + Math.sin(elapsed + i) * 0.5;
       const angle = elapsed * 0.5 + i * 0.1;
-      
+
       positions[i3] = Math.cos(angle) * radius;
       positions[i3 + 1] = Math.sin(elapsed + i) * 0.5;
       positions[i3 + 2] = Math.sin(angle) * radius;
@@ -429,10 +456,10 @@ export class Agent3DComponent implements OnInit, OnDestroy {
    */
   public onHover(isHovering: boolean): void {
     this.isHovered.set(isHovering);
-    
-    if (this.coreMesh?.material instanceof THREE.MeshPhongMaterial) {
+
+    if (this.enhancedCoreMaterial) {
       const targetOpacity = isHovering ? 1.0 : this.statusEffects().coreOpacity;
-      this.coreMesh.material.opacity = targetOpacity;
+      this.enhancedCoreMaterial.uniforms['opacity'].value = targetOpacity;
     }
 
     if (this.glowMesh?.material instanceof THREE.ShaderMaterial) {
@@ -447,17 +474,21 @@ export class Agent3DComponent implements OnInit, OnDestroy {
    */
   public onSelect(isSelected: boolean): void {
     this.isSelected.set(isSelected);
-    
+
     if (this.ringMesh?.material instanceof THREE.MeshBasicMaterial) {
       this.ringMesh.material.opacity = isSelected ? 1.0 : 0.6;
-      this.ringMesh.userData['rotationSpeed'] = isSelected ? 2.0 : this.statusEffects().ringSpeed;
+      this.ringMesh.userData['rotationSpeed'] = isSelected
+        ? 2.0
+        : this.statusEffects().ringSpeed;
     }
   }
 
   /**
    * Get geometry type based on agent type
    */
-  private getGeometryTypeByAgentType(type: AgentState['type']): Agent3DConfig['geometryType'] {
+  private getGeometryTypeByAgentType(
+    type: AgentState['type']
+  ): Agent3DConfig['geometryType'] {
     switch (type) {
       case 'coordinator':
         return 'icosahedron';
@@ -487,6 +518,76 @@ export class Agent3DComponent implements OnInit, OnDestroy {
         return 0.5;
       default:
         return 0.4;
+    }
+  }
+
+  /**
+   * Get status index for shader uniforms
+   */
+  private getStatusIndex(status: AgentState['status']): number {
+    switch (status) {
+      case 'idle':
+        return 0;
+      case 'thinking':
+        return 1;
+      case 'executing':
+        return 2;
+      case 'waiting':
+        return 3;
+      case 'error':
+        return 4;
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Update memory activity indicators for shader
+   */
+  private updateMemoryActivity(): void {
+    // Reset memory activity
+    this.memoryActivityVector.set(0, 0, 0);
+
+    // Check for current tool executions that might indicate memory access
+    this.agent.currentTools.forEach((tool) => {
+      if (tool.status === 'running') {
+        // Simulate memory activity based on tool type
+        if (
+          tool.toolName.toLowerCase().includes('search') ||
+          tool.toolName.toLowerCase().includes('vector')
+        ) {
+          this.memoryActivityVector.x = Math.max(
+            this.memoryActivityVector.x,
+            tool.progress / 100
+          ); // ChromaDB
+        }
+        if (
+          tool.toolName.toLowerCase().includes('graph') ||
+          tool.toolName.toLowerCase().includes('relationship')
+        ) {
+          this.memoryActivityVector.y = Math.max(
+            this.memoryActivityVector.y,
+            tool.progress / 100
+          ); // Neo4j
+        }
+        if (
+          tool.toolName.toLowerCase().includes('workflow') ||
+          tool.toolName.toLowerCase().includes('agent')
+        ) {
+          this.memoryActivityVector.z = Math.max(
+            this.memoryActivityVector.z,
+            tool.progress / 100
+          ); // Workflow
+        }
+      }
+    });
+
+    // Add status-based memory activity
+    if (this.agent.status === 'thinking') {
+      this.memoryActivityVector.z = Math.max(this.memoryActivityVector.z, 0.6);
+    } else if (this.agent.status === 'executing') {
+      this.memoryActivityVector.x = Math.max(this.memoryActivityVector.x, 0.8);
+      this.memoryActivityVector.y = Math.max(this.memoryActivityVector.y, 0.6);
     }
   }
 
@@ -523,5 +624,6 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     this.glowMesh = null;
     this.ringMesh = null;
     this.particleSystem = null;
+    this.enhancedCoreMaterial = null;
   }
 }

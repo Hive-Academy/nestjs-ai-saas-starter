@@ -24,20 +24,32 @@ import {
   MemoryContextResponseDto,
 } from '../dto/devbrand-api.dto';
 
-// Enhanced workflow result interface
-interface EnhancedWorkflowResult {
-  success?: boolean;
-  state?: any;
-  metadata?: {
-    workflowId?: string;
-    executionTime?: number;
-    agentOutputs?: any;
-    [key: string]: any;
-  };
-  executionTime?: number;
-  executionPath?: string[];
-  agentOutputs?: any;
-  [key: string]: any;
+// Import MultiAgentResult for proper typing
+import type { MultiAgentResult } from '@hive-academy/langgraph-multi-agent';
+import { BrandMemoryType } from '../schemas/brand-memory.schema';
+
+// Type guard to check if result has expected properties
+function isValidWorkflowResult(result: unknown): result is MultiAgentResult {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'finalState' in result &&
+    'executionPath' in result &&
+    'executionTime' in result &&
+    'success' in result
+  );
+}
+
+// Helper function to extract workflow metadata safely
+function extractWorkflowMetadata(result: MultiAgentResult): {
+  workflowId: string;
+  agentOutputs: Record<string, unknown>;
+} {
+  const workflowId =
+    (result.finalState.metadata?.workflowId as string) || 'unknown';
+  const agentOutputs =
+    (result.finalState.metadata?.agentOutputs as Record<string, unknown>) || {};
+  return { workflowId, agentOutputs };
 }
 
 // Type guard for unknown errors
@@ -111,22 +123,26 @@ export class DevBrandController {
             },
           },
         }
-      )) as EnhancedWorkflowResult;
+      )) as MultiAgentResult;
 
       // Store results in brand memory for future context
       if (request.userId) {
         await this.storeBrandContext(request.userId, result, 'github_analysis');
       }
 
+      if (!isValidWorkflowResult(result)) {
+        throw new Error('Invalid workflow result structure');
+      }
+
+      const { workflowId, agentOutputs } = extractWorkflowMetadata(result);
+
       return {
-        success: true,
-        workflowId: result.metadata?.workflowId || 'unknown',
-        result: result.state || result,
-        executionTime:
-          result.executionTime || result.metadata?.executionTime || 0,
-        executionPath: result.executionPath || [],
-        agentOutputs:
-          result.agentOutputs || result.metadata?.agentOutputs || {},
+        success: result.success,
+        workflowId,
+        result: result.finalState,
+        executionTime: result.executionTime,
+        executionPath: result.executionPath,
+        agentOutputs,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -188,13 +204,19 @@ export class DevBrandController {
         await this.storeBrandContext(request.userId, result, 'conversation');
       }
 
+      if (!isValidWorkflowResult(result)) {
+        throw new Error('Invalid workflow result structure');
+      }
+
+      const { workflowId, agentOutputs } = extractWorkflowMetadata(result);
+
       return {
-        success: true,
-        workflowId: result.metadata?.workflowId || 'unknown',
-        result: result.state,
+        success: result.success,
+        workflowId,
+        result: result.finalState,
         executionTime: result.executionTime,
         executionPath: result.executionPath,
-        agentOutputs: result.agentOutputs,
+        agentOutputs,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -257,13 +279,19 @@ export class DevBrandController {
         );
       }
 
+      if (!isValidWorkflowResult(result)) {
+        throw new Error('Invalid workflow result structure');
+      }
+
+      const { workflowId, agentOutputs } = extractWorkflowMetadata(result);
+
       return {
-        success: true,
-        workflowId: result.metadata?.workflowId || 'unknown',
-        result: result.state,
+        success: result.success,
+        workflowId,
+        result: result.finalState,
         executionTime: result.executionTime,
         executionPath: result.executionPath,
-        agentOutputs: result.agentOutputs,
+        agentOutputs,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -324,13 +352,19 @@ export class DevBrandController {
         await this.storeBrandContext(request.userId, result, 'brand_strategy');
       }
 
+      if (!isValidWorkflowResult(result)) {
+        throw new Error('Invalid workflow result structure');
+      }
+
+      const { workflowId, agentOutputs } = extractWorkflowMetadata(result);
+
       return {
-        success: true,
-        workflowId: result.metadata?.workflowId || 'unknown',
-        result: result.state,
+        success: result.success,
+        workflowId,
+        result: result.finalState,
         executionTime: result.executionTime,
         executionPath: result.executionPath,
-        agentOutputs: result.agentOutputs,
+        agentOutputs,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -409,17 +443,29 @@ export class DevBrandController {
 
     try {
       const searchQuery = query || 'personal brand development context';
-      const types = memoryTypes ? memoryTypes.split(',') : undefined;
+      const types = memoryTypes
+        ? memoryTypes
+            .split(',')
+            .filter((type): type is BrandMemoryType =>
+              [
+                'dev_achievement',
+                'content_performance',
+                'brand_strategy',
+                'skill_profile',
+                'career_milestone',
+                'market_insight',
+                'user_feedback',
+                'workflow_learning',
+              ].includes(type)
+            )
+        : undefined;
 
-      const memoryResults = await this.brandMemoryService.searchBrandMemories(
+      const memoryResults = await this.brandMemoryService.searchBrandMemories({
         userId,
-        searchQuery,
-        {
-          limit: Math.min(limit, 50), // Cap at 50 for performance
-          memoryTypes: types,
-          includeAnalytics: true,
-        }
-      );
+        query: searchQuery,
+        limit: Math.min(limit, 50), // Cap at 50 for performance
+        memoryTypes: types,
+      });
 
       const brandAnalytics = await this.brandMemoryService.getBrandAnalytics(
         userId
@@ -427,8 +473,36 @@ export class DevBrandController {
 
       return {
         userId,
-        memoryResults,
-        brandAnalytics,
+        memoryResults: memoryResults.map((memory) => ({
+          id: memory.id,
+          type: memory.metadata.type,
+          content: memory.content,
+          score: memory.relevanceScore || 0.8,
+          metadata: memory.metadata,
+        })),
+        brandAnalytics: {
+          totalMemories: brandAnalytics.totalMemories,
+          contentMetrics: {
+            totalGenerated:
+              brandAnalytics.contentPerformance?.totalGenerated || 0,
+            approvalRate: brandAnalytics.contentPerformance?.approvalRate || 0,
+            averageEngagement:
+              brandAnalytics.contentPerformance?.averageEngagement || 0,
+          },
+          skillProgress: Object.fromEntries(
+            Object.entries(
+              brandAnalytics.skillProgression?.currentLevel || {}
+            ).map(([key, value]) => [
+              key,
+              typeof value === 'string'
+                ? ['beginner', 'intermediate', 'advanced', 'expert'].indexOf(
+                    value
+                  ) + 1
+                : 1,
+            ])
+          ),
+          brandEvolution: brandAnalytics.brandEvolution || {},
+        },
         contextGenerated: new Date().toISOString(),
         totalMemories: memoryResults.length,
         queryUsed: searchQuery,
@@ -497,17 +571,27 @@ export class DevBrandController {
       | 'content_generation'
       | 'brand_strategy'
   ): Promise<void> {
+    // Map context types to BrandMemoryType
+    const memoryTypeMapping: Record<typeof contextType, BrandMemoryType> = {
+      github_analysis: 'dev_achievement',
+      conversation: 'workflow_learning',
+      content_generation: 'content_performance',
+      brand_strategy: 'brand_strategy',
+    };
+
     try {
       await this.brandMemoryService.storeBrandMemory(
         userId,
         'workflow_result',
         `${contextType} execution completed`,
-        contextType,
+        memoryTypeMapping[contextType],
         result,
         {
           execution_time: result.executionTime,
           execution_path: result.executionPath,
-          agent_outputs: result.agentOutputs,
+          agent_outputs: JSON.stringify(
+            extractWorkflowMetadata(result as MultiAgentResult).agentOutputs
+          ),
           timestamp: new Date().toISOString(),
           importance: 0.8,
         }

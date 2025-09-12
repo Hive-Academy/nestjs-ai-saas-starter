@@ -243,11 +243,11 @@ describe('DevBrandSupervisorWorkflow - Multi-Agent Ecosystem Showcase', () => {
     mockStrategistAgent = module.get(BrandStrategistAgent);
 
     // Setup mock implementations
-    mockGithubAgent.getAgentDefinition.mockReturnValue(mockGithubAgentDef);
-    mockContentAgent.getAgentDefinition.mockReturnValue(mockContentAgentDef);
-    mockStrategistAgent.getAgentDefinition.mockReturnValue(
-      mockStrategistAgentDef
-    );
+    // mockGithubAgent.getAgentDefinition.mockReturnValue(mockGithubAgentDef);
+    // mockContentAgent.getAgentDefinition.mockReturnValue(mockContentAgentDef);
+    // mockStrategistAgent.getAgentDefinition.mockReturnValue(
+    //   mockStrategistAgentDef
+    // );
 
     mockCoordinator.createNetwork.mockResolvedValue('devbrand-network-789');
     mockCoordinator.executeWorkflow.mockResolvedValue(mockWorkflowResult);
@@ -409,7 +409,7 @@ describe('DevBrandSupervisorWorkflow - Multi-Agent Ecosystem Showcase', () => {
 
     it('should require workflow initialization before execution', async () => {
       const uninitializedWorkflow = new DevBrandSupervisorWorkflow(
-        mockCoordinator,
+        mockCoordinator as any,
         mockGithubAgent,
         mockContentAgent,
         mockStrategistAgent
@@ -666,7 +666,7 @@ describe('DevBrandSupervisorWorkflow - Multi-Agent Ecosystem Showcase', () => {
 
     it('should handle uninitialized workflow status gracefully', async () => {
       const uninitializedWorkflow = new DevBrandSupervisorWorkflow(
-        mockCoordinator,
+        mockCoordinator as any,
         mockGithubAgent,
         mockContentAgent,
         mockStrategistAgent

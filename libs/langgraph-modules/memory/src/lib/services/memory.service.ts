@@ -24,7 +24,7 @@ import { wrapMemoryError } from '../errors/memory.errors';
  */
 @Injectable()
 export class MemoryService implements MemoryServiceInterface {
-  private readonly logger = new Logger(MemoryService.name);
+  protected readonly logger = new Logger(MemoryService.name);
 
   constructor(
     private readonly storageService: MemoryStorageService,

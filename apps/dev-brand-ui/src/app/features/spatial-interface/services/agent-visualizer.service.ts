@@ -9,10 +9,19 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
-import { Agent3DComponent, Agent3DConfig } from '../components/agent-3d.component';
-import { AgentState } from '../../../core/interfaces/agent-state.interface';
+import {
+  Agent3DComponent,
+  Agent3DConfig,
+} from '../components/agent-3d.component';
+import {
+  AgentState,
+  ToolExecution,
+  MemoryContext,
+} from '../../../core/interfaces/agent-state.interface';
 import { AgentCommunicationService } from '../../../core/services/agent-communication.service';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
+import { AgentStateEffects } from '../effects/agent-state-effects';
+import { filter } from 'rxjs/operators';
 
 export interface AgentVisualizerConfig {
   sceneId: string;
@@ -43,7 +52,9 @@ export class AgentVisualizerService {
   private readonly destroyRef = inject(DestroyRef);
 
   // Service state
-  private readonly agentInstances = signal<Map<string, Agent3DInstance>>(new Map());
+  private readonly agentInstances = signal<Map<string, Agent3DInstance>>(
+    new Map()
+  );
   private readonly isInitialized = signal(false);
   private readonly hoveredAgentId = signal<string | null>(null);
   private readonly selectedAgentId = signal<string | null>(null);
@@ -53,8 +64,13 @@ export class AgentVisualizerService {
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
 
+  // State effects system
+  private stateEffects: AgentStateEffects | null = null;
+
   // Public reactive state
-  readonly activeAgents = computed(() => Array.from(this.agentInstances().values()));
+  readonly activeAgents = computed(() =>
+    Array.from(this.agentInstances().values())
+  );
   readonly agentCount = computed(() => this.agentInstances().size);
   readonly hoveredAgent = computed(() => {
     const hoveredId = this.hoveredAgentId();
@@ -75,6 +91,7 @@ export class AgentVisualizerService {
     }
 
     this.config = config;
+    this.initializeStateEffects();
     this.setupAgentSubscriptions();
     this.setupInteractionHandlers();
     this.isInitialized.set(true);
@@ -92,7 +109,7 @@ export class AgentVisualizerService {
     }
 
     const existingInstance = this.agentInstances().get(agent.id);
-    
+
     if (existingInstance) {
       // Update existing agent
       this.updateAgentInstance(existingInstance, agent);
@@ -108,11 +125,11 @@ export class AgentVisualizerService {
   removeAgent(agentId: string): void {
     const instances = this.agentInstances();
     const instance = instances.get(agentId);
-    
+
     if (instance) {
       // Clean up component
       instance.component.destroy();
-      
+
       // Remove from tracking
       const newInstances = new Map(instances);
       newInstances.delete(agentId);
@@ -136,6 +153,11 @@ export class AgentVisualizerService {
     this.agentInstances().forEach((instance) => {
       instance.component.instance.updateAnimation();
     });
+
+    // Update state effects
+    if (this.stateEffects) {
+      this.stateEffects.updateEffects();
+    }
   }
 
   /**
@@ -178,7 +200,7 @@ export class AgentVisualizerService {
    */
   selectAgent(agentId: string | null): void {
     const currentSelected = this.selectedAgentId();
-    
+
     // Clear previous selection
     if (currentSelected) {
       const prevInstance = this.agentInstances().get(currentSelected);
@@ -189,12 +211,12 @@ export class AgentVisualizerService {
 
     // Set new selection
     this.selectedAgentId.set(agentId);
-    
+
     if (agentId) {
       const newInstance = this.agentInstances().get(agentId);
       if (newInstance) {
         newInstance.component.instance.onSelect(true);
-        
+
         // Switch to the selected agent in communication service
         this.agentCommunication.switchAgent(agentId);
       }
@@ -238,13 +260,31 @@ export class AgentVisualizerService {
     this.agentInstances().forEach((instance) => {
       instance.component.destroy();
     });
-    
+
+    // Clean up state effects
+    if (this.stateEffects) {
+      this.stateEffects.dispose();
+      this.stateEffects = null;
+    }
+
     this.agentInstances.set(new Map());
     this.hoveredAgentId.set(null);
     this.selectedAgentId.set(null);
     this.isInitialized.set(false);
-    
+
     console.log('AgentVisualizerService cleaned up');
+  }
+
+  /**
+   * Initialize state effects system
+   */
+  private initializeStateEffects(): void {
+    if (!this.config) return;
+
+    const sceneInstance = this.threeService.getScene(this.config.sceneId);
+    if (!sceneInstance) return;
+
+    this.stateEffects = new AgentStateEffects(sceneInstance.scene);
   }
 
   /**
@@ -256,13 +296,29 @@ export class AgentVisualizerService {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((updatedAgent) => {
         this.visualizeAgent(updatedAgent);
+        this.handleAgentStateChange(updatedAgent);
+      });
+
+    // Subscribe to memory updates
+    this.agentCommunication.memoryUpdates$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((contexts) => {
+        // Handle real memory update contexts from TASK_API_001 backend
+        this.handleMemoryUpdate(contexts);
+      });
+
+    // Subscribe to tool execution updates
+    this.agentCommunication.toolExecutions$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((toolExecution) => {
+        // Handle real tool execution from TASK_API_001 backend
+        this.handleToolExecutionUpdate(toolExecution);
       });
 
     // Subscribe to available agents changes
-    this.agentCommunication.availableAgents()
-      .forEach((agent: AgentState) => {
-        this.visualizeAgent(agent);
-      });
+    this.agentCommunication.availableAgents().forEach((agent: AgentState) => {
+      this.visualizeAgent(agent);
+    });
 
     // Handle agent removal (could be enhanced with explicit removal events)
     // For now, we'll track which agents haven't been updated recently
@@ -301,8 +357,9 @@ export class AgentVisualizerService {
     if (!this.config) return;
 
     // Create component
-    const componentRef = this.config.viewContainerRef.createComponent(Agent3DComponent);
-    
+    const componentRef =
+      this.config.viewContainerRef.createComponent(Agent3DComponent);
+
     // Configure component
     componentRef.instance.agent = agent;
     componentRef.instance.sceneId = this.config.sceneId;
@@ -327,11 +384,14 @@ export class AgentVisualizerService {
   /**
    * Update existing agent instance
    */
-  private updateAgentInstance(instance: Agent3DInstance, updatedAgent: AgentState): void {
+  private updateAgentInstance(
+    instance: Agent3DInstance,
+    updatedAgent: AgentState
+  ): void {
     // Update agent data
     instance.agent = updatedAgent;
     instance.lastUpdate = new Date();
-    
+
     // Update component input
     instance.component.instance.agent = updatedAgent;
 
@@ -403,15 +463,134 @@ export class AgentVisualizerService {
    */
   private findAgentIdFromMesh(mesh: THREE.Object3D): string | null {
     let current: THREE.Object3D | null = mesh;
-    
+
     while (current) {
       if (current.userData['agentId']) {
         return current.userData['agentId'];
       }
       current = current.parent;
     }
-    
+
     return null;
+  }
+
+  /**
+   * Handle agent state changes for visual effects
+   */
+  private handleAgentStateChange(agent: AgentState): void {
+    if (!this.stateEffects) return;
+
+    const position = new THREE.Vector3(
+      agent.position.x,
+      agent.position.y,
+      agent.position.z || 0
+    );
+
+    // Update tool execution progress rings
+    agent.currentTools.forEach((tool) => {
+      this.stateEffects!.updateToolProgressRing(agent.id, tool, position);
+    });
+
+    // Handle status-specific effects
+    switch (agent.status) {
+      case 'thinking':
+        // Show memory access indicator for thinking state
+        this.stateEffects.createMemoryAccessIndicator(
+          agent.id,
+          'workflow',
+          position,
+          0.8,
+          1000
+        );
+        break;
+      case 'executing':
+        // Enhanced memory access for execution
+        this.stateEffects.createMemoryAccessIndicator(
+          agent.id,
+          'chromadb',
+          position,
+          1.0,
+          800
+        );
+        break;
+    }
+  }
+
+  /**
+   * Handle real memory update contexts from TASK_API_001 backend
+   */
+  private handleMemoryUpdate(contexts: MemoryContext[]): void {
+    if (!this.stateEffects) return;
+
+    // Find affected agents and create memory access indicators
+    contexts.forEach((context) => {
+      context.relatedAgents.forEach((agentId) => {
+        const instance = this.agentInstances().get(agentId);
+        if (instance && context.isActive) {
+          const position = new THREE.Vector3(
+            instance.agent.position.x,
+            instance.agent.position.y,
+            instance.agent.position.z || 0
+          );
+
+          this.stateEffects!.createMemoryAccessIndicator(
+            agentId,
+            context.source,
+            position,
+            context.relevanceScore,
+            1500
+          );
+        }
+      });
+    });
+  }
+
+  /**
+   * Handle real tool execution updates from TASK_API_001 backend
+   */
+  private handleToolExecutionUpdate(toolExecution: ToolExecution): void {
+    if (!this.stateEffects) return;
+
+    // Find the agent instance for this tool execution by looking for the tool in current tools
+    this.agentInstances().forEach((instance, agentId) => {
+      if (
+        instance.agent.currentTools.some((tool) => tool.id === toolExecution.id)
+      ) {
+        const position = new THREE.Vector3(
+          instance.agent.position.x,
+          instance.agent.position.y,
+          instance.agent.position.z || 0
+        );
+
+        this.stateEffects!.updateToolProgressRing(
+          agentId,
+          toolExecution,
+          position
+        );
+      }
+    });
+  }
+
+  /**
+   * Create communication stream between agents
+   */
+  createCommunicationStream(
+    fromAgentId: string,
+    toAgentId: string,
+    messageType: 'data' | 'command' | 'response' = 'data'
+  ): void {
+    if (!this.stateEffects) return;
+
+    const fromInstance = this.agentInstances().get(fromAgentId);
+    const toInstance = this.agentInstances().get(toAgentId);
+
+    if (fromInstance && toInstance) {
+      this.stateEffects.handleAgentCommunication(
+        fromInstance.agent,
+        toInstance.agent,
+        messageType
+      );
+    }
   }
 
   /**
@@ -420,9 +599,9 @@ export class AgentVisualizerService {
   private cleanupStaleAgents(): void {
     const now = new Date();
     const staleThreshold = 2 * 60 * 1000; // 2 minutes
-    
+
     const instancesToRemove: string[] = [];
-    
+
     this.agentInstances().forEach((instance, agentId) => {
       const timeSinceUpdate = now.getTime() - instance.lastUpdate.getTime();
       if (timeSinceUpdate > staleThreshold) {

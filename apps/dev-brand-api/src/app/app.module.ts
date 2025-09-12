@@ -127,10 +127,8 @@ import { GitHubIntegrationService } from './services/github-integration.service'
     // 🎯 CHECKPOINT MODULE: Configure checkpoint storage once at application level
     // This provides CheckpointManagerService for dependency injection into consumer libraries
     LanggraphModulesCheckpointModule.forRootAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) =>
-        getCheckpointConfig(configService),
+      useFactory: async () => getCheckpointConfig(),
     }),
 
     // Other core modules (checkpoint-independent)
@@ -147,30 +145,39 @@ import { GitHubIntegrationService } from './services/github-integration.service'
     // Use case: Production workflows requiring reliability and observability
 
     FunctionalApiModule.forRootAsync({
-      useFactory: async (checkpointManager: CheckpointManagerService) => ({
-        ...getFunctionalApiConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
+      useFactory: async (...args: unknown[]) => {
+        const checkpointManager = args[0] as CheckpointManagerService;
+        return {
+          ...getFunctionalApiConfig(),
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
       inject: [CheckpointManagerService],
       // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
       // Enables: Workflow state persistence, step-by-step recovery, execution replay
     }),
 
     MultiAgentModule.forRootAsync({
-      useFactory: async (checkpointManager: CheckpointManagerService) => ({
-        ...getMultiAgentConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
+      useFactory: async (...args: unknown[]) => {
+        const checkpointManager = args[0] as CheckpointManagerService;
+        return {
+          ...getMultiAgentConfig(),
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
       inject: [CheckpointManagerService],
       // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
       // Enables: Agent network state, communication history, coordinated recovery
     }),
 
     TimeTravelModule.forRootAsync({
-      useFactory: async (checkpointManager: CheckpointManagerService) => ({
-        ...getTimeTravelConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
+      useFactory: async (...args: unknown[]) => {
+        const checkpointManager = args[0] as CheckpointManagerService;
+        return {
+          ...getTimeTravelConfig(),
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
       inject: [CheckpointManagerService],
       // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
       // Enables: Timeline branching, state snapshots, workflow debugging

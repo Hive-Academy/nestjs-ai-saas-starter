@@ -49,7 +49,7 @@ export class DevBrandWebSocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(DevBrandWebSocketGateway.name);
   private readonly connectedClients = new Map<
@@ -134,9 +134,11 @@ export class DevBrandWebSocketGateway
     if (userId) {
       try {
         const memoryContext = await this.brandMemoryService.searchBrandMemories(
-          userId,
-          'recent context',
-          { limit: 5, includeAnalytics: true }
+          {
+            userId,
+            query: 'recent context',
+            limit: 5,
+          }
         );
         client.emit('memory-context-update', {
           type: 'initial_context',
@@ -293,7 +295,7 @@ export class DevBrandWebSocketGateway
         error
       );
       client.emit('workflow-error', {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
       });
     }
@@ -328,14 +330,11 @@ export class DevBrandWebSocketGateway
     @MessageBody() data: { userId: string; query?: string; limit?: number }
   ): Promise<void> {
     try {
-      const memoryResults = await this.brandMemoryService.searchBrandMemories(
-        data.userId,
-        data.query || 'recent context',
-        {
-          limit: data.limit || 10,
-          includeAnalytics: true,
-        }
-      );
+      const memoryResults = await this.brandMemoryService.searchBrandMemories({
+        userId: data.userId,
+        query: data.query || 'recent context',
+        limit: data.limit || 10,
+      });
 
       client.emit('memory-context-update', {
         type: 'requested_update',

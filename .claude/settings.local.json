@@ -35,7 +35,8 @@
       "Bash(npx nx run:*)",
       "Bash(npm run build:libs:*)",
       "Bash(npx nx show:*)",
-      "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)"
+      "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": [],

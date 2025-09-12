@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIMessage } from '@langchain/core/messages';
+import { AIMessage, type MessageContent } from '@langchain/core/messages';
 import type {
   AgentDefinition,
   AgentState,
@@ -8,30 +8,45 @@ import { GitHubAnalyzerTool } from '../tools/github-analyzer.tool';
 import { AchievementExtractorTool } from '../tools/achievement-extractor.tool';
 import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
 
-// Enhanced agent state with thread support
-interface EnhancedAgentState extends AgentState {
+// Enhanced agent state with additional properties
+type EnhancedAgentState = AgentState & {
   thread_id?: string;
   workflow?: string;
   stepNumber?: number;
   timestamp?: string;
+};
+
+// Helper function to extract text content from MessageContent
+function extractTextContent(content: MessageContent): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    return content
+      .filter((item) => {
+        if (typeof item === 'object' && item !== null && 'type' in item) {
+          return item.type === 'text';
+        }
+        return false;
+      })
+      .map((item) => {
+        if (
+          typeof item === 'object' &&
+          item !== null &&
+          'text' in item &&
+          typeof item.text === 'string'
+        ) {
+          return item.text;
+        }
+        return '';
+      })
+      .join(' ');
+  }
+  return '';
 }
 
-// Technical memory metadata with proper generic constraints
-interface TechnicalMemoryMetadata<T = Record<string, unknown>> {
-  technicalData?: {
-    repositories?: string[];
-    technologies?: string[];
-    skillLevel?: string;
-    projectType?: string;
-  };
-  brandContext?: {
-    userId: string;
-    analysisVersion?: string;
-    confidenceScore: number;
-  };
-  importance: number;
-  [key: string]: string | number | boolean | null | undefined | T;
-}
+// Import the main BrandMemoryMetadata interface
+import { BrandMemoryMetadata } from '../schemas/brand-memory.schema';
 
 /**
  * GitHub Analyzer Agent for DevBrand Showcase
@@ -135,13 +150,14 @@ Always provide actionable insights that can be used for personal brand content c
 
       try {
         // Extract user context from state
-        const userId = state.metadata?.userId || 'demo-user';
+        const userId = (state.metadata?.userId as string) || 'demo-user';
         const lastMessage = state.messages[state.messages.length - 1];
 
         // Get contextual brand memories for GitHub analysis
         const brandContext = await this.getBrandMemoryContext(
           userId,
-          String(lastMessage.content || '')
+          'github-analyzer',
+          extractTextContent(lastMessage.content)
         );
 
         // Extract GitHub-related tasks from the current context
@@ -220,11 +236,15 @@ Always provide actionable insights that can be used for personal brand content c
   /**
    * Get brand memory context for GitHub analysis
    */
-  private async getBrandMemoryContext(userId: string, currentTask: string) {
+  private async getBrandMemoryContext(
+    userId: string,
+    agentType: 'github-analyzer',
+    currentTask: string
+  ) {
     try {
       return await this.brandMemoryService.getBrandContextForAgent(
         userId,
-        'github-analyzer',
+        agentType,
         currentTask,
         {
           maxMemories: 10,
@@ -256,6 +276,7 @@ Always provide actionable insights that can be used for personal brand content c
           'dev_achievement',
           analysis.data,
           {
+            type: 'dev_achievement' as const,
             technicalData: {
               repositories: analysis.data.repositories.map((r: any) => r.name),
               technologies: analysis.data.skillProfile
@@ -264,11 +285,11 @@ Always provide actionable insights that can be used for personal brand content c
             },
             brandContext: {
               userId,
-              analysisVersion: `github_${Date.now()}`,
+              analysisId: `github_${Date.now()}`,
               confidenceScore: 0.9,
             },
             importance: 0.8,
-          } as TechnicalMemoryMetadata
+          } satisfies Partial<BrandMemoryMetadata>
         );
       }
 
@@ -283,6 +304,7 @@ Always provide actionable insights that can be used for personal brand content c
           'skill_profile',
           analysis.data.skillProfile,
           {
+            type: 'skill_profile' as const,
             technicalData: {
               technologies: Object.keys(
                 analysis.data.skillProfile.frameworks || {}
@@ -294,7 +316,7 @@ Always provide actionable insights that can be used for personal brand content c
               confidenceScore: 0.85,
             },
             importance: 0.7,
-          } as TechnicalMemoryMetadata
+          } satisfies Partial<BrandMemoryMetadata>
         );
       }
     } catch (error) {
@@ -509,7 +531,7 @@ Ready to proceed with content creation based on this technical profile.`;
 
 I can help analyze:
 🔍 Repository structure and code quality
-📊 Technical skill extraction from commit history  
+📊 Technical skill extraction from commit history
 🎯 Achievement identification from project portfolios
 📈 Contribution pattern analysis
 🛠️ Technology stack profiling

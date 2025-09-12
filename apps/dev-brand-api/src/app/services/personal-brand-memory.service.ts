@@ -4,7 +4,6 @@ import type {
   MemoryEntry,
   MemoryMetadata,
   MemorySearchOptions,
-  UserMemoryPatterns,
 } from '@hive-academy/langgraph-memory';
 import {
   BrandMemoryEntry,
@@ -15,9 +14,7 @@ import {
   BrandMemoryType,
   BrandRelationshipType,
   BRAND_MEMORY_COLLECTIONS,
-  BRAND_GRAPH_LABELS,
   getCollectionForMemoryType,
-  BrandMemoryEntrySchema,
   BrandMemorySearchOptionsSchema,
 } from '../schemas/brand-memory.schema';
 import { wrapMemoryError } from '@hive-academy/langgraph-memory';
@@ -73,7 +70,7 @@ export class PersonalBrandMemoryService extends MemoryService {
       const baseEntry = await this.store(
         threadId,
         content,
-        enhancedMetadata,
+        enhancedMetadata as Partial<MemoryMetadata>,
         userId
       );
 
@@ -145,7 +142,10 @@ export class PersonalBrandMemoryService extends MemoryService {
       // Batch store in base memory system
       const baseEntries = await this.storeBatch(
         threadId,
-        processedEntries,
+        processedEntries.map((entry) => ({
+          content: entry.content,
+          metadata: entry.metadata as Partial<MemoryMetadata>,
+        })),
         userId
       );
 
@@ -215,7 +215,7 @@ export class PersonalBrandMemoryService extends MemoryService {
       const baseResults = await this.search(baseSearchOptions);
 
       // Filter by brand-specific criteria
-      let filteredResults = baseResults.filter((entry) =>
+      let filteredResults = [...baseResults].filter((entry) =>
         this.matchesBrandCriteria(entry, validatedOptions)
       );
 
@@ -555,7 +555,7 @@ export class PersonalBrandMemoryService extends MemoryService {
         metadata: {
           ...entry.metadata,
           structuredDataFor: entry.id,
-        },
+        } as Partial<MemoryMetadata>,
         threadId: entry.threadId,
         userId: entry.userId,
       });
@@ -663,7 +663,7 @@ export class PersonalBrandMemoryService extends MemoryService {
   private async enhanceBrandRelevance(
     results: readonly MemoryEntry[],
     options: BrandMemorySearchOptions
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     // Apply brand-specific relevance scoring
     return results
       .map((entry) => ({
@@ -697,7 +697,11 @@ export class PersonalBrandMemoryService extends MemoryService {
     relevance += confidence * 0.1;
 
     // Boost important memories
-    if (metadata.importance && metadata.importance > 0.8) {
+    if (
+      metadata.importance &&
+      typeof metadata.importance === 'number' &&
+      metadata.importance > 0.8
+    ) {
       relevance += 0.1;
     }
 
@@ -957,7 +961,11 @@ export class PersonalBrandMemoryService extends MemoryService {
     to: string;
     type: BrandRelationshipType;
   }> {
-    const relationships = [];
+    const relationships: Array<{
+      from: string;
+      to: string;
+      type: BrandRelationshipType;
+    }> = [];
     const metadata = entry.metadata;
 
     // Example relationship inference logic

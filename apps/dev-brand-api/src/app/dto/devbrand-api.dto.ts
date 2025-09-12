@@ -4,14 +4,9 @@ import {
   IsOptional,
   IsArray,
   IsEnum,
-  IsBoolean,
-  IsNumber,
-  IsObject,
-  ValidateNested,
   MinLength,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 /**
  * DevBrand API DTOs - External Interface Contracts

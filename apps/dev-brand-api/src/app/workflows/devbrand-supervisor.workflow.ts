@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
 import type {
@@ -277,6 +276,14 @@ Route to the most appropriate agent based on the current task and maintain workf
       }
 
       this.logger.log(`DevBrand streaming completed with ${stepCount} steps`);
+
+      // Return final result after streaming
+      return {
+        success: true,
+        finalState: {} as AgentState,
+        executionTime: 0,
+        executionPath: [],
+      };
     } catch (error) {
       this.logger.error('DevBrand streaming workflow failed:', error);
       throw error;

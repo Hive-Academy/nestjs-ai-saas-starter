@@ -1,6 +1,22 @@
 import { z } from 'zod';
 import type { BaseMessage } from '@langchain/core/messages';
 
+// Advanced serializable types for complex metadata structures
+export type SerializableValue = string | number | boolean | null | undefined;
+export type SerializableArray = readonly SerializableValue[];
+export type SerializableObject = {
+  readonly [K in string]?:
+    | SerializableValue
+    | SerializableArray
+    | SerializableObject;
+};
+
+// Generic metadata type that allows complex nested structures
+export type MetadataValue =
+  | SerializableValue
+  | SerializableArray
+  | SerializableObject;
+
 // Memory-specific metadata that's compatible with ChromaDB metadata
 export interface MemoryMetadata {
   readonly type:
@@ -15,7 +31,7 @@ export interface MemoryMetadata {
   readonly importance?: number; // 0-1 scale
   readonly persistent?: boolean;
   readonly userId?: string;
-  readonly [key: string]: string | number | boolean | null | undefined;
+  readonly [key: string]: MetadataValue;
 }
 
 // Core memory entry for the application layer
@@ -176,6 +192,21 @@ export interface MemoryServiceInterface {
   >;
 }
 
+// Recursive schema for complex metadata structures
+const SerializableValueSchema: z.ZodType<MetadataValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.undefined(),
+    z.array(
+      z.union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()])
+    ),
+    z.record(SerializableValueSchema),
+  ])
+);
+
 // Validation schemas
 export const MemoryEntrySchema = z.object({
   id: z.string(),
@@ -193,12 +224,12 @@ export const MemoryEntrySchema = z.object({
         'custom',
       ]),
       source: z.string().optional(),
-      tags: z.array(z.string()).optional(),
+      tags: z.string().optional(), // JSON string for ChromaDB compatibility
       importance: z.number().min(0).max(1).optional(),
       persistent: z.boolean().optional(),
       userId: z.string().optional(),
     })
-    .and(z.record(z.union([z.string(), z.number(), z.boolean(), z.null()]))),
+    .and(z.record(SerializableValueSchema)),
   createdAt: z.date(),
   lastAccessedAt: z.date().optional(),
   accessCount: z.number().min(0),

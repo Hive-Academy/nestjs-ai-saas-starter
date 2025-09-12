@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import type { MemoryMetadata } from '@hive-academy/langgraph-memory';
+import { z } from 'zod';
 
 /**
  * Brand Memory Schema - DevBrand Personal Brand Memory System
@@ -25,7 +25,7 @@ export type BrandMemoryType =
  * Extended Brand Memory Metadata
  * Extends base MemoryMetadata with brand-specific fields
  */
-export interface BrandMemoryMetadata extends MemoryMetadata {
+export interface BrandMemoryMetadata extends Omit<MemoryMetadata, 'type'> {
   readonly type: BrandMemoryType | MemoryMetadata['type'];
   readonly brandContext?: {
     readonly userId: string;

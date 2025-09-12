@@ -32,6 +32,7 @@ import {
   VisualEffectConfig,
 } from './services/agent-state-visualizer.service';
 import { PerformanceMonitorService } from './services/performance-monitor.service';
+import { Performance3DService } from './services/performance-3d.service';
 import {
   NavigationControlsComponent,
   NavigationControlsConfig,
@@ -353,6 +354,7 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
   private readonly agentInteraction = inject(AgentInteractionService);
   private readonly agentStateVisualizer = inject(AgentStateVisualizerService);
   private readonly performanceMonitor = inject(PerformanceMonitorService);
+  private readonly performance3D = inject(Performance3DService);
   private readonly viewContainerRef = inject(ViewContainerRef);
 
   // Template references
@@ -485,6 +487,9 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
       // Initialize performance monitoring
       this.initializePerformanceMonitoring();
 
+      // Initialize advanced 3D performance optimization
+      this.performance3D.initialize(this.sceneId, 60);
+
       // Start render loop with animation updates
       this.threeService.activateScene(this.sceneId, () => {
         this.updateAnimations();
@@ -587,10 +592,13 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
    * Setup agent communication and real-time updates
    */
   private setupAgentCommunication(): void {
-    console.log('🔌 Setting up agent communication...');
+    console.log('🔌 Setting up TASK_API_001 DevBrand backend connection...');
 
-    // Connect to agent system
+    // Connect to real TASK_API_001 agent system
     this.agentCommunication.connect();
+
+    // Add connection error handling
+    this.monitorBackendConnectivity();
 
     // Log connection status
     setInterval(() => {
@@ -608,31 +616,121 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
       this.agentVisualizer.visualizeAgent(agent);
     });
 
-    // Subscribe to new agent updates
-    this.agentCommunication.agentUpdates$
-      .pipe(takeUntilDestroyed())
-      .subscribe((agent: AgentState) => {
-        console.log('🔄 Agent update received:', agent.name, agent.status);
+    // Subscribe to real TASK_API_001 agent updates
+    this.agentCommunication.agentUpdates$.pipe(takeUntilDestroyed()).subscribe({
+      next: (agent: AgentState) => {
+        console.log(
+          '🔄 Real TASK_API_001 agent update received:',
+          agent.name,
+          agent.status
+        );
         this.agentVisualizer.visualizeAgent(agent);
-      });
+      },
+      error: (error) => {
+        console.error('❌ Error in agent updates stream:', error);
+        this.handleBackendError('Agent updates stream error', error);
+      },
+    });
 
-    // Subscribe to memory updates
+    // Subscribe to real memory updates from ChromaDB/Neo4j
     this.agentCommunication.memoryUpdates$
       .pipe(takeUntilDestroyed())
-      .subscribe((contexts) => {
-        console.log('🧠 Memory update received:', contexts.length, 'contexts');
+      .subscribe({
+        next: (contexts) => {
+          console.log(
+            '🧠 Real memory update from TASK_API_001:',
+            contexts.length,
+            'contexts'
+          );
+        },
+        error: (error) => {
+          console.error('❌ Error in memory updates stream:', error);
+          this.handleBackendError('Memory updates stream error', error);
+        },
       });
 
-    // Subscribe to tool executions
+    // Subscribe to real tool executions
     this.agentCommunication.toolExecutions$
       .pipe(takeUntilDestroyed())
-      .subscribe((execution) => {
-        console.log(
-          '🔧 Tool execution received:',
-          execution.toolName,
-          execution.status
-        );
+      .subscribe({
+        next: (execution) => {
+          console.log(
+            '🔧 Real tool execution from TASK_API_001:',
+            execution.toolName,
+            execution.status
+          );
+        },
+        error: (error) => {
+          console.error('❌ Error in tool execution stream:', error);
+          this.handleBackendError('Tool execution stream error', error);
+        },
       });
+  }
+
+  /**
+   * Monitor TASK_API_001 backend connectivity
+   */
+  private monitorBackendConnectivity(): void {
+    // Monitor connection status changes
+    setInterval(() => {
+      const isConnected = this.agentCommunication.isConnected();
+      console.log(
+        '📡 TASK_API_001 connection status:',
+        isConnected ? 'CONNECTED' : 'DISCONNECTED'
+      );
+
+      if (!isConnected) {
+        console.warn(
+          '⚠️ TASK_API_001 backend disconnected - attempting to reconnect...'
+        );
+        // Optionally show user notification
+        this.showConnectionWarning();
+      }
+    }, 5000); // Check every 5 seconds
+  }
+
+  /**
+   * Handle TASK_API_001 backend errors
+   */
+  private handleBackendError(context: string, error: any): void {
+    console.error(`❌ TASK_API_001 Backend Error [${context}]:`, error);
+
+    // Show user-friendly error message
+    this.showBackendErrorNotification(context, error);
+
+    // Attempt recovery actions
+    setTimeout(() => {
+      console.log('🔄 Attempting to recover TASK_API_001 connection...');
+      this.agentCommunication.connect();
+    }, 3000);
+  }
+
+  /**
+   * Show connection warning to user
+   */
+  private showConnectionWarning(): void {
+    // This could be enhanced with a proper notification system
+    if (typeof window !== 'undefined' && window.console) {
+      console.warn(
+        '⚠️ Connection to TASK_API_001 DevBrand backend lost. Real-time updates may be delayed.'
+      );
+    }
+  }
+
+  /**
+   * Show backend error notification
+   */
+  private showBackendErrorNotification(context: string, error: any): void {
+    // This could be enhanced with a proper toast/notification system
+    const errorMessage = error?.message || 'Unknown error';
+    console.error(`🚨 Backend Error: ${context} - ${errorMessage}`);
+
+    // For now, log to console. In production, this would show a user notification
+    if (typeof window !== 'undefined' && window.console) {
+      console.error(
+        `TASK_API_001 Backend Error in ${context}: ${errorMessage}`
+      );
+    }
   }
 
   /**
@@ -655,6 +753,9 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
       0.016,
       this.performanceMetrics().activeEffects
     );
+
+    // Update 3D performance optimization
+    this.performance3D.updatePerformanceMetrics(16.67); // ~60fps in milliseconds
 
     // Handle mouse interactions
     this.handleMouseInteractions();
@@ -831,6 +932,7 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
     this.agentInteraction.cleanup();
     this.agentStateVisualizer.cleanup();
     this.performanceMonitor.cleanup();
+    this.performance3D.dispose();
 
     if (this.controls) {
       this.controls.dispose();

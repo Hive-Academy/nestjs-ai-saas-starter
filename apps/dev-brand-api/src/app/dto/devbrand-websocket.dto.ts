@@ -63,7 +63,7 @@ export class DevBrandStreamRequestDto {
   @IsString()
   @MinLength(10)
   @MaxLength(2000)
-  message: string;
+  message!: string;
 
   @IsOptional()
   @ValidateNested()
@@ -77,10 +77,10 @@ export class DevBrandStreamRequestDto {
  */
 export class AgentStatusUpdateDto {
   @IsString()
-  networkId: string;
+  networkId!: string;
 
   @IsArray()
-  agents: Array<{
+  agents!: Array<{
     id: string;
     name: string;
     healthy: boolean;
@@ -94,7 +94,7 @@ export class AgentStatusUpdateDto {
   }>;
 
   @IsObject()
-  networkStats: {
+  networkStats!: {
     totalExecutions: number;
     averageExecutionTime: number;
     activeWorkflows: number;
@@ -102,7 +102,7 @@ export class AgentStatusUpdateDto {
   };
 
   @IsObject()
-  systemHealth: {
+  systemHealth!: {
     memoryUsage: number;
     cpuUsage: number;
     activeConnections: number;
@@ -116,10 +116,10 @@ export class AgentStatusUpdateDto {
  */
 export class MemoryUpdateDto {
   @IsString()
-  userId: string;
+  userId!: string;
 
   @IsString()
-  updateType: 'new_memory' | 'context_change' | 'analytics_update';
+  updateType!: 'new_memory' | 'context_change' | 'analytics_update';
 
   @IsOptional()
   @IsObject()
@@ -164,27 +164,27 @@ export class MemoryUpdateDto {
  */
 export class WorkflowProgressDto {
   @IsString()
-  workflowId: string;
+  workflowId!: string;
 
   @IsString()
-  workflowType:
+  workflowType!:
     | 'personal_brand_development'
     | 'github_analysis'
     | 'content_generation'
     | 'brand_strategy';
 
   @IsNumber()
-  stepNumber: number;
+  stepNumber!: number;
 
   @IsOptional()
   @IsNumber()
   totalSteps?: number;
 
   @IsString()
-  currentAgent: string;
+  currentAgent!: string;
 
   @IsArray()
-  agentCapabilities: string[];
+  agentCapabilities!: string[];
 
   @IsOptional()
   @IsString()
@@ -192,7 +192,7 @@ export class WorkflowProgressDto {
 
   @IsOptional()
   @IsString()
-  status:
+  status!:
     | 'starting'
     | 'in_progress'
     | 'agent_switch'
@@ -254,7 +254,7 @@ export class WorkflowProgressDto {
  */
 export class AgentConstellationEventDto {
   @IsString()
-  eventType:
+  eventType!:
     | 'agent_switch'
     | 'agent_thinking'
     | 'agent_collaboration'
@@ -269,7 +269,7 @@ export class AgentConstellationEventDto {
   toAgent?: string;
 
   @IsArray()
-  capabilities: string[];
+  capabilities!: string[];
 
   @IsOptional()
   @IsObject()
@@ -295,10 +295,10 @@ export class AgentConstellationEventDto {
  */
 export class MemoryConstellationEventDto {
   @IsString()
-  userId: string;
+  userId!: string;
 
   @IsString()
-  eventType:
+  eventType!:
     | 'memory_access'
     | 'memory_connection'
     | 'memory_cluster'
@@ -359,10 +359,10 @@ export class MemoryConstellationEventDto {
  */
 export class WorkflowCanvasEventDto {
   @IsString()
-  workflowId: string;
+  workflowId!: string;
 
   @IsString()
-  eventType:
+  eventType!:
     | 'node_activation'
     | 'edge_traversal'
     | 'workflow_branch'
@@ -379,7 +379,7 @@ export class WorkflowCanvasEventDto {
 
   @IsOptional()
   @IsString()
-  status: 'pending' | 'active' | 'completed' | 'error' | 'skipped';
+  status!: 'pending' | 'active' | 'completed' | 'error' | 'skipped';
 
   @IsOptional()
   @IsObject()
@@ -416,10 +416,10 @@ export class WorkflowCanvasEventDto {
  */
 export class ContentForgeEventDto {
   @IsString()
-  sessionId: string;
+  sessionId!: string;
 
   @IsString()
-  eventType:
+  eventType!:
     | 'content_start'
     | 'content_progress'
     | 'content_review'
@@ -427,10 +427,10 @@ export class ContentForgeEventDto {
     | 'content_approved';
 
   @IsString()
-  platform: string;
+  platform!: string;
 
   @IsString()
-  contentType: string;
+  contentType!: string;
 
   @IsOptional()
   @IsObject()
@@ -483,10 +483,10 @@ export class ContentForgeEventDto {
  */
 export class EnhancedChatEventDto {
   @IsString()
-  sessionId: string;
+  sessionId!: string;
 
   @IsString()
-  eventType:
+  eventType!:
     | 'message'
     | 'typing'
     | 'agent_switch'
@@ -495,7 +495,7 @@ export class EnhancedChatEventDto {
     | 'memory_access';
 
   @IsString()
-  agentId: string;
+  agentId!: string;
 
   @IsOptional()
   @IsString()

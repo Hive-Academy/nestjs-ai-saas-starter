@@ -1,36 +1,50 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIMessage } from '@langchain/core/messages';
+import { AIMessage, type MessageContent } from '@langchain/core/messages';
 import type {
   AgentDefinition,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
 import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
 
-// Enhanced agent state with thread support
-interface EnhancedAgentState extends AgentState {
+// Enhanced agent state with additional properties
+type EnhancedAgentState = AgentState & {
   thread_id?: string;
   workflow?: string;
   stepNumber?: number;
   timestamp?: string;
+};
+
+// Helper function to extract text content from MessageContent
+function extractTextContent(content: MessageContent): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    return content
+      .filter((item) => {
+        if (typeof item === 'object' && item !== null && 'type' in item) {
+          return item.type === 'text';
+        }
+        return false;
+      })
+      .map((item) => {
+        if (
+          typeof item === 'object' &&
+          item !== null &&
+          'text' in item &&
+          typeof item.text === 'string'
+        ) {
+          return item.text;
+        }
+        return '';
+      })
+      .join(' ');
+  }
+  return '';
 }
 
-// Brand memory metadata with proper generic constraints
-interface BrandMemoryMetadata<T = Record<string, unknown>> {
-  strategicData?: {
-    targetAudience?: string[];
-    marketSegment?: string;
-    brandPillars?: string[];
-    careerGoals?: string[];
-    competitivePosition?: string;
-  };
-  brandContext?: {
-    userId: string;
-    strategyVersion?: string;
-    confidenceScore: number;
-  };
-  importance: number;
-  [key: string]: any;
-}
+// Import the main BrandMemoryMetadata interface
+import { BrandMemoryMetadata } from '../schemas/brand-memory.schema';
 
 /**
  * Brand Strategist Agent for DevBrand Showcase
@@ -134,13 +148,14 @@ Always provide actionable, data-driven strategic recommendations that drive meas
 
       try {
         // Extract user context from state
-        const userId = state.metadata?.userId || 'demo-user';
+        const userId = (state.metadata?.userId as string) || 'demo-user';
         const lastMessage = state.messages[state.messages.length - 1];
 
         // Get brand memory context for strategic analysis
         const brandContext = await this.getBrandMemoryContext(
           userId,
-          String(lastMessage.content || '')
+          'brand-strategist',
+          extractTextContent(lastMessage.content)
         );
 
         // Extract strategic context from current conversation
@@ -154,7 +169,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
         if (strategy.data && strategy.data.strategicRecommendations) {
           await this.storeBrandMemoryFromStrategy(
             userId,
-            state.thread_id || 'strategy',
+            state.thread_id ?? `strategy-${Date.now()}`,
             strategy
           );
         }
@@ -219,11 +234,15 @@ Always provide actionable, data-driven strategic recommendations that drive meas
   /**
    * Get brand memory context for strategic analysis
    */
-  private async getBrandMemoryContext(userId: string, currentTask: string) {
+  private async getBrandMemoryContext(
+    userId: string,
+    agentType: 'brand-strategist',
+    currentTask: string
+  ) {
     try {
       return await this.brandMemoryService.getBrandContextForAgent(
         userId,
-        'brand-strategist',
+        agentType,
         currentTask,
         {
           maxMemories: 20,
@@ -255,6 +274,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
           'brand_strategy',
           strategy.data,
           {
+            type: 'brand_strategy' as const,
             strategicData: {
               targetAudience: strategy.data.positioning?.targetAudiences || [],
               marketSegment:
@@ -268,7 +288,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
               confidenceScore: 0.9,
             },
             importance: 0.9,
-          } as BrandMemoryMetadata
+          } satisfies Partial<BrandMemoryMetadata>
         );
       }
 
@@ -285,6 +305,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
           'market_insight',
           strategy.data.marketAnalysis,
           {
+            type: 'market_insight' as const,
             strategicData: {
               marketSegment:
                 strategy.data.marketAnalysis.marketSegment || 'technology',
@@ -296,7 +317,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
               confidenceScore: 0.85,
             },
             importance: 0.8,
-          } as BrandMemoryMetadata
+          } satisfies Partial<BrandMemoryMetadata>
         );
       }
 
@@ -311,6 +332,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
           'career_milestone',
           strategy.data.careerAlignment,
           {
+            type: 'career_milestone' as const,
             strategicData: {
               careerGoals: strategy.data.careerAlignment.objectives || [],
             },
@@ -319,7 +341,7 @@ Always provide actionable, data-driven strategic recommendations that drive meas
               confidenceScore: 0.8,
             },
             importance: 0.75,
-          } as BrandMemoryMetadata
+          } satisfies Partial<BrandMemoryMetadata>
         );
       }
     } catch (error) {

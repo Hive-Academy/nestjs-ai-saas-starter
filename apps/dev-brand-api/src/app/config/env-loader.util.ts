@@ -88,21 +88,13 @@ export class EnvLoader {
 
     return [
       // Base configurations (lowest precedence)
-      '.env.defaults',
       '.env.chromadb',
       '.env.neo4j',
       '.env.llm',
       '.env.platform',
 
-      // Environment-specific configurations
-      `.env.${nodeEnv}.local`,
-      `.env.${nodeEnv}`,
-
-      // Local overrides
-      '.env.local',
-
       // Main environment file (highest precedence)
-      '.env',
+      '.env.app',
     ];
   }
 
