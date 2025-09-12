@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EnvPathResolver } from './utils/env-path-resolver.util';
 
 // Library imports
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
@@ -56,15 +55,8 @@ import { CheckpointExamplesController } from './controllers/checkpoint-examples.
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
 
-// DevBrand API Surface Layer - External Interface Components
-import { DevBrandController } from './controllers/devbrand.controller';
-import { DevBrandWebSocketGateway } from './gateways/devbrand-websocket.gateway';
-import { DevBrandSupervisorWorkflow } from './workflows/devbrand-supervisor.workflow';
-import { PersonalBrandMemoryService } from './services/personal-brand-memory.service';
-import { GitHubAnalyzerAgent } from './agents/github-analyzer.agent';
-import { ContentCreatorAgent } from './agents/content-creator.agent';
-import { BrandStrategistAgent } from './agents/brand-strategist.agent';
-import { GitHubIntegrationService } from './services/github-integration.service';
+// Showcase Module - Demonstrates decorator system power
+import { ShowcaseModule } from './showcase/showcase.module';
 
 /**
  * Demo Application Module - Showcasing Optional Checkpoint DI Pattern
@@ -96,7 +88,6 @@ import { GitHubIntegrationService } from './services/github-integration.service'
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: EnvPathResolver.getValidatedEnvPath(),
     }),
 
     // ChromaDB Module with extracted configuration
@@ -207,6 +198,11 @@ import { GitHubIntegrationService } from './services/github-integration.service'
       logger: false, // Disable excessive logging
       errorLogStyle: 'pretty',
     }),
+
+    // Showcase Module - Demonstrates the FULL POWER of our decorator system
+    // This module shows how to create enterprise-grade AI agents with minimal code
+    // using our plug-and-play decorator architecture
+    ShowcaseModule,
   ],
   providers: [
     // Test service to verify child module service injection
@@ -214,17 +210,6 @@ import { GitHubIntegrationService } from './services/github-integration.service'
 
     // Checkpoint DI pattern demonstration service
     CheckpointExamplesService,
-
-    // DevBrand API Surface Layer - Services and Workflows
-    DevBrandSupervisorWorkflow,
-    PersonalBrandMemoryService,
-    GitHubAnalyzerAgent,
-    ContentCreatorAgent,
-    BrandStrategistAgent,
-    GitHubIntegrationService,
-
-    // DevBrand WebSocket Gateway
-    DevBrandWebSocketGateway,
   ],
   controllers: [
     // Test controller to expose child module verification endpoints
@@ -235,9 +220,6 @@ import { GitHubIntegrationService } from './services/github-integration.service'
 
     // Health check controller
     HealthController,
-
-    // DevBrand API Surface Layer - External REST Endpoints
-    DevBrandController,
   ],
   exports: [],
 })

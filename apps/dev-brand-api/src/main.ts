@@ -7,7 +7,11 @@
 import { EnvLoader } from './app/config/env-loader.util';
 
 // Initialize environment loading with only encapsulated .env files
+// When running from apps/dev-brand-api, we need to go up 2 levels to find the project root
+import { join } from 'path';
+const projectRoot = join(process.cwd(), '../..');
 const envResult = EnvLoader.load({
+  rootDir: projectRoot,
   envFiles: [
     '.env.chromadb', // ChromaDB & Memory configuration
     '.env.neo4j', // Neo4j configuration

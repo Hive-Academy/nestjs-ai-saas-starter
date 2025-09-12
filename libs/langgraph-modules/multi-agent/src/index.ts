@@ -20,9 +20,11 @@ export { ToolNodeService } from './lib/tools/tool-node.service';
 // Interfaces and Types
 export * from './lib/interfaces/multi-agent.interface';
 export type * from './lib/interfaces/tool.interface';
+export * from './lib/types/agent-config.interface';
 
 // Constants
 export * from './lib/constants/multi-agent.constants';
 
-// Decorators - Tool decorators
+// Decorators - Tool and Agent decorators
 export * from './lib/decorators/tool.decorator';
+export * from './lib/decorators/agent.decorator';

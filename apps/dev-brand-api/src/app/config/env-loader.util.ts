@@ -6,10 +6,12 @@ import { join } from 'path';
 /**
  * Environment configuration loader utility
  * Supports loading multiple .env files with proper precedence and encapsulation
+ * Includes smart path resolution for different deployment scenarios
  */
 export class EnvLoader {
   private static loaded = false;
   private static loadedFiles: string[] = [];
+  private static readonly ENV_FILENAME = '.env';
 
   /**
    * Load environment files with proper precedence
@@ -84,8 +86,6 @@ export class EnvLoader {
    * Get default environment files in order of precedence (lowest to highest)
    */
   private static getDefaultEnvFiles(): string[] {
-    const nodeEnv = process.env.NODE_ENV || 'development';
-
     return [
       // Base configurations (lowest precedence)
       '.env.chromadb',
@@ -205,6 +205,135 @@ export class EnvLoader {
    */
   static wasFileLoaded(fileName: string): boolean {
     return this.loadedFiles.includes(fileName);
+  }
+
+  /**
+   * Find the .env file using a deterministic path resolution strategy
+   * Integrated from EnvPathResolver for unified environment handling
+   * @returns Absolute path to the .env file
+   * @throws Error if .env file cannot be located
+   */
+  static findEnvFilePath(): string {
+    // Strategy 1: Look in current working directory (runtime context)
+    const cwdPath = join(process.cwd(), this.ENV_FILENAME);
+    if (existsSync(cwdPath)) {
+      return cwdPath;
+    }
+
+    // Strategy 2: Look relative to the built application file (__dirname)
+    const builtAppPath = join(__dirname, this.ENV_FILENAME);
+    if (existsSync(builtAppPath)) {
+      return builtAppPath;
+    }
+
+    // Strategy 3: Look in project root from dist directory structure
+    // apps/dev-brand-api/dist -> ../../../.env
+    const projectRootFromDist = join(__dirname, '../../../', this.ENV_FILENAME);
+    if (existsSync(projectRootFromDist)) {
+      return projectRootFromDist;
+    }
+
+    // Strategy 4: Look in workspace root (monorepo scenario)
+    const workspaceRoot = join(process.cwd(), '../../../', this.ENV_FILENAME);
+    if (existsSync(workspaceRoot)) {
+      return workspaceRoot;
+    }
+
+    // Strategy 5: Search up the directory tree from current location
+    const searchUpPath = this.searchUpDirectoryTree(__dirname);
+    if (searchUpPath) {
+      return searchUpPath;
+    }
+
+    // Log all attempted paths for debugging
+    const attemptedPaths = [
+      cwdPath,
+      builtAppPath,
+      projectRootFromDist,
+      workspaceRoot,
+    ];
+
+    throw new Error(
+      `Could not locate .env file. Searched in:\n${attemptedPaths.join(
+        '\n'
+      )}\n\nPlease ensure .env file exists in your project root.`
+    );
+  }
+
+  /**
+   * Search up the directory tree from starting directory to find .env file
+   * @param startDir Starting directory for search
+   * @param maxLevels Maximum levels to search up (prevent infinite loops)
+   * @returns Path to .env file or null if not found
+   */
+  private static searchUpDirectoryTree(
+    startDir: string,
+    maxLevels = 10
+  ): string | null {
+    let currentDir = startDir;
+
+    for (let level = 0; level < maxLevels; level++) {
+      const envPath = join(currentDir, this.ENV_FILENAME);
+
+      if (existsSync(envPath)) {
+        return envPath;
+      }
+
+      const parentDir = join(currentDir, '..');
+
+      // Reached filesystem root
+      if (parentDir === currentDir) {
+        break;
+      }
+
+      currentDir = parentDir;
+    }
+
+    return null;
+  }
+
+  /**
+   * Validate that the .env file is readable and contains expected content
+   * @param envPath Path to the .env file
+   * @returns true if file is valid, false otherwise
+   */
+  static validateEnvFile(envPath: string): boolean {
+    try {
+      const stats = require('fs').statSync(envPath);
+
+      if (!stats.isFile()) {
+        return false;
+      }
+
+      if (stats.size === 0) {
+        return false;
+      }
+
+      // Try to read a few bytes to ensure file is readable
+      const fs = require('fs');
+      const fd = fs.openSync(envPath, 'r');
+      const buffer = Buffer.alloc(10);
+      fs.readSync(fd, buffer, 0, 10, 0);
+      fs.closeSync(fd);
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get the resolved .env file path with validation
+   * @returns Validated absolute path to .env file
+   */
+  static getValidatedEnvPath(): string {
+    const envPath = this.findEnvFilePath();
+
+    if (!this.validateEnvFile(envPath)) {
+      throw new Error(`Invalid .env file at: ${envPath}`);
+    }
+
+    return envPath;
   }
 }
 
