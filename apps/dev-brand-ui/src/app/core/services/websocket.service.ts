@@ -28,6 +28,8 @@ export interface WebSocketConfig {
   reconnectInterval: number;
   maxReconnectAttempts: number;
   heartbeatInterval: number;
+  userId?: string;
+  sessionId?: string;
 }
 
 /**
@@ -180,12 +182,15 @@ export class WebSocketService {
 
   /**
    * Get WebSocket URL from environment
+   * Updated to connect to TASK_API_001 DevBrand backend at /devbrand namespace
    */
   private getWebSocketUrl(): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = window.location.hostname === 'localhost' ? ':3001' : '';
-    return `${protocol}//${host}${port}`;
+    // FIXED: Connect to real TASK_API_001 backend (port 3000, not mock 3001)
+    const port = window.location.hostname === 'localhost' ? ':3000' : '';
+    // Connect to actual DevBrand WebSocket namespace from TASK_API_001
+    return `${protocol}//${host}${port}/devbrand`;
   }
 
   /**

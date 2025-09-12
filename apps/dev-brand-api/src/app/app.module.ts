@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EnvPathResolver } from './utils/env-path-resolver.util';
 
 // Library imports
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
@@ -56,6 +55,9 @@ import { CheckpointExamplesController } from './controllers/checkpoint-examples.
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
 
+// Showcase Module - Demonstrates decorator system power
+import { ShowcaseModule } from './showcase/showcase.module';
+
 /**
  * Demo Application Module - Showcasing Optional Checkpoint DI Pattern
  *
@@ -86,7 +88,6 @@ import { HealthController } from './controllers/health.controller';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: EnvPathResolver.getValidatedEnvPath(),
     }),
 
     // ChromaDB Module with extracted configuration
@@ -117,10 +118,8 @@ import { HealthController } from './controllers/health.controller';
     // 🎯 CHECKPOINT MODULE: Configure checkpoint storage once at application level
     // This provides CheckpointManagerService for dependency injection into consumer libraries
     LanggraphModulesCheckpointModule.forRootAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getCheckpointConfig(configService),
+      useFactory: async () => getCheckpointConfig(),
     }),
 
     // Other core modules (checkpoint-independent)
@@ -137,30 +136,39 @@ import { HealthController } from './controllers/health.controller';
     // Use case: Production workflows requiring reliability and observability
 
     FunctionalApiModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
-        ...getFunctionalApiConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
+      useFactory: async (...args: unknown[]) => {
+        const checkpointManager = args[0] as CheckpointManagerService;
+        return {
+          ...getFunctionalApiConfig(),
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
       inject: [CheckpointManagerService],
       // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
       // Enables: Workflow state persistence, step-by-step recovery, execution replay
     }),
 
     MultiAgentModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
-        ...getMultiAgentConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
+      useFactory: async (...args: unknown[]) => {
+        const checkpointManager = args[0] as CheckpointManagerService;
+        return {
+          ...getMultiAgentConfig(),
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
       inject: [CheckpointManagerService],
       // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
       // Enables: Agent network state, communication history, coordinated recovery
     }),
 
     TimeTravelModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
-        ...getTimeTravelConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
+      useFactory: async (...args: unknown[]) => {
+        const checkpointManager = args[0] as CheckpointManagerService;
+        return {
+          ...getTimeTravelConfig(),
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
       inject: [CheckpointManagerService],
       // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
       // Enables: Timeline branching, state snapshots, workflow debugging
@@ -190,6 +198,11 @@ import { HealthController } from './controllers/health.controller';
       logger: false, // Disable excessive logging
       errorLogStyle: 'pretty',
     }),
+
+    // Showcase Module - Demonstrates the FULL POWER of our decorator system
+    // This module shows how to create enterprise-grade AI agents with minimal code
+    // using our plug-and-play decorator architecture
+    ShowcaseModule,
   ],
   providers: [
     // Test service to verify child module service injection

@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FunctionalWorkflowService } from '@hive-academy/langgraph-functional-api';
-import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
+import {
+  AgentNetwork,
+  MultiAgentCoordinatorService,
+} from '@hive-academy/langgraph-multi-agent';
 import { TimeTravelService } from '@hive-academy/langgraph-time-travel';
 import { MonitoringFacadeService } from '@hive-academy/langgraph-monitoring';
 
@@ -51,9 +54,10 @@ export class CheckpointExamplesService {
       const result = await this.functionalWorkflowService.executeWorkflow(
         JSON.stringify(workflow),
         {
-          enableCheckpointing: true,
-          threadId: `demo-${Date.now()}`,
-          metadata: { demo: 'checkpoint-enabled' },
+          metadata: {
+            demo: 'checkpoint-enabled',
+            threadId: `demo-${Date.now()}`,
+          },
         }
       );
 
@@ -86,7 +90,16 @@ export class CheckpointExamplesService {
         metrics: ['execution_time', 'memory_usage', 'cpu_usage'],
       };
 
-      const result = await this.monitoringService.trackWorkflow(metrics);
+      await this.monitoringService.recordMetric('workflow.demo.execution', 1, {
+        workflowId: metrics.workflowId,
+        type: 'monitoring-demo',
+      });
+
+      const result = {
+        success: true,
+        metrics: metrics,
+        timestamp: new Date().toISOString(),
+      };
 
       return {
         workflowResult: result,
@@ -110,24 +123,50 @@ export class CheckpointExamplesService {
     this.logger.log('🤖 DEMO: Multi-agent network with checkpoint persistence');
 
     try {
-      const agentNetwork = {
-        name: 'demo-agent-network',
+      const agentNetwork: AgentNetwork = {
+        id: 'demo-agent-network',
+        type: 'supervisor',
         agents: [
-          { id: 'coordinator', role: 'coordinator' },
-          { id: 'processor', role: 'data_processor' },
-          { id: 'validator', role: 'quality_validator' },
+          {
+            id: 'coordinator',
+            name: 'Coordinator',
+            description: 'Coordinates workflow',
+            nodeFunction: async (_state) => ({ messages: [] }),
+          },
+          {
+            id: 'processor',
+            name: 'Data Processor',
+            description: 'Processes data',
+            nodeFunction: async (state) => ({ messages: [] }),
+          },
+          {
+            id: 'validator',
+            name: 'Quality Validator',
+            description: 'Validates quality',
+            nodeFunction: async (state) => ({ messages: [] }),
+          },
         ],
-        workflow: {
-          steps: ['coordinate', 'process', 'validate', 'finalize'],
+        config: {
+          systemPrompt:
+            'You coordinate a multi-agent workflow for checkpoint demonstration',
+          workers: ['coordinator', 'processor', 'validator'],
         },
       };
 
+      // First create the network
+      const networkId = await this.multiAgentService.createNetwork(
+        agentNetwork
+      );
+
       // This will create checkpoints for network state and agent communications
       // because MultiAgentModule was configured with CheckpointManagerAdapter
-      const result = await this.multiAgentService.executeNetwork(agentNetwork, {
-        threadId: `multi-agent-${Date.now()}`,
-        enableCheckpointing: true,
-        checkpointInterval: 2000,
+      const result = await this.multiAgentService.executeWorkflow(networkId, {
+        messages: ['Execute multi-agent demo with checkpointing'],
+        config: {
+          configurable: {
+            thread_id: `multi-agent-${Date.now()}`,
+          },
+        },
       });
 
       return {
@@ -155,21 +194,20 @@ export class CheckpointExamplesService {
     );
 
     try {
-      const workflowState = {
-        id: 'time-travel-demo',
-        initialState: { step: 0, data: 'initial' },
-        timeline: [],
-      };
-
       // This will create branches and snapshots in checkpoint storage
       // because TimeTravelModule was configured with CheckpointManagerAdapter
       const threadId = `time-travel-${Date.now()}`;
       const checkpointId = 'initial-checkpoint';
 
-      // Create initial checkpoint
+      // Create initial checkpoint using the workflow state
       const timeline = await this.timeTravelService.getExecutionHistory(
         threadId
       );
+
+      // Store initial state in time travel service
+      await this.timeTravelService.createBranch(threadId, 'initial', {
+        name: 'initial-state',
+      });
 
       // Demonstrate branching
       await this.timeTravelService.createBranch(threadId, checkpointId, {

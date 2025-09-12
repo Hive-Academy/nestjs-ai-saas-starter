@@ -28,10 +28,12 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
     it('should validate that modules can be configured independently', () => {
       // Test module configurations are independent
-      const coreConfig = { llm: { provider: 'openai' } };
       const checkpointConfig = { checkpoint: { maxPerThread: 100 } };
-      const streamingConfig = { enabled: true, bufferSize: 1024 };
-      const hitlConfig = { enabled: true, defaultTimeout: 30000 };
+      const streamingConfig = {
+        websocket: { enabled: true },
+        defaultBufferSize: 1024,
+      };
+      const hitlConfig = { defaultTimeout: 30000, confidenceThreshold: 0.8 };
 
       expect(() =>
         LanggraphModulesCheckpointModule.forRoot(checkpointConfig)
@@ -52,8 +54,8 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
         LanggraphModulesCheckpointModule.forRoot({
           checkpoint: { maxPerThread: 100 },
         }),
-        StreamingModule.forRoot({ enabled: true }),
-        HitlModule.forRoot({ enabled: true }),
+        StreamingModule.forRoot({ websocket: { enabled: true } }),
+        HitlModule.forRoot({ defaultTimeout: 30000 }),
       ];
 
       moduleConfigs.forEach((config, index) => {

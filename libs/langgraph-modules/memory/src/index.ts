@@ -18,6 +18,10 @@ export type {
   UserMemoryPatterns,
   MemoryServiceInterface,
   MemoryOperationMetrics,
+  SerializableValue,
+  SerializableArray,
+  SerializableObject,
+  MetadataValue,
 } from './lib/interfaces/memory.interface';
 
 export type {
