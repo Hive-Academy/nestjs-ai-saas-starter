@@ -25,6 +25,9 @@ import { ToolRegistryService } from './tools/tool-registry.service';
 import {
   CHECKPOINT_ADAPTER_TOKEN,
   NoOpCheckpointAdapter,
+  IStreamingService,
+  STREAMING_SERVICE_TOKEN,
+  NoOpStreamingService,
 } from '@hive-academy/langgraph-core';
 import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 
@@ -51,6 +54,11 @@ export class MultiAgentModule {
       {
         provide: CHECKPOINT_ADAPTER_TOKEN,
         useValue: options.checkpointAdapter || new NoOpCheckpointAdapter(),
+      },
+      // Streaming adapter provider - either provided or no-op
+      {
+        provide: STREAMING_SERVICE_TOKEN,
+        useValue: options.streamingAdapter || new NoOpStreamingService(),
       },
       // Core services
       AgentRegistryService,
@@ -99,6 +107,9 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
+        // DI tokens
+        CHECKPOINT_ADAPTER_TOKEN,
+        STREAMING_SERVICE_TOKEN,
         // Examples service
       ],
       global: true,
@@ -127,6 +138,15 @@ export class MultiAgentModule {
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
           return moduleOptions.checkpointAdapter || new NoOpCheckpointAdapter();
+        },
+        inject: options.inject || [],
+      },
+      // Streaming adapter provider - async factory
+      {
+        provide: STREAMING_SERVICE_TOKEN,
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.streamingAdapter || new NoOpStreamingService();
         },
         inject: options.inject || [],
       },
@@ -183,6 +203,9 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
+        // DI tokens
+        CHECKPOINT_ADAPTER_TOKEN,
+        STREAMING_SERVICE_TOKEN,
         // Examples service
       ],
       global: false,
@@ -224,8 +247,9 @@ export class MultiAgentModule {
       tools: options.tools || [],
       agents: options.agents || [],
       workflows: options.workflows || [],
-      // Preserve checkpoint adapter if provided
+      // Preserve adapters if provided
       checkpointAdapter: options.checkpointAdapter,
+      streamingAdapter: options.streamingAdapter,
     };
   }
 }

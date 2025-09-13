@@ -6,6 +6,18 @@ import { WebSocketBridgeService } from './services/websocket-bridge.service';
 import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
 import { WebSocketGatewayConfig } from './interfaces/websocket-gateway.interface';
 import { setStreamingConfig } from './utils/streaming-config.accessor';
+import {
+  StreamingServiceAdapter,
+  TokenStreamingServiceAdapter,
+  EventStreamProcessorServiceAdapter,
+  WebSocketBridgeServiceAdapter,
+} from './adapters/streaming-service.adapter';
+import {
+  STREAMING_SERVICE_TOKEN,
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+} from '@hive-academy/langgraph-core';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 export interface StreamingModuleOptions {
@@ -26,6 +38,7 @@ export class StreamingModule {
     setStreamingConfig(config);
 
     const providers: any[] = [
+      // Concrete implementations
       TokenStreamingService,
       EventStreamProcessorService,
       WebSocketBridgeService,
@@ -33,12 +46,49 @@ export class StreamingModule {
         provide: 'STREAMING_OPTIONS',
         useValue: options || {},
       },
+
+      // Adapters for DI pattern
+      StreamingServiceAdapter,
+      TokenStreamingServiceAdapter,
+      EventStreamProcessorServiceAdapter,
+      WebSocketBridgeServiceAdapter,
+
+      // Interface tokens - providing concrete implementations
+      {
+        provide: STREAMING_SERVICE_TOKEN,
+        useExisting: StreamingServiceAdapter,
+      },
+      {
+        provide: TOKEN_STREAMING_SERVICE_TOKEN,
+        useExisting: TokenStreamingServiceAdapter,
+      },
+      {
+        provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+        useExisting: EventStreamProcessorServiceAdapter,
+      },
+      {
+        provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+        useExisting: WebSocketBridgeServiceAdapter,
+      },
     ];
 
     const exports: any[] = [
+      // Concrete services
       TokenStreamingService,
       EventStreamProcessorService,
       WebSocketBridgeService,
+
+      // Adapters
+      StreamingServiceAdapter,
+      TokenStreamingServiceAdapter,
+      EventStreamProcessorServiceAdapter,
+      WebSocketBridgeServiceAdapter,
+
+      // Export interface tokens for consumer injection
+      STREAMING_SERVICE_TOKEN,
+      TOKEN_STREAMING_SERVICE_TOKEN,
+      EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+      WEBSOCKET_BRIDGE_SERVICE_TOKEN,
     ];
 
     // Add WebSocket gateway if enabled and configured
@@ -80,6 +130,7 @@ export class StreamingModule {
       ],
       providers,
       exports,
+      global: true, // Make streaming services globally available
     };
   }
 }

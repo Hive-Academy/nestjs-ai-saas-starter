@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import type {
+  ICheckpointAdapter,
+  IStreamingService,
+} from '@hive-academy/langgraph-core';
 
 /**
  * LangGraph-compatible agent state following 2025 best practices
@@ -566,6 +569,12 @@ export interface MultiAgentModuleOptions {
    * If provided, enables checkpointing features
    */
   checkpointAdapter?: ICheckpointAdapter;
+
+  /**
+   * Optional streaming adapter for dependency injection
+   * If provided, enables real-time streaming features
+   */
+  streamingAdapter?: IStreamingService;
 }
 
 /**

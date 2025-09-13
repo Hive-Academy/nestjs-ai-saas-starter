@@ -4,6 +4,8 @@ import type { RunnableConfig } from '@langchain/core/runnables';
 import {
   CHECKPOINT_ADAPTER_TOKEN,
   ICheckpointAdapter,
+  STREAMING_SERVICE_TOKEN,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
@@ -33,7 +35,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     private readonly networkManager: NetworkManagerService,
     private readonly llmProvider: LlmProviderService,
     @Inject(CHECKPOINT_ADAPTER_TOKEN)
-    private readonly checkpointAdapter: ICheckpointAdapter
+    private readonly checkpointAdapter: ICheckpointAdapter,
+    @Inject(STREAMING_SERVICE_TOKEN)
+    private readonly streamingService: IStreamingService
   ) {}
 
   async onModuleInit(): Promise<void> {

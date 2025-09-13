@@ -23,7 +23,14 @@ import {
   StreamEventDecoratorMetadata,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
-import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
+import {
+  WorkflowStateAnnotation,
+  IStreamingService,
+  STREAMING_SERVICE_TOKEN,
+  TokenStreamOptions,
+  StreamEventData,
+  ProgressData,
+} from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 
 /**
@@ -53,7 +60,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
-    private readonly metadataProcessor: MetadataProcessorService
+    private readonly metadataProcessor: MetadataProcessorService,
+
+    // Inject the streaming service - could be real service or no-op
+    @Inject(STREAMING_SERVICE_TOKEN)
+    private readonly streamingService: IStreamingService
   ) {}
 
   /**
@@ -103,6 +114,20 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       methodName
     );
     if (tokenMetadata?.enabled) {
+      const options: TokenStreamOptions = {
+        executionId,
+        nodeId,
+        config: tokenMetadata,
+      };
+
+      // Initialize token streaming via injected service
+      this.streamingService.initializeTokenStream(options).catch((error) => {
+        this.logger.error(
+          `Failed to initialize token streaming for ${nodeId}:`,
+          error
+        );
+      });
+
       this.tokenStreamConfigs.set(`${executionId}:${nodeId}`, tokenMetadata);
       this.logger.debug(
         `Configured token streaming for ${nodeId}: ${JSON.stringify(
@@ -369,6 +394,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         accumulatedContent += processedToken;
 
+        // Stream via injected service instead of console.log
+        this.streamingService.streamToken(executionId, nodeId, processedToken, {
+          index: i,
+          totalTokens: tokens.length,
+          progress: ((i + 1) / tokens.length) * 100,
+        });
+
         const tokenData: TokenData = {
           content: processedToken,
           index: i,
@@ -391,7 +423,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         yield update;
 
-        // Emit token event for WebSocket bridge
+        // Still emit token event for backward compatibility
         this.eventEmitter.emit(`workflow.token.${executionId}`, {
           ...tokenData,
           nodeId,
@@ -405,6 +437,9 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           );
         }
       }
+
+      // Flush remaining tokens
+      await this.streamingService.flushTokens(executionId, nodeId);
 
       // Emit completion event
       this.eventEmitter.emit(`workflow.token.complete.${executionId}`, {
@@ -592,6 +627,14 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     message?: string,
     metadata?: any
   ): void {
+    // Stream via injected service
+    this.streamingService.streamProgress(executionId, 'workflow', {
+      progress,
+      message,
+      ...metadata,
+    });
+
+    // Continue with local streaming for backward compatibility
     const update = this.createUpdate(
       StreamEventType.PROGRESS,
       { progress, message, ...metadata },

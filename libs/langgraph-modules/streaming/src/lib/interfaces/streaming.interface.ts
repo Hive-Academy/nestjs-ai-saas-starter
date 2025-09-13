@@ -1,6 +1,7 @@
 // import { BaseMessage } from '@langchain/core/messages';
 
-import { StreamEventType } from '../constants';
+// Import StreamEventType from core library to avoid circular dependency
+import { StreamEventType } from '@hive-academy/langgraph-core';
 
 // Re-export StreamEventType for external use
 export { StreamEventType };
@@ -105,5 +106,3 @@ export function getStreamProgressMetadata(
     stage,
   };
 }
-
-

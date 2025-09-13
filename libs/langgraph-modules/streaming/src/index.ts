@@ -11,6 +11,9 @@ export * from './lib/services/websocket-bridge.service';
 export * from './lib/services/streaming-websocket-gateway.service';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
+// Adapters for DI pattern
+export * from './lib/adapters/streaming-service.adapter';
+
 // Decorators
 export * from './lib/decorators/streaming.decorator';
 

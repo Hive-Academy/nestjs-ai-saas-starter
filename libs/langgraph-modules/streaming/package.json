@@ -34,7 +34,8 @@
     "@nestjs/event-emitter": "^3.0.1",
     "rxjs": "7.8.2",
     "@nestjs/websockets": "^11.0.0",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "@hive-academy/langgraph-core": "0.0.1"
   },
   "devDependencies": {
     "rollup": "4.49.0",

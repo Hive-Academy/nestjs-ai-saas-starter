@@ -93,3 +93,34 @@ export {
   CheckpointIntegrationHelper,
   createCheckpointIntegration,
 } from './lib/utils/checkpoint-integration.helper';
+
+// Streaming integration exports for consumer libraries
+export {
+  STREAMING_SERVICE_TOKEN,
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+  NoOpStreamingService,
+  NoOpTokenStreamingService,
+  NoOpEventStreamProcessorService,
+  NoOpWebSocketBridgeService,
+  StreamEventType,
+} from './lib/interfaces/streaming.interface';
+
+export type {
+  IStreamingService,
+  ITokenStreamingService,
+  IEventStreamProcessorService,
+  IWebSocketBridgeService,
+  TokenStreamOptions,
+  StreamEventData,
+  ProgressData,
+  StreamUpdate,
+  TokenFilter,
+  StreamTokenDecoratorMetadata,
+  StreamEventDecoratorMetadata,
+  StreamProgressDecoratorMetadata,
+  StreamTokenOptions,
+  StreamEventOptions,
+  StreamProgressOptions,
+} from './lib/interfaces/streaming.interface';
