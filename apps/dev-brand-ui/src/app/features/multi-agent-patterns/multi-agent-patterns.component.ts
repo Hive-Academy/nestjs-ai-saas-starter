@@ -7,16 +7,36 @@ import {
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+
+// Import new components
+import {
+  PatternSelectorComponent,
+  PatternDemo,
+} from './components/pattern-selector/pattern-selector.component';
+import { AgentSelectionPanelComponent } from './components/agent-selection-panel/agent-selection-panel.component';
+import {
+  SearchDemoComponent,
+  SearchDemonstration,
+  SearchConfig,
+} from './components/search-demo/search-demo.component';
+import {
+  ConfigurationPanelComponent,
+  PatternConfig,
+} from './components/configuration-panel/configuration-panel.component';
+import {
+  VisualizationPanelComponent,
+  ExecutionStep,
+  ServiceCoordination,
+} from './components/visualization-panel/visualization-panel.component';
+import { StreamingOutputComponent } from './components/streaming-output/streaming-output.component';
+import { ExecutionResultsComponent } from './components/execution-results/execution-results.component';
+import { WebSocketStatusComponent } from './components/websocket-status/websocket-status.component';
 
 import {
   ShowcaseApiService,
   ShowcaseWorkflowRequest,
   ShowcaseWorkflowResponse,
   ShowcaseAgent,
-  SearchResponse,
-  NewsSearchResponse,
-  ResearchSearchResponse,
 } from '../../core/services/showcase-api.service';
 import { WebSocketService } from '../../core/services/websocket.service';
 import {
@@ -25,44 +45,7 @@ import {
   StreamUpdatePayload,
 } from '../../core/interfaces/agent-state.interface';
 
-interface PatternDemo {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  complexity: 'low' | 'medium' | 'high';
-  agentCount: number;
-  useCases: string[];
-  advantages: string[];
-  visualizationType: '3d-network' | '2d-flow' | 'hierarchy';
-}
-
-interface ServiceCoordination {
-  id: string;
-  name: string;
-  status: 'idle' | 'active' | 'completed' | 'error';
-  description: string;
-  progress: number;
-  executionOrder: number;
-}
-
-interface SearchDemonstration {
-  type: 'web' | 'news' | 'research';
-  query: string;
-  results?: SearchResponse | NewsSearchResponse | ResearchSearchResponse;
-  isLoading: boolean;
-  error?: string;
-}
-
-interface ExecutionStep {
-  id: string;
-  name: string;
-  status: 'pending' | 'running' | 'completed' | 'error';
-  agent?: string;
-  progress: number;
-  duration?: number;
-  output?: string;
-}
+// Interfaces are now imported from child components
 
 /**
  * 🐝 MULTI-AGENT PATTERNS COMPONENT
@@ -74,7 +57,17 @@ interface ExecutionStep {
 @Component({
   selector: 'brand-multi-agent-patterns',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    PatternSelectorComponent,
+    AgentSelectionPanelComponent,
+    SearchDemoComponent,
+    ConfigurationPanelComponent,
+    VisualizationPanelComponent,
+    StreamingOutputComponent,
+    ExecutionResultsComponent,
+    WebSocketStatusComponent,
+  ],
   templateUrl: './multi-agent-patterns.component.html',
   styleUrls: ['./multi-agent-patterns.component.css'],
 })
@@ -91,26 +84,14 @@ export class MultiAgentPatternsComponent implements OnInit {
   readonly visualizationMode = signal<'2d' | '3d'>('2d');
   readonly currentExecution = signal<ShowcaseWorkflowResponse | null>(null);
   readonly executionSteps = signal<ExecutionStep[]>([]);
-  readonly streamingOutput = signal<string>('');  // For real-time token streaming display
+  readonly streamingOutput = signal<string>(''); // For real-time token streaming display
   readonly availableAgents = signal<ShowcaseAgent[]>([]);
   readonly selectedAgents = signal<string[]>([]);
   readonly serviceCoordination = signal<ServiceCoordination[]>([]);
   readonly searchDemonstration = signal<SearchDemonstration | null>(null);
   readonly showSearchSection = signal(false);
 
-  // Form data
-  inputQuery =
-    'Analyze my GitHub repositories and create a comprehensive personal brand strategy with multi-platform content';
-  agentCount = 3;
-  complexityLevel: 'low' | 'medium' | 'high' = 'medium';
-  demonstrationMode: 'basic' | 'advanced' | 'enterprise' = 'advanced';
-  
-  // Search demonstration data
-  searchQuery = 'AI development trends 2024';
-  searchType: 'web' | 'news' | 'research' = 'web';
-  newsTimeframe: 'day' | 'week' | 'month' = 'week';
-  newsCategory: 'general' | 'tech' | 'business' | 'science' | 'health' = 'tech';
-  researchDepth: 'summary' | 'detailed' | 'comprehensive' = 'detailed';
+  // Configuration is now handled by child components
 
   // Pattern definitions
   readonly availablePatterns = signal<PatternDemo[]>([
@@ -182,9 +163,14 @@ export class MultiAgentPatternsComponent implements OnInit {
         if (status.status === 'connected') {
           console.log('🔗 WebSocket connected, subscribing to events');
           // Subscribe to streaming events for this component
-          this.wsService.subscribeToEvents(['stream_update', 'token', 'progress', 'event']);
+          this.wsService.subscribeToEvents([
+            'stream_update',
+            'token',
+            'progress',
+            'event',
+          ]);
         }
-      }
+      },
     });
   }
 
@@ -192,66 +178,58 @@ export class MultiAgentPatternsComponent implements OnInit {
     this.selectedPattern.set(patternId);
     this.executionStatus.set('idle');
     this.currentExecution.set(null);
-    this.streamingOutput.set('');  // Clear streaming output when switching patterns
+    this.streamingOutput.set('');
+  }
+
+  onPatternSelected(patternId: string) {
+    this.selectPattern(patternId);
+  }
+
+  onAgentToggled(agentId: string) {
+    this.toggleAgentSelection(agentId);
+  }
+
+  onSearchExecuted(config: SearchConfig) {
+    this.executeSearchDemo(config);
+  }
+
+  onSearchToggled() {
+    this.toggleSearchSection();
+  }
+
+  onConfigurationExecuted(config: PatternConfig) {
+    this.executePatternWithConfig(config);
   }
 
   setVisualizationMode(mode: '2d' | '3d') {
     this.visualizationMode.set(mode);
   }
 
-  getPatternName(): string {
-    const pattern = this.selectedPatternInfo();
-    return pattern ? pattern.name : 'Pattern';
-  }
-
-  getStatusText(): string {
-    const status = this.executionStatus();
-    const statusMap = {
-      idle: '⚪ Ready to Execute',
-      running: '🟡 Executing...',
-      completed: '🟢 Completed',
-      error: '🔴 Error Occurred',
-    };
-    return statusMap[status];
-  }
-
-  async executePattern() {
-    if (!this.inputQuery.trim() || this.isExecuting()) return;
-
-    this.isExecuting.set(true);
-    this.executionStatus.set('running');
-    this.currentExecution.set(null);
-    this.streamingOutput.set('');  // Clear streaming output for new execution
-
-    // Clear previous execution steps and reset
-    this.updateExecutionSteps(this.selectedPattern());
-
-    const request: ShowcaseWorkflowRequest = {
-      input: this.inputQuery,
-      demonstrationMode: this.demonstrationMode,
-      userId: 'demo-user',
-      sessionId: `pattern-${Date.now()}`,
-      selectedAgents: this.selectedAgents(),
-      enableStreaming: true,
-      enableHitl: this.demonstrationMode === 'enterprise'
-    };
-
+  private async executeWithRequest(request: ShowcaseWorkflowRequest) {
     // Generate a unique execution ID for this run
     const executionId = `${this.selectedPattern()}-${Date.now()}`;
-    
+
     // Subscribe to execution-specific streaming events BEFORE making the API call
     if (this.wsService.isConnected()) {
       console.log('🔔 Subscribing to execution:', executionId);
       this.wsService.subscribeToExecution({
         executionId,
-        eventTypes: ['token', 'progress', 'event', 'values', 'updates', 'node_start', 'node_complete'],
-        options: { includeHistory: false }
+        eventTypes: [
+          'token',
+          'progress',
+          'event',
+          'values',
+          'updates',
+          'node_start',
+          'node_complete',
+        ],
+        options: { includeHistory: false },
       });
     } else {
       console.warn('⚠️ WebSocket not connected, attempting to reconnect...');
       await this.connectWebSocket();
       // Wait a bit for connection to establish
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     try {
@@ -260,7 +238,7 @@ export class MultiAgentPatternsComponent implements OnInit {
       console.log('🚀 Starting showcase execution:', {
         pattern: this.selectedPattern(),
         executionId,
-        request
+        request,
       });
 
       if (this.selectedPattern() === 'supervisor') {
@@ -276,7 +254,7 @@ export class MultiAgentPatternsComponent implements OnInit {
       if (response) {
         console.log('✅ Showcase execution completed:', response);
         this.currentExecution.set(response);
-        
+
         // Don't immediately complete all steps - let the streaming updates handle it
         if (!this.wsService.isConnected()) {
           // Only complete steps if WebSocket isn't working
@@ -320,7 +298,7 @@ export class MultiAgentPatternsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Stream subscription error:', error);
-      }
+      },
     });
 
     // Subscribe to WebSocket messages
@@ -331,7 +309,7 @@ export class MultiAgentPatternsComponent implements OnInit {
       },
       error: (error) => {
         console.error('WebSocket message error:', error);
-      }
+      },
     });
   }
 
@@ -345,19 +323,19 @@ export class MultiAgentPatternsComponent implements OnInit {
 
     // Map node IDs from backend to UI step IDs
     const nodeIdMap: Record<string, string> = {
-      'initializeShowcase': 'supervisor',
-      'coordinateAgents': 'supervisor',
-      'performIntelligentAnalysis': 'github-analyzer',
-      'generateContent': 'content-creator',
-      'performQualityAssurance': 'brand-strategist',
-      'finalizeShowcase': 'brand-strategist',
+      initializeShowcase: 'supervisor',
+      coordinateAgents: 'supervisor',
+      performIntelligentAnalysis: 'github-analyzer',
+      generateContent: 'content-creator',
+      performQualityAssurance: 'brand-strategist',
+      finalizeShowcase: 'brand-strategist',
       // Swarm mappings
-      'initializeSwarm': 'peer-1',
-      'formPeerNetwork': 'peer-1',
-      'collaborateOnAnalysis': 'peer-2',
-      'achieveConsensus': 'peer-3',
-      'emergeCollectiveIntelligence': 'peer-4',
-      'finalizeSwarmResult': 'peer-4'
+      initializeSwarm: 'peer-1',
+      formPeerNetwork: 'peer-1',
+      collaborateOnAnalysis: 'peer-2',
+      achieveConsensus: 'peer-3',
+      emergeCollectiveIntelligence: 'peer-4',
+      finalizeSwarmResult: 'peer-4',
     };
 
     if (updateType === 'token' && updateData?.content) {
@@ -376,21 +354,34 @@ export class MultiAgentPatternsComponent implements OnInit {
 
     if (updateType === 'event' || updateType === 'events') {
       // Handle event data - it might be the event type directly or nested
-      const eventType = typeof updateData === 'string' ? updateData : 
-                       updateData?.eventType || updateData?.type || updateData?.event;
+      const eventType =
+        typeof updateData === 'string'
+          ? updateData
+          : updateData?.eventType || updateData?.type || updateData?.event;
       const nodeId = metadata.nodeId || metadata.node || updateData?.nodeId;
       const mappedId = nodeIdMap[nodeId] || nodeId;
-      
-      console.log('📡 Event received:', eventType, { nodeId, mappedId, data: updateData });
+
+      console.log('📡 Event received:', eventType, {
+        nodeId,
+        mappedId,
+        data: updateData,
+      });
 
       if (mappedId && eventType) {
         const eventUpper = eventType.toUpperCase();
         if (eventUpper.includes('START') || eventUpper.includes('BEGIN')) {
           this.setStepStatus(mappedId, 'running');
-        } else if (eventUpper.includes('COMPLETE') || eventUpper.includes('END') || eventUpper.includes('FINISH')) {
+        } else if (
+          eventUpper.includes('COMPLETE') ||
+          eventUpper.includes('END') ||
+          eventUpper.includes('FINISH')
+        ) {
           this.setStepStatus(mappedId, 'completed');
           this.updateStepProgress(mappedId, 100);
-        } else if (eventUpper.includes('ERROR') || eventUpper.includes('FAIL')) {
+        } else if (
+          eventUpper.includes('ERROR') ||
+          eventUpper.includes('FAIL')
+        ) {
           this.setStepStatus(mappedId, 'error');
         }
       }
@@ -417,7 +408,10 @@ export class MultiAgentPatternsComponent implements OnInit {
     }
 
     // Handle workflow completion
-    if (updateType === 'workflow_complete' || updateType === 'WORKFLOW_COMPLETE') {
+    if (
+      updateType === 'workflow_complete' ||
+      updateType === 'WORKFLOW_COMPLETE'
+    ) {
       console.log('🎉 Workflow completed!');
       this.executionStatus.set('completed');
       this.completeAllSteps();
@@ -445,8 +439,11 @@ export class MultiAgentPatternsComponent implements OnInit {
 
   private updateStepProgress(nodeId: string, progress: number) {
     const currentSteps = this.executionSteps();
-    const updatedSteps = currentSteps.map(step => {
-      if (step.id === nodeId || step.name.toLowerCase().includes(nodeId.toLowerCase())) {
+    const updatedSteps = currentSteps.map((step) => {
+      if (
+        step.id === nodeId ||
+        step.name.toLowerCase().includes(nodeId.toLowerCase())
+      ) {
         return { ...step, progress: Math.round(progress) };
       }
       return step;
@@ -454,10 +451,16 @@ export class MultiAgentPatternsComponent implements OnInit {
     this.executionSteps.set(updatedSteps);
   }
 
-  private setStepStatus(nodeId: string, status: 'pending' | 'running' | 'completed' | 'error') {
+  private setStepStatus(
+    nodeId: string,
+    status: 'pending' | 'running' | 'completed' | 'error'
+  ) {
     const currentSteps = this.executionSteps();
-    const updatedSteps = currentSteps.map(step => {
-      if (step.id === nodeId || step.name.toLowerCase().includes(nodeId.toLowerCase())) {
+    const updatedSteps = currentSteps.map((step) => {
+      if (
+        step.id === nodeId ||
+        step.name.toLowerCase().includes(nodeId.toLowerCase())
+      ) {
         return { ...step, status };
       }
       return step;
@@ -551,15 +554,6 @@ export class MultiAgentPatternsComponent implements OnInit {
     this.executionSteps.set([...steps]);
   }
 
-  getConnectionStatus(step1: ExecutionStep, step2: ExecutionStep): string {
-    if (step1.status === 'completed' && step2.status === 'completed') {
-      return 'status-active';
-    } else if (step1.status === 'running' || step2.status === 'running') {
-      return 'status-active';
-    }
-    return 'status-inactive';
-  }
-
   private displayStreamingToken(content: string) {
     console.log('📝 Displaying token:', content);
 
@@ -570,11 +564,11 @@ export class MultiAgentPatternsComponent implements OnInit {
     // Also update the currently running step's output
     if (this.executionStatus() === 'running') {
       const steps = this.executionSteps();
-      const runningStep = steps.find(s => s.status === 'running');
+      const runningStep = steps.find((s) => s.status === 'running');
       if (runningStep) {
-        runningStep.output = runningStep.output ?
-          runningStep.output + ' ' + content :
-          content;
+        runningStep.output = runningStep.output
+          ? runningStep.output + ' ' + content
+          : content;
         this.executionSteps.set([...steps]);
       }
     }
@@ -610,15 +604,22 @@ export class MultiAgentPatternsComponent implements OnInit {
             complexity: 'basic',
             showcaseLevel: 'basic',
             decoratorsUsed: ['@Agent'],
-            enterpriseFeatures: []
-          }
+            enterpriseFeatures: [],
+          },
         },
         {
           id: 'advanced-showcase',
           name: 'Advanced Showcase Agent',
-          description: 'Enterprise-grade capabilities with full decorator ecosystem',
+          description:
+            'Enterprise-grade capabilities with full decorator ecosystem',
           tools: ['advanced-analyzer', 'content-generator', 'quality-assessor'],
-          capabilities: ['analysis', 'generation', 'streaming', 'approval', 'monitoring'],
+          capabilities: [
+            'analysis',
+            'generation',
+            'streaming',
+            'approval',
+            'monitoring',
+          ],
           priority: 'high',
           executionTime: 'slow',
           outputFormat: 'comprehensive',
@@ -628,10 +629,19 @@ export class MultiAgentPatternsComponent implements OnInit {
             category: 'enterprise-demonstration',
             complexity: 'advanced',
             showcaseLevel: 'ultimate',
-            decoratorsUsed: ['@Agent', '@StreamToken', '@StreamEvent', '@RequiresApproval'],
-            enterpriseFeatures: ['real-time-streaming', 'human-in-loop', 'advanced-monitoring']
-          }
-        }
+            decoratorsUsed: [
+              '@Agent',
+              '@StreamToken',
+              '@StreamEvent',
+              '@RequiresApproval',
+            ],
+            enterpriseFeatures: [
+              'real-time-streaming',
+              'human-in-loop',
+              'advanced-monitoring',
+            ],
+          },
+        },
       ]);
     }
   }
@@ -644,18 +654,20 @@ export class MultiAgentPatternsComponent implements OnInit {
       {
         id: 'analysis-service',
         name: 'Analysis Service',
-        description: 'Sophisticated data analysis and GitHub repository insights',
+        description:
+          'Sophisticated data analysis and GitHub repository insights',
         status: 'idle',
         progress: 0,
-        executionOrder: 1
+        executionOrder: 1,
       },
       {
-        id: 'content-service', 
+        id: 'content-service',
         name: 'Content Service',
-        description: 'AI-powered content generation and multi-platform optimization',
+        description:
+          'AI-powered content generation and multi-platform optimization',
         status: 'idle',
         progress: 0,
-        executionOrder: 2
+        executionOrder: 2,
       },
       {
         id: 'quality-service',
@@ -663,7 +675,7 @@ export class MultiAgentPatternsComponent implements OnInit {
         description: 'Quality assurance and content validation',
         status: 'idle',
         progress: 0,
-        executionOrder: 3
+        executionOrder: 3,
       },
       {
         id: 'network-service',
@@ -671,8 +683,8 @@ export class MultiAgentPatternsComponent implements OnInit {
         description: 'Agent coordination and network topology management',
         status: 'idle',
         progress: 0,
-        executionOrder: 4
-      }
+        executionOrder: 4,
+      },
     ];
     this.serviceCoordination.set(services);
   }
@@ -683,7 +695,7 @@ export class MultiAgentPatternsComponent implements OnInit {
   toggleAgentSelection(agentId: string) {
     const selected = this.selectedAgents();
     if (selected.includes(agentId)) {
-      this.selectedAgents.set(selected.filter(id => id !== agentId));
+      this.selectedAgents.set(selected.filter((id) => id !== agentId));
     } else {
       this.selectedAgents.set([...selected, agentId]);
     }
@@ -700,88 +712,78 @@ export class MultiAgentPatternsComponent implements OnInit {
    * Toggle search demonstration section
    */
   toggleSearchSection() {
-    this.showSearchSection.update(show => !show);
+    this.showSearchSection.update((show) => !show);
   }
 
-  /**
-   * Execute Tavily search demonstration
-   */
-  async executeSearchDemo() {
-    if (!this.searchQuery.trim()) return;
+  async executeSearchDemo(config: SearchConfig) {
+    if (!config.query.trim()) return;
 
     const demo: SearchDemonstration = {
-      type: this.searchType,
-      query: this.searchQuery,
-      isLoading: true
+      type: config.type,
+      query: config.query,
+      isLoading: true,
     };
     this.searchDemonstration.set(demo);
 
     try {
       let results;
-      switch (this.searchType) {
+      switch (config.type) {
         case 'web':
-          results = await this.showcaseApi.searchWeb(this.searchQuery, 5, 'advanced').toPromise();
+          results = await this.showcaseApi
+            .searchWeb(config.query, 5, 'advanced')
+            .toPromise();
           break;
         case 'news':
-          results = await this.showcaseApi.searchNews(
-            this.searchQuery, 
-            this.newsTimeframe, 
-            this.newsCategory, 
-            8
-          ).toPromise();
+          results = await this.showcaseApi
+            .searchNews(
+              config.query,
+              config.newsTimeframe,
+              config.newsCategory,
+              8
+            )
+            .toPromise();
           break;
         case 'research':
-          results = await this.showcaseApi.searchResearch(
-            this.searchQuery,
-            this.researchDepth,
-            5,
-            true
-          ).toPromise();
+          results = await this.showcaseApi
+            .searchResearch(config.query, config.researchDepth, 5, true)
+            .toPromise();
           break;
       }
 
-      this.searchDemonstration.update(demo => ({
+      this.searchDemonstration.update((demo) => ({
         ...demo!,
         results,
-        isLoading: false
+        isLoading: false,
       }));
     } catch (error) {
-      this.searchDemonstration.update(demo => ({
+      this.searchDemonstration.update((demo) => ({
         ...demo!,
         error: (error as Error).message,
-        isLoading: false
+        isLoading: false,
       }));
     }
   }
 
-  /**
-   * Get search button text based on type and loading state
-   */
-  getSearchButtonText(): string {
-    const demo = this.searchDemonstration();
-    if (demo?.isLoading) {
-      return 'Searching...';
-    }
-    
-    const typeText = {
-      web: 'Web Search',
-      news: 'News Search', 
-      research: 'Research Search'
-    };
-    
-    return `Execute ${typeText[this.searchType]}`;
-  }
+  async executePatternWithConfig(config: PatternConfig) {
+    if (!config.inputQuery.trim() || this.isExecuting()) return;
 
-  /**
-   * Update service coordination status during execution
-   */
-  private updateServiceStatus(serviceId: string, status: ServiceCoordination['status'], progress = 0) {
-    this.serviceCoordination.update(services => 
-      services.map(service => 
-        service.id === serviceId 
-          ? { ...service, status, progress }
-          : service
-      )
-    );
+    this.isExecuting.set(true);
+    this.executionStatus.set('running');
+    this.currentExecution.set(null);
+    this.streamingOutput.set('');
+
+    this.updateExecutionSteps(this.selectedPattern());
+
+    const request: ShowcaseWorkflowRequest = {
+      input: config.inputQuery,
+      demonstrationMode: config.demonstrationMode,
+      userId: 'demo-user',
+      sessionId: `pattern-${Date.now()}`,
+      selectedAgents: this.selectedAgents(),
+      enableStreaming: true,
+      enableHitl: config.demonstrationMode === 'enterprise',
+    };
+
+    await this.executeWithRequest(request);
   }
 }

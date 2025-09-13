@@ -367,6 +367,223 @@ export class ShowcaseController {
   }
 
   /**
+   * 🤖 GET AVAILABLE AGENTS
+   *
+   * Returns a list of all available agents with their metadata
+   */
+  @Get('agents')
+  @ApiOperation({
+    summary: '🤖 Get Available Agents',
+    description: `Returns a comprehensive list of all available showcase agents with metadata:
+    
+    • Agent IDs and names
+    • Capabilities and tools
+    • Decorator usage patterns
+    • Complexity levels and priority
+    • Enterprise features supported
+    
+    Perfect for dynamic agent selection in the UI!`,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of available agents with comprehensive metadata',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Agent identifier' },
+          name: { type: 'string', description: 'Human-readable name' },
+          description: { type: 'string', description: 'Agent description' },
+          tools: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Available tools',
+          },
+          capabilities: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Agent capabilities',
+          },
+          priority: {
+            type: 'string',
+            enum: ['low', 'medium', 'high'],
+            description: 'Agent priority',
+          },
+          executionTime: {
+            type: 'string',
+            enum: ['fast', 'medium', 'slow'],
+            description: 'Expected execution time',
+          },
+          outputFormat: {
+            type: 'string',
+            enum: ['brief', 'detailed', 'comprehensive'],
+            description: 'Output format',
+          },
+          systemPrompt: { type: 'string', description: 'Agent system prompt' },
+          metadata: {
+            type: 'object',
+            properties: {
+              version: { type: 'string' },
+              category: { type: 'string' },
+              complexity: { type: 'string' },
+              showcaseLevel: { type: 'string' },
+              decoratorsUsed: { type: 'array', items: { type: 'string' } },
+              enterpriseFeatures: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAvailableAgents(): Promise<any[]> {
+    try {
+      // Return comprehensive agent definitions
+      const agents = [
+        {
+          id: 'demo-showcase',
+          name: 'Demo Showcase Agent',
+          description: 'Basic demonstration capabilities for getting started',
+          tools: ['analysis', 'formatting'],
+          capabilities: ['analysis'],
+          priority: 'medium',
+          executionTime: 'fast',
+          outputFormat: 'brief',
+          systemPrompt:
+            'Demo agent for basic showcasing with fundamental capabilities',
+          metadata: {
+            version: '1.0.0',
+            category: 'demo',
+            complexity: 'basic',
+            showcaseLevel: 'basic',
+            decoratorsUsed: ['@Agent'],
+            enterpriseFeatures: [],
+          },
+        },
+        {
+          id: 'advanced-showcase',
+          name: 'Advanced Showcase Agent',
+          description:
+            'Enterprise-grade capabilities with full decorator ecosystem',
+          tools: [
+            'advanced-analyzer',
+            'content-generator',
+            'quality-assessor',
+            'progress-tracker',
+          ],
+          capabilities: [
+            'analysis',
+            'generation',
+            'streaming',
+            'approval',
+            'monitoring',
+          ],
+          priority: 'high',
+          executionTime: 'slow',
+          outputFormat: 'comprehensive',
+          systemPrompt:
+            'Advanced agent showcasing complete decorator system with enterprise features',
+          metadata: {
+            version: '2.0.0',
+            category: 'enterprise-demonstration',
+            complexity: 'advanced',
+            showcaseLevel: 'ultimate',
+            decoratorsUsed: [
+              '@Agent',
+              '@StreamToken',
+              '@StreamEvent',
+              '@StreamProgress',
+              '@RequiresApproval',
+            ],
+            enterpriseFeatures: [
+              'real-time-streaming',
+              'human-in-loop',
+              'advanced-monitoring',
+              'state-persistence',
+            ],
+          },
+        },
+        {
+          id: 'specialist-showcase',
+          name: 'Specialist Showcase Agent',
+          description:
+            'Specialized capabilities for memory, tools, and coordination',
+          tools: ['memory-manager', 'tool-coordinator', 'debug-analyzer'],
+          capabilities: ['memory', 'tools', 'debugging', 'coordination'],
+          priority: 'high',
+          executionTime: 'medium',
+          outputFormat: 'detailed',
+          systemPrompt:
+            'Specialist agent for advanced tool coordination and memory management',
+          metadata: {
+            version: '1.5.0',
+            category: 'specialist',
+            complexity: 'advanced',
+            showcaseLevel: 'expert',
+            decoratorsUsed: ['@Agent', '@Tool', '@StreamEvent'],
+            enterpriseFeatures: [
+              'memory-intelligence',
+              'tool-coordination',
+              'debugging-support',
+            ],
+          },
+        },
+        {
+          id: 'streaming-showcase',
+          name: 'Streaming Showcase Agent',
+          description:
+            'Real-time streaming capabilities with token and event streaming',
+          tools: ['stream-processor', 'event-handler'],
+          capabilities: ['streaming'],
+          priority: 'medium',
+          executionTime: 'fast',
+          outputFormat: 'brief',
+          systemPrompt:
+            'Streaming specialist demonstrating real-time capabilities',
+          metadata: {
+            version: '1.2.0',
+            category: 'streaming',
+            complexity: 'basic',
+            showcaseLevel: 'focused',
+            decoratorsUsed: [
+              '@Agent',
+              '@StreamToken',
+              '@StreamEvent',
+              '@StreamProgress',
+            ],
+            enterpriseFeatures: ['real-time-streaming', 'event-processing'],
+          },
+        },
+        {
+          id: 'hitl-showcase',
+          name: 'Human-in-the-Loop Showcase Agent',
+          description: 'Human-in-the-loop workflows with approval mechanisms',
+          tools: ['approval-manager'],
+          capabilities: ['approval'],
+          priority: 'low',
+          executionTime: 'slow',
+          outputFormat: 'detailed',
+          systemPrompt: 'HITL specialist for human approval workflows',
+          metadata: {
+            version: '1.1.0',
+            category: 'hitl',
+            complexity: 'basic',
+            showcaseLevel: 'focused',
+            decoratorsUsed: ['@Agent', '@RequiresApproval', '@StreamEvent'],
+            enterpriseFeatures: ['human-in-loop', 'approval-workflows'],
+          },
+        },
+      ];
+
+      return agents;
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to retrieve available agents: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
    * 🤖 AGENT CAPABILITY DEMONSTRATION
    *
    * Showcases individual agent capabilities with examples and metrics

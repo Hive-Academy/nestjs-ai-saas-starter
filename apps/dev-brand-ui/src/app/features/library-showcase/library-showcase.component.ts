@@ -9,10 +9,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { interval } from 'rxjs';
+import { firstValueFrom, interval } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import {
+  ShowcaseAgent,
   ShowcaseApiService,
   ShowcaseCapabilities,
 } from '../../core/services/showcase-api.service';
@@ -1455,10 +1456,14 @@ export class LibraryShowcaseComponent implements OnInit {
     try {
       // Simulate demo execution with progress updates
       await this.simulateDemo(demo);
-
+      const agents = await firstValueFrom(
+        this.showcaseApi.getAvailableAgents()
+      );
       // Get real demo result from API if available
       if (
-        this.showcaseApi.getAvailableAgents().includes(`${library.id}-showcase`)
+        agents.filter(
+          (agent: ShowcaseAgent) => agent.id === `${library.id}-showcase`
+        ).length > 0
       ) {
         const agentDemo = await this.showcaseApi
           .getAgentDemo(`${library.id}-showcase`)

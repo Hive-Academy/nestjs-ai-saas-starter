@@ -78,6 +78,7 @@ export class Performance3DService {
   // Performance monitoring
   private frameCount = 0;
   private renderer: THREE.WebGLRenderer | null = null;
+  private lastQualityAdjustment = 0;
 
   // Memory management
   private geometryPool: Map<string, THREE.BufferGeometry[]> = new Map();
@@ -617,15 +618,30 @@ export class Performance3DService {
   private adjustQualityBasedOnPerformance(fps: number): void {
     const targetFps = this.targetFPS();
 
-    if (fps < targetFps - 10) {
-      // Performance is too low, reduce quality
+    // Prevent excessive adjustments by tracking last adjustment time
+    if (!this.lastQualityAdjustment) {
+      this.lastQualityAdjustment = performance.now();
+    }
+
+    const timeSinceLastAdjustment =
+      performance.now() - this.lastQualityAdjustment;
+    const minAdjustmentInterval = 2000; // 2 seconds minimum between adjustments
+
+    if (timeSinceLastAdjustment < minAdjustmentInterval) {
+      return; // Too soon to adjust again
+    }
+
+    if (fps < targetFps - 15) {
+      // Performance is significantly low, reduce quality
       this.reduceQuality();
+      this.lastQualityAdjustment = performance.now();
     } else if (
-      fps > targetFps + 5 &&
+      fps > targetFps + 10 &&
       this.performanceMetrics().qualityLevel !== 'high'
     ) {
-      // Performance is good, increase quality
+      // Performance is consistently good, increase quality
       this.increaseQuality();
+      this.lastQualityAdjustment = performance.now();
     }
   }
 
@@ -654,7 +670,7 @@ export class Performance3DService {
       ...metrics,
       qualityLevel: newLevel,
     }));
-    console.log(`Quality reduced to: ${newLevel}`);
+    console.debug(`Performance: Quality reduced to ${newLevel} (FPS impact)`);
   }
 
   /**
@@ -682,7 +698,9 @@ export class Performance3DService {
       ...metrics,
       qualityLevel: newLevel,
     }));
-    console.log(`Quality increased to: ${newLevel}`);
+    console.debug(
+      `Performance: Quality increased to ${newLevel} (optimization)`
+    );
   }
 
   /**

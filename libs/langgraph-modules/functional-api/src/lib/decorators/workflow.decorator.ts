@@ -63,9 +63,10 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
  * }
  * ```
  */
-export function Workflow(options: WorkflowOptions): ClassDecorator {
+export function Workflow(options: WorkflowOptions = {}): ClassDecorator {
   return (target: any) => {
     // Get module config with defaults for zero-config experience
+    // Handle case where module hasn't been initialized yet during class loading
     const moduleConfig = getFunctionalApiConfigWithDefaults();
 
     // Merge options with module config defaults

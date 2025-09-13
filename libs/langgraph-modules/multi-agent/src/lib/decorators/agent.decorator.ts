@@ -88,27 +88,18 @@ export const AGENT_METADATA_KEY = 'agent:config';
  * }
  * ```
  */
-export function Agent(config: AgentConfig): ClassDecorator {
+export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
   return (target: any) => {
-    // Validate required configuration
-    if (!config.id) {
-      throw new Error(
-        `@Agent decorator requires 'id' property on ${target.name}`
-      );
-    }
-    if (!config.name) {
-      throw new Error(
-        `@Agent decorator requires 'name' property on ${target.name}`
-      );
-    }
-    if (!config.description) {
-      throw new Error(
-        `@Agent decorator requires 'description' property on ${target.name}`
-      );
-    }
+    // Create config with defaults for zero-config usage
+    const agentConfig: AgentConfig = {
+      id: config.id || target.name.toLowerCase().replace(/agent$/, ''),
+      name: config.name || target.name.replace(/Agent$/, ''),
+      description: config.description || `Agent: ${target.name}`,
+      ...config,
+    };
 
     // Set metadata for agent configuration
-    SetMetadata(AGENT_METADATA_KEY, config)(target);
+    SetMetadata(AGENT_METADATA_KEY, agentConfig)(target);
 
     // Add agent marker for discovery service
     SetMetadata('agent:marker', true)(target);

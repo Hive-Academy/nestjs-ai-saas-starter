@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 
 // Import showcase workflows demonstrating ALL patterns
 import { SupervisorShowcaseWorkflow } from './workflows/supervisor-showcase.workflow';
@@ -73,8 +74,9 @@ import { ShowcaseController } from './controllers/showcase.controller';
  */
 @Module({
   imports: [
-    // No module imports - relies on parent app.module.ts configuration
-    // This ensures no duplication and maintains consistency
+    // Import MultiAgentModule to access LlmProviderService and other providers
+    // We use forRoot() with default config since parent app.module.ts has the main configuration
+    MultiAgentModule.forRoot(),
   ],
   providers: [
     // Showcase workflows demonstrating all patterns
