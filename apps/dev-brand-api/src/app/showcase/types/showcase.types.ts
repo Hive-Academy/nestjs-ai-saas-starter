@@ -43,6 +43,8 @@ export interface ShowcaseAgentState extends AgentState {
   // Execution context
   currentPattern: ShowcasePattern;
   activeCapabilities: AgentCapability[];
+  networkId?: string;
+  selectedAgents?: string[];
 
   // Performance metrics
   executionStartTime: number;

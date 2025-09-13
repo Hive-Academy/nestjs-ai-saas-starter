@@ -9,7 +9,6 @@ export { GraphBuilderService } from './lib/services/graph-builder.service';
 export { NodeFactoryService } from './lib/services/node-factory.service';
 export { LlmProviderService } from './lib/services/llm-provider.service';
 export { NetworkManagerService } from './lib/services/network-manager.service';
-export { AgentExamplesService } from './lib/services/agent-examples.service';
 
 // Tools System (explicit registration replaces discovery)
 export { ToolRegistrationService } from './lib/services/tool-registration.service';

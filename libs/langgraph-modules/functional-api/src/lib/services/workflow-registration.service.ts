@@ -167,7 +167,7 @@ export class WorkflowRegistrationService {
       tasks,
       dependencies,
       errorHandlers: new Map(),
-      metadata: workflowMetadata || {},
+      metadata: { ...(workflowMetadata || {}) },
     };
 
     // Validate workflow integrity

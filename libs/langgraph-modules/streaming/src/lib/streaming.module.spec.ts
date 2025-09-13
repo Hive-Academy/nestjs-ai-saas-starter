@@ -1,13 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Test } from '@nestjs/testing';
+import { EventStreamProcessorService } from './services/event-stream-processor.service';
+import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
+import { TokenStreamingService } from './services/token-streaming.service';
+import { WebSocketBridgeService } from './services/websocket-bridge.service';
 import {
   StreamingModule,
   type StreamingModuleOptions,
 } from './streaming.module';
-import { TokenStreamingService } from './services/token-streaming.service';
-import { EventStreamProcessorService } from './services/event-stream-processor.service';
-import { WebSocketBridgeService } from './services/websocket-bridge.service';
-import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
 
 describe('StreamingModule', () => {
   describe('Backward Compatibility', () => {

@@ -1,0 +1,660 @@
+<div class="patterns-container">
+  <!-- Header -->
+  <div class="patterns-header">
+    <h1>🐝 Multi-Agent Coordination Patterns</h1>
+    <p class="subtitle">
+      Explore the power of declarative agent coordination with real-time
+      demonstrations
+    </p>
+
+    <div class="pattern-selector">
+      @for (pattern of availablePatterns(); track pattern.id) {
+      <button
+        class="pattern-btn"
+        [class.active]="selectedPattern() === pattern.id"
+        (click)="selectPattern(pattern.id)"
+      >
+        <span class="pattern-icon">{{ pattern.icon }}</span>
+        <div class="pattern-info">
+          <div class="pattern-name">{{ pattern.name }}</div>
+          <div class="pattern-desc">{{ pattern.description }}</div>
+        </div>
+      </button>
+      }
+    </div>
+
+    <!-- Agent Selection Panel -->
+    @if (availableAgents().length > 0) {
+    <div class="agent-selection-panel">
+      <h3>🤖 Real Agent Selection</h3>
+      <p class="agent-selection-description">
+        Select from actual @Agent decorated agents with real capabilities
+      </p>
+      <div class="agents-grid">
+        @for (agent of availableAgents(); track agent.id) {
+        <div 
+          class="agent-card" 
+          [class.selected]="isAgentSelected(agent.id)"
+          (click)="toggleAgentSelection(agent.id)"
+        >
+          <div class="agent-header">
+            <div class="agent-name">{{ agent.name }}</div>
+            <div class="agent-priority" [class]="'priority-' + agent.priority">
+              {{ agent.priority }}
+            </div>
+          </div>
+          
+          <div class="agent-description">{{ agent.description }}</div>
+          
+          <div class="agent-metadata">
+            <div class="metadata-row">
+              <span class="metadata-label">Version:</span>
+              <span class="metadata-value">{{ agent.metadata.version }}</span>
+            </div>
+            <div class="metadata-row">
+              <span class="metadata-label">Complexity:</span>
+              <span class="metadata-value complexity" [class]="'complexity-' + agent.metadata.complexity">
+                {{ agent.metadata.complexity }}
+              </span>
+            </div>
+          </div>
+
+          <div class="agent-capabilities">
+            <h5>Capabilities:</h5>
+            <div class="capabilities-tags">
+              @for (capability of agent.capabilities; track capability) {
+              <span class="capability-tag">{{ capability }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="agent-decorators">
+            <h5>Decorators Used:</h5>
+            <div class="decorator-tags">
+              @for (decorator of agent.metadata.decoratorsUsed; track decorator) {
+              <span class="decorator-tag">{{ decorator }}</span>
+              }
+            </div>
+          </div>
+
+          @if (agent.metadata.enterpriseFeatures.length > 0) {
+          <div class="enterprise-features">
+            <h5>Enterprise Features:</h5>
+            <div class="features-tags">
+              @for (feature of agent.metadata.enterpriseFeatures; track feature) {
+              <span class="enterprise-tag">{{ feature }}</span>
+              }
+            </div>
+          </div>
+          }
+
+          <div class="selection-indicator">
+            @if (isAgentSelected(agent.id)) {
+            <span class="selected-icon">✓ Selected</span>
+            } @else {
+            <span class="select-text">Click to select</span>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      
+      @if (selectedAgents().length > 0) {
+      <div class="selection-summary">
+        <strong>Selected Agents ({{ selectedAgents().length }}):</strong>
+        @for (agentId of selectedAgents(); track agentId) {
+        <span class="selected-agent-pill">{{ agentId }}</span>
+        }
+      </div>
+      }
+    </div>
+    }
+
+    <!-- Tavily Search Demonstration -->
+    <div class="search-demo-section">
+      <div class="section-header" (click)="toggleSearchSection()">
+        <h3>🔍 Tavily Search Integration Showcase</h3>
+        <button class="toggle-btn" [class.expanded]="showSearchSection()">
+          @if (showSearchSection()) { ▼ Hide } @else { ▶ Show }
+        </button>
+      </div>
+
+      @if (showSearchSection()) {
+      <div class="search-demo-content">
+        <p class="search-description">
+          Demonstrate real-time web search capabilities using Tavily API integration with @Tool decorators
+        </p>
+
+        <div class="search-controls">
+          <div class="search-input-group">
+            <label for="searchQuery">Search Query:</label>
+            <input 
+              id="searchQuery"
+              [(ngModel)]="searchQuery" 
+              placeholder="Enter your search query..."
+              class="search-input"
+            />
+          </div>
+
+          <div class="search-options">
+            <div class="search-type-selector">
+              <label>Search Type:</label>
+              <select [(ngModel)]="searchType" class="search-type-select">
+                <option value="web">🌐 Web Search</option>
+                <option value="news">📰 News Search</option>
+                <option value="research">🔬 Research Search</option>
+              </select>
+            </div>
+
+            @if (searchType === 'news') {
+            <div class="news-options">
+              <label>Timeframe:</label>
+              <select [(ngModel)]="newsTimeframe" class="news-timeframe-select">
+                <option value="day">Last Day</option>
+                <option value="week">Last Week</option>
+                <option value="month">Last Month</option>
+              </select>
+              
+              <label>Category:</label>
+              <select [(ngModel)]="newsCategory" class="news-category-select">
+                <option value="general">General</option>
+                <option value="tech">Technology</option>
+                <option value="business">Business</option>
+                <option value="science">Science</option>
+                <option value="health">Health</option>
+              </select>
+            </div>
+            }
+
+            @if (searchType === 'research') {
+            <div class="research-options">
+              <label>Analysis Depth:</label>
+              <select [(ngModel)]="researchDepth" class="research-depth-select">
+                <option value="summary">Summary</option>
+                <option value="detailed">Detailed</option>
+                <option value="comprehensive">Comprehensive</option>
+              </select>
+            </div>
+            }
+          </div>
+
+          <button 
+            class="search-execute-btn"
+            [disabled]="!searchQuery.trim() || (searchDemonstration()?.isLoading ?? false)"
+            (click)="executeSearchDemo()"
+          >
+            @if (searchDemonstration()?.isLoading) {
+            <span class="spinner"></span>
+            } @else {
+            <span class="search-icon">🔍</span>
+            }
+            {{ getSearchButtonText() }}
+          </button>
+        </div>
+
+        <!-- Search Results Display -->
+        @if (searchDemonstration(); as demo) {
+        <div class="search-results">
+          @if (demo.error) {
+          <div class="search-error">
+            <span class="error-icon">❌</span>
+            <span class="error-message">{{ demo.error }}</span>
+          </div>
+          } @else if (demo.results) {
+          
+          <!-- Web Search Results -->
+          @if (demo.type === 'web' && demo.results) {
+          <div class="web-results">
+            <h4>🌐 Web Search Results ({{ (demo.results as any).totalResults }})</h4>
+            @if ((demo.results as any).answer) {
+            <div class="ai-answer">
+              <h5>AI Summary:</h5>
+              <p>{{ (demo.results as any).answer }}</p>
+            </div>
+            }
+            <div class="results-list">
+              @for (result of (demo.results as any).results; track result.url) {
+              <div class="result-item">
+                <h6 class="result-title">
+                  <a [href]="result.url" target="_blank">{{ result.title }}</a>
+                </h6>
+                <p class="result-content">{{ result.content.substring(0, 200) }}...</p>
+                <div class="result-meta">
+                  <span class="result-score">Score: {{ (result.score * 100).toFixed(1) }}%</span>
+                  <span class="result-url">{{ result.url }}</span>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- News Search Results -->
+          @if (demo.type === 'news' && demo.results) {
+          <div class="news-results">
+            <h4>📰 News Articles ({{ (demo.results as any).totalArticles }})</h4>
+            <div class="news-list">
+              @for (article of (demo.results as any).articles; track article.url) {
+              <div class="news-item">
+                <h6 class="news-title">
+                  <a [href]="article.url" target="_blank">{{ article.title }}</a>
+                </h6>
+                <p class="news-summary">{{ article.summary }}</p>
+                <div class="news-meta">
+                  <span class="news-source">{{ article.source }}</span>
+                  <span class="news-published">{{ article.publishedAt | date:'short' }}</span>
+                  <span class="news-relevance">{{ (article.relevanceScore * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          <!-- Research Search Results -->
+          @if (demo.type === 'research' && demo.results) {
+          <div class="research-results">
+            <h4>🔬 Research Analysis ({{ (demo.results as any).totalSources }} sources)</h4>
+            
+            @if ((demo.results as any).synthesis) {
+            <div class="research-synthesis">
+              <h5>Research Synthesis:</h5>
+              <p>{{ (demo.results as any).synthesis }}</p>
+            </div>
+            }
+
+            <div class="sources-list">
+              @for (source of (demo.results as any).sources; track source.url) {
+              <div class="source-item">
+                <h6 class="source-title">
+                  <a [href]="source.url" target="_blank">{{ source.title }}</a>
+                </h6>
+                <p class="source-content">{{ source.content.substring(0, 150) }}...</p>
+                <div class="source-meta">
+                  <span class="source-type" [class]="'type-' + source.type">{{ source.type }}</span>
+                  <span class="source-credibility" [class]="'credibility-' + source.credibility">
+                    {{ source.credibility }}
+                  </span>
+                  <span class="source-score">{{ (source.score * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+
+          }
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+
+  <div class="patterns-main">
+    <!-- Pattern Configuration Panel -->
+    <div class="config-panel">
+      <div class="panel-header">
+        <h3>⚙️ Configuration</h3>
+        <div class="execution-status" [class]="executionStatus()">
+          {{ getStatusText() }}
+        </div>
+      </div>
+
+      <div class="config-form">
+        <div class="form-group">
+          <label for="input">Input Query:</label>
+          <textarea
+            id="input"
+            [(ngModel)]="inputQuery"
+            placeholder="Enter your query to demonstrate the selected pattern..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="config-row">
+          <div class="form-group">
+            <label for="agentCount">Agent Count:</label>
+            <select id="agentCount" [(ngModel)]="agentCount">
+              <option value="2">2 Agents</option>
+              <option value="3">3 Agents</option>
+              <option value="4">4 Agents</option>
+              <option value="5">5 Agents</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="complexity">Complexity:</label>
+            <select id="complexity" [(ngModel)]="complexityLevel">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="mode">Demo Mode:</label>
+            <select id="mode" [(ngModel)]="demonstrationMode">
+              <option value="basic">Basic</option>
+              <option value="advanced">Advanced</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          class="execute-btn"
+          [disabled]="isExecuting() || !inputQuery.trim()"
+          (click)="executePattern()"
+        >
+          @if (isExecuting()) {
+          <span class="spinner"></span>
+          Executing... } @else {
+          <span class="execute-icon">🚀</span>
+          Execute {{ getPatternName() }}
+          }
+        </button>
+      </div>
+
+      <!-- Pattern Information -->
+      @if (selectedPatternInfo(); as info) {
+      <div class="pattern-details">
+        <h4>{{ info.name }} Pattern Details</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Complexity:</span>
+            <span
+              class="complexity-badge"
+              [class]="'complexity-' + info.complexity"
+            >
+              {{ info.complexity }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Optimal Agents:</span>
+            <span>{{ info.agentCount }}</span>
+          </div>
+        </div>
+
+        <div class="use-cases">
+          <h5>Use Cases:</h5>
+          <ul>
+            @for (useCase of info.useCases; track useCase) {
+            <li>{{ useCase }}</li>
+            }
+          </ul>
+        </div>
+
+        <div class="advantages">
+          <h5>Key Advantages:</h5>
+          <ul>
+            @for (advantage of info.advantages; track advantage) {
+            <li>{{ advantage }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Visualization Panel -->
+    <div class="visualization-panel">
+      <div class="panel-header">
+        <h3>📊 Real-time Coordination Visualization</h3>
+        <div class="viz-controls">
+          <button
+            class="viz-btn"
+            [class.active]="visualizationMode() === '2d'"
+            (click)="setVisualizationMode('2d')"
+          >
+            2D Flow
+          </button>
+          <button
+            class="viz-btn"
+            [class.active]="visualizationMode() === '3d'"
+            (click)="setVisualizationMode('3d')"
+          >
+            3D Network
+          </button>
+        </div>
+      </div>
+
+      <div class="visualization-area" [class]="'viz-' + visualizationMode()">
+        @if (!currentExecution() && !isExecuting()) {
+        <div class="viz-placeholder">
+          <div class="placeholder-icon">🎭</div>
+          <h4>Ready for Pattern Demonstration</h4>
+          <p>
+            Configure and execute a pattern to see real-time agent coordination
+          </p>
+        </div>
+        } @else {
+        <!-- Agent Network Visualization -->
+        <div class="agent-network">
+          @for (step of executionSteps(); track step.id) {
+          <div class="agent-node" [class]="'status-' + step.status">
+            <div class="node-header">
+              <span class="node-icon">🤖</span>
+              <span class="node-name">{{ step.name }}</span>
+              <div class="node-status" [class]="'status-' + step.status">
+                {{ step.status }}
+              </div>
+            </div>
+
+            @if (step.status === 'running' || step.status === 'completed') {
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="step.progress"></div>
+            </div>
+            <div class="progress-text">{{ step.progress }}%</div>
+            } @if (step.output) {
+            <div class="step-output">
+              {{ step.output }}
+            </div>
+            } @if (step.duration) {
+            <div class="step-duration">⏱️ {{ step.duration }}ms</div>
+            }
+          </div>
+          }
+        </div>
+
+        <!-- Service Coordination Visualization -->
+        <div class="service-coordination">
+          <h4>🔧 Service Coordination Layer</h4>
+          <div class="services-grid">
+            @for (service of serviceCoordination(); track service.id) {
+            <div class="service-node" [class]="'service-status-' + service.status">
+              <div class="service-header">
+                <span class="service-order">{{ service.executionOrder }}</span>
+                <span class="service-name">{{ service.name }}</span>
+                <span class="service-status-indicator" [class]="'status-' + service.status">
+                  {{ service.status }}
+                </span>
+              </div>
+              
+              <div class="service-description">
+                {{ service.description }}
+              </div>
+
+              @if (service.status === 'active' || service.status === 'completed') {
+              <div class="service-progress">
+                <div class="service-progress-bar">
+                  <div class="service-progress-fill" [style.width.%]="service.progress"></div>
+                </div>
+                <span class="service-progress-text">{{ service.progress }}%</span>
+              </div>
+              }
+
+              @if (service.status === 'active') {
+              <div class="service-activity">
+                <span class="activity-indicator">🔄 Processing...</span>
+              </div>
+              }
+            </div>
+            }
+          </div>
+
+          <!-- Service Flow Arrows -->
+          <div class="service-flow">
+            @for (service of serviceCoordination(); track service.id; let i = $index) {
+            @if (i < serviceCoordination().length - 1) {
+            <div class="service-arrow" 
+                 [class.active]="service.status === 'completed' || service.status === 'active'">
+              <span class="arrow-symbol">→</span>
+            </div>
+            }
+            }
+          </div>
+        </div>
+
+        <!-- Pattern Flow Connections -->
+        @if (selectedPattern() === 'supervisor') {
+        <div class="supervisor-connections">
+          <div class="supervisor-node">Supervisor</div>
+          @for (step of executionSteps().slice(1); track step.id) {
+          <div class="connection-line" [class]="'status-' + step.status"></div>
+          }
+        </div>
+        } @if (selectedPattern() === 'swarm') {
+        <div class="swarm-connections">
+          @for (step of executionSteps(); track step.id; let i = $index) { @for
+          (otherStep of executionSteps(); track otherStep.id; let j = $index) {
+          @if (i !== j && i < j) {
+          <div
+            class="peer-connection"
+            [class]="getConnectionStatus(step, otherStep)"
+          ></div>
+          } } }
+        </div>
+        } }
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Streaming Output -->
+  @if (isExecuting() || streamingOutput()) {
+  <div class="streaming-panel">
+    <div class="panel-header">
+      <h3>🌊 Real-time Agent Conversation</h3>
+      <div class="streaming-indicator">
+        <span class="pulse"></span>
+        <span>Streaming...</span>
+      </div>
+    </div>
+    <div class="streaming-content">
+      <div class="streaming-output" #streamingContainer>
+        {{ streamingOutput() }}
+        @if (isExecuting()) {
+        <span class="cursor-blink">▊</span>
+        }
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Results Panel -->
+  @if (currentExecution(); as execution) {
+  <div class="results-panel">
+    <div class="panel-header">
+      <h3>📋 Execution Results</h3>
+      <div class="execution-metrics">
+        <span class="metric"> ⏱️ {{ execution.duration }}ms </span>
+        <span class="metric">
+          🎯 {{ execution.decoratorsShowcased.length }} Decorators
+        </span>
+        <span class="metric">
+          ✨ {{ execution.enterpriseFeatures.length }} Features
+        </span>
+      </div>
+    </div>
+
+    <div class="results-content">
+      <div class="result-section">
+        <h4>Output</h4>
+        <div class="result-output">
+          {{ execution.output }}
+        </div>
+      </div>
+
+      <div class="result-section">
+        <h4>Decorators Demonstrated</h4>
+        <div class="decorator-list">
+          @for (decorator of execution.decoratorsShowcased; track decorator) {
+          <span class="decorator-tag">{{ decorator }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="result-section">
+        <h4>Enterprise Features</h4>
+        <div class="feature-list">
+          @for (feature of execution.enterpriseFeatures; track feature) {
+          <span class="feature-tag">{{ feature }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="result-section">
+        <h4>Execution Path</h4>
+        <div class="execution-path">
+          @for (step of execution.executionPath; track step; let i = $index) {
+          <div class="path-step">
+            <span class="step-number">{{ i + 1 }}</span>
+            <span class="step-name">{{ step }}</span>
+          </div>
+          @if (i < execution.executionPath.length - 1) {
+          <div class="path-arrow">→</div>
+          } }
+        </div>
+      </div>
+
+      @if (execution.swarmResults) {
+      <div class="result-section">
+        <h4>Swarm Intelligence Metrics</h4>
+        <div class="swarm-metrics">
+          <div class="metric-card">
+            <div class="metric-value">
+              {{ execution.swarmResults.peerCount }}
+            </div>
+            <div class="metric-label">Peer Agents</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">
+              {{ (execution.swarmResults.consensusScore * 100).toFixed(1) }}%
+            </div>
+            <div class="metric-label">Consensus Score</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">
+              {{ execution.swarmResults.emergentBehaviors }}
+            </div>
+            <div class="metric-label">Emergent Behaviors</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">
+              {{
+                (
+                  execution.swarmResults.collectiveIntelligenceGain * 100
+                ).toFixed(1)
+              }}%
+            </div>
+            <div class="metric-label">Intelligence Gain</div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- WebSocket Status -->
+  <div class="websocket-status" [class]="'ws-' + wsService.status()">
+    <span class="ws-indicator"></span>
+    <span class="ws-text">
+      {{
+        wsService.status() === 'connected'
+          ? 'Real-time Connected'
+          : 'Connecting...'
+      }}
+    </span>
+  </div>
+</div>

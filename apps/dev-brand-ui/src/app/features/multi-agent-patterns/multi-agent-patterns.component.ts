@@ -13,8 +13,17 @@ import {
   ShowcaseApiService,
   ShowcaseWorkflowRequest,
   ShowcaseWorkflowResponse,
+  ShowcaseAgent,
+  SearchResponse,
+  NewsSearchResponse,
+  ResearchSearchResponse,
 } from '../../core/services/showcase-api.service';
 import { WebSocketService } from '../../core/services/websocket.service';
+import {
+  WebSocketMessage,
+  WebSocketMessageType,
+  StreamUpdatePayload,
+} from '../../core/interfaces/agent-state.interface';
 
 interface PatternDemo {
   id: string;
@@ -26,6 +35,23 @@ interface PatternDemo {
   useCases: string[];
   advantages: string[];
   visualizationType: '3d-network' | '2d-flow' | 'hierarchy';
+}
+
+interface ServiceCoordination {
+  id: string;
+  name: string;
+  status: 'idle' | 'active' | 'completed' | 'error';
+  description: string;
+  progress: number;
+  executionOrder: number;
+}
+
+interface SearchDemonstration {
+  type: 'web' | 'news' | 'research';
+  query: string;
+  results?: SearchResponse | NewsSearchResponse | ResearchSearchResponse;
+  isLoading: boolean;
+  error?: string;
 }
 
 interface ExecutionStep {
@@ -49,995 +75,8 @@ interface ExecutionStep {
   selector: 'brand-multi-agent-patterns',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <div class="patterns-container">
-      <!-- Header -->
-      <div class="patterns-header">
-        <h1>🐝 Multi-Agent Coordination Patterns</h1>
-        <p class="subtitle">
-          Explore the power of declarative agent coordination with real-time
-          demonstrations
-        </p>
-
-        <div class="pattern-selector">
-          @for (pattern of availablePatterns(); track pattern.id) {
-          <button
-            class="pattern-btn"
-            [class.active]="selectedPattern() === pattern.id"
-            (click)="selectPattern(pattern.id)"
-          >
-            <span class="pattern-icon">{{ pattern.icon }}</span>
-            <div class="pattern-info">
-              <div class="pattern-name">{{ pattern.name }}</div>
-              <div class="pattern-desc">{{ pattern.description }}</div>
-            </div>
-          </button>
-          }
-        </div>
-      </div>
-
-      <div class="patterns-main">
-        <!-- Pattern Configuration Panel -->
-        <div class="config-panel">
-          <div class="panel-header">
-            <h3>⚙️ Configuration</h3>
-            <div class="execution-status" [class]="executionStatus()">
-              {{ getStatusText() }}
-            </div>
-          </div>
-
-          <div class="config-form">
-            <div class="form-group">
-              <label for="input">Input Query:</label>
-              <textarea
-                id="input"
-                [(ngModel)]="inputQuery"
-                placeholder="Enter your query to demonstrate the selected pattern..."
-                rows="3"
-              ></textarea>
-            </div>
-
-            <div class="config-row">
-              <div class="form-group">
-                <label for="agentCount">Agent Count:</label>
-                <select id="agentCount" [(ngModel)]="agentCount">
-                  <option value="2">2 Agents</option>
-                  <option value="3">3 Agents</option>
-                  <option value="4">4 Agents</option>
-                  <option value="5">5 Agents</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="complexity">Complexity:</label>
-                <select id="complexity" [(ngModel)]="complexityLevel">
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="mode">Demo Mode:</label>
-                <select id="mode" [(ngModel)]="demonstrationMode">
-                  <option value="basic">Basic</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              class="execute-btn"
-              [disabled]="isExecuting() || !inputQuery.trim()"
-              (click)="executePattern()"
-            >
-              @if (isExecuting()) {
-              <span class="spinner"></span>
-              Executing... } @else {
-              <span class="execute-icon">🚀</span>
-              Execute {{ getPatternName() }}
-              }
-            </button>
-          </div>
-
-          <!-- Pattern Information -->
-          @if (selectedPatternInfo(); as info) {
-          <div class="pattern-details">
-            <h4>{{ info.name }} Pattern Details</h4>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Complexity:</span>
-                <span
-                  class="complexity-badge"
-                  [class]="'complexity-' + info.complexity"
-                >
-                  {{ info.complexity }}
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Optimal Agents:</span>
-                <span>{{ info.agentCount }}</span>
-              </div>
-            </div>
-
-            <div class="use-cases">
-              <h5>Use Cases:</h5>
-              <ul>
-                @for (useCase of info.useCases; track useCase) {
-                <li>{{ useCase }}</li>
-                }
-              </ul>
-            </div>
-
-            <div class="advantages">
-              <h5>Key Advantages:</h5>
-              <ul>
-                @for (advantage of info.advantages; track advantage) {
-                <li>{{ advantage }}</li>
-                }
-              </ul>
-            </div>
-          </div>
-          }
-        </div>
-
-        <!-- Visualization Panel -->
-        <div class="visualization-panel">
-          <div class="panel-header">
-            <h3>📊 Real-time Coordination Visualization</h3>
-            <div class="viz-controls">
-              <button
-                class="viz-btn"
-                [class.active]="visualizationMode() === '2d'"
-                (click)="setVisualizationMode('2d')"
-              >
-                2D Flow
-              </button>
-              <button
-                class="viz-btn"
-                [class.active]="visualizationMode() === '3d'"
-                (click)="setVisualizationMode('3d')"
-              >
-                3D Network
-              </button>
-            </div>
-          </div>
-
-          <div
-            class="visualization-area"
-            [class]="'viz-' + visualizationMode()"
-          >
-            @if (!currentExecution()) {
-            <div class="viz-placeholder">
-              <div class="placeholder-icon">🎭</div>
-              <h4>Ready for Pattern Demonstration</h4>
-              <p>
-                Configure and execute a pattern to see real-time agent
-                coordination
-              </p>
-            </div>
-            } @else {
-            <!-- Agent Network Visualization -->
-            <div class="agent-network">
-              @for (step of executionSteps(); track step.id) {
-              <div class="agent-node" [class]="'status-' + step.status">
-                <div class="node-header">
-                  <span class="node-icon">🤖</span>
-                  <span class="node-name">{{ step.name }}</span>
-                  <div class="node-status" [class]="'status-' + step.status">
-                    {{ step.status }}
-                  </div>
-                </div>
-
-                @if (step.status === 'running' || step.status === 'completed') {
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    [style.width.%]="step.progress"
-                  ></div>
-                </div>
-                <div class="progress-text">{{ step.progress }}%</div>
-                } @if (step.output) {
-                <div class="step-output">
-                  {{ step.output }}
-                </div>
-                } @if (step.duration) {
-                <div class="step-duration">⏱️ {{ step.duration }}ms</div>
-                }
-              </div>
-              }
-            </div>
-
-            <!-- Pattern Flow Connections -->
-            @if (selectedPattern() === 'supervisor') {
-            <div class="supervisor-connections">
-              <div class="supervisor-node">Supervisor</div>
-              @for (step of executionSteps().slice(1); track step.id) {
-              <div
-                class="connection-line"
-                [class]="'status-' + step.status"
-              ></div>
-              }
-            </div>
-            } @if (selectedPattern() === 'swarm') {
-            <div class="swarm-connections">
-              @for (step of executionSteps(); track step.id; let i = $index) {
-              @for (otherStep of executionSteps(); track otherStep.id; let j =
-              $index) { @if (i !== j && i < j) {
-              <div
-                class="peer-connection"
-                [class]="getConnectionStatus(step, otherStep)"
-              ></div>
-              } } }
-            </div>
-            } }
-          </div>
-        </div>
-      </div>
-
-      <!-- Results Panel -->
-      @if (currentExecution(); as execution) {
-      <div class="results-panel">
-        <div class="panel-header">
-          <h3>📋 Execution Results</h3>
-          <div class="execution-metrics">
-            <span class="metric"> ⏱️ {{ execution.duration }}ms </span>
-            <span class="metric">
-              🎯 {{ execution.decoratorsShowcased.length }} Decorators
-            </span>
-            <span class="metric">
-              ✨ {{ execution.enterpriseFeatures.length }} Features
-            </span>
-          </div>
-        </div>
-
-        <div class="results-content">
-          <div class="result-section">
-            <h4>Output</h4>
-            <div class="result-output">
-              {{ execution.output }}
-            </div>
-          </div>
-
-          <div class="result-section">
-            <h4>Decorators Demonstrated</h4>
-            <div class="decorator-list">
-              @for (decorator of execution.decoratorsShowcased; track decorator)
-              {
-              <span class="decorator-tag">{{ decorator }}</span>
-              }
-            </div>
-          </div>
-
-          <div class="result-section">
-            <h4>Enterprise Features</h4>
-            <div class="feature-list">
-              @for (feature of execution.enterpriseFeatures; track feature) {
-              <span class="feature-tag">{{ feature }}</span>
-              }
-            </div>
-          </div>
-
-          <div class="result-section">
-            <h4>Execution Path</h4>
-            <div class="execution-path">
-              @for (step of execution.executionPath; track step; let i = $index)
-              {
-              <div class="path-step">
-                <span class="step-number">{{ i + 1 }}</span>
-                <span class="step-name">{{ step }}</span>
-              </div>
-              @if (i < execution.executionPath.length - 1) {
-              <div class="path-arrow">→</div>
-              } }
-            </div>
-          </div>
-
-          @if (execution.swarmResults) {
-          <div class="result-section">
-            <h4>Swarm Intelligence Metrics</h4>
-            <div class="swarm-metrics">
-              <div class="metric-card">
-                <div class="metric-value">
-                  {{ execution.swarmResults.peerCount }}
-                </div>
-                <div class="metric-label">Peer Agents</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">
-                  {{
-                    (execution.swarmResults.consensusScore * 100).toFixed(1)
-                  }}%
-                </div>
-                <div class="metric-label">Consensus Score</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">
-                  {{ execution.swarmResults.emergentBehaviors }}
-                </div>
-                <div class="metric-label">Emergent Behaviors</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-value">
-                  {{
-                    (
-                      execution.swarmResults.collectiveIntelligenceGain * 100
-                    ).toFixed(1)
-                  }}%
-                </div>
-                <div class="metric-label">Intelligence Gain</div>
-              </div>
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-      }
-
-      <!-- WebSocket Status -->
-      <div class="websocket-status" [class]="'ws-' + wsService.status()">
-        <span class="ws-indicator"></span>
-        <span class="ws-text">
-          {{
-            wsService.status() === 'connected'
-              ? 'Real-time Connected'
-              : 'Connecting...'
-          }}
-        </span>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .patterns-container {
-        min-height: 100vh;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        color: white;
-        padding: 20px;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      }
-
-      .patterns-header {
-        text-align: center;
-        margin-bottom: 40px;
-      }
-
-      .patterns-header h1 {
-        font-size: 3rem;
-        font-weight: 800;
-        margin-bottom: 10px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      }
-
-      .subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        margin-bottom: 30px;
-      }
-
-      .pattern-selector {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        flex-wrap: wrap;
-      }
-
-      .pattern-btn {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 16px 24px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        color: white;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        min-width: 200px;
-      }
-
-      .pattern-btn:hover {
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateY(-2px);
-      }
-
-      .pattern-btn.active {
-        background: rgba(34, 197, 94, 0.2);
-        border-color: rgba(34, 197, 94, 0.5);
-        box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-      }
-
-      .pattern-icon {
-        font-size: 1.8rem;
-      }
-
-      .pattern-info {
-        text-align: left;
-      }
-
-      .pattern-name {
-        font-weight: 600;
-        font-size: 1rem;
-      }
-
-      .pattern-desc {
-        font-size: 0.8rem;
-        opacity: 0.8;
-        margin-top: 2px;
-      }
-
-      .patterns-main {
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        gap: 30px;
-        max-width: 1400px;
-        margin: 0 auto;
-        align-items: start;
-      }
-
-      .config-panel,
-      .visualization-panel {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px;
-        padding: 24px;
-      }
-
-      .panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-      }
-
-      .panel-header h3 {
-        margin: 0;
-        font-size: 1.3rem;
-        font-weight: 600;
-      }
-
-      .execution-status {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-
-      .execution-status.idle {
-        background: rgba(156, 163, 175, 0.2);
-        color: #9ca3af;
-      }
-
-      .execution-status.running {
-        background: rgba(245, 158, 11, 0.2);
-        color: #f59e0b;
-        animation: pulse 2s infinite;
-      }
-
-      .execution-status.completed {
-        background: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
-      }
-
-      .execution-status.error {
-        background: rgba(239, 68, 68, 0.2);
-        color: #ef4444;
-      }
-
-      .config-form {
-        margin-bottom: 30px;
-      }
-
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        opacity: 0.9;
-      }
-
-      .form-group textarea,
-      .form-group select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        font-size: 0.9rem;
-      }
-
-      .form-group textarea::placeholder {
-        color: rgba(255, 255, 255, 0.5);
-      }
-
-      .config-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 16px;
-      }
-
-      .execute-btn {
-        width: 100%;
-        padding: 14px 20px;
-        background: linear-gradient(135deg, #22c55e, #16a34a);
-        border: none;
-        border-radius: 10px;
-        color: white;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      }
-
-      .execute-btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
-      }
-
-      .execute-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      .spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-top: 2px solid white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      .pattern-details {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 16px;
-      }
-
-      .pattern-details h4 {
-        margin: 0 0 12px 0;
-        font-size: 1.1rem;
-        font-weight: 600;
-      }
-
-      .detail-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      .detail-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .detail-label {
-        font-size: 0.9rem;
-        opacity: 0.8;
-      }
-
-      .complexity-badge {
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
-      }
-
-      .complexity-low {
-        background: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
-      }
-
-      .complexity-medium {
-        background: rgba(245, 158, 11, 0.2);
-        color: #f59e0b;
-      }
-
-      .complexity-high {
-        background: rgba(239, 68, 68, 0.2);
-        color: #ef4444;
-      }
-
-      .use-cases,
-      .advantages {
-        margin-bottom: 12px;
-      }
-
-      .use-cases h5,
-      .advantages h5 {
-        margin: 0 0 6px 0;
-        font-size: 0.9rem;
-        font-weight: 600;
-        opacity: 0.9;
-      }
-
-      .use-cases ul,
-      .advantages ul {
-        margin: 0;
-        padding-left: 16px;
-        font-size: 0.8rem;
-        opacity: 0.8;
-      }
-
-      .viz-controls {
-        display: flex;
-        gap: 8px;
-      }
-
-      .viz-btn {
-        padding: 6px 12px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-        color: white;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .viz-btn.active {
-        background: rgba(34, 197, 94, 0.2);
-        border-color: rgba(34, 197, 94, 0.5);
-      }
-
-      .visualization-area {
-        min-height: 400px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 20px;
-        position: relative;
-      }
-
-      .viz-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        text-align: center;
-        opacity: 0.6;
-      }
-
-      .placeholder-icon {
-        font-size: 3rem;
-        margin-bottom: 16px;
-      }
-
-      .viz-placeholder h4 {
-        margin: 0 0 8px 0;
-        font-size: 1.2rem;
-        font-weight: 600;
-      }
-
-      .viz-placeholder p {
-        margin: 0;
-        font-size: 0.9rem;
-        opacity: 0.8;
-      }
-
-      .agent-network {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 16px;
-      }
-
-      .agent-node {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        padding: 12px;
-        transition: all 0.3s ease;
-      }
-
-      .agent-node.status-running {
-        border-color: rgba(245, 158, 11, 0.5);
-        background: rgba(245, 158, 11, 0.1);
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
-      }
-
-      .agent-node.status-completed {
-        border-color: rgba(34, 197, 94, 0.5);
-        background: rgba(34, 197, 94, 0.1);
-      }
-
-      .agent-node.status-error {
-        border-color: rgba(239, 68, 68, 0.5);
-        background: rgba(239, 68, 68, 0.1);
-      }
-
-      .node-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .node-icon {
-        font-size: 1.2rem;
-      }
-
-      .node-name {
-        flex: 1;
-        font-weight: 500;
-        font-size: 0.9rem;
-      }
-
-      .node-status {
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 0.7rem;
-        text-transform: capitalize;
-        font-weight: 500;
-      }
-
-      .node-status.status-pending {
-        background: rgba(156, 163, 175, 0.2);
-        color: #9ca3af;
-      }
-
-      .node-status.status-running {
-        background: rgba(245, 158, 11, 0.2);
-        color: #f59e0b;
-      }
-
-      .node-status.status-completed {
-        background: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
-      }
-
-      .node-status.status-error {
-        background: rgba(239, 68, 68, 0.2);
-        color: #ef4444;
-      }
-
-      .progress-bar {
-        height: 4px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
-        overflow: hidden;
-        margin-bottom: 6px;
-      }
-
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #22c55e, #16a34a);
-        transition: width 0.3s ease;
-      }
-
-      .progress-text {
-        font-size: 0.8rem;
-        text-align: center;
-        opacity: 0.8;
-        margin-bottom: 8px;
-      }
-
-      .step-output {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-family: 'Monaco', 'Menlo', monospace;
-        margin-bottom: 6px;
-      }
-
-      .step-duration {
-        font-size: 0.7rem;
-        opacity: 0.7;
-        text-align: center;
-      }
-
-      .results-panel {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 16px;
-        padding: 24px;
-        margin-top: 30px;
-      }
-
-      .execution-metrics {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-
-      .metric {
-        padding: 6px 12px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        font-size: 0.8rem;
-      }
-
-      .results-content {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-      }
-
-      .result-section {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        padding: 16px;
-      }
-
-      .result-section h4 {
-        margin: 0 0 12px 0;
-        font-size: 1rem;
-        font-weight: 600;
-        opacity: 0.9;
-      }
-
-      .result-output {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 12px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
-
-      .decorator-list,
-      .feature-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .decorator-tag,
-      .feature-tag {
-        background: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
-      }
-
-      .execution-path {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .path-step {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 6px 10px;
-        border-radius: 16px;
-        font-size: 0.8rem;
-      }
-
-      .step-number {
-        background: rgba(34, 197, 94, 0.3);
-        color: white;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-        font-weight: 600;
-      }
-
-      .path-arrow {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 1.2rem;
-      }
-
-      .swarm-metrics {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 12px;
-      }
-
-      .metric-card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-      }
-
-      .metric-value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        line-height: 1;
-        color: #22c55e;
-      }
-
-      .metric-label {
-        font-size: 0.8rem;
-        opacity: 0.8;
-        margin-top: 4px;
-      }
-
-      .websocket-status {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .ws-connected {
-        background: rgba(34, 197, 94, 0.2);
-        color: #22c55e;
-      }
-
-      .ws-connecting {
-        background: rgba(245, 158, 11, 0.2);
-        color: #f59e0b;
-      }
-
-      .ws-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: currentColor;
-      }
-
-      @media (max-width: 1024px) {
-        .patterns-main {
-          grid-template-columns: 1fr;
-        }
-
-        .config-row {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .patterns-container {
-          padding: 16px;
-        }
-
-        .patterns-header h1 {
-          font-size: 2rem;
-        }
-
-        .pattern-selector {
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .results-content {
-          grid-template-columns: 1fr;
-        }
-      }
-    `,
-  ],
+  templateUrl: './multi-agent-patterns.component.html',
+  styleUrls: ['./multi-agent-patterns.component.css'],
 })
 export class MultiAgentPatternsComponent implements OnInit {
   private readonly showcaseApi = inject(ShowcaseApiService);
@@ -1052,6 +91,12 @@ export class MultiAgentPatternsComponent implements OnInit {
   readonly visualizationMode = signal<'2d' | '3d'>('2d');
   readonly currentExecution = signal<ShowcaseWorkflowResponse | null>(null);
   readonly executionSteps = signal<ExecutionStep[]>([]);
+  readonly streamingOutput = signal<string>('');  // For real-time token streaming display
+  readonly availableAgents = signal<ShowcaseAgent[]>([]);
+  readonly selectedAgents = signal<string[]>([]);
+  readonly serviceCoordination = signal<ServiceCoordination[]>([]);
+  readonly searchDemonstration = signal<SearchDemonstration | null>(null);
+  readonly showSearchSection = signal(false);
 
   // Form data
   inputQuery =
@@ -1059,6 +104,13 @@ export class MultiAgentPatternsComponent implements OnInit {
   agentCount = 3;
   complexityLevel: 'low' | 'medium' | 'high' = 'medium';
   demonstrationMode: 'basic' | 'advanced' | 'enterprise' = 'advanced';
+  
+  // Search demonstration data
+  searchQuery = 'AI development trends 2024';
+  searchType: 'web' | 'news' | 'research' = 'web';
+  newsTimeframe: 'day' | 'week' | 'month' = 'week';
+  newsCategory: 'general' | 'tech' | 'business' | 'science' | 'health' = 'tech';
+  researchDepth: 'summary' | 'detailed' | 'comprehensive' = 'detailed';
 
   // Pattern definitions
   readonly availablePatterns = signal<PatternDemo[]>([
@@ -1120,12 +172,27 @@ export class MultiAgentPatternsComponent implements OnInit {
 
   ngOnInit() {
     this.connectWebSocket();
+    this.subscribeToStreamingEvents();
+    this.loadAvailableAgents();
+    this.initializeServiceCoordination();
+
+    // Subscribe to execution events when connection is established
+    this.wsService.connectionStatus$.subscribe({
+      next: (status) => {
+        if (status.status === 'connected') {
+          console.log('🔗 WebSocket connected, subscribing to events');
+          // Subscribe to streaming events for this component
+          this.wsService.subscribeToEvents(['stream_update', 'token', 'progress', 'event']);
+        }
+      }
+    });
   }
 
   selectPattern(patternId: string) {
     this.selectedPattern.set(patternId);
     this.executionStatus.set('idle');
     this.currentExecution.set(null);
+    this.streamingOutput.set('');  // Clear streaming output when switching patterns
   }
 
   setVisualizationMode(mode: '2d' | '3d') {
@@ -1154,19 +221,47 @@ export class MultiAgentPatternsComponent implements OnInit {
     this.isExecuting.set(true);
     this.executionStatus.set('running');
     this.currentExecution.set(null);
+    this.streamingOutput.set('');  // Clear streaming output for new execution
 
-    // Start step simulation
-    this.simulateExecution();
+    // Clear previous execution steps and reset
+    this.updateExecutionSteps(this.selectedPattern());
 
     const request: ShowcaseWorkflowRequest = {
       input: this.inputQuery,
       demonstrationMode: this.demonstrationMode,
       userId: 'demo-user',
       sessionId: `pattern-${Date.now()}`,
+      selectedAgents: this.selectedAgents(),
+      enableStreaming: true,
+      enableHitl: this.demonstrationMode === 'enterprise'
     };
+
+    // Generate a unique execution ID for this run
+    const executionId = `${this.selectedPattern()}-${Date.now()}`;
+    
+    // Subscribe to execution-specific streaming events BEFORE making the API call
+    if (this.wsService.isConnected()) {
+      console.log('🔔 Subscribing to execution:', executionId);
+      this.wsService.subscribeToExecution({
+        executionId,
+        eventTypes: ['token', 'progress', 'event', 'values', 'updates', 'node_start', 'node_complete'],
+        options: { includeHistory: false }
+      });
+    } else {
+      console.warn('⚠️ WebSocket not connected, attempting to reconnect...');
+      await this.connectWebSocket();
+      // Wait a bit for connection to establish
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
 
     try {
       let response: ShowcaseWorkflowResponse | undefined;
+
+      console.log('🚀 Starting showcase execution:', {
+        pattern: this.selectedPattern(),
+        executionId,
+        request
+      });
 
       if (this.selectedPattern() === 'supervisor') {
         response = await this.showcaseApi
@@ -1179,27 +274,195 @@ export class MultiAgentPatternsComponent implements OnInit {
       }
 
       if (response) {
+        console.log('✅ Showcase execution completed:', response);
         this.currentExecution.set(response);
-        this.executionStatus.set('completed');
-        this.completeAllSteps();
+        
+        // Don't immediately complete all steps - let the streaming updates handle it
+        if (!this.wsService.isConnected()) {
+          // Only complete steps if WebSocket isn't working
+          this.executionStatus.set('completed');
+          this.completeAllSteps();
+        }
       } else {
         throw new Error('No response received from showcase API');
       }
     } catch (error) {
-      console.error('Pattern execution failed:', error);
+      console.error('❌ Pattern execution failed:', error);
       this.executionStatus.set('error');
       this.errorAllSteps();
     } finally {
-      this.isExecuting.set(false);
+      // Keep execution running if we're still receiving stream updates
+      setTimeout(() => {
+        if (this.executionStatus() === 'running') {
+          this.executionStatus.set('completed');
+          this.completeAllSteps();
+        }
+        this.isExecuting.set(false);
+      }, 5000); // Give 5 seconds for final stream updates
     }
   }
 
   private connectWebSocket() {
+    // Use the default WebSocket configuration
+    // The service will automatically connect to the correct URL and namespace
     this.wsService.connect({
-      url: 'ws://localhost:3000/',
       userId: 'pattern-demo',
       sessionId: `patterns-${Date.now()}`,
     });
+  }
+
+  private subscribeToStreamingEvents() {
+    // Subscribe to stream updates from the WebSocket service
+    this.wsService.streamUpdates$.subscribe({
+      next: (streamData) => {
+        console.log('🌊 Stream update received:', streamData);
+        this.handleStreamUpdate(streamData);
+      },
+      error: (error) => {
+        console.error('Stream subscription error:', error);
+      }
+    });
+
+    // Subscribe to WebSocket messages
+    this.wsService.messages$.subscribe({
+      next: (message) => {
+        console.log('📡 WebSocket message received:', message);
+        this.handleWebSocketMessage(message);
+      },
+      error: (error) => {
+        console.error('WebSocket message error:', error);
+      }
+    });
+  }
+
+  private handleStreamUpdate(streamData: StreamUpdatePayload) {
+    console.log('🌊 Processing stream update:', streamData);
+
+    // Handle different types of stream updates
+    const updateType = streamData.update.type;
+    const updateData = streamData.update.data;
+    const metadata: any = streamData.update.metadata || {};
+
+    // Map node IDs from backend to UI step IDs
+    const nodeIdMap: Record<string, string> = {
+      'initializeShowcase': 'supervisor',
+      'coordinateAgents': 'supervisor',
+      'performIntelligentAnalysis': 'github-analyzer',
+      'generateContent': 'content-creator',
+      'performQualityAssurance': 'brand-strategist',
+      'finalizeShowcase': 'brand-strategist',
+      // Swarm mappings
+      'initializeSwarm': 'peer-1',
+      'formPeerNetwork': 'peer-1',
+      'collaborateOnAnalysis': 'peer-2',
+      'achieveConsensus': 'peer-3',
+      'emergeCollectiveIntelligence': 'peer-4',
+      'finalizeSwarmResult': 'peer-4'
+    };
+
+    if (updateType === 'token' && updateData?.content) {
+      // Handle token streaming - update real-time text display
+      console.log('🎯 Token received:', updateData.content);
+      this.displayStreamingToken(updateData.content);
+    }
+
+    if (updateType === 'progress' && updateData) {
+      const progress = updateData.progress || updateData.percentage || 0;
+      const nodeId = metadata.nodeId || metadata.node || 'unknown';
+      const mappedId = nodeIdMap[nodeId] || nodeId;
+      console.log('📈 Progress update:', { nodeId, mappedId, progress });
+      this.updateStepProgress(mappedId, progress);
+    }
+
+    if (updateType === 'event' || updateType === 'events') {
+      // Handle event data - it might be the event type directly or nested
+      const eventType = typeof updateData === 'string' ? updateData : 
+                       updateData?.eventType || updateData?.type || updateData?.event;
+      const nodeId = metadata.nodeId || metadata.node || updateData?.nodeId;
+      const mappedId = nodeIdMap[nodeId] || nodeId;
+      
+      console.log('📡 Event received:', eventType, { nodeId, mappedId, data: updateData });
+
+      if (mappedId && eventType) {
+        const eventUpper = eventType.toUpperCase();
+        if (eventUpper.includes('START') || eventUpper.includes('BEGIN')) {
+          this.setStepStatus(mappedId, 'running');
+        } else if (eventUpper.includes('COMPLETE') || eventUpper.includes('END') || eventUpper.includes('FINISH')) {
+          this.setStepStatus(mappedId, 'completed');
+          this.updateStepProgress(mappedId, 100);
+        } else if (eventUpper.includes('ERROR') || eventUpper.includes('FAIL')) {
+          this.setStepStatus(mappedId, 'error');
+        }
+      }
+    }
+
+    // Handle node_start and node_complete events directly
+    if (updateType === 'node_start' || updateType === 'NODE_START') {
+      const nodeId = metadata.nodeId || metadata.node || updateData?.nodeId;
+      const mappedId = nodeIdMap[nodeId] || nodeId;
+      console.log('🟢 Node started:', { nodeId, mappedId });
+      if (mappedId) {
+        this.setStepStatus(mappedId, 'running');
+      }
+    }
+
+    if (updateType === 'node_complete' || updateType === 'NODE_COMPLETE') {
+      const nodeId = metadata.nodeId || metadata.node || updateData?.nodeId;
+      const mappedId = nodeIdMap[nodeId] || nodeId;
+      console.log('✅ Node completed:', { nodeId, mappedId });
+      if (mappedId) {
+        this.setStepStatus(mappedId, 'completed');
+        this.updateStepProgress(mappedId, 100);
+      }
+    }
+
+    // Handle workflow completion
+    if (updateType === 'workflow_complete' || updateType === 'WORKFLOW_COMPLETE') {
+      console.log('🎉 Workflow completed!');
+      this.executionStatus.set('completed');
+      this.completeAllSteps();
+    }
+  }
+
+  private handleWebSocketMessage(message: WebSocketMessage) {
+    console.log('📨 Processing WebSocket message:', message.type);
+
+    // Handle specific message types
+    switch (message.type) {
+      case WebSocketMessageType.STREAM_UPDATE:
+        // This should be handled by streamUpdates$ subscription
+        break;
+      case WebSocketMessageType.CONNECTION_STATUS:
+        console.log('🔗 Connection status:', message.data);
+        break;
+      case WebSocketMessageType.ERROR:
+        console.error('❌ WebSocket error:', message.data);
+        break;
+      default:
+        console.log('📝 Unhandled message type:', message.type);
+    }
+  }
+
+  private updateStepProgress(nodeId: string, progress: number) {
+    const currentSteps = this.executionSteps();
+    const updatedSteps = currentSteps.map(step => {
+      if (step.id === nodeId || step.name.toLowerCase().includes(nodeId.toLowerCase())) {
+        return { ...step, progress: Math.round(progress) };
+      }
+      return step;
+    });
+    this.executionSteps.set(updatedSteps);
+  }
+
+  private setStepStatus(nodeId: string, status: 'pending' | 'running' | 'completed' | 'error') {
+    const currentSteps = this.executionSteps();
+    const updatedSteps = currentSteps.map(step => {
+      if (step.id === nodeId || step.name.toLowerCase().includes(nodeId.toLowerCase())) {
+        return { ...step, status };
+      }
+      return step;
+    });
+    this.executionSteps.set(updatedSteps);
   }
 
   private updateExecutionSteps(pattern: string) {
@@ -1242,39 +505,8 @@ export class MultiAgentPatternsComponent implements OnInit {
     );
   }
 
-  private simulateExecution() {
-    const steps = this.executionSteps();
-    let currentStep = 0;
-
-    const progressStep = () => {
-      if (currentStep < steps.length && this.executionStatus() === 'running') {
-        const step = steps[currentStep];
-        step.status = 'running';
-
-        // Simulate progress
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-          progress += Math.random() * 20;
-          step.progress = Math.min(100, progress);
-
-          if (progress >= 100) {
-            clearInterval(progressInterval);
-            step.status = 'completed';
-            step.duration = Math.floor(Math.random() * 2000) + 500;
-            step.output = this.generateStepOutput(step.name);
-
-            currentStep++;
-            if (currentStep < steps.length) {
-              setTimeout(progressStep, 500);
-            }
-          }
-        }, 200);
-      }
-    };
-
-    // Start first step after a brief delay
-    setTimeout(progressStep, 1000);
-  }
+  // Remove simulateExecution method as we're using real streaming now
+  // The streaming updates will handle the step progress updates
 
   private generateStepOutput(stepName: string): string {
     const outputs = {
@@ -1326,5 +558,230 @@ export class MultiAgentPatternsComponent implements OnInit {
       return 'status-active';
     }
     return 'status-inactive';
+  }
+
+  private displayStreamingToken(content: string) {
+    console.log('📝 Displaying token:', content);
+
+    // Append token to streaming output
+    const currentOutput = this.streamingOutput();
+    this.streamingOutput.set(currentOutput + content);
+
+    // Also update the currently running step's output
+    if (this.executionStatus() === 'running') {
+      const steps = this.executionSteps();
+      const runningStep = steps.find(s => s.status === 'running');
+      if (runningStep) {
+        runningStep.output = runningStep.output ?
+          runningStep.output + ' ' + content :
+          content;
+        this.executionSteps.set([...steps]);
+      }
+    }
+  }
+
+  /**
+   * Load real agent definitions from backend
+   */
+  private async loadAvailableAgents() {
+    try {
+      const agents = await this.showcaseApi.getAvailableAgents().toPromise();
+      if (agents) {
+        this.availableAgents.set(agents);
+        console.log('🤖 Loaded real agents:', agents.length);
+      }
+    } catch (error) {
+      console.error('Failed to load agents:', error);
+      // Fallback to mock agents if API fails
+      this.availableAgents.set([
+        {
+          id: 'demo-showcase',
+          name: 'Demo Showcase Agent',
+          description: 'Basic demonstration capabilities',
+          tools: ['analysis', 'formatting'],
+          capabilities: ['analysis'],
+          priority: 'medium',
+          executionTime: 'fast',
+          outputFormat: 'brief',
+          systemPrompt: 'Demo agent for basic showcasing',
+          metadata: {
+            version: '1.0.0',
+            category: 'demo',
+            complexity: 'basic',
+            showcaseLevel: 'basic',
+            decoratorsUsed: ['@Agent'],
+            enterpriseFeatures: []
+          }
+        },
+        {
+          id: 'advanced-showcase',
+          name: 'Advanced Showcase Agent',
+          description: 'Enterprise-grade capabilities with full decorator ecosystem',
+          tools: ['advanced-analyzer', 'content-generator', 'quality-assessor'],
+          capabilities: ['analysis', 'generation', 'streaming', 'approval', 'monitoring'],
+          priority: 'high',
+          executionTime: 'slow',
+          outputFormat: 'comprehensive',
+          systemPrompt: 'Advanced agent showcasing complete decorator system',
+          metadata: {
+            version: '2.0.0',
+            category: 'enterprise-demonstration',
+            complexity: 'advanced',
+            showcaseLevel: 'ultimate',
+            decoratorsUsed: ['@Agent', '@StreamToken', '@StreamEvent', '@RequiresApproval'],
+            enterpriseFeatures: ['real-time-streaming', 'human-in-loop', 'advanced-monitoring']
+          }
+        }
+      ]);
+    }
+  }
+
+  /**
+   * Initialize service coordination display
+   */
+  private initializeServiceCoordination() {
+    const services: ServiceCoordination[] = [
+      {
+        id: 'analysis-service',
+        name: 'Analysis Service',
+        description: 'Sophisticated data analysis and GitHub repository insights',
+        status: 'idle',
+        progress: 0,
+        executionOrder: 1
+      },
+      {
+        id: 'content-service', 
+        name: 'Content Service',
+        description: 'AI-powered content generation and multi-platform optimization',
+        status: 'idle',
+        progress: 0,
+        executionOrder: 2
+      },
+      {
+        id: 'quality-service',
+        name: 'Quality Service',
+        description: 'Quality assurance and content validation',
+        status: 'idle',
+        progress: 0,
+        executionOrder: 3
+      },
+      {
+        id: 'network-service',
+        name: 'Network Service',
+        description: 'Agent coordination and network topology management',
+        status: 'idle',
+        progress: 0,
+        executionOrder: 4
+      }
+    ];
+    this.serviceCoordination.set(services);
+  }
+
+  /**
+   * Toggle agent selection for multi-agent scenarios
+   */
+  toggleAgentSelection(agentId: string) {
+    const selected = this.selectedAgents();
+    if (selected.includes(agentId)) {
+      this.selectedAgents.set(selected.filter(id => id !== agentId));
+    } else {
+      this.selectedAgents.set([...selected, agentId]);
+    }
+  }
+
+  /**
+   * Get agent selection status
+   */
+  isAgentSelected(agentId: string): boolean {
+    return this.selectedAgents().includes(agentId);
+  }
+
+  /**
+   * Toggle search demonstration section
+   */
+  toggleSearchSection() {
+    this.showSearchSection.update(show => !show);
+  }
+
+  /**
+   * Execute Tavily search demonstration
+   */
+  async executeSearchDemo() {
+    if (!this.searchQuery.trim()) return;
+
+    const demo: SearchDemonstration = {
+      type: this.searchType,
+      query: this.searchQuery,
+      isLoading: true
+    };
+    this.searchDemonstration.set(demo);
+
+    try {
+      let results;
+      switch (this.searchType) {
+        case 'web':
+          results = await this.showcaseApi.searchWeb(this.searchQuery, 5, 'advanced').toPromise();
+          break;
+        case 'news':
+          results = await this.showcaseApi.searchNews(
+            this.searchQuery, 
+            this.newsTimeframe, 
+            this.newsCategory, 
+            8
+          ).toPromise();
+          break;
+        case 'research':
+          results = await this.showcaseApi.searchResearch(
+            this.searchQuery,
+            this.researchDepth,
+            5,
+            true
+          ).toPromise();
+          break;
+      }
+
+      this.searchDemonstration.update(demo => ({
+        ...demo!,
+        results,
+        isLoading: false
+      }));
+    } catch (error) {
+      this.searchDemonstration.update(demo => ({
+        ...demo!,
+        error: (error as Error).message,
+        isLoading: false
+      }));
+    }
+  }
+
+  /**
+   * Get search button text based on type and loading state
+   */
+  getSearchButtonText(): string {
+    const demo = this.searchDemonstration();
+    if (demo?.isLoading) {
+      return 'Searching...';
+    }
+    
+    const typeText = {
+      web: 'Web Search',
+      news: 'News Search', 
+      research: 'Research Search'
+    };
+    
+    return `Execute ${typeText[this.searchType]}`;
+  }
+
+  /**
+   * Update service coordination status during execution
+   */
+  private updateServiceStatus(serviceId: string, status: ServiceCoordination['status'], progress = 0) {
+    this.serviceCoordination.update(services => 
+      services.map(service => 
+        service.id === serviceId 
+          ? { ...service, status, progress }
+          : service
+      )
+    );
   }
 }

@@ -89,7 +89,7 @@ Your output must be a **simple, direct** task-description.md that:
 ### **When to Route to researcher-expert:**
 
 - User's request involves unfamiliar technology
-- User mentioned specific tools/frameworks you need to research
+- User mentioned specific technologies/tools you need to research
 - User's problem requires understanding best practices
 - Complexity > Medium and knowledge gaps exist
 

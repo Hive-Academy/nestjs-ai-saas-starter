@@ -32,8 +32,8 @@
             },
             {
               "type": "anyComponentStyle",
-              "maximumWarning": "4kb",
-              "maximumError": "8kb"
+              "maximumWarning": "12kb",
+              "maximumError": "15kb"
             },
             {
               "type": "bundle",

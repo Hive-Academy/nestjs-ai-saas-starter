@@ -1,12 +1,11 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  StreamEventType,
+  type StreamUpdate,
+} from '../interfaces/streaming.interface';
+import { StreamingModule } from '../streaming.module';
 import { StreamingWebSocketGateway } from './streaming-websocket-gateway.service';
 import { WebSocketBridgeService } from './websocket-bridge.service';
-import { StreamingModule } from '../streaming.module';
-import {
-  type StreamUpdate,
-  StreamEventType,
-} from '../interfaces/streaming.interface';
 
 describe('StreamingWebSocketGateway Integration', () => {
   let module: TestingModule;
@@ -34,7 +33,7 @@ describe('StreamingWebSocketGateway Integration', () => {
       bridgeService = module.get<WebSocketBridgeService>(
         WebSocketBridgeService
       );
-    } catch (error) {
+    } catch (error:any) {
       // Gateway might not be available if not properly configured
       console.warn('Gateway not available in test setup:', error.message);
     }

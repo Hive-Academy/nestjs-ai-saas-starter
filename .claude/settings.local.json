@@ -38,11 +38,15 @@
       "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
       "Bash(sed:*)",
       "mcp__browser__browser_evaluate",
-      "mcp__browser__browser_press_key"
+      "mcp__browser__browser_press_key",
+      "mcp__browser__browser_screenshot",
+      "mcp__browser__browser_get_clickable_elements"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
+    "additionalDirectories": [
+      "d:\\projects\\nestjs-ai-saas-starter"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

@@ -1,21 +1,20 @@
-import { Injectable } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
+import { Injectable } from '@nestjs/common';
 
 // Import ALL decorators to demonstrate maximum utilization
-import { Workflow } from '@hive-academy/langgraph-functional-api';
-import { Task, Entrypoint } from '@hive-academy/langgraph-functional-api';
+import { Entrypoint, Task, Workflow } from '@hive-academy/langgraph-functional-api';
 import {
-  StreamToken,
-  StreamEvent,
-  StreamProgress,
-  StreamAll,
-  StreamEventType,
-} from '@hive-academy/langgraph-streaming';
-import {
-  RequiresApproval,
   ApprovalRiskLevel,
   EscalationStrategy,
+  RequiresApproval,
 } from '@hive-academy/langgraph-hitl';
+import {
+  StreamAll,
+  StreamEvent,
+  StreamEventType,
+  StreamProgress,
+  StreamToken,
+} from '@hive-academy/langgraph-streaming';
 
 // Import types and services
 import type {
@@ -25,9 +24,11 @@ import type {
   ShowcaseWorkflowResponse,
 } from '../types/showcase.types';
 
-import { ShowcaseCoordinatorService } from '../services/showcase-coordinator.service';
-import { ShowcaseStreamingService } from '../services/showcase-streaming.service';
+import { ShowcaseAnalysisService } from '../services/showcase-analysis.service';
+import { ShowcaseContentService } from '../services/showcase-content.service';
 import { ShowcaseMetricsService } from '../services/showcase-metrics.service';
+import { ShowcaseNetworkService } from '../services/showcase-network.service';
+import { ShowcaseQualityService } from '../services/showcase-quality.service';
 
 /**
  * 🎯 SUPERVISOR SHOWCASE WORKFLOW - ULTIMATE DECORATOR DEMONSTRATION
@@ -75,9 +76,11 @@ import { ShowcaseMetricsService } from '../services/showcase-metrics.service';
 @Injectable()
 export class SupervisorShowcaseWorkflow {
   constructor(
-    private readonly coordinatorService: ShowcaseCoordinatorService,
-    private readonly streamingService: ShowcaseStreamingService,
-    private readonly metricsService: ShowcaseMetricsService
+    private readonly metricsService: ShowcaseMetricsService,
+    private readonly analysisService: ShowcaseAnalysisService,
+    private readonly contentService: ShowcaseContentService,
+    private readonly qualityService: ShowcaseQualityService,
+    private readonly networkService: ShowcaseNetworkService
   ) {}
 
   /**
@@ -122,8 +125,7 @@ export class SupervisorShowcaseWorkflow {
       demonstrationMode: request.demonstrationMode,
     });
 
-    // Initialize streaming
-    await this.streamingService.initializeSession(executionId);
+    // Streaming is handled automatically by @StreamEvent and other decorators
 
     // Create initial state with comprehensive context
     const initialState: Partial<ShowcaseAgentState> = {
@@ -175,12 +177,13 @@ export class SupervisorShowcaseWorkflow {
   }
 
   /**
-   * 🤖 AGENT COORDINATION TASK
+   * 🤖 AGENT COORDINATION TASK - REAL MULTI-AGENT COORDINATION
    *
    * Demonstrates:
    * - @Task decorator with dependency management
    * - @StreamToken for real-time agent selection streaming
-   * - Multi-agent coordination logic
+   * - ACTUAL multi-agent coordination using our MultiAgentCoordinatorService
+   * - REAL agent network setup and execution
    */
   @Task({
     name: 'coordinate_agents',
@@ -197,50 +200,28 @@ export class SupervisorShowcaseWorkflow {
     processor: (token, metadata) => `[COORDINATION] ${token}`,
   })
   async coordinateAgents(
-    state: ShowcaseAgentState
+    state: Partial<ShowcaseAgentState>
   ): Promise<Partial<ShowcaseAgentState>> {
-    console.log('🤖 Coordinating showcase agents...');
+    console.log('🤖 Coordinating REAL showcase agents with actual multi-agent system...');
 
-    // Demonstrate intelligent agent selection
-    const selectedAgents = await this.coordinatorService.selectOptimalAgents({
-      input: state.input || '',
-      demonstrationMode: state.demonstrationMode,
-      activeCapabilities: state.activeCapabilities,
-      context: state.memoryContext,
-    });
+    // Use NetworkService for multi-agent coordination
+    const networkResult = await this.networkService.setupShowcaseNetwork(
+      state.showcaseId || 'unknown',
+      state.demonstrationMode || 'basic'
+    );
 
-    // Stream coordination decisions
-    await this.streamingService.streamCoordinationEvent({
-      executionId: state.showcaseId,
-      selectedAgents,
-      reasoning:
-        'Selected agents based on input analysis and capability matching',
-      confidence: 0.95,
-    });
-
-    return {
-      ...state,
-      metricsCollected: {
-        ...state.metricsCollected,
-        agentSwitches:
-          state.metricsCollected.agentSwitches + selectedAgents.length,
-      },
-      messages: [
-        ...state.messages,
-        new HumanMessage(
-          `Coordinated ${selectedAgents.length} agents for execution`
-        ),
-      ],
-    };
+    // Update state with network results
+    return this.networkService.updateStateWithNetwork(state, networkResult);
   }
 
   /**
-   * 🧠 INTELLIGENT ANALYSIS TASK
+   * 🧠 INTELLIGENT ANALYSIS TASK - REAL LLM-POWERED ANALYSIS
    *
    * Demonstrates:
    * - @Task with complex dependencies
    * - @StreamAll for comprehensive streaming
-   * - Advanced AI processing patterns
+   * - ACTUAL LLM integration for intelligent analysis
+   * - REAL agent network execution with streaming responses
    */
   @Task({
     name: 'intelligent_analysis',
@@ -281,59 +262,34 @@ export class SupervisorShowcaseWorkflow {
     },
   })
   async performIntelligentAnalysis(
-    state: ShowcaseAgentState
+    state: Partial<ShowcaseAgentState>
   ): Promise<Partial<ShowcaseAgentState>> {
-    console.log('🧠 Performing intelligent analysis...');
+    console.log('🧠 Performing REAL LLM-powered intelligent analysis...');
 
-    // Simulate sophisticated AI analysis with streaming
-    const analysisSteps = [
-      'Analyzing input context and requirements',
-      'Extracting key entities and relationships',
-      'Performing semantic analysis and classification',
-      'Generating insights and recommendations',
-      'Validating results against best practices',
-    ];
+    // Use AnalysisService for intelligent analysis
+    const networkId = state.networkId;
+    if (networkId) {
+      const analysisResult = await this.analysisService.executeAnalysisWorkflow(
+        networkId,
+        state.input || '',
+        state.activeCapabilities || [],
+        state.demonstrationMode || 'basic'
+      );
 
-    const analysisResults = [];
-
-    for (let i = 0; i < analysisSteps.length; i++) {
-      const step = analysisSteps[i];
-      console.log(`  📊 ${step}...`);
-
-      // Stream analysis progress
-      await this.streamingService.streamAnalysisProgress({
-        executionId: state.showcaseId,
-        step: i + 1,
-        total: analysisSteps.length,
-        description: step,
-        progress: ((i + 1) / analysisSteps.length) * 100,
-      });
-
-      // Simulate processing time
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      analysisResults.push({
-        step: i + 1,
-        description: step,
-        result: `Analysis result for: ${step}`,
-        confidence: 0.85 + Math.random() * 0.15,
-      });
+      return this.analysisService.updateStateWithAnalysis(state, analysisResult);
+    } else {
+      // Fallback mode
+      const fallbackAnalysis = this.analysisService.generateStructuredAnalysis(state.input || '');
+      const failedResult = {
+        success: false,
+        content: '',
+        metrics: { agentExecutions: 0, totalTokens: 0, agentsUsed: [], toolsInvoked: [], executionTime: 0 },
+        error: new Error('No agent network available')
+      };
+      return this.analysisService.updateStateWithAnalysis(state, failedResult, fallbackAnalysis);
     }
-
-    return {
-      ...state,
-      metricsCollected: {
-        ...state.metricsCollected,
-        memoryAccesses:
-          state.metricsCollected.memoryAccesses + analysisSteps.length,
-      },
-      messages: [
-        ...state.messages,
-        new HumanMessage('Intelligent analysis completed successfully'),
-      ],
-      analysis: analysisResults,
-    };
   }
+
 
   /**
    * 🎨 CONTENT GENERATION TASK
@@ -373,56 +329,16 @@ export class SupervisorShowcaseWorkflow {
     },
   })
   async generateContent(
-    state: ShowcaseAgentState
+    state: Partial<ShowcaseAgentState>
   ): Promise<Partial<ShowcaseAgentState>> {
     console.log('🎨 Generating showcase content...');
 
-    // Simulate AI content generation with token streaming
-    const contentSections = [
-      'Executive Summary',
-      'Technical Architecture',
-      'Feature Demonstration',
-      'Performance Metrics',
-      'Implementation Guide',
-    ];
+    // Use ContentService for content generation
+    const contentResult = await this.contentService.generateShowcaseContent(
+      state.showcaseId || 'unknown'
+    );
 
-    const generatedContent = [];
-
-    for (const section of contentSections) {
-      console.log(`  ✏️  Generating ${section}...`);
-
-      // Simulate token-by-token generation
-      const sectionContent = await this.simulateTokenGeneration(
-        state.showcaseId,
-        `### ${section}\n\nThis section demonstrates the sophisticated capabilities of our ${section.toLowerCase()} system. Our advanced AI architecture provides enterprise-grade functionality with real-time streaming, intelligent coordination, and comprehensive monitoring capabilities.\n\n`,
-        50 // tokens per section
-      );
-
-      generatedContent.push({
-        section,
-        content: sectionContent,
-        wordCount: sectionContent.split(' ').length,
-        generatedAt: new Date().toISOString(),
-      });
-    }
-
-    return {
-      ...state,
-      metricsCollected: {
-        ...state.metricsCollected,
-        tokensStreamed: generatedContent.reduce(
-          (total, section) => total + section.content.length,
-          0
-        ),
-      },
-      messages: [
-        ...state.messages,
-        new HumanMessage(
-          `Generated ${generatedContent.length} content sections`
-        ),
-      ],
-      generatedContent,
-    };
+    return this.contentService.updateStateWithContent(state, contentResult);
   }
 
   /**
@@ -495,83 +411,17 @@ export class SupervisorShowcaseWorkflow {
     }),
   })
   async performQualityAssurance(
-    state: ShowcaseAgentState
+    state: Partial<ShowcaseAgentState>
   ): Promise<Partial<ShowcaseAgentState>> {
     console.log('✅ Performing quality assurance with human approval...');
 
-    // Create approval request
-    const approvalRequest = {
-      id: `approval-${state.showcaseId}-${Date.now()}`,
-      type: 'content' as const,
-      title: 'Showcase Content Quality Review',
-      description:
-        'Review generated showcase content for accuracy and completeness',
-      requestedBy: 'supervisor-showcase-workflow',
-      requestedAt: Date.now(),
+    // Use QualityService for quality assurance
+    const approvalRequest = this.qualityService.createApprovalRequest(
+      state.showcaseId || 'unknown',
+      state
+    );
 
-      options: [
-        {
-          id: 'approve',
-          label: 'Approve Content',
-          description:
-            'Content meets quality standards and is ready for final processing',
-          consequences: ['Content will be finalized and prepared for delivery'],
-          confidence: 0.9,
-        },
-        {
-          id: 'revise',
-          label: 'Request Revisions',
-          description: 'Content needs improvements before approval',
-          consequences: ['Content will be regenerated with improvements'],
-          confidence: 0.7,
-        },
-        {
-          id: 'reject',
-          label: 'Reject Content',
-          description:
-            'Content does not meet standards and needs complete rework',
-          consequences: ['Workflow will restart from analysis phase'],
-          confidence: 0.3,
-        },
-      ],
-
-      context: {
-        agentState: {
-          contentSections: (state.generatedContent as any[])?.length || 0,
-          analysisQuality: (state.analysis as any[])?.length || 0,
-        } as Partial<ShowcaseAgentState>,
-        reasoning: 'Human validation required for showcase content quality',
-        confidence: 0.85,
-        alternatives: [
-          'Auto-approve based on high confidence',
-          'Skip approval for basic mode',
-        ],
-      },
-
-      timeout: 180000, // 3 minutes
-      fallbackAction: 'auto-approve' as 'auto-approve' | 'reject' | 'retry',
-    };
-
-    // Add to pending approvals
-    const updatedState = {
-      ...state,
-      pendingApprovals: [...state.pendingApprovals, approvalRequest],
-      messages: [
-        ...state.messages,
-        new HumanMessage(
-          'Quality assurance initiated - human approval requested'
-        ),
-      ],
-    };
-
-    // Stream approval request
-    await this.streamingService.streamApprovalRequest({
-      executionId: state.showcaseId,
-      approval: approvalRequest,
-    });
-
-    console.log('🔔 Human approval requested for quality assurance');
-    return updatedState;
+    return this.qualityService.updateStateWithApproval(state, approvalRequest);
   }
 
   /**
@@ -606,18 +456,26 @@ export class SupervisorShowcaseWorkflow {
     },
   })
   async finalizeShowcase(
-    state: ShowcaseAgentState
+    state: Partial<ShowcaseAgentState>
   ): Promise<ShowcaseWorkflowResponse> {
     console.log('🏁 Finalizing supervisor showcase workflow...');
 
     // Calculate final metrics
-    const finalDuration = Date.now() - state.executionStartTime;
+    const finalDuration = Date.now() - (state.executionStartTime || Date.now());
     const finalMetrics = {
-      ...state.metricsCollected,
       totalDuration: finalDuration,
+      agentSwitches: state.metricsCollected?.agentSwitches || 0,
+      toolInvocations: state.metricsCollected?.toolInvocations || 0,
+      memoryAccesses: state.metricsCollected?.memoryAccesses || 0,
+      averageResponseTime: finalDuration / Math.max((state.metricsCollected?.agentSwitches || 1), 1),
+      peakMemoryUsage: state.metricsCollected?.peakMemoryUsage || 0,
+      concurrentAgents: state.metricsCollected?.concurrentAgents || 1,
       successRate: 1.0, // Successful completion
-      averageResponseTime:
-        finalDuration / (state.metricsCollected.agentSwitches || 1),
+      errorRate: state.metricsCollected?.errorRate || 0,
+      approvalRate: state.metricsCollected?.approvalRate || 1.0,
+      tokensStreamed: state.metricsCollected?.tokensStreamed || 0,
+      streamingLatency: state.metricsCollected?.streamingLatency || 0,
+      connectionStability: state.metricsCollected?.connectionStability || 1.0,
     };
 
     // Generate comprehensive execution report
@@ -637,34 +495,34 @@ export class SupervisorShowcaseWorkflow {
       ],
       performanceMetrics: finalMetrics,
       qualityScore: 0.95,
-      humanInteractions: state.approvalHistory.length,
-      streamingEvents: state.streamBuffer.length,
+      humanInteractions: state.approvalHistory?.length || 0,
+      streamingEvents: state.streamBuffer?.length || 0,
     };
 
-    // Stream completion event
-    await this.streamingService.streamWorkflowCompletion({
-      executionId: state.showcaseId,
-      status: 'completed',
-      metrics: finalMetrics,
-      report: executionReport,
-    });
+    // Workflow completion is handled automatically by @StreamProgress decorator
+    console.log('🎯 Workflow completion event generated');
+
+    // Cleanup network resources
+    if (state.networkId) {
+      await this.networkService.cleanupNetwork(state.networkId);
+    }
 
     // Stop metrics collection
-    await this.metricsService.stopExecution(state.showcaseId, finalMetrics);
+    await this.metricsService.stopExecution(state.showcaseId || 'unknown', finalMetrics);
 
     console.log('🎯 Supervisor showcase workflow completed successfully!');
 
     // Return comprehensive response
     const response: ShowcaseWorkflowResponse = {
-      id: state.showcaseId,
+      id: state.showcaseId || 'unknown',
       pattern: 'supervisor',
       status: 'completed',
 
       output: `Supervisor Showcase completed successfully!
               Demonstrated ${executionReport.decoratorsApplied.length} decorators
-              with ${state.activeCapabilities.length} capabilities.`,
+              with ${state.activeCapabilities?.length || 0} capabilities.`,
 
-      finalState: state,
+      finalState: state as ShowcaseAgentState,
 
       executionPath: [
         'initializeShowcase',
@@ -681,13 +539,13 @@ export class SupervisorShowcaseWorkflow {
       duration: finalDuration,
       metrics: finalMetrics,
 
-      streamEvents: state.streamBuffer,
-      approvals: state.approvalHistory,
-      errors: state.errors,
+      streamEvents: state.streamBuffer || [],
+      approvals: state.approvalHistory || [],
+      errors: state.errors || [],
 
-      streamingUrl: `ws://localhost:3000/showcase/stream/${state.showcaseId}`,
-      timeTravelUrl: `http://localhost:3000/showcase/timetravel/${state.showcaseId}`,
-      metricsUrl: `http://localhost:3000/showcase/metrics/${state.showcaseId}`,
+      streamingUrl: `ws://localhost:3000/showcase/stream/${state.showcaseId || 'unknown'}`,
+      timeTravelUrl: `http://localhost:3000/showcase/timetravel/${state.showcaseId || 'unknown'}`,
+      metricsUrl: `http://localhost:3000/showcase/metrics/${state.showcaseId || 'unknown'}`,
     };
 
     return response;
@@ -747,40 +605,4 @@ export class SupervisorShowcaseWorkflow {
     };
   }
 
-  /**
-   * Helper method to simulate token-by-token content generation with streaming
-   */
-  private async simulateTokenGeneration(
-    executionId: string,
-    content: string,
-    tokenCount: number
-  ): Promise<string> {
-    const words = content.split(' ');
-    const tokensPerWord = Math.ceil(tokenCount / words.length);
-
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-
-      // Stream each word as multiple tokens
-      for (let j = 0; j < tokensPerWord; j++) {
-        const tokenPart = j === 0 ? word : '';
-        if (tokenPart) {
-          await this.streamingService.streamToken({
-            executionId,
-            token: tokenPart + (i < words.length - 1 ? ' ' : ''),
-            metadata: {
-              wordIndex: i,
-              tokenIndex: j,
-              sectionProgress: (i / words.length) * 100,
-            },
-          });
-
-          // Small delay to simulate natural generation
-          await new Promise((resolve) => setTimeout(resolve, 50));
-        }
-      }
-    }
-
-    return content;
-  }
 }

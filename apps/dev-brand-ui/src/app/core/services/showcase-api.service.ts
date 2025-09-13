@@ -10,6 +10,10 @@ export interface ShowcaseWorkflowRequest {
   demonstrationMode: 'basic' | 'advanced' | 'enterprise';
   userId?: string;
   sessionId?: string;
+  selectedAgents?: string[];
+  networkId?: string;
+  enableStreaming?: boolean;
+  enableHitl?: boolean;
 }
 
 export interface ShowcaseWorkflowResponse {
@@ -63,6 +67,79 @@ export interface ShowcaseAgentDemo {
     complexityHandled: string;
     toolsIntegrated: number;
   };
+}
+
+// New interfaces for enhanced backend integration
+export interface ShowcaseAgent {
+  id: string;
+  name: string;
+  description: string;
+  tools: string[];
+  capabilities: string[];
+  priority: 'low' | 'medium' | 'high';
+  executionTime: 'fast' | 'medium' | 'slow';
+  outputFormat: 'brief' | 'detailed' | 'comprehensive';
+  systemPrompt: string;
+  metadata: {
+    version: string;
+    category: string;
+    complexity: 'basic' | 'advanced' | 'enterprise';
+    showcaseLevel: string;
+    decoratorsUsed: string[];
+    enterpriseFeatures: string[];
+  };
+}
+
+export interface SearchResult {
+  title: string;
+  url: string;
+  content: string;
+  score: number;
+  publishedDate?: string;
+}
+
+export interface SearchResponse {
+  query: string;
+  results: SearchResult[];
+  totalResults: number;
+  searchTime: string;
+  answer?: string;
+  metadata: {
+    timestamp: string;
+    provider: string;
+    version: string;
+  };
+}
+
+export interface NewsSearchResponse {
+  query: string;
+  articles: Array<{
+    title: string;
+    url: string;
+    summary: string;
+    publishedAt: string;
+    source: string;
+    relevanceScore: number;
+    category: string;
+  }>;
+  totalArticles: number;
+  timeframe: 'day' | 'week' | 'month';
+  category: 'general' | 'tech' | 'business' | 'science' | 'health';
+}
+
+export interface ResearchSearchResponse {
+  topic: string;
+  sources: Array<{
+    title: string;
+    url: string;
+    content: string;
+    type: 'academic' | 'industry' | 'news' | 'general';
+    credibility: 'high' | 'medium-high' | 'medium' | 'low';
+    score: number;
+  }>;
+  synthesis: string;
+  totalSources: number;
+  analysisDepth: 'summary' | 'detailed' | 'comprehensive';
 }
 
 export interface ShowcaseCapabilities {
@@ -207,17 +284,78 @@ export class ShowcaseApiService {
   }
 
   /**
-   * Get Available Agent List
-   * Returns list of all available showcase agents
+   * Get Available Agents with Full Metadata
+   * Returns comprehensive agent definitions from backend
    */
-  getAvailableAgents(): string[] {
-    return [
-      'demo-showcase',
-      'advanced-showcase',
-      'specialist-showcase',
-      'streaming-showcase',
-      'hitl-showcase',
-    ];
+  getAvailableAgents(): Observable<ShowcaseAgent[]> {
+    return this.http
+      .get<ShowcaseAgent[]>(`${this.baseUrl}/agents`)
+      .pipe(catchError(this.handleError('getAvailableAgents')));
+  }
+
+  /**
+   * Get Available Tools
+   * Returns list of all available showcase tools
+   */
+  getAvailableTools(): Observable<any> {
+    return this.http
+      .get(`${this.baseUrl}/tools`)
+      .pipe(catchError(this.handleError('getAvailableTools')));
+  }
+
+  /**
+   * Tavily Web Search
+   * Perform web search using Tavily API integration
+   */
+  searchWeb(query: string, maxResults = 5, searchDepth: 'basic' | 'advanced' = 'basic'): Observable<SearchResponse> {
+    return this.http
+      .post<SearchResponse>(`${this.baseUrl}/search/web`, {
+        query,
+        maxResults,
+        searchDepth,
+        includeAnswer: true
+      })
+      .pipe(catchError(this.handleError('searchWeb')));
+  }
+
+  /**
+   * Tavily News Search
+   * Search for recent news articles
+   */
+  searchNews(
+    query: string, 
+    timeframe: 'day' | 'week' | 'month' = 'week',
+    category: 'general' | 'tech' | 'business' | 'science' | 'health' = 'general',
+    maxResults = 8
+  ): Observable<NewsSearchResponse> {
+    return this.http
+      .post<NewsSearchResponse>(`${this.baseUrl}/search/news`, {
+        query,
+        timeframe,
+        category,
+        maxResults
+      })
+      .pipe(catchError(this.handleError('searchNews')));
+  }
+
+  /**
+   * Tavily Research Search
+   * Comprehensive research with source analysis
+   */
+  searchResearch(
+    topic: string,
+    analysisDepth: 'summary' | 'detailed' | 'comprehensive' = 'detailed',
+    minSources = 5,
+    includeAcademic = true
+  ): Observable<ResearchSearchResponse> {
+    return this.http
+      .post<ResearchSearchResponse>(`${this.baseUrl}/search/research`, {
+        topic,
+        analysisDepth,
+        minSources,
+        includeAcademic
+      })
+      .pipe(catchError(this.handleError('searchResearch')));
   }
 
   /**

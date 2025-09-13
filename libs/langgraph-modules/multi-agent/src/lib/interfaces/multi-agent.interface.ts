@@ -121,6 +121,11 @@ export interface AgentDefinition {
   handoffTools?: HandoffTool[];
 
   /**
+   * Agent capabilities for discovery and routing
+   */
+  capabilities?: string[];
+
+  /**
    * Agent node function
    */
   nodeFunction: AgentNodeFunction;

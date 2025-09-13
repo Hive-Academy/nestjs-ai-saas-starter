@@ -1,6 +1,5 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { AgentExamplesService } from './services/agent-examples.service';
 import { AgentRegistryService } from './services/agent-registry.service';
 import { AgentRegistrationService } from './services/agent-registration.service';
 import { GraphBuilderService } from './services/graph-builder.service';
@@ -10,7 +9,6 @@ import { NetworkManagerService } from './services/network-manager.service';
 import { NodeFactoryService } from './services/node-factory.service';
 import { ToolRegistrationService } from './services/tool-registration.service';
 import { MultiAgentModuleInitializer } from './services/multi-agent-module-initializer.service';
-import { AgentRegistrationService } from './services/agent-registration.service';
 // Tool services
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
@@ -70,7 +68,7 @@ export class MultiAgentModule {
       },
       // Facade and examples
       MultiAgentCoordinatorService,
-      AgentExamplesService,
+
       // Module initializer
       MultiAgentModuleInitializer,
     ];
@@ -98,7 +96,7 @@ export class MultiAgentModule {
         // Tool service aliases
         TOOL_REGISTRY,
         // Examples service
-        AgentExamplesService,
+
       ],
       global: true,
     };
@@ -146,7 +144,7 @@ export class MultiAgentModule {
       },
       // Facade and examples
       MultiAgentCoordinatorService,
-      AgentExamplesService,
+
       // Module initializer
       MultiAgentModuleInitializer,
     ];
@@ -180,7 +178,7 @@ export class MultiAgentModule {
         // Tool service aliases
         TOOL_REGISTRY,
         // Examples service
-        AgentExamplesService,
+
       ],
       global: false,
     };

@@ -214,6 +214,17 @@ export class StreamingWebSocketGateway
       this.connections.set(connectionId, connection);
       this.socketToConnection.set(socket.id, connectionId);
 
+      // Register client with bridge service IMMEDIATELY after storing connection
+      if (this.bridgeService) {
+        this.bridgeService.registerClient(connectionId, {
+          metadata: {
+            ip: connection.metadata.ip,
+            userAgent: connection.metadata.userAgent,
+            connectedAt: connection.metadata.connectedAt,
+          },
+        });
+      }
+
       // Update statistics
       this.stats.activeConnections++;
       this.stats.totalConnections++;
@@ -259,6 +270,11 @@ export class StreamingWebSocketGateway
 
       // Cleanup subscriptions
       this.cleanupConnectionSubscriptions(connection);
+
+      // Unregister client from bridge service
+      if (this.bridgeService) {
+        this.bridgeService.unregisterClient(connectionId);
+      }
 
       // Remove connection mappings
       this.connections.delete(connectionId);

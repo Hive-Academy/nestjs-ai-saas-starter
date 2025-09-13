@@ -12,14 +12,24 @@ import { SpecialistShowcaseAgent } from './agents/specialist-showcase.agent';
 import { StreamingShowcaseAgent } from './agents/streaming-showcase.agent';
 import { HitlShowcaseAgent } from './agents/hitl-showcase.agent';
 
+// Import REAL showcase agents demonstrating proper library usage
+import { ResearchShowcaseAgent } from './agents/research-showcase.agent';
+import { AnalysisShowcaseAgent } from './agents/analysis-showcase.agent';
+import { ContentShowcaseAgent } from './agents/content-showcase.agent';
+
 // Import showcase services
 import { ShowcaseCoordinatorService } from './services/showcase-coordinator.service';
 import { ShowcaseMetricsService } from './services/showcase-metrics.service';
-import { ShowcaseStreamingService } from './services/showcase-streaming.service';
+import { ShowcaseAnalysisService } from './services/showcase-analysis.service';
+import { ShowcaseContentService } from './services/showcase-content.service';
+import { ShowcaseQualityService } from './services/showcase-quality.service';
+import { ShowcaseNetworkService } from './services/showcase-network.service';
 
 // Import showcase tools - Demonstrates @Tool decorator system
 import { ShowcaseAnalysisTools } from './tools/showcase-analysis.tools';
 import { ShowcaseIntegrationTools } from './tools/showcase-integration.tools';
+import { ShowcaseSearchTools } from './tools/showcase-search.tools';
+import { ShowcaseDocumentTools } from './tools/showcase-document.tools';
 
 // Import showcase controllers
 import { ShowcaseController } from './controllers/showcase.controller';
@@ -78,14 +88,24 @@ import { ShowcaseController } from './controllers/showcase.controller';
     StreamingShowcaseAgent,
     HitlShowcaseAgent,
 
+    // REAL showcase agents demonstrating proper library usage
+    ResearchShowcaseAgent,
+    AnalysisShowcaseAgent,
+    ContentShowcaseAgent,
+
     // Showcase services
     ShowcaseCoordinatorService,
     ShowcaseMetricsService,
-    ShowcaseStreamingService,
+    ShowcaseAnalysisService,
+    ShowcaseContentService,
+    ShowcaseQualityService,
+    ShowcaseNetworkService,
 
     // Showcase tools - Demonstrates @Tool decorator capabilities
     ShowcaseAnalysisTools,
     ShowcaseIntegrationTools,
+    ShowcaseSearchTools,
+    ShowcaseDocumentTools,
   ],
   controllers: [ShowcaseController],
   exports: [
@@ -94,8 +114,14 @@ import { ShowcaseController } from './controllers/showcase.controller';
     SwarmShowcaseWorkflow,
     ShowcaseCoordinatorService,
     ShowcaseMetricsService,
+    ShowcaseAnalysisService,
+    ShowcaseContentService,
+    ShowcaseQualityService,
+    ShowcaseNetworkService,
     ShowcaseAnalysisTools,
     ShowcaseIntegrationTools,
+    ShowcaseSearchTools,
+    ShowcaseDocumentTools,
   ],
 })
 export class ShowcaseModule {}
