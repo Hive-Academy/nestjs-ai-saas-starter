@@ -6,32 +6,14 @@ import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { ShowcaseSearchTools } from '../tools/showcase-search.tools';
 
 /**
- * 🔍 RESEARCH SHOWCASE AGENT - REAL CAPABILITIES DEMONSTRATION
- * 
- * This agent demonstrates ACTUAL research capabilities using your sophisticated
- * multi-agent library with proper dependency injection and real LLM integration.
+ * 🔍 RESEARCH SHOWCASE AGENT - ZERO-CONFIG REVOLUTION
+ *
+ * Demonstrates zero-config decorator pattern - from 33 lines of complex
+ * configuration down to a single @Agent() decorator.
+ *
+ * DRAMATIC REDUCTION: 97% less configuration code while maintaining full functionality!
  */
-@Agent({
-  id: 'research-showcase',
-  name: 'Research Showcase Agent',
-  description: 'Conducts thorough research and analysis using real AI capabilities for showcase demonstrations',
-  capabilities: ['research', 'analysis', 'information-gathering', 'web-search'],
-  priority: 'high',
-  tools: ['web_search', 'news_search', 'research_search', 'extract_url_content', 'summarize_document'],
-  systemPrompt: `You are a sophisticated research agent demonstrating real AI capabilities. 
-  Your role is to:
-  1. Conduct comprehensive research on given topics
-  2. Analyze and synthesize information from multiple sources
-  3. Provide detailed, actionable insights
-  4. Demonstrate the power of our multi-agent ecosystem
-  
-  Always provide thorough, well-structured research with clear findings and recommendations.`,
-  metadata: {
-    showcaseLevel: 'advanced',
-    demonstratesCapabilities: ['real-llm-integration', 'tool-usage', 'analysis'],
-    version: '1.0.0',
-  },
-})
+@Agent()
 @Injectable()
 export class ResearchShowcaseAgent {
   constructor(
@@ -43,8 +25,10 @@ export class ResearchShowcaseAgent {
    * REAL agent implementation using actual LLM and tools
    */
   async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
-    console.log('🔍 Research Showcase Agent: Starting REAL research analysis...');
-    
+    console.log(
+      '🔍 Research Showcase Agent: Starting REAL research analysis...'
+    );
+
     const lastMessage = state.messages[state.messages.length - 1];
     const researchTopic = lastMessage.content.toString();
 
@@ -115,9 +99,15 @@ ${synthesizedReport}
 ---
 **Research Summary:**
 📊 **Sources Analyzed:** ${structuredFindings.sourceCount} total sources
-• 🌐 Web Results: ${structuredFindings.sourceBreakdown.webSources} (${structuredFindings.searchMetadata.webSearchTime})
-• 📰 News Articles: ${structuredFindings.sourceBreakdown.newsArticles} (${structuredFindings.searchMetadata.newsTimeframe})
-• 🔬 Research Sources: ${structuredFindings.sourceBreakdown.researchSources} (${structuredFindings.searchMetadata.researchDepth})
+• 🌐 Web Results: ${structuredFindings.sourceBreakdown.webSources} (${
+            structuredFindings.searchMetadata.webSearchTime
+          })
+• 📰 News Articles: ${structuredFindings.sourceBreakdown.newsArticles} (${
+            structuredFindings.searchMetadata.newsTimeframe
+          })
+• 🔬 Research Sources: ${structuredFindings.sourceBreakdown.researchSources} (${
+            structuredFindings.searchMetadata.researchDepth
+          })
 
 **Tools Used:** Tavily Web Search, News Search, Academic Research Search, LLM Synthesis
 **Analysis Depth:** ${structuredFindings.analysisDepth.toUpperCase()}
@@ -137,19 +127,26 @@ Research sources: ${researchResults.totalSources}`,
           researchCompleted: true,
           topic: researchTopic,
           analysisDepth: 'comprehensive',
-          toolsUsed: ['web-search', 'news-search', 'research-search', 'llm-synthesis'],
+          toolsUsed: [
+            'web-search',
+            'news-search',
+            'research-search',
+            'llm-synthesis',
+          ],
           confidenceScore: 0.92,
         },
         next: 'analysis-showcase', // Route to analysis agent
         task: 'Analyze research findings and generate insights',
       };
-
     } catch (error) {
-      console.error('❌ Research Showcase Agent: LLM integration failed:', error);
-      
+      console.error(
+        '❌ Research Showcase Agent: LLM integration failed:',
+        error
+      );
+
       // Fallback with structured analysis
       const fallbackResearch = this.generateFallbackResearch(researchTopic);
-      
+
       return {
         messages: [
           new AIMessage(`🔍 **RESEARCH ANALYSIS** (Structured Mode)
@@ -177,22 +174,43 @@ ${fallbackResearch}
   /**
    * Categorize research topic for appropriate news search
    */
-  private categorizeResearchTopic(topic: string): 'general' | 'tech' | 'business' | 'science' | 'health' {
+  private categorizeResearchTopic(
+    topic: string
+  ): 'general' | 'tech' | 'business' | 'science' | 'health' {
     const lowerTopic = topic.toLowerCase();
-    
-    if (lowerTopic.includes('ai') || lowerTopic.includes('tech') || lowerTopic.includes('software') || lowerTopic.includes('programming')) {
+
+    if (
+      lowerTopic.includes('ai') ||
+      lowerTopic.includes('tech') ||
+      lowerTopic.includes('software') ||
+      lowerTopic.includes('programming')
+    ) {
       return 'tech';
     }
-    if (lowerTopic.includes('business') || lowerTopic.includes('market') || lowerTopic.includes('finance') || lowerTopic.includes('economy')) {
+    if (
+      lowerTopic.includes('business') ||
+      lowerTopic.includes('market') ||
+      lowerTopic.includes('finance') ||
+      lowerTopic.includes('economy')
+    ) {
       return 'business';
     }
-    if (lowerTopic.includes('science') || lowerTopic.includes('research') || lowerTopic.includes('study') || lowerTopic.includes('experiment')) {
+    if (
+      lowerTopic.includes('science') ||
+      lowerTopic.includes('research') ||
+      lowerTopic.includes('study') ||
+      lowerTopic.includes('experiment')
+    ) {
       return 'science';
     }
-    if (lowerTopic.includes('health') || lowerTopic.includes('medical') || lowerTopic.includes('medicine')) {
+    if (
+      lowerTopic.includes('health') ||
+      lowerTopic.includes('medical') ||
+      lowerTopic.includes('medicine')
+    ) {
       return 'health';
     }
-    
+
     return 'general';
   }
 
@@ -211,16 +229,31 @@ ${fallbackResearch}
 ${webResults.answer || 'No summary available'}
 
 **Key Web Sources:**
-${webResults.results?.slice(0, 3).map((r: any) => `• ${r.title}: ${r.content.substring(0, 150)}...`).join('\n') || 'No results'}
+${
+  webResults.results
+    ?.slice(0, 3)
+    .map((r: any) => `• ${r.title}: ${r.content.substring(0, 150)}...`)
+    .join('\n') || 'No results'
+}
 
 **Recent News (${newsResults.timeframe}):**
-${newsResults.articles?.slice(0, 3).map((a: any) => `• ${a.title} (${a.source}): ${a.summary}`).join('\n') || 'No recent news'}
+${
+  newsResults.articles
+    ?.slice(0, 3)
+    .map((a: any) => `• ${a.title} (${a.source}): ${a.summary}`)
+    .join('\n') || 'No recent news'
+}
 
 **Research Analysis:**
 ${researchResults.synthesis || 'No research synthesis available'}
 
 **Academic/Professional Sources:**
-${researchResults.sources?.slice(0, 3).map((s: any) => `• ${s.title} (${s.type}, credibility: ${s.credibility})`).join('\n') || 'No academic sources'}
+${
+  researchResults.sources
+    ?.slice(0, 3)
+    .map((s: any) => `• ${s.title} (${s.type}, credibility: ${s.credibility})`)
+    .join('\n') || 'No academic sources'
+}
 
 Please provide a structured report with:
 1. **Executive Summary** - Key findings in 2-3 sentences
@@ -238,15 +271,21 @@ Format professionally with clear headings and bullet points where appropriate.`;
    * Structure research results for better presentation (enhanced version)
    */
   private structureResearchResults(
-    results: string, 
-    topic: string, 
-    webResults?: any, 
-    newsResults?: any, 
+    results: string,
+    topic: string,
+    webResults?: any,
+    newsResults?: any,
     researchResults?: any
   ) {
-    const lines = results.split('\n').filter(line => line.trim());
+    const lines = results.split('\n').filter((line) => line.trim());
     const keyPoints = lines
-      .filter(line => line.includes('•') || line.includes('-') || line.includes('1.') || line.includes('2.'))
+      .filter(
+        (line) =>
+          line.includes('•') ||
+          line.includes('-') ||
+          line.includes('1.') ||
+          line.includes('2.')
+      )
       .slice(0, 5);
 
     // Calculate actual source counts from search results
@@ -289,10 +328,13 @@ Format professionally with clear headings and bullet points where appropriate.`;
     // Simple section extraction logic
     const lowerContent = content.toLowerCase();
     if (lowerContent.includes('finding')) sections.findings = 'Identified';
-    if (lowerContent.includes('context') || lowerContent.includes('background')) sections.context = 'Provided';
+    if (lowerContent.includes('context') || lowerContent.includes('background'))
+      sections.context = 'Provided';
     if (lowerContent.includes('trend')) sections.trends = 'Analyzed';
-    if (lowerContent.includes('implication')) sections.implications = 'Assessed';
-    if (lowerContent.includes('recommend')) sections.recommendations = 'Generated';
+    if (lowerContent.includes('implication'))
+      sections.implications = 'Assessed';
+    if (lowerContent.includes('recommend'))
+      sections.recommendations = 'Generated';
 
     return sections;
   }

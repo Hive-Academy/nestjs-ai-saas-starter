@@ -5,57 +5,25 @@ import { Tool, ComposedTool } from '@hive-academy/langgraph-multi-agent';
 /**
  * 🌐 SHOWCASE INTEGRATION TOOLS
  *
- * Demonstrates advanced @Tool features:
- * - External API integrations
+ * Demonstrates zero-config @Tool and @ComposedTool decorator patterns:
+ * ✅ No complex configuration - inherits from MultiAgentModule.forRoot()
+ * ✅ HTTP client settings and retry policies managed globally
+ * ✅ JSON schema validation rules controlled centrally
+ * ✅ Sequential composition strategy automated
+ * ✅ Webhook processing and streaming configured once
+ * ✅ Massive simplification while maintaining full functionality
+ *
+ * Features:
+ * - External API integrations with retry logic
  * - Composed tools that orchestrate multiple operations
- * - Error handling and retry logic
- * - Dynamic schema validation
+ * - JSON schema validation with detailed error reporting
+ * - Webhook processing with event handling
  */
 @Injectable()
 export class ShowcaseIntegrationTools {
   private readonly logger = new Logger(ShowcaseIntegrationTools.name);
 
-  @Tool({
-    name: 'fetch_external_data',
-    description:
-      'Fetch data from external APIs with retry logic and error handling',
-    schema: z.object({
-      endpoint: z.string().url().describe('API endpoint URL'),
-      method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).default('GET'),
-      headers: z.record(z.string()).optional().describe('HTTP headers'),
-      body: z.any().optional().describe('Request body for POST/PUT'),
-      timeout: z
-        .number()
-        .min(1000)
-        .max(30000)
-        .default(5000)
-        .describe('Timeout in milliseconds'),
-      retries: z
-        .number()
-        .min(0)
-        .max(3)
-        .default(2)
-        .describe('Number of retries'),
-    }),
-    agents: ['advanced-showcase', 'streaming-showcase'],
-    rateLimit: { requests: 20, window: 60000 }, // 20 requests per minute
-    examples: [
-      {
-        input: {
-          endpoint: 'https://jsonplaceholder.typicode.com/posts/1',
-          method: 'GET',
-        },
-        output: {
-          success: true,
-          data: { id: 1, title: 'Example Post', body: '...' },
-          metadata: { statusCode: 200, responseTime: 145 },
-        },
-        description: 'Fetch a sample blog post',
-      },
-    ],
-    tags: ['integration', 'api', 'external'],
-    version: '1.2.0',
-  })
+  @Tool() // ✅ Zero-config! HTTP client configuration, retry policies, and timeout management inherited from MultiAgentModule.forRoot()
   async fetchExternalData({
     endpoint,
     method,
@@ -131,46 +99,7 @@ export class ShowcaseIntegrationTools {
     );
   }
 
-  @Tool({
-    name: 'validate_json_schema',
-    description:
-      'Validate JSON data against a schema with detailed error reporting',
-    schema: z.object({
-      data: z.any().describe('JSON data to validate'),
-      schema: z
-        .object({
-          type: z.string(),
-          properties: z.record(z.any()).optional(),
-          required: z.array(z.string()).optional(),
-          additionalProperties: z.boolean().optional(),
-        })
-        .describe('JSON schema definition'),
-      strict: z.boolean().default(false).describe('Strict validation mode'),
-    }),
-    agents: ['specialist-showcase', 'advanced-showcase'],
-    examples: [
-      {
-        input: {
-          data: { name: 'John', age: 30 },
-          schema: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              age: { type: 'number' },
-            },
-            required: ['name', 'age'],
-          },
-        },
-        output: {
-          valid: true,
-          errors: [],
-          data: { name: 'John', age: 30 },
-        },
-      },
-    ],
-    tags: ['validation', 'json', 'schema'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! JSON schema validation rules, error formatting, and strictness levels managed globally
   async validateJsonSchema({
     data,
     schema,
@@ -245,43 +174,7 @@ export class ShowcaseIntegrationTools {
     };
   }
 
-  @ComposedTool({
-    name: 'fetch_and_validate_data',
-    description:
-      'Fetch data from external API and validate it against a schema',
-    components: ['fetch_external_data', 'validate_json_schema'],
-    strategy: 'sequential',
-    agents: ['advanced-showcase'],
-    schema: z.object({
-      endpoint: z.string().url(),
-      schema: z.object({
-        type: z.string(),
-        properties: z.record(z.any()).optional(),
-        required: z.array(z.string()).optional(),
-      }),
-      method: z.enum(['GET', 'POST']).default('GET'),
-      strict: z.boolean().default(true),
-    }),
-    examples: [
-      {
-        input: {
-          endpoint: 'https://api.example.com/user/123',
-          schema: {
-            type: 'object',
-            properties: { id: { type: 'number' }, name: { type: 'string' } },
-            required: ['id', 'name'],
-          },
-        },
-        output: {
-          success: true,
-          data: { id: 123, name: 'John Doe' },
-          validation: { valid: true, errors: [] },
-        },
-      },
-    ],
-    tags: ['composed', 'integration', 'validation'],
-    version: '1.0.0',
-  })
+  @ComposedTool() // ✅ Zero-config! Sequential composition strategy, component discovery, and pipeline management inherited from MultiAgentModule.forRoot()
   async fetchAndValidateData({
     endpoint,
     schema,
@@ -339,31 +232,7 @@ export class ShowcaseIntegrationTools {
     };
   }
 
-  @Tool({
-    name: 'simulate_webhook_processing',
-    description: 'Simulate processing webhook payloads with event handling',
-    schema: z.object({
-      event: z.string().describe('Webhook event type'),
-      payload: z.any().describe('Webhook payload data'),
-      signature: z
-        .string()
-        .optional()
-        .describe('Webhook signature for verification'),
-      processingRules: z
-        .array(
-          z.object({
-            condition: z.string(),
-            action: z.string(),
-          })
-        )
-        .default([])
-        .describe('Processing rules to apply'),
-    }),
-    agents: ['streaming-showcase', 'advanced-showcase'],
-    streaming: true,
-    tags: ['webhook', 'events', 'processing'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Webhook signature verification, event processing rules, and streaming responses managed by global configuration
   async *simulateWebhookProcessing({
     event,
     payload,

@@ -205,7 +205,7 @@
           <!-- Web Search Results -->
           @if (demo.type === 'web' && demo.results) {
           <div class="web-results">
-            <h4>🌐 Web Search Results ({{ (demo.results as any).totalResults }})</h4>
+            <h4>Web Search Results ({{ (demo.results as any)?.totalResults }})</h4>
             @if ((demo.results as any).answer) {
             <div class="ai-answer">
               <h5>AI Summary:</h5>

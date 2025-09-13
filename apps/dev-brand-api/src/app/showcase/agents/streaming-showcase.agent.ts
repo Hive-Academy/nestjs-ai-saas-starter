@@ -5,48 +5,18 @@ import { HumanMessage } from '@langchain/core/messages';
 import type { ShowcaseAgentState } from '../types/showcase.types';
 
 /**
- * 🌊 STREAMING SHOWCASE AGENT - Real-time Communication Specialist
+ * 🌊 STREAMING SHOWCASE AGENT - ZERO-CONFIG STREAMING
  *
- * This agent is the ultimate demonstration of streaming capabilities,
- * showcasing ALL streaming decorators with sophisticated real-time features.
+ * Demonstrates zero-config streaming - from complex configuration objects
+ * to simple @Agent() and @StreamAll() decorators.
+ *
+ * BEFORE: 39+ lines of complex streaming configuration
+ * AFTER: 2 simple decorators - 95% reduction!
  */
-@Agent({
-  id: 'streaming-showcase',
-  name: 'Streaming Showcase Agent',
-  description:
-    'Ultimate demonstration of real-time streaming capabilities with token, event, and progress streaming',
-
-  tools: ['stream-processor', 'real-time-analyzer', 'buffer-manager'],
-  capabilities: ['streaming'],
-  priority: 'high',
-  executionTime: 'medium',
-
-  systemPrompt: `You are the Streaming Showcase Agent, the ultimate demonstration of real-time communication.
-  You excel at token-level streaming, event broadcasting, and progress tracking with sophisticated buffering.`,
-
-  metadata: {
-    version: '1.0.0',
-    category: 'streaming-demonstration',
-    streamingCapabilities: ['token', 'event', 'progress', 'combined'],
-    decoratorsUsed: [
-      '@Agent',
-      '@StreamToken',
-      '@StreamEvent',
-      '@StreamProgress',
-      '@StreamAll',
-    ],
-  },
-})
+@Agent()
 @Injectable()
 export class StreamingShowcaseAgent {
-  @StreamAll({
-    token: { enabled: true, format: 'text', bufferSize: 25 },
-    event: {
-      events: [StreamEventType.VALUES, StreamEventType.UPDATES],
-      bufferSize: 50,
-    },
-    progress: { enabled: true, granularity: 'fine' },
-  })
+  @StreamAll()
   async nodeFunction(
     state: ShowcaseAgentState
   ): Promise<Partial<ShowcaseAgentState>> {

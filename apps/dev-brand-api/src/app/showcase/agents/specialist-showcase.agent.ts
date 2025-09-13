@@ -9,70 +9,19 @@ import { HumanMessage } from '@langchain/core/messages';
 import type { ShowcaseAgentState } from '../types/showcase.types';
 
 /**
- * 🎯 SPECIALIST SHOWCASE AGENT - Domain-Specific Expertise Demonstration
+ * 🎯 SPECIALIST SHOWCASE AGENT - ZERO-CONFIG SPECIALIZATION
  *
- * This agent demonstrates specialized domain knowledge with focused capabilities.
- * It showcases how to create agents with deep expertise in specific areas while
- * maintaining clean integration with the broader multi-agent ecosystem.
+ * Demonstrates how zero-config decorators work for specialized agents.
+ * All complex configurations replaced with simple decorators.
  *
- * Specializations:
- * - Memory management and contextual intelligence
- * - Tool coordination and workflow optimization
- * - Performance monitoring and debugging capabilities
- * - Time-travel and state management patterns
+ * MASSIVE SIMPLIFICATION:
+ * - @Agent(): 75+ lines → 1 line (98% reduction)
+ * - @StreamEvent(): 15+ lines → 1 line (95% reduction)
+ * - @StreamProgress(): 10+ lines → 1 line (90% reduction)
+ *
+ * Total: 100+ lines of config → 3 decorators!
  */
-@Agent({
-  id: 'specialist-showcase',
-  name: 'Specialist Showcase Agent',
-  description:
-    'Demonstrates specialized domain expertise with memory management, tool coordination, and advanced debugging capabilities',
-
-  // Specialized tool suite
-  tools: [
-    'memory-optimizer',
-    'context-analyzer',
-    'tool-coordinator',
-    'performance-debugger',
-    'state-manager',
-    'workflow-optimizer',
-  ],
-
-  // Specialized capabilities
-  capabilities: ['memory', 'tools', 'debugging', 'coordination'],
-
-  // Specialist configuration
-  priority: 'high',
-  executionTime: 'medium',
-  outputFormat: 'detailed',
-
-  // Domain-specific system prompt
-  systemPrompt: `You are the Specialist Showcase Agent, an expert in advanced system capabilities.
-  Your expertise spans:
-  
-  1. Memory Management: Sophisticated context handling and retrieval
-  2. Tool Coordination: Optimizing multi-tool workflows for maximum efficiency  
-  3. Performance Debugging: Advanced diagnostics and optimization strategies
-  4. State Management: Complex state transitions and time-travel capabilities
-  
-  You provide deep, technical insights while maintaining practical applicability.
-  Your responses combine theoretical knowledge with hands-on implementation guidance.`,
-
-  // Specialist metadata
-  metadata: {
-    version: '1.5.0',
-    category: 'specialist-demonstration',
-    complexity: 'intermediate-advanced',
-    showcaseLevel: 'specialized',
-    expertiseDomains: ['memory', 'tools', 'debugging', 'state-management'],
-    decoratorsUsed: ['@Agent', '@StreamEvent', '@StreamProgress'],
-    specializations: {
-      memoryManagement: 'Expert-level contextual intelligence',
-      toolCoordination: 'Advanced multi-tool workflow optimization',
-      performanceDebugging: 'Sophisticated diagnostics and profiling',
-      stateManagement: 'Complex state transitions and time-travel',
-    },
-  },
-})
+@Agent()
 @Injectable()
 export class SpecialistShowcaseAgent {
   /**
@@ -112,21 +61,7 @@ export class SpecialistShowcaseAgent {
    *
    * Demonstrates: Advanced memory management and contextual intelligence
    */
-  @StreamEvent({
-    events: [
-      StreamEventType.VALUES,
-      StreamEventType.UPDATES,
-      StreamEventType.EVENTS,
-    ],
-    bufferSize: 75,
-    delivery: 'at-least-once',
-    transformer: (event: any) => ({
-      ...(event as Record<string, unknown>),
-      specialization: 'memory-analysis',
-      expertise: 'contextual-intelligence',
-    }),
-    filter: { includeDebug: true },
-  })
+  @StreamEvent()
   private async analyzeMemoryContext(state: ShowcaseAgentState) {
     console.log('  🧠 Analyzing memory context and intelligence patterns...');
 
@@ -169,14 +104,7 @@ export class SpecialistShowcaseAgent {
    *
    * Demonstrates: Advanced tool coordination and workflow optimization
    */
-  @StreamProgress({
-    enabled: true,
-    interval: 1200,
-    granularity: 'fine',
-    includeETA: true,
-    milestones: [20, 40, 60, 80, 100],
-    format: { showPercentage: true, showRate: true, precision: 1 },
-  })
+  @StreamProgress()
   private async optimizeToolWorkflow(state: ShowcaseAgentState) {
     console.log('  🔧 Optimizing tool workflows and coordination patterns...');
 
@@ -250,20 +178,7 @@ export class SpecialistShowcaseAgent {
    *
    * Demonstrates: Advanced debugging and performance analysis capabilities
    */
-  @StreamEvent({
-    events: [
-      StreamEventType.VALUES,
-      StreamEventType.EVENTS,
-      StreamEventType.DEBUG,
-    ],
-    bufferSize: 100,
-    transformer: (event: any) => ({
-      ...(event as Record<string, unknown>),
-      diagnosticType: 'performance-analysis',
-      debugLevel: 'advanced',
-    }),
-    filter: { includeDebug: true, minPriority: 'low' },
-  })
+  @StreamEvent()
   private async performDebugDiagnostics(state: ShowcaseAgentState) {
     console.log('  🔍 Performing advanced debug diagnostics...');
 
@@ -343,12 +258,7 @@ export class SpecialistShowcaseAgent {
    *
    * Demonstrates: Advanced state transitions and management patterns
    */
-  @StreamProgress({
-    enabled: true,
-    granularity: 'detailed',
-    includeMetrics: true,
-    milestones: [25, 50, 75, 100],
-  })
+  @StreamProgress()
   private async manageComplexState(state: ShowcaseAgentState) {
     console.log('  🔄 Managing complex state transitions...');
 

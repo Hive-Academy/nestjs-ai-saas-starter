@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { getFunctionalApiConfigWithDefaults } from '../utils/functional-api-config.accessor';
 
 /**
  * Metadata key for task decorator
@@ -77,13 +78,16 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
   ) => {
     const methodName = String(propertyKey);
 
+    // Get module config with defaults for zero-config experience
+    const moduleConfig = getFunctionalApiConfigWithDefaults();
+
     const metadata: TaskMetadata = {
       name: options.name ?? methodName,
       methodName,
       dependsOn: options.dependsOn ?? [],
       isEntrypoint: false,
-      timeout: options.timeout ?? 30000,
-      retryCount: options.retryCount ?? 3,
+      timeout: options.timeout ?? moduleConfig.defaultTimeout,
+      retryCount: options.retryCount ?? moduleConfig.defaultRetryCount,
       errorHandler: options.errorHandler ?? '',
       metadata: options.metadata ?? {},
     };

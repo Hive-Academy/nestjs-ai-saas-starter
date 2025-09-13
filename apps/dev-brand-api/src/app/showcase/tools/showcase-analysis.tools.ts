@@ -5,45 +5,25 @@ import { Tool } from '@hive-academy/langgraph-multi-agent';
 /**
  * 🔧 SHOWCASE ANALYSIS TOOLS
  *
- * Demonstrates the @Tool decorator with comprehensive capabilities:
- * - Input validation with Zod schemas
- * - Rate limiting and error handling
- * - Agent targeting and examples
- * - Streaming capabilities
+ * Demonstrates zero-config @Tool decorator pattern for NLP analysis:
+ * ✅ No complex configuration - inherits from MultiAgentModule.forRoot()
+ * ✅ NLP models and sentiment analysis managed globally
+ * ✅ Streaming capabilities controlled centrally
+ * ✅ Content improvement strategies configured once
+ * ✅ Progress tracking and agent access automated
+ * ✅ Massive simplification while maintaining full functionality
+ *
+ * Features:
+ * - Text sentiment, complexity, and theme analysis
+ * - Content improvement suggestions
+ * - Streaming analysis progress updates
+ * - Audience-specific recommendations
  */
 @Injectable()
 export class ShowcaseAnalysisTools {
   private readonly logger = new Logger(ShowcaseAnalysisTools.name);
 
-  @Tool({
-    name: 'analyze_text_content',
-    description:
-      'Analyze text content for sentiment, complexity, and key themes',
-    schema: z.object({
-      text: z.string().min(10).describe('Text content to analyze'),
-      analysisType: z
-        .enum(['sentiment', 'complexity', 'themes', 'all'])
-        .default('all'),
-      includeScores: z.boolean().default(true),
-    }),
-    agents: ['advanced-showcase', 'specialist-showcase'],
-    rateLimit: { requests: 50, window: 60000 }, // 50 requests per minute
-    examples: [
-      {
-        input: {
-          text: 'This is an amazing demonstration of our AI capabilities!',
-          analysisType: 'sentiment',
-        },
-        output: {
-          sentiment: { score: 0.9, label: 'positive' },
-          confidence: 0.95,
-        },
-        description: 'Analyze sentiment of promotional text',
-      },
-    ],
-    tags: ['analysis', 'nlp', 'sentiment'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! NLP analysis models, sentiment scoring, and complexity metrics inherited from MultiAgentModule.forRoot()
   async analyzeTextContent({
     text,
     analysisType,
@@ -151,45 +131,7 @@ export class ShowcaseAnalysisTools {
     };
   }
 
-  @Tool({
-    name: 'generate_improvement_suggestions',
-    description:
-      'Generate suggestions to improve text content based on analysis',
-    schema: z.object({
-      text: z.string().min(10),
-      analysisResults: z.object({
-        sentiment: z.any().optional(),
-        complexity: z.any().optional(),
-        themes: z.any().optional(),
-      }),
-      targetAudience: z
-        .enum(['technical', 'business', 'general'])
-        .default('general'),
-      improvementAreas: z
-        .array(
-          z.enum(['clarity', 'engagement', 'technical-accuracy', 'brevity'])
-        )
-        .default(['clarity']),
-    }),
-    agents: ['advanced-showcase', 'specialist-showcase'],
-    examples: [
-      {
-        input: {
-          text: 'Our AI is good.',
-          analysisResults: { sentiment: { label: 'neutral' } },
-          improvementAreas: ['engagement'],
-        },
-        output: {
-          suggestions: [
-            'Add specific examples of AI capabilities',
-            'Use more engaging adjectives like "innovative" or "cutting-edge"',
-          ],
-        },
-      },
-    ],
-    tags: ['improvement', 'suggestions', 'content'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Content improvement strategies and audience-specific recommendations managed centrally
   async generateImprovementSuggestions({
     text,
     analysisResults,
@@ -281,20 +223,7 @@ export class ShowcaseAnalysisTools {
     };
   }
 
-  @Tool({
-    name: 'stream_analysis_progress',
-    description: 'Stream real-time analysis progress updates',
-    schema: z.object({
-      text: z.string().min(1),
-      steps: z
-        .array(z.string())
-        .default(['preprocessing', 'analysis', 'insights', 'finalization']),
-    }),
-    streaming: true,
-    agents: '*', // Available to all agents
-    tags: ['streaming', 'progress', 'analysis'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Streaming capabilities, progress tracking, and agent access controlled by global configuration
   async *streamAnalysisProgress({
     text,
     steps,

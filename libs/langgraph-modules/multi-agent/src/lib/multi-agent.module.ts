@@ -26,6 +26,7 @@ import {
   CHECKPOINT_ADAPTER_TOKEN,
   NoOpCheckpointAdapter,
 } from '@hive-academy/langgraph-core';
+import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -37,6 +38,9 @@ export class MultiAgentModule {
    */
   static forRoot(options: MultiAgentModuleOptions = {}): DynamicModule {
     const mergedOptions = this.mergeWithDefaults(options);
+
+    // Store config for decorator access
+    setMultiAgentConfig(mergedOptions);
 
     const providers: Provider[] = [
       {
@@ -96,7 +100,6 @@ export class MultiAgentModule {
         // Tool service aliases
         TOOL_REGISTRY,
         // Examples service
-
       ],
       global: true,
     };
@@ -111,7 +114,10 @@ export class MultiAgentModule {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
-          return this.mergeWithDefaults(moduleOptions);
+          const mergedOptions = this.mergeWithDefaults(moduleOptions);
+          // Store config for decorator access
+          setMultiAgentConfig(mergedOptions);
+          return mergedOptions;
         },
         inject: options.inject || [],
       },
@@ -178,7 +184,6 @@ export class MultiAgentModule {
         // Tool service aliases
         TOOL_REGISTRY,
         // Examples service
-
       ],
       global: false,
     };

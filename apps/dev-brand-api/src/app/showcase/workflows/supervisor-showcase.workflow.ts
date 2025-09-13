@@ -2,7 +2,11 @@ import { HumanMessage } from '@langchain/core/messages';
 import { Injectable } from '@nestjs/common';
 
 // Import ALL decorators to demonstrate maximum utilization
-import { Entrypoint, Task, Workflow } from '@hive-academy/langgraph-functional-api';
+import {
+  Entrypoint,
+  Task,
+  Workflow,
+} from '@hive-academy/langgraph-functional-api';
 import {
   ApprovalRiskLevel,
   EscalationStrategy,
@@ -202,7 +206,9 @@ export class SupervisorShowcaseWorkflow {
   async coordinateAgents(
     state: Partial<ShowcaseAgentState>
   ): Promise<Partial<ShowcaseAgentState>> {
-    console.log('🤖 Coordinating REAL showcase agents with actual multi-agent system...');
+    console.log(
+      '🤖 Coordinating REAL showcase agents with actual multi-agent system...'
+    );
 
     // Use NetworkService for multi-agent coordination
     const networkResult = await this.networkService.setupShowcaseNetwork(
@@ -234,33 +240,7 @@ export class SupervisorShowcaseWorkflow {
       expectedDuration: 90000,
     },
   })
-  @StreamAll({
-    token: {
-      enabled: true,
-      format: 'text',
-      bufferSize: 100,
-      filter: { minLength: 1, excludeWhitespace: true },
-    },
-    event: {
-      events: [
-        StreamEventType.VALUES,
-        StreamEventType.UPDATES,
-        StreamEventType.EVENTS,
-      ],
-      bufferSize: 50,
-      transformer: (event) => ({
-        ...(event as Record<string, unknown>),
-        analysisStage: true,
-      }),
-    },
-    progress: {
-      enabled: true,
-      granularity: 'detailed',
-      includeETA: true,
-      includeMetrics: true,
-      milestones: [10, 25, 50, 75, 90, 100],
-    },
-  })
+  @StreamAll() // ✅ Zero-config! Inherits ALL settings from StreamingModule.forRoot()
   async performIntelligentAnalysis(
     state: Partial<ShowcaseAgentState>
   ): Promise<Partial<ShowcaseAgentState>> {
@@ -276,20 +256,34 @@ export class SupervisorShowcaseWorkflow {
         state.demonstrationMode || 'basic'
       );
 
-      return this.analysisService.updateStateWithAnalysis(state, analysisResult);
+      return this.analysisService.updateStateWithAnalysis(
+        state,
+        analysisResult
+      );
     } else {
       // Fallback mode
-      const fallbackAnalysis = this.analysisService.generateStructuredAnalysis(state.input || '');
+      const fallbackAnalysis = this.analysisService.generateStructuredAnalysis(
+        state.input || ''
+      );
       const failedResult = {
         success: false,
         content: '',
-        metrics: { agentExecutions: 0, totalTokens: 0, agentsUsed: [], toolsInvoked: [], executionTime: 0 },
-        error: new Error('No agent network available')
+        metrics: {
+          agentExecutions: 0,
+          totalTokens: 0,
+          agentsUsed: [],
+          toolsInvoked: [],
+          executionTime: 0,
+        },
+        error: new Error('No agent network available'),
       };
-      return this.analysisService.updateStateWithAnalysis(state, failedResult, fallbackAnalysis);
+      return this.analysisService.updateStateWithAnalysis(
+        state,
+        failedResult,
+        fallbackAnalysis
+      );
     }
   }
-
 
   /**
    * 🎨 CONTENT GENERATION TASK
@@ -360,42 +354,7 @@ export class SupervisorShowcaseWorkflow {
       criticalPath: true,
     },
   })
-  @RequiresApproval({
-    confidenceThreshold: 0.8,
-    message: (state) =>
-      `Please review the generated showcase content for quality assurance. Demonstration mode: ${state.demonstrationMode}`,
-    timeoutMs: 180000, // 3 minutes for human response
-    onTimeout: 'escalate',
-    escalationStrategy: EscalationStrategy.CHAIN,
-
-    // Advanced approval configuration
-    riskAssessment: {
-      enabled: true,
-      factors: [
-        'content_quality',
-        'technical_accuracy',
-        'demonstration_completeness',
-      ],
-      evaluator: (state) => ({
-        level: ApprovalRiskLevel.MEDIUM,
-        factors: ['Generated content requires human validation'],
-        score: 0.7,
-      }),
-    },
-
-    skipConditions: {
-      highConfidence: 0.95,
-      safeMode: true,
-      custom: (state) => state.demonstrationMode === 'basic',
-    },
-
-    metadata: (state) => ({
-      contentSections: (state.generatedContent as any[])?.length || 0,
-      analysisResults: (state.analysis as any[])?.length || 0,
-      executionTime: Date.now() - (state.executionStartTime as number),
-      agentsSwitched: (state.metricsCollected as any).agentSwitches,
-    }),
-  })
+  @RequiresApproval() // ✅ Zero-config! Inherits timeout & confidence from HitlModule.forRoot()
   @StreamEvent({
     events: [
       'APPROVAL_REQUESTED',
@@ -467,7 +426,8 @@ export class SupervisorShowcaseWorkflow {
       agentSwitches: state.metricsCollected?.agentSwitches || 0,
       toolInvocations: state.metricsCollected?.toolInvocations || 0,
       memoryAccesses: state.metricsCollected?.memoryAccesses || 0,
-      averageResponseTime: finalDuration / Math.max((state.metricsCollected?.agentSwitches || 1), 1),
+      averageResponseTime:
+        finalDuration / Math.max(state.metricsCollected?.agentSwitches || 1, 1),
       peakMemoryUsage: state.metricsCollected?.peakMemoryUsage || 0,
       concurrentAgents: state.metricsCollected?.concurrentAgents || 1,
       successRate: 1.0, // Successful completion
@@ -508,7 +468,10 @@ export class SupervisorShowcaseWorkflow {
     }
 
     // Stop metrics collection
-    await this.metricsService.stopExecution(state.showcaseId || 'unknown', finalMetrics);
+    await this.metricsService.stopExecution(
+      state.showcaseId || 'unknown',
+      finalMetrics
+    );
 
     console.log('🎯 Supervisor showcase workflow completed successfully!');
 
@@ -519,7 +482,9 @@ export class SupervisorShowcaseWorkflow {
       status: 'completed',
 
       output: `Supervisor Showcase completed successfully!
-              Demonstrated ${executionReport.decoratorsApplied.length} decorators
+              Demonstrated ${
+                executionReport.decoratorsApplied.length
+              } decorators
               with ${state.activeCapabilities?.length || 0} capabilities.`,
 
       finalState: state as ShowcaseAgentState,
@@ -543,9 +508,15 @@ export class SupervisorShowcaseWorkflow {
       approvals: state.approvalHistory || [],
       errors: state.errors || [],
 
-      streamingUrl: `ws://localhost:3000/showcase/stream/${state.showcaseId || 'unknown'}`,
-      timeTravelUrl: `http://localhost:3000/showcase/timetravel/${state.showcaseId || 'unknown'}`,
-      metricsUrl: `http://localhost:3000/showcase/metrics/${state.showcaseId || 'unknown'}`,
+      streamingUrl: `ws://localhost:3000/showcase/stream/${
+        state.showcaseId || 'unknown'
+      }`,
+      timeTravelUrl: `http://localhost:3000/showcase/timetravel/${
+        state.showcaseId || 'unknown'
+      }`,
+      metricsUrl: `http://localhost:3000/showcase/metrics/${
+        state.showcaseId || 'unknown'
+      }`,
     };
 
     return response;
@@ -604,5 +575,4 @@ export class SupervisorShowcaseWorkflow {
       ],
     };
   }
-
 }

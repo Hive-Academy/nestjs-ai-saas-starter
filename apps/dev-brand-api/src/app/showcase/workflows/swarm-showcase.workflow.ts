@@ -30,26 +30,7 @@ import type {
  * - Collaborative intelligence patterns
  * - Self-organizing agent networks
  */
-@Workflow({
-  name: 'swarm-showcase',
-  description:
-    'Demonstrates swarm intelligence with peer-to-peer agent coordination and distributed decision making',
-  pattern: 'supervisor', // Using supervisor as closest match since swarm is not a valid pattern
-
-  streaming: true,
-  cache: true,
-  metrics: true,
-
-  // Swarm-specific configuration
-  hitl: {
-    enabled: false, // Swarms operate autonomously
-    timeout: 60000,
-    fallbackStrategy: 'auto-approve',
-  },
-
-  interruptNodes: ['peer_consensus', 'swarm_convergence'],
-  tags: ['showcase', 'swarm', 'peer-to-peer', 'distributed'],
-})
+@Workflow() // ✅ Zero-config! Inherits from WorkflowEngineModule.forRoot()
 @Injectable()
 export class SwarmShowcaseWorkflow {
   /**
@@ -57,24 +38,8 @@ export class SwarmShowcaseWorkflow {
    *
    * Sets up the distributed agent network for peer-to-peer coordination
    */
-  @Entrypoint({
-    timeout: 20000,
-    retryCount: 2,
-    errorHandler: 'handleSwarmInitError',
-  })
-  @StreamEvent({
-    events: [
-      StreamEventType.NODE_START,
-      StreamEventType.VALUES,
-      'SWARM_INIT',
-    ] as any,
-    bufferSize: 75,
-    transformer: (event) => ({
-      ...(event as Record<string, unknown>),
-      swarmMode: true,
-      pattern: 'peer-to-peer',
-    }),
-  })
+  @Entrypoint() // ✅ Zero-config! Inherits timeout from FunctionalApiModule.forRoot()
+  @StreamEvent() // ✅ Zero-config! Inherits buffer settings from StreamingModule.forRoot()
   async initializeSwarm(
     request: ShowcaseWorkflowRequest
   ): Promise<Partial<ShowcaseAgentState>> {

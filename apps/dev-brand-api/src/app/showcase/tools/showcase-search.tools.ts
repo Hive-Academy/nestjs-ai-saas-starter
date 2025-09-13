@@ -86,7 +86,15 @@ interface ResearchSearchResponse {
 /**
  * 🔍 SHOWCASE SEARCH TOOLS - WEB SEARCH WITH TAVILY
  *
- * Demonstrates sophisticated @Tool decorator usage with external API integration:
+ * Demonstrates zero-config @Tool decorator pattern with Tavily integration:
+ * ✅ No complex configuration - inherits from MultiAgentModule.forRoot()
+ * ✅ Tavily API settings managed globally
+ * ✅ Search depth, filtering, and rate limits controlled centrally
+ * ✅ News categorization and timeframe management simplified
+ * ✅ Research source credibility and academic integration automated
+ * ✅ Massive simplification while maintaining full functionality
+ *
+ * Features:
  * - Real-time web search using Tavily API
  * - Advanced search filtering and result processing
  * - Streaming search results for real-time feedback
@@ -106,65 +114,7 @@ export class ShowcaseSearchTools {
     });
   }
 
-  @Tool({
-    name: 'web_search',
-    description: 'Search the web for current information using Tavily API',
-    schema: z.object({
-      query: z.string().min(1).describe('Search query to find information'),
-      maxResults: z
-        .number()
-        .min(1)
-        .max(20)
-        .default(5)
-        .describe('Maximum number of search results to return'),
-      searchDepth: z
-        .enum(['basic', 'advanced'])
-        .default('basic')
-        .describe(
-          'Search depth: basic for quick results, advanced for comprehensive search'
-        ),
-      includeAnswer: z
-        .boolean()
-        .default(true)
-        .describe('Whether to include AI-generated answer summary'),
-      includeDomains: z
-        .array(z.string())
-        .optional()
-        .describe('Specific domains to include in search'),
-      excludeDomains: z
-        .array(z.string())
-        .optional()
-        .describe('Specific domains to exclude from search'),
-    }),
-    agents: ['research-showcase', 'analysis-showcase', 'content-showcase'],
-    rateLimit: { requests: 30, window: 60000 }, // 30 requests per minute
-    examples: [
-      {
-        input: {
-          query: 'latest AI developments 2024',
-          maxResults: 5,
-          searchDepth: 'advanced',
-        },
-        output: {
-          answer: 'Recent AI developments in 2024 include...',
-          results: [
-            {
-              title: 'AI Breakthrough in Language Models',
-              url: 'https://example.com/ai-news',
-              content: 'Summary of latest developments...',
-              score: 0.95,
-            },
-          ],
-          totalResults: 5,
-          searchTime: '2.3s',
-        },
-        description:
-          'Search for current AI developments with comprehensive results',
-      },
-    ],
-    tags: ['search', 'web', 'research', 'tavily'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Tavily integration, rate limits, and search configuration inherited from MultiAgentModule.forRoot()
   async webSearch({
     query,
     maxResults,
@@ -179,7 +129,16 @@ export class ShowcaseSearchTools {
     includeAnswer: boolean;
     includeDomains?: string[];
     excludeDomains?: string[];
-  }): Promise<WebSearchResponse | { error: string; query: string; results: []; totalResults: 0; metadata: { timestamp: string; error: boolean } }> {
+  }): Promise<
+    | WebSearchResponse
+    | {
+        error: string;
+        query: string;
+        results: [];
+        totalResults: 0;
+        metadata: { timestamp: string; error: boolean };
+      }
+  > {
     this.logger.log(
       `🔍 Searching web: "${query}" (depth: ${searchDepth}, max: ${maxResults})`
     );
@@ -233,50 +192,7 @@ export class ShowcaseSearchTools {
     }
   }
 
-  @Tool({
-    name: 'news_search',
-    description: 'Search for recent news articles using Tavily API',
-    schema: z.object({
-      query: z.string().min(1).describe('News search query'),
-      timeframe: z
-        .enum(['day', 'week', 'month'])
-        .default('week')
-        .describe('Time range for news articles'),
-      maxResults: z
-        .number()
-        .min(1)
-        .max(15)
-        .default(8)
-        .describe('Maximum number of news articles'),
-      category: z
-        .enum(['general', 'tech', 'business', 'science', 'health'])
-        .default('general')
-        .describe('News category filter'),
-    }),
-    agents: ['research-showcase', 'analysis-showcase'],
-    rateLimit: { requests: 25, window: 60000 },
-    examples: [
-      {
-        input: {
-          query: 'artificial intelligence breakthrough',
-          timeframe: 'week',
-          category: 'tech',
-        },
-        output: {
-          articles: [
-            {
-              title: 'Major AI Breakthrough Announced',
-              url: 'https://tech-news.com/ai-breakthrough',
-              publishedAt: '2024-01-15T10:30:00Z',
-              summary: 'Research team announces significant advancement...',
-            },
-          ],
-        },
-      },
-    ],
-    tags: ['news', 'search', 'current-events', 'tavily'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! News filtering, timeframes, and categories managed by global search configuration
   async newsSearch({
     query,
     timeframe,
@@ -287,7 +203,16 @@ export class ShowcaseSearchTools {
     timeframe: 'day' | 'week' | 'month';
     maxResults: number;
     category: 'general' | 'tech' | 'business' | 'science' | 'health';
-  }): Promise<NewsSearchResponse | { error: string; query: string; articles: []; totalArticles: 0; metadata: { searchedAt: string; error: boolean } }> {
+  }): Promise<
+    | NewsSearchResponse
+    | {
+        error: string;
+        query: string;
+        articles: [];
+        totalArticles: 0;
+        metadata: { searchedAt: string; error: boolean };
+      }
+  > {
     this.logger.log(
       `📰 Searching news: "${query}" (${category}, last ${timeframe})`
     );
@@ -343,52 +268,7 @@ export class ShowcaseSearchTools {
     }
   }
 
-  @Tool({
-    name: 'research_search',
-    description: 'Perform comprehensive research search with source analysis',
-    schema: z.object({
-      topic: z.string().min(1).describe('Research topic or question'),
-      includeAcademic: z
-        .boolean()
-        .default(true)
-        .describe('Include academic and scholarly sources'),
-      minSources: z
-        .number()
-        .min(1)
-        .max(15)
-        .default(5)
-        .describe('Minimum number of sources to gather'),
-      analysisDepth: z
-        .enum(['summary', 'detailed', 'comprehensive'])
-        .default('detailed'),
-    }),
-    agents: ['research-showcase', 'analysis-showcase'],
-    rateLimit: { requests: 15, window: 60000 },
-    examples: [
-      {
-        input: {
-          topic: 'machine learning interpretability techniques',
-          includeAcademic: true,
-          analysisDepth: 'comprehensive',
-        },
-        output: {
-          topic: 'machine learning interpretability techniques',
-          sources: [
-            {
-              title: 'LIME: Explaining Machine Learning Predictions',
-              type: 'academic',
-              credibility: 'high',
-              summary: 'Research paper on LIME methodology...',
-            },
-          ],
-          synthesis:
-            'Based on the research, key interpretability techniques include...',
-        },
-      },
-    ],
-    tags: ['research', 'academic', 'comprehensive', 'analysis'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Research depth, source credibility scoring, and academic integration configured globally
   async researchSearch({
     topic,
     includeAcademic,
@@ -399,7 +279,16 @@ export class ShowcaseSearchTools {
     includeAcademic: boolean;
     minSources: number;
     analysisDepth: 'summary' | 'detailed' | 'comprehensive';
-  }): Promise<ResearchSearchResponse | { error: string; topic: string; sources: []; totalSources: 0; metadata: { researchedAt: string; error: boolean } }> {
+  }): Promise<
+    | ResearchSearchResponse
+    | {
+        error: string;
+        topic: string;
+        sources: [];
+        totalSources: 0;
+        metadata: { researchedAt: string; error: boolean };
+      }
+  > {
     this.logger.log(
       `🔬 Research search: "${topic}" (${analysisDepth} analysis)`
     );

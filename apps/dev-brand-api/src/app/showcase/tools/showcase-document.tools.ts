@@ -2,10 +2,36 @@ import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { Tool } from '@hive-academy/langgraph-multi-agent';
 
+// Type definitions for zero-config tool results
+interface EntityExtractionResult {
+  entities: Array<{ text: string; type: string; confidence: number }>;
+  entitiesByType: Record<string, any[]>;
+  totalEntities: number;
+  entityTypes: string[];
+  confidenceThreshold: number;
+  averageConfidence: number;
+  extractedAt: string;
+  relationships?: Array<{
+    source: string;
+    relation: string;
+    target: string;
+    confidence: number;
+  }>;
+  totalRelationships?: number;
+}
+
 /**
  * 📄 SHOWCASE DOCUMENT TOOLS - DOCUMENT PROCESSING & ANALYSIS
  *
- * Demonstrates advanced @Tool decorator capabilities for document processing:
+ * Demonstrates zero-config @Tool decorator pattern:
+ * ✅ No complex configuration - inherits from MultiAgentModule.forRoot()
+ * ✅ Method names become tool names automatically
+ * ✅ TypeScript types auto-inferred for schemas
+ * ✅ Rate limiting, examples, and versioning managed globally
+ * ✅ Agent access controlled by central configuration
+ * ✅ Massive simplification while maintaining full functionality
+ *
+ * Features:
  * - URL content extraction and analysis
  * - Document summarization with different styles
  * - Entity extraction and relationship mapping
@@ -16,40 +42,7 @@ import { Tool } from '@hive-academy/langgraph-multi-agent';
 export class ShowcaseDocumentTools {
   private readonly logger = new Logger(ShowcaseDocumentTools.name);
 
-  @Tool({
-    name: 'extract_url_content',
-    description: 'Extract and analyze content from web URLs',
-    schema: z.object({
-      url: z.string().url().describe('URL to extract content from'),
-      includeMetadata: z.boolean().default(true).describe('Include page metadata (title, description, etc.)'),
-      maxContentLength: z.number().min(100).max(50000).default(10000).describe('Maximum content length to extract'),
-      contentType: z.enum(['text', 'markdown', 'structured']).default('text').describe('Desired content format'),
-    }),
-    agents: ['research-showcase', 'analysis-showcase', 'content-showcase'],
-    rateLimit: { requests: 20, window: 60000 },
-    examples: [
-      {
-        input: {
-          url: 'https://example.com/article',
-          includeMetadata: true,
-          contentType: 'structured',
-        },
-        output: {
-          url: 'https://example.com/article',
-          title: 'Example Article Title',
-          content: 'Extracted article content...',
-          wordCount: 1250,
-          metadata: {
-            description: 'Article description',
-            publishDate: '2024-01-15',
-            author: 'John Doe',
-          },
-        },
-      },
-    ],
-    tags: ['extraction', 'web-scraping', 'content', 'analysis'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Inherits ALL settings from MultiAgentModule.forRoot()
   async extractUrlContent({
     url,
     includeMetadata,
@@ -66,7 +59,10 @@ export class ShowcaseDocumentTools {
     try {
       // In production, use a robust web scraping library like Puppeteer or Playwright
       // For demonstration, we'll simulate content extraction
-      const mockContent = await this.simulateContentExtraction(url, maxContentLength);
+      const mockContent = await this.simulateContentExtraction(
+        url,
+        maxContentLength
+      );
 
       const result = {
         url,
@@ -90,9 +86,11 @@ export class ShowcaseDocumentTools {
 
       this.logger.log(`✅ Extracted ${result.wordCount} words from ${url}`);
       return result;
-
-    }  catch (error: any) {
-      this.logger.error(`❌ Content extraction failed for ${url}:`, error.message);
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Content extraction failed for ${url}:`,
+        error.message
+      );
 
       return {
         url,
@@ -103,37 +101,7 @@ export class ShowcaseDocumentTools {
     }
   }
 
-  @Tool({
-    name: 'summarize_document',
-    description: 'Generate intelligent summaries of documents with different styles',
-    schema: z.object({
-      content: z.string().min(100).describe('Document content to summarize'),
-      summaryStyle: z.enum(['executive', 'technical', 'bullet-points', 'narrative']).default('executive'),
-      length: z.enum(['short', 'medium', 'long']).default('medium').describe('Summary length'),
-      focusAreas: z.array(z.string()).optional().describe('Specific areas to focus on in summary'),
-      includeKeyQuotes: z.boolean().default(false).describe('Include relevant quotes from the document'),
-    }),
-    agents: ['analysis-showcase', 'content-showcase'],
-    rateLimit: { requests: 40, window: 60000 },
-    examples: [
-      {
-        input: {
-          content: 'Long technical document about AI development...',
-          summaryStyle: 'executive',
-          length: 'medium',
-          focusAreas: ['business impact', 'technical innovations'],
-        },
-        output: {
-          summary: 'Executive Summary: This document outlines...',
-          keyPoints: ['Point 1', 'Point 2', 'Point 3'],
-          confidence: 0.92,
-          readingTime: '3 minutes',
-        },
-      },
-    ],
-    tags: ['summarization', 'analysis', 'content-processing'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Inherits name from method, schema auto-inferred, agent access controlled by MultiAgentModule.forRoot()
   async summarizeDocument({
     content,
     summaryStyle,
@@ -147,17 +115,27 @@ export class ShowcaseDocumentTools {
     focusAreas?: string[];
     includeKeyQuotes: boolean;
   }) {
-    this.logger.log(`📝 Summarizing document (${summaryStyle} style, ${length} length)`);
+    this.logger.log(
+      `📝 Summarizing document (${summaryStyle} style, ${length} length)`
+    );
 
     try {
       // Analyze content structure
       const analysis = this.analyzeDocumentStructure(content);
 
       // Generate summary based on style and length
-      const summary = this.generateSummary(content, summaryStyle, length, focusAreas);
+      const summary = this.generateSummary(
+        content,
+        summaryStyle,
+        length,
+        focusAreas
+      );
 
       // Extract key points
-      const keyPoints = this.extractKeyPoints(content, Math.min(analysis.paragraphs, 8));
+      const keyPoints = this.extractKeyPoints(
+        content,
+        Math.min(analysis.paragraphs, 8)
+      );
 
       // Extract quotes if requested
       const quotes = includeKeyQuotes ? this.extractKeyQuotes(content) : [];
@@ -171,7 +149,9 @@ export class ShowcaseDocumentTools {
         readingTime: this.estimateReadingTime(summary),
         originalWordCount: content.split(' ').length,
         summaryWordCount: summary.split(' ').length,
-        compressionRatio: Math.round((summary.split(' ').length / content.split(' ').length) * 100),
+        compressionRatio: Math.round(
+          (summary.split(' ').length / content.split(' ').length) * 100
+        ),
         focusAreas: focusAreas || [],
         generatedAt: new Date().toISOString(),
       };
@@ -180,10 +160,11 @@ export class ShowcaseDocumentTools {
         result['keyQuotes'] = quotes;
       }
 
-      this.logger.log(`✅ Summary generated (${result.compressionRatio}% compression)`);
+      this.logger.log(
+        `✅ Summary generated (${result.compressionRatio}% compression)`
+      );
       return result;
-
-    }  catch (error: any) {
+    } catch (error: any) {
       this.logger.error(`❌ Summarization failed:`, error.message);
 
       return {
@@ -196,39 +177,7 @@ export class ShowcaseDocumentTools {
     }
   }
 
-  @Tool({
-    name: 'extract_entities',
-    description: 'Extract and categorize entities from document content',
-    schema: z.object({
-      content: z.string().min(50).describe('Content to extract entities from'),
-      entityTypes: z.array(z.enum(['person', 'organization', 'location', 'technology', 'concept', 'date', 'number'])).default(['person', 'organization', 'technology']),
-      includeRelationships: z.boolean().default(true).describe('Extract relationships between entities'),
-      confidenceThreshold: z.number().min(0).max(1).default(0.7).describe('Minimum confidence for entity extraction'),
-    }),
-    agents: ['analysis-showcase', 'research-showcase'],
-    rateLimit: { requests: 30, window: 60000 },
-    examples: [
-      {
-        input: {
-          content: 'OpenAI released GPT-4 in March 2023, revolutionizing AI development...',
-          entityTypes: ['organization', 'technology', 'date'],
-          includeRelationships: true,
-        },
-        output: {
-          entities: [
-            { text: 'OpenAI', type: 'organization', confidence: 0.98 },
-            { text: 'GPT-4', type: 'technology', confidence: 0.95 },
-            { text: 'March 2023', type: 'date', confidence: 0.92 },
-          ],
-          relationships: [
-            { source: 'OpenAI', relation: 'developed', target: 'GPT-4' },
-          ],
-        },
-      },
-    ],
-    tags: ['entity-extraction', 'nlp', 'analysis'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Rate limits, examples, and versioning managed centrally
   async extractEntities({
     content,
     entityTypes,
@@ -240,15 +189,23 @@ export class ShowcaseDocumentTools {
     includeRelationships: boolean;
     confidenceThreshold: number;
   }) {
-    this.logger.log(`🏷️ Extracting entities from content (${entityTypes.join(', ')})`);
+    this.logger.log(
+      `🏷️ Extracting entities from content (${entityTypes.join(', ')})`
+    );
 
     try {
-      const entities = this.performEntityExtraction(content, entityTypes, confidenceThreshold);
-      const relationships = includeRelationships ? this.extractRelationships(content, entities) : [];
+      const entities = this.performEntityExtraction(
+        content,
+        entityTypes,
+        confidenceThreshold
+      );
+      const relationships = includeRelationships
+        ? this.extractRelationships(content, entities)
+        : [];
 
       // Group entities by type
       const entitiesByType = entityTypes.reduce((acc, type) => {
-        acc[type] = entities.filter(e => e.type === type);
+        acc[type] = entities.filter((e) => e.type === type);
         return acc;
       }, {} as Record<string, any[]>);
 
@@ -258,7 +215,8 @@ export class ShowcaseDocumentTools {
         totalEntities: entities.length,
         entityTypes: entityTypes,
         confidenceThreshold,
-        averageConfidence: entities.reduce((sum, e) => sum + e.confidence, 0) / entities.length,
+        averageConfidence:
+          entities.reduce((sum, e) => sum + e.confidence, 0) / entities.length,
         extractedAt: new Date().toISOString(),
       };
 
@@ -267,10 +225,11 @@ export class ShowcaseDocumentTools {
         result.totalRelationships = relationships.length;
       }
 
-      this.logger.log(`✅ Extracted ${entities.length} entities, ${relationships.length} relationships`);
+      this.logger.log(
+        `✅ Extracted ${entities.length} entities, ${relationships.length} relationships`
+      );
       return result;
-
-    }  catch (error: any) {
+    } catch (error: any) {
       this.logger.error(`❌ Entity extraction failed:`, error.message);
 
       return {
@@ -283,37 +242,7 @@ export class ShowcaseDocumentTools {
     }
   }
 
-  @Tool({
-    name: 'assess_content_quality',
-    description: 'Assess document quality across multiple dimensions',
-    schema: z.object({
-      content: z.string().min(100).describe('Content to assess for quality'),
-      qualityDimensions: z.array(z.enum(['readability', 'structure', 'coherence', 'accuracy', 'completeness', 'engagement'])).default(['readability', 'structure', 'coherence']),
-      targetAudience: z.enum(['general', 'technical', 'academic', 'business']).default('general'),
-      includeRecommendations: z.boolean().default(true).describe('Include improvement recommendations'),
-    }),
-    agents: ['analysis-showcase', 'content-showcase'],
-    examples: [
-      {
-        input: {
-          content: 'Technical document about machine learning algorithms...',
-          qualityDimensions: ['readability', 'structure', 'accuracy'],
-          targetAudience: 'technical',
-        },
-        output: {
-          overallScore: 8.2,
-          dimensionScores: {
-            readability: 7.5,
-            structure: 8.8,
-            accuracy: 8.3,
-          },
-          recommendations: ['Simplify complex sentences', 'Add more examples'],
-        },
-      },
-    ],
-    tags: ['quality-assessment', 'content-analysis', 'recommendations'],
-    version: '1.0.0',
-  })
+  @Tool() // ✅ Zero-config! Quality assessment parameters inherited from global MultiAgent configuration
   async assessContentQuality({
     content,
     qualityDimensions,
@@ -325,7 +254,11 @@ export class ShowcaseDocumentTools {
     targetAudience: 'general' | 'technical' | 'academic' | 'business';
     includeRecommendations: boolean;
   }) {
-    this.logger.log(`📊 Assessing content quality (${qualityDimensions.join(', ')}) for ${targetAudience} audience`);
+    this.logger.log(
+      `📊 Assessing content quality (${qualityDimensions.join(
+        ', '
+      )}) for ${targetAudience} audience`
+    );
 
     try {
       const dimensionScores: Record<string, number> = {};
@@ -333,14 +266,20 @@ export class ShowcaseDocumentTools {
 
       // Assess each quality dimension
       for (const dimension of qualityDimensions) {
-        const { score, recs } = this.assessQualityDimension(content, dimension, targetAudience);
+        const { score, recs } = this.assessQualityDimension(
+          content,
+          dimension,
+          targetAudience
+        );
         dimensionScores[dimension] = score;
         if (includeRecommendations) {
           recommendations.push(...recs);
         }
       }
 
-      const overallScore = Object.values(dimensionScores).reduce((sum, score) => sum + score, 0) / qualityDimensions.length;
+      const overallScore =
+        Object.values(dimensionScores).reduce((sum, score) => sum + score, 0) /
+        qualityDimensions.length;
 
       const result = {
         overallScore: Math.round(overallScore * 10) / 10,
@@ -352,20 +291,25 @@ export class ShowcaseDocumentTools {
           wordCount: content.split(' ').length,
           sentenceCount: (content.match(/[.!?]+/g) || []).length,
           paragraphCount: content.split('\n\n').length,
-          avgWordsPerSentence: Math.round(content.split(' ').length / ((content.match(/[.!?]+/g) || []).length || 1)),
+          avgWordsPerSentence: Math.round(
+            content.split(' ').length /
+              ((content.match(/[.!?]+/g) || []).length || 1)
+          ),
         },
         assessedAt: new Date().toISOString(),
       };
 
       if (includeRecommendations) {
         result['recommendations'] = [...new Set(recommendations)].slice(0, 10); // Remove duplicates, limit to 10
-        result['improvementPotential'] = this.calculateImprovementPotential(dimensionScores);
+        result['improvementPotential'] =
+          this.calculateImprovementPotential(dimensionScores);
       }
 
-      this.logger.log(`✅ Quality assessment complete: ${result.grade} (${result.overallScore}/10)`);
+      this.logger.log(
+        `✅ Quality assessment complete: ${result.grade} (${result.overallScore}/10)`
+      );
       return result;
-
-    }  catch (error: any) {
+    } catch (error: any) {
       this.logger.error(`❌ Quality assessment failed:`, error.message);
 
       return {
@@ -385,23 +329,36 @@ export class ShowcaseDocumentTools {
 
     return {
       title: `Sample Article from ${domain}`,
-      content: `This is extracted content from ${url}. `.repeat(Math.floor(maxLength / 50)).substring(0, maxLength),
+      content: `This is extracted content from ${url}. `
+        .repeat(Math.floor(maxLength / 50))
+        .substring(0, maxLength),
       description: `A comprehensive article about various topics from ${domain}`,
-      publishDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      publishDate: new Date(
+        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+      )
+        .toISOString()
+        .split('T')[0],
       author: 'Content Author',
     };
   }
 
-  private formatContent(content: string, contentType: 'text' | 'markdown' | 'structured'): string {
+  private formatContent(
+    content: string,
+    contentType: 'text' | 'markdown' | 'structured'
+  ): string {
     switch (contentType) {
       case 'markdown':
         return content.replace(/\n\n/g, '\n\n## Section\n\n');
       case 'structured':
-        return JSON.stringify({
-          introduction: content.substring(0, 200),
-          body: content.substring(200, -200),
-          conclusion: content.substring(-200),
-        }, null, 2);
+        return JSON.stringify(
+          {
+            introduction: content.substring(0, 200),
+            body: content.substring(200, -200),
+            conclusion: content.substring(-200),
+          },
+          null,
+          2
+        );
       default:
         return content;
     }
@@ -412,13 +369,21 @@ export class ShowcaseDocumentTools {
       wordCount: content.split(' ').length,
       sentences: (content.match(/[.!?]+/g) || []).length,
       paragraphs: content.split('\n\n').length,
-      avgWordsPerSentence: content.split(' ').length / ((content.match(/[.!?]+/g) || []).length || 1),
+      avgWordsPerSentence:
+        content.split(' ').length /
+        ((content.match(/[.!?]+/g) || []).length || 1),
     };
   }
 
-  private generateSummary(content: string, style: string, length: string, focusAreas?: string[]): string {
+  private generateSummary(
+    content: string,
+    style: string,
+    length: string,
+    focusAreas?: string[]
+  ): string {
     const words = content.split(' ');
-    const targetLength = length === 'short' ? 100 : length === 'medium' ? 200 : 400;
+    const targetLength =
+      length === 'short' ? 100 : length === 'medium' ? 200 : 400;
 
     const baseContent = words.slice(0, targetLength).join(' ');
 
@@ -428,7 +393,12 @@ export class ShowcaseDocumentTools {
       case 'technical':
         return `TECHNICAL OVERVIEW: ${baseContent}... The implementation details and architectural considerations are outlined above.`;
       case 'bullet-points':
-        return baseContent.split('. ').filter(s => s.length > 10).slice(0, 5).map(s => `• ${s.trim()}`).join('\n');
+        return baseContent
+          .split('. ')
+          .filter((s) => s.length > 10)
+          .slice(0, 5)
+          .map((s) => `• ${s.trim()}`)
+          .join('\n');
       case 'narrative':
         return `This document presents ${baseContent}... The comprehensive analysis reveals important insights for stakeholders.`;
       default:
@@ -439,18 +409,21 @@ export class ShowcaseDocumentTools {
   private extractKeyPoints(content: string, maxPoints: number): string[] {
     return content
       .split('. ')
-      .filter(sentence => sentence.length > 20 && sentence.length < 200)
+      .filter((sentence) => sentence.length > 20 && sentence.length < 200)
       .slice(0, maxPoints)
-      .map(point => point.trim());
+      .map((point) => point.trim());
   }
 
   private extractKeyQuotes(content: string): string[] {
     // Simple quote extraction - look for quoted text or important statements
     const quotes = content.match(/"[^"]{20,200}"/g) || [];
-    return quotes.slice(0, 3).map(q => q.replace(/"/g, ''));
+    return quotes.slice(0, 3).map((q) => q.replace(/"/g, ''));
   }
 
-  private calculateSummaryConfidence(original: string, summary: string): number {
+  private calculateSummaryConfidence(
+    original: string,
+    summary: string
+  ): number {
     const originalLength = original.split(' ').length;
     const summaryLength = summary.split(' ').length;
     const compressionRatio = summaryLength / originalLength;
@@ -467,55 +440,81 @@ export class ShowcaseDocumentTools {
     return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
   }
 
-  private performEntityExtraction(content: string, entityTypes: string[], threshold: number) {
+  private performEntityExtraction(
+    content: string,
+    entityTypes: string[],
+    threshold: number
+  ) {
     // Simplified entity extraction for demonstration
-    const entities: Array<{text: string, type: string, confidence: number}> = [];
+    const entities: Array<{ text: string; type: string; confidence: number }> =
+      [];
 
     if (entityTypes.includes('organization')) {
-      const orgs = content.match(/\b(OpenAI|Google|Microsoft|Apple|Amazon|Meta|Tesla|Netflix)\b/gi) || [];
-      orgs.forEach(org => entities.push({
-        text: org,
-        type: 'organization',
-        confidence: 0.9 + Math.random() * 0.1
-      }));
+      const orgs =
+        content.match(
+          /\b(OpenAI|Google|Microsoft|Apple|Amazon|Meta|Tesla|Netflix)\b/gi
+        ) || [];
+      orgs.forEach((org) =>
+        entities.push({
+          text: org,
+          type: 'organization',
+          confidence: 0.9 + Math.random() * 0.1,
+        })
+      );
     }
 
     if (entityTypes.includes('technology')) {
-      const techs = content.match(/\b(AI|GPT|API|JavaScript|TypeScript|React|Angular|Node\.js|Python|Docker|Kubernetes)\b/gi) || [];
-      techs.forEach(tech => entities.push({
-        text: tech,
-        type: 'technology',
-        confidence: 0.85 + Math.random() * 0.1
-      }));
+      const techs =
+        content.match(
+          /\b(AI|GPT|API|JavaScript|TypeScript|React|Angular|Node\.js|Python|Docker|Kubernetes)\b/gi
+        ) || [];
+      techs.forEach((tech) =>
+        entities.push({
+          text: tech,
+          type: 'technology',
+          confidence: 0.85 + Math.random() * 0.1,
+        })
+      );
     }
 
     if (entityTypes.includes('date')) {
-      const dates = content.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi) || [];
-      dates.forEach(date => entities.push({
-        text: date,
-        type: 'date',
-        confidence: 0.95 + Math.random() * 0.05
-      }));
+      const dates =
+        content.match(
+          /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi
+        ) || [];
+      dates.forEach((date) =>
+        entities.push({
+          text: date,
+          type: 'date',
+          confidence: 0.95 + Math.random() * 0.05,
+        })
+      );
     }
 
-    return entities.filter(e => e.confidence >= threshold);
+    return entities.filter((e) => e.confidence >= threshold);
   }
 
   private extractRelationships(content: string, entities: any[]) {
     // Simple relationship extraction based on proximity
-    const relationships: Array<{source: string, relation: string, target: string, confidence: number}> = [];
+    const relationships: Array<{
+      source: string;
+      relation: string;
+      target: string;
+      confidence: number;
+    }> = [];
 
     entities.forEach((entity1, i) => {
-      entities.slice(i + 1).forEach(entity2 => {
+      entities.slice(i + 1).forEach((entity2) => {
         const entity1Index = content.indexOf(entity1.text);
         const entity2Index = content.indexOf(entity2.text);
 
-        if (Math.abs(entity1Index - entity2Index) < 200) { // Close proximity
+        if (Math.abs(entity1Index - entity2Index) < 200) {
+          // Close proximity
           relationships.push({
             source: entity1.text,
             relation: 'related_to',
             target: entity2.text,
-            confidence: 0.7 + Math.random() * 0.2
+            confidence: 0.7 + Math.random() * 0.2,
           });
         }
       });
@@ -524,37 +523,51 @@ export class ShowcaseDocumentTools {
     return relationships.slice(0, 10); // Limit relationships
   }
 
-  private assessQualityDimension(content: string, dimension: string, audience: string): {score: number, recs: string[]} {
+  private assessQualityDimension(
+    content: string,
+    dimension: string,
+    audience: string
+  ): { score: number; recs: string[] } {
     const recommendations: string[] = [];
     let score = 5; // Base score
 
     switch (dimension) {
-      case 'readability':{
-        const avgWordLength = content.replace(/\s+/g, '').length / content.split(' ').length;
-        score = audience === 'technical' ?
-          Math.max(1, 10 - avgWordLength) :
-          Math.max(1, 12 - avgWordLength * 1.5);
+      case 'readability': {
+        const avgWordLength =
+          content.replace(/\s+/g, '').length / content.split(' ').length;
+        score =
+          audience === 'technical'
+            ? Math.max(1, 10 - avgWordLength)
+            : Math.max(1, 12 - avgWordLength * 1.5);
 
-        if (score < 7) recommendations.push('Simplify vocabulary for better readability');
+        if (score < 7)
+          recommendations.push('Simplify vocabulary for better readability');
         break;
-}
-      case 'structure':{
-        const hasHeadings = /#{1,6}\s/.test(content) || /\n[A-Z][^.]*:/.test(content);
+      }
+      case 'structure': {
+        const hasHeadings =
+          /#{1,6}\s/.test(content) || /\n[A-Z][^.]*:/.test(content);
         const hasParagraphs = content.split('\n\n').length > 2;
         score = (hasHeadings ? 5 : 0) + (hasParagraphs ? 5 : 0);
 
-        if (!hasHeadings) recommendations.push('Add clear headings and sections');
-        if (!hasParagraphs) recommendations.push('Break content into logical paragraphs');
+        if (!hasHeadings)
+          recommendations.push('Add clear headings and sections');
+        if (!hasParagraphs)
+          recommendations.push('Break content into logical paragraphs');
         break;
-}
-      case 'coherence':{
-        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        const coherenceScore = sentences.length > 5 ? 8 : sentences.length * 1.5;
+      }
+      case 'coherence': {
+        const sentences = content
+          .split(/[.!?]+/)
+          .filter((s) => s.trim().length > 0);
+        const coherenceScore =
+          sentences.length > 5 ? 8 : sentences.length * 1.5;
         score = Math.min(10, coherenceScore);
 
-        if (score < 7) recommendations.push('Improve logical flow between ideas');
+        if (score < 7)
+          recommendations.push('Improve logical flow between ideas');
         break;
-}
+      }
       default:
         score = 7 + Math.random() * 2; // Default scoring
     }
@@ -575,8 +588,12 @@ export class ShowcaseDocumentTools {
     return 'D';
   }
 
-  private calculateImprovementPotential(scores: Record<string, number>): string {
-    const avgScore = Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.values(scores).length;
+  private calculateImprovementPotential(
+    scores: Record<string, number>
+  ): string {
+    const avgScore =
+      Object.values(scores).reduce((sum, score) => sum + score, 0) /
+      Object.values(scores).length;
     const potential = (10 - avgScore) / 10;
 
     if (potential > 0.4) return 'High';

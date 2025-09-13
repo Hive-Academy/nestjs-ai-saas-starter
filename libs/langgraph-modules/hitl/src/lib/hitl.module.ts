@@ -3,6 +3,7 @@ import { HumanApprovalService } from './services/human-approval.service';
 import { ConfidenceEvaluatorService } from './services/confidence-evaluator.service';
 import { ApprovalChainService } from './services/approval-chain.service';
 import { FeedbackProcessorService } from './services/feedback-processor.service';
+import { setHitlConfig } from './utils/hitl-config.accessor';
 
 export interface HitlModuleOptions {
   // Module configuration options
@@ -13,6 +14,10 @@ export interface HitlModuleOptions {
 @Module({})
 export class HitlModule {
   static forRoot(options?: HitlModuleOptions): DynamicModule {
+    // Store config for decorator access
+    const config = options || {};
+    setHitlConfig(config);
+
     return {
       module: HitlModule,
       providers: [

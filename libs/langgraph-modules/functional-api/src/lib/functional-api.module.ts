@@ -14,6 +14,7 @@ import {
   NoOpCheckpointAdapter,
 } from '@hive-academy/langgraph-core';
 import { FUNCTIONAL_API_MODULE_OPTIONS } from './constants/module.constants';
+import { setFunctionalApiConfig } from './utils/functional-api-config.accessor';
 
 /**
  * Functional API module for NestJS LangGraph integration
@@ -26,6 +27,10 @@ export class FunctionalApiModule {
    */
   static forRoot(options: FunctionalApiModuleOptions = {}): DynamicModule {
     const normalizedOptions = this.normalizeOptions(options);
+
+    // Store config for decorator access
+    setFunctionalApiConfig(normalizedOptions);
+
     const optionsProvider: Provider = {
       provide: FUNCTIONAL_API_MODULE_OPTIONS,
       useValue: normalizedOptions,
@@ -131,7 +136,10 @@ export class FunctionalApiModule {
         provide: FUNCTIONAL_API_MODULE_OPTIONS,
         useFactory: async (...args: unknown[]) => {
           const opts = await options.useFactory!(...args);
-          return this.normalizeOptions(opts);
+          const normalizedOpts = this.normalizeOptions(opts);
+          // Store config for decorator access
+          setFunctionalApiConfig(normalizedOpts);
+          return normalizedOpts;
         },
         inject: options.inject || [],
       };
@@ -142,7 +150,10 @@ export class FunctionalApiModule {
         provide: FUNCTIONAL_API_MODULE_OPTIONS,
         useFactory: async (optionsFactory: FunctionalApiOptionsFactory) => {
           const opts = await optionsFactory.createFunctionalApiOptions();
-          return this.normalizeOptions(opts);
+          const normalizedOpts = this.normalizeOptions(opts);
+          // Store config for decorator access
+          setFunctionalApiConfig(normalizedOpts);
+          return normalizedOpts;
         },
         inject: [options.useExisting],
       };
@@ -153,7 +164,10 @@ export class FunctionalApiModule {
         provide: FUNCTIONAL_API_MODULE_OPTIONS,
         useFactory: async (optionsFactory: FunctionalApiOptionsFactory) => {
           const opts = await optionsFactory.createFunctionalApiOptions();
-          return this.normalizeOptions(opts);
+          const normalizedOpts = this.normalizeOptions(opts);
+          // Store config for decorator access
+          setFunctionalApiConfig(normalizedOpts);
+          return normalizedOpts;
         },
         inject: [options.useClass],
       };

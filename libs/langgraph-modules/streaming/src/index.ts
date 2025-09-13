@@ -1,6 +1,9 @@
 // Module
 export * from './lib/streaming.module';
 
+// Config utilities for decorator access
+export * from './lib/utils/streaming-config.accessor';
+
 // Services
 export * from './lib/services/token-streaming.service';
 export * from './lib/services/event-stream-processor.service';

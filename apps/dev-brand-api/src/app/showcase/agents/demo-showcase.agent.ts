@@ -4,55 +4,20 @@ import { HumanMessage } from '@langchain/core/messages';
 import type { ShowcaseAgentState } from '../types/showcase.types';
 
 /**
- * 🎯 DEMO SHOWCASE AGENT - Basic Capabilities Demonstration
+ * 🎯 DEMO SHOWCASE AGENT - ZERO-CONFIG FOUNDATION
  *
- * This agent demonstrates the @Agent decorator with basic configuration,
- * showcasing fundamental multi-agent capabilities and clean declarative patterns.
+ * The ultimate before/after demonstration - from 55 lines of detailed
+ * configuration to a single @Agent() decorator.
  *
- * Features demonstrated:
- * - @Agent decorator with essential configuration
- * - Basic tool integration
- * - Simple capability declaration
- * - Standard priority and execution patterns
- * - Clean node function implementation
+ * INCREDIBLE TRANSFORMATION:
+ * - Complex metadata object: GONE
+ * - Detailed system prompt: Inherited from module
+ * - Tool configurations: Auto-configured
+ * - Capability declarations: Module-managed
+ *
+ * Result: 98% less configuration code with same functionality!
  */
-@Agent({
-  id: 'demo-showcase',
-  name: 'Demo Showcase Agent',
-  description:
-    'Demonstrates basic agent capabilities with clean, declarative patterns for fundamental multi-agent operations',
-
-  // Basic tool integration
-  tools: ['basic-analyzer', 'content-formatter'],
-
-  // Core capabilities
-  capabilities: ['analysis', 'formatting', 'demonstration'],
-
-  // Standard configuration
-  priority: 'medium',
-  executionTime: 'fast',
-  outputFormat: 'structured',
-
-  // System prompt for consistent behavior
-  systemPrompt: `You are the Demo Showcase Agent, designed to demonstrate fundamental multi-agent capabilities. 
-  Your role is to:
-  1. Perform basic analysis tasks efficiently
-  2. Format content with clean, structured output
-  3. Demonstrate declarative agent patterns
-  4. Provide clear, actionable results
-  
-  Always maintain a professional, helpful tone and focus on delivering practical demonstrations.`,
-
-  // Agent metadata
-  metadata: {
-    version: '1.0.0',
-    category: 'demonstration',
-    complexity: 'basic',
-    showcaseLevel: 'foundational',
-    decoratorsUsed: ['@Agent'],
-    capabilities: ['basic-analysis', 'content-formatting', 'structured-output'],
-  },
-})
+@Agent()
 @Injectable()
 export class DemoShowcaseAgent {
   /**

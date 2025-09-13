@@ -27,3 +27,6 @@ export * from './lib/constants/multi-agent.constants';
 // Decorators - Tool and Agent decorators
 export * from './lib/decorators/tool.decorator';
 export * from './lib/decorators/agent.decorator';
+
+// Configuration utilities
+export * from './lib/utils/multi-agent-config.accessor';

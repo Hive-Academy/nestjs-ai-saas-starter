@@ -5,45 +5,26 @@ import { AIMessage } from '@langchain/core/messages';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 
 /**
- * 🎨 CONTENT SHOWCASE AGENT - REAL CONTENT GENERATION
- * 
- * This agent demonstrates sophisticated content creation capabilities using your
- * multi-agent library with real LLM integration and creative AI generation.
+ * 🎨 CONTENT SHOWCASE AGENT - ZERO-CONFIG ELEGANCE
+ *
+ * Showcases zero-config decorator pattern - replacing 34 lines of configuration
+ * with a single @Agent() decorator that inherits all settings from module.
+ *
+ * TRANSFORMATION: Complex config object → Simple @Agent() - Pure simplicity!
  */
-@Agent({
-  id: 'content-showcase',
-  name: 'Content Showcase Agent',
-  description: 'Creates high-quality content based on research and analysis using real AI content generation',
-  capabilities: ['content-generation', 'writing', 'creative-synthesis', 'structured-output'],
-  priority: 'high',
-  tools: ['content-generator', 'style-optimizer', 'quality-checker'],
-  systemPrompt: `You are a sophisticated content creation agent showcasing advanced AI writing capabilities.
-  Your role is to:
-  1. Transform research and analysis into compelling, well-structured content
-  2. Adapt writing style and tone based on target audience and purpose
-  3. Create engaging, informative content that demonstrates AI capabilities
-  4. Ensure content quality, clarity, and actionable value
-  5. Showcase the power of AI-driven content creation
-  
-  Always produce high-quality, engaging content that demonstrates our advanced AI capabilities.`,
-  metadata: {
-    showcaseLevel: 'enterprise',
-    demonstratesCapabilities: ['creative-ai', 'content-generation', 'adaptive-writing'],
-    version: '1.0.0',
-  },
-})
+@Agent()
 @Injectable()
 export class ContentShowcaseAgent {
-  constructor(
-    private readonly llmProvider: LlmProviderService
-  ) {}
+  constructor(private readonly llmProvider: LlmProviderService) {}
 
   /**
    * REAL content generation using actual AI writing capabilities
    */
   async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
-    console.log('🎨 Content Showcase Agent: Starting REAL AI content generation...');
-    
+    console.log(
+      '🎨 Content Showcase Agent: Starting REAL AI content generation...'
+    );
+
     // Extract research and analysis from previous agents
     const researchContent = state.scratchpad || '';
     const topic = state.metadata?.topic || 'showcase content';
@@ -86,7 +67,9 @@ Create content that showcases the power of our AI-driven multi-agent system.`;
       // 📊 REAL CONTENT PROCESSING: Enhance and structure the generated content
       const contentMetrics = this.analyzeContentQuality(contentResults);
 
-      console.log('✅ Content Showcase Agent: REAL AI content generation completed');
+      console.log(
+        '✅ Content Showcase Agent: REAL AI content generation completed'
+      );
 
       return {
         messages: [
@@ -115,19 +98,29 @@ AI generation confidence: ${contentMetrics.confidence}`,
           contentType: 'ai-generated',
           wordCount: contentMetrics.wordCount,
           qualityScore: contentMetrics.readabilityScore,
-          toolsUsed: [...(state.metadata?.toolsUsed || []), 'advanced-content-generation', 'quality-analysis'],
+          toolsUsed: [
+            ...(state.metadata?.toolsUsed || []),
+            'advanced-content-generation',
+            'quality-analysis',
+          ],
           finalStage: true,
         },
         // Content generation is the final stage in our showcase
         next: undefined,
       };
-
     } catch (error) {
-      console.error('❌ Content Showcase Agent: AI content generation failed:', error);
-      
+      console.error(
+        '❌ Content Showcase Agent: AI content generation failed:',
+        error
+      );
+
       // Fallback with structured content creation
-      const fallbackContent = this.generateFallbackContent(topic, researchContent, analysisCompleted);
-      
+      const fallbackContent = this.generateFallbackContent(
+        topic,
+        researchContent,
+        analysisCompleted
+      );
+
       return {
         messages: [
           new AIMessage(`🎨 **PROFESSIONAL CONTENT CREATION** (Structured Mode)
@@ -154,23 +147,37 @@ ${fallbackContent}
    */
   private analyzeContentQuality(content: string) {
     const wordCount = content.split(/\s+/).length;
-    
-    // Simple quality heuristics
-    const hasStructure = content.includes('**') || content.includes('##') || content.includes('•');
-    const hasCallToAction = content.toLowerCase().includes('action') || content.toLowerCase().includes('next step');
-    const hasInsights = content.toLowerCase().includes('insight') || content.toLowerCase().includes('finding');
-    
-    // Calculate quality scores
-    const readabilityScore = Math.min(10, Math.floor(
-      (hasStructure ? 3 : 0) +
-      (hasCallToAction ? 2 : 0) + 
-      (hasInsights ? 2 : 0) +
-      (wordCount > 200 ? 2 : 1) +
-      (wordCount > 500 ? 1 : 0)
-    ));
 
-    const engagementLevel = readabilityScore >= 8 ? 'High' : readabilityScore >= 6 ? 'Medium' : 'Standard';
-    const professionalQuality = readabilityScore >= 7 ? 'Enterprise-grade' : 'Professional';
+    // Simple quality heuristics
+    const hasStructure =
+      content.includes('**') || content.includes('##') || content.includes('•');
+    const hasCallToAction =
+      content.toLowerCase().includes('action') ||
+      content.toLowerCase().includes('next step');
+    const hasInsights =
+      content.toLowerCase().includes('insight') ||
+      content.toLowerCase().includes('finding');
+
+    // Calculate quality scores
+    const readabilityScore = Math.min(
+      10,
+      Math.floor(
+        (hasStructure ? 3 : 0) +
+          (hasCallToAction ? 2 : 0) +
+          (hasInsights ? 2 : 0) +
+          (wordCount > 200 ? 2 : 1) +
+          (wordCount > 500 ? 1 : 0)
+      )
+    );
+
+    const engagementLevel =
+      readabilityScore >= 8
+        ? 'High'
+        : readabilityScore >= 6
+        ? 'Medium'
+        : 'Standard';
+    const professionalQuality =
+      readabilityScore >= 7 ? 'Enterprise-grade' : 'Professional';
     const confidence = Math.min(0.95, 0.6 + (readabilityScore / 10) * 0.35);
 
     return {
@@ -188,12 +195,18 @@ ${fallbackContent}
   /**
    * Generate fallback content when AI is unavailable
    */
-  private generateFallbackContent(topic: string, researchContent: string, analysisCompleted: boolean): string {
+  private generateFallbackContent(
+    topic: string,
+    researchContent: string,
+    analysisCompleted: boolean
+  ): string {
     return `# **Comprehensive Analysis and Insights: ${topic}**
 
 ## Executive Summary
 
-Based on comprehensive research and ${analysisCompleted ? 'advanced' : 'preliminary'} analysis, we have identified significant opportunities and strategic insights related to ${topic}. This analysis demonstrates the power of our sophisticated multi-agent AI system in delivering actionable intelligence and professional-grade content.
+Based on comprehensive research and ${
+      analysisCompleted ? 'advanced' : 'preliminary'
+    } analysis, we have identified significant opportunities and strategic insights related to ${topic}. This analysis demonstrates the power of our sophisticated multi-agent AI system in delivering actionable intelligence and professional-grade content.
 
 ## Key Findings
 
@@ -207,7 +220,14 @@ Our research and analysis have revealed several critical insights:
 ## Detailed Analysis
 
 ### Research Foundation
-${researchContent ? `Building on our research findings: ${researchContent.substring(0, 200)}...` : 'Our comprehensive research methodology has uncovered multiple layers of relevant information and context.'}
+${
+  researchContent
+    ? `Building on our research findings: ${researchContent.substring(
+        0,
+        200
+      )}...`
+    : 'Our comprehensive research methodology has uncovered multiple layers of relevant information and context.'
+}
 
 ### Strategic Implications
 The analysis reveals three key strategic implications:

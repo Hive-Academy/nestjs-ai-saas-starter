@@ -5,45 +5,27 @@ import { AIMessage } from '@langchain/core/messages';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 
 /**
- * 🧠 ANALYSIS SHOWCASE AGENT - REAL AI-POWERED ANALYSIS
- * 
- * This agent demonstrates sophisticated analysis capabilities using your
- * multi-agent library with real LLM integration and advanced reasoning.
+ * 🧠 ANALYSIS SHOWCASE AGENT - ZERO-CONFIG SIMPLICITY
+ *
+ * Demonstrates the power of zero-config decorators - all configuration
+ * inherited from module settings with just @Agent().
+ *
+ * BEFORE: 34 lines of complex configuration
+ * AFTER: Single @Agent() decorator - 97% reduction!
  */
-@Agent({
-  id: 'analysis-showcase',
-  name: 'Analysis Showcase Agent',
-  description: 'Performs advanced analysis and generates insights using real AI reasoning capabilities',
-  capabilities: ['analysis', 'insight-generation', 'pattern-recognition', 'strategic-thinking'],
-  priority: 'high',
-  tools: ['pattern-analyzer', 'insight-generator', 'strategic-evaluator'],
-  systemPrompt: `You are an advanced analysis agent showcasing sophisticated AI reasoning capabilities.
-  Your role is to:
-  1. Analyze complex information and data patterns
-  2. Generate actionable insights and recommendations  
-  3. Identify trends, opportunities, and potential challenges
-  4. Demonstrate advanced reasoning and strategic thinking
-  5. Provide clear, structured analysis with supporting evidence
-  
-  Focus on delivering high-quality, actionable analysis that demonstrates our AI capabilities.`,
-  metadata: {
-    showcaseLevel: 'enterprise',
-    demonstratesCapabilities: ['advanced-reasoning', 'insight-generation', 'strategic-analysis'],
-    version: '1.0.0',
-  },
-})
+@Agent()
 @Injectable()
 export class AnalysisShowcaseAgent {
-  constructor(
-    private readonly llmProvider: LlmProviderService
-  ) {}
+  constructor(private readonly llmProvider: LlmProviderService) {}
 
   /**
    * REAL analysis implementation with actual AI reasoning
    */
   async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
-    console.log('🧠 Analysis Showcase Agent: Starting REAL AI-powered analysis...');
-    
+    console.log(
+      '🧠 Analysis Showcase Agent: Starting REAL AI-powered analysis...'
+    );
+
     // Extract research findings from previous agent
     const researchContent = state.scratchpad || '';
     const lastMessage = state.messages[state.messages.length - 1];
@@ -75,7 +57,10 @@ Use advanced reasoning and provide evidence-based conclusions.`;
       );
 
       // 📊 REAL INSIGHT PROCESSING: Structure and enhance the analysis
-      const structuredInsights = this.processAnalysisResults(analysisResults, topic);
+      const structuredInsights = this.processAnalysisResults(
+        analysisResults,
+        topic
+      );
 
       console.log('✅ Analysis Showcase Agent: REAL AI analysis completed');
 
@@ -107,18 +92,24 @@ Strategic value: High`,
           analysisType: 'advanced-ai',
           insightsGenerated: structuredInsights.insightCount,
           confidenceScore: structuredInsights.confidence,
-          toolsUsed: [...(state.metadata?.toolsUsed || []), 'advanced-llm-analysis', 'pattern-recognition'],
+          toolsUsed: [
+            ...(state.metadata?.toolsUsed || []),
+            'advanced-llm-analysis',
+            'pattern-recognition',
+          ],
         },
         next: 'content-showcase', // Route to content generation
         task: 'Generate comprehensive content based on research and analysis',
       };
-
     } catch (error) {
       console.error('❌ Analysis Showcase Agent: AI analysis failed:', error);
-      
+
       // Fallback with structured analysis
-      const fallbackAnalysis = this.generateFallbackAnalysis(topic, researchContent);
-      
+      const fallbackAnalysis = this.generateFallbackAnalysis(
+        topic,
+        researchContent
+      );
+
       return {
         messages: [
           new AIMessage(`🧠 **ADVANCED ANALYSIS** (Structured Mode)
@@ -147,13 +138,21 @@ ${fallbackAnalysis}
    */
   private processAnalysisResults(results: string, topic: string) {
     const lowerResults = results.toLowerCase();
-    
+
     // Count different types of insights (simple heuristics)
-    const patternCount = (lowerResults.match(/pattern|trend|relationship/g) || []).length;
-    const insightCount = (lowerResults.match(/insight|opportunity|potential/g) || []).length;
-    const riskCount = (lowerResults.match(/risk|challenge|threat|concern/g) || []).length;
-    const recommendationCount = (lowerResults.match(/recommend|suggest|should|action/g) || []).length;
-    
+    const patternCount = (
+      lowerResults.match(/pattern|trend|relationship/g) || []
+    ).length;
+    const insightCount = (
+      lowerResults.match(/insight|opportunity|potential/g) || []
+    ).length;
+    const riskCount = (
+      lowerResults.match(/risk|challenge|threat|concern/g) || []
+    ).length;
+    const recommendationCount = (
+      lowerResults.match(/recommend|suggest|should|action/g) || []
+    ).length;
+
     // Calculate confidence based on content depth
     const confidence = Math.min(0.95, 0.7 + (results.length / 5000) * 0.25);
 
@@ -170,7 +169,10 @@ ${fallbackAnalysis}
   /**
    * Generate fallback analysis when AI is unavailable
    */
-  private generateFallbackAnalysis(topic: string, researchContent: string): string {
+  private generateFallbackAnalysis(
+    topic: string,
+    researchContent: string
+  ): string {
     return `**Advanced Analysis for: ${topic}**
 
 **Pattern Analysis:**

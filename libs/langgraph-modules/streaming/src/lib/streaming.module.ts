@@ -5,6 +5,7 @@ import { EventStreamProcessorService } from './services/event-stream-processor.s
 import { WebSocketBridgeService } from './services/websocket-bridge.service';
 import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
 import { WebSocketGatewayConfig } from './interfaces/websocket-gateway.interface';
+import { setStreamingConfig } from './utils/streaming-config.accessor';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 export interface StreamingModuleOptions {
@@ -20,6 +21,10 @@ export interface StreamingModuleOptions {
 @Module({})
 export class StreamingModule {
   static forRoot(options?: StreamingModuleOptions): DynamicModule {
+    // Store config for decorator access
+    const config = options || {};
+    setStreamingConfig(config);
+
     const providers: any[] = [
       TokenStreamingService,
       EventStreamProcessorService,

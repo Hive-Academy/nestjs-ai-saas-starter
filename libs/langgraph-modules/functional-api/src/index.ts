@@ -58,3 +58,6 @@ export * from './lib/errors/functional-workflow.errors';
 
 // Constants
 export { FUNCTIONAL_API_MODULE_OPTIONS } from './lib/constants/module.constants';
+
+// Configuration utilities
+export * from './lib/utils/functional-api-config.accessor';

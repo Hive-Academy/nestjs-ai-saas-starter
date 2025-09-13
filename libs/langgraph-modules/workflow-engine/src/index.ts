@@ -24,3 +24,6 @@ export * from './lib/interfaces/workflow-engine.interface';
 
 // Constants
 export * from './lib/constants';
+
+// Configuration utilities
+export * from './lib/utils/workflow-engine-config.accessor';
