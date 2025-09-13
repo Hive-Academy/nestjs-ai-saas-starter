@@ -1,87 +1,53 @@
-import type { Route } from '@angular/router';
+import { Routes } from '@angular/router';
 
-export const appRoutes: Route[] = [
+export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/devbrand-showcase',
-    pathMatch: 'full',
-  },
-  // New Showcase Routes
-  {
-    path: 'devbrand-showcase',
-    loadComponent: () =>
-      import('./features/devbrand-showcase/devbrand-showcase.component').then(
-        (m) => m.DevbrandShowcaseComponent
-      ),
-    title: 'DevBrand Platform Showcase',
+    redirectTo: '/spatial-interface',
+    pathMatch: 'full'
   },
   {
-    path: 'multi-agent-patterns',
-    loadComponent: () =>
-      import(
-        './features/multi-agent-patterns/multi-agent-patterns.component'
-      ).then((m) => m.MultiAgentPatternsComponent),
-    title: 'Multi-Agent Coordination Patterns',
-  },
-  {
-    path: 'library-showcase',
-    loadComponent: () =>
-      import('./features/library-showcase/library-showcase.component').then(
-        (m) => m.LibraryShowcaseComponent
-      ),
-    title: 'Complete Library Ecosystem',
-  },
-  {
-    path: 'developer-experience',
-    loadComponent: () =>
-      import(
-        './features/developer-experience/developer-experience.component'
-      ).then((m) => m.DeveloperExperienceComponent),
-    title: 'Developer Experience Revolution',
-  },
-  // Original Interface Modes
-  {
-    path: 'chat',
-    loadComponent: () =>
-      import('./features/chat-interface/chat-interface.component').then(
-        (m) => m.ChatInterfaceComponent
-      ),
-    title: 'DevBrand Chat Studio',
-  },
-  {
-    path: 'spatial',
+    path: 'spatial-interface',
     loadComponent: () =>
       import('./features/spatial-interface/spatial-interface.component').then(
-        (m) => m.SpatialInterfaceComponent
+        m => m.SpatialInterfaceComponent
       ),
-    title: 'Agent Constellation',
+    title: '3D Agent Visualization'
   },
   {
-    path: 'canvas',
+    path: 'workflow-canvas',
     loadComponent: () =>
       import('./features/workflow-canvas/workflow-canvas.component').then(
-        (m) => m.WorkflowCanvasComponent
+        m => m.WorkflowCanvasComponent
       ),
-    title: 'Living Workflow Canvas',
+    title: 'Workflow Canvas'
   },
   {
-    path: 'memory',
+    path: 'memory-constellation',
     loadComponent: () =>
-      import(
-        './features/memory-constellation/memory-constellation.component'
-      ).then((m) => m.MemoryConstellationComponent),
-    title: 'Memory Constellation',
+      import('./features/memory-constellation/memory-constellation.component').then(
+        m => m.MemoryConstellationComponent
+      ),
+    title: 'Memory Constellation'
   },
   {
-    path: 'forge',
+    path: 'chat-interface',
+    loadComponent: () =>
+      import('./features/chat-interface/chat-interface.component').then(
+        m => m.ChatInterfaceComponent
+      ),
+    title: 'AI Chat Interface'
+  },
+  {
+    path: 'content-forge',
     loadComponent: () =>
       import('./features/content-forge/content-forge.component').then(
-        (m) => m.ContentForgeComponent
+        m => m.ContentForgeComponent
       ),
-    title: 'Content Forge',
+    title: 'Content Forge'
   },
   {
     path: '**',
-    redirectTo: '/devbrand-showcase',
-  },
+    redirectTo: '/spatial-interface'
+  }
 ];

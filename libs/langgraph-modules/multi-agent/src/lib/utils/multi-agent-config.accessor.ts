@@ -27,7 +27,7 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
  * Get multi-agent config with safe defaults
  * Used by decorators to inherit module configuration
  */
-export function getMultiAgentConfigWithDefaults(): Required<MultiAgentModuleOptions> {
+export function getMultiAgentConfigWithDefaults(): Omit<Required<MultiAgentModuleOptions>, 'checkpointAdapter'> & { checkpointAdapter?: ICheckpointAdapter } {
   const config = getMultiAgentConfig();
 
   return {

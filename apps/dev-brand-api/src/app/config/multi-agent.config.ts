@@ -4,12 +4,10 @@ import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agen
 import { ShowcaseAnalysisTools } from '../showcase/tools/showcase-analysis.tools';
 import { ShowcaseIntegrationTools } from '../showcase/tools/showcase-integration.tools';
 
-// Import showcase agents for explicit registration
-import { DemoShowcaseAgent } from '../showcase/agents/demo-showcase.agent';
-import { AdvancedShowcaseAgent } from '../showcase/agents/advanced-showcase.agent';
-import { SpecialistShowcaseAgent } from '../showcase/agents/specialist-showcase.agent';
-import { StreamingShowcaseAgent } from '../showcase/agents/streaming-showcase.agent';
-import { HitlShowcaseAgent } from '../showcase/agents/hitl-showcase.agent';
+// Import existing showcase agents for explicit registration
+import { AnalysisShowcaseAgent } from '../showcase/agents/analysis-showcase.agent';
+import { ContentShowcaseAgent } from '../showcase/agents/content-showcase.agent';
+import { ResearchShowcaseAgent } from '../showcase/agents/research-showcase.agent';
 
 /**
  * Multi-Agent Module Configuration for dev-brand-api
@@ -70,11 +68,9 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
 
     // Explicit agent registration (replaces discovery-based registration)
     agents: [
-      DemoShowcaseAgent,
-      AdvancedShowcaseAgent,
-      SpecialistShowcaseAgent,
-      StreamingShowcaseAgent,
-      HitlShowcaseAgent,
+      AnalysisShowcaseAgent,
+      ContentShowcaseAgent,
+      ResearchShowcaseAgent,
     ],
 
     // Simple and consistent LLM configuration

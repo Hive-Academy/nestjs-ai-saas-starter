@@ -7,9 +7,9 @@ import {
   TokenStreamOptions,
   StreamEventData,
   ProgressData,
-  StreamUpdate,
   StreamEventType,
 } from '@hive-academy/langgraph-core';
+import { StreamUpdate } from '../interfaces/streaming.interface';
 import { TokenStreamingService } from '../services/token-streaming.service';
 import { EventStreamProcessorService } from '../services/event-stream-processor.service';
 import { WebSocketBridgeService } from '../services/websocket-bridge.service';
@@ -130,7 +130,7 @@ export class StreamingServiceAdapter implements IStreamingService {
   ): void {
     try {
       this.streamEvent(executionId, nodeId, {
-        type: 'progress',
+        type: StreamEventType.PROGRESS,
         data: progress,
         metadata: {
           progressType: 'node_progress',
@@ -236,8 +236,6 @@ export class StreamingServiceAdapter implements IStreamingService {
  */
 @Injectable()
 export class TokenStreamingServiceAdapter implements ITokenStreamingService {
-  private readonly logger = new Logger(TokenStreamingServiceAdapter.name);
-
   constructor(private readonly tokenStreamingService: TokenStreamingService) {}
 
   async initializeTokenStream(options: TokenStreamOptions): Promise<void> {
@@ -271,8 +269,6 @@ export class TokenStreamingServiceAdapter implements ITokenStreamingService {
 export class EventStreamProcessorServiceAdapter
   implements IEventStreamProcessorService
 {
-  private readonly logger = new Logger(EventStreamProcessorServiceAdapter.name);
-
   constructor(
     private readonly eventStreamProcessor: EventStreamProcessorService
   ) {}
@@ -321,8 +317,6 @@ export class EventStreamProcessorServiceAdapter
 
 @Injectable()
 export class WebSocketBridgeServiceAdapter implements IWebSocketBridgeService {
-  private readonly logger = new Logger(WebSocketBridgeServiceAdapter.name);
-
   constructor(private readonly webSocketBridge: WebSocketBridgeService) {}
 
   async broadcastToExecution(executionId: string, data: any): Promise<void> {

@@ -332,7 +332,7 @@ export function StreamProgress(
     descriptor: PropertyDescriptor
   ) => {
     // Get stored module configuration
-    const moduleConfig = getStreamingConfigWithDefaults();
+    getStreamingConfigWithDefaults();
 
     // Create progress streaming metadata - inherit from module config
     const progressMetadata: StreamProgressDecoratorMetadata = {

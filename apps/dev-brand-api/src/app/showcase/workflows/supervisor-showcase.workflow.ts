@@ -1,3 +1,4 @@
+// TODO: REFACTOR - Convert to real business workflow
 import { HumanMessage } from '@langchain/core/messages';
 import { Injectable } from '@nestjs/common';
 

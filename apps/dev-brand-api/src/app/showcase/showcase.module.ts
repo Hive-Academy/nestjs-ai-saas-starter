@@ -1,24 +1,19 @@
 import { Module } from '@nestjs/common';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { StreamingServiceAdapter } from '@hive-academy/langgraph-streaming';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
-// Import showcase workflows demonstrating ALL patterns
-import { SupervisorShowcaseWorkflow } from './workflows/supervisor-showcase.workflow';
-import { SwarmShowcaseWorkflow } from './workflows/swarm-showcase.workflow';
-// import { HierarchicalShowcaseWorkflow } from './workflows/hierarchical-showcase.workflow'; // TODO: Create this workflow
+// 🎯 DEVBRAND CHAT STUDIO - Real Business Agents
+// Transforms developer code contributions into personal brand content
 
-// Import showcase agents with @Agent decorator
-import { DemoShowcaseAgent } from './agents/demo-showcase.agent';
-import { AdvancedShowcaseAgent } from './agents/advanced-showcase.agent';
-import { SpecialistShowcaseAgent } from './agents/specialist-showcase.agent';
-import { StreamingShowcaseAgent } from './agents/streaming-showcase.agent';
-import { HitlShowcaseAgent } from './agents/hitl-showcase.agent';
+// Business-Focused Agents
+import { GitHubCodeAnalyzerAgent } from './agents/research-showcase.agent'; // Transformed from ResearchShowcaseAgent
+import { PersonalBrandStrategistAgent } from './agents/analysis-showcase.agent'; // Transformed from AnalysisShowcaseAgent  
+import { ContentCreatorAgent } from './agents/content-showcase.agent'; // Transformed from ContentShowcaseAgent
 
-// Import REAL showcase agents demonstrating proper library usage
-import { ResearchShowcaseAgent } from './agents/research-showcase.agent';
-import { AnalysisShowcaseAgent } from './agents/analysis-showcase.agent';
-import { ContentShowcaseAgent } from './agents/content-showcase.agent';
-
-// Import showcase services
+// Business Services
+import { PersonalBrandMemoryService } from './services/personal-brand-memory.service';
 import { ShowcaseCoordinatorService } from './services/showcase-coordinator.service';
 import { ShowcaseMetricsService } from './services/showcase-metrics.service';
 import { ShowcaseAnalysisService } from './services/showcase-analysis.service';
@@ -26,104 +21,78 @@ import { ShowcaseContentService } from './services/showcase-content.service';
 import { ShowcaseQualityService } from './services/showcase-quality.service';
 import { ShowcaseNetworkService } from './services/showcase-network.service';
 
-// Import showcase tools - Demonstrates @Tool decorator system
-import { ShowcaseAnalysisTools } from './tools/showcase-analysis.tools';
-import { ShowcaseIntegrationTools } from './tools/showcase-integration.tools';
+// Business Tools  
+import { GitHubIntegrationTools } from './tools/github-integration.tools';
 import { ShowcaseSearchTools } from './tools/showcase-search.tools';
-import { ShowcaseDocumentTools } from './tools/showcase-document.tools';
 
-// Import showcase controllers
+// Controller
 import { ShowcaseController } from './controllers/showcase.controller';
 
-/**
- * 🎯 SHOWCASE MODULE - CLEAN DEMONSTRATION PLATFORM
- *
- * This module demonstrates the decorator-driven architecture for building
- * enterprise-grade AI applications. It relies on the parent app.module.ts
- * for all library configurations to avoid duplication and maintain consistency.
- *
- * 🚀 FEATURES DEMONSTRATED:
- *
- * 1. Multi-Agent Coordination Patterns:
- *    - Supervisor Pattern (@Workflow + @Agent decorators)
- *    - Swarm Pattern (peer-to-peer coordination)
- *    - Hierarchical Pattern (multi-level command structure)
- *
- * 2. Advanced Decorator Ecosystem:
- *    - @Workflow with streaming, hitl, checkpointing
- *    - @Agent with capabilities, tools, priority
- *    - @Task with dependency management
- *    - @Entrypoint with retry/timeout
- *    - @StreamToken for real-time feedback
- *    - @Approval for human-in-the-loop
- *
- * 3. Enterprise Capabilities:
- *    - Tools registered via explicit registration (no discovery)
- *    - State persistence via parent module checkpoint configuration
- *    - Real-time streaming with parent WebSocket integration
- *    - Human-in-the-loop approval workflows
- *    - Advanced monitoring and metrics
- *
- * 4. Clean Architecture Principles:
- *    - No duplicated module imports
- *    - Relies on parent app.module.ts configurations
- *    - Single source of truth for library settings
- *    - Focused on business logic, not infrastructure
- *
- * This demonstrates the power of our explicit registration system!
- */
 @Module({
   imports: [
-    // Import MultiAgentModule to access LlmProviderService and other providers
-    // We use forRoot() with default config since parent app.module.ts has the main configuration
-    MultiAgentModule.forRoot(),
+    // ADVANCED STREAMING AND MEMORY INTEGRATION
+    MultiAgentModule.forRootAsync({
+      useFactory: async (streamingAdapter: StreamingServiceAdapter) => ({
+        streamingAdapter,  // Real-time streaming for DevBrand Chat Studio
+        enableStreaming: true,
+        enableProgress: true,
+        enableTokenStreaming: true,
+      }),
+      inject: [StreamingServiceAdapter],
+    }),
+    
+    // MEMORY SYSTEM INTEGRATION for Personal Branding
+    ChromaDBModule.forRootAsync({
+      useFactory: () => ({
+        path: process.env.CHROMADB_URL || 'http://localhost:8000',
+        // Collections will be created automatically by PersonalBrandMemoryService
+      })
+    }),
+    
+    Neo4jModule.forRootAsync({
+      useFactory: () => ({
+        scheme: 'bolt',
+        host: process.env.NEO4J_HOST || 'localhost',
+        port: process.env.NEO4J_PORT || 7687,
+        username: process.env.NEO4J_USER || 'neo4j',
+        password: process.env.NEO4J_PASSWORD || 'password',
+        database: process.env.NEO4J_DATABASE || 'neo4j',
+      })
+    }),
   ],
   providers: [
-    // Showcase workflows demonstrating all patterns
-    SupervisorShowcaseWorkflow,
-    SwarmShowcaseWorkflow,
-
-    // Showcase agents with full decorator usage
-    DemoShowcaseAgent,
-    AdvancedShowcaseAgent,
-    SpecialistShowcaseAgent,
-    StreamingShowcaseAgent,
-    HitlShowcaseAgent,
-
-    // REAL showcase agents demonstrating proper library usage
-    ResearchShowcaseAgent,
-    AnalysisShowcaseAgent,
-    ContentShowcaseAgent,
-
-    // Showcase services
-    ShowcaseCoordinatorService,
-    ShowcaseMetricsService,
-    ShowcaseAnalysisService,
-    ShowcaseContentService,
-    ShowcaseQualityService,
-    ShowcaseNetworkService,
-
-    // Showcase tools - Demonstrates @Tool decorator capabilities
-    ShowcaseAnalysisTools,
-    ShowcaseIntegrationTools,
-    ShowcaseSearchTools,
-    ShowcaseDocumentTools,
+    // 🤖 BUSINESS-FOCUSED AGENTS - DevBrand Chat Studio
+    GitHubCodeAnalyzerAgent,      // Analyzes GitHub repos → achievements  
+    PersonalBrandStrategistAgent, // Creates brand strategy from code analysis
+    ContentCreatorAgent,          // Generates LinkedIn + Dev.to content
+    
+    // 🧠 MEMORY & INTELLIGENCE SERVICES
+    PersonalBrandMemoryService,   // ChromaDB + Neo4j for personalized branding
+    
+    // 📊 SUPPORTING SERVICES  
+    ShowcaseCoordinatorService,   // Multi-agent workflow coordination
+    ShowcaseMetricsService,       // Business metrics and performance tracking
+    ShowcaseAnalysisService,      // Advanced analysis capabilities
+    ShowcaseContentService,       // Content optimization and management
+    ShowcaseQualityService,       // Quality assurance and scoring
+    ShowcaseNetworkService,       // Network and integration management
+    
+    // 🔧 BUSINESS TOOLS
+    GitHubIntegrationTools,       // GitHub API analysis and achievement extraction
+    ShowcaseSearchTools,          // Tavily search for tech trend research
   ],
   controllers: [ShowcaseController],
   exports: [
-    // Export everything for external integration
-    SupervisorShowcaseWorkflow,
-    SwarmShowcaseWorkflow,
+    // Export business services for use by other modules
+    PersonalBrandMemoryService,
+    GitHubIntegrationTools,
     ShowcaseCoordinatorService,
     ShowcaseMetricsService,
     ShowcaseAnalysisService,
     ShowcaseContentService,
     ShowcaseQualityService,
     ShowcaseNetworkService,
-    ShowcaseAnalysisTools,
-    ShowcaseIntegrationTools,
     ShowcaseSearchTools,
-    ShowcaseDocumentTools,
   ],
 })
 export class ShowcaseModule {}

@@ -5,8 +5,8 @@ import {
   CHECKPOINT_ADAPTER_TOKEN,
   ICheckpointAdapter,
   STREAMING_SERVICE_TOKEN,
-  IStreamingService,
 } from '@hive-academy/langgraph-core';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentNetwork,
@@ -38,7 +38,10 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     private readonly checkpointAdapter: ICheckpointAdapter,
     @Inject(STREAMING_SERVICE_TOKEN)
     private readonly streamingService: IStreamingService
-  ) {}
+  ) {
+    // Mark streamingService as used - available for future streaming features
+    void this.streamingService;
+  }
 
   async onModuleInit(): Promise<void> {
     this.logger.log(

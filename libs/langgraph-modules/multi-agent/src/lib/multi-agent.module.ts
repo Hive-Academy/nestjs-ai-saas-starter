@@ -25,7 +25,6 @@ import { ToolRegistryService } from './tools/tool-registry.service';
 import {
   CHECKPOINT_ADAPTER_TOKEN,
   NoOpCheckpointAdapter,
-  IStreamingService,
   STREAMING_SERVICE_TOKEN,
   NoOpStreamingService,
 } from '@hive-academy/langgraph-core';

@@ -1,372 +1,280 @@
 import { Injectable } from '@nestjs/common';
-import { Agent } from '@hive-academy/langgraph-multi-agent';
+import { Agent, StreamToken, StreamProgress } from '@hive-academy/langgraph-multi-agent';
 import { AgentState } from '@hive-academy/langgraph-multi-agent';
 import { AIMessage } from '@langchain/core/messages';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import { ShowcaseSearchTools } from '../tools/showcase-search.tools';
+import { GitHubIntegrationTools } from '../tools/github-integration.tools';
 
 /**
- * 🔍 RESEARCH SHOWCASE AGENT - ZERO-CONFIG REVOLUTION
+ * 💻 GITHUB CODE ANALYZER AGENT - AI-POWERED DEVELOPMENT INSIGHTS
  *
- * Demonstrates zero-config decorator pattern - from 33 lines of complex
- * configuration down to a single @Agent() decorator.
+ * Analyzes GitHub repositories for achievements and patterns to build personal brand:
+ * ✅ Real-time GitHub API integration with comprehensive code analysis
+ * ✅ Achievement extraction from commit patterns and repository data
+ * ✅ Developer expertise assessment and productivity metrics
+ * ✅ Technology stack analysis and skill mapping
+ * ✅ Streaming progress updates for real-time user feedback
  *
- * DRAMATIC REDUCTION: 97% less configuration code while maintaining full functionality!
+ * BUSINESS VALUE: Transforms raw code contributions into meaningful career achievements
  */
-@Agent()
+@Agent({
+  id: 'github-code-analyzer',
+  name: 'GitHub Code Analyzer',
+  capabilities: ['code-analysis', 'achievement-extraction', 'developer-insights'],
+  tools: ['github-analyzer', 'achievement-extractor', 'developer-insights'],
+  priority: 'high',
+  executionTime: 'fast'
+})
 @Injectable()
-export class ResearchShowcaseAgent {
+export class GitHubCodeAnalyzerAgent {
   constructor(
     private readonly llmProvider: LlmProviderService,
-    private readonly searchTools: ShowcaseSearchTools
+    private readonly githubTools: GitHubIntegrationTools
   ) {}
 
   /**
-   * REAL agent implementation using actual LLM and tools
+   * Real GitHub code analysis for personal branding
    */
+  @StreamProgress({ enabled: true, includeETA: true })
+  @StreamToken({ enabled: true, format: 'structured' })
   async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
-    console.log(
-      '🔍 Research Showcase Agent: Starting REAL research analysis...'
-    );
+    console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
 
     const lastMessage = state.messages[state.messages.length - 1];
-    const researchTopic = lastMessage.content.toString();
+    const messageContent = lastMessage.content.toString();
+    
+    // Extract GitHub username from message (could be "analyze my GitHub: username" or just "username")
+    const githubUsername = this.extractGitHubUsername(messageContent) || 
+                           state.metadata?.githubUsername || 
+                           'demo-user';
+    
+    const timeframe = state.metadata?.timeframe || 'month';
 
     try {
-      // 🚀 REAL WEB SEARCH: Use Tavily API for current information
-      console.log('🔍 Performing web search...');
-      const webSearchResults = await this.searchTools.webSearch({
-        query: researchTopic,
-        maxResults: 8,
-        searchDepth: 'advanced',
-        includeAnswer: true,
-        excludeDomains: ['reddit.com', 'quora.com'], // Filter low-quality sources
+      // 🚀 REAL GITHUB ANALYSIS: Comprehensive repository and commit analysis
+      console.log(`💻 Analyzing GitHub activity for ${githubUsername}...`);
+      const githubAnalysis = await this.githubTools.analyzeGitHubActivity({
+        username: githubUsername,
+        timeframe: timeframe as 'week' | 'month' | 'quarter',
+        includePrivate: false
       });
 
-      // 📰 NEWS SEARCH: Get recent developments
-      console.log('📰 Searching for recent news...');
-      const newsResults = await this.searchTools.newsSearch({
-        query: researchTopic,
-        timeframe: 'month',
-        maxResults: 5,
-        category: this.categorizeResearchTopic(researchTopic),
+      // 🎯 ACHIEVEMENT EXTRACTION: Transform code contributions into achievements
+      console.log('🎯 Extracting meaningful achievements...');
+      const achievements = await this.githubTools.extractAchievements({
+        commits: githubAnalysis.commits,
+        repositories: githubAnalysis.repositories,
+        analysisDepth: 'detailed'
       });
 
-      // 🔬 COMPREHENSIVE RESEARCH: Deep analysis with multiple sources
-      console.log('🔬 Conducting comprehensive research...');
-      const researchResults = await this.searchTools.researchSearch({
-        topic: researchTopic,
-        includeAcademic: true,
-        minSources: 6,
-        analysisDepth: 'comprehensive',
+      // 🔍 DEVELOPER INSIGHTS: Generate professional insights about work patterns
+      console.log('🔍 Generating developer insights...');
+      const developerInsights = await this.githubTools.generateDeveloperInsights({
+        username: githubUsername,
+        commits: githubAnalysis.commits,
+        repositories: githubAnalysis.repositories
       });
 
-      // 🚀 REAL LLM INTEGRATION: Synthesize findings with actual language model
-      const synthesisPrompt = this.buildSynthesisPrompt(
-        researchTopic,
-        webSearchResults,
-        newsResults,
-        researchResults
+      // 🚀 AI-POWERED SYNTHESIS: Create compelling narrative from technical data
+      const analysisPrompt = this.buildDeveloperAnalysisPrompt(
+        githubUsername,
+        githubAnalysis,
+        achievements,
+        developerInsights
       );
 
-      const synthesizedReport = await this.llmProvider.generateResponse(
-        synthesisPrompt,
+      const aiAnalysis = await this.llmProvider.generateResponse(
+        analysisPrompt,
         {
-          temperature: 0.3, // Lower temperature for factual research
-          maxTokens: 2000,
+          temperature: 0.4,
+          maxTokens: 2500,
         }
       );
 
-      // 📊 REAL ANALYSIS: Process and structure the results
-      const structuredFindings = this.structureResearchResults(
-        synthesizedReport,
-        researchTopic,
-        webSearchResults,
-        newsResults,
-        researchResults
-      );
-
-      console.log('✅ Research Showcase Agent: REAL research completed');
+      console.log('✅ GitHub Code Analyzer: Analysis completed with AI insights');
 
       return {
         messages: [
-          new AIMessage(`🔍 **COMPREHENSIVE RESEARCH ANALYSIS COMPLETE**
+          new AIMessage(`💻 **GITHUB CODE ANALYSIS COMPLETE**
 
-**Topic:** ${researchTopic}
+**Developer:** ${githubUsername}
+**Analysis Period:** ${timeframe}
 
-${synthesizedReport}
-
----
-**Research Summary:**
-📊 **Sources Analyzed:** ${structuredFindings.sourceCount} total sources
-• 🌐 Web Results: ${structuredFindings.sourceBreakdown.webSources} (${
-            structuredFindings.searchMetadata.webSearchTime
-          })
-• 📰 News Articles: ${structuredFindings.sourceBreakdown.newsArticles} (${
-            structuredFindings.searchMetadata.newsTimeframe
-          })
-• 🔬 Research Sources: ${structuredFindings.sourceBreakdown.researchSources} (${
-            structuredFindings.searchMetadata.researchDepth
-          })
-
-**Tools Used:** Tavily Web Search, News Search, Academic Research Search, LLM Synthesis
-**Analysis Depth:** ${structuredFindings.analysisDepth.toUpperCase()}
+${aiAnalysis}
 
 ---
-*Research conducted by Research Showcase Agent using REAL Tavily API + LLM integration*`),
+**📊 TECHNICAL METRICS:**
+• **Repositories Analyzed:** ${githubAnalysis.summary.totalRepositories}
+• **Commits Analyzed:** ${githubAnalysis.summary.totalCommits}
+• **Lines of Code:** ${githubAnalysis.summary.linesOfCode.toLocaleString()}
+• **Productivity Score:** ${githubAnalysis.summary.productivityScore}/100
+
+**🎯 ACHIEVEMENTS EXTRACTED:** ${achievements.length}
+${achievements.slice(0, 3).map(a => `• ${a.description} (${a.impact} impact)`).join('\n')}
+
+**💡 PRIMARY TECHNOLOGIES:** ${githubAnalysis.patterns.primaryLanguages.join(', ')}
+
+**⚡ WORKING PATTERNS:** ${githubAnalysis.patterns.workingHours} | Focus: ${githubAnalysis.patterns.focusAreas.join(', ')}
+
+---
+*Analysis powered by GitHub API + AI insights for personal branding*`),
         ],
-        scratchpad: `Research completed for: ${researchTopic}
-Key findings: ${structuredFindings.keyPoints.join(', ')}
-Analysis depth: Advanced
-Sources analyzed: ${structuredFindings.sourceCount}
-Web results: ${webSearchResults.totalResults}
-News articles: ${newsResults.totalArticles}
-Research sources: ${researchResults.totalSources}`,
+        scratchpad: `GitHub analysis completed for: ${githubUsername}
+Achievements found: ${achievements.length}
+Primary technologies: ${githubAnalysis.patterns.primaryLanguages.join(', ')}
+Productivity score: ${githubAnalysis.summary.productivityScore}
+Repositories: ${githubAnalysis.summary.totalRepositories}
+Commits: ${githubAnalysis.summary.totalCommits}`,
         metadata: {
           ...state.metadata,
-          researchCompleted: true,
-          topic: researchTopic,
-          analysisDepth: 'comprehensive',
+          githubAnalysisCompleted: true,
+          githubUsername,
+          timeframe,
+          achievements,
+          developerInsights,
+          githubData: githubAnalysis,
           toolsUsed: [
-            'web-search',
-            'news-search',
-            'research-search',
-            'llm-synthesis',
+            'github-analyzer',
+            'achievement-extractor',
+            'developer-insights',
+            'ai-synthesis'
           ],
-          confidenceScore: 0.92,
+          confidenceScore: 0.95,
         },
-        next: 'analysis-showcase', // Route to analysis agent
-        task: 'Analyze research findings and generate insights',
+        next: 'personal-brand-strategist', // Route to brand strategy agent
+        task: 'Develop personal brand strategy from code analysis',
       };
     } catch (error) {
-      console.error(
-        '❌ Research Showcase Agent: LLM integration failed:',
-        error
-      );
+      console.error('❌ GitHub Code Analyzer: Analysis failed:', error);
 
-      // Fallback with structured analysis
-      const fallbackResearch = this.generateFallbackResearch(researchTopic);
+      // Fallback with demo data for showcase
+      const fallbackAnalysis = this.generateFallbackGitHubAnalysis(githubUsername, timeframe);
 
       return {
         messages: [
-          new AIMessage(`🔍 **RESEARCH ANALYSIS** (Structured Mode)
+          new AIMessage(`💻 **GITHUB CODE ANALYSIS** (Demo Mode)
 
-**Topic:** ${researchTopic}
+**Developer:** ${githubUsername}
 
-${fallbackResearch}
+${fallbackAnalysis}
 
 ---
-*Note: Using structured analysis mode - LLM integration temporarily unavailable*`),
+*Note: Using demo analysis - GitHub API integration temporarily unavailable*`),
         ],
-        scratchpad: `Fallback research for: ${researchTopic}`,
+        scratchpad: `Fallback analysis for: ${githubUsername}`,
         metadata: {
           ...state.metadata,
-          researchCompleted: true,
-          mode: 'fallback',
-          topic: researchTopic,
+          githubAnalysisCompleted: true,
+          mode: 'demo-fallback',
+          githubUsername,
         },
-        next: 'analysis-showcase',
-        task: 'Analyze research findings',
+        next: 'personal-brand-strategist',
+        task: 'Develop brand strategy from demo analysis',
       };
     }
   }
 
   /**
-   * Categorize research topic for appropriate news search
+   * Extract GitHub username from user message
    */
-  private categorizeResearchTopic(
-    topic: string
-  ): 'general' | 'tech' | 'business' | 'science' | 'health' {
-    const lowerTopic = topic.toLowerCase();
+  private extractGitHubUsername(message: string): string | null {
+    // Look for patterns like "analyze my GitHub: username", "GitHub username", or just a username
+    const patterns = [
+      /github[:\s]+([a-zA-Z0-9\-_]+)/i,
+      /username[:\s]+([a-zA-Z0-9\-_]+)/i,
+      /analyze[:\s]+([a-zA-Z0-9\-_]+)/i,
+      /^([a-zA-Z0-9\-_]{2,39})$/  // Just a username
+    ];
 
-    if (
-      lowerTopic.includes('ai') ||
-      lowerTopic.includes('tech') ||
-      lowerTopic.includes('software') ||
-      lowerTopic.includes('programming')
-    ) {
-      return 'tech';
-    }
-    if (
-      lowerTopic.includes('business') ||
-      lowerTopic.includes('market') ||
-      lowerTopic.includes('finance') ||
-      lowerTopic.includes('economy')
-    ) {
-      return 'business';
-    }
-    if (
-      lowerTopic.includes('science') ||
-      lowerTopic.includes('research') ||
-      lowerTopic.includes('study') ||
-      lowerTopic.includes('experiment')
-    ) {
-      return 'science';
-    }
-    if (
-      lowerTopic.includes('health') ||
-      lowerTopic.includes('medical') ||
-      lowerTopic.includes('medicine')
-    ) {
-      return 'health';
+    for (const pattern of patterns) {
+      const match = message.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
     }
 
-    return 'general';
+    return null;
   }
 
   /**
-   * Build comprehensive synthesis prompt from all research sources
+   * Build comprehensive developer analysis prompt
    */
-  private buildSynthesisPrompt(
-    topic: string,
-    webResults: any,
-    newsResults: any,
-    researchResults: any
+  private buildDeveloperAnalysisPrompt(
+    username: string,
+    githubData: any,
+    achievements: any[],
+    insights: any
   ): string {
-    return `As an expert research analyst, synthesize the following information about "${topic}" into a comprehensive research report.
+    return `As an expert technical recruiter and personal branding strategist, analyze the following developer's GitHub activity and create a compelling professional narrative.
 
-**Web Search Results:**
-${webResults.answer || 'No summary available'}
+**Developer Profile:** ${username}
+**Analysis Period:** ${githubData.timeframe}
 
-**Key Web Sources:**
-${
-  webResults.results
-    ?.slice(0, 3)
-    .map((r: any) => `• ${r.title}: ${r.content.substring(0, 150)}...`)
-    .join('\n') || 'No results'
-}
+**📊 TECHNICAL METRICS:**
+• Repositories: ${githubData.summary.totalRepositories}
+• Commits: ${githubData.summary.totalCommits}  
+• Lines of Code: ${githubData.summary.linesOfCode.toLocaleString()}
+• Productivity Score: ${githubData.summary.productivityScore}/100
 
-**Recent News (${newsResults.timeframe}):**
-${
-  newsResults.articles
-    ?.slice(0, 3)
-    .map((a: any) => `• ${a.title} (${a.source}): ${a.summary}`)
-    .join('\n') || 'No recent news'
-}
+**🎯 EXTRACTED ACHIEVEMENTS:**
+${achievements.slice(0, 5).map(a => `• ${a.description} (${a.impact} impact) - ${a.technologies.join(', ')}`).join('\n')}
 
-**Research Analysis:**
-${researchResults.synthesis || 'No research synthesis available'}
+**💡 TECHNICAL EXPERTISE:**
+• Primary Languages: ${githubData.patterns.primaryLanguages.join(', ')}
+• Working Hours: ${githubData.patterns.workingHours}
+• Focus Areas: ${githubData.patterns.focusAreas.join(', ')}
 
-**Academic/Professional Sources:**
-${
-  researchResults.sources
-    ?.slice(0, 3)
-    .map((s: any) => `• ${s.title} (${s.type}, credibility: ${s.credibility})`)
-    .join('\n') || 'No academic sources'
-}
+**🔍 DEVELOPER INSIGHTS:**
+• Technical Breadth: ${insights.technicalExpertise?.breadth || 'Full-stack'}
+• Complexity Level: ${insights.technicalExpertise?.complexity || 'High'}
+• Growth Opportunities: ${insights.recommendations?.slice(0, 2).join(', ') || 'Continue current trajectory'}
 
-Please provide a structured report with:
-1. **Executive Summary** - Key findings in 2-3 sentences
-2. **Current State & Context** - What the research reveals about the current situation
-3. **Recent Developments** - Latest news and trends from the past month
-4. **Key Insights** - Most important discoveries from academic/professional sources
-5. **Implications & Impact** - What this means for stakeholders
-6. **Future Outlook** - Trends and predictions based on the evidence
-7. **Actionable Recommendations** - Specific next steps based on findings
+Please create a professional developer profile that includes:
 
-Format professionally with clear headings and bullet points where appropriate.`;
+1. **Executive Summary** - Compelling 2-3 sentence overview highlighting key strengths
+2. **Technical Leadership** - Evidence of technical decision-making and problem-solving
+3. **Innovation & Impact** - Specific examples of meaningful contributions and improvements
+4. **Professional Growth** - Trajectory and development patterns shown in the code
+5. **Brand Positioning** - How this developer should position themselves in the market
+6. **Key Differentiators** - What makes this developer stand out from peers
+
+Focus on transforming technical contributions into business value and career advancement opportunities.`;
   }
 
   /**
-   * Structure research results for better presentation (enhanced version)
+   * Generate fallback analysis for demo purposes
    */
-  private structureResearchResults(
-    results: string,
-    topic: string,
-    webResults?: any,
-    newsResults?: any,
-    researchResults?: any
-  ) {
-    const lines = results.split('\n').filter((line) => line.trim());
-    const keyPoints = lines
-      .filter(
-        (line) =>
-          line.includes('•') ||
-          line.includes('-') ||
-          line.includes('1.') ||
-          line.includes('2.')
-      )
-      .slice(0, 5);
+  private generateFallbackGitHubAnalysis(username: string, timeframe: string): string {
+    return `**Developer Profile Analysis for: ${username}**
 
-    // Calculate actual source counts from search results
-    const webSourceCount = webResults?.totalResults || 0;
-    const newsSourceCount = newsResults?.totalArticles || 0;
-    const researchSourceCount = researchResults?.totalSources || 0;
-    const totalSources = webSourceCount + newsSourceCount + researchSourceCount;
+**🎯 EXECUTIVE SUMMARY:**
+Highly productive developer demonstrating consistent contribution patterns and modern technology adoption. Shows strong technical leadership through quality code commits and innovative problem-solving approaches.
 
-    return {
-      keyPoints,
-      sourceCount: totalSources,
-      analysisDepth: 'comprehensive',
-      structuredSections: this.extractSections(results),
-      sourceBreakdown: {
-        webSources: webSourceCount,
-        newsArticles: newsSourceCount,
-        researchSources: researchSourceCount,
-        total: totalSources,
-      },
-      searchMetadata: {
-        webSearchTime: webResults?.searchTime,
-        newsTimeframe: newsResults?.timeframe,
-        researchDepth: researchResults?.analysisDepth,
-      },
-    };
-  }
+**📊 TECHNICAL HIGHLIGHTS:**
+• **Productivity Score:** 85/100 - Above industry average
+• **Primary Technologies:** TypeScript, React, Node.js, Python
+• **Working Pattern:** Consistent daily commits with focus on quality over quantity
+• **Code Quality:** Strong testing practices and documentation standards
 
-  /**
-   * Extract structured sections from LLM response
-   */
-  private extractSections(content: string) {
-    const sections = {
-      findings: '',
-      context: '',
-      trends: '',
-      implications: '',
-      recommendations: '',
-    };
+**🚀 KEY ACHIEVEMENTS:**
+• **Performance Optimization Expert:** Implemented 5+ performance improvements resulting in 40% faster load times
+• **Full-Stack Innovation:** Delivered 3 major features integrating modern frontend/backend technologies
+• **Quality Champion:** Maintained high code standards with comprehensive testing and documentation
 
-    // Simple section extraction logic
-    const lowerContent = content.toLowerCase();
-    if (lowerContent.includes('finding')) sections.findings = 'Identified';
-    if (lowerContent.includes('context') || lowerContent.includes('background'))
-      sections.context = 'Provided';
-    if (lowerContent.includes('trend')) sections.trends = 'Analyzed';
-    if (lowerContent.includes('implication'))
-      sections.implications = 'Assessed';
-    if (lowerContent.includes('recommend'))
-      sections.recommendations = 'Generated';
+**💡 PROFESSIONAL STRENGTHS:**
+• **Problem Solving:** Demonstrates analytical thinking through commit patterns
+• **Technology Adoption:** Early adopter of modern development practices
+• **Collaboration:** Regular contribution patterns showing team-oriented development
+• **Continuous Learning:** Technology diversity shows commitment to skill expansion
 
-    return sections;
-  }
+**🎯 BRAND POSITIONING:**
+Position as a **Senior Full-Stack Engineer** with expertise in modern web technologies and performance optimization. Strong candidate for **technical leadership roles** requiring both hands-on development and architectural decision-making.
 
-  /**
-   * Generate fallback research when LLM is unavailable
-   */
-  private generateFallbackResearch(topic: string): string {
-    return `**Research Findings for: ${topic}**
+**📈 GROWTH TRAJECTORY:**
+• Consistent upward trend in code complexity and project scope
+• Increasing responsibility evidenced through architectural decisions
+• Strong foundation for advancement to **Staff Engineer** or **Tech Lead** roles
 
-**Key Findings:**
-• Topic analysis indicates significant relevance in current market
-• Multiple factors contribute to the importance of this subject
-• Emerging trends suggest continued growth and development
-• Cross-domain applications demonstrate versatility
-
-**Context & Background:**
-This topic represents an important area of study with practical applications
-across multiple industries and use cases.
-
-**Current Trends:**
-• Increasing adoption and implementation
-• Growing community and ecosystem development  
-• Enhanced tooling and methodology improvements
-• Integration with emerging technologies
-
-**Recommendations:**
-1. Continue monitoring developments in this area
-2. Consider practical implementation strategies
-3. Evaluate potential integration opportunities
-4. Maintain awareness of best practices evolution
-
-*Analysis generated using structured research methodology*`;
+*Analysis based on contribution patterns, technology choices, and development practices*`;
   }
 }
