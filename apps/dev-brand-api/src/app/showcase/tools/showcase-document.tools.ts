@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { z } from 'zod';
 import { Tool } from '@hive-academy/langgraph-multi-agent';
 
 // Type definitions for zero-config tool results

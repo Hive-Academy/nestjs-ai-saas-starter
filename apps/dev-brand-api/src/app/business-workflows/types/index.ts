@@ -4,7 +4,7 @@
  */
 
 // Customer Support Types
-export * from './customer-support.types';
+export type * from './customer-support.types';
 
 // Shared Business Types
 export interface BaseEntity {

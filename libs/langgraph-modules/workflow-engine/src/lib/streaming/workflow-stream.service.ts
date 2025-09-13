@@ -23,13 +23,11 @@ import {
   StreamEventDecoratorMetadata,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   WorkflowStateAnnotation,
-  IStreamingService,
   STREAMING_SERVICE_TOKEN,
   TokenStreamOptions,
-  StreamEventData,
-  ProgressData,
 } from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 

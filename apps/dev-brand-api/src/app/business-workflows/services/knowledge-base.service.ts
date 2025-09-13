@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import { 
-  KnowledgeSearchQuery, 
-  KnowledgeSearchResult, 
-  SimilarTicket 
+import {
+  KnowledgeSearchQuery,
+  KnowledgeSearchResult,
+  SimilarTicket,
 } from '../types';
 
 /**
@@ -16,7 +16,7 @@ import {
 export class KnowledgeBaseService {
   private readonly KNOWLEDGE_COLLECTION = 'support_knowledge_base';
   private readonly TICKETS_COLLECTION = 'support_tickets';
-  
+
   constructor(
     private readonly chromaService: ChromaDBService,
     private readonly neo4jService: Neo4jService
@@ -32,8 +32,8 @@ export class KnowledgeBaseService {
         name: this.KNOWLEDGE_COLLECTION,
         metadata: {
           description: 'Customer support knowledge base for semantic search',
-          version: '1.0'
-        }
+          version: '1.0',
+        },
       });
 
       // Ensure tickets collection exists
@@ -41,8 +41,8 @@ export class KnowledgeBaseService {
         name: this.TICKETS_COLLECTION,
         metadata: {
           description: 'Historical support tickets for similarity matching',
-          version: '1.0'
-        }
+          version: '1.0',
+        },
       });
 
       console.log('Knowledge base collections initialized successfully');
@@ -54,7 +54,9 @@ export class KnowledgeBaseService {
   /**
    * Search the knowledge base for relevant articles
    */
-  async searchKnowledgeBase(query: KnowledgeSearchQuery): Promise<KnowledgeSearchResult[]> {
+  async searchKnowledgeBase(
+    query: KnowledgeSearchQuery
+  ): Promise<KnowledgeSearchResult[]> {
     try {
       const searchResults = await this.chromaService.similaritySearch(
         query.query,
@@ -62,12 +64,12 @@ export class KnowledgeBaseService {
           collection: this.KNOWLEDGE_COLLECTION,
           limit: query.maxResults || 5,
           threshold: query.similarityThreshold || 0.7,
-          filter: this.buildSearchFilter(query)
+          filter: this.buildSearchFilter(query),
         }
       );
 
       const results: KnowledgeSearchResult[] = [];
-      
+
       for (const result of searchResults) {
         const knowledgeResult: KnowledgeSearchResult = {
           id: result.id,
@@ -75,13 +77,15 @@ export class KnowledgeBaseService {
           content: result.document || '',
           category: result.metadata?.category || 'general',
           similarity: result.score || 0,
-          lastUpdated: result.metadata?.lastUpdated ? new Date(result.metadata.lastUpdated) : new Date(),
+          lastUpdated: result.metadata?.lastUpdated
+            ? new Date(result.metadata.lastUpdated)
+            : new Date(),
           useCount: result.metadata?.useCount || 0,
-          effectiveness: result.metadata?.effectiveness || 0.5
+          effectiveness: result.metadata?.effectiveness || 0.5,
         };
 
         results.push(knowledgeResult);
-        
+
         // Track knowledge article usage
         await this.trackKnowledgeUsage(result.id, query);
       }
@@ -97,10 +101,10 @@ export class KnowledgeBaseService {
    * Find similar historical tickets
    */
   async findSimilarTickets(
-    description: string, 
-    category?: string, 
+    description: string,
+    category?: string,
     customerTier?: string,
-    limit: number = 5
+    limit = 5
   ): Promise<SimilarTicket[]> {
     try {
       const filter: any = {};
@@ -113,11 +117,11 @@ export class KnowledgeBaseService {
           collection: this.TICKETS_COLLECTION,
           limit,
           threshold: 0.6,
-          filter
+          filter,
         }
       );
 
-      return searchResults.map(result => ({
+      return searchResults.map((result) => ({
         id: result.id,
         title: result.metadata?.title || 'Historical Ticket',
         description: result.document || '',
@@ -126,7 +130,7 @@ export class KnowledgeBaseService {
         resolutionTime: result.metadata?.resolutionTime || 0,
         satisfactionScore: result.metadata?.satisfactionScore || 0,
         category: result.metadata?.category || category || 'general',
-        embedding: result.embedding
+        embedding: result.embedding,
       }));
     } catch (error) {
       console.error('Error finding similar tickets:', error);
@@ -149,24 +153,27 @@ export class KnowledgeBaseService {
       // Add to ChromaDB for semantic search
       await this.chromaService.addDocuments({
         collection: this.KNOWLEDGE_COLLECTION,
-        documents: [{
-          id: article.id,
-          document: `${article.title}\n\n${article.content}`,
-          metadata: {
-            title: article.title,
-            category: article.category,
-            tags: article.tags || [],
-            author: article.author,
-            createdAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-            useCount: 0,
-            effectiveness: 0.5
-          }
-        }]
+        documents: [
+          {
+            id: article.id,
+            document: `${article.title}\n\n${article.content}`,
+            metadata: {
+              title: article.title,
+              category: article.category,
+              tags: article.tags || [],
+              author: article.author,
+              createdAt: new Date().toISOString(),
+              lastUpdated: new Date().toISOString(),
+              useCount: 0,
+              effectiveness: 0.5,
+            },
+          },
+        ],
       });
 
       // Add to Neo4j for relationship tracking
-      await this.neo4jService.run(`
+      await this.neo4jService.run(
+        `
         CREATE (a:Article {
           id: $id,
           title: $title,
@@ -185,13 +192,15 @@ export class KnowledgeBaseService {
         UNWIND $tags as tag
         MERGE (t:Tag {name: tag})
         CREATE (a)-[:TAGGED_WITH]->(t)
-      `, {
-        id: article.id,
-        title: article.title,
-        category: article.category,
-        author: article.author || 'System',
-        tags: article.tags || []
-      });
+      `,
+        {
+          id: article.id,
+          title: article.title,
+          category: article.category,
+          author: article.author || 'System',
+          tags: article.tags || [],
+        }
+      );
 
       console.log(`Knowledge article ${article.id} added successfully`);
     } catch (error) {
@@ -217,23 +226,26 @@ export class KnowledgeBaseService {
       // Add to ChromaDB for similarity search
       await this.chromaService.addDocuments({
         collection: this.TICKETS_COLLECTION,
-        documents: [{
-          id: ticket.id,
-          document: `${ticket.title}\n\n${ticket.description}`,
-          metadata: {
-            title: ticket.title,
-            resolution: ticket.resolution,
-            category: ticket.category,
-            customerTier: ticket.customerTier,
-            resolutionTime: ticket.resolutionTime,
-            satisfactionScore: ticket.satisfactionScore,
-            resolvedAt: new Date().toISOString()
-          }
-        }]
+        documents: [
+          {
+            id: ticket.id,
+            document: `${ticket.title}\n\n${ticket.description}`,
+            metadata: {
+              title: ticket.title,
+              resolution: ticket.resolution,
+              category: ticket.category,
+              customerTier: ticket.customerTier,
+              resolutionTime: ticket.resolutionTime,
+              satisfactionScore: ticket.satisfactionScore,
+              resolvedAt: new Date().toISOString(),
+            },
+          },
+        ],
       });
 
       // Update Neo4j with resolution information
-      await this.neo4jService.run(`
+      await this.neo4jService.run(
+        `
         MATCH (t:Ticket {id: $id})
         SET t.resolved = true,
             t.resolution = $resolution,
@@ -244,13 +256,15 @@ export class KnowledgeBaseService {
         WITH t
         MERGE (cat:Category {name: $category})
         MERGE (t)-[:RESOLVED_IN_CATEGORY]->(cat)
-      `, {
-        id: ticket.id,
-        resolution: ticket.resolution,
-        category: ticket.category,
-        resolutionTime: ticket.resolutionTime,
-        satisfactionScore: ticket.satisfactionScore
-      });
+      `,
+        {
+          id: ticket.id,
+          resolution: ticket.resolution,
+          category: ticket.category,
+          resolutionTime: ticket.resolutionTime,
+          satisfactionScore: ticket.satisfactionScore,
+        }
+      );
 
       console.log(`Resolved ticket ${ticket.id} added to knowledge base`);
     } catch (error) {
@@ -265,9 +279,22 @@ export class KnowledgeBaseService {
   async getKnowledgeBaseAnalytics(): Promise<{
     totalArticles: number;
     totalTickets: number;
-    topCategories: Array<{ category: string; count: number; effectiveness: number }>;
-    mostUsedArticles: Array<{ id: string; title: string; useCount: number; effectiveness: number }>;
-    resolutionPatterns: Array<{ pattern: string; frequency: number; avgSatisfaction: number }>;
+    topCategories: Array<{
+      category: string;
+      count: number;
+      effectiveness: number;
+    }>;
+    mostUsedArticles: Array<{
+      id: string;
+      title: string;
+      useCount: number;
+      effectiveness: number;
+    }>;
+    resolutionPatterns: Array<{
+      pattern: string;
+      frequency: number;
+      avgSatisfaction: number;
+    }>;
   }> {
     try {
       // Get analytics from Neo4j
@@ -320,7 +347,7 @@ export class KnowledgeBaseService {
         totalTickets: 0,
         topCategories: [],
         mostUsedArticles: [],
-        resolutionPatterns: []
+        resolutionPatterns: [],
       };
     } catch (error) {
       console.error('Error getting knowledge base analytics:', error);
@@ -329,7 +356,7 @@ export class KnowledgeBaseService {
         totalTickets: 0,
         topCategories: [],
         mostUsedArticles: [],
-        resolutionPatterns: []
+        resolutionPatterns: [],
       };
     }
   }
@@ -337,18 +364,28 @@ export class KnowledgeBaseService {
   /**
    * Update article effectiveness based on feedback
    */
-  async updateArticleEffectiveness(articleId: string, wasHelpful: boolean): Promise<void> {
+  async updateArticleEffectiveness(
+    articleId: string,
+    wasHelpful: boolean
+  ): Promise<void> {
     try {
       // Update in Neo4j
-      await this.neo4jService.run(`
+      await this.neo4jService.run(
+        `
         MATCH (a:Article {id: $articleId})
         SET a.feedbackCount = COALESCE(a.feedbackCount, 0) + 1,
             a.helpfulCount = COALESCE(a.helpfulCount, 0) + CASE WHEN $wasHelpful THEN 1 ELSE 0 END,
             a.effectiveness = COALESCE(a.helpfulCount, 0) / COALESCE(a.feedbackCount, 1),
             a.lastUpdated = datetime()
-      `, { articleId, wasHelpful });
+      `,
+        { articleId, wasHelpful }
+      );
 
-      console.log(`Updated effectiveness for article ${articleId}: ${wasHelpful ? 'helpful' : 'not helpful'}`);
+      console.log(
+        `Updated effectiveness for article ${articleId}: ${
+          wasHelpful ? 'helpful' : 'not helpful'
+        }`
+      );
     } catch (error) {
       console.error('Error updating article effectiveness:', error);
     }
@@ -362,31 +399,35 @@ export class KnowledgeBaseService {
       {
         id: 'kb-001',
         title: 'How to Reset Your Password',
-        content: 'To reset your password: 1. Go to the login page 2. Click "Forgot Password" 3. Enter your email 4. Check your email for reset instructions 5. Follow the link and create a new password',
+        content:
+          'To reset your password: 1. Go to the login page 2. Click "Forgot Password" 3. Enter your email 4. Check your email for reset instructions 5. Follow the link and create a new password',
         category: 'account',
-        tags: ['password', 'login', 'reset', 'account']
+        tags: ['password', 'login', 'reset', 'account'],
       },
       {
         id: 'kb-002',
         title: 'Billing and Payment Issues',
-        content: 'Common billing issues and solutions: 1. Payment declined - check with your bank 2. Incorrect charges - contact support with details 3. Refund requests - processed within 5-7 business days 4. Subscription changes - can be made in account settings',
+        content:
+          'Common billing issues and solutions: 1. Payment declined - check with your bank 2. Incorrect charges - contact support with details 3. Refund requests - processed within 5-7 business days 4. Subscription changes - can be made in account settings',
         category: 'billing',
-        tags: ['billing', 'payment', 'refund', 'subscription']
+        tags: ['billing', 'payment', 'refund', 'subscription'],
       },
       {
         id: 'kb-003',
         title: 'API Integration Guide',
-        content: 'Getting started with our API: 1. Generate API key in dashboard 2. Review API documentation 3. Test endpoints in sandbox 4. Implement authentication 5. Handle rate limits and errors',
+        content:
+          'Getting started with our API: 1. Generate API key in dashboard 2. Review API documentation 3. Test endpoints in sandbox 4. Implement authentication 5. Handle rate limits and errors',
         category: 'technical',
-        tags: ['api', 'integration', 'development', 'authentication']
+        tags: ['api', 'integration', 'development', 'authentication'],
       },
       {
         id: 'kb-004',
         title: 'Performance Optimization Tips',
-        content: 'Improve your application performance: 1. Use caching where appropriate 2. Optimize database queries 3. Compress images and assets 4. Use CDN for static files 5. Monitor and analyze performance metrics',
+        content:
+          'Improve your application performance: 1. Use caching where appropriate 2. Optimize database queries 3. Compress images and assets 4. Use CDN for static files 5. Monitor and analyze performance metrics',
         category: 'technical',
-        tags: ['performance', 'optimization', 'caching', 'cdn']
-      }
+        tags: ['performance', 'optimization', 'caching', 'cdn'],
+      },
     ];
 
     for (const article of sampleArticles) {
@@ -404,11 +445,11 @@ export class KnowledgeBaseService {
 
   private buildSearchFilter(query: KnowledgeSearchQuery): any {
     const filter: any = {};
-    
+
     if (query.category) {
       filter.category = query.category;
     }
-    
+
     if (query.customerTier === 'enterprise') {
       // For enterprise customers, include premium content
       filter.tier = { $in: ['basic', 'premium', 'enterprise'] };
@@ -417,14 +458,18 @@ export class KnowledgeBaseService {
     } else {
       filter.tier = 'basic';
     }
-    
+
     return Object.keys(filter).length > 0 ? filter : undefined;
   }
 
-  private async trackKnowledgeUsage(articleId: string, query: KnowledgeSearchQuery): Promise<void> {
+  private async trackKnowledgeUsage(
+    articleId: string,
+    query: KnowledgeSearchQuery
+  ): Promise<void> {
     try {
       // Update usage count in Neo4j
-      await this.neo4jService.run(`
+      await this.neo4jService.run(
+        `
         MATCH (a:Article {id: $articleId})
         SET a.useCount = COALESCE(a.useCount, 0) + 1,
             a.lastUsed = datetime()
@@ -436,11 +481,13 @@ export class KnowledgeBaseService {
           category: $category
         })
         CREATE (a)-[:USED_FOR]->(u)
-      `, {
-        articleId,
-        query: query.query,
-        category: query.category || 'general'
-      });
+      `,
+        {
+          articleId,
+          query: query.query,
+          category: query.category || 'general',
+        }
+      );
     } catch (error) {
       console.error('Error tracking knowledge usage:', error);
     }

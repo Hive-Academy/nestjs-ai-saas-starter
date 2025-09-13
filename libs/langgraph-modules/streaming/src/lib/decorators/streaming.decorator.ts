@@ -553,15 +553,17 @@ export function StreamAll(
     descriptor: PropertyDescriptor
   ) => {
     // ✅ Zero-config by default - all options inherit from module config
-    // Apply all streaming decorators
-    if (options.token) {
-      StreamToken(options.token)(target, propertyKey, descriptor);
+    // Apply all streaming decorators with defaults if no options provided
+    const shouldApplyDefault = Object.keys(options).length === 0;
+
+    if (options.token || shouldApplyDefault) {
+      StreamToken(options.token || {})(target, propertyKey, descriptor);
     }
-    if (options.event) {
-      StreamEvent(options.event)(target, propertyKey, descriptor);
+    if (options.event || shouldApplyDefault) {
+      StreamEvent(options.event || {})(target, propertyKey, descriptor);
     }
-    if (options.progress) {
-      StreamProgress(options.progress)(target, propertyKey, descriptor);
+    if (options.progress || shouldApplyDefault) {
+      StreamProgress(options.progress || {})(target, propertyKey, descriptor);
     }
 
     return descriptor;

@@ -1,53 +1,53 @@
-import { Routes } from '@angular/router';
+import type { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
     path: '',
     redirectTo: '/spatial-interface',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'spatial-interface',
     loadComponent: () =>
       import('./features/spatial-interface/spatial-interface.component').then(
-        m => m.SpatialInterfaceComponent
+        (m) => m.SpatialInterfaceComponent
       ),
-    title: '3D Agent Visualization'
+    title: '3D Agent Visualization',
   },
   {
     path: 'workflow-canvas',
     loadComponent: () =>
       import('./features/workflow-canvas/workflow-canvas.component').then(
-        m => m.WorkflowCanvasComponent
+        (m) => m.WorkflowCanvasComponent
       ),
-    title: 'Workflow Canvas'
+    title: 'Workflow Canvas',
   },
   {
     path: 'memory-constellation',
     loadComponent: () =>
-      import('./features/memory-constellation/memory-constellation.component').then(
-        m => m.MemoryConstellationComponent
-      ),
-    title: 'Memory Constellation'
+      import(
+        './features/memory-constellation/memory-constellation.component'
+      ).then((m) => m.MemoryConstellationComponent),
+    title: 'Memory Constellation',
   },
   {
     path: 'chat-interface',
     loadComponent: () =>
       import('./features/chat-interface/chat-interface.component').then(
-        m => m.ChatInterfaceComponent
+        (m) => m.ChatInterfaceComponent
       ),
-    title: 'AI Chat Interface'
+    title: 'AI Chat Interface',
   },
   {
     path: 'content-forge',
     loadComponent: () =>
       import('./features/content-forge/content-forge.component').then(
-        m => m.ContentForgeComponent
+        (m) => m.ContentForgeComponent
       ),
-    title: 'Content Forge'
+    title: 'Content Forge',
   },
   {
     path: '**',
-    redirectTo: '/spatial-interface'
-  }
+    redirectTo: '/spatial-interface',
+  },
 ];

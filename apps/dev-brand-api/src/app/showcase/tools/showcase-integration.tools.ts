@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { z } from 'zod';
 import { Tool, ComposedTool } from '@hive-academy/langgraph-multi-agent';
 
 /**
