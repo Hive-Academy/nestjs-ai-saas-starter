@@ -1,11 +1,17 @@
 import type { FunctionalApiModuleOptions } from '@hive-academy/langgraph-functional-api';
 
+// Import showcase workflows for explicit registration
+import { SupervisorShowcaseWorkflow } from '../showcase/workflows/supervisor-showcase.workflow';
+import { SwarmShowcaseWorkflow } from '../showcase/workflows/swarm-showcase.workflow';
+
 /**
  * Functional API Module Configuration for dev-brand-api
  * Enables functional programming patterns for LangGraph workflows
  */
 export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
   return {
+    // Explicit workflow registration (replaces discovery-based registration)
+    workflows: [SupervisorShowcaseWorkflow, SwarmShowcaseWorkflow],
     // Task execution settings
     defaultTimeout: parseInt(process.env.FUNCTIONAL_DEFAULT_TIMEOUT || '30000'),
     defaultRetryCount: parseInt(

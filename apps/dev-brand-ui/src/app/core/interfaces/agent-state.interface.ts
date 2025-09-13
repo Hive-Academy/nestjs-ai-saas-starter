@@ -28,12 +28,14 @@ export interface ToolExecution {
   inputs?: Record<string, unknown>;
   outputs?: Record<string, unknown>;
   error?: string;
+  parameters?: Record<string, unknown>;
+  result?: Record<string, unknown>;
 }
 
 export interface AgentState {
   id: string;
   name: string;
-  type: 'coordinator' | 'specialist' | 'analyst' | 'creator';
+  type: 'coordinator' | 'specialist' | 'analyst' | 'creator' | 'strategist';
   status: AgentStatus;
   currentTask?: string;
   position: AgentPosition;
@@ -69,6 +71,8 @@ export interface MemoryContext {
   source: 'chromadb' | 'neo4j' | 'workflow';
   tags: string[];
   relatedAgents: string[];
+  lastAccessed?: Date;
+  metadata?: Record<string, unknown>;
 }
 
 export interface WorkflowState {
@@ -103,20 +107,120 @@ export interface DevBrandState {
   };
 }
 
-// WebSocket Message Types
-export interface WebSocketMessage {
-  type:
-    | 'agent_update'
-    | 'memory_update'
-    | 'workflow_update'
-    | 'tool_execution'
-    | 'system_status';
-  timestamp: Date;
-  data: unknown;
+// Enhanced WebSocket Message Types for Gateway Integration
+export enum WebSocketMessageType {
+  // Client → Server messages
+  SUBSCRIBE_EXECUTION = 'subscribe_execution',
+  UNSUBSCRIBE_EXECUTION = 'unsubscribe_execution',
+  SUBSCRIBE_EVENTS = 'subscribe_events',
+  UNSUBSCRIBE_EVENTS = 'unsubscribe_events',
+  JOIN_ROOM = 'join_room',
+  LEAVE_ROOM = 'leave_room',
+  GET_STATUS = 'get_status',
+  PING = 'ping',
+  AUTHENTICATION = 'authentication',
+
+  // Server → Client messages
+  STREAM_UPDATE = 'stream_update',
+  EXECUTION_STATUS = 'execution_status',
+  CONNECTION_STATUS = 'connection_status',
+  ERROR = 'error',
+  PONG = 'pong',
+
+  // Legacy message types for backward compatibility
+  AGENT_UPDATE = 'agent_update',
+  MEMORY_UPDATE = 'memory_update',
+  WORKFLOW_UPDATE = 'workflow_update',
+  TOOL_EXECUTION = 'tool_execution',
+  SYSTEM_STATUS = 'system_status',
+  AGENT_CONSTELLATION_DATA = 'agent-constellation-data',
+  AGENT_SWITCH = 'agent-switch',
+  MEMORY_ACCESS = 'memory-access',
+  WORKFLOW_PROGRESS = 'workflow-progress',
 }
 
+// Enhanced WebSocket message structure
+export interface WebSocketMessage<T = any> {
+  type: WebSocketMessageType | string;
+  id?: string;
+  data: T;
+  metadata?: {
+    timestamp: Date;
+    source?: string;
+    priority?: 'low' | 'medium' | 'high';
+    retryCount?: number;
+  };
+  // Legacy support
+  timestamp?: Date;
+}
+
+// Gateway-specific message payloads
+export interface SubscribeExecutionPayload {
+  executionId: string;
+  eventTypes?: string[];
+  options?: {
+    includeHistory?: boolean;
+    bufferSize?: number;
+  };
+}
+
+export interface JoinRoomPayload {
+  roomId: string;
+  options?: {
+    requireAuth?: boolean;
+    metadata?: Record<string, any>;
+  };
+}
+
+export interface ConnectionStatusPayload {
+  status: 'connected' | 'authenticated' | 'error' | 'disconnected';
+  connection?: {
+    id: string;
+    serverTime: Date;
+    subscriptionsCount: number;
+    uptime: number;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+}
+
+export interface StreamUpdatePayload {
+  update: {
+    type: string;
+    data: any;
+    metadata?: {
+      timestamp: Date;
+      sequenceNumber: number;
+      executionId: string;
+      nodeId?: string;
+      agentType?: string;
+    };
+  };
+}
+
+export interface ErrorPayload {
+  code: string;
+  message: string;
+  category:
+    | 'authentication'
+    | 'authorization'
+    | 'validation'
+    | 'connection'
+    | 'internal';
+  details?: any;
+  actions?: Array<{
+    type: 'retry' | 'reconnect' | 'authenticate' | 'contact_support';
+    description: string;
+    metadata?: Record<string, any>;
+  }>;
+}
+
+// Legacy message interfaces for backward compatibility
 export interface AgentUpdateMessage extends WebSocketMessage {
-  type: 'agent_update';
+  type: WebSocketMessageType.AGENT_UPDATE;
   data: {
     agentId: string;
     state: Partial<AgentState>;
@@ -124,7 +228,7 @@ export interface AgentUpdateMessage extends WebSocketMessage {
 }
 
 export interface MemoryUpdateMessage extends WebSocketMessage {
-  type: 'memory_update';
+  type: WebSocketMessageType.MEMORY_UPDATE;
   data: {
     contexts: MemoryContext[];
     operation: 'add' | 'update' | 'remove' | 'activate' | 'deactivate';
@@ -132,9 +236,73 @@ export interface MemoryUpdateMessage extends WebSocketMessage {
 }
 
 export interface ToolExecutionMessage extends WebSocketMessage {
-  type: 'tool_execution';
+  type: WebSocketMessageType.TOOL_EXECUTION;
   data: {
     agentId: string;
     toolExecution: ToolExecution;
+  };
+}
+
+// DevBrand-specific WebSocket message interfaces
+export interface AgentConstellationDataMessage extends WebSocketMessage {
+  type: 'agent-constellation-data';
+  data: {
+    agents: Array<{
+      id: string;
+      name: string;
+      status: 'idle' | 'active' | 'processing' | 'error';
+      capabilities: string[];
+      healthy: boolean;
+      lastActivity?: string;
+    }>;
+    networkStats: {
+      totalAgents: number;
+      activeAgents: number;
+      averageResponseTime: number;
+    };
+  };
+}
+
+export interface AgentSwitchMessage extends WebSocketMessage {
+  type: 'agent-switch';
+  data: {
+    fromAgent: string | null;
+    toAgent: string;
+    capabilities: string[];
+  };
+}
+
+export interface MemoryAccessMessage extends WebSocketMessage {
+  type: 'memory-access';
+  data: {
+    memoryType: 'chromadb' | 'neo4j' | 'workflow';
+    query: string;
+    results: unknown[];
+  };
+}
+
+export interface WorkflowProgressMessage extends WebSocketMessage {
+  type: 'workflow-progress';
+  data: {
+    stepNumber: number;
+    currentAgent: string;
+    agentCapabilities: string[];
+    messages: Array<{
+      content: string;
+      type: string;
+      timestamp: string;
+    }>;
+    metadata?: {
+      memoryAccess?: {
+        type: 'chromadb' | 'neo4j' | 'workflow';
+        query: string;
+        results: unknown[];
+      };
+      toolExecution?: {
+        toolName: string;
+        status: 'pending' | 'running' | 'completed' | 'error';
+        progress: number;
+      };
+    };
   };
 }

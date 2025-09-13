@@ -1,80 +1,211 @@
-Hint: you can run the command with --verbose to see the full dependent project outputs
+[Nest] 60944  - 09/13/2025, 1:06:09 PM     LOG [WebSocketBridgeService] Registered client bdeee07b-d03a-4ff5-b8b8-af46325298f7 with rooms: []
+[Nest] 60944  - 09/13/2025, 1:06:09 PM   DEBUG [StreamingWebSocketGateway] Client connected: bdeee07b-d03a-4ff5-b8b8-af46325298f7 (::1)
+[Nest] 60944  - 09/13/2025, 1:06:10 PM   DEBUG [WebSocketBridgeService] Client bdeee07b-d03a-4ff5-b8b8-af46325298f7 subscribed to: stream_update, token, progress, event
+[Nest] 60944  - 09/13/2025, 1:06:10 PM   DEBUG [StreamingWebSocketGateway] Client bdeee07b-d03a-4ff5-b8b8-af46325298f7 subscribed to events: stream_update, token, progress, event
+[Nest] 60944  - 09/13/2025, 1:06:16 PM   DEBUG [WebSocketBridgeService] Linked client bdeee07b-d03a-4ff5-b8b8-af46325298f7 to execution supervisor-1757757976021
+[Nest] 60944  - 09/13/2025, 1:06:16 PM   DEBUG [WebSocketBridgeService] Client bdeee07b-d03a-4ff5-b8b8-af46325298f7 subscribed to: token, progress, event, values, updates, node_start, node_complete
+[Nest] 60944  - 09/13/2025, 1:06:16 PM   DEBUG [StreamingWebSocketGateway] Client bdeee07b-d03a-4ff5-b8b8-af46325298f7 subscribed to execution: supervisor-1757757976021
+🎯 Initializing Supervisor Showcase Workflow...
+[Nest] 60944  - 09/13/2025, 1:06:16 PM     LOG [ShowcaseMetricsService] 📊 Starting metrics collection for execution: supervisor-showcase-1757757976047
+✅ Supervisor showcase initialized successfully
+🤖 Coordinating showcase agents...
+[Nest] 60944  - 09/13/2025, 1:06:16 PM     LOG [ShowcaseCoordinatorService] 🎯 Selecting optimal agents for advanced demonstration
+[Nest] 60944  - 09/13/2025, 1:06:16 PM     LOG [ShowcaseCoordinatorService] ✅ Selected 1 agents: demo-showcase
+🤖 Agents coordinated: [ 'demo-showcase' ]
+🧠 Performing intelligent analysis...
+  📊 Analyzing input context and requirements...
+📊 Analysis progress: 20%
+  📊 Extracting key entities and relationships...
+📊 Analysis progress: 40%
+  📊 Performing semantic analysis and classification...
+📊 Analysis progress: 60%
+  📊 Generating insights and recommendations...
+📊 Analysis progress: 80%
+  📊 Validating results against best practices...
+📊 Analysis progress: 100%
+🎨 Generating showcase content...
+  ✏️  Generating Executive Summary...
+🎯 Token generated: ###
+🎯 Token generated: Executive
+🎯 Token generated: Summary
 
-———————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+This
+🎯 Token generated: section
+🎯 Token generated: demonstrates
+🎯 Token generated: the
+🎯 Token generated: sophisticated
+🎯 Token generated: capabilities
+🎯 Token generated: of
+🎯 Token generated: our
+🎯 Token generated: executive
+🎯 Token generated: summary
+🎯 Token generated: system.
+🎯 Token generated: Our
+🎯 Token generated: advanced
+🎯 Token generated: AI
+🎯 Token generated: architecture
+🎯 Token generated: provides
+🎯 Token generated: enterprise-grade
+🎯 Token generated: functionality
+🎯 Token generated: with
+🎯 Token generated: real-time
+🎯 Token generated: streaming,
+🎯 Token generated: intelligent
+🎯 Token generated: coordination,
+🎯 Token generated: and
+🎯 Token generated: comprehensive
+🎯 Token generated: monitoring
+🎯 Token generated: capabilities.
 
-> nx run dev-brand-api:typecheck
+  ✏️  Generating Technical Architecture...
+🎯 Token generated: ###
+🎯 Token generated: Technical
+🎯 Token generated: Architecture
 
-> tsc --build --emitDeclarationOnly
+This
+🎯 Token generated: section
+🎯 Token generated: demonstrates
+🎯 Token generated: the
+🎯 Token generated: sophisticated
+🎯 Token generated: capabilities
+🎯 Token generated: of
+🎯 Token generated: our
+🎯 Token generated: technical
+🎯 Token generated: architecture
+🎯 Token generated: system.
+🎯 Token generated: Our
+🎯 Token generated: advanced
+🎯 Token generated: AI
+🎯 Token generated: architecture
+🎯 Token generated: provides
+🎯 Token generated: enterprise-grade
+🎯 Token generated: functionality
+🎯 Token generated: with
+🎯 Token generated: real-time
+🎯 Token generated: streaming,
+🎯 Token generated: intelligent
+🎯 Token generated: coordination,
+🎯 Token generated: and
+🎯 Token generated: comprehensive
+🎯 Token generated: monitoring
+🎯 Token generated: capabilities.
 
-src/app/adapters/memory/chroma-vector.adapter.ts(2,33): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
-src/app/adapters/memory/neo4j-graph.adapter.ts(2,30): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
-src/app/adapters/memory/neo4j-graph.adapter.ts(220,10): error TS7006: Parameter 'record' implicitly has an 'any' type.
-src/app/agents/brand-strategist.agent.ts(127,11): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/app/agents/brand-strategist.agent.ts(142,13): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/app/agents/content-creator.agent.ts(119,11): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/app/agents/content-creator.agent.ts(134,13): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/app/agents/content-creator.agent.ts(245,15): error TS2345: Argument of type 'object' is not assignable to parameter of type 'Record<string, unknown>'.
-Index signature for type 'string' is missing in type '{}'.
-src/app/agents/content-creator.agent.ts(323,11): error TS6133: 'recentContentCount' is declared but its value is never read.
-src/app/agents/content-creator.agent.ts(327,11): error TS6133: 'strategyContext' is declared but its value is never read.
-src/app/agents/github-analyzer.agent.ts(129,11): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/app/agents/github-analyzer.agent.ts(144,13): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
-src/app/app.module.ts(6,32): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
-src/app/app.module.ts(7,29): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
-src/app/app.module.ts(130,7): error TS2353: Object literal may only specify known properties, and 'imports' does not exist in type '{ useFactory: (...args: unknown[]) => CheckpointModuleOptions | Promise<CheckpointModuleOptions>; inject?: InjectionToken[] | undefined; }'.
-src/app/app.module.ts(150,7): error TS2322: Type '(checkpointManager: CheckpointManagerService) => Promise<{ checkpointAdapter: CheckpointManagerAdapter; defaultTimeout?: number; defaultRetryCount?: number; ... 5 more ...; globalMetadata?: Record<string, unknown>; }>' is not assignable to type 'AsyncModuleFactory<FunctionalApiModuleOptions>'.
-Types of parameters 'checkpointManager' and 'deps' are incompatible.
-Type 'unknown' is not assignable to type 'CheckpointManagerService'.
-src/app/app.module.ts(170,7): error TS2322: Type '(checkpointManager: CheckpointManagerService) => Promise<{ checkpointAdapter: CheckpointManagerAdapter; maxCheckpointsPerThread?: number; maxCheckpointAge?: number; ... 4 more ...; storage?: { type: "memory" | "redis" | "postgres" | "sqlite"; config?: Record<string, unknown>; }; }>' is not assignable to type 'AsyncModuleFactory<TimeTravelConfig>'.
-Types of parameters 'checkpointManager' and 'deps' are incompatible.
-Type 'unknown' is not assignable to type 'CheckpointManagerService'.
-src/app/config/chromadb.config.ts(2,44): error TS2307: Cannot find module '@hive-academy/nestjs-chromadb' or its corresponding type declarations.
-src/app/config/monitoring.config.ts(53,11): error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'EscalationPolicy'.
-src/app/config/monitoring.config.ts(97,9): error TS2353: Object literal may only specify known properties, and 'from' does not exist in type 'TimeRange'.
-src/app/config/neo4j.config.ts(1,41): error TS2307: Cannot find module '@hive-academy/nestjs-neo4j' or its corresponding type declarations.
-src/app/controllers/devbrand.controller.ts(123,13): error TS2304: Cannot find name 'EnhancedWorkflowResult'.
-src/app/controllers/devbrand.controller.ts(447,9): error TS2554: Expected 1 arguments, but got 3.
-src/app/controllers/devbrand.controller.ts(461,9): error TS4104: The type 'readonly BrandMemoryEntry[]' is 'readonly' and cannot be assigned to the mutable type 'MemoryResultDto[]'.
-src/app/controllers/devbrand.controller.ts(462,9): error TS2739: Type 'BrandMemoryAnalytics' is missing the following properties from type 'BrandAnalyticsDto': contentMetrics, skillProgress
-src/app/controllers/devbrand.controller.ts(536,9): error TS2345: Argument of type '"brand_strategy" | "conversation" | "github_analysis" | "content_generation"' is not assignable to parameter of type 'BrandMemoryType'.
-Type '"conversation"' is not assignable to type 'BrandMemoryType'.
-src/app/gateways/devbrand-websocket.gateway.ts(52,3): error TS2564: Property 'server' has no initializer and is not definitely assigned in the constructor.
-src/app/gateways/devbrand-websocket.gateway.ts(138,11): error TS2554: Expected 1 arguments, but got 3.
-src/app/gateways/devbrand-websocket.gateway.ts(296,16): error TS18046: 'error' is of type 'unknown'.
-src/app/gateways/devbrand-websocket.gateway.ts(333,9): error TS2554: Expected 1 arguments, but got 3.
-src/app/services/checkpoint-examples.service.ts(54,11): error TS2353: Object literal may only specify known properties, and 'enableCheckpointing' does not exist in type 'WorkflowExecutionOptions'.
-src/app/services/checkpoint-examples.service.ts(89,51): error TS2339: Property 'trackWorkflow' does not exist on type 'MonitoringFacadeService'.
-src/app/services/checkpoint-examples.service.ts(127,51): error TS2339: Property 'executeNetwork' does not exist on type 'MultiAgentCoordinatorService'.
-src/app/services/checkpoint-examples.service.ts(158,13): error TS6133: 'workflowState' is declared but its value is never read.
-src/app/services/github-integration.service.ts(1,30): error TS6133: 'HttpException' is declared but its value is never read.
-src/app/services/github-integration.service.ts(1,45): error TS6133: 'HttpStatus' is declared but its value is never read.
-src/app/services/personal-brand-memory.service.ts(7,3): error TS6196: 'UserMemoryPatterns' is declared but never used.
-src/app/services/personal-brand-memory.service.ts(18,3): error TS6133: 'BRAND_GRAPH_LABELS' is declared but its value is never read.
-src/app/services/personal-brand-memory.service.ts(20,3): error TS6133: 'BrandMemoryEntrySchema' is declared but its value is never read.
-src/app/services/personal-brand-memory.service.ts(42,14): error TS2415: Class 'PersonalBrandMemoryService' incorrectly extends base class 'MemoryService'.
-Property 'logger' is private in type 'MemoryService' but not in type 'PersonalBrandMemoryService'.
-src/app/services/personal-brand-memory.service.ts(76,9): error TS2345: Argument of type 'BrandMemoryMetadata' is not assignable to parameter of type 'Partial<MemoryMetadata>'.
-Types of property 'type' are incompatible.
-Type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | BrandMemoryType' is not assignable to type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | undefined'.
-Type '"dev_achievement"' is not assignable to type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | undefined'.
-src/app/services/personal-brand-memory.service.ts(148,9): error TS2345: Argument of type '{ content: string; metadata: BrandMemoryMetadata; }[]' is not assignable to parameter of type 'readonly { content: string; metadata?: Partial<MemoryMetadata> | undefined; }[]'.
-Type '{ content: string; metadata: BrandMemoryMetadata; }' is not assignable to type '{ content: string; metadata?: Partial<MemoryMetadata> | undefined; }'.
-The types of 'metadata.type' are incompatible between these types.
-Type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | BrandMemoryType' is not assignable to type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | undefined'.
-Type '"dev_achievement"' is not assignable to type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | undefined'.
-src/app/services/personal-brand-memory.service.ts(223,7): error TS4104: The type 'readonly MemoryEntry[]' is 'readonly' and cannot be assigned to the mutable type 'MemoryEntry[]'.
-src/app/services/personal-brand-memory.service.ts(555,9): error TS2322: Type '{ structuredDataFor: string; type: BrandMemoryType | MemoryMetadata["type"]; brandContext?: { readonly userId: string; readonly analysisId?: string; readonly contentId?: string; readonly strategyVersion?: string; readonly confidenceScore?: number; readonly validatedByHuman?: boolean; }; technicalData?: { readonly gi...' is not assignable to type 'Partial<MemoryMetadata>'.
-Types of property 'type' are incompatible.
-Type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | BrandMemoryType' is not assignable to type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | undefined'.
-Type '"dev_achievement"' is not assignable to type '"custom" | "conversation" | "fact" | "preference" | "summary" | "context" | undefined'.
-src/app/services/personal-brand-memory.service.ts(700,32): error TS2365: Operator '>' cannot be applied to types 'string | number | boolean | SerializableArray | SerializableObject' and 'number'.
-src/app/services/personal-brand-memory.service.ts(960,11): error TS7034: Variable 'relationships' implicitly has type 'any[]' in some locations where its type cannot be determined.
-src/app/services/personal-brand-memory.service.ts(977,12): error TS7005: Variable 'relationships' implicitly has an 'any[]' type.
-src/app/workflows/devbrand-supervisor.workflow.ts(2,1): error TS6133: 'HumanMessage' is declared but its value is never read.
-src/app/workflows/devbrand-supervisor.workflow.ts(227,6): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
-src/app/workflows/devbrand-supervisor.workflow.spec.ts(2,44): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/workflows/devbrand-supervisor.workflow.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/workflows/devbrand-supervisor.workflow.ts'.
-src/app/workflows/devbrand-supervisor.workflow.spec.ts(4,37): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/agents/github-analyzer.agent.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/agents/github-analyzer.agent.ts'.
-src/app/workflows/devbrand-supervisor.workflow.spec.ts(5,37): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/agents/content-creator.agent.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/agents/content-creator.agent.ts'.
-src/app/workflows/devbrand-supervisor.workflow.spec.ts(6,38): error TS6305: Output file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/dist/app/agents/brand-strategist.agent.d.ts' has not been built from source file 'D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/agents/brand-strategist.agent.ts'.
-Warning: command "tsc --build --emitDeclarationOnly" exited with non-zero status code
-————————————————————————————————————————————————————————————————————————————————————————————————
+  ✏️  Generating Feature Demonstration...
+🎯 Token generated: ###
+🎯 Token generated: Feature
+🎯 Token generated: Demonstration
+
+This
+🎯 Token generated: section
+🎯 Token generated: demonstrates
+🎯 Token generated: the
+🎯 Token generated: sophisticated
+🎯 Token generated: capabilities
+🎯 Token generated: of
+🎯 Token generated: our
+🎯 Token generated: feature
+🎯 Token generated: demonstration
+🎯 Token generated: system.
+🎯 Token generated: Our
+🎯 Token generated: advanced
+🎯 Token generated: AI
+🎯 Token generated: architecture
+🎯 Token generated: provides
+🎯 Token generated: enterprise-grade
+🎯 Token generated: functionality
+🎯 Token generated: with
+🎯 Token generated: real-time
+🎯 Token generated: streaming,
+🎯 Token generated: intelligent
+🎯 Token generated: coordination,
+🎯 Token generated: and
+🎯 Token generated: comprehensive
+🎯 Token generated: monitoring
+🎯 Token generated: capabilities.
+
+  ✏️  Generating Performance Metrics...
+🎯 Token generated: ###
+🎯 Token generated: Performance
+🎯 Token generated: Metrics
+
+This
+🎯 Token generated: section
+🎯 Token generated: demonstrates
+🎯 Token generated: the
+🎯 Token generated: sophisticated
+🎯 Token generated: capabilities
+🎯 Token generated: of
+🎯 Token generated: our
+🎯 Token generated: performance
+🎯 Token generated: metrics
+🎯 Token generated: system.
+🎯 Token generated: Our
+🎯 Token generated: advanced
+🎯 Token generated: AI
+🎯 Token generated: architecture
+🎯 Token generated: provides
+🎯 Token generated: enterprise-grade
+🎯 Token generated: functionality
+🎯 Token generated: with
+🎯 Token generated: real-time
+🎯 Token generated: streaming,
+🎯 Token generated: intelligent
+🎯 Token generated: coordination,
+🎯 Token generated: and
+🎯 Token generated: comprehensive
+🎯 Token generated: monitoring
+🎯 Token generated: capabilities.
+
+  ✏️  Generating Implementation Guide...
+🎯 Token generated: ###
+🎯 Token generated: Implementation
+🎯 Token generated: Guide
+
+This
+🎯 Token generated: section
+🎯 Token generated: demonstrates
+🎯 Token generated: the
+🎯 Token generated: sophisticated
+🎯 Token generated: capabilities
+🎯 Token generated: of
+🎯 Token generated: our
+🎯 Token generated: implementation
+🎯 Token generated: guide
+🎯 Token generated: system.
+🎯 Token generated: Our
+🎯 Token generated: advanced
+🎯 Token generated: AI
+🎯 Token generated: architecture
+🎯 Token generated: provides
+🎯 Token generated: enterprise-grade
+🎯 Token generated: functionality
+🎯 Token generated: with
+🎯 Token generated: real-time
+🎯 Token generated: streaming,
+🎯 Token generated: intelligent
+🎯 Token generated: coordination,
+🎯 Token generated: and
+🎯 Token generated: comprehensive
+🎯 Token generated: monitoring
+🎯 Token generated: capabilities.
+
+🏁 Finalizing supervisor showcase workflow...
+🎯 Workflow completion event generated
+[Nest] 60944  - 09/13/2025, 1:06:30 PM    WARN [ShowcaseMetricsService] ⚠️  No metrics found for execution:: unknown
+🎯 Supervisor showcase workflow completed successfully!
+[Nest] 60944  - 09/13/2025, 1:06:36 PM   DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 60944  - 09/13/2025, 1:06:37 PM   DEBUG [CheckpointHealthService] Performing scheduled health checks
+[Nest] 60944  - 09/13/2025, 1:06:37 PM   DEBUG [CheckpointHealthService] Health check for default: healthy (0ms)
+[Nest] 60944  - 09/13/2025, 1:07:06 PM   DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 60944  - 09/13/2025, 1:07:06 PM   DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 60944  - 09/13/2025, 1:07:06 PM    WARN [HealthCheckService] System health degraded:
+[Nest] 60944  - 09/13/2025, 1:07:06 PM    WARN [HealthCheckService] Object(2) {
+  overall: 'unhealthy',
+  unhealthyServices: [
+    {
+      name: 'memory',
+      state: 'unhealthy',
+      error: undefined
+    }
+  ]
+}

@@ -3,9 +3,43 @@ import type { Route } from '@angular/router';
 export const appRoutes: Route[] = [
   {
     path: '',
-    redirectTo: '/chat',
+    redirectTo: '/devbrand-showcase',
     pathMatch: 'full',
   },
+  // New Showcase Routes
+  {
+    path: 'devbrand-showcase',
+    loadComponent: () =>
+      import('./features/devbrand-showcase/devbrand-showcase.component').then(
+        (m) => m.DevbrandShowcaseComponent
+      ),
+    title: 'DevBrand Platform Showcase',
+  },
+  {
+    path: 'multi-agent-patterns',
+    loadComponent: () =>
+      import(
+        './features/multi-agent-patterns/multi-agent-patterns.component'
+      ).then((m) => m.MultiAgentPatternsComponent),
+    title: 'Multi-Agent Coordination Patterns',
+  },
+  {
+    path: 'library-showcase',
+    loadComponent: () =>
+      import('./features/library-showcase/library-showcase.component').then(
+        (m) => m.LibraryShowcaseComponent
+      ),
+    title: 'Complete Library Ecosystem',
+  },
+  {
+    path: 'developer-experience',
+    loadComponent: () =>
+      import(
+        './features/developer-experience/developer-experience.component'
+      ).then((m) => m.DeveloperExperienceComponent),
+    title: 'Developer Experience Revolution',
+  },
+  // Original Interface Modes
   {
     path: 'chat',
     loadComponent: () =>
@@ -48,6 +82,6 @@ export const appRoutes: Route[] = [
   },
   {
     path: '**',
-    redirectTo: '/chat',
+    redirectTo: '/devbrand-showcase',
   },
 ];

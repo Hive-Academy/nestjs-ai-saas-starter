@@ -65,7 +65,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   // Start server
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT || 3000;
   await app.listen(port);
 
   Logger.log(
@@ -77,6 +77,10 @@ async function bootstrap() {
   Logger.log(
     `🔧 Health check available at: http://localhost:${port}/${globalPrefix}/health`
   );
+  Logger.log(
+    `🔌 WebSocket streaming available at: ws://localhost:${port}/streaming`
+  );
+  Logger.log(`🌊 Frontend should connect to: ws://localhost:${port}/streaming`);
 }
 
 bootstrap();

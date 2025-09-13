@@ -1,6 +1,9 @@
 // Module
 export { HitlModule } from './lib/hitl.module';
 
+// Config utilities for decorator access
+export * from './lib/utils/hitl-config.accessor';
+
 // Services
 export { HumanApprovalService } from './lib/services/human-approval.service';
 export { ConfidenceEvaluatorService } from './lib/services/confidence-evaluator.service';

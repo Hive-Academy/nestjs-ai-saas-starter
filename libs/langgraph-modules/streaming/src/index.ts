@@ -1,10 +1,14 @@
 // Module
 export * from './lib/streaming.module';
 
+// Config utilities for decorator access
+export * from './lib/utils/streaming-config.accessor';
+
 // Services
 export * from './lib/services/token-streaming.service';
 export * from './lib/services/event-stream-processor.service';
 export * from './lib/services/websocket-bridge.service';
+export * from './lib/services/streaming-websocket-gateway.service';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 // Decorators
@@ -24,6 +28,25 @@ export type {
   StreamContext,
   TokenData,
 } from './lib/interfaces/streaming.interface';
+
+// WebSocket Gateway Interfaces
+export type {
+  WebSocketGatewayConfig,
+  WebSocketConnection,
+  WebSocketMessage,
+  SubscribeExecutionPayload,
+  SubscribeEventsPayload,
+  JoinRoomPayload,
+  StreamUpdatePayload,
+  ConnectionStatusPayload,
+  ExecutionStatusPayload,
+  AuthenticationPayload,
+  ErrorPayload,
+  WebSocketGatewayEvents,
+  WebSocketGatewayStats,
+} from './lib/interfaces/websocket-gateway.interface';
+
+export { WebSocketMessageType } from './lib/interfaces/websocket-gateway.interface';
 
 // Export metadata types (what workflow-engine expects)
 export type {

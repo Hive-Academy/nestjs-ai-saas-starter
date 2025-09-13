@@ -5,9 +5,19 @@ import type {
 } from '@hive-academy/langgraph-core';
 
 /**
+ * Workflow provider type for explicit registration
+ */
+export type WorkflowProvider = new (...args: any[]) => any;
+
+/**
  * Configuration options for the Functional API module
  */
 export interface FunctionalApiModuleOptions {
+  /**
+   * Explicitly registered workflow providers (replaces discovery)
+   */
+  readonly workflows?: WorkflowProvider[];
+
   /**
    * Default timeout for task execution in milliseconds
    * @default 30000

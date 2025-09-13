@@ -29,6 +29,7 @@ import { CollectionService } from './services/collection.service';
 import { EmbeddingService } from './services/embedding.service';
 import { TextSplitterService } from './services/text-splitter.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
+import { setChromaDBConfig } from './utils/chromadb-config.accessor';
 
 @Global()
 @Module({})
@@ -38,6 +39,9 @@ export class ChromaDBModule {
    */
   static forRoot(options: ChromaDBModuleOptions): DynamicModule {
     const optionsWithDefaults = this.mergeWithDefaults(options);
+
+    // Store config for decorator access
+    setChromaDBConfig(optionsWithDefaults);
 
     const providers: Provider[] = [
       {
@@ -71,7 +75,7 @@ export class ChromaDBModule {
         provide: CollectionService,
         useFactory: (
           client: ChromaClient,
-          embeddingService: EmbeddingService,
+          embeddingService: EmbeddingService
         ) => {
           return new CollectionService(client, embeddingService);
         },
@@ -138,7 +142,7 @@ export class ChromaDBModule {
         provide: CollectionService,
         useFactory: (
           client: ChromaClient,
-          embeddingService: EmbeddingService,
+          embeddingService: EmbeddingService
         ) => {
           return new CollectionService(client, embeddingService);
         },
@@ -181,7 +185,7 @@ export class ChromaDBModule {
       provide: `COLLECTION_${config.name.toUpperCase()}`,
       useFactory: async (
         collectionService: CollectionService,
-        embeddingService: EmbeddingService,
+        embeddingService: EmbeddingService
       ) => {
         const embeddingFn =
           config.embeddingFunction ?? embeddingService.getEmbeddingFunction();
@@ -201,7 +205,7 @@ export class ChromaDBModule {
   }
 
   private static createAsyncProviders(
-    options: ChromaDBModuleAsyncOptions,
+    options: ChromaDBModuleAsyncOptions
   ): Provider[] {
     if (options.useExisting || options.useFactory) {
       return [this.createAsyncOptionsProvider(options)];
@@ -222,7 +226,7 @@ export class ChromaDBModule {
   }
 
   private static createAsyncOptionsProvider(
-    options: ChromaDBModuleAsyncOptions,
+    options: ChromaDBModuleAsyncOptions
   ): Provider {
     if (options.useFactory) {
       return {
@@ -232,7 +236,12 @@ export class ChromaDBModule {
             ...args: any[]
           ) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
           const config = await factory(...args);
-          return this.mergeWithDefaults(config);
+          const configWithDefaults = this.mergeWithDefaults(config);
+
+          // Store config for decorator access
+          setChromaDBConfig(configWithDefaults);
+
+          return configWithDefaults;
         },
         inject: options.inject ?? [],
       };
@@ -242,18 +251,23 @@ export class ChromaDBModule {
       provide: CHROMADB_OPTIONS,
       useFactory: async (optionsFactory: ChromaDBOptionsFactory) => {
         const config = await optionsFactory.createChromaDBOptions();
-        return this.mergeWithDefaults(config);
+        const configWithDefaults = this.mergeWithDefaults(config);
+
+        // Store config for decorator access
+        setChromaDBConfig(configWithDefaults);
+
+        return configWithDefaults;
       },
       inject: options.useExisting
         ? [options.useExisting]
         : options.useClass
-          ? [options.useClass]
-          : [],
+        ? [options.useClass]
+        : [],
     };
   }
 
   private static mergeWithDefaults(
-    options: ChromaDBModuleOptions,
+    options: ChromaDBModuleOptions
   ): ChromaDBModuleOptions {
     const defaults = {
       batchSize: DEFAULT_BATCH_SIZE,

@@ -91,7 +91,7 @@ export class AgentStateVisualizerService {
    */
   private connectToMockApi(): void {
     try {
-      this.mockApiSocket = new WebSocket('ws://localhost:3001');
+      this.mockApiSocket = new WebSocket('ws://localhost:3000');
 
       this.mockApiSocket.onopen = () => {
         console.log('Connected to Mock API WebSocket');

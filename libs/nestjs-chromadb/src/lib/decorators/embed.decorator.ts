@@ -1,5 +1,13 @@
 import { SetMetadata } from '@nestjs/common';
-import type { EmbeddingServiceInterface, EmbeddableDocument, EmbeddingOperationOptions } from '../interfaces/embedding-service.interface';
+import type {
+  EmbeddingServiceInterface,
+  EmbeddableDocument,
+  EmbeddingOperationOptions,
+} from '../interfaces/embedding-service.interface';
+import {
+  getChromaDBConfig,
+  getChromaDBConfigWithDefaults,
+} from '../utils/chromadb-config.accessor';
 
 export const EMBED_METADATA_KEY = 'embed:metadata';
 
@@ -56,6 +64,7 @@ export const EmbedMarker = (options: EmbedOptions = {}): MethodDecorator => {
 /**
  * Utility class for embedding operations
  * Use this instead of decorator magic for better type safety
+ * Automatically inherits configuration from module setup
  */
 export const EmbeddingHelper = {
   /**
@@ -72,24 +81,28 @@ export const EmbeddingHelper = {
       return documents;
     }
 
-    const documentsNeedingEmbeddings = documents.filter(doc =>
-      !doc[target as keyof typeof doc] && doc[field as keyof typeof doc]
+    const documentsNeedingEmbeddings = documents.filter(
+      (doc) =>
+        !doc[target as keyof typeof doc] && doc[field as keyof typeof doc]
     );
 
     if (documentsNeedingEmbeddings.length === 0) {
       return documents;
     }
 
-    const textsToEmbed = documentsNeedingEmbeddings.map(doc =>
-      doc[field as keyof typeof doc] as string
+    const textsToEmbed = documentsNeedingEmbeddings.map(
+      (doc) => doc[field as keyof typeof doc] as string
     );
 
     try {
       const embeddings = await embeddingService.embed(textsToEmbed);
 
       let embeddingIndex = 0;
-      return documents.map(doc => {
-        if (!doc[target as keyof typeof doc] && doc[field as keyof typeof doc]) {
+      return documents.map((doc) => {
+        if (
+          !doc[target as keyof typeof doc] &&
+          doc[field as keyof typeof doc]
+        ) {
           const embedding = embeddings[embeddingIndex];
           embeddingIndex += 1;
           return { ...doc, [target]: embedding };
@@ -144,7 +157,9 @@ export async function withEmbedding<T extends Record<string, unknown>>(
   }
 
   try {
-    const embedding = await embeddingService.embedSingle(String(obj[textField]));
+    const embedding = await embeddingService.embedSingle(
+      String(obj[textField])
+    );
     return { ...obj, [embeddingField]: embedding };
   } catch (_error) {
     // Failed to generate embedding, returning original object
@@ -161,8 +176,8 @@ export async function withBatchEmbeddings<T extends Record<string, unknown>>(
   textField: keyof T,
   embeddingField: keyof T = 'embedding' as keyof T
 ): Promise<T[]> {
-  const objectsNeedingEmbeddings = objects.filter(obj =>
-    obj[textField] && !obj[embeddingField]
+  const objectsNeedingEmbeddings = objects.filter(
+    (obj) => obj[textField] && !obj[embeddingField]
   );
 
   if (objectsNeedingEmbeddings.length === 0) {
@@ -170,11 +185,11 @@ export async function withBatchEmbeddings<T extends Record<string, unknown>>(
   }
 
   try {
-    const texts = objectsNeedingEmbeddings.map(obj => String(obj[textField]));
+    const texts = objectsNeedingEmbeddings.map((obj) => String(obj[textField]));
     const embeddings = await embeddingService.embed(texts);
 
     let embeddingIndex = 0;
-    return objects.map(obj => {
+    return objects.map((obj) => {
       if (obj[textField] && !obj[embeddingField]) {
         const embedding = embeddings[embeddingIndex];
         embeddingIndex += 1;

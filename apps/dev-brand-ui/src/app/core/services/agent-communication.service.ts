@@ -9,6 +9,10 @@ import {
   ToolExecutionMessage,
   MemoryContext,
   ToolExecution,
+  AgentConstellationDataMessage,
+  AgentSwitchMessage,
+  MemoryAccessMessage,
+  WorkflowProgressMessage,
 } from '../interfaces/agent-state.interface';
 
 export interface AgentCommand {
@@ -103,7 +107,7 @@ export class AgentCommunicationService {
    * Send command to agent system
    */
   sendCommand(command: AgentCommand): void {
-    this.websocketService.send({
+    this.websocketService.sendLegacy({
       type: 'agent_command',
       timestamp: new Date(),
       data: command,
@@ -305,83 +309,30 @@ export class AgentCommunicationService {
   private subscribeToDevBrandWebSocketEvents(): void {
     // Subscribe to agent constellation data (real TASK_API_001 agents)
     this.websocketService
-      .getMessagesByType<{
-        type: 'agent-constellation-data';
-        data: {
-          agents: Array<{
-            id: string;
-            name: string;
-            status: 'idle' | 'active' | 'processing' | 'error';
-            capabilities: string[];
-            healthy: boolean;
-            lastActivity?: string;
-          }>;
-          networkStats: {
-            totalAgents: number;
-            activeAgents: number;
-            averageResponseTime: number;
-          };
-        };
-      }>('agent-constellation-data')
+      .getMessagesByType<AgentConstellationDataMessage>(
+        'agent-constellation-data'
+      )
       .subscribe((message) => {
         this.handleDevBrandAgentData(message.data);
       });
 
     // Subscribe to agent switch events (real agent coordination)
     this.websocketService
-      .getMessagesByType<{
-        type: 'agent-switch';
-        data: {
-          fromAgent: string | null;
-          toAgent: string;
-          capabilities: string[];
-        };
-      }>('agent-switch')
+      .getMessagesByType<AgentSwitchMessage>('agent-switch')
       .subscribe((message) => {
         this.handleDevBrandAgentSwitch(message.data);
       });
 
     // Subscribe to memory access events (real ChromaDB/Neo4j operations)
     this.websocketService
-      .getMessagesByType<{
-        type: 'memory-access';
-        data: {
-          memoryType: 'chromadb' | 'neo4j' | 'workflow';
-          query: string;
-          results: unknown[];
-        };
-      }>('memory-access')
+      .getMessagesByType<MemoryAccessMessage>('memory-access')
       .subscribe((message) => {
         this.handleDevBrandMemoryAccess(message.data);
       });
 
     // Subscribe to workflow progress (real tool execution from TASK_API_001)
     this.websocketService
-      .getMessagesByType<{
-        type: 'workflow-progress';
-        data: {
-          stepNumber: number;
-          currentAgent: string;
-          agentCapabilities: string[];
-          messages: Array<{
-            content: string;
-            type: string;
-            timestamp: string;
-          }>;
-          metadata?: {
-            memoryAccess?: {
-              type: 'chromadb' | 'neo4j' | 'workflow';
-              query: string;
-              results: unknown[];
-            };
-            toolExecution?: {
-              toolName: string;
-              status: 'pending' | 'running' | 'completed' | 'error';
-              progress: number;
-            };
-          };
-        };
-      }>('workflow-progress')
+      .getMessagesByType<WorkflowProgressMessage>('workflow-progress')
       .subscribe((message) => {
         this.handleDevBrandWorkflowProgress(message.data);
       });
@@ -409,7 +360,7 @@ export class AgentCommunicationService {
     data.agents.forEach((backendAgent) => {
       const mappedAgent =
         this.mapDevBrandAgentToConstellationAgent(backendAgent);
-      this.updateAgentState(mappedAgent.id, mappedAgent);
+      this.updateAgentState(backendAgent.id, mappedAgent);
     });
   }
 
@@ -571,10 +522,13 @@ export class AgentCommunicationService {
     // Create memory context from real backend data
     const memoryContext: MemoryContext = {
       id: `memory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'procedural', // Classify as procedural since it's from tool execution
       content: `Memory access: ${data.query}`,
       source: data.memoryType,
       relevanceScore: Math.min(data.results.length * 0.1, 1.0),
       isActive: true,
+      timestamp: new Date(),
+      tags: [data.memoryType, 'tool-execution'],
       relatedAgents: [this.activeAgentId() || 'supervisor'],
       lastAccessed: new Date(),
       metadata: {
@@ -642,7 +596,12 @@ export class AgentCommunicationService {
 
     // Handle memory access if present
     if (data.metadata?.memoryAccess) {
-      this.handleDevBrandMemoryAccess(data.metadata.memoryAccess);
+      const memoryAccess = {
+        memoryType: data.metadata.memoryAccess.type,
+        query: data.metadata.memoryAccess.query,
+        results: data.metadata.memoryAccess.results,
+      };
+      this.handleDevBrandMemoryAccess(memoryAccess);
     }
   }
 
@@ -650,18 +609,16 @@ export class AgentCommunicationService {
    * Subscribe to agent constellation room for real TASK_API_001 updates
    */
   private subscribeToAgentConstellation(): void {
-    // Subscribe to the agent-constellation room
-    this.websocketService.send({
-      type: 'subscribe-to-room',
-      timestamp: new Date(),
-      data: {
-        room: 'agent-constellation',
-        userId: 'user_dev', // Could be made configurable
+    // Subscribe to the agent-constellation room using new gateway methods
+    this.websocketService.joinRoom({
+      roomId: 'agent-constellation',
+      options: {
+        metadata: { userId: 'user_dev' },
       },
     });
 
     // Request initial agent status
-    this.websocketService.send({
+    this.websocketService.sendLegacy({
       type: 'get-agent-status',
       timestamp: new Date(),
       data: {},

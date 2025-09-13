@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   effect,
+  DestroyRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -348,6 +349,7 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
 export class SpatialInterfaceComponent implements OnInit, OnDestroy {
   private readonly threeService = inject(ThreeIntegrationService);
   private readonly agentCommunication = inject(AgentCommunicationService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly agentVisualizer = inject(AgentVisualizerService);
   private readonly constellationLayout = inject(ConstellationLayoutService);
   private readonly spatialNavigation = inject(SpatialNavigationService);
@@ -617,24 +619,26 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
     });
 
     // Subscribe to real TASK_API_001 agent updates
-    this.agentCommunication.agentUpdates$.pipe(takeUntilDestroyed()).subscribe({
-      next: (agent: AgentState) => {
-        console.log(
-          '🔄 Real TASK_API_001 agent update received:',
-          agent.name,
-          agent.status
-        );
-        this.agentVisualizer.visualizeAgent(agent);
-      },
-      error: (error) => {
-        console.error('❌ Error in agent updates stream:', error);
-        this.handleBackendError('Agent updates stream error', error);
-      },
-    });
+    this.agentCommunication.agentUpdates$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (agent: AgentState) => {
+          console.log(
+            '🔄 Real TASK_API_001 agent update received:',
+            agent.name,
+            agent.status
+          );
+          this.agentVisualizer.visualizeAgent(agent);
+        },
+        error: (error) => {
+          console.error('❌ Error in agent updates stream:', error);
+          this.handleBackendError('Agent updates stream error', error);
+        },
+      });
 
     // Subscribe to real memory updates from ChromaDB/Neo4j
     this.agentCommunication.memoryUpdates$
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (contexts) => {
           console.log(
@@ -651,7 +655,7 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
 
     // Subscribe to real tool executions
     this.agentCommunication.toolExecutions$
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (execution) => {
           console.log(

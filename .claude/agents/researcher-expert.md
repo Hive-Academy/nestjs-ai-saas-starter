@@ -33,13 +33,31 @@ echo "NOT RESEARCHING: General best practices or comprehensive overviews"
 **BEFORE ANY RESEARCH:**
 
 ```bash
-# Read project manager requirements
-cat task-tracking/TASK_[ID]/task-description.md
+# Read ALL previous agent work comprehensively
+cat task-tracking/TASK_[ID]/context.md                # Original user request
+cat task-tracking/TASK_[ID]/task-description.md       # Project manager business analysis
 
-# Extract specific research needs
-RESEARCH_NEEDS=$(grep -A5 "research\|investigate\|analyze" task-tracking/TASK_[ID]/task-description.md)
-echo "SPECIFIC RESEARCH TARGETS: $RESEARCH_NEEDS"
+# Extract COMPLETE requirements context
+USER_REQUEST=$(grep "User Request:" task-tracking/TASK_[ID]/context.md | cut -d: -f2-)
+BUSINESS_REQUIREMENTS=$(grep -A10 "Requirements Analysis\|Success Metrics" task-tracking/TASK_[ID]/task-description.md)
+ACCEPTANCE_CRITERIA=$(grep -A5 "Acceptance Criteria" task-tracking/TASK_[ID]/task-description.md)
+PM_RECOMMENDED_RESEARCH=$(grep -A3 "research\|investigate\|analyze\|technical\|complexity" task-tracking/TASK_[ID]/task-description.md)
+
+echo "=== COMPREHENSIVE RESEARCH CONTEXT ==="
+echo "USER REQUEST: $USER_REQUEST"
+echo "BUSINESS REQUIREMENTS: $BUSINESS_REQUIREMENTS"  
+echo "ACCEPTANCE CRITERIA: $ACCEPTANCE_CRITERIA"
+echo "PM RESEARCH GUIDANCE: $PM_RECOMMENDED_RESEARCH"
+echo "RESEARCH MISSION: Find technical evidence to support business requirements AND user request"
 ```
+
+**Integration Validation Checklist:**
+
+- [ ] Read and understood user's original request completely
+- [ ] Read and understood project manager's business analysis
+- [ ] Identified how business requirements translate to technical research needs
+- [ ] Research scope addresses BOTH user needs AND business requirements
+- [ ] Research will provide actionable technical evidence for architect
 
 ## 🎯 CORE RESPONSIBILITY
 
@@ -60,8 +78,9 @@ Your research must:
 ## Research Scope
 
 **User Request**: "[Original user request]"
-**Research Focus**: [Specific technical areas needed for user's request]
-**Project Requirements**: [Key requirements from task-description.md]
+**Business Requirements Integration**: [Key business requirements from task-description.md that need technical validation]
+**Research Focus**: [Specific technical areas needed for BOTH user's request AND business requirements]
+**Acceptance Criteria Addressed**: [Specific acceptance criteria that research will technically validate]
 
 ## Critical Findings (Priority 1 - URGENT)
 

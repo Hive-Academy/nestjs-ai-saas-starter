@@ -32,7 +32,9 @@
     "@nestjs/common": "^11.0.0",
     "reflect-metadata": "^0.1.13",
     "@nestjs/event-emitter": "^3.0.1",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "@nestjs/websockets": "^11.0.0",
+    "socket.io": "^4.7.5"
   },
   "devDependencies": {
     "rollup": "4.49.0",

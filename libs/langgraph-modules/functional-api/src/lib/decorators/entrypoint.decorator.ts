@@ -38,7 +38,8 @@ export interface EntrypointOptions {
 /**
  * Entrypoint metadata stored on decorated methods
  */
-export interface EntrypointMetadata extends Required<Omit<EntrypointOptions, 'name'>> {
+export interface EntrypointMetadata
+  extends Required<Omit<EntrypointOptions, 'name'>> {
   readonly name: string;
   readonly methodName: string;
   readonly isEntrypoint: true;
@@ -46,7 +47,7 @@ export interface EntrypointMetadata extends Required<Omit<EntrypointOptions, 'na
 
 /**
  * Decorator to mark a method as the workflow entrypoint
- * 
+ *
  * @example
  * ```typescript
  * @Injectable()
@@ -59,9 +60,13 @@ export interface EntrypointMetadata extends Required<Omit<EntrypointOptions, 'na
  * ```
  */
 export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
-  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (
+    target: object,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     const methodName = String(propertyKey);
-    
+
     const metadata: EntrypointMetadata = {
       name: options.name ?? methodName,
       methodName,
@@ -72,8 +77,22 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
       metadata: options.metadata ?? {},
     };
 
-    SetMetadata(ENTRYPOINT_METADATA_KEY, metadata)(target, propertyKey, descriptor);
-    
+    // Use direct Reflect.defineMetadata instead of SetMetadata for better compatibility
+    // This ensures metadata survives when @Workflow decorator creates newConstructor
+    Reflect.defineMetadata(
+      ENTRYPOINT_METADATA_KEY,
+      metadata,
+      target,
+      propertyKey
+    );
+
+    // Also use SetMetadata for NestJS compatibility (belt and suspenders approach)
+    SetMetadata(ENTRYPOINT_METADATA_KEY, metadata)(
+      target,
+      propertyKey,
+      descriptor
+    );
+
     return descriptor;
   };
 }
@@ -81,8 +100,13 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
 /**
  * Helper function to extract entrypoint metadata from a method
  */
-export function getEntrypointMetadata(target: object, methodName: string): EntrypointMetadata | undefined {
-  return Reflect.getMetadata(ENTRYPOINT_METADATA_KEY, target, methodName) as EntrypointMetadata | undefined;
+export function getEntrypointMetadata(
+  target: object,
+  methodName: string
+): EntrypointMetadata | undefined {
+  return Reflect.getMetadata(ENTRYPOINT_METADATA_KEY, target, methodName) as
+    | EntrypointMetadata
+    | undefined;
 }
 
 /**

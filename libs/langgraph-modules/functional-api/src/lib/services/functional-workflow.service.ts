@@ -12,7 +12,7 @@ import {
   TaskDefinition,
 } from '../interfaces/functional-workflow.interface';
 import type { FunctionalApiModuleOptions } from '../interfaces/module-options.interface';
-import { WorkflowDiscoveryService } from './workflow-discovery.service';
+import { WorkflowRegistrationService } from './workflow-registration.service';
 import { GraphGeneratorService } from './graph-generator.service';
 import { WorkflowValidator } from '../validation/workflow-validator';
 import {
@@ -41,7 +41,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
   constructor(
     @Inject('FUNCTIONAL_API_MODULE_OPTIONS')
     private readonly options: FunctionalApiModuleOptions,
-    private readonly discoveryService: WorkflowDiscoveryService,
+    private readonly registrationService: WorkflowRegistrationService,
     private readonly graphGenerator: GraphGeneratorService,
     private readonly validator: WorkflowValidator,
     @Inject(CHECKPOINT_ADAPTER_TOKEN)
@@ -49,7 +49,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.discoveryService.discoverWorkflows();
+    // Workflows are registered explicitly through the module initializer
   }
 
   /**
@@ -69,7 +69,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         `Starting workflow execution: ${workflowName} (${executionId})`
       );
 
-      const definition = this.discoveryService.getWorkflow(workflowName);
+      const definition = this.registrationService.getWorkflow(workflowName);
       if (!definition) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -80,7 +80,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
         );
       }
 
-      const instance = this.discoveryService.getWorkflowInstance(workflowName);
+      const instance =
+        this.registrationService.getWorkflowInstance(workflowName);
       if (!instance) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -437,14 +438,14 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Lists all available workflows
    */
   listWorkflows(): string[] {
-    return this.discoveryService.getAllWorkflows().map((w) => w.name);
+    return Array.from(this.registrationService.getWorkflows().keys());
   }
 
   /**
    * Gets workflow definition by name
    */
   getWorkflowDefinition(name: string) {
-    return this.discoveryService.getWorkflow(name);
+    return this.registrationService.getWorkflow(name);
   }
 
   /**
@@ -564,7 +565,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       );
 
       // Get workflow definition and instance
-      const definition = this.discoveryService.getWorkflow(workflowName);
+      const definition = this.registrationService.getWorkflow(workflowName);
       if (!definition) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -575,7 +576,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
         );
       }
 
-      const instance = this.discoveryService.getWorkflowInstance(workflowName);
+      const instance =
+        this.registrationService.getWorkflowInstance(workflowName);
       if (!instance) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -736,7 +738,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Generates a visualization of the workflow graph
    */
   async visualizeWorkflow(workflowName: string): Promise<string> {
-    const definition = this.discoveryService.getWorkflow(workflowName);
+    const definition = this.registrationService.getWorkflow(workflowName);
     if (!definition) {
       throw new Error(`Workflow '${workflowName}' not found`);
     }

@@ -22,13 +22,13 @@ node start-mock-api.js --env development --scenario high_activity
 
 ```bash
 # Health check
-curl http://localhost:3001/health
+curl http://localhost:3000/health
 
 # Get agent list
-curl http://localhost:3001/api/agents
+curl http://localhost:3000/api/agents
 
 # Check simulation status
-curl http://localhost:3001/api/simulation/status
+curl http://localhost:3000/api/simulation/status
 ```
 
 ### 3. Connect Angular Application
@@ -37,7 +37,7 @@ The mock server provides the same WebSocket interface as the real backend:
 
 ```typescript
 // No changes needed in AgentCommunicationService
-// Just point to mock server URL: ws://localhost:3001
+// Just point to mock server URL: ws://localhost:3000
 ```
 
 ## Integration with Existing 3D Interface
@@ -48,11 +48,11 @@ The mock API server provides the exact same WebSocket interface as expected by `
 
 ```typescript
 // In your Angular service, update the WebSocket URL:
-const MOCK_WEBSOCKET_URL = 'ws://localhost:3001';
+const MOCK_WEBSOCKET_URL = 'ws://localhost:3000';
 
 // The service will receive the same message types:
 // - agent_update
-// - memory_update  
+// - memory_update
 // - tool_execution
 // - system_status
 ```
@@ -72,7 +72,7 @@ All WebSocket messages match the existing TypeScript interfaces:
   }
 }
 
-// ToolExecutionMessage  
+// ToolExecutionMessage
 {
   type: 'tool_execution',
   timestamp: Date,
@@ -84,7 +84,7 @@ All WebSocket messages match the existing TypeScript interfaces:
 
 // MemoryUpdateMessage
 {
-  type: 'memory_update', 
+  type: 'memory_update',
   timestamp: Date,
   data: {
     contexts: MemoryContext[],
@@ -98,25 +98,30 @@ All WebSocket messages match the existing TypeScript interfaces:
 The server initializes 8 realistic agents:
 
 ### Coordinators
+
 - **Nova Prime** (agent_coordinator_001) - Primary workflow coordinator
 - **Golden color, center position (0, 0, 0)**
 
-### Specialists  
+### Specialists
+
 - **Apex Engine** (agent_specialist_backend) - Backend development
-- **Vector Interface** (agent_specialist_ui) - Frontend/UI development  
+- **Vector Interface** (agent_specialist_ui) - Frontend/UI development
 - **Quantum Processor** (agent_specialist_data) - Data processing/ML
 
 ### Analysts
+
 - **Insight Engine** (agent_analyst_system) - System analysis
 - **Behavior Decoder** (agent_analyst_user) - User behavior analysis
 
 ### Creators
+
 - **Dimension Forge** (agent_creator_003d) - 3D modeling/visualization
 - **Narrative Synthesizer** (agent_creator_content) - Content generation
 
 ## Realistic Behavior Patterns
 
 ### State Transitions
+
 - **Idle**: 3-8 seconds (base state)
 - **Thinking**: 2-5 seconds (planning/analysis)
 - **Executing**: 4-12 seconds (active work)
@@ -124,18 +129,21 @@ The server initializes 8 realistic agents:
 - **Error**: 2-3 seconds (error recovery)
 
 ### Tool Execution
+
 - **10 different tools** with realistic execution times
 - **Progress tracking** from 0-100% with incremental updates
 - **Error scenarios** with appropriate error rates
 - **Tool types**: web_search, data_analysis, code_generation, etc.
 
 ### Memory Operations
+
 - **ChromaDB simulation**: 100-500ms delays for vector searches
 - **Neo4j simulation**: 50-200ms delays for graph queries
 - **Realistic memory contexts** matching MemoryContext interface
 - **Relevance scoring** and memory type classification
 
 ### Multi-Agent Coordination
+
 - **Workflow orchestration** with step-by-step coordination
 - **Agent dependencies** and waiting states
 - **Inter-agent communication** flows
@@ -144,6 +152,7 @@ The server initializes 8 realistic agents:
 ## Configuration Options
 
 ### Activity Levels
+
 ```bash
 # Low activity (longer intervals, less frequent actions)
 node start-mock-api.js --scenario minimal
@@ -156,17 +165,19 @@ node start-mock-api.js --scenario high_activity
 ```
 
 ### Error Testing
+
 ```bash
 # Higher error rates for testing error handling
 node start-mock-api.js --scenario error_testing
 ```
 
 ### Specialized Scenarios
+
 ```bash
 # Focus on coordination workflows
 node start-mock-api.js --scenario coordination_focus
 
-# Heavy memory access patterns  
+# Heavy memory access patterns
 node start-mock-api.js --scenario memory_intensive
 
 # Creator-focused workflows
@@ -176,6 +187,7 @@ node start-mock-api.js --scenario creative_workflow
 ## API Endpoints
 
 ### REST API
+
 - `GET /health` - Server health check
 - `GET /api/agents` - List all agents
 - `GET /api/agents/:id` - Get specific agent
@@ -187,24 +199,28 @@ node start-mock-api.js --scenario creative_workflow
 - `POST /api/agents/:id/activity` - Trigger specific activity
 
 ### WebSocket Events
+
 - **Incoming**: `agent_command`, `simulation_control`, `request_agent_data`
 - **Outgoing**: `agent_update`, `memory_update`, `tool_execution`, `system_status`
 
 ## Environment Configuration
 
 ### Development
+
 ```bash
 # Default development settings
 NODE_ENV=development node start-mock-api.js
 ```
 
 ### Testing
+
 ```bash
 # Optimized for testing (lower delays, minimal logging)
 NODE_ENV=testing node start-mock-api.js --port 3002
 ```
 
 ### Custom CORS
+
 ```bash
 # Custom CORS origins
 node start-mock-api.js --cors "http://localhost:4200,http://localhost:3000"
@@ -215,7 +231,7 @@ node start-mock-api.js --cors "http://localhost:4200,http://localhost:3000"
 When backend integration issues are resolved:
 
 1. **No code changes needed** in Angular components or services
-2. **Update WebSocket URL** from `ws://localhost:3001` to real backend URL
+2. **Update WebSocket URL** from `ws://localhost:3000` to real backend URL
 3. **Environment variable switching** for seamless transition
 4. **All interfaces remain identical** - zero refactoring required
 
@@ -224,30 +240,35 @@ When backend integration issues are resolved:
 ### Common Issues
 
 **Port already in use:**
+
 ```bash
 node start-mock-api.js --port 3002
 ```
 
 **CORS errors:**
+
 ```bash
 node start-mock-api.js --cors "http://localhost:4200"
 ```
 
 **Connection issues:**
-- Verify server is running: `curl http://localhost:3001/health`
+
+- Verify server is running: `curl http://localhost:3000/health`
 - Check WebSocket URL in Angular application
 - Ensure CORS origins include your Angular dev server URL
 
 ### Debug Mode
+
 ```bash
 # Enable detailed logging
 NODE_ENV=development node start-mock-api.js
 ```
 
 ### Manual Testing
+
 ```bash
 # Test WebSocket connection with wscat (install with: npm install -g wscat)
-wscat -c ws://localhost:3001
+wscat -c ws://localhost:3000
 ```
 
 ## Performance

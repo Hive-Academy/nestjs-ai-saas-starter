@@ -1,4 +1,8 @@
 import 'reflect-metadata';
+import {
+  getNeo4jConfig,
+  getNeo4jConfigWithDefaults,
+} from '../utils/neo4j-config.accessor';
 
 export interface Neo4jParamValidationOptions {
   /**

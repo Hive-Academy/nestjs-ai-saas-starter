@@ -50,7 +50,7 @@ Usage:
 
 Options:
   -e, --env <environment>     Environment: development, testing, production (default: development)
-  -p, --port <port>          Port number (default: 3001)
+  -p, --port <port>          Port number (default: 3000)
   -s, --scenario <scenario>  Scenario preset: default, high_activity, error_testing, etc.
   -c, --cors <origins>       CORS origins (comma-separated)
   -h, --help                 Show this help message
@@ -96,18 +96,18 @@ async function startServer() {
     console.log(`   CORS Origins: ${config.corsOrigin.join(', ')}`);
     console.log(`   Activity Level: ${config.simulation.activityLevel}`);
     console.log(`   Auto Start: ${config.simulation.autoStart}`);
-    
+
     if (options.scenario) {
       console.log(`   Scenario: ${options.scenario}`);
     }
-    
+
     console.log('');
 
     // Create and start server
     const server = new MockAPIServer({
       port: config.port,
       corsOrigin: config.corsOrigin,
-      config
+      config,
     });
 
     // Setup graceful shutdown
@@ -143,15 +143,22 @@ async function startServer() {
     console.log(`\n✅ Mock API Server is running!`);
     console.log(`\n📱 Quick Actions:`);
     console.log(`   Health Check: curl http://localhost:${config.port}/health`);
-    console.log(`   Agent List: curl http://localhost:${config.port}/api/agents`);
-    console.log(`   Simulation Status: curl http://localhost:${config.port}/api/simulation/status`);
-    console.log(`   Stop Simulation: curl -X POST http://localhost:${config.port}/api/simulation/stop`);
-    console.log(`   Start Simulation: curl -X POST http://localhost:${config.port}/api/simulation/start`);
+    console.log(
+      `   Agent List: curl http://localhost:${config.port}/api/agents`
+    );
+    console.log(
+      `   Simulation Status: curl http://localhost:${config.port}/api/simulation/status`
+    );
+    console.log(
+      `   Stop Simulation: curl -X POST http://localhost:${config.port}/api/simulation/stop`
+    );
+    console.log(
+      `   Start Simulation: curl -X POST http://localhost:${config.port}/api/simulation/start`
+    );
     console.log(`\n🔌 WebSocket Connection:`);
     console.log(`   URL: ws://localhost:${config.port}`);
     console.log(`   Test with Angular app on http://localhost:4200`);
     console.log(`\n🛑 Press Ctrl+C to stop the server`);
-
   } catch (error) {
     console.error('❌ Failed to start Mock API Server:', error.message);
     if (error.stack && options.environment === 'development') {

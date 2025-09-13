@@ -8,6 +8,7 @@ import {
   WORKFLOW_EDGES_KEY,
   WORKFLOW_TOOLS_KEY,
 } from '@hive-academy/langgraph-core';
+import { getFunctionalApiConfigWithDefaults } from '../utils/functional-api-config.accessor';
 
 /**
  * Options for @Workflow decorator
@@ -64,11 +65,21 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
  */
 export function Workflow(options: WorkflowOptions): ClassDecorator {
   return (target: any) => {
-    // Store workflow metadata
-    Reflect.defineMetadata(WORKFLOW_METADATA_KEY, options, target);
+    // Get module config with defaults for zero-config experience
+    const moduleConfig = getFunctionalApiConfigWithDefaults();
+
+    // Merge options with module config defaults
+    const mergedOptions: WorkflowOptions = {
+      ...options,
+      streaming: options.streaming ?? moduleConfig.enableStreaming,
+      cache: options.cache ?? true, // Enable caching by default for performance
+    };
+
+    // Store workflow metadata with merged options
+    Reflect.defineMetadata(WORKFLOW_METADATA_KEY, mergedOptions, target);
 
     // Apply NestJS metadata for DI
-    SetMetadata(WORKFLOW_METADATA_KEY, options)(target);
+    SetMetadata(WORKFLOW_METADATA_KEY, mergedOptions)(target);
 
     // Initialize node and edge collectors if not present
     if (!Reflect.hasMetadata(WORKFLOW_NODES_KEY, target)) {
@@ -91,26 +102,26 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
       // Apply workflow configuration
       if (!instance.workflowConfig) {
         instance.workflowConfig = {
-          name: options.name || target.name,
-          description: options.description,
-          confidenceThreshold: options.confidenceThreshold,
-          requiresHumanApproval: options.requiresHumanApproval,
-          autoApproveThreshold: options.autoApproveThreshold,
-          streaming: options.streaming,
-          cache: options.cache,
-          metrics: options.metrics,
-          hitl: options.hitl,
+          name: mergedOptions.name || target.name,
+          description: mergedOptions.description,
+          confidenceThreshold: mergedOptions.confidenceThreshold,
+          requiresHumanApproval: mergedOptions.requiresHumanApproval,
+          autoApproveThreshold: mergedOptions.autoApproveThreshold,
+          streaming: mergedOptions.streaming,
+          cache: mergedOptions.cache,
+          metrics: mergedOptions.metrics,
+          hitl: mergedOptions.hitl,
         };
       }
 
       // Apply channels if provided
-      if (options.channels && !instance.channels) {
-        instance.channels = options.channels;
+      if (mergedOptions.channels && !instance.channels) {
+        instance.channels = mergedOptions.channels;
       }
 
       // Apply pattern if provided
-      if (options.pattern && !instance.pattern) {
-        instance.pattern = options.pattern;
+      if (mergedOptions.pattern && !instance.pattern) {
+        instance.pattern = mergedOptions.pattern;
       }
 
       return instance;
@@ -122,14 +133,34 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
     // Copy static properties and methods
     Object.setPrototypeOf(newConstructor, originalConstructor);
 
-    // Copy metadata
+    // Copy metadata from constructor
     Reflect.getMetadataKeys(originalConstructor).forEach((key) => {
       const value = Reflect.getMetadata(key, originalConstructor);
       Reflect.defineMetadata(key, value, newConstructor);
     });
 
+    // Copy metadata from prototype methods (this is critical for @Entrypoint and @Task decorators)
+    const originalPrototype = originalConstructor.prototype;
+    const newPrototype = newConstructor.prototype;
+
+    Object.getOwnPropertyNames(originalPrototype).forEach((propertyName) => {
+      if (propertyName === 'constructor') return;
+
+      // Copy all metadata from each method
+      const metadataKeys =
+        Reflect.getMetadataKeys(originalPrototype, propertyName) || [];
+      metadataKeys.forEach((key) => {
+        const value = Reflect.getMetadata(key, originalPrototype, propertyName);
+        Reflect.defineMetadata(key, value, newPrototype, propertyName);
+      });
+    });
+
     // Store workflow metadata on the new constructor
-    Reflect.defineMetadata(WORKFLOW_METADATA_KEY, options, newConstructor);
+    Reflect.defineMetadata(
+      WORKFLOW_METADATA_KEY,
+      mergedOptions,
+      newConstructor
+    );
 
     return newConstructor;
   };

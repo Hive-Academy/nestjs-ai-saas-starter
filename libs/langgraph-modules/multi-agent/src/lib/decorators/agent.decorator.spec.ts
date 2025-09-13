@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { Injectable } from '@nestjs/common';
 import {
   Agent,
+  AGENT_METADATA_KEY,
   AgentConfig,
   getAgentConfig,
-  isAgentDecorated,
   isAgent,
-  AGENT_METADATA_KEY,
+  isAgentDecorated,
 } from './agent.decorator';
 
 describe('@Agent Decorator System', () => {
@@ -108,35 +109,19 @@ describe('@Agent Decorator System', () => {
     describe('User Error Scenarios: Invalid agent configuration', () => {
       it('should throw error when id is missing', () => {
         // Test user error condition: Missing required id field
-        expect(() => {
-          @Agent({
-            name: 'Test Agent',
-            description: 'Test description',
-          } as AgentConfig)
-          class _InvalidAgent {}
-        }).toThrow("@Agent decorator requires 'id' property");
+        expect(() => {}).toThrow("@Agent decorator requires 'id' property");
       });
 
       it('should throw error when name is missing', () => {
         // Test user error condition: Missing required name field
-        expect(() => {
-          @Agent({
-            id: 'test-id',
-            description: 'Test description',
-          } as AgentConfig)
-          class _InvalidAgent {}
-        }).toThrow("@Agent decorator requires 'name' property");
+        expect(() => {}).toThrow("@Agent decorator requires 'name' property");
       });
 
       it('should throw error when description is missing', () => {
         // Test user error condition: Missing required description field
-        expect(() => {
-          @Agent({
-            id: 'test-id',
-            name: 'Test Agent',
-          } as AgentConfig)
-          class _InvalidAgent {}
-        }).toThrow("@Agent decorator requires 'description' property");
+        expect(() => {}).toThrow(
+          "@Agent decorator requires 'description' property"
+        );
       });
     });
   });

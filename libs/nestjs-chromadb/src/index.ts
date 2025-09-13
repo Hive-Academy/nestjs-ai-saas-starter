@@ -78,3 +78,11 @@ export {
 
 // Constants
 export * from './lib/constants';
+
+// Config Utilities
+export {
+  getChromaDBConfig,
+  getChromaDBConfigWithDefaults,
+  setChromaDBConfig,
+  isChromaDBConfigured,
+} from './lib/utils/chromadb-config.accessor';

@@ -258,7 +258,7 @@ async extractAchievements({ commits, patterns }) {
 
 ```typescript
 // Backend WebSocket Gateway
-@WebSocketGateway(3001, { cors: true })
+@WebSocketGateway(3000, { cors: true })
 export class DevBrandChatGateway {
   @SubscribeMessage('chat-message')
   async handleChatMessage(@ConnectedSocket() client: Socket, @MessageBody() data: { message: string; userId: string }) {

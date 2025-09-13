@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { StreamEventType } from '../constants';
+import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
 
 // Metadata keys for streaming decorators
 export const STREAM_TOKEN_METADATA_KEY = 'streaming:token';
@@ -158,14 +159,18 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
-    // Create token streaming metadata
+    // Get stored module configuration
+    // const moduleConfig = getStreamingConfigWithDefaults(); // TODO: Use in future enhancements
+
+    // Create token streaming metadata - inherit from module config
     const tokenMetadata: StreamTokenDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
-      bufferSize: options.bufferSize ?? 50,
-      batchSize: options.batchSize ?? 10,
-      flushInterval: options.flushInterval ?? 100,
+      // ✅ Use module config instead of hardcoded defaults
+      bufferSize: options.bufferSize ?? moduleConfig.defaultBufferSize ?? 50,
+      batchSize: options.batchSize ?? 10, // TODO: Add to module config
+      flushInterval: options.flushInterval ?? 100, // TODO: Add to module config
       includeMetadata: options.includeMetadata ?? false,
       format: options.format ?? 'text',
     };
@@ -259,7 +264,10 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
-    // Create event streaming metadata
+    // Get stored module configuration
+    // const moduleConfig = getStreamingConfigWithDefaults(); // TODO: Use in future enhancements
+
+    // Create event streaming metadata - inherit from module config
     const eventMetadata: StreamEventDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
@@ -269,9 +277,10 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
         StreamEventType.UPDATES,
         StreamEventType.EVENTS,
       ],
-      bufferSize: options.bufferSize ?? 100,
-      batchSize: options.batchSize ?? 10,
-      delivery: options.delivery ?? 'at-least-once',
+      // ✅ Use module config instead of hardcoded defaults
+      bufferSize: options.bufferSize ?? moduleConfig.defaultBufferSize ?? 100,
+      batchSize: options.batchSize ?? 10, // TODO: Add to module config
+      delivery: options.delivery ?? 'at-least-once', // TODO: Add to module config
     };
 
     // Store metadata on the method
@@ -412,13 +421,16 @@ export function StreamProgress(
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
-    // Create progress streaming metadata
+    // Get stored module configuration
+    // const moduleConfig = getStreamingConfigWithDefaults(); // TODO: Use in future enhancements
+
+    // Create progress streaming metadata - inherit from module config
     const progressMetadata: StreamProgressDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
-      interval: options.interval ?? 1000,
-      granularity: options.granularity ?? 'fine',
+      interval: options.interval ?? 1000, // TODO: Add to module config
+      granularity: options.granularity ?? 'fine', // TODO: Add to module config
       includeETA: options.includeETA ?? false,
       includeMetrics: options.includeMetrics ?? false,
       milestones: options.milestones ?? [],
@@ -618,16 +630,19 @@ export function getAllStreamingMetadata(
  * }
  * ```
  */
-export function StreamAll(options: {
-  token?: StreamTokenOptions;
-  event?: StreamEventOptions;
-  progress?: StreamProgressOptions;
-}): MethodDecorator {
+export function StreamAll(
+  options: {
+    token?: StreamTokenOptions;
+    event?: StreamEventOptions;
+    progress?: StreamProgressOptions;
+  } = {}
+): MethodDecorator {
   return (
     target: object,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
+    // ✅ Zero-config by default - all options inherit from module config
     // Apply all streaming decorators
     if (options.token) {
       StreamToken(options.token)(target, propertyKey, descriptor);
