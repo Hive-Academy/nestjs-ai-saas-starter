@@ -4,14 +4,16 @@
 
 The **@hive-academy/nestjs-chromadb** module provides enterprise-grade ChromaDB integration for NestJS applications, enabling semantic search, RAG systems, and AI-powered document management with advanced text processing and multiple embedding providers.
 
-**Key Features:**
+**Key Features (updated):**
 
 - **Multi-Provider Embeddings** - OpenAI, HuggingFace, Cohere, Custom providers
-- **Intelligent Text Processing** - Automatic chunking with relationship preservation
-- **Enterprise Error Handling** - Comprehensive error types and recovery
+- **Deterministic Chunking** - Automatic chunking with parent/child relationship documents
+- **Strict Error Propagation** - Embedding helpers now throw on failure (no silent fallbacks)
+- **Config Validation** - Startup validation of connection + embedding provider settings
 - **Health Monitoring** - Built-in health indicators and diagnostics
+- **Cost Optimization** - Relationship metadata docs skipped for embedding
 - **Batch Operations** - Efficient bulk processing with configurable batching
-- **Type Safety** - Full TypeScript support with Zod validation
+- **Type Safety** - Full strict TypeScript; no silent null masking
 
 ## Quick Start
 
@@ -48,26 +50,33 @@ export class AppModule {}
 
 ## Core Services
 
-### ChromaDBService - Main Facade
-
-**Primary interface** for all ChromaDB operations:
+### ChromaDBService - Public API (current)
 
 ```typescript
-// Document operations
-addDocument(collection: string, document: ChromaDocument): Promise<void>
-addDocuments(collection: string, documents: ChromaDocument[], options?: ChromaBulkOptions): Promise<void>
-updateDocument(collection: string, id: string, document: Partial<ChromaDocument>): Promise<void>
-deleteDocument(collection: string, id: string): Promise<void>
+// Collection management
+listCollections(): Promise<ChromaCollectionInfo[]>
+createCollection(name: string, metadata?: Record<string, unknown>, embeddingFunction?: unknown, getOrCreate?: boolean): Promise<Collection>
+getCollection(name: string, embeddingFunction?: unknown): Promise<Collection>
+deleteCollection(name: string): Promise<void>
+collectionExists(name: string): Promise<boolean>
 
-// Search operations
-searchDocuments(collection: string, queryTexts: string[], embeddings?: number[][], options?: ChromaSearchOptions): Promise<ChromaQueryResult>
-similaritySearch(collection: string, query: string, options?: { limit?: number }): Promise<ChromaQueryResult>
-getDocuments(collection: string, options?: ChromaSearchOptions): Promise<ChromaQueryResult>
+// Bulk document operations
+addDocuments(collectionName: string, docs: ChromaDocument[], options?: ChromaBulkOptions): Promise<void>
+updateDocuments(collectionName: string, docs: ChromaDocument[], options?: ChromaBulkOptions): Promise<void>
+upsertDocuments(collectionName: string, docs: ChromaDocument[], options?: ChromaBulkOptions): Promise<void>
+deleteDocuments(collectionName: string, ids?: string[], where?: Where, whereDocument?: WhereDocument): Promise<void>
+getDocuments(collectionName: string, options?: GetDocumentsOptions): Promise<GetResult>
+countDocuments(collectionName: string): Promise<number>
+peekDocuments(collectionName: string, limit?: number): Promise<GetResult>
+getCollectionMetadata(collectionName: string): Promise<Record<string, any> | null> // null only if not found
+updateCollectionMetadata(collectionName: string, metadata: Record<string, unknown>): Promise<void>
 
-// Semantic operations
-findSimilarDocuments(collection: string, documentId: string, limit?: number): Promise<ChromaQueryResult>
-searchWithFilters(collection: string, query: string, filters: ChromaFilters): Promise<ChromaQueryResult>
+// Search
+searchDocuments(collectionName: string, queryTexts?: string[], queryEmbeddings?: number[][], options?: ChromaSearchOptions): Promise<ChromaSearchResult>
+similaritySearch(collectionName: string, query: string | number[], options?: { limit?: number; filter?: Where; includeMetadata?: boolean; includeDocuments?: boolean; includeDistances?: boolean }): Promise<{ ids: string[]; documents: (string | null)[]; metadatas: (Record<string, unknown> | null)[]; distances: number[] }>
 ```
+
+Previously documented single-item helpers (e.g. `addDocument`, `findSimilarDocuments`, `searchWithFilters`) are intentionally omitted—they are not part of the current exported service to encourage batching patterns.
 
 ### CollectionService - Collection Management
 
@@ -142,18 +151,15 @@ export class KnowledgeService {
 ```typescript
 ChromaDBModule.forRoot({
   connection: {
-    host: 'localhost',
+    host: 'http://localhost',
     port: 8000,
     ssl: false,
-    timeout: 30000,
-    retries: 3,
   },
   embedding: {
     provider: 'openai',
     config: {
       apiKey: process.env.OPENAI_API_KEY,
       model: 'text-embedding-3-small',
-      dimensions: 1536,
     },
   },
   defaultCollection: 'documents',
@@ -191,8 +197,7 @@ embedding: {
   provider: 'openai',
   config: {
     apiKey: process.env.OPENAI_API_KEY,
-    model: 'text-embedding-3-small',
-    dimensions: 1536
+    model: 'text-embedding-3-small'
   }
 }
 
@@ -217,7 +222,7 @@ embedding: {
 
 ## Advanced Features
 
-### Intelligent Document Chunking
+### Intelligent Document Chunking (embedding-safe)
 
 ```typescript
 // Smart chunking with relationship preservation
@@ -231,6 +236,11 @@ const options: ChromaBulkOptions = {
 };
 
 await this.chromaDB.addDocuments('documents', docs, options);
+
+// Notes:
+// - Each chunk receives its own embedding (parent embedding is never reused).
+// - Relationship summary docs (documentType = 'chunk-relationship') are stored WITHOUT embeddings.
+// - If autoChunk is requested but TextSplitterService is not registered, a warning is logged and original docs are used.
 ```
 
 ### Advanced Search Operations
@@ -257,6 +267,22 @@ const filteredResults = similarDocs.documents?.filter(
   (_, idx) => (similarDocs.distances?.[0][idx] || 0) < 0.8 // similarity threshold
 );
 ```
+
+### Embedding Error Handling
+
+Embedding utilities now throw on failure instead of silently skipping. Example defensive wrapping:
+
+```typescript
+try {
+  await this.chromaDB.addDocuments('knowledge', docs, { autoChunk: true, chunkingStrategy: 'smart' });
+} catch (error) {
+  // Decide whether to retry, degrade, or surface
+  this.logger.error('Embedding/indexing failed', (error as Error).message);
+  throw error;
+}
+```
+
+Configuration validation runs at module init. Missing `connection.host` / `connection.port` or provider-required keys (e.g. OpenAI apiKey) will throw immediately. A host missing protocol logs a warning.
 
 ### Metadata Management
 
@@ -320,10 +346,20 @@ interface ChromaSearchOptions {
 
 interface ChromaBulkOptions {
   batchSize?: number;
+  upsert?: boolean;
+  validateIds?: boolean;
   autoChunk?: boolean;
-  chunkingStrategy?: 'recursive' | 'token' | 'semantic' | 'smart';
-  extractMetadata?: boolean;
+  chunkingStrategy?: 'recursive' | 'token' | 'character' | 'markdown' | 'semantic' | 'smart';
+  chunkSize?: number;
+  chunkOverlap?: number;
   preserveChunkRelationships?: boolean;
+  extractMetadata?: boolean;
+  extractTopics?: boolean;
+  extractKeywords?: boolean;
+  analyzeComplexity?: boolean;
+  calculateReadingTime?: boolean;
+  detectCrossReferences?: boolean;
+  extractCodeMetadata?: boolean;
 }
 ```
 
@@ -355,17 +391,16 @@ export class HealthService {
 ## Error Handling
 
 ```typescript
-import { ChromaDBConnectionError, ChromaDBCollectionError, ChromaDBEmbeddingNotConfiguredError, ChromaDBConfigurationError } from '@hive-academy/nestjs-chromadb';
+import { ChromaDBConnectionError, ChromaDBCollectionNotFoundError, ChromaDBEmbeddingNotConfiguredError } from '@hive-academy/nestjs-chromadb';
 
 try {
-  await this.chromaDB.addDocument('collection', document);
+  await this.chromaDB.addDocuments('collection', [document]);
 } catch (error) {
   if (error instanceof ChromaDBConnectionError) {
     // Handle connection issues
     this.logger.error('ChromaDB connection failed', error.message);
-  } else if (error instanceof ChromaDBCollectionError) {
-    // Handle collection-specific errors
-    this.logger.error('Collection operation failed', error.message);
+  } else if (error instanceof ChromaDBCollectionNotFoundError) {
+    this.logger.error('Collection not found', error.message);
   } else if (error instanceof ChromaDBEmbeddingNotConfiguredError) {
     // Handle missing embedding configuration
     this.logger.error('Embedding provider not configured', error.message);
@@ -375,7 +410,7 @@ try {
 
 ## Testing
 
-### Unit Testing
+### Unit Testing (deferred areas)
 
 ```typescript
 import { Test } from '@nestjs/testing';

@@ -3,6 +3,7 @@ import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
 import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
 import { ToolRegistrationService } from './tool-registration.service';
 import { AgentRegistrationService } from './agent-registration.service';
+import { WorkflowManagerService } from './workflow-manager.service';
 
 /**
  * Service responsible for initializing the MultiAgent module
@@ -16,7 +17,8 @@ export class MultiAgentModuleInitializer implements OnModuleInit {
     @Inject(MULTI_AGENT_MODULE_OPTIONS)
     private readonly options: MultiAgentModuleOptions,
     private readonly toolRegistrationService: ToolRegistrationService,
-    private readonly agentRegistrationService: AgentRegistrationService
+    private readonly agentRegistrationService: AgentRegistrationService,
+    private readonly workflowManagerService: WorkflowManagerService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -47,11 +49,17 @@ export class MultiAgentModuleInitializer implements OnModuleInit {
         this.logger.debug('No agents provided for registration');
       }
 
-      // TODO: Register workflows when workflow system is implemented
+      // Register workflows if provided
       if (this.options.workflows && this.options.workflows.length > 0) {
-        this.logger.debug(
-          `${this.options.workflows.length} workflows provided (registration not implemented yet)`
+        this.workflowManagerService.registerWorkflowProviders(
+          this.options.workflows
         );
+        const stats = this.workflowManagerService.getWorkflowStats();
+        this.logger.log(
+          `Registered ${stats.registry.totalWorkflows} workflows`
+        );
+      } else {
+        this.logger.debug('No workflows provided for registration');
       }
 
       this.logger.log(

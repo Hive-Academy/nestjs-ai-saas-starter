@@ -35,6 +35,8 @@ import type {
 import { WebSocketMessageType } from '../interfaces/websocket-gateway.interface';
 import type { StreamUpdate } from '../interfaces/streaming.interface';
 import { WebSocketBridgeService } from './websocket-bridge.service';
+import { StreamingAuthService } from './streaming-auth.service';
+import { RateLimiterService } from './rate-limiter.service';
 
 /**
  * Simple UUID v4 generator (to avoid external dependency)
@@ -99,8 +101,12 @@ export class StreamingWebSocketGateway
   private statsInterval?: NodeJS.Timeout;
   private cleanupInterval?: NodeJS.Timeout;
 
+  // NOTE: Previously had an eventMap placeholder; removed to avoid unused variable while taxonomy finalization is pending.
+
   constructor(
     private readonly eventEmitter: EventEmitter2,
+    private readonly authService: StreamingAuthService,
+    private readonly rateLimiter: RateLimiterService,
     @Inject('WEBSOCKET_GATEWAY_CONFIG')
     @Optional()
     private readonly config: WebSocketGatewayConfig = {},
@@ -547,11 +553,12 @@ export class StreamingWebSocketGateway
       const connection = this.getConnection(socket);
       if (!connection) throw new WsException('Connection not found');
 
-      // Perform authentication (simplified - extend based on requirements)
-      const authenticated = await this.authenticateConnection(
-        connection,
-        payload
-      );
+      // Perform authentication via dedicated auth service
+      const claims = this.authService.verify(payload.token, {
+        required: !!this.config.auth?.required,
+        secret: this.config.auth?.jwtSecret,
+      });
+      const authenticated = !this.config.auth?.required || !!claims;
 
       if (authenticated) {
         connection.metadata.userId = payload.metadata?.client;
@@ -664,6 +671,36 @@ export class StreamingWebSocketGateway
     this.stats.messages.sent++;
 
     this.logger.debug(`Broadcasted stream update to room: ${roomId}`);
+  }
+
+  /**
+   * Emit token update to all connected clients for real-time streaming
+   */
+  emitTokenUpdate(token: string, executionId?: string, nodeId?: string): void {
+    const message: WebSocketMessage<{
+      token: string;
+      executionId?: string;
+      nodeId?: string;
+    }> = {
+      type: WebSocketMessageType.STREAM_UPDATE,
+      id: generateUUID(),
+      data: { token, executionId, nodeId },
+      metadata: {
+        timestamp: new Date(),
+        source: 'streaming_gateway',
+        priority: 'high',
+      },
+    };
+
+    // Emit to all connected clients
+    this.server.emit('token_update', message);
+    this.stats.messages.sent += this.connections.size;
+
+    this.logger.debug(
+      `Emitted token update to ${
+        this.connections.size
+      } connections: ${token.substring(0, 50)}...`
+    );
   }
 
   /**
@@ -809,45 +846,29 @@ export class StreamingWebSocketGateway
     };
   }
 
-  private async authenticateConnection(
-    connection: WebSocketConnection,
-    payload: AuthenticationPayload
-  ): Promise<boolean> {
-    // Simplified authentication - extend based on requirements
-    if (!this.config.auth?.required) {
-      return true;
-    }
-
-    // Custom authentication handler
-    if (this.config.auth?.handler) {
-      return this.config.auth.handler(connection.socket, payload.token || '');
-    }
-
-    // Basic token validation
-    if (payload.token && this.config.auth?.jwtSecret) {
-      try {
-        // JWT validation logic would go here
-        return true;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    return false;
-  }
+  // Legacy authenticateConnection removed (replaced by StreamingAuthService)
 
   private applyRateLimit(socket: Socket, next: (error?: any) => void): void {
-    if (!this.config.rateLimit) {
-      return next();
-    }
-
-    // Simplified rate limiting - implement proper rate limiting logic
     const connection = this.getConnection(socket);
-    if (connection && this.config.rateLimit.skip?.(socket)) {
-      return next();
-    }
+    if (!connection) return next();
 
-    // Rate limiting logic would go here
+    // Allow custom skip
+    if (this.config.rateLimit?.skip?.(socket)) return next();
+
+    // Composite keys: connection + optional execution
+    const decision = this.rateLimiter.allow(`conn:${connection.id}`);
+    if (!decision.allowed) {
+      socket.emit(
+        'error',
+        this.createErrorMessage(
+          'RATE_LIMIT',
+          'Rate limit exceeded',
+          'connection',
+          { resetInMs: decision.resetInMs, remaining: decision.remaining }
+        )
+      );
+      return next(new Error('RATE_LIMIT'));
+    }
     next();
   }
 

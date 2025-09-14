@@ -9,6 +9,10 @@ import { NetworkManagerService } from './services/network-manager.service';
 import { NodeFactoryService } from './services/node-factory.service';
 import { ToolRegistrationService } from './services/tool-registration.service';
 import { MultiAgentModuleInitializer } from './services/multi-agent-module-initializer.service';
+// Workflow services (internal infrastructure)
+import { WorkflowRegistryService } from './services/workflow-registry.service';
+import { WorkflowExecutionService } from './services/workflow-execution.service';
+import { WorkflowManagerService } from './services/workflow-manager.service';
 // Tool services
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
@@ -72,6 +76,10 @@ export class MultiAgentModule {
       ToolNodeService,
       // Agent services
       AgentRegistrationService,
+      // Workflow services (internal infrastructure)
+      WorkflowRegistryService,
+      WorkflowExecutionService,
+      WorkflowManagerService,
       // Tool service aliases
       {
         provide: TOOL_REGISTRY,
@@ -95,13 +103,16 @@ export class MultiAgentModule {
         AgentRegistryService,
         NetworkManagerService,
         LlmProviderService,
-        GraphBuilderService,
-        NodeFactoryService,
-        // Tool services
+        // NOTE: GraphBuilderService and ToolNodeService are now internal-only
+        // They provide powerful infrastructure but are implementation details
+        // Workflow facade service (external interface)
+        WorkflowManagerService,
+        // NOTE: WorkflowRegistryService and WorkflowExecutionService are internal-only
+        // They provide workflow infrastructure but are implementation details
+        // Tool services for external use
         ToolRegistryService,
         ToolRegistrationService,
         ToolBuilderService,
-        ToolNodeService,
         // Agent services
         AgentRegistrationService,
         // Tool service aliases
@@ -109,7 +120,6 @@ export class MultiAgentModule {
         // DI tokens
         CHECKPOINT_ADAPTER_TOKEN,
         STREAMING_SERVICE_TOKEN,
-        // Examples service
       ],
       global: true,
     };
@@ -162,6 +172,10 @@ export class MultiAgentModule {
       ToolNodeService,
       // Agent services
       AgentRegistrationService,
+      // Workflow services (internal infrastructure)
+      WorkflowRegistryService,
+      WorkflowExecutionService,
+      WorkflowManagerService,
       // Tool service aliases
       {
         provide: TOOL_REGISTRY,
@@ -191,13 +205,16 @@ export class MultiAgentModule {
         AgentRegistryService,
         NetworkManagerService,
         LlmProviderService,
-        GraphBuilderService,
-        NodeFactoryService,
-        // Tool services
+        // NOTE: GraphBuilderService and ToolNodeService are now internal-only
+        // They provide powerful infrastructure but are implementation details
+        // Workflow facade service (external interface)
+        WorkflowManagerService,
+        // NOTE: WorkflowRegistryService and WorkflowExecutionService are internal-only
+        // They provide workflow infrastructure but are implementation details
+        // Tool services for external use
         ToolRegistryService,
         ToolRegistrationService,
         ToolBuilderService,
-        ToolNodeService,
         // Agent services
         AgentRegistrationService,
         // Tool service aliases
@@ -205,7 +222,6 @@ export class MultiAgentModule {
         // DI tokens
         CHECKPOINT_ADAPTER_TOKEN,
         STREAMING_SERVICE_TOKEN,
-        // Examples service
       ],
       global: true,
     };

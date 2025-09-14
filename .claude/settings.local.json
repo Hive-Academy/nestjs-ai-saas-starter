@@ -43,7 +43,8 @@
       "mcp__browser__browser_get_clickable_elements",
       "Bash(npm run update:libs:*)",
       "Read(\\/**)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "mcp__nx-mcp__nx_workspace_path"
     ],
     "deny": [],
     "ask": [],

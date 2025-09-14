@@ -8,7 +8,10 @@ import {
   StreamEventData,
   ProgressData,
   StreamEventType,
+  StreamEventDecoratorMetadata,
+  StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-core';
+import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
 import { StreamUpdate } from '../interfaces/streaming.interface';
 import { TokenStreamingService } from '../services/token-streaming.service';
 import { EventStreamProcessorService } from '../services/event-stream-processor.service';
@@ -23,6 +26,16 @@ import { WebSocketBridgeService } from '../services/websocket-bridge.service';
 @Injectable()
 export class StreamingServiceAdapter implements IStreamingService {
   private readonly logger = new Logger(StreamingServiceAdapter.name);
+  private readonly initializedEventStreams = new Set<string>();
+  private readonly initializedProgressStreams = new Set<string>();
+  private readonly eventStreamConfigs = new Map<
+    string,
+    StreamEventDecoratorMetadata
+  >();
+  private readonly progressTrackerConfigs = new Map<
+    string,
+    StreamProgressDecoratorMetadata
+  >();
 
   constructor(
     private readonly tokenStreamingService: TokenStreamingService,
@@ -45,6 +58,77 @@ export class StreamingServiceAdapter implements IStreamingService {
       this.logger.error(`Failed to initialize token stream:`, error);
       throw error;
     }
+  }
+
+  // --- Event / Progress Lazy Initialization ---------------------------------
+
+  /**
+   * Initialize an event stream if not already initialized. Idempotent.
+   * Decorators call this before emitting NODE_START / etc. We keep a minimal
+   * config record so future adaptive logic (batching / delivery tuning) can
+   * reference original intent without forcing explicit initialization at
+   * every call site.
+   */
+  async initializeEventStream(options: {
+    executionId: string;
+    nodeId: string;
+    config: StreamEventDecoratorMetadata;
+  }): Promise<void> {
+    const { executionId, nodeId, config } = options;
+    const key = `${executionId}:${nodeId}`;
+    if (this.initializedEventStreams.has(key)) return;
+
+    const moduleDefaults = getStreamingConfigWithDefaults();
+    const enriched: StreamEventDecoratorMetadata = {
+      enabled: config.enabled ?? true,
+      methodName: config.methodName || nodeId,
+      events: config.events || [StreamEventType.EVENTS],
+      bufferSize: config.bufferSize ?? moduleDefaults.defaultBufferSize,
+      batchSize: config.batchSize ?? moduleDefaults.eventDefaults.batchSize,
+      delivery: config.delivery ?? moduleDefaults.eventDefaults.delivery,
+      filter: config.filter,
+      transformer: config.transformer,
+    };
+    this.eventStreamConfigs.set(key, enriched);
+    this.initializedEventStreams.add(key);
+    this.logger.debug(`Initialized event stream ${key}`);
+  }
+
+  /**
+   * Initialize a progress tracker lazily (idempotent). Stores config for
+   * potential later metrics or adaptive interval control.
+   */
+  async initializeProgressTracker(options: {
+    executionId: string;
+    nodeId: string;
+    config: StreamProgressDecoratorMetadata;
+  }): Promise<void> {
+    const { executionId, nodeId, config } = options;
+    const key = `${executionId}:${nodeId}`;
+    if (this.initializedProgressStreams.has(key)) return;
+
+    const moduleDefaults = getStreamingConfigWithDefaults();
+    const enriched: StreamProgressDecoratorMetadata = {
+      enabled: config.enabled ?? true,
+      methodName: config.methodName || nodeId,
+      interval: config.interval ?? moduleDefaults.progressDefaults.interval,
+      granularity:
+        config.granularity ?? moduleDefaults.progressDefaults.granularity,
+      includeETA: config.includeETA ?? false,
+      includeMetrics: config.includeMetrics ?? false,
+      milestones: config.milestones || [],
+      calculator: config.calculator,
+      format: config.format || {
+        showPercentage: true,
+        showCurrent: false,
+        showTotal: false,
+        showRate: false,
+        precision: 1,
+      },
+    };
+    this.progressTrackerConfigs.set(key, enriched);
+    this.initializedProgressStreams.add(key);
+    this.logger.debug(`Initialized progress tracker ${key}`);
   }
 
   streamToken(
@@ -248,7 +332,10 @@ export class StreamingServiceAdapter implements IStreamingService {
 
       // Broadcast to all relevant clients
       if (data.executionId) {
-        await this.webSocketBridge.broadcastToExecution(data.executionId, update);
+        await this.webSocketBridge.broadcastToExecution(
+          data.executionId,
+          update
+        );
       }
 
       this.logger.debug(`Emitted event ${eventType}`, { data });
@@ -278,7 +365,10 @@ export class StreamingServiceAdapter implements IStreamingService {
 
       // Broadcast progress to clients
       if (data.executionId) {
-        await this.webSocketBridge.broadcastToExecution(data.executionId, update);
+        await this.webSocketBridge.broadcastToExecution(
+          data.executionId,
+          update
+        );
       }
 
       this.logger.debug(`Emitted progress ${eventType}`, { data });

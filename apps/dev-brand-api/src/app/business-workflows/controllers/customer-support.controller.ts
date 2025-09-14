@@ -10,7 +10,7 @@ import {
   MessageEvent,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { CustomerSupportWorkflow } from '../workflows/customer-support.workflow';
+import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
 import { BusinessMetricsService } from '../services/business-metrics.service';
 import { KnowledgeBaseService } from '../services/knowledge-base.service';
 import type {
@@ -30,7 +30,7 @@ import type {
 @Controller('customer-support')
 export class CustomerSupportController {
   constructor(
-    private readonly supportWorkflow: CustomerSupportWorkflow,
+    private readonly workflowManager: WorkflowManagerService,
     private readonly metricsService: BusinessMetricsService,
     private readonly knowledgeBaseService: KnowledgeBaseService
   ) {}
@@ -43,22 +43,77 @@ export class CustomerSupportController {
     @Body() request: TicketRequest
   ): Promise<StreamingResponse<{ ticketId: string; executionId: string }>> {
     try {
-      // Initialize the workflow
-      const initialState = await this.supportWorkflow.processTicket(request);
-      const executionId = initialState.ticketId; // Use ticketId as executionId
+      // Execute workflow using WorkflowManagerService
+      const result = await this.workflowManager.executeWorkflow(
+        'customer-support-automation',
+        request,
+        {
+          streaming: true,
+          timeout: 600000,
+        }
+      );
 
-      // Execute the real workflow steps
-      this.executeRealWorkflow(initialState);
+      // Generate unique identifiers
+      const ticketId = this.generateTicketId();
+      const executionId = result.metadata?.instanceId || ticketId;
 
       return {
-        success: true,
+        success: result.success,
         data: {
-          ticketId: initialState.ticketId,
+          ticketId: result.data?.ticketId || ticketId,
           executionId,
+          workflowResult: result.data,
         },
         executionId,
         streaming: true,
-        streamUrl: `/customer-support/tickets/${initialState.ticketId}/stream`,
+        streamUrl: `/customer-support/tickets/${ticketId}/stream`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        executionId: '',
+        streaming: false,
+      };
+    }
+  }
+
+  /**
+   * NEW: Submit ticket with streaming support
+   */
+  @Post('tickets/streaming')
+  async submitTicketWithStreaming(
+    @Body() request: TicketRequest
+  ): Promise<StreamingResponse<any>> {
+    try {
+      const progressUpdates: any[] = [];
+
+      const result = await this.workflowManager.executeWorkflowWithStreaming(
+        'customer-support-automation',
+        request,
+        (event) => {
+          progressUpdates.push({
+            timestamp: Date.now(),
+            type: event.type,
+            data: event.data,
+          });
+        }
+      );
+
+      return {
+        success: result.success,
+        data: {
+          workflowResult: result.data,
+          streamingUpdates: progressUpdates,
+          capabilities: {
+            workflowOrchestration:
+              'Complete @Workflow system with lifecycle management',
+            streamingSupport: 'Real-time progress updates',
+            errorHandling: 'Built-in retry and error recovery',
+          },
+        },
+        executionId: result.metadata?.instanceId || 'unknown',
+        streaming: true,
       };
     } catch (error) {
       return {
@@ -85,6 +140,36 @@ export class CustomerSupportController {
           progress: 45,
           currentStep: 'analysis',
           estimatedCompletion: Date.now() + 300000, // 5 minutes from now
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * NEW: Get workflow status for a ticket
+   */
+  @Get('workflows/status/:ticketId')
+  async getWorkflowStatus(@Param('ticketId') ticketId: string) {
+    try {
+      const instances = this.workflowManager.getActiveInstances();
+      const instance = instances.find(
+        (i) => i.input?.id === ticketId || i.input?.ticketId === ticketId
+      );
+
+      return {
+        success: true,
+        data: {
+          ticketId,
+          status: instance?.status || 'not_found',
+          progress: instance ? this.calculateProgress(instance) : 0,
+          instanceId: instance?.instanceId,
+          startedAt: instance?.startedAt,
+          metadata: instance?.metadata,
         },
       };
     } catch (error) {
@@ -445,38 +530,21 @@ export class CustomerSupportController {
 
   // Private helper methods
 
-  private async executeRealWorkflow(initialState: any) {
-    // Execute the real workflow steps asynchronously
-    try {
-      // Step 1: Analysis
-      const analysisResult = await this.supportWorkflow.analyzeTicket(
-        initialState
-      );
+  private generateTicketId(): string {
+    return `TICKET_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 
-      // Step 2: Generate Response
-      const responseResult = await this.supportWorkflow.generateResponse({
-        ...initialState,
-        ...analysisResult,
-      });
-
-      // Step 3: Send Response (or request approval)
-      const finalState = {
-        ...initialState,
-        ...analysisResult,
-        ...responseResult,
-      };
-
-      const sendResult = await this.supportWorkflow.sendResponse(finalState);
-
-      console.log('Real workflow execution completed:', sendResult);
-
-      // Track metrics with real data
-      await this.metricsService.trackCustomerSupport({
-        ...finalState,
-        ...sendResult,
-      });
-    } catch (error) {
-      console.error('Real workflow execution error:', error);
+  private calculateProgress(instance: any): number {
+    // Simple progress calculation based on workflow status
+    switch (instance.status) {
+      case 'running':
+        return Math.min(90, (Date.now() - instance.startedAt) / 1000); // Estimate based on elapsed time
+      case 'completed':
+        return 100;
+      case 'failed':
+        return instance.metadata?.progress || 0;
+      default:
+        return 0;
     }
   }
 

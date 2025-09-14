@@ -1,21 +1,27 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { TokenStreamingService } from '@hive-academy/langgraph-streaming';
 import { HumanMessage } from '@langchain/core/messages';
 import type { ShowcaseAgentState } from '../types/showcase.types';
 
 /**
  * 🎨 SHOWCASE CONTENT SERVICE
- * 
+ *
  * Responsible for content generation operations in showcase workflows.
  * Handles token streaming, content structure, and generation metrics.
  */
 @Injectable()
 export class ShowcaseContentService {
   private readonly logger = new Logger(ShowcaseContentService.name);
+  constructor(
+    @Optional()
+    @Inject(TokenStreamingService)
+    private readonly tokenStreaming?: TokenStreamingService
+  ) {}
 
   /**
    * Generate showcase content with token streaming simulation
    */
-  async generateShowcaseContent(showcaseId: string): Promise<{
+  async generateShowcaseContent(executionId: string): Promise<{
     generatedContent: Array<{
       section: string;
       content: string;
@@ -41,7 +47,7 @@ export class ShowcaseContentService {
       this.logger.log(`  ✏️  Generating ${section}...`);
 
       const sectionContent = await this.generateSection(
-        showcaseId,
+        executionId,
         section,
         this.getSectionTemplate(section)
       );
@@ -69,16 +75,33 @@ export class ShowcaseContentService {
    * Generate individual content section
    */
   private async generateSection(
-    showcaseId: string,
+    executionId: string,
     sectionName: string,
     template: string
   ): Promise<string> {
-    // Simulate token-by-token generation with streaming
-    const content = template.replace('{sectionName}', sectionName.toLowerCase());
-    
-    // Stream tokens (in real implementation, this would integrate with actual LLM streaming)
-    await this.simulateTokenStreaming(content);
-    
+    const content = template.replace(
+      '{sectionName}',
+      sectionName.toLowerCase()
+    );
+
+    if (this.tokenStreaming) {
+      const nodeId = `content:${sectionName
+        .replace(/\s+/g, '_')
+        .toLowerCase()}`;
+      // Lazy auto-init wrapper will initialize on first token
+      const words = content.split(' ');
+      for (let i = 0; i < words.length; i += 3) {
+        const tokenChunk = words.slice(i, i + 3).join(' ');
+        this.tokenStreaming.streamToken(executionId, nodeId, tokenChunk, {
+          section: sectionName,
+          index: i,
+        });
+        await new Promise((r) => setTimeout(r, 30));
+      }
+      await this.tokenStreaming.flushTokens(executionId, nodeId);
+    } else {
+      await this.simulateTokenStreaming(content);
+    }
     return content;
   }
 
@@ -163,10 +186,13 @@ This {sectionName} provides clear guidance for implementing our sophisticated AI
 • Monitor workflows with comprehensive observability
 
 **Enterprise Integration:**
-Our platform integrates seamlessly with existing enterprise infrastructure and provides migration paths from legacy systems.`
+Our platform integrates seamlessly with existing enterprise infrastructure and provides migration paths from legacy systems.`,
     };
 
-    return templates[section] || `### ${section}\n\nContent for {sectionName} section.`;
+    return (
+      templates[section] ||
+      `### ${section}\n\nContent for {sectionName} section.`
+    );
   }
 
   /**
@@ -178,12 +204,12 @@ Our platform integrates seamlessly with existing enterprise infrastructure and p
 
     for (let i = 0; i < words.length; i += tokensPerBatch) {
       const tokenBatch = words.slice(i, i + tokensPerBatch).join(' ');
-      
+
       // In real implementation, this would emit tokens via WebSocket
       this.logger.debug(`🎯 Token batch: ${tokenBatch.substring(0, 20)}...`);
-      
+
       // Simulate realistic generation delay
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
 
@@ -201,12 +227,18 @@ Our platform integrates seamlessly with existing enterprise infrastructure and p
       ...state,
       metricsCollected: {
         ...state.metricsCollected,
-        tokensStreamed: (state.metricsCollected?.tokensStreamed || 0) + contentResult.totalTokens,
+        tokensStreamed:
+          (state.metricsCollected?.tokensStreamed || 0) +
+          contentResult.totalTokens,
       },
       messages: [
         ...(state.messages || []),
-        new HumanMessage(`Generated ${contentResult.generatedContent.length} content sections`),
-        new HumanMessage(`Total tokens generated: ${contentResult.totalTokens}`),
+        new HumanMessage(
+          `Generated ${contentResult.generatedContent.length} content sections`
+        ),
+        new HumanMessage(
+          `Total tokens generated: ${contentResult.totalTokens}`
+        ),
       ],
       generatedContent: contentResult.generatedContent,
     };
@@ -236,7 +268,11 @@ Our platform integrates seamlessly with existing enterprise infrastructure and p
       recommendations.push('Add clear section headers');
     }
 
-    if (!content.includes('•') && !content.includes('-') && !content.includes('1.')) {
+    if (
+      !content.includes('•') &&
+      !content.includes('-') &&
+      !content.includes('1.')
+    ) {
       issues.push('No structured lists');
       score -= 15;
       recommendations.push('Add bullet points or numbered lists');

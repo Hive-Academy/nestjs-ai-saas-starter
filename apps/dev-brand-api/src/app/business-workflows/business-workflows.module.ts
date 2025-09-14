@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 // Customer Support System Components
 import { CustomerSupportAgent } from './agents/customer-support.agent';
 import { CustomerSupportWorkflow } from './workflows/customer-support.workflow';
+import { EnhancedSupportWorkflow } from './workflows/enhanced-support.workflow';
 import { CustomerSupportController } from './controllers/customer-support.controller';
 import { BusinessMetricsService } from './services/business-metrics.service';
 import { KnowledgeBaseService } from './services/knowledge-base.service';
@@ -22,8 +23,9 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
     // Core AI Agents - RE-ENABLED AFTER DI METADATA FIX
     CustomerSupportAgent,
 
-    // Workflow Orchestrators - RE-ENABLED AFTER DI METADATA FIX
-    CustomerSupportWorkflow,
+    // Workflow Orchestrators - Both patterns supported
+    CustomerSupportWorkflow, // Functional-API pattern (@Task decorators)
+    EnhancedSupportWorkflow, // Multi-agent orchestration pattern
 
     // Business Services
     BusinessMetricsService,
@@ -84,7 +86,8 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
   exports: [
     // Export key services for use in other modules
     CustomerSupportAgent, // RE-ENABLED AFTER DI METADATA FIX
-    CustomerSupportWorkflow, // RE-ENABLED AFTER DI METADATA FIX
+    CustomerSupportWorkflow, // Functional-API pattern
+    EnhancedSupportWorkflow, // Multi-agent orchestration pattern
     BusinessMetricsService,
     KnowledgeBaseService,
   ],

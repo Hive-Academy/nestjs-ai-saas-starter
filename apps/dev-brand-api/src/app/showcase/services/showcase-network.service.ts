@@ -6,7 +6,7 @@ import type { ShowcaseAgentState } from '../types/showcase.types';
 
 /**
  * 🤖 SHOWCASE NETWORK SERVICE
- * 
+ *
  * Responsible for multi-agent network coordination and setup.
  * Handles agent registration, network configuration, and coordination metrics.
  */
@@ -23,7 +23,7 @@ export class ShowcaseNetworkService {
    * Setup multi-agent network for showcase
    */
   async setupShowcaseNetwork(
-    showcaseId: string,
+    executionId: string,
     demonstrationMode: string
   ): Promise<{
     success: boolean;
@@ -32,27 +32,35 @@ export class ShowcaseNetworkService {
     coordinationResults?: any;
     error?: Error;
   }> {
-    const networkId = `showcase-network-${showcaseId}`;
-    
+    const networkId = `showcase-network-${executionId}`;
+
     try {
       this.logger.log('🚀 Setting up REAL multi-agent network...');
 
       // Get registered agents from our agent registry
-      const researchAgent = this.multiAgentCoordinator.getAgent('research-showcase');
-      const analysisAgent = this.multiAgentCoordinator.getAgent('analysis-showcase'); 
-      const contentAgent = this.multiAgentCoordinator.getAgent('content-showcase');
+      const researchAgent =
+        this.multiAgentCoordinator.getAgent('research-showcase');
+      const analysisAgent =
+        this.multiAgentCoordinator.getAgent('analysis-showcase');
+      const contentAgent =
+        this.multiAgentCoordinator.getAgent('content-showcase');
 
       // Setup network with real agent definitions
-      await this.multiAgentCoordinator.setupNetwork(networkId, [
-        researchAgent,
-        analysisAgent, 
-        contentAgent,
-      ], 'supervisor', {
-        systemPrompt: `You are coordinating a team of AI agents for a ${demonstrationMode} demonstration. Route tasks to the most appropriate agent based on their capabilities.`,
-        workers: ['research-showcase', 'analysis-showcase', 'content-showcase'],
-        enableForwardMessage: true,
-        removeHandoffMessages: false, // Keep for showcase visibility
-      });
+      await this.multiAgentCoordinator.setupNetwork(
+        networkId,
+        [researchAgent, analysisAgent, contentAgent],
+        'supervisor',
+        {
+          systemPrompt: `You are coordinating a team of AI agents for a ${demonstrationMode} demonstration. Route tasks to the most appropriate agent based on their capabilities.`,
+          workers: [
+            'research-showcase',
+            'analysis-showcase',
+            'content-showcase',
+          ],
+          enableForwardMessage: true,
+          removeHandoffMessages: false, // Keep for showcase visibility
+        }
+      );
 
       // Use intelligent agent selection
       const selectedAgents = await this.selectOptimalAgents(demonstrationMode);
@@ -72,10 +80,9 @@ export class ShowcaseNetworkService {
         selectedAgents,
         coordinationResults,
       };
-
     } catch (error) {
       this.logger.error('❌ Network setup failed:', error);
-      
+
       return {
         success: false,
         networkId: '',
@@ -88,7 +95,9 @@ export class ShowcaseNetworkService {
   /**
    * Select optimal agents based on demonstration mode
    */
-  private async selectOptimalAgents(demonstrationMode: string): Promise<string[]> {
+  private async selectOptimalAgents(
+    demonstrationMode: string
+  ): Promise<string[]> {
     // Use the existing coordinator service for intelligent selection
     const selectedAgents = await this.coordinatorService.selectOptimalAgents({
       input: `Showcase demonstration in ${demonstrationMode} mode`,
@@ -119,7 +128,7 @@ export class ShowcaseNetworkService {
       networkId,
       selectedAgents,
       coordinationStrategy: 'supervisor',
-      agentCapabilities: selectedAgents.map(agentId => ({
+      agentCapabilities: selectedAgents.map((agentId) => ({
         id: agentId,
         capabilities: this.getAgentCapabilities(agentId),
         priority: 'medium',
@@ -137,8 +146,16 @@ export class ShowcaseNetworkService {
   private getAgentCapabilities(agentId: string): string[] {
     const capabilityMap: Record<string, string[]> = {
       'research-showcase': ['research', 'analysis', 'information-gathering'],
-      'analysis-showcase': ['analysis', 'insight-generation', 'pattern-recognition'],
-      'content-showcase': ['content-generation', 'writing', 'creative-synthesis'],
+      'analysis-showcase': [
+        'analysis',
+        'insight-generation',
+        'pattern-recognition',
+      ],
+      'content-showcase': [
+        'content-generation',
+        'writing',
+        'creative-synthesis',
+      ],
       'demo-showcase': ['basic-analysis', 'content-formatting'],
     };
 
@@ -166,7 +183,9 @@ export class ShowcaseNetworkService {
         metricsCollected: {
           ...state.metricsCollected,
           totalDuration: state.metricsCollected?.totalDuration || 0,
-          agentSwitches: (state.metricsCollected?.agentSwitches || 0) + networkResult.selectedAgents.length,
+          agentSwitches:
+            (state.metricsCollected?.agentSwitches || 0) +
+            networkResult.selectedAgents.length,
           toolInvocations: state.metricsCollected?.toolInvocations || 0,
           memoryAccesses: state.metricsCollected?.memoryAccesses || 0,
           averageResponseTime: state.metricsCollected?.averageResponseTime || 0,
@@ -177,7 +196,8 @@ export class ShowcaseNetworkService {
           approvalRate: state.metricsCollected?.approvalRate || 0,
           tokensStreamed: state.metricsCollected?.tokensStreamed || 0,
           streamingLatency: state.metricsCollected?.streamingLatency || 0,
-          connectionStability: state.metricsCollected?.connectionStability || 1.0,
+          connectionStability:
+            state.metricsCollected?.connectionStability || 1.0,
         },
         messages: [
           ...(state.messages || []),
@@ -185,7 +205,12 @@ export class ShowcaseNetworkService {
             `🚀 REAL Multi-Agent Coordination: Setup network '${networkResult.networkId}' with ${networkResult.selectedAgents.length} agents`
           ),
           new HumanMessage(
-            `Selected agents: ${networkResult.selectedAgents.map(agentId => `${agentId}(${this.getAgentCapabilities(agentId).join(', ')})`).join(', ')}`
+            `Selected agents: ${networkResult.selectedAgents
+              .map(
+                (agentId) =>
+                  `${agentId}(${this.getAgentCapabilities(agentId).join(', ')})`
+              )
+              .join(', ')}`
           ),
         ],
       };
@@ -200,7 +225,10 @@ export class ShowcaseNetworkService {
             type: 'agent' as const,
             severity: 'medium' as const,
             message: `Multi-agent coordination error: ${networkResult.error?.message}`,
-            context: { phase: 'agent_coordination', networkId: networkResult.networkId },
+            context: {
+              phase: 'agent_coordination',
+              networkId: networkResult.networkId,
+            },
             occurredAt: Date.now(),
             recoverable: true,
           },
@@ -221,10 +249,10 @@ export class ShowcaseNetworkService {
   async cleanupNetwork(networkId: string): Promise<void> {
     try {
       this.logger.log(`🧹 Cleaning up network: ${networkId}`);
-      
+
       // Remove network from coordinator
       const removed = this.multiAgentCoordinator.removeNetwork(networkId);
-      
+
       if (removed) {
         this.logger.log('✅ Network cleanup completed successfully');
       } else {
@@ -245,8 +273,9 @@ export class ShowcaseNetworkService {
     lastActivity?: number;
   } {
     try {
-      const networkConfig = this.multiAgentCoordinator.getNetworkConfig(networkId);
-      
+      const networkConfig =
+        this.multiAgentCoordinator.getNetworkConfig(networkId);
+
       if (!networkConfig) {
         return {
           healthy: false,
@@ -262,9 +291,10 @@ export class ShowcaseNetworkService {
         lastActivity: Date.now(),
       };
     } catch (error) {
+      const err = error as Error;
       return {
         healthy: false,
-        status: `Error: ${error.message}`,
+        status: `Error: ${err.message}`,
         agentCount: 0,
       };
     }

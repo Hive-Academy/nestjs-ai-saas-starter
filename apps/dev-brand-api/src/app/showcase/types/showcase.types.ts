@@ -39,6 +39,10 @@ export interface ShowcaseAgentState extends AgentState {
   // Core showcase data
   showcaseId: string;
   demonstrationMode: 'basic' | 'advanced' | 'enterprise';
+  /**
+   * Unified execution identifier (mirrors showcaseId for now). Added for streaming consistency.
+   */
+  executionId?: string;
 
   // Execution context
   currentPattern: ShowcasePattern;

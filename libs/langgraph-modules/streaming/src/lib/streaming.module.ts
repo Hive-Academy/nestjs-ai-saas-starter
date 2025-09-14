@@ -1,11 +1,14 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TokenStreamingService } from './services/token-streaming.service';
+import { AutoInitTokenStreamingService } from './services/auto-init-token-streaming.service';
 import { EventStreamProcessorService } from './services/event-stream-processor.service';
 import { WebSocketBridgeService } from './services/websocket-bridge.service';
 import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
 import { WebSocketGatewayConfig } from './interfaces/websocket-gateway.interface';
 import { setStreamingConfig } from './utils/streaming-config.accessor';
+import { StreamingAuthService } from './services/streaming-auth.service';
+import { RateLimiterService } from './services/rate-limiter.service';
 import {
   StreamingServiceAdapter,
   TokenStreamingServiceAdapter,
@@ -40,8 +43,15 @@ export class StreamingModule {
     const providers: any[] = [
       // Concrete implementations
       TokenStreamingService,
+      AutoInitTokenStreamingService,
+      {
+        provide: TokenStreamingService,
+        useClass: AutoInitTokenStreamingService,
+      },
       EventStreamProcessorService,
       WebSocketBridgeService,
+      StreamingAuthService,
+      RateLimiterService,
       {
         provide: 'STREAMING_OPTIONS',
         useValue: options || {},
@@ -74,9 +84,12 @@ export class StreamingModule {
 
     const exports: any[] = [
       // Concrete services
+      AutoInitTokenStreamingService,
       TokenStreamingService,
       EventStreamProcessorService,
       WebSocketBridgeService,
+      StreamingAuthService,
+      RateLimiterService,
 
       // Adapters
       StreamingServiceAdapter,
@@ -96,14 +109,21 @@ export class StreamingModule {
       options?.gateway?.enabled ?? options?.websocket?.enabled ?? false;
 
     if (gatewayEnabled) {
-      providers.push(StreamingWebSocketGateway, {
-        provide: 'WEBSOCKET_GATEWAY_CONFIG',
-        useValue: {
-          enabled: gatewayEnabled,
-          port: options?.websocket?.port,
-          ...options?.gateway,
+      providers.push(
+        StreamingWebSocketGateway,
+        {
+          provide: 'WEBSOCKET_GATEWAY_CONFIG',
+          useValue: {
+            enabled: gatewayEnabled,
+            port: options?.websocket?.port,
+            ...options?.gateway,
+          },
         },
-      });
+        {
+          provide: 'StreamingWebSocketGateway',
+          useExisting: StreamingWebSocketGateway,
+        }
+      );
 
       exports.push(StreamingWebSocketGateway);
     }

@@ -10,6 +10,262 @@ The **Multi-Agent Module** enables sophisticated AI agent coordination and orche
 
 Built on **2025 LangGraph patterns** with full TypeScript support and enterprise-ready features.
 
+## 🔄 Workflow System
+
+The **Multi-Agent Module** now includes a complete **Workflow System** for orchestrating complex AI workflows with agents:
+
+### @Workflow Decorator - CLASS-LEVEL
+
+**Applied to workflow classes** to define workflow metadata:
+
+```typescript
+@Workflow({
+  id: string;                    // Unique workflow identifier
+  name: string;                  // Human-readable workflow name
+  description: string;           // Workflow description
+  version?: string;              // Workflow version
+  requiredAgents?: string[];     // Required agents for this workflow
+  inputSchema?: any;             // Input validation schema
+  outputSchema?: any;            // Output schema definition
+  config?: WorkflowConfig;       // Workflow configuration
+  metadata?: Record<string, unknown>; // Extended configuration
+})
+```
+
+### Complete Workflow Example
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { Workflow } from '@hive-academy/langgraph-modules-multi-agent';
+import { WorkflowContext } from '@hive-academy/langgraph-modules-multi-agent';
+import { AIMessage } from '@langchain/core/messages';
+
+@Workflow({
+  id: 'content-creation-pipeline',
+  name: 'Content Creation Pipeline',
+  description: 'Orchestrates research, writing, and editing for content creation',
+  version: '1.0.0',
+  requiredAgents: ['researcher', 'writer', 'editor'],
+  config: {
+    timeout: 300000, // 5 minutes
+    streaming: true,
+    retry: {
+      enabled: true,
+      maxAttempts: 3,
+      backoffMs: 1000,
+    },
+  },
+})
+@Injectable()
+export class ContentCreationWorkflow {
+  async execute(input: ContentRequest, context: WorkflowContext): Promise<WorkflowResult> {
+    // Step 1: Research phase using agents
+    const researchResult = await context.coordinator.executeSimpleWorkflow('research-network', input.topic);
+
+    // Step 2: Writing phase
+    const writingResult = await context.coordinator.executeSimpleWorkflow('writing-network', {
+      topic: input.topic,
+      research: researchResult.finalState.metadata.research,
+    });
+
+    // Step 3: Editing phase
+    const editingResult = await context.coordinator.executeSimpleWorkflow('editing-network', {
+      content: writingResult.finalState.metadata.content,
+      requirements: input.requirements,
+    });
+
+    return {
+      success: true,
+      data: {
+        finalContent: editingResult.finalState.metadata.editedContent,
+        research: researchResult.finalState.metadata.research,
+        metrics: {
+          researchTime: researchResult.finalState.metadata.duration,
+          writingTime: writingResult.finalState.metadata.duration,
+          editingTime: editingResult.finalState.metadata.duration,
+        },
+      },
+      metadata: {
+        workflowId: 'content-creation-pipeline',
+        totalSteps: 3,
+        completedAt: new Date(),
+      },
+    };
+  }
+}
+```
+
+### Workflow Registration & Execution
+
+```typescript
+// Module configuration with workflows
+MultiAgentModule.forRoot({
+  agents: [ResearchAgent, WriterAgent, EditorAgent],
+  workflows: [ContentCreationWorkflow], // Register workflows
+  defaultLlm: {
+    provider: 'openai',
+    model: 'gpt-4',
+    openaiApiKey: process.env.OPENAI_API_KEY,
+  },
+});
+
+// Service usage
+@Injectable()
+export class ContentService {
+  constructor(private readonly workflowManager: WorkflowManagerService) {}
+
+  async createContent(request: ContentRequest): Promise<WorkflowResult> {
+    return this.workflowManager.executeWorkflow('content-creation-pipeline', request, {
+      streaming: true,
+      timeout: 600000, // 10 minutes
+    });
+  }
+
+  async createContentWithStreaming(request: ContentRequest, onProgress: (event: any) => void): Promise<WorkflowResult> {
+    return this.workflowManager.executeWorkflowWithStreaming('content-creation-pipeline', request, onProgress);
+  }
+}
+```
+
+### WorkflowManagerService API
+
+**Primary interface** for workflow operations:
+
+```typescript
+// Workflow execution
+async executeWorkflow(
+  workflowId: string,
+  input: any,
+  config?: Partial<WorkflowConfig>
+): Promise<WorkflowResult>
+
+// Streaming execution
+async executeWorkflowWithStreaming(
+  workflowId: string,
+  input: any,
+  streamCallback?: (event: any) => void,
+  config?: Partial<WorkflowConfig>
+): Promise<WorkflowResult>
+
+// Workflow management
+getWorkflow(workflowId: string): WorkflowDefinition | null
+getAllWorkflows(): WorkflowDefinition[]
+getWorkflowInfo(workflowId: string): WorkflowInfo | null
+
+// Instance management
+getActiveInstances(): WorkflowInstance[]
+cancelWorkflow(instanceId: string): Promise<boolean>
+getWorkflowHistory(workflowId: string): WorkflowInstance[]
+
+// Health & statistics
+getWorkflowStats(): WorkflowSystemStats
+healthCheck(): Promise<WorkflowHealthStatus>
+```
+
+### Workflow Context Interface
+
+```typescript
+interface WorkflowContext {
+  instanceId: string; // Unique instance identifier
+  agents: Map<string, AgentDefinition>; // Available agents
+  tools: ToolDefinition[]; // Available tools
+  config: WorkflowConfig; // Workflow configuration
+  logger: Logger; // Logger instance
+  coordinator: MultiAgentCoordinatorService; // Agent coordination
+}
+```
+
+## 🚀 Enhanced Internal Infrastructure
+
+### Powerful Internal Services
+
+**Major Update**: The Multi-Agent Module now includes sophisticated **internal infrastructure services** that provide enterprise-grade capabilities:
+
+#### GraphBuilderService - **Enhanced Hierarchical Coordination**
+
+_Internal service (not exported) - Used automatically by MultiAgentCoordinatorService_
+
+**Capabilities:**
+
+- **True Multi-Level Hierarchical Graphs** - Real executive → specialist → operational routing
+- **Dynamic Escalation Logic** - Condition-based level switching with contextual messaging
+- **Level-Specific Coordination** - Each hierarchy level has tailored prompt engineering
+- **Intelligent Routing Decisions** - Context-aware agent selection and workflow orchestration
+
+**Usage (Automatic):**
+
+```typescript
+// When you use 'hierarchical' pattern, GraphBuilderService handles the complexity:
+const networkId = await coordinator.setupNetwork(
+  'support-hierarchy',
+  agents,
+  'hierarchical', // ← Automatically uses enhanced GraphBuilderService
+  {
+    levels: [['executive'], ['specialist'], ['operational']],
+    escalationRules: [
+      /* intelligent escalation logic */
+    ],
+  }
+);
+```
+
+#### ToolNodeService - **Enhanced Weighted Merging**
+
+_Internal service (not exported) - Used automatically by agent execution_
+
+**Capabilities:**
+
+- **Multi-Type Weighted Merging** - Numbers, strings, arrays, objects handled intelligently
+- **Confidence-Based Selection** - Chooses best values based on tool confidence levels
+- **Recursive Object Merging** - Deep merging of complex nested structures
+- **Cumulative Weight Tracking** - Results improve with more confident sources
+
+**Usage (Automatic):**
+
+```typescript
+// Agents return weighted metadata that gets automatically merged:
+return {
+  messages: [new AIMessage('Analysis complete')],
+  metadata: {
+    ...state.metadata,
+    analysis: result,
+    toolWeight: 0.8, // ← ToolNodeService uses this automatically
+    confidence: 0.9,
+  },
+};
+```
+
+#### NodeFactoryService - **Enhanced Coordination Patterns**
+
+_Internal integration service - Orchestrates other internal services_
+
+**Capabilities:**
+
+- **Tool-Enhanced Agent Nodes** - Agents with automatic weighted result processing
+- **Adaptive Coordinator Nodes** - Dynamic strategy selection and pattern switching
+- **Advanced Retry Logic** - Intelligent failure handling and recovery
+- **Performance Optimization** - Efficient resource utilization and scaling
+
+### Clean Public API Design
+
+**Key Principle**: All enhanced capabilities are accessed through the **MultiAgentCoordinatorService facade**
+
+```typescript
+// Simple public interface hides complex internal infrastructure:
+
+// 1. Hierarchical coordination (uses GraphBuilderService internally)
+const hierarchicalResult = await coordinator.setupNetwork('hierarchy-id', agents, 'hierarchical', hierarchicalConfig);
+
+// 2. Weighted tool coordination (uses ToolNodeService internally)
+const weightedResult = await coordinator.executeSimpleWorkflow(
+  networkId,
+  message // Weighted merging happens automatically
+);
+
+// 3. Adaptive strategies (uses NodeFactoryService internally)
+const adaptiveResult = await coordinator.setupNetwork('adaptive-id', agents, dynamicPattern, adaptiveConfig);
+```
+
 ## Quick Start
 
 ### Installation & Setup
@@ -269,6 +525,41 @@ getAllAgents(): AgentDefinition[]
 getAgentsByCapability(capability: string): AgentDefinition[]
 ```
 
+### WorkflowManagerService
+
+**Primary interface** for workflow operations:
+
+```typescript
+// Workflow execution
+async executeWorkflow(
+  workflowId: string,
+  input: any,
+  config?: Partial<WorkflowConfig>
+): Promise<WorkflowResult>
+
+async executeWorkflowWithStreaming(
+  workflowId: string,
+  input: any,
+  streamCallback?: (event: any) => void,
+  config?: Partial<WorkflowConfig>
+): Promise<WorkflowResult>
+
+// Workflow management
+getWorkflow(workflowId: string): WorkflowDefinition | null
+getAllWorkflows(): WorkflowDefinition[]
+hasWorkflow(workflowId: string): boolean
+getWorkflowInfo(workflowId: string): WorkflowInfo | null
+
+// Instance management
+getActiveInstances(): WorkflowInstance[]
+cancelWorkflow(instanceId: string): Promise<boolean>
+getWorkflowHistory(workflowId: string): WorkflowInstance[]
+
+// Statistics and health
+getWorkflowStats(): WorkflowSystemStats
+healthCheck(): Promise<WorkflowHealthStatus>
+```
+
 ### AgentRegistryService
 
 **Agent lifecycle management**:
@@ -296,6 +587,9 @@ updateAgentHealth(agentId: string, isHealthy: boolean): void
 MultiAgentModule.forRoot({
   // Agent registration (replaces auto-discovery)
   agents: [ResearchAgent, WriterAgent, EditorAgent],
+
+  // Workflow registration
+  workflows: [ContentCreationWorkflow, CustomerSupportWorkflow],
 
   // LLM provider configuration
   defaultLlm: {

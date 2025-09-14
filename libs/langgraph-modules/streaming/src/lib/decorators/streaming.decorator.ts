@@ -79,8 +79,9 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
       enabled: options.enabled ?? true,
       // ✅ Use module config instead of hardcoded defaults
       bufferSize: options.bufferSize ?? moduleConfig.defaultBufferSize ?? 50,
-      batchSize: options.batchSize ?? 10, // TODO: Add to module config
-      flushInterval: options.flushInterval ?? 100, // TODO: Add to module config
+      batchSize: options.batchSize ?? moduleConfig.tokenDefaults.batchSize,
+      flushInterval:
+        options.flushInterval ?? moduleConfig.tokenDefaults.flushInterval,
       includeMetadata: options.includeMetadata ?? false,
       format: options.format ?? 'text',
     };
@@ -189,8 +190,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       ],
       // ✅ Use module config instead of hardcoded defaults
       bufferSize: options.bufferSize ?? moduleConfig.defaultBufferSize ?? 100,
-      batchSize: options.batchSize ?? 10, // TODO: Add to module config
-      delivery: options.delivery ?? 'at-least-once', // TODO: Add to module config
+      batchSize: options.batchSize ?? moduleConfig.eventDefaults.batchSize,
+      delivery: options.delivery ?? moduleConfig.eventDefaults.delivery,
     };
 
     // Store metadata on the method
@@ -332,15 +333,16 @@ export function StreamProgress(
     descriptor: PropertyDescriptor
   ) => {
     // Get stored module configuration
-    getStreamingConfigWithDefaults();
+    const moduleConfig = getStreamingConfigWithDefaults();
 
     // Create progress streaming metadata - inherit from module config
     const progressMetadata: StreamProgressDecoratorMetadata = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
-      interval: options.interval ?? 1000, // TODO: Add to module config
-      granularity: options.granularity ?? 'fine', // TODO: Add to module config
+      interval: options.interval ?? moduleConfig.progressDefaults.interval,
+      granularity:
+        options.granularity ?? moduleConfig.progressDefaults.granularity,
       includeETA: options.includeETA ?? false,
       includeMetrics: options.includeMetrics ?? false,
       milestones: options.milestones ?? [],

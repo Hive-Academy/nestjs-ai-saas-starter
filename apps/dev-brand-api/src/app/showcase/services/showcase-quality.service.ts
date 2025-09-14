@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import { ApprovalRiskLevel } from '@hive-academy/langgraph-hitl';
-import type { ShowcaseAgentState, ShowcaseApproval } from '../types/showcase.types';
+import type {
+  ShowcaseAgentState,
+  ShowcaseApproval,
+} from '../types/showcase.types';
 
 /**
  * ✅ SHOWCASE QUALITY SERVICE
- * 
+ *
  * Responsible for quality assurance and approval workflows.
  * Handles HITL approvals, risk assessment, and quality metrics.
  */
@@ -17,16 +20,17 @@ export class ShowcaseQualityService {
    * Create approval request for content quality review
    */
   createApprovalRequest(
-    showcaseId: string,
+    executionId: string,
     state: Partial<ShowcaseAgentState>
   ): ShowcaseApproval {
     this.logger.log('✅ Creating quality assurance approval request...');
 
     const approvalRequest: ShowcaseApproval = {
-      id: `approval-${showcaseId}-${Date.now()}`,
+      id: `approval-${executionId}-${Date.now()}`,
       type: 'content',
       title: 'Showcase Content Quality Review',
-      description: 'Review generated showcase content for accuracy and completeness',
+      description:
+        'Review generated showcase content for accuracy and completeness',
       requestedBy: 'supervisor-showcase-workflow',
       requestedAt: Date.now(),
 
@@ -34,7 +38,8 @@ export class ShowcaseQualityService {
         {
           id: 'approve',
           label: 'Approve Content',
-          description: 'Content meets quality standards and is ready for final processing',
+          description:
+            'Content meets quality standards and is ready for final processing',
           consequences: ['Content will be finalized and prepared for delivery'],
           confidence: 0.9,
         },
@@ -48,7 +53,8 @@ export class ShowcaseQualityService {
         {
           id: 'reject',
           label: 'Reject Content',
-          description: 'Content does not meet standards and needs complete rework',
+          description:
+            'Content does not meet standards and needs complete rework',
           consequences: ['Workflow will restart from analysis phase'],
           confidence: 0.3,
         },
@@ -56,7 +62,6 @@ export class ShowcaseQualityService {
 
       context: {
         agentState: {
-          contentSections: (state.generatedContent as any[])?.length || 0,
           analysisQuality: (state.analysis as any[])?.length || 0,
         },
         reasoning: 'Human validation required for showcase content quality',
@@ -125,7 +130,9 @@ export class ShowcaseQualityService {
 
     const autoApprove = riskScore < 0.2 && state.demonstrationMode === 'basic';
 
-    this.logger.log(`Risk assessment: ${level} (score: ${riskScore}, auto-approve: ${autoApprove})`);
+    this.logger.log(
+      `Risk assessment: ${level} (score: ${riskScore}, auto-approve: ${autoApprove})`
+    );
 
     return {
       level,
@@ -169,7 +176,7 @@ export class ShowcaseQualityService {
       },
       {
         name: 'Execution Time',
-        passed: (Date.now() - (state.executionStartTime || Date.now())) < 300000,
+        passed: Date.now() - (state.executionStartTime || Date.now()) < 300000,
         weight: 0.1,
         description: 'Workflow should complete within 5 minutes',
       },
@@ -193,7 +200,11 @@ export class ShowcaseQualityService {
 
     const passed = score >= 0.7; // 70% threshold
 
-    this.logger.log(`Quality validation: ${passed ? 'PASSED' : 'FAILED'} (score: ${Math.round(score * 100)}%)`);
+    this.logger.log(
+      `Quality validation: ${passed ? 'PASSED' : 'FAILED'} (score: ${Math.round(
+        score * 100
+      )}%)`
+    );
 
     return {
       passed,
@@ -214,7 +225,9 @@ export class ShowcaseQualityService {
       pendingApprovals: [...(state.pendingApprovals || []), approvalRequest],
       messages: [
         ...(state.messages || []),
-        new HumanMessage('Quality assurance initiated - human approval requested'),
+        new HumanMessage(
+          'Quality assurance initiated - human approval requested'
+        ),
         new HumanMessage(`Approval request: ${approvalRequest.title}`),
       ],
     };
@@ -232,9 +245,11 @@ export class ShowcaseQualityService {
     nextAction: string;
     updatedState: Partial<ShowcaseAgentState>;
   } {
-    this.logger.log(`Processing approval response: ${response} for ${approvalId}`);
+    this.logger.log(
+      `Processing approval response: ${response} for ${approvalId}`
+    );
 
-    const approval = state.pendingApprovals?.find(a => a.id === approvalId);
+    const approval = state.pendingApprovals?.find((a) => a.id === approvalId);
     if (!approval) {
       throw new Error(`Approval not found: ${approvalId}`);
     }
@@ -244,13 +259,17 @@ export class ShowcaseQualityService {
       {
         approvalId,
         response,
+        decision: response,
+        decidedBy: 'human-reviewer',
+        decidedAt: Date.now(),
         timestamp: Date.now(),
         reviewer: 'human-reviewer',
         comments: `Content ${response}d via quality assurance workflow`,
-      },
+      } as any, // Cast to any to align with ShowcaseApprovalHistory while preserving extra metadata
     ];
 
-    const pendingApprovals = state.pendingApprovals?.filter(a => a.id !== approvalId) || [];
+    const pendingApprovals =
+      state.pendingApprovals?.filter((a) => a.id !== approvalId) || [];
 
     let nextAction: string;
     let approved: boolean;
@@ -309,9 +328,9 @@ export class ShowcaseQualityService {
     else if (overallScore >= 60) qualityGrade = 'D';
     else qualityGrade = 'F';
 
-    const failedChecks = validation.checks.filter(c => !c.passed);
-    const recommendations = failedChecks.map(check => 
-      `Improve ${check.name}: ${check.description}`
+    const failedChecks = validation.checks.filter((c) => !c.passed);
+    const recommendations = failedChecks.map(
+      (check) => `Improve ${check.name}: ${check.description}`
     );
 
     const summary = `Quality assessment completed with ${overallScore}% score (Grade ${qualityGrade}). ${

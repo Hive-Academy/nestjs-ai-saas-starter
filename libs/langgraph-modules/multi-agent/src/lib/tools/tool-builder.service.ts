@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DynamicStructuredTool, DynamicTool } from '@langchain/core/tools';
 import { z } from 'zod';
+import axios, { AxiosResponse } from 'axios';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { ToolRegistryService } from './tool-registry.service';
-
 
 /**
  * Fluent builder for creating tools programmatically
@@ -102,7 +104,7 @@ export class ToolBuilderService {
   createSimpleTool(
     name: string,
     description: string,
-    func: () => Promise<string>,
+    func: () => Promise<string>
   ): DynamicTool {
     return new DynamicTool({
       name,
@@ -114,7 +116,9 @@ export class ToolBuilderService {
   /**
    * Create a file operation tool
    */
-  createFileTool(operation: 'read' | 'write' | 'delete'): DynamicStructuredTool {
+  createFileTool(
+    operation: 'read' | 'write' | 'delete'
+  ): DynamicStructuredTool {
     const schemas = {
       read: z.object({
         path: z.string().describe('File path to read'),
@@ -122,7 +126,10 @@ export class ToolBuilderService {
       write: z.object({
         path: z.string().describe('File path to write'),
         content: z.string().describe('Content to write'),
-        createDirs: z.boolean().optional().describe('Create parent directories if needed'),
+        createDirs: z
+          .boolean()
+          .optional()
+          .describe('Create parent directories if needed'),
       }),
       delete: z.object({
         path: z.string().describe('File path to delete'),
@@ -131,11 +138,71 @@ export class ToolBuilderService {
 
     return new DynamicStructuredTool({
       name: `file_${operation}`,
-      description: `${operation.charAt(0).toUpperCase() + operation.slice(1)} a file`,
+      description: `${
+        operation.charAt(0).toUpperCase() + operation.slice(1)
+      } a file`,
       schema: schemas[operation],
       func: async (input) => {
-        // This would be implemented with actual file operations
-        return `File ${operation} operation completed for: ${input.path}`;
+        try {
+          const filePath = input.path;
+
+          switch (operation) {
+            case 'read': {
+              const content = await fs.readFile(filePath, 'utf-8');
+              return {
+                operation: 'read',
+                path: filePath,
+                content,
+                size: content.length,
+                success: true,
+                timestamp: new Date().toISOString(),
+              };
+            }
+
+            case 'write': {
+              const writeContent = input.content;
+
+              // Create directories if needed
+              if (input.createDirs) {
+                const dir = path.dirname(filePath);
+                await fs.mkdir(dir, { recursive: true });
+              }
+
+              await fs.writeFile(filePath, writeContent, 'utf-8');
+              const stats = await fs.stat(filePath);
+
+              return {
+                operation: 'write',
+                path: filePath,
+                size: stats.size,
+                success: true,
+                timestamp: new Date().toISOString(),
+              };
+            }
+            case 'delete': {
+              await fs.unlink(filePath);
+
+              return {
+                operation: 'delete',
+                path: filePath,
+                success: true,
+                timestamp: new Date().toISOString(),
+              };
+            }
+            default:
+              throw new Error(`Unknown file operation: ${operation}`);
+          }
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          return {
+            operation,
+            path: input.path,
+            error: errorMessage,
+            success: false,
+            timestamp: new Date().toISOString(),
+          };
+        }
       },
     });
   }
@@ -147,26 +214,81 @@ export class ToolBuilderService {
     name: string,
     description: string,
     endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET'
   ): DynamicStructuredTool {
     return new DynamicStructuredTool({
       name,
       description,
       schema: z.object({
-        params: z.record(z.string(), z.any()).optional().describe('Query parameters'),
+        params: z
+          .record(z.string(), z.any())
+          .optional()
+          .describe('Query parameters'),
         body: z.any().optional().describe('Request body'),
-        headers: z.record(z.string(), z.string()).optional().describe('Request headers'),
+        headers: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe('Request headers'),
       }),
       func: async ({ params, body, headers }) => {
-        // This would make actual HTTP requests
-        return {
-          endpoint,
-          method,
-          params,
-          body,
-          headers,
-          response: 'Mock response',
-        };
+        try {
+          // Build the URL with query parameters
+          let url = endpoint;
+          if (params && Object.keys(params).length > 0) {
+            const searchParams = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+              searchParams.append(key, String(value));
+            });
+            url +=
+              (endpoint.includes('?') ? '&' : '?') + searchParams.toString();
+          }
+
+          // Make actual HTTP request using axios
+          const axiosConfig = {
+            method: method.toLowerCase(),
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              ...headers,
+            },
+            timeout: 30000, // 30 second timeout for demo stability
+            validateStatus: (status: number) => status < 500, // Don't throw on 4xx errors
+          } as any;
+
+          // Add body for POST/PUT requests
+          if (body && (method === 'POST' || method === 'PUT')) {
+            axiosConfig.data = body;
+          }
+
+          const response: AxiosResponse = await axios(axiosConfig);
+
+          return {
+            endpoint,
+            method,
+            params,
+            body,
+            headers,
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data,
+            success: response.status >= 200 && response.status < 300,
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          // Handle network errors gracefully for demo
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          return {
+            endpoint,
+            method,
+            params,
+            body,
+            headers,
+            error: errorMessage,
+            success: false,
+            timestamp: new Date().toISOString(),
+          };
+        }
       },
     });
   }
@@ -177,14 +299,17 @@ export class ToolBuilderService {
   createDatabaseTool(
     name: string,
     description: string,
-    queryBuilder: (params: any) => string,
+    queryBuilder: (params: any) => string
   ): DynamicStructuredTool {
     return new DynamicStructuredTool({
       name,
       description,
       schema: z.object({
         table: z.string().describe('Table name'),
-        filters: z.record(z.string(), z.any()).optional().describe('Query filters'),
+        filters: z
+          .record(z.string(), z.any())
+          .optional()
+          .describe('Query filters'),
         limit: z.number().optional().describe('Result limit'),
         orderBy: z.string().optional().describe('Order by field'),
       }),
@@ -207,7 +332,10 @@ export class ToolBuilderService {
     name: string,
     description: string,
     tools: string[],
-    orchestrator: (tools: Map<string, DynamicStructuredTool>, input: any) => Promise<any>,
+    orchestrator: (
+      tools: Map<string, DynamicStructuredTool>,
+      input: any
+    ) => Promise<any>
   ): DynamicStructuredTool {
     return new DynamicStructuredTool({
       name,
@@ -241,7 +369,7 @@ export class ToolBuilderService {
       condition: (input: any) => boolean;
       tool: string;
     }>,
-    defaultTool?: string,
+    defaultTool?: string
   ): DynamicStructuredTool {
     return new DynamicStructuredTool({
       name,
@@ -268,7 +396,9 @@ export class ToolBuilderService {
           }
         }
 
-        return { message: 'No conditions matched and no default tool specified' };
+        return {
+          message: 'No conditions matched and no default tool specified',
+        };
       },
     });
   }
@@ -283,7 +413,7 @@ export class ToolBuilderService {
     options?: {
       concurrency?: number;
       continueOnError?: boolean;
-    },
+    }
   ): DynamicStructuredTool {
     const concurrency = options?.concurrency || 5;
     const continueOnError = options?.continueOnError || false;
@@ -324,8 +454,8 @@ export class ToolBuilderService {
           });
 
           const batchResults = await Promise.all(batchPromises);
-          results.push(...batchResults.filter(r => r.success));
-          errors.push(...batchResults.filter(r => !r.success));
+          results.push(...batchResults.filter((r) => r.success));
+          errors.push(...batchResults.filter((r) => !r.success));
         }
 
         return {
@@ -346,7 +476,7 @@ export class ToolBuilderService {
     metadata?: {
       agents?: string[] | '*';
       tags?: string[];
-    },
+    }
   ): Promise<void> {
     this.toolRegistry.registerDynamicTool(tool, metadata);
   }

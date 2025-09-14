@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Inject } from '@nestjs/common';
@@ -80,7 +81,10 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   private cleanupTimer?: Subscription;
 
   constructor(
-    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    @Optional()
+    @Inject('StreamingWebSocketGateway')
+    private readonly streamingGateway?: any
   ) {}
 
   /**
@@ -336,6 +340,92 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
         lastFlush: config.lastFlush,
       })
     );
+  }
+
+  /**
+   * Process a single token and emit to connected clients
+   */
+  async processToken(token: string): Promise<void> {
+    try {
+      // Emit token to WebSocket gateway for real-time streaming
+      if (
+        this.streamingGateway &&
+        typeof this.streamingGateway.emitTokenUpdate === 'function'
+      ) {
+        this.streamingGateway.emitTokenUpdate(token);
+      }
+
+      // Emit token update event for other services
+      this.eventEmitter.emit('token.processed', {
+        token,
+        timestamp: new Date(),
+        source: 'token_streaming_service',
+      });
+
+      // Update processed token count
+      this.totalTokensProcessed++;
+      this.updateTokenStats();
+
+      this.logger.debug(`Processed token: ${token.substring(0, 50)}...`);
+    } catch (error) {
+      this.logger.error('Error processing token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stream multiple tokens with delay for real-time effect
+   */
+  async streamTokens(tokens: string[]): Promise<void> {
+    try {
+      this.logger.debug(`Streaming ${tokens.length} tokens`);
+
+      for (const token of tokens) {
+        await this.processToken(token);
+        // Add small delay for streaming effect (50ms for demo)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Emit completion event
+      this.eventEmitter.emit('tokens.stream.completed', {
+        tokenCount: tokens.length,
+        timestamp: new Date(),
+      });
+
+      this.logger.debug(`Completed streaming ${tokens.length} tokens`);
+    } catch (error) {
+      this.logger.error('Error streaming tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process a batch of stream items
+   */
+  async processStreamBatch(batch: any[]): Promise<void> {
+    try {
+      this.logger.debug(`Processing batch of ${batch.length} items`);
+
+      // Process each item in the batch
+      for (const item of batch) {
+        const token =
+          typeof item === 'string'
+            ? item
+            : item.token || item.content || String(item);
+        await this.processToken(token);
+      }
+
+      // Emit batch completion event
+      this.eventEmitter.emit('batch.processed', {
+        batchSize: batch.length,
+        timestamp: new Date(),
+      });
+
+      this.logger.debug(`Completed processing batch of ${batch.length} items`);
+    } catch (error) {
+      this.logger.error('Error processing stream batch:', error);
+      throw error;
+    }
   }
 
   // Private methods
@@ -622,7 +712,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Process async iterable tokens
+   * Process async iterable tokens - Fixed to actually yield and process items
    */
   private async processAsyncIterableTokens(
     iterable: AsyncIterable<any>,
@@ -631,16 +721,67 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     let tokenCount = 0;
 
     try {
-      for await (const _chunk of iterable) {
+      // Actually process each item from the async iterable
+      for await (const chunk of iterable) {
         tokenCount++;
-        // Process each chunk as a token
-        // This would need execution context from the decorator
+        const token =
+          typeof chunk === 'string'
+            ? chunk
+            : chunk.token || chunk.content || String(chunk);
+
+        // Process the token with real streaming
+        await this.processToken(token);
+
+        // Add small delay for streaming effect
+        await new Promise((resolve) => setTimeout(resolve, 25));
       }
 
       this.logger.debug(`Processed ${tokenCount} tokens from async iterable`);
     } catch (error) {
       this.logger.error('Error processing async iterable tokens:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Process async iterable with proper yielding - Generic method
+   */
+  async *processAsyncIterable<T>(
+    iterable: AsyncIterable<T>
+  ): AsyncGenerator<T> {
+    try {
+      for await (const item of iterable) {
+        // Actually yield the processed item instead of just counting
+        yield await this.processItem(item);
+      }
+    } catch (error) {
+      this.logger.error('Error in processAsyncIterable:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process individual item from async iterable
+   */
+  private async processItem<T>(item: T): Promise<T> {
+    try {
+      // Add processing logic if needed
+      const token =
+        typeof item === 'string'
+          ? item
+          : (item as any).token || (item as any).content || String(item);
+
+      // Process token for streaming
+      if (typeof token === 'string') {
+        await this.processToken(token);
+      }
+
+      // Return the original item
+      return item;
+    } catch (error) {
+      this.logger.error('Error processing item:', error);
+      // Return item even if processing fails
+      return item;
     }
   }
 

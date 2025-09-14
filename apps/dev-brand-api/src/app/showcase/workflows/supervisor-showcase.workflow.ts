@@ -131,6 +131,7 @@ export class SupervisorShowcaseWorkflow {
     // Create initial state with comprehensive context
     const initialState: Partial<ShowcaseAgentState> = {
       showcaseId: executionId,
+      executionId, // Added explicit executionId for streaming decorators & downstream services
       demonstrationMode: request.demonstrationMode,
       currentPattern: 'supervisor',
       activeCapabilities: ['coordination', 'analysis', 'generation'],

@@ -10,6 +10,9 @@ export { NodeFactoryService } from './lib/services/node-factory.service';
 export { LlmProviderService } from './lib/services/llm-provider.service';
 export { NetworkManagerService } from './lib/services/network-manager.service';
 
+// Workflow Services (public facade only)
+export { WorkflowManagerService } from './lib/services/workflow-manager.service';
+
 // Tools System (explicit registration replaces discovery)
 export { ToolRegistrationService } from './lib/services/tool-registration.service';
 export { ToolRegistryService } from './lib/tools/tool-registry.service';
@@ -24,9 +27,10 @@ export * from './lib/types/agent-config.interface';
 // Constants
 export * from './lib/constants/multi-agent.constants';
 
-// Decorators - Tool and Agent decorators
+// Decorators - Tool, Agent, and Workflow decorators
 export * from './lib/decorators/tool.decorator';
 export * from './lib/decorators/agent.decorator';
+export * from './lib/decorators/workflow.decorator';
 
 // Configuration utilities
 export * from './lib/utils/multi-agent-config.accessor';

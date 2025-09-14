@@ -9,6 +9,10 @@ import { AnalysisShowcaseAgent } from '../showcase/agents/analysis-showcase.agen
 import { ContentShowcaseAgent } from '../showcase/agents/content-showcase.agent';
 import { ResearchShowcaseAgent } from '../showcase/agents/research-showcase.agent';
 
+// Import business agents and workflows for unified registration
+import { CustomerSupportAgent } from '../business-workflows/agents/customer-support.agent';
+import { EnhancedSupportWorkflow } from '../business-workflows/workflows/enhanced-support.workflow';
+
 /**
  * Multi-Agent Module Configuration for dev-brand-api
  * Simple and consistent LLM provider configuration
@@ -68,9 +72,18 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
 
     // Explicit agent registration (replaces discovery-based registration)
     agents: [
+      // Showcase agents
       AnalysisShowcaseAgent,
       ContentShowcaseAgent,
       ResearchShowcaseAgent,
+
+      // Business agents
+      CustomerSupportAgent,
+    ],
+
+    // Workflow registration - Multi-agent orchestration workflows only
+    workflows: [
+      EnhancedSupportWorkflow, // Showcases multi-agent coordination
     ],
 
     // Simple and consistent LLM configuration

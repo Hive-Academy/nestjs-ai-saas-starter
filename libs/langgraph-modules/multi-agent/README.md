@@ -10,6 +10,35 @@ The **Multi-Agent Module** enables sophisticated AI agent coordination and orche
 
 Built on **2025 LangGraph patterns** with full TypeScript support and enterprise-ready features.
 
+## 🚀 New Enhanced Capabilities
+
+### Hierarchical Multi-Level Coordination
+
+Truly hierarchical agent systems with **intelligent escalation** and **level-specific routing**:
+
+- **Executive Level** - Strategic decisions and policy enforcement
+- **Specialist Level** - Technical expertise and complex problem resolution
+- **Operational Level** - Direct execution and customer interaction
+- **Dynamic Escalation** - Automatic routing based on conditions and metadata
+
+### Weighted Tool Coordination
+
+Sophisticated **confidence-based decision making** with weighted merging:
+
+- **Tool Confidence Tracking** - Each tool result has confidence/importance weights
+- **Intelligent Result Merging** - Weighted averages for numbers, confidence-based selection for strings
+- **Multi-Type Value Handling** - Arrays, objects, primitives all handled appropriately
+- **Cumulative Weight Accumulation** - Results improve with more confident sources
+
+### Adaptive Strategy Selection
+
+Dynamic coordination patterns that **adapt in real-time**:
+
+- **Context Analysis** - Real-time assessment of task characteristics
+- **Strategy Switching** - Automatic pattern selection (supervisor vs swarm vs hierarchical)
+- **Performance Optimization** - Route selection based on urgency, complexity, customer tier
+- **Feedback-Driven Learning** - Strategy effectiveness tracking and optimization
+
 ## Quick Start
 
 ### Installation & Setup
@@ -179,35 +208,174 @@ const networkId = await coordinator.setupNetwork(
 );
 ```
 
-### Hierarchical Pattern
+### Hierarchical Pattern - **ENHANCED**
 
 **Best for**: Approval workflows, escalation systems, enterprise processes
 
+Now supports **true multi-level hierarchical coordination** with intelligent escalation:
+
 ```typescript
-// Setup hierarchical network
+// Setup enhanced hierarchical network
 const networkId = await coordinator.setupNetwork(
-  'support-hierarchy',
+  'customer-support-hierarchy',
   [
-    { id: 'tier1-support', type: 'Tier1SupportAgent' },
-    { id: 'tier2-support', type: 'Tier2SupportAgent' },
-    { id: 'support-manager', type: 'SupportManagerAgent' },
+    // Executive Level - Strategic decisions
+    {
+      id: 'support-executive',
+      name: 'Support Executive',
+      description: 'Makes high-level customer service decisions, handles escalations',
+      nodeFunction: createExecutiveAgent(),
+      capabilities: ['strategic_planning', 'escalation_management', 'policy_decisions'],
+      priority: 'critical',
+    },
+    // Specialist Level - Technical expertise
+    {
+      id: 'technical-specialist',
+      name: 'Technical Specialist',
+      description: 'Provides technical expertise and complex problem resolution',
+      nodeFunction: createTechnicalSpecialistAgent(),
+      capabilities: ['technical_analysis', 'complex_troubleshooting', 'solution_architecture'],
+      priority: 'high',
+    },
+    // Operational Level - Direct customer interaction
+    {
+      id: 'frontline-agent',
+      name: 'Frontline Support Agent',
+      description: 'Handles direct customer interaction and basic support tasks',
+      nodeFunction: createFrontlineAgent(),
+      capabilities: ['customer_interaction', 'basic_support', 'ticket_processing'],
+      priority: 'medium',
+    },
   ],
-  'hierarchical',
+  'hierarchical', // Uses enhanced GraphBuilderService internally!
   {
     levels: [
-      ['support-manager'], // Management level
-      ['tier2-support'], // Specialist level
-      ['tier1-support'], // Front-line level
+      ['support-executive'], // Level 0: Executive
+      ['technical-specialist'], // Level 1: Specialist
+      ['frontline-agent'], // Level 2: Operational
     ],
     escalationRules: [
       {
-        condition: (state) => state.metadata?.severity === 'critical',
-        targetLevel: 0, // Escalate to management
-        message: 'Critical severity - immediate attention required',
+        condition: (state) => state.metadata?.priority === 'critical',
+        targetLevel: 0, // Escalate to executive
+        message: 'Critical priority - executive attention required',
+      },
+      {
+        condition: (state) => state.metadata?.complexity === 'high',
+        targetLevel: 1, // Escalate to specialist
+        message: 'Technical complexity requires specialist expertise',
       },
     ],
   }
 );
+```
+
+### Weighted Tool Coordination - **NEW**
+
+**Best for**: Multi-source analysis, confidence-based decisions, expert system integration
+
+```typescript
+// Setup weighted tool coordination
+const networkId = await coordinator.setupNetwork(
+  'weighted-analysis-tools',
+  [
+    {
+      id: 'knowledge-searcher',
+      name: 'Knowledge Base Searcher',
+      description: 'Searches knowledge base for solutions',
+      nodeFunction: createKnowledgeSearchAgent(),
+      capabilities: ['knowledge_search', 'solution_lookup'],
+    },
+    {
+      id: 'ai-analyzer',
+      name: 'AI Solution Analyzer',
+      description: 'Uses AI to analyze and propose solutions',
+      nodeFunction: createAIAnalyzerAgent(),
+      capabilities: ['ai_analysis', 'solution_generation'],
+    },
+    {
+      id: 'historical-matcher',
+      name: 'Historical Pattern Matcher',
+      description: 'Matches against historical successful resolutions',
+      nodeFunction: createHistoricalMatcherAgent(),
+      capabilities: ['pattern_matching', 'historical_analysis'],
+    },
+  ],
+  'supervisor',
+  {
+    systemPrompt: `You coordinate multiple analysis tools with different confidence levels.
+    
+TOOL WEIGHTS:
+- AI Analyzer: 0.7 (high confidence, sophisticated analysis)  
+- Historical Matcher: 0.8 (very high confidence, proven solutions)
+- Knowledge Searcher: 0.5 (medium confidence, basic lookup)
+
+Route to the tool most appropriate for the problem complexity.`,
+    workers: ['knowledge-searcher', 'ai-analyzer', 'historical-matcher'],
+    enableForwardMessage: true,
+  }
+);
+
+// Agents return weighted metadata that gets intelligently merged:
+// In agent implementations:
+return {
+  messages: [new AIMessage(`AI analysis suggests: ${analysis.recommendation}`)],
+  metadata: {
+    ...state.metadata,
+    aiAnalysis: analysis,
+    toolWeight: 0.7, // Higher confidence - AI analysis
+    analysisCompleted: true,
+  },
+};
+```
+
+### Adaptive Strategy Selection - **NEW**
+
+**Best for**: Dynamic workflows, context-sensitive routing, intelligent automation
+
+```typescript
+// Adaptive strategy that chooses coordination pattern based on context
+const networkId = await coordinator.setupNetwork(
+  `adaptive-support-${strategy}`, // Strategy determined at runtime
+  [
+    {
+      id: 'rapid-responder',
+      name: 'Rapid Response Agent',
+      description: 'Provides quick initial responses and basic solutions',
+      nodeFunction: createRapidResponseAgent(),
+      capabilities: ['quick_response', 'basic_solutions'],
+    },
+    {
+      id: 'deep-analyzer',
+      name: 'Deep Analysis Agent',
+      description: 'Performs thorough analysis for complex issues',
+      nodeFunction: createDeepAnalysisAgent(),
+      capabilities: ['deep_analysis', 'complex_solutions'],
+    },
+    {
+      id: 'quality-controller',
+      name: 'Quality Control Agent',
+      description: 'Reviews and validates proposed solutions',
+      nodeFunction: createQualityControlAgent(),
+      capabilities: ['quality_control', 'solution_validation'],
+    },
+  ],
+  strategy === 'urgent' ? 'swarm' : 'supervisor', // Dynamic pattern selection
+  strategy === 'urgent'
+    ? {
+        enableDynamicHandoffs: true,
+        messageHistory: { removeHandoffMessages: true },
+      }
+    : {
+        systemPrompt: 'Coordinate thorough analysis with quality validation',
+        workers: ['deep-analyzer', 'quality-controller'],
+      }
+);
+
+// Function to determine strategy based on real-time conditions:
+function determineOptimalStrategy(request: any): 'urgent' | 'thorough' {
+  return request.priority === 'critical' || request.customerTier === 'enterprise' ? 'urgent' : 'thorough';
+}
 ```
 
 ## Core Interfaces
@@ -402,6 +570,57 @@ defaultLlm: {
     siteUrl: 'https://yourapp.com'
   }
 }
+```
+
+## 🎯 Enhanced Internal Architecture
+
+### Powerful Internal Services
+
+The Multi-Agent Module now includes sophisticated **internal infrastructure services** that provide enterprise-grade capabilities while maintaining clean public APIs:
+
+#### GraphBuilderService - **Enhanced Hierarchical Coordination**
+
+_Internal service (not exported) providing sophisticated graph construction:_
+
+- **True Multi-Level Hierarchical Graphs** - Real executive → specialist → operational routing
+- **Dynamic Escalation Logic** - Condition-based level switching with contextual messaging
+- **Level-Specific Coordination** - Each hierarchy level has tailored prompt engineering and routing rules
+- **Intelligent Routing Decisions** - Context-aware agent selection and workflow orchestration
+
+#### ToolNodeService - **Enhanced Weighted Merging**
+
+_Internal service (not exported) providing sophisticated result coordination:_
+
+- **Multi-Type Weighted Merging** - Handles numbers, strings, arrays, objects with different strategies
+- **Confidence-Based Selection** - Chooses best values based on tool confidence levels
+- **Recursive Object Merging** - Deep merging of complex nested structures
+- **Cumulative Weight Tracking** - Maintains weight history for improved decision making
+
+#### NodeFactoryService - **Enhanced Coordination Patterns**
+
+_Internal integration service providing:_
+
+- **Tool-Enhanced Agent Nodes** - Agents with automatic weighted result processing
+- **Adaptive Coordinator Nodes** - Dynamic strategy selection and pattern switching
+- **Advanced Retry Logic** - Intelligent failure handling and recovery strategies
+- **Performance Optimization** - Efficient resource utilization and scaling
+
+### Clean Public API Design
+
+All enhanced capabilities are accessed through the **MultiAgentCoordinatorService facade**:
+
+```typescript
+// Simple public interface hides complex internal infrastructure
+const result = await coordinator.setupNetwork(
+  'network-id',
+  agents,
+  'hierarchical', // Uses enhanced GraphBuilderService internally
+  config
+);
+
+// Weighted coordination handled automatically by ToolNodeService
+// Adaptive strategies managed by NodeFactoryService
+// Enterprise-grade capabilities through simple method calls
 ```
 
 ## Advanced Features

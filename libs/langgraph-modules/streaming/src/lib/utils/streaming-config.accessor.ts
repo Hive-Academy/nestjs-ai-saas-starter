@@ -1,6 +1,27 @@
 import type { StreamingModuleOptions } from '../streaming.module';
 
 /**
+ * Extended runtime config shape injected by module. We augment original StreamingModuleOptions
+ * (non-breaking, since backward compatibility not required) with additional streaming defaults.
+ */
+export interface ResolvedStreamingRuntimeConfig
+  extends Required<StreamingModuleOptions> {
+  tokenDefaults: {
+    batchSize: number;
+    flushInterval: number;
+    format: 'text' | 'structured';
+  };
+  eventDefaults: {
+    batchSize: number;
+    delivery: 'at-least-once' | 'at-most-once';
+  };
+  progressDefaults: {
+    interval: number;
+    granularity: 'fine' | 'coarse';
+  };
+}
+
+/**
  * Global storage for streaming module configuration
  * Set when StreamingModule.forRoot() is called
  */
@@ -26,7 +47,7 @@ export function getStreamingConfig(): StreamingModuleOptions {
  * Get streaming config with safe defaults
  * Used by decorators to inherit module configuration
  */
-export function getStreamingConfigWithDefaults(): Required<StreamingModuleOptions> {
+export function getStreamingConfigWithDefaults(): ResolvedStreamingRuntimeConfig {
   const config = getStreamingConfig();
 
   return {
@@ -55,6 +76,19 @@ export function getStreamingConfigWithDefaults(): Required<StreamingModuleOption
         windowMs: config.gateway?.rateLimit?.windowMs ?? 60000,
       },
       ...config.gateway,
+    },
+    tokenDefaults: {
+      batchSize: (config as any)?.tokenDefaults?.batchSize ?? 10,
+      flushInterval: (config as any)?.tokenDefaults?.flushInterval ?? 100,
+      format: (config as any)?.tokenDefaults?.format ?? 'text',
+    },
+    eventDefaults: {
+      batchSize: (config as any)?.eventDefaults?.batchSize ?? 10,
+      delivery: (config as any)?.eventDefaults?.delivery ?? 'at-least-once',
+    },
+    progressDefaults: {
+      interval: (config as any)?.progressDefaults?.interval ?? 1000,
+      granularity: (config as any)?.progressDefaults?.granularity ?? 'fine',
     },
   };
 }

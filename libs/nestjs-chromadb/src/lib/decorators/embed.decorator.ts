@@ -1,4 +1,4 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata, Logger } from '@nestjs/common';
 import type {
   EmbeddingServiceInterface,
   EmbeddableDocument,
@@ -67,6 +67,7 @@ export const EmbedMarker = (options: EmbedOptions = {}): MethodDecorator => {
  * Automatically inherits configuration from module setup
  */
 export const EmbeddingHelper = {
+  _logger: new Logger('EmbeddingHelper'),
   /**
    * Add embeddings to documents that need them
    */
@@ -96,6 +97,14 @@ export const EmbeddingHelper = {
 
     try {
       const embeddings = await embeddingService.embed(textsToEmbed);
+      if (
+        !Array.isArray(embeddings) ||
+        embeddings.length !== textsToEmbed.length
+      ) {
+        throw new Error(
+          `Embedding service returned mismatched embeddings count. Expected ${textsToEmbed.length}, received ${embeddings?.length}`
+        );
+      }
 
       let embeddingIndex = 0;
       return documents.map((doc) => {
@@ -109,10 +118,10 @@ export const EmbeddingHelper = {
         }
         return doc;
       });
-    } catch (_error) {
-      // Log error to proper logging service if available
-      // For now, just return documents without embeddings
-      return documents;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      EmbeddingHelper._logger.error(`Failed to embed documents: ${message}`);
+      throw new Error(`Failed to embed documents: ${message}`);
     }
   },
 
@@ -133,10 +142,10 @@ export const EmbeddingHelper = {
     try {
       const embedding = await embeddingService.embedSingle(String(obj[field]));
       return { ...obj, [target]: embedding };
-    } catch (_error) {
-      // Log error to proper logging service if available
-      // For now, just return object without embedding
-      return obj;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      EmbeddingHelper._logger.error(`Failed to embed object: ${message}`);
+      throw new Error(`Failed to embed object: ${message}`);
     }
   },
 };
@@ -161,9 +170,12 @@ export async function withEmbedding<T extends Record<string, unknown>>(
       String(obj[textField])
     );
     return { ...obj, [embeddingField]: embedding };
-  } catch (_error) {
-    // Failed to generate embedding, returning original object
-    return obj;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    new Logger('EmbeddingHelper').error(
+      `Failed to embed object (withEmbedding): ${message}`
+    );
+    throw new Error(`Failed to embed object: ${message}`);
   }
 }
 
@@ -187,6 +199,11 @@ export async function withBatchEmbeddings<T extends Record<string, unknown>>(
   try {
     const texts = objectsNeedingEmbeddings.map((obj) => String(obj[textField]));
     const embeddings = await embeddingService.embed(texts);
+    if (!Array.isArray(embeddings) || embeddings.length !== texts.length) {
+      throw new Error(
+        `Embedding service returned mismatched embeddings count. Expected ${texts.length}, received ${embeddings?.length}`
+      );
+    }
 
     let embeddingIndex = 0;
     return objects.map((obj) => {
@@ -197,9 +214,11 @@ export async function withBatchEmbeddings<T extends Record<string, unknown>>(
       }
       return obj;
     });
-  } catch (_error) {
-    // Log error to proper logging service if available
-    // For now, just return objects without embeddings
-    return objects;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    new Logger('EmbeddingHelper').error(
+      `Failed to batch embed objects: ${message}`
+    );
+    throw new Error(`Failed to batch embed: ${message}`);
   }
 }
