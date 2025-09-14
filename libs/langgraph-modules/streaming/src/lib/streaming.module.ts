@@ -31,6 +31,8 @@ export interface StreamingModuleOptions {
   defaultBufferSize?: number;
   /** WebSocket gateway configuration */
   gateway?: WebSocketGatewayConfig;
+  /** When true, non-canonical nodeIds should cause errors instead of warnings */
+  strictNaming?: boolean;
 }
 
 @Module({})
@@ -38,16 +40,13 @@ export class StreamingModule {
   static forRoot(options?: StreamingModuleOptions): DynamicModule {
     // Store config for decorator access
     const config = options || {};
+    // Store including strictNaming flag (default handling occurs in accessor)
     setStreamingConfig(config);
 
     const providers: any[] = [
       // Concrete implementations
-      TokenStreamingService,
-      AutoInitTokenStreamingService,
-      {
-        provide: TokenStreamingService,
-        useClass: AutoInitTokenStreamingService,
-      },
+      TokenStreamingService, // inner concrete service
+      AutoInitTokenStreamingService, // wrapper providing lazy auto-init
       EventStreamProcessorService,
       WebSocketBridgeService,
       StreamingAuthService,
@@ -63,22 +62,22 @@ export class StreamingModule {
       EventStreamProcessorServiceAdapter,
       WebSocketBridgeServiceAdapter,
 
-      // Interface tokens - providing concrete implementations
+      // Interface tokens - expose auto-init variant via TOKEN_STREAMING_SERVICE_TOKEN while keeping concrete available for wrapper injection
       {
         provide: STREAMING_SERVICE_TOKEN,
-        useExisting: StreamingServiceAdapter,
+        useExisting: StreamingServiceAdapter, // adapter as facade for full streaming API
       },
       {
         provide: TOKEN_STREAMING_SERVICE_TOKEN,
-        useExisting: TokenStreamingServiceAdapter,
+        useExisting: AutoInitTokenStreamingService, // now resolves to auto-init wrapper
       },
       {
         provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
-        useExisting: EventStreamProcessorServiceAdapter,
+        useExisting: EventStreamProcessorService,
       },
       {
         provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
-        useExisting: WebSocketBridgeServiceAdapter,
+        useExisting: WebSocketBridgeService,
       },
     ];
 

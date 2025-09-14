@@ -4,12 +4,12 @@ export * from './lib/streaming.module';
 // Config utilities for decorator access
 export * from './lib/utils/streaming-config.accessor';
 
-// Services
-export * from './lib/services/token-streaming.service';
-export * from './lib/services/event-stream-processor.service';
-export * from './lib/services/websocket-bridge.service';
-export * from './lib/services/streaming-websocket-gateway.service';
-// WorkflowStreamService moved to workflow-engine module to avoid circular dependency
+// NOTE: Direct concrete service exports intentionally removed to enforce
+// interface + token based DI pattern. Consumers must inject via tokens
+// from @hive-academy/langgraph-core (STREAMING_SERVICE_TOKEN, etc.).
+// The underlying services remain internal implementation details.
+
+// (WorkflowStreamService previously moved to workflow-engine module to avoid circular dependency)
 
 // Adapters for DI pattern
 export * from './lib/adapters/streaming-service.adapter';

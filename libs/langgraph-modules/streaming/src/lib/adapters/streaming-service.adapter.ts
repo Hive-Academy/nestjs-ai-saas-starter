@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import {
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import type {
   IStreamingService,
   ITokenStreamingService,
   IEventStreamProcessorService,
@@ -7,15 +7,19 @@ import {
   TokenStreamOptions,
   StreamEventData,
   ProgressData,
-  StreamEventType,
   StreamEventDecoratorMetadata,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-core';
+import { StreamEventType } from '@hive-academy/langgraph-core';
 import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
 import { StreamUpdate } from '../interfaces/streaming.interface';
-import { TokenStreamingService } from '../services/token-streaming.service';
-import { EventStreamProcessorService } from '../services/event-stream-processor.service';
-import { WebSocketBridgeService } from '../services/websocket-bridge.service';
+// Switched to interface-token based injection to decouple adapter from concrete implementations
+import {
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+} from '@hive-academy/langgraph-core';
+import { normalizeAndWarn } from '@hive-academy/langgraph-core';
 
 /**
  * Main streaming service adapter implementing the DI adapter pattern
@@ -36,23 +40,50 @@ export class StreamingServiceAdapter implements IStreamingService {
     string,
     StreamProgressDecoratorMetadata
   >();
+  // track which raw ids have been warned (adapter-level) beyond util global - process scoped
+  private readonly warnedIds = new Set<string>();
+  private readonly strictNaming: boolean;
 
   constructor(
-    private readonly tokenStreamingService: TokenStreamingService,
-    private readonly eventStreamProcessor: EventStreamProcessorService,
-    private readonly webSocketBridge: WebSocketBridgeService
+    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
+    private readonly tokenStreamingService: ITokenStreamingService,
+    @Inject(EVENT_STREAM_PROCESSOR_SERVICE_TOKEN)
+    private readonly eventStreamProcessor: IEventStreamProcessorService,
+    @Inject(WEBSOCKET_BRIDGE_SERVICE_TOKEN)
+    private readonly webSocketBridge: IWebSocketBridgeService
   ) {
     this.logger.log(
       'StreamingServiceAdapter initialized with full DI integration'
     );
+    const cfg = getStreamingConfigWithDefaults();
+    this.strictNaming = cfg.strictNaming;
+  }
+
+  // central helper to canonicalize nodeId
+  private canonicalize(nodeId: string): string {
+    const normalized = normalizeAndWarn(nodeId, {
+      warn: true,
+      strict: this.strictNaming,
+    });
+    if (normalized !== nodeId && !this.warnedIds.has(nodeId)) {
+      this.warnedIds.add(nodeId);
+      this.logger.warn(
+        `nodeId '${nodeId}' normalized to canonical '${normalized}'`
+      );
+    }
+    return normalized;
   }
 
   // Token streaming methods
   async initializeTokenStream(options: TokenStreamOptions): Promise<void> {
     try {
-      await this.tokenStreamingService.initializeTokenStream(options);
+      const canonicalNodeId = this.canonicalize(options.nodeId);
+      await this.tokenStreamingService.initializeTokenStream({
+        ...options,
+        nodeId: canonicalNodeId,
+      });
       this.logger.debug(
-        `Initialized token stream for ${options.executionId}:${options.nodeId}`
+        `Initialized token stream for ${options.executionId}:${canonicalNodeId}`
       );
     } catch (error) {
       this.logger.error(`Failed to initialize token stream:`, error);
@@ -75,13 +106,14 @@ export class StreamingServiceAdapter implements IStreamingService {
     config: StreamEventDecoratorMetadata;
   }): Promise<void> {
     const { executionId, nodeId, config } = options;
-    const key = `${executionId}:${nodeId}`;
+    const canonicalNodeId = this.canonicalize(nodeId);
+    const key = `${executionId}:${canonicalNodeId}`;
     if (this.initializedEventStreams.has(key)) return;
 
     const moduleDefaults = getStreamingConfigWithDefaults();
     const enriched: StreamEventDecoratorMetadata = {
       enabled: config.enabled ?? true,
-      methodName: config.methodName || nodeId,
+      methodName: config.methodName || canonicalNodeId,
       events: config.events || [StreamEventType.EVENTS],
       bufferSize: config.bufferSize ?? moduleDefaults.defaultBufferSize,
       batchSize: config.batchSize ?? moduleDefaults.eventDefaults.batchSize,
@@ -104,13 +136,14 @@ export class StreamingServiceAdapter implements IStreamingService {
     config: StreamProgressDecoratorMetadata;
   }): Promise<void> {
     const { executionId, nodeId, config } = options;
-    const key = `${executionId}:${nodeId}`;
+    const canonicalNodeId = this.canonicalize(nodeId);
+    const key = `${executionId}:${canonicalNodeId}`;
     if (this.initializedProgressStreams.has(key)) return;
 
     const moduleDefaults = getStreamingConfigWithDefaults();
     const enriched: StreamProgressDecoratorMetadata = {
       enabled: config.enabled ?? true,
-      methodName: config.methodName || nodeId,
+      methodName: config.methodName || canonicalNodeId,
       interval: config.interval ?? moduleDefaults.progressDefaults.interval,
       granularity:
         config.granularity ?? moduleDefaults.progressDefaults.granularity,
@@ -137,18 +170,17 @@ export class StreamingServiceAdapter implements IStreamingService {
     token: string,
     metadata?: Record<string, unknown>
   ): void {
+    const canonicalNodeId = this.canonicalize(nodeId);
     try {
       this.tokenStreamingService.streamToken(
         executionId,
-        nodeId,
+        canonicalNodeId,
         token,
         metadata || {}
       );
-      // Optionally log at debug level
-      // this.logger.debug(`Streamed token for ${executionId}:${nodeId}`);
     } catch (error) {
       this.logger.error(
-        `Failed to stream token for ${executionId}:${nodeId}:`,
+        `Failed to stream token for ${executionId}:${canonicalNodeId}:`,
         error
       );
       throw error;
@@ -156,12 +188,16 @@ export class StreamingServiceAdapter implements IStreamingService {
   }
 
   async flushTokens(executionId: string, nodeId: string): Promise<void> {
+    const canonicalNodeId = this.canonicalize(nodeId);
     try {
-      await this.tokenStreamingService.flushTokens(executionId, nodeId);
-      this.logger.debug(`Flushed tokens for ${executionId}:${nodeId}`);
+      await this.tokenStreamingService.flushTokens(
+        executionId,
+        canonicalNodeId
+      );
+      this.logger.debug(`Flushed tokens for ${executionId}:${canonicalNodeId}`);
     } catch (error) {
       this.logger.error(
-        `Failed to flush tokens for ${executionId}:${nodeId}:`,
+        `Failed to flush tokens for ${executionId}:${canonicalNodeId}:`,
         error
       );
       throw error;
@@ -174,32 +210,29 @@ export class StreamingServiceAdapter implements IStreamingService {
     nodeId: string,
     event: StreamEventData
   ): void {
+    const canonicalNodeId = this.canonicalize(nodeId);
     try {
-      // Convert to internal event format and stream
       const internalUpdate: StreamUpdate = {
         type: this.mapEventTypeToStreamEventType(event.type),
         data: event.data,
         metadata: {
           timestamp: new Date(),
-          sequenceNumber: Date.now(), // Use timestamp as sequence for now
+          sequenceNumber: Date.now(),
           executionId,
-          nodeId,
+          nodeId: canonicalNodeId,
           ...event.metadata,
         },
       };
-
-      // Process event through the event stream processor
       this.eventStreamProcessor.processBatch([internalUpdate]);
-
-      // Also broadcast directly to WebSocket for immediate delivery
-      this.webSocketBridge.broadcastToExecution(executionId, internalUpdate);
-
+      if (this.webSocketBridge?.broadcastToExecution) {
+        this.webSocketBridge.broadcastToExecution(executionId, internalUpdate);
+      }
       this.logger.debug(
-        `Streamed event ${event.type} for ${executionId}:${nodeId}`
+        `Streamed event ${event.type} for ${executionId}:${canonicalNodeId}`
       );
     } catch (error) {
       this.logger.error(
-        `Failed to stream event for ${executionId}:${nodeId}:`,
+        `Failed to stream event for ${executionId}:${canonicalNodeId}:`,
         error
       );
       throw error;
@@ -212,8 +245,9 @@ export class StreamingServiceAdapter implements IStreamingService {
     nodeId: string,
     progress: ProgressData
   ): void {
+    const canonicalNodeId = this.canonicalize(nodeId);
     try {
-      this.streamEvent(executionId, nodeId, {
+      this.streamEvent(executionId, canonicalNodeId, {
         type: StreamEventType.PROGRESS,
         data: progress,
         metadata: {
@@ -223,21 +257,19 @@ export class StreamingServiceAdapter implements IStreamingService {
         },
       });
       this.logger.debug(
-        `Streamed progress ${progress.progress}% for ${executionId}:${nodeId}`
+        `Streamed progress ${progress.progress}% for ${executionId}:${canonicalNodeId}`
       );
     } catch (error) {
       this.logger.error(
-        `Failed to stream progress for ${executionId}:${nodeId}:`,
+        `Failed to stream progress for ${executionId}:${canonicalNodeId}:`,
         error
       );
       throw error;
     }
   }
 
-  // WebSocket integration methods
   async broadcastToExecution(executionId: string, data: any): Promise<void> {
     try {
-      // Convert data to StreamUpdate if not already
       let update: StreamUpdate;
       if (this.isStreamUpdate(data)) {
         update = data;
@@ -252,8 +284,9 @@ export class StreamingServiceAdapter implements IStreamingService {
           },
         };
       }
-
-      this.webSocketBridge.broadcastToExecution(executionId, update);
+      if (this.webSocketBridge?.broadcastToExecution) {
+        this.webSocketBridge.broadcastToExecution(executionId, update);
+      }
       this.logger.debug(`Broadcasted to execution ${executionId}`);
     } catch (error) {
       this.logger.error(
@@ -266,7 +299,6 @@ export class StreamingServiceAdapter implements IStreamingService {
 
   async sendToClient(clientId: string, data: any): Promise<void> {
     try {
-      // Convert data to StreamUpdate if not already
       let update: StreamUpdate;
       if (this.isStreamUpdate(data)) {
         update = data;
@@ -277,12 +309,13 @@ export class StreamingServiceAdapter implements IStreamingService {
           metadata: {
             timestamp: new Date(),
             sequenceNumber: Date.now(),
-            executionId: 'direct', // Direct client communication
+            executionId: 'direct',
           },
         };
       }
-
-      this.webSocketBridge.sendToClient(clientId, update);
+      if (this.webSocketBridge?.sendToClient) {
+        this.webSocketBridge.sendToClient(clientId, update);
+      }
       this.logger.debug(`Sent to client ${clientId}`);
     } catch (error) {
       this.logger.error(`Failed to send to client ${clientId}:`, error);
@@ -290,9 +323,7 @@ export class StreamingServiceAdapter implements IStreamingService {
     }
   }
 
-  // Helper methods
   private mapEventTypeToStreamEventType(eventType: string): StreamEventType {
-    // Map generic event types to internal StreamEventType enum
     const typeMapping: Record<string, StreamEventType> = {
       progress: StreamEventType.PROGRESS,
       token: StreamEventType.TOKEN,
@@ -305,7 +336,6 @@ export class StreamingServiceAdapter implements IStreamingService {
       milestone: StreamEventType.MILESTONE,
       debug: StreamEventType.DEBUG,
     };
-
     return typeMapping[eventType] || StreamEventType.EVENTS;
   }
 
@@ -313,7 +343,6 @@ export class StreamingServiceAdapter implements IStreamingService {
     return data && typeof data === 'object' && 'type' in data && 'data' in data;
   }
 
-  // High-level event emission methods
   async emitEvent(eventType: string, data: any): Promise<void> {
     try {
       const streamEventType = this.mapEventTypeToStreamEventType(eventType);
@@ -326,18 +355,17 @@ export class StreamingServiceAdapter implements IStreamingService {
           executionId: data.executionId || 'unknown',
         },
       };
-
-      // Process the event through the event processor
-      this.eventStreamProcessor.processEvent(update);
-
-      // Broadcast to all relevant clients
+      if ((this.eventStreamProcessor as any).processEvent) {
+        (this.eventStreamProcessor as any).processEvent(update);
+      } else {
+        this.eventStreamProcessor.processBatch([update]);
+      }
       if (data.executionId) {
         await this.webSocketBridge.broadcastToExecution(
           data.executionId,
           update
         );
       }
-
       this.logger.debug(`Emitted event ${eventType}`, { data });
     } catch (error) {
       this.logger.error(`Failed to emit event ${eventType}:`, error);
@@ -359,18 +387,17 @@ export class StreamingServiceAdapter implements IStreamingService {
           executionId: data.executionId || 'unknown',
         },
       };
-
-      // Process progress through the event processor
-      this.eventStreamProcessor.processEvent(update);
-
-      // Broadcast progress to clients
+      if ((this.eventStreamProcessor as any).processEvent) {
+        (this.eventStreamProcessor as any).processEvent(update);
+      } else {
+        this.eventStreamProcessor.processBatch([update]);
+      }
       if (data.executionId) {
         await this.webSocketBridge.broadcastToExecution(
           data.executionId,
           update
         );
       }
-
       this.logger.debug(`Emitted progress ${eventType}`, { data });
     } catch (error) {
       this.logger.error(`Failed to emit progress ${eventType}:`, error);
@@ -385,7 +412,10 @@ export class StreamingServiceAdapter implements IStreamingService {
  */
 @Injectable()
 export class TokenStreamingServiceAdapter implements ITokenStreamingService {
-  constructor(private readonly tokenStreamingService: TokenStreamingService) {}
+  constructor(
+    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
+    private readonly tokenStreamingService: ITokenStreamingService
+  ) {}
 
   async initializeTokenStream(options: TokenStreamOptions): Promise<void> {
     return this.tokenStreamingService.initializeTokenStream(options);
@@ -419,7 +449,8 @@ export class EventStreamProcessorServiceAdapter
   implements IEventStreamProcessorService
 {
   constructor(
-    private readonly eventStreamProcessor: EventStreamProcessorService
+    @Inject(EVENT_STREAM_PROCESSOR_SERVICE_TOKEN)
+    private readonly eventStreamProcessor: IEventStreamProcessorService
   ) {}
 
   streamEvent(
@@ -466,7 +497,10 @@ export class EventStreamProcessorServiceAdapter
 
 @Injectable()
 export class WebSocketBridgeServiceAdapter implements IWebSocketBridgeService {
-  constructor(private readonly webSocketBridge: WebSocketBridgeService) {}
+  constructor(
+    @Inject(WEBSOCKET_BRIDGE_SERVICE_TOKEN)
+    private readonly webSocketBridge: IWebSocketBridgeService
+  ) {}
 
   async broadcastToExecution(executionId: string, data: any): Promise<void> {
     let update: StreamUpdate;
@@ -507,7 +541,13 @@ export class WebSocketBridgeServiceAdapter implements IWebSocketBridgeService {
   }
 
   registerClient(clientId: string, executionId: string): void {
-    this.webSocketBridge.linkClientToExecution(clientId, executionId);
+    // Not all bridge implementations expose linkClientToExecution; guard
+    if ((this.webSocketBridge as any).linkClientToExecution) {
+      (this.webSocketBridge as any).linkClientToExecution(
+        clientId,
+        executionId
+      );
+    }
   }
 
   unregisterClient(clientId: string): void {

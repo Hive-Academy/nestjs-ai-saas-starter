@@ -442,6 +442,390 @@ export class WorkflowStreamingService {
 }
 ```
 
+## 🚀 User Interruption WebSocket Handlers
+
+**NEW FEATURE**: The streaming module now includes comprehensive WebSocket message handlers for real-time user interruption during workflow execution.
+
+### Available WebSocket Message Types
+
+The `StreamingWebSocketGateway` supports the following interruption-related message types:
+
+#### 1. Agent Interruption
+
+```typescript
+// Client → Server: Interrupt agent with question
+socket.send(JSON.stringify({
+  type: 'interrupt_agent',
+  payload: {
+    executionId: 'exec-123',
+    nodeId: 'current',        // optional, defaults to 'current'
+    question: 'Can you include pricing data?',
+    userId: 'user-456',       // optional
+    metadata: {               // optional
+      urgency: 'high',
+      source: 'chat_interface'
+    }
+  }
+}));
+
+// Server → Client: Acknowledgment
+{
+  type: 'interrupt_agent_ack',
+  success: true,
+  executionId: 'exec-123',
+  message: 'Interruption request sent to agent',
+  timestamp: '2025-01-15T10:30:00Z'
+}
+```
+
+#### 2. User Input Injection
+
+```typescript
+// Client → Server: Inject user input during execution
+socket.send(JSON.stringify({
+  type: 'inject_input',
+  payload: {
+    executionId: 'exec-123',
+    input: 'Focus on enterprise customers only',
+    continueExecution: true,  // optional, defaults to true
+    metadata: {              // optional
+      inputType: 'clarification',
+      priority: 'high'
+    }
+  }
+}));
+
+// Server → Client: Acknowledgment
+{
+  type: 'inject_input_ack',
+  success: true,
+  executionId: 'exec-123',
+  message: 'User input injected successfully',
+  timestamp: '2025-01-15T10:30:00Z'
+}
+```
+
+#### 3. Interruption Response
+
+```typescript
+// Client → Server: Respond to interruption request
+socket.send(JSON.stringify({
+  type: 'respond_to_interruption',
+  payload: {
+    interruptionId: 'interrupt-789',
+    response: 'Yes, include pricing for premium plans',
+    continueExecution: true,
+    metadata: {              // optional
+      responseTime: 45000,   // ms
+      confidence: 0.9
+    }
+  }
+}));
+
+// Server → Client: Acknowledgment
+{
+  type: 'respond_to_interruption_ack',
+  success: true,
+  interruptionId: 'interrupt-789',
+  message: 'Response processed successfully',
+  timestamp: '2025-01-15T10:30:00Z'
+}
+```
+
+#### 4. Workflow Control
+
+```typescript
+// Pause workflow
+socket.send(
+  JSON.stringify({
+    type: 'pause_workflow',
+    payload: {
+      executionId: 'exec-123',
+      reason: 'User needs to provide additional context', // optional
+    },
+  })
+);
+
+// Resume workflow
+socket.send(
+  JSON.stringify({
+    type: 'resume_workflow',
+    payload: {
+      executionId: 'exec-123',
+      userInput: 'Additional context provided', // optional
+    },
+  })
+);
+
+// Cancel interruption
+socket.send(
+  JSON.stringify({
+    type: 'cancel_interruption',
+    payload: {
+      interruptionId: 'interrupt-789',
+      reason: 'No longer needed', // optional
+    },
+  })
+);
+```
+
+### Real-Time Notifications
+
+The gateway broadcasts interruption events to subscribed clients:
+
+```typescript
+// Client receives interruption request from agent/system
+socket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  switch (message.type) {
+    case 'interruption_request':
+      // Agent is requesting user input
+      console.log('Interruption requested:', message.data);
+      /*
+      message.data = {
+        interruptionId: 'interrupt-789',
+        executionId: 'exec-123',
+        type: 'question',
+        message: 'Need clarification on data format',
+        timeout: 300000  // 5 minutes
+      }
+      */
+      break;
+
+    case 'interruption_resolved':
+      // User response was processed
+      console.log('Interruption resolved:', message.data);
+      /*
+      message.data = {
+        interruptionId: 'interrupt-789',
+        executionId: 'exec-123',
+        response: 'Use ISO format for dates',
+        continueExecution: true
+      }
+      */
+      break;
+  }
+};
+```
+
+### Complete Frontend Integration Example
+
+```typescript
+class InterruptionManager {
+  private socket: WebSocket;
+  private activeInterruptions = new Map<string, any>();
+
+  constructor(wsUrl: string) {
+    this.socket = new WebSocket(wsUrl);
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers(): void {
+    this.socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      switch (message.type) {
+        case 'interruption_request':
+          this.handleInterruptionRequest(message.data);
+          break;
+
+        case 'interruption_resolved':
+          this.handleInterruptionResolved(message.data);
+          break;
+
+        case 'user_interruption_requested':
+          this.showUserInterruptionDialog(message.data);
+          break;
+
+        case 'user_interruption_resolved':
+          this.hideInterruptionDialog(message.data);
+          break;
+      }
+    };
+  }
+
+  // User initiates interruption
+  async interruptAgent(executionId: string, question: string): Promise<void> {
+    this.socket.send(
+      JSON.stringify({
+        type: 'interrupt_agent',
+        payload: {
+          executionId,
+          question,
+          userId: this.getCurrentUserId(),
+          metadata: {
+            timestamp: new Date().toISOString(),
+            source: 'user_interface',
+          },
+        },
+      })
+    );
+  }
+
+  // User responds to interruption
+  async respondToInterruption(interruptionId: string, response: string, continueExecution = true): Promise<void> {
+    this.socket.send(
+      JSON.stringify({
+        type: 'respond_to_interruption',
+        payload: {
+          interruptionId,
+          response,
+          continueExecution,
+          metadata: {
+            responseTime: Date.now() - this.activeInterruptions.get(interruptionId)?.startTime,
+          },
+        },
+      })
+    );
+
+    // Remove from active interruptions
+    this.activeInterruptions.delete(interruptionId);
+  }
+
+  // Pause/Resume workflow
+  async pauseWorkflow(executionId: string, reason?: string): Promise<void> {
+    this.socket.send(
+      JSON.stringify({
+        type: 'pause_workflow',
+        payload: { executionId, reason },
+      })
+    );
+  }
+
+  async resumeWorkflow(executionId: string, userInput?: string): Promise<void> {
+    this.socket.send(
+      JSON.stringify({
+        type: 'resume_workflow',
+        payload: { executionId, userInput },
+      })
+    );
+  }
+
+  private handleInterruptionRequest(data: any): void {
+    // Store interruption for tracking
+    this.activeInterruptions.set(data.interruptionId, {
+      ...data,
+      startTime: Date.now(),
+    });
+
+    // Show UI for user to respond
+    this.showInterruptionDialog(data);
+  }
+
+  private handleInterruptionResolved(data: any): void {
+    // Update UI to show workflow continuing
+    this.showNotification(`Interruption resolved: ${data.response}`);
+    this.activeInterruptions.delete(data.interruptionId);
+  }
+
+  private showInterruptionDialog(data: any): void {
+    // Implementation depends on your UI framework
+    console.log('Show interruption dialog:', data);
+  }
+
+  private showNotification(message: string): void {
+    // Show user notification
+    console.log('Notification:', message);
+  }
+
+  private getCurrentUserId(): string {
+    // Return current user ID
+    return 'user-123';
+  }
+}
+
+// Usage
+const interruptionManager = new InterruptionManager('ws://localhost:8080');
+
+// Subscribe to execution updates
+interruptionManager.socket.onopen = () => {
+  interruptionManager.socket.send(
+    JSON.stringify({
+      type: 'subscribe_execution',
+      payload: { executionId: 'exec-123' },
+    })
+  );
+};
+```
+
+### Event-Driven Integration
+
+The WebSocket gateway emits events that can be consumed by other services:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
+import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
+
+@Injectable()
+export class InterruptionEventHandler {
+  constructor(private readonly hitlService: HumanApprovalService, private readonly workflowManager: WorkflowManagerService) {}
+
+  @OnEvent('user.interruption.requested')
+  async handleUserInterruptionRequested(data: any): Promise<void> {
+    // Create HITL interruption request
+    const interruptionId = await this.hitlService.requestUserInterruption({
+      executionId: data.executionId,
+      nodeId: data.nodeId,
+      type: data.type,
+      message: data.message,
+      metadata: data.metadata,
+    });
+
+    console.log(`Created interruption ${interruptionId} for execution ${data.executionId}`);
+  }
+
+  @OnEvent('user.input.injected')
+  async handleUserInputInjected(data: any): Promise<void> {
+    // Inject input into workflow
+    const success = await this.workflowManager.addUserInput(data.executionId, data.input, data.continueExecution, data.metadata);
+
+    console.log(`Input injection ${success ? 'successful' : 'failed'} for execution ${data.executionId}`);
+  }
+
+  @OnEvent('workflow.pause.requested')
+  async handleWorkflowPauseRequested(data: any): Promise<void> {
+    // Pause workflow
+    const paused = await this.workflowManager.pauseWorkflow(data.executionId, data.reason);
+    console.log(`Workflow ${data.executionId} pause ${paused ? 'successful' : 'failed'}`);
+  }
+
+  @OnEvent('workflow.resume.requested')
+  async handleWorkflowResumeRequested(data: any): Promise<void> {
+    // Resume workflow
+    const resumed = await this.workflowManager.resumeWorkflow(data.executionId, data.userInput);
+    console.log(`Workflow ${data.executionId} resume ${resumed ? 'successful' : 'failed'}`);
+  }
+}
+```
+
+### Broadcasting Methods
+
+The gateway provides methods for broadcasting interruption events:
+
+```typescript
+// From your service, broadcast interruption request to clients
+await webSocketGateway.broadcastInterruptionRequest({
+  interruptionId: 'interrupt-789',
+  executionId: 'exec-123',
+  type: 'question',
+  message: 'Need user clarification',
+  timeout: 300000,
+});
+
+// Broadcast interruption resolution to clients
+await webSocketGateway.broadcastInterruptionResolution({
+  interruptionId: 'interrupt-789',
+  executionId: 'exec-123',
+  response: 'User provided clarification',
+  continueExecution: true,
+});
+```
+
+This comprehensive WebSocket integration enables real-time bidirectional communication for dynamic user interruption, making your AI workflows truly interactive and responsive to user needs.
+
 ## Core Interfaces
 
 ### Stream Types

@@ -1,5 +1,8 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import { TokenStreamingService } from '@hive-academy/langgraph-streaming';
+import {
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  ITokenStreamingService,
+} from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import type { ShowcaseAgentState } from '../types/showcase.types';
 
@@ -14,8 +17,8 @@ export class ShowcaseContentService {
   private readonly logger = new Logger(ShowcaseContentService.name);
   constructor(
     @Optional()
-    @Inject(TokenStreamingService)
-    private readonly tokenStreaming?: TokenStreamingService
+    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
+    private readonly tokenStreaming?: ITokenStreamingService
   ) {}
 
   /**

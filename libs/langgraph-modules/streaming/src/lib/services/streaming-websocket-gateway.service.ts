@@ -969,4 +969,386 @@ export class StreamingWebSocketGateway
       this.logger.error(`Gateway event emission error (${event}):`, error);
     }
   }
+
+  // ==========================================
+  // USER INTERRUPTION MESSAGE HANDLERS
+  // ==========================================
+
+  /**
+   * Handle user interruption request during workflow execution
+   */
+  @SubscribeMessage('interrupt_agent')
+  async handleInterruptAgent(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    payload: {
+      executionId: string;
+      nodeId?: string;
+      question: string;
+      userId?: string;
+      metadata?: Record<string, unknown>;
+    }
+  ): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const connection = this.getConnection(socket);
+      if (!connection) throw new WsException('Connection not found');
+
+      // Emit interruption request event
+      this.eventEmitter.emit('user.interruption.requested', {
+        executionId: payload.executionId,
+        nodeId: payload.nodeId || 'current',
+        type: 'question',
+        message: payload.question,
+        userId: payload.userId || connection.id,
+        socketId: socket.id,
+        connectionId: connection.id,
+        metadata: {
+          ...payload.metadata,
+          socketInfo: {
+            id: socket.id,
+            address: socket.handshake.address,
+            userAgent: socket.handshake.headers['user-agent'],
+          },
+        },
+      });
+
+      // Send acknowledgment
+      socket.emit('interrupt_agent_ack', {
+        success: true,
+        executionId: payload.executionId,
+        message: 'Interruption request sent to agent',
+        timestamp: new Date(),
+      });
+
+      this.stats.messages.sent++;
+      this.updateProcessingTime(Date.now() - startTime);
+    } catch (error) {
+      this.handleMessageError(socket, error, 'interrupt_agent');
+    }
+  }
+
+  /**
+   * Handle user input injection during workflow execution
+   */
+  @SubscribeMessage('inject_input')
+  async handleInjectInput(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    payload: {
+      executionId: string;
+      input: string;
+      continueExecution?: boolean;
+      metadata?: Record<string, unknown>;
+    }
+  ): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const connection = this.getConnection(socket);
+      if (!connection) throw new WsException('Connection not found');
+
+      // Emit input injection event
+      this.eventEmitter.emit('user.input.injected', {
+        executionId: payload.executionId,
+        input: payload.input,
+        continueExecution: payload.continueExecution ?? true,
+        userId: connection.id,
+        socketId: socket.id,
+        connectionId: connection.id,
+        metadata: {
+          ...payload.metadata,
+          injectedAt: new Date(),
+          socketInfo: {
+            id: socket.id,
+            address: socket.handshake.address,
+          },
+        },
+      });
+
+      // Send acknowledgment
+      socket.emit('inject_input_ack', {
+        success: true,
+        executionId: payload.executionId,
+        message: 'User input injected successfully',
+        timestamp: new Date(),
+      });
+
+      this.stats.messages.sent++;
+      this.updateProcessingTime(Date.now() - startTime);
+    } catch (error) {
+      this.handleMessageError(socket, error, 'inject_input');
+    }
+  }
+
+  /**
+   * Handle user response to interruption request
+   */
+  @SubscribeMessage('respond_to_interruption')
+  async handleRespondToInterruption(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    payload: {
+      interruptionId: string;
+      response: string;
+      continueExecution: boolean;
+      metadata?: Record<string, unknown>;
+    }
+  ): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const connection = this.getConnection(socket);
+      if (!connection) throw new WsException('Connection not found');
+
+      // Emit interruption response event
+      this.eventEmitter.emit('user.interruption.responded', {
+        interruptionId: payload.interruptionId,
+        response: payload.response,
+        continueExecution: payload.continueExecution,
+        userId: connection.id,
+        socketId: socket.id,
+        connectionId: connection.id,
+        timestamp: new Date(),
+        metadata: {
+          ...payload.metadata,
+          respondedAt: new Date(),
+          socketInfo: {
+            id: socket.id,
+            address: socket.handshake.address,
+          },
+        },
+      });
+
+      // Send acknowledgment
+      socket.emit('respond_to_interruption_ack', {
+        success: true,
+        interruptionId: payload.interruptionId,
+        message: 'Response processed successfully',
+        timestamp: new Date(),
+      });
+
+      this.stats.messages.sent++;
+      this.updateProcessingTime(Date.now() - startTime);
+    } catch (error) {
+      this.handleMessageError(socket, error, 'respond_to_interruption');
+    }
+  }
+
+  /**
+   * Handle cancellation of user interruption
+   */
+  @SubscribeMessage('cancel_interruption')
+  async handleCancelInterruption(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    payload: {
+      interruptionId: string;
+      reason?: string;
+    }
+  ): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const connection = this.getConnection(socket);
+      if (!connection) throw new WsException('Connection not found');
+
+      // Emit interruption cancellation event
+      this.eventEmitter.emit('user.interruption.cancelled', {
+        interruptionId: payload.interruptionId,
+        reason: payload.reason,
+        userId: connection.id,
+        socketId: socket.id,
+        connectionId: connection.id,
+        timestamp: new Date(),
+      });
+
+      // Send acknowledgment
+      socket.emit('cancel_interruption_ack', {
+        success: true,
+        interruptionId: payload.interruptionId,
+        message: 'Interruption cancelled successfully',
+        timestamp: new Date(),
+      });
+
+      this.stats.messages.sent++;
+      this.updateProcessingTime(Date.now() - startTime);
+    } catch (error) {
+      this.handleMessageError(socket, error, 'cancel_interruption');
+    }
+  }
+
+  /**
+   * Handle pause workflow request
+   */
+  @SubscribeMessage('pause_workflow')
+  async handlePauseWorkflow(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    payload: {
+      executionId: string;
+      reason?: string;
+    }
+  ): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const connection = this.getConnection(socket);
+      if (!connection) throw new WsException('Connection not found');
+
+      // Emit workflow pause event
+      this.eventEmitter.emit('workflow.pause.requested', {
+        executionId: payload.executionId,
+        reason: payload.reason,
+        userId: connection.id,
+        socketId: socket.id,
+        connectionId: connection.id,
+        timestamp: new Date(),
+      });
+
+      // Send acknowledgment
+      socket.emit('pause_workflow_ack', {
+        success: true,
+        executionId: payload.executionId,
+        message: 'Workflow pause requested',
+        timestamp: new Date(),
+      });
+
+      this.stats.messages.sent++;
+      this.updateProcessingTime(Date.now() - startTime);
+    } catch (error) {
+      this.handleMessageError(socket, error, 'pause_workflow');
+    }
+  }
+
+  /**
+   * Handle resume workflow request
+   */
+  @SubscribeMessage('resume_workflow')
+  async handleResumeWorkflow(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    payload: {
+      executionId: string;
+      userInput?: string;
+    }
+  ): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const connection = this.getConnection(socket);
+      if (!connection) throw new WsException('Connection not found');
+
+      // Emit workflow resume event
+      this.eventEmitter.emit('workflow.resume.requested', {
+        executionId: payload.executionId,
+        userInput: payload.userInput,
+        userId: connection.id,
+        socketId: socket.id,
+        connectionId: connection.id,
+        timestamp: new Date(),
+      });
+
+      // Send acknowledgment
+      socket.emit('resume_workflow_ack', {
+        success: true,
+        executionId: payload.executionId,
+        message: 'Workflow resume requested',
+        timestamp: new Date(),
+      });
+
+      this.stats.messages.sent++;
+      this.updateProcessingTime(Date.now() - startTime);
+    } catch (error) {
+      this.handleMessageError(socket, error, 'resume_workflow');
+    }
+  }
+
+  /**
+   * Broadcast interruption request to subscribed clients
+   */
+  broadcastInterruptionRequest(data: {
+    interruptionId: string;
+    executionId: string;
+    type: string;
+    message: string;
+    timeout?: number;
+  }): void {
+    const message = {
+      type: 'user_interruption_requested',
+      id: generateUUID(),
+      data,
+      metadata: {
+        timestamp: new Date(),
+        source: 'hitl_service',
+        priority: 'high',
+      },
+    };
+
+    // Find connections subscribed to this execution
+    const targetConnections = Array.from(this.connections.values()).filter(
+      (connection) =>
+        connection.subscriptions.executionIds.has(data.executionId)
+    );
+
+    // Broadcast to target connections
+    targetConnections.forEach((connection) => {
+      try {
+        connection.socket.emit('interruption_request', message);
+        connection.metadata.lastActivity = new Date();
+        this.stats.messages.sent++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to send interruption request to ${connection.id}:`,
+          error
+        );
+        this.stats.messages.failed++;
+      }
+    });
+
+    this.logger.debug(
+      `Broadcasted interruption request to ${targetConnections.length} clients`
+    );
+  }
+
+  /**
+   * Broadcast interruption resolution to subscribed clients
+   */
+  broadcastInterruptionResolution(data: {
+    interruptionId: string;
+    executionId: string;
+    response: string;
+    continueExecution: boolean;
+  }): void {
+    const message = {
+      type: 'user_interruption_resolved',
+      id: generateUUID(),
+      data,
+      metadata: {
+        timestamp: new Date(),
+        source: 'hitl_service',
+        priority: 'high',
+      },
+    };
+
+    // Find connections subscribed to this execution
+    const targetConnections = Array.from(this.connections.values()).filter(
+      (connection) =>
+        connection.subscriptions.executionIds.has(data.executionId)
+    );
+
+    // Broadcast to target connections
+    targetConnections.forEach((connection) => {
+      try {
+        connection.socket.emit('interruption_resolved', message);
+        connection.metadata.lastActivity = new Date();
+        this.stats.messages.sent++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to send interruption resolution to ${connection.id}:`,
+          error
+        );
+        this.stats.messages.failed++;
+      }
+    });
+
+    this.logger.debug(
+      `Broadcasted interruption resolution to ${targetConnections.length} clients`
+    );
+  }
 }

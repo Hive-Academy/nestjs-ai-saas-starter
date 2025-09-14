@@ -1,7 +1,13 @@
 import 'reflect-metadata';
 import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
 // Import streaming types from core library (fixes circular dependency)
-import { StreamEventType } from '@hive-academy/langgraph-core';
+import {
+  StreamEventType,
+  normalizeAndWarn,
+  validateNodeId,
+  InvalidNodeIdError,
+  computeCanonicalNodeId,
+} from '@hive-academy/langgraph-core';
 import type {
   StreamTokenOptions,
   StreamTokenDecoratorMetadata,
@@ -10,6 +16,7 @@ import type {
   StreamProgressOptions,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-core';
+import type { Logger } from '@nestjs/common';
 
 // Metadata keys for streaming decorators
 export const STREAM_TOKEN_METADATA_KEY = 'streaming:token';
@@ -28,6 +35,22 @@ export type {
 
 // Re-export StreamEventType for backward compatibility
 export { StreamEventType } from '@hive-academy/langgraph-core';
+
+// Suffixes to strip from class names when inferring domain
+const CLASS_SUFFIX_STRIP = /(Workflow|Service|Agent|Processor|Engine)$/;
+
+/** Split a PascalCase or camelCase identifier into lowercase tokens */
+function splitTokens(name: string): string[] {
+  if (!name) return [];
+  // Replace non-alphanumeric with space, then split camel boundaries
+  const withDelims = name
+    .replace(/[^A-Za-z0-9]+/g, ' ') // normalize delimiters
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  return withDelims
+    .split(/\s+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 /**
  * Decorator to enable token-level streaming for a method or node
@@ -71,9 +94,20 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
   ) => {
     // Get stored module configuration
     const moduleConfig = getStreamingConfigWithDefaults();
+    const logger: Logger | undefined = (target as any)?.logger;
+
+    const { nodeId, inferred } = computeCanonicalNodeId(
+      (options as any).nodeId,
+      target,
+      propertyKey,
+      !!moduleConfig.strictNaming,
+      logger
+    );
 
     // Create token streaming metadata - inherit from module config
-    const tokenMetadata: StreamTokenDecoratorMetadata = {
+    const tokenMetadata: StreamTokenDecoratorMetadata & {
+      inferredNodeId?: boolean;
+    } = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
@@ -84,6 +118,8 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
         options.flushInterval ?? moduleConfig.tokenDefaults.flushInterval,
       includeMetadata: options.includeMetadata ?? false,
       format: options.format ?? 'text',
+      nodeId,
+      inferredNodeId: inferred,
     };
 
     // Store metadata on the method
@@ -117,7 +153,10 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
       if (this.streamingService && tokenMetadata.enabled) {
         await this.streamingService.initializeTokenStream({
           executionId: (args[0] as any)?.executionId,
-          nodeId: (args[0] as any)?.currentNode || tokenMetadata.methodName,
+          nodeId:
+            (args[0] as any)?.currentNode ||
+            tokenMetadata.nodeId ||
+            tokenMetadata.methodName,
           config: tokenMetadata,
         });
       }
@@ -177,9 +216,19 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
   ) => {
     // Get stored module configuration
     const moduleConfig = getStreamingConfigWithDefaults();
+    const logger: Logger | undefined = (target as any)?.logger;
+    const { nodeId, inferred } = computeCanonicalNodeId(
+      (options as any).nodeId,
+      target,
+      propertyKey,
+      !!moduleConfig.strictNaming,
+      logger
+    );
 
     // Create event streaming metadata - inherit from module config
-    const eventMetadata: StreamEventDecoratorMetadata = {
+    const eventMetadata: StreamEventDecoratorMetadata & {
+      inferredNodeId?: boolean;
+    } = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
@@ -192,6 +241,8 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       bufferSize: options.bufferSize ?? moduleConfig.defaultBufferSize ?? 100,
       batchSize: options.batchSize ?? moduleConfig.eventDefaults.batchSize,
       delivery: options.delivery ?? moduleConfig.eventDefaults.delivery,
+      nodeId,
+      inferredNodeId: inferred,
     };
 
     // Store metadata on the method
@@ -225,7 +276,10 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       if (this.streamingService && eventMetadata.enabled) {
         await this.streamingService.initializeEventStream({
           executionId: (args[0] as any)?.executionId,
-          nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
+          nodeId:
+            (args[0] as any)?.currentNode ||
+            eventMetadata.nodeId ||
+            eventMetadata.methodName,
           config: eventMetadata,
         });
       }
@@ -233,7 +287,10 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
       // Emit node start event
       if (this.streamingService && eventMetadata.enabled) {
         await this.streamingService.emitEvent(StreamEventType.NODE_START, {
-          nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
+          nodeId:
+            (args[0] as any)?.currentNode ||
+            eventMetadata.nodeId ||
+            eventMetadata.methodName,
           timestamp: new Date(),
           metadata: args[0],
         });
@@ -246,7 +303,10 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
         // Emit node complete event
         if (this.streamingService && eventMetadata.enabled) {
           await this.streamingService.emitEvent(StreamEventType.NODE_COMPLETE, {
-            nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
+            nodeId:
+              (args[0] as any)?.currentNode ||
+              eventMetadata.nodeId ||
+              eventMetadata.methodName,
             timestamp: new Date(),
             result,
             metadata: args[0],
@@ -258,7 +318,10 @@ export function StreamEvent(options: StreamEventOptions = {}): MethodDecorator {
         // Emit error event
         if (this.streamingService && eventMetadata.enabled) {
           await this.streamingService.emitEvent(StreamEventType.ERROR, {
-            nodeId: (args[0] as any)?.currentNode || eventMetadata.methodName,
+            nodeId:
+              (args[0] as any)?.currentNode ||
+              eventMetadata.nodeId ||
+              eventMetadata.methodName,
             timestamp: new Date(),
             error: (error as Error).message,
             metadata: args[0],
@@ -334,9 +397,19 @@ export function StreamProgress(
   ) => {
     // Get stored module configuration
     const moduleConfig = getStreamingConfigWithDefaults();
+    const logger: Logger | undefined = (target as any)?.logger;
+    const { nodeId, inferred } = computeCanonicalNodeId(
+      (options as any).nodeId,
+      target,
+      propertyKey,
+      !!moduleConfig.strictNaming,
+      logger
+    );
 
     // Create progress streaming metadata - inherit from module config
-    const progressMetadata: StreamProgressDecoratorMetadata = {
+    const progressMetadata: StreamProgressDecoratorMetadata & {
+      inferredNodeId?: boolean;
+    } = {
       ...options,
       methodName: String(propertyKey),
       enabled: options.enabled ?? true,
@@ -354,6 +427,8 @@ export function StreamProgress(
         precision: 1,
         ...options.format,
       },
+      nodeId,
+      inferredNodeId: inferred,
     };
 
     // Store metadata on the method
@@ -387,7 +462,10 @@ export function StreamProgress(
       if (this.streamingService && progressMetadata.enabled) {
         await this.streamingService.initializeProgressTracker({
           executionId: (args[0] as any)?.executionId,
-          nodeId: (args[0] as any)?.currentNode || progressMetadata.methodName,
+          nodeId:
+            (args[0] as any)?.currentNode ||
+            progressMetadata.nodeId ||
+            progressMetadata.methodName,
           config: progressMetadata,
         });
       }
@@ -395,7 +473,10 @@ export function StreamProgress(
       // Create progress tracking wrapper
       const progressContext = {
         startTime: new Date(),
-        nodeId: (args[0] as any)?.currentNode || progressMetadata.methodName,
+        nodeId:
+          (args[0] as any)?.currentNode ||
+          progressMetadata.nodeId ||
+          progressMetadata.methodName,
         config: progressMetadata,
       };
 

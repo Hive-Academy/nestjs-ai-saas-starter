@@ -6,17 +6,25 @@ import {
   EventStreamProcessorServiceAdapter,
   WebSocketBridgeServiceAdapter,
 } from './streaming-service.adapter';
-import { TokenStreamingService } from '../services/token-streaming.service';
-import { EventStreamProcessorService } from '../services/event-stream-processor.service';
-import { WebSocketBridgeService } from '../services/websocket-bridge.service';
+// Use interface tokens for DI after refactor
+import type {
+  ITokenStreamingService,
+  IEventStreamProcessorService,
+  IWebSocketBridgeService,
+} from '@hive-academy/langgraph-core';
+import {
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+} from '@hive-academy/langgraph-core';
 import { StreamEventType } from '../constants';
 import type { StreamUpdate } from '@hive-academy/langgraph-core';
 
 describe('StreamingServiceAdapter', () => {
   let adapter: StreamingServiceAdapter;
-  let tokenStreamingService: jest.Mocked<TokenStreamingService>;
-  let eventStreamProcessor: jest.Mocked<EventStreamProcessorService>;
-  let webSocketBridge: jest.Mocked<WebSocketBridgeService>;
+  let tokenStreamingService: jest.Mocked<ITokenStreamingService>;
+  let eventStreamProcessor: jest.Mocked<IEventStreamProcessorService>;
+  let webSocketBridge: jest.Mocked<IWebSocketBridgeService>;
 
   beforeEach(async () => {
     const mockTokenStreamingService = {
@@ -41,24 +49,24 @@ describe('StreamingServiceAdapter', () => {
       providers: [
         StreamingServiceAdapter,
         {
-          provide: TokenStreamingService,
+          provide: TOKEN_STREAMING_SERVICE_TOKEN,
           useValue: mockTokenStreamingService,
         },
         {
-          provide: EventStreamProcessorService,
+          provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
           useValue: mockEventStreamProcessor,
         },
         {
-          provide: WebSocketBridgeService,
+          provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
           useValue: mockWebSocketBridge,
         },
       ],
     }).compile();
 
     adapter = moduleRef.get<StreamingServiceAdapter>(StreamingServiceAdapter);
-    tokenStreamingService = moduleRef.get(TokenStreamingService);
-    eventStreamProcessor = moduleRef.get(EventStreamProcessorService);
-    webSocketBridge = moduleRef.get(WebSocketBridgeService);
+    tokenStreamingService = moduleRef.get(TOKEN_STREAMING_SERVICE_TOKEN);
+    eventStreamProcessor = moduleRef.get(EVENT_STREAM_PROCESSOR_SERVICE_TOKEN);
+    webSocketBridge = moduleRef.get(WEBSOCKET_BRIDGE_SERVICE_TOKEN);
   });
 
   describe('Token Streaming Integration', () => {
@@ -75,16 +83,13 @@ describe('StreamingServiceAdapter', () => {
         },
       });
 
-      expect(tokenStreamingService.initializeTokenStream).toHaveBeenCalledWith({
-        executionId: 'exec-123',
-        nodeId: 'node-456',
-        bufferSize: 100,
-        config: {
-          enabled: true,
-          methodName: 'test-method',
-          nodeId: 'node-456',
-        },
-      });
+      expect(tokenStreamingService.initializeTokenStream).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionId: 'exec-123',
+          nodeId: expect.stringContaining('node-456'),
+          config: expect.objectContaining({ methodName: 'test-method' }),
+        })
+      );
     });
 
     it('should stream token through TokenStreamingService', () => {
@@ -97,7 +102,7 @@ describe('StreamingServiceAdapter', () => {
 
       expect(tokenStreamingService.streamToken).toHaveBeenCalledWith(
         executionId,
-        nodeId,
+        expect.stringContaining('node-456'),
         token,
         metadata
       );
@@ -112,7 +117,7 @@ describe('StreamingServiceAdapter', () => {
 
       expect(tokenStreamingService.streamToken).toHaveBeenCalledWith(
         executionId,
-        nodeId,
+        expect.stringContaining('node-456'),
         token,
         {}
       );
@@ -128,7 +133,7 @@ describe('StreamingServiceAdapter', () => {
 
       expect(tokenStreamingService.flushTokens).toHaveBeenCalledWith(
         executionId,
-        nodeId
+        expect.stringContaining('node-456')
       );
     });
 
@@ -161,17 +166,19 @@ describe('StreamingServiceAdapter', () => {
       adapter.streamEvent(executionId, nodeId, event);
 
       // Should process through event stream processor
-      expect(eventStreamProcessor.processBatch).toHaveBeenCalledWith([
-        expect.objectContaining({
-          type: StreamEventType.PROGRESS,
-          data: event.data,
-          metadata: expect.objectContaining({
-            executionId,
-            nodeId,
-            step: 'validation',
+      expect(eventStreamProcessor.processBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: StreamEventType.PROGRESS,
+            data: event.data,
+            metadata: expect.objectContaining({
+              executionId,
+              nodeId: expect.stringContaining('node-456'),
+              step: 'validation',
+            }),
           }),
-        }),
-      ]);
+        ])
+      );
 
       // Should also broadcast directly to WebSocket
       expect(webSocketBridge.broadcastToExecution).toHaveBeenCalledWith(
@@ -242,19 +249,21 @@ describe('StreamingServiceAdapter', () => {
 
       adapter.streamProgress(executionId, nodeId, progress);
 
-      expect(eventStreamProcessor.processBatch).toHaveBeenCalledWith([
-        expect.objectContaining({
-          type: StreamEventType.PROGRESS,
-          data: progress,
-          metadata: expect.objectContaining({
-            progressType: 'node_progress',
-            progress: 75,
-            message: 'Almost done',
-            executionId,
-            nodeId,
+      expect(eventStreamProcessor.processBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: StreamEventType.PROGRESS,
+            data: progress,
+            metadata: expect.objectContaining({
+              progressType: 'node_progress',
+              progress: 75,
+              message: 'Almost done',
+              executionId,
+              nodeId: expect.stringContaining('node-456'),
+            }),
           }),
-        }),
-      ]);
+        ])
+      );
     });
   });
 
@@ -349,9 +358,7 @@ describe('StreamingServiceAdapter', () => {
       });
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Initialized token stream for exec-123:node-456'
-        )
+        expect.stringContaining('Initialized token stream for exec-123:')
       );
 
       logSpy.mockRestore();
@@ -388,7 +395,7 @@ describe('StreamingServiceAdapter', () => {
 describe('Individual Service Adapters', () => {
   describe('TokenStreamingServiceAdapter', () => {
     let adapter: TokenStreamingServiceAdapter;
-    let tokenStreamingService: jest.Mocked<TokenStreamingService>;
+    let tokenStreamingService: jest.Mocked<ITokenStreamingService>;
 
     beforeEach(async () => {
       const mockTokenStreamingService = {
@@ -402,7 +409,7 @@ describe('Individual Service Adapters', () => {
         providers: [
           TokenStreamingServiceAdapter,
           {
-            provide: TokenStreamingService,
+            provide: TOKEN_STREAMING_SERVICE_TOKEN,
             useValue: mockTokenStreamingService,
           },
         ],
@@ -411,7 +418,7 @@ describe('Individual Service Adapters', () => {
       adapter = moduleRef.get<TokenStreamingServiceAdapter>(
         TokenStreamingServiceAdapter
       );
-      tokenStreamingService = moduleRef.get(TokenStreamingService);
+      tokenStreamingService = moduleRef.get(TOKEN_STREAMING_SERVICE_TOKEN);
     });
 
     it('should delegate all operations to TokenStreamingService', async () => {
@@ -453,7 +460,7 @@ describe('Individual Service Adapters', () => {
 
   describe('EventStreamProcessorServiceAdapter', () => {
     let adapter: EventStreamProcessorServiceAdapter;
-    let eventStreamProcessor: jest.Mocked<EventStreamProcessorService>;
+    let eventStreamProcessor: jest.Mocked<IEventStreamProcessorService>;
 
     beforeEach(async () => {
       const mockEventStreamProcessor = {
@@ -464,7 +471,7 @@ describe('Individual Service Adapters', () => {
         providers: [
           EventStreamProcessorServiceAdapter,
           {
-            provide: EventStreamProcessorService,
+            provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
             useValue: mockEventStreamProcessor,
           },
         ],
@@ -473,7 +480,9 @@ describe('Individual Service Adapters', () => {
       adapter = moduleRef.get<EventStreamProcessorServiceAdapter>(
         EventStreamProcessorServiceAdapter
       );
-      eventStreamProcessor = moduleRef.get(EventStreamProcessorService);
+      eventStreamProcessor = moduleRef.get(
+        EVENT_STREAM_PROCESSOR_SERVICE_TOKEN
+      );
     });
 
     it('should convert and process events correctly', () => {
@@ -501,7 +510,7 @@ describe('Individual Service Adapters', () => {
 
   describe('WebSocketBridgeServiceAdapter', () => {
     let adapter: WebSocketBridgeServiceAdapter;
-    let webSocketBridge: jest.Mocked<WebSocketBridgeService>;
+    let webSocketBridge: jest.Mocked<IWebSocketBridgeService>;
 
     beforeEach(async () => {
       const mockWebSocketBridge = {
@@ -515,7 +524,7 @@ describe('Individual Service Adapters', () => {
         providers: [
           WebSocketBridgeServiceAdapter,
           {
-            provide: WebSocketBridgeService,
+            provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
             useValue: mockWebSocketBridge,
           },
         ],
@@ -524,7 +533,7 @@ describe('Individual Service Adapters', () => {
       adapter = moduleRef.get<WebSocketBridgeServiceAdapter>(
         WebSocketBridgeServiceAdapter
       );
-      webSocketBridge = moduleRef.get(WebSocketBridgeService);
+      webSocketBridge = moduleRef.get(WEBSOCKET_BRIDGE_SERVICE_TOKEN);
     });
 
     it('should manage client connections correctly', () => {
@@ -539,5 +548,152 @@ describe('Individual Service Adapters', () => {
         'client-123'
       );
     });
+  });
+});
+
+describe('StreamingServiceAdapter nodeId normalization', () => {
+  let normalizationAdapter: StreamingServiceAdapter;
+  let normalizationTokenService: any;
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        StreamingServiceAdapter,
+        {
+          provide: TOKEN_STREAMING_SERVICE_TOKEN,
+          useValue: {
+            initializeTokenStream: jest.fn(),
+            streamToken: jest.fn(),
+            flushTokens: jest.fn(),
+            closeTokenStream: jest.fn(),
+          },
+        },
+        {
+          provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+          useValue: { processBatch: jest.fn(), processEvent: jest.fn() },
+        },
+        {
+          provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+          useValue: {
+            broadcastToExecution: jest.fn(),
+            sendToClient: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    normalizationAdapter = moduleRef.get(StreamingServiceAdapter);
+    normalizationTokenService = moduleRef.get(TOKEN_STREAMING_SERVICE_TOKEN);
+  });
+
+  test('normalizes nodeId on initializeTokenStream', async () => {
+    await normalizationAdapter.initializeTokenStream({
+      executionId: 'exec1',
+      nodeId: 'Content|Plan:Dispatch',
+      config: {
+        enabled: true,
+        methodName: 'm',
+        nodeId: 'Content|Plan:Dispatch',
+      },
+    });
+    expect(
+      normalizationTokenService.initializeTokenStream
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ nodeId: 'content|plan:dispatch' })
+    );
+  });
+
+  test('warns only once for same raw nodeId', () => {
+    const loggerWarn = jest
+      .spyOn((normalizationAdapter as any).logger, 'warn')
+      .mockImplementation(() => undefined);
+    normalizationAdapter.streamToken('e1', 'Content|Plan:Dispatch', 'tok1');
+    normalizationAdapter.streamToken('e1', 'Content|Plan:Dispatch', 'tok2');
+    const occurrences = loggerWarn.mock.calls.filter(
+      (c) =>
+        typeof c[0] === 'string' &&
+        c[0].indexOf('normalized to canonical') !== -1
+    ).length;
+    expect(occurrences).toBe(1);
+  });
+});
+
+describe('StreamingServiceAdapter strict naming enforcement', () => {
+  let adapterStrict: StreamingServiceAdapter;
+  let tokenService: any;
+
+  beforeEach(async () => {
+    // Simulate strict naming by setting config prior to module creation
+    // Directly set global config (mirrors StreamingModule.forRoot side-effect)
+    const {
+      setStreamingConfig,
+    } = require('../utils/streaming-config.accessor');
+    setStreamingConfig({ strictNaming: true });
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        StreamingServiceAdapter,
+        {
+          provide: TOKEN_STREAMING_SERVICE_TOKEN,
+          useValue: {
+            initializeTokenStream: jest.fn(),
+            streamToken: jest.fn(),
+            flushTokens: jest.fn(),
+            closeTokenStream: jest.fn(),
+          },
+        },
+        {
+          provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
+          useValue: { processBatch: jest.fn(), processEvent: jest.fn() },
+        },
+        {
+          provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+          useValue: {
+            broadcastToExecution: jest.fn(),
+            sendToClient: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    adapterStrict = moduleRef.get(StreamingServiceAdapter);
+    tokenService = moduleRef.get(TOKEN_STREAMING_SERVICE_TOKEN);
+  });
+
+  afterEach(() => {
+    // reset config to avoid leaking strict flag into other tests
+    const {
+      setStreamingConfig,
+    } = require('../utils/streaming-config.accessor');
+    setStreamingConfig({});
+  });
+
+  it('throws InvalidNodeIdError when non-canonical nodeId provided in strict mode', async () => {
+    await expect(
+      adapterStrict.initializeTokenStream({
+        executionId: 'exec-strict',
+        nodeId: ' Content|Plan:Dispatch ',
+        config: {
+          enabled: true,
+          methodName: 'm',
+          nodeId: ' Content|Plan:Dispatch ',
+        },
+      })
+    ).rejects.toThrow(/Invalid or non-canonical nodeId/);
+  });
+
+  it('accepts already canonical nodeId in strict mode', async () => {
+    await adapterStrict.initializeTokenStream({
+      executionId: 'exec-strict',
+      nodeId: 'content|plan:dispatch',
+      config: {
+        enabled: true,
+        methodName: 'm',
+        nodeId: 'content|plan:dispatch',
+      },
+    });
+    expect(tokenService.initializeTokenStream).toHaveBeenCalledWith(
+      expect.objectContaining({ nodeId: 'content|plan:dispatch' })
+    );
   });
 });

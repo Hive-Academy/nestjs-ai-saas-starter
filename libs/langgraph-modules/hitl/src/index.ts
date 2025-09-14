@@ -9,6 +9,9 @@ export { HumanApprovalService } from './lib/services/human-approval.service';
 export { ConfidenceEvaluatorService } from './lib/services/confidence-evaluator.service';
 export { ApprovalChainService } from './lib/services/approval-chain.service';
 export { FeedbackProcessorService } from './lib/services/feedback-processor.service';
+export { HitlNotificationService } from './lib/services/hitl-notification.service';
+export type * from './lib/services/hitl-notification.service';
+export { HitlTimeoutService } from './lib/services/hitl-timeout.service';
 
 // Routing (moved from main library)
 export { WorkflowRoutingService } from './lib/routing/workflow-routing.service';
@@ -24,3 +27,10 @@ export * from './lib/constants';
 
 // Interfaces
 export type * from './lib/interfaces/hitl.interface';
+export { IHitlStorageService } from './lib/interfaces/hitl-storage.interface';
+export type * from './lib/interfaces/hitl-storage.interface';
+export {
+  IUserInterruptionService,
+  IUserInterruptionStorageService,
+} from './lib/interfaces/user-interruption.interface';
+export type * from './lib/interfaces/user-interruption.interface';

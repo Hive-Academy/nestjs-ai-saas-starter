@@ -1,8 +1,8 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, type TestingModule } from '@nestjs/testing';
-import type {
-  WebSocketGatewayConfig
-} from '../interfaces/websocket-gateway.interface';
+import { StreamingAuthService } from './streaming-auth.service';
+import { RateLimiterService } from './rate-limiter.service';
+import type { WebSocketGatewayConfig } from '../interfaces/websocket-gateway.interface';
 import { StreamingWebSocketGateway } from './streaming-websocket-gateway.service';
 import { WebSocketBridgeService } from './websocket-bridge.service';
 
@@ -59,6 +59,7 @@ describe('StreamingWebSocketGateway', () => {
       joinRoom: jest.fn(),
       leaveRoom: jest.fn(),
       broadcastToExecution: jest.fn(),
+      unregisterClient: jest.fn(),
     };
 
     module = await Test.createTestingModule({
@@ -66,9 +67,7 @@ describe('StreamingWebSocketGateway', () => {
         StreamingWebSocketGateway,
         {
           provide: EventEmitter2,
-          useValue: {
-            emit: jest.fn(),
-          },
+          useValue: { emit: jest.fn() },
         },
         {
           provide: 'WEBSOCKET_GATEWAY_CONFIG',
@@ -78,6 +77,8 @@ describe('StreamingWebSocketGateway', () => {
           provide: WebSocketBridgeService,
           useValue: mockBridgeService,
         },
+        StreamingAuthService,
+        RateLimiterService,
       ],
     }).compile();
 
@@ -104,10 +105,13 @@ describe('StreamingWebSocketGateway', () => {
     });
 
     it('should skip initialization when disabled', async () => {
+      // Provide explicit disabled config and minimal stubs for ctor signature (eventEmitter, authService, rateLimiter, config, bridge)
       const disabledGateway = new StreamingWebSocketGateway(
         eventEmitter,
-        { enabled: false },
-        bridgeService
+        {} as any, // auth service stub
+        {} as any, // rate limiter stub
+        { enabled: false } as any,
+        bridgeService as any
       );
 
       const logSpy = jest.spyOn((disabledGateway as any).logger, 'log');
@@ -133,21 +137,28 @@ describe('StreamingWebSocketGateway', () => {
     });
 
     it('should reject connections when at maximum limit', async () => {
-      const mockSocket = createMockSocket();
+      const firstSocket = createMockSocket('first');
+      const secondSocket = createMockSocket('second');
 
-      // Set a low connection limit
-      const limitedConfig = { ...mockConfig, websocket: { maxConnections: 0 } };
+      // Set connection limit to 1 then attempt two connections
+      const limitedConfig = {
+        ...mockConfig,
+        websocket: { ...mockConfig.websocket, maxConnections: 1 },
+      };
       const limitedGateway = new StreamingWebSocketGateway(
         eventEmitter,
-        limitedConfig,
-        bridgeService
+        {} as any,
+        {} as any,
+        limitedConfig as any,
+        bridgeService as any
       );
       (limitedGateway as any).server = mockServer;
       await limitedGateway.onModuleInit();
 
-      await limitedGateway.handleConnection(mockSocket as any);
+      await limitedGateway.handleConnection(firstSocket as any);
+      await limitedGateway.handleConnection(secondSocket as any);
 
-      expect(mockSocket.emit).toHaveBeenCalledWith(
+      expect(secondSocket.emit).toHaveBeenCalledWith(
         'error',
         expect.objectContaining({
           data: expect.objectContaining({
@@ -156,7 +167,7 @@ describe('StreamingWebSocketGateway', () => {
           }),
         })
       );
-      expect(mockSocket.disconnect).toHaveBeenCalled();
+      expect(secondSocket.disconnect).toHaveBeenCalled();
     });
 
     // it('should handle disconnections', async () => {

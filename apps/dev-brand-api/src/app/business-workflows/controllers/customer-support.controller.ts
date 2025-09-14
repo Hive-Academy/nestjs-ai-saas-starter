@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
+import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
 import { BusinessMetricsService } from '../services/business-metrics.service';
 import { KnowledgeBaseService } from '../services/knowledge-base.service';
 import type {
@@ -31,6 +32,7 @@ import type {
 export class CustomerSupportController {
   constructor(
     private readonly workflowManager: WorkflowManagerService,
+    private readonly hitlService: HumanApprovalService,
     private readonly metricsService: BusinessMetricsService,
     private readonly knowledgeBaseService: KnowledgeBaseService
   ) {}
@@ -445,6 +447,398 @@ export class CustomerSupportController {
       };
     }
   }
+
+  // ===== USER INTERRUPTION ENDPOINTS =====
+  /**
+   * 🚀 DYNAMIC USER INTERRUPTION SYSTEM
+   *
+   * These endpoints provide real-time user interruption capabilities during AI agent execution.
+   * Users can pause workflows, inject input, ask questions, request clarifications, and resume execution
+   * with dynamic context preservation and workflow state management.
+   *
+   * Key Features:
+   * - Real-time workflow interruption and resumption
+   * - Dynamic user input injection with context preservation
+   * - Multiple interruption types (questions, clarifications, corrections, approvals)
+   * - Workflow pause/resume with state persistence
+   * - Integration with WebSocket streaming for real-time notifications
+   * - Persistent audit trail via Neo4j interruption storage
+   *
+   * Endpoints:
+   * - POST /interruptions/question - Interrupt with a user question
+   * - POST /interruptions/clarification - Request clarification from user
+   * - PUT /interruptions/:id/respond - Respond to an interruption
+   * - GET /interruptions/:executionId - Get active interruptions
+   * - PUT /interruptions/:id/cancel - Cancel an interruption
+   * - POST /interruptions/dynamic - General-purpose interruption request
+   * - POST /workflows/:id/inject-input - Inject input and resume execution
+   */
+
+  /**
+   * Interrupt agent execution with a user question
+   */
+  @Post('interruptions/question')
+  async interruptWithQuestion(
+    @Body()
+    request: {
+      executionId: string;
+      nodeId?: string;
+      question: string;
+      userId?: string;
+      urgency?: 'low' | 'medium' | 'high';
+    }
+  ) {
+    try {
+      const interruptionId = await this.hitlService.interruptAgentWithQuestion(
+        request.executionId,
+        request.nodeId || 'current',
+        request.question
+      );
+
+      // Optionally pause workflow for user input
+      if (request.urgency === 'high') {
+        await this.workflowManager.pauseWorkflow(
+          request.executionId,
+          `User question: ${request.question}`
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          interruptionId,
+          executionId: request.executionId,
+          message: 'Agent interrupted successfully',
+          status: 'awaiting_response',
+          createdAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Request clarification from user during agent execution
+   */
+  @Post('interruptions/clarification')
+  async requestClarification(
+    @Body()
+    request: {
+      executionId: string;
+      nodeId?: string;
+      clarificationRequest: string;
+      context?: Record<string, unknown>;
+    }
+  ) {
+    try {
+      const interruptionId = await this.hitlService.requestClarification(
+        request.executionId,
+        request.nodeId || 'current',
+        request.clarificationRequest
+      );
+
+      // Always pause workflow when clarification is needed
+      await this.workflowManager.pauseWorkflow(
+        request.executionId,
+        `Clarification needed: ${request.clarificationRequest}`
+      );
+
+      return {
+        success: true,
+        data: {
+          interruptionId,
+          executionId: request.executionId,
+          message: 'Clarification request created',
+          clarificationRequest: request.clarificationRequest,
+          status: 'awaiting_clarification',
+          context: request.context,
+          createdAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Respond to a user interruption
+   */
+  @Put('interruptions/:interruptionId/respond')
+  async respondToInterruption(
+    @Param('interruptionId') interruptionId: string,
+    @Body()
+    response: {
+      response: string;
+      continueExecution?: boolean;
+      userId?: string;
+      metadata?: Record<string, unknown>;
+    }
+  ) {
+    try {
+      const result = await this.hitlService.handleUserInterruptionResponse({
+        interruptionId,
+        response: response.response,
+        continueExecution: response.continueExecution ?? true,
+        timestamp: new Date(),
+        metadata: {
+          userId: response.userId,
+          responseLength: response.response.length,
+          ...response.metadata,
+        },
+      });
+
+      // Resume workflow if requested and interruption was successfully processed
+      if (
+        result.success &&
+        result.shouldContinue &&
+        response.continueExecution
+      ) {
+        const interruption = await this.hitlService.getActiveUserInterruptions(
+          result.executionId || ''
+        );
+        if (interruption.length > 0) {
+          await this.workflowManager.resumeWorkflow(
+            result.executionId!,
+            response.response
+          );
+        }
+      }
+
+      return {
+        success: result.success,
+        data: {
+          interruptionId,
+          processed: result.success,
+          shouldContinue: result.shouldContinue,
+          workflowResumed: response.continueExecution && result.shouldContinue,
+          updatedState: result.updatedState,
+          error: result.error,
+          processedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Get active user interruptions for an execution
+   */
+  @Get('interruptions/:executionId')
+  async getActiveInterruptions(@Param('executionId') executionId: string) {
+    try {
+      const interruptions = await this.hitlService.getActiveUserInterruptions(
+        executionId
+      );
+
+      return {
+        success: true,
+        data: {
+          executionId,
+          interruptions: interruptions,
+          count: interruptions.length,
+          hasActiveInterruptions: interruptions.length > 0,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        data: {
+          executionId,
+          interruptions: [],
+          count: 0,
+          hasActiveInterruptions: false,
+        },
+      };
+    }
+  }
+
+  /**
+   * Cancel a user interruption
+   */
+  @Put('interruptions/:interruptionId/cancel')
+  async cancelInterruption(
+    @Param('interruptionId') interruptionId: string,
+    @Body() request: { reason?: string; userId?: string }
+  ) {
+    try {
+      const cancelled = await this.hitlService.cancelUserInterruption(
+        interruptionId
+      );
+
+      return {
+        success: cancelled,
+        data: {
+          interruptionId,
+          cancelled,
+          reason: request.reason || 'User cancelled',
+          cancelledBy: request.userId,
+          cancelledAt: new Date().toISOString(),
+        },
+        message: cancelled
+          ? 'Interruption cancelled successfully'
+          : 'Failed to cancel interruption',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Request dynamic user interruption during workflow execution
+   */
+  @Post('interruptions/dynamic')
+  async requestUserInterruption(
+    @Body()
+    request: {
+      executionId: string;
+      nodeId?: string;
+      type:
+        | 'question'
+        | 'clarification'
+        | 'input_request'
+        | 'approval_request'
+        | 'correction';
+      message: string;
+      pauseWorkflow?: boolean;
+      timeoutMs?: number;
+      urgency?: 'low' | 'medium' | 'high';
+      metadata?: Record<string, unknown>;
+    }
+  ) {
+    try {
+      const interruptionId = await this.hitlService.requestUserInterruption({
+        executionId: request.executionId,
+        nodeId: request.nodeId || 'current',
+        type: request.type,
+        message: request.message,
+        metadata: {
+          urgency: request.urgency || 'medium',
+          timeoutMs: request.timeoutMs || 300000, // 5 minutes default
+          source: 'rest_api',
+          ...request.metadata,
+        },
+      });
+
+      // Pause workflow if requested
+      if (request.pauseWorkflow !== false) {
+        await this.workflowManager.pauseWorkflow(
+          request.executionId,
+          `User interruption: ${request.type} - ${request.message}`
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          interruptionId,
+          executionId: request.executionId,
+          type: request.type,
+          message: request.message,
+          workflowPaused: request.pauseWorkflow !== false,
+          estimatedResumeTime: new Date(
+            Date.now() + (request.timeoutMs || 300000)
+          ),
+          status: 'active',
+          createdAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Inject user input during workflow execution
+   */
+  @Post('workflows/:executionId/inject-input')
+  async injectUserInput(
+    @Param('executionId') executionId: string,
+    @Body()
+    request: {
+      input: string;
+      nodeId?: string;
+      resumeExecution?: boolean;
+      inputType?: 'text' | 'selection' | 'correction' | 'approval';
+      metadata?: Record<string, unknown>;
+    }
+  ) {
+    try {
+      // Create an interruption request for input injection
+      const interruptionId = await this.hitlService.requestUserInterruption({
+        executionId,
+        nodeId: request.nodeId || 'current',
+        type: 'input_request',
+        message: `User input: ${request.input}`,
+        metadata: {
+          inputType: request.inputType || 'text',
+          source: 'input_injection',
+          ...request.metadata,
+        },
+      });
+
+      // Immediately respond with the provided input
+      const result = await this.hitlService.handleUserInterruptionResponse({
+        interruptionId,
+        response: request.input,
+        continueExecution: request.resumeExecution !== false,
+        timestamp: new Date(),
+        metadata: {
+          injected: true,
+          inputType: request.inputType || 'text',
+        },
+      });
+
+      // Resume workflow with injected input if successful
+      if (
+        result.success &&
+        result.shouldContinue &&
+        request.resumeExecution !== false
+      ) {
+        await this.workflowManager.resumeWorkflow(executionId, request.input);
+      }
+
+      return {
+        success: result.success,
+        data: {
+          executionId,
+          interruptionId,
+          inputInjected: result.success,
+          workflowResumed:
+            result.success &&
+            result.shouldContinue &&
+            request.resumeExecution !== false,
+          input: request.input,
+          inputType: request.inputType || 'text',
+          processedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  // ===== END USER INTERRUPTION ENDPOINTS =====
 
   /**
    * Get active tickets (admin endpoint)

@@ -1,5 +1,8 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import { TokenStreamingService } from '@hive-academy/langgraph-streaming';
+import {
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  ITokenStreamingService,
+} from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
 import type { ShowcaseAgentState } from '../types/showcase.types';
@@ -17,8 +20,8 @@ export class ShowcaseAnalysisService {
   constructor(
     private readonly multiAgentCoordinator: MultiAgentCoordinatorService,
     @Optional()
-    @Inject(TokenStreamingService)
-    private readonly tokenStreaming?: TokenStreamingService
+    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
+    private readonly tokenStreaming?: ITokenStreamingService
   ) {}
 
   /**

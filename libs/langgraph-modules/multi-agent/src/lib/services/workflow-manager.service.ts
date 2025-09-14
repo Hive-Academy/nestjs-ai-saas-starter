@@ -237,19 +237,166 @@ export class WorkflowManagerService {
   }
 
   /**
-   * Resume workflow execution (if supported)
+   * Resume workflow execution
    */
-  async resumeWorkflow(instanceId: string): Promise<boolean> {
+  async resumeWorkflow(
+    instanceId: string,
+    userInput?: string
+  ): Promise<boolean> {
     const instance = this.getInstance(instanceId);
     if (!instance || instance.status !== WorkflowStatus.PAUSED) {
+      this.logger.warn(
+        `Cannot resume workflow ${instanceId}: invalid state ${
+          instance?.status || 'not found'
+        }`
+      );
       return false;
     }
 
-    // For now, we don't support resuming - would require more complex state management
-    this.logger.warn(
-      `Resume requested for workflow ${instanceId} but not currently supported`
+    try {
+      // Restore workflow state
+      instance.status = WorkflowStatus.RUNNING;
+      instance.resumedAt = new Date();
+
+      // Inject user input if provided
+      if (userInput && instance.currentState) {
+        instance.currentState.userInput = userInput;
+        instance.currentState.userInputTimestamp = new Date();
+        instance.currentState.resumedFromPause = true;
+      }
+
+      // Clear pause context
+      if (instance.context?.pauseContext) {
+        instance.context.resumeContext = {
+          resumedAt: instance.resumedAt,
+          pauseDuration:
+            instance.resumedAt.getTime() - (instance.pausedAt?.getTime() || 0),
+          userInputProvided: !!userInput,
+        };
+        delete instance.context.pauseContext;
+      }
+
+      this.logger.log(
+        `Resumed workflow ${instanceId}${userInput ? ' with user input' : ''}`
+      );
+      return true;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to resume workflow ${instanceId}: ${errorMsg}`,
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Add user input to running workflow
+   */
+  async addUserInput(
+    instanceId: string,
+    userInput: string,
+    continueExecution = true,
+    metadata?: Record<string, unknown>
+  ): Promise<boolean> {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      this.logger.warn(
+        `Cannot add user input to workflow ${instanceId}: workflow not found`
+      );
+      return false;
+    }
+
+    try {
+      // Update current state with user input
+      if (!instance.currentState) {
+        instance.currentState = {};
+      }
+
+      instance.currentState = {
+        ...instance.currentState,
+        userInput,
+        userInputTimestamp: new Date(),
+        userInputMetadata: metadata,
+        waitingForInput: false,
+        inputReceived: true,
+      };
+
+      // Update instance metadata
+      instance.metadata = {
+        ...instance.metadata,
+        lastUserInteraction: new Date(),
+        userInputCount:
+          ((instance.metadata?.userInputCount as number) || 0) + 1,
+      };
+
+      this.logger.log(`Added user input to workflow ${instanceId}`);
+
+      // Resume if workflow was paused and continuation requested
+      if (continueExecution && instance.status === WorkflowStatus.PAUSED) {
+        return this.resumeWorkflow(instanceId, userInput);
+      }
+
+      return true;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to add user input to workflow ${instanceId}: ${errorMsg}`,
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Check if workflow is waiting for user input
+   */
+  isWaitingForUserInput(instanceId: string): boolean {
+    const instance = this.getInstance(instanceId);
+    return (
+      instance?.currentState?.waitingForInput === true ||
+      instance?.status === WorkflowStatus.PAUSED
     );
-    return false;
+  }
+
+  /**
+   * Mark workflow as waiting for user input
+   */
+  async markWaitingForInput(
+    instanceId: string,
+    inputPrompt?: string,
+    timeoutMs?: number
+  ): Promise<boolean> {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      return false;
+    }
+
+    try {
+      // Update state to indicate waiting for input
+      if (!instance.currentState) {
+        instance.currentState = {};
+      }
+
+      instance.currentState.waitingForInput = true;
+      instance.currentState.inputPrompt = inputPrompt;
+      instance.currentState.inputRequestedAt = new Date();
+
+      if (timeoutMs) {
+        instance.currentState.inputTimeoutMs = timeoutMs;
+        instance.currentState.inputTimeoutAt = new Date(Date.now() + timeoutMs);
+      }
+
+      this.logger.log(`Workflow ${instanceId} is now waiting for user input`);
+      return true;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to mark workflow ${instanceId} as waiting for input: ${errorMsg}`,
+        error
+      );
+      return false;
+    }
   }
 
   // ==================== MONITORING & STATISTICS ====================

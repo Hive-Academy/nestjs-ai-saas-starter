@@ -3,6 +3,8 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Inject,
+  Optional,
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Subject, Subscription, filter, merge } from 'rxjs';
@@ -10,7 +12,8 @@ import {
   StreamUpdate,
   StreamEventType,
 } from '../interfaces/streaming.interface';
-import { TokenStreamingService } from './token-streaming.service';
+import type { ITokenStreamingService } from '@hive-academy/langgraph-core';
+import { TOKEN_STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 interface WebSocketClient {
@@ -53,7 +56,9 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
-    private readonly tokenStreamingService?: TokenStreamingService // WorkflowStreamService removed - now in workflow-engine module
+    @Optional()
+    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
+    private readonly tokenStreamingService?: ITokenStreamingService // WorkflowStreamService removed - now in workflow-engine module
   ) {}
 
   /**
@@ -615,19 +620,20 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const tokenSubscription = this.tokenStreamingService
-      .getGlobalTokenStream()
-      .subscribe({
-        next: (update) => {
+    const svc = this.tokenStreamingService as any;
+    if (svc && typeof svc.getGlobalTokenStream === 'function') {
+      const tokenSubscription = svc.getGlobalTokenStream().subscribe({
+        next: (update: StreamUpdate) => {
           this.handleTokenStreamUpdate(update);
         },
-        error: (error) => {
+        error: (error: unknown) => {
           this.logger.error('Token stream integration error:', error);
         },
       });
 
-    this.activeSubscriptions.add(tokenSubscription);
-    this.logger.debug('Token stream integration setup completed');
+      this.activeSubscriptions.add(tokenSubscription);
+      this.logger.debug('Token stream integration setup completed');
+    }
   }
 
   /**
@@ -664,17 +670,20 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
       this.tokenStreamingService &&
       client.subscriptions.has(StreamEventType.TOKEN)
     ) {
-      streams.push(
-        this.tokenStreamingService
-          .getGlobalTokenStream()
-          .pipe(
-            filter(
-              (update) =>
-                !client.executionId ||
-                update.metadata?.executionId === client.executionId
+      const svc = this.tokenStreamingService as any;
+      if (typeof svc.getGlobalTokenStream === 'function') {
+        streams.push(
+          svc
+            .getGlobalTokenStream()
+            .pipe(
+              filter(
+                (update: StreamUpdate) =>
+                  !client.executionId ||
+                  update.metadata?.executionId === client.executionId
+              )
             )
-          )
-      );
+        );
+      }
     }
 
     // Add workflow stream if available
@@ -683,18 +692,18 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     if (streams.length > 0) {
       const mergedStream = merge(...streams);
 
-      const subscription = mergedStream.subscribe(
-        (update: unknown) => {
-          const streamUpdate = update as StreamUpdate;
-          if (this.shouldSendToClient(client, streamUpdate)) {
-            client.subject.next(streamUpdate);
+      const subscription = mergedStream.subscribe({
+        next: (value: unknown) => {
+          const update = value as StreamUpdate; // runtime contract
+          if (this.shouldSendToClient(client, update)) {
+            client.subject.next(update);
           }
         },
-        (error) => {
+        error: (error: unknown) => {
           this.logger.error(`Client stream error for ${client.id}:`, error);
-          client.subject.error(error);
-        }
-      );
+          client.subject.error(error as any);
+        },
+      });
 
       client.subscription = subscription;
       this.activeSubscriptions.add(subscription);

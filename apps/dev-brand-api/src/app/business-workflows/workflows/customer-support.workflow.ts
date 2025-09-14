@@ -8,10 +8,17 @@ import {
   StreamProgress,
   StreamToken,
   StreamEvent,
-  TokenStreamingService,
-  WebSocketBridgeService,
 } from '@hive-academy/langgraph-streaming';
-import { RequiresApproval } from '@hive-academy/langgraph-hitl';
+import {
+  TOKEN_STREAMING_SERVICE_TOKEN,
+  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+  ITokenStreamingService,
+  IWebSocketBridgeService,
+} from '@hive-academy/langgraph-core';
+import {
+  RequiresApproval,
+  HumanApprovalService,
+} from '@hive-academy/langgraph-hitl';
 import { StreamEventType } from '@hive-academy/langgraph-core';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { CustomerSupportAgent } from '../agents/customer-support.agent';
@@ -31,12 +38,13 @@ import type { CustomerSupportState, TicketRequest } from '../types';
 export class CustomerSupportWorkflow {
   constructor(
     private readonly supportAgent: CustomerSupportAgent,
-    private readonly tokenStreamingService: TokenStreamingService,
-    private readonly webSocketBridge: WebSocketBridgeService,
-    private readonly llmProvider: LlmProviderService
-  ) // In a real implementation, these would be injected
-  // private readonly emailService: EmailService,
-  // private readonly metricsService: BusinessMetricsService
+    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
+    private readonly tokenStreamingService: ITokenStreamingService,
+    @Inject(WEBSOCKET_BRIDGE_SERVICE_TOKEN)
+    private readonly webSocketBridge: IWebSocketBridgeService,
+    private readonly llmProvider: LlmProviderService,
+    private readonly hitlService: HumanApprovalService // In a real implementation, these would be injected // private readonly emailService: EmailService,
+  ) // private readonly metricsService: BusinessMetricsService
   {}
 
   /**
@@ -154,9 +162,62 @@ export class CustomerSupportWorkflow {
   }
 
   /**
-   * Step 2: Generate response based on analysis
+   * NEW: Dynamic user interruption point during analysis
    */
   @Task({ dependsOn: ['analyzeTicket'] })
+  async checkForUserQuestions(
+    state: CustomerSupportState
+  ): Promise<Partial<CustomerSupportState>> {
+    try {
+      // Check if user has any questions about the analysis
+      if (state.analysis?.complexity === 'high' || state.escalationRequired) {
+        const interruptionId = await this.hitlService.requestClarification(
+          state.ticketId,
+          'analysis-review',
+          `I've analyzed this ${
+            state.ticket.category
+          } ticket and found it requires special attention. 
+          Key findings: ${
+            state.analysis?.keyTopics?.join(', ') || 'Complex issue detected'
+          }
+          
+          Would you like me to:
+          1. Proceed with standard resolution
+          2. Escalate to human specialist immediately  
+          3. Request more information from customer first
+          
+          What's your preference?`
+        );
+
+        this.emitProgress({
+          ticketId: state.ticketId,
+          progress: 60,
+          message: 'Waiting for user guidance on resolution approach',
+          currentStep: 'awaiting_user_input',
+        });
+
+        return {
+          ...state,
+          status: 'awaiting_user_input',
+          metadata: {
+            ...state.metadata,
+            interruptionId,
+            interruptionReason: 'complex_analysis_requires_guidance',
+          },
+        };
+      }
+
+      return { ...state, status: 'analyzed' };
+    } catch (error) {
+      console.error('Error in checkForUserQuestions:', error);
+      return { ...state };
+    }
+  }
+
+  /**
+   * Step 2: Generate response based on analysis
+   */
+  @Task({ dependsOn: ['checkForUserQuestions'] })
   @StreamEvent({ events: [StreamEventType.MILESTONE, StreamEventType.VALUES] })
   async generateResponse(
     state: CustomerSupportState
@@ -230,7 +291,21 @@ export class CustomerSupportWorkflow {
    * Step 3: Send response (with optional human approval)
    */
   @Task({ dependsOn: ['generateResponse'] })
-  @RequiresApproval({ timeoutMs: 300000 })
+  @RequiresApproval({
+    confidenceThreshold: 0.8,
+    timeoutMs: 300000, // 5 minutes
+    when: (state) => this.determineApprovalRequirement(state),
+    onTimeout: 'escalate',
+    riskThreshold: 'medium',
+    message: (state) =>
+      `Review response for ${state.ticket.customerTier} customer: "${state.ticket.title}"`,
+    metadata: (state) => ({
+      ticketCategory: state.ticket.category,
+      customerTier: state.ticket.customerTier,
+      escalationRequired: state.escalationRequired,
+      businessImpact: state.analysis?.businessImpact,
+    }),
+  })
   async sendResponse(
     state: CustomerSupportState
   ): Promise<Partial<CustomerSupportState>> {

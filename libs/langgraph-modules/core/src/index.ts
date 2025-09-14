@@ -73,6 +73,7 @@ export {
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
+export * from './lib/utils/node-id';
 
 // Checkpoint integration exports for consumer libraries
 export {

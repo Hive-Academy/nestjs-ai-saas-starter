@@ -7,7 +7,12 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 import { MemoryModule } from '@hive-academy/langgraph-memory';
 
 // Adapters - Keep these as they're essential
-import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
+import {
+  ChromaVectorAdapter,
+  Neo4jGraphAdapter,
+  Neo4jHitlStorageAdapter,
+  Neo4jInterruptionStorageAdapter,
+} from './adapters';
 
 // LangGraph modules with proper streaming integration
 import {
@@ -15,10 +20,11 @@ import {
   CheckpointManagerService,
   CheckpointManagerAdapter,
 } from '@hive-academy/langgraph-checkpoint';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import {
-  StreamingModule,
-  StreamingServiceAdapter,
-} from '@hive-academy/langgraph-streaming';
+  STREAMING_SERVICE_TOKEN,
+  IStreamingService,
+} from '@hive-academy/langgraph-core';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
@@ -97,39 +103,48 @@ import { ShowcaseModule } from './showcase/showcase.module';
       },
     }),
 
-    // HITL module
-    HitlModule.forRoot(getHitlConfig()),
+    // HITL module with storage adapters
+    HitlModule.forRoot({
+      ...getHitlConfig(),
+      adapters: {
+        storage: Neo4jHitlStorageAdapter,
+        interruptionStorage: Neo4jInterruptionStorageAdapter,
+      },
+    }),
 
     // Workflow engine WITH STREAMING
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (streamingAdapter: any) => ({
+      useFactory: async (streamingAdapter: IStreamingService) => ({
         ...getWorkflowEngineConfig(),
-        streamingAdapter, // Enable streaming!
+        streamingAdapter, // Enable streaming via interface token
       }),
-      inject: [StreamingServiceAdapter],
+      inject: [STREAMING_SERVICE_TOKEN],
     }),
 
     // Multi-agent module WITH STREAMING
     MultiAgentModule.forRootAsync({
       useFactory: async (
-        streamingAdapter: StreamingServiceAdapter,
+        streamingAdapter: IStreamingService,
         checkpointManager: CheckpointManagerService
       ) => ({
         ...getMultiAgentConfig(),
-        streamingAdapter, // Enable streaming!
+        streamingAdapter, // Enable streaming via interface token
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
-      inject: [StreamingServiceAdapter, CheckpointManagerService],
+      inject: [STREAMING_SERVICE_TOKEN, CheckpointManagerService],
     }),
 
     // Functional API with checkpoint AND STREAMING
     FunctionalApiModule.forRootAsync({
-      useFactory: async (streamingAdapter: any, checkpointManager: any) => ({
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointManager: CheckpointManagerService
+      ) => ({
         ...getFunctionalApiConfig(),
-        streamingAdapter, // Enable streaming!
+        streamingAdapter, // Enable streaming via interface token
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
-      inject: [StreamingServiceAdapter, CheckpointManagerService],
+      inject: [STREAMING_SERVICE_TOKEN, CheckpointManagerService],
     }),
 
     // Monitoring module

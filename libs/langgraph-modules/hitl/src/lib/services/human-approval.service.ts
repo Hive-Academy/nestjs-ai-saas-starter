@@ -1,11 +1,43 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
+import type {
+  WorkflowState,
+  HumanFeedback,
+} from '@hive-academy/langgraph-core';
 import { ApprovalChainService, Approver } from './approval-chain.service';
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
+import {
+  HitlNotificationService,
+  ApprovalNotificationData,
+  ApprovalResponseNotificationData,
+} from './hitl-notification.service';
+import { HitlTimeoutService } from './hitl-timeout.service';
+import {
+  IHitlStorageService,
+  ApprovalStorageData,
+} from '../interfaces/hitl-storage.interface';
+import {
+  IUserInterruptionService,
+  IUserInterruptionStorageService,
+  InterruptionContext,
+  UserInterruption,
+  UserInterruptionResponse,
+  InterruptionType,
+  InterruptionStatus,
+} from '../interfaces/user-interruption.interface';
 import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
-import { ApprovalRiskLevel, EscalationStrategy, RequiresApprovalOptions } from '../decorators/approval.decorator';
+import {
+  ApprovalRiskLevel,
+  EscalationStrategy,
+  RequiresApprovalOptions,
+} from '../decorators/approval.decorator';
 
 /**
  * Approval workflow state
@@ -17,7 +49,7 @@ export enum ApprovalWorkflowState {
   REJECTED = 'rejected',
   ESCALATED = 'escalated',
   TIMEOUT = 'timeout',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 /**
@@ -140,12 +172,19 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private readonly approvalRequests = new Map<string, HumanApprovalRequest>();
   private readonly timeoutHandlers = new Map<string, NodeJS.Timeout>();
   private readonly streamConnections = new Map<string, any>(); // WebSocket connections for real-time updates
+  private readonly userInterruptions = new Map<string, UserInterruption>(); // Active user interruptions
+  private readonly interruptionTimeouts = new Map<string, NodeJS.Timeout>(); // Interruption timeouts
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
     private readonly approvalChainService: ApprovalChainService,
     private readonly feedbackProcessor: FeedbackProcessorService,
     private readonly confidenceEvaluator: ConfidenceEvaluatorService,
+    @Optional() private readonly storage?: IHitlStorageService,
+    @Optional() private readonly notifications?: HitlNotificationService,
+    @Optional() private readonly timeoutService?: HitlTimeoutService,
+    @Optional()
+    private readonly interruptionStorage?: IUserInterruptionStorageService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -181,18 +220,21 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   ): Promise<HumanApprovalRequest> {
     const requestId = this.generateRequestId();
 
-    this.logger.log(`Requesting approval for execution ${executionId}, node ${nodeId}`);
+    this.logger.log(
+      `Requesting approval for execution ${executionId}, node ${nodeId}`
+    );
 
     // Evaluate confidence
     const confidence = await this.confidenceEvaluator.evaluateConfidence(state);
-    const confidenceFactors = await this.confidenceEvaluator.getConfidenceFactors(state);
+    const confidenceFactors =
+      await this.confidenceEvaluator.getConfidenceFactors(state);
 
     // Assess risk if enabled
     let riskAssessment;
     if (options.riskAssessment?.enabled) {
       riskAssessment = await this.confidenceEvaluator.assessRisk(state, {
         factors: options.riskAssessment.factors || [],
-        customEvaluator: options.riskAssessment.evaluator
+        customEvaluator: options.riskAssessment.evaluator,
       });
     }
 
@@ -210,20 +252,21 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       riskAssessment,
       confidence: {
         current: confidence,
-        threshold: options.confidenceThreshold || HITL_DEFAULTS.CONFIDENCE_THRESHOLD,
-        factors: confidenceFactors
+        threshold:
+          options.confidenceThreshold || HITL_DEFAULTS.CONFIDENCE_THRESHOLD,
+        factors: confidenceFactors,
       },
       timestamps: {
-        requested: new Date()
+        requested: new Date(),
       },
       timeout: {
         duration: options.timeoutMs || HITL_DEFAULTS.APPROVAL_TIMEOUT_MS,
-        strategy: options.onTimeout || 'reject'
+        strategy: options.onTimeout || 'reject',
       },
       retry: {
         count: 0,
-        maxAttempts: HITL_DEFAULTS.RETRY_ATTEMPTS
-      }
+        maxAttempts: HITL_DEFAULTS.RETRY_ATTEMPTS,
+      },
     };
 
     // Store request
@@ -233,21 +276,27 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     this.setupTimeout(requestId);
 
     // Determine approvers based on escalation strategy
-    if (options.chainId && options.escalationStrategy !== EscalationStrategy.DIRECT) {
+    if (
+      options.chainId &&
+      options.escalationStrategy !== EscalationStrategy.DIRECT
+    ) {
       try {
-        const approvalRequest = await this.approvalChainService.initiateApproval(
-          executionId,
-          options.chainId,
-          {
-            nodeId,
-            message,
-            confidence: confidence,
-            riskAssessment,
-            metadata: request.metadata
-          }
-        );
+        const approvalRequest =
+          await this.approvalChainService.initiateApproval(
+            executionId,
+            options.chainId,
+            {
+              nodeId,
+              message,
+              confidence: confidence,
+              riskAssessment,
+              metadata: request.metadata,
+            }
+          );
 
-        request.approvers = approvalRequest.currentLevel.approvers.map(a => a.id);
+        request.approvers = approvalRequest.currentLevel.approvers.map(
+          (a) => a.id
+        );
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to initiate approval chain: ${errorMsg}`);
@@ -261,7 +310,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
       request,
       approvers: request.approvers,
-      streamEnabled: this.hasStreamConnection(executionId)
+      streamEnabled: this.hasStreamConnection(executionId),
     });
 
     // Stream real-time approval request if connection exists
@@ -269,7 +318,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       await this.streamApprovalRequest(request);
     }
 
-    this.logger.log(`Approval request ${requestId} created for execution ${executionId}`);
+    this.logger.log(
+      `Approval request ${requestId} created for execution ${executionId}`
+    );
 
     return request;
   }
@@ -280,7 +331,11 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   async processApprovalResponse(
     requestId: string,
     response: HumanApprovalResponse
-  ): Promise<{ success: boolean; nextState?: Partial<WorkflowState>; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    nextState?: Partial<WorkflowState>;
+    error?: string;
+  }> {
     const request = this.approvalRequests.get(requestId);
 
     if (!request) {
@@ -295,7 +350,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       return { success: false, error };
     }
 
-    this.logger.log(`Processing approval response for ${requestId}: ${response.decision}`);
+    this.logger.log(
+      `Processing approval response for ${requestId}: ${response.decision}`
+    );
 
     // Clear timeout
     this.clearTimeout(requestId);
@@ -340,7 +397,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         executionId: request.executionId,
         decision: response.decision,
         approver: response.approver,
-        duration: Date.now() - request.timestamps.requested.getTime()
+        duration: Date.now() - request.timestamps.requested.getTime(),
       });
 
       // Stream real-time update
@@ -349,10 +406,13 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       }
 
       return { success: true, nextState };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Error processing approval response: ${errorMessage}`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Error processing approval response: ${errorMessage}`,
+        error
+      );
 
       return { success: false, error: errorMessage };
     }
@@ -364,7 +424,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private async handleTimeout(requestId: string): Promise<void> {
     const request = this.approvalRequests.get(requestId);
 
-    if (!request || request.workflowState !== ApprovalWorkflowState.IN_PROGRESS) {
+    if (
+      !request ||
+      request.workflowState !== ApprovalWorkflowState.IN_PROGRESS
+    ) {
       return;
     }
 
@@ -379,9 +442,13 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         await this.processApprovalResponse(requestId, {
           requestId,
           decision: 'approved',
-          approver: { id: 'system', name: 'Auto-Approval (Timeout)', role: 'system' },
+          approver: {
+            id: 'system',
+            name: 'Auto-Approval (Timeout)',
+            role: 'system',
+          },
           message: 'Auto-approved due to timeout',
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         break;
 
@@ -389,9 +456,13 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         await this.processApprovalResponse(requestId, {
           requestId,
           decision: 'rejected',
-          approver: { id: 'system', name: 'Auto-Rejection (Timeout)', role: 'system' },
+          approver: {
+            id: 'system',
+            name: 'Auto-Rejection (Timeout)',
+            role: 'system',
+          },
           message: 'Auto-rejected due to timeout',
-          timestamp: new Date()
+          timestamp: new Date(),
         });
         break;
 
@@ -400,18 +471,26 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           await this.processApprovalResponse(requestId, {
             requestId,
             decision: 'escalated',
-            approver: { id: 'system', name: 'Auto-Escalation (Timeout)', role: 'system' },
+            approver: {
+              id: 'system',
+              name: 'Auto-Escalation (Timeout)',
+              role: 'system',
+            },
             message: 'Escalated due to timeout',
-            timestamp: new Date()
+            timestamp: new Date(),
           });
         } else {
           // No chain to escalate to, reject
           await this.processApprovalResponse(requestId, {
             requestId,
             decision: 'rejected',
-            approver: { id: 'system', name: 'Auto-Rejection (No Escalation)', role: 'system' },
+            approver: {
+              id: 'system',
+              name: 'Auto-Rejection (No Escalation)',
+              role: 'system',
+            },
             message: 'Rejected due to timeout (no escalation chain)',
-            timestamp: new Date()
+            timestamp: new Date(),
           });
         }
         break;
@@ -424,15 +503,19 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
 
           await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
             request,
-            retryAttempt: request.retry.count
+            retryAttempt: request.retry.count,
           });
         } else {
           await this.processApprovalResponse(requestId, {
             requestId,
             decision: 'rejected',
-            approver: { id: 'system', name: 'Auto-Rejection (Max Retries)', role: 'system' },
+            approver: {
+              id: 'system',
+              name: 'Auto-Rejection (Max Retries)',
+              role: 'system',
+            },
             message: 'Rejected after maximum retry attempts',
-            timestamp: new Date()
+            timestamp: new Date(),
           });
         }
         break;
@@ -443,7 +526,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       requestId,
       executionId: request.executionId,
       strategy: request.timeout.strategy,
-      retryCount: request.retry.count
+      retryCount: request.retry.count,
     });
   }
 
@@ -460,7 +543,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       'approval' as any,
       {
         message: response.message,
-        data: response.metadata
+        data: response.metadata,
       },
       response.approver
     );
@@ -475,12 +558,12 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         approver: response.approver,
         message: response.message,
         timestamp: response.timestamp,
-        metadata: response.metadata
+        metadata: response.metadata,
       } as HumanFeedback,
       confidence: newConfidence,
       approvalReceived: true,
       waitingForApproval: false,
-      [`approved_${request.nodeId}`]: true
+      [`approved_${request.nodeId}`]: true,
     };
   }
 
@@ -497,7 +580,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       'rejection' as any,
       {
         message: response.message,
-        data: response.metadata
+        data: response.metadata,
       },
       response.approver
     );
@@ -513,12 +596,12 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         message: response.message,
         reason: response.message,
         timestamp: response.timestamp,
-        metadata: response.metadata
+        metadata: response.metadata,
       } as HumanFeedback,
       confidence: newConfidence,
       approvalReceived: false,
       waitingForApproval: false,
-      rejectionReason: response.message
+      rejectionReason: response.message,
     };
   }
 
@@ -532,7 +615,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     if (request.chainId && this.approvalChainService) {
       // Process escalation through approval chain
       try {
-        const chainRequest = this.approvalChainService.getApprovalRequest(request.id);
+        const chainRequest = this.approvalChainService.getApprovalRequest(
+          request.id
+        );
         if (chainRequest) {
           await this.approvalChainService.processApproval(
             request.id,
@@ -552,7 +637,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       requestId: request.id,
       executionId: request.executionId,
       escalatedBy: response.approver,
-      chainId: request.chainId
+      chainId: request.chainId,
     });
 
     return {
@@ -560,8 +645,8 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       metadata: {
         ...request.state.metadata,
         escalatedBy: response.approver,
-        escalationReason: response.message
-      }
+        escalationReason: response.message,
+      },
     };
   }
 
@@ -582,17 +667,16 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         metadata: {
           ...request.state.metadata,
           retryCount: request.retry.count,
-          retryReason: response.message
-        }
+          retryReason: response.message,
+        },
       };
     }
-      // Max retries reached, reject
-      return await this.handleApprovalRejection(request, {
-        ...response,
-        decision: 'rejected',
-        message: `Max retries reached: ${response.message}`
-      });
-
+    // Max retries reached, reject
+    return await this.handleApprovalRejection(request, {
+      ...response,
+      decision: 'rejected',
+      message: `Max retries reached: ${response.message}`,
+    });
   }
 
   /**
@@ -609,7 +693,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       {
         message: response.message,
         modifications: response.modifications,
-        data: response.metadata
+        data: response.metadata,
       },
       response.approver
     );
@@ -621,14 +705,14 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         approver: response.approver,
         message: response.message,
         timestamp: response.timestamp,
-        metadata: response.modifications
+        metadata: response.modifications,
       } as HumanFeedback,
       waitingForApproval: false,
       metadata: {
         ...request.state.metadata,
         humanModifications: response.modifications,
-        modificationReason: response.message
-      }
+        modificationReason: response.message,
+      },
     };
   }
 
@@ -638,8 +722,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private setupEventListeners(): void {
     // Listen for approval chain events
     this.eventEmitter.on('approval.completed', async (event) => {
-      const request = Array.from(this.approvalRequests.values())
-        .find(r => r.executionId === event.executionId);
+      const request = Array.from(this.approvalRequests.values()).find(
+        (r) => r.executionId === event.executionId
+      );
 
       if (request) {
         await this.processApprovalResponse(request.id, {
@@ -647,7 +732,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
           decision: event.status === 'approved' ? 'approved' : 'rejected',
           approver: { id: 'chain', name: 'Approval Chain', role: 'system' },
           message: event.reason || `Chain ${event.status}`,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     });
@@ -658,7 +743,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   private setupTimeout(requestId: string): void {
     const request = this.approvalRequests.get(requestId);
-    if (!request) {return;}
+    if (!request) {
+      return;
+    }
 
     // Clear existing timeout
     this.clearTimeout(requestId);
@@ -692,22 +779,26 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   /**
    * Stream approval request to connected clients
    */
-  private async streamApprovalRequest(request: HumanApprovalRequest): Promise<void> {
+  private async streamApprovalRequest(
+    request: HumanApprovalRequest
+  ): Promise<void> {
     const connection = this.streamConnections.get(request.executionId);
     if (connection?.send) {
       try {
-        connection.send(JSON.stringify({
-          type: 'approval_requested',
-          data: {
-            requestId: request.id,
-            nodeId: request.nodeId,
-            message: request.message,
-            confidence: request.confidence,
-            riskAssessment: request.riskAssessment,
-            timeout: request.timeout.duration,
-            timestamp: request.timestamps.requested
-          }
-        }));
+        connection.send(
+          JSON.stringify({
+            type: 'approval_requested',
+            data: {
+              requestId: request.id,
+              nodeId: request.nodeId,
+              message: request.message,
+              confidence: request.confidence,
+              riskAssessment: request.riskAssessment,
+              timeout: request.timeout.duration,
+              timestamp: request.timestamps.requested,
+            },
+          })
+        );
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to stream approval request: ${errorMsg}`);
@@ -725,16 +816,18 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     const connection = this.streamConnections.get(request.executionId);
     if (connection?.send) {
       try {
-        connection.send(JSON.stringify({
-          type: 'approval_updated',
-          data: {
-            requestId: request.id,
-            decision: response.decision,
-            approver: response.approver,
-            message: response.message,
-            timestamp: response.timestamp
-          }
-        }));
+        connection.send(
+          JSON.stringify({
+            type: 'approval_updated',
+            data: {
+              requestId: request.id,
+              decision: response.decision,
+              approver: response.approver,
+              message: response.message,
+              timestamp: response.timestamp,
+            },
+          })
+        );
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to stream approval update: ${errorMsg}`);
@@ -747,7 +840,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   registerStreamConnection(executionId: string, connection: any): void {
     this.streamConnections.set(executionId, connection);
-    this.logger.debug(`Registered stream connection for execution ${executionId}`);
+    this.logger.debug(
+      `Registered stream connection for execution ${executionId}`
+    );
   }
 
   /**
@@ -755,7 +850,452 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   unregisterStreamConnection(executionId: string): void {
     this.streamConnections.delete(executionId);
-    this.logger.debug(`Unregistered stream connection for execution ${executionId}`);
+    this.logger.debug(
+      `Unregistered stream connection for execution ${executionId}`
+    );
+  }
+
+  // ==========================================
+  // USER INTERRUPTION METHODS
+  // ==========================================
+
+  /**
+   * Request user interruption during workflow execution
+   */
+  async requestUserInterruption(context: InterruptionContext): Promise<string> {
+    const interruptionId = `interrupt_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
+    // Create interruption record
+    const interruption: UserInterruption = {
+      id: interruptionId,
+      executionId: context.executionId,
+      nodeId: context.nodeId,
+      type: context.type,
+      status: InterruptionStatus.PENDING,
+      context,
+      timestamps: {
+        created: new Date(),
+      },
+      timeout: {
+        duration: 300000, // 5 minutes default
+        strategy: 'continue',
+      },
+    };
+
+    // Store interruption
+    this.userInterruptions.set(interruptionId, interruption);
+
+    // Store in persistent storage if available
+    if (this.interruptionStorage) {
+      try {
+        await this.interruptionStorage.storeInterruption(interruption);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to store interruption in persistent storage: ${errorMsg}`
+        );
+      }
+    }
+
+    // Set up timeout
+    this.setupInterruptionTimeout(interruptionId);
+
+    // Emit event for external systems
+    await this.eventEmitter.emit('interruption.requested', {
+      interruption,
+      streamEnabled: this.hasStreamConnection(context.executionId),
+    });
+
+    // Stream real-time interruption request if connection exists
+    if (this.hasStreamConnection(context.executionId)) {
+      await this.streamInterruptionRequest(interruption);
+    }
+
+    // Send notification if service available
+    if (this.notifications) {
+      await this.notifications.notifyApprovalRequest({
+        requestId: interruptionId,
+        executionId: context.executionId,
+        message: context.message,
+        type: 'interruption_request',
+        urgency: 'normal',
+        recipients: [], // TODO: Get from configuration
+        metadata: context.metadata || {},
+      });
+    }
+
+    this.logger.log(
+      `User interruption ${interruptionId} requested for execution ${context.executionId}`
+    );
+    return interruptionId;
+  }
+
+  /**
+   * Handle user response to interruption
+   */
+  async handleUserInterruptionResponse(
+    response: UserInterruptionResponse
+  ): Promise<{
+    success: boolean;
+    shouldContinue: boolean;
+    updatedState?: Partial<WorkflowState>;
+    error?: string;
+  }> {
+    const interruption = this.userInterruptions.get(response.interruptionId);
+
+    if (!interruption) {
+      const error = `Interruption ${response.interruptionId} not found`;
+      this.logger.error(error);
+      return { success: false, shouldContinue: false, error };
+    }
+
+    if (interruption.status !== InterruptionStatus.PENDING) {
+      const error = `Interruption ${response.interruptionId} is not pending (current status: ${interruption.status})`;
+      this.logger.error(error);
+      return { success: false, shouldContinue: false, error };
+    }
+
+    try {
+      // Clear timeout
+      this.clearInterruptionTimeout(response.interruptionId);
+
+      // Update interruption record
+      interruption.status = InterruptionStatus.RESPONDED;
+      interruption.response = response;
+      interruption.timestamps.responded = new Date();
+
+      // Update in persistent storage if available
+      if (this.interruptionStorage) {
+        await this.interruptionStorage.updateInterruptionStatus(
+          response.interruptionId,
+          InterruptionStatus.RESPONDED,
+          response
+        );
+      }
+
+      // Emit completion event
+      await this.eventEmitter.emit('interruption.responded', {
+        interruption,
+        response,
+        duration: Date.now() - interruption.timestamps.created.getTime(),
+      });
+
+      // Stream real-time update
+      if (this.hasStreamConnection(interruption.executionId)) {
+        await this.streamInterruptionUpdate(interruption, response);
+      }
+
+      // Send notification if service available
+      if (this.notifications) {
+        await this.notifications.notifyApprovalResponse({
+          requestId: response.interruptionId,
+          executionId: interruption.executionId,
+          decision: response.continueExecution ? 'continue' : 'stop',
+          approver: response.userId || 'anonymous',
+          message: response.response,
+          timestamp: response.timestamp,
+        });
+      }
+
+      // Create updated state with user input
+      const updatedState: Partial<WorkflowState> = {
+        userInput: response.response,
+        userInputMetadata: response.metadata,
+        interruptionHandled: true,
+        interruptionResponse: response,
+        lastInteractionTimestamp: response.timestamp,
+      };
+
+      this.logger.log(
+        `User interruption ${response.interruptionId} resolved: ${
+          response.continueExecution ? 'continue' : 'stop'
+        }`
+      );
+
+      return {
+        success: true,
+        shouldContinue: response.continueExecution,
+        updatedState,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Error processing interruption response: ${errorMessage}`,
+        error
+      );
+      return { success: false, shouldContinue: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get active interruptions for execution
+   */
+  async getActiveUserInterruptions(
+    executionId: string
+  ): Promise<readonly UserInterruption[]> {
+    const activeInterruptions = Array.from(
+      this.userInterruptions.values()
+    ).filter(
+      (i) =>
+        i.executionId === executionId && i.status === InterruptionStatus.PENDING
+    );
+
+    // Also check persistent storage if available
+    if (this.interruptionStorage) {
+      try {
+        const storedInterruptions =
+          await this.interruptionStorage.getActiveInterruptions(executionId);
+        // Merge with in-memory interruptions (avoiding duplicates)
+        const mergedMap = new Map<string, UserInterruption>();
+        activeInterruptions.forEach((i) => mergedMap.set(i.id, i));
+        storedInterruptions.forEach((i) => mergedMap.set(i.id, i));
+        return Array.from(mergedMap.values());
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to get interruptions from persistent storage: ${errorMsg}`
+        );
+      }
+    }
+
+    return activeInterruptions;
+  }
+
+  /**
+   * Cancel user interruption
+   */
+  async cancelUserInterruption(interruptionId: string): Promise<boolean> {
+    const interruption = this.userInterruptions.get(interruptionId);
+
+    if (!interruption) {
+      return false;
+    }
+
+    if (interruption.status !== InterruptionStatus.PENDING) {
+      return false;
+    }
+
+    // Clear timeout
+    this.clearInterruptionTimeout(interruptionId);
+
+    // Update status
+    interruption.status = InterruptionStatus.CANCELLED;
+
+    // Update in persistent storage if available
+    if (this.interruptionStorage) {
+      try {
+        await this.interruptionStorage.updateInterruptionStatus(
+          interruptionId,
+          InterruptionStatus.CANCELLED
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to update interruption status in storage: ${errorMsg}`
+        );
+      }
+    }
+
+    // Emit cancellation event
+    await this.eventEmitter.emit('interruption.cancelled', {
+      interruptionId,
+      executionId: interruption.executionId,
+      timestamp: new Date(),
+    });
+
+    this.logger.log(`Cancelled user interruption ${interruptionId}`);
+    return true;
+  }
+
+  /**
+   * Check if execution has pending interruptions
+   */
+  async hasPendingInterruptions(executionId: string): Promise<boolean> {
+    const activeInterruptions = await this.getActiveUserInterruptions(
+      executionId
+    );
+    return activeInterruptions.length > 0;
+  }
+
+  /**
+   * Interrupt agent execution with user question
+   */
+  async interruptAgentWithQuestion(
+    executionId: string,
+    nodeId: string,
+    userQuestion: string,
+    userId?: string
+  ): Promise<string> {
+    return this.requestUserInterruption({
+      executionId,
+      nodeId,
+      type: InterruptionType.QUESTION,
+      message: userQuestion,
+      metadata: {
+        userId,
+        interruptedAt: new Date(),
+        interruptionSource: 'user_question',
+      },
+    });
+  }
+
+  /**
+   * Request clarification from user during execution
+   */
+  async requestClarification(
+    executionId: string,
+    nodeId: string,
+    clarificationRequest: string,
+    context?: Record<string, unknown>
+  ): Promise<string> {
+    return this.requestUserInterruption({
+      executionId,
+      nodeId,
+      type: InterruptionType.CLARIFICATION,
+      message: clarificationRequest,
+      metadata: {
+        context,
+        requestedAt: new Date(),
+        interruptionSource: 'agent_clarification',
+      },
+    });
+  }
+
+  // ==========================================
+  // PRIVATE INTERRUPTION HELPER METHODS
+  // ==========================================
+
+  /**
+   * Setup timeout for interruption
+   */
+  private setupInterruptionTimeout(interruptionId: string): void {
+    const interruption = this.userInterruptions.get(interruptionId);
+    if (!interruption) return;
+
+    // Clear existing timeout
+    this.clearInterruptionTimeout(interruptionId);
+
+    // Set new timeout
+    const timeout = setTimeout(() => {
+      this.handleInterruptionTimeout(interruptionId);
+    }, interruption.timeout.duration);
+
+    this.interruptionTimeouts.set(interruptionId, timeout);
+  }
+
+  /**
+   * Clear timeout for interruption
+   */
+  private clearInterruptionTimeout(interruptionId: string): void {
+    const timeout = this.interruptionTimeouts.get(interruptionId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.interruptionTimeouts.delete(interruptionId);
+    }
+  }
+
+  /**
+   * Handle interruption timeout
+   */
+  private async handleInterruptionTimeout(
+    interruptionId: string
+  ): Promise<void> {
+    const interruption = this.userInterruptions.get(interruptionId);
+    if (!interruption || interruption.status !== InterruptionStatus.PENDING) {
+      return;
+    }
+
+    // Update status
+    interruption.status = InterruptionStatus.TIMEOUT;
+    interruption.timestamps.timeout = new Date();
+
+    // Update in persistent storage if available
+    if (this.interruptionStorage) {
+      try {
+        await this.interruptionStorage.updateInterruptionStatus(
+          interruptionId,
+          InterruptionStatus.TIMEOUT
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to update interruption timeout in storage: ${errorMsg}`
+        );
+      }
+    }
+
+    // Emit timeout event
+    await this.eventEmitter.emit('interruption.timeout', {
+      interruptionId,
+      executionId: interruption.executionId,
+      strategy: interruption.timeout.strategy,
+      timestamp: new Date(),
+    });
+
+    this.logger.warn(`User interruption ${interruptionId} timed out`);
+  }
+
+  /**
+   * Stream interruption request to connected clients
+   */
+  private async streamInterruptionRequest(
+    interruption: UserInterruption
+  ): Promise<void> {
+    const connection = this.streamConnections.get(interruption.executionId);
+    if (connection?.send) {
+      try {
+        connection.send(
+          JSON.stringify({
+            type: 'user_interruption_requested',
+            data: {
+              interruptionId: interruption.id,
+              executionId: interruption.executionId,
+              nodeId: interruption.nodeId,
+              interruptionType: interruption.type,
+              message: interruption.context.message,
+              timestamp: interruption.timestamps.created,
+              timeout: interruption.timeout.duration,
+            },
+          })
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Failed to stream interruption request: ${errorMsg}`);
+      }
+    }
+  }
+
+  /**
+   * Stream interruption update to connected clients
+   */
+  private async streamInterruptionUpdate(
+    interruption: UserInterruption,
+    response: UserInterruptionResponse
+  ): Promise<void> {
+    const connection = this.streamConnections.get(interruption.executionId);
+    if (connection?.send) {
+      try {
+        connection.send(
+          JSON.stringify({
+            type: 'user_interruption_resolved',
+            data: {
+              interruptionId: interruption.id,
+              executionId: interruption.executionId,
+              response: response.response,
+              continueExecution: response.continueExecution,
+              userId: response.userId,
+              timestamp: response.timestamp,
+            },
+          })
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Failed to stream interruption update: ${errorMsg}`);
+      }
+    }
   }
 
   /**
@@ -769,16 +1309,18 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    * Get all pending approvals
    */
   getPendingApprovals(): HumanApprovalRequest[] {
-    return Array.from(this.approvalRequests.values())
-      .filter(r => r.workflowState === ApprovalWorkflowState.IN_PROGRESS);
+    return Array.from(this.approvalRequests.values()).filter(
+      (r) => r.workflowState === ApprovalWorkflowState.IN_PROGRESS
+    );
   }
 
   /**
    * Get approvals for execution
    */
   getApprovalsForExecution(executionId: string): HumanApprovalRequest[] {
-    return Array.from(this.approvalRequests.values())
-      .filter(r => r.executionId === executionId);
+    return Array.from(this.approvalRequests.values()).filter(
+      (r) => r.executionId === executionId
+    );
   }
 
   /**
@@ -798,7 +1340,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       requestId,
       executionId: request.executionId,
       decision: 'cancelled',
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     this.logger.log(`Cancelled approval request ${requestId}`);
@@ -818,7 +1360,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       [ApprovalWorkflowState.REJECTED]: 0,
       [ApprovalWorkflowState.ESCALATED]: 0,
       [ApprovalWorkflowState.TIMEOUT]: 0,
-      [ApprovalWorkflowState.CANCELLED]: 0
+      [ApprovalWorkflowState.CANCELLED]: 0,
     };
 
     let totalResponseTime = 0;
@@ -828,7 +1370,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       byState[request.workflowState]++;
 
       if (request.timestamps.responded) {
-        totalResponseTime += request.timestamps.responded.getTime() - request.timestamps.requested.getTime();
+        totalResponseTime +=
+          request.timestamps.responded.getTime() -
+          request.timestamps.requested.getTime();
         responseCount++;
       }
     }
@@ -841,10 +1385,11 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     return {
       total,
       byState,
-      averageResponseTime: responseCount > 0 ? totalResponseTime / responseCount : 0,
+      averageResponseTime:
+        responseCount > 0 ? totalResponseTime / responseCount : 0,
       timeoutRate: total > 0 ? timeout / total : 0,
       approvalRate: total > 0 ? approved / total : 0,
-      escalationRate: total > 0 ? escalated / total : 0
+      escalationRate: total > 0 ? escalated / total : 0,
     };
   }
 

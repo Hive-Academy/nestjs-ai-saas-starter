@@ -28,16 +28,18 @@
 8. Fresh Session Consolidation
    - Generated comprehensive 22-item todo list to drive naming utility, adapter hooks, decorator integration, DI refactor, strict mode, test coverage, and deprecation steps.
 
-## 2. Current Core Components
+## 2. Current Core Components (Post Strict-Naming Implementation)
 
 - Services: `TokenStreamingService`, `EventStreamProcessorService`, `WebSocketBridgeService`.
-- Adapters: `StreamingServiceAdapter` (+ token/event/progress wrappers) with pending naming normalization hook.
-- Lazy Wrapper: `AutoInitTokenStreamingService` (now conceptually extended to events/progress init logic in adapter).
-- Decorators: `@StreamToken`, `@StreamEvent`, `@StreamProgress`, `@StreamAll` using centralized default config.
+- Adapters: `StreamingServiceAdapter` (+ token/event/progress wrappers) now performing nodeId normalization and enforcing strict mode when configured.
+- Lazy Wrapper: `AutoInitTokenStreamingService` (token init); adapter centralizes lazy init for events & progress.
+- Decorators: `@StreamToken`, `@StreamEvent`, `@StreamProgress`, `@StreamAll` using centralized default config (auto-id inference still pending).
 - Auth & Governance: JWT auth, token bucket rate limiting.
 - Correlation: `executionId` (canonical) replacing `showcaseId` in service layer.
-- Planned Utility: `stream-naming.util.ts` (not yet implemented).
-- DI Contracts: `IStreamingService`, `ITokenStreamingService`, `IEventStreamProcessorService`, `IWebSocketBridgeService` + DI tokens & no-op implementations.
+- Naming Utility: Implemented `stream-naming.util.ts` (parse / build / normalize / validate / warn-once / strict throw path).
+- Error Handling: `InvalidNodeIdError` thrown when `strictNaming` is enabled and a non-canonical id is supplied.
+- Config: `strictNaming` module option available (default false) surfaced via runtime config accessor.
+- DI Contracts: All streaming adapter dependencies injected via interface tokens (adapters decoupled from concrete classes).
 
 ## 3. What Has Been Refactored
 
@@ -46,13 +48,15 @@
 - Centralized defaults removed per-decorator duplication.
 - Initialization responsibilities removed from callers (auto-init pattern adopted).
 
-## 4. Pending Gaps / Risks
+## 4. Pending Gaps / Risks (Updated)
 
 - Workflows (supervisor/swarm) still contain legacy `showcaseId` references.
-- No naming normalization enforcement yet—risk of inconsistent nodeIds entering metrics/log streams.
-- Concrete service injections remain in multiple libraries (coupling risk for publishable package boundaries).
-- Lack of strict mode (cannot escalate invalid naming to errors yet).
-- Tests for new naming / normalization behaviors not yet written.
+- Decorator auto-generation & normalization not yet implemented (explicit nodeIds required at use sites).
+- Workflow refactor to replace ad-hoc nodeId strings with builder remains outstanding.
+- No-op fallback tests (module disabled / absent) not yet added.
+- Coverage uplift (utility edge cases, decorators, workflows) required to exceed 80% goal.
+- Deprecation annotations for `showcaseId` fields pending; mapping helper not yet introduced.
+- Need repository-wide confirmation that all concrete streaming service injections outside streaming module have been replaced (streaming library itself migrated; other libs may still have stragglers).
 
 ## 5. Canonical Naming Schema (Planned)
 
@@ -69,16 +73,25 @@ Normalization Rules:
 - Max total length ~80 chars (enforced/validated).
 - Idempotent normalization (double-normalize yields same string).
 
-## 6. Migration / Enforcement Roadmap (High-Level)
+## 6. Migration / Enforcement Roadmap (Progress)
 
-1. Implement naming utility (warn-only mode) + unit tests.
-2. Integrate adapter-level normalization (warn once per raw nodeId divergence).
-3. Enhance decorators to auto-generate canonical nodeIds from method metadata if omitted.
-4. Refactor workflows to use builder → eliminate ad-hoc IDs.
-5. Enable optional `strictNaming` flag in module config to escalate invalid IDs to thrown errors.
-6. Migrate all publishable libraries to interface DI tokens; remove concrete references.
-7. Add regression & coverage tests (adapters, decorators, workflows).
-8. Final deprecation marking for `showcaseId` (alias or removal plan documented).
+Completed:
+
+1. Naming utility implemented (warn + strict) and integrated.
+2. Adapter-level normalization with warn-once and strict throw.
+3. `strictNaming` configuration flag added and tested (InvalidNodeIdError path verified).
+4. Streaming adapter & core services refactored to interface DI tokens (decoupled from concrete classes).
+5. Initial normalization & strict-mode tests (22 passing including new cases).
+
+Remaining:
+
+1. Decorator auto-id inference + enforced normalization.
+1. Workflow nodeId builder & migration off legacy strings.
+1. No-op fallback tests & disabled module behavior validation.
+1. Cross-library sweep for any remaining direct concrete injections.
+1. Expanded regression & coverage (decorators/workflows) to reach >80%.
+1. Deprecation strategy execution for `showcaseId` (mapping helper + JSDoc tags).
+1. CHANGELOG and migration guide updates.
 
 ## 7. Todo List (Authoritative As Of This Document)
 
@@ -127,9 +140,9 @@ Normalization Rules:
 - Phase 2: Mark `showcaseId` fields with `@deprecated` JSDoc.
 - Phase 3: Remove `showcaseId` after consumer migration window; provide codemod.
 
-## 11. Immediate Next Action
+## 11. Immediate Next Action (Updated)
 
-Implement `stream-naming.util.ts` with comprehensive tests, then wire adapter normalization (warning mode).
+Implement decorator nodeId inference & normalization, then add workflow nodeId builder utilities. Follow with no-op fallback tests and coverage expansion.
 
 ## 12. Detailed Technical Findings
 
@@ -192,34 +205,17 @@ Issues Observed: mixed separators (`:` and `|`), camelCase endings, missing phas
 - Zero `any` types; utility must fully type parsed structures.
 - No library re-export of another library's service or type (only DI tokens & interfaces locally defined / imported).
 
-## 13. Naming Utility Specification
+## 13. Naming Utility Specification (Implemented Summary)
 
-### 13.1 Target File
+Implemented File: `libs/langgraph-modules/streaming/src/lib/utils/stream-naming.util.ts`
 
-`libs/<core-streaming-lib>/src/lib/utils/stream-naming.util.ts` (exact lib path to be confirmed during implementation—must live where other streaming abstractions reside; avoid polluting feature modules).
+Shipped Functions:
 
-### 13.2 Functions (Proposed Signatures)
-
-```ts
-export interface NodeIdParts {
-  domain: string; // required
-  phase: string; // required
-  activity: string; // required
-  detail?: string; // optional
-  original?: string; // optional preservation for diagnostics
-}
-
-export interface BuildNodeIdOptions {
-  enforceMaxLength?: boolean; // default true
-  maxLength?: number; // default 80
-  strict?: boolean; // if true, throw on invalid vs. silent normalize
-}
-
-export function buildNodeId(parts: NodeIdParts, opts?: BuildNodeIdOptions): string; // assumes already validated, performs normalization
-export function normalizeNodeId(raw: string, opts?: BuildNodeIdOptions): string; // parses -> reassembles canonical form
-export function parseNodeId(raw: string): NodeIdParts; // tolerant parse (collect original)
-export function validateNodeId(raw: string, strict?: boolean): { valid: boolean; errors: string[] }; // no throw unless strict
-```
+- `parseNodeId`, `normalizeNodeId`, `buildNodeId`, `validateNodeId`, `normalizeAndWarn`.
+- Warn-once semantics (process-level set) + adapter-level additional suppression.
+- Error codes: `MISSING_DOMAIN`, `MISSING_PHASE`, `MISSING_ACTIVITY`, `OVER_MAX_LENGTH`, `INVALID_CHARACTERS`, `IDEMPOTENCY_FAILURE`.
+- Idempotency verification and max-length enforcement (default 80).
+- Strict path throws `InvalidNodeIdError` including raw, normalized, validation snapshot.
 
 ### 13.3 Normalization Rules (Expanded)
 
@@ -254,7 +250,7 @@ userProvidedNodeId -> normalizeNodeId(raw)
    proceed with canonicalId
 ```
 
-## 14. Test Matrix (Planned)
+## 14. Test Matrix (Status)
 
 | Area           | Test Case                         | Purpose                                  |
 | -------------- | --------------------------------- | ---------------------------------------- |
@@ -265,24 +261,18 @@ userProvidedNodeId -> normalizeNodeId(raw)
 | Naming Utility | Length enforcement                | Boundary condition                       |
 | Naming Utility | Idempotency                       | Stability                                |
 | Naming Utility | Round-trip parse→build            | Reversibility                            |
-| Adapter        | Warn once per raw id              | Log gating                               |
-| Adapter        | Strict naming throws              | Enforcement                              |
+| Adapter        | Warn once per raw id              | Log gating (Implemented)                 |
+| Adapter        | Strict naming throws              | Enforcement (Implemented)                |
 | Decorator      | Auto-generate from method         | Inference mapping (camelCase → segments) |
 | Decorator      | Provided custom id normalized     | Integration path                         |
 | Workflow       | Legacy `showcaseId` mapping       | Backwards bridging                       |
 | No-Op Fallback | Streaming disabled does not throw | Resilience                               |
 | Coverage       | Branches for invalid combos       | >80% branch coverage target              |
 
-## 15. Migration Playbook (Actionable Steps)
+## 15. Migration Playbook (Progress Snapshot)
 
-1. Implement & test naming utility (warn mode default).
-2. Add normalization in adapter; release internal build (no external docs yet).
-3. Decorator augmentation for inference + normalization.
-4. Migrate workflows using builder; remove ad-hoc strings.
-5. Switch injections to interface tokens across publishable libs.
-6. Add strictNaming flag; enable in CI (later) with transitional allowlist if needed.
-7. Deprecate `showcaseId`; introduce mapping helper; annotate with `@deprecated`.
-8. Final cleanup: remove allowlist & enable fail-fast normalization.
+Completed: Steps 1,2,5 (streaming scope),6.
+Upcoming: Steps 3 (decorators), 4 (workflows), 7 (deprecation), 8 (final cleanup) plus coverage & fallback test additions.
 
 ## 16. DI Tokens & No-Op Reference
 
