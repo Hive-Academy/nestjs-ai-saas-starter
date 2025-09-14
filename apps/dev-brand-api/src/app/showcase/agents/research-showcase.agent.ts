@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Agent, AgentState, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import {
+  Agent,
+  AgentState,
+  LlmProviderService,
+} from '@hive-academy/langgraph-multi-agent';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { GitHubIntegrationTools } from '../tools/github-integration.tools';
@@ -19,10 +23,14 @@ import { GitHubIntegrationTools } from '../tools/github-integration.tools';
 @Agent({
   id: 'github-code-analyzer',
   name: 'GitHub Code Analyzer',
-  capabilities: ['code-analysis', 'achievement-extraction', 'developer-insights'],
+  capabilities: [
+    'code-analysis',
+    'achievement-extraction',
+    'developer-insights',
+  ],
   tools: ['github-analyzer', 'achievement-extractor', 'developer-insights'],
   priority: 'high',
-  executionTime: 'fast'
+  executionTime: 'fast',
 })
 @Injectable()
 export class GitHubCodeAnalyzerAgent {
@@ -41,12 +49,13 @@ export class GitHubCodeAnalyzerAgent {
 
     const lastMessage = state.messages[state.messages.length - 1];
     const messageContent = lastMessage.content.toString();
-    
+
     // Extract GitHub username from message (could be "analyze my GitHub: username" or just "username")
-    const githubUsername = this.extractGitHubUsername(messageContent) || 
-                           state.metadata?.githubUsername || 
-                           'demo-user';
-    
+    const githubUsername =
+      this.extractGitHubUsername(messageContent) ||
+      state.metadata?.githubUsername ||
+      'demo-user';
+
     const timeframe = state.metadata?.timeframe || 'month';
 
     try {
@@ -55,7 +64,7 @@ export class GitHubCodeAnalyzerAgent {
       const githubAnalysis = await this.githubTools.analyzeGitHubActivity({
         username: githubUsername,
         timeframe: timeframe as 'week' | 'month' | 'quarter',
-        includePrivate: false
+        includePrivate: false,
       });
 
       // 🎯 ACHIEVEMENT EXTRACTION: Transform code contributions into achievements
@@ -63,16 +72,17 @@ export class GitHubCodeAnalyzerAgent {
       const achievements = await this.githubTools.extractAchievements({
         commits: githubAnalysis.commits,
         repositories: githubAnalysis.repositories,
-        analysisDepth: 'detailed'
+        analysisDepth: 'detailed',
       });
 
       // 🔍 DEVELOPER INSIGHTS: Generate professional insights about work patterns
       console.log('🔍 Generating developer insights...');
-      const developerInsights = await this.githubTools.generateDeveloperInsights({
-        username: githubUsername,
-        commits: githubAnalysis.commits,
-        repositories: githubAnalysis.repositories
-      });
+      const developerInsights =
+        await this.githubTools.generateDeveloperInsights({
+          username: githubUsername,
+          commits: githubAnalysis.commits,
+          repositories: githubAnalysis.repositories,
+        });
 
       // 🚀 AI-POWERED SYNTHESIS: Create compelling narrative from technical data
       const analysisPrompt = this.buildDeveloperAnalysisPrompt(
@@ -82,15 +92,18 @@ export class GitHubCodeAnalyzerAgent {
         developerInsights
       );
 
-      const aiAnalysis = await this.llmProvider.generateResponse(
-        analysisPrompt,
-        {
-          temperature: 0.4,
-          maxTokens: 2500,
-        }
-      );
+      const llm = await this.llmProvider.getLLM({
+        temperature: 0.4,
+        maxTokens: 2500,
+      });
+      const aiAnalysisResponse = await llm.invoke([
+        { role: 'user', content: analysisPrompt },
+      ]);
+      const aiAnalysis = aiAnalysisResponse.content.toString();
 
-      console.log('✅ GitHub Code Analyzer: Analysis completed with AI insights');
+      console.log(
+        '✅ GitHub Code Analyzer: Analysis completed with AI insights'
+      );
 
       return {
         messages: [
@@ -109,11 +122,18 @@ ${aiAnalysis}
 • **Productivity Score:** ${githubAnalysis.summary.productivityScore}/100
 
 **🎯 ACHIEVEMENTS EXTRACTED:** ${achievements.length}
-${achievements.slice(0, 3).map(a => `• ${a.description} (${a.impact} impact)`).join('\n')}
+${achievements
+  .slice(0, 3)
+  .map((a) => `• ${a.description} (${a.impact} impact)`)
+  .join('\n')}
 
-**💡 PRIMARY TECHNOLOGIES:** ${githubAnalysis.patterns.primaryLanguages.join(', ')}
+**💡 PRIMARY TECHNOLOGIES:** ${githubAnalysis.patterns.primaryLanguages.join(
+            ', '
+          )}
 
-**⚡ WORKING PATTERNS:** ${githubAnalysis.patterns.workingHours} | Focus: ${githubAnalysis.patterns.focusAreas.join(', ')}
+**⚡ WORKING PATTERNS:** ${
+            githubAnalysis.patterns.workingHours
+          } | Focus: ${githubAnalysis.patterns.focusAreas.join(', ')}
 
 ---
 *Analysis powered by GitHub API + AI insights for personal branding*`),
@@ -136,7 +156,7 @@ Commits: ${githubAnalysis.summary.totalCommits}`,
             'github-analyzer',
             'achievement-extractor',
             'developer-insights',
-            'ai-synthesis'
+            'ai-synthesis',
           ],
           confidenceScore: 0.95,
         },
@@ -147,7 +167,10 @@ Commits: ${githubAnalysis.summary.totalCommits}`,
       console.error('❌ GitHub Code Analyzer: Analysis failed:', error);
 
       // Fallback with demo data for showcase
-      const fallbackAnalysis = this.generateFallbackGitHubAnalysis(githubUsername, timeframe);
+      const fallbackAnalysis = this.generateFallbackGitHubAnalysis(
+        githubUsername,
+        timeframe
+      );
 
       return {
         messages: [
@@ -182,7 +205,7 @@ ${fallbackAnalysis}
       /github[:\s]+([a-zA-Z0-9\-_]+)/i,
       /username[:\s]+([a-zA-Z0-9\-_]+)/i,
       /analyze[:\s]+([a-zA-Z0-9\-_]+)/i,
-      /^([a-zA-Z0-9\-_]{2,39})$/  // Just a username
+      /^([a-zA-Z0-9\-_]{2,39})$/, // Just a username
     ];
 
     for (const pattern of patterns) {
@@ -216,7 +239,13 @@ ${fallbackAnalysis}
 • Productivity Score: ${githubData.summary.productivityScore}/100
 
 **🎯 EXTRACTED ACHIEVEMENTS:**
-${achievements.slice(0, 5).map(a => `• ${a.description} (${a.impact} impact) - ${a.technologies.join(', ')}`).join('\n')}
+${achievements
+  .slice(0, 5)
+  .map(
+    (a) =>
+      `• ${a.description} (${a.impact} impact) - ${a.technologies.join(', ')}`
+  )
+  .join('\n')}
 
 **💡 TECHNICAL EXPERTISE:**
 • Primary Languages: ${githubData.patterns.primaryLanguages.join(', ')}
@@ -226,7 +255,10 @@ ${achievements.slice(0, 5).map(a => `• ${a.description} (${a.impact} impact) -
 **🔍 DEVELOPER INSIGHTS:**
 • Technical Breadth: ${insights.technicalExpertise?.breadth || 'Full-stack'}
 • Complexity Level: ${insights.technicalExpertise?.complexity || 'High'}
-• Growth Opportunities: ${insights.recommendations?.slice(0, 2).join(', ') || 'Continue current trajectory'}
+• Growth Opportunities: ${
+      insights.recommendations?.slice(0, 2).join(', ') ||
+      'Continue current trajectory'
+    }
 
 Please create a professional developer profile that includes:
 
@@ -243,7 +275,10 @@ Focus on transforming technical contributions into business value and career adv
   /**
    * Generate fallback analysis for demo purposes
    */
-  private generateFallbackGitHubAnalysis(username: string, timeframe: string): string {
+  private generateFallbackGitHubAnalysis(
+    username: string,
+    timeframe: string
+  ): string {
     return `**Developer Profile Analysis for: ${username}**
 
 **🎯 EXECUTIVE SUMMARY:**
@@ -279,4 +314,4 @@ Position as a **Senior Full-Stack Engineer** with expertise in modern web techno
 }
 
 // Export alias for config compatibility
-export { GitHubAnalyzerAgent as ResearchShowcaseAgent };
+export { GitHubCodeAnalyzerAgent as ResearchShowcaseAgent };

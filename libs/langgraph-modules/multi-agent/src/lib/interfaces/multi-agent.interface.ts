@@ -187,7 +187,7 @@ export interface SupervisorConfig {
    * LLM configuration for routing decisions
    */
   llm?: {
-    model: string;
+    model?: string;
     temperature?: number;
     maxTokens?: number;
   };

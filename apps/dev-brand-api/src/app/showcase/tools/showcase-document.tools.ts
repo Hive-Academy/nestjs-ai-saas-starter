@@ -19,6 +19,67 @@ interface EntityExtractionResult {
   totalRelationships?: number;
 }
 
+// Document extraction types with proper conditional properties
+interface BaseDocumentContent {
+  url: string;
+  title: string;
+  content: string;
+  wordCount: number;
+  extractedAt: string;
+  contentType: 'text' | 'structured' | 'markdown';
+}
+
+interface DocumentMetadata {
+  description: string;
+  publishDate: string;
+  author: string;
+  domain: string;
+  language: string;
+  readingTime: number;
+}
+
+interface DocumentContentWithMetadata extends BaseDocumentContent {
+  metadata: DocumentMetadata;
+}
+
+// Summary types with conditional key quotes
+interface BaseSummaryResult {
+  summary: string;
+  keyPoints: string[];
+  summaryStyle: 'technical' | 'executive' | 'bullet-points' | 'narrative';
+  length: 'short' | 'medium' | 'long';
+  confidence: number;
+  readingTime: string;
+  compressionRatio: number;
+  focusAreas: string[];
+  generatedAt: string;
+}
+
+interface SummaryResultWithQuotes extends BaseSummaryResult {
+  keyQuotes: string[];
+}
+
+// Assessment types with conditional recommendations
+interface BaseAssessmentResult {
+  overallScore: number;
+  grade: string;
+  dimensionScores: Record<string, number>;
+  qualityDimensions: string[];
+  targetAudience: 'technical' | 'business' | 'general' | 'academic';
+  contentStats: {
+    wordCount: number;
+    sentenceCount: number;
+    paragraphCount: number;
+    avgWordsPerSentence: number;
+  };
+  assessedAt: string;
+}
+
+interface AssessmentResultWithRecommendations extends BaseAssessmentResult {
+  recommendations: string[];
+  improvementPotential: number;
+}
+
 /**
  * 📄 SHOWCASE DOCUMENT TOOLS - DOCUMENT PROCESSING & ANALYSIS
  *
@@ -52,7 +113,7 @@ export class ShowcaseDocumentTools {
     includeMetadata: boolean;
     maxContentLength: number;
     contentType: 'text' | 'markdown' | 'structured';
-  }) {
+  }): Promise<BaseDocumentContent | DocumentContentWithMetadata> {
     this.logger.log(`📄 Extracting content from: ${url}`);
 
     try {
@@ -63,7 +124,7 @@ export class ShowcaseDocumentTools {
         maxContentLength
       );
 
-      const result = {
+      const baseResult: BaseDocumentContent = {
         url,
         title: mockContent.title,
         content: this.formatContent(mockContent.content, contentType),
@@ -73,18 +134,28 @@ export class ShowcaseDocumentTools {
       };
 
       if (includeMetadata) {
-        result['metadata'] = {
+        const metadata: DocumentMetadata = {
           description: mockContent.description,
           publishDate: mockContent.publishDate,
           author: mockContent.author,
           domain: new URL(url).hostname,
           language: 'en', // Could be detected
-          readingTime: Math.ceil(result.wordCount / 200), // Words per minute
+          readingTime: Math.ceil(baseResult.wordCount / 200), // Words per minute
         };
+
+        const resultWithMetadata: DocumentContentWithMetadata = {
+          ...baseResult,
+          metadata,
+        };
+
+        this.logger.log(
+          `✅ Content extracted with metadata (${resultWithMetadata.wordCount} words)`
+        );
+        return resultWithMetadata;
       }
 
-      this.logger.log(`✅ Extracted ${result.wordCount} words from ${url}`);
-      return result;
+      this.logger.log(`✅ Extracted ${baseResult.wordCount} words from ${url}`);
+      return baseResult;
     } catch (error: any) {
       this.logger.error(
         `❌ Content extraction failed for ${url}:`,
@@ -113,7 +184,7 @@ export class ShowcaseDocumentTools {
     length: 'short' | 'medium' | 'long';
     focusAreas?: string[];
     includeKeyQuotes: boolean;
-  }) {
+  }): Promise<BaseSummaryResult | SummaryResultWithQuotes> {
     this.logger.log(
       `📝 Summarizing document (${summaryStyle} style, ${length} length)`
     );
@@ -139,15 +210,13 @@ export class ShowcaseDocumentTools {
       // Extract quotes if requested
       const quotes = includeKeyQuotes ? this.extractKeyQuotes(content) : [];
 
-      const result = {
+      const baseResult: BaseSummaryResult = {
         summary,
         keyPoints,
         summaryStyle,
         length,
         confidence: this.calculateSummaryConfidence(content, summary),
         readingTime: this.estimateReadingTime(summary),
-        originalWordCount: content.split(' ').length,
-        summaryWordCount: summary.split(' ').length,
         compressionRatio: Math.round(
           (summary.split(' ').length / content.split(' ').length) * 100
         ),
@@ -156,13 +225,21 @@ export class ShowcaseDocumentTools {
       };
 
       if (includeKeyQuotes && quotes.length > 0) {
-        result['keyQuotes'] = quotes;
+        const resultWithQuotes: SummaryResultWithQuotes = {
+          ...baseResult,
+          keyQuotes: quotes,
+        };
+
+        this.logger.log(
+          `✅ Summary with quotes generated (${resultWithQuotes.compressionRatio}% compression)`
+        );
+        return resultWithQuotes;
       }
 
       this.logger.log(
-        `✅ Summary generated (${result.compressionRatio}% compression)`
+        `✅ Summary generated (${baseResult.compressionRatio}% compression)`
       );
-      return result;
+      return baseResult;
     } catch (error: any) {
       this.logger.error(`❌ Summarization failed:`, error.message);
 
@@ -252,7 +329,7 @@ export class ShowcaseDocumentTools {
     qualityDimensions: string[];
     targetAudience: 'general' | 'technical' | 'academic' | 'business';
     includeRecommendations: boolean;
-  }) {
+  }): Promise<BaseAssessmentResult | AssessmentResultWithRecommendations> {
     this.logger.log(
       `📊 Assessing content quality (${qualityDimensions.join(
         ', '
@@ -280,7 +357,7 @@ export class ShowcaseDocumentTools {
         Object.values(dimensionScores).reduce((sum, score) => sum + score, 0) /
         qualityDimensions.length;
 
-      const result = {
+      const baseResult: BaseAssessmentResult = {
         overallScore: Math.round(overallScore * 10) / 10,
         grade: this.calculateGrade(overallScore),
         dimensionScores,
@@ -299,15 +376,23 @@ export class ShowcaseDocumentTools {
       };
 
       if (includeRecommendations) {
-        result['recommendations'] = [...new Set(recommendations)].slice(0, 10); // Remove duplicates, limit to 10
-        result['improvementPotential'] =
-          this.calculateImprovementPotential(dimensionScores);
+        const resultWithRecommendations: AssessmentResultWithRecommendations = {
+          ...baseResult,
+          recommendations: [...new Set(recommendations)].slice(0, 10), // Remove duplicates, limit to 10
+          improvementPotential:
+            this.calculateImprovementPotential(dimensionScores),
+        };
+
+        this.logger.log(
+          `✅ Quality assessment with recommendations complete: ${resultWithRecommendations.grade} (${resultWithRecommendations.overallScore}/10)`
+        );
+        return resultWithRecommendations;
       }
 
       this.logger.log(
-        `✅ Quality assessment complete: ${result.grade} (${result.overallScore}/10)`
+        `✅ Quality assessment complete: ${baseResult.grade} (${baseResult.overallScore}/10)`
       );
-      return result;
+      return baseResult;
     } catch (error: any) {
       this.logger.error(`❌ Quality assessment failed:`, error.message);
 

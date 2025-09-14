@@ -207,7 +207,7 @@ export class MultiAgentModule {
         STREAMING_SERVICE_TOKEN,
         // Examples service
       ],
-      global: false,
+      global: true,
     };
   }
 

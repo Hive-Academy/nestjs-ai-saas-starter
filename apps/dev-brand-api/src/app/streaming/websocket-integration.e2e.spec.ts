@@ -25,10 +25,6 @@ describe('WebSocket Streaming Integration E2E', () => {
           websocket: {
             enabled: true,
             port: 8081, // Use different port for testing
-            cors: {
-              origin: '*',
-              credentials: true,
-            },
           },
           gateway: {
             enabled: true,
@@ -51,7 +47,6 @@ describe('WebSocket Streaming Integration E2E', () => {
         MultiAgentModule.forRoot({
           streaming: {
             enabled: true,
-            realTimeUpdates: true,
           },
         }),
       ],
@@ -60,7 +55,7 @@ describe('WebSocket Streaming Integration E2E', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockImplementation((key: string) => {
-              const config = {
+              const config: { [key: string]: number | boolean } = {
                 WEBSOCKET_PORT: 8081,
                 STREAMING_ENABLED: true,
               };
@@ -85,7 +80,7 @@ describe('WebSocket Streaming Integration E2E', () => {
     try {
       streamingAdapter = app.get(StreamingServiceAdapter);
       gateway = app.get(StreamingWebSocketGateway);
-    } catch (error) {
+    } catch (error: any) {
       console.warn(
         'Warning: Some streaming services not available in test context:',
         error.message
@@ -339,7 +334,7 @@ describe('WebSocket Streaming Integration E2E', () => {
       client.on('stream-update', (data) => receivedMessages.push(data));
 
       // Send direct message to specific client
-      await streamingAdapter.sendToClient(client.id, testMessage);
+      await streamingAdapter.sendToClient(client.id as string, testMessage);
 
       await new Promise((resolve) => setTimeout(resolve, 200));
 

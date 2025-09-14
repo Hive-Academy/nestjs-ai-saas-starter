@@ -2,38 +2,33 @@ import {
   Component,
   OnInit,
   OnDestroy,
-  ViewContainerRef,
-  ElementRef,
-  ViewChild,
   inject,
   signal,
-  effect,
+  computed,
   DestroyRef,
+  ChangeDetectionStrategy,
+  ViewContainerRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import * as THREE from 'three';
+import { catchError, retry, of } from 'rxjs';
+
+// Child Components
+import { Scene3DComponent } from './components/scene-3d.component';
 import {
-  ThreeIntegrationService,
-  SceneInstance,
-} from '../../core/services/three-integration.service';
-import { AgentCommunicationService } from '../../core/services/agent-communication.service';
-import { AgentVisualizerService } from './services/agent-visualizer.service';
-import { ConstellationLayoutService } from './services/constellation-layout.service';
+  ConstellationStatsComponent,
+  ConstellationStats,
+} from './components/constellation-stats.component';
 import {
-  SpatialNavigationService,
-  SpatialNavigationConfig,
-} from './services/spatial-navigation.service';
-import {
-  AgentInteractionService,
-  AgentInteractionConfig,
-} from './services/agent-interaction.service';
-import {
-  AgentStateVisualizerService,
-  VisualEffectConfig,
-} from './services/agent-state-visualizer.service';
-import { PerformanceMonitorService } from './services/performance-monitor.service';
-import { Performance3DService } from './services/performance-3d.service';
+  AgentInfoPanelComponent,
+  SelectedAgentData,
+} from './components/agent-info-panel.component';
+import { InstructionsComponent } from './components/instructions.component';
+import { LoadingOverlayComponent } from './components/loading-overlay.component';
+import { ErrorBoundaryComponent } from './components/error-boundary.component';
+
+// Existing Components
 import {
   NavigationControlsComponent,
   NavigationControlsConfig,
@@ -42,115 +37,87 @@ import {
   AgentTooltipComponent,
   TooltipConfig,
 } from './components/agent-tooltip.component';
+
+// Services
+import { AgentCommunicationService } from '../../core/services/agent-communication.service';
+import { SceneContentService } from './services/scene-content.service';
+import { AgentVisualizerService } from './services/agent-visualizer.service';
+import { ErrorHandlingService } from './services/error-handling.service';
+import { PerformanceMonitorService } from './services/performance-monitor.service';
+import { AgentStateVisualizerService } from './services/agent-state-visualizer.service';
+import { AgentInteractionService } from './services/agent-interaction.service';
+import { SceneInstance } from '../../core/services/three-integration.service';
 import { AgentState } from '../../core/interfaces/agent-state.interface';
 
 /**
- * Spatial Interface Component
- * Main container for the 3D Agent Constellation visualization
- * Integrates Three.js scene with real-time agent state management
+ * Refactored Spatial Interface Component
+ * Main container component managing child components and coordination
+ * Reduced from 1000+ lines to ~200 lines through proper separation of concerns
  */
 @Component({
   selector: 'brand-spatial-interface',
-  standalone: true,
-  imports: [CommonModule, NavigationControlsComponent, AgentTooltipComponent],
+  imports: [
+    CommonModule,
+    Scene3DComponent,
+    ConstellationStatsComponent,
+    AgentInfoPanelComponent,
+    InstructionsComponent,
+    LoadingOverlayComponent,
+    ErrorBoundaryComponent,
+    NavigationControlsComponent,
+    AgentTooltipComponent,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="spatial-interface" #containerRef>
-      <!-- 3D Scene Container -->
-      <div class="scene-container" #sceneContainer></div>
+    <div class="spatial-interface">
+      <!-- Error Boundary -->
+      <brand-error-boundary [error]="currentError()" (retry)="onRetryError()" />
+
+      <!-- 3D Scene -->
+      @if (!shouldShowFallback('3d-scene')) {
+      <brand-scene-3d
+        [sceneId]="sceneId"
+        [addDefaultContent]="true"
+        (sceneReady)="onSceneReady($event)"
+        (sceneError)="onSceneError($event)"
+      />
+      }
 
       <!-- UI Overlay -->
       <div class="ui-overlay">
         <!-- Agent Information Panel -->
-        <div
-          class="agent-info-panel"
-          *ngIf="selectedAgent() as selectedAgentData"
-        >
-          <h3>{{ selectedAgentData.agent.name }}</h3>
-          <div class="agent-details">
-            <p><strong>Type:</strong> {{ selectedAgentData.agent.type }}</p>
-            <p><strong>Status:</strong> {{ selectedAgentData.agent.status }}</p>
-            <p>
-              <strong>Capabilities:</strong>
-              {{ selectedAgentData.agent.capabilities.join(', ') }}
-            </p>
-            <div
-              class="agent-tools"
-              *ngIf="selectedAgentData.agent.currentTools.length"
-            >
-              <strong>Active Tools:</strong>
-              <ul>
-                <li *ngFor="let tool of selectedAgentData.agent.currentTools">
-                  {{ tool.toolName }} ({{ tool.status }})
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <brand-agent-info-panel [selectedAgent]="selectedAgent()" />
 
         <!-- Constellation Stats -->
-        <div class="constellation-stats">
-          <div class="stat-item">
-            <span class="stat-label">Agents:</span>
-            <span class="stat-value">{{ agentCount() }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">FPS:</span>
-            <span
-              class="stat-value"
-              [class.warning]="performanceMetrics().frameRate < 45"
-              [class.error]="performanceMetrics().frameRate < 30"
-            >
-              {{ performanceMetrics().frameRate }}
-            </span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Effects:</span>
-            <span class="stat-value">{{
-              performanceMetrics().activeEffects
-            }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Connected:</span>
-            <span class="stat-value" [class.connected]="isConnected()">
-              {{ isConnected() ? 'Yes' : 'No' }}
-            </span>
-          </div>
-        </div>
+        <brand-constellation-stats [stats]="constellationStats()" />
 
         <!-- Instructions -->
-        <div class="instructions" *ngIf="!selectedAgent()">
-          <p>🌌 <strong>Agent Constellation</strong></p>
-          <p>Click on agents to interact • Mouse to orbit • Scroll to zoom</p>
-          <p *ngIf="agentCount() === 0">
-            Waiting for agents to join the constellation...
-          </p>
-        </div>
+        <brand-instructions
+          [showInstructions]="showInstructions()"
+          [agentCount]="agentCount()"
+        />
 
-        <!-- Enhanced Navigation Controls -->
+        <!-- Navigation Controls -->
         <brand-navigation-controls
-          [config]="navigationControlsConfig()"
+          [config]="navigationControlsConfig"
           (focusRequested)="onFocusRequested($event)"
           (resetRequested)="onResetRequested()"
-        >
-        </brand-navigation-controls>
+        />
 
-        <!-- Enhanced Agent Tooltip -->
+        <!-- Agent Tooltip -->
         <brand-agent-tooltip
           [tooltipData]="currentTooltip()"
-          [config]="tooltipConfig()"
+          [config]="tooltipConfig"
           (focusAgent)="onTooltipFocusAgent($event)"
           (startChat)="onTooltipStartChat($event)"
-        >
-        </brand-agent-tooltip>
+        />
       </div>
 
-      <!-- Loading State -->
-      <div class="loading-overlay" *ngIf="!isSceneReady()">
-        <div class="loading-content">
-          <div class="loading-spinner"></div>
-          <p>Initializing 3D Constellation...</p>
-        </div>
-      </div>
+      <!-- Loading Overlay -->
+      <brand-loading-overlay
+        [isReady]="isSceneReady()"
+        [loadingText]="loadingText()"
+      />
     </div>
   `,
   styles: [
@@ -167,14 +134,6 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
         overflow: hidden;
       }
 
-      .scene-container {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-
       .ui-overlay {
         position: absolute;
         top: 0;
@@ -184,214 +143,62 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
         pointer-events: none;
         z-index: 10;
       }
-
-      .agent-info-panel {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.8);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 8px;
-        padding: 16px;
-        color: white;
-        min-width: 280px;
-        backdrop-filter: blur(10px);
-        pointer-events: auto;
-      }
-
-      .agent-info-panel h3 {
-        margin: 0 0 12px 0;
-        color: #3b82f6;
-        font-size: 1.2em;
-      }
-
-      .agent-details p {
-        margin: 4px 0;
-        font-size: 0.9em;
-      }
-
-      .agent-tools {
-        margin-top: 12px;
-      }
-
-      .agent-tools ul {
-        margin: 4px 0;
-        padding-left: 16px;
-      }
-
-      .agent-tools li {
-        font-size: 0.85em;
-        margin: 2px 0;
-      }
-
-      .constellation-stats {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        padding: 12px;
-        color: white;
-        font-family: monospace;
-        font-size: 0.85em;
-        backdrop-filter: blur(5px);
-        pointer-events: auto;
-      }
-
-      .stat-item {
-        display: flex;
-        justify-content: space-between;
-        margin: 4px 0;
-        min-width: 120px;
-      }
-
-      .stat-label {
-        color: #999;
-      }
-
-      .stat-value {
-        color: #fff;
-        font-weight: bold;
-      }
-
-      .stat-value.connected {
-        color: #10b981;
-      }
-
-      .stat-value.warning {
-        color: #ffaa00;
-      }
-
-      .stat-value.error {
-        color: #ff4444;
-      }
-
-      .instructions {
-        position: absolute;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        text-align: center;
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 0.9em;
-        pointer-events: auto;
-      }
-
-      .instructions p {
-        margin: 4px 0;
-      }
-
-      .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 20;
-      }
-
-      .loading-content {
-        text-align: center;
-        color: white;
-      }
-
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(59, 130, 246, 0.3);
-        border-top: 3px solid #3b82f6;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 16px;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Responsive Design */
-      @media (max-width: 768px) {
-        .agent-info-panel {
-          top: 10px;
-          right: 10px;
-          left: 10px;
-          min-width: auto;
-          max-width: none;
-        }
-
-        .constellation-stats {
-          top: 10px;
-          left: 10px;
-          font-size: 0.8em;
-        }
-
-        .instructions {
-          bottom: 20px;
-          left: 20px;
-          right: 20px;
-          transform: none;
-          font-size: 0.85em;
-        }
-      }
     `,
   ],
 })
 export class SpatialInterfaceComponent implements OnInit, OnDestroy {
-  private readonly threeService = inject(ThreeIntegrationService);
   private readonly agentCommunication = inject(AgentCommunicationService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly agentVisualizer = inject(AgentVisualizerService);
-  private readonly constellationLayout = inject(ConstellationLayoutService);
-  private readonly spatialNavigation = inject(SpatialNavigationService);
-  private readonly agentInteraction = inject(AgentInteractionService);
-  private readonly agentStateVisualizer = inject(AgentStateVisualizerService);
+  private readonly sceneContent = inject(SceneContentService);
+  private readonly errorHandler = inject(ErrorHandlingService);
   private readonly performanceMonitor = inject(PerformanceMonitorService);
-  private readonly performance3D = inject(Performance3DService);
+  private readonly agentStateVisualizer = inject(AgentStateVisualizerService);
+  private readonly agentInteraction = inject(AgentInteractionService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly http = inject(HttpClient);
 
-  // Template references
-  @ViewChild('sceneContainer', { static: true })
-  sceneContainer!: ElementRef<HTMLDivElement>;
-
-  // Scene management
-  private readonly sceneId = 'spatial-constellation';
-  private sceneInstance: SceneInstance | null = null;
-  private controls: any = null; // Will be OrbitControls
+  // Component configuration
+  readonly sceneId = 'spatial-constellation';
 
   // Component state
   readonly isSceneReady = signal(false);
-  readonly frameRate = signal(60);
+  readonly loadingText = signal('Initializing 3D Constellation...');
+  private sceneInstance: SceneInstance | null = null;
 
-  // Public reactive state
-  readonly selectedAgent = this.agentVisualizer.selectedAgent;
-  readonly agentCount = this.agentVisualizer.agentCount;
-  readonly isConnected = this.agentCommunication.isConnected;
-  readonly isNavigating = this.spatialNavigation.isNavigating;
+  // Computed reactive state
+  readonly selectedAgent = computed(() => {
+    const selected = this.agentVisualizer.selectedAgent();
+    return selected ? ({ agent: selected as any } as SelectedAgentData) : null;
+  });
+
+  readonly agentCount = computed(() => this.agentVisualizer.agentCount());
+  readonly showInstructions = computed(() => !this.selectedAgent());
+
+  readonly constellationStats = computed<ConstellationStats>(() => ({
+    agentCount: this.agentCount(),
+    frameRate: this.performanceMonitor.performanceMetrics().frameRate,
+    activeEffects: this.performanceMonitor.performanceMetrics().activeEffects,
+    isConnected: this.agentCommunication.isConnected(),
+  }));
+
   readonly currentTooltip = this.agentInteraction.tooltipData;
-  readonly visualEffectsActive = this.agentStateVisualizer.visualEffectsActive;
-  readonly performanceMetrics = this.performanceMonitor.performanceMetrics;
+  readonly currentError = this.errorHandler.error;
 
-  // Navigation controls configuration
-  readonly navigationControlsConfig = signal<NavigationControlsConfig>({
+  // Error handling computed properties
+  shouldShowFallback = (context: string) =>
+    this.errorHandler.shouldShowFallback(context);
+
+  // Component configurations
+  readonly navigationControlsConfig: NavigationControlsConfig = {
     showZoomControls: true,
     showResetButton: true,
     showKeyboardHints: true,
     showTouchHints: true,
     position: 'bottom-right',
-  });
+  };
 
-  // Tooltip configuration
-  readonly tooltipConfig = signal<TooltipConfig>({
+  readonly tooltipConfig: TooltipConfig = {
     showCapabilities: true,
     showStatus: true,
     showTools: true,
@@ -403,467 +210,165 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
     fadeOutDuration: 150,
     followCursor: false,
     offset: { x: 15, y: -10 },
-  });
-
-  constructor() {
-    // Monitor performance metrics
-    effect(() => {
-      const performance = this.threeService.performance();
-      this.frameRate.set(Math.round(performance.frameRate));
-    });
-  }
+  };
 
   ngOnInit(): void {
-    this.initializeScene();
     this.setupAgentCommunication();
   }
 
   ngOnDestroy(): void {
-    this.cleanupScene();
+    this.cleanup();
   }
 
   /**
-   * Initialize the 3D scene and constellation
+   * Handle scene ready event from child component
    */
-  private async initializeScene(): Promise<void> {
-    try {
-      // Create Three.js scene
-      this.sceneInstance = this.threeService.createScene(
-        this.sceneId,
-        this.sceneContainer.nativeElement,
-        {
-          backgroundColor: 0x0a0a0a,
-          enableShadows: true,
-          cameraFov: 75,
-          cameraNear: 0.1,
-          cameraFar: 1000,
-        }
-      );
+  onSceneReady(sceneInstance: SceneInstance): void {
+    this.sceneInstance = sceneInstance;
+    this.isSceneReady.set(true);
 
-      if (!this.sceneInstance) {
-        throw new Error('Failed to create 3D scene');
-      }
+    // Initialize all services with the scene
+    this.initializeServices();
+  }
 
-      // Setup camera position for constellation view
-      this.sceneInstance.camera.position.set(0, 5, 15);
-      this.sceneInstance.camera.lookAt(0, 0, 0);
+  /**
+   * Handle scene error from child component
+   */
+  onSceneError(error: Error): void {
+    const recoveryStrategy = this.errorHandler.getRecoveryStrategy('3d-scene');
+    this.errorHandler.handleError(error, '3d-scene', recoveryStrategy);
+    this.loadingText.set('Failed to initialize 3D scene.');
+  }
 
-      // Add constellation lighting
-      this.setupConstellationLighting();
+  /**
+   * Handle retry from error boundary
+   */
+  onRetryError(): void {
+    const currentErr = this.currentError();
+    if (!currentErr) return;
 
-      // Setup camera controls (OrbitControls will be added later)
-      await this.setupCameraControls();
-
-      // Initialize enhanced spatial navigation
-      this.initializeSpatialNavigation();
-
-      // Initialize enhanced agent interaction
-      this.initializeAgentInteraction();
-
-      // Initialize constellation layout system
-      this.constellationLayout.initialize({
-        centerRadius: 2.0,
-        orbitalRadius: 6.0,
-        verticalSpread: 3.0,
-        coordinatorCenter: true,
-        animationDuration: 2000,
-        collisionAvoidance: true,
-        hierarchicalLayout: true,
+    const strategy = this.errorHandler.getRecoveryStrategy(currentErr.context);
+    if (strategy.recoveryAction) {
+      this.errorHandler.clearError();
+      strategy.recoveryAction().catch((retryError) => {
+        this.errorHandler.handleError(retryError as Error, currentErr.context, {
+          canRecover: false,
+        });
       });
-
-      // Initialize agent visualizer
-      this.agentVisualizer.initialize({
-        sceneId: this.sceneId,
-        viewContainerRef: this.viewContainerRef,
-        enableInteraction: true,
-        enableAnimation: true,
-        defaultAgentConfig: {
-          glowIntensity: 0.6,
-          animationSpeed: 1.0,
-        },
-      });
-
-      // Initialize visual effects system
-      this.initializeVisualEffects();
-
-      // Initialize performance monitoring
-      this.initializePerformanceMonitoring();
-
-      // Initialize advanced 3D performance optimization
-      this.performance3D.initialize(this.sceneId, 60);
-
-      // Start render loop with animation updates
-      this.threeService.activateScene(this.sceneId, () => {
-        this.updateAnimations();
-      });
-
-      this.isSceneReady.set(true);
-      console.log('Spatial interface initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize spatial interface:', error);
     }
   }
 
   /**
-   * Setup lighting optimized for agent constellation
-   */
-  private setupConstellationLighting(): void {
-    if (!this.sceneInstance) return;
-
-    const scene = this.sceneInstance.scene;
-
-    // Clear default lighting
-    const lightsToRemove = scene.children.filter(
-      (child) => child instanceof THREE.Light
-    );
-    lightsToRemove.forEach((light) => scene.remove(light));
-
-    // Ambient light for base illumination
-    const ambientLight = new THREE.AmbientLight(0x404080, 0.4);
-    scene.add(ambientLight);
-
-    // Key light for dramatic effect
-    const keyLight = new THREE.DirectionalLight(0x4080ff, 0.8);
-    keyLight.position.set(10, 10, 5);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
-    scene.add(keyLight);
-
-    // Fill light from opposite side
-    const fillLight = new THREE.DirectionalLight(0x8040ff, 0.3);
-    fillLight.position.set(-5, 3, -10);
-    scene.add(fillLight);
-
-    // Rim light for agent silhouettes
-    const rimLight = new THREE.DirectionalLight(0xff8040, 0.2);
-    rimLight.position.set(0, -5, 10);
-    scene.add(rimLight);
-
-    // Add subtle point lights for depth
-    const pointLight1 = new THREE.PointLight(0x4080ff, 0.5, 20);
-    pointLight1.position.set(8, 0, 8);
-    scene.add(pointLight1);
-
-    const pointLight2 = new THREE.PointLight(0x8040ff, 0.3, 15);
-    pointLight2.position.set(-8, 3, -5);
-    scene.add(pointLight2);
-  }
-
-  /**
-   * Setup camera controls for constellation navigation
-   */
-  private async setupCameraControls(): Promise<void> {
-    if (!this.sceneInstance) return;
-
-    try {
-      // Dynamically import OrbitControls to avoid bundle size issues
-      const { OrbitControls } = await import(
-        'three/examples/jsm/controls/OrbitControls.js'
-      );
-
-      this.controls = new OrbitControls(
-        this.sceneInstance.camera,
-        this.sceneInstance.renderer.domElement
-      );
-
-      // Configure controls for constellation viewing
-      this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.05;
-      this.controls.screenSpacePanning = false;
-
-      // Limit zoom and distance
-      this.controls.minDistance = 5;
-      this.controls.maxDistance = 50;
-
-      // Limit vertical rotation
-      this.controls.maxPolarAngle = Math.PI;
-      this.controls.minPolarAngle = 0;
-
-      // Set target to constellation center
-      this.controls.target.set(0, 0, 0);
-      this.controls.update();
-
-      console.log('Camera controls initialized');
-    } catch (error) {
-      console.error('Failed to setup camera controls:', error);
-    }
-  }
-
-  /**
-   * Setup agent communication and real-time updates
+   * Setup agent communication
    */
   private setupAgentCommunication(): void {
-    console.log('🔌 Setting up TASK_API_001 DevBrand backend connection...');
-
-    // Connect to real TASK_API_001 agent system
+    // Connect to agent system (this now loads agents automatically)
     this.agentCommunication.connect();
-
-    // Add connection error handling
-    this.monitorBackendConnectivity();
-
-    // Log connection status
-    setInterval(() => {
-      console.log(
-        '📡 Connection status:',
-        this.agentCommunication.isConnected()
-      );
-    }, 2000);
 
     // Handle existing agents
     const existingAgents = this.agentCommunication.availableAgents();
-    console.log('👥 Existing agents found:', existingAgents.length);
-    existingAgents.forEach((agent) => {
-      console.log('🤖 Adding agent to visualization:', agent.name);
-      this.agentVisualizer.visualizeAgent(agent);
-    });
+    if (existingAgents.length > 0) {
+      existingAgents.forEach((agent) => {
+        this.agentVisualizer.visualizeAgent(agent);
+      });
+    }
 
-    // Subscribe to real TASK_API_001 agent updates
+    // Start periodic activity simulation for demonstration
+    this.startAgentActivitySimulation();
+
+    // Subscribe to agent updates with error handling
     this.agentCommunication.agentUpdates$
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        retry({ count: 3, delay: 2000 }),
+        catchError((error) => {
+          const recoveryStrategy =
+            this.errorHandler.getRecoveryStrategy('agents');
+          this.errorHandler.handleError(error, 'agents', recoveryStrategy);
+          return of(); // Return empty observable to continue
+        })
+      )
       .subscribe({
         next: (agent: AgentState) => {
-          console.log(
-            '🔄 Real TASK_API_001 agent update received:',
-            agent.name,
-            agent.status
-          );
           this.agentVisualizer.visualizeAgent(agent);
         },
         error: (error) => {
-          console.error('❌ Error in agent updates stream:', error);
-          this.handleBackendError('Agent updates stream error', error);
+          // Final error after retries
+          this.errorHandler.handleError(error, 'agents', { canRecover: false });
         },
       });
 
-    // Subscribe to real memory updates from ChromaDB/Neo4j
+    // Subscribe to available agents changes
+    setTimeout(() => {
+      this.agentCommunication.availableAgents().forEach((agent) => {
+        this.agentVisualizer.visualizeAgent(agent);
+      });
+    }, 2000); // Wait for backend to load
+
+    // Subscribe to memory updates with error handling
     this.agentCommunication.memoryUpdates$
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        retry({ count: 2, delay: 1000 }),
+        catchError((error) => {
+          console.warn('Memory updates failed:', error);
+          return of([]); // Return empty array to continue
+        })
+      )
       .subscribe({
         next: (contexts) => {
-          console.log(
-            '🧠 Real memory update from TASK_API_001:',
-            contexts.length,
-            'contexts'
-          );
+          // Handle memory updates if needed
         },
         error: (error) => {
-          console.error('❌ Error in memory updates stream:', error);
-          this.handleBackendError('Memory updates stream error', error);
+          console.error('Memory updates error:', error);
         },
       });
 
-    // Subscribe to real tool executions
+    // Subscribe to tool executions with error handling
     this.agentCommunication.toolExecutions$
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        retry({ count: 2, delay: 1000 }),
+        catchError((error) => {
+          console.warn('Tool execution updates failed:', error);
+          return of(); // Return empty observable to continue
+        })
+      )
       .subscribe({
         next: (execution) => {
-          console.log(
-            '🔧 Real tool execution from TASK_API_001:',
-            execution.toolName,
-            execution.status
-          );
+          // Handle tool execution updates if needed
         },
         error: (error) => {
-          console.error('❌ Error in tool execution stream:', error);
-          this.handleBackendError('Tool execution stream error', error);
+          console.error('Tool execution error:', error);
         },
       });
   }
 
   /**
-   * Monitor TASK_API_001 backend connectivity
-   */
-  private monitorBackendConnectivity(): void {
-    // Monitor connection status changes
-    setInterval(() => {
-      const isConnected = this.agentCommunication.isConnected();
-      console.log(
-        '📡 TASK_API_001 connection status:',
-        isConnected ? 'CONNECTED' : 'DISCONNECTED'
-      );
-
-      if (!isConnected) {
-        console.warn(
-          '⚠️ TASK_API_001 backend disconnected - attempting to reconnect...'
-        );
-        // Optionally show user notification
-        this.showConnectionWarning();
-      }
-    }, 5000); // Check every 5 seconds
-  }
-
-  /**
-   * Handle TASK_API_001 backend errors
-   */
-  private handleBackendError(context: string, error: any): void {
-    console.error(`❌ TASK_API_001 Backend Error [${context}]:`, error);
-
-    // Show user-friendly error message
-    this.showBackendErrorNotification(context, error);
-
-    // Attempt recovery actions
-    setTimeout(() => {
-      console.log('🔄 Attempting to recover TASK_API_001 connection...');
-      this.agentCommunication.connect();
-    }, 3000);
-  }
-
-  /**
-   * Show connection warning to user
-   */
-  private showConnectionWarning(): void {
-    // This could be enhanced with a proper notification system
-    if (typeof window !== 'undefined' && window.console) {
-      console.warn(
-        '⚠️ Connection to TASK_API_001 DevBrand backend lost. Real-time updates may be delayed.'
-      );
-    }
-  }
-
-  /**
-   * Show backend error notification
-   */
-  private showBackendErrorNotification(context: string, error: any): void {
-    // This could be enhanced with a proper toast/notification system
-    const errorMessage = error?.message || 'Unknown error';
-    console.error(`🚨 Backend Error: ${context} - ${errorMessage}`);
-
-    // For now, log to console. In production, this would show a user notification
-    if (typeof window !== 'undefined' && window.console) {
-      console.error(
-        `TASK_API_001 Backend Error in ${context}: ${errorMessage}`
-      );
-    }
-  }
-
-  /**
-   * Update animations every frame
-   */
-  private updateAnimations(): void {
-    // Update orbit controls
-    if (this.controls) {
-      this.controls.update();
-    }
-
-    // Update agent animations
-    this.agentVisualizer.updateAnimations();
-
-    // Update visual effects
-    this.agentStateVisualizer.updateEffects(0.016); // ~60fps
-
-    // Update performance monitoring
-    this.performanceMonitor.updateMetrics(
-      0.016,
-      this.performanceMetrics().activeEffects
-    );
-
-    // Update 3D performance optimization
-    this.performance3D.updatePerformanceMetrics(16.67); // ~60fps in milliseconds
-
-    // Handle mouse interactions
-    this.handleMouseInteractions();
-  }
-
-  /**
-   * Handle mouse interactions for agent selection
-   */
-  private handleMouseInteractions(): void {
-    if (!this.sceneInstance) return;
-
-    const container = this.sceneInstance.container;
-
-    // Mouse move handler
-    const onMouseMove = (event: MouseEvent) => {
-      this.agentVisualizer.handleMouseEvent(event, this.sceneInstance!.camera);
-    };
-
-    // Mouse click handler
-    const onClick = (event: MouseEvent) => {
-      this.agentVisualizer.handleMouseEvent(event, this.sceneInstance!.camera);
-    };
-
-    // Add event listeners if not already added
-    if (!container.dataset['listenersAdded']) {
-      container.addEventListener('mousemove', onMouseMove);
-      container.addEventListener('click', onClick);
-      container.dataset['listenersAdded'] = 'true';
-    }
-  }
-
-  /**
-   * Initialize enhanced spatial navigation
-   */
-  private initializeSpatialNavigation(): void {
-    const navigationConfig: SpatialNavigationConfig = {
-      sceneId: this.sceneId,
-      enableMomentum: true,
-      enableKeyboardControls: true,
-      enableTouchControls: true,
-      enableCameraStateStorage: true,
-      momentumDecay: 0.95,
-      maxMoveSpeed: 2.0,
-      cameraLimits: {
-        minDistance: 3,
-        maxDistance: 60,
-        minPolarAngle: 0,
-        maxPolarAngle: Math.PI,
-      },
-      focusTransition: {
-        duration: 1.5,
-        easing: 'power2.inOut',
-      },
-    };
-
-    this.spatialNavigation.initialize(navigationConfig);
-    console.log('Enhanced spatial navigation initialized');
-  }
-
-  /**
-   * Handle focus requests from navigation controls
+   * Handle navigation focus requests
    */
   onFocusRequested(target: any): void {
     console.log('Focus requested on target:', target);
-    // Additional integration logic can be added here
+    // Implement focus logic
   }
 
   /**
-   * Handle reset requests from navigation controls
+   * Handle reset requests
    */
   onResetRequested(): void {
     console.log('Camera reset requested');
-    // Clear any selection when resetting camera
     this.agentVisualizer.selectAgent(null);
   }
 
   /**
-   * Initialize enhanced agent interaction
-   */
-  private initializeAgentInteraction(): void {
-    const interactionConfig: AgentInteractionConfig = {
-      sceneId: this.sceneId,
-      enableHover: true,
-      enableSelection: true,
-      enableTooltips: true,
-      enableDoubleClickFocus: true,
-      hoverResponseTime: 100,
-      selectionHighlightDuration: 300,
-      tooltipDelay: 500,
-    };
-
-    this.agentInteraction.initialize(interactionConfig);
-    console.log('Enhanced agent interaction initialized');
-  }
-
-  /**
-   * Handle tooltip focus agent request
+   * Handle tooltip focus agent requests
    */
   onTooltipFocusAgent(agentId: string): void {
     this.agentInteraction.focusOnAgent(agentId);
   }
 
   /**
-   * Handle tooltip start chat request
+   * Handle tooltip start chat requests
    */
   onTooltipStartChat(agentId: string): void {
     this.agentInteraction.selectAgent(agentId);
@@ -872,78 +377,247 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Focus camera on selected agent with double-click
+   * Initialize all services with the scene
    */
-  focusOnSelectedAgent(): void {
-    const selected = this.selectedAgent();
-    if (selected) {
-      const agentPosition = new THREE.Vector3(
-        selected.agent.position.x,
-        selected.agent.position.y,
-        selected.agent.position.z || 0
-      );
+  private initializeServices(): void {
+    // Initialize agent visualizer
+    this.agentVisualizer.initialize({
+      sceneId: this.sceneId,
+      viewContainerRef: this.viewContainerRef,
+      enableInteraction: true,
+      enableAnimation: true,
+      defaultAgentConfig: {
+        glowIntensity: 0.6,
+        animationSpeed: 1.0,
+      },
+    });
 
-      const target = {
-        position: agentPosition,
-        target: agentPosition,
-        distance: 8,
-      };
+    // Initialize performance monitoring
+    this.performanceMonitor.initialize(this.sceneId);
 
-      this.spatialNavigation.focusOnTarget(target);
-    }
-  }
-
-  /**
-   * Initialize visual effects system
-   */
-  private initializeVisualEffects(): void {
-    const visualEffectConfig: VisualEffectConfig = {
+    // Initialize agent state visualizer
+    this.agentStateVisualizer.initialize({
       sceneId: this.sceneId,
       enableMemoryEffects: true,
       enableToolRings: true,
       enableCommunicationStreams: true,
       effectQuality: 'high',
       maxConcurrentEffects: 20,
-    };
-
-    this.agentStateVisualizer.initialize(visualEffectConfig);
-    console.log('Visual effects system initialized');
-  }
-
-  /**
-   * Initialize performance monitoring
-   */
-  private initializePerformanceMonitoring(): void {
-    this.performanceMonitor.initialize(this.sceneId);
-
-    // Register quality adjustment callback
-    this.performanceMonitor.registerQualityCallback((quality) => {
-      console.log('Performance quality adjusted:', quality);
-      // Notify visual effects system of quality change
-      // This could update effect parameters based on performance
     });
 
-    console.log('Performance monitoring initialized');
+    // Initialize agent interaction service
+    this.agentInteraction.initialize({
+      sceneId: this.sceneId,
+      enableHover: true,
+      enableSelection: true,
+      enableTooltips: true,
+      enableDoubleClickFocus: true,
+      hoverResponseTime: 100,
+      selectionHighlightDuration: 300,
+      tooltipDelay: 500,
+    });
+
+    // Start animation loop
+    this.startAnimationLoop();
   }
 
   /**
-   * Clean up scene and resources
+   * Start animation loop
    */
-  private cleanupScene(): void {
-    this.agentVisualizer.cleanup();
-    this.constellationLayout.cleanup();
-    this.spatialNavigation.cleanup();
-    this.agentInteraction.cleanup();
-    this.agentStateVisualizer.cleanup();
-    this.performanceMonitor.cleanup();
-    this.performance3D.dispose();
+  private startAnimationLoop(): void {
+    const animate = () => {
+      if (this.sceneInstance && this.isSceneReady()) {
+        // Update scene content animations
+        this.sceneContent.updateAnimations();
 
-    if (this.controls) {
-      this.controls.dispose();
-      this.controls = null;
+        // Update agent animations
+        this.agentVisualizer.updateAnimations();
+
+        // Update visual effects
+        this.agentStateVisualizer.updateEffects(0.016);
+
+        // Update performance monitoring
+        const currentMetrics = this.performanceMonitor.performanceMetrics();
+        this.performanceMonitor.updateMetrics(
+          0.016,
+          currentMetrics.activeEffects
+        );
+      }
+      requestAnimationFrame(animate);
+    };
+    animate();
+  }
+
+  /**
+   * Start periodic agent activity simulation
+   */
+  private startAgentActivitySimulation(): void {
+    // Simulate agent activity every 5-10 seconds for demonstration
+    const simulateActivity = () => {
+      this.agentCommunication.simulateAgentActivity();
+
+      // Schedule next simulation
+      const nextInterval = 5000 + Math.random() * 5000; // 5-10 seconds
+      setTimeout(simulateActivity, nextInterval);
+    };
+
+    // Start first simulation after initial load
+    setTimeout(simulateActivity, 3000);
+  }
+
+  /**
+   * Load agents from backend API
+   */
+  private loadAgentsFromBackend(): void {
+    this.http
+      .get<{ success: boolean; data: any[]; total: number }>(
+        'http://localhost:3000/api/customer-support/agents'
+      )
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error) => {
+          console.error('Failed to load agents from backend:', error);
+          // Fallback to mock agents on error
+          this.createMockAgents();
+          return of({ success: false, data: [], total: 0 });
+        })
+      )
+      .subscribe((response) => {
+        if (response.success && response.data.length > 0) {
+          console.log('Loaded agents from backend:', response.data);
+
+          // Add agents after a delay to ensure services are initialized
+          setTimeout(() => {
+            response.data.forEach((agent) => {
+              this.agentVisualizer.visualizeAgent(agent);
+            });
+          }, 1000);
+        } else {
+          // Fallback to mock agents if no backend agents
+          this.createMockAgents();
+        }
+      });
+  }
+
+  /**
+   * Create mock agents for development/testing
+   */
+  private createMockAgents(): void {
+    console.log('Creating mock agents for testing spatial interface');
+
+    const mockAgents: AgentState[] = [
+      {
+        id: 'github-analyzer',
+        name: 'GitHub Analyzer',
+        type: 'analyst',
+        status: 'idle',
+        position: { x: -8, y: 2, z: -3 },
+        capabilities: [
+          'repository-analysis',
+          'code-review',
+          'metrics-extraction',
+        ],
+        isActive: false,
+        lastActiveTime: new Date(),
+        currentTools: [],
+        personality: {
+          color: '#10B981',
+          description:
+            'GitHub Repository Analyzer - Extracts technical achievements and skills',
+        },
+      },
+      {
+        id: 'content-creator',
+        name: 'Content Creator',
+        type: 'creator',
+        status: 'thinking',
+        position: { x: 8, y: -2, z: 3 },
+        capabilities: [
+          'content-generation',
+          'narrative-creation',
+          'storytelling',
+        ],
+        isActive: true,
+        lastActiveTime: new Date(),
+        currentTools: [],
+        personality: {
+          color: '#8B5CF6',
+          description:
+            'Content Creator - Generates compelling brand narratives',
+        },
+      },
+      {
+        id: 'brand-strategist',
+        name: 'Brand Strategist',
+        type: 'strategist',
+        status: 'executing',
+        position: { x: 0, y: 8, z: -2 },
+        capabilities: [
+          'brand-positioning',
+          'strategy-development',
+          'market-analysis',
+        ],
+        isActive: true,
+        lastActiveTime: new Date(),
+        currentTools: [
+          {
+            id: 'tool_1',
+            toolName: 'Brand Analysis Tool',
+            status: 'running',
+            progress: 0.7,
+            startTime: new Date(),
+            parameters: {},
+          },
+        ],
+        personality: {
+          color: '#F59E0B',
+          description:
+            'Brand Strategist - Develops comprehensive brand positioning',
+        },
+      },
+      {
+        id: 'supervisor',
+        name: 'Supervisor',
+        type: 'coordinator',
+        status: 'idle',
+        position: { x: 0, y: 0, z: 0 },
+        capabilities: [
+          'workflow-coordination',
+          'task-management',
+          'quality-assurance',
+        ],
+        isActive: false,
+        lastActiveTime: new Date(),
+        currentTools: [],
+        personality: {
+          color: '#3B82F6',
+          description: 'Supervisor Agent - Coordinates multi-agent workflows',
+        },
+      },
+    ];
+
+    // Add mock agents to the agent communication service
+    setTimeout(() => {
+      mockAgents.forEach((agent) => {
+        this.agentVisualizer.visualizeAgent(agent);
+      });
+    }, 1000); // Delay to ensure services are initialized
+  }
+
+  /**
+   * Cleanup resources
+   */
+  private cleanup(): void {
+    if (this.sceneInstance) {
+      this.sceneContent.removeDefaultContent(this.sceneInstance.scene);
     }
 
-    this.threeService.removeScene(this.sceneId);
+    // Cleanup all services
+    this.agentVisualizer.cleanup();
+    this.performanceMonitor.cleanup();
+    this.agentStateVisualizer.cleanup();
+    this.agentInteraction.cleanup();
     this.agentCommunication.disconnect();
+    this.errorHandler.clearError();
   }
 }

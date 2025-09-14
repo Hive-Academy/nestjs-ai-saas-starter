@@ -10,16 +10,13 @@ import {
   MessageEvent,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { CustomerSupportWorkflow } from '../workflows/customer-support.workflow';
 import { BusinessMetricsService } from '../services/business-metrics.service';
 import { KnowledgeBaseService } from '../services/knowledge-base.service';
-import {
+import type {
   TicketRequest,
-  TicketResponse,
   CustomerSupportMetrics,
   BusinessImpact,
-  ApprovalRequest,
   KnowledgeSearchQuery,
   StreamingResponse,
   PaginatedResponse,
@@ -48,15 +45,10 @@ export class CustomerSupportController {
     try {
       // Initialize the workflow
       const initialState = await this.supportWorkflow.processTicket(request);
+      const executionId = initialState.ticketId; // Use ticketId as executionId
 
-      // Start the workflow execution (in a real implementation, this would be async)
-      const executionId = `exec_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-
-      // For demo purposes, we'll simulate starting the workflow
-      // In production, this would trigger the actual workflow engine
-      this.simulateWorkflowExecution(initialState, executionId);
+      // Execute the real workflow steps
+      this.executeRealWorkflow(initialState);
 
       return {
         success: true,
@@ -71,7 +63,7 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         executionId: '',
         streaming: false,
       };
@@ -98,7 +90,7 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -180,7 +172,94 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Get available agents in the customer support system
+   */
+  @Get('agents')
+  async getAvailableAgents() {
+    try {
+      const agents = [
+        {
+          id: 'customer-support-agent',
+          name: 'Customer Support Agent',
+          type: 'specialist',
+          status: 'idle',
+          position: { x: -5, y: 3, z: 2 },
+          capabilities: [
+            'ticket-analysis',
+            'sentiment-analysis',
+            'solution-generation',
+            'knowledge-base-search',
+            'escalation-detection',
+          ],
+          isActive: false,
+          lastActiveTime: new Date(),
+          currentTools: [],
+          personality: {
+            color: '#16A085',
+            description:
+              'Customer Support Agent - AI-powered ticket processing and customer assistance',
+          },
+        },
+        {
+          id: 'escalation-coordinator',
+          name: 'Escalation Coordinator',
+          type: 'coordinator',
+          status: 'idle',
+          position: { x: 3, y: 5, z: -1 },
+          capabilities: [
+            'risk-assessment',
+            'approval-coordination',
+            'human-handoff',
+            'priority-management',
+          ],
+          isActive: false,
+          lastActiveTime: new Date(),
+          currentTools: [],
+          personality: {
+            color: '#E74C3C',
+            description:
+              'Escalation Coordinator - Manages high-risk and complex support cases',
+          },
+        },
+        {
+          id: 'quality-assurance',
+          name: 'Quality Assurance Agent',
+          type: 'analyst',
+          status: 'idle',
+          position: { x: 0, y: -4, z: 3 },
+          capabilities: [
+            'response-validation',
+            'quality-scoring',
+            'improvement-suggestions',
+            'metrics-tracking',
+          ],
+          isActive: false,
+          lastActiveTime: new Date(),
+          currentTools: [],
+          personality: {
+            color: '#9B59B6',
+            description:
+              'Quality Assurance Agent - Ensures high-quality customer support responses',
+          },
+        },
+      ];
+
+      return {
+        success: true,
+        data: agents,
+        total: agents.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        data: [],
       };
     }
   }
@@ -231,7 +310,7 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         data: [],
       };
     }
@@ -252,7 +331,7 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -277,7 +356,7 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -359,53 +438,46 @@ export class CustomerSupportController {
     } catch (error) {
       return {
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
 
   // Private helper methods
 
-  private async simulateWorkflowExecution(
-    initialState: any,
-    executionId: string
-  ) {
-    // In a real implementation, this would trigger the workflow engine
-    // For demo purposes, we'll simulate the workflow steps
+  private async executeRealWorkflow(initialState: any) {
+    // Execute the real workflow steps asynchronously
+    try {
+      // Step 1: Analysis
+      const analysisResult = await this.supportWorkflow.analyzeTicket(
+        initialState
+      );
 
-    setTimeout(async () => {
-      try {
-        // Step 1: Analysis
-        const analysisResult = await this.supportWorkflow.analyzeTicket(
-          initialState
-        );
+      // Step 2: Generate Response
+      const responseResult = await this.supportWorkflow.generateResponse({
+        ...initialState,
+        ...analysisResult,
+      });
 
-        // Step 2: Generate Response
-        const responseResult = await this.supportWorkflow.generateResponse({
-          ...initialState,
-          ...analysisResult,
-        });
+      // Step 3: Send Response (or request approval)
+      const finalState = {
+        ...initialState,
+        ...analysisResult,
+        ...responseResult,
+      };
 
-        // Step 3: Send Response (or request approval)
-        const finalState = {
-          ...initialState,
-          ...analysisResult,
-          ...responseResult,
-        };
+      const sendResult = await this.supportWorkflow.sendResponse(finalState);
 
-        const sendResult = await this.supportWorkflow.sendResponse(finalState);
+      console.log('Real workflow execution completed:', sendResult);
 
-        console.log('Workflow execution completed:', sendResult);
-
-        // Track metrics
-        await this.metricsService.trackCustomerSupport({
-          ...finalState,
-          ...sendResult,
-        });
-      } catch (error) {
-        console.error('Workflow execution error:', error);
-      }
-    }, 1000);
+      // Track metrics with real data
+      await this.metricsService.trackCustomerSupport({
+        ...finalState,
+        ...sendResult,
+      });
+    } catch (error) {
+      console.error('Real workflow execution error:', error);
+    }
   }
 
   private getProgressMessage(progress: number): string {

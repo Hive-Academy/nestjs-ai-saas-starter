@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Agent, AgentState, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import {
+  Agent,
+  type AgentState,
+  LlmProviderService,
+} from '@hive-academy/langgraph-multi-agent';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
@@ -22,7 +26,7 @@ import { PersonalBrandMemoryService } from '../services/personal-brand-memory.se
   capabilities: ['brand-analysis', 'strategic-positioning', 'career-guidance'],
   tools: ['memory-analysis', 'brand-optimization', 'strategy-generation'],
   priority: 'high',
-  executionTime: 'moderate'
+  executionTime: 'medium',
 })
 @Injectable()
 export class PersonalBrandStrategistAgent {
@@ -40,23 +44,30 @@ export class PersonalBrandStrategistAgent {
     console.log('🎯 Personal Brand Strategist: Developing brand strategy...');
 
     // Extract GitHub analysis from previous agent
-    const githubUsername = state.metadata?.githubUsername || 'developer';
+    const githubUsername =
+      (state.metadata?.githubUsername as string) || 'developer';
     const githubData = state.metadata?.githubData;
-    const achievements = state.metadata?.achievements || [];
+    const achievements = (state.metadata?.achievements as string[]) || [];
     const developerInsights = state.metadata?.developerInsights;
 
     try {
       // 🧠 MEMORY-DRIVEN CONTEXT: Get developer's brand history and preferences
       console.log('🧠 Retrieving developer context from memory...');
-      const devContext = await this.personalBrandMemory.getDevContext(githubUsername);
+      const devContext = await this.personalBrandMemory.getDevContext(
+        githubUsername
+      );
 
       // 🎯 BRAND EVOLUTION: Analyze current brand trajectory
       console.log('📈 Analyzing brand evolution patterns...');
-      const brandEvolution = await this.personalBrandMemory.getBrandEvolution(githubUsername);
+      const brandEvolution = await this.personalBrandMemory.getBrandEvolution(
+        githubUsername
+      );
 
       // 🎨 BRAND VOICE: Get personalized content style preferences
       console.log('🎨 Analyzing brand voice and content preferences...');
-      const brandVoice = await this.personalBrandMemory.getBrandVoice(githubUsername);
+      const brandVoice = await this.personalBrandMemory.getBrandVoice(
+        githubUsername
+      );
 
       // 🚀 AI-POWERED STRATEGY: Generate sophisticated brand positioning
       const strategyPrompt = this.buildBrandStrategyPrompt(
@@ -69,16 +80,20 @@ export class PersonalBrandStrategistAgent {
         brandVoice
       );
 
-      const brandStrategy = await this.llmProvider.generateResponse(
-        strategyPrompt,
-        {
-          temperature: 0.5, // Balanced creativity and consistency
-          maxTokens: 3000,
-        }
-      );
+      const llm = await this.llmProvider.getLLM({
+        temperature: 0.5, // Balanced creativity and consistency
+        maxTokens: 3000,
+      });
+      const brandStrategyResponse = await llm.invoke([
+        { role: 'user', content: strategyPrompt },
+      ]);
+      const brandStrategy = brandStrategyResponse.content.toString();
 
       // 📊 STRATEGIC ANALYSIS: Extract actionable insights
-      const strategyAnalysis = this.analyzeBrandStrategy(brandStrategy, achievements);
+      const strategyAnalysis = this.analyzeBrandStrategy(
+        brandStrategy,
+        achievements
+      );
 
       // 💾 MEMORY STORAGE: Store new brand strategy for future evolution
       const newBrandStrategy = {
@@ -89,12 +104,17 @@ export class PersonalBrandStrategistAgent {
         recommendations: strategyAnalysis.recommendations,
         targetAudience: strategyAnalysis.targetAudience,
         confidenceScore: strategyAnalysis.confidence,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
-      await this.personalBrandMemory.storeBrandStrategy(githubUsername, newBrandStrategy);
+      await this.personalBrandMemory.storeBrandStrategy(
+        githubUsername,
+        newBrandStrategy
+      );
 
-      console.log('✅ Personal Brand Strategist: Strategy development completed');
+      console.log(
+        '✅ Personal Brand Strategist: Strategy development completed'
+      );
 
       return {
         messages: [
@@ -112,10 +132,16 @@ ${brandStrategy}
 • **Key Differentiators:** ${strategyAnalysis.strengths.slice(0, 3).join(', ')}
 
 **📈 GROWTH OPPORTUNITIES:**
-${strategyAnalysis.opportunities.slice(0, 3).map(o => `• ${o}`).join('\n')}
+${strategyAnalysis.opportunities
+  .slice(0, 3)
+  .map((o: any) => `• ${o}`)
+  .join('\n')}
 
 **💡 STRATEGIC RECOMMENDATIONS:**
-${strategyAnalysis.recommendations.slice(0, 4).map(r => `• ${r}`).join('\n')}
+${strategyAnalysis.recommendations
+  .slice(0, 4)
+  .map((r: any) => `• ${r}`)
+  .join('\n')}
 
 **🧠 MEMORY-DRIVEN INSIGHTS:**
 • Brand Evolution: ${brandEvolution.currentTrend}
@@ -141,10 +167,12 @@ Brand evolution: ${brandEvolution.currentTrend}`,
           brandEvolution,
           brandVoice,
           toolsUsed: [
-            ...(state.metadata?.toolsUsed || []),
+            ...(Array.isArray(state.metadata?.toolsUsed)
+              ? state.metadata.toolsUsed
+              : []),
             'personal-brand-memory',
             'brand-evolution-analysis',
-            'ai-strategy-generation'
+            'ai-strategy-generation',
           ],
           confidenceScore: strategyAnalysis.confidence,
         },
@@ -152,7 +180,10 @@ Brand evolution: ${brandEvolution.currentTrend}`,
         task: 'Create compelling content based on brand strategy and developer insights',
       };
     } catch (error) {
-      console.error('❌ Personal Brand Strategist: Strategy development failed:', error);
+      console.error(
+        '❌ Personal Brand Strategist: Strategy development failed:',
+        error
+      );
 
       // Fallback with structured brand analysis
       const fallbackStrategy = this.generateFallbackBrandStrategy(
@@ -201,24 +232,38 @@ ${fallbackStrategy}
 **DEVELOPER PROFILE:** ${username}
 
 **📊 CURRENT TECHNICAL PROFILE:**
-• Primary Technologies: ${githubData?.patterns.primaryLanguages?.join(', ') || 'Full-stack developer'}
+• Primary Technologies: ${
+      githubData?.patterns.primaryLanguages?.join(', ') ||
+      'Full-stack developer'
+    }
 • Productivity Score: ${githubData?.summary.productivityScore || 85}/100
 • Working Style: ${githubData?.patterns.workingHours || 'Professional hours'}
-• Focus Areas: ${githubData?.patterns.focusAreas?.join(', ') || 'General development'}
+• Focus Areas: ${
+      githubData?.patterns.focusAreas?.join(', ') || 'General development'
+    }
 
 **🎯 KEY ACHIEVEMENTS:**
-${achievements.slice(0, 5).map(a => `• ${a.description} (${a.impact} impact)`).join('\n') || '• Consistent code contributions and quality improvements'}
+${
+  achievements
+    .slice(0, 5)
+    .map((a) => `• ${a.description} (${a.impact} impact)`)
+    .join('\n') || '• Consistent code contributions and quality improvements'
+}
 
 **🧠 HISTORICAL CONTEXT:**
 • Brand Evolution Trend: ${brandEvolution.currentTrend || 'stable'}
-• Content Style: ${brandVoice.tone || 'professional'} tone, ${brandVoice.style || 'technical'} approach
+• Content Style: ${brandVoice.tone || 'professional'} tone, ${
+      brandVoice.style || 'technical'
+    } approach
 • Engagement Level: ${brandVoice.engagementLevel || 'active'}
 • Previous Achievements: ${devContext.recentAchievements?.length || 0} stored
 
 **📈 TECHNICAL EXPERTISE ASSESSMENT:**
 • Breadth: ${insights?.technicalExpertise?.breadth || 'Full-stack'}
 • Complexity Level: ${insights?.technicalExpertise?.complexity || 'High'}
-• Career Trajectory: ${brandEvolution.currentTrend === 'improving' ? 'Ascending' : 'Stable'}
+• Career Trajectory: ${
+      brandEvolution.currentTrend === 'improving' ? 'Ascending' : 'Stable'
+    }
 
 Please create a comprehensive personal brand strategy that includes:
 
@@ -247,32 +292,50 @@ Create a strategy that will help this developer advance their career and build m
     const lowerStrategy = strategy.toLowerCase();
 
     // Extract positioning statement (usually in first paragraph)
-    const lines = strategy.split('\n').filter(line => line.trim());
-    const positioning = lines.find(line => 
-      line.includes('position') || 
-      line.includes('brand') ||
-      line.length > 50
-    ) || 'Senior developer with strong technical expertise';
+    const lines = strategy.split('\n').filter((line) => line.trim());
+    const positioning =
+      lines.find(
+        (line) =>
+          line.includes('position') ||
+          line.includes('brand') ||
+          line.length > 50
+      ) || 'Senior developer with strong technical expertise';
 
     // Extract strengths
-    const strengths = this.extractListItems(strategy, ['strength', 'differentiator', 'unique']);
-    
-    // Extract opportunities  
-    const opportunities = this.extractListItems(strategy, ['opportunity', 'growth', 'advancement']);
-    
+    const strengths = this.extractListItems(strategy, [
+      'strength',
+      'differentiator',
+      'unique',
+    ]);
+
+    // Extract opportunities
+    const opportunities = this.extractListItems(strategy, [
+      'opportunity',
+      'growth',
+      'advancement',
+    ]);
+
     // Extract recommendations
-    const recommendations = this.extractListItems(strategy, ['recommend', 'action', 'step', 'strategy']);
+    const recommendations = this.extractListItems(strategy, [
+      'recommend',
+      'action',
+      'step',
+      'strategy',
+    ]);
 
     // Determine target audience
-    const targetAudience = lowerStrategy.includes('recruiter') ? 'Technical Recruiters' :
-                          lowerStrategy.includes('founder') ? 'Startup Founders' :
-                          lowerStrategy.includes('team') ? 'Engineering Teams' :
-                          'Tech Professionals';
+    const targetAudience = lowerStrategy.includes('recruiter')
+      ? 'Technical Recruiters'
+      : lowerStrategy.includes('founder')
+      ? 'Startup Founders'
+      : lowerStrategy.includes('team')
+      ? 'Engineering Teams'
+      : 'Tech Professionals';
 
     // Calculate confidence based on achievements and strategy depth
-    const confidence = Math.min(0.95, 0.7 + 
-      (achievements.length * 0.05) + 
-      (strategy.length / 4000 * 0.2)
+    const confidence = Math.min(
+      0.95,
+      0.7 + achievements.length * 0.05 + (strategy.length / 4000) * 0.2
     );
 
     return {
@@ -281,7 +344,7 @@ Create a strategy that will help this developer advance their career and build m
       opportunities: opportunities.slice(0, 4),
       recommendations: recommendations.slice(0, 6),
       targetAudience,
-      confidence: Math.round(confidence * 100) / 100
+      confidence: Math.round(confidence * 100) / 100,
     };
   }
 
@@ -304,7 +367,9 @@ Position as a **Senior Full-Stack Engineer** with proven expertise in modern web
 • **Tertiary:** Developer Community for thought leadership and knowledge sharing
 
 **🚀 KEY DIFFERENTIATORS:**
-• **Technical Breadth:** ${insights?.technicalExpertise?.breadth || 'Full-stack'} expertise across modern technology stacks
+• **Technical Breadth:** ${
+      insights?.technicalExpertise?.breadth || 'Full-stack'
+    } expertise across modern technology stacks
 • **Quality Focus:** Consistent emphasis on testing, documentation, and maintainable code
 • **Problem Solver:** Demonstrated ability to tackle complex technical challenges
 • **Growth Mindset:** Continuous learning and adaptation to emerging technologies
@@ -352,25 +417,41 @@ Position in the **top 20% of senior developers** by combining:
   private extractListItems(text: string, keywords: string[]): string[] {
     const items: string[] = [];
     const lines = text.split('\n');
-    
+
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
+      if (
+        trimmed.startsWith('•') ||
+        trimmed.startsWith('-') ||
+        /^\d+\./.test(trimmed)
+      ) {
         const cleaned = trimmed.replace(/^[•\-\d.]\s*/, '').trim();
-        if (cleaned.length > 10 && keywords.some(keyword => 
-          line.toLowerCase().includes(keyword) || 
-          text.substring(Math.max(0, text.indexOf(line) - 100), text.indexOf(line)).toLowerCase().includes(keyword)
-        )) {
+        if (
+          cleaned.length > 10 &&
+          keywords.some(
+            (keyword) =>
+              line.toLowerCase().includes(keyword) ||
+              text
+                .substring(
+                  Math.max(0, text.indexOf(line) - 100),
+                  text.indexOf(line)
+                )
+                .toLowerCase()
+                .includes(keyword)
+          )
+        ) {
           items.push(cleaned);
         }
       }
     }
-    
-    return items.length > 0 ? items : [
-      'Strong technical expertise in modern technologies',
-      'Proven track record of delivering quality solutions',
-      'Collaborative approach to software development'
-    ];
+
+    return items.length > 0
+      ? items
+      : [
+          'Strong technical expertise in modern technologies',
+          'Proven track record of delivering quality solutions',
+          'Collaborative approach to software development',
+        ];
   }
 
   private cleanPositioning(positioning: string): string {

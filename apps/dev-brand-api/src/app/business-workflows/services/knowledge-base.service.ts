@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import {
+import type {
   KnowledgeSearchQuery,
   KnowledgeSearchResult,
   SimilarTicket,
@@ -28,21 +28,15 @@ export class KnowledgeBaseService {
   async initializeCollections(): Promise<void> {
     try {
       // Ensure knowledge base collection exists
-      await this.chromaService.createCollection({
-        name: this.KNOWLEDGE_COLLECTION,
-        metadata: {
-          description: 'Customer support knowledge base for semantic search',
-          version: '1.0',
-        },
+      await this.chromaService.createCollection(this.KNOWLEDGE_COLLECTION, {
+        description: 'Customer support knowledge base for semantic search',
+        version: '1.0',
       });
 
       // Ensure tickets collection exists
-      await this.chromaService.createCollection({
-        name: this.TICKETS_COLLECTION,
-        metadata: {
-          description: 'Historical support tickets for similarity matching',
-          version: '1.0',
-        },
+      await this.chromaService.createCollection(this.TICKETS_COLLECTION, {
+        description: 'Historical support tickets for similarity matching',
+        version: '1.0',
       });
 
       console.log('Knowledge base collections initialized successfully');
@@ -58,36 +52,56 @@ export class KnowledgeBaseService {
     query: KnowledgeSearchQuery
   ): Promise<KnowledgeSearchResult[]> {
     try {
-      const searchResults = await this.chromaService.similaritySearch(
+      const queryResult = await this.chromaService.similaritySearch(
+        this.KNOWLEDGE_COLLECTION,
         query.query,
         {
-          collection: this.KNOWLEDGE_COLLECTION,
           limit: query.maxResults || 5,
-          threshold: query.similarityThreshold || 0.7,
           filter: this.buildSearchFilter(query),
+          includeMetadata: true,
+          includeDocuments: true,
+          includeDistances: true,
         }
       );
 
       const results: KnowledgeSearchResult[] = [];
 
-      for (const result of searchResults) {
-        const knowledgeResult: KnowledgeSearchResult = {
-          id: result.id,
-          title: result.metadata?.title || 'Unknown Article',
-          content: result.document || '',
-          category: result.metadata?.category || 'general',
-          similarity: result.score || 0,
-          lastUpdated: result.metadata?.lastUpdated
-            ? new Date(result.metadata.lastUpdated)
-            : new Date(),
-          useCount: result.metadata?.useCount || 0,
-          effectiveness: result.metadata?.effectiveness || 0.5,
-        };
+      if (
+        queryResult.ids &&
+        queryResult.documents &&
+        queryResult.metadatas &&
+        Array.isArray(queryResult.ids)
+      ) {
+        for (let i = 0; i < queryResult.ids.length; i++) {
+          const id = queryResult.ids[i];
+          const metadata = Array.isArray(queryResult.metadatas)
+            ? queryResult.metadatas[i]
+            : null;
+          const document = Array.isArray(queryResult.documents)
+            ? queryResult.documents[i]
+            : '';
+          const distance = Array.isArray(queryResult.distances)
+            ? queryResult.distances[i]
+            : null;
 
-        results.push(knowledgeResult);
+          const knowledgeResult: KnowledgeSearchResult = {
+            id: String(id),
+            title: (metadata?.title as string) || 'Unknown Article',
+            content: document || '',
+            category: (metadata?.category as string) || 'general',
+            similarity: distance !== null ? 1 - distance : 0,
+            lastUpdated: metadata?.lastUpdated
+              ? new Date(metadata.lastUpdated as string)
+              : new Date(),
+            useCount: (metadata?.useCount as number) || 0,
+            effectiveness: (metadata?.effectiveness as number) || 0.5,
+          };
 
-        // Track knowledge article usage
-        await this.trackKnowledgeUsage(result.id, query);
+          results.push(knowledgeResult);
+
+          // Track knowledge article usage
+          await this.trackKnowledgeUsage(String(id), query);
+        }
       }
 
       return results.sort((a, b) => b.similarity - a.similarity);
@@ -111,27 +125,52 @@ export class KnowledgeBaseService {
       if (category) filter.category = category;
       if (customerTier) filter.customerTier = customerTier;
 
-      const searchResults = await this.chromaService.similaritySearch(
+      const queryResult = await this.chromaService.similaritySearch(
+        this.TICKETS_COLLECTION,
         description,
         {
-          collection: this.TICKETS_COLLECTION,
           limit,
-          threshold: 0.6,
           filter,
+          includeMetadata: true,
+          includeDocuments: true,
+          includeDistances: true,
         }
       );
 
-      return searchResults.map((result) => ({
-        id: result.id,
-        title: result.metadata?.title || 'Historical Ticket',
-        description: result.document || '',
-        resolution: result.metadata?.resolution || '',
-        similarity: result.score || 0,
-        resolutionTime: result.metadata?.resolutionTime || 0,
-        satisfactionScore: result.metadata?.satisfactionScore || 0,
-        category: result.metadata?.category || category || 'general',
-        embedding: result.embedding,
-      }));
+      const results: SimilarTicket[] = [];
+      if (
+        queryResult.ids &&
+        queryResult.documents &&
+        queryResult.metadatas &&
+        Array.isArray(queryResult.ids)
+      ) {
+        for (let i = 0; i < queryResult.ids.length; i++) {
+          const id = queryResult.ids[i];
+          const metadata = Array.isArray(queryResult.metadatas)
+            ? queryResult.metadatas[i]
+            : null;
+          const document = Array.isArray(queryResult.documents)
+            ? queryResult.documents[i]
+            : '';
+          const distance = Array.isArray(queryResult.distances)
+            ? queryResult.distances[i]
+            : null;
+          // Note: embeddings not available in similaritySearch result
+
+          results.push({
+            id: String(id),
+            title: (metadata?.title as string) || 'Historical Ticket',
+            description: document || '',
+            resolution: (metadata?.resolution as string) || '',
+            similarity: distance !== null ? 1 - distance : 0,
+            resolutionTime: (metadata?.resolutionTime as number) || 0,
+            satisfactionScore: (metadata?.satisfactionScore as number) || 0,
+            category: (metadata?.category as string) || category || 'general',
+          });
+        }
+      }
+
+      return results;
     } catch (error) {
       console.error('Error finding similar tickets:', error);
       return [];
@@ -151,25 +190,22 @@ export class KnowledgeBaseService {
   }): Promise<void> {
     try {
       // Add to ChromaDB for semantic search
-      await this.chromaService.addDocuments({
-        collection: this.KNOWLEDGE_COLLECTION,
-        documents: [
-          {
-            id: article.id,
-            document: `${article.title}\n\n${article.content}`,
-            metadata: {
-              title: article.title,
-              category: article.category,
-              tags: article.tags || [],
-              author: article.author,
-              createdAt: new Date().toISOString(),
-              lastUpdated: new Date().toISOString(),
-              useCount: 0,
-              effectiveness: 0.5,
-            },
+      await this.chromaService.addDocuments(this.KNOWLEDGE_COLLECTION, [
+        {
+          id: article.id,
+          document: `${article.title}\n\n${article.content}`,
+          metadata: {
+            title: article.title,
+            category: article.category,
+            tags: JSON.stringify(article.tags || []), // ChromaDB metadata must be string, number, boolean, or null
+            author: article.author || 'unknown',
+            createdAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+            useCount: 0,
+            effectiveness: 0.5,
           },
-        ],
-      });
+        },
+      ]);
 
       // Add to Neo4j for relationship tracking
       await this.neo4jService.run(
@@ -224,13 +260,13 @@ export class KnowledgeBaseService {
   }): Promise<void> {
     try {
       // Add to ChromaDB for similarity search
-      await this.chromaService.addDocuments({
-        collection: this.TICKETS_COLLECTION,
-        documents: [
-          {
-            id: ticket.id,
-            document: `${ticket.title}\n\n${ticket.description}`,
-            metadata: {
+      await this.chromaService.addDocuments(
+        this.TICKETS_COLLECTION,
+        [`${ticket.title}\n\n${ticket.description}`],
+        {
+          ids: [ticket.id],
+          metadatas: [
+            {
               title: ticket.title,
               resolution: ticket.resolution,
               category: ticket.category,
@@ -239,9 +275,9 @@ export class KnowledgeBaseService {
               satisfactionScore: ticket.satisfactionScore,
               resolvedAt: new Date().toISOString(),
             },
-          },
-        ],
-      });
+          ],
+        }
+      );
 
       // Update Neo4j with resolution information
       await this.neo4jService.run(
@@ -337,8 +373,27 @@ export class KnowledgeBaseService {
         } as analytics
       `);
 
-      if (results && results.length > 0) {
-        return results[0].analytics;
+      if (results && results.records.length > 0) {
+        return results.records[0].get('analytics') as {
+          totalArticles: number;
+          totalTickets: number;
+          topCategories: Array<{
+            category: string;
+            count: number;
+            effectiveness: number;
+          }>;
+          mostUsedArticles: Array<{
+            id: string;
+            title: string;
+            useCount: number;
+            effectiveness: number;
+          }>;
+          resolutionPatterns: Array<{
+            pattern: string;
+            frequency: number;
+            avgSatisfaction: number;
+          }>;
+        };
       }
 
       // Return default analytics if no data

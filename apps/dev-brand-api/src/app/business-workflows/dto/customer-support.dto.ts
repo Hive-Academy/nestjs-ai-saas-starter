@@ -1,16 +1,14 @@
-import { 
-  IsString, 
-  IsOptional, 
-  IsEnum, 
-  IsNumber, 
-  IsBoolean, 
-  IsObject, 
-  Min, 
-  Max, 
-  MinLength, 
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsBoolean,
+  IsObject,
+  Min,
+  Max,
+  MinLength,
   MaxLength,
-  IsEmail,
-  ValidateNested
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -23,17 +21,17 @@ export class CreateTicketDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  customerId: string;
+  customerId!: string;
 
   @IsString()
   @MinLength(5)
   @MaxLength(200)
-  title: string;
+  title!: string;
 
   @IsString()
   @MinLength(10)
   @MaxLength(2000)
-  description: string;
+  description!: string;
 
   @IsOptional()
   @IsEnum(['technical', 'billing', 'product', 'general'])
@@ -59,8 +57,16 @@ export class CreateTicketDto {
 }
 
 export class UpdateTicketStatusDto {
-  @IsEnum(['open', 'processing', 'analyzed', 'response_generated', 'pending_approval', 'completed', 'closed'])
-  status: string;
+  @IsEnum([
+    'open',
+    'processing',
+    'analyzed',
+    'response_generated',
+    'pending_approval',
+    'completed',
+    'closed',
+  ])
+  status!: string;
 
   @IsOptional()
   @IsString()
@@ -74,12 +80,12 @@ export class UpdateTicketStatusDto {
 
 export class ApprovalDto {
   @IsBoolean()
-  approved: boolean;
+  approved!: boolean;
 
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  approvedBy: string;
+  approvedBy!: string;
 
   @IsOptional()
   @IsString()
@@ -95,7 +101,7 @@ export class KnowledgeSearchDto {
   @IsString()
   @MinLength(3)
   @MaxLength(500)
-  query: string;
+  query!: string;
 
   @IsOptional()
   @IsString()
@@ -120,7 +126,7 @@ export class KnowledgeSearchDto {
 
 export class ArticleFeedbackDto {
   @IsBoolean()
-  helpful: boolean;
+  helpful!: boolean;
 
   @IsOptional()
   @IsString()
@@ -136,20 +142,20 @@ export class CreateKnowledgeArticleDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
-  id: string;
+  id!: string;
 
   @IsString()
   @MinLength(5)
   @MaxLength(200)
-  title: string;
+  title!: string;
 
   @IsString()
   @MinLength(50)
-  content: string;
+  content!: string;
 
   @IsString()
   @IsEnum(['technical', 'billing', 'product', 'general', 'account'])
-  category: string;
+  category!: string;
 
   @IsOptional()
   @IsString({ each: true })
@@ -175,7 +181,15 @@ export class GetTicketsQueryDto {
   limit?: number = 20;
 
   @IsOptional()
-  @IsEnum(['open', 'processing', 'analyzed', 'response_generated', 'pending_approval', 'completed', 'closed'])
+  @IsEnum([
+    'open',
+    'processing',
+    'analyzed',
+    'response_generated',
+    'pending_approval',
+    'completed',
+    'closed',
+  ])
   status?: string;
 
   @IsOptional()
@@ -203,59 +217,59 @@ export class GetMetricsQueryDto {
 
 // Response DTOs
 export class TicketResponseDto {
-  ticketId: string;
-  response: string;
-  confidence: number;
-  suggestedActions: string[];
-  escalationRequired: boolean;
-  estimatedResolutionTime: number;
-  similarTickets: Array<{
+  ticketId!: string;
+  response!: string;
+  confidence!: number;
+  suggestedActions!: string[];
+  escalationRequired!: boolean;
+  estimatedResolutionTime!: number;
+  similarTickets!: Array<{
     id: string;
     title: string;
     similarity: number;
   }>;
-  nextSteps: string[];
+  nextSteps!: string[];
 }
 
 export class StreamingTicketResponseDto {
-  success: boolean;
+  success!: boolean;
   data?: {
     ticketId: string;
     executionId: string;
   };
   error?: string;
-  executionId: string;
-  streaming: boolean;
+  executionId!: string;
+  streaming!: boolean;
   streamUrl?: string;
 }
 
 export class MetricsResponseDto {
-  totalTickets: number;
-  resolvedTickets: number;
-  avgResolutionTime: number;
-  avgSatisfactionScore: number;
-  escalationRate: number;
-  automationRate: number;
-  costSavings: number;
-  responseTime: number;
-  firstContactResolution: number;
-  customerSatisfactionTrend: number[];
+  totalTickets!: number;
+  resolvedTickets!: number;
+  avgResolutionTime!: number;
+  avgSatisfactionScore!: number;
+  escalationRate!: number;
+  automationRate!: number;
+  costSavings!: number;
+  responseTime!: number;
+  firstContactResolution!: number;
+  customerSatisfactionTrend!: number[];
 }
 
 export class BusinessImpactResponseDto {
-  avgResolutionTime: number;
-  ticketsResolved: number;
-  escalationRate: number;
-  customerSatisfaction: number;
-  costSavings: number;
-  timeToResolution: number;
-  agentProductivity: number;
-  customerRetention: number;
+  avgResolutionTime!: number;
+  ticketsResolved!: number;
+  escalationRate!: number;
+  customerSatisfaction!: number;
+  costSavings!: number;
+  timeToResolution!: number;
+  agentProductivity!: number;
+  customerRetention!: number;
 }
 
 export class KnowledgeSearchResponseDto {
-  success: boolean;
-  data: Array<{
+  success!: boolean;
+  data!: Array<{
     id: string;
     title: string;
     content: string;
@@ -265,25 +279,25 @@ export class KnowledgeSearchResponseDto {
     useCount: number;
     effectiveness: number;
   }>;
-  total: number;
-  query: string;
+  total!: number;
+  query!: string;
 }
 
 export class KnowledgeAnalyticsResponseDto {
-  totalArticles: number;
-  totalTickets: number;
-  topCategories: Array<{
+  totalArticles!: number;
+  totalTickets!: number;
+  topCategories!: Array<{
     category: string;
     count: number;
     effectiveness: number;
   }>;
-  mostUsedArticles: Array<{
+  mostUsedArticles!: Array<{
     id: string;
     title: string;
     useCount: number;
     effectiveness: number;
   }>;
-  resolutionPatterns: Array<{
+  resolutionPatterns!: Array<{
     pattern: string;
     frequency: number;
     avgSatisfaction: number;
@@ -291,7 +305,7 @@ export class KnowledgeAnalyticsResponseDto {
 }
 
 export class PaginatedTicketsResponseDto {
-  data: Array<{
+  data!: Array<{
     id: string;
     customerId: string;
     title: string;
@@ -303,11 +317,11 @@ export class PaginatedTicketsResponseDto {
     createdAt: string;
     updatedAt: string;
   }>;
-  total: number;
-  page: number;
-  limit: number;
-  hasNext: boolean;
-  hasPrev: boolean;
+  total!: number;
+  page!: number;
+  limit!: number;
+  hasNext!: boolean;
+  hasPrev!: boolean;
 }
 
 // Validation groups
@@ -315,7 +329,7 @@ export const ValidationGroups = {
   CREATE: 'create',
   UPDATE: 'update',
   SEARCH: 'search',
-  ADMIN: 'admin'
+  ADMIN: 'admin',
 } as const;
 
 // Custom validators

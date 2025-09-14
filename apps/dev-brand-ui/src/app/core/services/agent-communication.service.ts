@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError, of } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
 import { WebSocketService } from './websocket.service';
 import {
   AgentState,
@@ -33,6 +34,7 @@ export interface AgentCommand {
 })
 export class AgentCommunicationService {
   private readonly websocketService = inject(WebSocketService);
+  private readonly http = inject(HttpClient);
 
   // Agent state management
   private readonly agents = signal<Record<string, AgentState>>({});
@@ -91,6 +93,9 @@ export class AgentCommunicationService {
    */
   connect(): void {
     this.websocketService.connect();
+
+    // Load initial agents from backend
+    this.loadInitialAgents();
 
     // Subscribe to agent-constellation room for real TASK_API_001 updates
     this.subscribeToAgentConstellation();
@@ -175,6 +180,147 @@ export class AgentCommunicationService {
    */
   getAgentToolExecutions(agentId: string): ToolExecution[] {
     return this.toolExecutions()[agentId] || [];
+  }
+
+  /**
+   * Manually update agent status (for backend integration)
+   */
+  updateAgentStatus(
+    agentId: string,
+    status: AgentState['status'],
+    isActive?: boolean
+  ): void {
+    const updates: Partial<AgentState> = {
+      status,
+      lastActiveTime: new Date(),
+    };
+
+    if (isActive !== undefined) {
+      updates.isActive = isActive;
+    }
+
+    this.updateAgentState(agentId, updates);
+  }
+
+  /**
+   * Add or update an agent in the system
+   */
+  addOrUpdateAgent(agent: AgentState): void {
+    const currentAgents = this.agents();
+    this.agents.set({
+      ...currentAgents,
+      [agent.id]: agent,
+    });
+  }
+
+  /**
+   * Simulate agent activity for demonstration purposes
+   */
+  simulateAgentActivity(): void {
+    const agents = this.availableAgents();
+    if (agents.length === 0) return;
+
+    // Randomly select an agent to update
+    const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+    const statuses: AgentState['status'][] = ['idle', 'thinking', 'executing'];
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+    // Try to trigger real backend activity first, fallback to local simulation
+    this.triggerBackendAgentActivity(randomAgent.id, randomStatus);
+  }
+
+  /**
+   * Trigger actual backend agent activity
+   */
+  private triggerBackendAgentActivity(
+    agentId: string,
+    status: AgentState['status']
+  ): void {
+    const toolNames = [
+      'ticket-analysis',
+      'sentiment-analysis',
+      'knowledge-search',
+      'quality-check',
+    ];
+    const toolName =
+      status === 'executing'
+        ? toolNames[Math.floor(Math.random() * toolNames.length)]
+        : undefined;
+
+    this.http
+      .post<{ success: boolean; data: any; message: string }>(
+        `http://localhost:3000/api/customer-support/agents/${agentId}/simulate-activity`,
+        {
+          status,
+          toolName,
+        }
+      )
+      .pipe(
+        catchError((error) => {
+          console.warn(
+            'Backend activity trigger failed, using local simulation:',
+            error
+          );
+          // Fallback to local simulation
+          this.simulateLocalAgentActivity(agentId, status);
+          return of({
+            success: false,
+            data: null,
+            message: 'Fallback to local simulation',
+          });
+        })
+      )
+      .subscribe((response) => {
+        if (response.success) {
+          console.log(`Backend activity triggered: ${response.message}`);
+
+          // Update local state with backend response
+          this.updateAgentStatus(
+            agentId,
+            status as AgentState['status'],
+            status !== 'idle'
+          );
+
+          // Handle tool execution if present
+          if (response.data.toolExecution) {
+            const toolExecution: ToolExecution = {
+              id: `tool_${agentId}_${Date.now()}`,
+              toolName: response.data.toolExecution.toolName,
+              status: response.data.toolExecution.status,
+              progress: response.data.toolExecution.progress,
+              startTime: new Date(response.data.toolExecution.startTime),
+              parameters: {},
+            };
+
+            this.updateToolExecution(agentId, toolExecution);
+          }
+        }
+      });
+  }
+
+  /**
+   * Local agent activity simulation (fallback)
+   */
+  private simulateLocalAgentActivity(
+    agentId: string,
+    status: AgentState['status']
+  ): void {
+    console.log(`Local simulation: Agent ${agentId} is now ${status}`);
+    this.updateAgentStatus(agentId, status, status !== 'idle');
+
+    // Simulate tool execution for executing agents
+    if (status === 'executing') {
+      const mockTool: ToolExecution = {
+        id: `tool_${agentId}_${Date.now()}`,
+        toolName: 'analysis-tool',
+        status: 'running',
+        progress: Math.random(),
+        startTime: new Date(),
+        parameters: {},
+      };
+
+      this.updateToolExecution(agentId, mockTool);
+    }
   }
 
   /**
@@ -603,6 +749,41 @@ export class AgentCommunicationService {
       };
       this.handleDevBrandMemoryAccess(memoryAccess);
     }
+  }
+
+  /**
+   * Load initial agents from backend business workflows
+   */
+  private loadInitialAgents(): void {
+    this.http
+      .get<{ success: boolean; data: AgentState[]; total: number }>(
+        'http://localhost:3000/api/customer-support/agents'
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to load agents from backend:', error);
+          return of({ success: false, data: [], total: 0 });
+        })
+      )
+      .subscribe((response) => {
+        if (response.success && response.data.length > 0) {
+          console.log('Loading agents from business workflows:', response.data);
+
+          // Update agent states with backend data
+          const agentsMap: Record<string, AgentState> = {};
+          response.data.forEach((agent) => {
+            agentsMap[agent.id] = agent;
+          });
+
+          this.agents.set(agentsMap);
+          console.log(
+            'Agents loaded successfully:',
+            this.availableAgents().length
+          );
+        } else {
+          console.warn('No agents received from backend');
+        }
+      });
   }
 
   /**

@@ -19,10 +19,10 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
     ConfigModule,
   ],
   providers: [
-    // Core AI Agents
+    // Core AI Agents - RE-ENABLED AFTER DI METADATA FIX
     CustomerSupportAgent,
 
-    // Workflow Orchestrators  
+    // Workflow Orchestrators - RE-ENABLED AFTER DI METADATA FIX
     CustomerSupportWorkflow,
 
     // Business Services
@@ -33,37 +33,58 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
     {
       provide: 'CUSTOMER_SUPPORT_CONFIG',
       useFactory: (configService: ConfigService) => ({
-        maxSimilarTickets: configService.get('CUSTOMER_SUPPORT_MAX_SIMILAR_TICKETS', 5),
-        sentimentThreshold: configService.get('CUSTOMER_SUPPORT_SENTIMENT_THRESHOLD', -0.3),
-        escalationThreshold: configService.get('CUSTOMER_SUPPORT_ESCALATION_THRESHOLD', 0.8),
+        maxSimilarTickets: configService.get(
+          'CUSTOMER_SUPPORT_MAX_SIMILAR_TICKETS',
+          5
+        ),
+        sentimentThreshold: configService.get(
+          'CUSTOMER_SUPPORT_SENTIMENT_THRESHOLD',
+          -0.3
+        ),
+        escalationThreshold: configService.get(
+          'CUSTOMER_SUPPORT_ESCALATION_THRESHOLD',
+          0.8
+        ),
         approvalRequired: {
-          enterpriseCustomers: configService.get('CUSTOMER_SUPPORT_APPROVAL_ENTERPRISE', true),
-          highValueTickets: configService.get('CUSTOMER_SUPPORT_APPROVAL_HIGH_VALUE', true),
-          sentimentThreshold: configService.get('CUSTOMER_SUPPORT_APPROVAL_SENTIMENT_THRESHOLD', -0.5)
+          enterpriseCustomers: configService.get(
+            'CUSTOMER_SUPPORT_APPROVAL_ENTERPRISE',
+            true
+          ),
+          highValueTickets: configService.get(
+            'CUSTOMER_SUPPORT_APPROVAL_HIGH_VALUE',
+            true
+          ),
+          sentimentThreshold: configService.get(
+            'CUSTOMER_SUPPORT_APPROVAL_SENTIMENT_THRESHOLD',
+            -0.5
+          ),
         },
         llmConfig: {
           model: configService.get('LLM_MODEL', 'gpt-4'),
           temperature: configService.get('LLM_TEMPERATURE', 0.7),
           maxTokens: configService.get('LLM_MAX_TOKENS', 1000),
-          streaming: configService.get('LLM_STREAMING', true)
+          streaming: configService.get('LLM_STREAMING', true),
         },
         vectorSearch: {
           collection: 'support_knowledge_base',
-          similarityThreshold: configService.get('VECTOR_SIMILARITY_THRESHOLD', 0.7),
-          maxResults: configService.get('VECTOR_MAX_RESULTS', 5)
-        }
+          similarityThreshold: configService.get(
+            'VECTOR_SIMILARITY_THRESHOLD',
+            0.7
+          ),
+          maxResults: configService.get('VECTOR_MAX_RESULTS', 5),
+        },
       }),
-      inject: [ConfigService]
-    }
+      inject: [ConfigService],
+    },
   ],
   controllers: [
-    // REST API Controllers
+    // REST API Controllers - RE-ENABLED AFTER DI METADATA FIX
     CustomerSupportController,
   ],
   exports: [
     // Export key services for use in other modules
-    CustomerSupportAgent,
-    CustomerSupportWorkflow,
+    CustomerSupportAgent, // RE-ENABLED AFTER DI METADATA FIX
+    CustomerSupportWorkflow, // RE-ENABLED AFTER DI METADATA FIX
     BusinessMetricsService,
     KnowledgeBaseService,
   ],

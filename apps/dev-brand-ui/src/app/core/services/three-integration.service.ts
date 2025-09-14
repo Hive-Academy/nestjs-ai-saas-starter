@@ -7,6 +7,7 @@ import {
   DestroyRef,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { interval, switchMap } from 'rxjs';
 import * as THREE from 'three';
 import {
   ThreeLifecycleUtil,
@@ -281,20 +282,28 @@ export class ThreeIntegrationService {
    * Setup performance monitoring
    */
   private setupPerformanceMonitoring(): void {
-    // Update performance metrics periodically
-    setInterval(() => {
-      const activeScene = this.activeScene();
-      if (activeScene) {
-        const metrics = activeScene.lifecycleUtil.getPerformanceMetrics();
-        this.performanceMetrics.set(metrics);
+    // Use reactive approach instead of setInterval
+    toObservable(this.activeScene)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        switchMap((activeScene) => {
+          if (!activeScene) return [];
+          return interval(2000); // Update every 2 seconds instead of 1
+        })
+      )
+      .subscribe(() => {
+        const activeScene = this.activeScene();
+        if (activeScene) {
+          const metrics = activeScene.lifecycleUtil.getPerformanceMetrics();
+          this.performanceMetrics.set(metrics);
 
-        // Update interface mode store with performance data
-        this.interfaceModeStore.updatePerformance(
-          metrics.frameRate,
-          metrics.memoryUsage / 1024 // Convert to MB
-        );
-      }
-    }, 1000); // Update every second
+          // Update interface mode store with performance data
+          this.interfaceModeStore.updatePerformance(
+            metrics.frameRate,
+            metrics.memoryUsage / 1024 // Convert to MB
+          );
+        }
+      });
   }
 
   /**

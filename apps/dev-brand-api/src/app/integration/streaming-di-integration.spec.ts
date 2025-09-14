@@ -1,20 +1,19 @@
-import { Test } from '@nestjs/testing';
-import type { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from '../app.module';
 import {
-  StreamingServiceAdapter,
-  StreamingModule,
-} from '@hive-academy/langgraph-streaming';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
-import {
-  STREAMING_SERVICE_TOKEN,
-  IStreamingService,
   NoOpStreamingService,
+  STREAMING_SERVICE_TOKEN,
 } from '@hive-academy/langgraph-core';
-import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
-import { WorkflowStreamService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  MultiAgentCoordinatorService,
+  MultiAgentModule,
+} from '@hive-academy/langgraph-multi-agent';
+import { StreamingServiceAdapter } from '@hive-academy/langgraph-streaming';
+import {
+  WorkflowEngineModule,
+  WorkflowStreamService,
+} from '@hive-academy/langgraph-workflow-engine';
+import type { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../app.module';
 
 describe('Application-Level Streaming DI Integration', () => {
   let app: INestApplication;
@@ -103,8 +102,6 @@ describe('Application-Level Streaming DI Integration', () => {
 
   describe('Application Configuration Integration', () => {
     it('should configure streaming module with correct settings from app.module', () => {
-      const configService = app.get(ConfigService);
-
       // Verify streaming configuration is properly loaded
       // This would come from getStreamingConfig() in app.module.ts
       expect(streamingAdapter).toBeDefined();

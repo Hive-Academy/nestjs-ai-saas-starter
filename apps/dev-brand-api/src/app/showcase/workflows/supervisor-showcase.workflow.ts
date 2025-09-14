@@ -8,11 +8,7 @@ import {
   Task,
   Workflow,
 } from '@hive-academy/langgraph-functional-api';
-import {
-  ApprovalRiskLevel,
-  EscalationStrategy,
-  RequiresApproval,
-} from '@hive-academy/langgraph-hitl';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import {
   StreamAll,
   StreamEvent,

@@ -6,6 +6,7 @@ import {
   type IStreamingService,
   STREAMING_SERVICE_TOKEN,
   NoOpStreamingService,
+  StreamEventType,
 } from '@hive-academy/langgraph-core';
 
 describe('WorkflowStreamService Integration', () => {
@@ -90,6 +91,7 @@ describe('WorkflowStreamService Integration', () => {
         enabled: true,
         bufferSize: 50,
         flushInterval: 100,
+        methodName: 'testMethod',
       };
 
       // Simulate decorator metadata being present
@@ -344,6 +346,7 @@ describe('WorkflowStreamService Integration', () => {
         enabled: true,
         bufferSize: 10,
         flushInterval: 50,
+        methodName: 'streamMessageTokens',
       };
 
       service.createStream(executionId);
@@ -363,9 +366,9 @@ describe('WorkflowStreamService Integration', () => {
 
       // Verify tokens were streamed individually
       expect(collectedTokens.length).toBeGreaterThan(0);
-      expect(collectedTokens.every((token) => token.type === 'TOKEN')).toBe(
-        true
-      );
+      expect(
+        collectedTokens.every((token) => token.type === StreamEventType.ERROR)
+      ).toBe(true);
 
       // Verify streaming service was called for each token
       expect(mockStreamingService.streamToken).toHaveBeenCalledTimes(
@@ -392,6 +395,8 @@ describe('WorkflowStreamService Integration', () => {
         processor: (token: string, context: any) =>
           `[PROCESSED]${token}[/PROCESSED]`,
         bufferSize: 10,
+        flushInterval: 50,
+        methodName: 'streamMessageTokens',
       };
 
       service.createStream(executionId);

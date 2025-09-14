@@ -1,25 +1,21 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { 
-  Workflow, 
-  Entrypoint, 
-  Task
+import {
+  Workflow,
+  Entrypoint,
+  Task,
 } from '@hive-academy/langgraph-functional-api';
-import { 
-  StreamProgress, 
-  StreamToken, 
+import {
+  StreamProgress,
+  StreamToken,
   StreamEvent,
-  StreamingServiceAdapter
+  TokenStreamingService,
+  WebSocketBridgeService,
 } from '@hive-academy/langgraph-streaming';
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import { IStreamingService, STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
+import { StreamEventType } from '@hive-academy/langgraph-core';
+import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { CustomerSupportAgent } from '../agents/customer-support.agent';
-import { 
-  CustomerSupportState, 
-  TicketRequest, 
-  TicketResponse, 
-  ApprovalRequest,
-  WorkflowExecutionState
-} from '../types';
+import type { CustomerSupportState, TicketRequest } from '../types';
 
 /**
  * Customer Support Automation Workflow
@@ -35,13 +31,13 @@ import {
 export class CustomerSupportWorkflow {
   constructor(
     private readonly supportAgent: CustomerSupportAgent,
-    @Inject(STREAMING_SERVICE_TOKEN)
-    private readonly streamingService: IStreamingService,
-    // In a real implementation, these would be injected
-    // private readonly responseGenerator: ResponseGeneratorService,
-    // private readonly emailService: EmailService,
-    // private readonly metricsService: BusinessMetricsService
-  ) {}
+    private readonly tokenStreamingService: TokenStreamingService,
+    private readonly webSocketBridge: WebSocketBridgeService,
+    private readonly llmProvider: LlmProviderService
+  ) // In a real implementation, these would be injected
+  // private readonly emailService: EmailService,
+  // private readonly metricsService: BusinessMetricsService
+  {}
 
   /**
    * Entry point - Initialize ticket processing
@@ -50,7 +46,7 @@ export class CustomerSupportWorkflow {
   @StreamProgress({ enabled: true, includeETA: true })
   async processTicket(request: TicketRequest): Promise<CustomerSupportState> {
     const ticketId = this.generateTicketId();
-    
+
     // Create initial state
     const initialState: CustomerSupportState = {
       ticketId,
@@ -59,21 +55,21 @@ export class CustomerSupportWorkflow {
         customerId: request.customerId,
         title: request.title,
         description: request.description,
-        category: request.category as any || 'general',
-        priority: request.priority as any || 'medium',
+        category: (request.category as any) || 'general',
+        priority: (request.priority as any) || 'medium',
         status: 'processing',
-        customerTier: request.customerTier as any || 'basic',
+        customerTier: (request.customerTier as any) || 'basic',
         createdAt: new Date(),
         updatedAt: new Date(),
         tags: [],
-        metadata: request.metadata || {}
+        metadata: request.metadata || {},
       },
       status: 'processing',
       startTime: Date.now(),
       metadata: {
         requestReceived: true,
-        initialProcessingTime: Date.now()
-      }
+        initialProcessingTime: Date.now(),
+      },
     };
 
     // Emit initial progress
@@ -81,7 +77,7 @@ export class CustomerSupportWorkflow {
       ticketId,
       progress: 10,
       message: 'Ticket received and initialized',
-      currentStep: 'initialization'
+      currentStep: 'initialization',
     });
 
     return initialState;
@@ -92,13 +88,15 @@ export class CustomerSupportWorkflow {
    */
   @Task({ dependsOn: ['processTicket'] })
   @StreamToken({ enabled: true, format: 'structured' })
-  async analyzeTicket(state: CustomerSupportState): Promise<Partial<CustomerSupportState>> {
+  async analyzeTicket(
+    state: CustomerSupportState
+  ): Promise<Partial<CustomerSupportState>> {
     try {
       this.emitProgress({
         ticketId: state.ticketId,
         progress: 30,
         message: 'Analyzing ticket with AI agent',
-        currentStep: 'analysis'
+        currentStep: 'analysis',
       });
 
       // Stream analysis tokens
@@ -106,28 +104,28 @@ export class CustomerSupportWorkflow {
         ticketId: state.ticketId,
         nodeId: 'customer-support-specialist',
         type: 'analysis_start',
-        data: { message: 'Starting comprehensive ticket analysis...' }
+        data: { message: 'Starting comprehensive ticket analysis...' },
       });
 
       // Use the customer support agent for analysis
       const analysisResult = await this.supportAgent.nodeFunction(state);
-      
+
       this.emitStreamToken({
         ticketId: state.ticketId,
         nodeId: 'customer-support-specialist',
         type: 'analysis_complete',
-        data: { 
+        data: {
           analysisComplete: true,
           similarTicketsFound: analysisResult.similarTickets?.length || 0,
-          escalationRequired: analysisResult.escalationRequired
-        }
+          escalationRequired: analysisResult.escalationRequired,
+        },
       });
 
       this.emitProgress({
         ticketId: state.ticketId,
         progress: 50,
         message: 'Ticket analysis completed',
-        currentStep: 'analysis_complete'
+        currentStep: 'analysis_complete',
       });
 
       return {
@@ -135,22 +133,22 @@ export class CustomerSupportWorkflow {
         status: 'analyzed',
         metadata: {
           ...state.metadata,
-          analysisCompletedAt: Date.now()
-        }
+          analysisCompletedAt: Date.now(),
+        },
       };
     } catch (error) {
       this.emitStreamEvent({
         ticketId: state.ticketId,
         event: 'analysis_failed',
-        data: { error: error.message }
+        data: { error: error instanceof Error ? error.message : String(error) },
       });
-      
+
       return {
         status: 'processing',
         metadata: {
           ...state.metadata,
-          analysisError: error.message
-        }
+          analysisError: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -159,14 +157,16 @@ export class CustomerSupportWorkflow {
    * Step 2: Generate response based on analysis
    */
   @Task({ dependsOn: ['analyzeTicket'] })
-  @StreamEvent({ events: ['solution_found', 'escalation_required'] })
-  async generateResponse(state: CustomerSupportState): Promise<Partial<CustomerSupportState>> {
+  @StreamEvent({ events: [StreamEventType.MILESTONE, StreamEventType.VALUES] })
+  async generateResponse(
+    state: CustomerSupportState
+  ): Promise<Partial<CustomerSupportState>> {
     try {
       this.emitProgress({
         ticketId: state.ticketId,
         progress: 70,
         message: 'Generating customer response',
-        currentStep: 'response_generation'
+        currentStep: 'response_generation',
       });
 
       // Generate response based on analysis
@@ -177,19 +177,20 @@ export class CustomerSupportWorkflow {
         this.emitStreamEvent({
           ticketId: state.ticketId,
           event: 'escalation_required',
-          data: { 
+          data: {
             reason: 'Ticket requires human escalation',
-            escalationFactors: state.analysis?.riskFactors || []
-          }
+            escalationFactors: state.analysis?.riskFactors || [],
+          },
         });
       } else {
         this.emitStreamEvent({
           ticketId: state.ticketId,
           event: 'solution_found',
-          data: { 
+          data: {
             confidence: state.analysis?.confidence || 0,
-            estimatedResolutionTime: state.analysis?.estimatedResolutionTime || 0
-          }
+            estimatedResolutionTime:
+              state.analysis?.estimatedResolutionTime || 0,
+          },
         });
       }
 
@@ -197,7 +198,7 @@ export class CustomerSupportWorkflow {
         ticketId: state.ticketId,
         progress: 85,
         message: 'Response generated successfully',
-        currentStep: 'response_ready'
+        currentStep: 'response_ready',
       });
 
       return {
@@ -205,22 +206,22 @@ export class CustomerSupportWorkflow {
         status: 'response_generated',
         metadata: {
           ...state.metadata,
-          responseGeneratedAt: Date.now()
-        }
+          responseGeneratedAt: Date.now(),
+        },
       };
     } catch (error) {
       this.emitStreamEvent({
         ticketId: state.ticketId,
         event: 'response_generation_failed',
-        data: { error: error.message }
+        data: { error: error instanceof Error ? error.message : String(error) },
       });
 
       return {
         status: 'analyzed',
         metadata: {
           ...state.metadata,
-          responseError: error.message
-        }
+          responseError: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -229,8 +230,10 @@ export class CustomerSupportWorkflow {
    * Step 3: Send response (with optional human approval)
    */
   @Task({ dependsOn: ['generateResponse'] })
-  @RequiresApproval({ riskLevel: 'HIGH' })
-  async sendResponse(state: CustomerSupportState): Promise<Partial<CustomerSupportState>> {
+  @RequiresApproval({ timeoutMs: 300000 })
+  async sendResponse(
+    state: CustomerSupportState
+  ): Promise<Partial<CustomerSupportState>> {
     try {
       // Check if approval is required
       const requiresApproval = this.determineApprovalRequirement(state);
@@ -240,7 +243,7 @@ export class CustomerSupportWorkflow {
           ticketId: state.ticketId,
           progress: 90,
           message: 'Waiting for human approval',
-          currentStep: 'pending_approval'
+          currentStep: 'pending_approval',
         });
 
         return {
@@ -249,8 +252,8 @@ export class CustomerSupportWorkflow {
           metadata: {
             ...state.metadata,
             approvalRequestedAt: Date.now(),
-            approvalReason: this.getApprovalReason(state)
-          }
+            approvalReason: this.getApprovalReason(state),
+          },
         };
       }
 
@@ -261,7 +264,7 @@ export class CustomerSupportWorkflow {
         ticketId: state.ticketId,
         progress: 100,
         message: 'Response sent to customer',
-        currentStep: 'completed'
+        currentStep: 'completed',
       });
 
       return {
@@ -270,22 +273,22 @@ export class CustomerSupportWorkflow {
         metadata: {
           ...state.metadata,
           responseSentAt: Date.now(),
-          totalProcessingTime: Date.now() - state.startTime
-        }
+          totalProcessingTime: Date.now() - state.startTime,
+        },
       };
     } catch (error) {
       this.emitStreamEvent({
         ticketId: state.ticketId,
         event: 'send_response_failed',
-        data: { error: error.message }
+        data: { error: error instanceof Error ? error.message : String(error) },
       });
 
       return {
         status: 'response_generated',
         metadata: {
           ...state.metadata,
-          sendError: error.message
-        }
+          sendError: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -294,8 +297,8 @@ export class CustomerSupportWorkflow {
    * Approval handler for human-in-the-loop scenarios
    */
   async handleApproval(
-    state: CustomerSupportState, 
-    approved: boolean, 
+    state: CustomerSupportState,
+    approved: boolean,
     approvedBy: string,
     feedback?: string
   ): Promise<Partial<CustomerSupportState>> {
@@ -306,14 +309,14 @@ export class CustomerSupportWorkflow {
       this.emitStreamEvent({
         ticketId: state.ticketId,
         event: 'response_approved_and_sent',
-        data: { approvedBy, feedback }
+        data: { approvedBy, feedback },
       });
 
       this.emitProgress({
         ticketId: state.ticketId,
         progress: 100,
         message: 'Response approved and sent',
-        currentStep: 'completed'
+        currentStep: 'completed',
       });
 
       return {
@@ -324,15 +327,15 @@ export class CustomerSupportWorkflow {
           ...state.metadata,
           approvedAt: Date.now(),
           approvedBy,
-          approvalFeedback: feedback
-        }
+          approvalFeedback: feedback,
+        },
       };
     } else {
       // Response was rejected, needs revision
       this.emitStreamEvent({
         ticketId: state.ticketId,
         event: 'response_rejected',
-        data: { rejectedBy: approvedBy, feedback }
+        data: { rejectedBy: approvedBy, feedback },
       });
 
       return {
@@ -341,8 +344,8 @@ export class CustomerSupportWorkflow {
           ...state.metadata,
           rejectedAt: Date.now(),
           rejectedBy: approvedBy,
-          rejectionFeedback: feedback
-        }
+          rejectionFeedback: feedback,
+        },
       };
     }
   }
@@ -354,44 +357,106 @@ export class CustomerSupportWorkflow {
   }
 
   private async createResponse(state: CustomerSupportState): Promise<string> {
-    // In a real implementation, this would use an LLM to generate the response
-    const { analysis, similarTickets, customerContext } = state;
-    
-    let response = `Dear ${customerContext?.name || 'Customer'},\n\n`;
-    response += `Thank you for contacting us regarding your ${analysis?.category || 'support'} inquiry.\n\n`;
+    try {
+      // Use the real LLM provider to generate the response
+      const llm = await this.llmProvider.getLLM();
 
-    // Add personalized content based on analysis
-    if (analysis?.businessImpact === 'critical' || analysis?.businessImpact === 'high') {
-      response += `We understand this is a high-priority issue for you, and we're committed to resolving it quickly.\n\n`;
-    }
+      const prompt = `Generate a professional customer support response based on the following information:
 
-    // Include solution from similar tickets if available
-    if (similarTickets && similarTickets.length > 0) {
-      const bestMatch = similarTickets[0];
-      if (bestMatch.similarity > 0.8 && bestMatch.resolution) {
-        response += `Based on similar cases, here's what typically resolves this issue:\n\n`;
-        response += `${bestMatch.resolution}\n\n`;
+Ticket Details:
+- Title: ${state.ticket.title}
+- Description: ${state.ticket.description}
+- Category: ${state.ticket.category}
+- Priority: ${state.ticket.priority}
+- Customer Tier: ${state.ticket.customerTier}
+
+Analysis Results:
+- Sentiment: ${state.analysis?.sentiment || 'neutral'}
+- Urgency: ${state.analysis?.urgency || 0.5}
+- Confidence: ${state.analysis?.confidence || 0.5}
+- Business Impact: ${state.analysis?.businessImpact || 'low'}
+- Key Topics: ${state.analysis?.keyTopics?.join(', ') || 'none'}
+- Detected Issues: ${state.analysis?.detectedIssues?.join(', ') || 'none'}
+
+Customer Context:
+- Name: ${state.customerContext?.name || 'Customer'}
+- Tier: ${state.customerContext?.tier || 'basic'}
+- Previous Tickets: ${state.customerContext?.totalTickets || 0}
+- Satisfaction Score: ${state.customerContext?.satisfactionScore || 'N/A'}
+
+Similar Tickets Solutions:
+${
+  state.similarTickets
+    ?.slice(0, 2)
+    .map(
+      (ticket, index) =>
+        `${index + 1}. ${ticket.title} (Similarity: ${(
+          ticket.similarity * 100
+        ).toFixed(1)}%) - Resolution: ${ticket.resolution}`
+    )
+    .join('\n') || 'No similar tickets found'
+}
+
+Suggested Actions:
+${
+  state.suggestedActions
+    ?.map((action, index) => `${index + 1}. ${action}`)
+    .join('\n') || 'Standard support process'
+}
+
+${
+  state.escalationRequired
+    ? 'IMPORTANT: This ticket requires escalation to specialist team.'
+    : ''
+}
+
+Please generate a personalized, professional response that:
+1. Acknowledges the customer's issue with empathy
+2. Provides helpful information or solutions
+3. Sets appropriate expectations
+4. Maintains a professional but friendly tone
+5. Includes relevant next steps
+
+Response:`;
+
+      const response = await llm.invoke([{ role: 'user', content: prompt }]);
+      return response.content.toString();
+    } catch (error) {
+      console.error('Error generating LLM response:', error);
+
+      // Fallback to template-based response if LLM fails
+      const { analysis, similarTickets, customerContext } = state;
+      let response = `Dear ${customerContext?.name || 'Customer'},\n\n`;
+      response += `Thank you for contacting us regarding your ${
+        analysis?.category || 'support'
+      } inquiry.\n\n`;
+
+      if (
+        analysis?.businessImpact === 'critical' ||
+        analysis?.businessImpact === 'high'
+      ) {
+        response += `We understand this is a high-priority issue for you, and we're committed to resolving it quickly.\n\n`;
       }
+
+      if (state.suggestedActions && state.suggestedActions.length > 0) {
+        response += `Recommended next steps:\n`;
+        state.suggestedActions.forEach((action, index) => {
+          response += `${index + 1}. ${action}\n`;
+        });
+        response += `\n`;
+      }
+
+      if (state.escalationRequired) {
+        response += `Due to the nature of your inquiry, I'm escalating this to our specialist team who will contact you within ${
+          analysis?.estimatedResolutionTime || 240
+        } minutes.\n\n`;
+      }
+
+      response += `If you have any additional questions, please don't hesitate to reach out.\n\n`;
+      response += `Best regards,\nAI Customer Support Specialist`;
+
+      return response;
     }
-
-    // Add suggested actions
-    if (state.suggestedActions && state.suggestedActions.length > 0) {
-      response += `Recommended next steps:\n`;
-      state.suggestedActions.forEach((action, index) => {
-        response += `${index + 1}. ${action}\n`;
-      });
-      response += `\n`;
-    }
-
-    // Add escalation note if required
-    if (state.escalationRequired) {
-      response += `Due to the nature of your inquiry, I'm escalating this to our specialist team who will contact you within ${analysis?.estimatedResolutionTime || 240} minutes.\n\n`;
-    }
-
-    response += `If you have any additional questions, please don't hesitate to reach out.\n\n`;
-    response += `Best regards,\nAI Customer Support Specialist`;
-
-    return response;
   }
 
   private determineApprovalRequirement(state: CustomerSupportState): boolean {
@@ -399,29 +464,36 @@ export class CustomerSupportWorkflow {
     if (state.escalationRequired) return true;
     if (state.ticket.customerTier === 'enterprise') return true;
     if (state.analysis?.businessImpact === 'critical') return true;
-    if (state.analysis?.sentiment < -0.5) return true;
+    if (state.analysis?.sentiment != null && state.analysis.sentiment < -0.5)
+      return true;
     if (state.customerContext?.riskLevel === 'high') return true;
-    
+
     return false;
   }
 
   private getApprovalReason(state: CustomerSupportState): string {
     const reasons: string[] = [];
-    
+
     if (state.escalationRequired) reasons.push('Escalation required');
-    if (state.ticket.customerTier === 'enterprise') reasons.push('Enterprise customer');
-    if (state.analysis?.businessImpact === 'critical') reasons.push('Critical business impact');
-    if (state.analysis?.sentiment < -0.5) reasons.push('Negative sentiment detected');
-    if (state.customerContext?.riskLevel === 'high') reasons.push('High-risk customer');
-    
+    if (state.ticket.customerTier === 'enterprise')
+      reasons.push('Enterprise customer');
+    if (state.analysis?.businessImpact === 'critical')
+      reasons.push('Critical business impact');
+    if (state.analysis?.sentiment != null && state.analysis.sentiment < -0.5)
+      reasons.push('Negative sentiment detected');
+    if (state.customerContext?.riskLevel === 'high')
+      reasons.push('High-risk customer');
+
     return reasons.join(', ');
   }
 
-  private async sendCustomerResponse(state: CustomerSupportState): Promise<void> {
+  private async sendCustomerResponse(
+    state: CustomerSupportState
+  ): Promise<void> {
     // In a real implementation, this would send email/notification
     console.log(`[CUSTOMER RESPONSE] Ticket ${state.ticketId}:`);
     console.log(state.response);
-    
+
     // Here you would integrate with email service, CRM, etc.
     // await this.emailService.send({
     //   to: state.customerContext?.email,
@@ -431,23 +503,31 @@ export class CustomerSupportWorkflow {
   }
 
   // Streaming helper methods - NOW PROPERLY WIRED TO STREAMING SERVICE!
-  private async emitProgress(data: { ticketId: string; progress: number; message: string; currentStep: string }) {
-    if (this.streamingService) {
-      await this.streamingService.streamProgress(
-        data.ticketId,
-        'customer-support',
-        {
-          progress: data.progress,
-          message: data.message,
-          currentStep: data.currentStep
-        }
-      );
+  private async emitProgress(data: {
+    ticketId: string;
+    progress: number;
+    message: string;
+    currentStep: string;
+  }) {
+    if (this.webSocketBridge) {
+      await this.webSocketBridge.broadcastToExecution(data.ticketId, {
+        type: 'progress',
+        progress: data.progress,
+        message: data.message,
+        currentStep: data.currentStep,
+        timestamp: new Date(),
+      });
     }
   }
 
-  private emitStreamToken(data: { ticketId: string; nodeId: string; type: string; data: any }) {
-    if (this.streamingService) {
-      this.streamingService.streamToken(
+  private emitStreamToken(data: {
+    ticketId: string;
+    nodeId: string;
+    type: string;
+    data: any;
+  }) {
+    if (this.tokenStreamingService) {
+      this.tokenStreamingService.streamToken(
         data.ticketId,
         data.nodeId,
         JSON.stringify({ type: data.type, ...data.data }),
@@ -456,13 +536,17 @@ export class CustomerSupportWorkflow {
     }
   }
 
-  private async emitStreamEvent(data: { ticketId: string; event: string; data: any }) {
-    if (this.streamingService) {
-      await this.streamingService.emitEvent(data.event, {
-        executionId: data.ticketId,
+  private async emitStreamEvent(data: {
+    ticketId: string;
+    event: string;
+    data: any;
+  }) {
+    if (this.webSocketBridge) {
+      await this.webSocketBridge.broadcastToExecution(data.ticketId, {
+        type: 'event',
         event: data.event,
         data: data.data,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
   }

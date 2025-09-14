@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Agent, AgentState, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import {
+  Agent,
+  type AgentState,
+  LlmProviderService,
+} from '@hive-academy/langgraph-multi-agent';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
@@ -19,10 +23,19 @@ import { PersonalBrandMemoryService } from '../services/personal-brand-memory.se
 @Agent({
   id: 'content-creator',
   name: 'Content Creator',
-  capabilities: ['content-generation', 'platform-optimization', 'engagement-analysis'],
-  tools: ['linkedin-formatter', 'devto-formatter', 'content-optimizer', 'quality-scorer'],
+  capabilities: [
+    'content-generation',
+    'platform-optimization',
+    'engagement-analysis',
+  ],
+  tools: [
+    'linkedin-formatter',
+    'devto-formatter',
+    'content-optimizer',
+    'quality-scorer',
+  ],
   priority: 'high',
-  executionTime: 'moderate'
+  executionTime: 'medium',
 })
 @Injectable()
 export class ContentCreatorAgent {
@@ -40,23 +53,42 @@ export class ContentCreatorAgent {
     console.log('📝 Content Creator: Generating platform-optimized content...');
 
     // Extract brand strategy and GitHub analysis from previous agents
-    const githubUsername = state.metadata?.githubUsername || 'developer';
+    const githubUsername =
+      (state.metadata?.githubUsername as string) || 'developer';
     const brandStrategy = state.metadata?.brandStrategy;
-    const brandAnalysis = state.metadata?.brandAnalysis;
-    const achievements = state.metadata?.achievements || [];
+    const brandAnalysis = state.metadata?.brandAnalysis as
+      | { positioning?: string }
+      | undefined;
+    const achievements =
+      (state.metadata?.achievements as {
+        id: string;
+        description: string;
+        technologies: string[];
+        impact: 'low' | 'medium' | 'high' | 'critical';
+        date: string;
+        repository: string;
+        userId: string;
+      }[]) || [];
     const githubData = state.metadata?.githubData;
 
     try {
       // 🎨 BRAND VOICE ANALYSIS: Get personalized content style
       console.log('🎨 Analyzing brand voice and content preferences...');
-      const brandVoice = await this.personalBrandMemory.getBrandVoice(githubUsername);
+      const brandVoice = await this.personalBrandMemory.getBrandVoice(
+        githubUsername
+      );
 
       // 📈 CONTENT STRATEGY: Get optimization insights from memory
       console.log('📈 Retrieving personalized content strategy...');
-      const contentStrategy = await this.personalBrandMemory.getPersonalizedContentStrategy(
-        githubUsername, 
-        brandAnalysis?.positioning || 'technical expertise'
-      );
+      const contentStrategy =
+        await this.personalBrandMemory.getPersonalizedContentStrategy(
+          githubUsername,
+          brandAnalysis &&
+            typeof brandAnalysis === 'object' &&
+            brandAnalysis.positioning
+            ? brandAnalysis.positioning
+            : 'technical expertise'
+        );
 
       // 📱 LINKEDIN CONTENT: Create professional networking content
       console.log('📱 Generating LinkedIn content...');
@@ -79,7 +111,10 @@ export class ContentCreatorAgent {
       );
 
       // 📊 CONTENT QUALITY ANALYSIS: Score and optimize content
-      const linkedinMetrics = this.analyzeContentQuality(linkedinContent, 'linkedin');
+      const linkedinMetrics = this.analyzeContentQuality(
+        linkedinContent,
+        'linkedin'
+      );
       const devtoMetrics = this.analyzeContentQuality(devtoArticle, 'devto');
 
       // 💾 MEMORY STORAGE: Store content for performance tracking
@@ -91,11 +126,13 @@ export class ContentCreatorAgent {
           engagementScore: linkedinMetrics.qualityScore,
           metrics: {},
           createdAt: new Date().toISOString(),
-          userId: githubUsername
+          userId: githubUsername,
         });
       }
 
-      console.log('✅ Content Creator: Platform-optimized content generation completed');
+      console.log(
+        '✅ Content Creator: Platform-optimized content generation completed'
+      );
 
       return {
         messages: [
@@ -120,13 +157,29 @@ ${devtoArticle}
 
 **LinkedIn Post:**
 • Quality Score: ${linkedinMetrics.qualityScore}/10
-• Engagement Potential: ${linkedinMetrics.engagementLevel}
-• Professional Alignment: ${linkedinMetrics.professionalQuality}
+• Engagement Potential: ${
+            'engagementLevel' in linkedinMetrics
+              ? linkedinMetrics.engagementLevel
+              : 'N/A'
+          }
+• Professional Alignment: ${
+            'professionalQuality' in linkedinMetrics
+              ? linkedinMetrics.professionalQuality
+              : 'N/A'
+          }
 
 **Dev.to Article:**
-• Quality Score: ${devtoMetrics.qualityScore}/10  
-• Technical Depth: ${devtoMetrics.technicalDepth}
-• Educational Value: ${devtoMetrics.educationalValue}
+• Quality Score: ${devtoMetrics.qualityScore}/10
+• Technical Depth: ${
+            'technicalDepth' in devtoMetrics
+              ? devtoMetrics.technicalDepth
+              : 'N/A'
+          }
+• Educational Value: ${
+            'educationalValue' in devtoMetrics
+              ? devtoMetrics.educationalValue
+              : 'N/A'
+          }
 
 **🎯 OPTIMIZATION INSIGHTS:**
 • Brand Voice: ${brandVoice.tone} tone, ${brandVoice.style} style
@@ -149,16 +202,18 @@ Content strategy confidence: ${contentStrategy.confidence || 0.8}`,
           devtoContent: devtoArticle,
           contentMetrics: {
             linkedin: linkedinMetrics,
-            devto: devtoMetrics
+            devto: devtoMetrics,
           },
           brandVoice,
           contentStrategy,
           toolsUsed: [
-            ...(state.metadata?.toolsUsed || []),
+            ...(Array.isArray(state.metadata?.toolsUsed)
+              ? state.metadata.toolsUsed
+              : []),
             'linkedin-content-generator',
             'devto-article-generator',
             'content-quality-analyzer',
-            'brand-voice-analysis'
+            'brand-voice-analysis',
           ],
           finalStage: true,
         },
@@ -211,16 +266,31 @@ ${fallbackContent}
     const linkedinPrompt = `Create an engaging LinkedIn post for ${username} that showcases their recent technical achievements for professional networking.
 
 **BRAND CONTEXT:**
-• Brand Positioning: ${brandStrategy?.positioning || 'Technical expert with proven track record'}
-• Brand Voice: ${brandVoice.tone || 'professional'} tone, ${brandVoice.style || 'informative'} style
+• Brand Positioning: ${
+      brandStrategy?.positioning || 'Technical expert with proven track record'
+    }
+• Brand Voice: ${brandVoice.tone || 'professional'} tone, ${
+      brandVoice.style || 'informative'
+    } style
 • Target Audience: Technical recruiters, engineering managers, and developer community
 
 **ACHIEVEMENTS TO HIGHLIGHT:**
-${achievements.slice(0, 3).map(a => `• ${a.description} (${a.impact} impact) - ${a.technologies?.join(', ')}`).join('\n')}
+${achievements
+  .slice(0, 3)
+  .map(
+    (a) =>
+      `• ${a.description} (${a.impact} impact) - ${a.technologies?.join(', ')}`
+  )
+  .join('\n')}
 
 **TECHNICAL CONTEXT:**
-• Primary Technologies: ${githubData?.patterns.primaryLanguages?.join(', ') || 'Modern web technologies'}
-• Recent Activity: ${githubData?.summary.totalCommits || 25} commits, ${githubData?.summary.productivityScore || 85}/100 productivity score
+• Primary Technologies: ${
+      githubData?.patterns.primaryLanguages?.join(', ') ||
+      'Modern web technologies'
+    }
+• Recent Activity: ${githubData?.summary.totalCommits || 25} commits, ${
+      githubData?.summary.productivityScore || 85
+    }/100 productivity score
 
 **LINKEDIN POST REQUIREMENTS:**
 • 200-300 words maximum (LinkedIn optimization)
@@ -234,13 +304,20 @@ ${achievements.slice(0, 3).map(a => `• ${a.description} (${a.impact} impact) -
 Write in first person, keep it authentic and engaging, and focus on the journey/learning rather than just bragging about achievements.`;
 
     try {
-      const linkedinPost = await this.llmProvider.generateResponse(linkedinPrompt, {
+      const llm = await this.llmProvider.getLLM({
         temperature: 0.6,
-        maxTokens: 400
+        maxTokens: 400,
       });
-      return linkedinPost;
+      const linkedinResponse = await llm.invoke([
+        { role: 'user', content: linkedinPrompt },
+      ]);
+      return linkedinResponse.content.toString();
     } catch (error) {
-      return this.createFallbackLinkedInPost(username, achievements, brandStrategy);
+      return this.createFallbackLinkedInPost(
+        username,
+        achievements,
+        brandStrategy
+      );
     }
   }
 
@@ -257,17 +334,39 @@ Write in first person, keep it authentic and engaging, and focus on the journey/
     const devtoPrompt = `Create an educational Dev.to article for ${username} that transforms their recent technical work into valuable learning content for the developer community.
 
 **BRAND CONTEXT:**
-• Brand Positioning: ${brandStrategy?.positioning || 'Technical educator and problem solver'}
-• Content Style: ${brandVoice.tone || 'accessible'} tone, ${brandVoice.style || 'educational'} approach
+• Brand Positioning: ${
+      brandStrategy?.positioning || 'Technical educator and problem solver'
+    }
+• Content Style: ${brandVoice.tone || 'accessible'} tone, ${
+      brandVoice.style || 'educational'
+    } approach
 • Target Audience: Developer community, junior developers, peers learning similar technologies
 
 **TECHNICAL ACHIEVEMENTS TO FEATURE:**
-${achievements.slice(0, 2).map(a => `• ${a.description}\n  - Impact: ${a.impact}\n  - Technologies: ${a.technologies?.join(', ')}\n  - Context: Can be turned into teaching moments`).join('\n\n')}
+${achievements
+  .slice(0, 2)
+  .map(
+    (a) =>
+      `• ${a.description}\n  - Impact: ${
+        a.impact
+      }\n  - Technologies: ${a.technologies?.join(
+        ', '
+      )}\n  - Context: Can be turned into teaching moments`
+  )
+  .join('\n\n')}
 
 **TECHNICAL CONTEXT:**
-• Primary Technologies: ${githubData?.patterns.primaryLanguages?.join(', ') || 'JavaScript, TypeScript, React'}
-• Development Patterns: ${githubData?.patterns.focusAreas?.join(', ') || 'Frontend, API development, testing'}
-• Work Style: ${githubData?.patterns.workingHours || 'Consistent'} development schedule
+• Primary Technologies: ${
+      githubData?.patterns.primaryLanguages?.join(', ') ||
+      'JavaScript, TypeScript, React'
+    }
+• Development Patterns: ${
+      githubData?.patterns.focusAreas?.join(', ') ||
+      'Frontend, API development, testing'
+    }
+• Work Style: ${
+      githubData?.patterns.workingHours || 'Consistent'
+    } development schedule
 
 **DEV.TO ARTICLE REQUIREMENTS:**
 • 800-1200 words with educational value
@@ -290,22 +389,32 @@ ${achievements.slice(0, 2).map(a => `• ${a.description}\n  - Impact: ${a.impac
 Focus on teaching and sharing knowledge rather than self-promotion. Make it valuable for the developer community.`;
 
     try {
-      const devtoArticle = await this.llmProvider.generateResponse(devtoPrompt, {
+      const llm = await this.llmProvider.getLLM({
         temperature: 0.5,
-        maxTokens: 1200
+        maxTokens: 1200,
       });
-      return devtoArticle;
+      const devtoResponse = await llm.invoke([
+        { role: 'user', content: devtoPrompt },
+      ]);
+      return devtoResponse.content.toString();
     } catch (error) {
-      return this.createFallbackDevToArticle(username, achievements, brandStrategy);
+      return this.createFallbackDevToArticle(
+        username,
+        achievements,
+        brandStrategy
+      );
     }
   }
 
   /**
    * Analyze content quality with platform-specific metrics
    */
-  private analyzeContentQuality(content: string, platform: 'linkedin' | 'devto' = 'linkedin') {
+  private analyzeContentQuality(
+    content: string,
+    platform: 'linkedin' | 'devto' = 'linkedin'
+  ) {
     const wordCount = content.split(/\s+/).length;
-    
+
     // Platform-specific analysis
     if (platform === 'linkedin') {
       return this.analyzeLinkedInQuality(content, wordCount);
@@ -316,53 +425,67 @@ Focus on teaching and sharing knowledge rather than self-promotion. Make it valu
 
   private analyzeLinkedInQuality(content: string, wordCount: number) {
     const lowerContent = content.toLowerCase();
-    
-    // LinkedIn-specific quality factors
-    const hasPersonalStory = lowerContent.includes('i ') || lowerContent.includes('my ');
-    const hasHashtags = content.includes('#');
-    const hasCallToAction = lowerContent.includes('what do you think') || 
-                           lowerContent.includes('let me know') ||
-                           lowerContent.includes('connect with me');
-    const hasEmoji = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(content);
-    const hasValue = lowerContent.includes('learn') || lowerContent.includes('insight');
 
-    const qualityScore = Math.min(10, 
+    // LinkedIn-specific quality factors
+    const hasPersonalStory =
+      lowerContent.includes('i ') || lowerContent.includes('my ');
+    const hasHashtags = content.includes('#');
+    const hasCallToAction =
+      lowerContent.includes('what do you think') ||
+      lowerContent.includes('let me know') ||
+      lowerContent.includes('connect with me');
+    const hasEmoji =
+      /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(
+        content
+      );
+    const hasValue =
+      lowerContent.includes('learn') || lowerContent.includes('insight');
+
+    const qualityScore = Math.min(
+      10,
       (hasPersonalStory ? 2 : 0) +
-      (hasHashtags ? 2 : 0) +
-      (hasCallToAction ? 2 : 0) +
-      (hasValue ? 2 : 0) +
-      (wordCount >= 150 && wordCount <= 300 ? 2 : 1) +
-      (hasEmoji ? 1 : 0)
+        (hasHashtags ? 2 : 0) +
+        (hasCallToAction ? 2 : 0) +
+        (hasValue ? 2 : 0) +
+        (wordCount >= 150 && wordCount <= 300 ? 2 : 1) +
+        (hasEmoji ? 1 : 0)
     );
 
     return {
       wordCount,
       qualityScore,
-      engagementLevel: qualityScore >= 7 ? 'High' : qualityScore >= 5 ? 'Medium' : 'Standard',
-      professionalQuality: qualityScore >= 6 ? 'LinkedIn-optimized' : 'Professional',
+      engagementLevel:
+        qualityScore >= 7 ? 'High' : qualityScore >= 5 ? 'Medium' : 'Standard',
+      professionalQuality:
+        qualityScore >= 6 ? 'LinkedIn-optimized' : 'Professional',
       hasPersonalStory,
       hasHashtags,
-      hasCallToAction
+      hasCallToAction,
     };
   }
 
   private analyzeDevToQuality(content: string, wordCount: number) {
     const lowerContent = content.toLowerCase();
-    
-    // Dev.to-specific quality factors  
-    const hasTechnicalDepth = lowerContent.includes('code') || lowerContent.includes('implementation');
-    const hasEducationalValue = lowerContent.includes('learn') || lowerContent.includes('how to');
-    const hasStructure = content.includes('#') || content.includes('##');
-    const hasPracticalExample = lowerContent.includes('example') || lowerContent.includes('```');
-    const hasLessonsLearned = lowerContent.includes('lesson') || lowerContent.includes('takeaway');
 
-    const qualityScore = Math.min(10,
+    // Dev.to-specific quality factors
+    const hasTechnicalDepth =
+      lowerContent.includes('code') || lowerContent.includes('implementation');
+    const hasEducationalValue =
+      lowerContent.includes('learn') || lowerContent.includes('how to');
+    const hasStructure = content.includes('#') || content.includes('##');
+    const hasPracticalExample =
+      lowerContent.includes('example') || lowerContent.includes('```');
+    const hasLessonsLearned =
+      lowerContent.includes('lesson') || lowerContent.includes('takeaway');
+
+    const qualityScore = Math.min(
+      10,
       (hasTechnicalDepth ? 2 : 0) +
-      (hasEducationalValue ? 2 : 0) +
-      (hasStructure ? 2 : 0) +
-      (hasPracticalExample ? 2 : 0) +
-      (hasLessonsLearned ? 1 : 0) +
-      (wordCount >= 800 ? 1 : 0)
+        (hasEducationalValue ? 2 : 0) +
+        (hasStructure ? 2 : 0) +
+        (hasPracticalExample ? 2 : 0) +
+        (hasLessonsLearned ? 1 : 0) +
+        (wordCount >= 800 ? 1 : 0)
     );
 
     return {
@@ -372,21 +495,29 @@ Focus on teaching and sharing knowledge rather than self-promotion. Make it valu
       educationalValue: hasEducationalValue ? 'High' : 'Medium',
       hasStructure,
       hasPracticalExample,
-      hasLessonsLearned
+      hasLessonsLearned,
     };
   }
 
   // Fallback content generators
-  private createFallbackLinkedInPost(username: string, achievements: any[], brandStrategy: any): string {
-    const topAchievement = achievements[0] || { 
+  private createFallbackLinkedInPost(
+    username: string,
+    achievements: any[],
+    brandStrategy: any
+  ): string {
+    const topAchievement = achievements[0] || {
       description: 'Delivered high-quality code solutions',
       impact: 'medium',
-      technologies: ['TypeScript', 'React']
+      technologies: ['TypeScript', 'React'],
     };
 
     return `🚀 Recently completed some exciting technical work that I wanted to share with my network!
 
-Just wrapped up ${topAchievement.description.toLowerCase()}, which had a ${topAchievement.impact} impact on our project outcomes. Working with ${topAchievement.technologies?.slice(0, 2).join(' and ')} has been an incredible learning experience.
+Just wrapped up ${topAchievement.description.toLowerCase()}, which had a ${
+      topAchievement.impact
+    } impact on our project outcomes. Working with ${topAchievement.technologies
+      ?.slice(0, 2)
+      .join(' and ')} has been an incredible learning experience.
 
 What I've learned through this process:
 • Technical excellence requires both depth and adaptability
@@ -397,21 +528,29 @@ The developer community continues to amaze me with its innovation and collaborat
 
 What's the most impactful technical project you've worked on recently? Let me know in the comments! 👇
 
-#SoftwareDeveloper #TechnicalGrowth #DeveloperCommunity #${topAchievement.technologies?.[0] || 'WebDev'}`;
+#SoftwareDeveloper #TechnicalGrowth #DeveloperCommunity #${
+      topAchievement.technologies?.[0] || 'WebDev'
+    }`;
   }
 
-  private createFallbackDevToArticle(username: string, achievements: any[], brandStrategy: any): string {
+  private createFallbackDevToArticle(
+    username: string,
+    achievements: any[],
+    brandStrategy: any
+  ): string {
     const achievement = achievements[0] || {
       description: 'performance optimization project',
       technologies: ['TypeScript', 'React'],
-      impact: 'high'
+      impact: 'high',
     };
 
     return `# Lessons Learned: ${achievement.description}
 
 ## Introduction
 
-As developers, we constantly face challenges that push us to grow and learn. Recently, I tackled a ${achievement.description} that taught me valuable lessons about modern web development and problem-solving approaches.
+As developers, we constantly face challenges that push us to grow and learn. Recently, I tackled a ${
+      achievement.description
+    } that taught me valuable lessons about modern web development and problem-solving approaches.
 
 ## The Challenge
 
@@ -430,7 +569,9 @@ After analyzing the problem, I decided to focus on:
 Before jumping into solutions, I spent time understanding why the issue existed in the first place. This helped me avoid band-aid fixes and focus on sustainable improvements.
 
 ### 2. Leveraging Modern Tools
-Working with ${achievement.technologies?.join(' and ') || 'modern JavaScript frameworks'} provided some excellent opportunities for optimization that weren't available in legacy codebases.
+Working with ${
+      achievement.technologies?.join(' and ') || 'modern JavaScript frameworks'
+    } provided some excellent opportunities for optimization that weren't available in legacy codebases.
 
 ### 3. Incremental Implementation
 Rather than attempting a complete rewrite, I implemented changes incrementally, testing each step thoroughly.
@@ -445,7 +586,9 @@ const optimizedFunction = () => {
 };
 \`\`\`
 
-The key insight was that ${achievement.impact} impact solutions often come from understanding the fundamentals rather than reaching for complex tools.
+The key insight was that ${
+      achievement.impact
+    } impact solutions often come from understanding the fundamentals rather than reaching for complex tools.
 
 ## Lessons Learned
 
@@ -461,7 +604,9 @@ The key insight was that ${achievement.impact} impact solutions often come from 
 
 ## Conclusion
 
-This project reinforced my belief that great software comes from combining technical skills with thoughtful problem-solving. The ${achievement.technologies?.join(' and ') || 'modern web development'} ecosystem provides powerful tools, but success still depends on understanding principles and applying them thoughtfully.
+This project reinforced my belief that great software comes from combining technical skills with thoughtful problem-solving. The ${
+      achievement.technologies?.join(' and ') || 'modern web development'
+    } ecosystem provides powerful tools, but success still depends on understanding principles and applying them thoughtfully.
 
 What's your approach to tackling complex technical challenges? Have you found similar patterns in your work? I'd love to hear about your experiences in the comments!
 
@@ -488,7 +633,7 @@ Tags: #webdev #javascript #typescript #performance #programming`;
 
 Key highlights from recent projects:
 • Implemented robust solutions with modern technology stacks
-• Focused on code quality and maintainable architecture  
+• Focused on code quality and maintainable architecture
 • Collaborated with amazing team members to deliver impact
 
 The developer community continues to inspire me with its innovation and knowledge sharing. Always learning something new!

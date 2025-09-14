@@ -43,6 +43,7 @@ import { HealthController } from './controllers/health.controller';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
+import { ShowcaseModule } from './showcase/showcase.module';
 
 @Module({
   imports: [
@@ -83,17 +84,16 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
     // PROPERLY CONFIGURED STREAMING MODULE
     StreamingModule.forRoot({
       ...getStreamingConfig(),
-      websocket: { 
-        enabled: true, 
-        port: 3000,  // Using main server port
-        namespace: '/streaming'
+      websocket: {
+        enabled: true,
+        port: 3000, // Using main server port
       },
-      gateway: { 
-        enabled: true, 
-        cors: true,
-        authentication: {
-          enabled: false,  // For development
-        }
+      gateway: {
+        enabled: true,
+        cors: {
+          origin: true,
+          credentials: true,
+        },
       },
     }),
 
@@ -102,9 +102,9 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
 
     // Workflow engine WITH STREAMING
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (streamingAdapter: StreamingServiceAdapter) => ({
+      useFactory: async (streamingAdapter: any) => ({
         ...getWorkflowEngineConfig(),
-        streamingAdapter,  // Enable streaming!
+        streamingAdapter, // Enable streaming!
       }),
       inject: [StreamingServiceAdapter],
     }),
@@ -116,7 +116,7 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
         checkpointManager: CheckpointManagerService
       ) => ({
         ...getMultiAgentConfig(),
-        streamingAdapter,  // Enable streaming!
+        streamingAdapter, // Enable streaming!
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
       inject: [StreamingServiceAdapter, CheckpointManagerService],
@@ -124,12 +124,9 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
 
     // Functional API with checkpoint AND STREAMING
     FunctionalApiModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: StreamingServiceAdapter,
-        checkpointManager: CheckpointManagerService
-      ) => ({
+      useFactory: async (streamingAdapter: any, checkpointManager: any) => ({
         ...getFunctionalApiConfig(),
-        streamingAdapter,  // Enable streaming!
+        streamingAdapter, // Enable streaming!
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
       inject: [StreamingServiceAdapter, CheckpointManagerService],
@@ -146,6 +143,7 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
 
     // Business modules
     BusinessWorkflowsModule,
+    ShowcaseModule,
   ],
   controllers: [
     HealthController,

@@ -296,9 +296,13 @@ export class PerformanceMonitorService {
    */
   private setupAutomaticQualityAdjustment(): void {
     // Monitor performance metrics and adjust quality automatically
-    setInterval(() => {
+    // Using requestAnimationFrame-based approach instead of setInterval for better performance
+    const checkQuality = () => {
       this.checkAndAdjustQuality();
-    }, 2000); // Check every 2 seconds
+      // Check every ~2 seconds (120 frames at 60fps)
+      setTimeout(() => requestAnimationFrame(checkQuality), 2000);
+    };
+    requestAnimationFrame(checkQuality);
   }
 
   /**

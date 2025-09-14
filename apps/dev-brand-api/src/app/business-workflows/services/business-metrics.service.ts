@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 import { StreamingServiceAdapter } from '@hive-academy/langgraph-streaming';
-import { 
-  BusinessImpact, 
-  CustomerSupportMetrics, 
-  CustomerSupportState, 
-  WorkflowExecutionState 
+import {
+  BusinessImpact,
+  CustomerSupportMetrics,
+  CustomerSupportState,
 } from '../types';
 
 /**
@@ -26,7 +25,8 @@ export class BusinessMetricsService {
   async trackCustomerSupport(execution: CustomerSupportState): Promise<void> {
     try {
       // Store execution data in Neo4j for relationship analysis
-      await this.neo4j.run(`
+      await this.neo4j.run(
+        `
         CREATE (e:Execution {
           id: $id,
           type: 'customer_support',
@@ -51,29 +51,31 @@ export class BusinessMetricsService {
         UNWIND $suggestedActions as action
         MERGE (a:Action {name: action})
         CREATE (e)-[:SUGGESTED]->(a)
-      `, {
-        id: execution.ticketId,
-        duration: execution.completedAt ? execution.completedAt - execution.startTime : null,
-        success: execution.status === 'completed',
-        escalated: execution.escalationRequired || false,
-        requiresApproval: execution.requiresApproval || false,
-        businessImpact: execution.analysis?.businessImpact || 'low',
-        sentiment: execution.analysis?.sentiment || 0,
-        complexity: execution.analysis?.complexity || 'moderate',
-        customerId: execution.ticket.customerId,
-        category: execution.ticket.category,
-        suggestedActions: execution.suggestedActions || [],
-        metadata: JSON.stringify(execution.metadata || {})
-      });
+      `,
+        {
+          id: execution.ticketId,
+          duration: execution.completedAt
+            ? execution.completedAt - execution.startTime
+            : null,
+          success: execution.status === 'completed',
+          escalated: execution.escalationRequired || false,
+          requiresApproval: execution.requiresApproval || false,
+          businessImpact: execution.analysis?.businessImpact || 'low',
+          sentiment: execution.analysis?.sentiment || 0,
+          complexity: execution.analysis?.complexity || 'moderate',
+          customerId: execution.ticket.customerId,
+          category: execution.ticket.category,
+          suggestedActions: execution.suggestedActions || [],
+          metadata: JSON.stringify(execution.metadata || {}),
+        }
+      );
 
       // Stream real-time metrics update
       const metrics = await this.calculateRealTimeMetrics();
-      this.streaming.broadcastMetric({
-        type: 'customer_support_metrics',
+      await this.streaming.emitEvent('customer_support_metrics', {
         data: metrics,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-
     } catch (error) {
       console.error('Error tracking customer support execution:', error);
     }
@@ -82,10 +84,12 @@ export class BusinessMetricsService {
   /**
    * Get comprehensive business impact analysis
    */
-  async getBusinessImpact(timeRange: 'day' | 'week' | 'month' | 'quarter' = 'month'): Promise<BusinessImpact> {
+  async getBusinessImpact(
+    timeRange: 'day' | 'week' | 'month' | 'quarter' = 'month'
+  ): Promise<BusinessImpact> {
     try {
       const duration = this.getTimeRangeDuration(timeRange);
-      
+
       const results = await this.neo4j.run(`
         MATCH (e:Execution {type: 'customer_support'})
         WHERE e.timestamp > datetime() - duration('${duration}')
@@ -122,22 +126,34 @@ export class BusinessMetricsService {
           sum(CASE WHEN e.businessImpact = 'high' THEN 1 ELSE 0 END) as highImpactIssues
       `);
 
-      if (!results || results.length === 0) {
+      if (!results || results.records.length === 0) {
         return this.getDefaultBusinessImpact();
       }
 
-      const data = results[0];
-      return {
-        avgResolutionTime: data.avgResolutionTime || 0,
-        ticketsResolved: data.resolvedTickets || 0,
-        escalationRate: data.totalTickets > 0 ? (data.escalations / data.totalTickets) : 0,
-        customerSatisfaction: this.sentimentToSatisfaction(data.avgSentiment || 0),
-        costSavings: data.estimatedCostSavings || 0,
-        timeToResolution: data.avgResolutionTime || 0,
-        agentProductivity: this.calculateProductivity(data),
-        customerRetention: this.calculateRetention(data.avgSentiment || 0)
-      };
+      const record = results.records[0];
+      const avgResolutionTime =
+        (record.get('avgResolutionTime') as number) || 0;
+      const totalTickets = (record.get('totalTickets') as number) || 0;
+      const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
+      const escalations = (record.get('escalations') as number) || 0;
+      const avgSentiment = (record.get('avgSentiment') as number) || 0;
+      const estimatedCostSavings =
+        (record.get('estimatedCostSavings') as number) || 0;
 
+      return {
+        avgResolutionTime,
+        ticketsResolved: resolvedTickets,
+        escalationRate: totalTickets > 0 ? escalations / totalTickets : 0,
+        customerSatisfaction: this.sentimentToSatisfaction(avgSentiment),
+        costSavings: estimatedCostSavings,
+        timeToResolution: avgResolutionTime,
+        agentProductivity: this.calculateProductivity({
+          avgResolutionTime,
+          totalTickets,
+          resolvedTickets,
+        }),
+        customerRetention: this.calculateRetention(avgSentiment),
+      };
     } catch (error) {
       console.error('Error calculating business impact:', error);
       return this.getDefaultBusinessImpact();
@@ -173,26 +189,34 @@ export class BusinessMetricsService {
                    ELSE null END) as avgResponseTime
       `);
 
-      if (!results || results.length === 0) {
+      if (!results || results.records.length === 0) {
         return this.getDefaultMetrics();
       }
 
-      const data = results[0];
-      const totalTickets = data.totalTickets || 0;
-      
+      const record = results.records[0];
+      const totalTickets = (record.get('totalTickets') as number) || 0;
+      const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
+      const avgResolutionTime =
+        (record.get('avgResolutionTime') as number) || 0;
+      const avgSatisfactionScore =
+        (record.get('avgSatisfactionScore') as number) || 3.0;
+      const escalations = (record.get('escalations') as number) || 0;
+      const automatedTickets = (record.get('automatedTickets') as number) || 0;
+      const avgResponseTime = (record.get('avgResponseTime') as number) || 0;
+
       return {
         totalTickets,
-        resolvedTickets: data.resolvedTickets || 0,
-        avgResolutionTime: data.avgResolutionTime || 0,
-        avgSatisfactionScore: data.avgSatisfactionScore || 3.0,
-        escalationRate: totalTickets > 0 ? (data.escalations / totalTickets) : 0,
-        automationRate: totalTickets > 0 ? (data.automatedTickets / totalTickets) : 0,
-        costSavings: this.calculateCostSavings(data),
-        responseTime: data.avgResponseTime || 0,
-        firstContactResolution: totalTickets > 0 ? ((data.resolvedTickets - data.escalations) / totalTickets) : 0,
-        customerSatisfactionTrend: await this.getSatisfactionTrend()
+        resolvedTickets,
+        avgResolutionTime,
+        avgSatisfactionScore,
+        escalationRate: totalTickets > 0 ? escalations / totalTickets : 0,
+        automationRate: totalTickets > 0 ? automatedTickets / totalTickets : 0,
+        costSavings: this.calculateCostSavings({ automatedTickets }),
+        responseTime: avgResponseTime,
+        firstContactResolution:
+          totalTickets > 0 ? (resolvedTickets - escalations) / totalTickets : 0,
+        customerSatisfactionTrend: await this.getSatisfactionTrend(),
       };
-
     } catch (error) {
       console.error('Error calculating real-time metrics:', error);
       return this.getDefaultMetrics();
@@ -218,8 +242,10 @@ export class BusinessMetricsService {
         RETURN collect(dailySatisfaction) as trend
       `);
 
-      if (results && results.length > 0 && results[0].trend) {
-        return results[0].trend.map((score: number) => Math.round(score * 100) / 100);
+      const record = results?.records?.[0];
+      const trend = record?.get('trend') as number[];
+      if (results && results.records.length > 0 && trend) {
+        return trend.map((score: number) => Math.round(score * 100) / 100);
       }
 
       // Return default trend if no data
@@ -233,9 +259,12 @@ export class BusinessMetricsService {
   /**
    * Get metrics for a specific customer
    */
-  async getCustomerMetrics(customerId: string): Promise<Partial<CustomerSupportMetrics>> {
+  async getCustomerMetrics(
+    customerId: string
+  ): Promise<Partial<CustomerSupportMetrics>> {
     try {
-      const results = await this.neo4j.run(`
+      const results = await this.neo4j.run(
+        `
         MATCH (c:Customer {id: $customerId})-[:HAD_SUPPORT]->(e:Execution {type: 'customer_support'})
         
         WITH c, e,
@@ -248,21 +277,29 @@ export class BusinessMetricsService {
           avg(e.duration) as avgResolutionTime,
           avg((e.sentiment + 1) * 2.5) as avgSatisfactionScore,
           sum(escalated) as escalations
-      `, { customerId });
+      `,
+        { customerId }
+      );
 
-      if (!results || results.length === 0) {
+      if (!results || results.records.length === 0) {
         return { totalTickets: 0, resolvedTickets: 0 };
       }
 
-      const data = results[0];
-      const totalTickets = data.totalTickets || 0;
+      const record = results.records[0];
+      const totalTickets = (record.get('totalTickets') as number) || 0;
+      const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
+      const avgResolutionTime =
+        (record.get('avgResolutionTime') as number) || 0;
+      const avgSatisfactionScore =
+        (record.get('avgSatisfactionScore') as number) || 3.0;
+      const escalations = (record.get('escalations') as number) || 0;
 
       return {
         totalTickets,
-        resolvedTickets: data.resolvedTickets || 0,
-        avgResolutionTime: data.avgResolutionTime || 0,
-        avgSatisfactionScore: data.avgSatisfactionScore || 3.0,
-        escalationRate: totalTickets > 0 ? (data.escalations / totalTickets) : 0
+        resolvedTickets,
+        avgResolutionTime,
+        avgSatisfactionScore,
+        escalationRate: totalTickets > 0 ? escalations / totalTickets : 0,
       };
     } catch (error) {
       console.error('Error getting customer metrics:', error);
@@ -274,10 +311,9 @@ export class BusinessMetricsService {
    * Stream metric update to connected clients
    */
   async streamMetricUpdate(metric: string, value: number): Promise<void> {
-    this.streaming.broadcastMetric({
-      type: 'metric_update',
+    await this.streaming.emitEvent('metric_update', {
       data: { [metric]: value },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -285,11 +321,16 @@ export class BusinessMetricsService {
 
   private getTimeRangeDuration(timeRange: string): string {
     switch (timeRange) {
-      case 'day': return 'P1D';
-      case 'week': return 'P7D';
-      case 'month': return 'P30D';
-      case 'quarter': return 'P90D';
-      default: return 'P30D';
+      case 'day':
+        return 'P1D';
+      case 'week':
+        return 'P7D';
+      case 'month':
+        return 'P30D';
+      case 'quarter':
+        return 'P90D';
+      default:
+        return 'P30D';
     }
   }
 
@@ -301,10 +342,11 @@ export class BusinessMetricsService {
   private calculateProductivity(data: any): number {
     // Calculate agent productivity based on resolution time and success rate
     const avgTime = data.avgResolutionTime || 1440; // Default 24 hours
-    const successRate = data.totalTickets > 0 ? (data.resolvedTickets / data.totalTickets) : 0;
-    
+    const successRate =
+      data.totalTickets > 0 ? data.resolvedTickets / data.totalTickets : 0;
+
     // Higher productivity = faster resolution + higher success rate
-    const timeScore = Math.max(0, 1 - (avgTime / 2880)); // Normalize against 48 hours
+    const timeScore = Math.max(0, 1 - avgTime / 2880); // Normalize against 48 hours
     return Math.round((timeScore * 0.5 + successRate * 0.5) * 100);
   }
 
@@ -319,7 +361,7 @@ export class BusinessMetricsService {
     const automatedTickets = data.automatedTickets || 0;
     const avgHumanCost = 25; // $25 per human-handled ticket
     const avgAiCost = 2; // $2 per AI-handled ticket
-    
+
     return automatedTickets * (avgHumanCost - avgAiCost);
   }
 
@@ -332,7 +374,7 @@ export class BusinessMetricsService {
       costSavings: 0,
       timeToResolution: 0,
       agentProductivity: 50,
-      customerRetention: 85
+      customerRetention: 85,
     };
   }
 
@@ -347,7 +389,7 @@ export class BusinessMetricsService {
       costSavings: 0,
       responseTime: 0,
       firstContactResolution: 0,
-      customerSatisfactionTrend: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+      customerSatisfactionTrend: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
     };
   }
 }
