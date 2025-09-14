@@ -12,6 +12,8 @@ import { FunctionalApiModuleInitializer } from './services/functional-api-module
 import {
   CHECKPOINT_ADAPTER_TOKEN,
   NoOpCheckpointAdapter,
+  STREAMING_SERVICE_TOKEN,
+  NoOpStreamingService,
 } from '@hive-academy/langgraph-core';
 import { FUNCTIONAL_API_MODULE_OPTIONS } from './constants/module.constants';
 import { setFunctionalApiConfig } from './utils/functional-api-config.accessor';
@@ -46,6 +48,12 @@ export class FunctionalApiModule {
           provide: CHECKPOINT_ADAPTER_TOKEN,
           useValue:
             normalizedOptions.checkpointAdapter || new NoOpCheckpointAdapter(),
+        },
+        // Streaming service provider - either provided or no-op
+        {
+          provide: STREAMING_SERVICE_TOKEN,
+          useValue:
+            normalizedOptions.streamingAdapter || new NoOpStreamingService(),
         },
         WorkflowValidator,
         WorkflowRegistrationService,
@@ -82,6 +90,18 @@ export class FunctionalApiModule {
             const normalizedOpts = this.normalizeOptions(opts);
             return (
               normalizedOpts.checkpointAdapter || new NoOpCheckpointAdapter()
+            );
+          },
+          inject: options.inject || [],
+        },
+        // Streaming service provider - async factory
+        {
+          provide: STREAMING_SERVICE_TOKEN,
+          useFactory: async (...args: unknown[]) => {
+            const opts = await options.useFactory!(...args);
+            const normalizedOpts = this.normalizeOptions(opts);
+            return (
+              normalizedOpts.streamingAdapter || new NoOpStreamingService()
             );
           },
           inject: options.inject || [],
@@ -181,8 +201,8 @@ export class FunctionalApiModule {
    */
   private static normalizeOptions(
     options: FunctionalApiModuleOptions
-  ): Required<Omit<FunctionalApiModuleOptions, 'checkpointAdapter'>> &
-    Pick<FunctionalApiModuleOptions, 'checkpointAdapter'> {
+  ): Required<Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'>> &
+    Pick<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'> {
     return {
       workflows: options.workflows ?? [],
       defaultTimeout: options.defaultTimeout ?? 30000,
@@ -194,6 +214,7 @@ export class FunctionalApiModule {
       enableCycleDetection: options.enableCycleDetection ?? true,
       globalMetadata: options.globalMetadata ?? {},
       checkpointAdapter: options.checkpointAdapter,
+      streamingAdapter: options.streamingAdapter,
     };
   }
 }

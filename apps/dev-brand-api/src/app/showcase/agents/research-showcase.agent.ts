@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Agent, StreamToken, StreamProgress } from '@hive-academy/langgraph-multi-agent';
-import { AgentState } from '@hive-academy/langgraph-multi-agent';
+import { Agent, AgentState, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
-import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { GitHubIntegrationTools } from '../tools/github-integration.tools';
 
 /**
@@ -278,3 +277,6 @@ Position as a **Senior Full-Stack Engineer** with expertise in modern web techno
 *Analysis based on contribution patterns, technology choices, and development practices*`;
   }
 }
+
+// Export alias for config compatibility
+export { GitHubAnalyzerAgent as ResearchShowcaseAgent };

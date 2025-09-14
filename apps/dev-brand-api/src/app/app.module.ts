@@ -122,13 +122,17 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
       inject: [StreamingServiceAdapter, CheckpointManagerService],
     }),
 
-    // Functional API with checkpoint
+    // Functional API with checkpoint AND STREAMING
     FunctionalApiModule.forRootAsync({
-      useFactory: async (checkpointManager: CheckpointManagerService) => ({
+      useFactory: async (
+        streamingAdapter: StreamingServiceAdapter,
+        checkpointManager: CheckpointManagerService
+      ) => ({
         ...getFunctionalApiConfig(),
+        streamingAdapter,  // Enable streaming!
         checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
       }),
-      inject: [CheckpointManagerService],
+      inject: [StreamingServiceAdapter, CheckpointManagerService],
     }),
 
     // Monitoring module

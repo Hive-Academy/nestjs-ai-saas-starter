@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Agent, StreamToken, StreamProgress } from '@hive-academy/langgraph-multi-agent';
-import { AgentState } from '@hive-academy/langgraph-multi-agent';
+import { Agent, AgentState, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
-import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { PersonalBrandMemoryService } from '../services/personal-brand-memory.service';
 
 /**
@@ -382,3 +381,6 @@ Position in the **top 20% of senior developers** by combining:
       .trim();
   }
 }
+
+// Export alias for config compatibility
+export { PersonalBrandStrategistAgent as AnalysisShowcaseAgent };

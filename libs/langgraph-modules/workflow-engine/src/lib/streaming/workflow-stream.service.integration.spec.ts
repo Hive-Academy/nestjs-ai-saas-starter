@@ -1,15 +1,11 @@
 import { Test } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Logger } from '@nestjs/common';
 import { WorkflowStreamService } from './workflow-stream.service';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import {
   type IStreamingService,
   STREAMING_SERVICE_TOKEN,
   NoOpStreamingService,
-  TokenStreamOptions,
-  ProgressData,
-  StreamEventData,
 } from '@hive-academy/langgraph-core';
 
 describe('WorkflowStreamService Integration', () => {
@@ -27,6 +23,8 @@ describe('WorkflowStreamService Integration', () => {
       streamProgress: jest.fn(),
       broadcastToExecution: jest.fn(),
       sendToClient: jest.fn(),
+      emitEvent: jest.fn(),
+      emitProgress: jest.fn(),
     };
 
     mockEventEmitter = {
@@ -72,8 +70,6 @@ describe('WorkflowStreamService Integration', () => {
     it('should use injected streaming service instead of console.log for token streaming', async () => {
       const executionId = 'test-exec-123';
       const nodeId = 'test-node-456';
-      const token = 'hello';
-      const metadata = { index: 0, totalTokens: 1, progress: 100 };
 
       // Create a stream
       service.createStream(executionId);

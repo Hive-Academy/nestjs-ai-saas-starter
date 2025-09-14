@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { 
   Workflow, 
   Entrypoint, 
-  Task, 
+  Task
+} from '@hive-academy/langgraph-functional-api';
+import { 
   StreamProgress, 
   StreamToken, 
-  StreamEvent, 
-  RequiresApproval 
+  StreamEvent,
+  StreamingServiceAdapter
 } from '@hive-academy/langgraph-streaming';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
+import { IStreamingService, STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
 import { CustomerSupportAgent } from '../agents/customer-support.agent';
 import { 
   CustomerSupportState, 
@@ -31,6 +35,8 @@ import {
 export class CustomerSupportWorkflow {
   constructor(
     private readonly supportAgent: CustomerSupportAgent,
+    @Inject(STREAMING_SERVICE_TOKEN)
+    private readonly streamingService: IStreamingService,
     // In a real implementation, these would be injected
     // private readonly responseGenerator: ResponseGeneratorService,
     // private readonly emailService: EmailService,
@@ -424,19 +430,40 @@ export class CustomerSupportWorkflow {
     // });
   }
 
-  // Streaming helper methods
-  private emitProgress(data: { ticketId: string; progress: number; message: string; currentStep: string }) {
-    // In a real implementation, this would emit through the streaming service
-    console.log(`[PROGRESS] ${data.ticketId}: ${data.progress}% - ${data.message}`);
+  // Streaming helper methods - NOW PROPERLY WIRED TO STREAMING SERVICE!
+  private async emitProgress(data: { ticketId: string; progress: number; message: string; currentStep: string }) {
+    if (this.streamingService) {
+      await this.streamingService.streamProgress(
+        data.ticketId,
+        'customer-support',
+        {
+          progress: data.progress,
+          message: data.message,
+          currentStep: data.currentStep
+        }
+      );
+    }
   }
 
   private emitStreamToken(data: { ticketId: string; nodeId: string; type: string; data: any }) {
-    // In a real implementation, this would emit through the streaming service
-    console.log(`[TOKEN] ${data.ticketId}/${data.nodeId}: ${data.type}`, data.data);
+    if (this.streamingService) {
+      this.streamingService.streamToken(
+        data.ticketId,
+        data.nodeId,
+        JSON.stringify({ type: data.type, ...data.data }),
+        { type: data.type, timestamp: new Date() }
+      );
+    }
   }
 
-  private emitStreamEvent(data: { ticketId: string; event: string; data: any }) {
-    // In a real implementation, this would emit through the streaming service
-    console.log(`[EVENT] ${data.ticketId}: ${data.event}`, data.data);
+  private async emitStreamEvent(data: { ticketId: string; event: string; data: any }) {
+    if (this.streamingService) {
+      await this.streamingService.emitEvent(data.event, {
+        executionId: data.ticketId,
+        event: data.event,
+        data: data.data,
+        timestamp: new Date()
+      });
+    }
   }
 }

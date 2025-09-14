@@ -174,6 +174,7 @@ export interface IStreamingService {
     nodeId: string,
     event: StreamEventData
   ): void;
+  emitEvent(eventType: string, data: any): Promise<void>;
 
   // Progress streaming
   streamProgress(
@@ -181,6 +182,7 @@ export interface IStreamingService {
     nodeId: string,
     progress: ProgressData
   ): void;
+  emitProgress(eventType: string, data: any): Promise<void>;
 
   // WebSocket integration
   broadcastToExecution(executionId: string, data: any): Promise<void>;
@@ -281,7 +283,15 @@ export class NoOpStreamingService implements IStreamingService {
     // no-op
   }
 
+  async emitEvent(): Promise<void> {
+    // no-op
+  }
+
   streamProgress(): void {
+    // no-op
+  }
+
+  async emitProgress(): Promise<void> {
     // no-op
   }
 

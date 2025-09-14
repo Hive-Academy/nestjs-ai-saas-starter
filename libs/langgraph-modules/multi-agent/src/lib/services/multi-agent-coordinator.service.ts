@@ -39,8 +39,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     @Inject(STREAMING_SERVICE_TOKEN)
     private readonly streamingService: IStreamingService
   ) {
-    // Mark streamingService as used - available for future streaming features
-    void this.streamingService;
+    // Initialize streaming service for multi-agent operations
+    this.initializeStreamingCapabilities();
   }
 
   async onModuleInit(): Promise<void> {
@@ -53,6 +53,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       const isConnected = await this.llmProvider.testLLM();
       if (isConnected) {
         this.logger.log('LLM connectivity verified');
+        // Initialize streaming for agent events
+        await this.setupAgentStreamingHooks();
       } else {
         this.logger.warn(
           'LLM connectivity test failed - workflows may not function properly'
@@ -138,7 +140,36 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       streamMode?: 'values' | 'updates' | 'messages';
     }
   ): Promise<MultiAgentResult> {
-    return this.networkManager.executeWorkflow(networkId, input);
+    const executionId = this.generateExecutionId(networkId);
+    
+    // Stream workflow start event
+    if (this.streamingService) {
+      await this.streamingService.emitEvent('workflow_start', {
+        executionId,
+        networkId,
+        input: { messageCount: input.messages.length },
+        timestamp: new Date(),
+        metadata: { agentCount: this.getNetworkConfig(networkId)?.agents?.length || 0 }
+      });
+    }
+
+    const result = await this.networkManager.executeWorkflow(networkId, input);
+
+    // Stream workflow completion event
+    if (this.streamingService && result) {
+      await this.streamingService.emitEvent('workflow_complete', {
+        executionId,
+        networkId,
+        result: {
+          success: result.success,
+          executionTime: result.executionTime,
+          executionPath: result.executionPath
+        },
+        timestamp: new Date()
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -152,7 +183,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       streamMode?: 'values' | 'updates' | 'messages';
     }
   ): AsyncGenerator<Partial<AgentState>, MultiAgentResult, unknown> {
-    return this.networkManager.streamWorkflow(networkId, input);
+    // Set up streaming bridge between networkManager and streaming service
+    return this.bridgeNetworkStreaming(networkId, input);
   }
 
   /**
@@ -523,6 +555,104 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    */
   private generateThreadId(networkId: string): string {
     return `multi-agent_${networkId}`;
+  }
+
+  /**
+   * Generate execution ID for streaming events
+   */
+  private generateExecutionId(networkId: string): string {
+    return `exec_${networkId}_${Date.now()}`;
+  }
+
+  /**
+   * Initialize streaming capabilities for multi-agent operations
+   */
+  private initializeStreamingCapabilities(): void {
+    this.logger.debug('Streaming service available:', !!this.streamingService);
+  }
+
+  /**
+   * Set up streaming hooks for agent events
+   */
+  private async setupAgentStreamingHooks(): Promise<void> {
+    if (!this.streamingService) {
+      this.logger.debug('Streaming service not available - skipping agent streaming hooks');
+      return;
+    }
+
+    this.logger.debug('Setting up agent streaming hooks');
+    // Additional streaming hook setup can be added here
+  }
+
+  /**
+   * Bridge streaming between networkManager and streaming service
+   */
+  private async* bridgeNetworkStreaming(
+    networkId: string,
+    input: {
+      messages: string[] | HumanMessage[];
+      config?: RunnableConfig;
+      streamMode?: 'values' | 'updates' | 'messages';
+    }
+  ): AsyncGenerator<Partial<AgentState>, MultiAgentResult, unknown> {
+    const executionId = this.generateExecutionId(networkId);
+
+    // Stream start event
+    if (this.streamingService) {
+      await this.streamingService.emitEvent('stream_start', {
+        executionId,
+        networkId,
+        timestamp: new Date()
+      });
+    }
+
+    // Get the original stream from network manager
+    const originalStream = this.networkManager.streamWorkflow(networkId, input);
+
+    try {
+      for await (const update of originalStream) {
+        // Stream progress events for each update
+        if (this.streamingService && update) {
+          await this.streamingService.emitEvent('agent_update', {
+            executionId,
+            networkId,
+            current: update.current,
+            timestamp: new Date(),
+            metadata: { messageCount: update.messages?.length || 0 }
+          });
+        }
+
+        yield update;
+      }
+
+      // Stream completion
+      if (this.streamingService) {
+        await this.streamingService.emitEvent('stream_complete', {
+          executionId,
+          networkId,
+          timestamp: new Date()
+        });
+      }
+    } catch (error) {
+      // Stream error
+      if (this.streamingService) {
+        await this.streamingService.emitEvent('stream_error', {
+          executionId,
+          networkId,
+          error: (error as Error).message,
+          timestamp: new Date()
+        });
+      }
+      throw error;
+    }
+
+    // Return from the generator (this won't be reached in normal iteration)
+    return {
+      finalState: {} as AgentState,
+      executionPath: [],
+      executionTime: 0,
+      success: true
+    };
   }
 
   // ============================================================================

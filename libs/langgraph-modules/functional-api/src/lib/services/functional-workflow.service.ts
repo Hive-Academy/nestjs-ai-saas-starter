@@ -23,10 +23,14 @@ import {
 } from '../errors/functional-workflow.errors';
 import {
   CHECKPOINT_ADAPTER_TOKEN,
-  ICheckpointAdapter,
   BaseCheckpoint,
   BaseCheckpointMetadata,
   BaseCheckpointTuple,
+  STREAMING_SERVICE_TOKEN,
+} from '@hive-academy/langgraph-core';
+import type {
+  ICheckpointAdapter,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -45,7 +49,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
     private readonly graphGenerator: GraphGeneratorService,
     private readonly validator: WorkflowValidator,
     @Inject(CHECKPOINT_ADAPTER_TOKEN)
-    private readonly checkpointAdapter: ICheckpointAdapter
+    private readonly checkpointAdapter: ICheckpointAdapter,
+    @Inject(STREAMING_SERVICE_TOKEN)
+    private readonly streamingService: IStreamingService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -109,7 +115,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       // Execute tasks in dependency order
       for (const taskName of executionOrder) {
         try {
-          this.emitStreamEvent({
+          await this.emitStreamEvent({
             type: 'task_start',
             taskName,
             timestamp: new Date(),
@@ -149,7 +155,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
             checkpointCount++;
           }
 
-          this.emitStreamEvent({
+          await this.emitStreamEvent({
             type: 'task_complete',
             taskName,
             state: result.state,
@@ -160,7 +166,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
           const taskError =
             error instanceof Error ? error : new Error(String(error));
 
-          this.emitStreamEvent({
+          await this.emitStreamEvent({
             type: 'task_error',
             taskName,
             error: taskError,
@@ -186,7 +192,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         checkpointCount,
       };
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_complete',
         state: currentState,
         timestamp: new Date(),
@@ -210,7 +216,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
               { executionId }
             );
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_error',
         error: executionError,
         timestamp: new Date(),
@@ -411,7 +417,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
       this.logger.debug(`Checkpoint saved for execution ${executionId}`);
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'checkpoint_saved',
         timestamp: new Date(),
         metadata: { executionId, checkpointId: checkpoint.id },
@@ -426,9 +432,32 @@ export class FunctionalWorkflowService implements OnModuleInit {
   }
 
   /**
-   * Emits a stream event
+   * Emits a stream event through the streaming service
    */
-  private emitStreamEvent(event: WorkflowStreamEvent): void {
+  private async emitStreamEvent(event: WorkflowStreamEvent): Promise<void> {
+    if (this.options.enableStreaming && this.streamingService) {
+      try {
+        // Use streamEvent method instead of emitEvent which doesn't exist yet
+        this.streamingService.streamEvent(
+          event.metadata?.executionId as string || 'unknown',
+          event.taskName || 'unknown',
+          {
+            type: event.type,
+            data: {
+              taskName: event.taskName,
+              state: event.state,
+              error: event.error,
+              timestamp: event.timestamp,
+              metadata: event.metadata
+            }
+          }
+        );
+      } catch (error) {
+        this.logger.warn('Failed to emit workflow stream event:', error);
+      }
+    }
+    
+    // Keep internal Subject for backward compatibility
     if (this.options.enableStreaming) {
       this.streamSubject.next(event);
     }
@@ -615,7 +644,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         ...options.initialState,
       } as TState;
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_start',
         timestamp: new Date(),
         metadata: {
@@ -685,7 +714,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         checkpointCount,
       };
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_complete',
         state: finalState,
         timestamp: new Date(),
@@ -714,7 +743,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
               { executionId }
             );
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_error',
         error: executionError,
         timestamp: new Date(),

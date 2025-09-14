@@ -228,6 +228,65 @@ export class StreamingServiceAdapter implements IStreamingService {
   private isStreamUpdate(data: any): data is StreamUpdate {
     return data && typeof data === 'object' && 'type' in data && 'data' in data;
   }
+
+  // High-level event emission methods
+  async emitEvent(eventType: string, data: any): Promise<void> {
+    try {
+      const streamEventType = this.mapEventTypeToStreamEventType(eventType);
+      const update: StreamUpdate = {
+        type: streamEventType,
+        data,
+        metadata: {
+          timestamp: new Date(),
+          sequenceNumber: Date.now(),
+          executionId: data.executionId || 'unknown',
+        },
+      };
+
+      // Process the event through the event processor
+      this.eventStreamProcessor.processEvent(update);
+
+      // Broadcast to all relevant clients
+      if (data.executionId) {
+        await this.webSocketBridge.broadcastToExecution(data.executionId, update);
+      }
+
+      this.logger.debug(`Emitted event ${eventType}`, { data });
+    } catch (error) {
+      this.logger.error(`Failed to emit event ${eventType}:`, error);
+      throw error;
+    }
+  }
+
+  async emitProgress(eventType: string, data: any): Promise<void> {
+    try {
+      const update: StreamUpdate = {
+        type: StreamEventType.PROGRESS,
+        data: {
+          ...data,
+          eventType,
+        },
+        metadata: {
+          timestamp: new Date(),
+          sequenceNumber: Date.now(),
+          executionId: data.executionId || 'unknown',
+        },
+      };
+
+      // Process progress through the event processor
+      this.eventStreamProcessor.processEvent(update);
+
+      // Broadcast progress to clients
+      if (data.executionId) {
+        await this.webSocketBridge.broadcastToExecution(data.executionId, update);
+      }
+
+      this.logger.debug(`Emitted progress ${eventType}`, { data });
+    } catch (error) {
+      this.logger.error(`Failed to emit progress ${eventType}:`, error);
+      throw error;
+    }
+  }
 }
 
 /**

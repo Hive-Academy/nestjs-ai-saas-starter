@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Agent, StreamToken } from '@hive-academy/langgraph-streaming';
+import { Agent } from '@hive-academy/langgraph-multi-agent';
+import { StreamToken } from '@hive-academy/langgraph-streaming';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 import { 
