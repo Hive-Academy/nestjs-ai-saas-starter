@@ -14,7 +14,7 @@ html, body {
 }
 
 .main-content {
-  margin-left: 60px;
+  /* margin-left: 60px; */
   min-height: 100vh;
   transition: margin-left 0.3s ease;
   position: relative;
@@ -29,7 +29,7 @@ body.nav-expanded .main-content {
   .main-content {
     margin-left: 0;
   }
-  
+
   body.nav-expanded .main-content {
     margin-left: 0;
   }

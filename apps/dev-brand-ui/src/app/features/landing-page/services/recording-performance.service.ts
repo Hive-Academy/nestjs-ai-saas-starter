@@ -27,7 +27,7 @@ export interface OptimizationLevel {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RecordingPerformanceService {
   private readonly _isRecordingMode = signal(false);
@@ -36,9 +36,11 @@ export class RecordingPerformanceService {
     frameTime: 16.67,
     memoryUsage: 0,
     renderTime: 0,
-    frameDrops: 0
+    frameDrops: 0,
   });
-  private readonly _optimizationLevel = signal<OptimizationLevel>(this.getOptimalConfig());
+  private readonly _optimizationLevel = signal<OptimizationLevel>(
+    this.getOptimalConfig()
+  );
 
   // Performance monitoring
   private performanceMonitor?: number;
@@ -57,9 +59,9 @@ export class RecordingPerformanceService {
         antiAliasing: true,
         motionBlur: true,
         bloomEffect: true,
-        enableGpuAcceleration: true
+        enableGpuAcceleration: true,
       },
-      description: 'Maximum visual quality for high-end recording setups'
+      description: 'Maximum visual quality for high-end recording setups',
     },
     {
       name: 'Balanced Quality',
@@ -70,9 +72,10 @@ export class RecordingPerformanceService {
         antiAliasing: true,
         motionBlur: false,
         bloomEffect: true,
-        enableGpuAcceleration: true
+        enableGpuAcceleration: true,
       },
-      description: 'Balanced quality and performance for most recording scenarios'
+      description:
+        'Balanced quality and performance for most recording scenarios',
     },
     {
       name: 'Performance',
@@ -83,9 +86,10 @@ export class RecordingPerformanceService {
         antiAliasing: false,
         motionBlur: false,
         bloomEffect: false,
-        enableGpuAcceleration: true
+        enableGpuAcceleration: true,
       },
-      description: 'Optimized for consistent 60fps recording on lower-end hardware'
+      description:
+        'Optimized for consistent 60fps recording on lower-end hardware',
     },
     {
       name: 'Recording Optimized',
@@ -96,10 +100,10 @@ export class RecordingPerformanceService {
         antiAliasing: false,
         motionBlur: false,
         bloomEffect: false,
-        enableGpuAcceleration: true
+        enableGpuAcceleration: true,
       },
-      description: 'Maximum performance for smooth screen recording'
-    }
+      description: 'Maximum performance for smooth screen recording',
+    },
   ];
 
   readonly isRecordingMode = this._isRecordingMode.asReadonly();
@@ -108,8 +112,8 @@ export class RecordingPerformanceService {
 
   readonly isPerformanceOptimal = computed(() => {
     const metrics = this._currentMetrics();
-    const config = this._optimizationLevel().config;
-    return metrics.fps >= config.targetFps - 5; // 5fps tolerance
+    const config = this._optimizationLevel()?.config;
+    return metrics.fps >= config?.targetFps - 5; // 5fps tolerance
   });
 
   readonly performanceGrade = computed(() => {
@@ -150,7 +154,7 @@ export class RecordingPerformanceService {
    * Set optimization level
    */
   setOptimizationLevel(levelName: string): void {
-    const level = this.optimizationLevels.find(l => l.name === levelName);
+    const level = this.optimizationLevels.find((l) => l.name === levelName);
     if (level) {
       this._optimizationLevel.set(level);
       if (this._isRecordingMode()) {
@@ -169,20 +173,24 @@ export class RecordingPerformanceService {
     if (currentFps < targetFps - 10) {
       // Performance is poor, move to more optimized level
       const currentIndex = this.optimizationLevels.findIndex(
-        l => l.name === this._optimizationLevel().name
+        (l) => l.name === this._optimizationLevel().name
       );
 
       if (currentIndex < this.optimizationLevels.length - 1) {
-        this.setOptimizationLevel(this.optimizationLevels[currentIndex + 1].name);
+        this.setOptimizationLevel(
+          this.optimizationLevels[currentIndex + 1].name
+        );
       }
     } else if (currentFps > targetFps + 5) {
       // Performance is good, can move to higher quality
       const currentIndex = this.optimizationLevels.findIndex(
-        l => l.name === this._optimizationLevel().name
+        (l) => l.name === this._optimizationLevel().name
       );
 
       if (currentIndex > 0) {
-        this.setOptimizationLevel(this.optimizationLevels[currentIndex - 1].name);
+        this.setOptimizationLevel(
+          this.optimizationLevels[currentIndex - 1].name
+        );
       }
     }
   }
@@ -231,7 +239,7 @@ export class RecordingPerformanceService {
       metrics: metrics,
       grade: this.performanceGrade(),
       isOptimal: this.isPerformanceOptimal(),
-      recommendations: this.getPerformanceRecommendations()
+      recommendations: this.getPerformanceRecommendations(),
     };
 
     return JSON.stringify(report, null, 2);
@@ -250,7 +258,11 @@ export class RecordingPerformanceService {
     const renderer = gl.getParameter(gl.RENDERER);
     // const vendor = gl.getParameter(gl.VENDOR);
 
-    if (renderer.includes('RTX') || renderer.includes('GTX 1080') || renderer.includes('RX 6')) {
+    if (
+      renderer.includes('RTX') ||
+      renderer.includes('GTX 1080') ||
+      renderer.includes('RX 6')
+    ) {
       return this.optimizationLevels[0]; // Ultra Quality
     } else if (renderer.includes('GTX') || renderer.includes('RX')) {
       return this.optimizationLevels[1]; // Balanced Quality
@@ -264,16 +276,37 @@ export class RecordingPerformanceService {
     const root = document.documentElement;
 
     // Apply CSS custom properties for optimization
-    root.style.setProperty('--particle-density', config.particleDensity.toString());
+    root.style.setProperty(
+      '--particle-density',
+      config.particleDensity.toString()
+    );
     root.style.setProperty('--shadow-quality', config.shadowQuality);
-    root.style.setProperty('--anti-aliasing', config.antiAliasing ? 'enabled' : 'disabled');
-    root.style.setProperty('--motion-blur', config.motionBlur ? 'enabled' : 'disabled');
-    root.style.setProperty('--bloom-effect', config.bloomEffect ? 'enabled' : 'disabled');
-    root.style.setProperty('--gpu-acceleration', config.enableGpuAcceleration ? 'enabled' : 'disabled');
+    root.style.setProperty(
+      '--anti-aliasing',
+      config.antiAliasing ? 'enabled' : 'disabled'
+    );
+    root.style.setProperty(
+      '--motion-blur',
+      config.motionBlur ? 'enabled' : 'disabled'
+    );
+    root.style.setProperty(
+      '--bloom-effect',
+      config.bloomEffect ? 'enabled' : 'disabled'
+    );
+    root.style.setProperty(
+      '--gpu-acceleration',
+      config.enableGpuAcceleration ? 'enabled' : 'disabled'
+    );
 
     // Apply global optimization classes
-    document.body.classList.toggle('recording-optimized', this._isRecordingMode());
-    document.body.classList.toggle('performance-mode', config.particleDensity < 0.5);
+    document.body.classList.toggle(
+      'recording-optimized',
+      this._isRecordingMode()
+    );
+    document.body.classList.toggle(
+      'performance-mode',
+      config.particleDensity < 0.5
+    );
 
     // Optimize GSAP settings for recording
     gsap.config({
@@ -316,14 +349,18 @@ export class RecordingPerformanceService {
       if (deltaTime >= 1000) {
         const fps = Math.round((this.frameCount * 1000) / deltaTime);
         const frameTime = deltaTime / this.frameCount;
-        const frameDrops = fps < this.frameDropThreshold ?
-          this._currentMetrics().frameDrops + 1 : this._currentMetrics().frameDrops;
+        const frameDrops =
+          fps < this.frameDropThreshold
+            ? this._currentMetrics().frameDrops + 1
+            : this._currentMetrics().frameDrops;
 
         // Get memory usage if available
         let memoryUsage = 0;
         if ('memory' in performance) {
           const memory = (performance as any).memory;
-          memoryUsage = Math.round((memory.usedJSHeapSize / memory.totalJSHeapSize) * 100);
+          memoryUsage = Math.round(
+            (memory.usedJSHeapSize / memory.totalJSHeapSize) * 100
+          );
         }
 
         this._currentMetrics.set({
@@ -331,7 +368,7 @@ export class RecordingPerformanceService {
           frameTime,
           memoryUsage,
           renderTime: frameTime,
-          frameDrops
+          frameDrops,
         });
 
         // Auto-adjust optimization if performance is poor

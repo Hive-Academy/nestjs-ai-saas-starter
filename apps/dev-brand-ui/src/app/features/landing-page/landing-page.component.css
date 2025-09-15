@@ -1,135 +1,286 @@
- /* Essential CSS that cannot be replicated with Tailwind utilities */
+Essential CSS that cannot be replicated with Tailwind utilities
 
-    /* Recording Mode CSS Variables */
-    .recording-mode {
-      --particle-density: 0.3;
-      --render-quality: performance;
-      --gpu-acceleration: enabled;
-    }
+/* Recording Mode CSS Variables */
+.recording-mode {
+  --particle-density: 0.3;
+  --render-quality: performance;
+  --gpu-acceleration: enabled;
+}
 
-    .fully-loaded {
-      --particle-density: 1.0;
-      --render-quality: high;
-    }
+.fully-loaded {
+  --particle-density: 1;
+  --render-quality: high;
+}
 
-    /* FullPage.js mode overrides */
-    .fullpage-enabled {
-      scroll-snap-type: none !important;
-    }
+/* FullPage.js mode overrides */
+.fullpage-enabled {
+  scroll-snap-type: none !important;
+}
 
-    .fullpage-enabled section {
-      scroll-snap-align: none !important;
-      scroll-snap-stop: normal !important;
-    }
+.fullpage-enabled section {
+  scroll-snap-align: none !important;
+  scroll-snap-stop: normal !important;
+}
 
-    /* Animation classes for section entrance */
-    .animate-in {
-      animation: slideInUp 1s ease-out forwards;
-    }
+/* Animation classes for section entrance */
+.animate-in {
+  animation: slideInUp 1s ease-out forwards;
+}
 
-    @keyframes slideInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-    /* Performance optimizations */
-    .w-screen {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      transform: translateZ(0); /* Force hardware acceleration */
-    }
+/* Performance optimizations */
+:host {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
 
-    /* Mobile viewport height fix */
-    @media (max-width: 768px) {
-      .h-screen {
-        height: 100vh;
-        height: 100svh; /* Safari iOS support */
-      }
+/* Mobile viewport height fix */
+@media (max-width: 768px) {
+  .h-screen {
+    height: 100vh;
+    height: 100svh; /* Safari iOS support */
+  }
 
-      /* Mobile control adjustments */
-      .fixed.top-5.right-5 {
-        top: 10px;
-        right: 10px;
-        transform: scale(0.9);
-      }
+  /* Mobile control adjustments */
+  .fixed.top-5.right-5 {
+    top: 10px;
+    right: 10px;
+    transform: scale(0.9);
+  }
 
-      .grid.grid-cols-2 {
-        grid-template-columns: 1fr;
-      }
+  .grid.grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
 
-      .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-auto-fit {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
+  .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-auto-fit {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 
-      .text-3xl {
-        font-size: 1.5rem;
-      }
-    }
+  .text-3xl {
+    font-size: 1.5rem;
+  }
+}
 
-    /* Tablet optimizations */
-    @media (min-width: 769px) and (max-width: 1024px) {
-      .fixed.top-5.right-5 {
-        transform: scale(0.95);
-      }
+/* Tablet optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .fixed.top-5.right-5 {
+    transform: scale(0.95);
+  }
 
-      .p-8 {
-        padding: 1.5rem;
-      }
+  .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-auto-fit {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-      .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-auto-fit {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
+/* High DPI display adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .h-1 {
+    border-radius: 2px;
+  }
+}
 
-    /* Large screen optimizations */
-    @media (min-width: 1400px) {
-      .p-8 {
-        padding: 3rem;
-      }
-    }
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .transition-all,
+  .transition-opacity {
+    animation: none;
+    transition: none;
+  }
+}
 
-    /* High DPI display adjustments */
-    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-      .h-1 {
-        border-radius: 2px;
-      }
-    }
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  :host {
+    color-scheme: dark;
+  }
+}
 
-    /* Reduced motion support */
-    @media (prefers-reduced-motion: reduce) {
-      .animate-in,
-      .transition-all,
-      .transition-opacity {
-        animation: none;
-        transition: none;
-      }
-    }
+/* Loading Overlay Styles */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d2d5f 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+}
 
-    /* Dark mode enhancements */
-    @media (prefers-color-scheme: dark) {
-      .w-screen {
-        color-scheme: dark;
-      }
-    }
+.loading-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
 
-    /* Print styles */
-    @media print {
-      .fixed,
-      .loading-overlay {
-        display: none;
-      }
+.loading-content {
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  padding: 2rem;
+}
 
-      .w-screen {
-        background: white !important;
-        color: black !important;
-      }
-    }
+.loading-header h2 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  color: #8a2be2;
+}
+
+.loading-header p {
+  font-size: 1.1rem;
+  margin: 0 0 2rem 0;
+  opacity: 0.8;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(138, 43, 226, 0.3);
+  border-top: 3px solid #8a2be2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 2rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-progress {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.loading-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8a2be2 0%, #ff69b4 100%);
+  transition: width 0.3s ease;
+}
+
+.loading-stage-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.stage-text {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #8a2be2;
+}
+
+.section-loading-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.section-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.section-status.loaded .section-icon {
+  background: #32cd32;
+}
+
+.section-status.error .section-icon {
+  background: #ff4444;
+}
+
+.section-progress {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.section-progress-fill {
+  height: 100%;
+  background: #8a2be2;
+  transition: width 0.3s ease;
+}
+
+/* Performance Monitor Styles */
+.performance-monitor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+}
+
+.performance-monitor.warning {
+  border-color: rgba(255, 165, 0, 0.6);
+}
+
+.fps-display {
+  color: #32cd32;
+}
+
+.grade-display {
+  font-weight: bold;
+}
+
+.grade-a { color: #32cd32; }
+.grade-b { color: #90ee90; }
+.grade-c { color: #ffd700; }
+.grade-d { color: #ffa500; }
+.grade-f { color: #ff4444; }
+
+/* Print styles */
+@media print {
+  .fixed,
+  .loading-overlay {
+    display: none;
+  }
+
+  :host {
+    background: white !important;
+    color: black !important;
+  }
+}

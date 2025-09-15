@@ -112,6 +112,7 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Mark as loaded for transition effect
       setTimeout(() => {
+        this.loadingStateService.completeLoading();
         this.isLoaded.set(true);
         this.showCinematicControls.set(true);
       }, 500);
@@ -283,7 +284,8 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   exportDemoInfo(): void {
     const demoInfo = this.cinematicScrollService.getDemoInformation();
-    const performanceReport = this.recordingPerformanceService.exportPerformanceReport();
+    const performanceReport =
+      this.recordingPerformanceService.exportPerformanceReport();
 
     const fullReport = {
       timestamp: new Date().toISOString(),
@@ -291,8 +293,10 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
       timings: demoInfo.timings,
       performance: JSON.parse(performanceReport),
       narrativeFlows: this.sectionTransitionService.getAllNarrativeFlows(),
-      loadingMetrics: JSON.parse(this.loadingStateService.exportLoadingMetrics()),
-      sectionSummary: this.loadingStateService.getSectionLoadingSummary()
+      loadingMetrics: JSON.parse(
+        this.loadingStateService.exportLoadingMetrics()
+      ),
+      sectionSummary: this.loadingStateService.getSectionLoadingSummary(),
     };
 
     // Create and download the report
@@ -330,11 +334,15 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
         if (isMobile && optimizationLevel === 'Ultra Quality') {
           optimizationLevel = 'Performance';
           this.selectedOptimization.set(optimizationLevel);
-          this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
+          this.recordingPerformanceService.setOptimizationLevel(
+            optimizationLevel
+          );
         } else if (!isMobile && optimizationLevel === 'Performance') {
           optimizationLevel = 'Balanced Quality';
           this.selectedOptimization.set(optimizationLevel);
-          this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
+          this.recordingPerformanceService.setOptimizationLevel(
+            optimizationLevel
+          );
         }
 
         // Update fullPage timing for device
