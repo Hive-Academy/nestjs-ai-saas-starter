@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { KnowledgeBaseService } from './knowledge-base.service';
-import type {
-  KnowledgeSearchQuery,
-} from '../types';
+import type { KnowledgeSearchQuery } from '../types';
 
 /**
  * Knowledge Base Management Service
@@ -10,10 +8,7 @@ import type {
  */
 @Injectable()
 export class KnowledgeBaseManagementService {
-
-  constructor(
-    private readonly knowledgeBaseService: KnowledgeBaseService
-  ) {}
+  constructor(private readonly knowledgeBaseService: KnowledgeBaseService) {}
 
   /**
    * Search knowledge base
@@ -106,8 +101,9 @@ export class KnowledgeBaseManagementService {
    */
   async getKnowledgeBaseStats() {
     try {
-      const analytics = await this.knowledgeBaseService.getKnowledgeBaseAnalytics();
-      
+      const analytics =
+        await this.knowledgeBaseService.getKnowledgeBaseAnalytics();
+
       return {
         success: true,
         data: {
@@ -134,7 +130,7 @@ export class KnowledgeBaseManagementService {
   /**
    * Get most popular articles
    */
-  async getPopularArticles(limit: number = 10) {
+  async getPopularArticles(limit = 10) {
     try {
       // This would be implemented with actual data from the knowledge base
       const popularArticles = [
@@ -189,7 +185,9 @@ export class KnowledgeBaseManagementService {
           title: 'Legacy API documentation',
           category: 'API',
           reason: 'Outdated content',
-          lastUpdated: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+          lastUpdated: new Date(
+            Date.now() - 90 * 24 * 60 * 60 * 1000
+          ).toISOString(),
           priority: 'high',
         },
         {
@@ -197,7 +195,9 @@ export class KnowledgeBaseManagementService {
           title: 'Mobile app troubleshooting',
           category: 'Mobile',
           reason: 'Low user satisfaction',
-          lastUpdated: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastUpdated: new Date(
+            Date.now() - 30 * 24 * 60 * 60 * 1000
+          ).toISOString(),
           priority: 'medium',
         },
       ];
@@ -227,9 +227,11 @@ export class KnowledgeBaseManagementService {
         'account settings',
         'API documentation',
         'mobile app support',
-      ].filter(suggestion => 
-        suggestion.toLowerCase().includes(partialQuery.toLowerCase())
-      ).slice(0, 5);
+      ]
+        .filter((suggestion) =>
+          suggestion.toLowerCase().includes(partialQuery.toLowerCase())
+        )
+        .slice(0, 5);
 
       return {
         success: true,
@@ -256,14 +258,20 @@ export class KnowledgeBaseManagementService {
           searchVolume: 45,
           successRate: 0.2,
           priority: 'high',
-          suggestedActions: ['Create comprehensive API guide', 'Add code examples'],
+          suggestedActions: [
+            'Create comprehensive API guide',
+            'Add code examples',
+          ],
         },
         {
           topic: 'Enterprise security features',
           searchVolume: 32,
           successRate: 0.3,
           priority: 'medium',
-          suggestedActions: ['Update security documentation', 'Add compliance guides'],
+          suggestedActions: [
+            'Update security documentation',
+            'Add compliance guides',
+          ],
         },
       ];
 
@@ -272,7 +280,10 @@ export class KnowledgeBaseManagementService {
         data: {
           gaps: contentGaps,
           totalGaps: contentGaps.length,
-          impactScore: contentGaps.reduce((sum, gap) => sum + gap.searchVolume, 0),
+          impactScore: contentGaps.reduce(
+            (sum, gap) => sum + gap.searchVolume,
+            0
+          ),
           recommendations: this.generateContentRecommendations(contentGaps),
         },
       };
@@ -290,7 +301,7 @@ export class KnowledgeBaseManagementService {
     return gaps
       .sort((a, b) => b.searchVolume - a.searchVolume)
       .slice(0, 3)
-      .map(gap => ({
+      .map((gap) => ({
         topic: gap.topic,
         priority: gap.priority,
         estimatedImpact: gap.searchVolume * (1 - gap.successRate),

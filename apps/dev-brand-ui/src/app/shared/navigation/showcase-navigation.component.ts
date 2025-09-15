@@ -1,5 +1,5 @@
 import { Component, inject, signal, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -21,7 +21,7 @@ interface NavItem {
 @Component({
   selector: 'brand-showcase-navigation',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   template: `
     <nav class="showcase-nav" [class.expanded]="isExpanded()">
       <div class="nav-header">

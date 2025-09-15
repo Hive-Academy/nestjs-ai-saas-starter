@@ -11,7 +11,7 @@ import {
   ViewChild,
   ElementRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TooltipData } from '../services/agent-interaction.service';
 
 export interface TooltipConfig {
@@ -43,8 +43,9 @@ export interface ActivityItem {
 @Component({
   selector: 'brand-agent-tooltip',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
+    @if (tooltipData) {
     <div
       #tooltipElement
       class="agent-tooltip"
@@ -54,7 +55,6 @@ export interface ActivityItem {
       [style.top.px]="position().y"
       [style.max-width.px]="config?.maxWidth || 320"
       [style.max-height.px]="config?.maxHeight || 400"
-      *ngIf="tooltipData"
     >
       <!-- Agent Header -->
       <div class="tooltip-header">
@@ -77,18 +77,14 @@ export interface ActivityItem {
             <div class="agent-type">{{ tooltipData.agent.type }}</div>
           </div>
         </div>
-
         <div class="agent-status" [class]="getStatusClass()">
           <div class="status-indicator"></div>
           <span class="status-text">{{ getStatusText() }}</span>
         </div>
       </div>
-
       <!-- Agent Capabilities -->
-      <div
-        class="tooltip-section capabilities-section"
-        *ngIf="config?.showCapabilities && hasCapabilities()"
-      >
+      @if (config?.showCapabilities && hasCapabilities()) {
+      <div class="tooltip-section capabilities-section">
         <div class="section-header">
           <svg
             width="14"
@@ -103,21 +99,18 @@ export interface ActivityItem {
           <span>Capabilities</span>
         </div>
         <div class="capabilities-list">
-          <div
-            class="capability-item"
-            *ngFor="let capability of tooltipData.agent.capabilities"
-            [title]="capability"
-          >
+          @for (capability of tooltipData.agent.capabilities; track capability)
+          {
+          <div class="capability-item" [title]="capability">
             {{ capability }}
           </div>
+          }
         </div>
       </div>
-
+      }
       <!-- Current Tools -->
-      <div
-        class="tooltip-section tools-section"
-        *ngIf="config?.showTools && hasActiveTools()"
-      >
+      @if (config?.showTools && hasActiveTools()) {
+      <div class="tooltip-section tools-section">
         <div class="section-header">
           <svg
             width="14"
@@ -134,14 +127,12 @@ export interface ActivityItem {
           <span>Active Tools</span>
         </div>
         <div class="tools-list">
-          <div
-            class="tool-item"
-            *ngFor="let tool of tooltipData.agent.currentTools"
-            [class]="getToolStatusClass(tool.status)"
-          >
+          @for (tool of tooltipData.agent.currentTools; track tool) {
+          <div class="tool-item" [class]="getToolStatusClass(tool.status)">
             <div class="tool-name">{{ tool.toolName }}</div>
             <div class="tool-status">{{ tool.status }}</div>
-            <div class="tool-progress" *ngIf="tool.progress !== undefined">
+            @if (tool.progress !== undefined) {
+            <div class="tool-progress">
               <div class="progress-bar">
                 <div
                   class="progress-fill"
@@ -150,15 +141,15 @@ export interface ActivityItem {
               </div>
               <span class="progress-text">{{ tool.progress }}%</span>
             </div>
+            }
           </div>
+          }
         </div>
       </div>
-
+      }
       <!-- Performance Metrics -->
-      <div
-        class="tooltip-section performance-section"
-        *ngIf="config?.showPerformance && hasPerformanceData()"
-      >
+      @if (config?.showPerformance && hasPerformanceData()) {
+      <div class="tooltip-section performance-section">
         <div class="section-header">
           <svg
             width="14"
@@ -173,26 +164,27 @@ export interface ActivityItem {
           <span>Performance</span>
         </div>
         <div class="performance-metrics">
-          <div class="metric-item" *ngIf="tooltipData.agent.lastResponse">
+          @if (tooltipData.agent.lastResponse) {
+          <div class="metric-item">
             <span class="metric-label">Response Time:</span>
             <span class="metric-value">{{ getResponseTime() }}ms</span>
           </div>
-          <div class="metric-item" *ngIf="tooltipData.agent.memoryUsage">
+          } @if (tooltipData.agent.memoryUsage) {
+          <div class="metric-item">
             <span class="metric-label">Memory:</span>
             <span class="metric-value">{{ getMemoryUsage() }}</span>
           </div>
+          }
           <div class="metric-item">
             <span class="metric-label">Uptime:</span>
             <span class="metric-value">{{ getUptime() }}</span>
           </div>
         </div>
       </div>
-
+      }
       <!-- Recent Activity -->
-      <div
-        class="tooltip-section activity-section"
-        *ngIf="config?.showRecentActivity && hasRecentActivity()"
-      >
+      @if (config?.showRecentActivity && hasRecentActivity()) {
+      <div class="tooltip-section activity-section">
         <div class="section-header">
           <svg
             width="14"
@@ -208,9 +200,9 @@ export interface ActivityItem {
           <span>Recent Activity</span>
         </div>
         <div class="activity-list">
+          @for (activity of getRecentActivities(); track activity) {
           <div
             class="activity-item"
-            *ngFor="let activity of getRecentActivities()"
             [class]="getActivityStatusClass(activity.status)"
           >
             <div class="activity-time">
@@ -218,9 +210,10 @@ export interface ActivityItem {
             </div>
             <div class="activity-description">{{ activity.description }}</div>
           </div>
+          }
         </div>
       </div>
-
+      }
       <!-- Quick Actions -->
       <div class="tooltip-actions">
         <button
@@ -243,7 +236,6 @@ export interface ActivityItem {
           </svg>
           Focus
         </button>
-
         <button
           class="action-button chat-button"
           (click)="onStartChat()"
@@ -264,10 +256,10 @@ export interface ActivityItem {
           Chat
         </button>
       </div>
-
       <!-- Tooltip Arrow -->
       <div class="tooltip-arrow" [style.left.px]="arrowPosition()"></div>
     </div>
+    }
   `,
   styles: [
     `

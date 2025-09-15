@@ -9,7 +9,7 @@ import {
   ChangeDetectionStrategy,
   ViewContainerRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, retry, of } from 'rxjs';
@@ -57,7 +57,6 @@ import { AgentState } from '../../core/interfaces/agent-state.interface';
 @Component({
   selector: 'brand-spatial-interface',
   imports: [
-    CommonModule,
     Scene3DComponent,
     ConstellationStatsComponent,
     AgentInfoPanelComponent,

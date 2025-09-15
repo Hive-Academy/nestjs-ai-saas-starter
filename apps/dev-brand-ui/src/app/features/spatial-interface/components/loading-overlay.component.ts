@@ -1,5 +1,4 @@
 import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 /**
  * Loading Overlay Component
@@ -7,7 +6,7 @@ import { CommonModule } from '@angular/common';
  */
 @Component({
   selector: 'brand-loading-overlay',
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!isReady()) {

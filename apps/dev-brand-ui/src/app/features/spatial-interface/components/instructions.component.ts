@@ -1,5 +1,4 @@
 import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 /**
  * Instructions Component
@@ -7,7 +6,7 @@ import { CommonModule } from '@angular/common';
  */
 @Component({
   selector: 'brand-instructions',
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (showInstructions()) {

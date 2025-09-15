@@ -15,7 +15,6 @@ import type {
  */
 @Injectable()
 export class TicketManagementService {
-
   constructor(
     private readonly workflowManager: WorkflowManagerService,
     private readonly customerSupportWorkflowService: CustomerSupportWorkflowService
@@ -29,17 +28,22 @@ export class TicketManagementService {
   ): Promise<StreamingResponse<{ ticketId: string; executionId: string }>> {
     try {
       const ticketId = this.generateTicketId();
-      
+
       const workflowRequest = {
         ticket: {
           issue: request.description,
-          priority: (request.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+          priority:
+            (request.priority as 'low' | 'medium' | 'high' | 'urgent') ||
+            'medium',
           category: request.category,
           customerId: request.customerId,
         },
       };
 
-      const result = await this.customerSupportWorkflowService.executeCustomerSupportWorkflow(workflowRequest);
+      const result =
+        await this.customerSupportWorkflowService.executeCustomerSupportWorkflow(
+          workflowRequest
+        );
 
       return {
         success: result.success,
@@ -73,22 +77,25 @@ export class TicketManagementService {
       const workflowRequest = {
         ticket: {
           issue: request.description,
-          priority: (request.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+          priority:
+            (request.priority as 'low' | 'medium' | 'high' | 'urgent') ||
+            'medium',
           category: request.category,
           customerId: request.customerId,
         },
       };
 
-      const result = await this.customerSupportWorkflowService.executeWorkflowWithStreaming(
-        workflowRequest,
-        (event) => {
-          progressUpdates.push({
-            timestamp: Date.now(),
-            type: event.type,
-            data: event.data,
-          });
-        }
-      );
+      const result =
+        await this.customerSupportWorkflowService.executeWorkflowWithStreaming(
+          workflowRequest,
+          (event) => {
+            progressUpdates.push({
+              timestamp: Date.now(),
+              type: event.type,
+              data: event.data,
+            });
+          }
+        );
 
       return {
         success: result.success,
@@ -122,9 +129,7 @@ export class TicketManagementService {
     try {
       // Find active workflow instance for this ticket
       const instances = this.workflowManager.getActiveInstances();
-      const instance = instances.find(
-        (i) => i.input?.ticketId === ticketId
-      );
+      const instance = instances.find((i) => i.input?.ticketId === ticketId);
 
       if (!instance) {
         return {
@@ -133,7 +138,10 @@ export class TicketManagementService {
         };
       }
 
-      const status = await this.customerSupportWorkflowService.getWorkflowStatus(instance.instanceId);
+      const status =
+        await this.customerSupportWorkflowService.getWorkflowStatus(
+          instance.instanceId
+        );
 
       return {
         success: true,
@@ -144,7 +152,8 @@ export class TicketManagementService {
           currentStep: status.currentStep || 'unknown',
           executionId: instance.instanceId,
           startedAt: instance.createdAt,
-          estimatedCompletion: status.estimatedCompletion || this.estimateCompletion(instance),
+          estimatedCompletion:
+            status.estimatedCompletion || this.estimateCompletion(instance),
         },
       };
     } catch (error) {
@@ -179,7 +188,10 @@ export class TicketManagementService {
         };
       }
 
-      const status = await this.customerSupportWorkflowService.getWorkflowStatus(instance.instanceId);
+      const status =
+        await this.customerSupportWorkflowService.getWorkflowStatus(
+          instance.instanceId
+        );
 
       return {
         success: true,
@@ -208,9 +220,7 @@ export class TicketManagementService {
     return new Observable((observer) => {
       // Find the workflow instance for this ticket
       const instances = this.workflowManager.getActiveInstances();
-      const instance = instances.find(
-        (i) => i.input?.ticketId === ticketId
-      );
+      const instance = instances.find((i) => i.input?.ticketId === ticketId);
 
       if (!instance) {
         observer.error(new Error('Ticket workflow not found'));
@@ -218,28 +228,37 @@ export class TicketManagementService {
       }
 
       // Subscribe to workflow events
-      const subscription = this.customerSupportWorkflowService.subscribeToWorkflowEvents(
-        instance.instanceId,
-        (event: {
-          type: 'workflow_started' | 'workflow_progress' | 'workflow_completed' | 'workflow_failed' | 'node_executed';
-          data: any;
-          timestamp: number;
-        }) => {
-          observer.next({
-            type: event.type,
-            data: {
-              ticketId,
-              ...event.data,
-              timestamp: Date.now(),
-            },
-          } as MessageEvent);
+      const subscription =
+        this.customerSupportWorkflowService.subscribeToWorkflowEvents(
+          instance.instanceId,
+          (event: {
+            type:
+              | 'workflow_started'
+              | 'workflow_progress'
+              | 'workflow_completed'
+              | 'workflow_failed'
+              | 'node_executed';
+            data: any;
+            timestamp: number;
+          }) => {
+            observer.next({
+              type: event.type,
+              data: {
+                ticketId,
+                ...event.data,
+                timestamp: Date.now(),
+              },
+            } as MessageEvent);
 
-          // Complete stream when workflow completes
-          if (event.type === 'workflow_completed' || event.type === 'workflow_failed') {
-            observer.complete();
+            // Complete stream when workflow completes
+            if (
+              event.type === 'workflow_completed' ||
+              event.type === 'workflow_failed'
+            ) {
+              observer.complete();
+            }
           }
-        }
-      );
+        );
 
       // Cleanup on unsubscribe
       return () => {
@@ -260,9 +279,7 @@ export class TicketManagementService {
     try {
       // Find the workflow instance for this ticket
       const instances = this.workflowManager.getActiveInstances();
-      const instance = instances.find(
-        (i) => i.input?.ticketId === ticketId
-      );
+      const instance = instances.find((i) => i.input?.ticketId === ticketId);
 
       if (!instance) {
         return {
@@ -352,10 +369,11 @@ export class TicketManagementService {
   private calculateProgress(instance: any): number {
     // Calculate progress based on workflow status and execution metadata
     switch (instance.status) {
-      case 'running':
+      case 'running': {
         const elapsedTime = Date.now() - instance.createdAt.getTime();
         const estimatedDuration = 300000; // 5 minutes estimated
         return Math.min(90, (elapsedTime / estimatedDuration) * 100);
+      }
       case 'completed':
         return 100;
       case 'failed':
@@ -370,9 +388,9 @@ export class TicketManagementService {
   private estimateCompletion(instance: any): number {
     const elapsedTime = Date.now() - instance.createdAt.getTime();
     const progress = this.calculateProgress(instance);
-    
+
     if (progress === 0) return Date.now() + 300000; // 5 minutes default
-    
+
     const estimatedTotal = (elapsedTime / progress) * 100;
     return instance.createdAt.getTime() + estimatedTotal;
   }
@@ -386,11 +404,11 @@ export class TicketManagementService {
     try {
       // Get active workflow instances
       const instances = this.workflowManager.getActiveInstances();
-      
+
       // Filter customer support workflows
       let supportTickets = instances
-        .filter(instance => instance.input?.ticketId)
-        .map(instance => ({
+        .filter((instance) => instance.input?.ticketId)
+        .map((instance) => ({
           id: instance.input.ticketId,
           customerId: instance.input.ticket?.customerId,
           title: instance.input.ticket?.title,
@@ -400,23 +418,32 @@ export class TicketManagementService {
           status: this.mapWorkflowStatusToTicketStatus(instance.status),
           customerTier: instance.input.ticket?.customerTier,
           createdAt: instance.createdAt.toISOString(),
-          updatedAt: instance.updatedAt?.toISOString() || instance.createdAt.toISOString(),
+          updatedAt:
+            instance.updatedAt?.toISOString() ||
+            instance.createdAt.toISOString(),
           executionId: instance.instanceId,
           progress: this.calculateProgress(instance),
         }));
 
       // Apply filters
       if (status) {
-        supportTickets = supportTickets.filter(ticket => ticket.status === status);
+        supportTickets = supportTickets.filter(
+          (ticket) => ticket.status === status
+        );
       }
       if (priority) {
-        supportTickets = supportTickets.filter(ticket => ticket.priority === priority);
+        supportTickets = supportTickets.filter(
+          (ticket) => ticket.priority === priority
+        );
       }
 
       // Pagination
       const total = supportTickets.length;
       const startIndex = (page - 1) * limit;
-      const paginatedTickets = supportTickets.slice(startIndex, startIndex + limit);
+      const paginatedTickets = supportTickets.slice(
+        startIndex,
+        startIndex + limit
+      );
 
       return { tickets: paginatedTickets, total };
     } catch (error) {

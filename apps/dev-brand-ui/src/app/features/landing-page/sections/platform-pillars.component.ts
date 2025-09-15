@@ -9,7 +9,7 @@ import {
   // DestroyRef, // Removed as not used
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 // import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // Removed as not used
 import * as THREE from 'three';
 import { gsap } from 'gsap';
@@ -29,181 +29,76 @@ interface PlatformPillar {
 }
 
 @Component({
-  selector: 'app-platform-pillars',
+  selector: 'brand-platform-pillars',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="platform-pillars-container">
-      <div class="content-header">
-        <h2 class="section-title">Platform Pillars</h2>
-        <p class="section-subtitle">
+    <div
+      class="w-full h-full relative flex flex-col bg-gradient-to-br from-gray-900/95 to-indigo-900/90 overflow-hidden"
+    >
+      <div class="text-center pt-12 pb-4 px-8 z-10 relative">
+        <h2
+          class="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-blue-400 to-pink-400 bg-[length:200%_200%] bg-clip-text text-transparent animate-[gradientShift_3s_ease-in-out_infinite]"
+        >
+          Platform Pillars
+        </h2>
+        <p
+          class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed"
+        >
           Five core capabilities that power intelligent AI workflows
         </p>
       </div>
 
-      <div class="pillars-scene" #sceneContainer></div>
+      <div
+        class="flex-1 relative min-h-[400px] max-h-[500px]"
+        #sceneContainer
+      ></div>
 
-      <div class="pillars-interface">
-        <div class="pillar-cards">
+      <div
+        class="absolute bottom-0 left-0 right-0 z-10 p-8 bg-gradient-to-t from-gray-900/95 to-transparent"
+      >
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 max-w-6xl mx-auto"
+        >
+          @for (pillar of pillars; track trackPillar(pillar)) {
           <div
-            *ngFor="let pillar of pillars; trackBy: trackPillar"
             class="pillar-card"
             [class.active]="activePillar() === pillar.id"
             (mouseenter)="onPillarHover(pillar.id)"
             (mouseleave)="onPillarLeave()"
             (click)="onPillarClick(pillar.id)"
+            (keypress)="onPillarClick(pillar.id)"
+            tabindex="0"
           >
-            <div class="card-icon">{{ pillar.icon }}</div>
-            <div class="card-content">
-              <h3 class="card-title">{{ pillar.title }}</h3>
-              <p class="card-description">{{ pillar.description }}</p>
-              <div class="card-features" *ngIf="activePillar() === pillar.id">
+            <div class="text-4xl mb-4 block">{{ pillar.icon }}</div>
+            <div>
+              <h3 class="text-xl font-semibold text-white mb-2">
+                {{ pillar.title }}
+              </h3>
+              <p class="text-sm text-white/70 mb-4 leading-relaxed">
+                {{ pillar.description }}
+              </p>
+              @if (activePillar() === pillar.id) {
+              <div class="flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]">
+                @for (feature of pillar.features; track feature) {
                 <div
-                  *ngFor="let feature of pillar.features"
-                  class="feature-item"
+                  class="text-xs text-white/60 py-1 border-l-2 border-sky-400 pl-3"
                 >
                   {{ feature }}
                 </div>
+                }
               </div>
+              }
             </div>
           </div>
+          }
         </div>
       </div>
     </div>
   `,
   styles: [
     `
-      .platform-pillars-container {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        background: linear-gradient(
-          135deg,
-          rgba(10, 10, 10, 0.95) 0%,
-          rgba(20, 20, 40, 0.9) 100%
-        );
-        overflow: hidden;
-      }
-
-      .content-header {
-        text-align: center;
-        padding: 3rem 2rem 1rem;
-        z-index: 10;
-        position: relative;
-      }
-
-      .section-title {
-        font-size: 3.5rem;
-        font-weight: 700;
-        margin: 0 0 1rem;
-        background: linear-gradient(135deg, #ff69b4, #00bfff, #ff69b4);
-        background-size: 200% 200%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: gradientShift 3s ease-in-out infinite;
-      }
-
-      .section-subtitle {
-        font-size: 1.3rem;
-        color: rgba(255, 255, 255, 0.8);
-        margin: 0;
-        max-width: 600px;
-        margin: 0 auto;
-        line-height: 1.5;
-      }
-
-      .pillars-scene {
-        flex: 1;
-        position: relative;
-        min-height: 400px;
-        max-height: 500px;
-      }
-
-      .pillars-interface {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 10;
-        padding: 2rem;
-        background: linear-gradient(
-          to top,
-          rgba(10, 10, 10, 0.95) 0%,
-          transparent 100%
-        );
-      }
-
-      .pillar-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-
-      .pillar-card {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        padding: 1.5rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .pillar-card:hover {
-        transform: translateY(-4px);
-        border-color: #ff69b4;
-        box-shadow: 0 8px 32px rgba(255, 105, 180, 0.3);
-      }
-
-      .pillar-card.active {
-        border-color: #00bfff;
-        box-shadow: 0 8px 32px rgba(0, 191, 255, 0.4);
-        background: rgba(0, 191, 255, 0.1);
-      }
-
-      .card-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        display: block;
-      }
-
-      .card-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #ffffff;
-        margin: 0 0 0.5rem;
-      }
-
-      .card-description {
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.7);
-        margin: 0 0 1rem;
-        line-height: 1.4;
-      }
-
-      .card-features {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        animation: slideIn 0.3s ease-out;
-      }
-
-      .feature-item {
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.6);
-        padding: 0.3rem 0;
-        border-left: 2px solid #00bfff;
-        padding-left: 0.8rem;
-      }
-
       @keyframes gradientShift {
         0% {
           background-position: 0% 50%;
@@ -216,6 +111,13 @@ interface PlatformPillar {
         }
       }
 
+      .pillar-card {
+        @apply bg-white/10 border border-white/20 rounded-xl p-6 cursor-pointer transition-all duration-300 backdrop-blur-lg relative overflow-hidden hover:-translate-y-1 hover:border-pink-400;
+      }
+      .pillar-card.active {
+        @apply border-sky-400 bg-sky-400/10;
+      }
+
       @keyframes slideIn {
         from {
           opacity: 0;
@@ -224,32 +126,6 @@ interface PlatformPillar {
         to {
           opacity: 1;
           transform: translateY(0);
-        }
-      }
-
-      @media (max-width: 768px) {
-        .content-header {
-          padding: 2rem 1rem 1rem;
-        }
-
-        .section-title {
-          font-size: 2.5rem;
-        }
-
-        .section-subtitle {
-          font-size: 1.1rem;
-        }
-
-        .pillars-interface {
-          padding: 1rem;
-        }
-
-        .pillar-cards {
-          grid-template-columns: 1fr;
-        }
-
-        .pillar-card {
-          padding: 1rem;
         }
       }
     `,
@@ -277,7 +153,8 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     {
       id: 'orchestration',
       title: 'Orchestration',
-      description: 'Intelligent workflow coordination across multiple AI agents',
+      description:
+        'Intelligent workflow coordination across multiple AI agents',
       icon: '🎼',
       color: 0xff69b4,
       position: [-8, 0, 0],
@@ -354,7 +231,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     this.cleanup();
   }
 
-  trackPillar(_index: number, pillar: PlatformPillar): string {
+  trackPillar(pillar: PlatformPillar): string {
     return pillar.id;
   }
 
@@ -455,13 +332,17 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       pointLight.shadow.mapSize.width = 1024;
       pointLight.shadow.mapSize.height = 1024;
       this.sceneInstance!.scene.add(pointLight);
-      
+
       // Add rim light for dramatic effect
       const rimLight = new THREE.PointLight(pillar.color, 0.4, 8);
-      rimLight.position.set(pillar.position[0], pillar.position[1] + 6, pillar.position[2] - 3);
+      rimLight.position.set(
+        pillar.position[0],
+        pillar.position[1] + 6,
+        pillar.position[2] - 3
+      );
       this.sceneInstance!.scene.add(rimLight);
     });
-    
+
     // Add atmospheric spotlight
     const spotlight = new THREE.SpotLight(0x8a2be2, 0.5, 30, Math.PI / 6, 0.3);
     spotlight.position.set(0, 25, 0);
@@ -477,7 +358,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     this.pillars.forEach((pillar, index) => {
       // Create enhanced pillar geometry with more detail
       const geometry = new THREE.BoxGeometry(2.5, 5, 2.5, 4, 8, 4);
-      
+
       // Create advanced material with PBR properties
       const material = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(pillar.color),
@@ -492,7 +373,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         envMapIntensity: 1.0,
         transmission: 0.1,
         thickness: 0.5,
-        ior: 1.5
+        ior: 1.5,
       });
 
       const mesh = new THREE.Mesh(geometry, material);
@@ -509,7 +390,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         transparent: true,
         opacity: 0.15,
         side: THREE.BackSide,
-        blending: THREE.AdditiveBlending
+        blending: THREE.AdditiveBlending,
       });
       const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
       glowMesh.position.copy(mesh.position);
@@ -521,7 +402,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       const indicatorMaterial = new THREE.MeshStandardMaterial({
         color: 0x00ff00, // Green for active status
         emissive: 0x004400,
-        emissiveIntensity: 0.5
+        emissiveIntensity: 0.5,
       });
       const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
       indicator.position.set(...pillar.position);
@@ -535,7 +416,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         color: new THREE.Color(pillar.color).multiplyScalar(1.5),
         transparent: true,
         opacity: 0.6,
-        linewidth: 2
+        linewidth: 2,
       });
       const wireframe = new THREE.LineSegments(
         wireframeGeometry,
@@ -550,7 +431,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         metalness: 0.9,
         roughness: 0.1,
         emissive: new THREE.Color(pillar.color),
-        emissiveIntensity: 0.1
+        emissiveIntensity: 0.1,
       });
       const platform = new THREE.Mesh(platformGeometry, platformMaterial);
       platform.position.set(...pillar.position);
@@ -575,28 +456,29 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     const sizes = new Float32Array(particleCount);
     const velocities = new Float32Array(particleCount * 3);
 
-    const pillarColors = this.pillars.map(p => new THREE.Color(p.color));
+    const pillarColors = this.pillars.map((p) => new THREE.Color(p.color));
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      
+
       // Distribute particles in cylindrical volume around pillars
       const radius = 15 + Math.random() * 25;
       const angle = Math.random() * Math.PI * 2;
       const height = Math.random() * 15;
-      
+
       positions[i3] = Math.cos(angle) * radius;
       positions[i3 + 1] = height;
       positions[i3 + 2] = Math.sin(angle) * radius;
 
       // Choose color based on nearest pillar
-      const color = pillarColors[Math.floor(Math.random() * pillarColors.length)];
+      const color =
+        pillarColors[Math.floor(Math.random() * pillarColors.length)];
       colors[i3] = color.r;
       colors[i3 + 1] = color.g;
       colors[i3 + 2] = color.b;
-      
+
       sizes[i] = Math.random() * 2 + 0.5;
-      
+
       // Add gentle movement
       velocities[i3] = (Math.random() - 0.5) * 0.02;
       velocities[i3 + 1] = Math.random() * 0.01;
@@ -606,7 +488,6 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-    particles.userData = { velocities };
 
     const particleMaterial = new THREE.PointsMaterial({
       size: 3,
@@ -614,32 +495,34 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       vertexColors: true,
       transparent: true,
       opacity: 0.8,
-      blending: THREE.AdditiveBlending
+      blending: THREE.AdditiveBlending,
     });
 
     this.ambientParticles = new THREE.Points(particles, particleMaterial);
+    this.ambientParticles.userData = { velocities };
     this.sceneInstance.scene.add(this.ambientParticles);
-    
+
     // Add floating geometric elements
     for (let i = 0; i < 20; i++) {
-      const geometry = Math.random() > 0.5 
-        ? new THREE.TetrahedronGeometry(0.2)
-        : new THREE.OctahedronGeometry(0.2);
-        
+      const geometry =
+        Math.random() > 0.5
+          ? new THREE.TetrahedronGeometry(0.2)
+          : new THREE.OctahedronGeometry(0.2);
+
       const material = new THREE.MeshBasicMaterial({
         color: pillarColors[Math.floor(Math.random() * pillarColors.length)],
         transparent: true,
         opacity: 0.3,
-        wireframe: true
+        wireframe: true,
       });
-      
+
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(
         (Math.random() - 0.5) * 40,
         Math.random() * 20,
         (Math.random() - 0.5) * 40
       );
-      
+
       this.sceneInstance.scene.add(mesh);
     }
   }
@@ -702,7 +585,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
 
     this.pillarMeshes.forEach((mesh, pillarId) => {
       // const baseY = mesh.position.y;
-      
+
       // Enhanced floating animation with different frequencies
       mesh.position.y = 2.5 + Math.sin(time * 1.5 + pillarId.length) * 0.4;
       mesh.rotation.y = time * 0.3;
@@ -712,11 +595,12 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       if (this.activePillar() === pillarId) {
         const scale = 1 + Math.sin(time * 4) * 0.15;
         mesh.scale.setScalar(scale);
-        
+
         // Enhanced glow effect
         const glow = this.glowEffects.get(pillarId);
         if (glow) {
-          (glow.material as THREE.MeshBasicMaterial).opacity = 0.3 + Math.sin(time * 5) * 0.1;
+          (glow.material as THREE.MeshBasicMaterial).opacity =
+            0.3 + Math.sin(time * 5) * 0.1;
           glow.scale.setScalar(1.1 + Math.sin(time * 3) * 0.2);
         }
       } else {
@@ -727,46 +611,66 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
           glow.scale.setScalar(1);
         }
       }
-      
+
       // Animate status indicators
       const indicator = this.statusIndicators.get(pillarId);
       if (indicator) {
         indicator.position.y = 6 + Math.sin(time * 2 + pillarId.length) * 0.2;
-        (indicator.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + Math.sin(time * 6) * 0.3;
-        
+        (indicator.material as THREE.MeshStandardMaterial).emissiveIntensity =
+          0.5 + Math.sin(time * 6) * 0.3;
+
         // Change color based on activity
         if (this.activePillar() === pillarId) {
-          (indicator.material as THREE.MeshStandardMaterial).color.setHex(0xffaa00); // Orange for selected
-          (indicator.material as THREE.MeshStandardMaterial).emissive.setHex(0x442200);
+          (indicator.material as THREE.MeshStandardMaterial).color.setHex(
+            0xffaa00
+          ); // Orange for selected
+          (indicator.material as THREE.MeshStandardMaterial).emissive.setHex(
+            0x442200
+          );
         } else {
-          (indicator.material as THREE.MeshStandardMaterial).color.setHex(0x00ff00); // Green for active
-          (indicator.material as THREE.MeshStandardMaterial).emissive.setHex(0x004400);
+          (indicator.material as THREE.MeshStandardMaterial).color.setHex(
+            0x00ff00
+          ); // Green for active
+          (indicator.material as THREE.MeshStandardMaterial).emissive.setHex(
+            0x004400
+          );
         }
       }
     });
-    
+
     // Animate ambient particles
-    if (this.ambientParticles) {
-      const positions = this.ambientParticles.geometry.attributes['position'] as THREE.BufferAttribute;
-      const velocities = this.ambientParticles.userData['velocities'];
-      
-      for (let i = 0; i < positions.count; i++) {
-        const i3 = i * 3;
-        positions.array[i3] += velocities[i3];
-        positions.array[i3 + 1] += velocities[i3 + 1];
-        positions.array[i3 + 2] += velocities[i3 + 2];
-        
-        // Reset particles that drift too far
-        if (Math.abs(positions.array[i3]) > 50 || positions.array[i3 + 1] > 20) {
-          const radius = 15 + Math.random() * 10;
-          const angle = Math.random() * Math.PI * 2;
-          positions.array[i3] = Math.cos(angle) * radius;
-          positions.array[i3 + 1] = 0;
-          positions.array[i3 + 2] = Math.sin(angle) * radius;
+    if (this.ambientParticles && this.ambientParticles.geometry) {
+      const positions = this.ambientParticles.geometry.attributes[
+        'position'
+      ] as THREE.BufferAttribute;
+      const velocities = this.ambientParticles.userData?.[
+        'velocities'
+      ] as Float32Array;
+
+      if (positions && velocities && positions.array && velocities.length > 0) {
+        for (let i = 0; i < positions.count; i++) {
+          const i3 = i * 3;
+          if (i3 + 2 < positions.array.length && i3 + 2 < velocities.length) {
+            positions.array[i3] += velocities[i3];
+            positions.array[i3 + 1] += velocities[i3 + 1];
+            positions.array[i3 + 2] += velocities[i3 + 2];
+
+            // Reset particles that drift too far
+            if (
+              Math.abs(positions.array[i3]) > 50 ||
+              positions.array[i3 + 1] > 20
+            ) {
+              const radius = 15 + Math.random() * 10;
+              const angle = Math.random() * Math.PI * 2;
+              positions.array[i3] = Math.cos(angle) * radius;
+              positions.array[i3 + 1] = 0;
+              positions.array[i3 + 2] = Math.sin(angle) * radius;
+            }
+          }
         }
+
+        positions.needsUpdate = true;
       }
-      
-      positions.needsUpdate = true;
       this.ambientParticles.rotation.y += 0.001;
     }
   }
@@ -784,21 +688,21 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       roughness: 0.1,
       ease: 'power2.out',
     });
-    
+
     // Enhanced glow effect
     const glow = this.glowEffects.get(pillarId);
     if (glow) {
       gsap.to(glow.material, {
         duration: 0.4,
         opacity: 0.4,
-        ease: 'power2.out'
+        ease: 'power2.out',
       });
       gsap.to(glow.scale, {
         duration: 0.4,
         x: 1.3,
         y: 1.3,
         z: 1.3,
-        ease: 'power2.out'
+        ease: 'power2.out',
       });
     }
 
@@ -812,13 +716,13 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
           metalness: 0.5,
           ease: 'power2.out',
         });
-        
+
         const otherGlow = this.glowEffects.get(otherId);
         if (otherGlow) {
           gsap.to(otherGlow.material, {
             duration: 0.4,
             opacity: 0.05,
-            ease: 'power2.out'
+            ease: 'power2.out',
           });
         }
       }
@@ -835,20 +739,20 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         roughness: 0.2,
         ease: 'power2.out',
       });
-      
+
       const glow = this.glowEffects.get(pillarId);
       if (glow) {
         gsap.to(glow.material, {
           duration: 0.4,
           opacity: 0.15,
-          ease: 'power2.out'
+          ease: 'power2.out',
         });
         gsap.to(glow.scale, {
           duration: 0.4,
           x: 1,
           y: 1,
           z: 1,
-          ease: 'power2.out'
+          ease: 'power2.out',
         });
       }
     });

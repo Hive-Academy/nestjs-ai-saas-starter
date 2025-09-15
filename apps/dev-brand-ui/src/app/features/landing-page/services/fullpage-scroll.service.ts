@@ -31,7 +31,7 @@ export interface NavigationDot {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FullPageScrollService {
   // Core state management
@@ -39,7 +39,7 @@ export class FullPageScrollService {
   private readonly _currentSectionIndex = signal(0);
   private readonly _isTransitioning = signal(false);
   private readonly _isEnabled = signal(false);
-  
+
   // Configuration
   private readonly _config = signal<FullPageConfig>({
     animationDuration: 1000,
@@ -49,7 +49,7 @@ export class FullPageScrollService {
     touchScrolling: true,
     continuousVertical: false,
     mouseWheelSensitivity: 1,
-    touchSensitivity: 1
+    touchSensitivity: 1,
   });
 
   // Navigation dots
@@ -104,19 +104,24 @@ export class FullPageScrollService {
   /**
    * Initialize fullPage.js functionality with sections
    */
-  initialize(sectionElements: HTMLElement[], config?: Partial<FullPageConfig>): void {
+  initialize(
+    sectionElements: HTMLElement[],
+    config?: Partial<FullPageConfig>
+  ): void {
     if (config) {
-      this._config.update(current => ({ ...current, ...config }));
+      this._config.update((current) => ({ ...current, ...config }));
     }
 
     // Set up sections
-    const sections: FullPageSection[] = sectionElements.map((element, index) => ({
-      id: element.id || `section-${index}`,
-      index,
-      element,
-      isActive: index === 0,
-      isVisible: true
-    }));
+    const sections: FullPageSection[] = sectionElements.map(
+      (element, index) => ({
+        id: element.id || `section-${index}`,
+        index,
+        element,
+        isActive: index === 0,
+        isVisible: true,
+      })
+    );
 
     this._sections.set(sections);
 
@@ -125,7 +130,7 @@ export class FullPageScrollService {
       index,
       sectionId: section.id,
       label: this.getSectionLabel(section.id),
-      isActive: index === 0
+      isActive: index === 0,
     }));
 
     this._navigationDots.set(dots);
@@ -133,10 +138,10 @@ export class FullPageScrollService {
     // Set up fullPage behavior
     this.setupFullPageLayout();
     this.setupEventListeners();
-    
+
     // Initialize first section
     this.setActiveSection(0, false);
-    
+
     this._isEnabled.set(true);
   }
 
@@ -147,7 +152,7 @@ export class FullPageScrollService {
     return new Promise((resolve) => {
       const sections = this._sections();
       const config = this._config();
-      
+
       if (index < 0 || index >= sections.length || this._isTransitioning()) {
         resolve();
         return;
@@ -160,9 +165,9 @@ export class FullPageScrollService {
       }
 
       this._isTransitioning.set(true);
-      
+
       const duration = animated ? config.animationDuration / 1000 : 0;
-      
+
       // GSAP scroll animation
       gsap.to(window, {
         duration,
@@ -172,7 +177,7 @@ export class FullPageScrollService {
           this.setActiveSection(index, true);
           this._isTransitioning.set(false);
           resolve();
-        }
+        },
       });
     });
   }
@@ -182,12 +187,14 @@ export class FullPageScrollService {
    */
   goToSectionById(sectionId: string, animated = true): Promise<void> {
     const sections = this._sections();
-    const sectionIndex = sections.findIndex(section => section.id === sectionId);
-    
+    const sectionIndex = sections.findIndex(
+      (section) => section.id === sectionId
+    );
+
     if (sectionIndex >= 0) {
       return this.goToSection(sectionIndex, animated);
     }
-    
+
     return Promise.resolve();
   }
 
@@ -200,7 +207,7 @@ export class FullPageScrollService {
     const config = this._config();
 
     let targetIndex = currentIndex + 1;
-    
+
     if (config.continuousVertical && targetIndex >= sections.length) {
       targetIndex = 0; // Loop to first section
     }
@@ -217,7 +224,7 @@ export class FullPageScrollService {
     const config = this._config();
 
     let targetIndex = currentIndex - 1;
-    
+
     if (config.continuousVertical && targetIndex < 0) {
       targetIndex = sections.length - 1; // Loop to last section
     }
@@ -229,7 +236,7 @@ export class FullPageScrollService {
    * Update configuration
    */
   updateConfig(newConfig: Partial<FullPageConfig>): void {
-    this._config.update(current => ({ ...current, ...newConfig }));
+    this._config.update((current) => ({ ...current, ...newConfig }));
   }
 
   /**
@@ -262,16 +269,16 @@ export class FullPageScrollService {
    */
   private setupFullPageLayout(): void {
     const sections = this._sections();
-    
-    sections.forEach(section => {
+
+    sections.forEach((section) => {
       const element = section.element;
-      
+
       // Ensure each section is exactly 100vh
       element.style.height = '100vh';
       element.style.width = '100vw';
       element.style.position = 'relative';
       element.style.overflow = 'hidden';
-      
+
       // Add smooth transition classes
       element.classList.add('fullpage-section');
     });
@@ -291,7 +298,7 @@ export class FullPageScrollService {
     if (config.autoScrolling) {
       const wheelHandler = this.handleMouseWheel.bind(this);
       document.addEventListener('wheel', wheelHandler, { passive: false });
-      this.eventListenerCleanup.push(() => 
+      this.eventListenerCleanup.push(() =>
         document.removeEventListener('wheel', wheelHandler)
       );
     }
@@ -300,7 +307,7 @@ export class FullPageScrollService {
     if (config.keyboardScrolling) {
       const keyHandler = this.handleKeyboard.bind(this);
       document.addEventListener('keydown', keyHandler);
-      this.eventListenerCleanup.push(() => 
+      this.eventListenerCleanup.push(() =>
         document.removeEventListener('keydown', keyHandler)
       );
     }
@@ -309,10 +316,12 @@ export class FullPageScrollService {
     if (config.touchScrolling) {
       const touchStartHandler = this.handleTouchStart.bind(this);
       const touchEndHandler = this.handleTouchEnd.bind(this);
-      
-      document.addEventListener('touchstart', touchStartHandler, { passive: true });
+
+      document.addEventListener('touchstart', touchStartHandler, {
+        passive: true,
+      });
       document.addEventListener('touchend', touchEndHandler, { passive: true });
-      
+
       this.eventListenerCleanup.push(() => {
         document.removeEventListener('touchstart', touchStartHandler);
         document.removeEventListener('touchend', touchEndHandler);
@@ -322,7 +331,7 @@ export class FullPageScrollService {
     // Resize handler
     const resizeHandler = this.handleResize.bind(this);
     window.addEventListener('resize', resizeHandler);
-    this.eventListenerCleanup.push(() => 
+    this.eventListenerCleanup.push(() =>
       window.removeEventListener('resize', resizeHandler)
     );
   }
@@ -336,7 +345,7 @@ export class FullPageScrollService {
     }
 
     event.preventDefault();
-    
+
     // Throttle wheel events
     if (this.mouseWheelTimeout) {
       clearTimeout(this.mouseWheelTimeout);
@@ -345,13 +354,13 @@ export class FullPageScrollService {
     this.mouseWheelTimeout = window.setTimeout(() => {
       const config = this._config();
       const delta = event.deltaY * config.mouseWheelSensitivity;
-      
+
       if (delta > 0 && this.canScrollDown()) {
         this.scrollDown();
       } else if (delta < 0 && this.canScrollUp()) {
         this.scrollUp();
       }
-      
+
       this.mouseWheelTimeout = null;
     }, 100);
   }
@@ -373,7 +382,7 @@ export class FullPageScrollService {
           this.scrollDown();
         }
         break;
-        
+
       case 'ArrowUp':
       case 'PageUp':
         event.preventDefault();
@@ -381,17 +390,18 @@ export class FullPageScrollService {
           this.scrollUp();
         }
         break;
-        
+
       case 'Home':
         event.preventDefault();
         this.goToSection(0);
         break;
-        
-      case 'End':
+
+      case 'End': {
         event.preventDefault();
         const sections = this._sections();
         this.goToSection(sections.length - 1);
         break;
+      }
     }
   }
 
@@ -447,7 +457,7 @@ export class FullPageScrollService {
   private handleResize(): void {
     // Recalculate section heights
     const sections = this._sections();
-    sections.forEach(section => {
+    sections.forEach((section) => {
       section.element.style.height = '100vh';
     });
   }
@@ -457,20 +467,20 @@ export class FullPageScrollService {
    */
   private setActiveSection(index: number, updateScroll = false): void {
     const sections = this._sections();
-    
+
     // Update sections state
-    this._sections.update(currentSections => 
+    this._sections.update((currentSections) =>
       currentSections.map((section, i) => ({
         ...section,
-        isActive: i === index
+        isActive: i === index,
       }))
     );
 
     // Update navigation dots
-    this._navigationDots.update(dots => 
+    this._navigationDots.update((dots) =>
       dots.map((dot, i) => ({
         ...dot,
-        isActive: i === index
+        isActive: i === index,
       }))
     );
 
@@ -486,16 +496,19 @@ export class FullPageScrollService {
   /**
    * Dispatch custom section change event
    */
-  private dispatchSectionChangeEvent(section: FullPageSection, index: number): void {
+  private dispatchSectionChangeEvent(
+    section: FullPageSection,
+    index: number
+  ): void {
     const event = new CustomEvent('fullpage-section-change', {
       detail: {
         section: section.id,
         index,
         element: section.element,
-        direction: index > this._currentSectionIndex() ? 'down' : 'up'
-      }
+        direction: index > this._currentSectionIndex() ? 'down' : 'up',
+      },
     });
-    
+
     document.dispatchEvent(event);
     section.element.dispatchEvent(event);
   }
@@ -520,9 +533,9 @@ export class FullPageScrollService {
    * Clean up event listeners
    */
   private cleanupEventListeners(): void {
-    this.eventListenerCleanup.forEach(cleanup => cleanup());
+    this.eventListenerCleanup.forEach((cleanup) => cleanup());
     this.eventListenerCleanup = [];
-    
+
     if (this.mouseWheelTimeout) {
       clearTimeout(this.mouseWheelTimeout);
       this.mouseWheelTimeout = null;
@@ -534,13 +547,13 @@ export class FullPageScrollService {
    */
   private getSectionLabel(sectionId: string): string {
     const labelMap: Record<string, string> = {
-      'hero': 'Hero',
+      hero: 'Hero',
       'platform-pillars': 'Platform',
       'demo-theater': 'Demos',
       'ecosystem-explorer': 'Ecosystem',
-      'architecture-diagram': 'Architecture'
+      'architecture-diagram': 'Architecture',
     };
-    
+
     return labelMap[sectionId] || sectionId.replace('-', ' ');
   }
 }

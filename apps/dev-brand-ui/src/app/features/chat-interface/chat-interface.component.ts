@@ -1,11 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DevBrandStateService } from '../../core/state/devbrand-state.service';
 
 @Component({
   selector: 'brand-chat-interface',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="chat-interface">
       <div class="chat-header">

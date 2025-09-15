@@ -185,7 +185,7 @@ export class GitHubIntegrationTools {
     description: 'Extracts meaningful achievements from code analysis',
     schema: z.object({
       commits: z.array(z.any()).describe('Array of commit objects to analyze'),
-      achievements: achievements.map(a => ({
+      achievements: achievements.map((a) => ({
         ...a,
         date: new Date(a.date).toISOString(),
       })),

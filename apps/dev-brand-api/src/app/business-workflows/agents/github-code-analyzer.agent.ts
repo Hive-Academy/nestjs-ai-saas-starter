@@ -1,12 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
-  Agent,
-  LlmProviderService,
-} from '@hive-academy/langgraph-multi-agent';
+import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import type { AgentState } from '@hive-academy/langgraph-multi-agent';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
-import { GitHubIntegrationTools } from '../tools/github-integration.tools';
+import { GitHubIntegrationTools } from '../core/tools/github-integration.tools';
 
 /**
  * 💻 GITHUB CODE ANALYZER AGENT - AI-POWERED DEVELOPMENT INSIGHTS
@@ -53,10 +50,15 @@ export class GitHubCodeAnalyzerAgent {
     // Extract GitHub username from message (could be "analyze my GitHub: username" or just "username")
     const githubUsername =
       this.extractGitHubUsername(messageContent) ||
-      (typeof state.metadata?.githubUsername === 'string' ? state.metadata.githubUsername : null) ||
+      (typeof state.metadata?.githubUsername === 'string'
+        ? state.metadata.githubUsername
+        : null) ||
       'demo-user';
 
-    const timeframe = (typeof state.metadata?.timeframe === 'string' ? state.metadata.timeframe : 'month');
+    const timeframe =
+      typeof state.metadata?.timeframe === 'string'
+        ? state.metadata.timeframe
+        : 'month';
 
     try {
       // 🚀 REAL GITHUB ANALYSIS: Comprehensive repository and commit analysis
@@ -124,7 +126,7 @@ ${aiAnalysis}
 **🎯 ACHIEVEMENTS EXTRACTED:** ${achievements.length}
 ${achievements
   .slice(0, 3)
-  .map((a) => `• ${a.description} (${a.impact} impact)`)
+  .map((a: any) => `• ${a.description} (${a.impact} impact)`)
   .join('\n')}
 
 **💡 PRIMARY TECHNOLOGIES:** ${githubAnalysis.patterns.primaryLanguages.join(
@@ -234,7 +236,7 @@ ${fallbackAnalysis}
 
 **📊 TECHNICAL METRICS:**
 • Repositories: ${githubData.summary.totalRepositories}
-• Commits: ${githubData.summary.totalCommits}  
+• Commits: ${githubData.summary.totalCommits}
 • Lines of Code: ${githubData.summary.linesOfCode.toLocaleString()}
 • Productivity Score: ${githubData.summary.productivityScore}/100
 

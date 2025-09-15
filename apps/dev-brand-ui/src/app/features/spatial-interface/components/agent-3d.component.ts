@@ -8,7 +8,7 @@ import {
   computed,
   effect,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import * as THREE from 'three';
 import { AgentState } from '../../../core/interfaces/agent-state.interface';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
@@ -30,7 +30,7 @@ export interface Agent3DConfig {
 @Component({
   selector: 'brand-agent-3d',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <!-- Agent 3D visualization is handled through Three.js, no DOM template needed -->
   `,

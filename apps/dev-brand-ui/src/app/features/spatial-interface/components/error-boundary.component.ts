@@ -5,7 +5,6 @@ import {
   computed,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface ErrorInfo {
   error: Error;
@@ -20,7 +19,7 @@ export interface ErrorInfo {
  */
 @Component({
   selector: 'brand-error-boundary',
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error()) {

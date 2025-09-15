@@ -1,0 +1,135 @@
+ /* Essential CSS that cannot be replicated with Tailwind utilities */
+
+    /* Recording Mode CSS Variables */
+    .recording-mode {
+      --particle-density: 0.3;
+      --render-quality: performance;
+      --gpu-acceleration: enabled;
+    }
+
+    .fully-loaded {
+      --particle-density: 1.0;
+      --render-quality: high;
+    }
+
+    /* FullPage.js mode overrides */
+    .fullpage-enabled {
+      scroll-snap-type: none !important;
+    }
+
+    .fullpage-enabled section {
+      scroll-snap-align: none !important;
+      scroll-snap-stop: normal !important;
+    }
+
+    /* Animation classes for section entrance */
+    .animate-in {
+      animation: slideInUp 1s ease-out forwards;
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Performance optimizations */
+    .w-screen {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      transform: translateZ(0); /* Force hardware acceleration */
+    }
+
+    /* Mobile viewport height fix */
+    @media (max-width: 768px) {
+      .h-screen {
+        height: 100vh;
+        height: 100svh; /* Safari iOS support */
+      }
+
+      /* Mobile control adjustments */
+      .fixed.top-5.right-5 {
+        top: 10px;
+        right: 10px;
+        transform: scale(0.9);
+      }
+
+      .grid.grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-auto-fit {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .text-3xl {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Tablet optimizations */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .fixed.top-5.right-5 {
+        transform: scale(0.95);
+      }
+
+      .p-8 {
+        padding: 1.5rem;
+      }
+
+      .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-auto-fit {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Large screen optimizations */
+    @media (min-width: 1400px) {
+      .p-8 {
+        padding: 3rem;
+      }
+    }
+
+    /* High DPI display adjustments */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .h-1 {
+        border-radius: 2px;
+      }
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      .animate-in,
+      .transition-all,
+      .transition-opacity {
+        animation: none;
+        transition: none;
+      }
+    }
+
+    /* Dark mode enhancements */
+    @media (prefers-color-scheme: dark) {
+      .w-screen {
+        color-scheme: dark;
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      .fixed,
+      .loading-overlay {
+        display: none;
+      }
+
+      .w-screen {
+        background: white !important;
+        color: black !important;
+      }
+    }

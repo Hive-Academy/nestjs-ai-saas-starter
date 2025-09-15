@@ -4,6 +4,9 @@ import { HitlModule } from '@hive-academy/langgraph-hitl';
 
 // Customer Support System Components
 import { CustomerSupportAgent } from './agents/customer-support.agent';
+import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer.agent';
+import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from './agents/content-creator.agent';
 import { CustomerSupportWorkflow } from './workflows/customer-support.workflow';
 import { EnhancedSupportWorkflow } from './workflows/enhanced-support.workflow';
 import { CustomerSupportController } from './controllers/customer-support.controller';
@@ -17,6 +20,10 @@ import { KnowledgeBaseManagementService } from './services/knowledge-base-manage
 import { AgentRegistryService } from './core/agent-registry.service';
 import { GithubActivityIntegrationService } from './core/integrations/github-activity.integration';
 import { ContentAnalysisService } from './core/analysis/content-analysis.service';
+import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
+import { DocumentProcessingTools } from './core/tools/document-processing.tools';
+import { WebResearchTools } from './core/tools/web-research.tools';
+// Showcase module fully removed; above imports are consolidated production equivalents
 
 /**
  * Business Workflows Module
@@ -31,12 +38,15 @@ import { ContentAnalysisService } from './core/analysis/content-analysis.service
     HitlModule,
   ],
   providers: [
-    // Core AI Agents - RE-ENABLED AFTER DI METADATA FIX
+    // Core AI Agents
     CustomerSupportAgent,
+    GitHubCodeAnalyzerAgent,
+    PersonalBrandStrategistAgent,
+    ContentCreatorAgent,
 
-    // Workflow Orchestrators - Both patterns supported
-    CustomerSupportWorkflow, // Functional-API pattern (@Task decorators)
-    EnhancedSupportWorkflow, // Multi-agent orchestration pattern
+    // Workflow Orchestrators
+    CustomerSupportWorkflow,
+    EnhancedSupportWorkflow,
 
     // Business Services
     BusinessMetricsService,
@@ -48,10 +58,13 @@ import { ContentAnalysisService } from './core/analysis/content-analysis.service
     UserInterruptionManagementService,
     MetricsAnalyticsService,
     KnowledgeBaseManagementService,
-  AgentRegistryService,
-  // Migrated from showcase module (salvaged)
-  GithubActivityIntegrationService,
-  ContentAnalysisService,
+    AgentRegistryService,
+    // Migrated services/tools formerly under showcase
+    GithubActivityIntegrationService,
+    ContentAnalysisService,
+    PersonalBrandMemoryService,
+    DocumentProcessingTools,
+    WebResearchTools,
 
     // Configuration providers using proper config pattern
     {

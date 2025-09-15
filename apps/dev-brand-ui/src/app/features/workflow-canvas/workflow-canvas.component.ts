@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   effect,
@@ -18,7 +17,7 @@ import {
 @Component({
   selector: 'brand-workflow-canvas',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   template: `
     <div
       class="relative h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 overflow-hidden"

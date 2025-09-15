@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -31,11 +30,12 @@ export interface NavigationControlsConfig {
 @Component({
   selector: 'brand-navigation-controls',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="navigation-controls" [class]="positionClass()">
       <!-- Zoom Controls -->
-      <div class="control-group zoom-controls" *ngIf="config?.showZoomControls">
+      @if (config?.showZoomControls) {
+      <div class="control-group zoom-controls">
         <button
           class="nav-button zoom-in"
           (click)="zoomIn()"
@@ -56,7 +56,6 @@ export interface NavigationControlsConfig {
             <line x1="11" y1="8" x2="11" y2="14" />
           </svg>
         </button>
-
         <button
           class="nav-button zoom-out"
           (click)="zoomOut()"
@@ -77,15 +76,16 @@ export interface NavigationControlsConfig {
           </svg>
         </button>
       </div>
+      }
 
       <!-- Reset and Focus Controls -->
       <div class="control-group action-controls">
+        @if (config?.showResetButton) {
         <button
           class="nav-button reset-camera"
           (click)="resetCamera()"
           [disabled]="isNavigating()"
           title="Reset Camera"
-          *ngIf="config?.showResetButton"
         >
           <svg
             width="16"
@@ -101,6 +101,7 @@ export interface NavigationControlsConfig {
             <path d="M3 21v-5h5" />
           </svg>
         </button>
+        }
 
         <button
           class="nav-button focus-constellation"
@@ -127,12 +128,11 @@ export interface NavigationControlsConfig {
       </div>
 
       <!-- Navigation Hints -->
-      <div class="control-group navigation-hints" *ngIf="showHints()">
+      @if (showHints()) {
+      <div class="control-group navigation-hints">
         <!-- Keyboard Hints -->
-        <div
-          class="hint-section keyboard-hints"
-          *ngIf="config?.showKeyboardHints"
-        >
+        @if (config?.showKeyboardHints) {
+        <div class="hint-section keyboard-hints">
           <div class="hint-title">Keyboard</div>
           <div class="hint-items">
             <div class="hint-item">
@@ -149,12 +149,10 @@ export interface NavigationControlsConfig {
             </div>
           </div>
         </div>
-
+        }
         <!-- Touch Hints -->
-        <div
-          class="hint-section touch-hints"
-          *ngIf="config?.showTouchHints && isTouchDevice()"
-        >
+        @if (config?.showTouchHints && isTouchDevice()) {
+        <div class="hint-section touch-hints">
           <div class="hint-title">Touch</div>
           <div class="hint-items">
             <div class="hint-item">
@@ -171,15 +169,19 @@ export interface NavigationControlsConfig {
             </div>
           </div>
         </div>
+        }
       </div>
+      }
 
       <!-- Navigation Status -->
-      <div class="navigation-status" *ngIf="isNavigating()">
+      @if (isNavigating()) {
+      <div class="navigation-status">
         <div class="status-indicator">
           <div class="status-spinner"></div>
           <span>Navigating...</span>
         </div>
       </div>
+      }
     </div>
   `,
   styles: [

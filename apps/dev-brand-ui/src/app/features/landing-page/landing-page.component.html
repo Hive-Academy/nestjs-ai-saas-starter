@@ -1,0 +1,346 @@
+<div
+  class="w-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out overflow-x-hidden relative smooth-scroll snap-y snap-mandatory"
+  [class.opacity-100]="isLoaded()"
+  [class.recording-mode]="isRecordingMode()"
+  [class.fullpage-enabled]="fullPageEnabled()"
+  [class.snap-none]="fullPageEnabled()"
+  #landingContainer
+  >
+  <!-- Global Loading Overlay - Temporarily disabled -->
+  <!-- <div class="loading-overlay" [class.visible]="loadingStateService.isLoading()" #loadingOverlay>
+  <div class="loading-content">
+    <div class="loading-header">
+      <h2>AI SaaS Platform</h2>
+      <p>Preparing your intelligent experience...</p>
+    </div>
+
+    <div class="loading-spinner"></div>
+
+    <div class="loading-progress">
+      <div class="loading-progress-fill" [style.width.%]="loadingStateService.loadingProgress()"></div>
+    </div>
+
+    <div class="loading-stage-info">
+      <div class="stage-text">{{ loadingStateService.currentStage() }}</div>
+      <div class="progress-text">{{ loadingStateService.loadingProgress() | number:'1.0-0' }}%</div>
+    </div>
+
+    <div class="section-loading-status">
+      <div
+        *ngFor="let section of loadingStateService.sectionLoadingStates()"
+        class="section-status"
+        [class.loaded]="section.isLoaded"
+        [class.error]="section.hasError">
+        <div class="section-icon"></div>
+        <span class="section-name">{{ section.sectionId | titlecase }}</span>
+        <div class="section-progress">
+          <div class="section-progress-fill" [style.width.%]="section.loadProgress"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<!-- Cinematic Controls -->
+<div
+  class="fixed top-5 right-5 opacity-0 translate-x-full transition-all duration-300 ease-out"
+  style="z-index: 1000"
+  [class.opacity-100]="showCinematicControls()"
+  [class.translate-x-0]="showCinematicControls()"
+  >
+  <div
+    class="bg-black/80 border border-white/20 rounded-xl p-4 backdrop-blur-lg flex flex-col gap-2"
+    style="min-width: 200px"
+    >
+    <button
+      class="px-4 py-2 bg-purple-900 bg-opacity-20 border border-purple-500 border-opacity-40 rounded-md text-white cursor-pointer transition-all duration-200 text-sm hover:bg-opacity-40"
+      [class.bg-opacity-60]="fullPageEnabled()"
+      [class.border-opacity-80]="fullPageEnabled()"
+      (click)="toggleFullPageMode()"
+      >
+      📄 FullPage Mode
+    </button>
+    <button
+      class="px-4 py-2 bg-purple-900 bg-opacity-20 border border-purple-500 border-opacity-40 rounded-md text-white cursor-pointer transition-all duration-200 text-sm hover:bg-opacity-40 disabled:opacity-50 disabled:cursor-not-allowed"
+      [class.bg-opacity-60]="isRecordingMode()"
+      [class.border-opacity-80]="isRecordingMode()"
+      (click)="toggleRecordingMode()"
+      [disabled]="!fullPageEnabled()"
+      >
+      🎬 Recording Mode
+    </button>
+    <button
+      class="px-4 py-2 bg-purple-900 bg-opacity-20 border border-purple-500 border-opacity-40 rounded-md text-white cursor-pointer transition-all duration-200 text-sm hover:bg-opacity-40 disabled:opacity-50 disabled:cursor-not-allowed"
+      [class.bg-opacity-60]="autoPlayActive()"
+      [class.border-opacity-80]="autoPlayActive()"
+      (click)="toggleAutoPlay()"
+      [disabled]="!isRecordingMode() || !fullPageEnabled()"
+      >
+      ▶️ Auto Play
+    </button>
+    <button
+      class="px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-md text-white cursor-pointer transition-all duration-200 text-sm hover:bg-opacity-20"
+      (click)="toggleAdvancedControls()"
+      >
+      ⚙️ Advanced
+    </button>
+
+    <!-- Advanced Controls Panel -->
+    <div
+      class="max-h-0 overflow-hidden transition-all duration-300 border-t border-white/10 mt-2 pt-0"
+      [class.pt-2]="showAdvancedControls()"
+      [style.max-height]="showAdvancedControls() ? '300px' : '0'"
+      >
+      <label
+        class="block text-xs text-white/70 mb-1"
+        for="optimizationSelect"
+        >
+        Optimization Level:
+      </label>
+      <select
+        id="optimizationSelect"
+        class="w-full p-2 bg-black/30 border border-white/20 rounded text-white text-xs mb-2"
+        [value]="selectedOptimization()"
+        (change)="onOptimizationChange($event)"
+        >
+        <option value="Performance">Performance</option>
+        <option value="Balanced Quality">Balanced Quality</option>
+        <option value="Ultra Quality">Ultra Quality</option>
+      </select>
+
+      @if (fullPageEnabled()) {
+        <div
+          class="my-2 border-t border-white/10 pt-2"
+          >
+          <label
+            class="block text-xs text-white/70 mb-1"
+            for="fullPageSettings"
+            >
+            FullPage Settings:
+          </label>
+          <div class="flex flex-col gap-1.5">
+            <label
+              class="flex items-center gap-2 text-xs text-white/80 cursor-pointer hover:text-white"
+              >
+              <input
+                name="fullPageSettings"
+                type="checkbox"
+                class="w-3.5 h-3.5 accent-purple-500"
+                [checked]="fullPageConfig().keyboardScrolling"
+                (change)="updateFullPageConfig('keyboardScrolling', $event)"
+                />
+                <span>Keyboard Navigation</span>
+              </label>
+              <label
+                class="flex items-center gap-2 text-xs text-white/80 cursor-pointer hover:text-white"
+                >
+                <input
+                  name="fullPageSettings"
+                  type="checkbox"
+                  class="w-3.5 h-3.5 accent-purple-500"
+                  [checked]="fullPageConfig().touchScrolling"
+                  (change)="updateFullPageConfig('touchScrolling', $event)"
+                  />
+                  <span>Touch Navigation</span>
+                </label>
+                <label
+                  class="flex items-center gap-2 text-xs text-white/80 cursor-pointer hover:text-white"
+                  >
+                  <input
+                    name="fullPageSettings"
+                    type="checkbox"
+                    class="w-3.5 h-3.5 accent-purple-500"
+                    [checked]="fullPageConfig().continuousVertical"
+                    (change)="updateFullPageConfig('continuousVertical', $event)"
+                    />
+                    <span>Continuous Loop</span>
+                  </label>
+                </div>
+              </div>
+            }
+
+            <div class="my-2">
+              <label class="block text-xs text-white/70 mb-1" for="quickNavigation">
+                Quick Navigation:
+              </label>
+              <div class="grid grid-cols-2 gap-1">
+                <button
+                  name="quickNavigation"
+                  class="px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white cursor-pointer text-xs transition-all duration-200 hover:bg-white/10"
+                  (click)="navigateToSection('hero')"
+                  >
+                  Hero
+                </button>
+                <button
+                  name="quickNavigation"
+                  class="px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white cursor-pointer text-xs transition-all duration-200 hover:bg-white/10"
+                  (click)="navigateToSection('platform-pillars')"
+                  >
+                  Pillars
+                </button>
+                <button
+                  name="quickNavigation"
+                  class="px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white cursor-pointer text-xs transition-all duration-200 hover:bg-white/10"
+                  (click)="navigateToSection('demo-theater')"
+                  >
+                  Theater
+                </button>
+                <button
+                  name="quickNavigation"
+                  class="px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white cursor-pointer text-xs transition-all duration-200 hover:bg-white/10"
+                  (click)="navigateToSection('ecosystem-explorer')"
+                  >
+                  Ecosystem
+                </button>
+                <button
+                  name="quickNavigation"
+                  class="px-2 py-1.5 bg-white/5 border border-white/10 rounded text-white cursor-pointer text-xs transition-all duration-200 hover:bg-white/10"
+                  (click)="navigateToSection('architecture-diagram')"
+                  >
+                  Architecture
+                </button>
+              </div>
+            </div>
+
+            <button
+              class="px-4 py-2 bg-sky-500/20 border border-sky-500/40 rounded-md text-white cursor-pointer transition-all duration-200 text-sm hover:bg-sky-500/40"
+              (click)="exportDemoInfo()"
+              >
+              📊 Export Demo Info
+            </button>
+          </div>
+
+          <div class="my-2 relative">
+            <div
+              class="h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-sm transition-all duration-300 relative overflow-hidden before:content-[''] before:absolute before:inset-0 before:bg-white/10 before:-z-10 before:rounded-sm"
+              [style.width.%]="cinematicScrollService.narrativeProgress()"
+            ></div>
+            <span class="block text-xs text-white/60 capitalize mt-1">{{
+              cinematicScrollService.currentSection()
+            }}</span>
+          </div>
+
+          <!-- <div class="performance-monitor" [class.warning]="!recordingPerformanceService.isPerformanceOptimal()">
+          <div class="fps-display">FPS: {{ recordingPerformanceService.currentMetrics().fps }}</div>
+          <div class="grade-display grade-{{ recordingPerformanceService.performanceGrade().toLowerCase() }}">
+            Grade: {{ recordingPerformanceService.performanceGrade() }}
+          </div>
+        </div> -->
+      </div>
+    </div>
+    <!-- Hero Section -->
+    <section
+      id="hero"
+      class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-radial from-purple-500/15 via-transparent to-transparent snap-start snap-always"
+      >
+      <div
+        class="w-full h-full flex items-center justify-center relative p-8 box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"
+        >
+        <brand-hero-section />
+      </div>
+    </section>
+
+    <!-- Platform Pillars Section -->
+    <section
+      id="platform-pillars"
+      class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-to-r from-pink-500/10 to-purple-500/10 snap-start snap-always"
+      >
+      <div
+        class="w-full h-full flex items-center justify-center relative p-8 box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"
+        >
+        <brand-platform-pillars />
+      </div>
+    </section>
+
+    <!-- Demo Theater Section -->
+    <section
+      id="demo-theater"
+      class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-to-br from-sky-500/10 to-purple-500/10 snap-start snap-always"
+      >
+      <div
+        class="w-full h-full flex items-center justify-center relative p-8 box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"
+        >
+        <brand-demo-theater />
+      </div>
+    </section>
+
+    <!-- Ecosystem Explorer Section -->
+    <section
+      id="ecosystem-explorer"
+      class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-radial from-green-500/10 via-transparent to-transparent snap-start snap-always"
+      >
+      <div
+        class="w-full h-full flex items-center justify-center relative p-8 box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"
+        >
+        <brand-ecosystem-explorer />
+      </div>
+    </section>
+
+    <!-- Architecture Deep Dive Section -->
+    <section
+      id="architecture-diagram"
+      class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-to-b from-yellow-500/10 to-pink-500/10 snap-start snap-always"
+      >
+      <div
+        class="w-full h-full flex items-center justify-center relative p-8 box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"
+        >
+        <brand-architecture-diagram />
+      </div>
+    </section>
+
+    <!-- FullPage Navigation Dots -->
+    @if (fullPageEnabled()) {
+      <brand-fullpage-navigation></brand-fullpage-navigation>
+    }
+
+    <!-- Navigation to other features -->
+    <nav
+      class="h-screen w-screen flex flex-col items-center justify-center p-8 box-border text-center bg-black/30 relative snap-start snap-always"
+      [class.fullpage-section]="fullPageEnabled()"
+      id="feature-navigation"
+      >
+      <h3 class="text-3xl mb-8 text-white text-center">
+        Explore Platform Features
+      </h3>
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-auto-fit gap-6 max-w-6xl mx-auto"
+        style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))"
+        >
+        <a
+          routerLink="/spatial-interface"
+          class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
+          >
+          <h4 class="m-0 mb-2 text-xl text-purple-500">3D Agent Visualization</h4>
+          <p class="m-0 text-white/70 text-sm">Interactive spatial interface</p>
+        </a>
+        <a
+          routerLink="/workflow-canvas"
+          class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
+          >
+          <h4 class="m-0 mb-2 text-xl text-purple-500">Workflow Canvas</h4>
+          <p class="m-0 text-white/70 text-sm">Visual workflow designer</p>
+        </a>
+        <a
+          routerLink="/memory-constellation"
+          class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
+          >
+          <h4 class="m-0 mb-2 text-xl text-purple-500">Memory Constellation</h4>
+          <p class="m-0 text-white/70 text-sm">Distributed memory system</p>
+        </a>
+        <a
+          routerLink="/chat-interface"
+          class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
+          >
+          <h4 class="m-0 mb-2 text-xl text-purple-500">AI Chat Interface</h4>
+          <p class="m-0 text-white/70 text-sm">Conversational AI experience</p>
+        </a>
+        <a
+          routerLink="/content-forge"
+          class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
+          >
+          <h4 class="m-0 mb-2 text-xl text-purple-500">Content Forge</h4>
+          <p class="m-0 text-white/70 text-sm">AI-powered content creation</p>
+        </a>
+      </div>
+    </nav>
+  </div>

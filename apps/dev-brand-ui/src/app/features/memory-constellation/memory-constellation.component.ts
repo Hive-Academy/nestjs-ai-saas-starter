@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'brand-memory-constellation',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="memory-constellation">
       <h1>Memory Constellation</h1>
