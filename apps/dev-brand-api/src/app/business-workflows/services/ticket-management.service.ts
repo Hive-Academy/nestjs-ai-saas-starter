@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
 import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
@@ -15,7 +15,6 @@ import type {
  */
 @Injectable()
 export class TicketManagementService {
-  private readonly logger = new Logger(TicketManagementService.name);
 
   constructor(
     private readonly workflowManager: WorkflowManagerService,

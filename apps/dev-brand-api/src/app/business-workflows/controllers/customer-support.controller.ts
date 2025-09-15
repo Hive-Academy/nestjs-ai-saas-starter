@@ -14,6 +14,7 @@ import { TicketManagementService } from '../services/ticket-management.service';
 import { UserInterruptionManagementService } from '../services/user-interruption-management.service';
 import { MetricsAnalyticsService } from '../services/metrics-analytics.service';
 import { KnowledgeBaseManagementService } from '../services/knowledge-base-management.service';
+import { AgentRegistryService } from '../core/agent-registry.service';
 import type {
   TicketRequest,
   CustomerSupportMetrics,
@@ -34,7 +35,8 @@ export class CustomerSupportController {
     private readonly ticketManagementService: TicketManagementService,
     private readonly userInterruptionManagementService: UserInterruptionManagementService,
     private readonly metricsAnalyticsService: MetricsAnalyticsService,
-    private readonly knowledgeBaseManagementService: KnowledgeBaseManagementService
+    private readonly knowledgeBaseManagementService: KnowledgeBaseManagementService,
+    private readonly agentRegistry: AgentRegistryService
   ) {}
 
   // ===== TICKET MANAGEMENT ENDPOINTS =====
@@ -353,7 +355,7 @@ export class CustomerSupportController {
    * Get most popular articles
    */
   @Get('knowledge-base/popular')
-  async getPopularArticles(@Query('limit') limit: number = 10) {
+  async getPopularArticles(@Query('limit') limit = 10) {
     return this.knowledgeBaseManagementService.getPopularArticles(limit);
   }
 
@@ -388,29 +390,11 @@ export class CustomerSupportController {
    */
   @Get('agents')
   async getAvailableAgents() {
-    try {
-      // Return mock agent data since the actual getRegisteredAgents method structure needs to be defined
-      const customerSupportAgents = [
-        {
-          id: 'customer-support-agent',
-          name: 'Customer Support Agent',
-          type: 'support',
-          status: 'active',
-          capabilities: ['ticket-analysis', 'customer-support'],
-        },
-      ];
-
-      return {
-        success: true,
-        data: customerSupportAgents,
-        total: customerSupportAgents.length,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        data: [],
-      };
-    }
+    const agents = this.agentRegistry.list();
+    return {
+      success: true,
+      data: agents,
+      total: agents.length,
+    };
   }
 }

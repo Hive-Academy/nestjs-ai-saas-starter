@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { MessageEvent } from '@nestjs/common';
 import { BusinessMetricsService } from './business-metrics.service';
@@ -13,7 +13,6 @@ import type {
  */
 @Injectable()
 export class MetricsAnalyticsService {
-  private readonly logger = new Logger(MetricsAnalyticsService.name);
 
   constructor(
     private readonly metricsService: BusinessMetricsService

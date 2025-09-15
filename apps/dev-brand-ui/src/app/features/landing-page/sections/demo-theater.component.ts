@@ -5,12 +5,12 @@ import {
   ViewChild,
   ElementRef,
   signal,
-  inject,
-  DestroyRef,
+  // inject, // Removed as not used
+  // DestroyRef, // Removed as not used
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+// import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // Removed as not used
 import { gsap } from 'gsap';
 
 interface DemoShowcase {
@@ -55,19 +55,31 @@ interface DemoShowcase {
         <div class="stage-screen" [class.playing]="isPlaying()">
           <!-- Video Player Placeholder -->
           <div class="video-player" *ngIf="selectedDemo(); else selectPrompt">
-            <div class="player-overlay">
-              <div class="play-controls">
+            <!-- Enhanced Player Overlay -->
+            <div class="player-overlay" [class.minimal]="isPlaying()">
+              <!-- Central Play Controls -->
+              <div class="central-controls">
                 <button
-                  class="play-btn"
+                  class="play-btn-large"
                   (click)="togglePlay()"
                   [class.playing]="isPlaying()"
                 >
-                  <span *ngIf="!isPlaying()">▶</span>
-                  <span *ngIf="isPlaying()">⏸</span>
+                  <div class="play-icon">
+                    <span *ngIf="!isPlaying()">▶</span>
+                    <span *ngIf="isPlaying()">⏸</span>
+                  </div>
                 </button>
               </div>
-              <div class="demo-info">
-                <h3>{{ selectedDemo()?.title }}</h3>
+              
+              <!-- Demo Information Panel -->
+              <div class="demo-info" [class.collapsed]="isPlaying()">
+                <div class="info-header">
+                  <h3>{{ selectedDemo()?.title }}</h3>
+                  <div class="live-badge" *ngIf="selectedDemo()?.isLive">
+                    <div class="live-dot"></div>
+                    LIVE
+                  </div>
+                </div>
                 <p>{{ selectedDemo()?.description }}</p>
                 <div class="demo-features">
                   <span
@@ -78,16 +90,68 @@ interface DemoShowcase {
                   </span>
                 </div>
               </div>
+              
+              <!-- Advanced Player Controls -->
+              <div class="player-controls" [class.visible]="isPlaying()">
+                <div class="controls-row">
+                  <button class="control-btn" (click)="seekBackward()">
+                    <span>⏪</span>
+                  </button>
+                  <button class="control-btn" (click)="togglePlay()">
+                    <span *ngIf="!isPlaying()">▶</span>
+                    <span *ngIf="isPlaying()">⏸</span>
+                  </button>
+                  <button class="control-btn" (click)="seekForward()">
+                    <span>⏩</span>
+                  </button>
+                  <div class="time-display">
+                    {{ currentTime() }} / {{ totalTime() }}
+                  </div>
+                  <button class="control-btn" (click)="toggleFullscreen()">
+                    <span *ngIf="!isFullscreen()">⛶</span>
+                    <span *ngIf="isFullscreen()">⛴</span>
+                  </button>
+                </div>
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill" [style.width.%]="playbackProgress()"></div>
+                    <div class="progress-thumb" [style.left.%]="playbackProgress()"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <!-- Simulated video content -->
+            <!-- Enhanced Video Simulation Layer -->
             <div class="video-simulation" [class.active]="isPlaying()">
-              <div class="code-lines">
-                <div
-                  *ngFor="let line of codeLines; let i = index"
-                  class="code-line"
-                  [style.animation-delay.s]="i * 0.1"
-                >
-                  {{ line }}
+              <!-- Dynamic Code Animation -->
+              <div class="code-terminal">
+                <div class="terminal-header">
+                  <div class="terminal-controls">
+                    <div class="control-dot red"></div>
+                    <div class="control-dot yellow"></div>
+                    <div class="control-dot green"></div>
+                  </div>
+                  <div class="terminal-title">AI Workflow Engine - Live Demo</div>
+                </div>
+                <div class="code-lines">
+                  <div
+                    *ngFor="let line of codeLines; let i = index"
+                    class="code-line"
+                    [class.highlighted]="isPlaying() && (playbackProgress() * codeLines.length / 100) > i"
+                    [style.animation-delay.s]="i * 0.15"
+                  >
+                    <span class="line-number">{{ i + 1 }}</span>
+                    <span class="line-content">{{ line }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Cinematic Visual Effects -->
+              <div class="visual-effects" [class.active]="isPlaying()">
+                <div class="data-stream"></div>
+                <div class="neural-network"></div>
+                <div class="processing-indicators">
+                  <div class="indicator" *ngFor="let indicator of [1,2,3,4,5]" 
+                       [style.animation-delay.s]="indicator * 0.3"></div>
                 </div>
               </div>
             </div>
@@ -617,7 +681,7 @@ interface DemoShowcase {
   ],
 })
 export class DemoTheaterComponent implements OnInit, OnDestroy {
-  private readonly destroyRef = inject(DestroyRef);
+  // private readonly destroyRef = inject(DestroyRef); // Removed as not used
 
   @ViewChild('theaterStage', { static: true })
   theaterStage!: ElementRef<HTMLDivElement>;
@@ -629,6 +693,13 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
   readonly activeCategory = signal<string>('All');
   readonly isPlaying = signal(false);
   readonly isTheaterReady = signal(false);
+  readonly playbackProgress = signal(0);
+  readonly isFullscreen = signal(false);
+  readonly currentTime = signal('00:00');
+  readonly totalTime = signal('00:00');
+  
+  private playbackInterval?: number;
+  private cinematicEffects?: any;
 
   readonly categories = ['All', 'Workflows', 'Memory', 'Streaming', 'Safety'];
 
@@ -752,7 +823,12 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Cleanup handled by destroyRef
+    if (this.playbackInterval) {
+      clearInterval(this.playbackInterval);
+    }
+    if (this.cinematicEffects) {
+      this.cinematicEffects.kill();
+    }
   }
 
   trackCategory(_index: number, category: string): string {
@@ -772,13 +848,87 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
   selectDemo(demo: DemoShowcase): void {
     this.selectedDemo.set(demo);
     this.isPlaying.set(false);
+    this.playbackProgress.set(0);
+    this.updateTimeDisplay();
     this.animateDemoSelection();
   }
 
   togglePlay(): void {
     const newPlayState = !this.isPlaying();
     this.isPlaying.set(newPlayState);
+    
+    if (newPlayState) {
+      this.startPlayback();
+    } else {
+      this.pausePlayback();
+    }
+    
     this.animatePlayState(newPlayState);
+  }
+  
+  seekBackward(): void {
+    const currentProgress = Math.max(0, this.playbackProgress() - 10);
+    this.playbackProgress.set(currentProgress);
+    this.updateTimeDisplay();
+  }
+  
+  seekForward(): void {
+    const currentProgress = Math.min(100, this.playbackProgress() + 10);
+    this.playbackProgress.set(currentProgress);
+    this.updateTimeDisplay();
+  }
+  
+  toggleFullscreen(): void {
+    this.isFullscreen.set(!this.isFullscreen());
+    // Implement fullscreen logic here
+  }
+  
+  private startPlayback(): void {
+    if (this.playbackInterval) {
+      clearInterval(this.playbackInterval);
+    }
+    
+    this.playbackInterval = setInterval(() => {
+      const currentProgress = this.playbackProgress();
+      if (currentProgress >= 100) {
+        this.pausePlayback();
+        this.playbackProgress.set(0);
+        return;
+      }
+      
+      this.playbackProgress.set(currentProgress + 0.5);
+      this.updateTimeDisplay();
+    }, 100) as any;
+  }
+  
+  private pausePlayback(): void {
+    if (this.playbackInterval) {
+      clearInterval(this.playbackInterval);
+      this.playbackInterval = undefined;
+    }
+    this.isPlaying.set(false);
+  }
+  
+  private updateTimeDisplay(): void {
+    const demo = this.selectedDemo();
+    if (!demo) return;
+    
+    const totalSeconds = this.parseDuration(demo.duration);
+    const currentSeconds = (this.playbackProgress() / 100) * totalSeconds;
+    
+    this.currentTime.set(this.formatTime(currentSeconds));
+    this.totalTime.set(this.formatTime(totalSeconds));
+  }
+  
+  private parseDuration(duration: string): number {
+    const [minutes, seconds] = duration.split(':').map(Number);
+    return minutes * 60 + seconds;
+  }
+  
+  private formatTime(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
   private initializeTheater(): void {

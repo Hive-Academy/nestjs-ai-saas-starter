@@ -51,7 +51,6 @@ import { HealthController } from './controllers/health.controller';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
-import { ShowcaseModule } from './showcase/showcase.module';
 
 @Module({
   imports: [
@@ -164,8 +163,7 @@ import { ShowcaseModule } from './showcase/showcase.module';
     }),
 
     // Business modules
-    BusinessWorkflowsModule,
-    ShowcaseModule,
+  BusinessWorkflowsModule,
   ],
   controllers: [
     HealthController,

@@ -6,11 +6,11 @@ import {
   ElementRef,
   signal,
   inject,
-  DestroyRef,
+  // DestroyRef, // Removed as not used
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+// import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // Removed as not used
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import {
@@ -257,15 +257,18 @@ interface PlatformPillar {
 })
 export class PlatformPillarsComponent implements OnInit, OnDestroy {
   private readonly threeService = inject(ThreeIntegrationService);
-  private readonly destroyRef = inject(DestroyRef);
+  // private readonly destroyRef = inject(DestroyRef); // Removed as not used
 
   @ViewChild('sceneContainer', { static: true })
   sceneContainer!: ElementRef<HTMLDivElement>;
 
   private sceneInstance: SceneInstance | null = null;
   private pillarMeshes: Map<string, THREE.Mesh> = new Map();
+  private statusIndicators: Map<string, THREE.Mesh> = new Map();
+  private glowEffects: Map<string, THREE.Mesh> = new Map();
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2();
+  private ambientParticles?: THREE.Points;
 
   readonly activePillar = signal<string | null>(null);
   readonly isSceneReady = signal(false);
@@ -419,59 +422,142 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
   private setupLighting(): void {
     if (!this.sceneInstance) return;
 
-    // Ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+    // Enhanced ambient light with warmer tone
+    const ambientLight = new THREE.AmbientLight(0x2a2a4a, 0.4);
     this.sceneInstance.scene.add(ambientLight);
 
-    // Directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 5);
+    // Main directional light with enhanced shadows
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    directionalLight.position.set(15, 20, 10);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 4096;
+    directionalLight.shadow.mapSize.height = 4096;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 100;
+    directionalLight.shadow.camera.left = -20;
+    directionalLight.shadow.camera.right = 20;
+    directionalLight.shadow.camera.top = 20;
+    directionalLight.shadow.camera.bottom = -20;
+    directionalLight.shadow.bias = -0.0001;
     this.sceneInstance.scene.add(directionalLight);
 
-    // Point lights for each pillar
-    this.pillars.forEach((pillar) => {
-      const pointLight = new THREE.PointLight(pillar.color, 0.5, 10);
+    // Secondary fill light
+    const fillLight = new THREE.DirectionalLight(0x4a4aff, 0.3);
+    fillLight.position.set(-10, 10, -5);
+    this.sceneInstance.scene.add(fillLight);
+
+    // Enhanced point lights for each pillar with dynamic intensity
+    this.pillars.forEach((pillar, index) => {
+      const pointLight = new THREE.PointLight(pillar.color, 0.8, 15);
       pointLight.position.set(...pillar.position);
-      pointLight.position.y = 3;
+      pointLight.position.y = 5;
+      pointLight.castShadow = true;
+      pointLight.shadow.mapSize.width = 1024;
+      pointLight.shadow.mapSize.height = 1024;
       this.sceneInstance!.scene.add(pointLight);
+      
+      // Add rim light for dramatic effect
+      const rimLight = new THREE.PointLight(pillar.color, 0.4, 8);
+      rimLight.position.set(pillar.position[0], pillar.position[1] + 6, pillar.position[2] - 3);
+      this.sceneInstance!.scene.add(rimLight);
     });
+    
+    // Add atmospheric spotlight
+    const spotlight = new THREE.SpotLight(0x8a2be2, 0.5, 30, Math.PI / 6, 0.3);
+    spotlight.position.set(0, 25, 0);
+    spotlight.target.position.set(0, 0, 0);
+    spotlight.castShadow = true;
+    this.sceneInstance.scene.add(spotlight);
+    this.sceneInstance.scene.add(spotlight.target);
   }
 
   private createPillarMeshes(): void {
     if (!this.sceneInstance) return;
 
-    this.pillars.forEach((pillar) => {
-      // Create pillar geometry
-      const geometry = new THREE.BoxGeometry(2, 4, 2);
-      const material = new THREE.MeshPhongMaterial({
-        color: pillar.color,
+    this.pillars.forEach((pillar, index) => {
+      // Create enhanced pillar geometry with more detail
+      const geometry = new THREE.BoxGeometry(2.5, 5, 2.5, 4, 8, 4);
+      
+      // Create advanced material with PBR properties
+      const material = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(pillar.color),
+        metalness: 0.7,
+        roughness: 0.2,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
         transparent: true,
-        opacity: 0.8,
-        emissive: pillar.color,
-        emissiveIntensity: 0.1,
+        opacity: 0.9,
+        emissive: new THREE.Color(pillar.color),
+        emissiveIntensity: 0.15,
+        envMapIntensity: 1.0,
+        transmission: 0.1,
+        thickness: 0.5,
+        ior: 1.5
       });
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(...pillar.position);
+      mesh.position.y = 2.5; // Raise the pillars
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData = { pillarId: pillar.id };
 
-      // Add wireframe overlay
+      // Add enhanced glow effect
+      const glowGeometry = new THREE.BoxGeometry(3.2, 6, 3.2);
+      const glowMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(pillar.color),
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.BackSide,
+        blending: THREE.AdditiveBlending
+      });
+      const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+      glowMesh.position.copy(mesh.position);
+      this.sceneInstance!.scene.add(glowMesh);
+      this.glowEffects.set(pillar.id, glowMesh);
+
+      // Add dynamic status indicator on top
+      const indicatorGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+      const indicatorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ff00, // Green for active status
+        emissive: 0x004400,
+        emissiveIntensity: 0.5
+      });
+      const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+      indicator.position.set(...pillar.position);
+      indicator.position.y = 6;
+      this.sceneInstance!.scene.add(indicator);
+      this.statusIndicators.set(pillar.id, indicator);
+
+      // Add enhanced wireframe with multiple layers
       const wireframeGeometry = new THREE.EdgesGeometry(geometry);
       const wireframeMaterial = new THREE.LineBasicMaterial({
-        color: pillar.color,
+        color: new THREE.Color(pillar.color).multiplyScalar(1.5),
         transparent: true,
-        opacity: 0.3,
+        opacity: 0.6,
+        linewidth: 2
       });
       const wireframe = new THREE.LineSegments(
         wireframeGeometry,
         wireframeMaterial
       );
       mesh.add(wireframe);
+
+      // Add base platform
+      const platformGeometry = new THREE.CylinderGeometry(2, 2.5, 0.3, 12);
+      const platformMaterial = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(pillar.color).multiplyScalar(0.7),
+        metalness: 0.9,
+        roughness: 0.1,
+        emissive: new THREE.Color(pillar.color),
+        emissiveIntensity: 0.1
+      });
+      const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+      platform.position.set(...pillar.position);
+      platform.position.y = -0.15;
+      platform.castShadow = true;
+      platform.receiveShadow = true;
+      this.sceneInstance!.scene.add(platform);
 
       this.sceneInstance!.scene.add(mesh);
       this.pillarMeshes.set(pillar.id, mesh);
@@ -481,40 +567,81 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
   private addAmbientEffects(): void {
     if (!this.sceneInstance) return;
 
-    // Add particle system
-    const particleCount = 300;
+    // Enhanced particle system with multiple layers
+    const particleCount = 800;
     const particles = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+    const velocities = new Float32Array(particleCount * 3);
+
+    const pillarColors = this.pillars.map(p => new THREE.Color(p.color));
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      positions[i3] = (Math.random() - 0.5) * 50;
-      positions[i3 + 1] = Math.random() * 20;
-      positions[i3 + 2] = (Math.random() - 0.5) * 50;
+      
+      // Distribute particles in cylindrical volume around pillars
+      const radius = 15 + Math.random() * 25;
+      const angle = Math.random() * Math.PI * 2;
+      const height = Math.random() * 15;
+      
+      positions[i3] = Math.cos(angle) * radius;
+      positions[i3 + 1] = height;
+      positions[i3 + 2] = Math.sin(angle) * radius;
 
-      const color = new THREE.Color().setHSL(
-        Math.random() * 0.3 + 0.5,
-        0.7,
-        0.5
-      );
+      // Choose color based on nearest pillar
+      const color = pillarColors[Math.floor(Math.random() * pillarColors.length)];
       colors[i3] = color.r;
       colors[i3 + 1] = color.g;
       colors[i3 + 2] = color.b;
+      
+      sizes[i] = Math.random() * 2 + 0.5;
+      
+      // Add gentle movement
+      velocities[i3] = (Math.random() - 0.5) * 0.02;
+      velocities[i3 + 1] = Math.random() * 0.01;
+      velocities[i3 + 2] = (Math.random() - 0.5) * 0.02;
     }
 
     particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    particles.userData = { velocities };
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 1.5,
+      size: 3,
+      sizeAttenuation: true,
       vertexColors: true,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending
     });
 
-    const particleSystem = new THREE.Points(particles, particleMaterial);
-    this.sceneInstance.scene.add(particleSystem);
+    this.ambientParticles = new THREE.Points(particles, particleMaterial);
+    this.sceneInstance.scene.add(this.ambientParticles);
+    
+    // Add floating geometric elements
+    for (let i = 0; i < 20; i++) {
+      const geometry = Math.random() > 0.5 
+        ? new THREE.TetrahedronGeometry(0.2)
+        : new THREE.OctahedronGeometry(0.2);
+        
+      const material = new THREE.MeshBasicMaterial({
+        color: pillarColors[Math.floor(Math.random() * pillarColors.length)],
+        transparent: true,
+        opacity: 0.3,
+        wireframe: true
+      });
+      
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(
+        (Math.random() - 0.5) * 40,
+        Math.random() * 20,
+        (Math.random() - 0.5) * 40
+      );
+      
+      this.sceneInstance.scene.add(mesh);
+    }
   }
 
   private setupInteractions(): void {
@@ -543,7 +670,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     );
 
     if (intersects.length > 0) {
-      const pillarId = intersects[0].object.userData.pillarId;
+      const pillarId = intersects[0].object.userData['pillarId'];
       if (this.activePillar() !== pillarId) {
         this.onPillarHover(pillarId);
       }
@@ -565,7 +692,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     );
 
     if (intersects.length > 0) {
-      const pillarId = intersects[0].object.userData.pillarId;
+      const pillarId = intersects[0].object.userData['pillarId'];
       this.onPillarClick(pillarId);
     }
   }
@@ -574,53 +701,156 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     const time = performance.now() * 0.001;
 
     this.pillarMeshes.forEach((mesh, pillarId) => {
-      // Gentle floating animation
-      mesh.position.y = Math.sin(time + pillarId.length) * 0.3;
-      mesh.rotation.y = time * 0.2;
+      // const baseY = mesh.position.y;
+      
+      // Enhanced floating animation with different frequencies
+      mesh.position.y = 2.5 + Math.sin(time * 1.5 + pillarId.length) * 0.4;
+      mesh.rotation.y = time * 0.3;
+      mesh.rotation.x = Math.sin(time * 0.8) * 0.05;
 
-      // Pulsing effect for active pillar
+      // Dynamic scaling and pulsing
       if (this.activePillar() === pillarId) {
-        const scale = 1 + Math.sin(time * 3) * 0.1;
+        const scale = 1 + Math.sin(time * 4) * 0.15;
         mesh.scale.setScalar(scale);
+        
+        // Enhanced glow effect
+        const glow = this.glowEffects.get(pillarId);
+        if (glow) {
+          (glow.material as THREE.MeshBasicMaterial).opacity = 0.3 + Math.sin(time * 5) * 0.1;
+          glow.scale.setScalar(1.1 + Math.sin(time * 3) * 0.2);
+        }
       } else {
         mesh.scale.setScalar(1);
+        const glow = this.glowEffects.get(pillarId);
+        if (glow) {
+          (glow.material as THREE.MeshBasicMaterial).opacity = 0.15;
+          glow.scale.setScalar(1);
+        }
+      }
+      
+      // Animate status indicators
+      const indicator = this.statusIndicators.get(pillarId);
+      if (indicator) {
+        indicator.position.y = 6 + Math.sin(time * 2 + pillarId.length) * 0.2;
+        (indicator.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + Math.sin(time * 6) * 0.3;
+        
+        // Change color based on activity
+        if (this.activePillar() === pillarId) {
+          (indicator.material as THREE.MeshStandardMaterial).color.setHex(0xffaa00); // Orange for selected
+          (indicator.material as THREE.MeshStandardMaterial).emissive.setHex(0x442200);
+        } else {
+          (indicator.material as THREE.MeshStandardMaterial).color.setHex(0x00ff00); // Green for active
+          (indicator.material as THREE.MeshStandardMaterial).emissive.setHex(0x004400);
+        }
       }
     });
+    
+    // Animate ambient particles
+    if (this.ambientParticles) {
+      const positions = this.ambientParticles.geometry.attributes['position'] as THREE.BufferAttribute;
+      const velocities = this.ambientParticles.userData['velocities'];
+      
+      for (let i = 0; i < positions.count; i++) {
+        const i3 = i * 3;
+        positions.array[i3] += velocities[i3];
+        positions.array[i3 + 1] += velocities[i3 + 1];
+        positions.array[i3 + 2] += velocities[i3 + 2];
+        
+        // Reset particles that drift too far
+        if (Math.abs(positions.array[i3]) > 50 || positions.array[i3 + 1] > 20) {
+          const radius = 15 + Math.random() * 10;
+          const angle = Math.random() * Math.PI * 2;
+          positions.array[i3] = Math.cos(angle) * radius;
+          positions.array[i3 + 1] = 0;
+          positions.array[i3 + 2] = Math.sin(angle) * radius;
+        }
+      }
+      
+      positions.needsUpdate = true;
+      this.ambientParticles.rotation.y += 0.001;
+    }
   }
 
   private highlightPillar(pillarId: string): void {
     const mesh = this.pillarMeshes.get(pillarId);
     if (!mesh) return;
 
-    // Animate highlight
+    // Enhanced highlight animation
     gsap.to(mesh.material, {
-      duration: 0.3,
+      duration: 0.4,
       opacity: 1,
-      emissiveIntensity: 0.3,
+      emissiveIntensity: 0.4,
+      metalness: 0.9,
+      roughness: 0.1,
       ease: 'power2.out',
     });
+    
+    // Enhanced glow effect
+    const glow = this.glowEffects.get(pillarId);
+    if (glow) {
+      gsap.to(glow.material, {
+        duration: 0.4,
+        opacity: 0.4,
+        ease: 'power2.out'
+      });
+      gsap.to(glow.scale, {
+        duration: 0.4,
+        x: 1.3,
+        y: 1.3,
+        z: 1.3,
+        ease: 'power2.out'
+      });
+    }
 
-    // Dim other pillars
+    // Dim other pillars with more dramatic effect
     this.pillarMeshes.forEach((otherMesh, otherId) => {
       if (otherId !== pillarId) {
         gsap.to(otherMesh.material, {
-          duration: 0.3,
-          opacity: 0.4,
+          duration: 0.4,
+          opacity: 0.3,
           emissiveIntensity: 0.05,
+          metalness: 0.5,
           ease: 'power2.out',
         });
+        
+        const otherGlow = this.glowEffects.get(otherId);
+        if (otherGlow) {
+          gsap.to(otherGlow.material, {
+            duration: 0.4,
+            opacity: 0.05,
+            ease: 'power2.out'
+          });
+        }
       }
     });
   }
 
   private resetPillarHighlights(): void {
-    this.pillarMeshes.forEach((mesh) => {
+    this.pillarMeshes.forEach((mesh, pillarId) => {
       gsap.to(mesh.material, {
-        duration: 0.3,
-        opacity: 0.8,
-        emissiveIntensity: 0.1,
+        duration: 0.4,
+        opacity: 0.9,
+        emissiveIntensity: 0.15,
+        metalness: 0.7,
+        roughness: 0.2,
         ease: 'power2.out',
       });
+      
+      const glow = this.glowEffects.get(pillarId);
+      if (glow) {
+        gsap.to(glow.material, {
+          duration: 0.4,
+          opacity: 0.15,
+          ease: 'power2.out'
+        });
+        gsap.to(glow.scale, {
+          duration: 0.4,
+          x: 1,
+          y: 1,
+          z: 1,
+          ease: 'power2.out'
+        });
+      }
     });
   }
 
@@ -660,6 +890,8 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     }
 
     this.pillarMeshes.clear();
+    this.statusIndicators.clear();
+    this.glowEffects.clear();
 
     if (this.sceneContainer?.nativeElement) {
       this.sceneContainer.nativeElement.removeEventListener(

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
 import { HumanApprovalService, InterruptionType } from '@hive-academy/langgraph-hitl';
 
@@ -8,7 +8,6 @@ import { HumanApprovalService, InterruptionType } from '@hive-academy/langgraph-
  */
 @Injectable()
 export class UserInterruptionManagementService {
-  private readonly logger = new Logger(UserInterruptionManagementService.name);
 
   constructor(
     private readonly workflowManager: WorkflowManagerService,

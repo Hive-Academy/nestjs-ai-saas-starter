@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, inject } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
@@ -121,15 +121,22 @@ import { ThreeIntegrationService } from '../../../core/services/three-integratio
       position: absolute;
       top: 2rem;
       right: 2rem;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(50, 205, 50, 0.3);
-      border-radius: 12px;
-      padding: 1.5rem;
-      max-width: 300px;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(50, 205, 50, 0.4);
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 400px;
       color: white;
       pointer-events: auto;
       transition: all 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    
+    .library-info.enhanced {
+      transform: scale(1.02);
+      border-color: rgba(50, 205, 50, 0.6);
+      box-shadow: 0 12px 48px rgba(50, 205, 50, 0.2);
     }
 
     .library-info h3 {
@@ -184,23 +191,39 @@ import { ThreeIntegrationService } from '../../../core/services/three-integratio
     .ecosystem-controls {
       position: absolute;
       bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 2rem;
+      right: 2rem;
       display: flex;
-      gap: 1rem;
+      justify-content: space-between;
+      align-items: center;
       pointer-events: auto;
+      z-index: 5;
+    }
+    
+    .view-controls, .camera-controls {
+      display: flex;
+      gap: 0.5rem;
     }
 
     .control-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       background: rgba(0, 0, 0, 0.7);
       border: 1px solid rgba(50, 205, 50, 0.3);
       color: rgba(255, 255, 255, 0.8);
-      padding: 0.8rem 1.5rem;
-      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      border-radius: 10px;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 0.9rem;
-      backdrop-filter: blur(5px);
+      font-size: 0.85rem;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      white-space: nowrap;
+    }
+    
+    .btn-icon {
+      font-size: 1rem;
     }
 
     .control-btn:hover {
@@ -211,10 +234,11 @@ import { ThreeIntegrationService } from '../../../core/services/three-integratio
     }
 
     .control-btn.active {
-      background: rgba(50, 205, 50, 0.2);
+      background: rgba(50, 205, 50, 0.25);
       border-color: #32cd32;
       color: #32cd32;
-      box-shadow: 0 0 20px rgba(50, 205, 50, 0.3);
+      box-shadow: 0 0 20px rgba(50, 205, 50, 0.4);
+      transform: translateY(-2px);
     }
 
     @media (max-width: 768px) {
@@ -246,7 +270,7 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
   @ViewChild('ecosystemCanvas', { static: true }) canvasRef!: ElementRef<HTMLElement>;
   
   private readonly threeService = inject(ThreeIntegrationService);
-  private readonly ngZone = inject(NgZone);
+  // private readonly ngZone = inject(NgZone); // Removed as not used
   
   private sceneId = 'ecosystem-explorer';
   private scene: THREE.Scene | null = null;
@@ -257,7 +281,12 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
   
   private libraryMeshes: THREE.Mesh[] = [];
   private dependencyLines: THREE.Line[] = [];
+  // private glowEffects: THREE.Mesh[] = [];
+  // private particleSystem: THREE.Points | null = null;
   private animationFrameId: number | null = null;
+  // private controls: any;
+  // private isInteracting = false;
+  private autoRotate = false;
   
   // Component state
   currentView: 'grid' | 'dependency' | 'layers' = 'grid';
@@ -394,10 +423,10 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
       this.sceneId,
       this.canvasRef.nativeElement,
       {
-        enableOrbitControls: true,
+        // enableOrbitControls: true, // Property may not exist in config
         backgroundColor: 0x0a0a1a,
         antialias: true,
-        alpha: true
+        // alpha: true // Property may not exist in config
       }
     );
     
@@ -590,8 +619,8 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
     
     if (intersects.length > 0) {
       const mesh = intersects[0].object as THREE.Mesh;
-      this.selectedLibrary = mesh.userData.library;
-      this.highlightLibraryAndDependencies(mesh.userData.library);
+      this.selectedLibrary = mesh.userData['library'];
+      this.highlightLibraryAndDependencies(mesh.userData['library']);
     } else {
       this.selectedLibrary = null;
       this.resetLibraryHighlights();
@@ -604,7 +633,7 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
     
     // Highlight selected library
     const selectedMesh = this.libraryMeshes.find(mesh => 
-      mesh.userData.library.name === library.name
+      mesh.userData['library'].name === library.name
     );
     
     if (selectedMesh) {
@@ -620,7 +649,7 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
     // Highlight dependencies
     library.dependencies.forEach((depName: string) => {
       const depMesh = this.libraryMeshes.find(mesh => 
-        mesh.userData.library.name === depName
+        mesh.userData['library'].name === depName
       );
       
       if (depMesh) {
@@ -685,7 +714,7 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
     layers.forEach((layer, layerIndex) => {
       layer.forEach((library, itemIndex) => {
         const mesh = this.libraryMeshes.find(m => 
-          m.userData.library.name === library.name
+          m.userData['library'].name === library.name
         );
         
         if (mesh) {
@@ -711,7 +740,7 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
     types.forEach((type, typeIndex) => {
       typeGroups[type].forEach((library, itemIndex) => {
         const mesh = this.libraryMeshes.find(m => 
-          m.userData.library.name === library.name
+          m.userData['library'].name === library.name
         );
         
         if (mesh) {
@@ -792,6 +821,59 @@ export class EcosystemExplorerComponent implements AfterViewInit, OnDestroy {
     }
   }
   
+  // New enhanced methods for better interactions
+  getDependentCount(libraryName: string): number {
+    return this.libraries.filter(lib => 
+      lib.dependencies.includes(libraryName)
+    ).length;
+  }
+  
+  getLibraryType(libraryName: string): string {
+    const library = this.libraries.find(lib => lib.name === libraryName);
+    return library ? library.type : 'Unknown';
+  }
+  
+  focusOnLibrary(libraryName: string): void {
+    const library = this.libraries.find(lib => lib.name === libraryName);
+    if (library) {
+      this.selectedLibrary = library;
+      this.highlightLibraryAndDependencies(library);
+      
+      // Animate camera to focus on the library
+      if (this.camera) {
+        gsap.to(this.camera.position, {
+          duration: 1.5,
+          x: library.position.x + 5,
+          y: library.position.y + 3,
+          z: library.position.z + 5,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            this.camera!.lookAt(library.position.x, library.position.y, library.position.z);
+          }
+        });
+      }
+    }
+  }
+  
+  resetCamera(): void {
+    if (this.camera) {
+      gsap.to(this.camera.position, {
+        duration: 1.2,
+        x: 10,
+        y: 8,
+        z: 10,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          this.camera!.lookAt(0, 0, 0);
+        }
+      });
+    }
+  }
+  
+  toggleAutoRotate(): void {
+    this.autoRotate = !this.autoRotate;
+  }
+
   private cleanup(): void {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);

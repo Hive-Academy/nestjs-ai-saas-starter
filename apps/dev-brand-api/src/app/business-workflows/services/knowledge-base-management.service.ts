@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import type {
   KnowledgeSearchQuery,
@@ -10,7 +10,6 @@ import type {
  */
 @Injectable()
 export class KnowledgeBaseManagementService {
-  private readonly logger = new Logger(KnowledgeBaseManagementService.name);
 
   constructor(
     private readonly knowledgeBaseService: KnowledgeBaseService
@@ -113,14 +112,14 @@ export class KnowledgeBaseManagementService {
         success: true,
         data: {
           totalArticles: analytics.totalArticles || 0,
-          totalSearches: analytics.totalSearches || 0,
-          averageRelevanceScore: analytics.averageRelevanceScore || 0,
+          totalSearches: 0, // Mock value since not in analytics
+          averageRelevanceScore: 0, // Mock value since not in analytics
           topCategories: analytics.topCategories || [],
-          recentActivity: analytics.recentActivity || [],
+          recentActivity: [], // Mock value since not in analytics
           performanceMetrics: {
-            searchLatency: analytics.averageSearchTime || 0,
-            hitRate: analytics.searchHitRate || 0,
-            userSatisfaction: analytics.userSatisfaction || 0,
+            searchLatency: 0, // Mock value since not in analytics
+            hitRate: 0, // Mock value since not in analytics
+            userSatisfaction: 0, // Mock value since not in analytics
           },
         },
       };

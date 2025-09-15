@@ -14,6 +14,9 @@ import { TicketManagementService } from './services/ticket-management.service';
 import { UserInterruptionManagementService } from './services/user-interruption-management.service';
 import { MetricsAnalyticsService } from './services/metrics-analytics.service';
 import { KnowledgeBaseManagementService } from './services/knowledge-base-management.service';
+import { AgentRegistryService } from './core/agent-registry.service';
+import { GithubActivityIntegrationService } from './core/integrations/github-activity.integration';
+import { ContentAnalysisService } from './core/analysis/content-analysis.service';
 
 /**
  * Business Workflows Module
@@ -39,6 +42,16 @@ import { KnowledgeBaseManagementService } from './services/knowledge-base-manage
     BusinessMetricsService,
     KnowledgeBaseService,
     CustomerSupportWorkflowService,
+
+    // Controller Delegate Services - Added for SRP compliance
+    TicketManagementService,
+    UserInterruptionManagementService,
+    MetricsAnalyticsService,
+    KnowledgeBaseManagementService,
+  AgentRegistryService,
+  // Migrated from showcase module (salvaged)
+  GithubActivityIntegrationService,
+  ContentAnalysisService,
 
     // Configuration providers using proper config pattern
     {
