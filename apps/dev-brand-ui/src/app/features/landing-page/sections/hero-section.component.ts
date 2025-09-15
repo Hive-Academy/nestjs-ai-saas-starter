@@ -109,7 +109,7 @@ import { gsap } from 'gsap';
       <div
         class="absolute top-5 right-5 bg-black bg-opacity-70 text-green-400 px-2 py-2 rounded text-xs font-mono z-30"
       >
-        FPS: {{ currentFPS() }} | Agents: {{ heroAgents().length }}
+        FPS: {{ currentFPS() }} | Circles: {{ heroCircles().length }}
       </div>
       }
     </div>
@@ -395,50 +395,56 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
   readonly currentFPS = signal(60);
   readonly showPerformanceDebug = signal(false); // Set to true for development
 
+  // Mouse tracking for interactive animation
+  private mousePosition = { x: 0, y: 0 };
+  private targetRotation = { x: 0, y: 0 };
+  private currentRotation = { x: 0, y: 0 };
+
   // Hero-specific agent configuration for 3D positioning
-  readonly heroAgents = signal([
+  // Restored floating circles positioned around hero text area
+  readonly heroCircles = signal([
     {
-      id: 'hero-central',
-      name: 'Central Intelligence',
-      type: 'coordinator',
-      position: { x: 0, y: 0, z: 0 },
-      scale: 1.5,
+      id: 'circle-1',
+      name: 'Floating Circle 1',
+      type: 'sphere',
+      position: { x: -6, y: 2, z: -1 },
+      scale: 1.2,
       isActive: true,
       color: '#8a2be2',
     },
     {
-      id: 'hero-memory',
-      name: 'Memory Agent',
-      type: 'memory',
-      position: { x: -4, y: 3, z: -2 },
-      scale: 1.0,
+      id: 'circle-2',
+      name: 'Floating Circle 2',
+      type: 'sphere',
+      position: { x: 6, y: -1, z: -2 },
+      scale: 0.9,
       isActive: true,
       color: '#ff69b4',
     },
     {
-      id: 'hero-workflow',
-      name: 'Workflow Agent',
-      type: 'workflow',
-      position: { x: 4, y: -2, z: -3 },
+      id: 'circle-3',
+      name: 'Floating Circle 3',
+      type: 'sphere',
+      position: { x: -4, y: -3, z: 1 },
       scale: 1.0,
       isActive: true,
       color: '#00bfff',
     },
     {
-      id: 'hero-analytics',
-      name: 'Analytics Agent',
-      type: 'analytics',
-      position: { x: -3, y: -3, z: 2 },
-      scale: 1.0,
+      id: 'circle-4',
+      name: 'Floating Circle 4',
+      type: 'sphere',
+      position: { x: 5, y: 3, z: 0 },
+      scale: 0.8,
       isActive: true,
       color: '#32cd32',
     },
     {
-      id: 'hero-integration',
-      name: 'Integration Agent',
-      type: 'integration',
-      position: { x: 3, y: 4, z: 1 },
-      scale: 1.0,
+      id: 'circle-5',
+      name: 'Floating Circle 5',
+      type: 'sphere',
+      position: { x: -7, y: 0, z: 2 },
+      scale: 1.1,
       isActive: true,
       color: '#ffd700',
     },
@@ -447,6 +453,7 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.initializeHeroSection();
     this.setupResponsiveHandling();
+    this.setupMouseTracking();
   }
 
   ngOnDestroy(): void {
@@ -482,13 +489,27 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
     const handleResize = () => {
       this.sceneWidth.set(window.innerWidth);
       this.sceneHeight.set(window.innerHeight);
-      this.updateAgentPositions();
+      this.updateShapePositions();
     };
 
     window.addEventListener('resize', handleResize);
   }
 
-  private updateAgentPositions(): void {
+  private setupMouseTracking(): void {
+    const handleMouseMove = (event: MouseEvent) => {
+      // Normalize mouse position to -1 to 1 range
+      this.mousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
+      this.mousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      // Calculate target rotation based on mouse position - more aggressive response
+      this.targetRotation.y = this.mousePosition.x * 0.4; // 4x more aggressive
+      this.targetRotation.x = this.mousePosition.y * 0.2; // 4x more aggressive
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+  }
+
+  private updateShapePositions(): void {
     // Update 3D camera and renderer on resize
     if (this.camera && this.renderer) {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -530,15 +551,15 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
   }
 
   private createAgentConstellation(): void {
-    const agents = this.heroAgents();
+    const circles = this.heroCircles();
 
-    agents.forEach((agent, index) => {
-      // Create sphere geometry with enhanced detail
+    circles.forEach((circle, index) => {
+      // Create sphere geometry with high detail for smooth circles
       const geometry = new THREE.SphereGeometry(0.8, 32, 32);
 
-      // Create material with agent-specific color and effects
+      // Create material with proper 3D shading and lighting
       const material = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(agent.color),
+        color: new THREE.Color(circle.color),
         metalness: 0.3,
         roughness: 0.1,
         clearcoat: 1.0,
@@ -546,21 +567,21 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
         transmission: 0.1,
         ior: 1.5,
         thickness: 0.5,
-        emissive: new THREE.Color(agent.color).multiplyScalar(0.2),
+        emissive: new THREE.Color(circle.color).multiplyScalar(0.2),
       });
 
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.copy(
-        new THREE.Vector3(agent.position.x, agent.position.y, agent.position.z)
+        new THREE.Vector3(circle.position.x, circle.position.y, circle.position.z)
       );
-      mesh.scale.setScalar(agent.scale);
+      mesh.scale.setScalar(circle.scale);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      // Add glow effect
+      // Add glow effect for circles
       const glowGeometry = new THREE.SphereGeometry(1.2, 16, 16);
       const glowMaterial = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(agent.color),
+        color: new THREE.Color(circle.color),
         transparent: true,
         opacity: 0.2,
         side: THREE.BackSide,
@@ -571,6 +592,13 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
       this.scene.add(mesh);
       this.agentMeshes.push(mesh);
 
+      // Store original position for mouse interaction
+      mesh.userData['originalPosition'] = {
+        x: circle.position.x,
+        y: circle.position.y,
+        z: circle.position.z,
+      };
+
       // Initial animation setup
       gsap.set(mesh.scale, { x: 0, y: 0, z: 0 });
       gsap.set(mesh.position, { y: mesh.position.y - 5 });
@@ -578,31 +606,42 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
   }
 
   private createParticleSystem(): void {
-    const particleCount = 2000;
+    // Create 3D cubes as background shapes with proper lighting
+    this.createBackgroundCubes();
+
+    // Much reduced particle density, keeping them away from center text
+    const particleCount = 200; // Even fewer particles
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
     const sizes = new Float32Array(particleCount);
 
-    // const color = new THREE.Color();
     const colorChoices = [
-      new THREE.Color('#8a2be2'),
-      new THREE.Color('#ff69b4'),
-      new THREE.Color('#00bfff'),
-      new THREE.Color('#32cd32'),
-      new THREE.Color('#ffd700'),
+      new THREE.Color('#4a1d6b'), // Darker purple
+      new THREE.Color('#2d1b47'), // Dark purple
+      new THREE.Color('#1a0d2e'), // Very dark purple
+      new THREE.Color('#261242'), // Dark violet
+      new THREE.Color('#1e1139'), // Dark navy
     ];
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
 
-      // Distribute particles in a sphere around the constellation
-      const radius = 20 + Math.random() * 30;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI;
+      // Create a larger "exclusion zone" around the text - push particles to edges
+      let x, y, z;
+      do {
+        const radius = 12 + Math.random() * 25; // Start further from center
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.PI / 2 + (Math.random() - 0.5) * 1.4;
 
-      positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      positions[i3 + 2] = radius * Math.cos(phi);
+        x = radius * Math.sin(phi) * Math.cos(theta);
+        y = (Math.random() - 0.5) * 15; // Wider vertical spread
+        z = radius * Math.cos(phi) * 0.3; // Shallow depth
+
+      } while (Math.abs(x) < 8 && Math.abs(y) < 4); // Larger exclusion zone
+
+      positions[i3] = x;
+      positions[i3 + 1] = y;
+      positions[i3 + 2] = z;
 
       // Random color from our palette
       const chosenColor =
@@ -611,7 +650,7 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
       colors[i3 + 1] = chosenColor.g;
       colors[i3 + 2] = chosenColor.b;
 
-      sizes[i] = Math.random() * 3 + 1;
+      sizes[i] = Math.random() * 1.5 + 0.3;
     }
 
     const particleGeometry = new THREE.BufferGeometry();
@@ -626,16 +665,108 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
     particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 2,
+      size: 0.8, // Smaller particles
       sizeAttenuation: true,
       vertexColors: true,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.5, // Much lower opacity
       blending: THREE.AdditiveBlending,
     });
 
     this.particleSystem = new THREE.Points(particleGeometry, particleMaterial);
     this.scene.add(this.particleSystem);
+  }
+
+  private createBackgroundCubes(): void {
+    // Create fewer 3D background cubes positioned at edges and higher/lower areas
+    const cubeCount = 35;
+
+    // Darker, more subtle colors that won't compete with text
+    const cubeColors = [
+      '#2d1b47', // Dark purple
+      '#1a0d2e', // Very dark purple
+      '#0f0a1c', // Nearly black purple
+      '#1e1139', // Dark navy purple
+      '#261242', // Dark violet
+      '#0a0a15', // Deep dark
+    ];
+
+    for (let i = 0; i < cubeCount; i++) {
+      // Smaller, more varied cube sizes
+      const size = 0.8 + Math.random() * 1.8;
+      const geometry = new THREE.BoxGeometry(size, size, size);
+
+      // Darker material with lower opacity for subtle presence
+      const material = new THREE.MeshLambertMaterial({
+        color: new THREE.Color(cubeColors[Math.floor(Math.random() * cubeColors.length)]),
+        transparent: true,
+        opacity: 0.6, // Much lower opacity
+      });
+
+      const cube = new THREE.Mesh(geometry, material);
+
+      // Position cubes around edges and away from center text area
+      let x = 0;
+      let y = 0;
+      let z = 0;
+
+      // Create distinct zones: top, bottom, left, right edges
+      const zone = Math.floor(Math.random() * 4);
+
+      switch (zone) {
+        case 0: // Top area
+          x = (Math.random() - 0.5) * 50;
+          y = 8 + Math.random() * 15; // High up
+          z = -8 + Math.random() * -20;
+          break;
+        case 1: // Bottom area
+          x = (Math.random() - 0.5) * 50;
+          y = -8 - Math.random() * 15; // Down low
+          z = -8 + Math.random() * -20;
+          break;
+        case 2: // Left side
+          x = -15 - Math.random() * 25; // Far left
+          y = (Math.random() - 0.5) * 30;
+          z = -8 + Math.random() * -20;
+          break;
+        case 3: // Right side
+          x = 15 + Math.random() * 25; // Far right
+          y = (Math.random() - 0.5) * 30;
+          z = -8 + Math.random() * -20;
+          break;
+      }
+
+      // Ensure we stay away from the central text area (-10 to 10 x, -6 to 6 y)
+      if (Math.abs(x) < 12 && Math.abs(y) < 8) {
+        // Push further out if too close to center
+        if (Math.abs(x) > Math.abs(y)) {
+          x = x > 0 ? 15 + Math.random() * 10 : -15 - Math.random() * 10;
+        } else {
+          y = y > 0 ? 10 + Math.random() * 8 : -10 - Math.random() * 8;
+        }
+      }
+
+      cube.position.set(x, y, z);
+      cube.rotation.set(
+        Math.random() * Math.PI,
+        Math.random() * Math.PI,
+        Math.random() * Math.PI
+      );
+
+      cube.castShadow = true;
+      cube.receiveShadow = true;
+
+      // Store original position and rotation for animation
+      cube.userData['originalPosition'] = { x, y, z };
+      cube.userData['originalRotation'] = {
+        x: cube.rotation.x,
+        y: cube.rotation.y,
+        z: cube.rotation.z,
+      };
+
+      this.scene.add(cube);
+      this.agentMeshes.push(cube);
+    }
   }
 
   private setupLighting(): void {
@@ -666,77 +797,112 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
   }
 
   private cinematicEntrance(): void {
-    // Camera entrance animation
+    // Camera entrance animation - closer positioning
     gsap.fromTo(
       this.camera.position,
-      { z: 50, y: -10 },
+      { z: 30, y: -5 },
       {
-        z: 15,
+        z: 12,
         y: 0,
-        duration: 3,
+        duration: 2.5,
         ease: 'power2.out',
       }
     );
 
-    // Agent meshes entrance with staggered timing
+    // Cube meshes entrance with staggered timing
     this.agentMeshes.forEach((mesh, index) => {
       gsap.to(mesh.scale, {
         x: 1,
         y: 1,
         z: 1,
-        duration: 1.5,
-        delay: index * 0.3,
-        ease: 'back.out(1.7)',
+        duration: 1.2,
+        delay: index * 0.2,
+        ease: 'back.out(1.4)',
       });
 
       gsap.to(mesh.position, {
-        y: mesh.userData['originalY'] || mesh.position.y + 5,
-        duration: 2,
-        delay: index * 0.3,
+        y: mesh.userData['originalPosition']?.y || mesh.position.y + 5,
+        duration: 1.5,
+        delay: index * 0.2,
         ease: 'power2.out',
       });
     });
 
-    // Particle system fade in
+    // Particle system fade in - lower opacity
     gsap.fromTo(
       this.particleSystem.material,
       { opacity: 0 },
       {
-        opacity: 0.8,
-        duration: 4,
-        delay: 1,
+        opacity: 0.6,
+        duration: 3,
+        delay: 0.8,
       }
     );
 
     // Content visibility with enhanced timing
     setTimeout(() => {
       this.contentVisible.set(true);
-    }, 2000);
+    }, 1500);
   }
 
   private startRenderLoop(): void {
     const animate = () => {
       this.animationFrame = requestAnimationFrame(animate);
 
-      // const deltaTime = this.clock.getDelta();
+      const deltaTime = this.clock.getDelta();
       const elapsedTime = this.clock.getElapsedTime();
 
-      // Animate agent meshes with floating motion
+      // Faster, more responsive interpolation to mouse movement
+      this.currentRotation.x += (this.targetRotation.x - this.currentRotation.x) * deltaTime * 5; // 2.5x faster response
+      this.currentRotation.y += (this.targetRotation.y - this.currentRotation.y) * deltaTime * 5; // 2.5x faster response
+
+      // Apply mouse-based rotation to camera - more dramatic movement
+      this.camera.position.x = Math.sin(this.currentRotation.y) * 12;
+      this.camera.position.z = Math.cos(this.currentRotation.y) * 12;
+      this.camera.position.y = this.currentRotation.x * 6; // 2x more camera movement
+      this.camera.lookAt(0, 0, 0);
+
+      // Separate animation for floating circles vs background cubes
       this.agentMeshes.forEach((mesh, index) => {
-        mesh.rotation.y += 0.01;
-        mesh.position.y += Math.sin(elapsedTime * 2 + index) * 0.01;
+        const originalPos = mesh.userData['originalPosition'];
+        if (originalPos) {
+          // Floating circles (first 5 meshes) - mouse responsive with gentle floating
+          if (index < 5) {
+            // Subtle floating motion for circles
+            mesh.position.y = originalPos.y + Math.sin(elapsedTime * 1.5 + index) * 0.3;
+
+            // More aggressive mouse-responsive rotation for circles
+            mesh.rotation.x = elapsedTime * 0.01 + this.currentRotation.x * 0.6; // 3x more rotation
+            mesh.rotation.y = elapsedTime * 0.02 + this.currentRotation.y * 0.8; // More rotation
+
+            // More dramatic position offset based on mouse for circles
+            mesh.position.x = originalPos.x + this.currentRotation.y * 2.0; // 2.5x more movement
+            mesh.position.z = originalPos.z + this.currentRotation.x * 1.2; // More depth movement
+          } else {
+            // Background cubes - slow continuous rotation with mouse influence
+            const originalRot = mesh.userData['originalRotation'];
+            if (originalRot) {
+              mesh.rotation.x = originalRot.x + elapsedTime * 0.02 + this.currentRotation.x * 0.3; // 3x more rotation
+              mesh.rotation.y = originalRot.y + elapsedTime * 0.03 + this.currentRotation.y * 0.4; // 4x more rotation
+              mesh.rotation.z = originalRot.z + elapsedTime * 0.01 + this.currentRotation.x * 0.2; // Added Z rotation
+
+              // More noticeable position shift for background cubes
+              mesh.position.x = originalPos.x + this.currentRotation.y * 0.8; // 4x more movement
+              mesh.position.y = originalPos.y + Math.sin(elapsedTime * 0.5 + index) * 0.1 + this.currentRotation.x * 0.3;
+              mesh.position.z = originalPos.z + this.currentRotation.x * 0.4; // 4x more depth movement
+            }
+          }
+        }
       });
 
-      // Animate particle system
+      // Particle system responds more aggressively to mouse movement
       if (this.particleSystem) {
-        this.particleSystem.rotation.y += 0.001;
-        this.particleSystem.rotation.x += 0.0005;
+        this.particleSystem.rotation.y = this.currentRotation.y * 0.3; // 3x more rotation
+        this.particleSystem.rotation.x = this.currentRotation.x * 0.15; // 3x more rotation
+        // Add subtle position shift for particles too
+        this.particleSystem.position.x = this.currentRotation.y * 0.5;
+        this.particleSystem.position.y = this.currentRotation.x * 0.3;
       }
-
-      // Gentle camera movement for depth
-      this.camera.position.x = Math.sin(elapsedTime * 0.1) * 0.5;
-      this.camera.position.y = Math.cos(elapsedTime * 0.15) * 0.3;
-      this.camera.lookAt(0, 0, 0);
 
       this.renderer.render(this.scene, this.camera);
     };

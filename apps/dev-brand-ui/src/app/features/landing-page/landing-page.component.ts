@@ -42,7 +42,111 @@ gsap.registerPlugin(ScrollToPlugin);
     ArchitectureDiagramComponent,
     FullPageNavigationComponent,
   ],
-  templateUrl: './landing-page.component.html',
+  template: `
+  <div class="w-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out overflow-x-hidden relative" [class.opacity-100]="isLoaded()" [class.recording-mode]="isRecordingMode()" [class.fullpage-enabled]="fullPageEnabled()" [class.smooth-scroll]="!fullPageEnabled()" [class.snap-y]="!fullPageEnabled()" [class.snap-mandatory]="!fullPageEnabled()" #landingContainer>
+    <!-- Floating Cinematic Controls -->
+    <div class="fixed top-5 right-5 transition-all duration-300 ease-out" style="z-index: 1000" [class.opacity-0]="!showCinematicControls()" [class.translate-x-full]="!showCinematicControls()" [class.opacity-100]="showCinematicControls()" [class.translate-x-0]="showCinematicControls()">
+      <!-- Floating Button -->
+      <div class="relative">
+        <button class="w-14 h-14 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-full shadow-lg backdrop-blur-lg border border-white/20 flex items-center justify-center text-white transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95" (click)="toggleDropdownControls()">⚙️</button>
+        
+        <!-- Simple Dropdown Panel -->
+        <div class="absolute top-16 right-0 bg-black/90 border border-white/20 rounded-xl backdrop-blur-lg shadow-2xl overflow-hidden transition-all duration-300 w-72" [class.hidden]="!showDropdownControls()">
+          <div class="p-4 space-y-3">
+            <div class="text-center text-xs text-white/70 border-b border-white/10 pb-2 mb-3">Cinematic Controls</div>
+            
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-white/80">FullPage Mode</span>
+                <button class="px-3 py-1 bg-purple-600/30 hover:bg-purple-600/50 rounded text-xs" (click)="toggleFullPageMode()">Toggle</button>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-white/80">Recording Mode</span>
+                <button class="px-3 py-1 bg-red-600/30 hover:bg-red-600/50 rounded text-xs" [disabled]="!fullPageEnabled()" (click)="toggleRecordingMode()">Toggle</button>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-white/80">Auto Play</span>
+                <button class="px-3 py-1 bg-green-600/30 hover:bg-green-600/50 rounded text-xs" [disabled]="!isRecordingMode()" (click)="toggleAutoPlay()">Toggle</button>
+              </div>
+            </div>
+            
+            <div class="border-t border-white/10 pt-3">
+              <div class="flex items-center justify-between text-xs mb-2">
+                <span class="text-white/60">Progress</span>
+                <span class="text-white/60">{{ cinematicScrollService.currentSection() }}</span>
+              </div>
+              <div class="h-1 bg-black/50 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" [style.width.%]="cinematicScrollService.narrativeProgress()"></div>
+              </div>
+              
+              <div class="flex items-center justify-between mt-2 text-xs">
+                <span class="text-white/60">FPS: {{ recordingPerformanceService.currentMetrics().fps }}</span>
+                <button class="px-2 py-1 bg-sky-600/30 hover:bg-sky-600/50 rounded text-xs" (click)="exportDemoInfo()">Export</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="hero" class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-radial from-purple-500/15 via-transparent to-transparent snap-start snap-always">
+      <brand-hero-section class="w-full h-full flex items-center justify-center relative box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"/>
+    </section>
+
+    <!-- Platform Pillars Section -->
+    <section id="platform-pillars" class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-to-r from-pink-500/10 to-purple-500/10 snap-start snap-always">
+      <brand-platform-pillars class="w-full h-full flex items-center justify-center relative box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"/>
+    </section>
+
+    <!-- Demo Theater Section -->
+    <section id="demo-theater" class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-to-br from-sky-500/10 to-purple-500/10 snap-start snap-always">
+      <brand-demo-theater class="w-full h-full flex items-center justify-center relative box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"/>
+    </section>
+
+    <!-- Ecosystem Explorer Section -->
+    <section id="ecosystem-explorer" class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-radial from-green-500/10 via-transparent to-transparent snap-start snap-always">
+      <brand-ecosystem-explorer class="w-full h-full flex items-center justify-center relative box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"/>
+    </section>
+
+    <!-- Architecture Deep Dive Section -->
+    <section id="architecture-diagram" class="h-screen w-screen relative flex items-center justify-center p-0 m-0 overflow-hidden border-b border-white/10 bg-gradient-to-b from-yellow-500/10 to-pink-500/10 snap-start snap-always">
+      <brand-architecture-diagram class="w-full h-full flex items-center justify-center relative box-border opacity-0 transform translate-y-8 transition-all duration-1000 animate-in"/>
+    </section>
+
+    @if (fullPageEnabled()) {
+    <brand-fullpage-navigation></brand-fullpage-navigation>
+    }
+
+    <!-- Navigation to other features -->
+    <nav class="h-screen w-screen flex flex-col items-center justify-center box-border text-center bg-black/30 relative snap-start snap-always" [class.fullpage-section]="fullPageEnabled()" id="feature-navigation">
+      <h3 class="text-3xl mb-8 text-white text-center">Explore Platform Features</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-auto-fit gap-6 max-w-6xl mx-auto" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
+        <a routerLink="/spatial-interface" class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30">
+          <h4 class="m-0 mb-2 text-xl text-purple-500">3D Agent Visualization</h4>
+          <p class="m-0 text-white/70 text-sm">Interactive spatial interface</p>
+        </a>
+        <a routerLink="/workflow-canvas" class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30">
+          <h4 class="m-0 mb-2 text-xl text-purple-500">Workflow Canvas</h4>
+          <p class="m-0 text-white/70 text-sm">Visual workflow designer</p>
+        </a>
+        <a routerLink="/memory-constellation" class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30">
+          <h4 class="m-0 mb-2 text-xl text-purple-500">Memory Constellation</h4>
+          <p class="m-0 text-white/70 text-sm">Distributed memory system</p>
+        </a>
+        <a routerLink="/chat-interface" class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30">
+          <h4 class="m-0 mb-2 text-xl text-purple-500">AI Chat Interface</h4>
+          <p class="m-0 text-white/70 text-sm">Conversational AI experience</p>
+        </a>
+        <a routerLink="/content-forge" class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30">
+          <h4 class="m-0 mb-2 text-xl text-purple-500">Content Forge</h4>
+          <p class="m-0 text-white/70 text-sm">AI-powered content creation</p>
+        </a>
+      </div>
+    </nav>
+  </div>`,
   styleUrls: ['./landing-page.component.css'],
 })
 export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -57,6 +161,7 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly autoPlayActive = signal(false);
   readonly showCinematicControls = signal(false);
   readonly showAdvancedControls = signal(false);
+  readonly showDropdownControls = signal(false);
   readonly selectedOptimization = signal('Balanced Quality');
 
   private fullPageScrollService = inject(FullPageScrollService);
@@ -126,7 +231,7 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private initializeScrollSystems(): void {
     const sectionElements = Array.from(
-      this.landingContainer.nativeElement.querySelectorAll('.section-container')
+      this.landingContainer.nativeElement.querySelectorAll('section')
     ) as HTMLElement[];
 
     if (sectionElements.length > 0) {
@@ -144,8 +249,9 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
         continuousVertical: false,
       });
 
-      // Disable fullPage initially - let user enable it
-      this.fullPageScrollService.disable();
+      // Enable fullPage by default for better UX
+      this.fullPageEnabled.set(true);
+      this.fullPageScrollService.enable();
     }
   }
 
@@ -419,5 +525,12 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
    */
   toggleAdvancedControls(): void {
     this.showAdvancedControls.update((show) => !show);
+  }
+
+  /**
+   * Toggle dropdown controls visibility
+   */
+  toggleDropdownControls(): void {
+    this.showDropdownControls.update((show) => !show);
   }
 }

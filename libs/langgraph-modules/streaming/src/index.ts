@@ -76,3 +76,5 @@ export {
 
 // Constants
 export * from './lib/constants';
+
+export * from './lib/services/streaming-websocket-gateway.service'
