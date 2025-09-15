@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ShowcaseNavigationComponent } from './shared/navigation/showcase-navigation.component';
 
 @Component({
-  imports: [RouterModule, ShowcaseNavigationComponent],
+  imports: [RouterModule],
   selector: 'brand-root',
   templateUrl: './app.html',
   styleUrl: './app.css',

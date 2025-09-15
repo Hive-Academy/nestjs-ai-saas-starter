@@ -24,7 +24,7 @@ interface DemoShowcase {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="w-full h-full min-h-screen bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-gray-900/98 text-white flex flex-col overflow-hidden relative"
+      class="w-full h-screen bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-gray-900/98 text-white flex flex-col overflow-hidden relative"
     >
       <!-- Theater Header -->
       <div class="text-center pt-12 pb-8 px-8 z-10 relative">

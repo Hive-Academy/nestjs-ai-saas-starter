@@ -1,12 +1,12 @@
 import {
   Component,
-  Input,
   OnInit,
   OnDestroy,
   inject,
   signal,
   computed,
   effect,
+  input
 } from '@angular/core';
 
 import * as THREE from 'three';
@@ -39,9 +39,9 @@ export class Agent3DComponent implements OnInit, OnDestroy {
   private readonly threeService = inject(ThreeIntegrationService);
 
   // Input properties
-  @Input({ required: true }) agent!: AgentState;
-  @Input({ required: true }) sceneId!: string;
-  @Input() config?: Partial<Agent3DConfig>;
+  readonly agent = input.required<AgentState>();
+  readonly sceneId = input.required<string>();
+  readonly config = input<Partial<Agent3DConfig>>();
 
   // Three.js objects
   private agentMesh: THREE.Group | null = null;
@@ -65,18 +65,18 @@ export class Agent3DComponent implements OnInit, OnDestroy {
   // Computed configuration
   private readonly agentConfig = computed(() => {
     const defaults: Agent3DConfig = {
-      geometryType: this.getGeometryTypeByAgentType(this.agent.type),
-      baseColor: this.agent.personality.color,
-      size: this.getSizeByAgentType(this.agent.type),
+      geometryType: this.getGeometryTypeByAgentType(this.agent().type),
+      baseColor: this.agent().personality.color,
+      size: this.getSizeByAgentType(this.agent().type),
       glowIntensity: 0.5,
       animationSpeed: 1.0,
     };
-    return { ...defaults, ...this.config };
+    return { ...defaults, ...this.config() };
   });
 
   // Status-based visual effects
   private readonly statusEffects = computed(() => {
-    const status = this.agent.status;
+    const status = this.agent().status;
     switch (status) {
       case 'idle':
         return {
@@ -141,7 +141,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     // Update agent position when it changes
     effect(() => {
       if (this.isInitialized() && this.agentMesh) {
-        const pos = this.agent.position;
+        const pos = this.agent().position;
         this.agentMesh.position.set(pos.x, pos.y, pos.z || 0);
       }
     });
@@ -159,18 +159,18 @@ export class Agent3DComponent implements OnInit, OnDestroy {
    * Initialize 3D representation of the agent
    */
   private initializeAgent3D(): void {
-    const sceneInstance = this.threeService.getScene(this.sceneId);
+    const sceneInstance = this.threeService.getScene(this.sceneId());
     if (!sceneInstance) {
       console.error(
-        `Scene ${this.sceneId} not found for agent ${this.agent.id}`
+        `Scene ${this.sceneId()} not found for agent ${this.agent().id}`
       );
       return;
     }
 
     // Create main agent group
     this.agentMesh = new THREE.Group();
-    this.agentMesh.name = `agent-${this.agent.id}`;
-    this.agentMesh.userData = { agentId: this.agent.id, component: this };
+    this.agentMesh.name = `agent-${this.agent().id}`;
+    this.agentMesh.userData = { agentId: this.agent().id, component: this };
 
     // Create core geometry
     this.createCoreGeometry();
@@ -185,14 +185,14 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     this.createParticleSystem();
 
     // Position the agent
-    const pos = this.agent.position;
+    const pos = this.agent().position;
     this.agentMesh.position.set(pos.x, pos.y, pos.z || 0);
 
     // Add to scene
     sceneInstance.scene.add(this.agentMesh);
 
     this.isInitialized.set(true);
-    console.log(`Agent 3D initialized: ${this.agent.name} (${this.agent.id})`);
+    console.log(`Agent 3D initialized: ${this.agent().name} (${this.agent().id})`);
   }
 
   /**
@@ -226,7 +226,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
       AgentShaderFactory.createEnhancedAgentCoreMaterial({
         baseColor: { value: new THREE.Color(config.baseColor) },
         opacity: { value: 0.9 },
-        agentStatus: { value: this.getStatusIndex(this.agent.status) },
+        agentStatus: { value: this.getStatusIndex(this.agent().status) },
         memoryActivity: { value: this.memoryActivityVector },
       });
 
@@ -367,7 +367,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     if (this.enhancedCoreMaterial) {
       this.enhancedCoreMaterial.uniforms['opacity'].value = effects.coreOpacity;
       this.enhancedCoreMaterial.uniforms['agentStatus'].value =
-        this.getStatusIndex(this.agent.status);
+        this.getStatusIndex(this.agent().status);
 
       // Update memory activity indicators
       this.updateMemoryActivity();
@@ -549,7 +549,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     this.memoryActivityVector.set(0, 0, 0);
 
     // Check for current tool executions that might indicate memory access
-    this.agent.currentTools.forEach((tool) => {
+    this.agent().currentTools.forEach((tool) => {
       if (tool.status === 'running') {
         // Simulate memory activity based on tool type
         if (
@@ -583,9 +583,10 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     });
 
     // Add status-based memory activity
-    if (this.agent.status === 'thinking') {
+    const agent = this.agent();
+    if (agent.status === 'thinking') {
       this.memoryActivityVector.z = Math.max(this.memoryActivityVector.z, 0.6);
-    } else if (this.agent.status === 'executing') {
+    } else if (agent.status === 'executing') {
       this.memoryActivityVector.x = Math.max(this.memoryActivityVector.x, 0.8);
       this.memoryActivityVector.y = Math.max(this.memoryActivityVector.y, 0.6);
     }
@@ -596,7 +597,7 @@ export class Agent3DComponent implements OnInit, OnDestroy {
    */
   private disposeAgent3D(): void {
     if (this.agentMesh) {
-      const sceneInstance = this.threeService.getScene(this.sceneId);
+      const sceneInstance = this.threeService.getScene(this.sceneId());
       if (sceneInstance) {
         sceneInstance.scene.remove(this.agentMesh);
       }

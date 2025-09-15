@@ -1,12 +1,10 @@
 import {
   Component,
   computed,
-  EventEmitter,
   inject,
-  Input,
-  OnInit,
-  Output,
-  signal,
+  input,
+  output,
+  signal
 } from '@angular/core';
 import * as THREE from 'three';
 import {
@@ -34,7 +32,7 @@ export interface NavigationControlsConfig {
   template: `
     <div class="navigation-controls" [class]="positionClass()">
       <!-- Zoom Controls -->
-      @if (config?.showZoomControls) {
+      @if (config()?.showZoomControls) {
       <div class="control-group zoom-controls">
         <button
           class="nav-button zoom-in"
@@ -80,7 +78,7 @@ export interface NavigationControlsConfig {
 
       <!-- Reset and Focus Controls -->
       <div class="control-group action-controls">
-        @if (config?.showResetButton) {
+        @if (config()?.showResetButton) {
         <button
           class="nav-button reset-camera"
           (click)="resetCamera()"
@@ -131,7 +129,7 @@ export interface NavigationControlsConfig {
       @if (showHints()) {
       <div class="control-group navigation-hints">
         <!-- Keyboard Hints -->
-        @if (config?.showKeyboardHints) {
+        @if (config()?.showKeyboardHints) {
         <div class="hint-section keyboard-hints">
           <div class="hint-title">Keyboard</div>
           <div class="hint-items">
@@ -151,7 +149,7 @@ export interface NavigationControlsConfig {
         </div>
         }
         <!-- Touch Hints -->
-        @if (config?.showTouchHints && isTouchDevice()) {
+        @if (config()?.showTouchHints && isTouchDevice()) {
         <div class="hint-section touch-hints">
           <div class="hint-title">Touch</div>
           <div class="hint-items">
@@ -184,222 +182,20 @@ export interface NavigationControlsConfig {
       }
     </div>
   `,
-  styles: [
-    `
-      .navigation-controls {
-        position: absolute;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        z-index: 100;
-        pointer-events: none;
-      }
-
-      .navigation-controls.top-left {
-        top: 20px;
-        left: 20px;
-      }
-
-      .navigation-controls.top-right {
-        top: 20px;
-        right: 20px;
-      }
-
-      .navigation-controls.bottom-left {
-        bottom: 20px;
-        left: 20px;
-      }
-
-      .navigation-controls.bottom-right {
-        bottom: 20px;
-        right: 20px;
-      }
-
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        pointer-events: auto;
-      }
-
-      .zoom-controls {
-        flex-direction: row;
-        gap: 4px;
-      }
-
-      .action-controls {
-        flex-direction: row;
-        gap: 4px;
-      }
-
-      .nav-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        background: rgba(0, 0, 0, 0.8);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        border-radius: 6px;
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        backdrop-filter: blur(5px);
-      }
-
-      .nav-button:hover:not(:disabled) {
-        background: rgba(59, 130, 246, 0.2);
-        border-color: rgba(59, 130, 246, 0.6);
-        transform: translateY(-1px);
-      }
-
-      .nav-button:active {
-        transform: translateY(0);
-      }
-
-      .nav-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .nav-button svg {
-        width: 16px;
-        height: 16px;
-      }
-
-      .navigation-hints {
-        background: rgba(0, 0, 0, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
-        padding: 8px;
-        backdrop-filter: blur(5px);
-        min-width: 120px;
-      }
-
-      .hint-section {
-        margin-bottom: 8px;
-      }
-
-      .hint-section:last-child {
-        margin-bottom: 0;
-      }
-
-      .hint-title {
-        color: #3b82f6;
-        font-size: 0.75em;
-        font-weight: 600;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .hint-items {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .hint-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.7em;
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .hint-keys {
-        color: #10b981;
-        font-weight: 500;
-        font-family: monospace;
-        font-size: 0.9em;
-      }
-
-      .hint-desc {
-        color: rgba(255, 255, 255, 0.7);
-      }
-
-      .navigation-status {
-        background: rgba(0, 0, 0, 0.8);
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        border-radius: 6px;
-        padding: 8px 12px;
-        backdrop-filter: blur(5px);
-      }
-
-      .status-indicator {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #22c55e;
-        font-size: 0.8em;
-        font-weight: 500;
-      }
-
-      .status-spinner {
-        width: 12px;
-        height: 12px;
-        border: 2px solid rgba(34, 197, 94, 0.3);
-        border-top: 2px solid #22c55e;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Mobile Responsive */
-      @media (max-width: 768px) {
-        .navigation-controls {
-          gap: 8px;
-        }
-
-        .nav-button {
-          width: 32px;
-          height: 32px;
-        }
-
-        .nav-button svg {
-          width: 14px;
-          height: 14px;
-        }
-
-        .navigation-hints {
-          min-width: 100px;
-          padding: 6px;
-        }
-
-        .hint-item {
-          font-size: 0.65em;
-        }
-      }
-
-      /* Touch-friendly sizing */
-      @media (pointer: coarse) {
-        .nav-button {
-          width: 44px;
-          height: 44px;
-        }
-
-        .nav-button svg {
-          width: 18px;
-          height: 18px;
-        }
-      }
-    `,
-  ],
+  styleUrls: ['./navigation-controls.component.css'],
 })
-export class NavigationControlsComponent implements OnInit {
+export class NavigationControlsComponent {
   private readonly spatialNavigation = inject(SpatialNavigationService);
 
-  @Input() config: NavigationControlsConfig | null = null;
-  @Output() focusRequested = new EventEmitter<NavigationTarget>();
-  @Output() resetRequested = new EventEmitter<void>();
+  readonly config = input<NavigationControlsConfig | null>({
+        showZoomControls: true,
+        showResetButton: true,
+        showKeyboardHints: true,
+        showTouchHints: true,
+        position: 'bottom-right',
+      });
+  readonly focusRequested = output<NavigationTarget>();
+  readonly resetRequested = output<void>();
 
   // Component state
   readonly isNavigating = this.spatialNavigation.isNavigating;
@@ -408,11 +204,12 @@ export class NavigationControlsComponent implements OnInit {
 
   // Computed properties
   readonly positionClass = computed(() => {
-    return `controls-${this.config?.position || 'bottom-right'}`;
+    return `controls-${this.config()?.position || 'bottom-right'}`;
   });
 
   readonly showHints = computed(() => {
-    return this.config?.showKeyboardHints || this.config?.showTouchHints;
+    const config = this.config();
+    return config?.showKeyboardHints || config?.showTouchHints;
   });
 
   readonly canZoomIn = computed(() => {
@@ -433,23 +230,6 @@ export class NavigationControlsComponent implements OnInit {
       this.currentDistance.set(this.spatialNavigation.getCameraDistance());
     }, 100);
   }
-
-  ngOnInit(): void {
-    // Set default configuration if not provided
-    if (!this.config) {
-      this.config = {
-        showZoomControls: true,
-        showResetButton: true,
-        showKeyboardHints: true,
-        showTouchHints: true,
-        position: 'bottom-right',
-      };
-    }
-  }
-
-  // ngOnDestroy(): void {
-  //   // Component cleanup handled by parent
-  // }
 
   /**
    * Zoom camera in (closer to constellation)
@@ -523,7 +303,7 @@ export class NavigationControlsComponent implements OnInit {
    */
   getNavigationState() {
     return {
-      config: this.config,
+      config: this.config(),
       currentDistance: this.currentDistance(),
       cameraLimits: this.cameraLimits(),
       isTouchDevice: this.isTouchDevice(),

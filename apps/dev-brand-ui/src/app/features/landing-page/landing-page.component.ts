@@ -9,6 +9,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FullPageNavigationComponent } from './components/fullpage-navigation.component';
 import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
@@ -19,9 +20,9 @@ import { PlatformPillarsComponent } from './sections/platform-pillars.component'
 import { CinematicScrollService } from './services/cinematic-scroll.service';
 import { FullPageScrollService } from './services/fullpage-scroll.service';
 
-// import { SectionTransitionService } from './services/section-transition.service';
-// import { RecordingPerformanceService } from './services/recording-performance.service';
-// import { LoadingStateService } from './services/loading-state.service';
+import { SectionTransitionService } from './services/section-transition.service';
+import { RecordingPerformanceService } from './services/recording-performance.service';
+import { LoadingStateService } from './services/loading-state.service';
 
 import { gsap } from 'gsap';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
@@ -32,6 +33,7 @@ gsap.registerPlugin(ScrollToPlugin);
   selector: 'brand-landing-page',
   standalone: true,
   imports: [
+    CommonModule,
     RouterModule,
     HeroSectionComponent,
     PlatformPillarsComponent,
@@ -59,6 +61,9 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private fullPageScrollService = inject(FullPageScrollService);
   public cinematicScrollService = inject(CinematicScrollService);
+  private sectionTransitionService = inject(SectionTransitionService);
+  public recordingPerformanceService = inject(RecordingPerformanceService);
+  public loadingStateService = inject(LoadingStateService);
 
   // Component state
   readonly isLoaded = signal(false);
@@ -92,18 +97,18 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy(): void {
     this.fullPageScrollService.destroy();
     this.cinematicScrollService.destroy();
-    // this.loadingStateService.reset();
+    this.loadingStateService.reset();
   }
 
   private async initializeLandingPage(): Promise<void> {
     try {
-      // Simplified loading without service
-      // this.loadingStateService.startLoading();
+      // Start loading state service
+      this.loadingStateService.startLoading();
 
       // Simulate progressive loading for development
-      // if (typeof window !== 'undefined') {
-      //   await this.loadingStateService.simulateLoading();
-      // }
+      if (typeof window !== 'undefined') {
+        await this.loadingStateService.simulateLoading();
+      }
 
       // Mark as loaded for transition effect
       setTimeout(() => {
@@ -113,7 +118,7 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
     } catch (error) {
       console.error('Failed to initialize landing page:', error);
       // Complete loading even if there are errors
-      // this.loadingStateService.completeLoading();
+      this.loadingStateService.completeLoading();
       this.isLoaded.set(true);
     }
   }
@@ -203,7 +208,7 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
       }
 
       this.selectedOptimization.set(optimizationLevel);
-      // this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
+      this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
     } else {
       // Disable auto-play when exiting recording mode
       if (this.autoPlayActive()) {
@@ -273,21 +278,21 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
     const target = event.target as HTMLSelectElement;
     const levelName = target.value;
     this.selectedOptimization.set(levelName);
-    // this.recordingPerformanceService.setOptimizationLevel(levelName);
+    this.recordingPerformanceService.setOptimizationLevel(levelName);
   }
 
   exportDemoInfo(): void {
     const demoInfo = this.cinematicScrollService.getDemoInformation();
-    // const performanceReport = this.recordingPerformanceService.exportPerformanceReport();
+    const performanceReport = this.recordingPerformanceService.exportPerformanceReport();
 
     const fullReport = {
       timestamp: new Date().toISOString(),
       demoScript: demoInfo.script,
       timings: demoInfo.timings,
-      // performance: JSON.parse(performanceReport),
-      // narrativeFlows: this.sectionTransitionService.getAllNarrativeFlows(),
-      // loadingMetrics: JSON.parse(this.loadingStateService.exportLoadingMetrics()),
-      // sectionSummary: this.loadingStateService.getSectionLoadingSummary()
+      performance: JSON.parse(performanceReport),
+      narrativeFlows: this.sectionTransitionService.getAllNarrativeFlows(),
+      loadingMetrics: JSON.parse(this.loadingStateService.exportLoadingMetrics()),
+      sectionSummary: this.loadingStateService.getSectionLoadingSummary()
     };
 
     // Create and download the report
@@ -325,11 +330,11 @@ export class LandingPageComponent implements OnInit, OnDestroy, AfterViewInit {
         if (isMobile && optimizationLevel === 'Ultra Quality') {
           optimizationLevel = 'Performance';
           this.selectedOptimization.set(optimizationLevel);
-          // this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
+          this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
         } else if (!isMobile && optimizationLevel === 'Performance') {
           optimizationLevel = 'Balanced Quality';
           this.selectedOptimization.set(optimizationLevel);
-          // this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
+          this.recordingPerformanceService.setOptimizationLevel(optimizationLevel);
         }
 
         // Update fullPage timing for device

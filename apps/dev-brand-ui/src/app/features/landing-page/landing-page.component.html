@@ -6,8 +6,8 @@
   [class.snap-none]="fullPageEnabled()"
   #landingContainer
   >
-  <!-- Global Loading Overlay - Temporarily disabled -->
-  <!-- <div class="loading-overlay" [class.visible]="loadingStateService.isLoading()" #loadingOverlay>
+  <!-- Global Loading Overlay -->
+  <div class="loading-overlay" [class.visible]="loadingStateService.isLoading()" #loadingOverlay>
   <div class="loading-content">
     <div class="loading-header">
       <h2>AI SaaS Platform</h2>
@@ -39,7 +39,7 @@
       </div>
     </div>
   </div>
-</div> -->
+</div>
 
 <!-- Cinematic Controls -->
 <div
@@ -220,12 +220,12 @@
             }}</span>
           </div>
 
-          <!-- <div class="performance-monitor" [class.warning]="!recordingPerformanceService.isPerformanceOptimal()">
+          <div class="performance-monitor" [class.warning]="!recordingPerformanceService.isPerformanceOptimal()">
           <div class="fps-display">FPS: {{ recordingPerformanceService.currentMetrics().fps }}</div>
           <div class="grade-display grade-{{ recordingPerformanceService.performanceGrade().toLowerCase() }}">
             Grade: {{ recordingPerformanceService.performanceGrade() }}
           </div>
-        </div> -->
+        </div>
       </div>
     </div>
     <!-- Hero Section -->

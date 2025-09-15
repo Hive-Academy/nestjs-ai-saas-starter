@@ -35,7 +35,7 @@ interface PlatformPillar {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="w-full h-full relative flex flex-col bg-gradient-to-br from-gray-900/95 to-indigo-900/90 overflow-hidden"
+      class="w-full h-screen relative flex flex-col bg-gradient-to-br from-gray-900/95 to-indigo-900/90 overflow-hidden"
     >
       <div class="text-center pt-12 pb-4 px-8 z-10 relative">
         <h2
