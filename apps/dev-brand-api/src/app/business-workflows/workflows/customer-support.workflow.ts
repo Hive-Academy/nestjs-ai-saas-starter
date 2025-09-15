@@ -8,10 +8,10 @@ import {
   StreamProgress,
   StreamToken,
   StreamEvent,
+  TokenStreamingServiceAdapter,
+  WebSocketBridgeServiceAdapter,
 } from '@hive-academy/langgraph-streaming';
 import {
-  TOKEN_STREAMING_SERVICE_TOKEN,
-  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
   ITokenStreamingService,
   IWebSocketBridgeService,
 } from '@hive-academy/langgraph-core';
@@ -38,10 +38,8 @@ import type { CustomerSupportState, TicketRequest } from '../types';
 export class CustomerSupportWorkflow {
   constructor(
     private readonly supportAgent: CustomerSupportAgent,
-    @Inject(TOKEN_STREAMING_SERVICE_TOKEN)
-    private readonly tokenStreamingService: ITokenStreamingService,
-    @Inject(WEBSOCKET_BRIDGE_SERVICE_TOKEN)
-    private readonly webSocketBridge: IWebSocketBridgeService,
+    private readonly tokenStreamingService: TokenStreamingServiceAdapter,
+    private readonly webSocketBridge: WebSocketBridgeServiceAdapter,
     private readonly llmProvider: LlmProviderService,
     private readonly hitlService: HumanApprovalService // In a real implementation, these would be injected // private readonly emailService: EmailService,
   ) // private readonly metricsService: BusinessMetricsService

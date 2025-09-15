@@ -9,7 +9,7 @@ import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
-import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
+import { EventStreamProcessorServiceAdapter } from '@hive-academy/langgraph-streaming';
 import { isWorkflow } from '@hive-academy/langgraph-core';
 import {
   WorkflowState,
@@ -48,8 +48,8 @@ export abstract class UnifiedWorkflowBase<
     @Inject(WorkflowStreamService)
     protected readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorService)
-    protected readonly eventProcessor?: EventStreamProcessorService
+    @Inject(EventStreamProcessorServiceAdapter)
+    protected readonly eventProcessor?: EventStreamProcessorServiceAdapter
   ) {
     this.logger = new Logger(this.constructor.name);
   }

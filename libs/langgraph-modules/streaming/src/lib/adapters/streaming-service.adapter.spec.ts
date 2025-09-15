@@ -513,10 +513,10 @@ describe('Individual Service Adapters', () => {
     let webSocketBridge: jest.Mocked<IWebSocketBridgeService>;
 
     beforeEach(async () => {
-      const mockWebSocketBridge = {
+      const mockWebSocketBridge: jest.Mocked<IWebSocketBridgeService> = {
         broadcastToExecution: jest.fn(),
         sendToClient: jest.fn(),
-        linkClientToExecution: jest.fn(),
+        registerClient: jest.fn(),
         unregisterClient: jest.fn(),
       };
 
@@ -540,7 +540,7 @@ describe('Individual Service Adapters', () => {
       adapter.registerClient('client-123', 'exec-456');
       adapter.unregisterClient('client-123');
 
-      expect(webSocketBridge.linkClientToExecution).toHaveBeenCalledWith(
+      expect(webSocketBridge.registerClient).toHaveBeenCalledWith(
         'client-123',
         'exec-456'
       );

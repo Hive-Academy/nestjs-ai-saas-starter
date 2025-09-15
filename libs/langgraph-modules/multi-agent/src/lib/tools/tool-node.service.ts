@@ -262,7 +262,7 @@ export class ToolNodeService {
         const currentWeight = (target as any).__weights?.[key] || 1;
         if (weight >= currentWeight) {
           target[key] = sourceValue;
-          if (!(target as key).__weights) {
+          if (!(target as any).__weights) {
             (target as any).__weights = {};
           }
           (target as any).__weights[key] = weight;

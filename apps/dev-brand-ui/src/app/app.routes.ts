@@ -3,8 +3,16 @@ import type { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/spatial-interface',
+    redirectTo: '/landing',
     pathMatch: 'full',
+  },
+  {
+    path: 'landing',
+    loadComponent: () =>
+      import('./features/landing-page/landing-page.component').then(
+        (m) => m.LandingPageComponent
+      ),
+    title: 'NestJS AI SaaS Starter',
   },
   {
     path: 'spatial-interface',

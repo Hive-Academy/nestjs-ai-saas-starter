@@ -522,6 +522,40 @@ export class WorkflowManagerService {
     }
   }
 
+  /**
+   * Subscribe to workflow events for real-time monitoring
+   */
+  subscribeToWorkflowEvents(
+    instanceId: string,
+    callback: (event: {
+      type: 'workflow_started' | 'workflow_progress' | 'workflow_completed' | 'workflow_failed' | 'node_executed';
+      data: any;
+      timestamp: number;
+    }) => void
+  ): { unsubscribe: () => void } {
+    return this.workflowExecution.subscribeToWorkflowEvents(instanceId, callback);
+  }
+
+  /**
+   * Get registered agents from the agent registry
+   */
+  getRegisteredAgents(): Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    capabilities?: string[];
+    isActive: boolean;
+    lastActiveTime: Date;
+    currentTools: string[];
+    personality?: {
+      color: string;
+      description: string;
+    };
+  }> {
+    return this.workflowRegistry.getRegisteredAgents();
+  }
+
   // ==================== UTILITY METHODS ====================
 
   /**

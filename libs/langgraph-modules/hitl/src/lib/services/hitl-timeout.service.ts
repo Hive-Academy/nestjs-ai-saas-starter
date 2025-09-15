@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { IHitlStorageService } from '../interfaces/hitl-storage.interface';
 import {
   HitlNotificationService,
@@ -129,7 +129,7 @@ export class HitlTimeoutService {
   clearAllTimeouts(): number {
     const count = this.timeouts.size;
 
-    for (const [approvalId, timeout] of this.timeouts.entries()) {
+    for (const [, timeout] of this.timeouts.entries()) {
       clearTimeout(timeout);
     }
 
@@ -171,7 +171,7 @@ export class HitlTimeoutService {
           }
         } catch (error) {
           this.logger.error(
-            `Failed to get approval data for timeout: ${error.message}`
+            `Failed to get approval data for timeout: ${(error as Error).message}`
           );
         }
       }
@@ -181,7 +181,7 @@ export class HitlTimeoutService {
         const notificationData: ApprovalTimeoutNotificationData = {
           requestId: approvalId,
           executionId,
-          timeoutStrategy: strategy,
+          timeoutStrategy: strategy as 'approve' | 'reject' | 'escalate',
           timeoutDuration,
         };
 
@@ -383,7 +383,7 @@ export class HitlTimeoutService {
         : 'rejected';
 
     return {
-      decision: decision as 'approved' | 'rejected' | 'escalated' | 'timeout',
+      decision: decision as 'approved' | 'rejected' | 'escalated',
       approvedBy: 'SYSTEM_TIMEOUT',
       message: `${strategy.toUpperCase()} due to ${Math.round(
         timeoutDuration / 60000

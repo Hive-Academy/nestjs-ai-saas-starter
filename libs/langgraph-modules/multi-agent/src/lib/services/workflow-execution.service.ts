@@ -468,6 +468,102 @@ export class WorkflowExecutionService {
   }
 
   /**
+   * Subscribe to workflow events for real-time monitoring
+   */
+  subscribeToWorkflowEvents(
+    instanceId: string,
+    callback: (event: {
+      type: 'workflow_started' | 'workflow_progress' | 'workflow_completed' | 'workflow_failed' | 'node_executed';
+      data: any;
+      timestamp: number;
+    }) => void
+  ): { unsubscribe: () => void } {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      throw new Error(`Workflow instance ${instanceId} not found`);
+    }
+
+    // Create event listeners for this instance
+    const unsubscribeFunctions: Array<() => void> = [];
+
+    // Add listeners and collect unsubscribe functions
+    const listener1 = this.eventEmitter.on('workflow.started', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_started',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener1 === 'function') {
+      unsubscribeFunctions.push(listener1);
+    }
+
+    const listener2 = this.eventEmitter.on('workflow.progress', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_progress',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener2 === 'function') {
+      unsubscribeFunctions.push(listener2);
+    }
+
+    const listener3 = this.eventEmitter.on('workflow.completed', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_completed',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener3 === 'function') {
+      unsubscribeFunctions.push(listener3);
+    }
+
+    const listener4 = this.eventEmitter.on('workflow.failed', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_failed',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener4 === 'function') {
+      unsubscribeFunctions.push(listener4);
+    }
+
+    const listener5 = this.eventEmitter.on('workflow.node.executed', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'node_executed',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener5 === 'function') {
+      unsubscribeFunctions.push(listener5);
+    }
+
+    return {
+      unsubscribe: () => {
+        unsubscribeFunctions.forEach(unsub => {
+          if (typeof unsub === 'function') {
+            unsub();
+          }
+        });
+      },
+    };
+  }
+
+  /**
    * Clear all instances (useful for testing)
    */
   clear(): void {

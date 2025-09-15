@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
   Agent,
-  AgentState,
   LlmProviderService,
 } from '@hive-academy/langgraph-multi-agent';
+import type { AgentState } from '@hive-academy/langgraph-multi-agent';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { GitHubIntegrationTools } from '../tools/github-integration.tools';
@@ -53,10 +53,10 @@ export class GitHubCodeAnalyzerAgent {
     // Extract GitHub username from message (could be "analyze my GitHub: username" or just "username")
     const githubUsername =
       this.extractGitHubUsername(messageContent) ||
-      state.metadata?.githubUsername ||
+      (typeof state.metadata?.githubUsername === 'string' ? state.metadata.githubUsername : null) ||
       'demo-user';
 
-    const timeframe = state.metadata?.timeframe || 'month';
+    const timeframe = (typeof state.metadata?.timeframe === 'string' ? state.metadata.timeframe : 'month');
 
     try {
       // 🚀 REAL GITHUB ANALYSIS: Comprehensive repository and commit analysis

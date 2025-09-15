@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { HitlModule } from '@hive-academy/langgraph-hitl';
 
 // Customer Support System Components
 import { CustomerSupportAgent } from './agents/customer-support.agent';
@@ -8,6 +9,11 @@ import { EnhancedSupportWorkflow } from './workflows/enhanced-support.workflow';
 import { CustomerSupportController } from './controllers/customer-support.controller';
 import { BusinessMetricsService } from './services/business-metrics.service';
 import { KnowledgeBaseService } from './services/knowledge-base.service';
+import { CustomerSupportWorkflowService } from './services/customer-support-workflow.service';
+import { TicketManagementService } from './services/ticket-management.service';
+import { UserInterruptionManagementService } from './services/user-interruption-management.service';
+import { MetricsAnalyticsService } from './services/metrics-analytics.service';
+import { KnowledgeBaseManagementService } from './services/knowledge-base-management.service';
 
 /**
  * Business Workflows Module
@@ -18,6 +24,8 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
   imports: [
     // Only import ConfigModule for configuration access
     ConfigModule,
+    // Import HitlModule to make HumanApprovalService available (no configuration needed as it's already configured in AppModule)
+    HitlModule,
   ],
   providers: [
     // Core AI Agents - RE-ENABLED AFTER DI METADATA FIX
@@ -30,6 +38,7 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
     // Business Services
     BusinessMetricsService,
     KnowledgeBaseService,
+    CustomerSupportWorkflowService,
 
     // Configuration providers using proper config pattern
     {
@@ -90,6 +99,7 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
     EnhancedSupportWorkflow, // Multi-agent orchestration pattern
     BusinessMetricsService,
     KnowledgeBaseService,
+    CustomerSupportWorkflowService,
   ],
 })
 export class BusinessWorkflowsModule {

@@ -1,5 +1,3 @@
-import type { NodeIdValidationResult } from '../utils/stream-naming.util';
-
 /**
  * Error thrown when strict naming is enabled and a provided nodeId is not canonical / invalid.
  * Carries diagnostic information to aid upstream logging or transformation pipelines.
@@ -7,17 +5,17 @@ import type { NodeIdValidationResult } from '../utils/stream-naming.util';
 export class InvalidNodeIdError extends Error {
   readonly raw: string;
   readonly normalized: string;
-  readonly validation: NodeIdValidationResult;
+  readonly validation: any;
 
   constructor(
     raw: string,
     normalized: string,
-    validation: NodeIdValidationResult
+    validation: any
   ) {
     super(
       `Invalid or non-canonical nodeId '${raw}'. Expected canonical form '${normalized}'. Errors: ${validation.errors
-        .map((e) => e.code)
-        .join(', ')}`
+        ?.map((e: any) => e.code)
+        ?.join(', ') || 'unknown'}`
     );
     this.name = 'InvalidNodeIdError';
     this.raw = raw;

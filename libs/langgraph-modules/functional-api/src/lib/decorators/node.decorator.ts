@@ -283,13 +283,62 @@ export function SubgraphNode(
 
 /**
  * Get all streaming metadata from a target object and method
- * Placeholder function for compatibility with workflow-engine
+ * Returns comprehensive metadata about streaming capabilities and configuration
  */
 export function getAllStreamingMetadata(
   target: any,
   methodName?: string
 ): Record<string, any> {
-  // Return empty object for now - this would need proper implementation
-  // when streaming decorators are fully implemented
-  return {};
+  // Get configuration from module options
+  const config = getFunctionalApiConfigWithDefaults();
+  
+  // Get workflow nodes metadata if available
+  const nodes: Map<string, NodeMetadata> = Reflect.getMetadata(WORKFLOW_NODES_KEY, target) || new Map<string, NodeMetadata>();
+  
+  // Prepare node-specific metadata
+  const nodeMetadata = methodName && nodes.has(methodName) 
+    ? nodes.get(methodName) 
+    : null;
+  
+  // Convert Map entries to array safely
+  const nodeEntries = Array.from(nodes.entries());
+  
+  return {
+    // Streaming capabilities
+    activeStreams: 0, // Would need runtime tracking
+    totalProcessed: 0, // Would need runtime tracking
+    currentWorkflows: Array.from(nodes.keys()),
+    streamingModes: ['values', 'updates', 'messages'],
+    lastActivity: new Date().toISOString(),
+    
+    // Performance metrics
+    performance: {
+      avgProcessingTime: 0,
+      throughput: 0
+    },
+    
+    // Node-specific metadata if method provided
+    nodeInfo: nodeMetadata ? {
+      id: nodeMetadata.id,
+      name: nodeMetadata.name,
+      type: nodeMetadata.type || 'standard',
+      requiresApproval: nodeMetadata.requiresApproval || false,
+      timeout: nodeMetadata.timeout || config.defaultTimeout
+    } : null,
+    
+    // Configuration from module
+    configuration: {
+      streamingEnabled: config.enableStreaming || false,
+      checkpointingEnabled: config.enableCheckpointing || false,
+      defaultTimeout: config.defaultTimeout || 30000,
+      defaultRetryCount: config.defaultRetryCount || 3
+    },
+    
+    // Available nodes
+    availableNodes: nodeEntries.map(([name, meta]) => ({
+      name,
+      type: meta.type || 'standard',
+      hasStreaming: meta.type === 'stream'
+    }))
+  };
 }

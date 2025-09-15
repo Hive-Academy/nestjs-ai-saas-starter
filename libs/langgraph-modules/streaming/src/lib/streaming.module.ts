@@ -1,4 +1,4 @@
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule, Global } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TokenStreamingService } from './services/token-streaming.service';
 import { AutoInitTokenStreamingService } from './services/auto-init-token-streaming.service';
@@ -35,6 +35,7 @@ export interface StreamingModuleOptions {
   strictNaming?: boolean;
 }
 
+@Global()
 @Module({})
 export class StreamingModule {
   static forRoot(options?: StreamingModuleOptions): DynamicModule {

@@ -6,9 +6,8 @@ import {
   ApprovalStorageStatus,
   ApprovalStorageResponse,
   HitlStorageStats,
-  HitlStorageError,
-  InvalidApprovalDataError,
 } from '@hive-academy/langgraph-hitl';
+import { HitlStorageError, InvalidApprovalDataError } from '@hive-academy/langgraph-hitl';
 
 /**
  * Application-specific Neo4j adapter for HITL approval storage.
@@ -64,7 +63,7 @@ export class Neo4jHitlStorageAdapter extends IHitlStorageService {
         status: request.status,
         requestedAt: request.requestedAt.toISOString(),
         expiresAt: request.expiresAt
-          ? datetime(request.expiresAt.toISOString())
+          ? request.expiresAt.toISOString()
           : null,
         confidence: request.confidence || null,
         riskLevel: request.riskLevel || null,
@@ -379,11 +378,11 @@ export class Neo4jHitlStorageAdapter extends IHitlStorageService {
       // Get timeout and approval rates
       const rateCypher = `
         MATCH (a:ApprovalRequest)
-        WITH 
+        WITH
           count(*) as total,
           count(CASE WHEN a.status = 'timeout' THEN 1 END) as timeouts,
           count(CASE WHEN a.status = 'approved' THEN 1 END) as approved
-        RETURN 
+        RETURN
           total,
           timeouts,
           approved,
@@ -497,8 +496,4 @@ export class Neo4jHitlStorageAdapter extends IHitlStorageService {
     return { error: String(error) };
   }
 
-  private datetime(isoString: string): any {
-    // Neo4j datetime function equivalent
-    return { __isDateTime__: true, value: isoString };
-  }
 }

@@ -1,12 +1,16 @@
-import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
+import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
-import { HumanApprovalService } from './services/human-approval.service';
-import { ConfidenceEvaluatorService } from './services/confidence-evaluator.service';
 import { ApprovalChainService } from './services/approval-chain.service';
+import { ApprovalProcessingService } from './services/approval-processing.service';
+import { ApprovalTimeoutService } from './services/approval-timeout.service';
+import { ApprovalStreamingService } from './services/approval-streaming.service';
+import { ConfidenceEvaluatorService } from './services/confidence-evaluator.service';
 import { FeedbackProcessorService } from './services/feedback-processor.service';
 import { HitlNotificationService } from './services/hitl-notification.service';
 import { HitlTimeoutService } from './services/hitl-timeout.service';
+import { HumanApprovalService } from './services/human-approval.service';
+import { UserInterruptionService } from './services/user-interruption.service';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Import interfaces only - adapters moved to application layer
@@ -14,12 +18,12 @@ import { IHitlStorageService } from './interfaces/hitl-storage.interface';
 import { IUserInterruptionStorageService } from './interfaces/user-interruption.interface';
 
 import type {
-  HitlModuleOptions,
   HitlModuleAsyncOptions,
+  HitlModuleOptions,
   HitlOptionsFactory,
 } from './interfaces/hitl.interface';
 
-import { HITL_CONFIG, DEFAULT_HITL_CONFIG } from './constants';
+import { DEFAULT_HITL_CONFIG, HITL_CONFIG } from './constants';
 
 /**
  * Enhanced NestJS HITL Module with Adapter Pattern Support
@@ -30,6 +34,7 @@ import { HITL_CONFIG, DEFAULT_HITL_CONFIG } from './constants';
  * - 100% backward compatibility with existing configurations
  * - Extensibility through custom adapter injection
  */
+@Global()
 @Module({})
 export class HitlModule {
   /**
@@ -61,6 +66,10 @@ export class HitlModule {
         ...adapterProviders,
         // Core services
         HumanApprovalService,
+        ApprovalProcessingService,
+        ApprovalTimeoutService,
+        ApprovalStreamingService,
+        UserInterruptionService,
         ConfidenceEvaluatorService,
         ApprovalChainService,
         FeedbackProcessorService,
@@ -74,6 +83,10 @@ export class HitlModule {
       ],
       exports: [
         HumanApprovalService,
+        ApprovalProcessingService,
+        ApprovalTimeoutService,
+        ApprovalStreamingService,
+        UserInterruptionService,
         ConfidenceEvaluatorService,
         ApprovalChainService,
         FeedbackProcessorService,
@@ -104,6 +117,10 @@ export class HitlModule {
         ...adapterProviders,
         // Core services
         HumanApprovalService,
+        ApprovalProcessingService,
+        ApprovalTimeoutService,
+        ApprovalStreamingService,
+        UserInterruptionService,
         ConfidenceEvaluatorService,
         ApprovalChainService,
         FeedbackProcessorService,
@@ -112,6 +129,10 @@ export class HitlModule {
       ],
       exports: [
         HumanApprovalService,
+        ApprovalProcessingService,
+        ApprovalTimeoutService,
+        ApprovalStreamingService,
+        UserInterruptionService,
         ConfidenceEvaluatorService,
         ApprovalChainService,
         FeedbackProcessorService,
@@ -232,8 +253,7 @@ export class HitlModule {
         // It's a class type
         providers.push({
           provide: IUserInterruptionStorageService,
-          useClass:
-            interruptionStorageAdapter as Type<IUserInterruptionStorageService>,
+          useClass: interruptionStorageAdapter,
         });
       } else {
         // It's an instance

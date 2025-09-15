@@ -1,4 +1,4 @@
-import type { HitlModuleOptions } from '../hitl.module';
+import type { HitlModuleOptions } from '../interfaces/hitl.interface';
 
 /**
  * Global storage for HITL module configuration
@@ -32,5 +32,7 @@ export function getHitlConfigWithDefaults(): Required<HitlModuleOptions> {
   return {
     defaultTimeout: config.defaultTimeout ?? 1800000, // 30 minutes default
     confidenceThreshold: config.confidenceThreshold ?? 0.7, // 70% confidence default
+    enabled: config.enabled ?? true,
+    adapters: config.adapters ?? {},
   };
 }

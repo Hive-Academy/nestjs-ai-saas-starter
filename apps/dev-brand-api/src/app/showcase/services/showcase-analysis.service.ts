@@ -1,8 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import {
-  TOKEN_STREAMING_SERVICE_TOKEN,
-  ITokenStreamingService,
-} from '@hive-academy/langgraph-core';
+import { TOKEN_STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
+import type { ITokenStreamingService } from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
 import type { ShowcaseAgentState } from '../types/showcase.types';

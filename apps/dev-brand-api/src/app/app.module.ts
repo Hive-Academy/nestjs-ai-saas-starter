@@ -20,16 +20,18 @@ import {
   CheckpointManagerService,
   CheckpointManagerAdapter,
 } from '@hive-academy/langgraph-checkpoint';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import {
-  STREAMING_SERVICE_TOKEN,
+  StreamingModule,
+  StreamingServiceAdapter
+} from '@hive-academy/langgraph-streaming';
+import {
   IStreamingService,
 } from '@hive-academy/langgraph-core';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { WorkflowEngineModule, WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
 
 // Configuration imports
 import { getChromaDBConfig } from './config/chromadb.config';
@@ -114,37 +116,42 @@ import { ShowcaseModule } from './showcase/showcase.module';
 
     // Workflow engine WITH STREAMING
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (streamingAdapter: IStreamingService) => ({
-        ...getWorkflowEngineConfig(),
-        streamingAdapter, // Enable streaming via interface token
-      }),
-      inject: [STREAMING_SERVICE_TOKEN],
+      useFactory: async (...deps: unknown[]): Promise<WorkflowEngineModuleOptions> => {
+        const streamingAdapter = deps[0] as IStreamingService;
+        return {
+          ...getWorkflowEngineConfig(),
+          streamingAdapter, // Enable streaming via interface token
+        };
+      },
+      inject: [StreamingServiceAdapter], // Inject the actual adapter class
     }),
 
     // Multi-agent module WITH STREAMING
     MultiAgentModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointManager: CheckpointManagerService
-      ) => ({
-        ...getMultiAgentConfig(),
-        streamingAdapter, // Enable streaming via interface token
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
-      inject: [STREAMING_SERVICE_TOKEN, CheckpointManagerService],
+      useFactory: async (...deps: unknown[]) => {
+        const streamingAdapter = deps[0] as IStreamingService;
+        const checkpointManager = deps[1] as CheckpointManagerService;
+        return {
+          ...getMultiAgentConfig(),
+          streamingAdapter, // Enable streaming via interface token
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
+      inject: [StreamingServiceAdapter, CheckpointManagerService], // Use the actual adapter class
     }),
 
     // Functional API with checkpoint AND STREAMING
     FunctionalApiModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointManager: CheckpointManagerService
-      ) => ({
-        ...getFunctionalApiConfig(),
-        streamingAdapter, // Enable streaming via interface token
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
-      inject: [STREAMING_SERVICE_TOKEN, CheckpointManagerService],
+      useFactory: async (...deps: unknown[]): Promise<any> => {
+        const streamingAdapter = deps[0] as IStreamingService;
+        const checkpointManager = deps[1] as CheckpointManagerService;
+        return {
+          ...getFunctionalApiConfig(),
+          streamingAdapter, // Enable streaming via interface token
+          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+        };
+      },
+      inject: [StreamingServiceAdapter, CheckpointManagerService], // Use the actual adapter class
     }),
 
     // Monitoring module
@@ -166,6 +173,11 @@ import { ShowcaseModule } from './showcase/showcase.module';
   ],
   providers: [
     // Business services will be added here
+  ],
+  exports: [
+    // Export modules so their services are available to child modules
+    HitlModule,
+    StreamingModule,
   ],
 })
 export class AppModule {}

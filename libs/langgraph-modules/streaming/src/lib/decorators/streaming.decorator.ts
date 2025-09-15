@@ -3,9 +3,6 @@ import { getStreamingConfigWithDefaults } from '../utils/streaming-config.access
 // Import streaming types from core library (fixes circular dependency)
 import {
   StreamEventType,
-  normalizeAndWarn,
-  validateNodeId,
-  InvalidNodeIdError,
   computeCanonicalNodeId,
 } from '@hive-academy/langgraph-core';
 import type {
@@ -36,21 +33,6 @@ export type {
 // Re-export StreamEventType for backward compatibility
 export { StreamEventType } from '@hive-academy/langgraph-core';
 
-// Suffixes to strip from class names when inferring domain
-const CLASS_SUFFIX_STRIP = /(Workflow|Service|Agent|Processor|Engine)$/;
-
-/** Split a PascalCase or camelCase identifier into lowercase tokens */
-function splitTokens(name: string): string[] {
-  if (!name) return [];
-  // Replace non-alphanumeric with space, then split camel boundaries
-  const withDelims = name
-    .replace(/[^A-Za-z0-9]+/g, ' ') // normalize delimiters
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2');
-  return withDelims
-    .split(/\s+/)
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 /**
  * Decorator to enable token-level streaming for a method or node

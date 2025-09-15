@@ -6,6 +6,10 @@ export * from './lib/utils/hitl-config.accessor';
 
 // Services
 export { HumanApprovalService } from './lib/services/human-approval.service';
+export { ApprovalProcessingService } from './lib/services/approval-processing.service';
+export { ApprovalTimeoutService } from './lib/services/approval-timeout.service';
+export { ApprovalStreamingService } from './lib/services/approval-streaming.service';
+export { UserInterruptionService } from './lib/services/user-interruption.service';
 export { ConfidenceEvaluatorService } from './lib/services/confidence-evaluator.service';
 export { ApprovalChainService } from './lib/services/approval-chain.service';
 export { FeedbackProcessorService } from './lib/services/feedback-processor.service';
@@ -27,10 +31,21 @@ export * from './lib/constants';
 
 // Interfaces
 export type * from './lib/interfaces/hitl.interface';
-export { IHitlStorageService } from './lib/interfaces/hitl-storage.interface';
-export type * from './lib/interfaces/hitl-storage.interface';
+export { IHitlStorageService, HitlStorageError, InvalidApprovalDataError } from './lib/interfaces/hitl-storage.interface';
+export type {
+  ApprovalStorageData,
+  ApprovalStorageStatus,
+  ApprovalStorageResponse,
+  HitlStorageStats
+} from './lib/interfaces/hitl-storage.interface';
 export {
   IUserInterruptionService,
   IUserInterruptionStorageService,
+  InterruptionStatus,
+  InterruptionType,
 } from './lib/interfaces/user-interruption.interface';
-export type * from './lib/interfaces/user-interruption.interface';
+export type {
+  UserInterruption,
+  InterruptionContext,
+  UserInterruptionResponse,
+} from './lib/interfaces/user-interruption.interface';

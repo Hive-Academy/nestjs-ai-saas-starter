@@ -37,14 +37,14 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
         createdAt: $createdAt,
         updatedAt: $createdAt
       })
-      
+
       // Link to execution if it exists
       WITH i
       OPTIONAL MATCH (e:WorkflowExecution {id: $executionId})
       FOREACH (execution IN CASE WHEN e IS NOT NULL THEN [e] ELSE [] END |
         CREATE (execution)-[:HAS_INTERRUPTION]->(i)
       )
-      
+
       RETURN i.id as interruptionId
     `;
 
@@ -62,13 +62,15 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
     };
 
     try {
-      const result = await this.neo4jService.write(query, parameters);
+      const result = await this.neo4jService.run(query, parameters);
 
       if (result.records.length === 0) {
         throw new Error('Failed to create interruption record');
       }
 
-      const interruptionId = result.records[0].get('interruptionId');
+      const interruptionId = (
+        result.records[0] as { get: (key: string) => string }
+      ).get('interruptionId');
 
       this.logger.debug(`Stored interruption ${interruptionId} in Neo4j`);
       return interruptionId;
@@ -90,15 +92,15 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
     `;
 
     try {
-      const result = await this.neo4jService.read(query, { id });
+      const result = await this.neo4jService.run(query, { id });
 
       if (result.records.length === 0) {
         return null;
       }
 
       const record = result.records[0];
-      const interruptionNode = record.get('i');
-      const responseNode = record.get('r');
+      const interruptionNode = (record as any).get('i');
+      const responseNode = (record as any).get('r');
 
       return this.mapNodeToInterruption(interruptionNode, responseNode);
     } catch (error) {
@@ -123,13 +125,13 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
     `;
 
     try {
-      const result = await this.neo4jService.read(query, { executionId });
+      const result = await this.neo4jService.run(query, { executionId });
 
       const interruptions: UserInterruption[] = [];
 
       for (const record of result.records) {
-        const interruptionNode = record.get('i');
-        const responseNode = record.get('r');
+        const interruptionNode = (record as any).get('i');
+        const responseNode = (record as any).get('r');
 
         const interruption = this.mapNodeToInterruption(
           interruptionNode,
@@ -193,10 +195,7 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
 
     try {
       // Update interruption status
-      const updateResult = await this.neo4jService.write(
-        updateQuery,
-        parameters
-      );
+      const updateResult = await this.neo4jService.run(updateQuery, parameters);
 
       if (updateResult.records.length === 0) {
         this.logger.warn(`Interruption ${id} not found for status update`);
@@ -235,13 +234,13 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
     `;
 
     try {
-      const result = await this.neo4jService.read(query, { executionId });
+      const result = await this.neo4jService.run(query, { executionId });
 
       const interruptions: UserInterruption[] = [];
 
       for (const record of result.records) {
-        const interruptionNode = record.get('i');
-        const responseNode = record.get('r');
+        const interruptionNode = (record as any).get('i');
+        const responseNode = (record as any).get('r');
 
         const interruption = this.mapNodeToInterruption(
           interruptionNode,
@@ -272,7 +271,7 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
   async cleanupExpiredInterruptions(): Promise<number> {
     const query = `
       MATCH (i:UserInterruption)
-      WHERE i.status = 'pending' 
+      WHERE i.status = 'pending'
         AND datetime(i.createdAt) + duration({seconds: i.timeoutDuration / 1000}) < datetime()
       SET i.status = 'timeout',
           i.timeoutAt = datetime().epochSeconds,
@@ -281,10 +280,10 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
     `;
 
     try {
-      const result = await this.neo4jService.write(query, {});
+      const result = await this.neo4jService.run(query, {});
 
       const expiredCount =
-        result.records[0]?.get('expiredCount')?.toNumber() || 0;
+        (result.records[0] as any)?.get('expiredCount')?.toNumber() || 0;
 
       if (expiredCount > 0) {
         this.logger.log(`Cleaned up ${expiredCount} expired interruptions`);
@@ -335,7 +334,7 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
       timestamp: response.timestamp.toISOString(),
     };
 
-    await this.neo4jService.write(query, parameters);
+    await this.neo4jService.run(query, parameters);
   }
 
   /**

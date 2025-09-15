@@ -28,6 +28,7 @@ export interface ConfidenceThreshold {
 
 import type { Type } from '@nestjs/common';
 import type { IHitlStorageService } from './hitl-storage.interface';
+import type { IUserInterruptionStorageService } from './user-interruption.interface';
 
 export interface HitlModuleOptions {
   defaultTimeout?: number;
@@ -35,6 +36,7 @@ export interface HitlModuleOptions {
   enabled?: boolean;
   adapters?: {
     storage?: Type<IHitlStorageService> | IHitlStorageService;
+    interruptionStorage?: Type<IUserInterruptionStorageService> ;
   };
 }
 

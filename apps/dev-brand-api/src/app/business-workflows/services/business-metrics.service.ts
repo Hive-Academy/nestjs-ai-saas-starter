@@ -1,9 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import {
-  STREAMING_SERVICE_TOKEN,
-  IStreamingService,
-} from '@hive-academy/langgraph-core';
+import { STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   BusinessImpact,
   CustomerSupportMetrics,
@@ -134,7 +132,7 @@ export class BusinessMetricsService {
         return this.getDefaultBusinessImpact();
       }
 
-      const record = results.records[0];
+      const record = results.records[0] as any;
       const avgResolutionTime =
         (record.get('avgResolutionTime') as number) || 0;
       const totalTickets = (record.get('totalTickets') as number) || 0;
@@ -197,7 +195,7 @@ export class BusinessMetricsService {
         return this.getDefaultMetrics();
       }
 
-      const record = results.records[0];
+      const record = results.records[0] as any;
       const totalTickets = (record.get('totalTickets') as number) || 0;
       const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
       const avgResolutionTime =
@@ -247,7 +245,12 @@ export class BusinessMetricsService {
       `);
 
       const record = results?.records?.[0];
-      const trend = record?.get('trend') as number[];
+      const trend =
+        record && typeof (record as { get: (key: string) => unknown }).get === 'function'
+          ? ((record as { get: (key: string) => number[] }).get(
+              'trend'
+            ) as number[])
+          : undefined;
       if (results && results.records.length > 0 && trend) {
         return trend.map((score: number) => Math.round(score * 100) / 100);
       }
@@ -289,7 +292,7 @@ export class BusinessMetricsService {
         return { totalTickets: 0, resolvedTickets: 0 };
       }
 
-      const record = results.records[0];
+      const record = results.records[0] as any;
       const totalTickets = (record.get('totalTickets') as number) || 0;
       const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
       const avgResolutionTime =

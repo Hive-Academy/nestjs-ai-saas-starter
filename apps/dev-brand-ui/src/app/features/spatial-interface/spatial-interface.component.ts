@@ -273,6 +273,9 @@ export class SpatialInterfaceComponent implements OnInit, OnDestroy {
       });
     }
 
+    // Load agents from backend
+    this.loadAgentsFromBackend();
+
     // Start periodic activity simulation for demonstration
     this.startAgentActivitySimulation();
 

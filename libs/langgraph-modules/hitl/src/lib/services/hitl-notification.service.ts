@@ -2,7 +2,7 @@ import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   STREAMING_SERVICE_TOKEN,
-  IStreamingService,
+  type IStreamingService,
 } from '@hive-academy/langgraph-core';
 import { HITL_EVENTS } from '../constants';
 
@@ -106,9 +106,8 @@ export class HitlNotificationService {
       // Send via streaming service
       if (this.streaming) {
         try {
-          await this.streaming.emitToExecution(
+          await this.streaming.broadcastToExecution(
             data.executionId,
-            'hitl:approval_timeout',
             timeoutStreamData
           );
           this.logger.warn(
@@ -116,7 +115,7 @@ export class HitlNotificationService {
           );
         } catch (error) {
           this.logger.warn(
-            `Failed to send streaming timeout notification: ${error.message}`
+            `Failed to send streaming timeout notification: ${(error as Error).message}`
           );
         }
       }
@@ -168,9 +167,8 @@ export class HitlNotificationService {
       // Send via streaming service
       if (this.streaming) {
         try {
-          await this.streaming.emitToExecution(
+          await this.streaming.broadcastToExecution(
             data.requestId,
-            'hitl:approval_escalated',
             escalationStreamData
           );
           this.logger.log(
@@ -178,7 +176,7 @@ export class HitlNotificationService {
           );
         } catch (error) {
           this.logger.warn(
-            `Failed to send streaming escalation notification: ${error.message}`
+            `Failed to send streaming escalation notification: ${(error as Error).message}`
           );
         }
       }
@@ -235,9 +233,8 @@ export class HitlNotificationService {
       // Send via streaming service with urgent priority
       if (this.streaming) {
         try {
-          await this.streaming.emitToExecution(
+          await this.streaming.broadcastToExecution(
             data.executionId,
-            'hitl:urgent_approval_requested',
             urgentStreamData
           );
           this.logger.error(
@@ -245,7 +242,7 @@ export class HitlNotificationService {
           );
         } catch (error) {
           this.logger.error(
-            `Failed to send URGENT streaming notification: ${error.message}`
+            `Failed to send URGENT streaming notification: ${(error as Error).message}`
           );
         }
       }
@@ -331,9 +328,8 @@ export class HitlNotificationService {
     // Send via streaming service for real-time WebSocket delivery
     if (this.streaming) {
       try {
-        await this.streaming.emitToExecution(
+        await this.streaming.broadcastToExecution(
           data.executionId,
-          'hitl:approval_requested',
           streamData
         );
         this.logger.debug(
@@ -341,7 +337,7 @@ export class HitlNotificationService {
         );
       } catch (error) {
         this.logger.warn(
-          `Failed to send streaming notification: ${error.message}`
+          `Failed to send streaming notification: ${(error as Error).message}`
         );
       }
     }
@@ -372,9 +368,8 @@ export class HitlNotificationService {
     // Send via streaming service for real-time WebSocket delivery
     if (this.streaming) {
       try {
-        await this.streaming.emitToExecution(
+        await this.streaming.broadcastToExecution(
           data.executionId,
-          'hitl:approval_completed',
           streamData
         );
         this.logger.debug(
@@ -382,7 +377,7 @@ export class HitlNotificationService {
         );
       } catch (error) {
         this.logger.warn(
-          `Failed to send streaming response notification: ${error.message}`
+          `Failed to send streaming response notification: ${(error as Error).message}`
         );
       }
     }

@@ -1,8 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import {
-  TOKEN_STREAMING_SERVICE_TOKEN,
-  ITokenStreamingService,
-} from '@hive-academy/langgraph-core';
+import { TOKEN_STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
+import type { ITokenStreamingService } from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import type { ShowcaseAgentState } from '../types/showcase.types';
 
@@ -229,10 +227,21 @@ Our platform integrates seamlessly with existing enterprise infrastructure and p
     return {
       ...state,
       metricsCollected: {
-        ...state.metricsCollected,
+        totalDuration: state.metricsCollected?.totalDuration || 0,
+        agentSwitches: state.metricsCollected?.agentSwitches || 0,
+        toolInvocations: state.metricsCollected?.toolInvocations || 0,
+        memoryAccesses: state.metricsCollected?.memoryAccesses || 0,
+        averageResponseTime: state.metricsCollected?.averageResponseTime || 0,
+        peakMemoryUsage: state.metricsCollected?.peakMemoryUsage || 0,
+        concurrentAgents: state.metricsCollected?.concurrentAgents || 1,
+        successRate: state.metricsCollected?.successRate || 0,
+        errorRate: state.metricsCollected?.errorRate || 0,
+        approvalRate: state.metricsCollected?.approvalRate || 0,
         tokensStreamed:
           (state.metricsCollected?.tokensStreamed || 0) +
           contentResult.totalTokens,
+        streamingLatency: state.metricsCollected?.streamingLatency || 0,
+        connectionStability: state.metricsCollected?.connectionStability || 1.0,
       },
       messages: [
         ...(state.messages || []),

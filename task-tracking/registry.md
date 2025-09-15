@@ -58,6 +58,16 @@
 | TASK_STR_002 | Monitoring Dashboard Streaming Integration - Real-time Metrics Display | 📋 Future | backend-developer | Critical | 2 weeks   |
 | TASK_STR_003 | Time-travel Real-time Replay Streaming - Live Workflow Visualization   | 📋 Future | backend-developer | Low      | 1-2 weeks |
 
+### Landing Page Enhancements (Added by TASK_INT_003)
+
+| TASK_ID      | Description                                                              | Status    | Agent              | Priority | Effort    |
+| ------------ | ------------------------------------------------------------------------ | --------- | ------------------ | -------- | --------- |
+| TASK_LP_001  | Advanced Particle Systems for Landing Page Visual Effects               | 📋 Future | frontend-developer | Medium   | 2-3 weeks |
+| TASK_LP_002  | WebXR Integration for Immersive Landing Page Experience                  | 📋 Future | frontend-developer | Low      | 2-3 weeks |
+| TASK_LP_003  | AI-Driven Dynamic Content Adaptation Based on User Behavior             | 📋 Future | software-architect | Low      | 2-3 weeks |
+| TASK_LP_004  | Advanced Analytics and Interaction Heatmap Integration                  | 📋 Future | frontend-developer | Low      | 1-2 weeks |
+| TASK_LP_005  | Gesture Recognition for Touch-Free Navigation                           | 📋 Future | frontend-developer | Low      | 2 weeks   |
+
 ### Critical System Fixes (Added by Analysis)
 
 | TASK_ID      | Description                                      | Status    | Agent             | Priority | Effort    |
