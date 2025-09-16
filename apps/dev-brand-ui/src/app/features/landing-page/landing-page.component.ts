@@ -1,5 +1,5 @@
+import { CommonModule } from '@angular/common';
 import {
-  AfterViewInit,
   Component,
   computed,
   ElementRef,
@@ -9,12 +9,11 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HeroSectionComponent } from './sections/hero-section.component';
-import { PlatformPillarsComponent } from './sections/platform-pillars.component';
+import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
 import { DemoTheaterComponent } from './sections/demo-theater.component';
 import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
-import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
+import { HeroSectionComponent } from './sections/hero-section.component';
+import { PlatformPillarsComponent } from './sections/platform-pillars.component';
 import { LoadingStateService } from './services/loading-state.service';
 
 @Component({

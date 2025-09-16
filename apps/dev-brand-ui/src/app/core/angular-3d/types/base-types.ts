@@ -5,22 +5,22 @@ import type { Signal } from '@angular/core';
  * Content priority levels for intelligent scaling
  */
 export enum ContentPriority {
-  HERO = 10,        // Largest: Hero content, main CTAs
-  PRIMARY = 8,      // Large: Key information, forms
-  SECONDARY = 6,    // Medium: Supporting content, navigation
-  TERTIARY = 4,     // Small: Metadata, labels
-  DECORATIVE = 2    // Tiny: Pure visual elements
+  HERO = 10, // Largest: Hero content, main CTAs
+  PRIMARY = 8, // Large: Key information, forms
+  SECONDARY = 6, // Medium: Supporting content, navigation
+  TERTIARY = 4, // Small: Metadata, labels
+  DECORATIVE = 2, // Tiny: Pure visual elements
 }
 
 /**
  * Layout types for 3D scenes
  */
 export type LayoutType =
-  | 'grid-2d'        // Traditional grid projected to 3D
-  | 'depth-layers'   // Content at different Z levels
-  | 'orbital'        // Circular arrangement
-  | 'flow'           // Natural flowing layout
-  | 'custom';        // Custom positioning function
+  | 'grid-2d' // Traditional grid projected to 3D
+  | 'depth-layers' // Content at different Z levels
+  | 'orbital' // Circular arrangement
+  | 'flow' // Natural flowing layout
+  | 'custom'; // Custom positioning function
 
 /**
  * Decoration geometry types
@@ -193,7 +193,10 @@ export interface PerformanceConfig {
  * Content renderer interface
  */
 export interface ContentRenderer {
-  render(element: HTMLElement, options: ContentTextureOptions): THREE.CanvasTexture;
+  render(
+    element: HTMLElement,
+    options: ContentTextureOptions
+  ): THREE.CanvasTexture;
   updateTexture(texture: THREE.CanvasTexture, element: HTMLElement): void;
   dispose(texture: THREE.CanvasTexture): void;
 }
@@ -207,10 +210,7 @@ export interface LayoutManager {
     config: SceneLayoutConfig
   ): Map<string, THREE.Vector3>;
 
-  updateLayout(
-    elements: HybridElement3D[],
-    config: SceneLayoutConfig
-  ): void;
+  updateLayout(elements: HybridElement3D[], config: SceneLayoutConfig): void;
 }
 
 /**
