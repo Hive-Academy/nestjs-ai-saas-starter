@@ -73,7 +73,7 @@ import { FullPageScrollService } from '../services/fullpage-scroll.service';
             <path d="M12 5v14M19 12l-7 7-7-7" />
           </svg>
         </div>
-        <div class="text-xs text-center">Scroll or use arrows</div>
+        <div class="text-xs text-center">Click navigation dots</div>
       </div>
     </nav>
   `,

@@ -1,7 +1,6 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
-  STREAMING_SERVICE_TOKEN,
   type IStreamingService,
 } from '@hive-academy/langgraph-core';
 import { HITL_EVENTS } from '../constants';
@@ -21,7 +20,7 @@ export class HitlNotificationService {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     @Optional()
-    @Inject(STREAMING_SERVICE_TOKEN)
+    @Inject('IStreamingService')
     private readonly streaming?: IStreamingService
   ) {
     this.logger.debug('HitlNotificationService initialized', {

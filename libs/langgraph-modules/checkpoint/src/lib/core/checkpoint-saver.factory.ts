@@ -88,20 +88,16 @@ export class CheckpointSaverFactory
     config?: MemoryCheckpointConfig
   ): Promise<EnhancedBaseCheckpointSaver> {
     try {
-      // Dynamic import of optional dependency
-      const { SqliteSaver } = await import(
-        '@langchain/langgraph-checkpoint-sqlite'
-      );
+      // Use the dedicated MemorySaver from @langchain/langgraph-checkpoint
+      const { MemorySaver } = await import('@langchain/langgraph-checkpoint');
 
-      const saver = SqliteSaver.fromConnString(
-        ':memory:'
-      ) as EnhancedBaseCheckpointSaver;
+      const saver = new MemorySaver() as EnhancedBaseCheckpointSaver;
       this.logger.debug('Memory checkpoint saver created successfully');
       return saver;
     } catch (error: any) {
       if (error.code === 'MODULE_NOT_FOUND') {
         throw this.createError(
-          'Memory checkpoint requires @langchain/langgraph-checkpoint-sqlite package. Install it with: npm install @langchain/langgraph-checkpoint-sqlite',
+          'Memory checkpoint requires @langchain/langgraph-checkpoint package. Install it with: npm install @langchain/langgraph-checkpoint',
           'MEMORY_SAVER_DEPENDENCY_MISSING',
           error as Error
         );

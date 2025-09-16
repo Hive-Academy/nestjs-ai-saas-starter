@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
   Workflow,
-  WorkflowContext,
   WorkflowResult,
-  MultiAgentCoordinatorService,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
+import type { WorkflowContext } from '@hive-academy/langgraph-multi-agent';
 import { StreamProgress } from '@hive-academy/langgraph-streaming';
-import { HumanMessage } from '@langchain/core/messages';
-import { CustomerSupportAgent } from '../agents/customer-support.agent';
 import type { TicketRequest } from '../types';
 
 /**
@@ -44,10 +41,6 @@ import type { TicketRequest } from '../types';
 })
 @Injectable()
 export class EnhancedSupportWorkflow {
-  constructor(
-    private readonly supportAgent: CustomerSupportAgent
-  ) // Note: MultiAgentCoordinatorService is injected via WorkflowContext
-  {}
 
   /**
    * Multi-agent orchestration execution
@@ -58,8 +51,8 @@ export class EnhancedSupportWorkflow {
     input: TicketRequest,
     context: WorkflowContext
   ): Promise<WorkflowResult> {
+    const startTime = Date.now();
     try {
-      const startTime = Date.now();
 
       // Step 1: Determine appropriate agent network topology
       const networkType = this.determineNetworkTopology(input);
@@ -85,17 +78,16 @@ export class EnhancedSupportWorkflow {
 
       return {
         success: false,
-        error: errorMessage,
+        error: { message: errorMessage },
         data: {
           ticketId: input.customerId + '_' + Date.now(),
           status: 'failed',
-          error: errorMessage,
         },
         metadata: {
-          workflowId: 'enhanced-support-orchestration',
+          startTime: startTime,
+          endTime: Date.now(),
+          duration: Date.now() - startTime,
           instanceId: context.instanceId,
-          error: errorMessage,
-          failedAt: Date.now(),
         },
       };
     }
@@ -141,11 +133,12 @@ export class EnhancedSupportWorkflow {
         executionTime: Date.now() - startTime,
       },
       metadata: {
-        workflowId: 'enhanced-support-orchestration',
+        startTime,
+        endTime: Date.now(),
+        duration: Date.now() - startTime,
         instanceId: context.instanceId,
-        executionTime: Date.now() - startTime,
         agentsUsed: result.executionPath || ['customer-support-specialist'],
-        networkType: 'simple',
+        checkpoints: 0,
       },
     };
   }
@@ -189,7 +182,10 @@ export class EnhancedSupportWorkflow {
               'Critical priority - requires escalation coordinator oversight',
           },
           {
-            condition: (state: AgentState) => state.metadata?.complexity > 0.8,
+            condition: (state: AgentState) => {
+              const complexity = (state as any).metadata?.complexity;
+              return typeof complexity === 'number' && complexity > 0.8;
+            },
             targetLevel: 1,
             message: 'High complexity - specialist expertise required',
           },
@@ -218,16 +214,16 @@ export class EnhancedSupportWorkflow {
         executionTime: Date.now() - startTime,
       },
       metadata: {
-        workflowId: 'enhanced-support-orchestration',
+        startTime,
+        endTime: Date.now(),
+        duration: Date.now() - startTime,
         instanceId: context.instanceId,
-        executionTime: Date.now() - startTime,
-        agentsUsed: result.executionPath || [
-          'escalation-coordinator',
-          'customer-support-specialist',
-        ],
-        networkType: 'hierarchical',
-        escalationTriggered:
-          input.customerTier === 'enterprise' || input.priority === 'critical',
+        agentsUsed:
+          result.executionPath || [
+            'escalation-coordinator',
+            'customer-support-specialist',
+          ],
+        checkpoints: 0,
       },
     };
   }
@@ -293,17 +289,17 @@ export class EnhancedSupportWorkflow {
         executionTime: Date.now() - startTime,
       },
       metadata: {
-        workflowId: 'enhanced-support-orchestration',
+        startTime,
+        endTime: Date.now(),
+        duration: Date.now() - startTime,
         instanceId: context.instanceId,
-        executionTime: Date.now() - startTime,
-        agentsUsed: result.executionPath || [
-          'customer-support-specialist',
-          'escalation-coordinator',
-          'quality-assurance',
-        ],
-        networkType: 'weighted',
-        consensusAchieved:
-          (result.finalState.metadata?.consensusScore || 0.8) >= 0.7,
+        agentsUsed:
+          result.executionPath || [
+            'customer-support-specialist',
+            'escalation-coordinator',
+            'quality-assurance',
+          ],
+        checkpoints: 0,
       },
     };
   }

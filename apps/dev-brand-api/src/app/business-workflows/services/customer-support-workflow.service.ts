@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
 import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
 import type { WorkflowResult } from '@hive-academy/langgraph-multi-agent';
+import type { ApprovalRequestSummary, WorkflowExecutionStats, NormalizedTicketInput } from '../types';
 
 /**
  * Customer Support Workflow Service
@@ -19,31 +20,12 @@ export class CustomerSupportWorkflowService {
   /**
    * Execute customer support workflow
    */
-  async executeCustomerSupportWorkflow(request: {
-    ticket: {
-      issue: string;
-      priority: 'low' | 'medium' | 'high' | 'urgent';
-      category?: string;
-      customerId?: string;
-    };
-  }): Promise<WorkflowResult> {
+  async executeCustomerSupportWorkflow(request: { ticket: NormalizedTicketInput }): Promise<WorkflowResult> {
     try {
       this.logger.log(`Starting customer support workflow for ticket: ${request.ticket.issue}`);
 
       // Prepare initial workflow state
-      const initialState = {
-        ticket: request.ticket,
-        status: 'analyzing',
-        confidence: 0.0,
-        supportResponse: null,
-        approvalRequired: false,
-        escalationLevel: 'tier1',
-        metadata: {
-          startTime: new Date(),
-          priority: request.ticket.priority,
-          category: request.ticket.category || 'general',
-        },
-      };
+      const initialState = this.buildInitialState(request.ticket);
 
       // Execute customer support workflow
       const result = await this.workflowManager.executeWorkflow(
@@ -70,29 +52,10 @@ export class CustomerSupportWorkflowService {
    * Execute workflow with streaming updates
    */
   async executeWorkflowWithStreaming(
-    request: {
-      ticket: {
-        issue: string;
-        priority: 'low' | 'medium' | 'high' | 'urgent';
-        category?: string;
-        customerId?: string;
-      };
-    },
+    request: { ticket: NormalizedTicketInput },
     onUpdate: (event: any) => void
   ): Promise<WorkflowResult> {
-    const initialState = {
-      ticket: request.ticket,
-      status: 'analyzing',
-      confidence: 0.0,
-      supportResponse: null,
-      approvalRequired: false,
-      escalationLevel: 'tier1',
-      metadata: {
-        startTime: new Date(),
-        priority: request.ticket.priority,
-        category: request.ticket.category || 'general',
-      },
-    };
+    const initialState = this.buildInitialState(request.ticket);
 
     return this.workflowManager.executeWorkflowWithStreaming(
       'customer-support-workflow',
@@ -116,14 +79,16 @@ export class CustomerSupportWorkflowService {
   }> {
     try {
       const instance = this.workflowManager.getInstance(instanceId);
-      
+
       if (!instance) {
         return { status: 'not_found' };
       }
 
+      // context shape is not strictly typed here; use optional chaining
+      const contextMeta: any = (instance as any).context?.metadata;
       return {
         status: instance.status,
-        currentStep: instance.context?.metadata?.currentStep,
+        currentStep: contextMeta?.currentStep,
         progress: this.calculateProgress(instance),
         estimatedCompletion: this.estimateCompletion(instance),
       };
@@ -180,27 +145,14 @@ export class CustomerSupportWorkflowService {
   /**
    * Get pending approvals for a user
    */
-  async getPendingApprovals(userId: string): Promise<Array<{
-    id: string;
-    executionId: string;
-    nodeId: string;
-    message: string;
-    priority: string;
-    requestedAt: Date;
-    expiresAt?: Date;
-  }>> {
+  async getPendingApprovals(userId: string): Promise<ApprovalRequestSummary[]> {
     try {
-      const approvals = await this.humanApprovalService.getPendingApprovals(userId);
-      
-      return approvals.map(approval => ({
-        id: approval.id,
-        executionId: approval.executionId,
-        nodeId: approval.nodeId,
-        message: approval.message,
-        priority: approval.options.riskThreshold || 'medium',
-        requestedAt: approval.timestamps.requested,
-        expiresAt: approval.timestamps.expires,
-      }));
+      const svc: unknown = this.humanApprovalService as unknown as { getPendingApprovals?: () => Promise<unknown[]> };
+  if (!svc || typeof svc !== 'object' || !('getPendingApprovals' in (svc as any)) || typeof (svc as any).getPendingApprovals !== 'function') return [];
+      const approvals: unknown[] = await (svc as any).getPendingApprovals();
+      return approvals
+        .map((a: unknown) => this.mapApproval(a))
+        .filter((a): a is ApprovalRequestSummary => !!a);
     } catch (error) {
       this.logger.error(`Error getting pending approvals for user ${userId}:`, error);
       return [];
@@ -210,20 +162,19 @@ export class CustomerSupportWorkflowService {
   /**
    * Get workflow statistics
    */
-  getWorkflowStatistics(): {
-    totalExecutions: number;
-    activeInstances: number;
-    successRate: number;
-    averageExecutionTime: number;
-  } {
+  getWorkflowStatistics(): WorkflowExecutionStats {
     try {
-      const stats = this.workflowManager.getExecutionStats();
-      return {
-        totalExecutions: stats.totalExecutions,
-        activeInstances: stats.activeInstances,
-        successRate: stats.successRate,
-        averageExecutionTime: stats.averageExecutionTime,
+      const mgr: unknown = this.workflowManager as unknown as { getExecutionStats?: () => unknown };
+      const raw: unknown = mgr && typeof mgr === 'object' && 'getExecutionStats' in (mgr as any) && typeof (mgr as any).getExecutionStats === 'function'
+        ? (mgr as any).getExecutionStats()
+        : {};
+      const stats: WorkflowExecutionStats = {
+        totalExecutions: Number((raw as any).totalExecutions) || 0,
+        activeInstances: Number((raw as any).activeInstances) || 0,
+        successRate: Number((raw as any).successRate) || 0,
+        averageExecutionTime: Number((raw as any).averageExecutionTime) || 0,
       };
+      return stats;
     } catch (error) {
       this.logger.error('Error getting workflow statistics:', error);
       return {
@@ -241,15 +192,15 @@ export class CustomerSupportWorkflowService {
   async cancelWorkflow(instanceId: string, reason?: string): Promise<boolean> {
     try {
       this.logger.log(`Cancelling workflow instance ${instanceId}${reason ? `: ${reason}` : ''}`);
-      
+
       const cancelled = await this.workflowManager.cancelWorkflow(instanceId);
-      
+
       if (cancelled) {
         this.logger.log(`Workflow instance ${instanceId} cancelled successfully`);
       } else {
         this.logger.warn(`Failed to cancel workflow instance ${instanceId}`);
       }
-      
+
       return cancelled;
     } catch (error) {
       this.logger.error(`Error cancelling workflow ${instanceId}:`, error);
@@ -277,14 +228,14 @@ export class CustomerSupportWorkflowService {
   private calculateProgress(instance: any): number {
     // Simple progress calculation based on workflow state
     if (!instance.result) return 0;
-    
+
     const metadata = instance.result.metadata;
     if (!metadata) return 0;
-    
+
     // Calculate based on duration vs expected duration
     const duration = metadata.duration || 0;
     const expectedDuration = 300000; // 5 minutes expected
-    
+
     return Math.min(duration / expectedDuration, 1.0) * 100;
   }
 
@@ -293,15 +244,47 @@ export class CustomerSupportWorkflowService {
    */
   private estimateCompletion(instance: any): Date | undefined {
     if (!instance.createdAt) return undefined;
-    
+
     const startTime = instance.createdAt.getTime();
     const now = Date.now();
     const elapsed = now - startTime;
-    
+
     // Estimate based on average execution time
     const averageTime = 300000; // 5 minutes average
     const estimatedTotal = Math.max(averageTime, elapsed * 1.5);
-    
+
     return new Date(startTime + estimatedTotal);
+  }
+
+  // --- Internal helpers ---
+  private buildInitialState(ticket: NormalizedTicketInput) {
+    return {
+      ticket,
+      status: 'processing', // normalized value (was 'analyzing')
+      confidence: 0.0,
+      supportResponse: null as string | null,
+      approvalRequired: false,
+      escalationLevel: 'tier1',
+      metadata: {
+        startTime: new Date(),
+        priority: ticket.priority,
+        category: ticket.category || 'general',
+      },
+    };
+  }
+
+  private mapApproval(input: unknown): ApprovalRequestSummary | undefined {
+    if (!input || typeof input !== 'object') return undefined;
+    const i: any = input;
+    if (!i.id) return undefined;
+    return {
+      id: String(i.id),
+      executionId: String(i.executionId || ''),
+      nodeId: String(i.nodeId || ''),
+      message: String(i.message || ''),
+      priority: String(i.options?.riskThreshold || 'medium'),
+      requestedAt: i.timestamps?.requested instanceof Date ? i.timestamps.requested : new Date(),
+      expiresAt: i.timestamps?.expires instanceof Date ? i.timestamps.expires : undefined,
+    };
   }
 }

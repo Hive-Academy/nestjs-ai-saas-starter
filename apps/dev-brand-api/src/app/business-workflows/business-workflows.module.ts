@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { HitlModule } from '@hive-academy/langgraph-hitl';
 
 // Customer Support System Components
 import { CustomerSupportAgent } from './agents/customer-support.agent';
@@ -23,6 +22,7 @@ import { ContentAnalysisService } from './core/analysis/content-analysis.service
 import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
 import { DocumentProcessingTools } from './core/tools/document-processing.tools';
 import { WebResearchTools } from './core/tools/web-research.tools';
+import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
 // Showcase module fully removed; above imports are consolidated production equivalents
 
 /**
@@ -34,8 +34,7 @@ import { WebResearchTools } from './core/tools/web-research.tools';
   imports: [
     // Only import ConfigModule for configuration access
     ConfigModule,
-    // Import HitlModule to make HumanApprovalService available (no configuration needed as it's already configured in AppModule)
-    HitlModule,
+  // HITL providers are now global via HitlModule.forRoot in AppModule; no local import needed
   ],
   providers: [
     // Core AI Agents
@@ -65,6 +64,8 @@ import { WebResearchTools } from './core/tools/web-research.tools';
     PersonalBrandMemoryService,
     DocumentProcessingTools,
     WebResearchTools,
+  // Missing provider causing DI failure for GitHubCodeAnalyzerAgent
+  GitHubIntegrationTools,
 
     // Configuration providers using proper config pattern
     {

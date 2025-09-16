@@ -186,6 +186,13 @@ export class WebSocketService {
   }
 
   /**
+   * Get all messages (for UserInterruptionService)
+   */
+  getMessages(): Observable<WebSocketMessage> {
+    return this.messages$;
+  }
+
+  /**
    * Get stream updates for a specific execution
    */
   getStreamUpdatesForExecution(
@@ -267,6 +274,42 @@ export class WebSocketService {
       token,
       metadata,
       timestamp: new Date(),
+    });
+  }
+
+  /**
+   * Send user question to running workflow
+   */
+  sendUserQuestion(executionId: string, question: string, urgency: 'low' | 'medium' | 'high' = 'medium'): void {
+    this.send('user_question', {
+      executionId,
+      question,
+      urgency,
+      timestamp: new Date()
+    });
+  }
+
+  /**
+   * Inject user input into workflow
+   */
+  injectUserInput(executionId: string, input: string, inputType: string = 'text'): void {
+    this.send('inject_input', {
+      executionId,
+      input,
+      inputType,
+      timestamp: new Date()
+    });
+  }
+
+  /**
+   * Respond to an interruption
+   */
+  respondToInterruption(interruptionId: string, response: string, continueExecution: boolean = true): void {
+    this.send('respond_to_interruption', {
+      interruptionId,
+      response,
+      continueExecution,
+      timestamp: new Date()
     });
   }
 
@@ -359,6 +402,61 @@ export class WebSocketService {
 
     this.socket.on('authentication_success', (data: any) => {
       console.log('Authentication successful:', data);
+    });
+
+    // User Interruption System handlers
+    this.socket.on('interruption_request', (data: any) => {
+      console.log('🔔 Interruption request received:', data);
+      this.messageSubject.next({
+        type: 'interruption_request',
+        data,
+        metadata: { timestamp: new Date() }
+      });
+    });
+
+    this.socket.on('workflow_paused', (data: any) => {
+      console.log('⏸️ Workflow paused:', data);
+      this.messageSubject.next({
+        type: 'workflow_paused',
+        data,
+        metadata: { timestamp: new Date() }
+      });
+    });
+
+    this.socket.on('workflow_resumed', (data: any) => {
+      console.log('▶️ Workflow resumed:', data);
+      this.messageSubject.next({
+        type: 'workflow_resumed',
+        data,
+        metadata: { timestamp: new Date() }
+      });
+    });
+
+    this.socket.on('approval_request', (data: any) => {
+      console.log('✋ Approval request received:', data);
+      this.messageSubject.next({
+        type: 'approval_request',
+        data,
+        metadata: { timestamp: new Date() }
+      });
+    });
+
+    this.socket.on('interruption_timeout', (data: any) => {
+      console.log('⏰ Interruption timeout:', data);
+      this.messageSubject.next({
+        type: 'interruption_timeout',
+        data,
+        metadata: { timestamp: new Date() }
+      });
+    });
+
+    this.socket.on('interruption_response', (data: any) => {
+      console.log('✅ Interruption response processed:', data);
+      this.messageSubject.next({
+        type: 'interruption_response',
+        data,
+        metadata: { timestamp: new Date() }
+      });
     });
 
     // Legacy message handling for backward compatibility
@@ -469,4 +567,5 @@ export class WebSocketService {
 
     return hasBasicProperties && (hasTimestamp || hasMetadataWithTimestamp);
   }
+
 }

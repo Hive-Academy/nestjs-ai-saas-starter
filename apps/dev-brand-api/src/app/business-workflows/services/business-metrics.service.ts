@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import { STREAMING_SERVICE_TOKEN } from '@hive-academy/langgraph-core';
 import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   BusinessImpact,
@@ -17,7 +16,7 @@ import {
 export class BusinessMetricsService {
   constructor(
     private readonly neo4j: Neo4jService,
-    @Inject(STREAMING_SERVICE_TOKEN)
+    @Inject('IStreamingService')
     private readonly streaming: IStreamingService
   ) {}
 

@@ -64,8 +64,8 @@ export class HitlModule {
         },
         // Adapter providers (conditional)
         ...adapterProviders,
-        // Core services
-        HumanApprovalService,
+        // Core services (order: dependencies first, orchestrator last)
+        // Processing & helper services
         ApprovalProcessingService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
@@ -75,6 +75,8 @@ export class HitlModule {
         FeedbackProcessorService,
         HitlNotificationService,
         HitlTimeoutService,
+        // Orchestrator service that depends on the above
+        HumanApprovalService,
         // Legacy provider for backward compatibility
         {
           provide: 'HITL_OPTIONS',
@@ -96,7 +98,10 @@ export class HitlModule {
         // Export adapter interface for external use
         IHitlStorageService,
       ],
-      global: false,
+      // Make the configured HITL module global so its providers are available
+      // to feature modules (e.g., BusinessWorkflowsModule) without re-importing
+      // an unconfigured base module that would omit providers.
+      global: true,
     };
   }
 
@@ -115,8 +120,7 @@ export class HitlModule {
         ...this.createAsyncProviders(options),
         // Adapter providers (self-contained)
         ...adapterProviders,
-        // Core services
-        HumanApprovalService,
+        // Core services (dependencies first)
         ApprovalProcessingService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
@@ -126,6 +130,7 @@ export class HitlModule {
         FeedbackProcessorService,
         HitlNotificationService,
         HitlTimeoutService,
+        HumanApprovalService,
       ],
       exports: [
         HumanApprovalService,
@@ -142,7 +147,7 @@ export class HitlModule {
         // Export adapter interface for external use
         IHitlStorageService,
       ],
-      global: false,
+      global: true,
     };
   }
 

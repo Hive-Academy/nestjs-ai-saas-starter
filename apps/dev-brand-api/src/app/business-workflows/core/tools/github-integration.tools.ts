@@ -34,6 +34,7 @@ interface GitHubRepository {
   created_at: string;
   updated_at: string;
   pushed_at: string;
+  private?: boolean; // add optional flag actually returned by GitHub API when authorized
 }
 
 interface CodeAchievement {
@@ -154,7 +155,11 @@ export class GitHubIntegrationTools {
 
       // Analyze patterns and extract achievements
       const patterns = this.analyzeCommitPatterns(commits, targetRepos);
-      const achievements = this.extractAchievements(commits, targetRepos);
+      const achievements = await this.extractAchievements({
+        commits,
+        repositories: targetRepos,
+        analysisDepth: 'detailed',
+      });
 
       // Calculate summary metrics
       const summary = this.calculateSummaryMetrics(commits, targetRepos);
@@ -184,11 +189,12 @@ export class GitHubIntegrationTools {
     name: 'achievement-extractor',
     description: 'Extracts meaningful achievements from code analysis',
     schema: z.object({
-      commits: z.array(z.any()).describe('Array of commit objects to analyze'),
-      achievements: achievements.map((a) => ({
-        ...a,
-        date: new Date(a.date).toISOString(),
-      })),
+      commits: z
+        .array(z.any())
+        .describe('Array of commit objects to analyze'),
+      repositories: z
+        .array(z.any())
+        .describe('Repositories associated with the commits'),
       analysisDepth: z
         .enum(['basic', 'detailed', 'comprehensive'])
         .optional()
@@ -417,7 +423,7 @@ export class GitHubIntegrationTools {
     return allCommits.slice(0, 50); // Limit total commits
   }
 
-  private getAuthHeaders(): HeadersInit {
+  private getAuthHeaders(): Record<string, string> {
     return this.githubToken
       ? { Authorization: `token ${this.githubToken}` }
       : {};

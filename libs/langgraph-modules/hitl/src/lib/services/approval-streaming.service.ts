@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   HumanApprovalRequest,
   HumanApprovalResponse,
-} from './human-approval.service';
+} from './approval-workflow.types';
 import { UserInterruption, UserInterruptionResponse } from '../interfaces/user-interruption.interface';
 
 /**

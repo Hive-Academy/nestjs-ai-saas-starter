@@ -97,10 +97,7 @@ export {
 
 // Streaming integration exports for consumer libraries
 export {
-  STREAMING_SERVICE_TOKEN,
-  TOKEN_STREAMING_SERVICE_TOKEN,
-  EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
-  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+  // STREAMING_SERVICE_TOKEN, // Removed - using adapter pattern
   NoOpStreamingService,
   NoOpTokenStreamingService,
   NoOpEventStreamProcessorService,

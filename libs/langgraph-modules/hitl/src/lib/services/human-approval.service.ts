@@ -14,141 +14,23 @@ import { ApprovalProcessingService } from './approval-processing.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
 import { ApprovalStreamingService } from './approval-streaming.service';
 import { UserInterruptionService } from './user-interruption.service';
-import {
-  InterruptionContext,
-  UserInterruption,
-  UserInterruptionResponse,
-} from '../interfaces/user-interruption.interface';
+import { InterruptionContext, UserInterruption, UserInterruptionResponse } from '../interfaces/user-interruption.interface';
 import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
+import { EscalationStrategy, RequiresApprovalOptions } from '../decorators/approval.decorator';
 import {
-  ApprovalRiskLevel,
-  EscalationStrategy,
-  RequiresApprovalOptions,
-} from '../decorators/approval.decorator';
+  ApprovalWorkflowState,
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowStats,
+} from './approval-workflow.types';
 
-/**
- * Approval workflow state
- */
-export enum ApprovalWorkflowState {
-  PENDING = 'pending',
-  IN_PROGRESS = 'in_progress',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  ESCALATED = 'escalated',
-  TIMEOUT = 'timeout',
-  CANCELLED = 'cancelled',
-}
-
-/**
- * Human approval request structure
- */
-export interface HumanApprovalRequest {
-  /** Request ID */
-  id: string;
-
-  /** Execution ID */
-  executionId: string;
-
-  /** Node requesting approval */
-  nodeId: string;
-
-  /** Approval message */
-  message: string;
-
-  /** Request metadata */
-  metadata: Record<string, unknown>;
-
-  /** Current workflow state */
-  state: WorkflowState;
-
-  /** Approval options */
-  options: RequiresApprovalOptions;
-
-  /** Current workflow state */
-  workflowState: ApprovalWorkflowState;
-
-  /** Assigned approvers */
-  approvers?: string[];
-
-  /** Approval chain ID */
-  chainId?: string;
-
-  /** Risk assessment */
-  riskAssessment?: {
-    level: ApprovalRiskLevel;
-    factors: string[];
-    score: number;
-    details?: Record<string, unknown>;
-  };
-
-  /** Confidence evaluation */
-  confidence: {
-    current: number;
-    threshold: number;
-    factors: Record<string, number>;
-  };
-
-  /** Timestamps */
-  timestamps: {
-    requested: Date;
-    responded?: Date;
-    timeout?: Date;
-  };
-
-  /** Timeout configuration */
-  timeout: {
-    duration: number;
-    strategy: 'approve' | 'reject' | 'escalate' | 'retry';
-  };
-
-  /** Retry information */
-  retry: {
-    count: number;
-    maxAttempts: number;
-  };
-}
-
-/**
- * Human approval response
- */
-export interface HumanApprovalResponse {
-  /** Request ID */
-  requestId: string;
-
-  /** Decision */
-  decision: 'approved' | 'rejected' | 'escalated' | 'retry' | 'modify';
-
-  /** Approver information */
-  approver: {
-    id: string;
-    name?: string;
-    role?: string;
-  };
-
-  /** Response message */
-  message?: string;
-
-  /** Modifications to apply */
-  modifications?: Record<string, unknown>;
-
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
-
-  /** Response timestamp */
-  timestamp: Date;
-}
-
-/**
- * Approval workflow statistics
- */
-export interface ApprovalWorkflowStats {
-  total: number;
-  byState: Record<ApprovalWorkflowState, number>;
-  averageResponseTime: number;
-  timeoutRate: number;
-  approvalRate: number;
-  escalationRate: number;
-}
+// Re-export moved types for backward compatibility (external imports unchanged)
+export { ApprovalWorkflowState } from './approval-workflow.types';
+export type {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowStats,
+} from './approval-workflow.types';
 
 /**
  * Service for managing human approval workflows with state persistence and timeout handling

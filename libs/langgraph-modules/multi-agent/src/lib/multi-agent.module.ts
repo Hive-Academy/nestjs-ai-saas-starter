@@ -27,9 +27,9 @@ import { ToolBuilderService } from './tools/tool-builder.service';
 import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
 import {
-  CHECKPOINT_ADAPTER_TOKEN,
+  ICheckpointAdapter,
   NoOpCheckpointAdapter,
-  STREAMING_SERVICE_TOKEN,
+  IStreamingService,
   NoOpStreamingService,
 } from '@hive-academy/langgraph-core';
 import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
@@ -55,12 +55,12 @@ export class MultiAgentModule {
       },
       // Checkpoint adapter provider - either provided or no-op
       {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
+        provide: 'ICheckpointAdapter',
         useValue: options.checkpointAdapter || new NoOpCheckpointAdapter(),
       },
       // Streaming adapter provider - either provided or no-op
       {
-        provide: STREAMING_SERVICE_TOKEN,
+        provide: 'IStreamingService',
         useValue: options.streamingAdapter || new NoOpStreamingService(),
       },
       // Core services
@@ -117,9 +117,9 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // DI tokens
-        CHECKPOINT_ADAPTER_TOKEN,
-        STREAMING_SERVICE_TOKEN,
+        // Adapter interfaces
+        'ICheckpointAdapter',
+        'IStreamingService',
       ],
       global: true,
     };
@@ -143,7 +143,7 @@ export class MultiAgentModule {
       },
       // Checkpoint adapter provider - async factory
       {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
+        provide: 'ICheckpointAdapter',
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
           return moduleOptions.checkpointAdapter || new NoOpCheckpointAdapter();
@@ -152,7 +152,7 @@ export class MultiAgentModule {
       },
       // Streaming adapter provider - async factory
       {
-        provide: STREAMING_SERVICE_TOKEN,
+        provide: 'IStreamingService',
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
           return moduleOptions.streamingAdapter || new NoOpStreamingService();
@@ -219,9 +219,9 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // DI tokens
-        CHECKPOINT_ADAPTER_TOKEN,
-        STREAMING_SERVICE_TOKEN,
+        // Adapter interfaces
+        'ICheckpointAdapter',
+        'IStreamingService',
       ],
       global: true,
     };

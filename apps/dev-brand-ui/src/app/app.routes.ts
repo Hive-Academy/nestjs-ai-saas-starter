@@ -12,7 +12,7 @@ export const routes: Routes = [
       import('./features/landing-page/landing-page.component').then(
         (m) => m.LandingPageComponent
       ),
-    title: 'NestJS AI SaaS Starter',
+    title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
   {
     path: 'spatial-interface',

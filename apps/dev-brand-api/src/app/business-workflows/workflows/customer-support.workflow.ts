@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   Workflow,
   Entrypoint,
@@ -11,10 +11,7 @@ import {
   TokenStreamingServiceAdapter,
   WebSocketBridgeServiceAdapter,
 } from '@hive-academy/langgraph-streaming';
-import {
-  ITokenStreamingService,
-  IWebSocketBridgeService,
-} from '@hive-academy/langgraph-core';
+// Removed unused core interfaces (streaming handled via adapters)
 import {
   RequiresApproval,
   HumanApprovalService,
@@ -23,6 +20,7 @@ import { StreamEventType } from '@hive-academy/langgraph-core';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { CustomerSupportAgent } from '../agents/customer-support.agent';
 import type { CustomerSupportState, TicketRequest } from '../types';
+import type { ApprovalPredicateStateLike } from '../types';
 
 /**
  * Customer Support Automation Workflow
@@ -38,8 +36,9 @@ import type { CustomerSupportState, TicketRequest } from '../types';
 export class CustomerSupportWorkflow {
   constructor(
     private readonly supportAgent: CustomerSupportAgent,
-    private readonly tokenStreamingService: TokenStreamingServiceAdapter,
-    private readonly webSocketBridge: WebSocketBridgeServiceAdapter,
+    // COMPLETELY REMOVED STREAMING ADAPTERS FOR TESTING
+    // private readonly tokenStreamingService: TokenStreamingServiceAdapter,
+    // private readonly webSocketBridge: WebSocketBridgeServiceAdapter,
     private readonly llmProvider: LlmProviderService,
     private readonly hitlService: HumanApprovalService // In a real implementation, these would be injected // private readonly emailService: EmailService,
   ) // private readonly metricsService: BusinessMetricsService
@@ -52,8 +51,22 @@ export class CustomerSupportWorkflow {
   @StreamProgress({ enabled: true, includeETA: true })
   async processTicket(request: TicketRequest): Promise<CustomerSupportState> {
     const ticketId = this.generateTicketId();
+    const allowedCategories = new Set(['technical', 'billing', 'product', 'general']);
+    const category = typeof request.category === 'string' && allowedCategories.has(request.category)
+      ? request.category
+      : 'general';
+    const allowedPriorities = new Set(['low', 'medium', 'high', 'critical']);
+    const priority: CustomerSupportState['ticket']['priority'] =
+      typeof request.priority === 'string' && allowedPriorities.has(request.priority)
+        ? (request.priority as any)
+        : 'medium';
+    const tier: CustomerSupportState['ticket']['customerTier'] =
+      request.customerTier === 'basic' ||
+      request.customerTier === 'premium' ||
+      request.customerTier === 'enterprise'
+        ? (request.customerTier as any)
+        : 'basic';
 
-    // Create initial state
     const initialState: CustomerSupportState = {
       ticketId,
       ticket: {
@@ -61,10 +74,10 @@ export class CustomerSupportWorkflow {
         customerId: request.customerId,
         title: request.title,
         description: request.description,
-        category: (request.category as any) || 'general',
-        priority: (request.priority as any) || 'medium',
+        category: category as any, // cast to union type already validated
+        priority: priority as any, // priority enumerations align; retained narrow cast
         status: 'processing',
-        customerTier: (request.customerTier as any) || 'basic',
+        customerTier: tier as any,
         createdAt: new Date(),
         updatedAt: new Date(),
         tags: [],
@@ -72,20 +85,10 @@ export class CustomerSupportWorkflow {
       },
       status: 'processing',
       startTime: Date.now(),
-      metadata: {
-        requestReceived: true,
-        initialProcessingTime: Date.now(),
-      },
+      metadata: { requestReceived: true, initialProcessingTime: Date.now() },
     };
 
-    // Emit initial progress
-    this.emitProgress({
-      ticketId,
-      progress: 10,
-      message: 'Ticket received and initialized',
-      currentStep: 'initialization',
-    });
-
+    this.emitProgress({ ticketId, progress: 10, message: 'Ticket received and initialized', currentStep: 'initialization' });
     return initialState;
   }
 
@@ -168,22 +171,27 @@ export class CustomerSupportWorkflow {
   ): Promise<Partial<CustomerSupportState>> {
     try {
       // Check if user has any questions about the analysis
-      if (state.analysis?.complexity === 'high' || state.escalationRequired) {
+      // Treat both 'highly_complex' and 'complex' as requiring user guidance
+      if (
+        state.analysis?.complexity === 'highly_complex' ||
+        state.analysis?.complexity === 'complex' ||
+        state.escalationRequired
+      ) {
         const interruptionId = await this.hitlService.requestClarification(
           state.ticketId,
           'analysis-review',
           `I've analyzed this ${
             state.ticket.category
-          } ticket and found it requires special attention. 
+          } ticket and found it requires special attention.
           Key findings: ${
             state.analysis?.keyTopics?.join(', ') || 'Complex issue detected'
           }
-          
+
           Would you like me to:
           1. Proceed with standard resolution
-          2. Escalate to human specialist immediately  
+          2. Escalate to human specialist immediately
           3. Request more information from customer first
-          
+
           What's your preference?`
         );
 
@@ -196,9 +204,11 @@ export class CustomerSupportWorkflow {
 
         return {
           ...state,
-          status: 'awaiting_user_input',
+          // map to existing status union - stay in 'analyzed' but mark awaiting flag
+          status: 'analyzed',
           metadata: {
             ...state.metadata,
+            awaitingUserInput: true,
             interruptionId,
             interruptionReason: 'complex_analysis_requires_guidance',
           },
@@ -291,18 +301,22 @@ export class CustomerSupportWorkflow {
   @Task({ dependsOn: ['generateResponse'] })
   @RequiresApproval({
     confidenceThreshold: 0.8,
-    timeoutMs: 300000, // 5 minutes
-    when: (state) => this.determineApprovalRequirement(state),
+    timeoutMs: 300000,
+  when: (s: any) => CustomerSupportWorkflow.approvalPredicate(s as any),
     onTimeout: 'escalate',
-    riskThreshold: 'medium',
-    message: (state) =>
-      `Review response for ${state.ticket.customerTier} customer: "${state.ticket.title}"`,
-    metadata: (state) => ({
-      ticketCategory: state.ticket.category,
-      customerTier: state.ticket.customerTier,
-      escalationRequired: state.escalationRequired,
-      businessImpact: state.analysis?.businessImpact,
-    }),
+    message: (state: any) => {
+      const s = state as CustomerSupportState;
+      return `Review response for ${s.ticket.customerTier} customer: "${s.ticket.title}"`;
+    },
+    metadata: (state: any) => {
+      const s = state as CustomerSupportState;
+      return {
+        ticketCategory: s.ticket.category,
+        customerTier: s.ticket.customerTier,
+        escalationRequired: s.escalationRequired,
+        businessImpact: s.analysis?.businessImpact,
+      };
+    },
   })
   async sendResponse(
     state: CustomerSupportState
@@ -432,7 +446,7 @@ export class CustomerSupportWorkflow {
   private async createResponse(state: CustomerSupportState): Promise<string> {
     try {
       // Use the real LLM provider to generate the response
-      const llm = await this.llmProvider.getLLM();
+  const llm = await this.llmProvider.getLLM();
 
       const prompt = `Generate a professional customer support response based on the following information:
 
@@ -498,7 +512,7 @@ Response:`;
       console.error('Error generating LLM response:', error);
 
       // Fallback to template-based response if LLM fails
-      const { analysis, similarTickets, customerContext } = state;
+  const { analysis, customerContext } = state as any;
       let response = `Dear ${customerContext?.name || 'Customer'},\n\n`;
       response += `Thank you for contacting us regarding your ${
         analysis?.category || 'support'
@@ -532,16 +546,18 @@ Response:`;
     }
   }
 
-  private determineApprovalRequirement(state: CustomerSupportState): boolean {
-    // Require approval for high-risk scenarios
+  static approvalPredicate(state: ApprovalPredicateStateLike | undefined): boolean {
+    if (!state) return false;
     if (state.escalationRequired) return true;
-    if (state.ticket.customerTier === 'enterprise') return true;
+    if (state.ticket?.customerTier === 'enterprise') return true;
     if (state.analysis?.businessImpact === 'critical') return true;
-    if (state.analysis?.sentiment != null && state.analysis.sentiment < -0.5)
-      return true;
+    if (typeof state.analysis?.sentiment === 'number' && state.analysis.sentiment < -0.5) return true;
     if (state.customerContext?.riskLevel === 'high') return true;
-
     return false;
+  }
+
+  private determineApprovalRequirement(state: CustomerSupportState): boolean {
+    return CustomerSupportWorkflow.approvalPredicate(state);
   }
 
   private getApprovalReason(state: CustomerSupportState): string {

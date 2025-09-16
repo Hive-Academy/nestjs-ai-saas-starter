@@ -23,152 +23,147 @@ interface NavItem {
   standalone: true,
   imports: [RouterModule],
   template: `
-    <nav class="showcase-nav" [class.expanded]="isExpanded()">
-      <div class="nav-header">
-        <button class="nav-toggle" (click)="toggleNav()">
-          <span class="toggle-icon">{{ isExpanded() ? '❮' : '❯' }}</span>
+    <!-- Floating Navigation Button -->
+    <div class="floating-nav" [class.nav-open]="isExpanded()">
+      <div class="relative">
+        <!-- Main Navigation Button -->
+        <button class="nav-button" (click)="toggleNav()" [class.active]="isExpanded()">
+          🚀
         </button>
-        <div class="nav-title" [class.hidden]="!isExpanded()">
-          🚀 DevBrand Platform
-        </div>
-      </div>
 
-      <div class="nav-content">
-        <!-- Showcase Routes -->
-        <div class="nav-section">
-          <div class="section-title" [class.hidden]="!isExpanded()">
-            Showcase Experience
+        <!-- Navigation Dropdown -->
+        <div class="nav-dropdown" [class.hidden]="!isExpanded()">
+          <div class="nav-header">
+            <div class="nav-title">🚀 DevBrand Platform</div>
+            <div class="nav-subtitle">v1.0.0-showcase</div>
           </div>
-          @for (item of showcaseItems; track item.path) {
-          <a
-            class="nav-item"
-            [routerLink]="item.path"
-            [class.active]="currentRoute() === item.path"
-            [title]="item.description"
-          >
-            <span class="nav-icon">{{ item.icon }}</span>
-            <div class="nav-info" [class.hidden]="!isExpanded()">
-              <div class="nav-label">{{ item.title }}</div>
-              <div class="nav-desc">{{ item.description }}</div>
-            </div>
-          </a>
-          }
-        </div>
 
-        <!-- Interface Modes -->
-        <div class="nav-section">
-          <div class="section-title" [class.hidden]="!isExpanded()">
-            Interface Modes
+          <!-- Showcase Routes -->
+          <div class="nav-section">
+            <div class="section-title">Showcase Experience</div>
+            @for (item of showcaseItems; track item.path) {
+            <a
+              class="nav-item"
+              [routerLink]="item.path"
+              [class.active]="currentRoute() === item.path"
+              (click)="closeNav()"
+            >
+              <span class="nav-icon">{{ item.icon }}</span>
+              <div class="nav-info">
+                <div class="nav-label">{{ item.title }}</div>
+                <div class="nav-desc">{{ item.description }}</div>
+              </div>
+            </a>
+            }
           </div>
-          @for (item of interfaceItems; track item.path) {
-          <a
-            class="nav-item"
-            [routerLink]="item.path"
-            [class.active]="currentRoute() === item.path"
-            [title]="item.description"
-          >
-            <span class="nav-icon">{{ item.icon }}</span>
-            <div class="nav-info" [class.hidden]="!isExpanded()">
-              <div class="nav-label">{{ item.title }}</div>
-              <div class="nav-desc">{{ item.description }}</div>
-            </div>
-          </a>
-          }
-        </div>
-      </div>
 
-      <!-- Footer -->
-      <div class="nav-footer">
-        <div class="status-indicator" [class.hidden]="!isExpanded()">
-          <span class="status-dot online"></span>
-          <span class="status-text">All Systems Online</span>
-        </div>
-        <div class="version-info" [class.hidden]="!isExpanded()">
-          v1.0.0-showcase
+          <!-- Interface Modes -->
+          <div class="nav-section">
+            <div class="section-title">Interface Modes</div>
+            @for (item of interfaceItems; track item.path) {
+            <a
+              class="nav-item"
+              [routerLink]="item.path"
+              [class.active]="currentRoute() === item.path"
+              (click)="closeNav()"
+            >
+              <span class="nav-icon">{{ item.icon }}</span>
+              <div class="nav-info">
+                <div class="nav-label">{{ item.title }}</div>
+                <div class="nav-desc">{{ item.description }}</div>
+              </div>
+            </a>
+            }
+          </div>
+
+          <!-- Status Footer -->
+          <div class="nav-footer">
+            <div class="status-indicator">
+              <span class="status-dot"></span>
+              <span class="status-text">All Systems Online</span>
+            </div>
+          </div>
         </div>
       </div>
-    </nav>
+    </div>
   `,
   styles: [
     `
-      .showcase-nav {
+      .floating-nav {
         position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: 60px;
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.3s ease;
+        top: 20px;
+        left: 20px;
         z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
       }
 
-      .showcase-nav.expanded {
-        width: 280px;
+      .relative {
+        position: relative;
       }
 
-      .nav-header {
-        display: flex;
-        align-items: center;
-        padding: 16px 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      .nav-toggle {
-        width: 36px;
-        height: 36px;
+      .nav-button {
+        width: 56px;
+        height: 56px;
         border: none;
-        background: rgba(34, 197, 94, 0.2);
-        border-radius: 8px;
-        color: #22c55e;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        border-radius: 50%;
+        color: white;
+        font-size: 1.5rem;
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
       }
 
-      .nav-toggle:hover {
-        background: rgba(34, 197, 94, 0.3);
+      .nav-button:hover {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
         transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(34, 197, 94, 0.4);
       }
 
-      .toggle-icon {
-        font-size: 0.9rem;
-        font-weight: 600;
+      .nav-button.active {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3);
       }
 
-      .nav-title {
-        margin-left: 12px;
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: white;
-        transition: opacity 0.3s ease;
+      .nav-dropdown {
+        position: absolute;
+        top: 64px;
+        left: 0;
+        width: 320px;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        transform-origin: top left;
       }
 
       .hidden {
         opacity: 0;
         pointer-events: none;
+        transform: scale(0.95);
       }
 
-      .nav-content {
-        flex: 1;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(34, 197, 94, 0.5) transparent;
+      .nav-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(34, 197, 94, 0.05);
       }
 
-      .nav-content::-webkit-scrollbar {
-        width: 4px;
+      .nav-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 4px;
       }
 
-      .nav-content::-webkit-scrollbar-thumb {
-        background: rgba(34, 197, 94, 0.5);
-        border-radius: 2px;
+      .nav-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
       }
 
       .nav-section {
@@ -176,20 +171,23 @@ interface NavItem {
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
 
+      .nav-section:last-of-type {
+        border-bottom: none;
+      }
+
       .section-title {
-        padding: 0 16px 8px 16px;
+        padding: 0 20px 12px 20px;
         font-size: 0.8rem;
         font-weight: 600;
         text-transform: uppercase;
         color: rgba(255, 255, 255, 0.6);
         letter-spacing: 0.5px;
-        transition: opacity 0.3s ease;
       }
 
       .nav-item {
         display: flex;
         align-items: center;
-        padding: 12px 16px;
+        padding: 12px 20px;
         text-decoration: none;
         color: rgba(255, 255, 255, 0.8);
         transition: all 0.3s ease;
@@ -210,35 +208,33 @@ interface NavItem {
       }
 
       .nav-icon {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         min-width: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
+        margin-right: 12px;
       }
 
       .nav-info {
-        margin-left: 12px;
         flex: 1;
-        transition: opacity 0.3s ease;
       }
 
       .nav-label {
         font-weight: 500;
         font-size: 0.9rem;
         line-height: 1.3;
+        margin-bottom: 2px;
       }
 
       .nav-desc {
         font-size: 0.75rem;
         opacity: 0.7;
         line-height: 1.2;
-        margin-top: 2px;
       }
 
       .nav-footer {
-        padding: 16px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 16px 20px;
         background: rgba(0, 0, 0, 0.2);
       }
 
@@ -246,8 +242,6 @@ interface NavItem {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 8px;
-        transition: opacity 0.3s ease;
       }
 
       .status-dot {
@@ -259,13 +253,8 @@ interface NavItem {
       }
 
       @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.6;
-        }
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
       }
 
       .status-text {
@@ -274,39 +263,24 @@ interface NavItem {
         font-weight: 500;
       }
 
-      .version-info {
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.5);
-        text-align: center;
-        transition: opacity 0.3s ease;
-      }
-
       /* Mobile responsive */
       @media (max-width: 768px) {
-        .showcase-nav {
-          transform: translateX(-100%);
-        }
-
-        .showcase-nav.expanded {
-          transform: translateX(0);
-          width: 100vw;
-          background: rgba(30, 41, 59, 0.98);
-          backdrop-filter: blur(10px);
+        .nav-dropdown {
+          width: 280px;
+          left: -20px;
+          top: 70px;
         }
       }
 
-      /* Push main content when nav is expanded */
-      :global(body) {
-        transition: margin-left 0.3s ease;
-      }
-
-      :global(body.nav-expanded) {
-        margin-left: 280px;
-      }
-
-      @media (max-width: 768px) {
-        :global(body.nav-expanded) {
-          margin-left: 0;
+      @media (max-width: 480px) {
+        .floating-nav {
+          top: 10px;
+          left: 10px;
+        }
+        
+        .nav-dropdown {
+          width: calc(100vw - 40px);
+          left: -10px;
         }
       }
     `,
@@ -321,69 +295,48 @@ export class ShowcaseNavigationComponent {
 
   readonly showcaseItems: NavItem[] = [
     {
-      path: '/devbrand-showcase',
-      title: 'Platform Overview',
-      icon: '🚀',
-      description: 'Main dashboard & system health',
-      category: 'showcase',
-    },
-    {
-      path: '/multi-agent-patterns',
-      title: 'Agent Patterns',
-      icon: '🐝',
-      description: 'Supervisor & swarm coordination',
-      category: 'showcase',
-    },
-    {
-      path: '/library-showcase',
-      title: 'Library Ecosystem',
-      icon: '📚',
-      description: '13 integrated libraries',
-      category: 'showcase',
-    },
-    {
-      path: '/developer-experience',
-      title: 'Developer DX',
-      icon: '⚡',
-      description: 'Code transformation showcase',
+      path: '/landing',
+      title: 'Landing Page',
+      icon: '🏠',
+      description: 'Platform landing & overview',
       category: 'showcase',
     },
   ];
 
   readonly interfaceItems: NavItem[] = [
     {
-      path: '/chat',
-      title: 'Chat Studio',
-      icon: '💬',
-      description: 'Interactive AI conversations',
-      category: 'interface',
-    },
-    {
-      path: '/spatial',
-      title: 'Agent Constellation',
+      path: '/spatial-interface',
+      title: '3D Agent Visualization',
       icon: '🌌',
-      description: '3D agent visualization',
+      description: 'Interactive spatial interface',
       category: 'interface',
     },
     {
-      path: '/canvas',
+      path: '/workflow-canvas',
       title: 'Workflow Canvas',
       icon: '🎨',
       description: 'Visual workflow designer',
       category: 'interface',
     },
     {
-      path: '/memory',
+      path: '/memory-constellation',
       title: 'Memory Constellation',
       icon: '🧠',
-      description: 'Context & memory visualization',
+      description: 'Distributed memory system',
       category: 'interface',
     },
     {
-      path: '/forge',
+      path: '/chat-interface',
+      title: 'AI Chat Interface',
+      icon: '💬',
+      description: 'Conversational AI experience',
+      category: 'interface',
+    },
+    {
+      path: '/content-forge',
       title: 'Content Forge',
       icon: '⚒️',
-      description: 'Content creation studio',
+      description: 'AI-powered content creation',
       category: 'interface',
     },
   ];
@@ -404,14 +357,10 @@ export class ShowcaseNavigationComponent {
   }
 
   toggleNav() {
-    const expanded = !this.isExpanded();
-    this.isExpanded.set(expanded);
+    this.isExpanded.update(expanded => !expanded);
+  }
 
-    // Update body class for main content positioning
-    if (expanded) {
-      document.body.classList.add('nav-expanded');
-    } else {
-      document.body.classList.remove('nav-expanded');
-    }
+  closeNav() {
+    this.isExpanded.set(false);
   }
 }

@@ -101,8 +101,8 @@ interface ResearchSearchResponse {
  * - Search result summarization and analysis
  */
 @Injectable()
-export class ShowcaseSearchTools {
-  private readonly logger = new Logger(ShowcaseSearchTools.name);
+export class WebResearchTools {
+  private readonly logger = new Logger(WebResearchTools.name);
   private readonly tavilyTool: TavilySearch;
 
   constructor() {

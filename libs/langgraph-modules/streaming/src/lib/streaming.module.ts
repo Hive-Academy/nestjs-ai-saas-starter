@@ -1,26 +1,15 @@
 import { Module, DynamicModule, Global } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TokenStreamingService } from './services/token-streaming.service';
-import { AutoInitTokenStreamingService } from './services/auto-init-token-streaming.service';
+// AutoInitTokenStreamingService removed - functionality merged into TokenStreamingService
 import { EventStreamProcessorService } from './services/event-stream-processor.service';
 import { WebSocketBridgeService } from './services/websocket-bridge.service';
-import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
+import { StreamingWebSocketService } from './services/streaming-websocket.service';
 import { WebSocketGatewayConfig } from './interfaces/websocket-gateway.interface';
 import { setStreamingConfig } from './utils/streaming-config.accessor';
 import { StreamingAuthService } from './services/streaming-auth.service';
 import { RateLimiterService } from './services/rate-limiter.service';
-import {
-  StreamingServiceAdapter,
-  TokenStreamingServiceAdapter,
-  EventStreamProcessorServiceAdapter,
-  WebSocketBridgeServiceAdapter,
-} from './adapters/streaming-service.adapter';
-import {
-  STREAMING_SERVICE_TOKEN,
-  TOKEN_STREAMING_SERVICE_TOKEN,
-  EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
-  WEBSOCKET_BRIDGE_SERVICE_TOKEN,
-} from '@hive-academy/langgraph-core';
+// No longer importing token - using adapter pattern instead
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 export interface StreamingModuleOptions {
@@ -45,9 +34,8 @@ export class StreamingModule {
     setStreamingConfig(config);
 
     const providers: any[] = [
-      // Concrete implementations
-      TokenStreamingService, // inner concrete service
-      AutoInitTokenStreamingService, // wrapper providing lazy auto-init
+      // Core services - direct injection without adapters
+      TokenStreamingService,
       EventStreamProcessorService,
       WebSocketBridgeService,
       StreamingAuthService,
@@ -57,60 +45,27 @@ export class StreamingModule {
         useValue: options || {},
       },
 
-      // Adapters for DI pattern
-      StreamingServiceAdapter,
-      TokenStreamingServiceAdapter,
-      EventStreamProcessorServiceAdapter,
-      WebSocketBridgeServiceAdapter,
-
-      // Interface tokens - expose auto-init variant via TOKEN_STREAMING_SERVICE_TOKEN while keeping concrete available for wrapper injection
-      {
-        provide: STREAMING_SERVICE_TOKEN,
-        useExisting: StreamingServiceAdapter, // adapter as facade for full streaming API
-      },
-      {
-        provide: TOKEN_STREAMING_SERVICE_TOKEN,
-        useExisting: AutoInitTokenStreamingService, // now resolves to auto-init wrapper
-      },
-      {
-        provide: EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
-        useExisting: EventStreamProcessorService,
-      },
-      {
-        provide: WEBSOCKET_BRIDGE_SERVICE_TOKEN,
-        useExisting: WebSocketBridgeService,
-      },
+      // No longer providing token - using adapter pattern in app module
     ];
 
     const exports: any[] = [
-      // Concrete services
-      AutoInitTokenStreamingService,
+      // Core services - direct exports
       TokenStreamingService,
       EventStreamProcessorService,
       WebSocketBridgeService,
       StreamingAuthService,
       RateLimiterService,
 
-      // Adapters
-      StreamingServiceAdapter,
-      TokenStreamingServiceAdapter,
-      EventStreamProcessorServiceAdapter,
-      WebSocketBridgeServiceAdapter,
-
-      // Export interface tokens for consumer injection
-      STREAMING_SERVICE_TOKEN,
-      TOKEN_STREAMING_SERVICE_TOKEN,
-      EVENT_STREAM_PROCESSOR_SERVICE_TOKEN,
-      WEBSOCKET_BRIDGE_SERVICE_TOKEN,
+      // No longer exporting token - using adapter pattern in app module
     ];
 
-    // Add WebSocket gateway if enabled and configured
+    // Add WebSocket service if enabled - REFACTORED to use new clean service
     const gatewayEnabled =
       options?.gateway?.enabled ?? options?.websocket?.enabled ?? false;
 
     if (gatewayEnabled) {
       providers.push(
-        StreamingWebSocketGateway,
+        StreamingWebSocketService,
         {
           provide: 'WEBSOCKET_GATEWAY_CONFIG',
           useValue: {
@@ -120,12 +75,12 @@ export class StreamingModule {
           },
         },
         {
-          provide: 'StreamingWebSocketGateway',
-          useExisting: StreamingWebSocketGateway,
+          provide: 'StreamingWebSocketService',
+          useExisting: StreamingWebSocketService,
         }
       );
 
-      exports.push(StreamingWebSocketGateway);
+      exports.push(StreamingWebSocketService);
     }
 
     return {

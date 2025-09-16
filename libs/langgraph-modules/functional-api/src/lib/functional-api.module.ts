@@ -10,9 +10,9 @@ import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
 import { FunctionalApiModuleInitializer } from './services/functional-api-module-initializer.service';
 import {
-  CHECKPOINT_ADAPTER_TOKEN,
+  ICheckpointAdapter,
   NoOpCheckpointAdapter,
-  STREAMING_SERVICE_TOKEN,
+  IStreamingService,
   NoOpStreamingService,
 } from '@hive-academy/langgraph-core';
 import { FUNCTIONAL_API_MODULE_OPTIONS } from './constants/module.constants';
@@ -45,13 +45,13 @@ export class FunctionalApiModule {
         optionsProvider,
         // Checkpoint adapter provider - either provided or no-op
         {
-          provide: CHECKPOINT_ADAPTER_TOKEN,
+          provide: 'ICheckpointAdapter',
           useValue:
             normalizedOptions.checkpointAdapter || new NoOpCheckpointAdapter(),
         },
         // Streaming service provider - either provided or no-op
         {
-          provide: STREAMING_SERVICE_TOKEN,
+          provide: 'IStreamingService',
           useValue:
             normalizedOptions.streamingAdapter || new NoOpStreamingService(),
         },
@@ -84,7 +84,7 @@ export class FunctionalApiModule {
         ...asyncProviders,
         // Checkpoint adapter provider - async factory
         {
-          provide: CHECKPOINT_ADAPTER_TOKEN,
+          provide: 'ICheckpointAdapter',
           useFactory: async (...args: unknown[]) => {
             const opts = await options.useFactory!(...args);
             const normalizedOpts = this.normalizeOptions(opts);
@@ -96,7 +96,7 @@ export class FunctionalApiModule {
         },
         // Streaming service provider - async factory
         {
-          provide: STREAMING_SERVICE_TOKEN,
+          provide: 'IStreamingService',
           useFactory: async (...args: unknown[]) => {
             const opts = await options.useFactory!(...args);
             const normalizedOpts = this.normalizeOptions(opts);

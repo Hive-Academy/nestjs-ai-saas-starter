@@ -7,7 +7,6 @@ import {
   TimeTravelModuleAsyncOptions,
 } from './interfaces/time-travel.interface';
 import {
-  CHECKPOINT_ADAPTER_TOKEN,
   NoOpCheckpointAdapter,
   ICheckpointAdapter,
 } from '@hive-academy/langgraph-core';
@@ -32,7 +31,7 @@ export class TimeTravelModule {
       },
       // Checkpoint adapter provider - either provided or no-op
       {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
+        provide: 'ICheckpointAdapter',
         useValue: config?.checkpointAdapter || new NoOpCheckpointAdapter(),
       },
       TimeTravelService,
@@ -70,7 +69,7 @@ export class TimeTravelModule {
       },
       // Checkpoint adapter provider - async factory
       {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
+        provide: 'ICheckpointAdapter',
         useFactory: async (...args: unknown[]) => {
           const timeTravelConfig = await options.useFactory!(...args);
           return (

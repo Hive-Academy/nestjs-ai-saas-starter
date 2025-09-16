@@ -9,7 +9,7 @@ import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
-import { EventStreamProcessorServiceAdapter } from '@hive-academy/langgraph-streaming';
+import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
 import {
   getWorkflowMetadata,
   isWorkflow,
@@ -99,8 +99,8 @@ export abstract class DeclarativeWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorServiceAdapter)
-    protected override readonly eventProcessor?: EventStreamProcessorServiceAdapter
+    @Optional()
+    protected override readonly eventProcessor?: EventStreamProcessorService
   ) {
     super(eventEmitter, graphBuilder, subgraphManager, streamService, eventProcessor);
     this.logger = new Logger(this.constructor.name);

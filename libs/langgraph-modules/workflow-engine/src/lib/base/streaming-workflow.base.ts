@@ -16,9 +16,9 @@ import {
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
 import { WorkflowStreamService } from '../streaming/workflow-stream.service';
 import {
-  TokenStreamingServiceAdapter,
-  WebSocketBridgeServiceAdapter,
-  EventStreamProcessorServiceAdapter,
+  TokenStreamingService,
+  WebSocketBridgeService,
+  EventStreamProcessorService,
 } from '@hive-academy/langgraph-streaming';
 import type { WorkflowState } from '../interfaces';
 import type {
@@ -162,14 +162,14 @@ export abstract class StreamingWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorServiceAdapter)
-    protected override readonly eventProcessor?: EventStreamProcessorServiceAdapter,
     @Optional()
-    @Inject(TokenStreamingServiceAdapter)
-    protected readonly tokenStreamingService?: TokenStreamingServiceAdapter,
+    protected override readonly eventProcessor?: EventStreamProcessorService,
     @Optional()
-    @Inject(WebSocketBridgeServiceAdapter)
-    protected readonly webSocketBridgeService?: WebSocketBridgeServiceAdapter
+    @Optional()
+    protected readonly tokenStreamingService?: TokenStreamingService,
+    @Optional()
+    @Optional()
+    protected readonly webSocketBridgeService?: WebSocketBridgeService
   ) {
     super(
       eventEmitter,

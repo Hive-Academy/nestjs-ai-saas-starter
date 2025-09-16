@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Core library imports
+import { MemoryModule } from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
-import { MemoryModule } from '@hive-academy/langgraph-memory';
 
 // Adapters - Keep these as they're essential
 import {
@@ -16,33 +16,30 @@ import {
 
 // LangGraph modules with proper streaming integration
 import {
-  LanggraphModulesCheckpointModule,
-  CheckpointManagerService,
   CheckpointManagerAdapter,
+  CheckpointManagerService,
+  LanggraphModulesCheckpointModule,
 } from '@hive-academy/langgraph-checkpoint';
-import {
-  StreamingModule,
-  StreamingServiceAdapter
-} from '@hive-academy/langgraph-streaming';
-import {
-  IStreamingService,
-} from '@hive-academy/langgraph-core';
-import { HitlModule } from '@hive-academy/langgraph-hitl';
+// Removed token-based imports - using direct service injection
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { HitlModule } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
+// Import streaming adapter from app adapters
+import { StreamingServiceAdapter } from './adapters/streaming/streaming-service.adapter';
 import { WorkflowEngineModule, WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
 
 // Configuration imports
-import { getChromaDBConfig } from './config/chromadb.config';
-import { getNeo4jConfig } from './config/neo4j.config';
 import { getCheckpointConfig } from './config/checkpoint.config';
-import { getStreamingConfig } from './config/streaming.config';
+import { getChromaDBConfig } from './config/chromadb.config';
+import { getFunctionalApiConfig } from './config/functional-api.config';
 import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
-import { getFunctionalApiConfig } from './config/functional-api.config';
-import { getMultiAgentConfig } from './config/multi-agent.config';
 import { getMonitoringConfig } from './config/monitoring.config';
+import { getMultiAgentConfig } from './config/multi-agent.config';
+import { getNeo4jConfig } from './config/neo4j.config';
+import { getStreamingConfig } from './config/streaming.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
@@ -51,6 +48,12 @@ import { HealthController } from './controllers/health.controller';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
+
+// App streaming manager
+import { AppStreamingManager } from './services/app-streaming-manager.service';
+
+// Core interface for adapter pattern
+import { IStreamingService } from '@hive-academy/langgraph-core';
 
 @Module({
   imports: [
@@ -113,44 +116,39 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
       },
     }),
 
-    // Workflow engine WITH STREAMING
+    // Workflow engine WITH STREAMING - adapter injection
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (...deps: unknown[]): Promise<WorkflowEngineModuleOptions> => {
-        const streamingAdapter = deps[0] as IStreamingService;
+      useFactory: async (streamingAdapter: IStreamingService): Promise<WorkflowEngineModuleOptions> => {
         return {
           ...getWorkflowEngineConfig(),
-          streamingAdapter, // Enable streaming via interface token
+          streamingAdapter, // Adapter injection from app providers
         };
       },
-      inject: [StreamingServiceAdapter], // Inject the actual adapter class
+      inject: ['IStreamingService'], // Inject adapter via string token
     }),
 
-    // Multi-agent module WITH STREAMING
+    // Multi-agent module WITH STREAMING - adapter injection
     MultiAgentModule.forRootAsync({
-      useFactory: async (...deps: unknown[]) => {
-        const streamingAdapter = deps[0] as IStreamingService;
-        const checkpointManager = deps[1] as CheckpointManagerService;
+      useFactory: async (streamingAdapter: IStreamingService, checkpointManager: CheckpointManagerService) => {
         return {
           ...getMultiAgentConfig(),
-          streamingAdapter, // Enable streaming via interface token
+          streamingAdapter, // Adapter injection from app providers
           checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
         };
       },
-      inject: [StreamingServiceAdapter, CheckpointManagerService], // Use the actual adapter class
+      inject: ['IStreamingService', CheckpointManagerService], // Inject adapter via string token
     }),
 
-    // Functional API with checkpoint AND STREAMING
+    // Functional API with checkpoint AND STREAMING - adapter injection
     FunctionalApiModule.forRootAsync({
-      useFactory: async (...deps: unknown[]): Promise<any> => {
-        const streamingAdapter = deps[0] as IStreamingService;
-        const checkpointManager = deps[1] as CheckpointManagerService;
+      useFactory: async (streamingAdapter: IStreamingService, checkpointManager: CheckpointManagerService): Promise<any> => {
         return {
           ...getFunctionalApiConfig(),
-          streamingAdapter, // Enable streaming via interface token
+          streamingAdapter, // Adapter injection from app providers
           checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
         };
       },
-      inject: [StreamingServiceAdapter, CheckpointManagerService], // Use the actual adapter class
+      inject: ['IStreamingService', CheckpointManagerService], // Inject adapter via string token
     }),
 
     // Monitoring module
@@ -170,6 +168,15 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
     // Business controllers will be added here
   ],
   providers: [
+    // Streaming adapter - bridges streaming module to core interface
+    StreamingServiceAdapter,
+    {
+      provide: 'IStreamingService',
+      useExisting: StreamingServiceAdapter,
+    },
+    
+    // User-controlled streaming initialization
+    AppStreamingManager,
     // Business services will be added here
   ],
   exports: [

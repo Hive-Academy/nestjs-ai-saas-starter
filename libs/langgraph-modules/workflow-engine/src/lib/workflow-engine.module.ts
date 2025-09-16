@@ -8,7 +8,6 @@ import { WorkflowStreamService } from './streaming/workflow-stream.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
   IStreamingService,
-  STREAMING_SERVICE_TOKEN,
   NoOpStreamingService,
 } from '@hive-academy/langgraph-core';
 
@@ -62,7 +61,7 @@ export class WorkflowEngineModule {
 
         // Streaming adapter - use provided adapter or default to no-op
         {
-          provide: STREAMING_SERVICE_TOKEN,
+          provide: 'IStreamingService',
           useValue: options.streamingAdapter || new NoOpStreamingService(),
         },
       ],
@@ -72,7 +71,7 @@ export class WorkflowEngineModule {
         MetadataProcessorService,
         SubgraphManagerService,
         WorkflowStreamService,
-        STREAMING_SERVICE_TOKEN,
+        'IStreamingService', // Export string token for adapter
       ],
       global: true,
     };
@@ -105,7 +104,7 @@ export class WorkflowEngineModule {
 
         // Streaming adapter - injected via factory
         {
-          provide: STREAMING_SERVICE_TOKEN,
+          provide: 'IStreamingService',
           useFactory: async (...args: unknown[]) => {
             const moduleOptions = await options.useFactory(...args);
             return moduleOptions.streamingAdapter || new NoOpStreamingService();
@@ -119,7 +118,7 @@ export class WorkflowEngineModule {
         MetadataProcessorService,
         SubgraphManagerService,
         WorkflowStreamService,
-        STREAMING_SERVICE_TOKEN,
+        'IStreamingService', // Export string token for adapter
       ],
       global: true,
     };

@@ -31,6 +31,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
+import { AppStreamingManager } from './app/services/app-streaming-manager.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -64,7 +65,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  // Start server
+  // Initialize the app completely first
+  await app.init();
+
+  // Start server FIRST - ensure HTTP server and WebSocket server are ready
   const port = process.env.PORT || 3000;
   await app.listen(port);
 

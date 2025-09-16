@@ -25,9 +25,6 @@ import {
   BaseCheckpoint,
   BaseCheckpointMetadata,
   BaseCheckpointTuple,
-  STREAMING_SERVICE_TOKEN,
-} from '@hive-academy/langgraph-core';
-import type {
   ICheckpointAdapter,
   IStreamingService,
 } from '@hive-academy/langgraph-core';
@@ -47,9 +44,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
     private readonly registrationService: WorkflowRegistrationService,
     private readonly graphGenerator: GraphGeneratorService,
     private readonly validator: WorkflowValidator,
-    @Inject(CHECKPOINT_ADAPTER_TOKEN)
+    @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter,
-    @Inject(STREAMING_SERVICE_TOKEN)
+    @Inject('IStreamingService')
     private readonly streamingService: IStreamingService
   ) {}
 

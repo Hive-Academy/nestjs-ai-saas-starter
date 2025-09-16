@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 // Types for Showcase API
@@ -88,6 +88,28 @@ export interface ShowcaseAgent {
     decoratorsUsed: string[];
     enterpriseFeatures: string[];
   };
+}
+
+// Customer Support API interfaces
+export interface TicketRequest {
+  customerId: string;
+  title: string;
+  description: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  category?: string;
+  customerTier?: 'basic' | 'premium' | 'enterprise';
+  metadata?: Record<string, any>;
+}
+
+export interface SupportTicketResponse {
+  success: boolean;
+  data?: {
+    ticketId: string;
+    executionId: string;
+  };
+  executionId: string;
+  streaming: boolean;
+  streamUrl?: string;
 }
 
 export interface SearchResult {
@@ -189,35 +211,74 @@ export interface PatternExploration {
 export class ShowcaseApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/api/v1/showcase`;
+  private readonly customerSupportUrl = `${environment.apiUrl}/api/customer-support`;
 
   /**
    * Execute Supervisor Pattern Showcase
-   * Demonstrates hierarchical coordination with ALL decorator capabilities
+   * Now routes to customer-support backend instead of deprecated showcase endpoints
    */
   executeSupervisorShowcase(
     request: ShowcaseWorkflowRequest
   ): Observable<ShowcaseWorkflowResponse> {
+    const ticketRequest: TicketRequest = {
+      customerId: request.userId || 'demo-user',
+      title: request.input.slice(0, 60) || 'Supervisor Pattern Demo',
+      description: request.input,
+      priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
+      category: 'demo-supervisor',
+      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      metadata: {
+        pattern: 'supervisor',
+        selectedAgents: request.selectedAgents,
+        enableStreaming: request.enableStreaming,
+        enableHitl: request.enableHitl,
+        demonstrationMode: request.demonstrationMode
+      }
+    };
+
     return this.http
-      .post<ShowcaseWorkflowResponse>(
-        `${this.baseUrl}/workflows/supervisor`,
-        request
+      .post<SupportTicketResponse>(
+        `${this.customerSupportUrl}/tickets`,
+        ticketRequest
       )
-      .pipe(catchError(this.handleError('executeSupervisorShowcase')));
+      .pipe(
+        map(response => this.adaptToShowcaseResponse(response, 'supervisor')),
+        catchError(this.handleError('executeSupervisorShowcase'))
+      );
   }
 
   /**
    * Execute Swarm Pattern Showcase
-   * Demonstrates peer-to-peer coordination and distributed intelligence
+   * Now routes to customer-support backend instead of deprecated showcase endpoints
    */
   executeSwarmShowcase(
     request: ShowcaseWorkflowRequest
   ): Observable<ShowcaseWorkflowResponse> {
+    const ticketRequest: TicketRequest = {
+      customerId: request.userId || 'demo-user',
+      title: request.input.slice(0, 60) || 'Swarm Pattern Demo',
+      description: request.input,
+      priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
+      category: 'demo-swarm',
+      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      metadata: {
+        pattern: 'swarm',
+        selectedAgents: request.selectedAgents,
+        enableStreaming: request.enableStreaming,
+        enableHitl: request.enableHitl,
+        demonstrationMode: request.demonstrationMode
+      }
+    };
+
     return this.http
-      .post<ShowcaseWorkflowResponse>(
-        `${this.baseUrl}/workflows/swarm`,
-        request
+      .post<SupportTicketResponse>(
+        `${this.customerSupportUrl}/tickets`,
+        ticketRequest
       )
-      .pipe(catchError(this.handleError('executeSwarmShowcase')));
+      .pipe(
+        map(response => this.adaptToShowcaseResponse(response, 'swarm')),
+        catchError(this.handleError('executeSwarmShowcase'))
+      );
   }
 
   /**
@@ -285,12 +346,35 @@ export class ShowcaseApiService {
 
   /**
    * Get Available Agents with Full Metadata
-   * Returns comprehensive agent definitions from backend
+   * Now routes to customer-support backend instead of deprecated showcase endpoints
    */
   getAvailableAgents(): Observable<ShowcaseAgent[]> {
     return this.http
-      .get<ShowcaseAgent[]>(`${this.baseUrl}/agents`)
-      .pipe(catchError(this.handleError('getAvailableAgents')));
+      .get<{success: boolean; data: any[]; total: number}>(
+        `${this.customerSupportUrl}/agents`
+      )
+      .pipe(
+        map(response => response.data.map(agent => ({
+          id: agent.id || agent.name,
+          name: agent.name,
+          description: agent.description || 'Customer support agent',
+          tools: agent.tools || [],
+          capabilities: agent.capabilities || [],
+          priority: agent.priority || 'medium',
+          executionTime: agent.executionTime || 'medium',
+          outputFormat: agent.outputFormat || 'detailed',
+          systemPrompt: agent.systemPrompt || '',
+          metadata: {
+            version: '1.0',
+            category: 'customer-support',
+            complexity: 'advanced',
+            showcaseLevel: 'production',
+            decoratorsUsed: ['@Workflow', '@Task', '@RequiresApproval'],
+            enterpriseFeatures: ['hitl', 'streaming', 'approval']
+          }
+        } as ShowcaseAgent))),
+        catchError(this.handleError('getAvailableAgents'))
+      );
   }
 
   /**
@@ -304,18 +388,31 @@ export class ShowcaseApiService {
   }
 
   /**
-   * Tavily Web Search
-   * Perform web search using Tavily API integration
+   * Knowledge Base Search
+   * Search the customer support knowledge base instead of web search
    */
   searchWeb(query: string, maxResults = 5, searchDepth: 'basic' | 'advanced' = 'basic'): Observable<SearchResponse> {
     return this.http
-      .post<SearchResponse>(`${this.baseUrl}/search/web`, {
+      .post<any>(`${this.customerSupportUrl}/knowledge-base/search`, {
         query,
         maxResults,
-        searchDepth,
-        includeAnswer: true
+        searchDepth: searchDepth === 'advanced' ? 'comprehensive' : 'summary'
       })
-      .pipe(catchError(this.handleError('searchWeb')));
+      .pipe(
+        map(response => ({
+          query,
+          results: response.results || [],
+          totalResults: response.totalResults || 0,
+          searchTime: response.searchTime || '0ms',
+          answer: response.answer,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            provider: 'knowledge-base',
+            version: '1.0'
+          }
+        } as SearchResponse)),
+        catchError(this.handleError('searchWeb'))
+      );
   }
 
   /**
@@ -371,6 +468,77 @@ export class ShowcaseApiService {
       'parallel',
       'map-reduce',
     ];
+  }
+
+  /**
+   * Create a new support ticket (new method for frontend)
+   */
+  createSupportTicket(request: TicketRequest): Observable<SupportTicketResponse> {
+    return this.http
+      .post<SupportTicketResponse>(
+        `${this.customerSupportUrl}/tickets`,
+        request
+      )
+      .pipe(catchError(this.handleError('createSupportTicket')));
+  }
+
+  /**
+   * Approve a support ticket
+   */
+  approveTicket(
+    ticketId: string,
+    approval: { approved: boolean; approvedBy: string; feedback?: string }
+  ): Observable<any> {
+    return this.http
+      .put(`${this.customerSupportUrl}/tickets/${ticketId}/approve`, approval)
+      .pipe(catchError(this.handleError('approveTicket')));
+  }
+
+  /**
+   * Get ticket status
+   */
+  getTicketStatus(ticketId: string): Observable<any> {
+    return this.http
+      .get(`${this.customerSupportUrl}/tickets/${ticketId}`)
+      .pipe(catchError(this.handleError('getTicketStatus')));
+  }
+
+  /**
+   * Adapter function to convert customer-support response to showcase format
+   */
+  private adaptToShowcaseResponse(
+    response: SupportTicketResponse,
+    pattern: 'supervisor' | 'swarm'
+  ): ShowcaseWorkflowResponse {
+    return {
+      id: response.data?.ticketId || response.executionId,
+      pattern: pattern,
+      status: 'running',
+      output: '',
+      decoratorsShowcased: [
+        '@Workflow',
+        '@Entrypoint',
+        '@Task',
+        '@RequiresApproval',
+        '@StreamProgress',
+        '@StreamEvent',
+        '@StreamToken'
+      ],
+      enterpriseFeatures: ['hitl', 'vector', 'graph', 'multi-agent'],
+      executionPath: [],
+      duration: 0,
+      streamingUrl: response.streamUrl || 
+        `${this.customerSupportUrl}/tickets/${response.data?.ticketId}/stream`,
+      metricsUrl: `${this.customerSupportUrl}/metrics`,
+      ...(pattern === 'swarm' && {
+        swarmResults: {
+          peerCount: 3,
+          consensusScore: 0.85,
+          emergentBehaviors: 0,
+          collectiveIntelligenceGain: 0
+        }
+      })
+    };
   }
 
   /**

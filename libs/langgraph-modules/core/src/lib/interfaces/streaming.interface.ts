@@ -157,36 +157,37 @@ export interface StreamProgressDecoratorMetadata extends StreamProgressOptions {
  * This interface enables consumer libraries (workflow-engine, multi-agent)
  * to depend on streaming functionality without tight coupling to implementation.
  */
-export interface IStreamingService {
+export abstract class IStreamingService {
   // Token streaming
-  initializeTokenStream(options: TokenStreamOptions): Promise<void>;
-  streamToken(
+  abstract initializeTokenStream(options: TokenStreamOptions): Promise<void>;
+  abstract streamToken(
     executionId: string,
     nodeId: string,
     token: string,
     metadata?: Record<string, unknown>
   ): void;
-  flushTokens(executionId: string, nodeId: string): Promise<void>;
+
+  abstract flushTokens(executionId: string, nodeId: string): Promise<void>;
 
   // Event streaming
-  streamEvent(
+  abstract streamEvent(
     executionId: string,
     nodeId: string,
     event: StreamEventData
   ): void;
-  emitEvent(eventType: string, data: any): Promise<void>;
+  abstract emitEvent(eventType: string, data: any): Promise<void>;
 
   // Progress streaming
-  streamProgress(
+  abstract streamProgress(
     executionId: string,
     nodeId: string,
     progress: ProgressData
   ): void;
-  emitProgress(eventType: string, data: any): Promise<void>;
+  abstract emitProgress(eventType: string, data: any): Promise<void>;
 
   // WebSocket integration
-  broadcastToExecution(executionId: string, data: any): Promise<void>;
-  sendToClient(clientId: string, data: any): Promise<void>;
+  abstract broadcastToExecution(executionId: string, data: any): Promise<void>;
+  abstract sendToClient(clientId: string, data: any): Promise<void>;
 }
 
 /**
@@ -352,9 +353,4 @@ export class NoOpWebSocketBridgeService implements IWebSocketBridgeService {
   }
 }
 
-// Dependency injection tokens
-export const STREAMING_SERVICE_TOKEN = 'STREAMING_SERVICE_TOKEN';
-export const TOKEN_STREAMING_SERVICE_TOKEN = 'TOKEN_STREAMING_SERVICE_TOKEN';
-export const EVENT_STREAM_PROCESSOR_SERVICE_TOKEN =
-  'EVENT_STREAM_PROCESSOR_SERVICE_TOKEN';
-export const WEBSOCKET_BRIDGE_SERVICE_TOKEN = 'WEBSOCKET_BRIDGE_SERVICE_TOKEN';
+// Token removed - using direct adapter injection instead

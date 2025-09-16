@@ -15,7 +15,7 @@ import { gsap } from 'gsap';
   imports: [],
   template: `
     <div
-      class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-black via-purple-900 to-black"
+      class="relative w-full h-screen overflow-auto bg-gradient-to-br from-black via-purple-900 to-black"
       [class.loaded]="isLoaded()"
     >
       <!-- 3D Scene Container -->

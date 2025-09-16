@@ -44,9 +44,9 @@ export class FullPageScrollService {
   private readonly _config = signal<FullPageConfig>({
     animationDuration: 1000,
     easing: 'power2.inOut',
-    autoScrolling: true,
-    keyboardScrolling: true,
-    touchScrolling: true,
+    autoScrolling: false,
+    keyboardScrolling: false,
+    touchScrolling: false,
     continuousVertical: false,
     mouseWheelSensitivity: 1,
     touchSensitivity: 1,
@@ -277,15 +277,15 @@ export class FullPageScrollService {
       element.style.height = '100vh';
       element.style.width = '100vw';
       element.style.position = 'relative';
-      element.style.overflow = 'hidden';
+      element.style.overflow = 'auto'; // Allow internal scrolling
 
       // Add smooth transition classes
       element.classList.add('fullpage-section');
     });
 
-    // Set body and html styles
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.scrollBehavior = 'auto';
+    // Set body and html styles - allow normal scrolling
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.scrollBehavior = 'smooth';
   }
 
   /**
@@ -517,16 +517,17 @@ export class FullPageScrollService {
    * Disable default scrolling behavior
    */
   private disableDefaultScrolling(): void {
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    // Allow content scrolling within sections
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
   }
 
   /**
    * Enable default scrolling behavior
    */
   private enableDefaultScrolling(): void {
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
   }
 
   /**

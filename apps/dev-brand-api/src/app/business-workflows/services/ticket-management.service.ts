@@ -35,7 +35,7 @@ export class TicketManagementService {
           priority:
             (request.priority as 'low' | 'medium' | 'high' | 'urgent') ||
             'medium',
-          category: request.category,
+          category: request.category || 'general',
           customerId: request.customerId,
         },
       };
@@ -80,7 +80,7 @@ export class TicketManagementService {
           priority:
             (request.priority as 'low' | 'medium' | 'high' | 'urgent') ||
             'medium',
-          category: request.category,
+          category: request.category || 'general',
           customerId: request.customerId,
         },
       };

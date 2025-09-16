@@ -26,7 +26,6 @@ import {
 import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   WorkflowStateAnnotation,
-  STREAMING_SERVICE_TOKEN,
   TokenStreamOptions,
 } from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
@@ -61,7 +60,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     private readonly metadataProcessor: MetadataProcessorService,
 
     // Inject the streaming service - could be real service or no-op
-    @Inject(STREAMING_SERVICE_TOKEN)
+    @Inject('IStreamingService')
     private readonly streamingService: IStreamingService
   ) {}
 

@@ -2,11 +2,9 @@ import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import {
-  CHECKPOINT_ADAPTER_TOKEN,
   ICheckpointAdapter,
-  STREAMING_SERVICE_TOKEN,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
-import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentNetwork,
@@ -34,9 +32,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     private readonly agentRegistry: AgentRegistryService,
     private readonly networkManager: NetworkManagerService,
     private readonly llmProvider: LlmProviderService,
-    @Inject(CHECKPOINT_ADAPTER_TOKEN)
+    @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter,
-    @Inject(STREAMING_SERVICE_TOKEN)
+    @Inject('IStreamingService')
     private readonly streamingService: IStreamingService
   ) {
     // Initialize streaming service for multi-agent operations
@@ -48,21 +46,23 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       'Multi-agent coordinator service initialized with SOLID architecture'
     );
 
-    // Test LLM connectivity on startup
-    try {
-      const isConnected = await this.llmProvider.testLLM();
-      if (isConnected) {
-        this.logger.log('LLM connectivity verified');
-        // Initialize streaming for agent events
-        await this.setupAgentStreamingHooks();
-      } else {
-        this.logger.warn(
-          'LLM connectivity test failed - workflows may not function properly'
-        );
+    // Test LLM connectivity asynchronously to avoid blocking startup
+    setImmediate(async () => {
+      try {
+        const isConnected = await this.llmProvider.testLLM();
+        if (isConnected) {
+          this.logger.log('LLM connectivity verified');
+          // Initialize streaming for agent events
+          await this.setupAgentStreamingHooks();
+        } else {
+          this.logger.warn(
+            'LLM connectivity test failed - workflows may not function properly'
+          );
+        }
+      } catch (error) {
+        this.logger.warn('Unable to test LLM connectivity on startup:', error);
       }
-    } catch (error) {
-      this.logger.warn('Unable to test LLM connectivity on startup:', error);
-    }
+    });
   }
 
   // ============================================================================

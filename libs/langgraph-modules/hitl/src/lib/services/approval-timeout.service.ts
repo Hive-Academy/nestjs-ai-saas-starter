@@ -5,7 +5,7 @@ import {
   ApprovalWorkflowState,
   HumanApprovalRequest,
   HumanApprovalResponse,
-} from './human-approval.service';
+} from './approval-workflow.types';
 
 /**
  * Approval Timeout Service
