@@ -10,6 +10,7 @@ import { CheckpointCleanupService } from '../core/checkpoint-cleanup.service';
 import { CheckpointHealthService } from '../core/checkpoint-health.service';
 import { LangGraphCheckpointProvider } from '../providers/langgraph-checkpoint.provider';
 import { CheckpointConfig } from '../interfaces/checkpoint.interface';
+import { CheckpointManagerAdapter } from '../adapters/checkpoint-manager.adapter';
 
 export interface CheckpointModuleOptions {
   /**
@@ -66,6 +67,96 @@ export interface CheckpointModuleOptions {
 @Module({})
 export class LanggraphModulesCheckpointModule {
   /**
+   * Get shared providers configuration
+   */
+  private static getProviders(): any[] {
+    return [
+      // Core services following SOLID principles
+      CheckpointSaverFactory,
+      CheckpointRegistryService,
+      CheckpointMetricsService,
+      CheckpointCleanupService,
+      CheckpointHealthService,
+      CheckpointPersistenceService,
+
+      // Official LangGraph checkpoint provider
+      LangGraphCheckpointProvider,
+
+      // Interface tokens for dependency injection
+      {
+        provide: 'ICheckpointSaverFactory',
+        useExisting: CheckpointSaverFactory,
+      },
+      {
+        provide: 'ICheckpointRegistryService',
+        useExisting: CheckpointRegistryService,
+      },
+      {
+        provide: 'ICheckpointPersistenceService',
+        useExisting: CheckpointPersistenceService,
+      },
+      {
+        provide: 'ICheckpointMetricsService',
+        useExisting: CheckpointMetricsService,
+      },
+      {
+        provide: 'ICheckpointCleanupService',
+        useExisting: CheckpointCleanupService,
+      },
+      {
+        provide: 'ICheckpointHealthService',
+        useExisting: CheckpointHealthService,
+      },
+      {
+        provide: 'ILangGraphCheckpointProvider',
+        useExisting: LangGraphCheckpointProvider,
+      },
+
+      // Facade service
+      CheckpointManagerService,
+
+      // Checkpoint adapter - bridges checkpoint module to core interface
+      CheckpointManagerAdapter,
+      {
+        provide: 'ICheckpointAdapter',
+        useExisting: CheckpointManagerAdapter,
+      },
+
+      // Legacy service
+      StateTransformerService,
+    ];
+  }
+
+  /**
+   * Get shared exports configuration
+   */
+  private static getExports(): any[] {
+    return [
+      CheckpointManagerService,
+      StateTransformerService,
+      // Export focused services for advanced usage
+      CheckpointSaverFactory,
+      CheckpointRegistryService,
+      CheckpointPersistenceService,
+      CheckpointMetricsService,
+      CheckpointCleanupService,
+      CheckpointHealthService,
+      // Export official LangGraph provider
+      LangGraphCheckpointProvider,
+      // Export interface tokens
+      'ICheckpointSaverFactory',
+      'ICheckpointRegistryService',
+      'ICheckpointPersistenceService',
+      'ICheckpointMetricsService',
+      'ICheckpointCleanupService',
+      'ICheckpointHealthService',
+      'ILangGraphCheckpointProvider',
+      // Export checkpoint adapter
+      'ICheckpointAdapter',
+    ];
+  }
+
+  /**
    * Configure the checkpoint module with options
    */
   public static forRoot(options: CheckpointModuleOptions = {}): DynamicModule {
@@ -77,74 +168,9 @@ export class LanggraphModulesCheckpointModule {
           provide: 'CHECKPOINT_MODULE_OPTIONS',
           useValue: options,
         },
-        // Core services following SOLID principles
-        CheckpointSaverFactory,
-        CheckpointRegistryService,
-        CheckpointMetricsService,
-        CheckpointCleanupService,
-        CheckpointHealthService,
-        CheckpointPersistenceService,
-
-        // Official LangGraph checkpoint provider
-        LangGraphCheckpointProvider,
-
-        // Interface tokens for dependency injection
-        {
-          provide: 'ICheckpointSaverFactory',
-          useExisting: CheckpointSaverFactory,
-        },
-        {
-          provide: 'ICheckpointRegistryService',
-          useExisting: CheckpointRegistryService,
-        },
-        {
-          provide: 'ICheckpointPersistenceService',
-          useExisting: CheckpointPersistenceService,
-        },
-        {
-          provide: 'ICheckpointMetricsService',
-          useExisting: CheckpointMetricsService,
-        },
-        {
-          provide: 'ICheckpointCleanupService',
-          useExisting: CheckpointCleanupService,
-        },
-        {
-          provide: 'ICheckpointHealthService',
-          useExisting: CheckpointHealthService,
-        },
-        {
-          provide: 'ILangGraphCheckpointProvider',
-          useExisting: LangGraphCheckpointProvider,
-        },
-
-        // Facade service
-        CheckpointManagerService,
-
-        // Legacy service
-        StateTransformerService,
+        ...this.getProviders(),
       ],
-      exports: [
-        CheckpointManagerService,
-        StateTransformerService,
-        // Export focused services for advanced usage
-        CheckpointSaverFactory,
-        CheckpointRegistryService,
-        CheckpointPersistenceService,
-        CheckpointMetricsService,
-        CheckpointCleanupService,
-        CheckpointHealthService,
-        // Export official LangGraph provider
-        LangGraphCheckpointProvider,
-        // Export interface tokens
-        'ICheckpointSaverFactory',
-        'ICheckpointRegistryService',
-        'ICheckpointPersistenceService',
-        'ICheckpointMetricsService',
-        'ICheckpointCleanupService',
-        'ICheckpointHealthService',
-        'ILangGraphCheckpointProvider',
-      ],
+      exports: this.getExports(),
       global: true,
     };
   }
@@ -167,74 +193,9 @@ export class LanggraphModulesCheckpointModule {
           useFactory: options.useFactory,
           inject: options.inject ?? [],
         },
-        // Core services following SOLID principles
-        CheckpointSaverFactory,
-        CheckpointRegistryService,
-        CheckpointMetricsService,
-        CheckpointCleanupService,
-        CheckpointHealthService,
-        CheckpointPersistenceService,
-
-        // Official LangGraph checkpoint provider
-        LangGraphCheckpointProvider,
-
-        // Interface tokens for dependency injection
-        {
-          provide: 'ICheckpointSaverFactory',
-          useExisting: CheckpointSaverFactory,
-        },
-        {
-          provide: 'ICheckpointRegistryService',
-          useExisting: CheckpointRegistryService,
-        },
-        {
-          provide: 'ICheckpointPersistenceService',
-          useExisting: CheckpointPersistenceService,
-        },
-        {
-          provide: 'ICheckpointMetricsService',
-          useExisting: CheckpointMetricsService,
-        },
-        {
-          provide: 'ICheckpointCleanupService',
-          useExisting: CheckpointCleanupService,
-        },
-        {
-          provide: 'ICheckpointHealthService',
-          useExisting: CheckpointHealthService,
-        },
-        {
-          provide: 'ILangGraphCheckpointProvider',
-          useExisting: LangGraphCheckpointProvider,
-        },
-
-        // Facade service
-        CheckpointManagerService,
-
-        // Legacy service
-        StateTransformerService,
+        ...this.getProviders(),
       ],
-      exports: [
-        CheckpointManagerService,
-        StateTransformerService,
-        // Export focused services for advanced usage
-        CheckpointSaverFactory,
-        CheckpointRegistryService,
-        CheckpointPersistenceService,
-        CheckpointMetricsService,
-        CheckpointCleanupService,
-        CheckpointHealthService,
-        // Export official LangGraph provider
-        LangGraphCheckpointProvider,
-        // Export interface tokens
-        'ICheckpointSaverFactory',
-        'ICheckpointRegistryService',
-        'ICheckpointPersistenceService',
-        'ICheckpointMetricsService',
-        'ICheckpointCleanupService',
-        'ICheckpointHealthService',
-        'ILangGraphCheckpointProvider',
-      ],
+      exports: this.getExports(),
       global: true,
     };
   }

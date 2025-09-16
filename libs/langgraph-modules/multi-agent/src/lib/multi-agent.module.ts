@@ -26,12 +26,6 @@ import {
 import { ToolBuilderService } from './tools/tool-builder.service';
 import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
-import {
-  ICheckpointAdapter,
-  NoOpCheckpointAdapter,
-  IStreamingService,
-  NoOpStreamingService,
-} from '@hive-academy/langgraph-core';
 import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 
 /**
@@ -53,16 +47,8 @@ export class MultiAgentModule {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
-      // Checkpoint adapter provider - either provided or no-op
-      {
-        provide: 'ICheckpointAdapter',
-        useValue: options.checkpointAdapter || new NoOpCheckpointAdapter(),
-      },
-      // Streaming adapter provider - either provided or no-op
-      {
-        provide: 'IStreamingService',
-        useValue: options.streamingAdapter || new NoOpStreamingService(),
-      },
+      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
       LlmProviderService,
@@ -117,9 +103,6 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // Adapter interfaces
-        'ICheckpointAdapter',
-        'IStreamingService',
       ],
       global: true,
     };
@@ -141,24 +124,8 @@ export class MultiAgentModule {
         },
         inject: options.inject || [],
       },
-      // Checkpoint adapter provider - async factory
-      {
-        provide: 'ICheckpointAdapter',
-        useFactory: async (...args: unknown[]) => {
-          const moduleOptions = await options.useFactory!(...args);
-          return moduleOptions.checkpointAdapter || new NoOpCheckpointAdapter();
-        },
-        inject: options.inject || [],
-      },
-      // Streaming adapter provider - async factory
-      {
-        provide: 'IStreamingService',
-        useFactory: async (...args: unknown[]) => {
-          const moduleOptions = await options.useFactory!(...args);
-          return moduleOptions.streamingAdapter || new NoOpStreamingService();
-        },
-        inject: options.inject || [],
-      },
+      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
       LlmProviderService,
@@ -188,15 +155,9 @@ export class MultiAgentModule {
       MultiAgentModuleInitializer,
     ];
 
-    const imports = [EventEmitterModule.forRoot()];
-
-    if (options.imports) {
-      imports.push(...options.imports);
-    }
-
     return {
       module: MultiAgentModule,
-      imports,
+      imports: [EventEmitterModule.forRoot()],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -219,9 +180,6 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // Adapter interfaces
-        'ICheckpointAdapter',
-        'IStreamingService',
       ],
       global: true,
     };

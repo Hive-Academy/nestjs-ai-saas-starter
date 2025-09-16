@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { DevBrandStateService } from '../../core/state/devbrand-state.service';
@@ -42,7 +42,7 @@ import { Subscription } from 'rxjs';
               <div class="agent-name">{{ agent.name }}</div>
               <div class="agent-status">{{ agent.status }}</div>
               @if (agent.status === 'waiting') {
-                <div class="waiting-indicator">🤔 Waiting for input</div>
+              <div class="waiting-indicator">🤔 Waiting for input</div>
               }
             </div>
           </div>
@@ -61,7 +61,10 @@ import { Subscription } from 'rxjs';
               <button (click)="askQuestion()" [disabled]="!userQuestion.trim()">
                 Ask Question
               </button>
-              <button (click)="injectContext()" [disabled]="!userQuestion.trim()">
+              <button
+                (click)="injectContext()"
+                [disabled]="!userQuestion.trim()"
+              >
                 Provide Context
               </button>
             </div>
@@ -70,78 +73,102 @@ import { Subscription } from 'rxjs';
 
         <div class="chat-messages">
           @if (interruptionService.dialogData()) {
-            <!-- Active Interruption Dialog -->
-            <div class="interruption-dialog">
-              <div class="dialog-header">
-                <h3>{{ getInterruptionTitle(interruptionService.dialogData()!.type) }}</h3>
-                <div class="urgency-badge" [class]="interruptionService.dialogData()!.urgency">
-                  {{ interruptionService.dialogData()!.urgency || 'medium' }}
-                </div>
+          <!-- Active Interruption Dialog -->
+          <div class="interruption-dialog">
+            <div class="dialog-header">
+              <h3>
+                {{
+                  getInterruptionTitle(interruptionService.dialogData()!.type)
+                }}
+              </h3>
+              <div
+                class="urgency-badge"
+                [class]="interruptionService.dialogData()!.urgency"
+              >
+                {{ interruptionService.dialogData()!.urgency || 'medium' }}
               </div>
+            </div>
 
-              <div class="dialog-content">
-                <p>{{ interruptionService.dialogData()!.message }}</p>
+            <div class="dialog-content">
+              <p>{{ interruptionService.dialogData()!.message }}</p>
 
-                @if (interruptionService.dialogData()!.type === 'clarification') {
-                  <!-- Predefined options for clarifications -->
-                  <div class="option-buttons">
-                    <button (click)="respondToInterruption('1')">Option 1: Proceed with standard resolution</button>
-                    <button (click)="respondToInterruption('2')">Option 2: Escalate to specialist</button>
-                    <button (click)="respondToInterruption('3')">Option 3: Request more customer info</button>
-                  </div>
-                }
+              @if (interruptionService.dialogData()!.type === 'clarification') {
+              <!-- Predefined options for clarifications -->
+              <div class="option-buttons">
+                <button (click)="respondToInterruption('1')">
+                  Option 1: Proceed with standard resolution
+                </button>
+                <button (click)="respondToInterruption('2')">
+                  Option 2: Escalate to specialist
+                </button>
+                <button (click)="respondToInterruption('3')">
+                  Option 3: Request more customer info
+                </button>
+              </div>
+              }
 
-                <!-- Free text response -->
-                <div class="response-input">
-                  <textarea
-                    [(ngModel)]="interruptionResponse"
-                    placeholder="Your response..."
-                    class="response-textarea"
-                  ></textarea>
-                  <div class="response-actions">
-                    <button
-                      (click)="respondToInterruption(interruptionResponse)"
-                      [disabled]="!interruptionResponse.trim()"
-                      class="respond-btn"
-                    >
-                      Respond & Continue
-                    </button>
-                    <button (click)="cancelInterruption()" class="cancel-btn">
-                      Cancel
-                    </button>
-                  </div>
+              <!-- Free text response -->
+              <div class="response-input">
+                <textarea
+                  [(ngModel)]="interruptionResponse"
+                  placeholder="Your response..."
+                  class="response-textarea"
+                ></textarea>
+                <div class="response-actions">
+                  <button
+                    (click)="respondToInterruption(interruptionResponse)"
+                    [disabled]="!interruptionResponse.trim()"
+                    class="respond-btn"
+                  >
+                    Respond & Continue
+                  </button>
+                  <button (click)="cancelInterruption()" class="cancel-btn">
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
+          </div>
           } @else {
-            <div class="message-placeholder">
-              @if (currentExecutionId()) {
-                <div class="active-workflow">
-                  <h3>🤖 AI Workflow Active</h3>
-                  <p>Execution ID: {{ currentExecutionId() }}</p>
-                  <div class="workflow-controls">
-                    <button 
-                      class="start-workflow-btn" 
-                      (click)="startWorkflow()" 
-                      [disabled]="workflowRunning()"
-                    >
-                      {{ workflowRunning() ? 'Workflow Running...' : 'Start Support Workflow' }}
-                    </button>
-                  </div>
-                </div>
-              } @else {
-                <div class="no-workflow">
-                  <h3>💬 DevBrand Chat Interface</h3>
-                  <p>Start a workflow to begin real-time communication with AI agents.</p>
-                  <button class="start-workflow-btn" (click)="startWorkflow()">Start Support Workflow</button>
-                </div>
-              }
-              @if (interruptionService.interruptions().length > 0) {
-                <div class="pending-interruptions">
-                  <p>{{ interruptionService.interruptions().length }} pending interruption(s)</p>
-                </div>
-              }
+          <div class="message-placeholder">
+            @if (currentExecutionId()) {
+            <div class="active-workflow">
+              <h3>🤖 AI Workflow Active</h3>
+              <p>Execution ID: {{ currentExecutionId() }}</p>
+              <div class="workflow-controls">
+                <button
+                  class="start-workflow-btn"
+                  (click)="startWorkflow()"
+                  [disabled]="workflowRunning()"
+                >
+                  {{
+                    workflowRunning()
+                      ? 'Workflow Running...'
+                      : 'Start Support Workflow'
+                  }}
+                </button>
+              </div>
             </div>
+            } @else {
+            <div class="no-workflow">
+              <h3>💬 DevBrand Chat Interface</h3>
+              <p>
+                Start a workflow to begin real-time communication with AI
+                agents.
+              </p>
+              <button class="start-workflow-btn" (click)="startWorkflow()">
+                Start Support Workflow
+              </button>
+            </div>
+            } @if (interruptionService.interruptions().length > 0) {
+            <div class="pending-interruptions">
+              <p>
+                {{ interruptionService.interruptions().length }} pending
+                interruption(s)
+              </p>
+            </div>
+            }
+          </div>
           }
         </div>
 
@@ -400,7 +427,8 @@ import { Subscription } from 'rxjs';
         background: #b91c1c;
       }
 
-      .active-workflow, .no-workflow {
+      .active-workflow,
+      .no-workflow {
         padding: 2rem;
         text-align: center;
       }
@@ -470,7 +498,7 @@ import { Subscription } from 'rxjs';
     `,
   ],
 })
-export class ChatInterfaceComponent implements OnInit {
+export class ChatInterfaceComponent implements OnInit, OnDestroy {
   protected readonly stateService = inject(DevBrandStateService);
   protected readonly interruptionService = inject(UserInterruptionService);
   private readonly streamingService = inject(StreamingIntegrationService);
@@ -480,7 +508,7 @@ export class ChatInterfaceComponent implements OnInit {
   protected interruptionResponse = '';
   protected readonly currentExecutionId = signal<string | null>(null);
   protected readonly workflowRunning = signal(false);
-  
+
   // Subscriptions
   private subscriptions: Subscription[] = [];
 
@@ -493,25 +521,29 @@ export class ChatInterfaceComponent implements OnInit {
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
   async startWorkflow(): Promise<void> {
     if (this.workflowRunning()) return;
 
     this.workflowRunning.set(true);
-    
+
     try {
       const demoRequest = {
-        input: 'Customer support request: Help me understand how to integrate your AI platform with our existing CRM system. I need technical documentation and implementation guidance.',
+        input:
+          'Customer support request: Help me understand how to integrate your AI platform with our existing CRM system. I need technical documentation and implementation guidance.',
         demonstrationMode: 'enterprise' as const,
-        enableStreaming: true
+        enableStreaming: true,
       };
 
-      console.log('🚀 Starting customer support workflow from chat interface...');
-      
+      console.log(
+        '🚀 Starting customer support workflow from chat interface...'
+      );
+
       // Subscribe to streaming updates
-      const streamSubscription = this.streamingService.startSupervisorShowcase(demoRequest)
+      const streamSubscription = this.streamingService
+        .startSupervisorShowcase(demoRequest)
         .subscribe({
           next: (update) => {
             console.log('📡 Chat workflow update:', update);
@@ -526,11 +558,10 @@ export class ChatInterfaceComponent implements OnInit {
           complete: () => {
             console.log('✅ Chat workflow completed');
             this.workflowRunning.set(false);
-          }
+          },
         });
 
       this.subscriptions.push(streamSubscription);
-
     } catch (error) {
       console.error('Failed to start workflow:', error);
       this.workflowRunning.set(false);
@@ -572,7 +603,10 @@ export class ChatInterfaceComponent implements OnInit {
     if (!interruption || !response.trim()) return;
 
     try {
-      await this.interruptionService.respondToInterruption(interruption.id, response);
+      await this.interruptionService.respondToInterruption(
+        interruption.id,
+        response
+      );
       this.interruptionResponse = '';
     } catch (error) {
       console.error('Failed to respond to interruption:', error);
@@ -595,11 +629,16 @@ export class ChatInterfaceComponent implements OnInit {
 
   getInterruptionTitle(type: string): string {
     switch (type) {
-      case 'question': return '💬 Agent Question';
-      case 'clarification': return '❓ Clarification Needed';
-      case 'approval_request': return '✋ Approval Required';
-      case 'input_request': return '📝 Input Required';
-      default: return '🤖 Agent Interaction';
+      case 'question':
+        return '💬 Agent Question';
+      case 'clarification':
+        return '❓ Clarification Needed';
+      case 'approval_request':
+        return '✋ Approval Required';
+      case 'input_request':
+        return '📝 Input Required';
+      default:
+        return '🤖 Agent Interaction';
     }
   }
 }

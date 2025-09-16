@@ -1,8 +1,6 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  type IStreamingService,
-} from '@hive-academy/langgraph-core';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 import { HITL_EVENTS } from '../constants';
 
 /**
@@ -114,7 +112,9 @@ export class HitlNotificationService {
           );
         } catch (error) {
           this.logger.warn(
-            `Failed to send streaming timeout notification: ${(error as Error).message}`
+            `Failed to send streaming timeout notification: ${
+              (error as Error).message
+            }`
           );
         }
       }
@@ -175,7 +175,9 @@ export class HitlNotificationService {
           );
         } catch (error) {
           this.logger.warn(
-            `Failed to send streaming escalation notification: ${(error as Error).message}`
+            `Failed to send streaming escalation notification: ${
+              (error as Error).message
+            }`
           );
         }
       }
@@ -241,7 +243,9 @@ export class HitlNotificationService {
           );
         } catch (error) {
           this.logger.error(
-            `Failed to send URGENT streaming notification: ${(error as Error).message}`
+            `Failed to send URGENT streaming notification: ${
+              (error as Error).message
+            }`
           );
         }
       }
@@ -327,10 +331,7 @@ export class HitlNotificationService {
     // Send via streaming service for real-time WebSocket delivery
     if (this.streaming) {
       try {
-        await this.streaming.broadcastToExecution(
-          data.executionId,
-          streamData
-        );
+        await this.streaming.broadcastToExecution(data.executionId, streamData);
         this.logger.debug(
           `Sent streaming notification for approval ${data.id}`
         );
@@ -367,16 +368,15 @@ export class HitlNotificationService {
     // Send via streaming service for real-time WebSocket delivery
     if (this.streaming) {
       try {
-        await this.streaming.broadcastToExecution(
-          data.executionId,
-          streamData
-        );
+        await this.streaming.broadcastToExecution(data.executionId, streamData);
         this.logger.debug(
           `Sent streaming response notification for approval ${data.requestId}`
         );
       } catch (error) {
         this.logger.warn(
-          `Failed to send streaming response notification: ${(error as Error).message}`
+          `Failed to send streaming response notification: ${
+            (error as Error).message
+          }`
         );
       }
     }

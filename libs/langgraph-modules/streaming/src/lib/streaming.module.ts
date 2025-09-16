@@ -9,6 +9,7 @@ import { WebSocketGatewayConfig } from './interfaces/websocket-gateway.interface
 import { setStreamingConfig } from './utils/streaming-config.accessor';
 import { StreamingAuthService } from './services/streaming-auth.service';
 import { RateLimiterService } from './services/rate-limiter.service';
+import { StreamingServiceAdapter } from './adapters/streaming-service.adapter';
 // No longer importing token - using adapter pattern instead
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
@@ -44,6 +45,12 @@ export class StreamingModule {
         provide: 'STREAMING_OPTIONS',
         useValue: options || {},
       },
+      // Streaming adapter - bridges streaming module to core interface
+      StreamingServiceAdapter,
+      {
+        provide: 'IStreamingService',
+        useExisting: StreamingServiceAdapter,
+      },
 
       // No longer providing token - using adapter pattern in app module
     ];
@@ -55,7 +62,7 @@ export class StreamingModule {
       WebSocketBridgeService,
       StreamingAuthService,
       RateLimiterService,
-
+      'IStreamingService',
       // No longer exporting token - using adapter pattern in app module
     ];
 

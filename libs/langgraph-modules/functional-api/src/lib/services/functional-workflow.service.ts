@@ -20,8 +20,7 @@ import {
   TaskTimeoutError,
   UnknownTaskError,
 } from '../errors/functional-workflow.errors';
-import {
-  CHECKPOINT_ADAPTER_TOKEN,
+import type {
   BaseCheckpoint,
   BaseCheckpointMetadata,
   BaseCheckpointTuple,
@@ -242,7 +241,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
     }
 
     const executionId = `stream_exec_${++this.executionCounter}_${Date.now()}`;
-    
+
     return new Observable((observer) => {
       // Subscribe to internal stream subject for this execution
       const subscription = this.streamSubject.subscribe({
@@ -253,34 +252,37 @@ export class FunctionalWorkflowService implements OnModuleInit {
           }
         },
         error: (error) => observer.error(error),
-        complete: () => observer.complete()
+        complete: () => observer.complete(),
       });
-      
+
       // Start workflow execution asynchronously
-      this.executeWorkflow<TState>(workflowName, { ...options, metadata: { ...options.metadata, executionId } })
-        .then(result => {
+      this.executeWorkflow<TState>(workflowName, {
+        ...options,
+        metadata: { ...options.metadata, executionId },
+      })
+        .then((result) => {
           // Emit final result
           const completeEvent: WorkflowStreamEvent<TState> = {
             type: 'workflow_complete',
             state: result.finalState,
             timestamp: new Date(),
-            metadata: { 
-              executionId, 
+            metadata: {
+              executionId,
               workflowName,
               executionTime: result.executionTime,
               executionPath: result.executionPath,
-              checkpointCount: result.checkpointCount
-            }
+              checkpointCount: result.checkpointCount,
+            },
           };
           observer.next(completeEvent);
           observer.complete();
         })
-        .catch(error => {
+        .catch((error) => {
           const errorEvent: WorkflowStreamEvent<TState> = {
             type: 'workflow_error',
             error: error instanceof Error ? error : new Error(String(error)),
             timestamp: new Date(),
-            metadata: { executionId, workflowName }
+            metadata: { executionId, workflowName },
           };
           observer.next(errorEvent);
           observer.error(error);
@@ -289,7 +291,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
       // Cleanup function
       return () => {
         subscription.unsubscribe();
-        this.logger.debug(`Stream subscription cancelled for workflow: ${workflowName} (${executionId})`);
+        this.logger.debug(
+          `Stream subscription cancelled for workflow: ${workflowName} (${executionId})`
+        );
       };
     });
   }
@@ -482,7 +486,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       try {
         // Use streamEvent method instead of emitEvent which doesn't exist yet
         this.streamingService.streamEvent(
-          event.metadata?.executionId as string || 'unknown',
+          (event.metadata?.executionId as string) || 'unknown',
           event.taskName || 'unknown',
           {
             type: event.type,
@@ -491,15 +495,15 @@ export class FunctionalWorkflowService implements OnModuleInit {
               state: event.state,
               error: event.error,
               timestamp: event.timestamp,
-              metadata: event.metadata
-            }
+              metadata: event.metadata,
+            },
           }
         );
       } catch (error) {
         this.logger.warn('Failed to emit workflow stream event:', error);
       }
     }
-    
+
     // Keep internal Subject for backward compatibility
     if (this.options.enableStreaming) {
       this.streamSubject.next(event);
@@ -512,7 +516,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
   listWorkflows(): string[] {
     return Array.from(this.registrationService.getWorkflows().keys());
   }
-  
+
   /**
    * Gets streaming metadata for the current workflow execution
    * This resolves the critical issue where getAllStreamingMetadata returns empty
@@ -520,43 +524,50 @@ export class FunctionalWorkflowService implements OnModuleInit {
   getAllStreamingMetadata(): Record<string, any> {
     const activeExecutions = new Set<string>();
     const workflows = this.registrationService.getWorkflows();
-    
+
     // Collect metadata from workflows
-    const workflowsMetadata = Array.from(workflows.entries()).map(([name, definition]) => ({
-      name,
-      tasksCount: definition.tasks.size,
-      hasEntrypoint: !!definition.entrypoint,
-      capabilities: Array.from(definition.tasks.keys())
-    }));
-    
+    const workflowsMetadata = Array.from(workflows.entries()).map(
+      ([name, definition]) => ({
+        name,
+        tasksCount: definition.tasks.size,
+        hasEntrypoint: !!definition.entrypoint,
+        capabilities: Array.from(definition.tasks.keys()),
+      })
+    );
+
     return {
       // Active streaming information
       activeStreams: activeExecutions.size,
       totalProcessed: this.executionCounter,
-      currentWorkflows: workflowsMetadata.map(w => w.name),
+      currentWorkflows: workflowsMetadata.map((w) => w.name),
       streamingModes: ['values', 'updates', 'messages'],
       lastActivity: new Date().toISOString(),
-      
+
       // Performance metrics
       performance: {
         avgProcessingTime: 0, // Would need tracking implementation
-        throughput: this.executionCounter > 0 ? this.executionCounter / (Date.now() / 1000 / 60) : 0
+        throughput:
+          this.executionCounter > 0
+            ? this.executionCounter / (Date.now() / 1000 / 60)
+            : 0,
       },
-      
+
       // Workflow details
       workflowDetails: workflowsMetadata,
-      
+
       // Module configuration
       configuration: {
         streamingEnabled: this.options.enableStreaming,
         checkpointingEnabled: this.options.enableCheckpointing,
         defaultTimeout: this.options.defaultTimeout,
-        defaultRetryCount: this.options.defaultRetryCount
+        defaultRetryCount: this.options.defaultRetryCount,
       },
-      
+
       // Streaming service status
       streamingServiceAvailable: !!this.streamingService,
-      streamingServiceType: this.streamingService ? 'IStreamingService' : 'NoOp'
+      streamingServiceType: this.streamingService
+        ? 'IStreamingService'
+        : 'NoOp',
     };
   }
 

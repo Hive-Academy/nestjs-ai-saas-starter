@@ -280,36 +280,48 @@ export class WebSocketService {
   /**
    * Send user question to running workflow
    */
-  sendUserQuestion(executionId: string, question: string, urgency: 'low' | 'medium' | 'high' = 'medium'): void {
+  sendUserQuestion(
+    executionId: string,
+    question: string,
+    urgency: 'low' | 'medium' | 'high' = 'medium'
+  ): void {
     this.send('user_question', {
       executionId,
       question,
       urgency,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
   /**
    * Inject user input into workflow
    */
-  injectUserInput(executionId: string, input: string, inputType: string = 'text'): void {
+  injectUserInput(
+    executionId: string,
+    input: string,
+    inputType = 'text'
+  ): void {
     this.send('inject_input', {
       executionId,
       input,
       inputType,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
   /**
    * Respond to an interruption
    */
-  respondToInterruption(interruptionId: string, response: string, continueExecution: boolean = true): void {
+  respondToInterruption(
+    interruptionId: string,
+    response: string,
+    continueExecution = true
+  ): void {
     this.send('respond_to_interruption', {
       interruptionId,
       response,
       continueExecution,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
@@ -410,7 +422,7 @@ export class WebSocketService {
       this.messageSubject.next({
         type: 'interruption_request',
         data,
-        metadata: { timestamp: new Date() }
+        metadata: { timestamp: new Date() },
       });
     });
 
@@ -419,7 +431,7 @@ export class WebSocketService {
       this.messageSubject.next({
         type: 'workflow_paused',
         data,
-        metadata: { timestamp: new Date() }
+        metadata: { timestamp: new Date() },
       });
     });
 
@@ -428,7 +440,7 @@ export class WebSocketService {
       this.messageSubject.next({
         type: 'workflow_resumed',
         data,
-        metadata: { timestamp: new Date() }
+        metadata: { timestamp: new Date() },
       });
     });
 
@@ -437,7 +449,7 @@ export class WebSocketService {
       this.messageSubject.next({
         type: 'approval_request',
         data,
-        metadata: { timestamp: new Date() }
+        metadata: { timestamp: new Date() },
       });
     });
 
@@ -446,7 +458,7 @@ export class WebSocketService {
       this.messageSubject.next({
         type: 'interruption_timeout',
         data,
-        metadata: { timestamp: new Date() }
+        metadata: { timestamp: new Date() },
       });
     });
 
@@ -455,7 +467,7 @@ export class WebSocketService {
       this.messageSubject.next({
         type: 'interruption_response',
         data,
-        metadata: { timestamp: new Date() }
+        metadata: { timestamp: new Date() },
       });
     });
 
@@ -567,5 +579,4 @@ export class WebSocketService {
 
     return hasBasicProperties && (hasTimestamp || hasMetadataWithTimestamp);
   }
-
 }

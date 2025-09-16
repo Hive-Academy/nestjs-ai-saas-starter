@@ -4,7 +4,6 @@ import { WorkflowStreamService } from './workflow-stream.service';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import {
   type IStreamingService,
-  STREAMING_SERVICE_TOKEN,
   NoOpStreamingService,
   StreamEventType,
 } from '@hive-academy/langgraph-core';
@@ -51,7 +50,7 @@ describe('WorkflowStreamService Integration', () => {
           useValue: mockMetadataProcessor,
         },
         {
-          provide: STREAMING_SERVICE_TOKEN,
+          provide: 'IStreamingService',
           useValue: mockStreamingService,
         },
       ],
@@ -216,7 +215,7 @@ describe('WorkflowStreamService Integration', () => {
             useValue: mockMetadataProcessor,
           },
           {
-            provide: STREAMING_SERVICE_TOKEN,
+            provide: 'IStreamingService',
             useValue: noOpService,
           },
         ],

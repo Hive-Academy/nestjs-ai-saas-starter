@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import {
+import type {
   ICheckpointAdapter,
   IStreamingService,
 } from '@hive-academy/langgraph-core';
@@ -141,7 +141,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     }
   ): Promise<MultiAgentResult> {
     const executionId = this.generateExecutionId(networkId);
-    
+
     // Stream workflow start event
     if (this.streamingService) {
       await this.streamingService.emitEvent('workflow_start', {
@@ -149,7 +149,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         networkId,
         input: { messageCount: input.messages.length },
         timestamp: new Date(),
-        metadata: { agentCount: this.getNetworkConfig(networkId)?.agents?.length || 0 }
+        metadata: {
+          agentCount: this.getNetworkConfig(networkId)?.agents?.length || 0,
+        },
       });
     }
 
@@ -163,9 +165,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         result: {
           success: result.success,
           executionTime: result.executionTime,
-          executionPath: result.executionPath
+          executionPath: result.executionPath,
         },
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
@@ -576,7 +578,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    */
   private async setupAgentStreamingHooks(): Promise<void> {
     if (!this.streamingService) {
-      this.logger.debug('Streaming service not available - skipping agent streaming hooks');
+      this.logger.debug(
+        'Streaming service not available - skipping agent streaming hooks'
+      );
       return;
     }
 
@@ -587,7 +591,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   /**
    * Bridge streaming between networkManager and streaming service
    */
-  private async* bridgeNetworkStreaming(
+  private async *bridgeNetworkStreaming(
     networkId: string,
     input: {
       messages: string[] | HumanMessage[];
@@ -602,7 +606,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       await this.streamingService.emitEvent('stream_start', {
         executionId,
         networkId,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
@@ -618,7 +622,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
             networkId,
             current: update.current,
             timestamp: new Date(),
-            metadata: { messageCount: update.messages?.length || 0 }
+            metadata: { messageCount: update.messages?.length || 0 },
           });
         }
 
@@ -630,7 +634,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         await this.streamingService.emitEvent('stream_complete', {
           executionId,
           networkId,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     } catch (error) {
@@ -640,7 +644,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           executionId,
           networkId,
           error: (error as Error).message,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
       throw error;
@@ -651,7 +655,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       finalState: {} as AgentState,
       executionPath: [],
       executionTime: 0,
-      success: true
+      success: true,
     };
   }
 

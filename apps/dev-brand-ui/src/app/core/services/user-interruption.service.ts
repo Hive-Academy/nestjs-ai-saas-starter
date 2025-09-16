@@ -8,7 +8,12 @@ export interface UserInterruption {
   id: string;
   executionId: string;
   nodeId?: string;
-  type: 'question' | 'clarification' | 'input_request' | 'approval_request' | 'correction';
+  type:
+    | 'question'
+    | 'clarification'
+    | 'input_request'
+    | 'approval_request'
+    | 'correction';
   message: string;
   urgency?: 'low' | 'medium' | 'high';
   timeoutMs?: number;
@@ -28,7 +33,12 @@ export interface InterruptionResponse {
 export interface DynamicInterruptionRequest {
   executionId: string;
   nodeId?: string;
-  type: 'question' | 'clarification' | 'input_request' | 'approval_request' | 'correction';
+  type:
+    | 'question'
+    | 'clarification'
+    | 'input_request'
+    | 'approval_request'
+    | 'correction';
   message: string;
   pauseWorkflow?: boolean;
   timeoutMs?: number;
@@ -38,14 +48,14 @@ export interface DynamicInterruptionRequest {
 
 /**
  * User Interruption Service
- * 
+ *
  * Provides bidirectional communication between users and AI agents during workflow execution.
  * Integrates with customer-support backend endpoints and WebSocket for real-time interruptions.
- * 
+ *
  * Based on USER_INTERRUPTION_INTEGRATION_GUIDE.md
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UserInterruptionService {
   private readonly http = inject(HttpClient);
@@ -70,15 +80,15 @@ export class UserInterruptionService {
    * Sends question to running workflow for agent to respond
    */
   async askQuestion(
-    executionId: string, 
-    question: string, 
+    executionId: string,
+    question: string,
     urgency: 'low' | 'medium' | 'high' = 'medium'
   ): Promise<any> {
     const payload = {
       executionId,
       question,
       urgency,
-      userId: 'demo-user'
+      userId: 'demo-user',
     };
 
     // Send via REST API
@@ -95,8 +105,8 @@ export class UserInterruptionService {
    * Injects input directly into running workflow
    */
   async injectInput(
-    executionId: string, 
-    input: string, 
+    executionId: string,
+    input: string,
     inputType: 'text' | 'correction' | 'selection' | 'approval' = 'text'
   ): Promise<any> {
     const payload = {
@@ -105,8 +115,8 @@ export class UserInterruptionService {
       resumeExecution: true,
       metadata: {
         timestamp: new Date().toISOString(),
-        source: 'user-interface'
-      }
+        source: 'user-interface',
+      },
     };
 
     const response = await this.http
@@ -122,9 +132,9 @@ export class UserInterruptionService {
    * Resolves active interruption and allows workflow to continue
    */
   async respondToInterruption(
-    interruptionId: string, 
+    interruptionId: string,
     response: string,
-    continueExecution: boolean = true
+    continueExecution = true
   ): Promise<any> {
     const payload: InterruptionResponse = {
       response,
@@ -132,8 +142,8 @@ export class UserInterruptionService {
       userId: 'demo-user',
       metadata: {
         timestamp: new Date().toISOString(),
-        responseMethod: 'interface'
-      }
+        responseMethod: 'interface',
+      },
     };
 
     const result = await this.http
@@ -141,8 +151,8 @@ export class UserInterruptionService {
       .toPromise();
 
     // Remove from active interruptions
-    this.activeInterruptions.update(interruptions => 
-      interruptions.filter(i => i.id !== interruptionId)
+    this.activeInterruptions.update((interruptions) =>
+      interruptions.filter((i) => i.id !== interruptionId)
     );
     this.currentDialog.set(null);
     this.isWorkflowPaused.set(false);
@@ -155,10 +165,13 @@ export class UserInterruptionService {
    * Cancel an active interruption without responding
    * Used when user wants to dismiss without providing input
    */
-  async cancelInterruption(interruptionId: string, reason?: string): Promise<any> {
+  async cancelInterruption(
+    interruptionId: string,
+    reason?: string
+  ): Promise<any> {
     const payload = {
       reason: reason || 'User cancelled',
-      userId: 'demo-user'
+      userId: 'demo-user',
     };
 
     const result = await this.http
@@ -166,8 +179,8 @@ export class UserInterruptionService {
       .toPromise();
 
     // Remove from active interruptions
-    this.activeInterruptions.update(interruptions => 
-      interruptions.filter(i => i.id !== interruptionId)
+    this.activeInterruptions.update((interruptions) =>
+      interruptions.filter((i) => i.id !== interruptionId)
     );
     this.currentDialog.set(null);
     this.isWorkflowPaused.set(false);
@@ -180,7 +193,9 @@ export class UserInterruptionService {
    * Request a dynamic interruption during workflow execution
    * Used by agents to pause workflow and request user input
    */
-  async requestUserInterruption(request: DynamicInterruptionRequest): Promise<any> {
+  async requestUserInterruption(
+    request: DynamicInterruptionRequest
+  ): Promise<any> {
     const response = await this.http
       .post(`${this.baseUrl}/interruptions/dynamic`, request)
       .toPromise();
@@ -197,9 +212,13 @@ export class UserInterruptionService {
    * Get all active interruptions for a specific execution
    * Used to check pending interruptions when reconnecting
    */
-  async getActiveInterruptions(executionId: string): Promise<UserInterruption[]> {
+  async getActiveInterruptions(
+    executionId: string
+  ): Promise<UserInterruption[]> {
     const response = await this.http
-      .get<{success: boolean; data: UserInterruption[]}>(`${this.baseUrl}/interruptions/${executionId}`)
+      .get<{ success: boolean; data: UserInterruption[] }>(
+        `${this.baseUrl}/interruptions/${executionId}`
+      )
       .toPromise();
 
     if (response?.success && response.data) {
@@ -219,20 +238,26 @@ export class UserInterruptionService {
   async approveTicket(
     ticketId: string,
     approved: boolean,
-    approvedBy: string = 'demo-user',
+    approvedBy = 'demo-user',
     feedback?: string
   ): Promise<any> {
     const payload = {
       approved,
       approvedBy,
-      feedback: feedback || (approved ? 'Approved via interface' : 'Rejected via interface')
+      feedback:
+        feedback ||
+        (approved ? 'Approved via interface' : 'Rejected via interface'),
     };
 
     const response = await this.http
       .put(`${this.baseUrl}/tickets/${ticketId}/approve`, payload)
       .toPromise();
 
-    console.log(`${approved ? '✅' : '❌'} Ticket ${approved ? 'approved' : 'rejected'}: ${ticketId}`);
+    console.log(
+      `${approved ? '✅' : '❌'} Ticket ${
+        approved ? 'approved' : 'rejected'
+      }: ${ticketId}`
+    );
     return response;
   }
 
@@ -252,24 +277,26 @@ export class UserInterruptionService {
    */
   private setupWebSocketHandlers(): void {
     // Listen for interruption requests from agents
-    this.websocket.getMessages().subscribe(message => {
+    this.websocket.getMessages().subscribe((message) => {
       if (message.type === 'interruption_request') {
         const interruption: UserInterruption = {
           ...message.data,
           timestamp: new Date(message.data.timestamp || Date.now()),
-          status: 'pending'
+          status: 'pending',
         };
-        
-        this.activeInterruptions.update(list => [...list, interruption]);
+
+        this.activeInterruptions.update((list) => [...list, interruption]);
         this.currentDialog.set(interruption);
         this.isWorkflowPaused.set(true);
-        
-        console.log(`🔔 Interruption request received: ${interruption.type} - ${interruption.message}`);
+
+        console.log(
+          `🔔 Interruption request received: ${interruption.type} - ${interruption.message}`
+        );
       }
     });
 
     // Listen for workflow pause notifications
-    this.websocket.getMessages().subscribe(message => {
+    this.websocket.getMessages().subscribe((message) => {
       if (message.type === 'workflow_paused') {
         this.isWorkflowPaused.set(true);
         console.log('⏸️ Workflow paused for user input');
@@ -277,7 +304,7 @@ export class UserInterruptionService {
     });
 
     // Listen for workflow resume notifications
-    this.websocket.getMessages().subscribe(message => {
+    this.websocket.getMessages().subscribe((message) => {
       if (message.type === 'workflow_resumed') {
         this.isWorkflowPaused.set(false);
         this.currentDialog.set(null);
@@ -286,7 +313,7 @@ export class UserInterruptionService {
     });
 
     // Listen for approval requests (from @RequiresApproval decorator)
-    this.websocket.getMessages().subscribe(message => {
+    this.websocket.getMessages().subscribe((message) => {
       if (message.type === 'approval_request') {
         const approvalRequest: UserInterruption = {
           id: message.data.approvalId || `approval-${Date.now()}`,
@@ -296,10 +323,10 @@ export class UserInterruptionService {
           urgency: message.data.urgency || 'medium',
           timestamp: new Date(),
           status: 'pending',
-          metadata: message.data
+          metadata: message.data,
         };
 
-        this.activeInterruptions.update(list => [...list, approvalRequest]);
+        this.activeInterruptions.update((list) => [...list, approvalRequest]);
         this.currentDialog.set(approvalRequest);
         this.isWorkflowPaused.set(true);
 
@@ -308,15 +335,15 @@ export class UserInterruptionService {
     });
 
     // Listen for timeout notifications
-    this.websocket.getMessages().subscribe(message => {
+    this.websocket.getMessages().subscribe((message) => {
       if (message.type === 'interruption_timeout') {
         const timeoutId = message.data.interruptionId;
-        this.activeInterruptions.update(interruptions => 
-          interruptions.map(i => 
+        this.activeInterruptions.update((interruptions) =>
+          interruptions.map((i) =>
             i.id === timeoutId ? { ...i, status: 'timeout' } : i
           )
         );
-        
+
         console.log(`⏰ Interruption timed out: ${timeoutId}`);
       }
     });
@@ -326,17 +353,19 @@ export class UserInterruptionService {
    * Utility method to check if there are any pending interruptions
    */
   hasPendingInterruptions(): boolean {
-    return this.activeInterruptions().some(i => i.status === 'pending');
+    return this.activeInterruptions().some((i) => i.status === 'pending');
   }
 
   /**
    * Get the most urgent pending interruption
    */
   getMostUrgentInterruption(): UserInterruption | null {
-    const pending = this.activeInterruptions().filter(i => i.status === 'pending');
+    const pending = this.activeInterruptions().filter(
+      (i) => i.status === 'pending'
+    );
     if (pending.length === 0) return null;
 
-    const urgencyOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+    const urgencyOrder = { high: 3, medium: 2, low: 1 };
     return pending.reduce((most, current) => {
       const mostUrgency = urgencyOrder[most.urgency || 'medium'];
       const currentUrgency = urgencyOrder[current.urgency || 'medium'];
@@ -351,17 +380,21 @@ export class UserInterruptionService {
     const interruptions = this.activeInterruptions();
     return {
       total: interruptions.length,
-      pending: interruptions.filter(i => i.status === 'pending').length,
-      answered: interruptions.filter(i => i.status === 'answered').length,
-      cancelled: interruptions.filter(i => i.status === 'cancelled').length,
-      timeout: interruptions.filter(i => i.status === 'timeout').length,
+      pending: interruptions.filter((i) => i.status === 'pending').length,
+      answered: interruptions.filter((i) => i.status === 'answered').length,
+      cancelled: interruptions.filter((i) => i.status === 'cancelled').length,
+      timeout: interruptions.filter((i) => i.status === 'timeout').length,
       byType: {
-        question: interruptions.filter(i => i.type === 'question').length,
-        clarification: interruptions.filter(i => i.type === 'clarification').length,
-        approval_request: interruptions.filter(i => i.type === 'approval_request').length,
-        input_request: interruptions.filter(i => i.type === 'input_request').length,
-        correction: interruptions.filter(i => i.type === 'correction').length,
-      }
+        question: interruptions.filter((i) => i.type === 'question').length,
+        clarification: interruptions.filter((i) => i.type === 'clarification')
+          .length,
+        approval_request: interruptions.filter(
+          (i) => i.type === 'approval_request'
+        ).length,
+        input_request: interruptions.filter((i) => i.type === 'input_request')
+          .length,
+        correction: interruptions.filter((i) => i.type === 'correction').length,
+      },
     };
   }
 }

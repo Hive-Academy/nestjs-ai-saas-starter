@@ -1,6 +1,6 @@
 import {
   NoOpStreamingService,
-  STREAMING_SERVICE_TOKEN,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 import {
   MultiAgentCoordinatorService,
@@ -28,7 +28,7 @@ describe('Application-Level Streaming DI Integration', () => {
     await app.init();
 
     // Resolve streaming service via token
-    streamingService = app.get(STREAMING_SERVICE_TOKEN);
+    streamingService = app.get('IStreamingService');
   });
 
   afterAll(async () => {
@@ -64,18 +64,18 @@ describe('Application-Level Streaming DI Integration', () => {
       expect(injectedStreamingService).toBe(streamingService);
     });
 
-    it('should provide STREAMING_SERVICE_TOKEN with correct implementation across modules', () => {
+    it('should provide `IStreamingService` with correct implementation across modules', () => {
       // Test workflow engine DI token
       const workflowStreamingService = app
         .select(WorkflowEngineModule)
-        .get(STREAMING_SERVICE_TOKEN, { strict: false });
+        .get('IStreamingService', { strict: false });
 
       expect(workflowStreamingService).toBe(streamingService);
 
       // Test multi-agent module DI token
       const multiAgentStreamingService = app
         .select(MultiAgentModule)
-        .get(STREAMING_SERVICE_TOKEN, { strict: false });
+        .get('IStreamingService', { strict: false });
 
       expect(multiAgentStreamingService).toBe(streamingService);
     });
@@ -324,23 +324,23 @@ describe('Application-Level Streaming DI Integration', () => {
     //   const executionId = 'throughput-test';
     //   const messageCount = 100;
 
-      // Mock to prevent actual network calls
-      // const broadcastSpy = jest
-      //   .spyOn(
-      //     (streamingAdapter as any).webSocketBridge,
-      //     'broadcastToExecution'
-      //   )
-      //   .mockImplementation();
+    // Mock to prevent actual network calls
+    // const broadcastSpy = jest
+    //   .spyOn(
+    //     (streamingAdapter as any).webSocketBridge,
+    //     'broadcastToExecution'
+    //   )
+    //   .mockImplementation();
 
-      // // Send many messages rapidly
-      // for (let i = 0; i < messageCount; i++) {
-      //   streamingAdapter.streamToken(executionId, `node-${i}`, `token-${i}`, {
-      //     index: i,
-      //     batch: 'throughput-test',
-      //   });
-      // }
+    // // Send many messages rapidly
+    // for (let i = 0; i < messageCount; i++) {
+    //   streamingAdapter.streamToken(executionId, `node-${i}`, `token-${i}`, {
+    //     index: i,
+    //     batch: 'throughput-test',
+    //   });
+    // }
 
-      // Should handle all messages
+    // Should handle all messages
     //   expect(broadcastSpy).toHaveBeenCalledTimes(messageCount);
 
     //   // Verify consistent execution ID across all calls
@@ -369,10 +369,10 @@ describe('Application-Level Streaming DI Integration', () => {
       // Verify services can be resolved from DI container
       expect(app.get(WorkflowStreamService)).toBeDefined();
       expect(app.get(MultiAgentCoordinatorService)).toBeDefined();
-      expect(app.get(STREAMING_SERVICE_TOKEN)).toBeDefined();
+      expect(app.get('IStreamingService')).toBeDefined();
 
       // Verify no circular dependencies or resolution issues
-      expect(() => app.get(STREAMING_SERVICE_TOKEN)).not.toThrow();
+      expect(() => app.get('IStreamingService')).not.toThrow();
     });
   });
 });

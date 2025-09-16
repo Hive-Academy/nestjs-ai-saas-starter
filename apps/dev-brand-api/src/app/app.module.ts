@@ -15,22 +15,17 @@ import {
 } from './adapters';
 
 // LangGraph modules with proper streaming integration
-import {
-  CheckpointManagerAdapter,
-  CheckpointManagerService,
-  LanggraphModulesCheckpointModule,
-} from '@hive-academy/langgraph-checkpoint';
-// Removed token-based imports - using direct service injection
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
-// Import streaming adapter from app adapters
-import { StreamingServiceAdapter } from './adapters/streaming/streaming-service.adapter';
-import { WorkflowEngineModule, WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowEngineModule,
+  WorkflowEngineModuleOptions,
+} from '@hive-academy/langgraph-workflow-engine';
 
-// Configuration imports
 import { getCheckpointConfig } from './config/checkpoint.config';
 import { getChromaDBConfig } from './config/chromadb.config';
 import { getFunctionalApiConfig } from './config/functional-api.config';
@@ -53,7 +48,10 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
 import { AppStreamingManager } from './services/app-streaming-manager.service';
 
 // Core interface for adapter pattern
-import { IStreamingService } from '@hive-academy/langgraph-core';
+import {
+  ICheckpointAdapter,
+  IStreamingService,
+} from '@hive-academy/langgraph-core';
 
 @Module({
   imports: [
@@ -118,37 +116,45 @@ import { IStreamingService } from '@hive-academy/langgraph-core';
 
     // Workflow engine WITH STREAMING - adapter injection
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (streamingAdapter: IStreamingService): Promise<WorkflowEngineModuleOptions> => {
+      useFactory: async (
+        streamingAdapter: IStreamingService
+      ): Promise<WorkflowEngineModuleOptions> => {
         return {
           ...getWorkflowEngineConfig(),
-          streamingAdapter, // Adapter injection from app providers
+          streamingAdapter,
         };
       },
-      inject: ['IStreamingService'], // Inject adapter via string token
+      inject: ['IStreamingService'],
     }),
 
     // Multi-agent module WITH STREAMING - adapter injection
     MultiAgentModule.forRootAsync({
-      useFactory: async (streamingAdapter: IStreamingService, checkpointManager: CheckpointManagerService) => {
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter
+      ) => {
         return {
           ...getMultiAgentConfig(),
-          streamingAdapter, // Adapter injection from app providers
-          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+          streamingAdapter,
+          checkpointAdapter,
         };
       },
-      inject: ['IStreamingService', CheckpointManagerService], // Inject adapter via string token
+      inject: ['IStreamingService', 'ICheckpointAdapter'],
     }),
 
     // Functional API with checkpoint AND STREAMING - adapter injection
     FunctionalApiModule.forRootAsync({
-      useFactory: async (streamingAdapter: IStreamingService, checkpointManager: CheckpointManagerService): Promise<any> => {
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter
+      ): Promise<any> => {
         return {
           ...getFunctionalApiConfig(),
-          streamingAdapter, // Adapter injection from app providers
-          checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+          streamingAdapter,
+          checkpointAdapter,
         };
       },
-      inject: ['IStreamingService', CheckpointManagerService], // Inject adapter via string token
+      inject: ['IStreamingService', 'ICheckpointAdapter'], // Inject adapter via string token
     }),
 
     // Monitoring module
@@ -161,28 +167,9 @@ import { IStreamingService } from '@hive-academy/langgraph-core';
     }),
 
     // Business modules
-  BusinessWorkflowsModule,
+    BusinessWorkflowsModule,
   ],
-  controllers: [
-    HealthController,
-    // Business controllers will be added here
-  ],
-  providers: [
-    // Streaming adapter - bridges streaming module to core interface
-    StreamingServiceAdapter,
-    {
-      provide: 'IStreamingService',
-      useExisting: StreamingServiceAdapter,
-    },
-    
-    // User-controlled streaming initialization
-    AppStreamingManager,
-    // Business services will be added here
-  ],
-  exports: [
-    // Export modules so their services are available to child modules
-    HitlModule,
-    StreamingModule,
-  ],
+  controllers: [HealthController],
+  providers: [AppStreamingManager],
 })
 export class AppModule {}

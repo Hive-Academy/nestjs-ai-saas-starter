@@ -9,12 +9,6 @@ import { WorkflowRegistrationService } from './services/workflow-registration.se
 import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
 import { FunctionalApiModuleInitializer } from './services/functional-api-module-initializer.service';
-import {
-  ICheckpointAdapter,
-  NoOpCheckpointAdapter,
-  IStreamingService,
-  NoOpStreamingService,
-} from '@hive-academy/langgraph-core';
 import { FUNCTIONAL_API_MODULE_OPTIONS } from './constants/module.constants';
 import { setFunctionalApiConfig } from './utils/functional-api-config.accessor';
 
@@ -43,18 +37,8 @@ export class FunctionalApiModule {
       imports: [],
       providers: [
         optionsProvider,
-        // Checkpoint adapter provider - either provided or no-op
-        {
-          provide: 'ICheckpointAdapter',
-          useValue:
-            normalizedOptions.checkpointAdapter || new NoOpCheckpointAdapter(),
-        },
-        // Streaming service provider - either provided or no-op
-        {
-          provide: 'IStreamingService',
-          useValue:
-            normalizedOptions.streamingAdapter || new NoOpStreamingService(),
-        },
+        // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+        // No local providers needed as they will be injected globally
         WorkflowValidator,
         WorkflowRegistrationService,
         GraphGeneratorService,
@@ -82,30 +66,8 @@ export class FunctionalApiModule {
       imports: [...(options.imports || [])],
       providers: [
         ...asyncProviders,
-        // Checkpoint adapter provider - async factory
-        {
-          provide: 'ICheckpointAdapter',
-          useFactory: async (...args: unknown[]) => {
-            const opts = await options.useFactory!(...args);
-            const normalizedOpts = this.normalizeOptions(opts);
-            return (
-              normalizedOpts.checkpointAdapter || new NoOpCheckpointAdapter()
-            );
-          },
-          inject: options.inject || [],
-        },
-        // Streaming service provider - async factory
-        {
-          provide: 'IStreamingService',
-          useFactory: async (...args: unknown[]) => {
-            const opts = await options.useFactory!(...args);
-            const normalizedOpts = this.normalizeOptions(opts);
-            return (
-              normalizedOpts.streamingAdapter || new NoOpStreamingService()
-            );
-          },
-          inject: options.inject || [],
-        },
+        // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+        // No local providers needed as they will be injected globally
         WorkflowValidator,
         WorkflowRegistrationService,
         GraphGeneratorService,
@@ -154,7 +116,7 @@ export class FunctionalApiModule {
     if (options.useFactory) {
       return {
         provide: FUNCTIONAL_API_MODULE_OPTIONS,
-        useFactory: async (...args: unknown[]) => {
+        useFactory: async (...args: any[]) => {
           const opts = await options.useFactory!(...args);
           const normalizedOpts = this.normalizeOptions(opts);
           // Store config for decorator access
@@ -201,7 +163,9 @@ export class FunctionalApiModule {
    */
   private static normalizeOptions(
     options: FunctionalApiModuleOptions
-  ): Required<Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'>> &
+  ): Required<
+    Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'>
+  > &
     Pick<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'> {
     return {
       workflows: options.workflows ?? [],

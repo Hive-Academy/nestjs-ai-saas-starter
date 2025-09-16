@@ -162,12 +162,9 @@ export abstract class StreamingWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Optional()
     protected override readonly eventProcessor?: EventStreamProcessorService,
     @Optional()
-    @Optional()
     protected readonly tokenStreamingService?: TokenStreamingService,
-    @Optional()
     @Optional()
     protected readonly webSocketBridgeService?: WebSocketBridgeService
   ) {
@@ -342,7 +339,9 @@ export abstract class StreamingWorkflowBase<
 
     // Register client using adapter interface
     if (options.executionId) {
-      this.webSocketBridgeService.registerClient(clientId, options.executionId);
+      this.webSocketBridgeService.registerClient(clientId, {
+        executionId: options.executionId,
+      });
     }
 
     // Update execution context if executionId provided
@@ -612,7 +611,8 @@ export abstract class StreamingWorkflowBase<
     // Complete token streams
     if (context.tokenStreaming && this.tokenStreamingService) {
       // Close individual token streams for this execution
-      for (const [nodeId] of this.streamingConfiguration!.tokenStreaming.nodes) {
+      for (const [nodeId] of this.streamingConfiguration!.tokenStreaming
+        .nodes) {
         this.tokenStreamingService.closeTokenStream(executionId, nodeId);
       }
     }

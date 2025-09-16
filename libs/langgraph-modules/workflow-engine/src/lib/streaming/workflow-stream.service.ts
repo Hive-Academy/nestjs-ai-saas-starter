@@ -5,6 +5,7 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
+import 'reflect-metadata';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BaseMessage } from '@langchain/core/messages';
 import { StateGraph } from '@langchain/langgraph';

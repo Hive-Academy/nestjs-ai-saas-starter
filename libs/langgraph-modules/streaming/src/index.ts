@@ -13,17 +13,31 @@ export * from './lib/services/streaming-websocket.service';
 // User-controlled initialization pattern
 export * from './lib/interfaces/streaming-manager.interface';
 
-// Decorators
-export * from './lib/decorators/streaming.decorator';
+// Decorators - explicit exports to avoid duplicates
+export {
+  StreamToken,
+  StreamEvent,
+  StreamProgress,
+  getStreamTokenMetadata,
+  getStreamEventMetadata,
+  getStreamProgressMetadata,
+  STREAM_TOKEN_METADATA_KEY,
+  STREAM_EVENT_METADATA_KEY,
+  STREAM_PROGRESS_METADATA_KEY,
+} from './lib/decorators/streaming.decorator';
 
-// Export decorator metadata types
+// Export decorator metadata types and options
 export type {
+  StreamTokenOptions,
   StreamTokenDecoratorMetadata,
+  StreamEventOptions,
   StreamEventDecoratorMetadata,
+  StreamProgressOptions,
   StreamProgressDecoratorMetadata,
 } from './lib/decorators/streaming.decorator';
 
-// Interfaces
+// Interfaces and constants
+export { StreamEventType } from './lib/constants';
 export type {
   StreamUpdate,
   StreamMetadata,
@@ -57,8 +71,6 @@ export type {
   StreamProgressMetadata,
 } from './lib/interfaces/streaming.interface';
 
-export { StreamEventType } from './lib/interfaces/streaming.interface';
-
 // Export helper functions for creating metadata objects (runtime creation)
 export {
   getStreamTokenMetadata as createStreamTokenMetadata,
@@ -66,14 +78,7 @@ export {
   getStreamProgressMetadata as createStreamProgressMetadata,
 } from './lib/interfaces/streaming.interface';
 
-// Export decorator-based metadata functions (what workflow-engine expects)
-export {
-  getStreamTokenMetadata,
-  getStreamEventMetadata,
-  getStreamProgressMetadata,
-} from './lib/decorators/streaming.decorator';
-
 // Constants
 export * from './lib/constants';
 
-export * from './lib/services/streaming-websocket.service'
+export * from './lib/services/streaming-websocket.service';

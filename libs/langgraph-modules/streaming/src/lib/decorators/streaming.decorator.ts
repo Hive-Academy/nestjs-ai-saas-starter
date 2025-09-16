@@ -1,10 +1,7 @@
 import 'reflect-metadata';
 import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
-// Import streaming types from core library (fixes circular dependency)
-import {
-  StreamEventType,
-  computeCanonicalNodeId,
-} from '@hive-academy/langgraph-core';
+import { StreamEventType } from '../constants';
+import { computeCanonicalNodeId } from '@hive-academy/langgraph-core';
 import type {
   StreamTokenOptions,
   StreamTokenDecoratorMetadata,
@@ -12,7 +9,7 @@ import type {
   StreamEventDecoratorMetadata,
   StreamProgressOptions,
   StreamProgressDecoratorMetadata,
-} from '@hive-academy/langgraph-core';
+} from '../interfaces/decorator-metadata.interface';
 import type { Logger } from '@nestjs/common';
 
 // Metadata keys for streaming decorators
@@ -20,7 +17,7 @@ export const STREAM_TOKEN_METADATA_KEY = 'streaming:token';
 export const STREAM_EVENT_METADATA_KEY = 'streaming:event';
 export const STREAM_PROGRESS_METADATA_KEY = 'streaming:progress';
 
-// Re-export decorator metadata types from core library (for backward compatibility)
+// Re-export decorator metadata types for external use
 export type {
   StreamTokenOptions,
   StreamTokenDecoratorMetadata,
@@ -28,11 +25,10 @@ export type {
   StreamEventDecoratorMetadata,
   StreamProgressOptions,
   StreamProgressDecoratorMetadata,
-} from '@hive-academy/langgraph-core';
+} from '../interfaces/decorator-metadata.interface';
 
 // Re-export StreamEventType for backward compatibility
-export { StreamEventType } from '@hive-academy/langgraph-core';
-
+export { StreamEventType } from '../constants';
 
 /**
  * Decorator to enable token-level streaming for a method or node

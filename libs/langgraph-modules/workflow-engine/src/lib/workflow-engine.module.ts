@@ -6,10 +6,7 @@ import { MetadataProcessorService } from './core/metadata-processor.service';
 import { SubgraphManagerService } from './core/subgraph-manager.service';
 import { WorkflowStreamService } from './streaming/workflow-stream.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
-import {
-  IStreamingService,
-  NoOpStreamingService,
-} from '@hive-academy/langgraph-core';
+import { IStreamingService } from '@hive-academy/langgraph-core';
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -59,11 +56,8 @@ export class WorkflowEngineModule {
         SubgraphManagerService,
         WorkflowStreamService,
 
-        // Streaming adapter - use provided adapter or default to no-op
-        {
-          provide: 'IStreamingService',
-          useValue: options.streamingAdapter || new NoOpStreamingService(),
-        },
+        // Note: IStreamingService should be provided by the app module via adapter pattern
+        // No local provider needed as it will be injected globally
       ],
       exports: [
         WorkflowGraphBuilderService,
@@ -71,7 +65,6 @@ export class WorkflowEngineModule {
         MetadataProcessorService,
         SubgraphManagerService,
         WorkflowStreamService,
-        'IStreamingService', // Export string token for adapter
       ],
       global: true,
     };
@@ -82,7 +75,7 @@ export class WorkflowEngineModule {
    */
   public static forRootAsync(options: {
     useFactory: (
-      ...args: unknown[]
+      ...args: any[]
     ) => Promise<WorkflowEngineModuleOptions> | WorkflowEngineModuleOptions;
     inject?: InjectionToken[];
   }): DynamicModule {
@@ -102,15 +95,8 @@ export class WorkflowEngineModule {
         SubgraphManagerService,
         WorkflowStreamService,
 
-        // Streaming adapter - injected via factory
-        {
-          provide: 'IStreamingService',
-          useFactory: async (...args: unknown[]) => {
-            const moduleOptions = await options.useFactory(...args);
-            return moduleOptions.streamingAdapter || new NoOpStreamingService();
-          },
-          inject: options.inject ?? [],
-        },
+        // Note: IStreamingService should be provided by the app module via adapter pattern
+        // No local provider needed as it will be injected globally
       ],
       exports: [
         WorkflowGraphBuilderService,
@@ -118,7 +104,6 @@ export class WorkflowEngineModule {
         MetadataProcessorService,
         SubgraphManagerService,
         WorkflowStreamService,
-        'IStreamingService', // Export string token for adapter
       ],
       global: true,
     };

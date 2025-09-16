@@ -1,6 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { CheckpointSaverFactory } from '../core/checkpoint-saver.factory';
-import { CheckpointConfig } from '../interfaces/checkpoint.interface';
+import type { CheckpointConfig } from '../interfaces/checkpoint.interface';
 
 describe('CheckpointSaverFactory', () => {
   let factory: CheckpointSaverFactory;

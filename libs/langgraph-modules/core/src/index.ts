@@ -77,7 +77,7 @@ export * from './lib/utils/node-id';
 
 // Checkpoint integration exports for consumer libraries
 export {
-  CHECKPOINT_ADAPTER_TOKEN,
+  // CHECKPOINT_ADAPTER_TOKEN, // Removed - using abstract class pattern
   NoOpCheckpointAdapter,
   ICheckpointAdapter,
 } from './lib/interfaces/checkpoint-adapter.interface';
@@ -97,13 +97,13 @@ export {
 
 // Streaming integration exports for consumer libraries
 export {
-  // STREAMING_SERVICE_TOKEN, // Removed - using adapter pattern
   NoOpStreamingService,
   NoOpTokenStreamingService,
   NoOpEventStreamProcessorService,
   NoOpWebSocketBridgeService,
-  StreamEventType,
 } from './lib/interfaces/streaming.interface';
+
+export { StreamEventType } from './lib/interfaces/streaming.interface';
 
 export type {
   IStreamingService,
@@ -111,14 +111,4 @@ export type {
   IEventStreamProcessorService,
   IWebSocketBridgeService,
   TokenStreamOptions,
-  StreamEventData,
-  ProgressData,
-  StreamUpdate,
-  TokenFilter,
-  StreamTokenDecoratorMetadata,
-  StreamEventDecoratorMetadata,
-  StreamProgressDecoratorMetadata,
-  StreamTokenOptions,
-  StreamEventOptions,
-  StreamProgressOptions,
 } from './lib/interfaces/streaming.interface';
