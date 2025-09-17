@@ -7,7 +7,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 > Goal: Classify every raw Three.js touchpoint into (a) Keep (specialized), (b) Abstract (fold into Hybrid UI builder/manager), (c) Adapter (temporary wrapper until manager lands), (d) Remove (redundant/unnecessary post-migration).
 
 ---
- 
+
 ## 1. Pattern Taxonomy
 
 | Code | Pattern | Description | Target Abstraction |
@@ -26,7 +26,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | LineSegments | Wireframe / line geometry constructs | Structural diagrams | Diagram layout + line style config |
 
 ---
- 
+
 ## 2. Landing Page Section Audit
 
 | Component | File | Patterns | Action Classification | Notes |
@@ -41,7 +41,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | Section Performance Service | section-performance.service.ts | Renderer metrics | Abstract | Replace with metrics signals from Hybrid layer |
 
 ---
- 
+
 ## 3. Spatial Interface Audit (Advanced / Non-Landing)
 
 | Module Element | File | Patterns | Action | Rationale |
@@ -66,7 +66,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | Three Integration Service (legacy) | three-integration.service.ts | Renderer, MeshCreate | Remove | Consolidate into Hybrid service |
 
 ---
- 
+
 ## 4. Abstraction Roadmap Mapping
 
 | Manager / Builder | Patterns Consumed | Initial Sources | Priority |
@@ -82,7 +82,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | Asset Loader Manager | GLTFLoader, EffectComposer | Lazy Loading Service | Low (after core) |
 
 ---
- 
+
 ## 5. Migration Action List (Derived)
 
 | ID | Action | Source Files | Target Abstraction | Batch | Notes |
@@ -99,7 +99,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | A10 | Texture update pipeline implementation | (planned metrics/testimonial) | Texture Pipeline | Batch 3 | MutationObserver + debounced redraw |
 
 ---
- 
+
 ## 6. Risk & Mitigation
 
 | Risk | Impact | Mitigation |
@@ -111,7 +111,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | Screenshot diff tooling gap | Delayed parity verification | Temporary manual capture checklist; automate later |
 
 ---
- 
+
 ## 7. Decommission Candidates
 
 | File | Condition to Remove | Status |
@@ -123,7 +123,7 @@ Scope: All direct Three.js usages in `apps/dev-brand-ui` (landing page + spatial
 | individual particle code blocks | Particle adapter adopted | Pending |
 
 ---
- 
+
 ## 8. Next Steps
 
 1. Implement A1–A4 (Batch 1) scaffolds in hybrid layer (no visual regression allowed).

@@ -12,6 +12,7 @@ Branch: `feature/TASK_FE_004-landing-page-critical-fixes`
 Central tracker mapping each landing page (and related showcase) component from its current implementation (legacy / direct Three.js / ad-hoc) to the standardized Hybrid UI architecture using `HybridUIService`, config builders, and upcoming manager abstractions.
 
 ---
+
 ## 2. Status Legend
 
 | Code | Meaning |
@@ -25,7 +26,7 @@ Central tracker mapping each landing page (and related showcase) component from 
 Deletion of legacy variant only occurs after: (a) visual parity approval, (b) no external dependencies, (c) screenshot diff baseline captured.
 
 ---
- 
+
 ## 3. Component Inventory (Grounded Discovery)
 
 Legend (Patterns): SceneInit, CameraMutate, MeshCreate, MaterialAdjust, rAFLoop, Raycast, Shader, Particles, Instancing, TextureDraw, LayoutCustom
@@ -50,7 +51,7 @@ Legend (Patterns): SceneInit, CameraMutate, MeshCreate, MaterialAdjust, rAFLoop,
 Removed Placeholder Rows: Consolidated planned components explicitly with (Planned) label to avoid confusing unimplemented vs undiscovered.
 
 ---
- 
+
 ## 4. Migration Workflow (Per Component)
 
 1. Baseline Capture: Screenshot (desktop + mobile), record camera / spacing constants.
@@ -65,7 +66,7 @@ Removed Placeholder Rows: Consolidated planned components explicitly with (Plann
 10. Promotion: Mark status RV → DN, schedule removal of legacy variant in consolidation batch.
 
 ---
- 
+
 ## 5. Discovery Tasks (Execution Log)
 
 | ID | Task | Status | Output Summary |
@@ -76,7 +77,7 @@ Removed Placeholder Rows: Consolidated planned components explicitly with (Plann
 | G4 | Author audit doc | Pending | Will create `HYBRID_UI_THREE_AUDIT.md` (next task) |
 
 ---
- 
+
 ## 6. Builder Mapping Cheat Sheet
 
 | Legacy Pattern | Replacement | Notes |
@@ -91,7 +92,6 @@ Removed Placeholder Rows: Consolidated planned components explicitly with (Plann
 | Texture redraw on every setInterval | Texture versioning + MutationObserver (future) | Debounce + diff detection |
 
 ## 7. Parity Validation Checklist
- 
 
 | Check | Description | Pass? |
 |-------|-------------|-------|
@@ -104,7 +104,7 @@ Removed Placeholder Rows: Consolidated planned components explicitly with (Plann
 | Performance | FPS within 5% of legacy under idle |  |
 
 ## 8. Deletion Gate Criteria
- 
+
 A legacy component may be scheduled for removal ONLY if:
 
 - Status = DN in table.
@@ -114,7 +114,6 @@ A legacy component may be scheduled for removal ONLY if:
 - No downstream modules import the legacy selector.
 
 ## 9. Open Items / TODOs
- 
 
 | ID | Item | Blocking | Target Batch |
 |----|------|---------|--------------|
@@ -128,7 +127,7 @@ A legacy component may be scheduled for removal ONLY if:
 | O8 | Draft MutationObserver texture directive | Texture pipeline phase | B |
 
 ## 10. Contribution Rules
- 
+
 1. Never modify original legacy component while hybrid variant is in NS/IP state.
 2. Hybrid variant naming: `<component-name>-hybrid` or nested `hybrid/<component>.component.ts` to ease diffing.
 3. Each PR must update this document’s table statuses.
@@ -136,7 +135,7 @@ A legacy component may be scheduled for removal ONLY if:
 5. If a legacy bug is discovered during migration, document under Open Items instead of silently fixing in both—fix only in hybrid path unless security related.
 
 ## 11. Exit Definition (Document Can Retire)
- 
+
 - All rows DN.
 - Open Items list empty or deferred to separate roadmap.
 - Strategy doc updated with final architecture references.

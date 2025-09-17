@@ -4,6 +4,7 @@ Date: 2025-09-15
 Scope: `apps/dev-brand-ui`
 
 ## 1. Current Structure Overview
+
 ```
 app/
   app.routes.ts (lazy feature routing)
@@ -27,7 +28,9 @@ app/
   shared/
     navigation/ (shared presentational component)
 ```
+
 Observations:
+
 - Feature folders exist but some features (e.g. spatial-interface) contain both presentation & complex orchestration logic.
 - Core services contain domain-like logic (agent communication simulation) along with infrastructure (websocket) & API clients.
 - Mixed concerns: `websocket.service.ts` (transport), `agent-communication.service.ts` (domain + simulation + state mutation), `spatial-interface.component.ts` (view + orchestration + test fixture creation).
@@ -35,6 +38,7 @@ Observations:
 - No shared typed client abstractions per feature; `showcase-api.service.ts` large and multi-purpose.
 
 ## 2. Layer & Responsibility Assessment
+
 | Layer | Current Reality | Issues | Target |
 |-------|-----------------|--------|--------|
 | UI Components | Mix of smart (spatial-interface) & dumb | Smart components too large; hidden state transitions | Convert to Presentation + Container pattern with signals/store |
@@ -45,6 +49,7 @@ Observations:
 | Testing | Some specs present, complex features under-tested | Difficult because of large components | Smaller units + test harness per feature store |
 
 ## 3. Identified Hardcoded / Dummy Logic (Frontend)
+
 | Location | Description | Risk | Recommendation |
 |----------|-------------|------|---------------|
 | `spatial-interface.component.ts#loadAgentsFromBackend` | Hardcoded URL & fallback to mock agents | Environment drift & prod/test inconsistency | Extract to `customer-support.api` + baseUrl from `environment.apiUrl` |
@@ -53,11 +58,13 @@ Observations:
 | `showcase-api.service.ts` | Mixed endpoint set (patterns, search, capabilities) | Single large service (>400 lines potential) | Separate per bounded context: `showcase-patterns.api.ts`, `showcase-search.api.ts` |
 
 ## 4. UI -> Backend Coupling Issues
+
 - Raw string event types & endpoints referenced at call sites; no central contract map.
 - SSE vs WebSocket event shapes not unified in a single stream abstraction.
 - Error handling repeated (console + generic `Error`).
 
 ## 5. Proposed Feature-Based Folder Architecture
+
 ```
 app/
   features/
@@ -108,17 +115,21 @@ app/
     ui/ (presentational components)
     lib/ (pure utility functions)
 ```
+
 Principles:
+
 - Every feature exports ONLY what other features need (UI components + store facade + data-access facade).
 - Transport/infrastructure concerns centralized in `core`.
 - Mock/fixtures isolated & excluded from prod builds (conditional import or file replacement).
 
 ## 6. State Management Strategy
+
 Option A (Native Signals + Facade): Keep lightweight, introduce `FeatureStore` classes encapsulating signal state + derived computed selectors.
 Option B (NgRx Signals Store later): Add when complexity or cross-feature synchronization grows.
 Initial Recommendation: Option A with explicit typed actions as methods on store for discoverability.
 
 Example (ticket store sketch):
+
 ```ts
 @Injectable({ providedIn: 'root' })
 export class CustomerSupportStore {
@@ -139,7 +150,9 @@ export class CustomerSupportStore {
 ```
 
 ## 7. Realtime Event Normalization
+
 Introduce unified `RealtimeEvent<T>` shape:
+
 ```ts
 interface RealtimeEvent<T> {
   type: string;            // namespaced (e.g. ticket.progress)
@@ -147,10 +160,12 @@ interface RealtimeEvent<T> {
   meta: { ts: number; v:1; source:'ws'|'sse' };
 }
 ```
+
 Channel adapter maps raw WebSocket or SSE message -> `RealtimeEvent`.
 Frontend consumes `Observable<RealtimeEvent<any>>` + feature-specific type guards.
 
 ## 8. Error Handling & Resilience Improvements
+
 | Concern | Current | Improvement |
 |---------|---------|------------|
 | HTTP Errors | Local catchError with console logging | Central `HttpErrorInterceptor` + typed `ApiError` model |
@@ -159,11 +174,13 @@ Frontend consumes `Observable<RealtimeEvent<any>>` + feature-specific type guard
 | Retry Semantics | Ad-hoc RxJS retry() | Central retry utility reading from config (max attempts, status code filters) |
 
 ## 9. Performance Considerations
+
 - Large spatial component performing animation loop; ensure change detection isolation (OnPush already) + possibly move heavy loops to Web Worker or OffscreenCanvas later.
 - Lazy load heavy 3D libraries (dynamic import) and split spatial feature into sub-routes if necessary.
 - Memoize derived computationally expensive selectors (signals already cheap, but guard object churn in lists via normalization).
 
 ## 10. Incremental Refactor Roadmap
+
 | Phase | Goal | Slice |
 |-------|------|-------|
 | 0 | Extract customer-support feature folder & move API calls | Low risk |
@@ -175,20 +192,23 @@ Frontend consumes `Observable<RealtimeEvent<any>>` + feature-specific type guard
 | 6 | Migrate spatial-interface to consume store facades instead of direct service mutation | High |
 
 ## 11. DX & Testing Enhancements
+
 - Provide Storybook (optional) or component harness tests for UI pieces.
 - Add test utilities for realtime event simulation.
 - Snapshot tests for store state transitions given sequences of events.
 
 ## 12. Expected Benefits
+
 | Metric | Current | Target |
 |--------|---------|--------|
 | Bundle Clarity | Mixed concerns | Clear vertical slices |
 | Mock Swap Ease | Manual edits | Token-based injection |
 | Test Coverage Potential | Moderate | High (pure stores + adapters) |
-| Maintainability | Medium risk | High | 
+| Maintainability | Medium risk | High |
 | Onboarding Time | High (implicit flows) | Reduced (documented contracts) |
 
 ## 13. Immediate Action Items
+
 1. Create `features/customer-support` with subfolders (ui, data-access, state, realtime, fixtures, models).
 2. Move agent + ticket API interactions out of spatial component.
 3. Introduce `RealtimeEvent` & simple adapter wrapping WebSocket messages.
@@ -196,13 +216,15 @@ Frontend consumes `Observable<RealtimeEvent<any>>` + feature-specific type guard
 5. Split `showcase-api.service.ts` (> single-responsibility principle) by context.
 
 ## 14. Risks & Mitigations
+
 | Risk | Mitigation |
 |------|------------|
 | Refactor churn breaking existing demos | Introduce new feature modules parallel, deprecate old paths gradually |
 | Increased file count overhead | Provide index barrels & Nx generator schematics |
-| Runtime regression in spatial visualization | Add pre-refactor screenshot / metrics baseline & minimal e2e | 
+| Runtime regression in spatial visualization | Add pre-refactor screenshot / metrics baseline & minimal e2e |
 
 ## 15. Summary
+
 The UI has an encouraging feature directory baseline but suffers from orchestration & infrastructure concerns embedded in components and core services. Implementing per-feature data-access + state + realtime channels with unified event contracts will significantly improve clarity, testability, and resilience.
 
 ---

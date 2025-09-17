@@ -28,7 +28,7 @@ Layout, Animation, Texture, Performance) and no residual direct Three.js usage i
 ---
 
 ## 3. Current State Inventory (Landing + Hybrid Elements)
- 
+
 | Concern | Current Pattern | Gaps | Migration Target |
 |---------|-----------------|------|------------------|
 | Scene creation | Manual or legacy service (removed) | Duplication, non-deterministic config | Central `HybridUIService.createScene()` with config signal |
@@ -73,6 +73,7 @@ Three.js (Scene, Camera, Renderer) ← isolated inside HybridUIService & manager
 
 Goals: Full inventory of raw Three.js usages & hybrid component insertion points.
 Actions:
+
 - Search for any `new THREE.` or `from 'three'` imports outside angular-hybrid-ui → log occurrences.
 - Create `docs/HYBRID_UI_THREE_AUDIT.md` (spin-off) enumerating each usage category: geometry creation, material customization, camera manipulation, animation loops.
 - Replace trivial remaining direct imports in landing components with builder-based configs (card/button/nav).
@@ -82,6 +83,7 @@ Exit Criteria: No direct Three.js imports in landing page except within the hybr
 
 Goals: Allow existing feature components that rely on imperative element placement to function while shifting implementation.
 Actions:
+
 - Introduce a thin `HybridUIAdapter` (temporary) with API parity to deprecated calls; internally delegates to `HybridUIService`.
 - Mark adapter with `@deprecated` JSDoc and schedule removal in Phase 5.
 - Provide mapping table old->new methods in adapter file header.
@@ -91,6 +93,7 @@ Exit Criteria: All feature code uses adapter or new service (no raw legacy signa
 
 Goals: Decompose responsibilities from monolithic service.
 Actions:
+
 - Extract InteractionManager interface (`applyHover`, `applyClick`, `dispatchFocusChange`).
 - Extract LayoutManager: accepts element registry signal, emits positioned transforms.
 - Extract AnimationController: central rAF loop with subscription registry.
@@ -101,6 +104,7 @@ Exit Criteria: Service file <200 lines, managers each <180 lines, unit tests for
 
 Goals: Reactive texture updates without full redraw.
 Actions:
+
 - Implement MutationObserver directive (already partially conceptualized) to schedule debounced texture re-render in `ContentTextureService`.
 - Add cache invalidation & size adaptive logic (respect maxTextureSize from config).
 - Provide `textureVersion` signal per element for change detection.
@@ -110,6 +114,7 @@ Exit Criteria: Editing projected DOM inside a content-3d element updates its tex
 
 Goals: Instrument and optimize runtime.
 Actions:
+
 - Add `PerformanceMonitor` with rAF delta history (rolling window 120 frames) computing average, min, P95.
 - Expose signals: `fps`, `frameTimeMs`, `isFrameBudgetBreached`, `drawCallCount` (if accessible), `lodLevel`.
 - Introduce dynamic LOD decision: degrade non-primary elements’ geometry when fps < targetFrameRate * 0.85 for sustained N frames.
@@ -119,6 +124,7 @@ Exit Criteria: Demonstrated LOD downgrade under artificial perf stress; metrics 
 
 Goals: Remove transitional artifacts.
 Actions:
+
 - Remove `HybridUIAdapter` and update any lingering imports.
 - Deprecate any config fields superseded by managers.
 - Produce updated diagrams + README excerpts.
@@ -128,6 +134,7 @@ Exit Criteria: No deprecated symbols referenced in app code; docs updated.
 
 Goals: Achieve reliability & coverage.
 Actions:
+
 - Unit tests: managers, builders (happy path + invalid inputs), service orchestration.
 - Integration test: register N elements, assert layout transforms snapshot.
 - Performance regression harness: synthetic 100 element load to ensure <= target baseline frame budget.
@@ -135,8 +142,9 @@ Actions:
 Exit Criteria: >80% line & branch coverage for hybrid module; green CI with perf harness thresholds.
 
 ---
+
 ## 6. Workstream Breakdown & Ownership
- 
+
 | Workstream | Primary Artifacts | Dependencies | Est. Effort |
 |------------|------------------|--------------|-------------|
 | Three.js Audit | HYBRID_UI_THREE_AUDIT.md | Phase 1 start | 0.5d |
@@ -151,8 +159,9 @@ Exit Criteria: >80% line & branch coverage for hybrid module; green CI with perf
 | Testing & Hardening | Jest specs + perf harness | All prior | 1.5d |
 
 ---
+
 ## 7. Risk Matrix & Mitigations
- 
+
 | Risk | Impact | Likelihood | Mitigation |
 |------|--------|-----------|------------|
 | Hidden direct Three.js usage resurfaces | Breaks abstraction | Medium | Comprehensive audit & enforce ESLint rule banning external three imports outside module |
@@ -162,6 +171,7 @@ Exit Criteria: >80% line & branch coverage for hybrid module; green CI with perf
 | Manager extraction churn | Refactor fatigue | Medium | Keep public facade stable; incremental PRs per manager |
 
 ---
+
 ## 8. Definition of Done (Full Migration)
 
 Zero direct `three` imports in feature code.
@@ -177,7 +187,7 @@ Zero direct `three` imports in feature code.
 ---
 
 ## 9. Immediate Next Actions (Phase 1 Kickoff)
- 
+
 1. Implement audit script / grep and create `HYBRID_UI_THREE_AUDIT.md` skeleton.
 
 2. Add an ESLint rule override (temporary) to flag disallowed `three` imports outside angular-hybrid-ui.
@@ -189,7 +199,7 @@ Zero direct `three` imports in feature code.
 ---
 
 ## 10. Appendix: Mapping Legacy to New API
- 
+
 | Legacy Concept | Old Pattern | New Pattern |
 |----------------|------------|-------------|
 | Create element | manual mesh + add() | `createCardConfig()` + `hybridUI.addElement()` |
