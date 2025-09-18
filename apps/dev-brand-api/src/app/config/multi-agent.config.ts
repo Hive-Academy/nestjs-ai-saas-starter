@@ -1,15 +1,11 @@
 import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agent';
 
-// Import showcase tools for explicit registration
-import { ShowcaseAnalysisTools } from '../showcase/tools/showcase-analysis.tools';
-import { ShowcaseIntegrationTools } from '../showcase/tools/showcase-integration.tools';
-
-// Import existing showcase agents for explicit registration
-import { AnalysisShowcaseAgent } from '../showcase/agents/analysis-showcase.agent';
-import { ContentShowcaseAgent } from '../showcase/agents/content-showcase.agent';
-import { ResearchShowcaseAgent } from '../showcase/agents/research-showcase.agent';
-
-// Import business agents and workflows for unified registration
+// Post-migration tool & agent imports (showcase module fully deprecated)
+import { DocumentProcessingTools } from '../business-workflows/core/tools/document-processing.tools';
+import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
+import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from '../business-workflows/agents/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer.agent';
 import { CustomerSupportAgent } from '../business-workflows/agents/customer-support.agent';
 import { EnhancedSupportWorkflow } from '../business-workflows/workflows/enhanced-support.workflow';
 
@@ -68,23 +64,18 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
 
   return {
     // Explicit tool registration (replaces discovery-based registration)
-    tools: [ShowcaseAnalysisTools, ShowcaseIntegrationTools],
+    tools: [DocumentProcessingTools, WebResearchTools],
 
     // Explicit agent registration (replaces discovery-based registration)
     agents: [
-      // Showcase agents
-      AnalysisShowcaseAgent,
-      ContentShowcaseAgent,
-      ResearchShowcaseAgent,
-
-      // Business agents
+      PersonalBrandStrategistAgent,
+      ContentCreatorAgent,
+      GitHubCodeAnalyzerAgent,
       CustomerSupportAgent,
     ],
 
     // Workflow registration - Multi-agent orchestration workflows only
-    workflows: [
-      EnhancedSupportWorkflow, // Showcases multi-agent coordination
-    ],
+    workflows: [EnhancedSupportWorkflow],
 
     // Simple and consistent LLM configuration
     defaultLlm: {

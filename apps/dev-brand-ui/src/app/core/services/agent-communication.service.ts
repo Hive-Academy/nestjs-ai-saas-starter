@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map, catchError, of } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketService } from './websocket.service';
 import {
@@ -771,7 +772,7 @@ export class AgentCommunicationService {
 
           // Update agent states with backend data
           const agentsMap: Record<string, AgentState> = {};
-          response.data.forEach((agent) => {
+          response.data.forEach((agent: any) => {
             agentsMap[agent.id] = agent;
           });
 

@@ -6,6 +6,7 @@ import type { StreamingModuleOptions } from '../streaming.module';
  */
 export interface ResolvedStreamingRuntimeConfig
   extends Required<StreamingModuleOptions> {
+  strictNaming: boolean; // resolved flag (default false)
   tokenDefaults: {
     batchSize: number;
     flushInterval: number;
@@ -51,6 +52,7 @@ export function getStreamingConfigWithDefaults(): ResolvedStreamingRuntimeConfig
   const config = getStreamingConfig();
 
   return {
+    strictNaming: config.strictNaming ?? false,
     websocket: {
       enabled: config.websocket?.enabled ?? true,
       port: config.websocket?.port ?? 3000,

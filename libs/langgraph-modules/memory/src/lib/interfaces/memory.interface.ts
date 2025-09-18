@@ -83,6 +83,21 @@ export interface MemoryConfig {
   readonly neo4j?: {
     readonly database?: string;
   };
+  readonly limits?: {
+    readonly countAccuracyLimit?: number; // Default: 1000
+    readonly memoryContentLimit?: number; // Default: 1000 characters
+    readonly relationshipQueryLimit?: number; // Default: 10
+    readonly batchOperationLimit?: number; // Default: 100
+    readonly searchResultLimit?: number; // Default: 100
+  };
+  readonly semanticRelationships?: {
+    readonly enabled?: boolean; // Default: true
+    readonly strategy?: 'word_matching' | 'vector_similarity' | 'hybrid'; // Default: 'hybrid'
+    readonly similarityThreshold?: number; // Default: 0.7 for vector similarity
+    readonly minCommonWords?: number; // Default: 2 for word matching
+    readonly requireApoc?: boolean; // Default: false (fallback without APOC)
+    readonly maxRelationshipsPerMemory?: number; // Default: 5
+  };
 }
 
 export interface MemoryRetentionPolicy {
@@ -119,6 +134,8 @@ export interface MemoryStats {
   readonly averageSearchTime: number;
   readonly summarizationCount: number;
   readonly cacheHitRate: number;
+  readonly lastUpdated?: string;
+  readonly error?: string;
 }
 
 // User patterns and behavior

@@ -12,6 +12,10 @@ The **@hive-academy/langgraph-hitl** (Human-In-The-Loop) module provides sophist
 - **Confidence Evaluation** - AI confidence scoring to determine when human approval is needed
 - **Timeout & Fallback Handling** - Robust timeout management with configurable fallback strategies
 - **Feedback Processing** - Human feedback integration to improve AI decision-making
+- **🚀 DYNAMIC USER INTERRUPTION** - Real-time user interruption during agent execution
+- **🔄 WORKFLOW PAUSE/RESUME** - True workflow pause and resume with user input injection
+- **📡 REAL-TIME STREAMING** - WebSocket integration for live user interaction
+- **💾 PERSISTENT STORAGE** - Full audit trail with Neo4j adapter support
 
 ## Quick Start
 
@@ -75,6 +79,290 @@ cancelApproval(requestId: string, reason?: string): Promise<void>
 
 // Get pending approvals for user
 getPendingApprovals(userId: string): Promise<HumanApprovalRequest[]>
+
+// 🚀 NEW: Dynamic User Interruption Methods
+requestUserInterruption(context: InterruptionContext): Promise<string>
+handleUserInterruptionResponse(response: UserInterruptionResponse): Promise<InterruptionResult>
+getActiveUserInterruptions(executionId: string): Promise<readonly UserInterruption[]>
+cancelUserInterruption(interruptionId: string): Promise<boolean>
+interruptAgentWithQuestion(executionId: string, nodeId: string, question: string): Promise<string>
+requestClarification(executionId: string, nodeId: string, clarificationRequest: string): Promise<string>
+```
+
+## 🚀 Dynamic User Interruption
+
+**NEW FEATURE**: Real-time user interruption during agent execution with workflow pause/resume capabilities.
+
+### Overview
+
+The Dynamic User Interruption system allows users to:
+
+- **Interrupt agents mid-execution** with questions or clarifications
+- **Inject dynamic input** during workflow processing
+- **Pause and resume workflows** with user context preservation
+- **Real-time WebSocket communication** for instant feedback
+
+### Key Components
+
+- **`IUserInterruptionService`** - Core interruption interface
+- **`IUserInterruptionStorageService`** - Persistent storage for audit trails
+- **WebSocket Integration** - Real-time bidirectional communication
+- **Workflow Manager Integration** - True pause/resume capabilities
+
+### Basic Usage Example
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
+
+@Injectable()
+export class CustomerSupportService {
+  constructor(private readonly hitlService: HumanApprovalService) {}
+
+  async handleUserInterruption(executionId: string, userQuestion: string): Promise<string> {
+    // User interrupts agent during execution
+    const interruptionId = await this.hitlService.interruptAgentWithQuestion(
+      executionId,
+      'current', // current node
+      userQuestion
+    );
+
+    console.log(`User interrupted execution ${executionId} with question: ${userQuestion}`);
+    return interruptionId;
+  }
+
+  async processUserResponse(interruptionId: string, userResponse: string): Promise<boolean> {
+    // Process user's response to interruption
+    const result = await this.hitlService.handleUserInterruptionResponse({
+      interruptionId,
+      response: userResponse,
+      continueExecution: true,
+      timestamp: new Date(),
+    });
+
+    return result.success && result.shouldContinue;
+  }
+}
+```
+
+### Advanced Interruption Workflow
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
+import { HumanApprovalService, InterruptionType } from '@hive-academy/langgraph-hitl';
+
+@Injectable()
+export class AdvancedInterruptionService {
+  constructor(private readonly hitlService: HumanApprovalService, private readonly workflowManager: WorkflowManagerService) {}
+
+  async handleComplexInterruption(
+    executionId: string,
+    nodeId: string,
+    userInput: string,
+    interruptionType: InterruptionType = InterruptionType.QUESTION
+  ): Promise<{
+    interruptionId: string;
+    workflowPaused: boolean;
+    estimatedResumeTime?: Date;
+  }> {
+    // Step 1: Create interruption request
+    const interruptionId = await this.hitlService.requestUserInterruption({
+      executionId,
+      nodeId,
+      type: interruptionType,
+      message: userInput,
+      metadata: {
+        timestamp: new Date(),
+        urgency: this.calculateUrgency(userInput),
+        source: 'user_interface',
+      },
+    });
+
+    // Step 2: Pause workflow to prevent further execution
+    const workflowPaused = await this.workflowManager.pauseWorkflow(executionId, `User interruption: ${interruptionType}`);
+
+    // Step 3: Set up timeout for automatic resumption
+    const estimatedResumeTime = new Date(Date.now() + 300000); // 5 minutes
+
+    return {
+      interruptionId,
+      workflowPaused,
+      estimatedResumeTime,
+    };
+  }
+
+  async resumeWithUserInput(executionId: string, interruptionId: string, userResponse: string): Promise<{ resumed: boolean; newState?: any }> {
+    // Step 1: Process interruption response
+    const interruptionResult = await this.hitlService.handleUserInterruptionResponse({
+      interruptionId,
+      response: userResponse,
+      continueExecution: true,
+      timestamp: new Date(),
+      metadata: {
+        responseProcessedAt: new Date(),
+        responseLength: userResponse.length,
+      },
+    });
+
+    if (!interruptionResult.success) {
+      throw new Error(`Failed to process interruption response: ${interruptionResult.error}`);
+    }
+
+    // Step 2: Resume workflow with user input
+    const resumed = await this.workflowManager.resumeWorkflow(executionId, userResponse);
+
+    return {
+      resumed,
+      newState: interruptionResult.updatedState,
+    };
+  }
+
+  private calculateUrgency(userInput: string): 'low' | 'medium' | 'high' {
+    const urgentKeywords = ['urgent', 'critical', 'immediately', 'asap', 'emergency'];
+    const input = userInput.toLowerCase();
+
+    if (urgentKeywords.some((keyword) => input.includes(keyword))) {
+      return 'high';
+    }
+
+    return userInput.length > 100 ? 'medium' : 'low';
+  }
+}
+```
+
+### WebSocket Real-Time Integration
+
+```typescript
+// Frontend WebSocket client integration
+const socket = new WebSocket('ws://localhost:8080');
+
+socket.onopen = () => {
+  // Subscribe to execution updates
+  socket.send(
+    JSON.stringify({
+      type: 'subscribe_execution',
+      payload: { executionId: 'exec-123' },
+    })
+  );
+};
+
+// Handle interruption requests from agents
+socket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  switch (message.type) {
+    case 'interruption_request':
+      // Agent is requesting user input
+      showInterruptionDialog(message.data);
+      break;
+
+    case 'interruption_resolved':
+      // User response processed, workflow continuing
+      hideInterruptionDialog();
+      showWorkflowContinuing(message.data);
+      break;
+  }
+};
+
+// User clicks "Interrupt Agent" button
+function interruptAgent(question: string) {
+  socket.send(
+    JSON.stringify({
+      type: 'interrupt_agent',
+      payload: {
+        executionId: 'exec-123',
+        question: question,
+        userId: 'user-456',
+      },
+    })
+  );
+}
+
+// User responds to interruption
+function respondToInterruption(interruptionId: string, response: string) {
+  socket.send(
+    JSON.stringify({
+      type: 'respond_to_interruption',
+      payload: {
+        interruptionId,
+        response,
+        continueExecution: true,
+      },
+    })
+  );
+}
+```
+
+### Configuration with Interruption Storage
+
+```typescript
+// Application configuration with interruption storage
+import { HitlModule } from '@hive-academy/langgraph-hitl';
+import { Neo4jInterruptionStorageAdapter } from './adapters/hitl/neo4j-interruption-storage.adapter';
+
+@Module({
+  imports: [
+    HitlModule.forRoot({
+      enabled: true,
+      defaultTimeout: 300000,
+      confidenceThreshold: 0.8,
+
+      // Configure both storage adapters
+      adapters: {
+        storage: Neo4jHitlStorageAdapter, // Approval storage
+        interruptionStorage: Neo4jInterruptionStorageAdapter, // NEW: Interruption storage
+      },
+
+      // Interruption-specific configuration
+      interruption: {
+        enabled: true,
+        maxConcurrentInterruptions: 5,
+        defaultTimeoutMs: 300000, // 5 minutes
+        autoCleanupExpired: true,
+        enableAuditTrail: true,
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Interruption Types and Use Cases
+
+```typescript
+import { InterruptionType } from '@hive-academy/langgraph-hitl';
+
+// Different types of interruptions
+enum InterruptionType {
+  QUESTION = 'question', // User has a question
+  CLARIFICATION = 'clarification', // Agent needs clarification
+  INPUT_REQUEST = 'input_request', // Agent needs additional input
+  APPROVAL_REQUEST = 'approval_request', // Agent needs approval
+  CORRECTION = 'correction', // User wants to correct something
+}
+
+// Example usage scenarios
+async function handleDifferentInterruptions() {
+  // Scenario 1: User asks question during content generation
+  await hitlService.requestUserInterruption({
+    executionId: 'content-gen-123',
+    nodeId: 'writing-node',
+    type: InterruptionType.QUESTION,
+    message: 'Can you also include pricing information in this article?',
+  });
+
+  // Scenario 2: Agent requests clarification
+  await hitlService.requestClarification('analysis-456', 'data-processing', 'The dataset has conflicting date formats. Which format should I prioritize?');
+
+  // Scenario 3: User provides correction
+  await hitlService.requestUserInterruption({
+    executionId: 'report-789',
+    nodeId: 'formatting',
+    type: InterruptionType.CORRECTION,
+    message: 'Actually, focus on enterprise customers, not consumers',
+  });
+}
 ```
 
 ### Decorators - METHOD-LEVEL Usage

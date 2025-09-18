@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { BaseMessage } from '@langchain/core/messages';
 import { z } from 'zod';
+import * as crypto from 'crypto';
 import type {
   StateAnnotationConfig,
   StateAnnotation,
@@ -20,7 +21,10 @@ import type {
 @Injectable()
 export class StateTransformerService {
   private readonly logger = new Logger(StateTransformerService.name);
-  private readonly stateAnnotations = new Map<string, StateAnnotation<unknown>>();
+  private readonly stateAnnotations = new Map<
+    string,
+    StateAnnotation<unknown>
+  >();
   private readonly stateValidators = new Map<string, z.ZodSchema>();
   private readonly stateReducers = new Map<string, ReducerFunction>();
   private readonly stateTransformers = new Map<
@@ -160,7 +164,8 @@ export class StateTransformerService {
         const initialState = {} as T;
         Object.entries(allChannels).forEach(([key, channelDef]) => {
           if (channelDef.default) {
-            (initialState as Record<string, unknown>)[key] = channelDef.default();
+            (initialState as Record<string, unknown>)[key] =
+              channelDef.default();
           }
         });
         return initialState;
@@ -188,7 +193,10 @@ export class StateTransformerService {
     };
 
     // Store the annotation (type cast for storage compatibility)
-    this.stateAnnotations.set(config.name, stateAnnotation as StateAnnotation<unknown>);
+    this.stateAnnotations.set(
+      config.name,
+      stateAnnotation as StateAnnotation<unknown>
+    );
 
     this.logger.log(
       `State annotation created: ${config.name} with ${
@@ -322,9 +330,9 @@ export class StateTransformerService {
             value !== null &&
             !Array.isArray(currentValue)
           ) {
-            (result as Record<string, unknown>)[key] = { 
-              ...(currentValue as Record<string, unknown>), 
-              ...(value as Record<string, unknown>) 
+            (result as Record<string, unknown>)[key] = {
+              ...(currentValue as Record<string, unknown>),
+              ...(value as Record<string, unknown>),
             };
           } else {
             (result as Record<string, unknown>)[key] = value;
@@ -341,11 +349,16 @@ export class StateTransformerService {
 
     // Validate merged result if requested
     if (options.validate) {
-      // This would require the schema name, which we don't have here
-      // In a real implementation, we might need to pass the schema or annotation name
-      this.logger.debug(
-        'Validation requested but no schema provided for merged state'
-      );
+      const validationResult = this.validateMergedState(result, options);
+      if (!validationResult.isValid) {
+        this.logger.error('State validation failed:', validationResult.errors);
+        throw new Error(
+          `State validation failed: ${
+            validationResult.errors?.join(', ') || 'Unknown validation error'
+          }`
+        );
+      }
+      this.logger.debug('State validation passed');
     }
 
     this.logger.debug('State merge completed');
@@ -359,7 +372,10 @@ export class StateTransformerService {
     name: string,
     transformer: StateTransformer<TFrom, TTo>
   ): void {
-    this.stateTransformers.set(name, transformer as StateTransformer<unknown, unknown>);
+    this.stateTransformers.set(
+      name,
+      transformer as StateTransformer<unknown, unknown>
+    );
     this.logger.log(`Registered state transformer: ${name}`);
   }
 
@@ -369,7 +385,9 @@ export class StateTransformerService {
   public getStateTransformer<TFrom, TTo>(
     name: string
   ): StateTransformer<TFrom, TTo> | undefined {
-    return this.stateTransformers.get(name) as StateTransformer<TFrom, TTo> | undefined;
+    return this.stateTransformers.get(name) as
+      | StateTransformer<TFrom, TTo>
+      | undefined;
   }
 
   /**
@@ -379,9 +397,7 @@ export class StateTransformerService {
     overrides: Partial<EnhancedWorkflowState> = {}
   ): EnhancedWorkflowState {
     const defaultState: EnhancedWorkflowState = {
-      executionId: `exec_${Date.now()}_${Math.random()
-        .toString(36)
-        .substring(2, 11)}`,
+      executionId: this.generateSecureId('exec'),
       status: 'pending',
       completedNodes: [],
       confidence: 1.0,
@@ -430,5 +446,95 @@ export class StateTransformerService {
     this.stateReducers.clear();
     this.stateTransformers.clear();
     this.logger.log('All state annotations cleared');
+  }
+
+  /**
+   * Generate a cryptographically secure ID
+   */
+  private generateSecureId(prefix: string): string {
+    const timestamp = Date.now();
+    const randomBytes = crypto.randomBytes(8).toString('hex');
+    const hash = crypto
+      .createHash('sha256')
+      .update(`${timestamp}-${randomBytes}`)
+      .digest('hex')
+      .substring(0, 12);
+    return `${prefix}_${timestamp}_${hash}`;
+  }
+
+  /**
+   * Validate the merged state based on options
+   */
+  private validateMergedState(
+    state: any,
+    options: StateMergeOptions
+  ): { isValid: boolean; errors?: string[] } {
+    const errors: string[] = [];
+
+    // Validate required fields based on schema if provided
+    if (options.schemaName) {
+      const validator = this.stateValidators.get(options.schemaName);
+      if (validator) {
+        try {
+          validator.parse(state);
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            errors.push(
+              ...error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
+            );
+          }
+        }
+      }
+    }
+
+    // Validate structure integrity
+    if (!state || typeof state !== 'object') {
+      errors.push('State must be a non-null object');
+    }
+
+    // Validate channel values if present
+    if (
+      state.channel_values !== undefined &&
+      typeof state.channel_values !== 'object'
+    ) {
+      errors.push('channel_values must be an object');
+    }
+
+    // Custom validation based on annotation
+    if (options.annotationName) {
+      const annotation = this.stateAnnotations.get(options.annotationName);
+      if (annotation && annotation.validate) {
+        const annotationResult = annotation.validate(state);
+        if (!annotationResult.isValid) {
+          errors.push(
+            ...(annotationResult.errors || ['Annotation validation failed'])
+          );
+        }
+      }
+    }
+
+    // Validate timestamp fields
+    if (state.ts && !this.isValidTimestamp(state.ts)) {
+      errors.push('Invalid timestamp format');
+    }
+
+    // Validate version if present
+    if (state.v !== undefined && (typeof state.v !== 'number' || state.v < 0)) {
+      errors.push('Version must be a non-negative number');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  }
+
+  /**
+   * Check if a timestamp is valid
+   */
+  private isValidTimestamp(ts: any): boolean {
+    if (typeof ts !== 'string') return false;
+    const date = new Date(ts);
+    return !isNaN(date.getTime());
   }
 }

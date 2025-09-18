@@ -12,7 +12,10 @@ import { MultiAgentModuleInitializer } from './services/multi-agent-module-initi
 // Workflow services (internal infrastructure)
 import { WorkflowRegistryService } from './services/workflow-registry.service';
 import { WorkflowExecutionService } from './services/workflow-execution.service';
+import { WorkflowCheckpointService } from './services/workflow-checkpoint.service';
 import { WorkflowManagerService } from './services/workflow-manager.service';
+import { WorkflowInstanceService } from './services/workflow-instance.service';
+import { WorkflowCanonicalIdService } from './services/workflow-canonical-id.service';
 // Tool services
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
@@ -26,12 +29,6 @@ import {
 import { ToolBuilderService } from './tools/tool-builder.service';
 import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
-import {
-  CHECKPOINT_ADAPTER_TOKEN,
-  NoOpCheckpointAdapter,
-  STREAMING_SERVICE_TOKEN,
-  NoOpStreamingService,
-} from '@hive-academy/langgraph-core';
 import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 
 /**
@@ -53,16 +50,8 @@ export class MultiAgentModule {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
-      // Checkpoint adapter provider - either provided or no-op
-      {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
-        useValue: options.checkpointAdapter || new NoOpCheckpointAdapter(),
-      },
-      // Streaming adapter provider - either provided or no-op
-      {
-        provide: STREAMING_SERVICE_TOKEN,
-        useValue: options.streamingAdapter || new NoOpStreamingService(),
-      },
+      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
       LlmProviderService,
@@ -78,6 +67,9 @@ export class MultiAgentModule {
       AgentRegistrationService,
       // Workflow services (internal infrastructure)
       WorkflowRegistryService,
+      WorkflowCheckpointService,
+      WorkflowInstanceService,
+      WorkflowCanonicalIdService,
       WorkflowExecutionService,
       WorkflowManagerService,
       // Tool service aliases
@@ -117,9 +109,6 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // DI tokens
-        CHECKPOINT_ADAPTER_TOKEN,
-        STREAMING_SERVICE_TOKEN,
       ],
       global: true,
     };
@@ -141,24 +130,8 @@ export class MultiAgentModule {
         },
         inject: options.inject || [],
       },
-      // Checkpoint adapter provider - async factory
-      {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
-        useFactory: async (...args: unknown[]) => {
-          const moduleOptions = await options.useFactory!(...args);
-          return moduleOptions.checkpointAdapter || new NoOpCheckpointAdapter();
-        },
-        inject: options.inject || [],
-      },
-      // Streaming adapter provider - async factory
-      {
-        provide: STREAMING_SERVICE_TOKEN,
-        useFactory: async (...args: unknown[]) => {
-          const moduleOptions = await options.useFactory!(...args);
-          return moduleOptions.streamingAdapter || new NoOpStreamingService();
-        },
-        inject: options.inject || [],
-      },
+      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
       LlmProviderService,
@@ -174,6 +147,9 @@ export class MultiAgentModule {
       AgentRegistrationService,
       // Workflow services (internal infrastructure)
       WorkflowRegistryService,
+      WorkflowCheckpointService,
+      WorkflowInstanceService,
+      WorkflowCanonicalIdService,
       WorkflowExecutionService,
       WorkflowManagerService,
       // Tool service aliases
@@ -188,15 +164,9 @@ export class MultiAgentModule {
       MultiAgentModuleInitializer,
     ];
 
-    const imports = [EventEmitterModule.forRoot()];
-
-    if (options.imports) {
-      imports.push(...options.imports);
-    }
-
     return {
       module: MultiAgentModule,
-      imports,
+      imports: [EventEmitterModule.forRoot()],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -219,9 +189,6 @@ export class MultiAgentModule {
         AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // DI tokens
-        CHECKPOINT_ADAPTER_TOKEN,
-        STREAMING_SERVICE_TOKEN,
       ],
       global: true,
     };

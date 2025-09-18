@@ -3,11 +3,27 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Customer Support System Components
 import { CustomerSupportAgent } from './agents/customer-support.agent';
+import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer.agent';
+import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from './agents/content-creator.agent';
 import { CustomerSupportWorkflow } from './workflows/customer-support.workflow';
 import { EnhancedSupportWorkflow } from './workflows/enhanced-support.workflow';
 import { CustomerSupportController } from './controllers/customer-support.controller';
 import { BusinessMetricsService } from './services/business-metrics.service';
 import { KnowledgeBaseService } from './services/knowledge-base.service';
+import { CustomerSupportWorkflowService } from './services/customer-support-workflow.service';
+import { TicketManagementService } from './services/ticket-management.service';
+import { UserInterruptionManagementService } from './services/user-interruption-management.service';
+import { MetricsAnalyticsService } from './services/metrics-analytics.service';
+import { KnowledgeBaseManagementService } from './services/knowledge-base-management.service';
+import { AgentRegistryService } from './core/agent-registry.service';
+import { GithubActivityIntegrationService } from './core/integrations/github-activity.integration';
+import { ContentAnalysisService } from './core/analysis/content-analysis.service';
+import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
+import { DocumentProcessingTools } from './core/tools/document-processing.tools';
+import { WebResearchTools } from './core/tools/web-research.tools';
+import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
+// Showcase module fully removed; above imports are consolidated production equivalents
 
 /**
  * Business Workflows Module
@@ -18,18 +34,38 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
   imports: [
     // Only import ConfigModule for configuration access
     ConfigModule,
+  // HITL providers are now global via HitlModule.forRoot in AppModule; no local import needed
   ],
   providers: [
-    // Core AI Agents - RE-ENABLED AFTER DI METADATA FIX
+    // Core AI Agents
     CustomerSupportAgent,
+    GitHubCodeAnalyzerAgent,
+    PersonalBrandStrategistAgent,
+    ContentCreatorAgent,
 
-    // Workflow Orchestrators - Both patterns supported
-    CustomerSupportWorkflow, // Functional-API pattern (@Task decorators)
-    EnhancedSupportWorkflow, // Multi-agent orchestration pattern
+    // Workflow Orchestrators
+    CustomerSupportWorkflow,
+    EnhancedSupportWorkflow,
 
     // Business Services
     BusinessMetricsService,
     KnowledgeBaseService,
+    CustomerSupportWorkflowService,
+
+    // Controller Delegate Services - Added for SRP compliance
+    TicketManagementService,
+    UserInterruptionManagementService,
+    MetricsAnalyticsService,
+    KnowledgeBaseManagementService,
+    AgentRegistryService,
+    // Migrated services/tools formerly under showcase
+    GithubActivityIntegrationService,
+    ContentAnalysisService,
+    PersonalBrandMemoryService,
+    DocumentProcessingTools,
+    WebResearchTools,
+  // Missing provider causing DI failure for GitHubCodeAnalyzerAgent
+  GitHubIntegrationTools,
 
     // Configuration providers using proper config pattern
     {
@@ -90,6 +126,7 @@ import { KnowledgeBaseService } from './services/knowledge-base.service';
     EnhancedSupportWorkflow, // Multi-agent orchestration pattern
     BusinessMetricsService,
     KnowledgeBaseService,
+    CustomerSupportWorkflowService,
   ],
 })
 export class BusinessWorkflowsModule {

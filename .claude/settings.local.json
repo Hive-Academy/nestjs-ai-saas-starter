@@ -44,7 +44,9 @@
       "Bash(npm run update:libs:*)",
       "Read(\\/**)",
       "Bash(curl:*)",
-      "mcp__nx-mcp__nx_workspace_path"
+      "mcp__nx-mcp__nx_workspace_path",
+      "WebFetch(domain:langchain-ai.github.io)",
+      "mcp__fetch__fetch"
     ],
     "deny": [],
     "ask": [],
@@ -57,7 +59,9 @@
     "nx-mcp",
     "angular-cli",
     "neo4j-graph-data-modeling",
-    "chroma"
+    "chroma",
+    "filesystem",
+    "fetch"
   ],
   "statusLine": {
     "type": "command",

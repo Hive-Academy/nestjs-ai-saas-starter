@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { FunctionalApiModule } from './functional-api.module';
 import { FunctionalWorkflowService } from './services/functional-workflow.service';
 import {
-  CHECKPOINT_ADAPTER_TOKEN,
+  ICheckpointAdapter,
   NoOpCheckpointAdapter,
 } from '@hive-academy/langgraph-core';
 
@@ -16,7 +16,7 @@ describe('FunctionalApiModule', () => {
       const workflowService = moduleRef.get<FunctionalWorkflowService>(
         FunctionalWorkflowService
       );
-      const checkpointAdapter = moduleRef.get(CHECKPOINT_ADAPTER_TOKEN);
+      const checkpointAdapter = moduleRef.get('ICheckpointAdapter');
 
       expect(workflowService).toBeDefined();
       expect(checkpointAdapter).toBeInstanceOf(NoOpCheckpointAdapter);
@@ -36,7 +36,7 @@ describe('FunctionalApiModule', () => {
       const workflowService = moduleRef.get<FunctionalWorkflowService>(
         FunctionalWorkflowService
       );
-      const checkpointAdapter = moduleRef.get(CHECKPOINT_ADAPTER_TOKEN);
+      const checkpointAdapter = moduleRef.get('ICheckpointAdapter');
 
       expect(workflowService).toBeDefined();
       expect(checkpointAdapter).toBe(customAdapter);
@@ -61,7 +61,7 @@ describe('FunctionalApiModule', () => {
       const workflowService = moduleRef.get<FunctionalWorkflowService>(
         FunctionalWorkflowService
       );
-      const checkpointAdapter = moduleRef.get(CHECKPOINT_ADAPTER_TOKEN);
+      const checkpointAdapter = moduleRef.get('ICheckpointAdapter');
 
       expect(workflowService).toBeDefined();
       expect(checkpointAdapter).toBe(customAdapter);

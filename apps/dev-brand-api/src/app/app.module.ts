@@ -2,39 +2,41 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Core library imports
+import { MemoryModule } from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
-import { MemoryModule } from '@hive-academy/langgraph-memory';
 
 // Adapters - Keep these as they're essential
-import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
+import {
+  ChromaVectorAdapter,
+  Neo4jGraphAdapter,
+  Neo4jHitlStorageAdapter,
+  Neo4jInterruptionStorageAdapter,
+} from './adapters';
 
 // LangGraph modules with proper streaming integration
-import {
-  LanggraphModulesCheckpointModule,
-  CheckpointManagerService,
-  CheckpointManagerAdapter,
-} from '@hive-academy/langgraph-checkpoint';
-import {
-  StreamingModule,
-  StreamingServiceAdapter,
-} from '@hive-academy/langgraph-streaming';
-import { HitlModule } from '@hive-academy/langgraph-hitl';
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { HitlModule } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
+import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
+import {
+  WorkflowEngineModule,
+  WorkflowEngineModuleOptions,
+} from '@hive-academy/langgraph-workflow-engine';
 
-// Configuration imports
-import { getChromaDBConfig } from './config/chromadb.config';
-import { getNeo4jConfig } from './config/neo4j.config';
 import { getCheckpointConfig } from './config/checkpoint.config';
-import { getStreamingConfig } from './config/streaming.config';
+import { getChromaDBConfig } from './config/chromadb.config';
+import { getFunctionalApiConfig } from './config/functional-api.config';
 import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
-import { getFunctionalApiConfig } from './config/functional-api.config';
-import { getMultiAgentConfig } from './config/multi-agent.config';
 import { getMonitoringConfig } from './config/monitoring.config';
+import { getMultiAgentConfig } from './config/multi-agent.config';
+import { getNeo4jConfig } from './config/neo4j.config';
+import { getStreamingConfig } from './config/streaming.config';
+import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
@@ -43,7 +45,15 @@ import { HealthController } from './controllers/health.controller';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
-import { ShowcaseModule } from './showcase/showcase.module';
+
+// App streaming manager
+import { AppStreamingManager } from './services/app-streaming-manager.service';
+
+// Core interface for adapter pattern
+import {
+  ICheckpointAdapter,
+  IStreamingService,
+} from '@hive-academy/langgraph-core';
 
 @Module({
   imports: [
@@ -75,10 +85,12 @@ import { ShowcaseModule } from './showcase/showcase.module';
       },
     }),
 
-    // Checkpoint module
+    // Checkpoint module with new adapter pattern
     LanggraphModulesCheckpointModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: async () => getCheckpointConfig(),
+      useFactory: async () => {
+        const config = await getCheckpointConfig();
+        return config;
+      },
     }),
 
     // PROPERLY CONFIGURED STREAMING MODULE
@@ -97,43 +109,80 @@ import { ShowcaseModule } from './showcase/showcase.module';
       },
     }),
 
-    // HITL module
-    HitlModule.forRoot(getHitlConfig()),
-
-    // Workflow engine WITH STREAMING
-    WorkflowEngineModule.forRootAsync({
-      useFactory: async (streamingAdapter: any) => ({
-        ...getWorkflowEngineConfig(),
-        streamingAdapter, // Enable streaming!
+    // HITL module WITH CHECKPOINT INTEGRATION - adapter injection
+    HitlModule.forRootAsync({
+      useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+        ...getHitlConfig(),
+        checkpointAdapter,
+        adapters: {
+          storage: Neo4jHitlStorageAdapter,
+          interruptionStorage: Neo4jInterruptionStorageAdapter,
+        },
       }),
-      inject: [StreamingServiceAdapter],
+      inject: ['ICheckpointAdapter'],
     }),
 
-    // Multi-agent module WITH STREAMING
+    // Workflow engine WITH STREAMING AND CHECKPOINT - adapter injection
+    WorkflowEngineModule.forRootAsync({
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter
+      ): Promise<WorkflowEngineModuleOptions> => {
+        return {
+          ...getWorkflowEngineConfig(),
+          streamingAdapter,
+          checkpointAdapter,
+        };
+      },
+      inject: ['IStreamingService', 'ICheckpointAdapter'],
+    }),
+
+    // Multi-agent module WITH STREAMING - adapter injection
     MultiAgentModule.forRootAsync({
       useFactory: async (
-        streamingAdapter: StreamingServiceAdapter,
-        checkpointManager: CheckpointManagerService
-      ) => ({
-        ...getMultiAgentConfig(),
-        streamingAdapter, // Enable streaming!
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
-      inject: [StreamingServiceAdapter, CheckpointManagerService],
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter
+      ) => {
+        return {
+          ...getMultiAgentConfig(),
+          streamingAdapter,
+          checkpointAdapter,
+        };
+      },
+      inject: ['IStreamingService', 'ICheckpointAdapter'],
     }),
 
-    // Functional API with checkpoint AND STREAMING
+    // Functional API with checkpoint AND STREAMING - adapter injection
     FunctionalApiModule.forRootAsync({
-      useFactory: async (streamingAdapter: any, checkpointManager: any) => ({
-        ...getFunctionalApiConfig(),
-        streamingAdapter, // Enable streaming!
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
-      inject: [StreamingServiceAdapter, CheckpointManagerService],
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter
+      ): Promise<any> => {
+        return {
+          ...getFunctionalApiConfig(),
+          streamingAdapter,
+          checkpointAdapter,
+        };
+      },
+      inject: ['IStreamingService', 'ICheckpointAdapter'], // Inject adapter via string token
     }),
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
+
+    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT - adapter injection
+    ...(process.env.NODE_ENV !== 'production' ||
+    process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
+      ? [
+          TimeTravelModule.forRootAsync({
+            useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+              ...getTimeTravelConfig(),
+              checkpointAdapter,
+            }),
+            inject: ['ICheckpointAdapter'],
+          }),
+        ]
+      : []),
 
     // Health checks
     TerminusModule.forRoot({
@@ -143,14 +192,8 @@ import { ShowcaseModule } from './showcase/showcase.module';
 
     // Business modules
     BusinessWorkflowsModule,
-    ShowcaseModule,
   ],
-  controllers: [
-    HealthController,
-    // Business controllers will be added here
-  ],
-  providers: [
-    // Business services will be added here
-  ],
+  controllers: [HealthController],
+  providers: [AppStreamingManager],
 })
 export class AppModule {}

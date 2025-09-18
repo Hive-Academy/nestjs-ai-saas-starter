@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import { StreamingServiceAdapter } from '@hive-academy/langgraph-streaming';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 import {
   BusinessImpact,
   CustomerSupportMetrics,
@@ -16,7 +16,8 @@ import {
 export class BusinessMetricsService {
   constructor(
     private readonly neo4j: Neo4jService,
-    private readonly streaming: StreamingServiceAdapter
+    @Inject('IStreamingService')
+    private readonly streaming: IStreamingService
   ) {}
 
   /**
@@ -42,11 +43,11 @@ export class BusinessMetricsService {
         })
         MERGE (c:Customer {id: $customerId})
         CREATE (c)-[:HAD_SUPPORT]->(e)
-        
+
         WITH e, c
         MERGE (cat:Category {name: $category})
         CREATE (e)-[:BELONGS_TO]->(cat)
-        
+
         WITH e
         UNWIND $suggestedActions as action
         MERGE (a:Action {name: action})
@@ -93,34 +94,34 @@ export class BusinessMetricsService {
       const results = await this.neo4j.run(`
         MATCH (e:Execution {type: 'customer_support'})
         WHERE e.timestamp > datetime() - duration('${duration}')
-        
+
         OPTIONAL MATCH (e)<-[:HAD_SUPPORT]-(c:Customer)
-        
+
         WITH e, c,
              CASE WHEN e.success THEN 1 ELSE 0 END as successful,
              CASE WHEN e.escalated THEN 1 ELSE 0 END as escalated,
-             CASE WHEN c.tier = 'enterprise' THEN 500 
-                  WHEN c.tier = 'premium' THEN 100 
+             CASE WHEN c.tier = 'enterprise' THEN 500
+                  WHEN c.tier = 'premium' THEN 100
                   ELSE 20 END as customerValue
-        
-        RETURN 
+
+        RETURN
           avg(e.duration) as avgResolutionTime,
           count(e) as totalTickets,
           sum(successful) as resolvedTickets,
           sum(escalated) as escalations,
           avg(e.sentiment) as avgSentiment,
           avg(customerValue) as avgCustomerValue,
-          
+
           // Calculate cost savings (compared to human-only support)
-          sum(CASE WHEN e.success AND NOT e.escalated 
-                   THEN customerValue * 0.8 
+          sum(CASE WHEN e.success AND NOT e.escalated
+                   THEN customerValue * 0.8
                    ELSE 0 END) as estimatedCostSavings,
-                   
+
           // Performance by complexity
           avg(CASE WHEN e.complexity = 'simple' THEN e.duration END) as simpleAvgTime,
           avg(CASE WHEN e.complexity = 'moderate' THEN e.duration END) as moderateAvgTime,
           avg(CASE WHEN e.complexity = 'complex' THEN e.duration END) as complexAvgTime,
-          
+
           // Business impact metrics
           sum(CASE WHEN e.businessImpact = 'critical' THEN 1 ELSE 0 END) as criticalIssues,
           sum(CASE WHEN e.businessImpact = 'high' THEN 1 ELSE 0 END) as highImpactIssues
@@ -130,7 +131,7 @@ export class BusinessMetricsService {
         return this.getDefaultBusinessImpact();
       }
 
-      const record = results.records[0];
+      const record = results.records[0] as any;
       const avgResolutionTime =
         (record.get('avgResolutionTime') as number) || 0;
       const totalTickets = (record.get('totalTickets') as number) || 0;
@@ -168,23 +169,23 @@ export class BusinessMetricsService {
       const results = await this.neo4j.run(`
         MATCH (e:Execution {type: 'customer_support'})
         WHERE e.timestamp > datetime() - duration('P1D') // Last 24 hours
-        
+
         WITH e,
              CASE WHEN e.success THEN 1 ELSE 0 END as successful,
              CASE WHEN e.escalated THEN 1 ELSE 0 END as escalated,
              CASE WHEN e.requiresApproval THEN 0 ELSE 1 END as automated
-        
-        RETURN 
+
+        RETURN
           count(e) as totalTickets,
           sum(successful) as resolvedTickets,
           avg(e.duration) as avgResolutionTime,
           avg((e.sentiment + 1) * 2.5) as avgSatisfactionScore, // Convert -1,1 to 0,5 scale
           sum(escalated) as escalations,
           sum(automated) as automatedTickets,
-          
+
           // Response time calculation (first analysis completion)
-          avg(CASE WHEN e.metadata IS NOT NULL 
-                   THEN toInteger(replace(e.metadata, '.*"analysisCompletedAt":([0-9]+).*', '$1')) - 
+          avg(CASE WHEN e.metadata IS NOT NULL
+                   THEN toInteger(replace(e.metadata, '.*"analysisCompletedAt":([0-9]+).*', '$1')) -
                         toInteger(replace(e.metadata, '.*"initialProcessingTime":([0-9]+).*', '$1'))
                    ELSE null END) as avgResponseTime
       `);
@@ -193,7 +194,7 @@ export class BusinessMetricsService {
         return this.getDefaultMetrics();
       }
 
-      const record = results.records[0];
+      const record = results.records[0] as any;
       const totalTickets = (record.get('totalTickets') as number) || 0;
       const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
       const avgResolutionTime =
@@ -231,19 +232,24 @@ export class BusinessMetricsService {
       const results = await this.neo4j.run(`
         MATCH (e:Execution {type: 'customer_support'})
         WHERE e.timestamp > datetime() - duration('P7D')
-        
-        WITH e, 
+
+        WITH e,
              date(e.timestamp) as executionDate,
              (e.sentiment + 1) * 2.5 as satisfaction
-        
+
         WITH executionDate, avg(satisfaction) as dailySatisfaction
         ORDER BY executionDate
-        
+
         RETURN collect(dailySatisfaction) as trend
       `);
 
       const record = results?.records?.[0];
-      const trend = record?.get('trend') as number[];
+      const trend =
+        record && typeof (record as { get: (key: string) => unknown }).get === 'function'
+          ? ((record as { get: (key: string) => number[] }).get(
+              'trend'
+            ) as number[])
+          : undefined;
       if (results && results.records.length > 0 && trend) {
         return trend.map((score: number) => Math.round(score * 100) / 100);
       }
@@ -266,12 +272,12 @@ export class BusinessMetricsService {
       const results = await this.neo4j.run(
         `
         MATCH (c:Customer {id: $customerId})-[:HAD_SUPPORT]->(e:Execution {type: 'customer_support'})
-        
+
         WITH c, e,
              CASE WHEN e.success THEN 1 ELSE 0 END as successful,
              CASE WHEN e.escalated THEN 1 ELSE 0 END as escalated
-        
-        RETURN 
+
+        RETURN
           count(e) as totalTickets,
           sum(successful) as resolvedTickets,
           avg(e.duration) as avgResolutionTime,
@@ -285,7 +291,7 @@ export class BusinessMetricsService {
         return { totalTickets: 0, resolvedTickets: 0 };
       }
 
-      const record = results.records[0];
+      const record = results.records[0] as any;
       const totalTickets = (record.get('totalTickets') as number) || 0;
       const resolvedTickets = (record.get('resolvedTickets') as number) || 0;
       const avgResolutionTime =

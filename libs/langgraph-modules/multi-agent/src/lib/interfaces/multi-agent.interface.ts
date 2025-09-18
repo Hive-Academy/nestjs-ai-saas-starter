@@ -511,6 +511,25 @@ export interface WorkflowContext {
    * Multi-agent coordinator service
    */
   coordinator: any;
+
+  /**
+   * Pause context information
+   */
+  pauseContext?: {
+    pausedAt: Date;
+    reason?: string;
+    pausedBy?: string;
+    userInputRequested?: boolean;
+  };
+
+  /**
+   * Resume context information
+   */
+  resumeContext?: {
+    resumedAt: Date;
+    pauseDuration: number;
+    userInputProvided: boolean;
+  };
 }
 
 /**
@@ -633,6 +652,26 @@ export interface WorkflowInstance {
    * Last update timestamp
    */
   updatedAt: Date;
+
+  /**
+   * Pause timestamp
+   */
+  pausedAt?: Date;
+
+  /**
+   * Resume timestamp
+   */
+  resumedAt?: Date;
+
+  /**
+   * Current state
+   */
+  currentState?: any;
+
+  /**
+   * Instance metadata
+   */
+  metadata?: Record<string, any>;
 
   /**
    * Execution context
@@ -806,7 +845,6 @@ export interface MultiAgentModuleOptions {
  * Async configuration options for MultiAgentModule
  */
 export interface MultiAgentModuleAsyncOptions {
-  imports?: any[];
   useFactory?: (
     ...args: any[]
   ) => Promise<MultiAgentModuleOptions> | MultiAgentModuleOptions;

@@ -4,7 +4,7 @@ import {
   computed,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AgentState } from '../../../core/interfaces/agent-state.interface';
 
 export interface SelectedAgentData {
@@ -17,7 +17,7 @@ export interface SelectedAgentData {
  */
 @Component({
   selector: 'brand-agent-info-panel',
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (selectedAgent(); as selectedAgentData) {

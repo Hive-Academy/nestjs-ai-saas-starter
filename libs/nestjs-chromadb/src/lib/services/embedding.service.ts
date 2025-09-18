@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { EmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
-import type { EmbeddingServiceInterface, EmbeddingVector } from '../interfaces/embedding-service.interface';
+import type {
+  EmbeddingServiceInterface,
+  EmbeddingVector,
+} from '../interfaces/embedding-service.interface';
 import { EmbeddingProvider } from '../embeddings/base.embedding';
 import { OpenAIEmbeddingProvider } from '../embeddings/openai.embedding';
 import { HuggingFaceEmbeddingProvider } from '../embeddings/huggingface.embedding';
@@ -10,7 +13,7 @@ import {
   ChromaDBEmbeddingNotConfiguredError,
   ChromaDBConfigurationError,
 } from '../errors/chromadb.errors';
-import { ChromaDBErrorHandler } from '../utils/error.utils';
+import { ChromaDBErrorHandler, getErrorMessage } from '../utils/error.utils';
 
 /**
  * Embedding service that manages different embedding providers
@@ -25,14 +28,20 @@ export class EmbeddingService implements EmbeddingServiceInterface {
    */
   public initialize(config?: EmbeddingConfig): void {
     if (!config) {
-      this.logger.warn('No embedding provider configured');
-      return;
+      const errorMessage =
+        'Embedding provider configuration is required but not provided';
+      this.logger.error(errorMessage);
+      throw new ChromaDBEmbeddingNotConfiguredError(errorMessage);
     }
 
     try {
       this.provider = this.createProvider(config);
-      this.logger.log(`Initialized ${config.provider} embedding provider`);
+      this.logger.log(
+        `Successfully initialized ${config.provider} embedding provider`
+      );
     } catch (error) {
+      const errorMessage = `Failed to initialize ${config.provider} embedding provider`;
+      this.logger.error(errorMessage, { error: getErrorMessage(error) });
       throw ChromaDBErrorHandler.handleConfigurationError(
         error,
         'embedding.provider',
@@ -44,22 +53,43 @@ export class EmbeddingService implements EmbeddingServiceInterface {
   /**
    * Generate embeddings for texts
    */
-  public async embed(texts: readonly string[]): Promise<readonly EmbeddingVector[]> {
+  public async embed(
+    texts: readonly string[]
+  ): Promise<readonly EmbeddingVector[]> {
     if (!this.provider) {
       throw new ChromaDBEmbeddingNotConfiguredError();
     }
 
     if (texts.length === 0) {
+      this.logger.warn('Empty texts array provided to embedding service');
       return [];
     }
 
+    // Validate texts
+    const validTexts = texts.filter(
+      (text) => text && typeof text === 'string' && text.trim().length > 0
+    );
+    if (validTexts.length === 0) {
+      throw new ChromaDBEmbeddingNotConfiguredError(
+        'No valid text content provided for embedding generation'
+      );
+    }
+
+    if (validTexts.length !== texts.length) {
+      this.logger.warn(
+        `Filtered out ${
+          texts.length - validTexts.length
+        } invalid texts from embedding request`
+      );
+    }
+
     try {
-      return await this.provider.embed([...texts]);
+      return await this.provider.embed(validTexts);
     } catch (error) {
       throw ChromaDBErrorHandler.handleEmbeddingError(
         error,
         this.provider.name,
-        { textsCount: texts.length }
+        { textsCount: validTexts.length }
       );
     }
   }

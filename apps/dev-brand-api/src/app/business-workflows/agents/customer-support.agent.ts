@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Agent } from '@hive-academy/langgraph-multi-agent';
 import { StreamToken } from '@hive-academy/langgraph-streaming';
-import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 import type {
@@ -32,8 +31,7 @@ import type {
 export class CustomerSupportAgent {
   constructor(
     private readonly chromaService: ChromaDBService,
-    private readonly neo4jService: Neo4jService,
-    private readonly llmProvider: LlmProviderService
+    private readonly neo4jService: Neo4jService
   ) {}
 
   /**

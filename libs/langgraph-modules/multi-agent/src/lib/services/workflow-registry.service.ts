@@ -4,6 +4,7 @@ import {
   WorkflowProvider,
   WorkflowConfig,
 } from '../interfaces/multi-agent.interface';
+import { AgentRegistryService } from './agent-registry.service';
 
 /**
  * Workflow Registry Service
@@ -15,7 +16,7 @@ export class WorkflowRegistryService {
   private readonly workflows = new Map<string, WorkflowDefinition>();
   private readonly workflowProviders = new Map<string, WorkflowProvider>();
 
-  constructor() {
+  constructor(private readonly agentRegistry: AgentRegistryService) {
     this.logger.debug('WorkflowRegistryService initialized');
   }
 
@@ -250,6 +251,59 @@ export class WorkflowRegistryService {
         );
       }
     }
+  }
+
+  /**
+   * Get registered agents from agent registry
+   */
+  getRegisteredAgents(): Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    capabilities?: string[];
+    isActive: boolean;
+    lastActiveTime: Date;
+    currentTools: string[];
+    personality?: {
+      color: string;
+      description: string;
+    };
+  }> {
+    const agents = this.agentRegistry.getAllAgents();
+    
+    return agents.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      type: agent.constructor?.name || 'Unknown',
+      status: 'idle', // TODO: Track actual agent status
+      capabilities: agent.capabilities || [],
+      isActive: false, // TODO: Track actual agent activity
+      lastActiveTime: new Date(),
+      currentTools: Array.isArray(agent.metadata?.tools) ? agent.metadata.tools : [],
+      personality: {
+        color: this.getAgentColor(agent.id),
+        description: agent.description,
+      },
+    }));
+  }
+
+  /**
+   * Get a color for an agent based on its ID
+   */
+  private getAgentColor(agentId: string): string {
+    const colors = [
+      '#16A085', '#E74C3C', '#9B59B6', '#3498DB', 
+      '#F39C12', '#1ABC9C', '#E67E22', '#34495E'
+    ];
+    
+    // Simple hash to get consistent color for same agent
+    let hash = 0;
+    for (let i = 0; i < agentId.length; i++) {
+      hash = ((hash << 5) - hash + agentId.charCodeAt(i)) & 0xffffffff;
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
   }
 
   /**

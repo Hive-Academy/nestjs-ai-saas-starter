@@ -1,18 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { v4 as uuidv4 } from 'uuid';
 import {
   WorkflowDefinition,
   WorkflowInstance,
   WorkflowStatus,
   WorkflowResult,
-  WorkflowContext,
   WorkflowConfig,
-  AgentDefinition,
 } from '../interfaces/multi-agent.interface';
 import { WorkflowRegistryService } from './workflow-registry.service';
-import { MultiAgentCoordinatorService } from './multi-agent-coordinator.service';
-import { AgentRegistryService } from './agent-registry.service';
+import { WorkflowCheckpointService } from './workflow-checkpoint.service';
+import { WorkflowInstanceService } from './workflow-instance.service';
+import { WorkflowCanonicalIdService } from './workflow-canonical-id.service';
 
 /**
  * Workflow Execution Service
@@ -21,16 +19,24 @@ import { AgentRegistryService } from './agent-registry.service';
 @Injectable()
 export class WorkflowExecutionService {
   private readonly logger = new Logger(WorkflowExecutionService.name);
-  private readonly activeInstances = new Map<string, WorkflowInstance>();
-  private readonly executionHistory = new Map<string, WorkflowInstance[]>();
 
   constructor(
     private readonly workflowRegistry: WorkflowRegistryService,
-    private readonly coordinator: MultiAgentCoordinatorService,
-    private readonly agentRegistry: AgentRegistryService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private readonly checkpointService: WorkflowCheckpointService,
+    private readonly instanceService: WorkflowInstanceService,
+    private readonly canonicalIdService: WorkflowCanonicalIdService
   ) {
     this.logger.debug('WorkflowExecutionService initialized');
+    if (this.checkpointService.isCheckpointingAvailable()) {
+      this.logger.log(
+        'Checkpoint service available - automatic checkpointing enabled'
+      );
+    } else {
+      this.logger.debug(
+        'No checkpoint adapter - running without checkpointing'
+      );
+    }
   }
 
   /**
@@ -48,9 +54,16 @@ export class WorkflowExecutionService {
         throw new Error(`Workflow '${workflowId}' not found`);
       }
 
+      // Generate canonical instance ID
+      const instanceId = this.canonicalIdService.generateInstanceId(
+        workflowId,
+        input
+      );
+
       // Create workflow instance
-      const instance = await this.createWorkflowInstance(
-        workflow,
+      const instance = await this.instanceService.createInstance(
+        workflowId,
+        instanceId,
         input,
         config
       );
@@ -102,9 +115,10 @@ export class WorkflowExecutionService {
 
     try {
       // Update instance status
-      instance.status = WorkflowStatus.RUNNING;
-      instance.updatedAt = new Date();
-      this.activeInstances.set(instance.instanceId, instance);
+      this.instanceService.updateInstanceStatus(
+        instance.instanceId,
+        WorkflowStatus.RUNNING
+      );
 
       // Emit workflow started event
       this.eventEmitter.emit('workflow.started', {
@@ -147,21 +161,15 @@ export class WorkflowExecutionService {
         },
       };
 
-      instance.result = finalResult;
-      instance.status = result.success
+      // Update instance status with result
+      const finalStatus = result.success
         ? WorkflowStatus.COMPLETED
         : WorkflowStatus.FAILED;
-      instance.updatedAt = new Date();
-
-      // Emit workflow completed event
-      this.eventEmitter.emit('workflow.completed', {
-        instanceId: instance.instanceId,
-        workflowId: instance.workflowId,
-        result: finalResult,
-      });
-
-      // Move to history
-      this.moveToHistory(instance);
+      this.instanceService.updateInstanceStatus(
+        instance.instanceId,
+        finalStatus,
+        finalResult
+      );
 
       return finalResult;
     } catch (error) {
@@ -182,19 +190,12 @@ export class WorkflowExecutionService {
         },
       };
 
-      instance.result = errorResult;
-      instance.status = WorkflowStatus.FAILED;
-      instance.updatedAt = new Date();
-
-      // Emit workflow failed event
-      this.eventEmitter.emit('workflow.failed', {
-        instanceId: instance.instanceId,
-        workflowId: instance.workflowId,
-        error: errorResult.error,
-      });
-
-      // Move to history
-      this.moveToHistory(instance);
+      // Update instance status with error result
+      this.instanceService.updateInstanceStatus(
+        instance.instanceId,
+        WorkflowStatus.FAILED,
+        errorResult
+      );
 
       return errorResult;
     }
@@ -249,136 +250,34 @@ export class WorkflowExecutionService {
     throw lastError || new Error('Unknown execution error');
   }
 
-  /**
-   * Create a new workflow instance
-   */
-  private async createWorkflowInstance(
-    workflow: WorkflowDefinition,
-    input: any,
-    configOverride?: Partial<WorkflowConfig>
-  ): Promise<WorkflowInstance> {
-    const instanceId = uuidv4();
-
-    // Merge configuration
-    const config: WorkflowConfig = {
-      timeout: 300000, // 5 minutes default
-      checkpointing: false,
-      streaming: false,
-      retry: {
-        enabled: false,
-        maxAttempts: 1,
-        backoffMs: 1000,
-      },
-      ...workflow.config,
-      ...configOverride,
-    };
-
-    // Validate required agents are available
-    if (workflow.requiredAgents) {
-      const missingAgents = workflow.requiredAgents.filter(
-        (agentId) => !this.agentRegistry.hasAgent(agentId)
-      );
-
-      if (missingAgents.length > 0) {
-        throw new Error(
-          `Required agents not available: ${missingAgents.join(', ')}`
-        );
-      }
-    }
-
-    // Build agents map
-    const agents = new Map<string, AgentDefinition>();
-    if (workflow.requiredAgents) {
-      for (const agentId of workflow.requiredAgents) {
-        const agent = this.agentRegistry.getAgent(agentId);
-        if (agent) {
-          agents.set(agentId, agent);
-        }
-      }
-    }
-
-    // Create execution context
-    const context: WorkflowContext = {
-      instanceId,
-      agents,
-      tools: [], // TODO: Get tools from registry when available
-      config,
-      logger: this.logger,
-      coordinator: this.coordinator,
-    };
-
-    // Create workflow instance
-    const instance: WorkflowInstance = {
-      instanceId,
-      workflowId: workflow.id,
-      status: WorkflowStatus.PENDING,
-      input,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      context,
-    };
-
-    // Validate input against schema if provided
-    if (workflow.inputSchema) {
-      try {
-        // Basic validation - could be enhanced with proper schema validation
-        if (typeof workflow.inputSchema.validate === 'function') {
-          workflow.inputSchema.validate(input);
-        }
-      } catch (error) {
-        throw new Error(`Input validation failed: ${error}`);
-      }
-    }
-
-    this.logger.debug(
-      `Created workflow instance ${instanceId} for workflow ${workflow.id}`
-    );
-
-    return instance;
-  }
+  // createWorkflowInstance method REMOVED - delegated to WorkflowInstanceService
 
   /**
    * Get active workflow instances
    */
   getActiveInstances(): WorkflowInstance[] {
-    return Array.from(this.activeInstances.values());
+    return this.instanceService.getActiveInstances();
   }
 
   /**
    * Get workflow instance by ID
    */
   getInstance(instanceId: string): WorkflowInstance | null {
-    return this.activeInstances.get(instanceId) || null;
+    return this.instanceService.getInstance(instanceId);
   }
 
   /**
    * Cancel workflow execution
    */
   async cancelWorkflow(instanceId: string): Promise<boolean> {
-    const instance = this.activeInstances.get(instanceId);
-    if (!instance) {
-      return false;
-    }
-
-    instance.status = WorkflowStatus.CANCELLED;
-    instance.updatedAt = new Date();
-
-    this.eventEmitter.emit('workflow.cancelled', {
-      instanceId,
-      workflowId: instance.workflowId,
-    });
-
-    this.moveToHistory(instance);
-
-    this.logger.log(`Workflow instance ${instanceId} cancelled`);
-    return true;
+    return this.instanceService.cancelWorkflow(instanceId);
   }
 
   /**
    * Get execution history for a workflow
    */
-  getWorkflowHistory(workflowId: string): WorkflowInstance[] {
-    return this.executionHistory.get(workflowId) || [];
+  getWorkflowExecutionHistory(workflowId: string): WorkflowInstance[] {
+    return this.instanceService.getWorkflowHistory(workflowId);
   }
 
   /**
@@ -390,56 +289,21 @@ export class WorkflowExecutionService {
     successRate: number;
     averageExecutionTime: number;
   } {
-    const allHistory = Array.from(this.executionHistory.values()).flat();
-    const completedExecutions = allHistory.filter(
-      (instance) =>
-        instance.status === WorkflowStatus.COMPLETED ||
-        instance.status === WorkflowStatus.FAILED
-    );
-
-    const successfulExecutions = completedExecutions.filter(
-      (instance) => instance.status === WorkflowStatus.COMPLETED
-    );
-
-    const totalExecutionTime = completedExecutions
-      .filter((instance) => instance.result?.metadata?.duration)
-      .reduce(
-        (sum, instance) => sum + (instance.result?.metadata?.duration || 0),
-        0
-      );
-
+    const stats = this.instanceService.getStatistics();
     return {
-      activeInstances: this.activeInstances.size,
-      totalExecutions: allHistory.length,
+      activeInstances: stats.activeCount,
+      totalExecutions: stats.totalExecutions,
       successRate:
-        completedExecutions.length > 0
-          ? successfulExecutions.length / completedExecutions.length
+        stats.totalExecutions > 0
+          ? stats.byStatus[WorkflowStatus.COMPLETED] / stats.totalExecutions
           : 0,
-      averageExecutionTime:
-        completedExecutions.length > 0
-          ? totalExecutionTime / completedExecutions.length
-          : 0,
+      averageExecutionTime: 0, // TODO: Add average execution time to instance service
     };
   }
 
   /**
-   * Move instance to history and clean up
+   * Move instance to history and clean up - REMOVED, delegated to WorkflowInstanceService
    */
-  private moveToHistory(instance: WorkflowInstance): void {
-    // Remove from active instances
-    this.activeInstances.delete(instance.instanceId);
-
-    // Add to history
-    const history = this.executionHistory.get(instance.workflowId) || [];
-    history.push(instance);
-
-    // Keep only last 100 executions per workflow
-    if (history.length > 100) {
-      history.splice(0, history.length - 100);
-    }
-
-    this.executionHistory.set(instance.workflowId, history);
-  }
 
   /**
    * Validate workflow result structure
@@ -468,11 +332,191 @@ export class WorkflowExecutionService {
   }
 
   /**
+   * Subscribe to workflow events for real-time monitoring
+   */
+  subscribeToWorkflowEvents(
+    instanceId: string,
+    callback: (event: {
+      type:
+        | 'workflow_started'
+        | 'workflow_progress'
+        | 'workflow_completed'
+        | 'workflow_failed'
+        | 'node_executed';
+      data: any;
+      timestamp: number;
+    }) => void
+  ): { unsubscribe: () => void } {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      throw new Error(`Workflow instance ${instanceId} not found`);
+    }
+
+    // Create event listeners for this instance
+    const unsubscribeFunctions: Array<() => void> = [];
+
+    // Add listeners and collect unsubscribe functions
+    const listener1 = this.eventEmitter.on('workflow.started', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_started',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener1 === 'function') {
+      unsubscribeFunctions.push(listener1);
+    }
+
+    const listener2 = this.eventEmitter.on('workflow.progress', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_progress',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener2 === 'function') {
+      unsubscribeFunctions.push(listener2);
+    }
+
+    const listener3 = this.eventEmitter.on('workflow.completed', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_completed',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener3 === 'function') {
+      unsubscribeFunctions.push(listener3);
+    }
+
+    const listener4 = this.eventEmitter.on('workflow.failed', (event) => {
+      if (event.instanceId === instanceId) {
+        callback({
+          type: 'workflow_failed',
+          data: event,
+          timestamp: Date.now(),
+        });
+      }
+    });
+    if (typeof listener4 === 'function') {
+      unsubscribeFunctions.push(listener4);
+    }
+
+    const listener5 = this.eventEmitter.on(
+      'workflow.node.executed',
+      (event) => {
+        if (event.instanceId === instanceId) {
+          callback({
+            type: 'node_executed',
+            data: event,
+            timestamp: Date.now(),
+          });
+        }
+      }
+    );
+    if (typeof listener5 === 'function') {
+      unsubscribeFunctions.push(listener5);
+    }
+
+    return {
+      unsubscribe: () => {
+        unsubscribeFunctions.forEach((unsub) => {
+          if (typeof unsub === 'function') {
+            unsub();
+          }
+        });
+      },
+    };
+  }
+
+  /**
    * Clear all instances (useful for testing)
    */
   clear(): void {
-    this.activeInstances.clear();
-    this.executionHistory.clear();
+    this.instanceService.clear();
     this.logger.debug('All workflow instances cleared');
   }
+
+  // ==================== CANONICAL ID GENERATION (NODE_ID_STANDARD) ====================
+
+  // Canonical ID generation methods REMOVED - delegated to WorkflowCanonicalIdService
+
+  // ==================== CHECKPOINT DELEGATION METHODS ====================
+
+  /**
+   * Resume workflow execution from checkpoint
+   * Delegates to WorkflowCheckpointService
+   */
+  async resumeFromCheckpoint(
+    threadId: string,
+    checkpointId?: string
+  ): Promise<WorkflowResult> {
+    const result = await this.checkpointService.resumeFromCheckpoint(
+      threadId,
+      checkpointId
+    );
+
+    // If successful, tracking is handled by the WorkflowInstanceService automatically
+    // No additional tracking needed here since the checkpoint service handles workflow completion
+
+    return result;
+  }
+
+  /**
+   * Get workflow history from checkpoints
+   * Delegates to WorkflowCheckpointService
+   */
+  async getWorkflowCheckpointHistory(threadId: string): Promise<any[]> {
+    // Get checkpoint history
+    const checkpointHistory = await this.checkpointService.getWorkflowHistory(
+      threadId
+    );
+
+    // Also check in-memory history if available
+    const memoryHistory = this.instanceService.getWorkflowHistory(threadId);
+
+    if (memoryHistory.length > 0) {
+      const memoryEntries = memoryHistory.map((instance) => ({
+        threadId: instance.instanceId,
+        checkpointId: `memory-${instance.instanceId}-${Date.now()}`,
+        timestamp: instance.updatedAt,
+        workflowId: instance.workflowId,
+        status: instance.status,
+        state: {
+          messages: 0,
+          metadata: instance.result?.metadata || {},
+        },
+        metrics: {
+          executionTime: instance.result?.metadata?.duration || null,
+          confidence: null,
+          errorCount: instance.result?.error ? 1 : 0,
+        },
+        context: {
+          isMemoryOnly: true,
+          isError: instance.status === WorkflowStatus.FAILED,
+          errorMessage: instance.result?.error?.message || null,
+        },
+      }));
+
+      // Merge and deduplicate
+      const allHistory = [...checkpointHistory, ...memoryEntries];
+      const uniqueHistory = Array.from(
+        new Map(
+          allHistory.map((h) => [`${h.threadId}-${h.timestamp}`, h])
+        ).values()
+      );
+
+      return uniqueHistory;
+    }
+
+    return checkpointHistory;
+  }
+
+  // saveCheckpoint method REMOVED - delegated to WorkflowCheckpointService
 }

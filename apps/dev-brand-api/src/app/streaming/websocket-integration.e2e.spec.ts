@@ -8,14 +8,14 @@ import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import {
   StreamingServiceAdapter,
-  StreamingWebSocketGateway,
+
 } from '@hive-academy/langgraph-streaming';
 
 describe('WebSocket Streaming Integration E2E', () => {
   let app: INestApplication;
   let client: Socket;
   let streamingAdapter: StreamingServiceAdapter;
-  let gateway: StreamingWebSocketGateway;
+  // let gateway: StreamingWebSocketGateway;
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -79,7 +79,7 @@ describe('WebSocket Streaming Integration E2E', () => {
     // Get service instances - use try/catch to handle missing services gracefully
     try {
       streamingAdapter = app.get(StreamingServiceAdapter);
-      gateway = app.get(StreamingWebSocketGateway);
+      // gateway = app.get(StreamingWebSocketGateway);
     } catch (error: any) {
       console.warn(
         'Warning: Some streaming services not available in test context:',
@@ -93,10 +93,10 @@ describe('WebSocket Streaming Integration E2E', () => {
         broadcastToExecution: jest.fn(),
         sendToClient: jest.fn(),
       } as any;
-      gateway = {
-        handleConnection: jest.fn(),
-        handleDisconnect: jest.fn(),
-      } as any;
+      // gateway = {
+      //   handleConnection: jest.fn(),
+      //   handleDisconnect: jest.fn(),
+      // } as any;
     }
 
     await app.listen(3001);

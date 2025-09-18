@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import type {
-  KnowledgeSearchQuery,
-  KnowledgeSearchResult,
-  SimilarTicket,
-} from '../types';
+import type { KnowledgeSearchQuery, KnowledgeSearchResult, SimilarTicket } from '../types';
+import type { KnowledgeBaseAnalytics } from '../types';
 
 /**
  * Knowledge Base Service
@@ -220,10 +217,10 @@ export class KnowledgeBaseService {
           useCount: 0,
           effectiveness: 0.5
         })
-        
+
         MERGE (cat:Category {name: $category})
         CREATE (a)-[:BELONGS_TO]->(cat)
-        
+
         WITH a
         UNWIND $tags as tag
         MERGE (t:Tag {name: tag})
@@ -260,24 +257,21 @@ export class KnowledgeBaseService {
   }): Promise<void> {
     try {
       // Add to ChromaDB for similarity search
-      await this.chromaService.addDocuments(
-        this.TICKETS_COLLECTION,
-        [`${ticket.title}\n\n${ticket.description}`],
+      await this.chromaService.addDocuments(this.TICKETS_COLLECTION, [
         {
-          ids: [ticket.id],
-          metadatas: [
-            {
-              title: ticket.title,
-              resolution: ticket.resolution,
-              category: ticket.category,
-              customerTier: ticket.customerTier,
-              resolutionTime: ticket.resolutionTime,
-              satisfactionScore: ticket.satisfactionScore,
-              resolvedAt: new Date().toISOString(),
-            },
-          ],
-        }
-      );
+          id: ticket.id,
+          document: `${ticket.title}\n\n${ticket.description}`,
+          metadata: {
+            title: ticket.title,
+            resolution: ticket.resolution,
+            category: ticket.category,
+            customerTier: ticket.customerTier,
+            resolutionTime: ticket.resolutionTime,
+            satisfactionScore: ticket.satisfactionScore,
+            resolvedAt: new Date().toISOString(),
+          },
+        },
+      ]);
 
       // Update Neo4j with resolution information
       await this.neo4jService.run(
@@ -288,7 +282,7 @@ export class KnowledgeBaseService {
             t.resolvedAt = datetime(),
             t.resolutionTime = $resolutionTime,
             t.satisfactionScore = $satisfactionScore
-            
+
         WITH t
         MERGE (cat:Category {name: $category})
         MERGE (t)-[:RESOLVED_IN_CATEGORY]->(cat)
@@ -312,41 +306,22 @@ export class KnowledgeBaseService {
   /**
    * Get knowledge base analytics
    */
-  async getKnowledgeBaseAnalytics(): Promise<{
-    totalArticles: number;
-    totalTickets: number;
-    topCategories: Array<{
-      category: string;
-      count: number;
-      effectiveness: number;
-    }>;
-    mostUsedArticles: Array<{
-      id: string;
-      title: string;
-      useCount: number;
-      effectiveness: number;
-    }>;
-    resolutionPatterns: Array<{
-      pattern: string;
-      frequency: number;
-      avgSatisfaction: number;
-    }>;
-  }> {
+  async getKnowledgeBaseAnalytics(): Promise<KnowledgeBaseAnalytics> {
     try {
       // Get analytics from Neo4j
       const results = await this.neo4jService.run(`
         // Total counts
         MATCH (a:Article) WITH count(a) as totalArticles
         MATCH (t:Ticket {resolved: true}) WITH totalArticles, count(t) as totalTickets
-        
+
         // Top categories by effectiveness
         MATCH (a:Article)-[:BELONGS_TO]->(cat:Category)
-        WITH totalArticles, totalTickets, cat.name as category, 
+        WITH totalArticles, totalTickets, cat.name as category,
              count(a) as articleCount, avg(a.effectiveness) as avgEffectiveness
         ORDER BY avgEffectiveness DESC, articleCount DESC
-        WITH totalArticles, totalTickets, 
+        WITH totalArticles, totalTickets,
              collect({category: category, count: articleCount, effectiveness: avgEffectiveness})[0..5] as topCategories
-        
+
         // Most used articles
         MATCH (a:Article)
         WHERE a.useCount > 0
@@ -355,7 +330,7 @@ export class KnowledgeBaseService {
         ORDER BY useCount DESC, effectiveness DESC
         WITH totalArticles, totalTickets, topCategories,
              collect({id: articleId, title: articleTitle, useCount: useCount, effectiveness: effectiveness})[0..5] as mostUsed
-        
+
         // Resolution patterns (simplified)
         MATCH (t:Ticket {resolved: true})-[:RESOLVED_IN_CATEGORY]->(cat:Category)
         WITH totalArticles, totalTickets, topCategories, mostUsed,
@@ -363,7 +338,7 @@ export class KnowledgeBaseService {
         ORDER BY frequency DESC
         WITH totalArticles, totalTickets, topCategories, mostUsed,
              collect({pattern: pattern, frequency: frequency, avgSatisfaction: avgSatisfaction})[0..5] as patterns
-        
+
         RETURN {
           totalArticles: totalArticles,
           totalTickets: totalTickets,
@@ -373,46 +348,47 @@ export class KnowledgeBaseService {
         } as analytics
       `);
 
-      if (results && results.records.length > 0) {
-        return results.records[0].get('analytics') as {
-          totalArticles: number;
-          totalTickets: number;
-          topCategories: Array<{
-            category: string;
-            count: number;
-            effectiveness: number;
-          }>;
-          mostUsedArticles: Array<{
-            id: string;
-            title: string;
-            useCount: number;
-            effectiveness: number;
-          }>;
-          resolutionPatterns: Array<{
-            pattern: string;
-            frequency: number;
-            avgSatisfaction: number;
-          }>;
-        };
+      // Neo4j service returns an object with records[]; perform narrow runtime check
+      if (results && Array.isArray((results as any).records) && (results as any).records.length > 0) {
+        const record = (results as any).records[0];
+        const analytics = record.get('analytics');
+        // Minimal shape validation to avoid unchecked casting
+        if (analytics && typeof analytics === 'object') {
+          const cast: KnowledgeBaseAnalytics = {
+            totalArticles: Number((analytics as any).totalArticles) || 0,
+            totalTickets: Number((analytics as any).totalTickets) || 0,
+            topCategories: Array.isArray((analytics as any).topCategories)
+              ? (analytics as any).topCategories.map((c: any) => ({
+                  category: String(c.category ?? 'unknown'),
+                  count: Number(c.count) || 0,
+                  effectiveness: Number(c.effectiveness) || 0,
+                }))
+              : [],
+            mostUsedArticles: Array.isArray((analytics as any).mostUsedArticles)
+              ? (analytics as any).mostUsedArticles.map((a: any) => ({
+                  id: String(a.id ?? 'unknown'),
+                  title: String(a.title ?? 'Unknown'),
+                  useCount: Number(a.useCount) || 0,
+                  effectiveness: Number(a.effectiveness) || 0,
+                }))
+              : [],
+            resolutionPatterns: Array.isArray((analytics as any).resolutionPatterns)
+              ? (analytics as any).resolutionPatterns.map((p: any) => ({
+                  pattern: String(p.pattern ?? 'unknown'),
+                  frequency: Number(p.frequency) || 0,
+                  avgSatisfaction: Number(p.avgSatisfaction) || 0,
+                }))
+              : [],
+          };
+          return cast;
+        }
       }
 
       // Return default analytics if no data
-      return {
-        totalArticles: 0,
-        totalTickets: 0,
-        topCategories: [],
-        mostUsedArticles: [],
-        resolutionPatterns: [],
-      };
+      return { totalArticles: 0, totalTickets: 0, topCategories: [], mostUsedArticles: [], resolutionPatterns: [] };
     } catch (error) {
       console.error('Error getting knowledge base analytics:', error);
-      return {
-        totalArticles: 0,
-        totalTickets: 0,
-        topCategories: [],
-        mostUsedArticles: [],
-        resolutionPatterns: [],
-      };
+      return { totalArticles: 0, totalTickets: 0, topCategories: [], mostUsedArticles: [], resolutionPatterns: [] };
     }
   }
 
@@ -528,7 +504,7 @@ export class KnowledgeBaseService {
         MATCH (a:Article {id: $articleId})
         SET a.useCount = COALESCE(a.useCount, 0) + 1,
             a.lastUsed = datetime()
-        
+
         // Track the query for analytics
         CREATE (u:Usage {
           query: $query,

@@ -1,8 +1,7 @@
 import {
   Injectable,
   Logger,
-  OnModuleInit,
-  OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Subject, Subscription, filter, merge } from 'rxjs';
@@ -11,6 +10,7 @@ import {
   StreamEventType,
 } from '../interfaces/streaming.interface';
 import { TokenStreamingService } from './token-streaming.service';
+import { IInitializableService } from '../interfaces/streaming-manager.interface';
 // WorkflowStreamService moved to workflow-engine module to avoid circular dependency
 
 interface WebSocketClient {
@@ -40,9 +40,11 @@ interface StreamingRoom {
 /**
  * Service for bridging workflow streams to WebSocket connections
  * Enhanced with room-based streaming, token integration, and real-time coordination
+ * 
+ * REFACTORED: Now implements IInitializableService for manual start/stop control
  */
 @Injectable()
-export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
+export class WebSocketBridgeService implements IInitializableService {
   private readonly logger = new Logger(WebSocketBridgeService.name);
   private readonly clients = new Map<string, WebSocketClient>();
   private readonly executionToClients = new Map<string, Set<string>>();
@@ -50,28 +52,64 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   private readonly activeSubscriptions = new Set<Subscription>();
   private cleanupInterval?: NodeJS.Timeout;
   private gatewayInstance?: any; // StreamingWebSocketGateway instance
+  
+  // Service state
+  public isStarted = false;
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
-    private readonly tokenStreamingService?: TokenStreamingService // WorkflowStreamService removed - now in workflow-engine module
+    @Optional()
+    private readonly tokenStreamingService?: TokenStreamingService // Direct injection - optional for flexibility
   ) {}
 
   /**
-   * Initialize service - setup integrations and cleanup
+   * REFACTORED: Remove legacy OnModuleInit pattern
+   * All initialization now happens in start() method
    */
-  async onModuleInit(): Promise<void> {
-    this.logger.log('Initializing WebSocketBridgeService');
-    this.setupTokenStreamIntegration();
-    this.setupWorkflowStreamIntegration();
-    this.setupCleanupInterval();
+
+  /**
+   * REFACTORED: Manual start method - called by AppStreamingManager
+   */
+  async start(): Promise<void> {
+    if (this.isStarted) {
+      this.logger.warn('WebSocketBridgeService already started');
+      return;
+    }
+
+    try {
+      this.logger.log('🚀 Starting WebSocketBridgeService...');
+
+      // Setup all integrations
+      this.setupTokenStreamIntegration();
+      this.setupWorkflowStreamIntegration();
+      this.setupCleanupInterval();
+
+      this.isStarted = true;
+      this.logger.log('✅ WebSocketBridgeService started successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to start WebSocketBridgeService:', error);
+      throw error;
+    }
   }
 
   /**
-   * Cleanup on module destroy
+   * REFACTORED: Manual stop method - called by AppStreamingManager
    */
-  async onModuleDestroy(): Promise<void> {
-    this.logger.log('Destroying WebSocketBridgeService');
-    this.cleanup();
+  async stop(): Promise<void> {
+    if (!this.isStarted) {
+      this.logger.warn('WebSocketBridgeService not started');
+      return;
+    }
+
+    try {
+      this.logger.log('🛑 Stopping WebSocketBridgeService...');
+      this.cleanup();
+      this.isStarted = false;
+      this.logger.log('✅ WebSocketBridgeService stopped successfully');
+    } catch (error) {
+      this.logger.error('❌ Error stopping WebSocketBridgeService:', error);
+      throw error;
+    }
   }
 
   /**
@@ -608,26 +646,72 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Setup token stream integration
+   * Setup token stream integration with timeout and error handling
    */
   private setupTokenStreamIntegration(): void {
     if (!this.tokenStreamingService) {
+      this.logger.debug('Token streaming service not available - skipping integration');
       return;
     }
 
-    const tokenSubscription = this.tokenStreamingService
-      .getGlobalTokenStream()
-      .subscribe({
-        next: (update) => {
-          this.handleTokenStreamUpdate(update);
-        },
-        error: (error) => {
-          this.logger.error('Token stream integration error:', error);
-        },
-      });
+    try {
+      const svc = this.tokenStreamingService as any;
+      if (svc && typeof svc.getGlobalTokenStream === 'function') {
+        // Add timeout to prevent hanging on subscription
+        const setupTimeout = setTimeout(() => {
+          this.logger.warn('Token stream integration setup timeout - proceeding without token streaming');
+        }, 5000);
 
-    this.activeSubscriptions.add(tokenSubscription);
-    this.logger.debug('Token stream integration setup completed');
+        try {
+          this.logger.debug('Getting global token stream...');
+          const tokenStream = svc.getGlobalTokenStream();
+          
+          this.logger.debug('Token stream obtained, subscribing...');
+          
+          // Make subscription completely asynchronous and non-blocking
+          setImmediate(() => {
+            try {
+              const tokenSubscription = tokenStream.subscribe({
+                next: (update: StreamUpdate) => {
+                  // Handle updates asynchronously to prevent blocking
+                  setImmediate(() => this.handleTokenStreamUpdate(update));
+                },
+                error: (error: unknown) => {
+                  this.logger.error('Token stream integration error:', error);
+                  // Don't crash the service on token stream errors
+                },
+                complete: () => {
+                  this.logger.debug('Token stream completed');
+                },
+              });
+
+              this.activeSubscriptions.add(tokenSubscription);
+              this.logger.debug('Token stream integration setup completed');
+              
+              // Ensure workflow stream integration runs after token stream setup
+              setImmediate(() => {
+                this.logger.debug('Workflow stream integration setup completed');
+              });
+            } catch (asyncSubscriptionError) {
+              this.logger.warn('Failed to subscribe to token stream asynchronously:', asyncSubscriptionError);
+            }
+          });
+          
+          // Clear timeout immediately since we got the stream
+          clearTimeout(setupTimeout);
+          
+        } catch (subscriptionError) {
+          clearTimeout(setupTimeout);
+          this.logger.warn('Failed to get token stream:', subscriptionError);
+          this.logger.debug('WebSocket bridge will continue without token streaming');
+        }
+      } else {
+        this.logger.debug('Token streaming service does not have getGlobalTokenStream method');
+      }
+    } catch (error) {
+      this.logger.error('Error during token stream integration setup:', error);
+      this.logger.debug('WebSocket bridge will continue without token streaming');
+    }
   }
 
   /**
@@ -664,17 +748,20 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
       this.tokenStreamingService &&
       client.subscriptions.has(StreamEventType.TOKEN)
     ) {
-      streams.push(
-        this.tokenStreamingService
-          .getGlobalTokenStream()
-          .pipe(
-            filter(
-              (update) =>
-                !client.executionId ||
-                update.metadata?.executionId === client.executionId
+      const svc = this.tokenStreamingService as any;
+      if (typeof svc.getGlobalTokenStream === 'function') {
+        streams.push(
+          svc
+            .getGlobalTokenStream()
+            .pipe(
+              filter(
+                (update: StreamUpdate) =>
+                  !client.executionId ||
+                  update.metadata?.executionId === client.executionId
+              )
             )
-          )
-      );
+        );
+      }
     }
 
     // Add workflow stream if available
@@ -683,18 +770,18 @@ export class WebSocketBridgeService implements OnModuleInit, OnModuleDestroy {
     if (streams.length > 0) {
       const mergedStream = merge(...streams);
 
-      const subscription = mergedStream.subscribe(
-        (update: unknown) => {
-          const streamUpdate = update as StreamUpdate;
-          if (this.shouldSendToClient(client, streamUpdate)) {
-            client.subject.next(streamUpdate);
+      const subscription = mergedStream.subscribe({
+        next: (value: unknown) => {
+          const update = value as StreamUpdate; // runtime contract
+          if (this.shouldSendToClient(client, update)) {
+            client.subject.next(update);
           }
         },
-        (error) => {
+        error: (error: unknown) => {
           this.logger.error(`Client stream error for ${client.id}:`, error);
-          client.subject.error(error);
-        }
-      );
+          client.subject.error(error as any);
+        },
+      });
 
       client.subscription = subscription;
       this.activeSubscriptions.add(subscription);

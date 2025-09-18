@@ -83,3 +83,6 @@ export interface BaseWorkflowState {
   progress?: number;
   currentStep?: string;
 }
+
+// Local hardening-only types (not part of public library surface)
+export type * from './hardening.types';

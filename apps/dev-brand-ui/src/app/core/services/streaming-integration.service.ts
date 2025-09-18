@@ -225,131 +225,157 @@ export class StreamingIntegrationService {
 
   /**
    * Enhanced supervisor showcase streaming with gateway integration
-   * Integrates with @StreamToken, @StreamEvent, @StreamProgress decorators
+   * Now uses real backend executionId from customer-support API
    */
   startSupervisorShowcase(request: {
     input: string;
     demonstrationMode: 'basic' | 'advanced' | 'enterprise';
     enableStreaming: boolean;
   }): Observable<StreamingUpdate> {
-    const executionId = `supervisor-${Date.now()}`;
-    console.log(`🚀 Starting enhanced supervisor showcase: ${executionId}`);
+    console.log(`🚀 Starting enhanced supervisor showcase`);
 
-    // Join supervisor-specific rooms for targeted messaging
-    this.joinRoom('supervisor-showcase', { metadata: { executionId } });
-    this.joinRoom('devbrand-streaming', { metadata: { type: 'supervisor' } });
+    // Create ticket request for customer-support API
+    const ticketRequest = {
+      customerId: 'demo-user',
+      title: request.input.slice(0, 60) || 'Supervisor Pattern Demo',
+      description: request.input,
+      priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
+      category: 'demo-supervisor',
+      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      metadata: {
+        pattern: 'supervisor',
+        enableStreaming: request.enableStreaming,
+        demonstrationMode: request.demonstrationMode
+      }
+    };
 
-    // Subscribe to workflow streaming before initiating
-    const streamObservable = this.subscribeToWorkflow(executionId, {
-      eventTypes: [
-        'token',
-        'event',
-        'progress',
-        'workflow:start',
-        'workflow:end',
-        'node:start',
-        'node:end',
-      ],
-      rooms: ['supervisor-showcase', 'devbrand-streaming'],
-      includeHistory: false,
-    });
-
-    // Initiate workflow via HTTP API with streaming enabled
-    const apiUrl = `${environment.apiUrl}/api/v1/showcase/workflows/supervisor`;
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...request,
-        streamingEnabled: true,
-        executionId, // Pass execution ID to backend
-      }),
-    })
-      .then((response) => {
-        if (response.ok) {
-          console.log(
-            `✅ Enhanced supervisor workflow initiated: ${executionId}`
-          );
-        } else {
-          console.error(
-            `❌ Failed to initiate supervisor workflow: ${response.statusText}`
-          );
-        }
+    // Initiate workflow via customer-support API and get real executionId
+    const apiUrl = `${environment.apiUrl}/api/customer-support/tickets`;
+    return new Observable<StreamingUpdate>((observer) => {
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ticketRequest),
       })
-      .catch((error) => {
-        console.error(`❌ Supervisor workflow initiation error:`, error);
-      });
+        .then((response) => response.json())
+        .then((result) => {
+          const executionId = result.executionId;
+          console.log(`✅ Supervisor workflow initiated with executionId: ${executionId}`);
 
-    return streamObservable;
+          // Join supervisor-specific rooms for targeted messaging
+          this.joinRoom('supervisor-showcase', { metadata: { executionId } });
+          this.joinRoom('devbrand-streaming', { metadata: { type: 'supervisor' } });
+
+          // Subscribe to workflow streaming with real executionId
+          const streamObservable = this.subscribeToWorkflow(executionId, {
+            eventTypes: [
+              'token',
+              'event',
+              'progress',
+              'workflow:start',
+              'workflow:end',
+              'node:start',
+              'node:end',
+            ],
+            rooms: ['supervisor-showcase', 'devbrand-streaming'],
+            includeHistory: false,
+          });
+
+          // Forward all stream updates to the observer
+          streamObservable.subscribe({
+            next: (update) => observer.next(update),
+            error: (error) => observer.error(error),
+            complete: () => observer.complete()
+          });
+        })
+        .catch((error) => {
+          console.error(`❌ Supervisor workflow initiation error:`, error);
+          observer.error(error);
+        });
+    });
   }
 
   /**
    * Enhanced swarm showcase streaming with gateway integration
-   * Integrates with SwarmShowcaseWorkflow streaming
+   * Now uses real backend executionId from customer-support API
    */
   startSwarmShowcase(request: {
     input: string;
     demonstrationMode: 'basic' | 'advanced' | 'enterprise';
     enableStreaming: boolean;
   }): Observable<StreamingUpdate> {
-    const executionId = `swarm-${Date.now()}`;
-    console.log(`🐝 Starting enhanced swarm showcase: ${executionId}`);
+    console.log(`🐝 Starting enhanced swarm showcase`);
 
-    // Join swarm-specific rooms for targeted messaging
-    this.joinRoom('swarm-showcase', { metadata: { executionId } });
-    this.joinRoom('devbrand-streaming', { metadata: { type: 'swarm' } });
-    this.joinRoom('multi-agent-coordination', {
-      metadata: { pattern: 'swarm' },
-    });
+    // Create ticket request for customer-support API
+    const ticketRequest = {
+      customerId: 'demo-user',
+      title: request.input.slice(0, 60) || 'Swarm Pattern Demo',
+      description: request.input,
+      priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
+      category: 'demo-swarm',
+      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      metadata: {
+        pattern: 'swarm',
+        enableStreaming: request.enableStreaming,
+        demonstrationMode: request.demonstrationMode
+      }
+    };
 
-    // Subscribe to workflow streaming before initiating
-    const streamObservable = this.subscribeToWorkflow(executionId, {
-      eventTypes: [
-        'token',
-        'event',
-        'progress',
-        'workflow:start',
-        'workflow:end',
-        'node:start',
-        'node:end',
-      ],
-      rooms: [
-        'swarm-showcase',
-        'devbrand-streaming',
-        'multi-agent-coordination',
-      ],
-      includeHistory: false,
-    });
-
-    // Initiate workflow via HTTP API with streaming enabled
-    const apiUrl = `${environment.apiUrl}/api/v1/showcase/workflows/swarm`;
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...request,
-        streamingEnabled: true,
-        executionId, // Pass execution ID to backend
-      }),
-    })
-      .then((response) => {
-        if (response.ok) {
-          console.log(`✅ Enhanced swarm workflow initiated: ${executionId}`);
-        } else {
-          console.error(
-            `❌ Failed to initiate swarm workflow: ${response.statusText}`
-          );
-        }
+    // Initiate workflow via customer-support API and get real executionId
+    const apiUrl = `${environment.apiUrl}/api/customer-support/tickets`;
+    return new Observable<StreamingUpdate>((observer) => {
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ticketRequest),
       })
-      .catch((error) => {
-        console.error(`❌ Swarm workflow initiation error:`, error);
-      });
+        .then((response) => response.json())
+        .then((result) => {
+          const executionId = result.executionId;
+          console.log(`✅ Swarm workflow initiated with executionId: ${executionId}`);
 
-    return streamObservable;
+          // Join swarm-specific rooms for targeted messaging
+          this.joinRoom('swarm-showcase', { metadata: { executionId } });
+          this.joinRoom('devbrand-streaming', { metadata: { type: 'swarm' } });
+          this.joinRoom('multi-agent-coordination', {
+            metadata: { pattern: 'swarm' },
+          });
+
+          // Subscribe to workflow streaming with real executionId
+          const streamObservable = this.subscribeToWorkflow(executionId, {
+            eventTypes: [
+              'token',
+              'event',
+              'progress',
+              'workflow:start',
+              'workflow:end',
+              'node:start',
+              'node:end',
+            ],
+            rooms: [
+              'swarm-showcase',
+              'devbrand-streaming',
+              'multi-agent-coordination',
+            ],
+            includeHistory: false,
+          });
+
+          // Forward all stream updates to the observer
+          streamObservable.subscribe({
+            next: (update) => observer.next(update),
+            error: (error) => observer.error(error),
+            complete: () => observer.complete()
+          });
+        })
+        .catch((error) => {
+          console.error(`❌ Swarm workflow initiation error:`, error);
+          observer.error(error);
+        });
+    });
   }
 
   /**

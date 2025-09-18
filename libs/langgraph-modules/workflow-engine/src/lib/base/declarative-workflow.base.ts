@@ -99,7 +99,7 @@ export abstract class DeclarativeWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorService)
+    @Optional()
     protected override readonly eventProcessor?: EventStreamProcessorService
   ) {
     super(eventEmitter, graphBuilder, subgraphManager, streamService, eventProcessor);

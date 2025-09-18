@@ -4,7 +4,6 @@ import {
   computed,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface ConstellationStats {
   agentCount: number;
@@ -19,7 +18,7 @@ export interface ConstellationStats {
  */
 @Component({
   selector: 'brand-constellation-stats',
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="constellation-stats">
