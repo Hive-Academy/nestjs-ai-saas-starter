@@ -17,6 +17,26 @@ export class EventStreamProcessorService {
   constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
 
   /**
+   * Process a single stream event
+   */
+  processEvent(event: StreamUpdate): void {
+    try {
+      // Buffer the event for replay capability
+      if (event.metadata?.executionId) {
+        this.bufferEvents(event.metadata.executionId, event);
+      }
+
+      // Emit the event to the event emitter system
+      this.eventEmitter.emit(`workflow.${event.type}`, event);
+
+      this.logger.debug(`Processed event ${event.type} for ${event.metadata?.executionId}:${event.metadata?.nodeId}`);
+    } catch (error) {
+      this.logger.error('Failed to process event:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Process stream events with batching
    */
   processBatch(

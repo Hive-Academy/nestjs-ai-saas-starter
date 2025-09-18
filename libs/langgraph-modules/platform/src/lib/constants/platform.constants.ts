@@ -1,7 +1,7 @@
 export const PLATFORM_MODULE_OPTIONS = Symbol('PLATFORM_MODULE_OPTIONS');
 
 export const DEFAULT_PLATFORM_OPTIONS = {
-  baseUrl: process.env.LANGGRAPH_PLATFORM_URL || 'http://localhost:8123',
+  baseUrl: 'http://localhost:8123',
   timeout: 30000,
   retryPolicy: {
     maxRetries: 3,

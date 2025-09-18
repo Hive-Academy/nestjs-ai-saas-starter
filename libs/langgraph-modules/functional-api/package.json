@@ -35,7 +35,6 @@
     "rxjs": "^7.8.0",
     "@langchain/langgraph": "^0.4.3",
     "reflect-metadata": "^0.1.13",
-    "@hive-academy/langgraph-core": "0.0.1",
-    "@golevelup/nestjs-discovery": "^5.0.0"
+    "@hive-academy/langgraph-core": "0.0.1"
   }
 }

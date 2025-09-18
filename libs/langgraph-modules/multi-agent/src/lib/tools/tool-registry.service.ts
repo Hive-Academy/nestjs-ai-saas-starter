@@ -1,56 +1,18 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DiscoveryService } from '@golevelup/nestjs-discovery';
+import { Injectable, Logger } from '@nestjs/common';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { ToolMetadata, getClassTools } from '../decorators/tool.decorator';
+import { ToolMetadata } from '../decorators/tool.decorator';
 
 /**
- * Tool registration and discovery service
- * Automatically discovers and registers tools decorated with @Tool
+ * Tool registry service for explicit tool management
+ * Tools are registered through ToolRegistrationService instead of discovery
  */
 @Injectable()
-export class ToolRegistryService implements OnModuleInit {
+export class ToolRegistryService {
   private readonly logger = new Logger(ToolRegistryService.name);
   private readonly tools = new Map<string, DynamicStructuredTool>();
   private readonly toolMetadata = new Map<string, ToolMetadata>();
   private readonly agentTools = new Map<string, Set<string>>();
-
-  constructor(private readonly discoveryService: DiscoveryService) {}
-
-  async onModuleInit() {
-    await this.discoverTools();
-  }
-
-  /**
-   * Discover all tools in the application
-   */
-  private async discoverTools() {
-    // Import the discovery filter utility
-    const { DiscoveryFilterUtil } = await import('../utils/discovery-filter.util');
-    
-    // Use intelligent filtering to only scan providers with @Tool decorated methods
-    const providers = await this.discoveryService.providers(
-      DiscoveryFilterUtil.createToolFilter(['ToolRegistryService'])
-    );
-
-    this.logger.debug(`Scanning ${providers.length} tool providers (filtered from all available providers)`);
-
-    for (const wrapper of providers) {
-      const { instance } = wrapper;
-      if (!instance || typeof instance !== 'object') {
-        continue;
-      }
-
-      // Get tools from class metadata
-      const tools = getClassTools(instance.constructor);
-
-      for (const toolMeta of tools) {
-        await this.registerTool(toolMeta, instance);
-      }
-    }
-
-    this.logger.log(`Discovered and registered ${this.tools.size} tools from ${providers.length} providers`);
-  }
 
   /**
    * Register a tool
@@ -104,6 +66,16 @@ export class ToolRegistryService implements OnModuleInit {
     }
 
     this.logger.debug(`Registered tool: ${name}`);
+  }
+
+  /**
+   * Public method to register a tool (for explicit registration)
+   */
+  async registerToolFromMetadata(
+    metadata: ToolMetadata,
+    instance: any
+  ): Promise<void> {
+    await this.registerTool(metadata, instance);
   }
 
   /**

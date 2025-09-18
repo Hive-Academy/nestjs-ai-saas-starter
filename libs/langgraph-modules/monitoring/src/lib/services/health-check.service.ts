@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import type {
+  DetailedHealthCheckResult,
   IHealthCheck,
   HealthCheckFunction,
   ServiceHealth,
@@ -22,6 +23,24 @@ import { HealthCheckError } from '../interfaces/monitoring.interface';
 @Injectable()
 export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
   private readonly logger = new Logger(HealthCheckService.name);
+
+  /**
+   * Type guard to check if result is DetailedHealthCheckResult
+   */
+  private isDetailedHealthCheckResult(
+    result: unknown
+  ): result is DetailedHealthCheckResult {
+    return (
+      result !== null &&
+      typeof result === 'object' &&
+      'healthy' in result &&
+      'degraded' in result &&
+      'unhealthy' in result &&
+      typeof (result as any).healthy === 'boolean' &&
+      typeof (result as any).degraded === 'boolean' &&
+      typeof (result as any).unhealthy === 'boolean'
+    );
+  }
   private readonly healthChecks = new Map<string, HealthCheckFunction>();
   private readonly healthCache = new Map<string, ServiceHealth>();
   private readonly healthHistory = new Map<string, ServiceHealth[]>();
@@ -207,7 +226,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       if (typeof result === 'boolean') {
         // Simple boolean result (legacy checks)
         state = result ? 'healthy' : 'degraded';
-      } else if (result && typeof result === 'object' && 'healthy' in result) {
+      } else if (this.isDetailedHealthCheckResult(result)) {
         // Detailed result object (new memory check format)
         if (result.unhealthy) {
           state = 'unhealthy';
@@ -220,7 +239,7 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
         metadata = { ...metadata, ...result };
       } else {
         // Fallback for other result types
-        state = result ? 'healthy' : 'degraded';
+        state = 'degraded';
       }
 
       return {

@@ -2,10 +2,9 @@ import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  CHECKPOINT_ADAPTER_TOKEN,
   BaseCheckpointTuple,
+  ICheckpointAdapter,
 } from '@hive-academy/langgraph-core';
-import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 import {
   ReplayOptions,
   BranchOptions,
@@ -38,7 +37,7 @@ export class TimeTravelService
 
   constructor(
     private readonly configService: ConfigService,
-    @Inject(CHECKPOINT_ADAPTER_TOKEN)
+    @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter
   ) {}
 

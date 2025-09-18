@@ -6,11 +6,7 @@ import {
   TimeTravelConfig,
   TimeTravelModuleAsyncOptions,
 } from './interfaces/time-travel.interface';
-import {
-  CHECKPOINT_ADAPTER_TOKEN,
-  NoOpCheckpointAdapter,
-  ICheckpointAdapter,
-} from '@hive-academy/langgraph-core';
+import { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 /**
  * Time travel module for workflow replay and debugging capabilities
  */
@@ -30,11 +26,8 @@ export class TimeTravelModule {
           maxBranchesPerThread: 10,
         },
       },
-      // Checkpoint adapter provider - either provided or no-op
-      {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
-        useValue: config?.checkpointAdapter || new NoOpCheckpointAdapter(),
-      },
+      // Note: ICheckpointAdapter should be provided by the app module via adapter pattern
+      // No local provider needed as it will be injected globally
       TimeTravelService,
     ];
 
@@ -68,17 +61,8 @@ export class TimeTravelModule {
         useFactory: options.useFactory!,
         inject: options.inject ?? [],
       },
-      // Checkpoint adapter provider - async factory
-      {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
-        useFactory: async (...args: unknown[]) => {
-          const timeTravelConfig = await options.useFactory!(...args);
-          return (
-            timeTravelConfig?.checkpointAdapter || new NoOpCheckpointAdapter()
-          );
-        },
-        inject: options.inject || [],
-      },
+      // Note: ICheckpointAdapter should be provided by the app module via adapter pattern
+      // No local provider needed as it will be injected globally
       {
         provide: TimeTravelService,
         useFactory: (
@@ -97,7 +81,7 @@ export class TimeTravelModule {
 
           return new TimeTravelService(configService, checkpointAdapter);
         },
-        inject: [ConfigService, 'TIME_TRAVEL_CONFIG', CHECKPOINT_ADAPTER_TOKEN],
+        inject: [ConfigService, 'TIME_TRAVEL_CONFIG', 'ICheckpointAdapter'],
       },
       {
         provide: BranchManagerService,

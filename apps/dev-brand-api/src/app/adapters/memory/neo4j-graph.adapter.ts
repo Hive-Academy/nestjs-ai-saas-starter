@@ -57,7 +57,16 @@ export class Neo4jGraphAdapter extends IGraphService {
         properties: data.properties,
       });
 
-      const createdId = this.extractString(result.records[0]?.get('id'));
+      const firstRecord = result.records[0];
+      if (!firstRecord) {
+        throw new GraphOperationError(
+          'No record returned from node creation',
+          'createNode',
+          { data }
+        );
+      }
+
+      const createdId = String((firstRecord as any).id || nodeId);
       this.logger.debug(
         `Created node ${createdId} with labels [${data.labels.join(', ')}]`
       );
@@ -101,7 +110,16 @@ export class Neo4jGraphAdapter extends IGraphService {
         properties: data.properties || {},
       });
 
-      const createdId = this.extractString(result.records[0]?.get('id'));
+      const firstRecord = result.records[0];
+      if (!firstRecord) {
+        throw new GraphOperationError(
+          'No record returned from relationship creation',
+          'createRelationship',
+          { fromNodeId, toNodeId, data }
+        );
+      }
+
+      const createdId = String((firstRecord as any).id || relationshipId);
       this.logger.debug(
         `Created relationship ${createdId} of type ${data.type} from ${fromNodeId} to ${toNodeId}`
       );
@@ -153,12 +171,10 @@ export class Neo4jGraphAdapter extends IGraphService {
       const relationships: GraphRelationship[] = [];
       const paths: GraphPath[] = [];
 
-      result.records.forEach((record) => {
-        const pathNodes = this.extractNodes(this.extractArray(record.get('nodes')));
-        const pathRels = this.extractRelationships(
-          this.extractArray(record.get('relationships'))
-        );
-        const path = this.extractPath(record.get('path'));
+      result.records.forEach((record: any) => {
+        const pathNodes = this.extractNodes(record.nodes || []);
+        const pathRels = this.extractRelationships(record.relationships || []);
+        const path = this.extractPath(record.path);
 
         nodes.push(...pathNodes);
         relationships.push(...pathRels);
@@ -200,13 +216,9 @@ export class Neo4jGraphAdapter extends IGraphService {
     try {
       const result = await this.neo4jService.run(query, params);
 
-      const records = result.records.map((record) => {
-        const recordData: Record<string, unknown> = {};
-        record.keys.forEach((key) => {
-          recordData[key] = this.extractValue(record.get(key));
-        });
-        return recordData;
-      });
+      const records = result.records.map(
+        (record) => record as Record<string, unknown>
+      );
 
       const summary = result.summary
         ? {
@@ -219,10 +231,8 @@ export class Neo4jGraphAdapter extends IGraphService {
                 result.summary.counters?.relationshipsDeleted || 0,
               propertiesSet: result.summary.counters?.propertiesSet || 0,
             },
-            resultAvailableAfter:
-              result.summary.resultAvailableAfter?.toNumber() || 0,
-            resultConsumedAfter:
-              result.summary.resultConsumedAfter?.toNumber() || 0,
+            resultAvailableAfter: result.summary.resultAvailableAfter || 0,
+            resultConsumedAfter: result.summary.resultConsumedAfter || 0,
           }
         : undefined;
 
@@ -256,11 +266,18 @@ export class Neo4jGraphAdapter extends IGraphService {
       `;
 
       const result = await this.neo4jService.run(cypher);
-      const record = result.records[0];
+      const firstRecord = result.records[0];
+      if (!firstRecord) {
+        throw new GraphOperationError(
+          'No statistics record returned',
+          'getStats',
+          {}
+        );
+      }
 
-      const nodeCount = this.extractNumber(record?.get('nodeCount')) || 0;
+      const nodeCount = Number((firstRecord as any).nodeCount) || 0;
       const relationshipCount =
-        this.extractNumber(record?.get('relationshipCount')) || 0;
+        Number((firstRecord as any).relationshipCount) || 0;
 
       // Get detailed stats
       const labelStats = await this.getNodeCountsByLabel();
@@ -351,8 +368,8 @@ export class Neo4jGraphAdapter extends IGraphService {
       `;
 
       const result = await this.neo4jService.run(cypher);
-      const nodes = result.records.map((record) =>
-        this.extractNode(record.get('n'))
+      const nodes = result.records.map((record: any) =>
+        this.extractNode(record.n)
       );
 
       this.logger.debug(`Found ${nodes.length} nodes matching criteria`);
@@ -383,8 +400,13 @@ export class Neo4jGraphAdapter extends IGraphService {
       const result = await this.neo4jService.run(cypher, {
         nodeIds: [...nodeIds],
       });
-      const deletedCount =
-        this.extractNumber(result.records[0]?.get('deletedCount'));
+
+      const firstRecord = result.records[0];
+      if (!firstRecord) {
+        return 0;
+      }
+
+      const deletedCount = Number((firstRecord as any).deletedCount) || 0;
 
       this.logger.debug(`Deleted ${deletedCount} nodes`);
       return deletedCount;
@@ -416,8 +438,13 @@ export class Neo4jGraphAdapter extends IGraphService {
       const result = await this.neo4jService.run(cypher, {
         relationshipIds: [...relationshipIds],
       });
-      const deletedCount =
-        this.extractNumber(result.records[0]?.get('deletedCount'));
+
+      const firstRecord = result.records[0];
+      if (!firstRecord) {
+        return 0;
+      }
+
+      const deletedCount = Number((firstRecord as any).deletedCount) || 0;
 
       this.logger.debug(`Deleted ${deletedCount} relationships`);
       return deletedCount;
@@ -520,11 +547,17 @@ export class Neo4jGraphAdapter extends IGraphService {
     return clauses.join(', ');
   }
 
+  /**
+   * Extract nodes from record data
+   */
   private extractNodes(nodeList: any[]): GraphNode[] {
     return nodeList.map((node) => this.extractNode(node));
   }
 
-  private extractNode(node: unknown): GraphNode {
+  /**
+   * Extract single node from record data
+   */
+  private extractNode(node: any): GraphNode {
     if (!node || typeof node !== 'object') {
       return {
         id: '',
@@ -533,19 +566,24 @@ export class Neo4jGraphAdapter extends IGraphService {
       };
     }
 
-    const nodeObj = node as any;
     return {
-      id: nodeObj.properties?.id || nodeObj.identity?.toString() || '',
-      labels: Array.isArray(nodeObj.labels) ? nodeObj.labels : [],
-      properties: typeof nodeObj.properties === 'object' ? nodeObj.properties : {},
+      id: String(node.id || node.identity || ''),
+      labels: Array.isArray(node.labels) ? node.labels.map(String) : [],
+      properties: node.properties || {},
     };
   }
 
+  /**
+   * Extract relationships from record data
+   */
   private extractRelationships(relList: any[]): GraphRelationship[] {
     return relList.map((rel) => this.extractRelationship(rel));
   }
 
-  private extractRelationship(rel: unknown): GraphRelationship {
+  /**
+   * Extract single relationship from record data
+   */
+  private extractRelationship(rel: any): GraphRelationship {
     if (!rel || typeof rel !== 'object') {
       return {
         id: '',
@@ -556,17 +594,19 @@ export class Neo4jGraphAdapter extends IGraphService {
       };
     }
 
-    const relObj = rel as any;
     return {
-      id: relObj.properties?.id || relObj.identity?.toString() || '',
-      type: relObj.type || '',
-      startNodeId: relObj.start?.toString() || '',
-      endNodeId: relObj.end?.toString() || '',
-      properties: typeof relObj.properties === 'object' ? relObj.properties : {},
+      id: String(rel.id || rel.identity || ''),
+      type: String(rel.type || ''),
+      startNodeId: String(rel.startNodeId || rel.start || ''),
+      endNodeId: String(rel.endNodeId || rel.end || ''),
+      properties: rel.properties || {},
     };
   }
 
-  private extractPath(pathData: unknown): GraphPath {
+  /**
+   * Extract path from record data
+   */
+  private extractPath(pathData: any): GraphPath {
     if (!pathData || typeof pathData !== 'object') {
       return {
         nodes: [],
@@ -575,59 +615,27 @@ export class Neo4jGraphAdapter extends IGraphService {
       };
     }
 
-    const pathObj = pathData as any;
-    const segments = Array.isArray(pathObj.segments) ? pathObj.segments : [];
-    
-    const nodes = this.extractNodes(
-      segments.flatMap((s: any) => [s?.start, s?.end].filter(Boolean))
-    );
-    const relationships = this.extractRelationships(
-      segments.map((s: any) => s?.relationship).filter(Boolean)
-    );
+    const segments = Array.isArray(pathData.segments) ? pathData.segments : [];
+
+    const allNodes: any[] = [];
+    const allRelationships: any[] = [];
+
+    segments.forEach((segment: any) => {
+      if (segment && typeof segment === 'object') {
+        if (segment.start) allNodes.push(segment.start);
+        if (segment.end) allNodes.push(segment.end);
+        if (segment.relationship) allRelationships.push(segment.relationship);
+      }
+    });
+
+    const nodes = this.extractNodes(allNodes);
+    const relationships = this.extractRelationships(allRelationships);
 
     return {
       nodes,
       relationships,
       length: relationships.length,
     };
-  }
-
-  private extractValue(value: unknown): unknown {
-    if (value && typeof value === 'object' && 'toNumber' in value) {
-      return (value as any).toNumber();
-    }
-    return value;
-  }
-
-  /**
-   * Type-safe string extraction from Neo4j record values
-   */
-  private extractString(value: unknown): string {
-    if (typeof value === 'string') return value;
-    if (value && typeof value === 'object' && 'toString' in value) {
-      return (value as any).toString();
-    }
-    return String(value || '');
-  }
-
-  /**
-   * Type-safe number extraction from Neo4j record values
-   */
-  private extractNumber(value: unknown): number {
-    if (typeof value === 'number') return value;
-    if (value && typeof value === 'object' && 'toNumber' in value) {
-      return (value as any).toNumber();
-    }
-    const num = Number(value);
-    return isNaN(num) ? 0 : num;
-  }
-
-  /**
-   * Type-safe array extraction from Neo4j record values
-   */
-  private extractArray(value: unknown): any[] {
-    if (Array.isArray(value)) return value;
-    return [];
   }
 
   private deduplicateNodes(nodes: GraphNode[]): GraphNode[] {
@@ -655,7 +663,11 @@ export class Neo4jGraphAdapter extends IGraphService {
       case 'CREATE_NODE':
         return this.createNode(operation.data as GraphNodeData);
       case 'CREATE_RELATIONSHIP': {
-        const relData = operation.data as any;
+        const relData = operation.data as {
+          from: string;
+          to: string;
+          relationship: GraphRelationshipData;
+        };
         return this.createRelationship(
           relData.from,
           relData.to,
@@ -693,9 +705,9 @@ export class Neo4jGraphAdapter extends IGraphService {
       const result = await this.neo4jService.run(cypher);
       const counts: Record<string, number> = {};
 
-      result.records.forEach((record) => {
-        const label = this.extractString(record.get('label'));
-        const count = this.extractNumber(record.get('count'));
+      result.records.forEach((record: any) => {
+        const label = String(record.label || '');
+        const count = Number(record.count) || 0;
         if (label) {
           counts[label] = count;
         }
@@ -718,9 +730,9 @@ export class Neo4jGraphAdapter extends IGraphService {
       const result = await this.neo4jService.run(cypher);
       const counts: Record<string, number> = {};
 
-      result.records.forEach((record) => {
-        const relType = this.extractString(record.get('relType'));
-        const count = this.extractNumber(record.get('count'));
+      result.records.forEach((record: any) => {
+        const relType = String(record.relType || '');
+        const count = Number(record.count) || 0;
         if (relType) {
           counts[relType] = count;
         }
@@ -732,4 +744,6 @@ export class Neo4jGraphAdapter extends IGraphService {
       return {};
     }
   }
+
+  // The base class already provides validation methods as protected
 }

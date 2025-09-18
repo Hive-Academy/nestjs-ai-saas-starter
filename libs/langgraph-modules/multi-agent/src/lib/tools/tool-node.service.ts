@@ -182,9 +182,7 @@ export class ToolNodeService {
 
           // Apply weighted merging if specified
           if (config.weight !== undefined) {
-            // For weighted merging, we'd need more sophisticated logic
-            // For now, just merge with last-write-wins
-            Object.assign(merged, result);
+            this.applyWeightedMerge(merged, result, config.weight);
           } else {
             Object.assign(merged, result);
           }
@@ -196,6 +194,81 @@ export class ToolNodeService {
         throw error;
       }
     };
+  }
+
+  /**
+   * Apply weighted merging to combine results based on confidence/importance
+   */
+  private applyWeightedMerge(
+    target: Partial<any>,
+    source: Partial<any>,
+    weight: number
+  ): void {
+    for (const [key, sourceValue] of Object.entries(source)) {
+      const targetValue = target[key];
+
+      if (targetValue === undefined) {
+        // No existing value, use source directly
+        target[key] = sourceValue;
+      } else if (
+        typeof targetValue === 'number' &&
+        typeof sourceValue === 'number'
+      ) {
+        // Weighted average for numeric values
+        const currentWeight = (target as any).__weights?.[key] || 1;
+        const totalWeight = currentWeight + weight;
+        target[key] =
+          (targetValue * currentWeight + sourceValue * weight) / totalWeight;
+
+        // Track weights for future merges
+        if (!(target as any).__weights) {
+          (target as any).__weights = {};
+        }
+        (target as any).__weights[key] = totalWeight;
+      } else if (
+        typeof targetValue === 'string' &&
+        typeof sourceValue === 'string'
+      ) {
+        // Confidence-based selection for strings (higher weight wins)
+        const currentWeight = (target as any).__weights?.[key] || 1;
+        if (weight > currentWeight) {
+          target[key] = sourceValue;
+          if (!(target as any).__weights) {
+            (target as any).__weights = {};
+          }
+          (target as any).__weights[key] = weight;
+        }
+      } else if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+        // Merge arrays with weight-based prioritization
+        const mergedArray = [...targetValue];
+        sourceValue.forEach((item, index) => {
+          if (weight > 0.5) {
+            // Higher weight items get priority positioning
+            mergedArray.splice(index, 0, item);
+          } else {
+            mergedArray.push(item);
+          }
+        });
+        target[key] = mergedArray;
+      } else if (
+        typeof targetValue === 'object' &&
+        typeof sourceValue === 'object'
+      ) {
+        // Recursively merge nested objects
+        if (!target[key]) target[key] = {};
+        this.applyWeightedMerge(target[key], sourceValue, weight);
+      } else {
+        // For other types, use weight-based selection
+        const currentWeight = (target as any).__weights?.[key] || 1;
+        if (weight >= currentWeight) {
+          target[key] = sourceValue;
+          if (!(target as any).__weights) {
+            (target as any).__weights = {};
+          }
+          (target as any).__weights[key] = weight;
+        }
+      }
+    }
   }
 
   /**
@@ -401,9 +474,7 @@ export class ToolNodeService {
       }
 
       // Check exclude tags
-      if (
-        excludeTags?.some((tag) => metadata.tags!.includes(tag))
-      ) {
+      if (excludeTags?.some((tag) => metadata.tags!.includes(tag))) {
         return false;
       }
 

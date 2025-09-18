@@ -297,7 +297,7 @@ Options:
   --skip-build       Skip build step, only update node_modules from existing dist/
 
 Examples:
-  npm run update-libs              # Build only affected libraries (recommended)
+  npm run update:libs              # Build only affected libraries (recommended)
   node scripts/update-local-libs.js --force  # Build all libraries
   node scripts/update-local-libs.js --skip-build  # Just copy existing builds
 

@@ -48,7 +48,7 @@ export abstract class UnifiedWorkflowBase<
     @Inject(WorkflowStreamService)
     protected readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorService)
+    @Optional()
     protected readonly eventProcessor?: EventStreamProcessorService
   ) {
     this.logger = new Logger(this.constructor.name);

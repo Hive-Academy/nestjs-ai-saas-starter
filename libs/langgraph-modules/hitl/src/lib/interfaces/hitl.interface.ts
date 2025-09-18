@@ -26,8 +26,30 @@ export interface ConfidenceThreshold {
   high: number;
 }
 
+import type { Type } from '@nestjs/common';
+import type { IHitlStorageService } from './hitl-storage.interface';
+import type { IUserInterruptionStorageService } from './user-interruption.interface';
+
 export interface HitlModuleOptions {
   defaultTimeout?: number;
   confidenceThreshold?: number;
   enabled?: boolean;
+  adapters?: {
+    storage?: Type<IHitlStorageService> | IHitlStorageService;
+    interruptionStorage?: Type<IUserInterruptionStorageService> ;
+  };
+}
+
+export interface HitlModuleAsyncOptions {
+  imports?: any[];
+  inject?: any[];
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<HitlModuleOptions> | HitlModuleOptions;
+  useClass?: Type<HitlOptionsFactory>;
+  useExisting?: Type<HitlOptionsFactory>;
+}
+
+export interface HitlOptionsFactory {
+  createHitlOptions(): Promise<HitlModuleOptions> | HitlModuleOptions;
 }

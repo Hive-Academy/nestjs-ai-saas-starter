@@ -23,3 +23,11 @@ export * from './lib/utils/parameter-serializer';
 
 // Constants
 export * from './lib/constants';
+
+// Config Utilities
+export {
+  getNeo4jConfig,
+  getNeo4jConfigWithDefaults,
+  setNeo4jConfig,
+  isNeo4jConfigured,
+} from './lib/utils/neo4j-config.accessor';
