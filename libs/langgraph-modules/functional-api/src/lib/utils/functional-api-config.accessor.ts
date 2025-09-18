@@ -4,7 +4,7 @@ import type { FunctionalApiModuleOptions } from '../interfaces/module-options.in
  * Global storage for functional API module configuration
  * Set when FunctionalApiModule.forRoot() is called
  */
-let storedFunctionalApiConfig: FunctionalApiModuleOptions = {};
+let storedFunctionalApiConfig: FunctionalApiModuleOptions | null = null;
 
 /**
  * Store functional API configuration for decorator access
@@ -21,7 +21,7 @@ export function setFunctionalApiConfig(
  * Returns the config passed to FunctionalApiModule.forRoot()
  */
 export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
-  return storedFunctionalApiConfig;
+  return storedFunctionalApiConfig || {};
 }
 
 /**
@@ -29,9 +29,9 @@ export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
  * Used by decorators to inherit module configuration
  */
 export function getFunctionalApiConfigWithDefaults(): Required<
-  Omit<FunctionalApiModuleOptions, 'checkpointAdapter'>
+  Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'>
 > &
-  Pick<FunctionalApiModuleOptions, 'checkpointAdapter'> {
+  Pick<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'> {
   const config = getFunctionalApiConfig();
 
   return {
@@ -45,5 +45,6 @@ export function getFunctionalApiConfigWithDefaults(): Required<
     enableCycleDetection: config.enableCycleDetection ?? true,
     globalMetadata: config.globalMetadata ?? {},
     checkpointAdapter: config.checkpointAdapter,
+    streamingAdapter: config.streamingAdapter,
   };
 }

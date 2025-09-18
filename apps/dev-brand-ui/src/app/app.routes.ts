@@ -1,71 +1,37 @@
-import type { Route } from '@angular/router';
+import type { Routes } from '@angular/router';
 
-export const appRoutes: Route[] = [
+export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/devbrand-showcase',
+    redirectTo: '/landing',
     pathMatch: 'full',
   },
-  // New Showcase Routes
   {
-    path: 'devbrand-showcase',
+    path: 'landing',
     loadComponent: () =>
-      import('./features/devbrand-showcase/devbrand-showcase.component').then(
-        (m) => m.DevbrandShowcaseComponent
+      import('./features/landing-page/landing-page.component').then(
+        (m) => m.LandingPageComponent
       ),
-    title: 'DevBrand Platform Showcase',
+    title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
   {
-    path: 'multi-agent-patterns',
-    loadComponent: () =>
-      import(
-        './features/multi-agent-patterns/multi-agent-patterns.component'
-      ).then((m) => m.MultiAgentPatternsComponent),
-    title: 'Multi-Agent Coordination Patterns',
-  },
-  {
-    path: 'library-showcase',
-    loadComponent: () =>
-      import('./features/library-showcase/library-showcase.component').then(
-        (m) => m.LibraryShowcaseComponent
-      ),
-    title: 'Complete Library Ecosystem',
-  },
-  {
-    path: 'developer-experience',
-    loadComponent: () =>
-      import(
-        './features/developer-experience/developer-experience.component'
-      ).then((m) => m.DeveloperExperienceComponent),
-    title: 'Developer Experience Revolution',
-  },
-  // Original Interface Modes
-  {
-    path: 'chat',
-    loadComponent: () =>
-      import('./features/chat-interface/chat-interface.component').then(
-        (m) => m.ChatInterfaceComponent
-      ),
-    title: 'DevBrand Chat Studio',
-  },
-  {
-    path: 'spatial',
+    path: 'spatial-interface',
     loadComponent: () =>
       import('./features/spatial-interface/spatial-interface.component').then(
         (m) => m.SpatialInterfaceComponent
       ),
-    title: 'Agent Constellation',
+    title: '3D Agent Visualization',
   },
   {
-    path: 'canvas',
+    path: 'workflow-canvas',
     loadComponent: () =>
       import('./features/workflow-canvas/workflow-canvas.component').then(
         (m) => m.WorkflowCanvasComponent
       ),
-    title: 'Living Workflow Canvas',
+    title: 'Workflow Canvas',
   },
   {
-    path: 'memory',
+    path: 'memory-constellation',
     loadComponent: () =>
       import(
         './features/memory-constellation/memory-constellation.component'
@@ -73,7 +39,15 @@ export const appRoutes: Route[] = [
     title: 'Memory Constellation',
   },
   {
-    path: 'forge',
+    path: 'chat-interface',
+    loadComponent: () =>
+      import('./features/chat-interface/chat-interface.component').then(
+        (m) => m.ChatInterfaceComponent
+      ),
+    title: 'AI Chat Interface',
+  },
+  {
+    path: 'content-forge',
     loadComponent: () =>
       import('./features/content-forge/content-forge.component').then(
         (m) => m.ContentForgeComponent
@@ -82,6 +56,6 @@ export const appRoutes: Route[] = [
   },
   {
     path: '**',
-    redirectTo: '/devbrand-showcase',
+    redirectTo: '/spatial-interface',
   },
 ];

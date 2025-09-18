@@ -63,9 +63,10 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
  * }
  * ```
  */
-export function Workflow(options: WorkflowOptions): ClassDecorator {
+export function Workflow(options: WorkflowOptions = {}): ClassDecorator {
   return (target: any) => {
     // Get module config with defaults for zero-config experience
+    // Handle case where module hasn't been initialized yet during class loading
     const moduleConfig = getFunctionalApiConfigWithDefaults();
 
     // Merge options with module config defaults
@@ -127,16 +128,63 @@ export function Workflow(options: WorkflowOptions): ClassDecorator {
       return instance;
     };
 
-    // Copy prototype
+    // Copy prototype and preserve constructor identity
     newConstructor.prototype = originalConstructor.prototype;
 
     // Copy static properties and methods
     Object.setPrototypeOf(newConstructor, originalConstructor);
 
-    // Copy metadata from constructor
+    // 🔧 2025 FIX: Preserve constructor name and identity for NestJS
+    Object.defineProperty(newConstructor, 'name', {
+      value: originalConstructor.name,
+      configurable: true,
+    });
+
+    // Preserve constructor length (arity) for proper DI
+    Object.defineProperty(newConstructor, 'length', {
+      value: originalConstructor.length,
+      configurable: true,
+    });
+
+    // Copy ALL metadata from constructor (essential for NestJS DI)
     Reflect.getMetadataKeys(originalConstructor).forEach((key) => {
       const value = Reflect.getMetadata(key, originalConstructor);
       Reflect.defineMetadata(key, value, newConstructor);
+    });
+
+    // 🔧 2025 NestJS DI FIX: Explicitly preserve critical DI metadata keys
+    // These are essential for NestJS dependency injection to work properly
+    const criticalDIMetadata = [
+      'design:paramtypes', // Constructor parameter types (MOST CRITICAL)
+      'design:type', // Class type information
+      'design:returntype', // Return type information
+      'custom:paramtypes', // Custom parameter types
+      'self:paramtypes', // Self parameter types
+      'inject', // @Inject() tokens
+      'optional', // @Optional() markers
+      'self', // @Self() markers
+      'skip-self', // @SkipSelf() markers
+      'host', // @Host() markers
+    ];
+
+    criticalDIMetadata.forEach((metadataKey) => {
+      if (Reflect.hasMetadata(metadataKey, originalConstructor)) {
+        const value = Reflect.getMetadata(metadataKey, originalConstructor);
+        Reflect.defineMetadata(metadataKey, value, newConstructor);
+      }
+    });
+
+    // Copy NestJS-specific metadata (like from @Injectable)
+    const nestjsMetadataKeys =
+      Reflect.getMetadataKeys(originalConstructor) || [];
+    nestjsMetadataKeys.forEach((key) => {
+      // Ensure we handle all possible metadata keys that NestJS might need
+      if (typeof key === 'string' || typeof key === 'symbol') {
+        const value = Reflect.getMetadata(key, originalConstructor);
+        if (value !== undefined) {
+          Reflect.defineMetadata(key, value, newConstructor);
+        }
+      }
     });
 
     // Copy metadata from prototype methods (this is critical for @Entrypoint and @Task decorators)

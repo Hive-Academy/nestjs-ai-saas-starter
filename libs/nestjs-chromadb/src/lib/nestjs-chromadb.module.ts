@@ -11,7 +11,6 @@ import {
   CHROMADB_CLIENT,
   CHROMADB_OPTIONS,
   DEFAULT_BATCH_SIZE,
-  DEFAULT_CHROMA_HOST,
   DEFAULT_CHROMA_PORT,
   DEFAULT_CHROMA_SSL,
   DEFAULT_MAX_RETRIES,
@@ -30,6 +29,7 @@ import { EmbeddingService } from './services/embedding.service';
 import { TextSplitterService } from './services/text-splitter.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
 import { setChromaDBConfig } from './utils/chromadb-config.accessor';
+import { validateChromaDBOptions } from './validation/validate-chromadb-options';
 
 @Global()
 @Module({})
@@ -38,7 +38,11 @@ export class ChromaDBModule {
    * Register ChromaDB module synchronously
    */
   static forRoot(options: ChromaDBModuleOptions): DynamicModule {
+    // Validate raw options first to fail fast before merging defaults
+    validateChromaDBOptions(options as ChromaDBModuleOptions);
     const optionsWithDefaults = this.mergeWithDefaults(options);
+    // Re-validate merged (ensures derived numeric defaults remain valid)
+    validateChromaDBOptions(optionsWithDefaults);
 
     // Store config for decorator access
     setChromaDBConfig(optionsWithDefaults);
@@ -236,11 +240,11 @@ export class ChromaDBModule {
             ...args: any[]
           ) => Promise<ChromaDBModuleOptions> | ChromaDBModuleOptions;
           const config = await factory(...args);
+          validateChromaDBOptions(config as ChromaDBModuleOptions);
           const configWithDefaults = this.mergeWithDefaults(config);
-
+          validateChromaDBOptions(configWithDefaults);
           // Store config for decorator access
           setChromaDBConfig(configWithDefaults);
-
           return configWithDefaults;
         },
         inject: options.inject ?? [],
@@ -251,11 +255,11 @@ export class ChromaDBModule {
       provide: CHROMADB_OPTIONS,
       useFactory: async (optionsFactory: ChromaDBOptionsFactory) => {
         const config = await optionsFactory.createChromaDBOptions();
+        validateChromaDBOptions(config as ChromaDBModuleOptions);
         const configWithDefaults = this.mergeWithDefaults(config);
-
+        validateChromaDBOptions(configWithDefaults);
         // Store config for decorator access
         setChromaDBConfig(configWithDefaults);
-
         return configWithDefaults;
       },
       inject: options.useExisting
@@ -277,7 +281,6 @@ export class ChromaDBModule {
       healthCheckInterval: 30000,
       logConnection: true,
       connection: {
-        host: DEFAULT_CHROMA_HOST,
         port: DEFAULT_CHROMA_PORT,
         ssl: DEFAULT_CHROMA_SSL,
       },

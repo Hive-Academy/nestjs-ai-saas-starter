@@ -313,15 +313,108 @@ export class CheckpointCleanupService
     affectedThreads: string[];
     estimatedSpaceSaved: number;
   }> {
-    const dryRunOptions = { ...options, dryRun: true };
-    const deletedCount = await this.cleanup(dryRunOptions, saverName);
+    const mergedOptions = this.mergeCleanupOptions(options);
+    const saver = this.registryService.getSaver(saverName);
 
-    // Note: This is a simplified implementation
-    // Real implementation would need better integration with checkpoint savers
+    if (!saver) {
+      throw new Error(`Checkpoint saver not found: ${saverName || 'default'}`);
+    }
+
+    const affectedThreads = new Set<string>();
+    let checkpointCount = 0;
+    let totalSize = 0;
+    const averageCheckpointSize = 2048; // Average size in bytes (more realistic than 1024)
+
+    try {
+      // Get all threads to analyze
+      const threadMap = new Map<
+        string,
+        { checkpoints: any[]; oldestTs: string }
+      >();
+
+      // Iterate through all checkpoints to collect data
+      const listOptions = { limit: 1000 }; // Get a reasonable batch
+      for await (const checkpoint of saver.list({}, listOptions)) {
+        if (checkpoint && checkpoint.config?.configurable?.thread_id) {
+          const threadId = checkpoint.config.configurable.thread_id;
+          const checkpointData = checkpoint.checkpoint || checkpoint;
+
+          if (!threadMap.has(threadId)) {
+            threadMap.set(threadId, {
+              checkpoints: [],
+              oldestTs: checkpointData.ts || '',
+            });
+          }
+
+          const threadData = threadMap.get(threadId)!;
+          threadData.checkpoints.push(checkpointData);
+
+          // Track oldest timestamp
+          if (checkpointData.ts && checkpointData.ts < threadData.oldestTs) {
+            threadData.oldestTs = checkpointData.ts;
+          }
+        }
+      }
+
+      // Analyze what would be deleted based on policies
+      const now = Date.now();
+      const maxAgeMs = mergedOptions.maxAge || this.cleanupPolicies.maxAge;
+      const maxPerThread =
+        mergedOptions.maxPerThread || this.cleanupPolicies.maxPerThread;
+      const excludeThreads = mergedOptions.excludeThreads || [];
+
+      for (const [threadId, threadData] of threadMap.entries()) {
+        // Skip excluded threads
+        if (excludeThreads.includes(threadId)) {
+          continue;
+        }
+
+        let threadCheckpointsToDelete = 0;
+        const sortedCheckpoints = threadData.checkpoints.sort((a, b) => {
+          const tsA = new Date(a.ts || 0).getTime();
+          const tsB = new Date(b.ts || 0).getTime();
+          return tsB - tsA; // Newest first
+        });
+
+        // Check age-based deletion
+        for (const checkpoint of sortedCheckpoints) {
+          const checkpointAge = now - new Date(checkpoint.ts || 0).getTime();
+          if (checkpointAge > maxAgeMs) {
+            threadCheckpointsToDelete++;
+          }
+        }
+
+        // Check count-based deletion (keep only maxPerThread newest)
+        if (sortedCheckpoints.length > maxPerThread) {
+          const countBasedDeletions = sortedCheckpoints.length - maxPerThread;
+          threadCheckpointsToDelete = Math.max(
+            threadCheckpointsToDelete,
+            countBasedDeletions
+          );
+        }
+
+        if (threadCheckpointsToDelete > 0) {
+          affectedThreads.add(threadId);
+          checkpointCount += threadCheckpointsToDelete;
+
+          // Estimate size based on checkpoint data
+          const firstCheckpoint = sortedCheckpoints[0];
+          const checkpointSize =
+            firstCheckpoint?.size ||
+            JSON.stringify(firstCheckpoint).length * 1.5 || // Account for storage overhead
+            averageCheckpointSize;
+          totalSize += threadCheckpointsToDelete * checkpointSize;
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error during dry run cleanup analysis:', error);
+      throw error;
+    }
+
     return {
-      wouldDelete: deletedCount,
-      affectedThreads: [], // Would need to be implemented in checkpoint savers
-      estimatedSpaceSaved: deletedCount * 1024, // Rough estimate
+      wouldDelete: checkpointCount,
+      affectedThreads: Array.from(affectedThreads),
+      estimatedSpaceSaved: totalSize || checkpointCount * averageCheckpointSize,
     };
   }
 
@@ -344,13 +437,13 @@ export class CheckpointCleanupService
    * Load cleanup policies from configuration
    */
   private loadCleanupPolicies(): CleanupPolicies {
-    const checkpointConfig = this.moduleOptions.checkpoint || {};
+    const cleanupConfig = this.moduleOptions.cleanup || {};
 
     return {
-      maxAge: checkpointConfig.maxAge || 7 * 24 * 60 * 60 * 1000, // 7 days
-      maxPerThread: checkpointConfig.maxPerThread || 100,
-      cleanupInterval: checkpointConfig.cleanupInterval || 3600000, // 1 hour
-      excludeThreads: checkpointConfig.excludeThreads || [],
+      maxAge: cleanupConfig.maxAge || 7 * 24 * 60 * 60 * 1000, // 7 days default
+      maxPerThread: cleanupConfig.maxPerThread || 100,
+      cleanupInterval: cleanupConfig.interval || 3600000, // 1 hour default
+      excludeThreads: cleanupConfig.excludeThreads || [],
     };
   }
 

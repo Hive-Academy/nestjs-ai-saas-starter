@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { IGraphService } from '../interfaces/graph-service.interface';
+import { IVectorService } from '../interfaces/vector-service.interface';
 import type { MemoryEntry, MemoryConfig } from '../interfaces/memory.interface';
 import { MEMORY_CONFIG } from '../constants/memory.constants';
 // import { wrapMemoryError } from '../errors/memory.errors'; // Not used in this service
@@ -20,6 +21,7 @@ export class MemoryGraphService {
 
   constructor(
     private readonly graphService: IGraphService,
+    private readonly vectorService: IVectorService,
     @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {
     this.logger.debug('MemoryGraphService initialized with configuration', {
@@ -98,7 +100,7 @@ export class MemoryGraphService {
       const memoryData = memories.map((memory) => ({
         threadId: memory.threadId,
         memoryId: memory.id,
-        content: memory.content.substring(0, 1000), // Limit content length
+        content: memory.content.substring(0, this.config.limits?.memoryContentLimit || 1000), // Configurable content length limit
         type: memory.metadata.type,
         importance: memory.metadata.importance || 0.5,
         createdAt: memory.createdAt.toISOString(),
@@ -138,44 +140,193 @@ export class MemoryGraphService {
   }
 
   /**
-   * Build semantic relationships between memories
+   * Build semantic relationships between memories using configurable strategies
    */
   async buildSemanticRelationships(): Promise<void> {
-    // Only build relationships if auto-summarization is enabled (requires graph features)
-    if (!this.config.enableAutoSummarization) {
-      this.logger.debug(
-        'Semantic relationships disabled - auto-summarization not enabled'
-      );
+    // Check if semantic relationships are enabled
+    if (!this.config.semanticRelationships?.enabled) {
+      this.logger.debug('Semantic relationships disabled in configuration');
       return;
     }
 
+    const strategy = this.config.semanticRelationships.strategy || 'hybrid';
+    const maxRelationships = this.config.semanticRelationships.maxRelationshipsPerMemory || 5;
+
     try {
-      // Find memories with similar content or shared tags
-      const cypher = `
-        MATCH (m1:Memory), (m2:Memory)
-        WHERE m1.id <> m2.id
-        AND (
-          m1.type = m2.type OR
-          size(apoc.text.split(toLower(m1.content), ' ')) > 5 AND
-          size([word IN apoc.text.split(toLower(m1.content), ' ') 
-                WHERE word IN apoc.text.split(toLower(m2.content), ' ')]) > 2
-        )
-        AND NOT (m1)-[:RELATED_TO]-(m2)
-        WITH m1, m2, 
-             size([word IN apoc.text.split(toLower(m1.content), ' ') 
-                   WHERE word IN apoc.text.split(toLower(m2.content), ' ')]) as commonWords
-        WHERE commonWords > 2
-        CREATE (m1)-[:RELATED_TO {strength: toFloat(commonWords)/10, createdAt: datetime()}]->(m2)
-        RETURN count(*) as relationshipsCreated
+      let totalRelationships = 0;
+
+      switch (strategy) {
+        case 'vector_similarity':
+          totalRelationships = await this.buildVectorBasedRelationships(maxRelationships);
+          break;
+        case 'word_matching':
+          totalRelationships = await this.buildWordMatchingRelationships(maxRelationships);
+          break;
+        case 'hybrid':
+        default:
+          // Try vector similarity first, fallback to word matching
+          try {
+            totalRelationships = await this.buildVectorBasedRelationships(maxRelationships);
+            this.logger.debug(`Built ${totalRelationships} relationships using vector similarity`);
+          } catch (vectorError) {
+            this.logger.warn('Vector similarity failed, falling back to word matching', vectorError);
+            totalRelationships = await this.buildWordMatchingRelationships(maxRelationships);
+            this.logger.debug(`Built ${totalRelationships} relationships using word matching fallback`);
+          }
+          break;
+      }
+
+      this.logger.debug(`Built ${totalRelationships} semantic relationships using ${strategy} strategy`);
+    } catch (error) {
+      this.logger.warn(`Failed to build semantic relationships`, error);
+    }
+  }
+
+  /**
+   * Build relationships using vector similarity (requires vector service)
+   */
+  private async buildVectorBasedRelationships(maxRelationships: number): Promise<number> {
+    try {
+      // Get all memories from graph to compare
+      const allMemoriesQuery = `
+        MATCH (m:Memory)
+        RETURN m.id as id, m.content as content
+        LIMIT ${this.config.limits?.countAccuracyLimit || 1000}
       `;
+      
+      const memoriesResult = await this.graphService.executeCypher(allMemoriesQuery);
+      const memories = memoriesResult.records.map(record => ({
+        id: record.id as string,
+        content: record.content as string,
+      }));
+
+      let totalCreated = 0;
+      const similarityThreshold = this.config.semanticRelationships?.similarityThreshold || 0.7;
+      const collection = this.config.collection || 'memory_store';
+
+      // For each memory, find similar memories using vector search
+      for (const memory of memories) {
+        try {
+          // Use vector service to find similar content
+          const similarMemories = await this.vectorService.search(collection, {
+            queryText: memory.content,
+            limit: maxRelationships * 2, // Get more to filter out self and apply threshold
+          });
+
+          const relationships: Array<{ targetId: string; strength: number }> = [];
+
+          for (const similar of similarMemories) {
+            // Skip self-references and apply similarity threshold
+            if (similar.id !== memory.id && (similar.relevanceScore || 0) >= similarityThreshold) {
+              relationships.push({
+                targetId: similar.id,
+                strength: similar.relevanceScore || 0,
+              });
+            }
+          }
+
+          // Create relationships with highest similarity scores
+          const topRelationships = relationships
+            .sort((a, b) => b.strength - a.strength)
+            .slice(0, maxRelationships);
+
+          for (const rel of topRelationships) {
+            const relationshipCypher = `
+              MATCH (m1:Memory {id: $sourceId}), (m2:Memory {id: $targetId})
+              WHERE NOT (m1)-[:RELATED_TO]-(m2)
+              CREATE (m1)-[:RELATED_TO {
+                strength: $strength, 
+                type: 'vector_similarity',
+                createdAt: datetime()
+              }]->(m2)
+              RETURN count(*) as created
+            `;
+
+            const result = await this.graphService.executeCypher(relationshipCypher, {
+              sourceId: memory.id,
+              targetId: rel.targetId,
+              strength: rel.strength,
+            });
+
+            totalCreated += (result.records[0]?.created as number) || 0;
+          }
+        } catch (memoryError) {
+          this.logger.debug(`Failed to process memory ${memory.id}`, memoryError);
+        }
+      }
+
+      return totalCreated;
+    } catch (error) {
+      throw new Error(`Vector-based relationship building failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Build relationships using word matching (APOC-independent)
+   */
+  private async buildWordMatchingRelationships(maxRelationships: number): Promise<number> {
+    const minCommonWords = this.config.semanticRelationships?.minCommonWords || 2;
+    const requireApoc = this.config.semanticRelationships?.requireApoc ?? false;
+
+    try {
+      let cypher: string;
+
+      if (requireApoc) {
+        // Original APOC-dependent implementation
+        cypher = `
+          MATCH (m1:Memory), (m2:Memory)
+          WHERE m1.id <> m2.id
+          AND size(apoc.text.split(toLower(m1.content), ' ')) > 5
+          AND NOT (m1)-[:RELATED_TO]-(m2)
+          WITH m1, m2, 
+               size([word IN apoc.text.split(toLower(m1.content), ' ') 
+                     WHERE word IN apoc.text.split(toLower(m2.content), ' ')]) as commonWords
+          WHERE commonWords >= ${minCommonWords}
+          WITH m1, m2, commonWords
+          ORDER BY commonWords DESC
+          WITH m1, collect({memory: m2, score: commonWords})[0..${maxRelationships}] as topRelated
+          UNWIND topRelated as related
+          CREATE (m1)-[:RELATED_TO {
+            strength: toFloat(related.score)/10, 
+            type: 'word_matching',
+            createdAt: datetime()
+          }]->(related.memory)
+          RETURN count(*) as relationshipsCreated
+        `;
+      } else {
+        // APOC-independent implementation using native Cypher functions
+        cypher = `
+          MATCH (m1:Memory), (m2:Memory)
+          WHERE m1.id <> m2.id
+          AND size(split(toLower(m1.content), ' ')) > 5
+          AND NOT (m1)-[:RELATED_TO]-(m2)
+          WITH m1, m2, 
+               split(toLower(m1.content), ' ') as words1,
+               split(toLower(m2.content), ' ') as words2
+          WITH m1, m2, 
+               size([word IN words1 WHERE word IN words2]) as commonWords
+          WHERE commonWords >= ${minCommonWords}
+          WITH m1, m2, commonWords
+          ORDER BY commonWords DESC
+          WITH m1, collect({memory: m2, score: commonWords})[0..${maxRelationships}] as topRelated
+          UNWIND topRelated as related
+          CREATE (m1)-[:RELATED_TO {
+            strength: toFloat(related.score)/10, 
+            type: 'word_matching',
+            createdAt: datetime()
+          }]->(related.memory)
+          RETURN count(*) as relationshipsCreated
+        `;
+      }
 
       const result = await this.graphService.executeCypher(cypher);
       const recordValue = result.records[0]?.relationshipsCreated;
-      const count = typeof recordValue === 'number' ? recordValue : 0;
-
-      this.logger.debug(`Built ${count} semantic relationships`);
+      return typeof recordValue === 'number' ? recordValue : 0;
     } catch (error) {
-      this.logger.warn(`Failed to build semantic relationships`, error);
+      if (error instanceof Error && error.message?.includes('apoc') && !requireApoc) {
+        throw new Error('APOC procedures not available and requireApoc is false');
+      }
+      throw error;
     }
   }
 
@@ -236,7 +387,7 @@ export class MemoryGraphService {
         WHERE connected.id <> $memoryId
         RETURN DISTINCT connected.id as connectedId
         ORDER BY connected.importance DESC
-        LIMIT 10
+        LIMIT ${this.config.limits?.relationshipQueryLimit || 10}
       `;
 
       const result = await this.graphService.executeCypher(cypher, {

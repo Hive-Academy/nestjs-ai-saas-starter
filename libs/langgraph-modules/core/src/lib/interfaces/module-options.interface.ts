@@ -424,5 +424,5 @@ export interface LangGraphOptionsFactory {
  */
 export type AsyncModuleFactory<
   TOptions = any,
-  TDeps extends readonly unknown[] = readonly unknown[]
+  TDeps extends readonly any[] = readonly any[]
 > = (...deps: TDeps) => Promise<TOptions> | TOptions;

@@ -78,13 +78,52 @@ export interface MemoryContext {
 export interface WorkflowState {
   id: string;
   name: string;
-  status: 'planning' | 'executing' | 'completed' | 'error';
+  status:
+    | 'planning'
+    | 'executing'
+    | 'completed'
+    | 'error'
+    | 'paused'
+    | 'awaiting_user_input';
   currentStep: number;
   totalSteps: number;
   activeAgents: string[];
   memoryContexts: MemoryContext[];
   startTime: Date;
   estimatedCompletion?: Date;
+  // NEW: User Interruption Support
+  isPaused?: boolean;
+  pauseReason?: string;
+  awaitingUserInput?: boolean;
+  activeInterruptions?: UserInterruption[];
+}
+
+// NEW: User Interruption Interfaces
+export interface UserInterruption {
+  id: string;
+  executionId: string;
+  nodeId: string;
+  type:
+    | 'question'
+    | 'clarification'
+    | 'input_request'
+    | 'approval_request'
+    | 'correction';
+  message: string;
+  status: 'active' | 'resolved' | 'cancelled' | 'expired';
+  createdAt: Date;
+  resolvedAt?: Date;
+  userResponse?: string;
+  timeoutMs?: number;
+  urgency?: 'low' | 'medium' | 'high';
+  metadata?: Record<string, unknown>;
+}
+
+export interface InterruptionDialogData {
+  interruption: UserInterruption;
+  options?: string[];
+  allowFreeText?: boolean;
+  placeholder?: string;
 }
 
 export interface InterfaceModeState {
@@ -120,12 +159,28 @@ export enum WebSocketMessageType {
   PING = 'ping',
   AUTHENTICATION = 'authentication',
 
+  // NEW: User Interruption Messages (Client → Server)
+  INTERRUPT_AGENT = 'interrupt_agent',
+  INJECT_INPUT = 'inject_input',
+  RESPOND_TO_INTERRUPTION = 'respond_to_interruption',
+  CANCEL_INTERRUPTION = 'cancel_interruption',
+  REQUEST_CLARIFICATION = 'request_clarification',
+  USER_QUESTION = 'user_question',
+
   // Server → Client messages
   STREAM_UPDATE = 'stream_update',
   EXECUTION_STATUS = 'execution_status',
   CONNECTION_STATUS = 'connection_status',
   ERROR = 'error',
   PONG = 'pong',
+
+  // NEW: User Interruption Messages (Server → Client)
+  INTERRUPTION_REQUEST = 'interruption_request',
+  INTERRUPTION_RESOLVED = 'interruption_resolved',
+  WORKFLOW_PAUSED = 'workflow_paused',
+  WORKFLOW_RESUMED = 'workflow_resumed',
+  APPROVAL_REQUEST = 'approval_request',
+  CLARIFICATION_REQUEST = 'clarification_request',
 
   // Legacy message types for backward compatibility
   AGENT_UPDATE = 'agent_update',

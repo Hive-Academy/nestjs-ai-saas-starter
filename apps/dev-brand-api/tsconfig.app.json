@@ -28,7 +28,10 @@
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../../libs/langgraph-modules/streaming/src/lib/adapters/streaming-service.adapter.ts"
+  ],
   "exclude": [
     "out-tsc",
     "dist",

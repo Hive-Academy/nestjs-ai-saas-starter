@@ -1,5 +1,9 @@
 import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
 import { DEFAULT_MULTI_AGENT_OPTIONS } from '../constants/multi-agent.constants';
+import type {
+  ICheckpointAdapter,
+  IStreamingService,
+} from '@hive-academy/langgraph-core';
 
 /**
  * Global storage for multi-agent module configuration
@@ -27,7 +31,13 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
  * Get multi-agent config with safe defaults
  * Used by decorators to inherit module configuration
  */
-export function getMultiAgentConfigWithDefaults(): Required<MultiAgentModuleOptions> {
+export function getMultiAgentConfigWithDefaults(): Omit<
+  Required<MultiAgentModuleOptions>,
+  'checkpointAdapter' | 'streamingAdapter'
+> & {
+  checkpointAdapter?: ICheckpointAdapter;
+  streamingAdapter?: IStreamingService;
+} {
   const config = getMultiAgentConfig();
 
   return {
@@ -58,6 +68,7 @@ export function getMultiAgentConfigWithDefaults(): Required<MultiAgentModuleOpti
     tools: config.tools || [],
     agents: config.agents || [],
     workflows: config.workflows || [],
-    checkpointAdapter: config.checkpointAdapter || undefined,
+    checkpointAdapter: config.checkpointAdapter,
+    streamingAdapter: config.streamingAdapter,
   };
 }

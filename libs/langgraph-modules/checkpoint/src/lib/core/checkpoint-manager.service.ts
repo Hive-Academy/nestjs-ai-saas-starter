@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type {
-  CheckpointConfig,
   EnhancedCheckpointMetadata,
   EnhancedCheckpoint,
   EnhancedCheckpointTuple,
@@ -17,13 +16,13 @@ import type {
   CheckpointCleanupOptions,
 } from '../interfaces/checkpoint.interface';
 import type {
-  ICheckpointSaverFactory,
   ICheckpointRegistryService,
   ICheckpointPersistenceService,
   ICheckpointMetricsService,
   ICheckpointCleanupService,
   ICheckpointHealthService,
 } from '../interfaces/checkpoint-services.interface';
+import type { ICheckpointSaverRegistry } from '../interfaces/checkpoint-saver-registry.interface';
 
 /**
  * Facade service for managing checkpoint persistence across multiple storage backends
@@ -38,8 +37,8 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Optional() private readonly configService?: ConfigService,
-    @Inject('ICheckpointSaverFactory')
-    private readonly saverFactory?: ICheckpointSaverFactory,
+    @Inject('ICheckpointSaverRegistry')
+    private readonly saverRegistry?: ICheckpointSaverRegistry,
     @Inject('ICheckpointRegistryService')
     private readonly registryService?: ICheckpointRegistryService,
     @Inject('ICheckpointPersistenceService')
@@ -68,7 +67,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    */
   public isCoreServicesAvailable(): boolean {
     return !!(
-      this.saverFactory &&
+      this.saverRegistry &&
       this.registryService &&
       this.persistenceService
     );
@@ -221,13 +220,11 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Returns empty array if registry service not available
    */
   getAvailableSavers(): string[] {
-    if (!this.registryService) {
-      this.logger.warn(
-        'Registry service not available - returning empty array'
-      );
+    if (!this.saverRegistry) {
+      this.logger.warn('Saver registry not available - returning empty array');
       return [];
     }
-    return this.registryService.getAvailableSavers();
+    return this.saverRegistry.getAvailableSavers();
   }
 
   /**
@@ -415,7 +412,14 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Update cleanup policies
    * Does nothing if cleanup service not available
    */
-  updateCleanupPolicies(policies: any): void {
+  updateCleanupPolicies(
+    policies: Partial<{
+      maxAge: number;
+      maxPerThread: number;
+      cleanupInterval: number;
+      excludeThreads: string[];
+    }>
+  ): void {
     if (!this.cleanupService) {
       this.logger.warn(
         'Cleanup service not available - cannot update policies'
@@ -666,53 +670,55 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Initialize checkpoint savers from configuration
-   * Uses factory and registry services for setup
-   * Falls back to default configuration if ConfigService not available
+   * Now supports single-saver configuration pattern
+   * Falls back to default memory saver if no configuration provided
    */
   private async initializeCheckpointSavers(): Promise<void> {
-    const configs =
-      this.configService?.get<CheckpointConfig[]>('checkpoint.savers', []) ??
-      [];
+    // Check if we have any registered savers (from module initialization)
+    const availableSavers = this.saverRegistry?.getAvailableSavers() || [];
 
-    if (configs.length === 0) {
-      // Create default memory saver if no configuration provided
-      const defaultConfig: CheckpointConfig = {
-        type: 'memory',
-        name: 'default',
-        default: true,
-      };
-      configs.push(defaultConfig);
+    if (availableSavers.length > 0) {
+      this.logger.log(
+        `✅ Checkpoint system initialized with ${
+          availableSavers.length
+        } saver(s): ${availableSavers.join(', ')}`
+      );
+      return;
     }
 
-    for (const config of configs) {
-      try {
-        // Check if factory and registry services are available
-        if (!this.saverFactory || !this.registryService) {
-          this.logger.warn(
-            `Cannot initialize ${config.type} saver - required services not available`
-          );
-          continue;
-        }
+    // No savers registered - create fallback memory saver
+    this.logger.warn(
+      '⚠️  No checkpoint saver provided - falling back to in-memory storage'
+    );
 
-        // Create saver using factory
-        const saver = await this.saverFactory.createCheckpointSaver(config);
-        const name = config.name || config.type;
+    // Import and create memory saver as fallback
+    try {
+      const { MemorySaver } = await import('@langchain/langgraph-checkpoint');
+      const memorySaver = new MemorySaver();
 
-        // Register saver in registry
-        this.registryService.registerSaver(name, saver, config.default);
+      if (this.saverRegistry) {
+        this.saverRegistry.registerSaver({
+          name: 'fallback-memory',
+          saver: memorySaver,
+          default: true,
+          metadata: {
+            type: 'memory',
+            description: 'In-memory checkpoint storage (fallback)',
+            persistent: false,
+            supportsStreaming: true,
+          },
+        });
 
-        this.logger.log(`Initialized ${config.type} checkpoint saver: ${name}`);
-      } catch (error) {
-        this.logger.error(
-          `Failed to initialize checkpoint saver ${
-            config.name || config.type
-          }:`,
-          error
-        );
+        this.logger.log('✅ Fallback memory saver registered successfully');
       }
+    } catch (error) {
+      this.logger.error('Failed to create fallback memory saver:', error);
+      throw new Error(
+        'Cannot initialize checkpoint system - no savers available'
+      );
     }
 
-    // Validate that we have at least one saver if registry service is available
+    // Validate that we now have at least one saver
     if (this.registryService) {
       const validation = this.registryService.validateSavers();
       if (!validation.valid) {
@@ -722,16 +728,6 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
           )}`
         );
       }
-
-      this.logger.log(
-        `Checkpoint system initialized with ${
-          this.registryService.getAvailableSavers().length
-        } saver(s)`
-      );
-    } else {
-      this.logger.warn(
-        'Registry service not available - cannot validate initialization'
-      );
     }
   }
 

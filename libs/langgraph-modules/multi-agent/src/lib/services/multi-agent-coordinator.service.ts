@@ -1,10 +1,11 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import {
-  CHECKPOINT_ADAPTER_TOKEN,
+import type {
   ICheckpointAdapter,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
+import { NodeIdBuilder } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentNetwork,
@@ -32,28 +33,37 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     private readonly agentRegistry: AgentRegistryService,
     private readonly networkManager: NetworkManagerService,
     private readonly llmProvider: LlmProviderService,
-    @Inject(CHECKPOINT_ADAPTER_TOKEN)
-    private readonly checkpointAdapter: ICheckpointAdapter
-  ) {}
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter: ICheckpointAdapter,
+    @Inject('IStreamingService')
+    private readonly streamingService: IStreamingService
+  ) {
+    // Initialize streaming service for multi-agent operations
+    this.initializeStreamingCapabilities();
+  }
 
   async onModuleInit(): Promise<void> {
     this.logger.log(
       'Multi-agent coordinator service initialized with SOLID architecture'
     );
 
-    // Test LLM connectivity on startup
-    try {
-      const isConnected = await this.llmProvider.testLLM();
-      if (isConnected) {
-        this.logger.log('LLM connectivity verified');
-      } else {
-        this.logger.warn(
-          'LLM connectivity test failed - workflows may not function properly'
-        );
+    // Test LLM connectivity asynchronously to avoid blocking startup
+    setImmediate(async () => {
+      try {
+        const isConnected = await this.llmProvider.testLLM();
+        if (isConnected) {
+          this.logger.log('LLM connectivity verified');
+          // Initialize streaming for agent events
+          await this.setupAgentStreamingHooks();
+        } else {
+          this.logger.warn(
+            'LLM connectivity test failed - workflows may not function properly'
+          );
+        }
+      } catch (error) {
+        this.logger.warn('Unable to test LLM connectivity on startup:', error);
       }
-    } catch (error) {
-      this.logger.warn('Unable to test LLM connectivity on startup:', error);
-    }
+    });
   }
 
   // ============================================================================
@@ -131,7 +141,101 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       streamMode?: 'values' | 'updates' | 'messages';
     }
   ): Promise<MultiAgentResult> {
-    return this.networkManager.executeWorkflow(networkId, input);
+    const executionId = this.generateExecutionId(networkId);
+    const threadId = this.generateThreadId(networkId);
+
+    // Prepare checkpoint-enabled config
+    const checkpointConfig: RunnableConfig = {
+      ...input.config,
+      configurable: {
+        ...input.config?.configurable,
+        thread_id: threadId,
+      },
+      tags: [...(input.config?.tags || []), 'multi-agent', 'auto-checkpoint'],
+      metadata: {
+        ...input.config?.metadata,
+        networkId,
+        executionId,
+        threadId,
+        checkpointEnabled: !!this.checkpointAdapter,
+      },
+    };
+
+    // Save initial checkpoint if adapter is available
+    if (this.checkpointAdapter) {
+      try {
+        await this.saveWorkflowCheckpoint(threadId, {
+          networkId,
+          executionId,
+          phase: 'start',
+          messages: input.messages,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        this.logger.warn(`Failed to save initial checkpoint: ${error}`);
+        // Continue execution even if checkpoint fails
+      }
+    }
+
+    // Stream workflow start event
+    if (this.streamingService) {
+      await this.streamingService.emitEvent('workflow_start', {
+        executionId,
+        networkId,
+        threadId,
+        input: { messageCount: input.messages.length },
+        timestamp: new Date(),
+        metadata: {
+          agentCount: this.getNetworkConfig(networkId)?.agents?.length || 0,
+          checkpointEnabled: !!this.checkpointAdapter,
+        },
+      });
+    }
+
+    const result = await this.networkManager.executeWorkflow(networkId, {
+      ...input,
+      config: checkpointConfig,
+    });
+
+    // Save completion checkpoint if adapter is available
+    if (this.checkpointAdapter && result) {
+      try {
+        await this.saveWorkflowCheckpoint(threadId, {
+          networkId,
+          executionId,
+          phase: 'complete',
+          result: {
+            success: result.success,
+            executionTime: result.executionTime,
+            executionPath: result.executionPath,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        this.logger.warn(`Failed to save completion checkpoint: ${error}`);
+        // Don't fail the workflow if checkpoint fails
+      }
+    }
+
+    // Stream workflow completion event
+    if (this.streamingService && result) {
+      await this.streamingService.emitEvent('workflow_complete', {
+        executionId,
+        networkId,
+        threadId,
+        result: {
+          success: result.success,
+          executionTime: result.executionTime,
+          executionPath: result.executionPath,
+        },
+        timestamp: new Date(),
+        metadata: {
+          checkpointSaved: !!this.checkpointAdapter,
+        },
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -145,7 +249,35 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       streamMode?: 'values' | 'updates' | 'messages';
     }
   ): AsyncGenerator<Partial<AgentState>, MultiAgentResult, unknown> {
-    return this.networkManager.streamWorkflow(networkId, input);
+    const threadId = this.generateThreadId(networkId);
+
+    // Prepare checkpoint-enabled config for streaming
+    const checkpointConfig: RunnableConfig = {
+      ...input.config,
+      configurable: {
+        ...input.config?.configurable,
+        thread_id: threadId,
+      },
+      tags: [
+        ...(input.config?.tags || []),
+        'multi-agent',
+        'auto-checkpoint',
+        'streaming',
+      ],
+      metadata: {
+        ...input.config?.metadata,
+        networkId,
+        threadId,
+        streamMode: input.streamMode || 'values',
+        checkpointEnabled: !!this.checkpointAdapter,
+      },
+    };
+
+    // Set up streaming bridge with checkpoint-enabled config
+    return this.bridgeNetworkStreaming(networkId, {
+      ...input,
+      config: checkpointConfig,
+    });
   }
 
   /**
@@ -513,9 +645,249 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
 
   /**
    * Generate thread ID for a network (consistent naming)
+   * Uses NodeIdBuilder to create canonical thread ID following pattern: multi-agent.network.{networkId}
    */
   private generateThreadId(networkId: string): string {
-    return `multi-agent_${networkId}`;
+    try {
+      return NodeIdBuilder.create()
+        .domain('multi-agent')
+        .phase('network')
+        .activity(networkId)
+        .build();
+    } catch (error) {
+      this.logger.warn(
+        `Failed to generate canonical thread ID, using fallback: ${error}`
+      );
+      // Fallback to simple pattern if NodeIdBuilder fails
+      return `multi-agent.network.${networkId}`;
+    }
+  }
+
+  /**
+   * Save workflow checkpoint with state and metadata
+   */
+  private async saveWorkflowCheckpoint(
+    threadId: string,
+    state: Record<string, unknown>
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return;
+    }
+
+    try {
+      const checkpoint = {
+        id: `checkpoint_${threadId}_${Date.now()}`,
+        channel_values: state,
+      };
+
+      const metadata = {
+        threadId,
+        timestamp: new Date().toISOString(),
+        source: 'input' as const,
+        step: 0,
+        parents: {},
+        networkId: state.networkId as string,
+        executionId: state.executionId as string,
+        phase: state.phase as string,
+      };
+
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        checkpoint,
+        metadata
+      );
+
+      this.logger.debug(`Checkpoint saved for thread ${threadId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to save checkpoint for thread ${threadId}:`,
+        error
+      );
+      // Don't throw - checkpoint failures shouldn't stop workflow execution
+    }
+  }
+
+  /**
+   * Generate execution ID for streaming events
+   */
+  private generateExecutionId(networkId: string): string {
+    return `exec_${networkId}_${Date.now()}`;
+  }
+
+  /**
+   * Initialize streaming capabilities for multi-agent operations
+   */
+  private initializeStreamingCapabilities(): void {
+    this.logger.debug('Streaming service available:', !!this.streamingService);
+  }
+
+  /**
+   * Set up streaming hooks for agent events
+   */
+  private async setupAgentStreamingHooks(): Promise<void> {
+    if (!this.streamingService) {
+      this.logger.debug(
+        'Streaming service not available - skipping agent streaming hooks'
+      );
+      return;
+    }
+
+    this.logger.debug('Setting up agent streaming hooks');
+    // Additional streaming hook setup can be added here
+  }
+
+  /**
+   * Bridge streaming between networkManager and streaming service
+   */
+  private async *bridgeNetworkStreaming(
+    networkId: string,
+    input: {
+      messages: string[] | HumanMessage[];
+      config?: RunnableConfig;
+      streamMode?: 'values' | 'updates' | 'messages';
+    }
+  ): AsyncGenerator<Partial<AgentState>, MultiAgentResult, unknown> {
+    const executionId = this.generateExecutionId(networkId);
+    const threadId =
+      (input.config?.metadata?.threadId as string) ||
+      this.generateThreadId(networkId);
+    const startTime = Date.now();
+
+    // Save initial checkpoint for streaming if adapter is available
+    if (this.checkpointAdapter) {
+      try {
+        await this.saveWorkflowCheckpoint(threadId, {
+          networkId,
+          executionId,
+          phase: 'stream_start',
+          messages: input.messages,
+          streamMode: input.streamMode || 'values',
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to save initial streaming checkpoint: ${error}`
+        );
+      }
+    }
+
+    // Stream start event
+    if (this.streamingService) {
+      await this.streamingService.emitEvent('stream_start', {
+        executionId,
+        networkId,
+        threadId,
+        timestamp: new Date(),
+        metadata: {
+          checkpointEnabled: !!this.checkpointAdapter,
+          streamMode: input.streamMode || 'values',
+        },
+      });
+    }
+
+    // Get the original stream from network manager
+    const originalStream = this.networkManager.streamWorkflow(networkId, input);
+
+    try {
+      let stepCount = 0;
+      for await (const update of originalStream) {
+        stepCount++;
+
+        // Save periodic checkpoints during streaming
+        if (this.checkpointAdapter && stepCount % 5 === 0) {
+          try {
+            await this.saveWorkflowCheckpoint(threadId, {
+              networkId,
+              executionId,
+              phase: 'stream_update',
+              step: stepCount,
+              current: update.current,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (error) {
+            this.logger.warn(
+              `Failed to save streaming checkpoint at step ${stepCount}: ${error}`
+            );
+          }
+        }
+
+        // Stream progress events for each update
+        if (this.streamingService && update) {
+          await this.streamingService.emitEvent('agent_update', {
+            executionId,
+            networkId,
+            threadId,
+            current: update.current,
+            timestamp: new Date(),
+            metadata: {
+              messageCount: update.messages?.length || 0,
+              step: stepCount,
+              checkpointSaved: this.checkpointAdapter && stepCount % 5 === 0,
+            },
+          });
+        }
+
+        yield update;
+      }
+
+      const executionTime = Date.now() - startTime;
+
+      // Save final checkpoint
+      if (this.checkpointAdapter) {
+        try {
+          await this.saveWorkflowCheckpoint(threadId, {
+            networkId,
+            executionId,
+            phase: 'stream_complete',
+            totalSteps: stepCount,
+            executionTime,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          this.logger.warn(
+            `Failed to save final streaming checkpoint: ${error}`
+          );
+        }
+      }
+
+      // Stream completion
+      if (this.streamingService) {
+        await this.streamingService.emitEvent('stream_complete', {
+          executionId,
+          networkId,
+          threadId,
+          timestamp: new Date(),
+          metadata: {
+            totalSteps: stepCount,
+            executionTime,
+            checkpointSaved: !!this.checkpointAdapter,
+          },
+        });
+      }
+    } catch (error) {
+      // Stream error
+      if (this.streamingService) {
+        await this.streamingService.emitEvent('stream_error', {
+          executionId,
+          networkId,
+          threadId,
+          error: (error as Error).message,
+          timestamp: new Date(),
+          metadata: {
+            checkpointEnabled: !!this.checkpointAdapter,
+          },
+        });
+      }
+      throw error;
+    }
+
+    // Return from the generator (this won't be reached in normal iteration)
+    return {
+      finalState: {} as AgentState,
+      executionPath: [],
+      executionTime: Date.now() - startTime,
+      success: true,
+    };
   }
 
   // ============================================================================

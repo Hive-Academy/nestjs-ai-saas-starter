@@ -1,15 +1,13 @@
 import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agent';
 
-// Import showcase tools for explicit registration
-import { ShowcaseAnalysisTools } from '../showcase/tools/showcase-analysis.tools';
-import { ShowcaseIntegrationTools } from '../showcase/tools/showcase-integration.tools';
-
-// Import showcase agents for explicit registration
-import { DemoShowcaseAgent } from '../showcase/agents/demo-showcase.agent';
-import { AdvancedShowcaseAgent } from '../showcase/agents/advanced-showcase.agent';
-import { SpecialistShowcaseAgent } from '../showcase/agents/specialist-showcase.agent';
-import { StreamingShowcaseAgent } from '../showcase/agents/streaming-showcase.agent';
-import { HitlShowcaseAgent } from '../showcase/agents/hitl-showcase.agent';
+// Post-migration tool & agent imports (showcase module fully deprecated)
+import { DocumentProcessingTools } from '../business-workflows/core/tools/document-processing.tools';
+import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
+import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from '../business-workflows/agents/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer.agent';
+import { CustomerSupportAgent } from '../business-workflows/agents/customer-support.agent';
+import { EnhancedSupportWorkflow } from '../business-workflows/workflows/enhanced-support.workflow';
 
 /**
  * Multi-Agent Module Configuration for dev-brand-api
@@ -66,16 +64,18 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
 
   return {
     // Explicit tool registration (replaces discovery-based registration)
-    tools: [ShowcaseAnalysisTools, ShowcaseIntegrationTools],
+    tools: [DocumentProcessingTools, WebResearchTools],
 
     // Explicit agent registration (replaces discovery-based registration)
     agents: [
-      DemoShowcaseAgent,
-      AdvancedShowcaseAgent,
-      SpecialistShowcaseAgent,
-      StreamingShowcaseAgent,
-      HitlShowcaseAgent,
+      PersonalBrandStrategistAgent,
+      ContentCreatorAgent,
+      GitHubCodeAnalyzerAgent,
+      CustomerSupportAgent,
     ],
+
+    // Workflow registration - Multi-agent orchestration workflows only
+    workflows: [EnhancedSupportWorkflow],
 
     // Simple and consistent LLM configuration
     defaultLlm: {

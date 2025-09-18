@@ -2,6 +2,7 @@ import type { ModuleMetadata, Type } from '@nestjs/common';
 import type {
   ICheckpointAdapter,
   AsyncModuleFactory,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -70,6 +71,12 @@ export interface FunctionalApiModuleOptions {
    * If not provided, checkpointing will be disabled (uses NoOpCheckpointAdapter)
    */
   readonly checkpointAdapter?: ICheckpointAdapter;
+
+  /**
+   * Optional streaming service adapter for real-time events
+   * If not provided, streaming will be disabled (uses NoOpStreamingService)
+   */
+  readonly streamingAdapter?: IStreamingService;
 }
 
 /**

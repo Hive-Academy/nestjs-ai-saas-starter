@@ -1,4 +1,5 @@
 import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 
 /**
  * Global storage for workflow engine module configuration
@@ -28,15 +29,29 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
  * Get workflow engine config with safe defaults
  * Used by decorators to inherit module configuration
  */
-export function getWorkflowEngineConfigWithDefaults(): Required<WorkflowEngineModuleOptions> {
+export function getWorkflowEngineConfigWithDefaults(): Omit<
+  Required<WorkflowEngineModuleOptions>,
+  'streamingAdapter'
+> & { streamingAdapter?: IStreamingService } {
   const config = getWorkflowEngineConfig();
 
   return {
-    cache: {
-      enabled: config.cache?.enabled ?? true,
-      maxSize: config.cache?.maxSize ?? 1000,
-      ttl: config.cache?.ttl ?? 300000, // 5 minutes
+    compilation: {
+      cacheEnabled: config.compilation?.cacheEnabled ?? true,
+      cacheTTL: config.compilation?.cacheTTL ?? 300000, // 5 minutes
+      optimizeGraphs: config.compilation?.optimizeGraphs ?? true,
     },
-    debug: config.debug ?? false,
+    execution: {
+      defaultTimeout: config.execution?.defaultTimeout ?? 30000,
+      streamingEnabled: config.execution?.streamingEnabled ?? true,
+      parallelExecution: config.execution?.parallelExecution ?? true,
+      maxConcurrency: config.execution?.maxConcurrency ?? 10,
+    },
+    debugging: {
+      enabled: config.debugging?.enabled ?? false,
+      logLevel: config.debugging?.logLevel ?? 'info',
+      traceExecution: config.debugging?.traceExecution ?? false,
+    },
+    streamingAdapter: config.streamingAdapter,
   };
 }
