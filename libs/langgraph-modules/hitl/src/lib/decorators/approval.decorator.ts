@@ -5,6 +5,7 @@ import type { WorkflowState } from '@hive-academy/langgraph-core';
 import type { HumanApprovalService } from '../services/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';
 import type { ApprovalChainService } from '../services/approval-chain.service';
+import { getHitlConfigWithDefaults } from '../utils/hitl-config.accessor';
 
 /**
  * Risk level enumeration for approval decisions
@@ -139,11 +140,24 @@ export function RequiresApproval(
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
+    // Get stored module configuration
+    const moduleConfig = getHitlConfigWithDefaults();
+
+    // Merge module config with decorator overrides
+    const mergedOptions: RequiresApprovalOptions = {
+      // ✅ Inherit from module config
+      timeoutMs: options.timeoutMs ?? moduleConfig.defaultTimeout,
+      confidenceThreshold:
+        options.confidenceThreshold ?? moduleConfig.confidenceThreshold,
+      // Other options from decorator
+      ...options,
+    };
+
     // Store enhanced approval metadata
     Reflect.defineMetadata(
       'approval:metadata',
       {
-        ...options,
+        ...mergedOptions,
         nodeId: String(propertyKey),
         decoratedAt: new Date(),
       },
@@ -256,7 +270,9 @@ export function RequiresApproval(
         options: RequiresApprovalOptions
       ): Promise<boolean> {
         const skip = options.skipConditions;
-        if (!skip) {return false;}
+        if (!skip) {
+          return false;
+        }
 
         // High confidence skip
         if (
@@ -337,7 +353,8 @@ export function RequiresApproval(
               [ApprovalRiskLevel.CRITICAL]: 4,
             };
 
-            const currentRiskLevel = riskLevels[riskAssessment.level as ApprovalRiskLevel];
+            const currentRiskLevel =
+              riskLevels[riskAssessment.level as ApprovalRiskLevel];
             const thresholdLevel = riskLevels[options.riskThreshold];
 
             if (currentRiskLevel >= thresholdLevel) {

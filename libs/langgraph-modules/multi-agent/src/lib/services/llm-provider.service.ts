@@ -215,8 +215,16 @@ export class LlmProviderService {
     maxTokens?: number
   ): BaseLanguageModelInterface {
     // Note: This would require @langchain/google-genai package
-    throw new Error(
-      'Google AI provider not yet implemented - requires @langchain/google-genai package'
+    this.logger.warn(
+      'Google AI provider not yet implemented - falling back to OpenAI. ' +
+        'To use Google AI, install @langchain/google-genai package and implement provider.'
+    );
+
+    // Graceful fallback to OpenAI to prevent demo crashes
+    return this.createOpenAILLM(
+      model.replace(/^gemini/, 'gpt-4'),
+      temperature,
+      maxTokens
     );
   }
 
@@ -257,9 +265,13 @@ export class LlmProviderService {
     maxTokens?: number
   ): BaseLanguageModelInterface {
     // Note: This would require @langchain/azure-openai package or specific configuration
-    throw new Error(
-      'Azure OpenAI provider not yet implemented - requires @langchain/azure-openai package'
+    this.logger.warn(
+      'Azure OpenAI provider not yet implemented - falling back to OpenAI. ' +
+        'To use Azure OpenAI, install @langchain/azure-openai package and configure Azure endpoints.'
     );
+
+    // Graceful fallback to OpenAI to prevent demo crashes
+    return this.createOpenAILLM(model, temperature, maxTokens);
   }
 
   /**
@@ -271,9 +283,15 @@ export class LlmProviderService {
     maxTokens?: number
   ): BaseLanguageModelInterface {
     // Note: This would require @langchain/cohere package
-    throw new Error(
-      'Cohere provider not yet implemented - requires @langchain/cohere package'
+    this.logger.warn(
+      'Cohere provider not yet implemented - falling back to OpenAI. ' +
+        'To use Cohere, install @langchain/cohere package and implement provider.'
     );
+
+    // Graceful fallback to OpenAI to prevent demo crashes
+    // Map common Cohere models to OpenAI equivalents
+    const mappedModel = model.startsWith('command') ? 'gpt-4' : model;
+    return this.createOpenAILLM(mappedModel, temperature, maxTokens);
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { performance } from 'perf_hooks';
 
@@ -33,16 +33,19 @@ describe('Architecture Migration Performance Benchmarks', () => {
               }),
 
               LanggraphModulesCheckpointModule.forRoot({
-                providers: ['memory'],
-                configs: { memory: { maxSizeBytes: 1024 * 1024 } },
+                checkpoint: {
+                  cleanupInterval: 60000,
+                  maxAge: 3600000,
+                  maxPerThread: 100,
+                },
               }),
               StreamingModule.forRoot({
-                enabled: true,
-                bufferSize: 1024,
+                websocket: { enabled: true },
+                defaultBufferSize: 1024,
               }),
               HitlModule.forRoot({
-                enabled: true,
                 defaultTimeout: 30000,
+                confidenceThreshold: 0.8,
               }),
             ],
           }).compile();
@@ -79,24 +82,27 @@ describe('Architecture Migration Performance Benchmarks', () => {
             name: 'CheckpointModule',
             factory: () =>
               LanggraphModulesCheckpointModule.forRoot({
-                providers: ['memory'],
-                configs: { memory: { maxSizeBytes: 1024 * 1024 } },
+                checkpoint: {
+                  cleanupInterval: 60000,
+                  maxAge: 3600000,
+                  maxPerThread: 100,
+                },
               }),
           },
           {
             name: 'StreamingModule',
             factory: () =>
               StreamingModule.forRoot({
-                enabled: true,
-                bufferSize: 1024,
+                websocket: { enabled: true },
+                defaultBufferSize: 1024,
               }),
           },
           {
             name: 'HitlModule',
             factory: () =>
               HitlModule.forRoot({
-                enabled: true,
                 defaultTimeout: 30000,
+                confidenceThreshold: 0.8,
               }),
           },
         ];
@@ -147,16 +153,19 @@ describe('Architecture Migration Performance Benchmarks', () => {
             }),
 
             LanggraphModulesCheckpointModule.forRoot({
-              providers: ['memory'],
-              configs: { memory: { maxSizeBytes: 1024 * 1024 } },
+              checkpoint: {
+                cleanupInterval: 60000,
+                maxAge: 3600000,
+                maxPerThread: 100,
+              },
             }),
             StreamingModule.forRoot({
-              enabled: true,
-              bufferSize: 1024,
+              websocket: { enabled: true },
+              defaultBufferSize: 1024,
             }),
             HitlModule.forRoot({
-              enabled: true,
               defaultTimeout: 30000,
+              confidenceThreshold: 0.8,
             }),
           ],
         }).compile();
@@ -212,8 +221,11 @@ describe('Architecture Migration Performance Benchmarks', () => {
               }),
 
               LanggraphModulesCheckpointModule.forRoot({
-                providers: ['memory'],
-                configs: { memory: { maxSizeBytes: 1024 * 1024 } },
+                checkpoint: {
+                  cleanupInterval: 60000,
+                  maxAge: 3600000,
+                  maxPerThread: 100,
+                },
               }),
             ],
             expectedMaxMB: 20,
@@ -226,7 +238,10 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 envFilePath: '.env.test',
               }),
 
-              StreamingModule.forRoot({ enabled: true, bufferSize: 1024 }),
+              StreamingModule.forRoot({
+                websocket: { enabled: true },
+                defaultBufferSize: 1024,
+              }),
             ],
             expectedMaxMB: 18,
           },
@@ -238,7 +253,10 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 envFilePath: '.env.test',
               }),
 
-              HitlModule.forRoot({ enabled: true, defaultTimeout: 30000 }),
+              HitlModule.forRoot({
+                defaultTimeout: 30000,
+                confidenceThreshold: 0.8,
+              }),
             ],
             expectedMaxMB: 18,
           },
@@ -333,11 +351,20 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 }),
 
                 LanggraphModulesCheckpointModule.forRoot({
-                  providers: ['memory'],
-                  configs: { memory: { maxSizeBytes: 1024 * 1024 } },
+                  checkpoint: {
+                    cleanupInterval: 60000,
+                    maxAge: 3600000,
+                    maxPerThread: 100,
+                  },
                 }),
-                StreamingModule.forRoot({ enabled: true, bufferSize: 1024 }),
-                HitlModule.forRoot({ enabled: true, defaultTimeout: 30000 }),
+                StreamingModule.forRoot({
+                  websocket: { enabled: true },
+                  defaultBufferSize: 1024,
+                }),
+                HitlModule.forRoot({
+                  defaultTimeout: 30000,
+                  confidenceThreshold: 0.8,
+                }),
               ],
             }).compile()
           );
@@ -376,8 +403,11 @@ describe('Architecture Migration Performance Benchmarks', () => {
               }),
 
               LanggraphModulesCheckpointModule.forRoot({
-                providers: ['memory'],
-                configs: { memory: { maxSizeBytes: 1024 * 1024 } },
+                checkpoint: {
+                  cleanupInterval: 60000,
+                  maxAge: 3600000,
+                  maxPerThread: 100,
+                },
               }),
             ],
           }).compile();

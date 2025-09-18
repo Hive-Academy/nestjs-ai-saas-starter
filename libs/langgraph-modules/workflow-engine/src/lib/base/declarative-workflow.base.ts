@@ -99,7 +99,7 @@ export abstract class DeclarativeWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorService)
+    @Optional()
     protected override readonly eventProcessor?: EventStreamProcessorService
   ) {
     super(eventEmitter, graphBuilder, subgraphManager, streamService, eventProcessor);
@@ -314,7 +314,7 @@ export abstract class DeclarativeWorkflowBase<
       );
       console.log(`    Method: ${node.config?.metadata?.methodName}`);
       console.log(`    Requires Approval: ${node.requiresApproval || false}`);
-      console.log(`    Streaming: ${node.config?.streaming || false}`);
+      this.logger.debug(`    Streaming: ${node.config?.streaming || false}`);
     });
 
     console.log('\nEdges:');
@@ -331,7 +331,7 @@ export abstract class DeclarativeWorkflowBase<
     console.log(
       `  HITL Enabled: ${this.workflowConfig.hitl?.enabled || false}`
     );
-    console.log(`  Streaming: ${this.workflowConfig.streaming || false}`);
+    this.logger.debug(`  Streaming: ${this.workflowConfig.streaming || false}`);
     console.log(`  Caching: ${this.workflowConfig.cache || false}`);
     console.log(`  Metrics: ${this.workflowConfig.metrics || false}`);
 

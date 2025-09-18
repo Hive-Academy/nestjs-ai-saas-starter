@@ -1,5 +1,6 @@
 // import { BaseMessage } from '@langchain/core/messages';
 
+// Import StreamEventType from local constants - streaming library is source of truth
 import { StreamEventType } from '../constants';
 
 // Re-export StreamEventType for external use
@@ -105,5 +106,3 @@ export function getStreamProgressMetadata(
     stage,
   };
 }
-
-

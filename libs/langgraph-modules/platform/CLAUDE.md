@@ -1,215 +1,266 @@
-# CLAUDE.md - LangGraph Platform Module
+# Platform Module - User Manual
 
-This file provides guidance to Claude Code when working with the LangGraph Platform module, which provides NestJS integration for the LangGraph Platform API.
+## Overview
 
-## Business Domain
+The **@hive-academy/langgraph-platform** module provides enterprise-grade integration with the LangGraph Platform API, enabling hosted assistant management, thread lifecycle operations, run execution monitoring, and real-time webhook notifications for production AI applications.
 
-### Core Purpose
-The LangGraph Platform module provides a comprehensive NestJS wrapper for interacting with the LangGraph Platform API, enabling:
+**Key Features:**
 
-- **Hosted Assistant Management**: Create, configure, and manage AI assistants running on LangGraph Platform
-- **Thread Lifecycle Management**: Handle conversation threads with persistent state and history
-- **Run Execution & Monitoring**: Execute assistant runs with real-time streaming and status tracking
-- **Webhook Integration**: Receive real-time notifications for platform events
-- **State Management**: Manage thread state, checkpoints, and conversation history
+- **Hosted Assistant Management** - Create, configure, and manage AI assistants on LangGraph Platform
+- **Thread Lifecycle Management** - Persistent conversation threads with state and history
+- **Run Execution & Monitoring** - Execute assistant runs with streaming and status tracking
+- **Webhook Integration** - Real-time event notifications and secure payload handling
+- **Enterprise HTTP Client** - Robust client with authentication, retries, and error handling
+- **Production-Ready Configuration** - Rate limiting, timeout management, and security features
 
-### Key Business Concepts
-- **Assistant**: A configured AI agent with specific graph, settings, and metadata
-- **Thread**: A conversation context with persistent state and history
-- **Run**: An execution of an assistant within a thread context
-- **Webhook**: Real-time event notifications for platform activities
-- **Checkpoint**: State snapshots for thread history and rollback capabilities
+## Quick Start
 
-## High-Level Architecture
+### Installation & Setup
 
-### Module Structure
-```
-platform/
-├── src/lib/
-│   ├── platform.module.ts           # Main NestJS module
-│   ├── constants/
-│   │   └── platform.constants.ts    # Configuration constants
-│   ├── interfaces/                  # TypeScript interfaces
-│   │   ├── platform.interface.ts    # Core module interfaces
-│   │   ├── assistant.interface.ts   # Assistant domain types
-│   │   ├── thread.interface.ts      # Thread domain types
-│   │   ├── run.interface.ts         # Run execution types
-│   │   └── webhook.interface.ts     # Webhook event types
-│   └── services/                    # Business logic services
-│       ├── platform-client.service.ts  # HTTP API client
-│       ├── assistant.service.ts        # Assistant management
-│       ├── thread.service.ts           # Thread operations
-│       ├── run.service.ts              # Run execution
-│       └── webhook.service.ts          # Webhook management
+```bash
+npm install @hive-academy/langgraph-platform
 ```
 
-### Service Architecture
-- **PlatformClientService**: Base HTTP client with authentication, error handling, and retry logic
-- **AssistantService**: High-level operations for assistant lifecycle management
-- **ThreadService**: Thread creation, state management, and history operations
-- **RunService**: Run execution, streaming, and monitoring
-- **WebhookService**: Webhook registration and management
-
-## Platform Integration Patterns
-
-### Assistant Lifecycle Management
 ```typescript
-// Create assistant with graph configuration
-const assistant = await assistantService.create({
-  graph_id: 'my-workflow-graph',
-  name: 'Customer Support Agent',
-  config: {
-    configurable: {
-      model: 'gpt-4',
-      temperature: 0.1
-    },
-    recursion_limit: 50,
-    tags: ['customer-support', 'production']
-  },
-  metadata: {
-    created_by: 'admin',
-    version: '1.0.0',
-    description: 'AI assistant for customer support workflows'
-  }
-});
+import { Module } from '@nestjs/common';
+import { PlatformModule } from '@hive-academy/langgraph-platform';
 
-// Update assistant configuration
-await assistantService.update(assistant.assistant_id, {
-  config: {
-    configurable: {
-      temperature: 0.2  // Adjust creativity level
-    }
-  }
-});
-
-// Search assistants by graph
-const assistants = await assistantService.getByGraphId('customer-support-graph');
-```
-
-### Thread State Management
-```typescript
-// Create thread with metadata
-const thread = await threadService.create('user-session-123', {
-  metadata: {
-    user_id: 'user123',
-    session_type: 'support',
-    priority: 'high'
-  }
-});
-
-// Get current thread state
-const state = await threadService.getState(thread.thread_id);
-console.log('Current values:', state.values);
-console.log('Next steps:', state.next);
-
-// Update thread state manually
-await threadService.updateState(
-  thread.thread_id,
-  { user_context: { name: 'John', issue: 'billing' } },
-  'input_node'
-);
-
-// Get thread history with pagination
-const history = await threadService.getHistory(
-  thread.thread_id,
-  10,  // limit
-  undefined,  // before checkpoint
-  { user_id: 'user123' }  // metadata filter
-);
-```
-
-### Run Execution Monitoring
-```typescript
-// Create and execute run
-const run = await runService.create(thread.thread_id, {
-  assistant_id: assistant.assistant_id,
-  input: { message: 'Help me with my billing issue' },
-  config: {
-    tags: ['support-ticket'],
-    metadata: { priority: 'high' }
-  },
-  interrupt_before: ['human_approval'],
-  webhook: 'https://myapp.com/webhooks/langgraph'
-});
-
-// Stream run execution with real-time updates
-const stream$ = runService.stream(thread.thread_id, {
-  assistant_id: assistant.assistant_id,
-  input: { message: 'Process this request' }
-}, 'values');
-
-stream$.subscribe({
-  next: (event) => {
-    console.log('Stream event:', event.event, event.data);
-  },
-  error: (error) => {
-    console.error('Stream error:', error);
-  },
-  complete: () => {
-    console.log('Run completed');
-  }
-});
-
-// Wait for run completion with timeout
-const completedRun = await runService.waitForCompletion(
-  thread.thread_id,
-  run.run_id,
-  300000,  // 5 minute timeout
-  1000     // 1 second poll interval
-);
-```
-
-### Webhook Event Processing
-```typescript
-// Register webhook for run events
-const webhook = await webhookService.create({
-  url: 'https://myapp.com/webhooks/langgraph',
-  events: [
-    WebhookEvent.RUN_START,
-    WebhookEvent.RUN_END,
-    WebhookEvent.RUN_ERROR,
-    WebhookEvent.RUN_INTERRUPT
+@Module({
+  imports: [
+    PlatformModule.forRoot({
+      baseUrl: 'https://api.langgraph.com',
+      apiKey: process.env.LANGGRAPH_API_KEY,
+      timeout: 30000,
+      retryPolicy: {
+        maxRetries: 3,
+        backoffFactor: 2,
+        maxBackoffTime: 30000,
+      },
+      webhook: {
+        enabled: true,
+        secret: process.env.WEBHOOK_SECRET,
+        retryPolicy: {
+          maxRetries: 3,
+          backoffFactor: 2,
+          maxBackoffTime: 30000,
+        },
+      },
+    }),
   ],
-  secret: process.env.WEBHOOK_SECRET
-});
+})
+export class AppModule {}
+```
 
-// Webhook payload handler
-@Controller('webhooks')
-export class WebhookController {
-  @Post('langgraph')
-  async handleWebhook(@Body() payload: WebhookPayload) {
-    switch (payload.event) {
-      case WebhookEvent.RUN_START:
-        await this.onRunStart(payload.data);
-        break;
-      case WebhookEvent.RUN_END:
-        await this.onRunComplete(payload.data);
-        break;
-      case WebhookEvent.RUN_ERROR:
-        await this.onRunError(payload.data);
-        break;
-      case WebhookEvent.RUN_INTERRUPT:
-        await this.onRunInterrupt(payload.data);
-        break;
+## Core Services
+
+### PlatformClientService - HTTP Client Foundation
+
+**Base HTTP client** with authentication and error handling:
+
+```typescript
+// Core HTTP operations with automatic authentication
+get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T>
+post<T>(endpoint: string, data?: unknown): Promise<T>
+put<T>(endpoint: string, data?: unknown): Promise<T>
+patch<T>(endpoint: string, data?: unknown): Promise<T>
+delete<T>(endpoint: string): Promise<T>
+
+// Built-in retry logic and error handling
+// Automatic API key injection and timeout management
+// Comprehensive logging and monitoring
+```
+
+### WebhookService - Real-Time Event Processing
+
+**Webhook management** for platform event notifications:
+
+```typescript
+// Webhook lifecycle management
+create(config: WebhookCreateRequest): Promise<Webhook>
+update(webhookId: string, config: WebhookUpdateRequest): Promise<Webhook>
+delete(webhookId: string): Promise<void>
+list(limit?: number, offset?: number): Promise<Webhook[]>
+
+// Security and payload verification
+verifySignature(payload: string, signature: string, secret: string): boolean
+processSecureWebhook(payload: WebhookPayload, signature: string): Promise<void>
+```
+
+### Complete Usage Example
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { PlatformClientService, WebhookService } from '@hive-academy/langgraph-platform';
+
+interface AssistantConfig {
+  graphId: string;
+  name: string;
+  variables: Record<string, any>;
+  maxSteps: number;
+  tags: string[];
+}
+
+@Injectable()
+export class EnterpriseAssistantService {
+  constructor(private readonly platformClient: PlatformClientService, private readonly webhookService: WebhookService) {}
+
+  async createProductionAssistant(config: AssistantConfig): Promise<Assistant> {
+    // Create assistant on LangGraph Platform
+    const assistant = await this.platformClient.post<Assistant>('/assistants', {
+      graph_id: config.graphId,
+      name: config.name,
+      config: {
+        configurable: config.variables,
+        recursion_limit: config.maxSteps,
+        tags: ['production', ...config.tags],
+      },
+      metadata: {
+        created_by: 'enterprise-service',
+        environment: 'production',
+        deployed_at: new Date().toISOString(),
+      },
+    });
+
+    // Set up production monitoring webhooks
+    await this.webhookService.create({
+      url: 'https://myapp.com/webhooks/langgraph/production',
+      events: ['run.start', 'run.end', 'run.error', 'run.interrupt'],
+      secret: process.env.PRODUCTION_WEBHOOK_SECRET,
+      metadata: {
+        assistant_id: assistant.assistant_id,
+        environment: 'production',
+      },
+    });
+
+    return assistant;
+  }
+
+  async executeConversationalWorkflow(assistantId: string, userId: string, message: string): Promise<ConversationResult> {
+    // Create or get existing thread for user
+    let thread: Thread;
+    const threadId = `user-${userId}`;
+
+    try {
+      thread = await this.platformClient.get<Thread>(`/threads/${threadId}`);
+    } catch (error) {
+      // Create new thread if not exists
+      thread = await this.platformClient.post<Thread>('/threads', {
+        thread_id: threadId,
+        metadata: {
+          user_id: userId,
+          conversation_type: 'support',
+          created_at: new Date().toISOString(),
+        },
+      });
     }
+
+    // Execute assistant run with streaming
+    const run = await this.platformClient.post<Run>(`/threads/${thread.thread_id}/runs`, {
+      assistant_id: assistantId,
+      input: { message },
+      config: {
+        tags: ['user-message', 'production'],
+        metadata: {
+          user_id: userId,
+          timestamp: new Date().toISOString(),
+        },
+      },
+      stream_mode: 'values', // Enable streaming
+      webhook: 'https://myapp.com/webhooks/run-updates',
+    });
+
+    // Wait for completion with timeout
+    const completedRun = await this.waitForRunCompletion(
+      thread.thread_id,
+      run.run_id,
+      300000 // 5 minutes timeout
+    );
+
+    // Get final thread state
+    const finalState = await this.platformClient.get<ThreadState>(`/threads/${thread.thread_id}/state`);
+
+    return {
+      runId: completedRun.run_id,
+      threadId: thread.thread_id,
+      response: finalState.values.messages?.[finalState.values.messages.length - 1],
+      status: completedRun.status,
+      executionTime: new Date(completedRun.updated_at).getTime() - new Date(completedRun.created_at).getTime(),
+    };
+  }
+
+  private async waitForRunCompletion(threadId: string, runId: string, timeoutMs: number = 300000): Promise<Run> {
+    const startTime = Date.now();
+    const pollInterval = 1000; // 1 second
+
+    while (Date.now() - startTime < timeoutMs) {
+      const run = await this.platformClient.get<Run>(`/threads/${threadId}/runs/${runId}`);
+
+      if (run.status === 'success' || run.status === 'error' || run.status === 'cancelled') {
+        return run;
+      }
+
+      if (run.status === 'interrupted') {
+        // Handle human-in-the-loop scenarios
+        await this.handleRunInterrupt(threadId, runId, run);
+      }
+
+      // Wait before next poll
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+
+    throw new Error(`Run ${runId} timed out after ${timeoutMs}ms`);
+  }
+
+  private async handleRunInterrupt(threadId: string, runId: string, run: Run): Promise<void> {
+    // Handle interrupt based on the interruption reason
+    const interruptData = run.kwargs?.interrupt;
+
+    if (interruptData?.type === 'human_approval') {
+      // Log interrupt for human review
+      console.log(`Run ${runId} requires human approval:`, interruptData);
+
+      // Could trigger notification system, queue for review, etc.
+      await this.notifyHumanReviewNeeded(threadId, runId, interruptData);
+    }
+  }
+
+  private async notifyHumanReviewNeeded(threadId: string, runId: string, data: any): Promise<void> {
+    // Implementation for human review notification
+    console.log(`Human review needed for run ${runId}:`, data);
   }
 }
 ```
 
-## Best Practices for Platform Integration
+## Configuration
 
-### 1. Configuration Management
+### Basic Configuration
+
 ```typescript
-// Environment-based configuration
+PlatformModule.forRoot({
+  baseUrl: 'https://api.langgraph.com',
+  apiKey: process.env.LANGGRAPH_API_KEY,
+  timeout: 30000,
+  retryPolicy: {
+    maxRetries: 3,
+    backoffFactor: 2,
+    maxBackoffTime: 30000,
+  },
+});
+```
+
+### Advanced Production Configuration
+
+```typescript
 PlatformModule.forRootAsync({
-  useFactory: async (configService: ConfigService) => ({
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => ({
     baseUrl: configService.get('LANGGRAPH_PLATFORM_URL'),
     apiKey: configService.get('LANGGRAPH_API_KEY'),
-    timeout: configService.get('PLATFORM_TIMEOUT', 30000),
+    timeout: configService.get('PLATFORM_TIMEOUT', 60000),
     retryPolicy: {
-      maxRetries: 3,
-      backoffFactor: 2,
-      maxBackoffTime: 30000
+      maxRetries: configService.get('PLATFORM_MAX_RETRIES', 3),
+      backoffFactor: configService.get('PLATFORM_BACKOFF_FACTOR', 2),
+      maxBackoffTime: configService.get('PLATFORM_MAX_BACKOFF', 30000),
     },
     webhook: {
       enabled: configService.get('WEBHOOKS_ENABLED', true),
@@ -217,396 +268,477 @@ PlatformModule.forRootAsync({
       retryPolicy: {
         maxRetries: 3,
         backoffFactor: 2,
-        maxBackoffTime: 30000
-      }
-    }
+        maxBackoffTime: 30000,
+      },
+    },
+    rateLimit: {
+      enabled: configService.get('RATE_LIMITING_ENABLED', true),
+      maxRequestsPerMinute: configService.get('RATE_LIMIT_RPM', 100),
+      burstLimit: configService.get('RATE_LIMIT_BURST', 10),
+    },
+    monitoring: {
+      enabled: configService.get('MONITORING_ENABLED', true),
+      metricsPrefix: 'langgraph_platform',
+      logRequests: configService.get('LOG_REQUESTS', false),
+      logResponses: configService.get('LOG_RESPONSES', false),
+    },
   }),
-  inject: [ConfigService]
-})
+  inject: [ConfigService],
+});
 ```
 
-### 2. Error Handling Patterns
+## Advanced Features
+
+### Webhook Security & Processing
+
+```typescript
+import { Controller, Post, Body, Headers, UnauthorizedException } from '@nestjs/common';
+import { WebhookService } from '@hive-academy/langgraph-platform';
+
+@Controller('webhooks')
+export class LangGraphWebhookController {
+  constructor(private readonly webhookService: WebhookService) {}
+
+  @Post('langgraph')
+  async handleLangGraphWebhook(@Body() payload: WebhookPayload, @Headers('x-langgraph-signature') signature: string): Promise<void> {
+    // Verify webhook signature for security
+    const secret = process.env.WEBHOOK_SECRET;
+    const isValid = this.webhookService.verifySignature(JSON.stringify(payload), signature, secret);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid webhook signature');
+    }
+
+    // Process different webhook events
+    switch (payload.event) {
+      case 'run.start':
+        await this.handleRunStart(payload.data);
+        break;
+
+      case 'run.end':
+        await this.handleRunComplete(payload.data);
+        break;
+
+      case 'run.error':
+        await this.handleRunError(payload.data);
+        break;
+
+      case 'run.interrupt':
+        await this.handleRunInterrupt(payload.data);
+        break;
+
+      default:
+        console.warn(`Unhandled webhook event: ${payload.event}`);
+    }
+  }
+
+  private async handleRunStart(data: RunStartData): Promise<void> {
+    console.log(`Run started: ${data.run_id} in thread ${data.thread_id}`);
+
+    // Track run metrics
+    await this.trackRunMetric('run_started', {
+      runId: data.run_id,
+      threadId: data.thread_id,
+      assistantId: data.assistant_id,
+      timestamp: new Date(),
+    });
+  }
+
+  private async handleRunComplete(data: RunCompleteData): Promise<void> {
+    console.log(`Run completed: ${data.run_id} with status ${data.status}`);
+
+    // Calculate execution time and log metrics
+    const executionTime = new Date(data.updated_at).getTime() - new Date(data.created_at).getTime();
+
+    await this.trackRunMetric('run_completed', {
+      runId: data.run_id,
+      status: data.status,
+      executionTime,
+      tokensUsed: data.usage?.total_tokens || 0,
+    });
+  }
+
+  private async handleRunError(data: RunErrorData): Promise<void> {
+    console.error(`Run failed: ${data.run_id} - ${data.error}`);
+
+    // Alert on critical errors
+    if (data.error_type === 'system_error') {
+      await this.alertCriticalError(data);
+    }
+  }
+
+  private async handleRunInterrupt(data: RunInterruptData): Promise<void> {
+    console.log(`Run interrupted: ${data.run_id} - ${data.interrupt_reason}`);
+
+    // Queue for human review if needed
+    if (data.interrupt_reason === 'human_approval_required') {
+      await this.queueHumanReview(data);
+    }
+  }
+
+  private async trackRunMetric(event: string, data: any): Promise<void> {
+    // Implementation for metrics tracking
+    console.log(`Metric: ${event}`, data);
+  }
+
+  private async alertCriticalError(data: RunErrorData): Promise<void> {
+    // Implementation for critical error alerting
+    console.error('CRITICAL ERROR:', data);
+  }
+
+  private async queueHumanReview(data: RunInterruptData): Promise<void> {
+    // Implementation for human review queueing
+    console.log('Queued for human review:', data);
+  }
+}
+```
+
+### Thread State Management
+
 ```typescript
 @Injectable()
-export class SafeAssistantService {
-  constructor(private assistantService: AssistantService) {}
+export class ThreadManagementService {
+  constructor(private readonly platformClient: PlatformClientService) {}
+
+  async createConversationThread(userId: string, metadata: Record<string, any> = {}): Promise<Thread> {
+    const thread = await this.platformClient.post<Thread>('/threads', {
+      metadata: {
+        user_id: userId,
+        created_by: 'conversation-service',
+        created_at: new Date().toISOString(),
+        ...metadata,
+      },
+    });
+
+    return thread;
+  }
+
+  async getThreadState(threadId: string): Promise<ThreadState> {
+    return this.platformClient.get<ThreadState>(`/threads/${threadId}/state`);
+  }
+
+  async updateThreadState(threadId: string, values: Record<string, any>, asNode?: string): Promise<ThreadState> {
+    const updatePayload: any = { values };
+
+    if (asNode) {
+      updatePayload.as_node = asNode;
+    }
+
+    return this.platformClient.patch<ThreadState>(`/threads/${threadId}/state`, updatePayload);
+  }
+
+  async getThreadHistory(threadId: string, limit: number = 10, before?: string, metadata?: Record<string, any>): Promise<ThreadHistoryResponse> {
+    const params: any = { limit };
+
+    if (before) params.before = before;
+    if (metadata) params.metadata = JSON.stringify(metadata);
+
+    return this.platformClient.get<ThreadHistoryResponse>(`/threads/${threadId}/history`, params);
+  }
+
+  async searchThreads(criteria: ThreadSearchCriteria): Promise<ThreadSearchResponse> {
+    const params = {
+      limit: criteria.limit || 50,
+      offset: criteria.offset || 0,
+    };
+
+    if (criteria.metadata) {
+      params.metadata = JSON.stringify(criteria.metadata);
+    }
+
+    if (criteria.status) {
+      params.status = criteria.status;
+    }
+
+    return this.platformClient.get<ThreadSearchResponse>('/threads', params);
+  }
+
+  async archiveThread(threadId: string): Promise<void> {
+    await this.platformClient.patch(`/threads/${threadId}`, {
+      metadata: { archived: true, archived_at: new Date().toISOString() },
+    });
+  }
+}
+```
+
+### Enterprise Rate Limiting
+
+```typescript
+@Injectable()
+export class RateLimitedPlatformService {
+  private readonly requestCounts = new Map<string, { count: number; resetTime: number }>();
+  private readonly WINDOW_SIZE = 60000; // 1 minute
+  private readonly MAX_REQUESTS = 100; // per window
+
+  constructor(private readonly platformClient: PlatformClientService) {}
+
+  async executeWithRateLimit<T>(operation: () => Promise<T>, key: string = 'default'): Promise<T> {
+    await this.checkRateLimit(key);
+
+    try {
+      const result = await operation();
+      this.incrementCounter(key);
+      return result;
+    } catch (error) {
+      this.incrementCounter(key); // Count failed requests too
+      throw error;
+    }
+  }
+
+  private async checkRateLimit(key: string): Promise<void> {
+    const now = Date.now();
+    const record = this.requestCounts.get(key);
+
+    if (!record || now >= record.resetTime) {
+      // Reset or initialize counter
+      this.requestCounts.set(key, {
+        count: 0,
+        resetTime: now + this.WINDOW_SIZE,
+      });
+      return;
+    }
+
+    if (record.count >= this.MAX_REQUESTS) {
+      const waitTime = record.resetTime - now;
+      throw new Error(`Rate limit exceeded. Retry after ${waitTime}ms`);
+    }
+  }
+
+  private incrementCounter(key: string): void {
+    const record = this.requestCounts.get(key);
+    if (record) {
+      record.count++;
+    }
+  }
+
+  async createAssistantWithRateLimit(config: AssistantConfig): Promise<Assistant> {
+    return this.executeWithRateLimit(() => this.platformClient.post<Assistant>('/assistants', config), 'assistant_creation');
+  }
+
+  async executeRunWithRateLimit(threadId: string, runConfig: RunConfig): Promise<Run> {
+    return this.executeWithRateLimit(() => this.platformClient.post<Run>(`/threads/${threadId}/runs`, runConfig), `run_execution_${threadId}`);
+  }
+}
+```
+
+## Core Interfaces
+
+### Platform Types
+
+```typescript
+interface Assistant {
+  assistant_id: string;
+  graph_id: string;
+  name: string;
+  description?: string;
+  config: AssistantConfig;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Thread {
+  thread_id: string;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, any>;
+}
+
+interface Run {
+  run_id: string;
+  thread_id: string;
+  assistant_id: string;
+  status: 'pending' | 'running' | 'success' | 'error' | 'cancelled' | 'interrupted';
+  input: Record<string, any>;
+  output?: Record<string, any>;
+  error?: string;
+  created_at: string;
+  updated_at: string;
+  kwargs?: Record<string, any>;
+}
+
+interface WebhookPayload {
+  event: string;
+  data: any;
+  timestamp: string;
+  webhook_id: string;
+}
+```
+
+### Configuration Types
+
+```typescript
+interface PlatformModuleOptions {
+  baseUrl: string;
+  apiKey: string;
+  timeout?: number;
+  retryPolicy?: RetryPolicy;
+  webhook?: WebhookConfig;
+  rateLimit?: RateLimitConfig;
+  monitoring?: MonitoringConfig;
+}
+
+interface RetryPolicy {
+  maxRetries: number;
+  backoffFactor: number;
+  maxBackoffTime: number;
+}
+```
+
+## Error Handling
+
+```typescript
+import { PlatformError, WebhookError, RateLimitError } from '@hive-academy/langgraph-platform';
+
+@Injectable()
+export class RobustPlatformService {
+  constructor(private readonly platformClient: PlatformClientService) {}
 
   async safeExecute<T>(operation: () => Promise<T>): Promise<T | null> {
     try {
       return await operation();
     } catch (error) {
-      if (error.message.includes('404')) {
-        this.logger.warn('Resource not found');
-        return null;
-      }
-      if (error.message.includes('429')) {
-        this.logger.warn('Rate limited, implementing backoff');
-        await this.backoff();
+      if (error instanceof RateLimitError) {
+        this.logger.warn('Rate limit exceeded, implementing backoff');
+        await this.exponentialBackoff();
         return this.safeExecute(operation);
+      } else if (error instanceof PlatformError) {
+        this.logger.error('Platform API error:', error.message);
+        throw new ServiceUnavailableException('LangGraph Platform temporarily unavailable');
+      } else if (error instanceof WebhookError) {
+        this.logger.error('Webhook processing error:', error.message);
+        // Continue execution, don't fail the main operation
+        return null;
       }
       throw error;
     }
   }
 
-  private async backoff(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  private async exponentialBackoff(): Promise<void> {
+    const backoffTime = Math.min(1000 * Math.pow(2, Math.random()), 30000);
+    await new Promise((resolve) => setTimeout(resolve, backoffTime));
   }
 }
 ```
 
-### 3. State Synchronization
+## Testing
+
+### Unit Testing
+
 ```typescript
-@Injectable()
-export class StateSyncService {
-  async syncThreadState(threadId: string, localState: any): Promise<void> {
-    const platformState = await this.threadService.getState(threadId);
-    
-    // Compare states and update if needed
-    if (!this.statesEqual(platformState.values, localState)) {
-      await this.threadService.updateState(
-        threadId,
-        { ...platformState.values, ...localState }
-      );
-    }
-  }
+import { Test } from '@nestjs/testing';
+import { PlatformModule, PlatformClientService } from '@hive-academy/langgraph-platform';
 
-  private statesEqual(state1: any, state2: any): boolean {
-    return JSON.stringify(state1) === JSON.stringify(state2);
-  }
-}
-```
+describe('PlatformClientService', () => {
+  let service: PlatformClientService;
 
-## Performance Considerations
-
-### API Rate Limiting
-```typescript
-@Injectable()
-export class RateLimitedPlatformService {
-  private readonly rateLimiter = new Map<string, number>();
-  private readonly RATE_LIMIT = 100; // requests per minute
-  private readonly WINDOW_SIZE = 60000; // 1 minute
-
-  async executeWithRateLimit<T>(
-    key: string,
-    operation: () => Promise<T>
-  ): Promise<T> {
-    const now = Date.now();
-    const windowStart = now - this.WINDOW_SIZE;
-    
-    // Clean old entries
-    for (const [k, timestamp] of this.rateLimiter.entries()) {
-      if (timestamp < windowStart) {
-        this.rateLimiter.delete(k);
-      }
-    }
-
-    // Check rate limit
-    const requests = Array.from(this.rateLimiter.values())
-      .filter(timestamp => timestamp > windowStart).length;
-
-    if (requests >= this.RATE_LIMIT) {
-      throw new Error('Rate limit exceeded');
-    }
-
-    this.rateLimiter.set(`${key}-${now}`, now);
-    return operation();
-  }
-}
-```
-
-### Caching Strategies
-```typescript
-@Injectable()
-export class CachedAssistantService {
-  private readonly cache = new Map<string, { data: Assistant; expiry: number }>();
-  private readonly CACHE_TTL = 300000; // 5 minutes
-
-  async getCached(assistantId: string): Promise<Assistant> {
-    const cached = this.cache.get(assistantId);
-    
-    if (cached && cached.expiry > Date.now()) {
-      return cached.data;
-    }
-
-    const assistant = await this.assistantService.get(assistantId);
-    this.cache.set(assistantId, {
-      data: assistant,
-      expiry: Date.now() + this.CACHE_TTL
-    });
-
-    return assistant;
-  }
-
-  invalidateCache(assistantId: string): void {
-    this.cache.delete(assistantId);
-  }
-}
-```
-
-## Common Use Cases
-
-### 1. Hosted Assistant Deployment
-```typescript
-@Injectable()
-export class AssistantDeploymentService {
-  async deployAssistant(config: AssistantDeploymentConfig): Promise<Assistant> {
-    // Create assistant with production configuration
-    const assistant = await this.assistantService.create({
-      graph_id: config.graphId,
-      name: config.name,
-      config: {
-        configurable: config.variables,
-        recursion_limit: config.maxSteps || 100,
-        tags: ['production', ...config.tags]
-      },
-      metadata: {
-        deployed_by: config.deployedBy,
-        environment: 'production',
-        version: config.version
-      }
-    });
-
-    // Set up webhooks for monitoring
-    await this.webhookService.create({
-      url: config.webhookUrl,
-      events: [
-        WebhookEvent.RUN_START,
-        WebhookEvent.RUN_END,
-        WebhookEvent.RUN_ERROR
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      imports: [
+        PlatformModule.forRoot({
+          baseUrl: 'https://test-api.langgraph.com',
+          apiKey: 'test-api-key',
+          timeout: 10000,
+        }),
       ],
-      secret: config.webhookSecret
-    });
+    }).compile();
 
-    return assistant;
-  }
-}
-```
+    service = module.get<PlatformClientService>(PlatformClientService);
+  });
 
-### 2. Multi-Turn Conversation Management
-```typescript
-@Injectable()
-export class ConversationService {
-  async startConversation(userId: string, assistantId: string): Promise<string> {
-    const thread = await this.threadService.create(undefined, {
-      metadata: {
-        user_id: userId,
-        conversation_type: 'support',
-        started_at: new Date().toISOString()
-      }
-    });
-
-    return thread.thread_id;
-  }
-
-  async sendMessage(
-    threadId: string,
-    assistantId: string,
-    message: string
-  ): Promise<Observable<StreamEvent>> {
-    return this.runService.stream(threadId, {
-      assistant_id: assistantId,
-      input: { message },
-      config: {
-        tags: ['user-message'],
-        metadata: { timestamp: new Date().toISOString() }
-      }
-    });
-  }
-
-  async getConversationHistory(threadId: string): Promise<any[]> {
-    const history = await this.threadService.getHistory(threadId, 50);
-    return history.states.map(state => ({
-      timestamp: state.created_at,
-      step: state.metadata.step,
-      values: state.values
-    }));
-  }
-}
-```
-
-### 3. Workflow Integration Patterns
-```typescript
-@Injectable()
-export class WorkflowIntegrationService {
-  async executeWorkflowStep(
-    workflowId: string,
-    stepData: any,
-    context: any
-  ): Promise<any> {
-    // Get or create thread for workflow
-    const threadId = `workflow-${workflowId}`;
-    let thread: Thread;
-    
-    try {
-      thread = await this.threadService.get(threadId);
-    } catch {
-      thread = await this.threadService.create(threadId, {
-        metadata: {
-          workflow_id: workflowId,
-          type: 'workflow-execution'
-        }
-      });
-    }
-
-    // Execute step with context
-    const run = await this.runService.create(thread.thread_id, {
-      assistant_id: context.assistantId,
-      input: stepData,
-      config: {
-        configurable: context.variables,
-        metadata: {
-          workflow_step: context.stepName,
-          step_index: context.stepIndex
-        }
-      }
-    });
-
-    // Wait for completion and return result
-    const completedRun = await this.runService.waitForCompletion(
-      thread.thread_id,
-      run.run_id
-    );
-
-    // Get final state
-    const finalState = await this.threadService.getState(thread.thread_id);
-    return finalState.values;
-  }
-}
-```
-
-## Authentication and Security
-
-### API Key Management
-```typescript
-// Secure API key configuration
-export class PlatformConfigService {
-  static getSecureConfig(): PlatformModuleOptions {
-    const apiKey = process.env.LANGGRAPH_API_KEY;
-    if (!apiKey) {
-      throw new Error('LANGGRAPH_API_KEY environment variable is required');
-    }
-
-    return {
-      baseUrl: process.env.LANGGRAPH_PLATFORM_URL || 'https://api.langgraph.com',
-      apiKey,
-      timeout: 30000,
-      retryPolicy: {
-        maxRetries: 3,
-        backoffFactor: 2,
-        maxBackoffTime: 30000
-      }
+  it('should create assistant successfully', async () => {
+    const assistantConfig = {
+      graph_id: 'test-graph',
+      name: 'Test Assistant',
+      config: { recursion_limit: 50 },
+      metadata: { test: true },
     };
-  }
-}
-```
 
-### Webhook Security
-```typescript
-@Injectable()
-export class SecureWebhookService {
-  private readonly crypto = require('crypto');
-
-  verifyWebhookSignature(
-    payload: string,
-    signature: string,
-    secret: string
-  ): boolean {
-    const expectedSignature = this.crypto
-      .createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex');
-    
-    return this.crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
-  }
-
-  @Post('webhook')
-  async handleSecureWebhook(
-    @Body() payload: any,
-    @Headers('x-langgraph-signature') signature: string
-  ) {
-    const secret = process.env.WEBHOOK_SECRET;
-    if (!this.verifyWebhookSignature(
-      JSON.stringify(payload),
-      signature,
-      secret
-    )) {
-      throw new UnauthorizedException('Invalid webhook signature');
-    }
-
-    // Process verified webhook
-    await this.processWebhook(payload);
-  }
-}
-```
-
-## Environment Variables
-
-### Required Configuration
-```bash
-# LangGraph Platform API
-LANGGRAPH_PLATFORM_URL=https://api.langgraph.com
-LANGGRAPH_API_KEY=your_api_key_here
-
-# Optional Configuration
-PLATFORM_TIMEOUT=30000
-WEBHOOKS_ENABLED=true
-WEBHOOK_SECRET=your_webhook_secret_here
-
-# Rate Limiting
-PLATFORM_RATE_LIMIT=100
-PLATFORM_RATE_WINDOW=60000
-```
-
-## Module Integration Examples
-
-### Basic Setup
-```typescript
-@Module({
-  imports: [
-    PlatformModule.forRootAsync({
-      useFactory: (config: ConfigService) => ({
-        baseUrl: config.get('LANGGRAPH_PLATFORM_URL'),
-        apiKey: config.get('LANGGRAPH_API_KEY'),
-        timeout: config.get('PLATFORM_TIMEOUT', 30000)
-      }),
-      inject: [ConfigService]
-    })
-  ],
-  providers: [MyPlatformService],
-  controllers: [PlatformController]
-})
-export class AppModule {}
-```
-
-### Advanced Integration
-```typescript
-@Injectable()
-export class EnterpriseAssistantService {
-  constructor(
-    private assistantService: AssistantService,
-    private threadService: ThreadService,
-    private runService: RunService,
-    private webhookService: WebhookService
-  ) {}
-
-  async createEnterpriseAssistant(config: EnterpriseConfig): Promise<Assistant> {
-    // Implementation with full platform integration
-    const assistant = await this.assistantService.create({
-      graph_id: config.graphId,
-      name: config.name,
-      config: {
-        configurable: config.enterpriseSettings,
-        recursion_limit: config.maxComplexity,
-        tags: ['enterprise', 'production']
-      }
+    // Mock successful API response
+    jest.spyOn(service, 'post').mockResolvedValue({
+      assistant_id: 'test-assistant-id',
+      ...assistantConfig,
     });
 
-    // Set up monitoring and webhooks
-    await this.setupEnterpriseMonitoring(assistant.assistant_id);
-    
-    return assistant;
+    const result = await service.post('/assistants', assistantConfig);
+
+    expect(result.assistant_id).toBe('test-assistant-id');
+    expect(result.name).toBe('Test Assistant');
+  });
+});
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. API Authentication Failures
+
+```typescript
+// Solution: Validate API key and permissions
+const validateApiKey = async () => {
+  try {
+    await platformClient.get('/assistants?limit=1');
+    console.log('API key is valid');
+  } catch (error) {
+    if (error.status === 401) {
+      throw new Error('Invalid API key - check LANGGRAPH_API_KEY environment variable');
+    }
+    if (error.status === 403) {
+      throw new Error('API key lacks required permissions');
+    }
+    throw error;
+  }
+};
+```
+
+#### 2. Webhook Delivery Failures
+
+```typescript
+// Solution: Implement retry logic and validation
+@Injectable()
+export class ReliableWebhookService {
+  async handleWebhookWithRetry(payload: any, maxRetries = 3): Promise<void> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.processWebhook(payload);
+        return; // Success
+      } catch (error) {
+        console.warn(`Webhook processing attempt ${attempt} failed:`, error.message);
+
+        if (attempt === maxRetries) {
+          throw error; // Final attempt failed
+        }
+
+        // Exponential backoff
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
   }
 }
+```
+
+#### 3. Thread State Synchronization Issues
+
+```typescript
+// Solution: Implement state validation and recovery
+async validateThreadState(threadId: string, expectedState: any): Promise<void> {
+  const currentState = await this.getThreadState(threadId);
+
+  if (!this.statesMatch(currentState.values, expectedState)) {
+    console.warn(`Thread ${threadId} state mismatch, attempting recovery`);
+
+    // Attempt to recover by updating state
+    await this.updateThreadState(threadId, expectedState);
+
+    // Verify recovery
+    const recoveredState = await this.getThreadState(threadId);
+    if (!this.statesMatch(recoveredState.values, expectedState)) {
+      throw new Error(`Failed to recover thread ${threadId} state`);
+    }
+  }
+}
+```
+
+This comprehensive platform module provides production-ready integration with LangGraph Platform, enabling hosted assistant management, robust execution monitoring, and secure webhook processing for enterprise AI applications.

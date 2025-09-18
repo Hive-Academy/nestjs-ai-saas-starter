@@ -33,43 +33,32 @@ export function getMonitoringConfig(): MonitoringConfig {
       evaluationInterval: parseInt(
         process.env.MONITORING_EVALUATION_INTERVAL || '30000'
       ), // 30 seconds
+      defaultCooldown: parseInt(
+        process.env.MONITORING_DEFAULT_COOLDOWN || '300000'
+      ), // 5 minutes
       channels: [
         {
-          name: 'default-webhook',
           type: 'webhook',
+          name: 'default-webhook',
           config: {
             url: process.env.MONITORING_WEBHOOK_URL || '',
           },
           enabled: !!process.env.MONITORING_WEBHOOK_URL,
         },
-      ],
-      defaultRules: [
+      ] as const,
+      escalationPolicies: [
         {
-          name: 'high-error-rate',
-          description: 'Alert when error rate exceeds threshold',
-          condition: {
-            metric: 'workflow.error_rate',
-            operator: '>',
-            threshold: parseFloat(
-              process.env.MONITORING_ERROR_THRESHOLD || '0.05'
-            ), // 5%
-            window: '5m',
-          },
-          severity: 'critical',
-          cooldown: 300000, // 5 minutes
+          id: 'default-escalation',
+          name: 'Default Escalation Policy',
+          rules: [
+            {
+              delay: 300000, // 5 minutes
+              channels: ['default-webhook'],
+              severity: 'critical' as const,
+            },
+          ],
         },
-      ],
-      escalation: {
-        id: 'default-escalation',
-        name: 'Default Escalation Policy',
-        rules: [
-          {
-            delay: 300000, // 5 minutes
-            channels: ['default-webhook'],
-            severity: 'critical',
-          },
-        ],
-      },
+      ] as const,
     },
 
     // Health check settings
@@ -94,21 +83,21 @@ export function getMonitoringConfig(): MonitoringConfig {
       minSamples: parseInt(process.env.MONITORING_MIN_SAMPLES || '30'),
     },
 
-    // Dashboard settings
+    // Dashboard settings - simplified for compatibility
     dashboard: {
-      port: parseInt(process.env.MONITORING_DASHBOARD_PORT || '3001'),
+      id: 'dev-brand-dashboard',
+      name: 'DevBrand Monitoring Dashboard',
+      description: 'Real-time monitoring dashboard for DevBrand API',
+      widgets: [] as const,
       refreshInterval: parseInt(
         process.env.MONITORING_REFRESH_INTERVAL || '5000'
       ), // 5 seconds
-      theme: process.env.MONITORING_DASHBOARD_THEME || 'dark',
-      authentication: {
-        enabled: process.env.MONITORING_AUTH_ENABLED === 'true',
-        provider: 'basic',
-        config: {
-          username: process.env.MONITORING_USERNAME || 'admin',
-          password: process.env.MONITORING_PASSWORD || 'admin',
-        },
+      timeRange: {
+        start: new Date(Date.now() - 3600000), // 1 hour ago
+        end: new Date(),
       },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     },
   };
 }

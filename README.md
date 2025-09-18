@@ -1,15 +1,15 @@
 # NestJS AI SaaS Starter
 
-<div align="center">
+<!-- Center alignment div removed to satisfy markdown lint (MD033) -->
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 [![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![Nx](https://img.shields.io/badge/nx-143055?style=flat&logo=nx&logoColor=white)](https://nx.dev)
 
-**A comprehensive NestJS-based AI SaaS starter with enterprise-grade integrations for building sophisticated AI agent workflows and applications.**
+**A modular NestJS + LangGraph AI platform: real-time streaming, checkpoint/replay, human gating, unified (vector + graph) memory, multi-agent orchestration — all delivered as publishable libraries.**
 
-[🚀 Quick Start](#quick-start) • [📚 Documentation](#documentation) • [🏗️ Architecture](#architecture) • [🔧 Development](#development) • [📦 Libraries](#published-libraries)
+**Sections:** Quick Start · Platform Pillars · Demo Story · Architecture · Business Outcomes · Libraries · AI-Assisted Build · Quality Signals
 
 </div>
 
@@ -17,14 +17,17 @@
 
 ## 🌟 Overview
 
-This monorepo provides a complete foundation for building AI-powered SaaS applications with NestJS, featuring:
+This workspace now contains **14 focused libraries** (core contracts, workflow engine, streaming, checkpointing, multi-agent, HITL, memory fusion, time-travel, monitoring scaffold, platform API, plus persistence adapters). Together they enable:
 
-- **🤖 AI Agent Workflows**: Build complex AI workflows using LangGraph integration
-- **🔍 Vector Database**: Comprehensive ChromaDB integration for semantic search
-- **📊 Graph Database**: Advanced Neo4j integration for relationship modeling
-- **🏢 Enterprise Ready**: Production-ready with health checks, monitoring, and Docker deployment
-- **📦 Publishable Libraries**: Three NPM packages ready for distribution
-- **🔄 CI/CD Pipeline**: Automated testing, building, versioning, and publishing
+- **⚙️ Orchestrated AI Workflows** (declarative + functional APIs)
+- **⚡ Real-Time Streaming** (tokens / events / progress via decorators)
+- **🛡️ Durable Execution** (checkpoint + deterministic replay)
+- **🧠 Unified Memory Fusion** (semantic vector + graph relationships)
+- **🧍 Human-in-the-Loop Safety** (approval gates, optional)
+- **🧩 Optional Modularity** (all cross-cutting features injectable / no-op)
+- **🏢 Enterprise Scaffold** (health indicators, adapters, DI boundaries)
+
+> Full value matrix: see `docs/hackathon/04-value-prop-per-library.md`
 
 ### 🎯 AI Provider Support
 
@@ -32,24 +35,73 @@ This monorepo provides a complete foundation for building AI-powered SaaS applic
 - **Ollama**: Fully local LLM inference for privacy and offline usage
 - **HuggingFace**: Local embeddings with sentence transformers (no API key required)
 
+## 🧱 Platform Pillars
+
+| Pillar | What It Delivers | Primary Libraries | Differentiator |
+| ------ | ---------------- | ----------------- | -------------- |
+| Orchestration | Graph-based agent execution w/ decorators | `workflow-engine`, `functional-api`, `core` | Unified declarative + functional styles |
+| Streaming UX | Token/event/progress WebSocket streaming | `streaming`, `workflow-engine` | Method-level decorators → DI adapter |
+| Durability & Replay | Resume after failure + deterministic timeline | `checkpoint`, `time-travel` | Replay re-emits original token cadence |
+| Memory Fusion | Semantic + graph enriched context | `memory`, `nestjs-chromadb`, `nestjs-neo4j` | Cascade retrieval (vector → graph expansion) |
+| Human Safety | Approval / intervention gates | `hitl`, `workflow-engine` | Removable with zero code churn (no-op fallback) |
+
+> For architectural narrative + diagrams: `docs/hackathon/05-architecture-overview-draft.md`
+
+## 🧪 Demo Story (3‑min)
+
+Sequence (each mapped to a pillar): orchestrate run → live token stream → forced restart (resume) → approval gate → memory fusion diff → replay flash. Script: `docs/hackathon/06-demo-script.md`.
+
+| Step | Visual | Pillar | Criterion (Hackathon) |
+| ---- | ------ | ------ | --------------------- |
+| 1. Orchestrate | Terminal executionId | Orchestration | Implementation discipline |
+| 2. Streaming tokens | UI token pane | Streaming UX | Innovation / UX |
+| 3. Restart resume | Kill + resume | Durability | Reliability |
+| 4. Approval gate | Modal pause | Human Safety | Control / Trust |
+| 5. Memory fusion | Baseline vs enriched answer | Memory Fusion | Depth / Differentiation |
+| 6. Replay flash | Timeline playback | Durability & Replay | Debuggability |
+
+## 💼 Business Outcomes
+
+| Outcome | Supported By | Story Hook |
+| ------- | ------------ | ---------- |
+| Assisted Support Resolution | streaming + workflow-engine + checkpoint | Faster perceived response, safe restart |
+| Code Review Summaries | memory + chroma + neo4j + multi-agent | Multi-agent roles w/ enriched context |
+| Knowledge Exploration | memory fusion + time-travel | Replay explorations, refine prompts |
+| Risk / Policy Enforcement | hitl + checkpoint | Approval gates + immutable state snapshots |
+
 ## 🏗️ Architecture
 
-### Workspace Structure
+### Workspace Structure (Current)
 
+```text
+apps/
+  dev-brand-api/          # NestJS backend (API + orchestrated workflows)
+  dev-brand-ui/           # Angular/Frontend consuming streaming + HITL
+  dev-brand-ui-e2e/       # Playwright E2E tests for UI flows
+
+libs/
+  langgraph-modules/
+    core/                 # Shared contracts, tokens, base types
+    workflow-engine/      # Orchestrator + decorator runtime
+    functional-api/       # Functional convenience layer
+    streaming/            # Streaming adapter + event contracts
+    checkpoint/           # Durable state + resume primitives
+    time-travel/          # Deterministic replay / timeline utilities
+    memory/               # Memory fusion (vector + graph cascade)
+    hitl/                 # Human approval gate decorators/services
+    multi-agent/          # Role / agent orchestration helpers
+    monitoring/           # Health/telemetry scaffolding
+    platform/             # Cross-cutting platform wiring & DI exports
+  nestjs-chromadb/        # ChromaDB NestJS integration
+  nestjs-neo4j/           # Neo4j NestJS integration
+
+docs/                     # Guides, architecture, hackathon assets
+scripts/                  # Tooling (migrate, sync, validation)
+.github/workflows/        # CI/CD pipelines
+docker-compose*.yml       # Local environment services
 ```
-nestjs-ai-saas-starter/
-├── apps/
-│   ├── nestjs-ai-saas-starter-demo/     # Main NestJS application
-│   └── nestjs-ai-saas-starter-demo-e2e/ # E2E tests
-├── libs/                                # Reusable libraries
-│   ├── nestjs-chromadb/                 # ChromaDB integration
-│   ├── nestjs-neo4j/                    # Neo4j integration
-│   ├── nestjs-langgraph/                # LangGraph workflows
-├── docs/                                # Documentation
-├── docker/                              # Docker configurations
-├── .github/workflows/                   # CI/CD pipelines
-└── scripts/                             # Build and utility scripts
-```
+
+> NOTE: Legacy names like `nestjs-ai-saas-starter-demo` were refactored into the `dev-brand-*` app suite for clarity between API, UI, and E2E.
 
 ### Technology Stack
 
@@ -67,6 +119,8 @@ nestjs-ai-saas-starter/
 | **CI/CD**        | GitHub Actions    | Automated workflows            |
 
 ## 🚀 Quick Start
+
+> Want the narrative version? See **Demo Story** above. Below is the minimal hands-on path.
 
 ### Prerequisites
 
@@ -201,11 +255,21 @@ git commit -m "docs: update installation guide"
 
 ## 📦 Published Libraries
 
-This workspace publishes three NPM packages under the `@hive-academy` scope:
+This workspace contains modular packages; external NPM publications currently focus on infrastructure adapters (`nestjs-chromadb`, `nestjs-neo4j`) and emerging LangGraph integration. Internal (not all yet published) modules live under `langgraph-modules` and are versioned together.
+
+> Maturity snapshot: Adapters = Beta, Core runtime & cross-cutting modules = Alpha (stabilizing toward a cohesive initial public release), Experimental = `time-travel`, `monitoring`.
+
+Categories:
+
+- Core Runtime: `core`, `workflow-engine`, `functional-api`
+- Cross-Cutting: `streaming`, `checkpoint`, `time-travel`, `memory`, `hitl`, `multi-agent`, `monitoring`, `platform`
+- External Adapters: `nestjs-chromadb`, `nestjs-neo4j`
+
+For maturity and value details see `docs/hackathon/04-value-prop-per-library.md`.
 
 ### [@hive-academy/nestjs-chromadb](https://www.npmjs.com/package/@hive-academy/nestjs-chromadb)
 
-**Vector Database Integration**
+#### Vector Database Integration
 
 ```bash
 npm install @hive-academy/nestjs-chromadb chromadb
@@ -232,9 +296,7 @@ export class AppModule {}
 - Health checks and connection management
 - Comprehensive TypeScript support
 
-### [@hive-academy/nestjs-neo4j](https://www.npmjs.com/package/@hive-academy/nestjs-neo4j)
-
-**Graph Database Integration**
+#### Graph Database Integration
 
 ```bash
 npm install @hive-academy/nestjs-neo4j neo4j-driver
@@ -264,7 +326,7 @@ export class AppModule {}
 
 ### [@hive-academy/nestjs-langgraph](https://www.npmjs.com/package/@hive-academy/nestjs-langgraph)
 
-**AI Agent Workflows**
+#### AI Agent Workflows
 
 ```bash
 npm install @hive-academy/nestjs-langgraph @langchain/langgraph
@@ -311,7 +373,7 @@ NODE_ENV=production
 NEO4J_URI=bolt://neo4j:7687
 CHROMADB_URL=http://chromadb:8000
 REDIS_URL=redis://redis:6379
-OPENAI_API_KEY=your_openai_key
+OPENAI_API_KEY=your_open_ai_key
 ```
 
 ### Health Monitoring
@@ -493,6 +555,44 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support & Community
 
+## 🧬 AI-Assisted Build (Kiro)
+
+This codebase was iteratively shaped using internal orchestrated AI agents (Kiro workflow). Governance rules live in `CLAUDE.md` (mandatory `/orchestrate` command, type reuse, DI adapter discipline). We treat AI as a *co-engineer*—artifact trails: `docs/hackathon/01-inventory.md`, `04-value-prop-per-library.md`, `05-architecture-overview-draft.md`, `06-demo-script.md`.
+
+Benefits:
+
+- Faster architecture convergence (adapter patterns unified early)
+- Automated standards enforcement (no re-exports, strict types)
+- Traceable decision log for judges & contributors
+
+## ✅ Quality Signals
+
+| Signal | Status | Notes |
+| ------ | ------ | ----- |
+| Build (CI) | ![CI](https://img.shields.io/badge/CI-passing-brightgreen?style=flat) | GitHub Actions (`ci.yml`) |
+| Lint / Typecheck | (badge planned) | ESLint strict + TS strict mode |
+| Test Coverage | (badge planned) | Target ≥ 80% (see upcoming summary) |
+| Packages Published | chromadb · neo4j · langgraph | More modules maturing |
+| Streaming Adapter | Implemented | DI no-op fallback pattern |
+| Checkpoint Replay | Implemented | Deterministic resume path |
+| Memory Fusion | In progress (pattern defined) | Cascade retrieval design |
+| HITL Gating | Implemented | Declarative decorator |
+| Replay (Time Travel) | PoC planned | Timeline emission spec drafted |
+
+> After polishing, badges (coverage, lint, types) will replace placeholders.
+
+## 🔗 Quick Cross-Refs
+
+| Need | Doc |
+| ---- | --- |
+| Library Value Matrix | `docs/hackathon/04-value-prop-per-library.md` |
+| Architecture Narrative | `docs/hackathon/05-architecture-overview-draft.md` |
+| Demo Script | `docs/hackathon/06-demo-script.md` |
+| Streaming Blueprint | `STREAMING_INTEGRATION_BLUEPRINT.md` |
+| Operating Constraints | `CLAUDE.md` |
+| Library Index | `docs/hackathon/07-library-index.md` |
+| Architecture Diagrams | `docs/hackathon/08-architecture-diagrams.md` |
+
 - **📖 Documentation**: [Full documentation site](https://hive-academy.github.io/nestjs-ai-saas-starter)
 - **🐛 Issues**: [GitHub Issues](https://github.com/hive-academy/nestjs-ai-saas-starter/issues)
 - **💬 Discussions**: [GitHub Discussions](https://github.com/hive-academy/nestjs-ai-saas-starter/discussions)
@@ -511,10 +611,5 @@ Built with amazing open-source technologies:
 
 ---
 
-<div align="center">
-
-**[⭐ Star this repo](https://github.com/hive-academy/nestjs-ai-saas-starter) if you find it helpful!**
-
-Made with ❤️ by the Anubis team
-
-</div>
+**Star this repo if you find it helpful!**  
+Made with ❤️ by the Anubis team · AI-assisted via Kiro orchestrator

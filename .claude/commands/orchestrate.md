@@ -249,7 +249,7 @@ $USER_REQUEST
 
 ## YOUR SINGLE RESPONSIBILITY
 
-Create implementation-plan.md for user's request. Move any large-scope work (>1 week) to task-tracking/registry.md as future tasks.
+Create implementation-plan.md for user's request. Move only architectural improvements (not user-requested functionality) to task-tracking/registry.md as future tasks.
 
 ## DELIVERABLES
 
@@ -257,7 +257,7 @@ Create implementation-plan.md for user's request. Move any large-scope work (>1 
 2. Update task-tracking/registry.md with future tasks (if any)
 3. Return delegation to appropriate developer
 
-Keep timeline under 2 weeks for user's immediate needs.
+Focus on optimal value delivery for user's needs, organizing by dependencies and complexity.
 
 ### 3.2 Validate Architect Work
 
@@ -276,14 +276,14 @@ You are the business-analyst for $TASK_ID - Software Architect Validation Phase.
 
 ## VALIDATION FOCUS
 
-1. **Scope Discipline**: Timeline under 2 weeks for user's request?
-2. **Registry Usage**: Large work moved to registry.md as future tasks?
-3. **User Focus**: Plan directly addresses user's request?
+1. **User Focus**: Plan directly addresses user's request completely?
+2. **Value Optimization**: Implementation strategy based on dependencies and complexity?
+3. **Registry Usage**: Only architectural improvements moved to registry.md as future tasks?
 
 ## VALIDATION DECISION REQUIRED
 
 - APPROVE ✅: Proceed to development phase
-- REJECT ❌: Re-delegate to software-architect with scope corrections
+- REJECT ❌: Re-delegate to software-architect with value optimization corrections
 
 Return validation decision with developer assignment.
 
@@ -649,7 +649,7 @@ fi
 2. **Sequential Agent Execution**: No parallel execution to prevent conflicts
 3. **Validation Gates**: Every agent validated by business-analyst
 4. **User Focus**: Original request drives all decisions
-5. **Scope Discipline**: Large work goes to registry.md as future tasks
+5. **Value Optimization**: Implementation strategy based on user value and dependencies
 6. **Clean Git History**: Proper commits and PR creation
 7. **Registry Management**: Single source of truth for all tasks
 

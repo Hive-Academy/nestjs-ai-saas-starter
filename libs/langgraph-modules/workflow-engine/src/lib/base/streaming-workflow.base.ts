@@ -162,13 +162,10 @@ export abstract class StreamingWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorService)
     protected override readonly eventProcessor?: EventStreamProcessorService,
     @Optional()
-    @Inject(TokenStreamingService)
     protected readonly tokenStreamingService?: TokenStreamingService,
     @Optional()
-    @Inject(WebSocketBridgeService)
     protected readonly webSocketBridgeService?: WebSocketBridgeService
   ) {
     super(
@@ -317,11 +314,11 @@ export abstract class StreamingWorkflowBase<
     executionId: string,
     nodeId?: string
   ): Observable<StreamUpdate> {
-    if (!this.tokenStreamingService) {
-      throw new Error('TokenStreamingService not available');
+    if (!this.streamService) {
+      throw new Error('WorkflowStreamService not available');
     }
 
-    return this.tokenStreamingService.getTokenStream(executionId, nodeId);
+    return this.streamService.createStream(executionId);
   }
 
   /**
@@ -340,19 +337,11 @@ export abstract class StreamingWorkflowBase<
       throw new Error('WebSocketBridgeService not available');
     }
 
-    // Register client
-    const clientStream = this.webSocketBridgeService.registerClient(clientId, {
-      executionId: options.executionId,
-      rooms: options.rooms,
-      metadata: options.metadata,
-    });
-
-    // Subscribe to specific event types if provided
-    if (options.eventTypes && options.eventTypes.length > 0) {
-      this.webSocketBridgeService.subscribeToEvents(
-        clientId,
-        options.eventTypes
-      );
+    // Register client using adapter interface
+    if (options.executionId) {
+      this.webSocketBridgeService.registerClient(clientId, {
+        executionId: options.executionId,
+      });
     }
 
     // Update execution context if executionId provided
@@ -366,7 +355,12 @@ export abstract class StreamingWorkflowBase<
       }
     }
 
-    return clientStream.asObservable();
+    // Return streaming observable
+    if (!this.streamService) {
+      throw new Error('WorkflowStreamService not available');
+    }
+
+    return this.streamService.createStream(options.executionId || clientId);
   }
 
   /**
@@ -397,27 +391,17 @@ export abstract class StreamingWorkflowBase<
    */
   getStreamingStats(): {
     workflowStats: any;
-    activeStreams?: number;
-    activeTokenStreams?: any[];
-    connectedClients?: number;
-    activeRooms?: any[];
+    activeExecutions?: number;
+    streamingEnabled?: boolean;
   } {
     const workflowStats = this.getWorkflowStats();
     const stats: any = { workflowStats };
 
     if (this.streamService) {
-      stats.activeStreams = this.streamService.getActiveStreamCount();
+      stats.activeExecutions = this.executionContexts.size;
     }
 
-    if (this.tokenStreamingService) {
-      stats.activeTokenStreams =
-        this.tokenStreamingService.getActiveTokenStreams();
-    }
-
-    if (this.webSocketBridgeService) {
-      stats.connectedClients = this.webSocketBridgeService.getClientCount();
-      stats.activeRooms = this.webSocketBridgeService.getAllRoomsInfo();
-    }
+    stats.streamingEnabled = this.streamingConfiguration?.enabled || false;
 
     return stats;
   }
@@ -626,7 +610,11 @@ export abstract class StreamingWorkflowBase<
 
     // Complete token streams
     if (context.tokenStreaming && this.tokenStreamingService) {
-      this.tokenStreamingService.closeExecutionTokenStreams(executionId);
+      // Close individual token streams for this execution
+      for (const [nodeId] of this.streamingConfiguration!.tokenStreaming
+        .nodes) {
+        this.tokenStreamingService.closeTokenStream(executionId, nodeId);
+      }
     }
 
     this.logger.debug(`Streaming completed for execution ${executionId}`);

@@ -1,11 +1,11 @@
 import {
   Injectable,
   Logger,
-  OnModuleInit,
-  OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Inject } from '@nestjs/common';
+import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
 import {
   Subject,
   Observable,
@@ -24,6 +24,7 @@ import {
   StreamTokenDecoratorMetadata,
   // StreamTokenOptions,
 } from '../decorators/streaming.decorator';
+import { IInitializableService } from '../interfaces/streaming-manager.interface';
 
 /**
  * Token buffer entry for batching and processing
@@ -51,13 +52,22 @@ interface TokenStreamConfig extends StreamTokenDecoratorMetadata {
 /**
  * Service for token-level streaming implementation
  * Handles buffering, throttling, and advanced token processing
+ * 
+ * REFACTORED: Now implements IInitializableService for manual start/stop control
  */
 @Injectable()
-export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
+export class TokenStreamingService implements IInitializableService {
   private readonly logger = new Logger(TokenStreamingService.name);
+
+  // Service state
+  public isStarted = false;
+  private serviceStartTime?: Date; // Service initialization time
 
   // Token stream configurations per execution:node
   private readonly tokenStreams = new Map<string, TokenStreamConfig>();
+  
+  // Initialization tracking
+  private readonly initialized = new Set<string>();
 
   // Global token subjects for broadcasting
   private readonly globalTokenSubject = new Subject<StreamUpdate>();
@@ -73,31 +83,76 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
 
   // Performance tracking
   private totalTokensProcessed = 0;
-  private readonly streamStartTime = new Date();
   private readonly activeSubscriptions = new Set<Subscription>();
 
   // Cleanup timer
   private cleanupTimer?: Subscription;
 
   constructor(
-    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    @Optional()
+    @Inject('StreamingWebSocketGateway')
+    private readonly streamingGateway?: any
   ) {}
 
   /**
-   * Initialize service - setup cleanup timer
+   * REFACTORED: Manual start method - called by AppStreamingManager
    */
-  async onModuleInit(): Promise<void> {
-    this.logger.log('Initializing TokenStreamingService');
-    this.setupCleanupTimer();
-    this.setupPerformanceTracking();
+  async start(): Promise<void> {
+    if (this.isStarted) {
+      this.logger.warn('TokenStreamingService already started');
+      return;
+    }
+
+    try {
+      this.logger.log('🚀 Starting TokenStreamingService...');
+
+      // Initialize core streaming components
+      this.setupCleanupTimer();
+      this.setupPerformanceTracking();
+
+      // Mark as started
+      this.isStarted = true;
+      this.serviceStartTime = new Date();
+
+      this.logger.log('✅ TokenStreamingService started successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to start TokenStreamingService:', error);
+      throw error;
+    }
   }
 
   /**
-   * Cleanup on module destroy
+   * REFACTORED: Manual stop method - called by AppStreamingManager
    */
-  async onModuleDestroy(): Promise<void> {
-    this.logger.log('Destroying TokenStreamingService');
-    this.cleanup();
+  async stop(): Promise<void> {
+    if (!this.isStarted) {
+      this.logger.warn('TokenStreamingService not started');
+      return;
+    }
+
+    try {
+      this.logger.log('🛑 Stopping TokenStreamingService...');
+
+      // Cleanup all resources
+      this.cleanup();
+
+      // Mark as stopped
+      this.isStarted = false;
+      this.serviceStartTime = undefined;
+
+      this.logger.log('✅ TokenStreamingService stopped successfully');
+    } catch (error) {
+      this.logger.error('❌ Error stopping TokenStreamingService:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if service is started
+   */
+  get isServiceStarted(): boolean {
+    return this.isStarted;
   }
 
   /**
@@ -138,6 +193,9 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
 
     // Store configuration
     this.tokenStreams.set(streamKey, streamConfig);
+    
+    // Mark as initialized
+    this.initialized.add(streamKey);
 
     // Update stats
     this.updateTokenStats();
@@ -168,6 +226,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Stream a single token to the appropriate stream
+   * Automatically initializes stream on first token if not already initialized
    */
   streamToken(
     executionId: string,
@@ -176,6 +235,16 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     metadata: Record<string, unknown> = {}
   ): void {
     const streamKey = `${executionId}:${nodeId}`;
+    
+    // Auto-initialize stream if not already initialized
+    if (!this.initialized.has(streamKey)) {
+      this.lazyInit(executionId, nodeId).catch((err) => {
+        this.logger.error(
+          `Lazy initialization failed for ${streamKey}; token will be dropped: ${err}`
+        );
+      });
+    }
+    
     const streamConfig = this.tokenStreams.get(streamKey);
 
     if (!streamConfig) {
@@ -242,6 +311,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
    * Get global token stream
    */
   getGlobalTokenStream(): Observable<StreamUpdate> {
+    // Return the observable directly - Subject is cold and won't block
     return this.globalTokenSubject.asObservable();
   }
 
@@ -336,6 +406,92 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
         lastFlush: config.lastFlush,
       })
     );
+  }
+
+  /**
+   * Process a single token and emit to connected clients
+   */
+  async processToken(token: string): Promise<void> {
+    try {
+      // Emit token to WebSocket gateway for real-time streaming
+      if (
+        this.streamingGateway &&
+        typeof this.streamingGateway.emitTokenUpdate === 'function'
+      ) {
+        this.streamingGateway.emitTokenUpdate(token);
+      }
+
+      // Emit token update event for other services
+      this.eventEmitter.emit('token.processed', {
+        token,
+        timestamp: new Date(),
+        source: 'token_streaming_service',
+      });
+
+      // Update processed token count
+      this.totalTokensProcessed++;
+      this.updateTokenStats();
+
+      this.logger.debug(`Processed token: ${token.substring(0, 50)}...`);
+    } catch (error) {
+      this.logger.error('Error processing token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stream multiple tokens with delay for real-time effect
+   */
+  async streamTokens(tokens: string[]): Promise<void> {
+    try {
+      this.logger.debug(`Streaming ${tokens.length} tokens`);
+
+      for (const token of tokens) {
+        await this.processToken(token);
+        // Add small delay for streaming effect (50ms for demo)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Emit completion event
+      this.eventEmitter.emit('tokens.stream.completed', {
+        tokenCount: tokens.length,
+        timestamp: new Date(),
+      });
+
+      this.logger.debug(`Completed streaming ${tokens.length} tokens`);
+    } catch (error) {
+      this.logger.error('Error streaming tokens:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process a batch of stream items
+   */
+  async processStreamBatch(batch: any[]): Promise<void> {
+    try {
+      this.logger.debug(`Processing batch of ${batch.length} items`);
+
+      // Process each item in the batch
+      for (const item of batch) {
+        const token =
+          typeof item === 'string'
+            ? item
+            : item.token || item.content || String(item);
+        await this.processToken(token);
+      }
+
+      // Emit batch completion event
+      this.eventEmitter.emit('batch.processed', {
+        batchSize: batch.length,
+        timestamp: new Date(),
+      });
+
+      this.logger.debug(`Completed processing batch of ${batch.length} items`);
+    } catch (error) {
+      this.logger.error('Error processing stream batch:', error);
+      throw error;
+    }
   }
 
   // Private methods
@@ -622,7 +778,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Process async iterable tokens
+   * Process async iterable tokens - Fixed to actually yield and process items
    */
   private async processAsyncIterableTokens(
     iterable: AsyncIterable<any>,
@@ -631,16 +787,67 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     let tokenCount = 0;
 
     try {
-      for await (const _chunk of iterable) {
+      // Actually process each item from the async iterable
+      for await (const chunk of iterable) {
         tokenCount++;
-        // Process each chunk as a token
-        // This would need execution context from the decorator
+        const token =
+          typeof chunk === 'string'
+            ? chunk
+            : chunk.token || chunk.content || String(chunk);
+
+        // Process the token with real streaming
+        await this.processToken(token);
+
+        // Add small delay for streaming effect
+        await new Promise((resolve) => setTimeout(resolve, 25));
       }
 
       this.logger.debug(`Processed ${tokenCount} tokens from async iterable`);
     } catch (error) {
       this.logger.error('Error processing async iterable tokens:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Process async iterable with proper yielding - Generic method
+   */
+  async *processAsyncIterable<T>(
+    iterable: AsyncIterable<T>
+  ): AsyncGenerator<T> {
+    try {
+      for await (const item of iterable) {
+        // Actually yield the processed item instead of just counting
+        yield await this.processItem(item);
+      }
+    } catch (error) {
+      this.logger.error('Error in processAsyncIterable:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process individual item from async iterable
+   */
+  private async processItem<T>(item: T): Promise<T> {
+    try {
+      // Add processing logic if needed
+      const token =
+        typeof item === 'string'
+          ? item
+          : (item as any).token || (item as any).content || String(item);
+
+      // Process token for streaming
+      if (typeof token === 'string') {
+        await this.processToken(token);
+      }
+
+      // Return the original item
+      return item;
+    } catch (error) {
+      this.logger.error('Error processing item:', error);
+      // Return item even if processing fails
+      return item;
     }
   }
 
@@ -659,7 +866,7 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
     const { totalTokensProcessed } = this;
 
     // Calculate average tokens per second
-    const elapsedSeconds = (Date.now() - this.streamStartTime.getTime()) / 1000;
+    const elapsedSeconds = this.serviceStartTime ? (Date.now() - this.serviceStartTime.getTime()) / 1000 : 1;
     const averageTokensPerSecond =
       elapsedSeconds > 0 ? totalTokensProcessed / elapsedSeconds : 0;
 
@@ -722,6 +929,38 @@ export class TokenStreamingService implements OnModuleInit, OnModuleDestroy {
         `Cleaned up ${streamsToRemove.length} stale token streams`
       );
     }
+  }
+
+  /**
+   * Build unique key for stream identification
+   */
+  private key(executionId: string, nodeId: string): string {
+    return `${executionId}:${nodeId}`;
+  }
+
+  /**
+   * Perform one-time initialization using module defaults
+   */
+  private async lazyInit(executionId: string, nodeId: string): Promise<void> {
+    const key = this.key(executionId, nodeId);
+    if (this.initialized.has(key)) return;
+
+    const configDefaults = getStreamingConfigWithDefaults();
+    const tokenDefaults = configDefaults.tokenDefaults;
+
+    await this.initializeTokenStream({
+      executionId,
+      nodeId,
+      config: {
+        enabled: true,
+        bufferSize: configDefaults.defaultBufferSize,
+        batchSize: tokenDefaults.batchSize,
+        flushInterval: tokenDefaults.flushInterval,
+        format: tokenDefaults.format,
+        methodName: 'lazyAutoInit',
+      },
+    });
+    this.logger.debug(`Lazy initialized token stream for ${key}`);
   }
 
   /**

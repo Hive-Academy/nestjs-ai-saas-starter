@@ -1,14 +1,16 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import * as THREE from 'three';
+import { interval, takeUntil, Subject } from 'rxjs';
 import {
-  MemoryUpdateMessage,
-  ToolExecutionMessage,
-  AgentUpdateMessage,
-  WebSocketMessage,
   MemoryContext,
   ToolExecution,
 } from '../../../core/interfaces/agent-state.interface';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
+import {
+  ShowcaseApiService,
+  ShowcaseAgent,
+  ShowcaseSystemStatus,
+} from '../../../core/services/showcase-api.service';
 import { MemoryAccessEffect } from '../effects/memory-access-effect';
 import { ToolExecutionRing } from '../effects/tool-execution-ring';
 import { CommunicationStream } from '../effects/communication-stream';
@@ -34,13 +36,14 @@ export interface ActiveVisualEffect {
 /**
  * Agent State Visualizer Service
  * Orchestrates all visual effects for real-time agent state visualization
- * Connects Mock API WebSocket data to Three.js visual effects system
+ * Connects to Showcase API for real agent data and system status
  */
 @Injectable({
   providedIn: 'root',
 })
 export class AgentStateVisualizerService {
   private readonly threeService = inject(ThreeIntegrationService);
+  private readonly showcaseApi = inject(ShowcaseApiService);
 
   // Service state
   private readonly isInitialized = signal(false);
@@ -49,10 +52,11 @@ export class AgentStateVisualizerService {
   );
   private readonly effectConfig = signal<VisualEffectConfig | null>(null);
 
-  // WebSocket connection for Mock API
-  private mockApiSocket: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private readonly maxReconnectAttempts = 5;
+  // API polling for real-time updates
+  private readonly destroy$ = new Subject<void>();
+  private readonly pollingInterval = 2000; // Poll every 2 seconds
+  private readonly availableAgents = signal<ShowcaseAgent[]>([]);
+  private readonly systemStatus = signal<ShowcaseSystemStatus | null>(null);
 
   // Performance monitoring
   private readonly lastFrameTime = signal(0);
@@ -60,13 +64,16 @@ export class AgentStateVisualizerService {
   private readonly memoryUsage = signal(0);
 
   // Public reactive state
-  readonly isConnectedToMockApi = signal(false);
+  readonly isConnectedToApi = computed(() => this.systemStatus() !== null);
   readonly visualEffectsActive = computed(() => this.activeEffects().size > 0);
+  readonly currentAgents = this.availableAgents.asReadonly();
+  readonly currentSystemStatus = this.systemStatus.asReadonly();
   readonly performanceMetrics = computed(() => ({
     frameTime: this.lastFrameTime(),
     effectCount: this.effectCount(),
     memoryUsage: this.memoryUsage(),
     isOptimalPerformance: this.lastFrameTime() < 16.67, // 60fps = 16.67ms per frame
+    apiConnected: this.isConnectedToApi(),
   }));
 
   /**
@@ -79,7 +86,7 @@ export class AgentStateVisualizerService {
     }
 
     this.effectConfig.set(config);
-    this.connectToMockApi();
+    this.startApiPolling();
     this.setupCleanupInterval();
     this.isInitialized.set(true);
 
@@ -87,94 +94,145 @@ export class AgentStateVisualizerService {
   }
 
   /**
-   * Connect to Mock API WebSocket for real-time agent data
+   * Start API polling for real-time agent data
    */
-  private connectToMockApi(): void {
-    try {
-      this.mockApiSocket = new WebSocket('ws://localhost:3001');
+  private startApiPolling(): void {
+    console.log('Starting Showcase API polling for real-time agent data');
 
-      this.mockApiSocket.onopen = () => {
-        console.log('Connected to Mock API WebSocket');
-        this.isConnectedToMockApi.set(true);
-        this.reconnectAttempts = 0;
-      };
+    // Initial fetch
+    this.fetchAgentsAndStatus();
 
-      this.mockApiSocket.onmessage = (event) => {
-        this.handleMockApiMessage(JSON.parse(event.data));
-      };
-
-      this.mockApiSocket.onclose = () => {
-        console.log('Mock API WebSocket connection closed');
-        this.isConnectedToMockApi.set(false);
-        this.scheduleReconnect();
-      };
-
-      this.mockApiSocket.onerror = (error) => {
-        console.error('Mock API WebSocket error:', error);
-        this.isConnectedToMockApi.set(false);
-      };
-    } catch (error) {
-      console.error('Failed to connect to Mock API:', error);
-      this.scheduleReconnect();
-    }
-  }
-
-  /**
-   * Handle incoming messages from Mock API
-   */
-  private handleMockApiMessage(message: WebSocketMessage): void {
-    switch (message.type) {
-      case 'memory_update':
-        this.handleMemoryUpdate(message as MemoryUpdateMessage);
-        break;
-      case 'tool_execution':
-        this.handleToolExecution(message as ToolExecutionMessage);
-        break;
-      case 'agent_update':
-        this.handleAgentUpdate(message as AgentUpdateMessage);
-        break;
-      default:
-        // Handle other message types if needed
-        break;
-    }
-  }
-
-  /**
-   * Handle memory access updates and trigger visual effects
-   */
-  private handleMemoryUpdate(message: MemoryUpdateMessage): void {
-    const config = this.effectConfig();
-    if (!config?.enableMemoryEffects) return;
-
-    message.data.contexts.forEach((context: MemoryContext) => {
-      context.relatedAgents.forEach((agentId: string) => {
-        this.triggerMemoryAccessEffect(agentId, context);
+    // Set up polling interval
+    interval(this.pollingInterval)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.fetchAgentsAndStatus();
       });
+  }
+
+  /**
+   * Fetch agents and system status from Showcase API
+   */
+  private fetchAgentsAndStatus(): void {
+    // Fetch available agents
+    this.showcaseApi.getAvailableAgents().subscribe({
+      next: (agents) => {
+        this.availableAgents.set(agents);
+        this.simulateAgentActivity(agents);
+      },
+      error: (error) => {
+        console.error('Failed to fetch agents:', error);
+      },
+    });
+
+    // Fetch system status
+    this.showcaseApi.getSystemStatus().subscribe({
+      next: (status) => {
+        this.systemStatus.set(status);
+        this.processSystemStatus(status);
+      },
+      error: (error) => {
+        console.error('Failed to fetch system status:', error);
+      },
     });
   }
 
   /**
-   * Handle tool execution updates and trigger progress rings
+   * Process system status and trigger visual effects
    */
-  private handleToolExecution(message: ToolExecutionMessage): void {
-    const config = this.effectConfig();
-    if (!config?.enableToolRings) return;
+  private processSystemStatus(status: ShowcaseSystemStatus): void {
+    // Trigger visual effects based on agent activity
+    Object.entries(status.agents).forEach(([agentId, agentStatus]) => {
+      if (agentStatus === 'active' || agentStatus === 'busy') {
+        this.simulateMemoryAccess(agentId);
+      }
+    });
 
-    const { agentId, toolExecution } = message.data;
-    this.triggerToolExecutionRing(agentId, toolExecution);
+    // Trigger communication streams for running workflows
+    Object.entries(status.workflows).forEach(([workflowId, workflowStatus]) => {
+      if (workflowStatus === 'running') {
+        this.simulateWorkflowCommunication(workflowId);
+      }
+    });
   }
 
   /**
-   * Handle agent state updates for communication streams
+   * Simulate agent activity based on real agents
    */
-  private handleAgentUpdate(message: AgentUpdateMessage): void {
-    const config = this.effectConfig();
-    if (!config?.enableCommunicationStreams) return;
+  private simulateAgentActivity(agents: ShowcaseAgent[]): void {
+    agents.forEach((agent) => {
+      // Simulate tool execution for agents with high priority
+      if (agent.priority === 'high' && Math.random() > 0.7) {
+        this.simulateToolExecution(agent.id, agent.tools);
+      }
 
-    // Check if this is part of multi-agent coordination
-    const { agentId, state } = message.data;
-    if (state.currentTask && this.isCoordinationTask(state.currentTask)) {
-      this.triggerCommunicationStream(agentId, state.currentTask);
+      // Simulate memory access for agents with advanced capabilities
+      if (agent.metadata.complexity === 'advanced' && Math.random() > 0.6) {
+        this.simulateMemoryAccess(agent.id);
+      }
+    });
+  }
+
+  /**
+   * Simulate memory access for visualization
+   */
+  private simulateMemoryAccess(agentId: string): void {
+    const memoryTypes: ('chromadb' | 'neo4j' | 'workflow')[] = [
+      'chromadb',
+      'neo4j',
+      'workflow',
+    ];
+    const randomType =
+      memoryTypes[Math.floor(Math.random() * memoryTypes.length)];
+
+    const mockContext: MemoryContext = {
+      id: `sim-${Date.now()}`,
+      source: randomType,
+      type: 'semantic',
+      content: `Simulated ${randomType} access`,
+      relevanceScore: 0.5 + Math.random() * 0.5,
+      isActive: true,
+      timestamp: new Date(),
+      tags: ['simulation'],
+      relatedAgents: [agentId],
+      metadata: { timestamp: new Date().toISOString() },
+    };
+
+    this.triggerMemoryAccessEffect(agentId, mockContext);
+  }
+
+  /**
+   * Simulate tool execution for visualization
+   */
+  private simulateToolExecution(agentId: string, tools: string[]): void {
+    if (tools.length === 0) return;
+
+    const randomTool = tools[Math.floor(Math.random() * tools.length)];
+
+    const mockExecution: ToolExecution = {
+      id: `tool-${Date.now()}`,
+      toolName: randomTool,
+      progress: Math.random() * 100, // 0-100 as per interface
+      status: 'running',
+      startTime: new Date(),
+    };
+
+    this.triggerToolExecutionRing(agentId, mockExecution);
+  }
+
+  /**
+   * Simulate workflow communication
+   */
+  private simulateWorkflowCommunication(workflowId: string): void {
+    // Create communication between random agents
+    const agents = this.availableAgents();
+    if (agents.length < 2) return;
+
+    const fromAgent = agents[Math.floor(Math.random() * agents.length)];
+    const toAgent = agents[Math.floor(Math.random() * agents.length)];
+
+    if (fromAgent.id !== toAgent.id) {
+      this.triggerCommunicationStream(fromAgent.id, `Workflow: ${workflowId}`);
     }
   }
 
@@ -350,14 +408,13 @@ export class AgentStateVisualizerService {
     });
     this.activeEffects.set(new Map());
 
-    // Close WebSocket connection
-    if (this.mockApiSocket) {
-      this.mockApiSocket.close();
-      this.mockApiSocket = null;
-    }
+    // Stop API polling
+    this.destroy$.next();
+    this.destroy$.complete();
 
     this.isInitialized.set(false);
-    this.isConnectedToMockApi.set(false);
+    this.systemStatus.set(null);
+    this.availableAgents.set([]);
 
     console.log('AgentStateVisualizerService cleaned up');
   }
@@ -457,22 +514,6 @@ export class AgentStateVisualizerService {
   }
 
   /**
-   * Check if task involves coordination
-   */
-  private isCoordinationTask(taskDescription: string): boolean {
-    const coordinationKeywords = [
-      'coordinate',
-      'collaborate',
-      'sync',
-      'share',
-      'communicate',
-    ];
-    return coordinationKeywords.some((keyword) =>
-      taskDescription.toLowerCase().includes(keyword)
-    );
-  }
-
-  /**
    * Check if effect should be removed
    */
   private shouldRemoveEffect(activeEffect: ActiveVisualEffect): boolean {
@@ -526,22 +567,22 @@ export class AgentStateVisualizerService {
   }
 
   /**
-   * Schedule WebSocket reconnection
+   * Get real agent data by mapping showcase agents to visual representation
    */
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached for Mock API');
-      return;
-    }
+  getAgentVisualizationData(agentId: string) {
+    const agent = this.availableAgents().find((a) => a.id === agentId);
+    if (!agent) return null;
 
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-    this.reconnectAttempts++;
-
-    setTimeout(() => {
-      console.log(
-        `Attempting to reconnect to Mock API (attempt ${this.reconnectAttempts})`
-      );
-      this.connectToMockApi();
-    }, delay);
+    return {
+      name: agent.name,
+      type: agent.metadata.category,
+      priority: agent.priority,
+      capabilities: agent.capabilities,
+      tools: agent.tools,
+      complexity: agent.metadata.complexity,
+      isActive:
+        this.systemStatus()?.agents[agentId] === 'active' ||
+        this.systemStatus()?.agents[agentId] === 'busy',
+    };
   }
 }
