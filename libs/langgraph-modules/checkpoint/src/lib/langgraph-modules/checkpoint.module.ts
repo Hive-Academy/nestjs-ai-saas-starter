@@ -11,7 +11,7 @@ import { CheckpointHealthService } from '../core/checkpoint-health.service';
 import { CheckpointModuleConfig } from '../interfaces/checkpoint-saver-registry.interface';
 import { CheckpointManagerAdapter } from '../adapters/checkpoint-manager.adapter';
 
-export type CheckpointModuleOptions = CheckpointModuleConfig
+export type CheckpointModuleOptions = CheckpointModuleConfig;
 
 @Module({})
 export class LanggraphModulesCheckpointModule {
@@ -108,16 +108,14 @@ export class LanggraphModulesCheckpointModule {
           useValue: options,
         },
         ...this.getProviders(),
-        // Initialize checkpoint savers registry
+        // Initialize checkpoint savers registry with single saver
         {
           provide: 'CHECKPOINT_SAVERS_INIT',
           useFactory: (registry: CheckpointSaverRegistry) => {
-            if (options.savers) {
-              options.savers.forEach((saverConfig) => {
-                registry.registerSaver(saverConfig);
-              });
-            }
-            return registry;
+            return LanggraphModulesCheckpointModule.initializeCheckpointSaver(
+              registry,
+              options
+            );
           },
           inject: [CheckpointSaverRegistry],
         },
@@ -153,12 +151,10 @@ export class LanggraphModulesCheckpointModule {
             moduleOptions: CheckpointModuleOptions,
             registry: CheckpointSaverRegistry
           ) => {
-            if (moduleOptions.savers) {
-              moduleOptions.savers.forEach((saverConfig) => {
-                registry.registerSaver(saverConfig);
-              });
-            }
-            return registry;
+            return LanggraphModulesCheckpointModule.initializeCheckpointSaver(
+              registry,
+              moduleOptions
+            );
           },
           inject: ['CHECKPOINT_MODULE_OPTIONS', CheckpointSaverRegistry],
         },
@@ -166,5 +162,75 @@ export class LanggraphModulesCheckpointModule {
       exports: this.getExports(),
       global: true,
     };
+  }
+
+  /**
+   * Initialize checkpoint saver with validation and fallback logic
+   */
+  private static initializeCheckpointSaver(
+    registry: CheckpointSaverRegistry,
+    options: CheckpointModuleOptions
+  ): CheckpointSaverRegistry {
+    if (options.saver) {
+      // User provided a saver - register it
+      const saverType = LanggraphModulesCheckpointModule.detectSaverType(
+        options.saver
+      );
+
+      registry.registerSaver({
+        name: 'primary',
+        saver: options.saver,
+        default: true,
+        metadata: {
+          type: saverType,
+          description: `${saverType} checkpoint storage`,
+          persistent: saverType !== 'memory',
+          supportsStreaming: true,
+        },
+      });
+
+      console.log(
+        `✅ Checkpoint saver registered: ${saverType} (provided by user)`
+      );
+    } else {
+      // No saver provided - fallback to in-memory
+      import('@langchain/langgraph-checkpoint').then(({ MemorySaver }) => {
+        registry.registerSaver({
+          name: 'fallback',
+          saver: new MemorySaver(),
+          default: true,
+          metadata: {
+            type: 'memory',
+            description: 'In-memory checkpoint storage (fallback)',
+            persistent: false,
+            supportsStreaming: true,
+          },
+        });
+
+        console.log(
+          '⚠️  No checkpoint saver provided - falling back to in-memory storage'
+        );
+      });
+    }
+
+    return registry;
+  }
+
+  /**
+   * Detect the type of checkpoint saver based on its constructor name
+   */
+  private static detectSaverType(saver: any): string {
+    const constructorName = saver.constructor.name;
+
+    if (constructorName.includes('Memory')) return 'memory';
+    if (
+      constructorName.includes('Sqlite') ||
+      constructorName.includes('SQLite')
+    )
+      return 'sqlite';
+    if (constructorName.includes('Redis')) return 'redis';
+    if (constructorName.includes('Postgres')) return 'postgres';
+
+    return 'custom';
   }
 }

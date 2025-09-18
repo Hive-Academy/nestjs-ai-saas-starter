@@ -81,13 +81,15 @@ export interface ICheckpointSaverRegistry {
 
 /**
  * Configuration for the checkpoint module
- * Users provide pre-configured checkpoint savers
+ * Users provide a single pre-configured checkpoint saver
+ * The module will handle fallback to in-memory if no saver is provided
  */
 export interface CheckpointModuleConfig {
   /**
-   * Array of checkpoint saver configurations
+   * Single checkpoint saver instance
+   * If not provided, the module will fallback to in-memory storage
    */
-  savers?: CheckpointSaverConfig[];
+  saver?: BaseCheckpointSaver;
 
   /**
    * Global checkpoint settings

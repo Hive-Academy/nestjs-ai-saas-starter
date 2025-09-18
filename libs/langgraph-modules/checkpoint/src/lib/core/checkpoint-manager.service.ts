@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type {
-  CheckpointConfig,
   EnhancedCheckpointMetadata,
   EnhancedCheckpoint,
   EnhancedCheckpointTuple,
@@ -671,42 +670,55 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Initialize checkpoint savers from configuration
-   * Uses factory and registry services for setup
-   * Falls back to default configuration if ConfigService not available
+   * Now supports single-saver configuration pattern
+   * Falls back to default memory saver if no configuration provided
    */
   private async initializeCheckpointSavers(): Promise<void> {
-    const configs =
-      this.configService?.get<CheckpointConfig[]>('checkpoint.savers', []) ??
-      [];
+    // Check if we have any registered savers (from module initialization)
+    const availableSavers = this.saverRegistry?.getAvailableSavers() || [];
 
-    if (configs.length === 0) {
-      // Create default memory saver if no configuration provided
-      const defaultConfig: CheckpointConfig = {
-        type: 'memory',
-        name: 'default',
-        default: true,
-      };
-      configs.push(defaultConfig);
+    if (availableSavers.length > 0) {
+      this.logger.log(
+        `✅ Checkpoint system initialized with ${
+          availableSavers.length
+        } saver(s): ${availableSavers.join(', ')}`
+      );
+      return;
     }
 
-    for (const config of configs) {
-      try {
-        // Savers are now registered during module initialization
-        this.logger.debug(
-          `Checkpoint saver configuration found: ${config.type}`
-        );
-        // No action needed here - savers are provided by user during module setup
-      } catch (error) {
-        this.logger.error(
-          `Failed to initialize checkpoint saver ${
-            config.name || config.type
-          }:`,
-          error
-        );
+    // No savers registered - create fallback memory saver
+    this.logger.warn(
+      '⚠️  No checkpoint saver provided - falling back to in-memory storage'
+    );
+
+    // Import and create memory saver as fallback
+    try {
+      const { MemorySaver } = await import('@langchain/langgraph-checkpoint');
+      const memorySaver = new MemorySaver();
+
+      if (this.saverRegistry) {
+        this.saverRegistry.registerSaver({
+          name: 'fallback-memory',
+          saver: memorySaver,
+          default: true,
+          metadata: {
+            type: 'memory',
+            description: 'In-memory checkpoint storage (fallback)',
+            persistent: false,
+            supportsStreaming: true,
+          },
+        });
+
+        this.logger.log('✅ Fallback memory saver registered successfully');
       }
+    } catch (error) {
+      this.logger.error('Failed to create fallback memory saver:', error);
+      throw new Error(
+        'Cannot initialize checkpoint system - no savers available'
+      );
     }
 
-    // Validate that we have at least one saver if registry service is available
+    // Validate that we now have at least one saver
     if (this.registryService) {
       const validation = this.registryService.validateSavers();
       if (!validation.valid) {
@@ -716,16 +728,6 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
           )}`
         );
       }
-
-      this.logger.log(
-        `Checkpoint system initialized with ${
-          this.registryService.getAvailableSavers().length
-        } saver(s)`
-      );
-    } else {
-      this.logger.warn(
-        'Registry service not available - cannot validate initialization'
-      );
     }
   }
 

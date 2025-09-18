@@ -21,6 +21,7 @@ import { HitlModule } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
+import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
 import {
   WorkflowEngineModule,
   WorkflowEngineModuleOptions,
@@ -35,6 +36,7 @@ import { getMonitoringConfig } from './config/monitoring.config';
 import { getMultiAgentConfig } from './config/multi-agent.config';
 import { getNeo4jConfig } from './config/neo4j.config';
 import { getStreamingConfig } from './config/streaming.config';
+import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
@@ -87,10 +89,6 @@ import {
     LanggraphModulesCheckpointModule.forRootAsync({
       useFactory: async () => {
         const config = await getCheckpointConfig();
-        console.log('Checkpoint configuration loaded:', {
-          savers: config.savers?.length || 0,
-          defaultSaver: config.savers?.find((s) => s.default)?.name || 'none',
-        });
         return config;
       },
     }),
@@ -111,13 +109,17 @@ import {
       },
     }),
 
-    // HITL module with storage adapters
-    HitlModule.forRoot({
-      ...getHitlConfig(),
-      adapters: {
-        storage: Neo4jHitlStorageAdapter,
-        interruptionStorage: Neo4jInterruptionStorageAdapter,
-      },
+    // HITL module WITH CHECKPOINT INTEGRATION - adapter injection
+    HitlModule.forRootAsync({
+      useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+        ...getHitlConfig(),
+        checkpointAdapter,
+        adapters: {
+          storage: Neo4jHitlStorageAdapter,
+          interruptionStorage: Neo4jInterruptionStorageAdapter,
+        },
+      }),
+      inject: ['ICheckpointAdapter'],
     }),
 
     // Workflow engine WITH STREAMING AND CHECKPOINT - adapter injection
@@ -167,6 +169,20 @@ import {
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
+
+    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT - adapter injection
+    ...(process.env.NODE_ENV !== 'production' ||
+    process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
+      ? [
+          TimeTravelModule.forRootAsync({
+            useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+              ...getTimeTravelConfig(),
+              checkpointAdapter,
+            }),
+            inject: ['ICheckpointAdapter'],
+          }),
+        ]
+      : []),
 
     // Health checks
     TerminusModule.forRoot({

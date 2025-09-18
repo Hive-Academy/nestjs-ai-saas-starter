@@ -59,7 +59,9 @@
     "nx-mcp",
     "angular-cli",
     "neo4j-graph-data-modeling",
-    "chroma"
+    "chroma",
+    "filesystem",
+    "fetch"
   ],
   "statusLine": {
     "type": "command",

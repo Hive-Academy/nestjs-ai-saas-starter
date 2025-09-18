@@ -45,7 +45,10 @@ export const getChromaDBConfig = (
     },
 
     embedding: (() => {
-      const provider = configService.get('EMBEDDING_PROVIDER', 'openai');
+      const provider = configService.get(
+        'CHROMADB_EMBEDDING_PROVIDER',
+        'huggingface'
+      );
 
       switch (provider) {
         case 'openai':
