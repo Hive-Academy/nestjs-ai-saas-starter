@@ -2,12 +2,23 @@ import type { ModuleMetadata, Type } from '@nestjs/common';
 import type {
   ICheckpointAdapter,
   AsyncModuleFactory,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
+
+/**
+ * Workflow provider type for explicit registration
+ */
+export type WorkflowProvider = new (...args: any[]) => any;
 
 /**
  * Configuration options for the Functional API module
  */
 export interface FunctionalApiModuleOptions {
+  /**
+   * Explicitly registered workflow providers (replaces discovery)
+   */
+  readonly workflows?: WorkflowProvider[];
+
   /**
    * Default timeout for task execution in milliseconds
    * @default 30000
@@ -60,6 +71,12 @@ export interface FunctionalApiModuleOptions {
    * If not provided, checkpointing will be disabled (uses NoOpCheckpointAdapter)
    */
   readonly checkpointAdapter?: ICheckpointAdapter;
+
+  /**
+   * Optional streaming service adapter for real-time events
+   * If not provided, streaming will be disabled (uses NoOpStreamingService)
+   */
+  readonly streamingAdapter?: IStreamingService;
 }
 
 /**

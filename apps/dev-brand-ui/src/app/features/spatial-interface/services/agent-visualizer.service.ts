@@ -21,7 +21,6 @@ import {
 import { AgentCommunicationService } from '../../../core/services/agent-communication.service';
 import { ThreeIntegrationService } from '../../../core/services/three-integration.service';
 import { AgentStateEffects } from '../effects/agent-state-effects';
-import { filter } from 'rxjs/operators';
 
 export interface AgentVisualizerConfig {
   sceneId: string;
@@ -361,9 +360,9 @@ export class AgentVisualizerService {
       this.config.viewContainerRef.createComponent(Agent3DComponent);
 
     // Configure component
-    componentRef.instance.agent = agent;
-    componentRef.instance.sceneId = this.config.sceneId;
-    componentRef.instance.config = this.config.defaultAgentConfig;
+    componentRef.setInput('agent', agent);
+    componentRef.setInput('sceneId', this.config.sceneId);
+    componentRef.setInput('config', this.config.defaultAgentConfig);
 
     // Create instance record
     const instance: Agent3DInstance = {
@@ -393,7 +392,7 @@ export class AgentVisualizerService {
     instance.lastUpdate = new Date();
 
     // Update component input
-    instance.component.instance.agent = updatedAgent;
+    instance.component.setInput('agent', updatedAgent);
 
     // Trigger change detection
     instance.component.changeDetectorRef.detectChanges();

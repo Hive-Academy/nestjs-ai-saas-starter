@@ -73,10 +73,11 @@ export {
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
+export * from './lib/utils/node-id';
 
 // Checkpoint integration exports for consumer libraries
 export {
-  CHECKPOINT_ADAPTER_TOKEN,
+  // CHECKPOINT_ADAPTER_TOKEN, // Removed - using abstract class pattern
   NoOpCheckpointAdapter,
   ICheckpointAdapter,
 } from './lib/interfaces/checkpoint-adapter.interface';
@@ -93,3 +94,21 @@ export {
   CheckpointIntegrationHelper,
   createCheckpointIntegration,
 } from './lib/utils/checkpoint-integration.helper';
+
+// Streaming integration exports for consumer libraries
+export {
+  NoOpStreamingService,
+  NoOpTokenStreamingService,
+  NoOpEventStreamProcessorService,
+  NoOpWebSocketBridgeService,
+} from './lib/interfaces/streaming.interface';
+
+export { StreamEventType } from './lib/interfaces/streaming.interface';
+
+export type {
+  IStreamingService,
+  ITokenStreamingService,
+  IEventStreamProcessorService,
+  IWebSocketBridgeService,
+  TokenStreamOptions,
+} from './lib/interfaces/streaming.interface';

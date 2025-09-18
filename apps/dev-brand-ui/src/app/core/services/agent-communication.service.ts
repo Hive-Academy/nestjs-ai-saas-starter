@@ -1,6 +1,8 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { WebSocketService } from './websocket.service';
 import {
   AgentState,
@@ -9,6 +11,10 @@ import {
   ToolExecutionMessage,
   MemoryContext,
   ToolExecution,
+  AgentConstellationDataMessage,
+  AgentSwitchMessage,
+  MemoryAccessMessage,
+  WorkflowProgressMessage,
 } from '../interfaces/agent-state.interface';
 
 export interface AgentCommand {
@@ -29,6 +35,7 @@ export interface AgentCommand {
 })
 export class AgentCommunicationService {
   private readonly websocketService = inject(WebSocketService);
+  private readonly http = inject(HttpClient);
 
   // Agent state management
   private readonly agents = signal<Record<string, AgentState>>({});
@@ -88,6 +95,9 @@ export class AgentCommunicationService {
   connect(): void {
     this.websocketService.connect();
 
+    // Load initial agents from backend
+    this.loadInitialAgents();
+
     // Subscribe to agent-constellation room for real TASK_API_001 updates
     this.subscribeToAgentConstellation();
   }
@@ -103,7 +113,7 @@ export class AgentCommunicationService {
    * Send command to agent system
    */
   sendCommand(command: AgentCommand): void {
-    this.websocketService.send({
+    this.websocketService.sendLegacy({
       type: 'agent_command',
       timestamp: new Date(),
       data: command,
@@ -171,6 +181,147 @@ export class AgentCommunicationService {
    */
   getAgentToolExecutions(agentId: string): ToolExecution[] {
     return this.toolExecutions()[agentId] || [];
+  }
+
+  /**
+   * Manually update agent status (for backend integration)
+   */
+  updateAgentStatus(
+    agentId: string,
+    status: AgentState['status'],
+    isActive?: boolean
+  ): void {
+    const updates: Partial<AgentState> = {
+      status,
+      lastActiveTime: new Date(),
+    };
+
+    if (isActive !== undefined) {
+      updates.isActive = isActive;
+    }
+
+    this.updateAgentState(agentId, updates);
+  }
+
+  /**
+   * Add or update an agent in the system
+   */
+  addOrUpdateAgent(agent: AgentState): void {
+    const currentAgents = this.agents();
+    this.agents.set({
+      ...currentAgents,
+      [agent.id]: agent,
+    });
+  }
+
+  /**
+   * Simulate agent activity for demonstration purposes
+   */
+  simulateAgentActivity(): void {
+    const agents = this.availableAgents();
+    if (agents.length === 0) return;
+
+    // Randomly select an agent to update
+    const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+    const statuses: AgentState['status'][] = ['idle', 'thinking', 'executing'];
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+
+    // Try to trigger real backend activity first, fallback to local simulation
+    this.triggerBackendAgentActivity(randomAgent.id, randomStatus);
+  }
+
+  /**
+   * Trigger actual backend agent activity
+   */
+  private triggerBackendAgentActivity(
+    agentId: string,
+    status: AgentState['status']
+  ): void {
+    const toolNames = [
+      'ticket-analysis',
+      'sentiment-analysis',
+      'knowledge-search',
+      'quality-check',
+    ];
+    const toolName =
+      status === 'executing'
+        ? toolNames[Math.floor(Math.random() * toolNames.length)]
+        : undefined;
+
+    this.http
+      .post<{ success: boolean; data: any; message: string }>(
+        `http://localhost:3000/api/customer-support/agents/${agentId}/simulate-activity`,
+        {
+          status,
+          toolName,
+        }
+      )
+      .pipe(
+        catchError((error) => {
+          console.warn(
+            'Backend activity trigger failed, using local simulation:',
+            error
+          );
+          // Fallback to local simulation
+          this.simulateLocalAgentActivity(agentId, status);
+          return of({
+            success: false,
+            data: null,
+            message: 'Fallback to local simulation',
+          });
+        })
+      )
+      .subscribe((response) => {
+        if (response.success) {
+          console.log(`Backend activity triggered: ${response.message}`);
+
+          // Update local state with backend response
+          this.updateAgentStatus(
+            agentId,
+            status as AgentState['status'],
+            status !== 'idle'
+          );
+
+          // Handle tool execution if present
+          if (response.data.toolExecution) {
+            const toolExecution: ToolExecution = {
+              id: `tool_${agentId}_${Date.now()}`,
+              toolName: response.data.toolExecution.toolName,
+              status: response.data.toolExecution.status,
+              progress: response.data.toolExecution.progress,
+              startTime: new Date(response.data.toolExecution.startTime),
+              parameters: {},
+            };
+
+            this.updateToolExecution(agentId, toolExecution);
+          }
+        }
+      });
+  }
+
+  /**
+   * Local agent activity simulation (fallback)
+   */
+  private simulateLocalAgentActivity(
+    agentId: string,
+    status: AgentState['status']
+  ): void {
+    console.log(`Local simulation: Agent ${agentId} is now ${status}`);
+    this.updateAgentStatus(agentId, status, status !== 'idle');
+
+    // Simulate tool execution for executing agents
+    if (status === 'executing') {
+      const mockTool: ToolExecution = {
+        id: `tool_${agentId}_${Date.now()}`,
+        toolName: 'analysis-tool',
+        status: 'running',
+        progress: Math.random(),
+        startTime: new Date(),
+        parameters: {},
+      };
+
+      this.updateToolExecution(agentId, mockTool);
+    }
   }
 
   /**
@@ -305,83 +456,30 @@ export class AgentCommunicationService {
   private subscribeToDevBrandWebSocketEvents(): void {
     // Subscribe to agent constellation data (real TASK_API_001 agents)
     this.websocketService
-      .getMessagesByType<{
-        type: 'agent-constellation-data';
-        data: {
-          agents: Array<{
-            id: string;
-            name: string;
-            status: 'idle' | 'active' | 'processing' | 'error';
-            capabilities: string[];
-            healthy: boolean;
-            lastActivity?: string;
-          }>;
-          networkStats: {
-            totalAgents: number;
-            activeAgents: number;
-            averageResponseTime: number;
-          };
-        };
-      }>('agent-constellation-data')
+      .getMessagesByType<AgentConstellationDataMessage>(
+        'agent-constellation-data'
+      )
       .subscribe((message) => {
         this.handleDevBrandAgentData(message.data);
       });
 
     // Subscribe to agent switch events (real agent coordination)
     this.websocketService
-      .getMessagesByType<{
-        type: 'agent-switch';
-        data: {
-          fromAgent: string | null;
-          toAgent: string;
-          capabilities: string[];
-        };
-      }>('agent-switch')
+      .getMessagesByType<AgentSwitchMessage>('agent-switch')
       .subscribe((message) => {
         this.handleDevBrandAgentSwitch(message.data);
       });
 
     // Subscribe to memory access events (real ChromaDB/Neo4j operations)
     this.websocketService
-      .getMessagesByType<{
-        type: 'memory-access';
-        data: {
-          memoryType: 'chromadb' | 'neo4j' | 'workflow';
-          query: string;
-          results: unknown[];
-        };
-      }>('memory-access')
+      .getMessagesByType<MemoryAccessMessage>('memory-access')
       .subscribe((message) => {
         this.handleDevBrandMemoryAccess(message.data);
       });
 
     // Subscribe to workflow progress (real tool execution from TASK_API_001)
     this.websocketService
-      .getMessagesByType<{
-        type: 'workflow-progress';
-        data: {
-          stepNumber: number;
-          currentAgent: string;
-          agentCapabilities: string[];
-          messages: Array<{
-            content: string;
-            type: string;
-            timestamp: string;
-          }>;
-          metadata?: {
-            memoryAccess?: {
-              type: 'chromadb' | 'neo4j' | 'workflow';
-              query: string;
-              results: unknown[];
-            };
-            toolExecution?: {
-              toolName: string;
-              status: 'pending' | 'running' | 'completed' | 'error';
-              progress: number;
-            };
-          };
-        };
-      }>('workflow-progress')
+      .getMessagesByType<WorkflowProgressMessage>('workflow-progress')
       .subscribe((message) => {
         this.handleDevBrandWorkflowProgress(message.data);
       });
@@ -409,7 +507,7 @@ export class AgentCommunicationService {
     data.agents.forEach((backendAgent) => {
       const mappedAgent =
         this.mapDevBrandAgentToConstellationAgent(backendAgent);
-      this.updateAgentState(mappedAgent.id, mappedAgent);
+      this.updateAgentState(backendAgent.id, mappedAgent);
     });
   }
 
@@ -571,10 +669,13 @@ export class AgentCommunicationService {
     // Create memory context from real backend data
     const memoryContext: MemoryContext = {
       id: `memory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'procedural', // Classify as procedural since it's from tool execution
       content: `Memory access: ${data.query}`,
       source: data.memoryType,
       relevanceScore: Math.min(data.results.length * 0.1, 1.0),
       isActive: true,
+      timestamp: new Date(),
+      tags: [data.memoryType, 'tool-execution'],
       relatedAgents: [this.activeAgentId() || 'supervisor'],
       lastAccessed: new Date(),
       metadata: {
@@ -642,26 +743,64 @@ export class AgentCommunicationService {
 
     // Handle memory access if present
     if (data.metadata?.memoryAccess) {
-      this.handleDevBrandMemoryAccess(data.metadata.memoryAccess);
+      const memoryAccess = {
+        memoryType: data.metadata.memoryAccess.type,
+        query: data.metadata.memoryAccess.query,
+        results: data.metadata.memoryAccess.results,
+      };
+      this.handleDevBrandMemoryAccess(memoryAccess);
     }
+  }
+
+  /**
+   * Load initial agents from backend business workflows
+   */
+  private loadInitialAgents(): void {
+    this.http
+      .get<{ success: boolean; data: AgentState[]; total: number }>(
+        'http://localhost:3000/api/customer-support/agents'
+      )
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to load agents from backend:', error);
+          return of({ success: false, data: [], total: 0 });
+        })
+      )
+      .subscribe((response) => {
+        if (response.success && response.data.length > 0) {
+          console.log('Loading agents from business workflows:', response.data);
+
+          // Update agent states with backend data
+          const agentsMap: Record<string, AgentState> = {};
+          response.data.forEach((agent: any) => {
+            agentsMap[agent.id] = agent;
+          });
+
+          this.agents.set(agentsMap);
+          console.log(
+            'Agents loaded successfully:',
+            this.availableAgents().length
+          );
+        } else {
+          console.warn('No agents received from backend');
+        }
+      });
   }
 
   /**
    * Subscribe to agent constellation room for real TASK_API_001 updates
    */
   private subscribeToAgentConstellation(): void {
-    // Subscribe to the agent-constellation room
-    this.websocketService.send({
-      type: 'subscribe-to-room',
-      timestamp: new Date(),
-      data: {
-        room: 'agent-constellation',
-        userId: 'user_dev', // Could be made configurable
+    // Subscribe to the agent-constellation room using new gateway methods
+    this.websocketService.joinRoom({
+      roomId: 'agent-constellation',
+      options: {
+        metadata: { userId: 'user_dev' },
       },
     });
 
     // Request initial agent status
-    this.websocketService.send({
+    this.websocketService.sendLegacy({
       type: 'get-agent-status',
       timestamp: new Date(),
       data: {},

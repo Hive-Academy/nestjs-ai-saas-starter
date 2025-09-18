@@ -8,14 +8,39 @@ import type {
 import type { EmbeddingFunction, CollectionMetadata } from 'chromadb';
 
 /**
+ * HTTP client configuration options
+ */
+export interface HttpClientOptions {
+  /**
+   * Request timeout in milliseconds (default: 30000)
+   */
+  timeout?: number;
+
+  /**
+   * Maximum number of retries for failed requests (default: 3)
+   */
+  maxRetries?: number;
+
+  /**
+   * Initial delay between retries in milliseconds (default: 1000)
+   */
+  retryDelay?: number;
+
+  /**
+   * Backoff factor for exponential retry delay (default: 2)
+   */
+  retryBackoffFactor?: number;
+}
+
+/**
  * ChromaDB client configuration options
  * Uses host/port/ssl instead of deprecated 'path' parameter
  */
 export interface ChromaDBClientOptions {
   /**
-   * ChromaDB server host (default: localhost)
+   * ChromaDB server host - REQUIRED in production
    */
-  host?: string;
+  host: string;
 
   /**
    * ChromaDB server port (default: 8000)
@@ -44,6 +69,11 @@ export interface ChromaDBClientOptions {
     provider?: 'basic' | 'token';
     credentials?: string;
   };
+
+  /**
+   * HTTP client configuration for ChromaDB requests
+   */
+  http?: HttpClientOptions;
 }
 
 /**
@@ -56,13 +86,43 @@ export type EmbeddingProviderType =
   | 'custom';
 
 /**
+ * Input validation configuration
+ */
+export interface InputValidationConfig {
+  /**
+   * Maximum text length per input (default: 8000)
+   */
+  maxTextLength?: number;
+
+  /**
+   * Maximum number of inputs per batch
+   */
+  maxBatchSize?: number;
+
+  /**
+   * Validate API key format
+   */
+  validateApiKey?: boolean;
+
+  /**
+   * Estimate token count for rate limiting
+   */
+  estimateTokens?: boolean;
+}
+
+/**
  * OpenAI embedding configuration
  */
 export interface OpenAIEmbeddingConfig {
   apiKey: string;
-  model?: string; // default: 'text-embedding-ada-002'
+  model?: string; // default: 'text-embedding-3-small'
+  apiEndpoint?: string; // default: 'https://api.openai.com/v1/embeddings'
   organization?: string;
+  dimensions?: number;
   batchSize?: number;
+  maxInputTokens?: number;
+  http?: HttpClientOptions;
+  validation?: InputValidationConfig;
 }
 
 /**
@@ -71,8 +131,11 @@ export interface OpenAIEmbeddingConfig {
 export interface HuggingFaceEmbeddingConfig {
   apiKey?: string;
   model?: string; // default: 'sentence-transformers/all-MiniLM-L6-v2'
-  endpoint?: string;
+  apiEndpoint?: string;
+  dimensions?: number;
   batchSize?: number;
+  http?: HttpClientOptions;
+  validation?: InputValidationConfig;
 }
 
 /**
@@ -80,8 +143,12 @@ export interface HuggingFaceEmbeddingConfig {
  */
 export interface CohereEmbeddingConfig {
   apiKey: string;
-  model?: string; // default: 'embed-english-v2.0'
+  model?: string; // default: 'embed-english-v3.0'
+  apiEndpoint?: string; // default: 'https://api.cohere.ai/v1/embed'
+  dimensions?: number;
   batchSize?: number;
+  http?: HttpClientOptions;
+  validation?: InputValidationConfig;
 }
 
 /**
@@ -91,6 +158,8 @@ export interface CustomEmbeddingConfig {
   embed: (texts: string[]) => Promise<number[][]>;
   dimension: number;
   batchSize?: number;
+  http?: HttpClientOptions;
+  validation?: InputValidationConfig;
 }
 
 /**
@@ -109,6 +178,26 @@ export interface CollectionConfig {
   name: string;
   metadata?: CollectionMetadata;
   embeddingFunction?: EmbeddingFunction;
+}
+
+/**
+ * Text processing configuration
+ */
+export interface TextProcessingConfig {
+  /**
+   * Default chunk size for text splitting (default: 1000)
+   */
+  chunkSize?: number;
+
+  /**
+   * Default chunk overlap for text splitting (default: 200)
+   */
+  chunkOverlap?: number;
+
+  /**
+   * Maximum text length for processing (default: 8000)
+   */
+  maxTextLength?: number;
 }
 
 /**
@@ -137,11 +226,13 @@ export interface ChromaDBModuleOptions {
 
   /**
    * Maximum number of connection retries (default: 3)
+   * @deprecated Use connection.http.maxRetries instead
    */
   maxRetries?: number;
 
   /**
    * Delay between retries in milliseconds (default: 1000)
+   * @deprecated Use connection.http.retryDelay instead
    */
   retryDelay?: number;
 
@@ -159,6 +250,26 @@ export interface ChromaDBModuleOptions {
    * Log connection details on startup
    */
   logConnection?: boolean;
+
+  /**
+   * Log embedding operations for debugging
+   */
+  logEmbeddingOperations?: boolean;
+
+  /**
+   * Text processing configuration
+   */
+  textProcessing?: TextProcessingConfig;
+
+  /**
+   * Global HTTP client configuration
+   */
+  http?: HttpClientOptions;
+
+  /**
+   * Global input validation configuration
+   */
+  validation?: InputValidationConfig;
 }
 
 /**

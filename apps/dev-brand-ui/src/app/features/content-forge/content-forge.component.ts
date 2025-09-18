@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'brand-content-forge',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="content-forge">
       <h1>Content Forge</h1>

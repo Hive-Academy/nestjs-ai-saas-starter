@@ -11,7 +11,7 @@ const AgentBehaviorSimulator = require('./simulators/agent-behavior.simulator');
 
 class MockAPIServer {
   constructor(options = {}) {
-    this.port = options.port || 3001;
+    this.port = options.port || 3000;
     this.corsOrigin = options.corsOrigin || [
       'http://localhost:4200',
       'http://localhost:3000',
@@ -428,7 +428,7 @@ class MockAPIServer {
 // CLI usage
 if (require.main === module) {
   const server = new MockAPIServer({
-    port: process.env.MOCK_API_PORT || 3001,
+    port: process.env.MOCK_API_PORT || 3000,
     corsOrigin: process.env.MOCK_API_CORS_ORIGIN
       ? process.env.MOCK_API_CORS_ORIGIN.split(',')
       : ['http://localhost:4200', 'http://localhost:3000'],

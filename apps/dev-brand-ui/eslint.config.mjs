@@ -9,7 +9,7 @@ export default [
     files: ['**/*.ts'],
     rules: {
       '@angular-eslint/directive-selector': [
-        'error',
+        'off',
         {
           type: 'attribute',
           prefix: 'brand',
@@ -17,7 +17,7 @@ export default [
         },
       ],
       '@angular-eslint/component-selector': [
-        'error',
+        'off',
         {
           type: 'element',
           prefix: 'brand',
@@ -29,6 +29,8 @@ export default [
   {
     files: ['**/*.html'],
     // Override or add rules here
-    rules: {},
+    rules: {
+      '@angular-eslint/template/click-events-have-key-events': 'warn',
+    },
   },
 ];

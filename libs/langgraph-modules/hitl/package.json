@@ -32,7 +32,8 @@
     "@nestjs/common": "^11.0.0",
     "@hive-academy/langgraph-core": "0.0.1",
     "reflect-metadata": "^0.1.13",
-    "@nestjs/event-emitter": "^3.0.1"
+    "@nestjs/event-emitter": "^3.0.1",
+    "@nestjs/config": "4.0.2"
   },
   "devDependencies": {
     "rollup": "4.49.0",

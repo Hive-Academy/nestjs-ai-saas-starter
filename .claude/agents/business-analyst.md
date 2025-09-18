@@ -67,24 +67,40 @@ interface ScopeDecision {
 // REJECT if: NOT userRequested AND NOT criticalDependency
 ```
 
-### 3. **Work Continuity Validation**
+### 3. **Work Continuity & Comprehensive Integration Validation**
 
-**Mission**: Ensure agents build on previous work instead of starting fresh
+**Mission**: Ensure agents build on ALL previous work instead of cherry-picking or starting fresh
 
-**Continuity Check Protocol:**
+**Comprehensive Continuity Check Protocol:**
 
 ```bash
-# Read all previous agent work in sequence
-PREVIOUS_FINDINGS=$(cat task-tracking/TASK_[ID]/*.md)
+# Read ALL previous agent work in sequence for comprehensive validation
+USER_REQUEST=$(grep "User Request:" task-tracking/TASK_[ID]/context.md)
+PM_BUSINESS_REQS=$(grep -A10 "Requirements Analysis" task-tracking/TASK_[ID]/task-description.md)
+PM_ACCEPTANCE=$(grep -A10 "Acceptance Criteria" task-tracking/TASK_[ID]/task-description.md)
+RESEARCH_CRITICAL=$(grep -A5 "CRITICAL\|Priority.*1" task-tracking/TASK_[ID]/research-report.md)
+RESEARCH_HIGH=$(grep -A5 "HIGH\|Priority.*2" task-tracking/TASK_[ID]/research-report.md)
+ARCHITECT_PHASES=$(grep -A10 "Phase.*:" task-tracking/TASK_[ID]/implementation-plan.md)
 CURRENT_AGENT_WORK="[Current agent deliverable]"
 
-# Validation questions:
-echo "PREVIOUS AGENT RECOMMENDATIONS: $PREVIOUS_FINDINGS"
+# Comprehensive validation questions:
+echo "=== COMPREHENSIVE INTEGRATION VALIDATION ==="
+echo "USER REQUEST: $USER_REQUEST"
+echo "PM BUSINESS REQUIREMENTS: $PM_BUSINESS_REQS"
+echo "PM ACCEPTANCE CRITERIA: $PM_ACCEPTANCE"
+echo "RESEARCH CRITICAL FINDINGS: $RESEARCH_CRITICAL"
+echo "RESEARCH HIGH FINDINGS: $RESEARCH_HIGH"
+echo "ARCHITECT PHASES: $ARCHITECT_PHASES"
 echo "CURRENT AGENT WORK: $CURRENT_AGENT_WORK"
-echo "❓ Did agent reference previous findings? [YES/NO]"
-echo "❓ Did agent address critical recommendations from research? [YES/NO]"
-echo "❓ Did agent build on architect's plan (if applicable)? [YES/NO]"
+
+echo "❓ Did agent address user's original request? [YES/NO]"
+echo "❓ Did agent fulfill PM's business requirements? [YES/NO]"
+echo "❓ Did agent address PM's acceptance criteria? [YES/NO]"
+echo "❓ Did agent address critical research findings? [YES/NO]"
+echo "❓ Did agent address high priority research findings? [YES/NO]"
+echo "❓ Did agent follow architect's implementation phases (if applicable)? [YES/NO]"
 echo "❓ Any major recommendations ignored without justification? [YES/NO]"
+echo "❓ Does work represent synthesis of ALL previous findings? [YES/NO]"
 ```
 
 ### 4. **Critical Issue Priority Validation**
