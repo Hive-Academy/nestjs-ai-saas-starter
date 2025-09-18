@@ -1,5 +1,4 @@
 // Module
-export * from './lib/core.module';
 
 // Constants (runtime exports)
 export * from './lib/constants';
@@ -74,6 +73,7 @@ export {
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
 export * from './lib/utils/node-id';
+export * from './lib/utils/id-generation.utils';
 
 // Checkpoint integration exports for consumer libraries
 export {

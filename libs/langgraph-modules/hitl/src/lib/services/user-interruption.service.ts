@@ -32,9 +32,8 @@ export class UserInterruptionService {
    * Request user interruption during workflow execution
    */
   async requestUserInterruption(context: InterruptionContext): Promise<string> {
-    const interruptionId = `interrupt_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
+    const { generateId } = await import('@hive-academy/langgraph-core');
+    const interruptionId = generateId('interrupt');
 
     // Create interruption record
     const interruption: UserInterruption = {
@@ -163,7 +162,8 @@ export class UserInterruptionService {
           decision: response.continueExecution ? 'approved' : 'rejected',
           approvedBy: response.userId || 'anonymous',
           message: response.response,
-          responseTimeMs: Date.now() - interruption.timestamps.created.getTime(),
+          responseTimeMs:
+            Date.now() - interruption.timestamps.created.getTime(),
         });
       }
 
@@ -219,7 +219,9 @@ export class UserInterruptionService {
         // Merge with in-memory interruptions (avoiding duplicates)
         const mergedMap = new Map<string, UserInterruption>();
         activeInterruptions.forEach((i) => mergedMap.set(i.id, i));
-        storedInterruptions.forEach((i: UserInterruption) => mergedMap.set(i.id, i));
+        storedInterruptions.forEach((i: UserInterruption) =>
+          mergedMap.set(i.id, i)
+        );
         return Array.from(mergedMap.values());
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -353,7 +355,7 @@ export class UserInterruptionService {
   }
 
   // Private helper methods
-  
+
   private setupInterruptionTimeout(interruptionId: string): void {
     const interruption = this.userInterruptions.get(interruptionId);
     if (!interruption) return;

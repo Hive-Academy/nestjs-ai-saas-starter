@@ -15,7 +15,7 @@ export type {
   MemoryConfig,
   MemoryRetentionPolicy,
   MemoryStats,
-  UserMemoryPatterns,
+  UserMemoryPatterns as BaseUserMemoryPatterns,
   MemoryServiceInterface,
   MemoryOperationMetrics,
   SerializableValue,
@@ -30,9 +30,45 @@ export type {
   MemoryOptionsFactory,
 } from './lib/interfaces/memory-module-options.interface';
 
+export {
+  DEFAULT_AGENTIC_CONFIG,
+  DEFAULT_RAG_CONFIG,
+  DEFAULT_AGENT_MEMORY_CONFIG,
+  DEFAULT_STORE_CONFIG,
+} from './lib/interfaces/memory-module-options.interface';
+
 // Adapter Pattern Interfaces
 export { IVectorService } from './lib/interfaces/vector-service.interface';
 export { IGraphService } from './lib/interfaces/graph-service.interface';
+
+// NEW: Memory Adapter Interfaces for Agentic Superpowers
+export {
+  IMemoryAdapter,
+  MemoryManagerAdapter,
+  MemoryAdapterFactory,
+} from './lib/interfaces/memory-adapter.interface';
+export type { MemorySearchOptions as MemoryAdapterSearchOptions } from './lib/interfaces/memory-adapter.interface';
+
+// NEW: LangGraph Store Interface (LangGraph 2025 Compliance)
+export type { Item, Store } from './lib/interfaces/langgraph-store.interface';
+export {
+  ChromaLangGraphStore,
+  LangGraphStoreFactory,
+  NamespaceUtils,
+  isValidItem,
+} from './lib/interfaces/langgraph-store.interface';
+
+// NEW: Agent State Integration Interfaces
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  IAgentMemoryService,
+  AgentMemory,
+  AgentMemoryConfig,
+  AgentMemoryStats,
+  IAgentMemoryBridge,
+} from './lib/interfaces/agent-memory.interface';
 
 export type {
   VectorStoreData,

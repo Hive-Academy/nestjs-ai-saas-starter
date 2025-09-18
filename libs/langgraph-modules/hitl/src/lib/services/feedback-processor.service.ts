@@ -458,7 +458,7 @@ export class FeedbackProcessorService {
    * Generate unique feedback ID
    */
   private generateFeedbackId(): string {
-    return `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const { generateId } = require('@hive-academy/langgraph-core');
+    return generateId('feedback');
   }
 }
-

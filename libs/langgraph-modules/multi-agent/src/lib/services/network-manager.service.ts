@@ -598,6 +598,7 @@ export class NetworkManagerService {
    * Generate unique execution ID
    */
   private generateExecutionId(): string {
-    return `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const { generateExecutionId } = require('@hive-academy/langgraph-core');
+    return generateExecutionId();
   }
 }

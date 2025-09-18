@@ -46,7 +46,13 @@
       "Bash(curl:*)",
       "mcp__nx-mcp__nx_workspace_path",
       "WebFetch(domain:langchain-ai.github.io)",
-      "mcp__fetch__fetch"
+      "mcp__fetch__fetch",
+      "mcp__filesystem__create_directory",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__write_file",
+      "mcp__filesystem__edit_file",
+      "mcp__filesystem__read_text_file"
     ],
     "deny": [],
     "ask": [],

@@ -472,9 +472,8 @@ export class CheckpointHealthService
    * Perform comprehensive health check on checkpoint saver
    */
   private async performBasicHealthCheck(saver: any): Promise<boolean> {
-    const testThreadId = `health-check-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`;
+    const { generateThreadId } = require('@hive-academy/langgraph-core');
+    const testThreadId = generateThreadId('health-check');
     const testConfig = { configurable: { thread_id: testThreadId } };
     const testCheckpoint = {
       id: 'health-test',

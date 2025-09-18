@@ -7,7 +7,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { NodeIdBuilder } from '@hive-academy/langgraph-core';
+import type { NodeIdBuilder } from '@hive-academy/langgraph-core';
 import type {
   WorkflowState,
   ICheckpointAdapter,
@@ -546,7 +546,8 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    * Generate unique request ID
    */
   private generateRequestId(): string {
-    return `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const { generateId } = require('@hive-academy/langgraph-core');
+    return generateId('approval');
   }
 
   // ==========================================
