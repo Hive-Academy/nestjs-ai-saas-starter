@@ -17,13 +17,13 @@ import type {
   CheckpointCleanupOptions,
 } from '../interfaces/checkpoint.interface';
 import type {
-  ICheckpointSaverFactory,
   ICheckpointRegistryService,
   ICheckpointPersistenceService,
   ICheckpointMetricsService,
   ICheckpointCleanupService,
   ICheckpointHealthService,
 } from '../interfaces/checkpoint-services.interface';
+import type { ICheckpointSaverRegistry } from '../interfaces/checkpoint-saver-registry.interface';
 
 /**
  * Facade service for managing checkpoint persistence across multiple storage backends
@@ -38,8 +38,8 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Optional() private readonly configService?: ConfigService,
-    @Inject('ICheckpointSaverFactory')
-    private readonly saverFactory?: ICheckpointSaverFactory,
+    @Inject('ICheckpointSaverRegistry')
+    private readonly saverRegistry?: ICheckpointSaverRegistry,
     @Inject('ICheckpointRegistryService')
     private readonly registryService?: ICheckpointRegistryService,
     @Inject('ICheckpointPersistenceService')
@@ -68,7 +68,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    */
   public isCoreServicesAvailable(): boolean {
     return !!(
-      this.saverFactory &&
+      this.saverRegistry &&
       this.registryService &&
       this.persistenceService
     );
@@ -221,13 +221,11 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Returns empty array if registry service not available
    */
   getAvailableSavers(): string[] {
-    if (!this.registryService) {
-      this.logger.warn(
-        'Registry service not available - returning empty array'
-      );
+    if (!this.saverRegistry) {
+      this.logger.warn('Saver registry not available - returning empty array');
       return [];
     }
-    return this.registryService.getAvailableSavers();
+    return this.saverRegistry.getAvailableSavers();
   }
 
   /**
@@ -415,7 +413,14 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Update cleanup policies
    * Does nothing if cleanup service not available
    */
-  updateCleanupPolicies(policies: any): void {
+  updateCleanupPolicies(
+    policies: Partial<{
+      maxAge: number;
+      maxPerThread: number;
+      cleanupInterval: number;
+      excludeThreads: string[];
+    }>
+  ): void {
     if (!this.cleanupService) {
       this.logger.warn(
         'Cleanup service not available - cannot update policies'
@@ -686,22 +691,11 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
     for (const config of configs) {
       try {
-        // Check if factory and registry services are available
-        if (!this.saverFactory || !this.registryService) {
-          this.logger.warn(
-            `Cannot initialize ${config.type} saver - required services not available`
-          );
-          continue;
-        }
-
-        // Create saver using factory
-        const saver = await this.saverFactory.createCheckpointSaver(config);
-        const name = config.name || config.type;
-
-        // Register saver in registry
-        this.registryService.registerSaver(name, saver, config.default);
-
-        this.logger.log(`Initialized ${config.type} checkpoint saver: ${name}`);
+        // Savers are now registered during module initialization
+        this.logger.debug(
+          `Checkpoint saver configuration found: ${config.type}`
+        );
+        // No action needed here - savers are provided by user during module setup
       } catch (error) {
         this.logger.error(
           `Failed to initialize checkpoint saver ${

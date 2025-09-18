@@ -2,67 +2,16 @@ import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CheckpointManagerService } from '../core/checkpoint-manager.service';
 import { StateTransformerService } from '../core/state-transformer.service';
-import { CheckpointSaverFactory } from '../core/checkpoint-saver.factory';
+import { CheckpointSaverRegistry } from '../core/checkpoint-saver.registry';
 import { CheckpointRegistryService } from '../core/checkpoint-registry.service';
 import { CheckpointPersistenceService } from '../core/checkpoint-persistence.service';
 import { CheckpointMetricsService } from '../core/checkpoint-metrics.service';
 import { CheckpointCleanupService } from '../core/checkpoint-cleanup.service';
 import { CheckpointHealthService } from '../core/checkpoint-health.service';
-import { LangGraphCheckpointProvider } from '../providers/langgraph-checkpoint.provider';
-import { CheckpointConfig } from '../interfaces/checkpoint.interface';
+import { CheckpointModuleConfig } from '../interfaces/checkpoint-saver-registry.interface';
 import { CheckpointManagerAdapter } from '../adapters/checkpoint-manager.adapter';
 
-export interface CheckpointModuleOptions {
-  /**
-   * Checkpoint configuration
-   */
-  checkpoint?: {
-    /**
-     * Array of checkpoint saver configurations
-     */
-    savers?: CheckpointConfig[];
-
-    /**
-     * Cleanup interval in milliseconds
-     */
-    cleanupInterval?: number;
-
-    /**
-     * Maximum age of checkpoints to keep (in milliseconds)
-     */
-    maxAge?: number;
-
-    /**
-     * Maximum number of checkpoints per thread
-     */
-    maxPerThread?: number;
-
-    /**
-     * Thread patterns to exclude from cleanup
-     */
-    excludeThreads?: string[];
-
-    /**
-     * Health monitoring configuration
-     */
-    health?: {
-      /**
-       * Health check interval in milliseconds
-       */
-      checkInterval?: number;
-
-      /**
-       * Response time threshold for degraded status (ms)
-       */
-      degradedThreshold?: number;
-
-      /**
-       * Response time threshold for unhealthy status (ms)
-       */
-      unhealthyThreshold?: number;
-    };
-  };
-}
+export type CheckpointModuleOptions = CheckpointModuleConfig
 
 @Module({})
 export class LanggraphModulesCheckpointModule {
@@ -72,20 +21,17 @@ export class LanggraphModulesCheckpointModule {
   private static getProviders(): any[] {
     return [
       // Core services following SOLID principles
-      CheckpointSaverFactory,
+      CheckpointSaverRegistry,
       CheckpointRegistryService,
       CheckpointMetricsService,
       CheckpointCleanupService,
       CheckpointHealthService,
       CheckpointPersistenceService,
 
-      // Official LangGraph checkpoint provider
-      LangGraphCheckpointProvider,
-
       // Interface tokens for dependency injection
       {
-        provide: 'ICheckpointSaverFactory',
-        useExisting: CheckpointSaverFactory,
+        provide: 'ICheckpointSaverRegistry',
+        useExisting: CheckpointSaverRegistry,
       },
       {
         provide: 'ICheckpointRegistryService',
@@ -107,10 +53,6 @@ export class LanggraphModulesCheckpointModule {
         provide: 'ICheckpointHealthService',
         useExisting: CheckpointHealthService,
       },
-      {
-        provide: 'ILangGraphCheckpointProvider',
-        useExisting: LangGraphCheckpointProvider,
-      },
 
       // Facade service
       CheckpointManagerService,
@@ -122,7 +64,7 @@ export class LanggraphModulesCheckpointModule {
         useExisting: CheckpointManagerAdapter,
       },
 
-      // Legacy service
+      // State transformer service
       StateTransformerService,
     ];
   }
@@ -135,22 +77,19 @@ export class LanggraphModulesCheckpointModule {
       CheckpointManagerService,
       StateTransformerService,
       // Export focused services for advanced usage
-      CheckpointSaverFactory,
+      CheckpointSaverRegistry,
       CheckpointRegistryService,
       CheckpointPersistenceService,
       CheckpointMetricsService,
       CheckpointCleanupService,
       CheckpointHealthService,
-      // Export official LangGraph provider
-      LangGraphCheckpointProvider,
       // Export interface tokens
-      'ICheckpointSaverFactory',
+      'ICheckpointSaverRegistry',
       'ICheckpointRegistryService',
       'ICheckpointPersistenceService',
       'ICheckpointMetricsService',
       'ICheckpointCleanupService',
       'ICheckpointHealthService',
-      'ILangGraphCheckpointProvider',
       // Export checkpoint adapter
       'ICheckpointAdapter',
     ];
@@ -169,6 +108,19 @@ export class LanggraphModulesCheckpointModule {
           useValue: options,
         },
         ...this.getProviders(),
+        // Initialize checkpoint savers registry
+        {
+          provide: 'CHECKPOINT_SAVERS_INIT',
+          useFactory: (registry: CheckpointSaverRegistry) => {
+            if (options.savers) {
+              options.savers.forEach((saverConfig) => {
+                registry.registerSaver(saverConfig);
+              });
+            }
+            return registry;
+          },
+          inject: [CheckpointSaverRegistry],
+        },
       ],
       exports: this.getExports(),
       global: true,
@@ -194,6 +146,22 @@ export class LanggraphModulesCheckpointModule {
           inject: options.inject ?? [],
         },
         ...this.getProviders(),
+        // Initialize checkpoint savers registry asynchronously
+        {
+          provide: 'CHECKPOINT_SAVERS_INIT',
+          useFactory: async (
+            moduleOptions: CheckpointModuleOptions,
+            registry: CheckpointSaverRegistry
+          ) => {
+            if (moduleOptions.savers) {
+              moduleOptions.savers.forEach((saverConfig) => {
+                registry.registerSaver(saverConfig);
+              });
+            }
+            return registry;
+          },
+          inject: ['CHECKPOINT_MODULE_OPTIONS', CheckpointSaverRegistry],
+        },
       ],
       exports: this.getExports(),
       global: true,

@@ -3,10 +3,16 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
+  Inject,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NodeIdBuilder } from '@hive-academy/langgraph-core';
 import type {
   WorkflowState,
+  ICheckpointAdapter,
+  BaseCheckpointMetadata,
+  BaseCheckpointTuple,
 } from '@hive-academy/langgraph-core';
 import { ApprovalChainService } from './approval-chain.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
@@ -14,9 +20,16 @@ import { ApprovalProcessingService } from './approval-processing.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
 import { ApprovalStreamingService } from './approval-streaming.service';
 import { UserInterruptionService } from './user-interruption.service';
-import { InterruptionContext, UserInterruption, UserInterruptionResponse } from '../interfaces/user-interruption.interface';
+import {
+  InterruptionContext,
+  UserInterruption,
+  UserInterruptionResponse,
+} from '../interfaces/user-interruption.interface';
 import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
-import { EscalationStrategy, RequiresApprovalOptions } from '../decorators/approval.decorator';
+import {
+  EscalationStrategy,
+  RequiresApprovalOptions,
+} from '../decorators/approval.decorator';
 import {
   ApprovalWorkflowState,
   HumanApprovalRequest,
@@ -40,6 +53,7 @@ export type {
 export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(HumanApprovalService.name);
   private readonly approvalRequests = new Map<string, HumanApprovalRequest>();
+  private currentStep = 0;
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
@@ -48,8 +62,17 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly approvalProcessingService: ApprovalProcessingService,
     private readonly approvalTimeoutService: ApprovalTimeoutService,
     private readonly approvalStreamingService: ApprovalStreamingService,
-    private readonly userInterruptionService: UserInterruptionService
-  ) {}
+    private readonly userInterruptionService: UserInterruptionService,
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {
+    if (this.checkpointAdapter) {
+      this.logger.log(
+        'Checkpoint adapter available - automatic approval state persistence enabled'
+      );
+    }
+  }
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Human Approval Service initialized');
@@ -128,10 +151,8 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     this.approvalRequests.set(requestId, request);
 
     // Set up timeout
-    this.approvalTimeoutService.setupTimeout(
-      requestId,
-      request,
-      (id) => this.handleTimeout(id)
+    this.approvalTimeoutService.setupTimeout(requestId, request, (id) =>
+      this.handleTimeout(id)
     );
 
     // Determine approvers based on escalation strategy
@@ -156,6 +177,14 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         request.approvers = approvalRequest.currentLevel.approvers.map(
           (a) => a.id
         );
+
+        // Save chain progress checkpoint
+        await this.saveChainProgress(
+          request,
+          approvalRequest.currentLevel.priority,
+          request.approvers,
+          'initiated'
+        );
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to initiate approval chain: ${errorMsg}`);
@@ -169,13 +198,17 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
       request,
       approvers: request.approvers,
-      streamEnabled: this.approvalStreamingService.hasStreamConnection(executionId),
+      streamEnabled:
+        this.approvalStreamingService.hasStreamConnection(executionId),
     });
 
     // Stream real-time approval request if connection exists
     if (this.approvalStreamingService.hasStreamConnection(executionId)) {
       await this.approvalStreamingService.streamApprovalRequest(request);
     }
+
+    // Save checkpoint after approval is created
+    await this.saveApprovalState(request, 'approval_created');
 
     this.logger.log(
       `Approval request ${requestId} created for execution ${executionId}`
@@ -199,7 +232,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     shouldContinue?: boolean;
     error?: string;
   }> {
-    return this.approvalProcessingService.processApproval(request, this.approvalRequests);
+    return this.approvalProcessingService.processApproval(
+      request,
+      this.approvalRequests
+    );
   }
 
   /**
@@ -215,7 +251,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   }> {
     const request = this.approvalRequests.get(requestId);
     if (!request) {
-      return { success: false, error: `Approval request ${requestId} not found` };
+      return {
+        success: false,
+        error: `Approval request ${requestId} not found`,
+      };
     }
 
     // Clear timeout
@@ -229,8 +268,22 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     );
 
     // Stream real-time update
-    if (this.approvalStreamingService.hasStreamConnection(request.executionId)) {
-      await this.approvalStreamingService.streamApprovalUpdate(request, response);
+    if (
+      this.approvalStreamingService.hasStreamConnection(request.executionId)
+    ) {
+      await this.approvalStreamingService.streamApprovalUpdate(
+        request,
+        response
+      );
+    }
+
+    // Save checkpoint after approval response is processed
+    if (result.success && request) {
+      await this.saveApprovalState(request, 'approval_processed', {
+        decision: response.decision,
+        approver: response.approver,
+        nextState: result.nextState,
+      });
     }
 
     return result;
@@ -242,6 +295,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private async handleTimeout(requestId: string): Promise<void> {
     const request = this.approvalRequests.get(requestId);
     if (!request) return;
+
+    // Save timeout state before handling
+    await this.persistTimeoutState(request);
 
     await this.approvalTimeoutService.handleTimeout(
       requestId,
@@ -261,6 +317,16 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       );
 
       if (request) {
+        // Save chain completion checkpoint before processing response
+        if (request.chainId) {
+          await this.saveChainProgress(
+            request,
+            event.level || 0,
+            request.approvers || [],
+            event.status
+          );
+        }
+
         await this.processApprovalResponse(request.id, {
           requestId: request.id,
           decision: event.status === 'approved' ? 'approved' : 'rejected',
@@ -280,7 +346,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    * Register stream connection for real-time updates
    */
   registerStreamConnection(executionId: string, connection: any): void {
-    this.approvalStreamingService.registerStreamConnection(executionId, connection);
+    this.approvalStreamingService.registerStreamConnection(
+      executionId,
+      connection
+    );
   }
 
   /**
@@ -312,7 +381,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     updatedState?: Partial<WorkflowState>;
     error?: string;
   }> {
-    return this.userInterruptionService.handleUserInterruptionResponse(response);
+    return this.userInterruptionService.handleUserInterruptionResponse(
+      response
+    );
   }
 
   /**
@@ -476,5 +547,371 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   private generateRequestId(): string {
     return `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // ==========================================
+  // CHECKPOINT OPERATIONS
+  // ==========================================
+
+  /**
+   * Save approval workflow state at critical points
+   */
+  private async saveApprovalState(
+    request: HumanApprovalRequest,
+    source: string,
+    additionalData?: Record<string, unknown>
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return; // Gracefully handle when checkpoint adapter is not available
+    }
+
+    try {
+      const threadId = this.generateApprovalThreadId(
+        request.executionId,
+        request.nodeId
+      );
+
+      const checkpointData = {
+        id: request.id,
+        channel_values: {
+          request,
+          additionalData,
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      const metadata: BaseCheckpointMetadata = {
+        timestamp: new Date().toISOString(),
+        source: source as 'input' | 'loop' | 'update' | 'fork',
+        step: ++this.currentStep,
+        parents: {
+          executionId: request.executionId,
+          nodeId: request.nodeId,
+          requestId: request.id,
+        },
+        workflowState: request.workflowState,
+        confidence: request.confidence.current,
+        riskLevel: request.riskAssessment?.level,
+      };
+
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        checkpointData,
+        metadata,
+        'hitl-approval'
+      );
+
+      this.logger.debug(
+        `Saved approval checkpoint for request ${request.id} at ${source}`
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to save approval checkpoint for request ${request.id}: ${errorMsg}`
+      );
+      // Don't throw - gracefully continue approval workflow
+    }
+  }
+
+  /**
+   * Resume approval workflow from saved state
+   */
+  async resumeApprovalWorkflow(
+    executionId: string,
+    nodeId: string,
+    checkpointId?: string
+  ): Promise<HumanApprovalRequest | null> {
+    if (!this.checkpointAdapter) {
+      this.logger.warn(
+        'Cannot resume approval workflow - no checkpoint adapter available'
+      );
+      return null;
+    }
+
+    try {
+      const threadId = this.generateApprovalThreadId(executionId, nodeId);
+
+      const checkpoint = await this.checkpointAdapter.loadCheckpoint<{
+        request: HumanApprovalRequest;
+        additionalData?: Record<string, unknown>;
+        timestamp: string;
+      }>(threadId, checkpointId, 'hitl-approval');
+
+      if (!checkpoint?.channel_values?.request) {
+        this.logger.warn(
+          `No checkpoint found for approval workflow: ${executionId}/${nodeId}`
+        );
+        return null;
+      }
+
+      const restoredRequest = checkpoint.channel_values.request;
+
+      // Restore request to in-memory map
+      this.approvalRequests.set(restoredRequest.id, restoredRequest);
+
+      // Re-setup timeout if still in progress
+      if (restoredRequest.workflowState === ApprovalWorkflowState.IN_PROGRESS) {
+        const timeElapsed =
+          Date.now() - restoredRequest.timestamps.requested.getTime();
+        const remainingTimeout = restoredRequest.timeout.duration - timeElapsed;
+
+        if (remainingTimeout > 0) {
+          // Update the request timeout duration to the remaining time
+          restoredRequest.timeout.duration = remainingTimeout;
+          this.approvalTimeoutService.setupTimeout(
+            restoredRequest.id,
+            restoredRequest,
+            (id) => this.handleTimeout(id)
+          );
+        }
+      }
+
+      this.logger.log(
+        `Resumed approval workflow for request ${restoredRequest.id} from checkpoint`
+      );
+
+      return restoredRequest;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to resume approval workflow for ${executionId}/${nodeId}: ${errorMsg}`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Handle timeout state persistence
+   */
+  private async persistTimeoutState(
+    request: HumanApprovalRequest
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return; // Gracefully handle when checkpoint adapter is not available
+    }
+
+    try {
+      // Update request with timeout timestamp
+      request.timestamps.timeout = new Date();
+      request.workflowState = ApprovalWorkflowState.TIMEOUT;
+
+      // Save timeout state
+      await this.saveApprovalState(request, 'approval_timeout', {
+        timeoutStrategy: request.timeout.strategy,
+        originalDuration: request.timeout.duration,
+        timeoutAt: request.timestamps.timeout.toISOString(),
+      });
+
+      this.logger.log(
+        `Persisted timeout state for approval request ${request.id}`
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to persist timeout state for request ${request.id}: ${errorMsg}`
+      );
+      // Don't throw - gracefully continue timeout handling
+    }
+  }
+
+  /**
+   * Save approval chain progression
+   */
+  private async saveChainProgress(
+    request: HumanApprovalRequest,
+    chainLevel: number,
+    approvers: string[],
+    chainStatus: string
+  ): Promise<void> {
+    if (!this.checkpointAdapter || !request.chainId) {
+      return; // Gracefully handle when checkpoint adapter is not available or no chain
+    }
+
+    try {
+      const threadId = this.generateChainThreadId(
+        request.chainId,
+        request.executionId
+      );
+
+      const chainData = {
+        id: `${request.chainId}-${chainLevel}`,
+        channel_values: {
+          chainId: request.chainId,
+          level: chainLevel,
+          approvers,
+          status: chainStatus,
+          requestId: request.id,
+          executionId: request.executionId,
+          nodeId: request.nodeId,
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      const metadata: BaseCheckpointMetadata = {
+        timestamp: new Date().toISOString(),
+        source: 'update',
+        step: ++this.currentStep,
+        parents: {
+          chainId: request.chainId,
+          executionId: request.executionId,
+          requestId: request.id,
+          level: chainLevel,
+        },
+        chainLevel,
+        chainStatus,
+        approverCount: approvers.length,
+      };
+
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        chainData,
+        metadata,
+        'hitl-chain'
+      );
+
+      this.logger.debug(
+        `Saved chain progress checkpoint for chain ${request.chainId} level ${chainLevel}`
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to save chain progress for chain ${request.chainId}: ${errorMsg}`
+      );
+      // Don't throw - gracefully continue chain processing
+    }
+  }
+
+  /**
+   * Resume approval chain from saved state
+   */
+  async resumeApprovalChain(
+    chainId: string,
+    executionId: string,
+    checkpointId?: string
+  ): Promise<{
+    level: number;
+    approvers: string[];
+    status: string;
+  } | null> {
+    if (!this.checkpointAdapter) {
+      this.logger.warn(
+        'Cannot resume approval chain - no checkpoint adapter available'
+      );
+      return null;
+    }
+
+    try {
+      const threadId = this.generateChainThreadId(chainId, executionId);
+
+      const checkpoint = await this.checkpointAdapter.loadCheckpoint<{
+        chainId: string;
+        level: number;
+        approvers: string[];
+        status: string;
+        requestId: string;
+        executionId: string;
+        nodeId: string;
+        timestamp: string;
+      }>(threadId, checkpointId, 'hitl-chain');
+
+      if (!checkpoint?.channel_values) {
+        this.logger.warn(
+          `No chain checkpoint found for chain: ${chainId}/${executionId}`
+        );
+        return null;
+      }
+
+      const chainData = checkpoint.channel_values;
+
+      this.logger.log(
+        `Resumed approval chain ${chainId} at level ${chainData.level} with status ${chainData.status}`
+      );
+
+      return {
+        level: chainData.level,
+        approvers: chainData.approvers,
+        status: chainData.status,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to resume approval chain ${chainId}/${executionId}: ${errorMsg}`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Generate canonical thread ID for approval workflow
+   */
+  private generateApprovalThreadId(
+    executionId: string,
+    nodeId: string
+  ): string {
+    return NodeIdBuilder.create()
+      .domain('hitl')
+      .phase('approval')
+      .activity('workflow')
+      .detail(`${executionId}-${nodeId}`)
+      .build();
+  }
+
+  /**
+   * Generate canonical thread ID for approval chain
+   */
+  private generateChainThreadId(chainId: string, executionId: string): string {
+    return NodeIdBuilder.create()
+      .domain('hitl')
+      .phase('approval')
+      .activity('chain')
+      .detail(`${chainId}-${executionId}`)
+      .build();
+  }
+
+  /**
+   * Get all approval checkpoints for execution
+   */
+  async getApprovalCheckpoints(
+    executionId: string,
+    nodeId: string,
+    limit?: number
+  ): Promise<readonly BaseCheckpointTuple[]> {
+    if (!this.checkpointAdapter) {
+      return [];
+    }
+
+    try {
+      const threadId = this.generateApprovalThreadId(executionId, nodeId);
+      return await this.checkpointAdapter.listCheckpoints(
+        threadId,
+        { limit: limit || 10 },
+        'hitl-approval'
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to get approval checkpoints for ${executionId}/${nodeId}: ${errorMsg}`
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Cleanup old approval checkpoints
+   */
+  async cleanupApprovalCheckpoints(maxAge?: number): Promise<number> {
+    if (!this.checkpointAdapter) {
+      return 0;
+    }
+
+    try {
+      return await this.checkpointAdapter.cleanupCheckpoints({
+        maxAge: maxAge || HITL_DEFAULTS.FEEDBACK_RETENTION_MS,
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to cleanup approval checkpoints: ${errorMsg}`);
+      return 0;
+    }
   }
 }

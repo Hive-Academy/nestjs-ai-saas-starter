@@ -83,10 +83,16 @@ import {
       },
     }),
 
-    // Checkpoint module
+    // Checkpoint module with new adapter pattern
     LanggraphModulesCheckpointModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: async () => getCheckpointConfig(),
+      useFactory: async () => {
+        const config = await getCheckpointConfig();
+        console.log('Checkpoint configuration loaded:', {
+          savers: config.savers?.length || 0,
+          defaultSaver: config.savers?.find((s) => s.default)?.name || 'none',
+        });
+        return config;
+      },
     }),
 
     // PROPERLY CONFIGURED STREAMING MODULE
@@ -114,17 +120,19 @@ import {
       },
     }),
 
-    // Workflow engine WITH STREAMING - adapter injection
+    // Workflow engine WITH STREAMING AND CHECKPOINT - adapter injection
     WorkflowEngineModule.forRootAsync({
       useFactory: async (
-        streamingAdapter: IStreamingService
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter
       ): Promise<WorkflowEngineModuleOptions> => {
         return {
           ...getWorkflowEngineConfig(),
           streamingAdapter,
+          checkpointAdapter,
         };
       },
-      inject: ['IStreamingService'],
+      inject: ['IStreamingService', 'ICheckpointAdapter'],
     }),
 
     // Multi-agent module WITH STREAMING - adapter injection

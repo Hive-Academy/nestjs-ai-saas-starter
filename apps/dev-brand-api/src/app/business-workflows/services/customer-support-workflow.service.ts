@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
 import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
 import type { WorkflowResult } from '@hive-academy/langgraph-multi-agent';
-import type { ApprovalRequestSummary, WorkflowExecutionStats, NormalizedTicketInput } from '../types';
+import type {
+  ApprovalRequestSummary,
+  WorkflowExecutionStats,
+  NormalizedTicketInput,
+} from '../types';
 
 /**
  * Customer Support Workflow Service
@@ -20,25 +24,36 @@ export class CustomerSupportWorkflowService {
   /**
    * Execute customer support workflow
    */
-  async executeCustomerSupportWorkflow(request: { ticket: NormalizedTicketInput }): Promise<WorkflowResult> {
+  async executeCustomerSupportWorkflow(request: {
+    ticket: NormalizedTicketInput;
+  }): Promise<WorkflowResult> {
     try {
-      this.logger.log(`Starting customer support workflow for ticket: ${request.ticket.issue}`);
+      this.logger.log(
+        `Starting customer support workflow for ticket: ${request.ticket.issue}`
+      );
 
       // Prepare initial workflow state
       const initialState = this.buildInitialState(request.ticket);
 
-      // Execute customer support workflow
+      // Execute customer support workflow with checkpointing
+      const threadId = `cs-workflow-${request.ticket.priority}-${Date.now()}`;
       const result = await this.workflowManager.executeWorkflow(
         'customer-support-workflow',
         initialState,
         {
           streaming: true,
           timeout: 600000, // 10 minutes
+          thread_id: threadId,
+          checkpoint_ns: 'customer-support',
         }
       );
 
+      this.logger.log(`Workflow checkpointed with thread_id: ${threadId}`);
+
       this.logger.log(
-        `Customer support workflow completed: ${result.success ? 'success' : 'failed'}`
+        `Customer support workflow completed: ${
+          result.success ? 'success' : 'failed'
+        }`
       );
 
       return result;
@@ -56,6 +71,9 @@ export class CustomerSupportWorkflowService {
     onUpdate: (event: any) => void
   ): Promise<WorkflowResult> {
     const initialState = this.buildInitialState(request.ticket);
+    const threadId = `cs-streaming-${request.ticket.priority}-${Date.now()}`;
+
+    this.logger.log(`Starting streaming workflow with thread_id: ${threadId}`);
 
     return this.workflowManager.executeWorkflowWithStreaming(
       'customer-support-workflow',
@@ -64,8 +82,51 @@ export class CustomerSupportWorkflowService {
       {
         streaming: true,
         timeout: 600000,
+        thread_id: threadId,
+        checkpoint_ns: 'customer-support-streaming',
       }
     );
+  }
+
+  /**
+   * Resume workflow from checkpoint
+   */
+  async resumeWorkflowFromCheckpoint(
+    threadId: string,
+    checkpointId?: string
+  ): Promise<WorkflowResult> {
+    try {
+      this.logger.log(
+        `Resuming workflow from checkpoint - thread_id: ${threadId}, checkpoint_id: ${checkpointId}`
+      );
+
+      const result = await this.workflowManager.resumeFromCheckpoint(
+        threadId,
+        checkpointId
+      );
+
+      this.logger.log(
+        `Workflow resumed successfully: ${
+          result.success ? 'success' : 'failed'
+        }`
+      );
+      return result;
+    } catch (error) {
+      this.logger.error('Error resuming workflow from checkpoint:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get workflow execution history from checkpoints
+   */
+  async getWorkflowHistory(threadId: string): Promise<any[]> {
+    try {
+      return await this.workflowManager.getWorkflowHistory(threadId);
+    } catch (error) {
+      this.logger.error('Error getting workflow history:', error);
+      throw error;
+    }
   }
 
   /**
@@ -93,7 +154,10 @@ export class CustomerSupportWorkflowService {
         estimatedCompletion: this.estimateCompletion(instance),
       };
     } catch (error) {
-      this.logger.error(`Error getting workflow status for ${instanceId}:`, error);
+      this.logger.error(
+        `Error getting workflow status for ${instanceId}:`,
+        error
+      );
       return { status: 'error' };
     }
   }
@@ -114,9 +178,9 @@ export class CustomerSupportWorkflowService {
   }> {
     try {
       this.logger.log(
-        `Processing approval for execution ${request.executionId}, node ${request.nodeId}: ${
-          request.approved ? 'approved' : 'rejected'
-        }`
+        `Processing approval for execution ${request.executionId}, node ${
+          request.nodeId
+        }: ${request.approved ? 'approved' : 'rejected'}`
       );
 
       const result = await this.humanApprovalService.processApproval({
@@ -147,14 +211,25 @@ export class CustomerSupportWorkflowService {
    */
   async getPendingApprovals(userId: string): Promise<ApprovalRequestSummary[]> {
     try {
-      const svc: unknown = this.humanApprovalService as unknown as { getPendingApprovals?: () => Promise<unknown[]> };
-  if (!svc || typeof svc !== 'object' || !('getPendingApprovals' in (svc as any)) || typeof (svc as any).getPendingApprovals !== 'function') return [];
+      const svc: unknown = this.humanApprovalService as unknown as {
+        getPendingApprovals?: () => Promise<unknown[]>;
+      };
+      if (
+        !svc ||
+        typeof svc !== 'object' ||
+        !('getPendingApprovals' in (svc as any)) ||
+        typeof (svc as any).getPendingApprovals !== 'function'
+      )
+        return [];
       const approvals: unknown[] = await (svc as any).getPendingApprovals();
       return approvals
         .map((a: unknown) => this.mapApproval(a))
         .filter((a): a is ApprovalRequestSummary => !!a);
     } catch (error) {
-      this.logger.error(`Error getting pending approvals for user ${userId}:`, error);
+      this.logger.error(
+        `Error getting pending approvals for user ${userId}:`,
+        error
+      );
       return [];
     }
   }
@@ -164,10 +239,16 @@ export class CustomerSupportWorkflowService {
    */
   getWorkflowStatistics(): WorkflowExecutionStats {
     try {
-      const mgr: unknown = this.workflowManager as unknown as { getExecutionStats?: () => unknown };
-      const raw: unknown = mgr && typeof mgr === 'object' && 'getExecutionStats' in (mgr as any) && typeof (mgr as any).getExecutionStats === 'function'
-        ? (mgr as any).getExecutionStats()
-        : {};
+      const mgr: unknown = this.workflowManager as unknown as {
+        getExecutionStats?: () => unknown;
+      };
+      const raw: unknown =
+        mgr &&
+        typeof mgr === 'object' &&
+        'getExecutionStats' in (mgr as any) &&
+        typeof (mgr as any).getExecutionStats === 'function'
+          ? (mgr as any).getExecutionStats()
+          : {};
       const stats: WorkflowExecutionStats = {
         totalExecutions: Number((raw as any).totalExecutions) || 0,
         activeInstances: Number((raw as any).activeInstances) || 0,
@@ -191,12 +272,18 @@ export class CustomerSupportWorkflowService {
    */
   async cancelWorkflow(instanceId: string, reason?: string): Promise<boolean> {
     try {
-      this.logger.log(`Cancelling workflow instance ${instanceId}${reason ? `: ${reason}` : ''}`);
+      this.logger.log(
+        `Cancelling workflow instance ${instanceId}${
+          reason ? `: ${reason}` : ''
+        }`
+      );
 
       const cancelled = await this.workflowManager.cancelWorkflow(instanceId);
 
       if (cancelled) {
-        this.logger.log(`Workflow instance ${instanceId} cancelled successfully`);
+        this.logger.log(
+          `Workflow instance ${instanceId} cancelled successfully`
+        );
       } else {
         this.logger.warn(`Failed to cancel workflow instance ${instanceId}`);
       }
@@ -214,7 +301,12 @@ export class CustomerSupportWorkflowService {
   subscribeToWorkflowEvents(
     instanceId: string,
     callback: (event: {
-      type: 'workflow_started' | 'workflow_progress' | 'workflow_completed' | 'workflow_failed' | 'node_executed';
+      type:
+        | 'workflow_started'
+        | 'workflow_progress'
+        | 'workflow_completed'
+        | 'workflow_failed'
+        | 'node_executed';
       data: any;
       timestamp: number;
     }) => void
@@ -283,8 +375,14 @@ export class CustomerSupportWorkflowService {
       nodeId: String(i.nodeId || ''),
       message: String(i.message || ''),
       priority: String(i.options?.riskThreshold || 'medium'),
-      requestedAt: i.timestamps?.requested instanceof Date ? i.timestamps.requested : new Date(),
-      expiresAt: i.timestamps?.expires instanceof Date ? i.timestamps.expires : undefined,
+      requestedAt:
+        i.timestamps?.requested instanceof Date
+          ? i.timestamps.requested
+          : new Date(),
+      expiresAt:
+        i.timestamps?.expires instanceof Date
+          ? i.timestamps.expires
+          : undefined,
     };
   }
 }

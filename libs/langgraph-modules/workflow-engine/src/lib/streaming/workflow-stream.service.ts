@@ -4,6 +4,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import 'reflect-metadata';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -24,7 +25,10 @@ import {
   StreamEventDecoratorMetadata,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
-import type { IStreamingService } from '@hive-academy/langgraph-core';
+import type {
+  IStreamingService,
+  ICheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 import {
   WorkflowStateAnnotation,
   TokenStreamOptions,
@@ -55,6 +59,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   >();
   private readonly activeSubscriptions = new Set<Subscription>();
   private readonly streamingEnabled = new Map<string, boolean>();
+  private readonly checkpointingEnabled: boolean;
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
@@ -62,14 +67,24 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
     // Inject the streaming service - could be real service or no-op
     @Inject('IStreamingService')
-    private readonly streamingService: IStreamingService
-  ) {}
+    private readonly streamingService: IStreamingService,
+
+    // Inject checkpoint adapter - optional for backward compatibility
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {
+    this.checkpointingEnabled = !!this.checkpointAdapter;
+  }
 
   /**
    * Initialize module - setup event listeners
    */
   async onModuleInit(): Promise<void> {
     this.logger.log('Initializing WorkflowStreamService');
+    this.logger.log(
+      `Checkpoint adapter available: ${this.checkpointingEnabled}`
+    );
     this.setupEventListeners();
   }
 
@@ -236,6 +251,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         executionId
       );
 
+      // Save initial checkpoint if checkpoint adapter is available
+      if (this.checkpointingEnabled && this.checkpointAdapter) {
+        await this.saveInitialCheckpoint(executionId, input, config);
+      }
+
       // Get the compiled graph
       const compiledGraph = graph.compile(config);
 
@@ -337,6 +357,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       // Get final state
       const finalState = await compiledGraph.invoke(input, config);
       yield this.createUpdate(StreamEventType.FINAL, finalState, executionId);
+
+      // Save final checkpoint if checkpoint adapter is available
+      if (this.checkpointingEnabled && this.checkpointAdapter) {
+        await this.saveFinalCheckpoint(executionId, finalState, config);
+      }
 
       yield this.createUpdate(
         StreamEventType.NODE_COMPLETE,
@@ -1017,5 +1042,109 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   getActiveStreamCount(): number {
     return this.streams.size;
+  }
+
+  /**
+   * Save initial checkpoint for workflow execution
+   */
+  private async saveInitialCheckpoint(
+    executionId: string,
+    input: any,
+    config: any
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return;
+    }
+
+    try {
+      const threadId = this.generateWorkflowThreadId(executionId);
+      const checkpointData = {
+        id: `${threadId}_initial`,
+        thread_id: threadId,
+        checkpoint: {
+          version: 1,
+          data: {
+            input,
+            config,
+            status: 'started',
+            executionId,
+            timestamp: new Date().toISOString(),
+          },
+        },
+        metadata: {
+          source: 'workflow-engine',
+          type: 'initial',
+          executionId,
+          created_at: new Date().toISOString(),
+        },
+      };
+
+      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      this.logger.debug(
+        `Saved initial checkpoint for execution ${executionId} with thread ID ${threadId}`
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save initial checkpoint for execution ${executionId}:`,
+        error
+      );
+      // Don't throw - checkpointing is optional and shouldn't break workflow
+    }
+  }
+
+  /**
+   * Save final checkpoint for workflow execution
+   */
+  private async saveFinalCheckpoint(
+    executionId: string,
+    finalState: any,
+    config: any
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return;
+    }
+
+    try {
+      const threadId = this.generateWorkflowThreadId(executionId);
+      const checkpointData = {
+        id: `${threadId}_final`,
+        thread_id: threadId,
+        checkpoint: {
+          version: 1,
+          data: {
+            finalState,
+            config,
+            status: 'completed',
+            executionId,
+            timestamp: new Date().toISOString(),
+          },
+        },
+        metadata: {
+          source: 'workflow-engine',
+          type: 'final',
+          executionId,
+          created_at: new Date().toISOString(),
+        },
+      };
+
+      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      this.logger.debug(
+        `Saved final checkpoint for execution ${executionId} with thread ID ${threadId}`
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save final checkpoint for execution ${executionId}:`,
+        error
+      );
+      // Don't throw - checkpointing is optional and shouldn't break workflow
+    }
+  }
+
+  /**
+   * Generate canonical thread ID for workflow using NodeIdBuilder pattern
+   * Follows pattern: workflow-engine.execution.{executionId}
+   */
+  private generateWorkflowThreadId(executionId: string): string {
+    return `workflow-engine.execution.${executionId}`;
   }
 }

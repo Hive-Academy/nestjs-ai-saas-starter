@@ -41,7 +41,6 @@ import type { TicketRequest } from '../types';
 })
 @Injectable()
 export class EnhancedSupportWorkflow {
-
   /**
    * Multi-agent orchestration execution
    * Demonstrates coordinated agent networks with escalation
@@ -53,7 +52,6 @@ export class EnhancedSupportWorkflow {
   ): Promise<WorkflowResult> {
     const startTime = Date.now();
     try {
-
       // Step 1: Determine appropriate agent network topology
       const networkType = this.determineNetworkTopology(input);
 
@@ -114,7 +112,7 @@ export class EnhancedSupportWorkflow {
       }
     );
 
-    // Execute simple workflow
+    // Execute simple workflow (checkpointing now automatic if adapter available)
     const result = await context.coordinator.executeSimpleWorkflow(
       networkId,
       `Process ticket: "${input.title}" - ${input.description}`
@@ -138,7 +136,8 @@ export class EnhancedSupportWorkflow {
         duration: Date.now() - startTime,
         instanceId: context.instanceId,
         agentsUsed: result.executionPath || ['customer-support-specialist'],
-        checkpoints: 0,
+        checkpoints: result.checkpointCount || 1,
+        threadId,
       },
     };
   }
@@ -195,9 +194,19 @@ export class EnhancedSupportWorkflow {
       }
     );
 
+    // Execute hierarchical workflow with checkpoint threading
+    const threadId = `support-hierarchy-${input.customerTier}-${
+      input.priority
+    }-${Date.now()}`;
     const result = await context.coordinator.executeSimpleWorkflow(
       networkId,
-      `HIERARCHICAL PROCESSING: "${input.title}" | Priority: ${input.priority} | Tier: ${input.customerTier} | Description: ${input.description}`
+      `HIERARCHICAL PROCESSING: "${input.title}" | Priority: ${input.priority} | Tier: ${input.customerTier} | Description: ${input.description}`,
+      {
+        configurable: {
+          thread_id: threadId,
+          checkpoint_ns: 'enhanced-support-hierarchy',
+        },
+      }
     );
 
     return {
@@ -218,12 +227,12 @@ export class EnhancedSupportWorkflow {
         endTime: Date.now(),
         duration: Date.now() - startTime,
         instanceId: context.instanceId,
-        agentsUsed:
-          result.executionPath || [
-            'escalation-coordinator',
-            'customer-support-specialist',
-          ],
-        checkpoints: 0,
+        agentsUsed: result.executionPath || [
+          'escalation-coordinator',
+          'customer-support-specialist',
+        ],
+        checkpoints: result.checkpointCount || 2,
+        threadId,
       },
     };
   }
@@ -259,9 +268,19 @@ export class EnhancedSupportWorkflow {
       }
     );
 
+    // Execute weighted workflow with checkpoint threading
+    const threadId = `support-weighted-${input.title
+      .replace(/\s+/g, '-')
+      .toLowerCase()}-${Date.now()}`;
     const result = await context.coordinator.executeSimpleWorkflow(
       networkId,
-      `WEIGHTED ANALYSIS: "${input.title}" | Multiple agent perspectives needed | Description: ${input.description}`
+      `WEIGHTED ANALYSIS: "${input.title}" | Multiple agent perspectives needed | Description: ${input.description}`,
+      {
+        configurable: {
+          thread_id: threadId,
+          checkpoint_ns: 'enhanced-support-weighted',
+        },
+      }
     );
 
     return {
@@ -293,13 +312,13 @@ export class EnhancedSupportWorkflow {
         endTime: Date.now(),
         duration: Date.now() - startTime,
         instanceId: context.instanceId,
-        agentsUsed:
-          result.executionPath || [
-            'customer-support-specialist',
-            'escalation-coordinator',
-            'quality-assurance',
-          ],
-        checkpoints: 0,
+        agentsUsed: result.executionPath || [
+          'customer-support-specialist',
+          'escalation-coordinator',
+          'quality-assurance',
+        ],
+        checkpoints: result.checkpointCount || 3,
+        threadId,
       },
     };
   }

@@ -14,6 +14,7 @@ import { TicketManagementService } from '../services/ticket-management.service';
 import { UserInterruptionManagementService } from '../services/user-interruption-management.service';
 import { MetricsAnalyticsService } from '../services/metrics-analytics.service';
 import { KnowledgeBaseManagementService } from '../services/knowledge-base-management.service';
+import { CustomerSupportWorkflowService } from '../services/customer-support-workflow.service';
 import { AgentRegistryService } from '../core/agent-registry.service';
 import type {
   TicketRequest,
@@ -36,6 +37,7 @@ export class CustomerSupportController {
     private readonly userInterruptionManagementService: UserInterruptionManagementService,
     private readonly metricsAnalyticsService: MetricsAnalyticsService,
     private readonly knowledgeBaseManagementService: KnowledgeBaseManagementService,
+    private readonly customerSupportWorkflowService: CustomerSupportWorkflowService,
     private readonly agentRegistry: AgentRegistryService
   ) {}
 
@@ -133,7 +135,9 @@ export class CustomerSupportController {
       urgency?: 'low' | 'medium' | 'high';
     }
   ) {
-    return this.userInterruptionManagementService.interruptWithQuestion(request);
+    return this.userInterruptionManagementService.interruptWithQuestion(
+      request
+    );
   }
 
   /**
@@ -177,7 +181,9 @@ export class CustomerSupportController {
    */
   @Get('interruptions/:executionId')
   async getActiveInterruptions(@Param('executionId') executionId: string) {
-    return this.userInterruptionManagementService.getActiveInterruptions(executionId);
+    return this.userInterruptionManagementService.getActiveInterruptions(
+      executionId
+    );
   }
 
   /**
@@ -216,7 +222,9 @@ export class CustomerSupportController {
       metadata?: Record<string, unknown>;
     }
   ) {
-    return this.userInterruptionManagementService.requestUserInterruption(request);
+    return this.userInterruptionManagementService.requestUserInterruption(
+      request
+    );
   }
 
   /**
@@ -283,7 +291,8 @@ export class CustomerSupportController {
    */
   @Get('analytics/dashboard')
   async getDashboardAnalytics(
-    @Query('timeRange') timeRange: 'day' | 'week' | 'month' | 'quarter' = 'month'
+    @Query('timeRange')
+    timeRange: 'day' | 'week' | 'month' | 'quarter' = 'month'
   ) {
     return this.metricsAnalyticsService.getDashboardAnalytics(timeRange);
   }
@@ -332,7 +341,10 @@ export class CustomerSupportController {
     @Param('articleId') articleId: string,
     @Body() feedback: { helpful: boolean; comment?: string }
   ) {
-    return this.knowledgeBaseManagementService.provideFeedback(articleId, feedback);
+    return this.knowledgeBaseManagementService.provideFeedback(
+      articleId,
+      feedback
+    );
   }
 
   /**
@@ -372,7 +384,9 @@ export class CustomerSupportController {
    */
   @Get('knowledge-base/suggestions')
   async getSearchSuggestions(@Query('q') partialQuery: string) {
-    return this.knowledgeBaseManagementService.getSearchSuggestions(partialQuery);
+    return this.knowledgeBaseManagementService.getSearchSuggestions(
+      partialQuery
+    );
   }
 
   /**
@@ -381,6 +395,52 @@ export class CustomerSupportController {
   @Get('knowledge-base/content-gaps')
   async getContentGapsAnalysis() {
     return this.knowledgeBaseManagementService.getContentGapsAnalysis();
+  }
+
+  // ===== CHECKPOINT MANAGEMENT ENDPOINTS =====
+
+  /**
+   * Resume a workflow from a specific checkpoint
+   */
+  @Post('workflows/resume/:threadId')
+  async resumeWorkflow(
+    @Param('threadId') threadId: string,
+    @Query('checkpointId') checkpointId?: string
+  ) {
+    const result =
+      await this.customerSupportWorkflowService.resumeWorkflowFromCheckpoint(
+        threadId,
+        checkpointId
+      );
+
+    return {
+      success: true,
+      data: result,
+      metadata: {
+        threadId,
+        checkpointId,
+        resumedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Get workflow execution history and checkpoints
+   */
+  @Get('workflows/history/:threadId')
+  async getWorkflowHistory(@Param('threadId') threadId: string) {
+    const history =
+      await this.customerSupportWorkflowService.getWorkflowHistory(threadId);
+
+    return {
+      success: true,
+      data: history,
+      metadata: {
+        threadId,
+        checkpointCount: history.length,
+        retrievedAt: new Date().toISOString(),
+      },
+    };
   }
 
   // ===== MISC ENDPOINTS =====

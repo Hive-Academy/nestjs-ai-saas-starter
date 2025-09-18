@@ -6,6 +6,7 @@ export * from './lib/core/workflow-graph-builder.service';
 export * from './lib/core/compilation-cache.service';
 export * from './lib/core/metadata-processor.service';
 export * from './lib/core/subgraph-manager.service';
+export * from './lib/core/workflow-checkpoint.service';
 
 // Streaming Services (moved from streaming module to avoid circular dependency)
 export * from './lib/streaming/workflow-stream.service';

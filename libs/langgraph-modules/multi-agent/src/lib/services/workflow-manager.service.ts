@@ -216,8 +216,34 @@ export class WorkflowManagerService {
   /**
    * Get execution history for a workflow
    */
-  getWorkflowHistory(workflowId: string): WorkflowInstance[] {
-    return this.workflowExecution.getWorkflowHistory(workflowId);
+  getWorkflowExecutionHistory(workflowId: string): WorkflowInstance[] {
+    return this.workflowExecution.getWorkflowExecutionHistory(workflowId);
+  }
+
+  // ==================== CHECKPOINT MANAGEMENT (AUTOMAGICAL) ====================
+
+  /**
+   * Resume workflow execution from checkpoint
+   * Automatically uses checkpoint adapter if available
+   */
+  async resumeFromCheckpoint(
+    threadId: string,
+    checkpointId?: string
+  ): Promise<WorkflowResult> {
+    this.logger.log(
+      `Resuming workflow from checkpoint - thread: ${threadId}, checkpoint: ${
+        checkpointId || 'latest'
+      }`
+    );
+    return this.workflowExecution.resumeFromCheckpoint(threadId, checkpointId);
+  }
+
+  /**
+   * Get workflow history from checkpoints
+   * Returns checkpoint-based history if adapter available, otherwise returns in-memory history
+   */
+  async getWorkflowCheckpointHistory(threadId: string): Promise<any[]> {
+    return this.workflowExecution.getWorkflowCheckpointHistory(threadId);
   }
 
   /**
@@ -446,7 +472,7 @@ export class WorkflowManagerService {
       (instance) => instance.workflowId === workflowId
     );
 
-    const history = this.getWorkflowHistory(workflowId);
+    const history = this.getWorkflowExecutionHistory(workflowId);
 
     const totalExecutions = history.length;
     const successfulExecutions = history.filter(
@@ -528,12 +554,20 @@ export class WorkflowManagerService {
   subscribeToWorkflowEvents(
     instanceId: string,
     callback: (event: {
-      type: 'workflow_started' | 'workflow_progress' | 'workflow_completed' | 'workflow_failed' | 'node_executed';
+      type:
+        | 'workflow_started'
+        | 'workflow_progress'
+        | 'workflow_completed'
+        | 'workflow_failed'
+        | 'node_executed';
       data: any;
       timestamp: number;
     }) => void
   ): { unsubscribe: () => void } {
-    return this.workflowExecution.subscribeToWorkflowEvents(instanceId, callback);
+    return this.workflowExecution.subscribeToWorkflowEvents(
+      instanceId,
+      callback
+    );
   }
 
   /**

@@ -12,7 +12,10 @@ import { MultiAgentModuleInitializer } from './services/multi-agent-module-initi
 // Workflow services (internal infrastructure)
 import { WorkflowRegistryService } from './services/workflow-registry.service';
 import { WorkflowExecutionService } from './services/workflow-execution.service';
+import { WorkflowCheckpointService } from './services/workflow-checkpoint.service';
 import { WorkflowManagerService } from './services/workflow-manager.service';
+import { WorkflowInstanceService } from './services/workflow-instance.service';
+import { WorkflowCanonicalIdService } from './services/workflow-canonical-id.service';
 // Tool services
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
@@ -64,6 +67,9 @@ export class MultiAgentModule {
       AgentRegistrationService,
       // Workflow services (internal infrastructure)
       WorkflowRegistryService,
+      WorkflowCheckpointService,
+      WorkflowInstanceService,
+      WorkflowCanonicalIdService,
       WorkflowExecutionService,
       WorkflowManagerService,
       // Tool service aliases
@@ -141,6 +147,9 @@ export class MultiAgentModule {
       AgentRegistrationService,
       // Workflow services (internal infrastructure)
       WorkflowRegistryService,
+      WorkflowCheckpointService,
+      WorkflowInstanceService,
+      WorkflowCanonicalIdService,
       WorkflowExecutionService,
       WorkflowManagerService,
       // Tool service aliases

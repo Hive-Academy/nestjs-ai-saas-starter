@@ -45,13 +45,12 @@
       "Read(\\/**)",
       "Bash(curl:*)",
       "mcp__nx-mcp__nx_workspace_path",
-      "WebFetch(domain:langchain-ai.github.io)"
+      "WebFetch(domain:langchain-ai.github.io)",
+      "mcp__fetch__fetch"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "d:\\projects\\nestjs-ai-saas-starter"
-    ]
+    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

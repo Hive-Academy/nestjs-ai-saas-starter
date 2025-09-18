@@ -11,7 +11,6 @@ import {
   CHROMADB_CLIENT,
   CHROMADB_OPTIONS,
   DEFAULT_BATCH_SIZE,
-  DEFAULT_CHROMA_HOST,
   DEFAULT_CHROMA_PORT,
   DEFAULT_CHROMA_SSL,
   DEFAULT_MAX_RETRIES,
@@ -282,7 +281,6 @@ export class ChromaDBModule {
       healthCheckInterval: 30000,
       logConnection: true,
       connection: {
-        host: DEFAULT_CHROMA_HOST,
         port: DEFAULT_CHROMA_PORT,
         ssl: DEFAULT_CHROMA_SSL,
       },
