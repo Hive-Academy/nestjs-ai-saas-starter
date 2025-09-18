@@ -210,6 +210,40 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  /**
+   * Delete a specific checkpoint by ID
+   * Delegates to persistence service for actual delete operation
+   * Returns false if persistence service not available
+   */
+  public async deleteCheckpoint(
+    threadId: string,
+    checkpointId: string,
+    saverName?: string
+  ): Promise<boolean> {
+    if (!this.persistenceService) {
+      this.logger.warn(
+        'Persistence service not available - cannot delete checkpoint'
+      );
+      return false;
+    }
+
+    // Check if the persistence service has a deleteCheckpoint method
+    if (
+      typeof (this.persistenceService as any).deleteCheckpoint === 'function'
+    ) {
+      return (this.persistenceService as any).deleteCheckpoint(
+        threadId,
+        checkpointId,
+        saverName
+      );
+    }
+
+    this.logger.warn(
+      'Persistence service does not support individual checkpoint deletion - consider using cleanup instead'
+    );
+    return false;
+  }
+
   // ========================================
   // Registry Management (Facade API)
   // ========================================
