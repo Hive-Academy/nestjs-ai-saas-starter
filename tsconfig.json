@@ -10,9 +10,6 @@
       "path": "./libs/nestjs-neo4j"
     },
     {
-      "path": "./libs/langgraph-modules/nestjs-langgraph"
-    },
-    {
       "path": "./libs/langgraph-modules/checkpoint"
     },
     {

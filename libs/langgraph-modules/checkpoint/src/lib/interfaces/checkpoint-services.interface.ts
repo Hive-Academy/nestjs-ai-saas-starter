@@ -1,5 +1,4 @@
 import type {
-  CheckpointConfig,
   EnhancedCheckpointMetadata,
   EnhancedCheckpoint,
   EnhancedCheckpointTuple,
@@ -9,18 +8,6 @@ import type {
   EnhancedBaseCheckpointSaver,
 } from './checkpoint.interface';
 import { Injectable, Logger } from '@nestjs/common';
-
-/**
- * Factory service for creating different types of checkpoint savers
- */
-export interface ICheckpointSaverFactory {
-  /**
-   * Create a checkpoint saver based on configuration
-   */
-  createCheckpointSaver: (
-    config: CheckpointConfig
-  ) => Promise<EnhancedBaseCheckpointSaver>;
-}
 
 /**
  * Registry service for managing multiple checkpoint savers

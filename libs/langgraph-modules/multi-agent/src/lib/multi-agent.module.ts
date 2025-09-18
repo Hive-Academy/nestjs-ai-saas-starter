@@ -1,14 +1,22 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { AgentExamplesService } from './services/agent-examples.service';
 import { AgentRegistryService } from './services/agent-registry.service';
+import { AgentRegistrationService } from './services/agent-registration.service';
 import { GraphBuilderService } from './services/graph-builder.service';
 import { LlmProviderService } from './services/llm-provider.service';
 import { MultiAgentCoordinatorService } from './services/multi-agent-coordinator.service';
 import { NetworkManagerService } from './services/network-manager.service';
 import { NodeFactoryService } from './services/node-factory.service';
+import { ToolRegistrationService } from './services/tool-registration.service';
+import { MultiAgentModuleInitializer } from './services/multi-agent-module-initializer.service';
+// Workflow services (internal infrastructure)
+import { WorkflowRegistryService } from './services/workflow-registry.service';
+import { WorkflowExecutionService } from './services/workflow-execution.service';
+import { WorkflowCheckpointService } from './services/workflow-checkpoint.service';
+import { WorkflowManagerService } from './services/workflow-manager.service';
+import { WorkflowInstanceService } from './services/workflow-instance.service';
+import { WorkflowCanonicalIdService } from './services/workflow-canonical-id.service';
 // Tool services
-import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
   MULTI_AGENT_MODULE_OPTIONS,
@@ -19,13 +27,9 @@ import {
   MultiAgentModuleOptions,
 } from './interfaces/multi-agent.interface';
 import { ToolBuilderService } from './tools/tool-builder.service';
-import { ToolDiscoveryService } from './tools/tool-discovery.service';
 import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
-import {
-  CHECKPOINT_ADAPTER_TOKEN,
-  NoOpCheckpointAdapter,
-} from '@hive-academy/langgraph-core';
+import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -38,16 +42,16 @@ export class MultiAgentModule {
   static forRoot(options: MultiAgentModuleOptions = {}): DynamicModule {
     const mergedOptions = this.mergeWithDefaults(options);
 
+    // Store config for decorator access
+    setMultiAgentConfig(mergedOptions);
+
     const providers: Provider[] = [
       {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
-      // Checkpoint adapter provider - either provided or no-op
-      {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
-        useValue: options.checkpointAdapter || new NoOpCheckpointAdapter(),
-      },
+      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
       LlmProviderService,
@@ -56,9 +60,18 @@ export class MultiAgentModule {
       NetworkManagerService,
       // Tool services
       ToolRegistryService,
-      ToolDiscoveryService,
+      ToolRegistrationService,
       ToolBuilderService,
       ToolNodeService,
+      // Agent services
+      AgentRegistrationService,
+      // Workflow services (internal infrastructure)
+      WorkflowRegistryService,
+      WorkflowCheckpointService,
+      WorkflowInstanceService,
+      WorkflowCanonicalIdService,
+      WorkflowExecutionService,
+      WorkflowManagerService,
       // Tool service aliases
       {
         provide: TOOL_REGISTRY,
@@ -66,12 +79,14 @@ export class MultiAgentModule {
       },
       // Facade and examples
       MultiAgentCoordinatorService,
-      AgentExamplesService,
+
+      // Module initializer
+      MultiAgentModuleInitializer,
     ];
 
     return {
       module: MultiAgentModule,
-      imports: [EventEmitterModule.forRoot(), DiscoveryModule],
+      imports: [EventEmitterModule.forRoot()],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -80,19 +95,22 @@ export class MultiAgentModule {
         AgentRegistryService,
         NetworkManagerService,
         LlmProviderService,
-        GraphBuilderService,
-        NodeFactoryService,
-        // Tool services
+        // NOTE: GraphBuilderService and ToolNodeService are now internal-only
+        // They provide powerful infrastructure but are implementation details
+        // Workflow facade service (external interface)
+        WorkflowManagerService,
+        // NOTE: WorkflowRegistryService and WorkflowExecutionService are internal-only
+        // They provide workflow infrastructure but are implementation details
+        // Tool services for external use
         ToolRegistryService,
-        ToolDiscoveryService,
+        ToolRegistrationService,
         ToolBuilderService,
-        ToolNodeService,
+        // Agent services
+        AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // Examples service
-        AgentExamplesService,
       ],
-      global: false,
+      global: true,
     };
   }
 
@@ -105,19 +123,15 @@ export class MultiAgentModule {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
-          return this.mergeWithDefaults(moduleOptions);
+          const mergedOptions = this.mergeWithDefaults(moduleOptions);
+          // Store config for decorator access
+          setMultiAgentConfig(mergedOptions);
+          return mergedOptions;
         },
         inject: options.inject || [],
       },
-      // Checkpoint adapter provider - async factory
-      {
-        provide: CHECKPOINT_ADAPTER_TOKEN,
-        useFactory: async (...args: unknown[]) => {
-          const moduleOptions = await options.useFactory!(...args);
-          return moduleOptions.checkpointAdapter || new NoOpCheckpointAdapter();
-        },
-        inject: options.inject || [],
-      },
+      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
       LlmProviderService,
@@ -126,9 +140,18 @@ export class MultiAgentModule {
       NetworkManagerService,
       // Tool services
       ToolRegistryService,
-      ToolDiscoveryService,
+      ToolRegistrationService,
       ToolBuilderService,
       ToolNodeService,
+      // Agent services
+      AgentRegistrationService,
+      // Workflow services (internal infrastructure)
+      WorkflowRegistryService,
+      WorkflowCheckpointService,
+      WorkflowInstanceService,
+      WorkflowCanonicalIdService,
+      WorkflowExecutionService,
+      WorkflowManagerService,
       // Tool service aliases
       {
         provide: TOOL_REGISTRY,
@@ -136,18 +159,14 @@ export class MultiAgentModule {
       },
       // Facade and examples
       MultiAgentCoordinatorService,
-      AgentExamplesService,
+
+      // Module initializer
+      MultiAgentModuleInitializer,
     ];
-
-    const imports = [EventEmitterModule.forRoot(), DiscoveryModule];
-
-    if (options.imports) {
-      imports.push(...options.imports);
-    }
 
     return {
       module: MultiAgentModule,
-      imports,
+      imports: [EventEmitterModule.forRoot()],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -156,19 +175,22 @@ export class MultiAgentModule {
         AgentRegistryService,
         NetworkManagerService,
         LlmProviderService,
-        GraphBuilderService,
-        NodeFactoryService,
-        // Tool services
+        // NOTE: GraphBuilderService and ToolNodeService are now internal-only
+        // They provide powerful infrastructure but are implementation details
+        // Workflow facade service (external interface)
+        WorkflowManagerService,
+        // NOTE: WorkflowRegistryService and WorkflowExecutionService are internal-only
+        // They provide workflow infrastructure but are implementation details
+        // Tool services for external use
         ToolRegistryService,
-        ToolDiscoveryService,
+        ToolRegistrationService,
         ToolBuilderService,
-        ToolNodeService,
+        // Agent services
+        AgentRegistrationService,
         // Tool service aliases
         TOOL_REGISTRY,
-        // Examples service
-        AgentExamplesService,
       ],
-      global: false,
+      global: true,
     };
   }
 
@@ -203,6 +225,13 @@ export class MultiAgentModule {
         ...DEFAULT_MULTI_AGENT_OPTIONS.checkpointing,
         ...options.checkpointing,
       },
+      // Preserve tools, agents, workflows arrays - critical for explicit registration
+      tools: options.tools || [],
+      agents: options.agents || [],
+      workflows: options.workflows || [],
+      // Preserve adapters if provided
+      checkpointAdapter: options.checkpointAdapter,
+      streamingAdapter: options.streamingAdapter,
     };
   }
 }

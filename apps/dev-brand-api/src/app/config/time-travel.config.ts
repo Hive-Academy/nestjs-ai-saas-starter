@@ -1,36 +1,50 @@
 import type { TimeTravelConfig } from '@hive-academy/langgraph-time-travel';
-import type { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 
 /**
  * Time Travel Module Configuration for dev-brand-api
  * Enables workflow debugging and state history replay
+ * Automatically disabled in production unless explicitly enabled
  */
 export function getTimeTravelConfig(): TimeTravelConfig {
+  const environment = process.env.NODE_ENV || 'development';
+  const isProduction = environment === 'production';
+
+  // Time-Travel is primarily a debugging tool - disabled in production by default
+  const isEnabled =
+    !isProduction || process.env.ENABLE_TIME_TRAVEL_PROD === 'true';
+
   return {
     // Maximum number of checkpoints to keep per thread
     maxCheckpointsPerThread: parseInt(
-      process.env.TIME_TRAVEL_MAX_CHECKPOINTS_PER_THREAD || '100'
+      process.env.TIME_TRAVEL_MAX_CHECKPOINTS_PER_THREAD ||
+        (isProduction ? '50' : '100')
     ),
 
     // Maximum age of checkpoints in milliseconds
     maxCheckpointAge: parseInt(
-      process.env.TIME_TRAVEL_MAX_CHECKPOINT_AGE || '604800000' // 7 days
+      process.env.TIME_TRAVEL_MAX_CHECKPOINT_AGE ||
+        (isProduction ? '86400000' : '604800000') // 1 day prod, 7 days dev
     ),
 
     // Whether to enable automatic checkpoint creation
-    enableAutoCheckpoint: process.env.TIME_TRAVEL_AUTO_CHECKPOINT !== 'false',
+    enableAutoCheckpoint:
+      isEnabled && process.env.TIME_TRAVEL_AUTO_CHECKPOINT !== 'false',
 
     // Checkpoint creation interval in milliseconds
     checkpointInterval: parseInt(
       process.env.TIME_TRAVEL_CHECKPOINT_INTERVAL || '60000' // 1 minute
     ),
 
-    // Whether to enable branch management
-    enableBranching: process.env.TIME_TRAVEL_ENABLE_BRANCHING !== 'false',
+    // Whether to enable branch management (dev/staging only)
+    enableBranching:
+      isEnabled &&
+      !isProduction &&
+      process.env.TIME_TRAVEL_ENABLE_BRANCHING !== 'false',
 
-    // Maximum number of branches per thread
+    // Maximum number of branches per thread (reduced in production)
     maxBranchesPerThread: parseInt(
-      process.env.TIME_TRAVEL_MAX_BRANCHES_PER_THREAD || '10'
+      process.env.TIME_TRAVEL_MAX_BRANCHES_PER_THREAD ||
+        (isProduction ? '3' : '10')
     ),
 
     // Storage backend configuration

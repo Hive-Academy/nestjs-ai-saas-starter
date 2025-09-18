@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `@hive-academy/nestjs-chromadb` - NestJS integration for ChromaDB vector database
 - `@hive-academy/nestjs-neo4j` - NestJS integration for Neo4j graph database
-- `@hive-academy/nestjs-langgraph` - NestJS integration for LangGraph AI workflows
 
 ### Infrastructure
 

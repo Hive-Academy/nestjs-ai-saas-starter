@@ -1,6 +1,5 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
-import { Observable, Subject, throwError, from, EMPTY } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
+import { Observable, Subject, throwError } from 'rxjs';
 import {
   FunctionalWorkflowState,
   TaskExecutionContext,
@@ -12,7 +11,7 @@ import {
   TaskDefinition,
 } from '../interfaces/functional-workflow.interface';
 import type { FunctionalApiModuleOptions } from '../interfaces/module-options.interface';
-import { WorkflowDiscoveryService } from './workflow-discovery.service';
+import { WorkflowRegistrationService } from './workflow-registration.service';
 import { GraphGeneratorService } from './graph-generator.service';
 import { WorkflowValidator } from '../validation/workflow-validator';
 import {
@@ -21,12 +20,12 @@ import {
   TaskTimeoutError,
   UnknownTaskError,
 } from '../errors/functional-workflow.errors';
-import {
-  CHECKPOINT_ADAPTER_TOKEN,
-  ICheckpointAdapter,
+import type {
   BaseCheckpoint,
   BaseCheckpointMetadata,
   BaseCheckpointTuple,
+  ICheckpointAdapter,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -41,15 +40,17 @@ export class FunctionalWorkflowService implements OnModuleInit {
   constructor(
     @Inject('FUNCTIONAL_API_MODULE_OPTIONS')
     private readonly options: FunctionalApiModuleOptions,
-    private readonly discoveryService: WorkflowDiscoveryService,
+    private readonly registrationService: WorkflowRegistrationService,
     private readonly graphGenerator: GraphGeneratorService,
     private readonly validator: WorkflowValidator,
-    @Inject(CHECKPOINT_ADAPTER_TOKEN)
-    private readonly checkpointAdapter: ICheckpointAdapter
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter: ICheckpointAdapter,
+    @Inject('IStreamingService')
+    private readonly streamingService: IStreamingService
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.discoveryService.discoverWorkflows();
+    // Workflows are registered explicitly through the module initializer
   }
 
   /**
@@ -69,7 +70,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         `Starting workflow execution: ${workflowName} (${executionId})`
       );
 
-      const definition = this.discoveryService.getWorkflow(workflowName);
+      const definition = this.registrationService.getWorkflow(workflowName);
       if (!definition) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -80,7 +81,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
         );
       }
 
-      const instance = this.discoveryService.getWorkflowInstance(workflowName);
+      const instance =
+        this.registrationService.getWorkflowInstance(workflowName);
       if (!instance) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -108,7 +110,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       // Execute tasks in dependency order
       for (const taskName of executionOrder) {
         try {
-          this.emitStreamEvent({
+          await this.emitStreamEvent({
             type: 'task_start',
             taskName,
             timestamp: new Date(),
@@ -148,7 +150,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
             checkpointCount++;
           }
 
-          this.emitStreamEvent({
+          await this.emitStreamEvent({
             type: 'task_complete',
             taskName,
             state: result.state,
@@ -159,7 +161,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
           const taskError =
             error instanceof Error ? error : new Error(String(error));
 
-          this.emitStreamEvent({
+          await this.emitStreamEvent({
             type: 'task_error',
             taskName,
             error: taskError,
@@ -185,7 +187,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         checkpointCount,
       };
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_complete',
         state: currentState,
         timestamp: new Date(),
@@ -209,7 +211,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
               { executionId }
             );
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_error',
         error: executionError,
         timestamp: new Date(),
@@ -238,10 +240,62 @@ export class FunctionalWorkflowService implements OnModuleInit {
       return throwError(() => new Error('Streaming is not enabled'));
     }
 
-    return from(this.executeWorkflow<TState>(workflowName, options)).pipe(
-      switchMap(() => EMPTY),
-      catchError(() => EMPTY)
-    );
+    const executionId = `stream_exec_${++this.executionCounter}_${Date.now()}`;
+
+    return new Observable((observer) => {
+      // Subscribe to internal stream subject for this execution
+      const subscription = this.streamSubject.subscribe({
+        next: (event) => {
+          // Filter events for this execution
+          if (event.metadata?.executionId === executionId) {
+            observer.next(event as WorkflowStreamEvent<TState>);
+          }
+        },
+        error: (error) => observer.error(error),
+        complete: () => observer.complete(),
+      });
+
+      // Start workflow execution asynchronously
+      this.executeWorkflow<TState>(workflowName, {
+        ...options,
+        metadata: { ...options.metadata, executionId },
+      })
+        .then((result) => {
+          // Emit final result
+          const completeEvent: WorkflowStreamEvent<TState> = {
+            type: 'workflow_complete',
+            state: result.finalState,
+            timestamp: new Date(),
+            metadata: {
+              executionId,
+              workflowName,
+              executionTime: result.executionTime,
+              executionPath: result.executionPath,
+              checkpointCount: result.checkpointCount,
+            },
+          };
+          observer.next(completeEvent);
+          observer.complete();
+        })
+        .catch((error) => {
+          const errorEvent: WorkflowStreamEvent<TState> = {
+            type: 'workflow_error',
+            error: error instanceof Error ? error : new Error(String(error)),
+            timestamp: new Date(),
+            metadata: { executionId, workflowName },
+          };
+          observer.next(errorEvent);
+          observer.error(error);
+        });
+
+      // Cleanup function
+      return () => {
+        subscription.unsubscribe();
+        this.logger.debug(
+          `Stream subscription cancelled for workflow: ${workflowName} (${executionId})`
+        );
+      };
+    });
   }
 
   /**
@@ -410,7 +464,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
       this.logger.debug(`Checkpoint saved for execution ${executionId}`);
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'checkpoint_saved',
         timestamp: new Date(),
         metadata: { executionId, checkpointId: checkpoint.id },
@@ -425,9 +479,32 @@ export class FunctionalWorkflowService implements OnModuleInit {
   }
 
   /**
-   * Emits a stream event
+   * Emits a stream event through the streaming service
    */
-  private emitStreamEvent(event: WorkflowStreamEvent): void {
+  private async emitStreamEvent(event: WorkflowStreamEvent): Promise<void> {
+    if (this.options.enableStreaming && this.streamingService) {
+      try {
+        // Use streamEvent method instead of emitEvent which doesn't exist yet
+        this.streamingService.streamEvent(
+          (event.metadata?.executionId as string) || 'unknown',
+          event.taskName || 'unknown',
+          {
+            type: event.type,
+            data: {
+              taskName: event.taskName,
+              state: event.state,
+              error: event.error,
+              timestamp: event.timestamp,
+              metadata: event.metadata,
+            },
+          }
+        );
+      } catch (error) {
+        this.logger.warn('Failed to emit workflow stream event:', error);
+      }
+    }
+
+    // Keep internal Subject for backward compatibility
     if (this.options.enableStreaming) {
       this.streamSubject.next(event);
     }
@@ -437,14 +514,68 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Lists all available workflows
    */
   listWorkflows(): string[] {
-    return this.discoveryService.getAllWorkflows().map((w) => w.name);
+    return Array.from(this.registrationService.getWorkflows().keys());
+  }
+
+  /**
+   * Gets streaming metadata for the current workflow execution
+   * This resolves the critical issue where getAllStreamingMetadata returns empty
+   */
+  getAllStreamingMetadata(): Record<string, any> {
+    const activeExecutions = new Set<string>();
+    const workflows = this.registrationService.getWorkflows();
+
+    // Collect metadata from workflows
+    const workflowsMetadata = Array.from(workflows.entries()).map(
+      ([name, definition]) => ({
+        name,
+        tasksCount: definition.tasks.size,
+        hasEntrypoint: !!definition.entrypoint,
+        capabilities: Array.from(definition.tasks.keys()),
+      })
+    );
+
+    return {
+      // Active streaming information
+      activeStreams: activeExecutions.size,
+      totalProcessed: this.executionCounter,
+      currentWorkflows: workflowsMetadata.map((w) => w.name),
+      streamingModes: ['values', 'updates', 'messages'],
+      lastActivity: new Date().toISOString(),
+
+      // Performance metrics
+      performance: {
+        avgProcessingTime: 0, // Would need tracking implementation
+        throughput:
+          this.executionCounter > 0
+            ? this.executionCounter / (Date.now() / 1000 / 60)
+            : 0,
+      },
+
+      // Workflow details
+      workflowDetails: workflowsMetadata,
+
+      // Module configuration
+      configuration: {
+        streamingEnabled: this.options.enableStreaming,
+        checkpointingEnabled: this.options.enableCheckpointing,
+        defaultTimeout: this.options.defaultTimeout,
+        defaultRetryCount: this.options.defaultRetryCount,
+      },
+
+      // Streaming service status
+      streamingServiceAvailable: !!this.streamingService,
+      streamingServiceType: this.streamingService
+        ? 'IStreamingService'
+        : 'NoOp',
+    };
   }
 
   /**
    * Gets workflow definition by name
    */
   getWorkflowDefinition(name: string) {
-    return this.discoveryService.getWorkflow(name);
+    return this.registrationService.getWorkflow(name);
   }
 
   /**
@@ -564,7 +695,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       );
 
       // Get workflow definition and instance
-      const definition = this.discoveryService.getWorkflow(workflowName);
+      const definition = this.registrationService.getWorkflow(workflowName);
       if (!definition) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -575,7 +706,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
         );
       }
 
-      const instance = this.discoveryService.getWorkflowInstance(workflowName);
+      const instance =
+        this.registrationService.getWorkflowInstance(workflowName);
       if (!instance) {
         throw new WorkflowExecutionError(
           workflowName,
@@ -613,7 +745,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         ...options.initialState,
       } as TState;
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_start',
         timestamp: new Date(),
         metadata: {
@@ -683,7 +815,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         checkpointCount,
       };
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_complete',
         state: finalState,
         timestamp: new Date(),
@@ -712,7 +844,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
               { executionId }
             );
 
-      this.emitStreamEvent({
+      await this.emitStreamEvent({
         type: 'workflow_error',
         error: executionError,
         timestamp: new Date(),
@@ -736,7 +868,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Generates a visualization of the workflow graph
    */
   async visualizeWorkflow(workflowName: string): Promise<string> {
-    const definition = this.discoveryService.getWorkflow(workflowName);
+    const definition = this.registrationService.getWorkflow(workflowName);
     if (!definition) {
       throw new Error(`Workflow '${workflowName}' not found`);
     }

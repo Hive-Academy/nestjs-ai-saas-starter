@@ -98,7 +98,7 @@ export abstract class ICheckpointAdapter {
 /**
  * Token for dependency injection of checkpoint adapter
  */
-export const CHECKPOINT_ADAPTER_TOKEN = Symbol('CHECKPOINT_ADAPTER');
+// Token removed - using abstract class pattern instead
 
 /**
  * Configuration interface for checkpoint integration in consumer libraries

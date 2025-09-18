@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Security Scanner",
+  "description": "Automatically reviews changed files for potential security issues including API keys, credentials, sensitive data, and common security vulnerabilities",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "*.env*",
+      "supabase/**/*.sql",
+      "scripts/**/*.js",
+      "*.config.js",
+      "*.config.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the changed files for security issues. Check for:\n\n1. **Exposed Credentials & API Keys:**\n   - Hardcoded API keys, tokens, passwords\n   - Database connection strings with credentials\n   - OAuth secrets and client secrets\n   - Private keys or certificates\n\n2. **Sensitive Data Exposure:**\n   - Personal identifiable information (PII)\n   - Email addresses, phone numbers\n   - Internal URLs or system paths\n   - Debug information that reveals system details\n\n3. **Common Security Vulnerabilities:**\n   - SQL injection risks in database queries\n   - XSS vulnerabilities in user input handling\n   - Insecure direct object references\n   - Missing input validation or sanitization\n   - Unsafe eval() or innerHTML usage\n\n4. **Configuration Security:**\n   - Insecure CORS settings\n   - Missing security headers\n   - Overly permissive file permissions\n   - Exposed development/debug endpoints\n\n5. **Authentication & Authorization:**\n   - Weak authentication mechanisms\n   - Missing authorization checks\n   - Insecure session management\n   - Privilege escalation risks\n\nFor each issue found, provide:\n- File path and line number\n- Description of the security risk\n- Severity level (Critical/High/Medium/Low)\n- Recommended fix or mitigation\n\nIf no security issues are found, confirm the files have been reviewed and are secure."
+  }
+}

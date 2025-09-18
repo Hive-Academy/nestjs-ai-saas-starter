@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import { Where } from 'chromadb';
 import {
   IVectorService,
   VectorStoreData,
@@ -141,7 +142,7 @@ export class ChromaVectorAdapter extends IVectorService {
         query.queryEmbedding ? [Array.from(query.queryEmbedding)] : undefined,
         {
           nResults: query.limit || 10,
-          where: query.filter as any,
+          where: this.convertToWhereClause(query.filter),
         }
       );
 
@@ -227,7 +228,7 @@ export class ChromaVectorAdapter extends IVectorService {
     try {
       // First get matching documents
       const matchingDocs = await this.chromaDBService.getDocuments(collection, {
-        where: filter,
+        where: this.convertToWhereClause(filter),
       });
 
       if (matchingDocs.ids.length === 0) {
@@ -262,16 +263,15 @@ export class ChromaVectorAdapter extends IVectorService {
     this.validateCollection(collection);
 
     try {
-      // Use ChromaDBService to get collection info
-      const collectionInfo = await this.chromaDBService.getCollection(
-        collection
-      );
-
+      // Use ChromaDBService to get collection info and count
+      const collection_obj = await this.chromaDBService.getCollection(collection);
+      const documentCount = await this.chromaDBService.countDocuments(collection);
+      
       return {
-        documentCount: collectionInfo.count || 0,
-        collectionSize: 0, // Not directly available
+        documentCount,
+        collectionSize: 0, // Not directly available from ChromaDB
         lastUpdated: new Date(),
-        dimensions: collectionInfo.metadata?.dimensions,
+        dimensions: collection_obj.metadata?.dimensions as number | undefined,
       };
     } catch (error) {
       this.logger.error(
@@ -297,15 +297,13 @@ export class ChromaVectorAdapter extends IVectorService {
 
     try {
       const result = await this.chromaDBService.getDocuments(collection, {
-        ids: options.ids as string[] | undefined,
-        where: options.where as any,
+        ids: options.ids ? [...options.ids] : undefined,
+        where: this.convertToWhereClause(options.where),
         limit: options.limit,
         offset: options.offset,
-        include: [
-          ...(options.includeDocuments !== false ? ['documents'] : []),
-          ...(options.includeMetadata !== false ? ['metadatas'] : []),
-          ...(options.includeEmbeddings ? ['embeddings'] : []),
-        ] as any,
+        includeDocuments: options.includeDocuments !== false,
+        includeMetadata: options.includeMetadata !== false,
+        includeEmbeddings: options.includeEmbeddings === true,
       });
 
       this.logger.debug(
@@ -331,6 +329,20 @@ export class ChromaVectorAdapter extends IVectorService {
         { collection, options, error: this.serializeError(error) }
       );
     }
+  }
+
+  /**
+   * Convert generic filter to ChromaDB Where clause with type safety
+   */
+  private convertToWhereClause(filter?: Record<string, unknown>): Where | undefined {
+    if (!filter || Object.keys(filter).length === 0) {
+      return undefined;
+    }
+
+    // For now, return the filter as-is since ChromaDB's Where type
+    // accepts Record<string, unknown> structure. In production,
+    // you might want to add more sophisticated validation here.
+    return filter as Where;
   }
 
   /**

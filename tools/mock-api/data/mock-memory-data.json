@@ -1,0 +1,120 @@
+{
+  "episodicMemories": [
+    {
+      "id": "mem_ep_001",
+      "type": "episodic",
+      "content": "User requested implementation of 3D spatial interface for agent visualization",
+      "relevanceScore": 0.9,
+      "isActive": true,
+      "timestamp": "2024-01-15T10:30:00Z",
+      "source": "workflow",
+      "tags": ["user-request", "3d-interface", "spatial-visualization"],
+      "relatedAgents": ["agent_coordinator_001", "agent_specialist_ui"]
+    },
+    {
+      "id": "mem_ep_002", 
+      "type": "episodic",
+      "content": "Successful completion of Phase 1 & 2: 3D Agent Constellation with navigation",
+      "relevanceScore": 0.85,
+      "isActive": true,
+      "timestamp": "2024-01-15T14:20:00Z",
+      "source": "workflow",
+      "tags": ["phase-completion", "3d-constellation", "navigation"],
+      "relatedAgents": ["agent_coordinator_001", "agent_creator_003d"]
+    },
+    {
+      "id": "mem_ep_003",
+      "type": "episodic", 
+      "content": "Backend library integration issues blocking real API development",
+      "relevanceScore": 0.95,
+      "isActive": true,
+      "timestamp": "2024-01-15T16:45:00Z",
+      "source": "workflow",
+      "tags": ["backend-issues", "api-blocking", "integration-problems"],
+      "relatedAgents": ["agent_coordinator_001", "agent_specialist_backend"]
+    }
+  ],
+  "semanticMemories": [
+    {
+      "id": "mem_sem_001",
+      "type": "semantic",
+      "content": "Three.js best practices for 3D scene optimization and memory management",
+      "relevanceScore": 0.75,
+      "isActive": true,
+      "timestamp": "2024-01-15T09:00:00Z",
+      "source": "chromadb",
+      "tags": ["threejs", "optimization", "3d-graphics"],
+      "relatedAgents": ["agent_specialist_ui", "agent_creator_003d"]
+    },
+    {
+      "id": "mem_sem_002",
+      "type": "semantic",
+      "content": "WebSocket patterns for real-time agent communication in Angular applications",
+      "relevanceScore": 0.8,
+      "isActive": true,
+      "timestamp": "2024-01-15T11:15:00Z",
+      "source": "chromadb",
+      "tags": ["websocket", "angular", "real-time", "communication"],
+      "relatedAgents": ["agent_specialist_ui", "agent_specialist_backend"]
+    },
+    {
+      "id": "mem_sem_003",
+      "type": "semantic",
+      "content": "Agent state management patterns for multi-agent coordination systems",
+      "relevanceScore": 0.85,
+      "isActive": true,
+      "timestamp": "2024-01-15T13:30:00Z",
+      "source": "neo4j",
+      "tags": ["agent-coordination", "state-management", "multi-agent"],
+      "relatedAgents": ["agent_coordinator_001", "agent_analyst_system"]
+    }
+  ],
+  "proceduralMemories": [
+    {
+      "id": "mem_proc_001",
+      "type": "procedural",
+      "content": "Step-by-step process for implementing 3D agent visualization components",
+      "relevanceScore": 0.7,
+      "isActive": true,
+      "timestamp": "2024-01-15T12:00:00Z",
+      "source": "workflow",
+      "tags": ["procedure", "3d-implementation", "step-by-step"],
+      "relatedAgents": ["agent_creator_003d", "agent_specialist_ui"]
+    },
+    {
+      "id": "mem_proc_002",
+      "type": "procedural",
+      "content": "Protocol for agent state transitions and WebSocket communication",
+      "relevanceScore": 0.8,
+      "isActive": true,
+      "timestamp": "2024-01-15T15:30:00Z",
+      "source": "workflow",
+      "tags": ["protocol", "state-transitions", "websocket"],
+      "relatedAgents": ["agent_specialist_backend", "agent_coordinator_001"]
+    }
+  ],
+  "workingMemories": [
+    {
+      "id": "mem_work_001",
+      "type": "working",
+      "content": "Current focus: Implementing Mock API for Phase 3 to unblock Phase 4 development",
+      "relevanceScore": 1.0,
+      "isActive": true,
+      "timestamp": "2024-01-15T17:00:00Z",
+      "source": "workflow",
+      "tags": ["current-task", "mock-api", "phase3"],
+      "relatedAgents": ["agent_coordinator_001", "agent_specialist_backend"]
+    },
+    {
+      "id": "mem_work_002",
+      "type": "working",
+      "content": "Agent constellation layout algorithm needs realistic timing for state transitions",
+      "relevanceScore": 0.9,
+      "isActive": true,
+      "timestamp": "2024-01-15T17:15:00Z",
+      "source": "workflow",
+      "tags": ["layout-algorithm", "timing", "state-transitions"],
+      "relatedAgents": ["agent_creator_003d", "agent_specialist_backend"]
+    }
+  ]
+}

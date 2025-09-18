@@ -1,4 +1,8 @@
 import { Inject } from '@nestjs/common';
+import {
+  getChromaDBConfig,
+  getChromaDBConfigWithDefaults,
+} from '../utils/chromadb-config.accessor';
 
 /**
  * Decorator to inject a specific ChromaDB collection
@@ -51,7 +55,7 @@ export const CollectionHelper = {
   ): Promise<T> {
     const collection = await collectionService.getCollection(collectionName);
     return operation(collection);
-  }
+  },
 };
 
 /**
@@ -74,6 +78,10 @@ export async function withCollection<T>(
     const collection = await collectionService.getCollection(collectionName);
     return await operation(collection);
   } catch (error) {
-    throw new Error(`Collection operation failed for '${collectionName}': ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Collection operation failed for '${collectionName}': ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }

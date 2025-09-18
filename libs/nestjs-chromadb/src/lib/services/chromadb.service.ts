@@ -1,4 +1,3 @@
-
 import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
 import {
   ChromaClient,
@@ -39,7 +38,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     private readonly collectionService: CollectionService,
     private readonly embeddingService: EmbeddingService,
     private readonly adminService: ChromaAdminService,
-    @Optional() private readonly textSplitterService?: TextSplitterService,
+    @Optional() private readonly textSplitterService?: TextSplitterService
   ) {}
 
   /**
@@ -94,8 +93,12 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     getOrCreate?: boolean
   ): Promise<Collection> {
     return this.collectionService.createCollection(name, {
-      metadata: (metadata ? sanitizeMetadata(metadata) : undefined) as Metadata | undefined,
-      embeddingFunction: (embeddingFunction as EmbeddingFunction | null | undefined) ?? undefined,
+      metadata: (metadata ? sanitizeMetadata(metadata) : undefined) as
+        | Metadata
+        | undefined,
+      embeddingFunction:
+        (embeddingFunction as EmbeddingFunction | null | undefined) ??
+        undefined,
       getOrCreate,
     });
   }
@@ -109,7 +112,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   ): Promise<Collection> {
     return this.collectionService.getCollection(
       name,
-      (embeddingFunction as EmbeddingFunction | undefined)
+      embeddingFunction as EmbeddingFunction | undefined
     );
   }
 
@@ -138,11 +141,23 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     let documentsToProcess = documents;
 
     // Apply auto-chunking if enabled
-    if (options?.autoChunk && this.textSplitterService) {
-      documentsToProcess = await this.chunkDocuments(collectionName, documents, options);
+    if (options?.autoChunk) {
+      if (this.textSplitterService) {
+        documentsToProcess = await this.chunkDocuments(
+          collectionName,
+          documents,
+          options
+        );
+      } else {
+        this.logger.warn(
+          'autoChunk enabled but TextSplitterService not available - proceeding without chunking'
+        );
+      }
     }
 
-    const processedDocuments = await this.processDocumentsForEmbedding(documentsToProcess);
+    const processedDocuments = await this.processDocumentsForEmbedding(
+      documentsToProcess
+    );
     const collection = await this.getCollection(collectionName);
 
     const batchSize = options?.batchSize || DEFAULT_BATCH_SIZE;
@@ -150,10 +165,18 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       const batch = processedDocuments.slice(i, i + batchSize);
 
       await collection.add({
-        ids: batch.map(doc => doc.id),
-        documents: batch.map(doc => doc.document).filter((doc): doc is string => !!doc),
-        metadatas: batch.map(doc => doc.metadata ? sanitizeMetadata(doc.metadata) : undefined).filter(Boolean) as Metadata[],
-        embeddings: batch.map(doc => doc.embedding).filter((emb): emb is number[] => !!emb),
+        ids: batch.map((doc) => doc.id),
+        documents: batch
+          .map((doc) => doc.document)
+          .filter((doc): doc is string => !!doc),
+        metadatas: batch
+          .map((doc) =>
+            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
+          )
+          .filter(Boolean) as Metadata[],
+        embeddings: batch
+          .map((doc) => doc.embedding)
+          .filter((emb): emb is number[] => !!emb),
       });
     }
   }
@@ -164,10 +187,12 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   private async chunkDocuments(
     collectionName: string,
     documents: ChromaDocument[],
-    options: ChromaBulkOptions,
+    options: ChromaBulkOptions
   ): Promise<ChromaDocument[]> {
     if (!this.textSplitterService) {
-      this.logger.warn('Text splitter service not available, skipping chunking');
+      this.logger.warn(
+        'Text splitter service not available, skipping chunking'
+      );
       return documents;
     }
 
@@ -221,12 +246,13 @@ export class ChromaDBService implements ChromaDBServiceInterface {
               ...chunk.metadata,
               originalDocumentId: doc.id,
             }),
-            embedding: doc.embedding, // Will be regenerated for chunk content
+            // Explicitly clear any parent embedding; each chunk must be embedded independently
+            embedding: undefined,
           });
         }
 
         this.logger.debug(
-          `Chunked document ${doc.id} into ${chunks.length} pieces using ${strategy} strategy`,
+          `Chunked document ${doc.id} into ${chunks.length} pieces using ${strategy} strategy`
         );
       } catch (error) {
         this.logger.error(`Failed to chunk document ${doc.id}:`, error);
@@ -248,13 +274,15 @@ export class ChromaDBService implements ChromaDBServiceInterface {
    */
   private async storeChunkRelationships(
     collectionName: string,
-    documents: ChromaDocument[],
+    documents: ChromaDocument[]
   ): Promise<void> {
     // Group chunks by parent document
     const parentGroups = new Map<string, ChromaDocument[]>();
 
     for (const doc of documents) {
-      const parentId = (doc.metadata?.['originalDocumentId'] as string) || (doc.metadata?.['parentId'] as string);
+      const parentId =
+        (doc.metadata?.['originalDocumentId'] as string) ||
+        (doc.metadata?.['parentId'] as string);
       if (parentId && typeof parentId === 'string') {
         if (!parentGroups.has(parentId)) {
           parentGroups.set(parentId, []);
@@ -308,7 +336,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
           .filter((doc): doc is string => Boolean(doc)),
         metadatas: batch
           .map((doc) =>
-            doc.metadata ? (sanitizeMetadata(doc.metadata) as Metadata) : undefined
+            doc.metadata
+              ? (sanitizeMetadata(doc.metadata) as Metadata)
+              : undefined
           )
           .filter(Boolean) as Metadata[],
         embeddings: batch
@@ -342,7 +372,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
           .filter((doc): doc is string => Boolean(doc)),
         metadatas: batch
           .map((doc) =>
-            doc.metadata ? (sanitizeMetadata(doc.metadata) as Metadata) : undefined
+            doc.metadata
+              ? (sanitizeMetadata(doc.metadata) as Metadata)
+              : undefined
           )
           .filter(Boolean) as Metadata[],
         embeddings: batch
@@ -369,7 +401,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     }
   ): Promise<GetResult<Record<string, string | number | boolean | null>>> {
     const collection = await this.getCollection(collectionName);
-    const include: Array<'documents' | 'embeddings' | 'metadatas' | 'distances'> = [];
+    const include: Array<
+      'documents' | 'embeddings' | 'metadatas' | 'distances'
+    > = [];
     if (options?.includeDocuments) {
       include.push('documents');
     }
@@ -426,7 +460,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       !queryEmbeddings &&
       this.embeddingService.isConfigured()
     ) {
-      processedQueryEmbeddings = (await this.embeddingService.embed(queryTexts)) as number[][];
+      processedQueryEmbeddings = (await this.embeddingService.embed(
+        queryTexts
+      )) as number[][];
     }
 
     return collection.query({
@@ -450,7 +486,13 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   async similaritySearch(
     collectionName: string,
     query: string | number[],
-    options?: Omit<ChromaSearchOptions, 'includeMetadata' | 'includeDocuments' | 'includeDistances' | 'includeEmbeddings'> & {
+    options?: Omit<
+      ChromaSearchOptions,
+      | 'includeMetadata'
+      | 'includeDocuments'
+      | 'includeDistances'
+      | 'includeEmbeddings'
+    > & {
       limit?: number;
       filter?: Where;
       includeMetadata?: boolean;
@@ -526,9 +568,23 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   ): Promise<Record<string, string | number | boolean | null> | null> {
     try {
       const collection = await this.getCollection(collectionName);
-      return (collection.metadata as Record<string, string | number | boolean | null> | undefined) ?? null;
-    } catch {
-      return null;
+      return (
+        (collection.metadata as
+          | Record<string, string | number | boolean | null>
+          | undefined) ?? null
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      // Preserve null for expected not-found scenarios
+      if (/not\s+found/i.test(message) || /does\s+not\s+exist/i.test(message)) {
+        return null;
+      }
+      this.logger.error(
+        `Failed to get metadata for collection '${collectionName}': ${message}`
+      );
+      throw new Error(
+        `Failed to get collection metadata '${collectionName}': ${message}`
+      );
     }
   }
 
@@ -556,19 +612,29 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     }
 
     const documentsNeedingEmbeddings = documents.filter(
-      (doc) => !doc.embedding && doc.document
+      (doc) =>
+        !doc.embedding &&
+        doc.document &&
+        // Skip metadata-only relationship docs to save cost and avoid noise
+        doc.metadata?.['documentType'] !== 'chunk-relationship'
     );
 
     if (documentsNeedingEmbeddings.length === 0) {
       return documents;
     }
 
-    const textsToEmbed = documentsNeedingEmbeddings.map((doc) => doc.document as string);
+    const textsToEmbed = documentsNeedingEmbeddings.map(
+      (doc) => doc.document as string
+    );
     const embeddings = await this.embeddingService.embed(textsToEmbed);
 
     let embeddingIndex = 0;
     return documents.map((doc) => {
-      if (!doc.embedding && doc.document) {
+      if (
+        !doc.embedding &&
+        doc.document &&
+        doc.metadata?.['documentType'] !== 'chunk-relationship'
+      ) {
         const embedding = embeddings[embeddingIndex];
         embeddingIndex += 1;
         return { ...doc, embedding };

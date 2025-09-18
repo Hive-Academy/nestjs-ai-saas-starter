@@ -6,13 +6,17 @@ import type { WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workfl
  */
 export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
   return {
-    cache: {
-      enabled: process.env.WORKFLOW_CACHE_ENABLED !== 'false',
-      maxSize: parseInt(process.env.WORKFLOW_CACHE_MAX_SIZE || '1000'),
-      ttl: parseInt(process.env.WORKFLOW_CACHE_TTL || '300000'), // 5 minutes
+    compilation: {
+      cacheEnabled: process.env.WORKFLOW_CACHE_ENABLED !== 'false',
+      cacheTTL: parseInt(process.env.WORKFLOW_CACHE_TTL || '300000'), // 5 minutes
+      optimizeGraphs: process.env.WORKFLOW_OPTIMIZE_GRAPHS !== 'false',
     },
-    debug:
-      process.env.NODE_ENV === 'development' ||
-      process.env.WORKFLOW_DEBUG === 'true',
+    debugging: {
+      enabled:
+        process.env.NODE_ENV === 'development' ||
+        process.env.WORKFLOW_DEBUG === 'true',
+      logLevel: process.env.WORKFLOW_LOG_LEVEL || 'info',
+      traceExecution: process.env.WORKFLOW_TRACE_EXECUTION === 'true',
+    },
   };
 }

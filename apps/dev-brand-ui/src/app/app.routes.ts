@@ -1,37 +1,37 @@
-import type { Route } from '@angular/router';
+import type { Routes } from '@angular/router';
 
-export const appRoutes: Route[] = [
+export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/chat',
+    redirectTo: '/landing',
     pathMatch: 'full',
   },
   {
-    path: 'chat',
+    path: 'landing',
     loadComponent: () =>
-      import('./features/chat-interface/chat-interface.component').then(
-        (m) => m.ChatInterfaceComponent
+      import('./features/landing-page/landing-page.component').then(
+        (m) => m.LandingPageComponent
       ),
-    title: 'DevBrand Chat Studio',
+    title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
   {
-    path: 'spatial',
+    path: 'spatial-interface',
     loadComponent: () =>
       import('./features/spatial-interface/spatial-interface.component').then(
         (m) => m.SpatialInterfaceComponent
       ),
-    title: 'Agent Constellation',
+    title: '3D Agent Visualization',
   },
   {
-    path: 'canvas',
+    path: 'workflow-canvas',
     loadComponent: () =>
       import('./features/workflow-canvas/workflow-canvas.component').then(
         (m) => m.WorkflowCanvasComponent
       ),
-    title: 'Living Workflow Canvas',
+    title: 'Workflow Canvas',
   },
   {
-    path: 'memory',
+    path: 'memory-constellation',
     loadComponent: () =>
       import(
         './features/memory-constellation/memory-constellation.component'
@@ -39,7 +39,15 @@ export const appRoutes: Route[] = [
     title: 'Memory Constellation',
   },
   {
-    path: 'forge',
+    path: 'chat-interface',
+    loadComponent: () =>
+      import('./features/chat-interface/chat-interface.component').then(
+        (m) => m.ChatInterfaceComponent
+      ),
+    title: 'AI Chat Interface',
+  },
+  {
+    path: 'content-forge',
     loadComponent: () =>
       import('./features/content-forge/content-forge.component').then(
         (m) => m.ContentForgeComponent
@@ -48,6 +56,6 @@ export const appRoutes: Route[] = [
   },
   {
     path: '**',
-    redirectTo: '/chat',
+    redirectTo: '/spatial-interface',
   },
 ];
