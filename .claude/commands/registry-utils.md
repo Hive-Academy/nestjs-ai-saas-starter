@@ -13,7 +13,7 @@ if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
     UPDATED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
     
     # Simple pattern - matches the first few columns only
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | $NEW_STATUS |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | $NEW_STATUS | \2/" task-tracking/registry.md
     echo "✅ Registry updated: $TASK_ID → $NEW_STATUS"
 else
     echo "ℹ️ Standalone mode or no registry"
@@ -29,7 +29,7 @@ if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ] && [ "$FINAL_AGENT" =
     COMPLETED_DATE=$(date '+%Y-%m-%d')
     
     # Update status to complete
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | ✅ Complete |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | ✅ Complete | \2/" task-tracking/registry.md
     echo "✅ Task completed: $TASK_ID"
 else
     echo "ℹ️ Not final agent or no task ID"
@@ -101,7 +101,7 @@ fi
 
 # 2. Update status (if orchestration)
 if [ "$MODE" = "ORCHESTRATION" ] && [ -f "task-tracking/registry.md" ]; then
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | 🔄 Active ($AGENT_NAME) |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | 🔄 Active ($AGENT_NAME) | \2/" task-tracking/registry.md
     echo "✅ Updated registry status"
 fi
 

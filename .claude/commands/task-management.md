@@ -107,7 +107,7 @@ if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
     NEW_STATUS="🔄 Active (Agent Name)"  # Change as needed
     UPDATED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
     
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | $NEW_STATUS |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | $NEW_STATUS | \2/" task-tracking/registry.md
     echo "✅ Updated: $TASK_ID → $NEW_STATUS"
 else
     echo "ℹ️ No task ID or registry file"
@@ -122,7 +122,7 @@ if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
     COMPLETED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
     COMPLETED_DATE=$(date '+%Y-%m-%d')
     
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | ✅ Complete | \2 | \3 | \4 | \5 | $COMPLETED_TIME | $COMPLETED_DATE |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | ✅ Complete | \2/" task-tracking/registry.md
     echo "✅ Completed: $TASK_ID"
 else
     echo "ℹ️ No task ID or registry file"
@@ -190,7 +190,7 @@ git checkout -b "feature/${TASK_ID##*_}"
 # At start of agent work - update registry status
 if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
     AGENT_NAME="backend-developer"  # Change per agent
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | 🔄 Active ($AGENT_NAME) |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | 🔄 Active ($AGENT_NAME) | \2/" task-tracking/registry.md
 fi
 ```
 

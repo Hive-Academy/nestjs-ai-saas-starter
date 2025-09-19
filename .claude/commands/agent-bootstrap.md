@@ -20,7 +20,7 @@ fi
 ```bash
 # Update registry directly (no function needed)
 if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* | \([^|]*\) |/| $TASK_ID | \1 | 🔄 Active (Backend Dev) | \2 |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | 🔄 Active (Backend Dev) | \2/" task-tracking/registry.md
     echo "✅ Updated: $TASK_ID"
 fi
 ```
@@ -42,7 +42,7 @@ fi
 # Mark task complete (for final agent only)
 if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
     DATE=$(date '+%Y-%m-%d')
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | ✅ Complete | \2 | \3 | \4 | \5 | \6 | $DATE |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | ✅ Complete | \2/" task-tracking/registry.md
     echo "✅ Completed: $TASK_ID"
 fi
 ```
@@ -69,7 +69,7 @@ fi
 
 # 3. UPDATE STATUS (if orchestration)
 if [ "$MODE" = "ORCHESTRATION" ] && [ -f "task-tracking/registry.md" ]; then
-    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | 🔄 Active ($AGENT_NAME) |/" task-tracking/registry.md
+    LC_ALL=C sed -i "s/\(^| $TASK_ID | [^|]*\) | [^|]* | \(.*\)$/\1 | 🔄 Active ($AGENT_NAME) | \2/" task-tracking/registry.md
 fi
 
 # 4. LOAD CONTEXT (if orchestration)
