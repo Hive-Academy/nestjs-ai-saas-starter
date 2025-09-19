@@ -1079,7 +1079,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         },
       };
 
-      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      await this.checkpointAdapter.saveCheckpoint(threadId, checkpointData, checkpointData.metadata);
       this.logger.debug(
         `Saved initial checkpoint for execution ${executionId} with thread ID ${threadId}`
       );
@@ -1127,7 +1127,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         },
       };
 
-      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      await this.checkpointAdapter.saveCheckpoint(threadId, checkpointData, checkpointData.metadata);
       this.logger.debug(
         `Saved final checkpoint for execution ${executionId} with thread ID ${threadId}`
       );

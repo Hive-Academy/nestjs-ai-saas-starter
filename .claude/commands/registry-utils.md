@@ -1,100 +1,159 @@
-# Registry Utilities
+# Registry Utilities for Sub-Agents
 
-## Registry Update Functions for Agents
+⚠️ **CRITICAL**: This file contains DIRECT bash commands for sub-agents. Do NOT try to extract functions.
 
-### Core Functions
+## Direct Registry Commands
 
-```bash
-# Update Task Status
-update_task_status() {
-    local task_id="$1"
-    local new_status="$2"
-    local registry_file="task-tracking/registry.md"
-    local updated_time=$(date '+%Y-%m-%d %H:%M:%S')
-
-    if [ -f "$registry_file" ] && [ -n "$task_id" ]; then
-        # Update status and timestamp in registry
-        sed -i "s/| $task_id | \(.*\) | [^|]* | \(.*\) | \(.*\) | \(.*\) | \(.*\) | [^|]* | \(.*\) | \(.*\) |/| $task_id | \1 | $new_status | \2 | \3 | \4 | \5 | $updated_time | \6 | \7 |/" "$registry_file"
-        echo "✅ Registry updated: $task_id → $new_status"
-    elif [ -z "$task_id" ]; then
-        echo "ℹ️  Standalone mode: No registry update (no task ID)"
-    else
-        echo "⚠️  Registry file not found: $registry_file"
-    fi
-}
-
-# Mark Task Complete
-complete_task() {
-    local task_id="$1"
-    local registry_file="task-tracking/registry.md"
-    local completed_time=$(date '+%Y-%m-%d %H:%M:%S')
-    local completed_date=$(date '+%Y-%m-%d')
-
-    if [ -f "$registry_file" ] && [ -n "$task_id" ]; then
-        # Update to completed status with completion timestamp
-        sed -i "s/| $task_id | \(.*\) | [^|]* | \(.*\) | \(.*\) | \(.*\) | \(.*\) | [^|]* | [^|]* | \(.*\) |/| $task_id | \1 | ✅ Complete | \2 | \3 | \4 | \5 | $completed_time | $completed_date | \6 |/" "$registry_file"
-        echo "✅ Task completed in registry: $task_id"
-    elif [ -z "$task_id" ]; then
-        echo "ℹ️  Standalone mode: No task completion tracking"
-    else
-        echo "⚠️  Registry file not found: $registry_file"
-    fi
-}
-
-# Registry Statistics
-get_registry_stats() {
-    local registry_file="task-tracking/registry.md"
-
-    if [ -f "$registry_file" ]; then
-        local total=$(grep -c "TASK_" "$registry_file" 2>/dev/null || echo "0")
-        local active=$(grep -c "🔄 Active" "$registry_file" 2>/dev/null || echo "0")
-        local complete=$(grep -c "✅ Complete" "$registry_file" 2>/dev/null || echo "0")
-        local pending=$(grep -c "⏳ Pending" "$registry_file" 2>/dev/null || echo "0")
-
-        echo "📊 Registry Stats: Total=$total, Active=$active, Complete=$complete, Pending=$pending"
-    else
-        echo "📊 Registry Stats: No registry found"
-    fi
-}
-
-# Display Current Task Status
-show_task_status() {
-    local task_id="$1"
-    local registry_file="task-tracking/registry.md"
-
-    if [ -f "$registry_file" ] && [ -n "$task_id" ]; then
-        local task_line=$(grep "$task_id" "$registry_file" 2>/dev/null)
-        if [ -n "$task_line" ]; then
-            echo "📋 Current Status: $task_line"
-        else
-            echo "⚠️  Task $task_id not found in registry"
-        fi
-    fi
-}
-```
-
-## Integration Points
-
-### Orchestration Mode
-
-- Registry updates handled automatically by orchestration workflow
-- Agents receive TASK_ID and can update status
-- Final agent marks task complete
-
-### Standalone Mode
-
-- No registry updates (TASK_ID not provided)
-- Agents work without registry integration
-- Direct results returned to user
-
-### Agent Detection Pattern
+### Update Task Status (Direct Command)
 
 ```bash
-# Each agent can detect mode and update registry accordingly
+# Update task status in registry - USE THIS EXACT PATTERN
 if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
-    echo "Orchestration mode: Will update registry"
-    update_task_status "$TASK_ID" "🔄 Active ([Agent Name] working)"
+    NEW_STATUS="🔄 Active (Agent Name)"  # Replace "Agent Name" with actual agent
+    UPDATED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    # Simple pattern - matches the first few columns only
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | $NEW_STATUS |/" task-tracking/registry.md
+    echo "✅ Registry updated: $TASK_ID → $NEW_STATUS"
 else
-    echo "Standalone mode: No registry updates"
+    echo "ℹ️ Standalone mode or no registry"
 fi
 ```
+
+### Mark Task Complete (Direct Command)
+
+```bash
+# Mark task complete - FOR FINAL AGENT ONLY
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ] && [ "$FINAL_AGENT" = "true" ]; then
+    COMPLETED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+    COMPLETED_DATE=$(date '+%Y-%m-%d')
+    
+    # Update status to complete
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | ✅ Complete |/" task-tracking/registry.md
+    echo "✅ Task completed: $TASK_ID"
+else
+    echo "ℹ️ Not final agent or no task ID"
+fi
+```
+
+### Get Registry Statistics (Direct Command)
+
+```bash
+# Get registry statistics
+if [ -f "task-tracking/registry.md" ]; then
+    TOTAL=$(grep -c "TASK_" task-tracking/registry.md 2>/dev/null || echo "0")
+    ACTIVE=$(grep -c "🔄 Active" task-tracking/registry.md 2>/dev/null || echo "0")
+    COMPLETE=$(grep -c "✅ Complete" task-tracking/registry.md 2>/dev/null || echo "0")
+    PENDING=$(grep -c "⏳ Pending" task-tracking/registry.md 2>/dev/null || echo "0")
+    
+    echo "📊 Registry Stats: Total=$TOTAL, Active=$ACTIVE, Complete=$COMPLETE, Pending=$PENDING"
+else
+    echo "📊 No registry found"
+fi
+```
+
+### Show Current Task Status (Direct Command)
+
+```bash
+# Display current task status
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
+    TASK_LINE=$(grep "$TASK_ID" task-tracking/registry.md 2>/dev/null | head -1)
+    if [ -n "$TASK_LINE" ]; then
+        echo "📋 Current Status: $TASK_LINE"
+    else
+        echo "⚠️ Task $TASK_ID not found in registry"
+    fi
+else
+    echo "⚠️ No task ID or registry file"
+fi
+```
+
+## Sub-Agent Integration Patterns
+
+### Mode Detection (Direct Command)
+
+```bash
+# Detect if we're in orchestration or standalone mode
+if [ -d "task-tracking" ] && [ -n "$TASK_ID" ]; then
+    echo "🎭 ORCHESTRATION MODE - Task: $TASK_ID"
+    MODE="ORCHESTRATION"
+else
+    echo "🎭 STANDALONE MODE"
+    MODE="STANDALONE"
+fi
+```
+
+### Agent Initialization Template
+
+```bash
+# Complete initialization pattern for sub-agents
+AGENT_NAME="backend-developer"  # Change per agent
+echo "🤖 Agent: $AGENT_NAME starting..."
+
+# 1. Detect mode
+if [ -d "task-tracking" ] && [ -n "$TASK_ID" ]; then
+    MODE="ORCHESTRATION"
+    echo "📋 Task ID: $TASK_ID"
+else
+    MODE="STANDALONE"
+    echo "📋 No task tracking"
+fi
+
+# 2. Update status (if orchestration)
+if [ "$MODE" = "ORCHESTRATION" ] && [ -f "task-tracking/registry.md" ]; then
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | 🔄 Active ($AGENT_NAME) |/" task-tracking/registry.md
+    echo "✅ Updated registry status"
+fi
+
+# 3. Load previous work (if orchestration)
+if [ "$MODE" = "ORCHESTRATION" ] && [ -d "task-tracking/$TASK_ID" ]; then
+    echo "📖 Loading previous work..."
+    for file in task-tracking/$TASK_ID/*.md; do
+        [ -f "$file" ] && echo "=== $(basename $file) ===" && cat "$file"
+    done
+fi
+
+echo "💼 Starting $AGENT_NAME tasks..."
+```
+
+### Registry Operations
+
+#### Orchestration Mode
+- Sub-agents receive `$TASK_ID` environment variable
+- Registry updates using direct sed commands
+- Final agent marks task complete with `$FINAL_AGENT=true`
+
+#### Standalone Mode  
+- No `$TASK_ID` provided
+- Sub-agents work without registry integration
+- Direct results returned to user
+
+### Critical Notes
+
+⚠️ **DO NOT** try to extract these commands from markdown
+⚠️ **DO NOT** use complex function definitions
+⚠️ **ALWAYS** use `LC_ALL=C` with sed commands
+⚠️ **ALWAYS** check file existence before operations
+
+### Debug Commands
+
+```bash
+# Check registry format
+head -5 task-tracking/registry.md
+
+# Test task exists
+grep "$TASK_ID" task-tracking/registry.md
+
+# Test sed pattern
+echo "| TASK_2025_001 | Test Title | 🔄 Active | Feature |" | \
+    LC_ALL=C sed "s/| TASK_2025_001 | \([^|]*\) | [^|]* |/| TASK_2025_001 | \1 | ✅ Complete |/"
+```
+
+This provides SIMPLE, RELIABLE commands that sub-agents can execute without complex extraction mechanisms.
+
+## Status Reference
+
+- `⏳ Pending` - Not started
+- `🔄 Active` - In progress (with agent name)
+- `✅ Complete` - Finished
+- `❌ Failed` - Blocked/failed

@@ -8,6 +8,8 @@ export interface PlatformModuleOptions {
   timeout?: number;
   retryPolicy?: RetryPolicy;
   webhook?: WebhookConfig;
+  // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+  memoryAdapter?: unknown;
 }
 
 export interface RetryPolicy {
@@ -23,7 +25,9 @@ export interface WebhookConfig {
 }
 
 export interface PlatformModuleAsyncOptions {
-  useFactory?: (...args: unknown[]) => Promise<PlatformModuleOptions> | PlatformModuleOptions;
+  useFactory?: (
+    ...args: unknown[]
+  ) => Promise<PlatformModuleOptions> | PlatformModuleOptions;
   inject?: unknown[];
 }
 

@@ -1,4 +1,6 @@
-# Task Management System
+# Task Management System for Sub-Agents
+
+⚠️ **IMPORTANT**: This file contains DIRECT bash commands for sub-agents. Do NOT try to extract functions.
 
 ## 🎯 Sequential Task ID System
 
@@ -49,155 +51,199 @@ TASK_YYYY_NNN
 | TASK_2025_002 | Fix Login Bug       | ✅ Complete | Bug     | P0-Crit  | S      | 2025-01-16 | 2025-01-16 | 2025-01-16 | feature/002 |
 ```
 
-## 🔧 Implementation Functions
+## 🔧 Direct Commands for Sub-Agents
 
-### Get Next Task ID
+⚠️ **IMPORTANT**: Sub-agents should use these DIRECT commands instead of trying to extract functions.
+
+### Get Next Task ID (Direct Command)
 
 ```bash
-get_next_task_id() {
-    local year=$(date +%Y)
-    local registry_file="task-tracking/registry.md"
+# Generate next sequential task ID
+YEAR=$(date +%Y)
+REGISTRY_FILE="task-tracking/registry.md"
 
-    # Ensure registry exists
-    if [ ! -f "$registry_file" ]; then
-        create_registry_file
-    fi
-
-    # Find highest task number for current year
-    local highest_num=$(grep "TASK_${year}_" "$registry_file" | \
-        sed -n "s/.*TASK_${year}_\([0-9]\{3\}\).*/\1/p" | \
+if [ -f "$REGISTRY_FILE" ]; then
+    HIGHEST_NUM=$(grep "TASK_${YEAR}_" "$REGISTRY_FILE" | \
+        sed -n "s/.*TASK_${YEAR}_\([0-9]\{3\}\).*/\1/p" | \
         sort -n | tail -1)
-
-    # Calculate next number
-    if [ -z "$highest_num" ]; then
-        local next_num="001"
+    
+    if [ -z "$HIGHEST_NUM" ]; then
+        NEXT_NUM="001"
     else
-        local next_num=$(printf "%03d" $((10#$highest_num + 1)))
+        NEXT_NUM=$(printf "%03d" $((10#$HIGHEST_NUM + 1)))
     fi
+else
+    NEXT_NUM="001"
+fi
 
-    echo "TASK_${year}_${next_num}"
-}
+NEXT_TASK_ID="TASK_${YEAR}_${NEXT_NUM}"
+echo "📋 Next Task ID: $NEXT_TASK_ID"
 ```
 
-### Create Registry Entry
+### Create Registry Entry (Direct Command)
 
 ```bash
-create_registry_entry() {
-    local task_id="$1"
-    local title="$2"
-    local type="$3"
-    local priority="$4"
-    local effort="$5"
-    local created_date=$(date '+%Y-%m-%d')
-    local created_time=$(date '+%Y-%m-%d %H:%M:%S')
-    local branch_name="feature/${task_id##*_}"
+# Create new task entry in registry
+TASK_ID="$1"  # e.g., TASK_2025_001
+TITLE="$2"    # e.g., "Implement authentication"
+TYPE="$3"     # e.g., "Feature"
+PRIORITY="$4" # e.g., "P1-High"
+EFFORT="$5"   # e.g., "M"
 
-    # Add to registry
-    echo "| $task_id | $title | 🔄 Active | $type | $priority | $effort | $created_date | $created_time | | $branch_name |" >> task-tracking/registry.md
+CREATED_DATE=$(date '+%Y-%m-%d')
+CREATED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+BRANCH_NAME="feature/${TASK_ID##*_}"
 
-    # Sort registry by task ID
-    sort_registry
-}
+# Add to registry
+echo "| $TASK_ID | $TITLE | 🔄 Active | $TYPE | $PRIORITY | $EFFORT | $CREATED_DATE | $CREATED_TIME | | $BRANCH_NAME |" >> task-tracking/registry.md
+echo "✅ Registry entry created for $TASK_ID"
 ```
 
-### Update Task Status
+### Update Task Status (Direct Command)
 
 ```bash
-update_task_status() {
-    local task_id="$1"
-    local new_status="$2"
-    local registry_file="task-tracking/registry.md"
-    local updated_time=$(date '+%Y-%m-%d %H:%M:%S')
-
-    # Update status and timestamp
-    sed -i "s/| $task_id | \(.*\) | [^|]* | \(.*\) | \(.*\) | \(.*\) | \(.*\) | [^|]* | \(.*\) |/| $task_id | \1 | $new_status | \2 | \3 | \4 | \5 | $updated_time | \6 |/" "$registry_file"
-}
+# Update task status in registry
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
+    NEW_STATUS="🔄 Active (Agent Name)"  # Change as needed
+    UPDATED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | $NEW_STATUS |/" task-tracking/registry.md
+    echo "✅ Updated: $TASK_ID → $NEW_STATUS"
+else
+    echo "ℹ️ No task ID or registry file"
+fi
 ```
 
-### Complete Task
+### Complete Task (Direct Command)
 
 ```bash
-complete_task() {
-    local task_id="$1"
-    local registry_file="task-tracking/registry.md"
-    local completed_time=$(date '+%Y-%m-%d %H:%M:%S')
-    local completed_date=$(date '+%Y-%m-%d')
-
-    # Update to completed status with completion timestamp
-    sed -i "s/| $task_id | \(.*\) | [^|]* | \(.*\) | \(.*\) | \(.*\) | \(.*\) | \(.*\) | [^|]* | \(.*\) |/| $task_id | \1 | ✅ Complete | \2 | \3 | \4 | \5 | $completed_time | $completed_date | \6 |/" "$registry_file"
-}
+# Mark task complete (for final agent only)
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
+    COMPLETED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+    COMPLETED_DATE=$(date '+%Y-%m-%d')
+    
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | ✅ Complete | \2 | \3 | \4 | \5 | $COMPLETED_TIME | $COMPLETED_DATE |/" task-tracking/registry.md
+    echo "✅ Completed: $TASK_ID"
+else
+    echo "ℹ️ No task ID or registry file"
+fi
 ```
 
-## 📊 Registry Management Commands
+## 📊 Registry Management Commands (Direct)
 
-### View Active Tasks
+### View Active Tasks (Direct Command)
 
 ```bash
-view_active_tasks() {
+# Show active tasks
+if [ -f "task-tracking/registry.md" ]; then
+    echo "📋 Active Tasks:"
     grep "🔄 Active" task-tracking/registry.md | head -20
-}
+else
+    echo "⚠️ No registry found"
+fi
 ```
 
-### View Recent Tasks
+### View Recent Tasks (Direct Command)
 
 ```bash
-view_recent_tasks() {
+# Show recent tasks
+if [ -f "task-tracking/registry.md" ]; then
+    echo "📋 Recent Tasks:"
     tail -10 task-tracking/registry.md
-}
+else
+    echo "⚠️ No registry found"
+fi
 ```
 
-### Task Statistics
+### Task Statistics (Direct Command)
 
 ```bash
-task_stats() {
-    local total=$(grep -c "TASK_" task-tracking/registry.md)
-    local active=$(grep -c "🔄 Active" task-tracking/registry.md)
-    local complete=$(grep -c "✅ Complete" task-tracking/registry.md)
-
-    echo "Total Tasks: $total"
-    echo "Active: $active"
-    echo "Complete: $complete"
-}
+# Get registry statistics
+if [ -f "task-tracking/registry.md" ]; then
+    TOTAL=$(grep -c "TASK_" task-tracking/registry.md 2>/dev/null || echo "0")
+    ACTIVE=$(grep -c "🔄 Active" task-tracking/registry.md 2>/dev/null || echo "0")
+    COMPLETE=$(grep -c "✅ Complete" task-tracking/registry.md 2>/dev/null || echo "0")
+    PENDING=$(grep -c "⏳ Pending" task-tracking/registry.md 2>/dev/null || echo "0")
+    
+    echo "📊 Registry Stats: Total=$TOTAL, Active=$ACTIVE, Complete=$COMPLETE, Pending=$PENDING"
+else
+    echo "📊 No registry found"
+fi
 ```
 
-## 🔄 Agent Integration Points
+## 🔄 Sub-Agent Integration Points
 
-### Task Creation (Orchestrator)
+### Task Creation (Orchestrator Only)
 
-1. Generate next sequential ID
-2. Create registry entry FIRST
-3. Create task folder
-4. Initialize git branch
-5. Commit initial state
+```bash
+# 1. Generate next sequential ID (use direct command above)
+# 2. Create registry entry FIRST (use direct command above)
+# 3. Create task folder
+mkdir -p "task-tracking/$TASK_ID"
+# 4. Initialize git branch
+git checkout -b "feature/${TASK_ID##*_}"
+```
 
-### Task Updates (All Agents)
+### Task Updates (All Sub-Agents)
 
-1. Update registry status when starting work
-2. Update registry timestamp during progress
-3. Mark complete in registry when done
-4. Never work outside registry tracking
+```bash
+# At start of agent work - update registry status
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
+    AGENT_NAME="backend-developer"  # Change per agent
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | 🔄 Active ($AGENT_NAME) |/" task-tracking/registry.md
+fi
+```
 
-### Task Completion (Final Agent)
+### Task Completion (Final Agent Only)
 
-1. Mark complete in registry
-2. Set completion timestamp
-3. Update final metrics
-4. Archive if needed
+```bash
+# Mark complete in registry (use direct command above)
+# No complex extraction - just direct sed commands
+if [ "$FINAL_AGENT" = "true" ] && [ -n "$TASK_ID" ]; then
+    # Use the complete task direct command from above
+fi
+```
 
-## 🎯 Migration Strategy
+## ⚠️ CRITICAL NOTES FOR SUB-AGENTS
 
-### Current State Fix
+### DO NOT Use Function Extraction
 
-1. Rename `TASK_CMD_010` → `TASK_2025_001`
-2. Update registry with new format
-3. Fix all references
-4. Implement new ID generation
+❌ **NEVER** try to extract functions from markdown files
+❌ **NEVER** use complex sed patterns to extract bash code
+❌ **NEVER** source functions from markdown
 
-### Going Forward
+### DO Use Direct Commands
 
-1. All new tasks use sequential IDs
-2. Registry-first workflow mandatory
-3. Agents required to update registry
-4. Regular registry maintenance
+✅ **ALWAYS** use the direct bash commands shown above
+✅ **ALWAYS** include `LC_ALL=C` with sed commands
+✅ **ALWAYS** check if files exist before modifying
+✅ **ALWAYS** use simple, direct patterns
 
-This creates a predictable, maintainable task management system that puts the registry at the center of all operations.
+### Registry Format Reference
+
+```
+| Task ID | Title | Status | Type | Priority | Effort | Created | Updated | Completed | Branch |
+```
+
+### Status Values
+
+- `⏳ Pending` - Not started
+- `🔄 Active` - In progress (with agent name)
+- `✅ Complete` - Finished
+- `❌ Failed` - Blocked/failed
+
+### Debug Commands
+
+```bash
+# Check registry format
+head -5 task-tracking/registry.md
+
+# Check task exists
+grep "$TASK_ID" task-tracking/registry.md
+
+# Test sed command
+echo "| TASK_2025_001 | Test | 🔄 Active | Feature |" | \
+    LC_ALL=C sed "s/| TASK_2025_001 | \([^|]*\) | [^|]* |/| TASK_2025_001 | \1 | ✅ Complete |/"
+```
+
+This system provides SIMPLE, DIRECT commands that sub-agents can execute reliably without complex extraction mechanisms.

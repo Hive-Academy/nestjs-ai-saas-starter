@@ -32,6 +32,8 @@ export * from './lib/constants';
 // Interfaces
 export type * from './lib/interfaces/hitl.interface';
 export { IHitlStorageService, HitlStorageError, InvalidApprovalDataError } from './lib/interfaces/hitl-storage.interface';
+export type { IApprovalChainStorageService } from './lib/interfaces/approval-chain-storage.interface';
+export type { ApprovalChainStorageConfig } from './lib/interfaces/approval-chain-storage.interface';
 export type {
   ApprovalStorageData,
   ApprovalStorageStatus,

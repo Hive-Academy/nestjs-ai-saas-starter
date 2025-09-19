@@ -3,6 +3,7 @@ import type {
   ICheckpointAdapter,
   AsyncModuleFactory,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -77,6 +78,12 @@ export interface FunctionalApiModuleOptions {
    * If not provided, streaming will be disabled (uses NoOpStreamingService)
    */
   readonly streamingAdapter?: IStreamingService;
+
+  /**
+   * 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+   * If not provided, memory features will be disabled
+   */
+  readonly memoryAdapter?: IMemoryAdapter;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 import {
   ReplayOptions,
@@ -19,7 +19,10 @@ export class WorkflowReplayService {
     @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter,
     @Inject('WORKFLOW_REGISTRY')
-    private readonly workflowRegistry: Map<string, unknown>
+    private readonly workflowRegistry: Map<string, unknown>,
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: any
   ) {}
 
   /**
@@ -128,6 +131,9 @@ export class WorkflowReplayService {
       execution.endTime = new Date();
       execution.result = result;
 
+      // 🧠 MEMORY INTEGRATION: Store replay outcome for future optimization
+      await this.storeReplayMemory(threadId, checkpointId, execution, options);
+
       this.logger.log(
         `Workflow replay completed successfully: ${replayThreadId}`
       );
@@ -135,6 +141,9 @@ export class WorkflowReplayService {
       execution.status = 'failed';
       execution.endTime = new Date();
       execution.error = error as Error;
+
+      // 🧠 MEMORY INTEGRATION: Store failed replay for learning
+      await this.storeReplayMemory(threadId, checkpointId, execution, options);
 
       this.logger.error(`Workflow replay failed for ${replayThreadId}:`, error);
       throw error;

@@ -1,247 +1,123 @@
-# Agent Bootstrap System
+# Agent Bootstrap Guide
 
-## 🎯 Automatic Command Discovery & Loading
+## 🚀 SIMPLE BOOTSTRAP FOR SUB-AGENTS
 
-### Agent Initialization Pattern
+Sub-agents should use these **direct bash commands** instead of trying to extract functions from markdown:
 
-Every agent should start with this bootstrap sequence:
+### 1. Check Operation Mode
 
-````bash
-# ===== AGENT BOOTSTRAP SEQUENCE =====
-echo "🚀 Initializing Agent Environment..."
-
-# 1. Source all available command utilities
-for cmd_file in .claude/commands/*.md; do
-    if [ -f "$cmd_file" ]; then
-        # Extract bash functions from markdown command files
-        sed -n '/```bash/,/```/p' "$cmd_file" | sed '1d;$d' > /tmp/$(basename "$cmd_file" .md).sh 2>/dev/null
-        [ -s "/tmp/$(basename "$cmd_file" .md).sh" ] && source "/tmp/$(basename "$cmd_file" .md).sh" 2>/dev/null
-    fi
-done
-
-# 2. Load task management functions specifically
-if [ -f ".claude/commands/registry-utils.md" ]; then
-    echo "📋 Loading task management functions..."
-    # Extract and source registry utilities
-    sed -n '/```bash/,/```/p' .claude/commands/registry-utils.md | sed '1d;$d' > /tmp/registry-utils.sh
-    source /tmp/registry-utils.sh 2>/dev/null
-    echo "✅ Task management functions loaded"
-fi
-
-# 3. Detect operation mode
+```bash
+# Detect if we're in orchestration or standalone mode
 if [ -d "task-tracking" ] && [ -n "$TASK_ID" ]; then
-    OPERATION_MODE="ORCHESTRATION"
-    echo "🎭 Mode: Orchestration (TASK_ID: $TASK_ID)"
-
-    # Load task context if available
-    if [ -f "task-tracking/$TASK_ID/context.md" ]; then
-        echo "📖 Loading task context..."
-        TASK_CONTEXT=$(cat "task-tracking/$TASK_ID/context.md")
-    fi
-
-    # Update registry status
-    if type update_task_status >/dev/null 2>&1; then
-        update_task_status "$TASK_ID" "🔄 Active"
-        echo "📊 Registry updated"
-    fi
+    echo "🎭 ORCHESTRATION MODE - Task: $TASK_ID"
 else
-    OPERATION_MODE="STANDALONE"
-    echo "🎭 Mode: Standalone"
+    echo "🎭 STANDALONE MODE"
 fi
+```
 
-# 4. Display available functions
-echo "🛠️  Available Functions:"
-echo "   - update_task_status(task_id, status)"
-echo "   - complete_task(task_id)"
-echo "   - get_registry_stats()"
-echo ""
+### 2. Update Task Status (Direct Command)
 
-# ===== END BOOTSTRAP SEQUENCE =====
-````
+```bash
+# Update registry directly (no function needed)
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* | \([^|]*\) |/| $TASK_ID | \1 | 🔄 Active (Backend Dev) | \2 |/" task-tracking/registry.md
+    echo "✅ Updated: $TASK_ID"
+fi
+```
 
-## 🔧 Function Auto-Discovery
+### 3. Read Previous Work (Direct Command)
 
-### Extract Functions from Command Files
-
-````bash
-discover_agent_functions() {
-    echo "🔍 Discovering available agent functions..."
-
-    local functions_found=0
-
-    # Scan all command files for bash functions
-    for cmd_file in .claude/commands/*.md; do
-        if [ -f "$cmd_file" ]; then
-            local cmd_name=$(basename "$cmd_file" .md)
-            echo "📄 Scanning: $cmd_name"
-
-            # Extract function definitions
-            local funcs=$(sed -n '/```bash/,/```/p' "$cmd_file" | grep -E '^[a-zA-Z_][a-zA-Z0-9_]*\(\)' | cut -d'(' -f1)
-
-            if [ -n "$funcs" ]; then
-                echo "   Functions: $funcs"
-                functions_found=$((functions_found + 1))
-            fi
-        fi
+```bash
+# Read all previous agent outputs
+if [ -n "$TASK_ID" ] && [ -d "task-tracking/$TASK_ID" ]; then
+    for file in task-tracking/$TASK_ID/*.md; do
+        [ -f "$file" ] && echo "=== $(basename $file) ===" && cat "$file"
     done
+fi
+```
 
-    echo "✅ Discovered $functions_found command files with functions"
-}
-````
+### 4. Complete Task (Direct Command)
 
-## 📱 Agent Integration Pattern
+```bash
+# Mark task complete (for final agent only)
+if [ -n "$TASK_ID" ] && [ -f "task-tracking/registry.md" ]; then
+    DATE=$(date '+%Y-%m-%d')
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | ✅ Complete | \2 | \3 | \4 | \5 | \6 | $DATE |/" task-tracking/registry.md
+    echo "✅ Completed: $TASK_ID"
+fi
+```
 
-### Standard Agent Header
+## 📋 AGENT TEMPLATE
 
-Every agent should include this at the start:
+Sub-agents should use this template at the start:
 
-`````markdown
-## 🚀 Agent Initialization
+```bash
+#!/bin/bash
 
-**MANDATORY FIRST STEP**: Bootstrap agent environment
+# 1. IDENTIFY MYSELF
+AGENT_NAME="backend-developer"
+echo "🤖 Agent: $AGENT_NAME starting..."
 
-````bash
-# Source the agent bootstrap system
-if [ -f ".claude/commands/agent-bootstrap.md" ]; then
-    # Extract and execute bootstrap sequence
-    sed -n '/# ===== AGENT BOOTSTRAP SEQUENCE =====/,/# ===== END BOOTSTRAP SEQUENCE =====/p' .claude/commands/agent-bootstrap.md | \
-        sed -n '/```bash/,/```/p' | sed '1d;$d' | bash
+# 2. CHECK MODE
+if [ -d "task-tracking" ] && [ -n "$TASK_ID" ]; then
+    MODE="ORCHESTRATION"
+    echo "📋 Task ID: $TASK_ID"
 else
-    echo "⚠️  Warning: Agent bootstrap not found - running in limited mode"
-fi
-````
-`````
-
-`````
-
-### Agent-Specific Function Usage
-
-After bootstrap, agents can use functions directly:
-
-```bash
-# Update task status (if in orchestration mode)
-if [ "$OPERATION_MODE" = "ORCHESTRATION" ] && [ -n "$TASK_ID" ]; then
-    update_task_status "$TASK_ID" "🔄 Active (Backend Development)"
+    MODE="STANDALONE"
+    echo "📋 No task tracking"
 fi
 
-# Get registry statistics
-if type get_registry_stats >/dev/null 2>&1; then
-    get_registry_stats
+# 3. UPDATE STATUS (if orchestration)
+if [ "$MODE" = "ORCHESTRATION" ] && [ -f "task-tracking/registry.md" ]; then
+    LC_ALL=C sed -i "s/| $TASK_ID | \([^|]*\) | [^|]* |/| $TASK_ID | \1 | 🔄 Active ($AGENT_NAME) |/" task-tracking/registry.md
 fi
 
-# Complete task (for final agent)
-if [ "$FINAL_AGENT" = "true" ] && [ -n "$TASK_ID" ]; then
-    complete_task "$TASK_ID"
+# 4. LOAD CONTEXT (if orchestration)
+if [ "$MODE" = "ORCHESTRATION" ] && [ -d "task-tracking/$TASK_ID" ]; then
+    echo "📖 Loading previous work..."
+    cat task-tracking/$TASK_ID/*.md 2>/dev/null
 fi
+
+# 5. DO YOUR WORK
+echo "💼 Starting $AGENT_NAME tasks..."
 ```
 
-## 🎯 Command File Structure
+## ⚠️ IMPORTANT NOTES
 
-### Standard Command File Format
+1. **NO FUNCTION EXTRACTION**: Sub-agents should NOT try to extract functions from markdown
+2. **DIRECT COMMANDS ONLY**: Use the exact bash commands shown above
+3. **LC_ALL=C**: Always use `LC_ALL=C` with sed to avoid encoding issues
+4. **CHECK FILES EXIST**: Always check if files exist before trying to read/modify them
+5. **SIMPLE IS BETTER**: Complex extraction mechanisms fail in sub-agent contexts
 
-All command files in `.claude/commands/` should follow this format:
+## 🔧 TROUBLESHOOTING
 
-````markdown
-# Command Name
-
-## Description
-
-Brief description of what this command provides
-
-## Functions
-
-### function_name()
+If registry updates fail:
 
 ```bash
-function_name() {
-    # Function implementation
-    echo "Function executed"
-}
-```
-`````
+# Debug: Check registry format
+head -2 task-tracking/registry.md
 
-### another_function()
+# Debug: Check task exists
+grep "$TASK_ID" task-tracking/registry.md
 
-```bash
-another_function() {
-    # Another function
-    local param="$1"
-    echo "Parameter: $param"
-}
+# Debug: Test sed command
+echo "| TASK_2025_001 | Test | 🔄 Active | Feature |" | LC_ALL=C sed "s/| TASK_2025_001 | \([^|]*\) | [^|]* |/| TASK_2025_001 | \1 | ✅ Complete |/"
 ```
 
-## Usage Examples
+## 📚 REFERENCE
 
-### Example 1
+Registry format:
 
-```bash
-function_name
+```
+| Task ID | Title | Status | Type | Priority | Effort | Created | Updated | Completed | Branch |
 ```
 
-### Example 2
+Status values:
 
-```bash
-another_function "test"
-```
+- `⏳ Pending` - Not started
+- `🔄 Active` - In progress
+- `✅ Complete` - Finished
+- `❌ Failed` - Blocked/failed
 
-````
-
-## 🔄 Execution Flow
-
-### Agent Startup Sequence
-
-1. **Bootstrap Execution**: Agent runs bootstrap sequence
-2. **Function Loading**: All command utilities are sourced
-3. **Mode Detection**: Orchestration vs Standalone mode determined
-4. **Context Loading**: Task context loaded if available
-5. **Registry Update**: Initial status update if in orchestration mode
-6. **Agent Work**: Agent performs its specific tasks
-7. **Status Updates**: Registry updated throughout work
-8. **Completion**: Final status update if last agent
-
-### Error Handling
-
-```bash
-# Safe function execution with error handling
-safe_execute() {
-    local func_name="$1"
-    shift
-
-    if type "$func_name" >/dev/null 2>&1; then
-        "$func_name" "$@"
-    else
-        echo "⚠️  Function '$func_name' not available"
-    fi
-}
-
-# Usage
-safe_execute update_task_status "$TASK_ID" "🔄 Active"
-````
-
-## 🎯 Benefits
-
-### 1. Automatic Discovery
-
-- Agents automatically discover all available functions
-- No manual configuration required
-- New commands are immediately available to all agents
-
-### 2. Mode-Aware Operation
-
-- Agents automatically detect orchestration vs standalone mode
-- Registry updates only happen when appropriate
-- Graceful degradation when functions aren't available
-
-### 3. Consistent Interface
-
-- All agents use the same bootstrap mechanism
-- Consistent function naming and usage patterns
-- Standardized error handling
-
-### 4. Extensible Design
-
-- Easy to add new command files
-- Functions are automatically discovered and loaded
-- No agent updates required for new commands
-
-This system ensures agents can discover, load, and execute all available task management functions automatically!
+This guide provides DIRECT, SIMPLE commands that sub-agents can execute without complex extraction mechanisms.

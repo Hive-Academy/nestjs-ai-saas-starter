@@ -106,7 +106,7 @@ export class WorkflowCheckpointService {
         },
       };
 
-      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      await this.checkpointAdapter.saveCheckpoint(threadId, checkpointData, checkpointData.metadata);
       this.logger.debug(
         `Saved ${type} checkpoint for execution ${executionId} with thread ID ${threadId}`
       );
@@ -132,7 +132,7 @@ export class WorkflowCheckpointService {
 
     try {
       const threadId = this.generateThreadId(executionId);
-      const checkpoint = await this.checkpointAdapter.getCheckpoint(threadId);
+      const checkpoint = await this.checkpointAdapter.loadCheckpoint(threadId);
 
       if (!checkpoint) {
         this.logger.warn(`No checkpoint found for execution ${executionId}`);
@@ -142,7 +142,7 @@ export class WorkflowCheckpointService {
       this.logger.log(
         `Resuming workflow execution ${executionId} from checkpoint`
       );
-      return checkpoint.checkpoint.data;
+      return checkpoint.channel_values;
     } catch (error) {
       this.logger.error(
         `Failed to resume workflow for execution ${executionId}:`,
@@ -175,7 +175,7 @@ export class WorkflowCheckpointService {
       });
 
       return {
-        checkpoints: result || [],
+        checkpoints: [...(result || [])],
         total: result?.length || 0,
         hasMore: (result?.length || 0) >= limit,
       };
@@ -211,8 +211,8 @@ export class WorkflowCheckpointService {
       );
 
       // Sort by creation time (most recent first)
-      return (checkpoints || []).sort(
-        (a, b) =>
+      return [...(checkpoints || [])].sort(
+        (a: WorkflowCheckpointRecord, b: WorkflowCheckpointRecord) =>
           new Date(b.metadata.created_at).getTime() -
           new Date(a.metadata.created_at).getTime()
       );
@@ -254,8 +254,8 @@ export class WorkflowCheckpointService {
       }
 
       // Sort by creation time (most recent first)
-      const sortedCheckpoints = checkpoints.sort(
-        (a, b) =>
+      const sortedCheckpoints = [...checkpoints].sort(
+        (a: WorkflowCheckpointRecord, b: WorkflowCheckpointRecord) =>
           new Date(b.metadata.created_at).getTime() -
           new Date(a.metadata.created_at).getTime()
       );

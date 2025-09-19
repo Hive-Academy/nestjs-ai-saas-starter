@@ -368,6 +368,8 @@ export interface MonitoringConfig {
   readonly healthChecks: HealthCheckConfig;
   readonly performance: PerformanceConfig;
   readonly dashboard: DashboardConfig;
+  // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+  readonly memoryAdapter?: unknown;
 }
 
 export interface MetricsConfig {

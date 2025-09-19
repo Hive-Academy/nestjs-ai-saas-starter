@@ -6,7 +6,10 @@ import {
 } from './interfaces/platform.interface';
 import { PlatformClientService } from './services/platform-client.service';
 import { WebhookService } from './services/webhook.service';
-import { PLATFORM_MODULE_OPTIONS, DEFAULT_PLATFORM_OPTIONS } from './constants/platform.constants';
+import {
+  PLATFORM_MODULE_OPTIONS,
+  DEFAULT_PLATFORM_OPTIONS,
+} from './constants/platform.constants';
 
 /**
  * LangGraph Platform module for NestJS
@@ -22,6 +25,15 @@ export class PlatformModule {
         provide: PLATFORM_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
+      // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+      {
+        provide: 'IMemoryAdapter',
+        useFactory: (options: PlatformModuleOptions) => {
+          // Optional memory adapter for platform memory integration
+          return options.memoryAdapter || null;
+        },
+        inject: [PLATFORM_MODULE_OPTIONS],
+      },
       PlatformClientService,
       WebhookService,
     ];
@@ -30,10 +42,7 @@ export class PlatformModule {
       module: PlatformModule,
       imports: [HttpModule],
       providers,
-      exports: [
-        WebhookService,
-        PlatformClientService,
-      ],
+      exports: [WebhookService, PlatformClientService],
       global: false,
     };
   }
@@ -46,7 +55,16 @@ export class PlatformModule {
           const moduleOptions = await options.useFactory!(...args);
           return this.mergeWithDefaults(moduleOptions);
         },
-        inject: options.inject || [] as any[],
+        inject: options.inject || ([] as any[]),
+      },
+      // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+      {
+        provide: 'IMemoryAdapter',
+        useFactory: async (options: PlatformModuleOptions) => {
+          // Optional memory adapter for platform memory integration
+          return options.memoryAdapter || null;
+        },
+        inject: [PLATFORM_MODULE_OPTIONS],
       },
       PlatformClientService,
       WebhookService,
@@ -56,15 +74,14 @@ export class PlatformModule {
       module: PlatformModule,
       imports: [HttpModule],
       providers,
-      exports: [
-        WebhookService,
-        PlatformClientService,
-      ],
+      exports: [WebhookService, PlatformClientService],
       global: false,
     };
   }
 
-  private static mergeWithDefaults(options: PlatformModuleOptions): PlatformModuleOptions {
+  private static mergeWithDefaults(
+    options: PlatformModuleOptions
+  ): PlatformModuleOptions {
     return {
       baseUrl: options.baseUrl || DEFAULT_PLATFORM_OPTIONS.baseUrl,
       apiKey: options.apiKey,

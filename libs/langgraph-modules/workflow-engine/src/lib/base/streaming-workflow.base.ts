@@ -262,6 +262,7 @@ export abstract class StreamingWorkflowBase<
       };
     } = {}
   ): AsyncGenerator<StreamUpdate> {
+    const { generateExecutionId } = await import('@hive-academy/langgraph-core');
     const executionId = options.executionId || generateExecutionId();
 
     if (!this.streamService) {
