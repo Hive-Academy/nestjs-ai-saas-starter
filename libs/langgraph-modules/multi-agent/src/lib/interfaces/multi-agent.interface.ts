@@ -4,6 +4,7 @@ import type { RunnableConfig } from '@langchain/core/runnables';
 import type {
   ICheckpointAdapter,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -34,6 +35,16 @@ export interface AgentState {
    * Task description passed between agents
    */
   task?: string;
+
+  /**
+   * Thread ID for memory context and checkpointing
+   */
+  threadId?: string;
+
+  /**
+   * User ID for memory context and personalization
+   */
+  userId?: string;
 
   /**
    * Agent metadata and context
@@ -839,6 +850,11 @@ export interface MultiAgentModuleOptions {
    * If provided, enables real-time streaming features
    */
   streamingAdapter?: IStreamingService;
+  /**
+   * Optional memory adapter for dependency injection
+   * If provided, enables memory superpowers for agents
+   */
+  memoryAdapter?: IMemoryAdapter;
 }
 
 /**

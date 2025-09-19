@@ -42,7 +42,29 @@ Phase 8: Future Work Consolidation (project-manager)
 
 ### Task Setup & Git Operations
 
-```bash
+````bash
+# ===== ORCHESTRATOR BOOTSTRAP =====
+echo "🚀 Initializing Orchestrator Environment..."
+
+# Source task management functions
+if [ -f ".claude/commands/registry-utils.md" ]; then
+    # Extract and source registry utilities
+    sed -n '/```bash/,/```/p' .claude/commands/registry-utils.md | sed '1d;$d' > /tmp/registry-utils.sh
+    source /tmp/registry-utils.sh 2>/dev/null
+    echo "✅ Task management functions loaded"
+else
+    echo "⚠️  Warning: Registry utilities not found"
+fi
+
+# Source agent bootstrap functions
+if [ -f ".claude/commands/agent-bootstrap.md" ]; then
+    # Extract bootstrap functions for agent execution
+    sed -n '/```bash/,/```/p' .claude/commands/agent-bootstrap.md | sed '1d;$d' > /tmp/agent-bootstrap.sh
+    echo "✅ Agent bootstrap functions available"
+else
+    echo "⚠️  Warning: Agent bootstrap not found"
+fi
+
 # Task initiation
 USER_REQUEST="$ARGUMENTS"
 echo "=== ORCHESTRATOR INITIATED ==="
@@ -60,18 +82,50 @@ if ! git diff --quiet; then
     git commit -m "chore: checkpoint before starting new task"
 fi
 
-# Generate TASK_ID
-DOMAIN=$(determine_domain "$USER_REQUEST")  # CMD, INT, FE, BE, DOC, BUG
-TASK_NUMBER=$(get_next_task_number "$DOMAIN")
-TASK_ID="TASK_${DOMAIN}_${TASK_NUMBER}"
+# Generate sequential TASK_ID
+YEAR=$(date +%Y)
+REGISTRY_FILE="task-tracking/registry.md"
 
-# Create feature branch (trunk-based development)
-BRANCH_NAME="feature/${TASK_ID}-$(echo "$USER_REQUEST" | sed 's/[^a-zA-Z0-9]/-/g' | cut -c1-30)"
+# Ensure registry exists
+if [ ! -f "$REGISTRY_FILE" ]; then
+    mkdir -p task-tracking
+    echo "# Task Registry" > "$REGISTRY_FILE"
+    echo "" >> "$REGISTRY_FILE"
+    echo "| Task ID      | Title                    | Status      | Type    | Priority | Effort | Created    | Updated    | Completed  | Branch      |" >> "$REGISTRY_FILE"
+    echo "| ------------ | ------------------------ | ----------- | ------- | -------- | ------ | ---------- | ---------- | ---------- | ----------- |" >> "$REGISTRY_FILE"
+fi
+
+# Find highest task number for current year
+HIGHEST_NUM=$(grep "TASK_${YEAR}_" "$REGISTRY_FILE" | \
+    sed -n "s/.*TASK_${YEAR}_\([0-9]\{3\}\).*/\1/p" | \
+    sort -n | tail -1)
+
+# Calculate next sequential number
+if [ -z "$HIGHEST_NUM" ]; then
+    NEXT_NUM="001"
+else
+    NEXT_NUM=$(printf "%03d" $((10#$HIGHEST_NUM + 1)))
+fi
+
+TASK_ID="TASK_${YEAR}_${NEXT_NUM}"
+
+# Determine task type and priority
+TASK_TYPE="Feature"  # Default, can be enhanced based on request analysis
+TASK_PRIORITY="P2-Medium"  # Default, can be enhanced based on urgency
+TASK_EFFORT="M"  # Default, can be enhanced based on complexity
+
+# Create registry entry FIRST (registry-first approach)
+CREATED_DATE=$(date '+%Y-%m-%d')
+CREATED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+BRANCH_NUMBER="${TASK_ID##*_}"  # Extract number part for short branch name
+BRANCH_NAME="feature/${BRANCH_NUMBER}"
+
+# Add to registry with complete information
+echo "| $TASK_ID | $USER_REQUEST | 🔄 Active | $TASK_TYPE | $TASK_PRIORITY | $TASK_EFFORT | $CREATED_DATE | $CREATED_TIME | | $BRANCH_NAME |" >> "$REGISTRY_FILE"
+
+# Create feature branch
 git checkout -b "$BRANCH_NAME"
 git push -u origin "$BRANCH_NAME"
-
-# Update task registry
-echo "| $TASK_ID | $USER_REQUEST | 🔄 In Progress | orchestrator | $(date '+%Y-%m-%d') | $(date '+%Y-%m-%d %H:%M:%S') |" >> task-tracking/registry.md
 
 # Create task folder structure
 mkdir -p "task-tracking/$TASK_ID"
@@ -83,7 +137,7 @@ git commit -m "feat($TASK_ID): initialize task - $USER_REQUEST"
 git push origin "$BRANCH_NAME"
 
 echo "✅ Task $TASK_ID initialized on branch $BRANCH_NAME"
-```
+````
 
 ---
 
@@ -99,6 +153,12 @@ Use the Task tool to invoke the project-manager agent:
 
 You are the project-manager for $TASK_ID.
 
+## ENVIRONMENT VARIABLES
+
+- TASK_ID=$TASK_ID
+- OPERATION_MODE=ORCHESTRATION
+- USER_REQUEST="$USER_REQUEST"
+
 ## ORIGINAL USER REQUEST
 
 The user has requested: "$USER_REQUEST"
@@ -107,10 +167,19 @@ The user has requested: "$USER_REQUEST"
 
 Create comprehensive task-description.md that directly addresses the user's request above.
 
+## AVAILABLE FUNCTIONS
+
+After bootstrap, you have access to:
+
+- update_task_status(task_id, status)
+- complete_task(task_id)
+- get_registry_stats()
+
 ## DELIVERABLES
 
 1. Save analysis to: task-tracking/$TASK_ID/task-description.md
 2. Return delegation to next agent (researcher-expert OR software-architect)
+3. Update registry status using: update_task_status "$TASK_ID" "🔄 Active (Requirements)"
 
 Focus ONLY on what the user actually asked for. No scope expansion.
 
@@ -304,6 +373,13 @@ Use the Task tool to invoke the $DEVELOPER_TYPE agent:
 
 You are the $DEVELOPER_TYPE for $TASK_ID.
 
+## ENVIRONMENT VARIABLES
+
+- TASK_ID=$TASK_ID
+- OPERATION_MODE=ORCHESTRATION
+- USER_REQUEST="$USER_REQUEST"
+- DEVELOPER_TYPE=$DEVELOPER_TYPE
+
 ## ORIGINAL USER REQUEST
 
 $USER_REQUEST
@@ -314,14 +390,23 @@ $USER_REQUEST
 
 ## YOUR SINGLE RESPONSIBILITY
 
-Implement the user's requested functionality following the architecture plan.
+Implement the user's requested functionality with real business logic, actual database connections, and complete working features following the architecture plan.
+
+## AVAILABLE FUNCTIONS
+
+After bootstrap, you have access to:
+
+- update_task_status(task_id, status)
+- complete_task(task_id)
+- get_registry_stats()
 
 ## DELIVERABLES
 
-1. Implement code changes
-2. Update task-tracking/$TASK_ID/progress.md with completion status
+1. Implement code changes with REAL business logic (no stubs/simulations)
+2. Update registry: update_task_status "$TASK_ID" "🔄 Active ($DEVELOPER_TYPE Complete)"
+3. Update task-tracking/$TASK_ID/progress.md with completion status
 
-Focus on user's functional requirements only.
+Focus on implementing user's functional requirements with real, production-ready code that actually works.
 
 ### 4.2 Validate Development Work
 
@@ -383,7 +468,7 @@ Create tests that verify user's requirements are met.
 1. Implement tests for user's functionality
 2. Save test report to: task-tracking/$TASK_ID/test-report.md
 
-Test what the user actually needs, not theoretical edge cases.
+Implement what the user actually needs with real functionality, not theoretical edge cases or stubs.
 
 ### 5.2 Validate Testing Work
 
@@ -511,8 +596,12 @@ echo "✅ Pull Request created: $PR_URL"
 ### 7.2 Update Registry
 
 ```bash
-# Update task status in registry
-sed -i "s/| $TASK_ID | .* | 🔄 In Progress |/| $TASK_ID | $USER_REQUEST | ✅ Completed | orchestrator |/g" task-tracking/registry.md
+# Update task status to completed in registry
+COMPLETED_DATE=$(date '+%Y-%m-%d')
+COMPLETED_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Update registry with completion information
+sed -i "s/| $TASK_ID | \(.*\) | 🔄 Active | \(.*\) | \(.*\) | \(.*\) | \(.*\) | .* | .* | \(.*\) |/| $TASK_ID | \1 | ✅ Complete | \2 | \3 | \4 | \5 | $COMPLETED_TIME | $COMPLETED_DATE | \6 |/" "$REGISTRY_FILE"
 
 # Final commit
 git add task-tracking/registry.md

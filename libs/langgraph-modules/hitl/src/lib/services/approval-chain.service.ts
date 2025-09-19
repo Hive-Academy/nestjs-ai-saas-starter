@@ -1,3 +1,4 @@
+import { generateId } from '@hive-academy/langgraph-core';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -260,7 +261,7 @@ export class ApprovalChainService {
       return this.createAutoApprovedRequest(executionId, chain, context);
     }
 
-    const requestId = this.generateRequestId();
+    const requestId = generateId('approval');
     const request: ApprovalRequest = {
       id: requestId,
       executionId,
@@ -538,7 +539,7 @@ export class ApprovalChainService {
     chain: ApprovalLevel[],
     context: Record<string, unknown>
   ): ApprovalRequest {
-    const requestId = this.generateRequestId();
+    const requestId = generateId('approval');
     return {
       id: requestId,
       executionId,
@@ -576,13 +577,5 @@ export class ApprovalChainService {
         request.status === 'pending' &&
         request.currentLevel.approvers.some((a) => a.id === approverId)
     );
-  }
-
-  /**
-   * Generate request ID
-   */
-  private generateRequestId(): string {
-    const { generateId } = require('@hive-academy/langgraph-core');
-    return generateId('approval');
   }
 }

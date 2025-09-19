@@ -16,6 +16,10 @@ import { WorkflowCheckpointService } from './services/workflow-checkpoint.servic
 import { WorkflowManagerService } from './services/workflow-manager.service';
 import { WorkflowInstanceService } from './services/workflow-instance.service';
 import { WorkflowCanonicalIdService } from './services/workflow-canonical-id.service';
+// Specialized workflow services (extracted from god services)
+import { WorkflowStreamingService } from './services/workflow-streaming.service';
+import { WorkflowMetricsService } from './services/workflow-metrics.service';
+import { AgentStatusTrackingService } from './services/agent-status-tracking.service';
 // Tool services
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
@@ -50,7 +54,7 @@ export class MultiAgentModule {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
-      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
+      // Note: ICheckpointAdapter, IStreamingService, and IMemoryAdapter should be provided by the app module via adapter pattern
       // No local providers needed as they will be injected globally
       // Core services
       AgentRegistryService,
@@ -72,6 +76,10 @@ export class MultiAgentModule {
       WorkflowCanonicalIdService,
       WorkflowExecutionService,
       WorkflowManagerService,
+      // Specialized workflow services (SRP-compliant)
+      WorkflowStreamingService,
+      WorkflowMetricsService,
+      AgentStatusTrackingService,
       // Tool service aliases
       {
         provide: TOOL_REGISTRY,
@@ -152,6 +160,10 @@ export class MultiAgentModule {
       WorkflowCanonicalIdService,
       WorkflowExecutionService,
       WorkflowManagerService,
+      // Specialized workflow services (SRP-compliant)
+      WorkflowStreamingService,
+      WorkflowMetricsService,
+      AgentStatusTrackingService,
       // Tool service aliases
       {
         provide: TOOL_REGISTRY,

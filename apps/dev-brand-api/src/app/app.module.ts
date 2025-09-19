@@ -53,6 +53,7 @@ import { AppStreamingManager } from './services/app-streaming-manager.service';
 import {
   ICheckpointAdapter,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 @Module({
@@ -137,19 +138,21 @@ import {
       inject: ['IStreamingService', 'ICheckpointAdapter'],
     }),
 
-    // Multi-agent module WITH STREAMING - adapter injection
+    // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
     MultiAgentModule.forRootAsync({
       useFactory: async (
         streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
       ) => {
         return {
           ...getMultiAgentConfig(),
           streamingAdapter,
           checkpointAdapter,
+          memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter'],
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
     // Functional API with checkpoint AND STREAMING - adapter injection

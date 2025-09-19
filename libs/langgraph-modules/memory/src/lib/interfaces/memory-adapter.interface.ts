@@ -1,130 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { AgentState, AgentMemoryContext } from './agent-memory.interface';
-import { Store } from './langgraph-store.interface';
+import {
+  IMemoryAdapter,
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions as CoreMemorySearchOptions,
+} from '@hive-academy/langgraph-core';
+import { MemoryEntry } from './memory.interface';
+import { Store as MemoryStore } from './langgraph-store.interface';
 
 /**
- * Memory adapter interface for automagical injection
- * Follows the same pattern as ICheckpointAdapter and IStreamingService
- *
- * This abstract class serves as both a contract definition and NestJS injection token
- * for memory operations, enabling the automagical dependency injection pattern
- * that makes memory superpowers available across all modules without consumer changes.
+ * Extended memory adapter for memory module
+ * Extends the core IMemoryAdapter with memory-specific functionality
  */
 @Injectable()
-export abstract class IMemoryAdapter {
+export abstract class ExtendedMemoryAdapter extends IMemoryAdapter {
   /**
-   * Get memory context for agent execution
-   * Retrieves relevant memories from thread, user, and agent scopes
-   *
-   * @param state Current agent state containing context information
-   * @returns Promise of comprehensive memory context for agent execution
+   * Enhanced agent context method with full MemoryEntry types
    */
-  abstract getAgentContext(state: AgentState): Promise<AgentMemoryContext>;
+  abstract override getAgentContext(
+    state: AgentState
+  ): Promise<AgentMemoryContext>;
 
   /**
-   * Store agent execution result
-   * Preserves agent decision patterns and execution context for learning
-   *
-   * @param state Initial agent state
-   * @param result Agent execution result
-   * @param agentId Unique identifier for the executing agent
+   * Enhanced user patterns method with full UserMemoryPatterns type
    */
-  abstract storeAgentExecution(
-    state: AgentState,
-    result: Partial<AgentState>,
-    agentId: string
-  ): Promise<void>;
+  abstract override getUserPatterns(
+    userId: string,
+    limitDays?: number
+  ): Promise<UserMemoryPatterns>;
 
   /**
-   * Store conversation turn (human + AI messages)
-   * Maintains conversational context for future reference and learning
-   *
-   * @param threadId Thread identifier for conversation grouping
-   * @param humanMessage Human message content
-   * @param aiMessage AI response content
-   * @param metadata Additional context metadata
+   * Enhanced store method with MemoryStore support
    */
-  abstract storeConversationTurn(
-    threadId: string,
-    humanMessage: string,
-    aiMessage: string,
-    metadata?: Record<string, unknown>
-  ): Promise<void>;
+  abstract override getStore(collection?: string): MemoryStore;
 
   /**
-   * LangGraph Store interface for cross-thread memory
-   * Provides namespace-based hierarchical storage compatible with LangGraph 2025
-   *
-   * @param collection Optional collection name for scoping
-   * @returns Store instance for LangGraph operations
+   * Enhanced search with local MemorySearchOptions
    */
-  abstract getStore(collection?: string): Store;
-
-  /**
-   * Search memories with query
-   * Flexible search across different memory scopes and namespaces
-   *
-   * @param options Search parameters including query, filters, and limits
-   * @returns Promise of matching memory entries
-   */
-  abstract search(options: {
-    query: string;
-    threadId?: string;
-    userId?: string;
-    agentId?: string;
-    limit?: number;
-    namespace?: string[];
-    minRelevance?: number;
-  }): Promise<any[]>;
-
-  /**
-   * Store memory entry
-   * Basic memory storage for thread-scoped content
-   *
-   * @param threadId Thread identifier for memory grouping
-   * @param content Memory content to store
-   * @param metadata Additional metadata for memory classification
-   * @returns Promise of stored memory identifier
-   */
-  abstract store(
-    threadId: string,
-    content: string,
-    metadata?: Record<string, unknown>
-  ): Promise<any>;
-
-  /**
-   * Health check for memory system
-   * Validates adapter availability and functionality
-   *
-   * @returns Promise indicating adapter health status
-   */
-  abstract isHealthy(): Promise<boolean>;
-
-  /**
-   * Batch store operation for performance optimization
-   * Store multiple memory entries in a single operation
-   *
-   * @param threadId Thread identifier for memory grouping
-   * @param entries Array of memory entries to store
-   * @returns Promise of stored memory identifiers
-   */
-  abstract storeBatch(
-    threadId: string,
-    entries: Array<{
-      content: string;
-      metadata?: Record<string, unknown>;
-    }>
-  ): Promise<string[]>;
-
-  /**
-   * Get user memory patterns
-   * Extract behavioral patterns from user's historical interactions
-   *
-   * @param userId User identifier
-   * @param limitDays Optional limit for pattern analysis timeframe
-   * @returns Promise of user memory patterns
-   */
-  abstract getUserPatterns(userId: string, limitDays?: number): Promise<any>;
+  abstract searchMemories(
+    options: CoreMemorySearchOptions
+  ): Promise<MemoryEntry[]>;
 }
 
 /**
@@ -291,7 +208,7 @@ export class MemoryManagerAdapter extends IMemoryAdapter {
     threadId: string,
     content: string,
     metadata?: Record<string, unknown>
-  ): Promise<any> {
+  ): Promise<string> {
     return this.memoryService.store(threadId, content, metadata);
   }
 
@@ -368,6 +285,29 @@ export class MemoryManagerAdapter extends IMemoryAdapter {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Enhanced search with MemorySearchOptions support
+   * Provides type-safe search functionality for memory-specific implementations
+   */
+  async searchMemories(
+    options: CoreMemorySearchOptions
+  ): Promise<MemoryEntry[]> {
+    // Convert CoreMemorySearchOptions to the basic search format
+    const basicOptions = {
+      query: options.query,
+      threadId: options.threadId,
+      userId: options.userId,
+      agentId: options.agentId,
+      limit: options.limit,
+      namespace: options.namespace,
+      minRelevance: options.minRelevance,
+    };
+
+    // Use the existing search method and cast results to MemoryEntry[]
+    const results = await this.search(basicOptions);
+    return results as MemoryEntry[];
   }
 
   // Private helper methods for pattern analysis

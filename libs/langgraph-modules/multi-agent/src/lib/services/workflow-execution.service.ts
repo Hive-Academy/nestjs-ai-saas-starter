@@ -20,6 +20,21 @@ import { WorkflowCanonicalIdService } from './workflow-canonical-id.service';
 export class WorkflowExecutionService {
   private readonly logger = new Logger(WorkflowExecutionService.name);
 
+  // Execution time tracking
+  private readonly executionTimes = new Map<string, number[]>();
+  private readonly workflowMetrics = new Map<
+    string,
+    {
+      totalExecutions: number;
+      totalTime: number;
+      averageTime: number;
+      minTime: number;
+      maxTime: number;
+      successCount: number;
+      failureCount: number;
+    }
+  >();
+
   constructor(
     private readonly workflowRegistry: WorkflowRegistryService,
     private readonly eventEmitter: EventEmitter2,
@@ -161,6 +176,13 @@ export class WorkflowExecutionService {
         },
       };
 
+      // Track execution time metrics
+      this.recordExecutionTime(
+        instance.workflowId,
+        endTime - startTime,
+        result.success
+      );
+
       // Update instance status with result
       const finalStatus = result.success
         ? WorkflowStatus.COMPLETED
@@ -189,6 +211,9 @@ export class WorkflowExecutionService {
           instanceId: instance.instanceId,
         },
       };
+
+      // Track execution time metrics for failed execution
+      this.recordExecutionTime(instance.workflowId, endTime - startTime, false);
 
       // Update instance status with error result
       this.instanceService.updateInstanceStatus(
@@ -281,6 +306,56 @@ export class WorkflowExecutionService {
   }
 
   /**
+   * Record execution time for a workflow
+   */
+  private recordExecutionTime(
+    workflowId: string,
+    executionTime: number,
+    success: boolean
+  ): void {
+    // Record individual execution time
+    const times = this.executionTimes.get(workflowId) || [];
+    times.push(executionTime);
+
+    // Keep only last 1000 execution times to prevent memory leaks
+    if (times.length > 1000) {
+      times.splice(0, times.length - 1000);
+    }
+    this.executionTimes.set(workflowId, times);
+
+    // Update workflow metrics
+    const metrics = this.workflowMetrics.get(workflowId) || {
+      totalExecutions: 0,
+      totalTime: 0,
+      averageTime: 0,
+      minTime: Infinity,
+      maxTime: 0,
+      successCount: 0,
+      failureCount: 0,
+    };
+
+    metrics.totalExecutions++;
+    metrics.totalTime += executionTime;
+    metrics.averageTime = metrics.totalTime / metrics.totalExecutions;
+    metrics.minTime = Math.min(metrics.minTime, executionTime);
+    metrics.maxTime = Math.max(metrics.maxTime, executionTime);
+
+    if (success) {
+      metrics.successCount++;
+    } else {
+      metrics.failureCount++;
+    }
+
+    this.workflowMetrics.set(workflowId, metrics);
+
+    this.logger.debug(
+      `Recorded execution time for workflow ${workflowId}: ${executionTime}ms (avg: ${metrics.averageTime.toFixed(
+        2
+      )}ms)`
+    );
+  }
+
+  /**
    * Get execution statistics
    */
   getExecutionStats(): {
@@ -290,6 +365,19 @@ export class WorkflowExecutionService {
     averageExecutionTime: number;
   } {
     const stats = this.instanceService.getStatistics();
+
+    // Calculate overall average execution time across all workflows
+    let totalTime = 0;
+    let totalExecutions = 0;
+
+    for (const [, metrics] of this.workflowMetrics) {
+      totalTime += metrics.totalTime;
+      totalExecutions += metrics.totalExecutions;
+    }
+
+    const averageExecutionTime =
+      totalExecutions > 0 ? totalTime / totalExecutions : 0;
+
     return {
       activeInstances: stats.activeCount,
       totalExecutions: stats.totalExecutions,
@@ -297,7 +385,7 @@ export class WorkflowExecutionService {
         stats.totalExecutions > 0
           ? stats.byStatus[WorkflowStatus.COMPLETED] / stats.totalExecutions
           : 0,
-      averageExecutionTime: 0, // TODO: Add average execution time to instance service
+      averageExecutionTime,
     };
   }
 
@@ -436,11 +524,152 @@ export class WorkflowExecutionService {
   }
 
   /**
+   * Get detailed execution metrics for a specific workflow
+   */
+  getWorkflowExecutionMetrics(workflowId: string): {
+    totalExecutions: number;
+    averageTime: number;
+    minTime: number;
+    maxTime: number;
+    successRate: number;
+    recentExecutionTimes: number[];
+    percentiles: {
+      p50: number;
+      p90: number;
+      p95: number;
+      p99: number;
+    };
+  } | null {
+    const metrics = this.workflowMetrics.get(workflowId);
+    const times = this.executionTimes.get(workflowId);
+
+    if (!metrics || !times || times.length === 0) {
+      return null;
+    }
+
+    // Calculate percentiles
+    const sortedTimes = [...times].sort((a, b) => a - b);
+    const percentiles = {
+      p50: this.calculatePercentile(sortedTimes, 50),
+      p90: this.calculatePercentile(sortedTimes, 90),
+      p95: this.calculatePercentile(sortedTimes, 95),
+      p99: this.calculatePercentile(sortedTimes, 99),
+    };
+
+    return {
+      totalExecutions: metrics.totalExecutions,
+      averageTime: metrics.averageTime,
+      minTime: metrics.minTime === Infinity ? 0 : metrics.minTime,
+      maxTime: metrics.maxTime,
+      successRate:
+        metrics.totalExecutions > 0
+          ? metrics.successCount / metrics.totalExecutions
+          : 0,
+      recentExecutionTimes: times.slice(-10), // Last 10 execution times
+      percentiles,
+    };
+  }
+
+  /**
+   * Calculate percentile from sorted array
+   */
+  private calculatePercentile(
+    sortedArray: number[],
+    percentile: number
+  ): number {
+    if (sortedArray.length === 0) return 0;
+
+    const index = (percentile / 100) * (sortedArray.length - 1);
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+
+    if (lower === upper) {
+      return sortedArray[lower];
+    }
+
+    const weight = index - lower;
+    return sortedArray[lower] * (1 - weight) + sortedArray[upper] * weight;
+  }
+
+  /**
+   * Get system-wide execution metrics
+   */
+  getSystemExecutionMetrics(): {
+    totalWorkflows: number;
+    totalExecutions: number;
+    averageExecutionTime: number;
+    totalSuccessfulExecutions: number;
+    totalFailedExecutions: number;
+    systemSuccessRate: number;
+    workflowMetrics: Record<
+      string,
+      {
+        executions: number;
+        averageTime: number;
+        successRate: number;
+      }
+    >;
+  } {
+    let totalExecutions = 0;
+    let totalTime = 0;
+    let totalSuccessful = 0;
+    let totalFailed = 0;
+
+    const workflowMetrics: Record<
+      string,
+      {
+        executions: number;
+        averageTime: number;
+        successRate: number;
+      }
+    > = {};
+
+    for (const [workflowId, metrics] of this.workflowMetrics) {
+      totalExecutions += metrics.totalExecutions;
+      totalTime += metrics.totalTime;
+      totalSuccessful += metrics.successCount;
+      totalFailed += metrics.failureCount;
+
+      workflowMetrics[workflowId] = {
+        executions: metrics.totalExecutions,
+        averageTime: metrics.averageTime,
+        successRate:
+          metrics.totalExecutions > 0
+            ? metrics.successCount / metrics.totalExecutions
+            : 0,
+      };
+    }
+
+    return {
+      totalWorkflows: this.workflowMetrics.size,
+      totalExecutions,
+      averageExecutionTime:
+        totalExecutions > 0 ? totalTime / totalExecutions : 0,
+      totalSuccessfulExecutions: totalSuccessful,
+      totalFailedExecutions: totalFailed,
+      systemSuccessRate:
+        totalExecutions > 0 ? totalSuccessful / totalExecutions : 0,
+      workflowMetrics,
+    };
+  }
+
+  /**
+   * Clear execution metrics for a specific workflow
+   */
+  clearWorkflowMetrics(workflowId: string): void {
+    this.executionTimes.delete(workflowId);
+    this.workflowMetrics.delete(workflowId);
+    this.logger.debug(`Cleared execution metrics for workflow ${workflowId}`);
+  }
+
+  /**
    * Clear all instances (useful for testing)
    */
   clear(): void {
     this.instanceService.clear();
-    this.logger.debug('All workflow instances cleared');
+    this.executionTimes.clear();
+    this.workflowMetrics.clear();
+    this.logger.debug('All workflow instances and execution metrics cleared');
   }
 
   // ==================== CANONICAL ID GENERATION (NODE_ID_STANDARD) ====================

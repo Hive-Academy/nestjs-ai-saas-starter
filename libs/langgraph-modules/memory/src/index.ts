@@ -43,14 +43,27 @@ export { IGraphService } from './lib/interfaces/graph-service.interface';
 
 // NEW: Memory Adapter Interfaces for Agentic Superpowers
 export {
-  IMemoryAdapter,
+  ExtendedMemoryAdapter,
   MemoryManagerAdapter,
   MemoryAdapterFactory,
 } from './lib/interfaces/memory-adapter.interface';
-export type { MemorySearchOptions as MemoryAdapterSearchOptions } from './lib/interfaces/memory-adapter.interface';
+
+// Re-export core memory adapter interfaces for convenience
+export { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-core';
+
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions as CoreMemorySearchOptions,
+} from '@hive-academy/langgraph-core';
 
 // NEW: LangGraph Store Interface (LangGraph 2025 Compliance)
-export type { Item, Store } from './lib/interfaces/langgraph-store.interface';
+export type {
+  Item,
+  Store as MemoryStore,
+} from './lib/interfaces/langgraph-store.interface';
 export {
   ChromaLangGraphStore,
   LangGraphStoreFactory,
@@ -58,11 +71,8 @@ export {
   isValidItem,
 } from './lib/interfaces/langgraph-store.interface';
 
-// NEW: Agent State Integration Interfaces
+// NEW: Agent State Integration Interfaces (local extensions)
 export type {
-  AgentState,
-  AgentMemoryContext,
-  UserMemoryPatterns,
   IAgentMemoryService,
   AgentMemory,
   AgentMemoryConfig,

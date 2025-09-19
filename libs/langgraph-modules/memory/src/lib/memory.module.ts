@@ -9,10 +9,7 @@ import { MemoryGraphService } from './services/memory-graph.service';
 // Import interfaces only - adapters moved to application layer
 import { IVectorService } from './interfaces/vector-service.interface';
 import { IGraphService } from './interfaces/graph-service.interface';
-import {
-  IMemoryAdapter,
-  MemoryManagerAdapter,
-} from './interfaces/memory-adapter.interface';
+import { MemoryManagerAdapter } from './interfaces/memory-adapter.interface';
 
 import type {
   MemoryModuleOptions,

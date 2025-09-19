@@ -1,16 +1,50 @@
 # Task Registry
 
-## Active Tasks
+## Sequential Task Management System
 
-| Task ID      | Task Name                                                          | Status         | Dependencies | Start Date | Priority    | Effort | Research Report |
-| ------------ | ------------------------------------------------------------------ | -------------- | ------------ | ---------- | ----------- | ------ | --------------- |
-| TASK_CMD_010 | Implement AGENTIC RAG MEMORY SUPERPOWERS from implementation guide | 🔄 In Progress | orchestrator | 2025-09-18 | P0-Critical | XL     | Completed ✅    |
+**Format**: `TASK_YYYY_NNN` (e.g., TASK_2025_001, TASK_2025_002)
 
-## Future Architectural Improvements (Identified During TASK_CMD_010)
+| Task ID       | Title                                                              | Status    | Type    | Priority    | Effort | Created    | Updated    | Completed | Branch      |
+| ------------- | ------------------------------------------------------------------ | --------- | ------- | ----------- | ------ | ---------- | ---------- | --------- | ----------- |
+| TASK_2025_001 | Implement AGENTIC RAG MEMORY SUPERPOWERS from implementation guide | 🔄 Active | Feature | P0-Critical | XL     | 2025-01-18 | 2025-01-18 |           | feature/001 |
 
-| Task ID      | Task Name                                                  | Status     | Priority | Effort | Identified During |
-| ------------ | ---------------------------------------------------------- | ---------- | -------- | ------ | ----------------- |
-| TASK_ARC_001 | Implement Memory Performance Monitoring Dashboard          | ⏳ Pending | P1-High  | M      | TASK_CMD_010      |
-| TASK_ARC_002 | Add Vector Search Index Optimization for Large Memory Sets | ⏳ Pending | P2-Med   | L      | TASK_CMD_010      |
-| TASK_ARC_003 | Implement Memory Retention and Cleanup Automation          | ⏳ Pending | P2-Med   | M      | TASK_CMD_010      |
-| TASK_ARC_004 | Add Cross-Agent Memory Sharing Patterns                    | ⏳ Pending | P3-Low   | S      | TASK_CMD_010      |
+## Future Architectural Improvements
+
+| Task ID       | Title                                                             | Status     | Type     | Priority    | Effort | Identified During | Created    |
+| ------------- | ----------------------------------------------------------------- | ---------- | -------- | ----------- | ------ | ----------------- | ---------- |
+| TASK_2025_002 | Implement Memory Performance Monitoring Dashboard                 | ⏳ Pending | Feature  | P1-High     | M      | TASK_2025_001     | 2025-01-18 |
+| TASK_2025_003 | Add Vector Search Index Optimization for Large Memory Sets        | ⏳ Pending | Feature  | P2-Medium   | L      | TASK_2025_001     | 2025-01-18 |
+| TASK_2025_004 | Implement Memory Retention and Cleanup Automation                 | ⏳ Pending | Feature  | P2-Medium   | M      | TASK_2025_001     | 2025-01-18 |
+| TASK_2025_005 | Add Cross-Agent Memory Sharing Patterns                           | ⏳ Pending | Feature  | P3-Low      | S      | TASK_2025_001     | 2025-01-18 |
+| TASK_2025_006 | Systematic HITL Architecture Refactoring - Critical Anti-Patterns | 🔄 Active  | Refactor | P0-Critical | XL     | Analysis Report   | 2025-01-19 |
+
+## Registry Statistics
+
+- **Total Tasks**: 6
+- **Active**: 2
+- **Pending**: 4
+- **Complete**: 0
+
+## Task Status Legend
+
+- 🔄 **Active**: Currently being worked on
+- ⏳ **Pending**: Scheduled for future work
+- ✅ **Complete**: Finished and merged
+- ❌ **Cancelled**: Cancelled or deprecated
+- 🚧 **Blocked**: Waiting for dependencies
+
+## Priority Levels
+
+- **P0-Critical**: Urgent, blocking other work
+- **P1-High**: Important, should be next
+- **P2-Medium**: Normal priority
+- **P3-Low**: Nice to have, when time allows
+
+## Effort Estimates
+
+- **XS**: < 2 hours
+- **S**: 2-8 hours (half day to 1 day)
+- **M**: 1-3 days
+- **L**: 1-2 weeks
+- **XL**: 2+ weeks
+  | TASK_2025_001 | | 🔄 Active | Feature | P2-Medium | M | 2025-09-19 | 2025-09-19 03:18:43 | | feature/001 |

@@ -44,7 +44,6 @@ export {
   validateMetadataSchema,
   type MetadataSchema,
 } from './lib/utils/metadata.utils';
-// Error utils now consolidated in @hive-academy/shared
 
 // Errors
 export * from './lib/errors/chromadb.errors';

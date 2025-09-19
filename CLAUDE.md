@@ -26,22 +26,23 @@ This NestJS AI SaaS Starter is a sophisticated monorepo designed for building en
 
 ### 🔴 TOP PRIORITY RULES (VIOLATIONS = IMMEDIATE FAILURE)
 
-1. **ALWAYS USE AGENTS**: Every user request MUST go through appropriate agent - NO EXCEPTIONS unless user explicitly confirms "quick fix"
-2. **NEVER CREATE TYPES**: Search codebase for shared types and core interfaces FIRST, document search in progress.md, extend don't duplicate
-3. **NO BACKWARD COMPATIBILITY**: Never work on or target backward compatibility unless verbally asked for by the user
-4. **NO RE-EXPORTS**: Never re-export a type or service from a library inside another library
+1. **IMPLEMENT REAL BUSINESS LOGIC**: Always implement actual, production-ready business logic that uses the full stack (ChromaDB + Neo4j + LangGraph). NO stubs, simulations, or placeholder implementations
+2. **WIRE EVERYTHING TOGETHER**: Connect all the infrastructure components with real data flows, actual embeddings, real graph relationships, and functional AI workflows
+3. **NEVER CREATE TYPES**: Search codebase for shared types and core interfaces FIRST, document search in progress.md, extend don't duplicate
+4. **NO BACKWARD COMPATIBILITY**: Never work on or target backward compatibility unless verbally asked for by the user
+5. **NO RE-EXPORTS**: Never re-export a type or service from a library inside another library
 
 ### ENFORCEMENT RULES
 
 1. **Type Safety**: NO 'any' types - will fail code review
 2. **Import Aliases**: Always use @hive-academy/\* paths
-3. **File Limits**: Services < 200 lines, modules < 500 lines
-4. **Agent Protocol**: Never skip main thread orchestration
+3. **Real Implementations**: NO stubs, mocks, or simulations in production code - implement actual functionality
+4. **Full Stack Integration**: Every feature must use the complete stack (vector + graph + AI workflows)
 5. **Progress Updates**: Per ⏰ Progress Rule (30 minutes)
 6. **Quality Gates**: Must pass 10/10 (see full checklist)
 7. **Branch Strategy**: Sequential by default (see Git Branch Operations)
 8. **Error Context**: Always include relevant debugging info
-9. **Testing**: 80% coverage minimum
+9. **Testing**: 80% coverage minimum with real integrations
 10. **Type Discovery**: Per Type Search Protocol
 
 ## Technical Architecture
@@ -324,41 +325,42 @@ For detailed implementation guidance, always refer to the specific library CLAUD
 
 # Important Instructions
 
-**Do what has been asked; nothing more, nothing less.**
+**Implement complete, production-ready solutions that utilize the full AI stack.**
 
-- **NEVER create files unless they're absolutely necessary for achieving your goal**
-- **ALWAYS prefer editing an existing file to creating a new one**
-- **NEVER proactively create documentation files (\*.md) or README files unless explicitly requested**
+- **CREATE whatever files are needed to implement real functionality**
+- **BUILD complete integrations between ChromaDB, Neo4j, and LangGraph**
+- **IMPLEMENT actual business logic, not stubs or simulations**
+- **WIRE all components together with real data flows**
 - **Only use emojis if the user explicitly requests it**
 
 For library-specific work, always consult the relevant CLAUDE.md file first to understand the domain-specific patterns and best practices.
 
 ### 🔴 FUNDAMENTAL OPERATING PRINCIPLE
 
-**EVERY user request MUST be processed through the appropriate agent system. Direct implementation without agents is FORBIDDEN unless the user explicitly requests "no agents, quick fix only".**
+**IMPLEMENT REAL SOLUTIONS DIRECTLY when you have all the infrastructure and context needed. Use agents only when you need specialized expertise or complex planning. Prioritize getting functional code running over process overhead.**
 
 ### ✨ NEW: ORCHESTRATOR COMMAND
 
-**All agent workflows are now managed through the `/orchestrate` slash command:**
+**All agent workflows are now managed through the `/orchestrate` slash command with sequential task IDs:**
 
 ```bash
-# Start new task
+# Start new task (generates TASK_2025_XXX automatically)
 /orchestrate implement user authentication system
 
-# Continue existing task
-/orchestrate TASK_CMD_009
+# Continue existing task (uses new sequential IDs)
+/orchestrate TASK_2025_001
 
-# Continue last incomplete
+# Continue last incomplete task
 /orchestrate continue
 ```
 
 **Benefits:**
 
-- Prevents memory leaks (sequential execution only)
-- Enforces quality gates at each step
-- Automates agent transitions
-- Tracks progress automatically
-- Validates all outputs
+- **Sequential Task IDs**: Predictable TASK_YYYY_NNN format (TASK_2025_001, TASK_2025_002, etc.)
+- **Registry-First**: Single source of truth for all task information
+- **Automatic Discovery**: Agents auto-load task management functions
+- **Real Implementation**: Zero tolerance for stubs or placeholders
+- **Live Progress**: Registry updates throughout agent workflow
 
 ### 🔴 TYPE CREATION PRINCIPLE
 
@@ -368,22 +370,24 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
 
 ## 🚨 CRITICAL WORKFLOW PROTOCOL
 
-### ⚡ RULE #1: ALWAYS USE AGENTS
+### ⚡ RULE #1: IMPLEMENT REAL FUNCTIONALITY
 
-**MANDATORY**: For EVERY user request, no matter how simple, ALWAYS utilize the appropriate agent. Direct implementation without agents is FORBIDDEN except for explicit "quick fixes" confirmed by user.
+**MANDATORY**: For EVERY user request, implement actual, working business logic that uses the full stack. NO stubs, simulations, or placeholders. Create real integrations between ChromaDB, Neo4j, and LangGraph with actual data flows.
 
 ### MANDATORY: Before ANY User Request
 
 1. **Check Task Registry** (ALWAYS FIRST)
 
    ```bash
-   # TASK REGISTRY CHECK PROTOCOL
-   registry=$(cat task-tracking/registry.md)
+   # TASK REGISTRY CHECK PROTOCOL - Uses new sequential IDs
+   registry=$(cat task-tracking/registry.md 2>/dev/null || echo "No registry found")
    branch=$(git branch --show-current)
    status=$(git status --short)
 
-   # TASK ANALYSIS
-   incomplete_tasks=$(grep -E "🔄|⚠️|❌" registry.md)
+   # TASK ANALYSIS - Look for new format
+   active_tasks=$(grep "🔄 Active" task-tracking/registry.md 2>/dev/null | wc -l)
+   pending_tasks=$(grep "⏳ Pending" task-tracking/registry.md 2>/dev/null | wc -l)
+   complete_tasks=$(grep "✅ Complete" task-tracking/registry.md 2>/dev/null | wc -l)
    ```
 
 2. **Present Context & Options**
@@ -392,22 +396,24 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
    📊 Current Context:
 
    - Branch: [current_branch]
-   - Active Tasks: [count of incomplete]
+   - Active Tasks: [active_tasks]
+   - Pending Tasks: [pending_tasks]
+   - Complete Tasks: [complete_tasks]
    - Uncommitted: [X files]
 
    Options:
 
-   1. Continue task → /orchestrate TASK\_[ID]
-   2. Start new task → /orchestrate [description]
+   1. Continue task → /orchestrate TASK_2025_XXX
+   2. Start new task → /orchestrate [description] (auto-generates TASK_2025_XXX)
    3. Quick fix (no tracking) → Requires explicit confirmation
 
-   Use the orchestrator command for all agent workflows.
+   **Registry-First**: All tasks use sequential IDs and track progress automatically.
    ```
 
 3. **Route Decision**
-   - Any Agent Task → Use `/orchestrate` command
-   - New Task → `/orchestrate [task description]`
-   - Continue Task → `/orchestrate TASK_[ID]`
+   - Any Agent Task → Use `/orchestrate` command (generates/continues TASK_2025_XXX)
+   - New Task → `/orchestrate [task description]` (auto-generates next sequential ID)
+   - Continue Task → `/orchestrate TASK_2025_XXX` (uses exact sequential ID)
    - Quick Fix → **ONLY IF** user explicitly confirms no agent needed
 
 ---

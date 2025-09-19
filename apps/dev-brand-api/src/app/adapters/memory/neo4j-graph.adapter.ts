@@ -17,6 +17,7 @@ import {
   GraphOperationError,
   InvalidInputError,
   TransactionError,
+  AgentState,
 } from '@hive-academy/langgraph-memory';
 
 /**
@@ -743,6 +744,223 @@ export class Neo4jGraphAdapter extends IGraphService {
       this.logger.warn('Failed to get relationship counts by type', error);
       return {};
     }
+  }
+
+  // NEW: Agent-aware memory relationship creation
+  async createAgentMemoryRelationship(
+    fromMemoryId: string,
+    toMemoryId: string,
+    agentState: AgentState,
+    relationshipType: string
+  ): Promise<string> {
+    const relationshipStrength = this.calculateRelationshipStrength(
+      agentState,
+      relationshipType
+    );
+
+    const query = `
+      MATCH (from:Memory {id: $fromMemoryId})
+      MATCH (to:Memory {id: $toMemoryId})
+      CREATE (from)-[r:${relationshipType} {
+        strength: $strength,
+        agentId: $agentId,
+        threadId: $threadId,
+        userId: $userId,
+        createdAt: datetime()
+      }]->(to)
+      RETURN id(r) as relationshipId
+    `;
+
+    const result = await this.neo4jService.run(query, {
+      fromMemoryId,
+      toMemoryId,
+      strength: relationshipStrength,
+      agentId: agentState.current,
+      threadId: agentState.threadId,
+      userId: agentState.userId,
+    });
+
+    return (result.records[0]?.get as any)('relationshipId')?.toString() || '';
+  }
+
+  // NEW: Agent-scoped memory traversal
+  async findRelatedMemoriesForAgent(
+    startMemoryId: string,
+    agentState: AgentState,
+    maxDepth = 2
+  ): Promise<any> {
+    const query = `
+      MATCH path = (start:Memory {id: $startMemoryId})-[*1..${maxDepth}]-(related:Memory)
+      WHERE ALL(r IN relationships(path) WHERE
+        r.userId = $userId AND (r.threadId = $threadId OR r.agentId = $agentId)
+      )
+      RETURN related,
+             [r IN relationships(path) | r.strength] as strengths,
+             length(path) as depth
+      ORDER BY
+        length(path) ASC,
+        reduce(sum = 0, s IN [r IN relationships(path) | r.strength] | sum + s) DESC
+      LIMIT 20
+    `;
+
+    const result = await this.neo4jService.run(query, {
+      startMemoryId,
+      userId: agentState.userId,
+      threadId: agentState.threadId,
+      agentId: agentState.current,
+    });
+
+    return {
+      relatedMemories: result.records.map((record) => ({
+        memory: ((record.get as any)('related') as any).properties,
+        relationshipStrengths: (record.get as any)('strengths') as any,
+        depth: ((record.get as any)('depth') as any).toNumber(),
+      })),
+      totalFound: result.records.length,
+    };
+  }
+
+  // NEW: Sequential conversation relationship creation
+  async createConversationFlow(
+    threadId: string,
+    conversationMemories: string[]
+  ): Promise<void> {
+    for (let i = 0; i < conversationMemories.length - 1; i++) {
+      const query = `
+        MATCH (from:Memory {id: $fromId})
+        MATCH (to:Memory {id: $toId})
+        CREATE (from)-[r:FOLLOWS_IN_CONVERSATION {
+          threadId: $threadId,
+          sequence: $sequence,
+          createdAt: datetime()
+        }]->(to)
+      `;
+
+      await this.neo4jService.run(query, {
+        fromId: conversationMemories[i],
+        toId: conversationMemories[i + 1],
+        threadId,
+        sequence: i + 1,
+      });
+    }
+  }
+
+  // NEW: User behavior pattern analysis
+  async analyzeConversationPatterns(
+    userId: string,
+    limitDays = 30
+  ): Promise<any> {
+    const query = `
+      MATCH (m:Memory)-[r:FOLLOWS_IN_CONVERSATION]->(next:Memory)
+      WHERE r.createdAt > datetime() - duration({days: $limitDays})
+        AND m.userId = $userId
+      WITH m.threadId as threadId, count(*) as messageCount
+      RETURN
+        threadId,
+        messageCount,
+        avg(messageCount) as avgMessagesPerThread,
+        collect(threadId)[0..5] as recentThreads
+      ORDER BY messageCount DESC
+      LIMIT 10
+    `;
+
+    const result = await this.neo4jService.run(query, { userId, limitDays });
+
+    return {
+      conversationPatterns: result.records.map((record) => ({
+        threadId: (record.get as any)('threadId'),
+        messageCount: ((record.get as any)('messageCount') as any).toNumber(),
+        avgMessagesPerThread: (
+          (record.get as any)('avgMessagesPerThread') as any
+        ).toNumber(),
+      })),
+      recentThreads: (result.records[0]?.get as any)('recentThreads') || [],
+    };
+  }
+
+  // NEW: Semantic relationship building
+  async buildSemanticRelationships(
+    memoryIds: string[],
+    similarityThreshold = 0.7
+  ): Promise<number> {
+    let relationshipsCreated = 0;
+
+    // This would typically use vector similarity from ChromaDB
+    // For now, implement basic text similarity
+    for (let i = 0; i < memoryIds.length; i++) {
+      for (let j = i + 1; j < memoryIds.length; j++) {
+        const similarity = await this.calculateTextSimilarity(
+          memoryIds[i],
+          memoryIds[j]
+        );
+
+        if (similarity >= similarityThreshold) {
+          const query = `
+            MATCH (m1:Memory {id: $id1})
+            MATCH (m2:Memory {id: $id2})
+            CREATE (m1)-[r:SEMANTICALLY_SIMILAR {
+              similarity: $similarity,
+              createdAt: datetime()
+            }]->(m2)
+          `;
+
+          await this.neo4jService.run(query, {
+            id1: memoryIds[i],
+            id2: memoryIds[j],
+            similarity,
+          });
+
+          relationshipsCreated++;
+        }
+      }
+    }
+
+    return relationshipsCreated;
+  }
+
+  // Private helper methods
+  private calculateRelationshipStrength(
+    agentState: AgentState,
+    relationshipType: string
+  ): number {
+    let strength = 0.5; // Base strength
+
+    if (relationshipType === 'FOLLOWS_IN_CONVERSATION') strength += 0.3;
+    if (relationshipType === 'SEMANTICALLY_SIMILAR') strength += 0.2;
+    if (agentState.messages && agentState.messages.length > 0) strength += 0.1;
+
+    return Math.min(strength, 1.0);
+  }
+
+  private async calculateTextSimilarity(
+    memoryId1: string,
+    memoryId2: string
+  ): Promise<number> {
+    // Simplified similarity calculation
+    // In production, this would use proper embedding similarity
+    const query = `
+      MATCH (m1:Memory {id: $id1})
+      MATCH (m2:Memory {id: $id2})
+      RETURN m1.content as content1, m2.content as content2
+    `;
+
+    const result = await this.neo4jService.run(query, {
+      id1: memoryId1,
+      id2: memoryId2,
+    });
+
+    if (result.records.length === 0) return 0;
+
+    const content1 = (result.records[0] as any).get('content1') || '';
+    const content2 = (result.records[0] as any).get('content2') || '';
+
+    // Basic word overlap similarity
+    const words1 = new Set(content1.toLowerCase().split(/\s+/));
+    const words2 = new Set(content2.toLowerCase().split(/\s+/));
+    const intersection = new Set([...words1].filter((x) => words2.has(x)));
+    const union = new Set([...words1, ...words2]);
+
+    return intersection.size / union.size;
   }
 
   // The base class already provides validation methods as protected

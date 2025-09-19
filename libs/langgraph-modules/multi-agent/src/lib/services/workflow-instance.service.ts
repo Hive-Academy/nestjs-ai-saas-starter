@@ -12,6 +12,8 @@ import { WorkflowRegistryService } from './workflow-registry.service';
 import { AgentRegistryService } from './agent-registry.service';
 import { MultiAgentCoordinatorService } from './multi-agent-coordinator.service';
 import { WorkflowCheckpointService } from './workflow-checkpoint.service';
+import { ToolRegistryService } from '../tools/tool-registry.service';
+import type { DynamicStructuredTool } from '@langchain/core/tools';
 
 /**
  * Workflow Instance Service
@@ -28,9 +30,15 @@ export class WorkflowInstanceService {
     private readonly agentRegistry: AgentRegistryService,
     private readonly coordinator: MultiAgentCoordinatorService,
     private readonly checkpointService: WorkflowCheckpointService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private readonly toolRegistry: ToolRegistryService
   ) {
     this.logger.debug('WorkflowInstanceService initialized');
+
+    const toolStats = this.toolRegistry.getAllTools();
+    this.logger.debug(
+      `Tool registry available with ${toolStats.length} registered tools`
+    );
   }
 
   /**
@@ -93,11 +101,20 @@ export class WorkflowInstanceService {
       }
     }
 
+    // Get available tools for the workflow
+    const workflowTools = this.getToolsForWorkflow(workflow, agents);
+
+    this.logger.debug(
+      `Workflow ${workflowId} has access to ${
+        workflowTools.length
+      } tools: ${workflowTools.map((t) => t.name).join(', ')}`
+    );
+
     // Create execution context
     const context: WorkflowContext = {
       instanceId,
       agents,
-      tools: [], // TODO: Get tools from registry when available
+      tools: workflowTools,
       config,
       logger: this.logger,
       coordinator: this.coordinator,
@@ -255,6 +272,218 @@ export class WorkflowInstanceService {
   }
 
   /**
+   * Get tools available for a specific workflow
+   */
+  private getToolsForWorkflow(
+    workflow: any,
+    agents: Map<string, AgentDefinition>
+  ): DynamicStructuredTool[] {
+    const availableTools = new Set<DynamicStructuredTool>();
+
+    // Get all universal tools (available to all agents)
+    const universalTools = this.toolRegistry.getToolsForAgent('*');
+    universalTools.forEach((tool) => availableTools.add(tool));
+
+    // Get tools for each required agent
+    if (workflow.requiredAgents) {
+      for (const agentId of workflow.requiredAgents) {
+        const agentTools = this.toolRegistry.getToolsForAgent(agentId);
+        agentTools.forEach((tool) => availableTools.add(tool));
+      }
+    }
+
+    // Get tools for all registered agents if no specific agents required
+    if (!workflow.requiredAgents || workflow.requiredAgents.length === 0) {
+      for (const [agentId] of agents) {
+        const agentTools = this.toolRegistry.getToolsForAgent(agentId);
+        agentTools.forEach((tool) => availableTools.add(tool));
+      }
+    }
+
+    const toolsArray = Array.from(availableTools);
+
+    this.logger.debug(
+      `Found ${toolsArray.length} tools for workflow ${
+        workflow.id
+      }: ${toolsArray.map((t) => t.name).join(', ')}`
+    );
+
+    return toolsArray;
+  }
+
+  /**
+   * Get tools for a specific agent in a workflow instance
+   */
+  getToolsForAgent(
+    instanceId: string,
+    agentId: string
+  ): DynamicStructuredTool[] {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      this.logger.warn(
+        `Instance ${instanceId} not found for agent tools lookup`
+      );
+      return [];
+    }
+
+    // Get agent-specific tools from the tool registry
+    const agentTools = this.toolRegistry.getToolsForAgent(agentId);
+
+    // Also include universal tools
+    const universalTools = this.toolRegistry.getToolsForAgent('*');
+
+    // Combine and deduplicate
+    const allTools = new Set([...agentTools, ...universalTools]);
+
+    this.logger.debug(
+      `Agent ${agentId} in instance ${instanceId} has access to ${
+        allTools.size
+      } tools: ${Array.from(allTools)
+        .map((t) => t.name)
+        .join(', ')}`
+    );
+
+    return Array.from(allTools);
+  }
+
+  /**
+   * Get all available tools in the registry
+   */
+  getAllAvailableTools(): DynamicStructuredTool[] {
+    return this.toolRegistry.getAllTools();
+  }
+
+  /**
+   * Get tools by tags for a workflow instance
+   */
+  getToolsByTags(instanceId: string, tags: string[]): DynamicStructuredTool[] {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      this.logger.warn(
+        `Instance ${instanceId} not found for tools by tags lookup`
+      );
+      return [];
+    }
+
+    const toolsByTags = this.toolRegistry.getToolsByTags(tags);
+
+    this.logger.debug(
+      `Found ${toolsByTags.length} tools with tags [${tags.join(
+        ', '
+      )}] for instance ${instanceId}: ${toolsByTags
+        .map((t) => t.name)
+        .join(', ')}`
+    );
+
+    return toolsByTags;
+  }
+
+  /**
+   * Get tool metadata for a workflow instance
+   */
+  getToolMetadata(toolName: string): any {
+    return this.toolRegistry.getToolMetadata(toolName);
+  }
+
+  /**
+   * Register a dynamic tool for a running workflow instance
+   */
+  registerDynamicToolForInstance(
+    instanceId: string,
+    tool: DynamicStructuredTool,
+    metadata?: any
+  ): boolean {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      this.logger.warn(
+        `Instance ${instanceId} not found for dynamic tool registration`
+      );
+      return false;
+    }
+
+    try {
+      // Register the tool in the global registry
+      this.toolRegistry.registerDynamicTool(tool, metadata);
+
+      // Add the tool to the instance context
+      if (!instance.context.tools) {
+        instance.context.tools = [];
+      }
+
+      // Check if tool already exists in instance context
+      const existingTool = instance.context.tools.find(
+        (t) => (t as DynamicStructuredTool).name === tool.name
+      );
+
+      if (!existingTool) {
+        instance.context.tools.push(tool);
+
+        this.logger.log(
+          `Dynamically registered tool '${tool.name}' for workflow instance ${instanceId}`
+        );
+
+        // Emit event for tool registration
+        this.eventEmitter.emit('workflow.tool.registered', {
+          instanceId,
+          workflowId: instance.workflowId,
+          toolName: tool.name,
+          toolDescription: tool.description,
+        });
+
+        return true;
+      } else {
+        this.logger.debug(
+          `Tool '${tool.name}' already exists in instance ${instanceId} context`
+        );
+        return false;
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to register dynamic tool '${tool.name}' for instance ${instanceId}:`,
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Remove a tool from a workflow instance
+   */
+  removeToolFromInstance(instanceId: string, toolName: string): boolean {
+    const instance = this.getInstance(instanceId);
+    if (!instance) {
+      this.logger.warn(`Instance ${instanceId} not found for tool removal`);
+      return false;
+    }
+
+    if (!instance.context.tools) {
+      return false;
+    }
+
+    const initialLength = instance.context.tools.length;
+    instance.context.tools = instance.context.tools.filter(
+      (tool) => (tool as DynamicStructuredTool).name !== toolName
+    );
+
+    const removed = instance.context.tools.length < initialLength;
+
+    if (removed) {
+      this.logger.log(
+        `Removed tool '${toolName}' from workflow instance ${instanceId}`
+      );
+
+      // Emit event for tool removal
+      this.eventEmitter.emit('workflow.tool.removed', {
+        instanceId,
+        workflowId: instance.workflowId,
+        toolName,
+      });
+    }
+
+    return removed;
+  }
+
+  /**
    * Get instance statistics
    */
   getStatistics(): {
@@ -262,6 +491,8 @@ export class WorkflowInstanceService {
     totalExecutions: number;
     byStatus: Record<WorkflowStatus, number>;
     byWorkflow: Record<string, number>;
+    toolsAvailable: number;
+    toolsPerInstance: Record<string, number>;
   } {
     const allHistory = this.getAllHistory();
     const active = this.getActiveInstances();
@@ -276,12 +507,19 @@ export class WorkflowInstanceService {
     };
 
     const byWorkflow: Record<string, number> = {};
+    const toolsPerInstance: Record<string, number> = {};
 
     // Count active instances
     for (const instance of active) {
       byStatus[instance.status]++;
       byWorkflow[instance.workflowId] =
         (byWorkflow[instance.workflowId] || 0) + 1;
+
+      // Count tools per instance
+      const toolCount = instance.context.tools
+        ? instance.context.tools.length
+        : 0;
+      toolsPerInstance[instance.instanceId] = toolCount;
     }
 
     // Count historical instances
@@ -296,6 +534,8 @@ export class WorkflowInstanceService {
       totalExecutions: active.length + allHistory.length,
       byStatus,
       byWorkflow,
+      toolsAvailable: this.toolRegistry.getAllTools().length,
+      toolsPerInstance,
     };
   }
 }

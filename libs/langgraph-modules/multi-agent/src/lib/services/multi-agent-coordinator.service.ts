@@ -1,9 +1,16 @@
-import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import type {
   ICheckpointAdapter,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 import { NodeIdBuilder } from '@hive-academy/langgraph-core';
 import {
@@ -36,10 +43,24 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter,
     @Inject('IStreamingService')
-    private readonly streamingService: IStreamingService
+    private readonly streamingService: IStreamingService,
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
   ) {
     // Initialize streaming service for multi-agent operations
     this.initializeStreamingCapabilities();
+
+    // Log memory adapter availability for automagical memory superpowers
+    if (this.memoryAdapter) {
+      this.logger.log(
+        '🧠 Memory adapter available - automagical memory superpowers enabled'
+      );
+    } else {
+      this.logger.debug(
+        'Memory adapter not available - proceeding without memory features'
+      );
+    }
   }
 
   async onModuleInit(): Promise<void> {
@@ -144,20 +165,47 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     const executionId = this.generateExecutionId(networkId);
     const threadId = this.generateThreadId(networkId);
 
+    // 🧠 AUTOMAGICAL: Enhance initial state with memory context if available
+    let enhancedInput = input;
+    if (this.memoryAdapter) {
+      try {
+        enhancedInput = await this.enhanceInputWithMemoryContext(
+          input,
+          threadId,
+          networkId
+        );
+        this.logger.debug(
+          `Enhanced input with memory context for execution ${executionId}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to enhance input with memory context: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        // Continue with original input if memory enhancement fails
+      }
+    }
+
     // Prepare checkpoint-enabled config
     const checkpointConfig: RunnableConfig = {
-      ...input.config,
+      ...enhancedInput.config,
       configurable: {
-        ...input.config?.configurable,
+        ...enhancedInput.config?.configurable,
         thread_id: threadId,
       },
-      tags: [...(input.config?.tags || []), 'multi-agent', 'auto-checkpoint'],
+      tags: [
+        ...(enhancedInput.config?.tags || []),
+        'multi-agent',
+        'auto-checkpoint',
+      ],
       metadata: {
-        ...input.config?.metadata,
+        ...enhancedInput.config?.metadata,
         networkId,
         executionId,
         threadId,
         checkpointEnabled: !!this.checkpointAdapter,
+        memoryEnabled: !!this.memoryAdapter,
       },
     };
 
@@ -193,7 +241,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     }
 
     const result = await this.networkManager.executeWorkflow(networkId, {
-      ...input,
+      ...enhancedInput,
       config: checkpointConfig,
     });
 
@@ -214,6 +262,29 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       } catch (error) {
         this.logger.warn(`Failed to save completion checkpoint: ${error}`);
         // Don't fail the workflow if checkpoint fails
+      }
+    }
+
+    // 🧠 AUTOMAGICAL: Store conversation turn in memory if available
+    if (this.memoryAdapter && result) {
+      try {
+        await this.storeConversationInMemory(
+          enhancedInput,
+          result,
+          threadId,
+          executionId,
+          networkId
+        );
+        this.logger.debug(
+          `Stored conversation turn in memory for execution ${executionId}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to store conversation in memory: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        // Don't fail the workflow if memory storage fails
       }
     }
 
@@ -389,6 +460,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
 
   /**
    * Quick execute: Simple text-based workflow execution
+   * 🧠 AUTOMAGICAL: Memory context and storage handled automatically
    */
   async executeSimpleWorkflow(
     networkId: string,
@@ -398,6 +470,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       config?: RunnableConfig;
     }
   ): Promise<MultiAgentResult> {
+    // Use the full executeWorkflow method which includes automagical memory handling
     return this.executeWorkflow(networkId, {
       messages: [message],
       streamMode: options?.streamMode,
@@ -619,18 +692,18 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       }
 
       const timestamps = checkpoints
-        .map(([, , metadata]) => metadata?.timestamp)
+        .map((tuple) => tuple[2]?.timestamp)
         .filter(Boolean)
-        .map((ts) => new Date(ts as string))
-        .sort((a, b) => a.getTime() - b.getTime());
+        .map((ts: any) => new Date(ts as string))
+        .sort((a: Date, b: Date) => a.getTime() - b.getTime());
 
       return {
         totalCheckpoints: checkpoints.length,
         oldestCheckpoint: timestamps[0],
         newestCheckpoint: timestamps[timestamps.length - 1],
         totalSize: checkpoints.reduce(
-          (sum, [, , metadata]) =>
-            sum + (typeof metadata?.size === 'number' ? metadata.size : 0),
+          (sum: number, tuple) =>
+            sum + (typeof tuple[2]?.size === 'number' ? tuple[2].size : 0),
           0
         ),
       };
@@ -888,6 +961,153 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       executionTime: Date.now() - startTime,
       success: true,
     };
+  }
+
+  // ============================================================================
+  // AUTOMAGICAL MEMORY SUPERPOWERS (Private Helper Methods)
+  // ============================================================================
+
+  /**
+   * 🧠 AUTOMAGICAL: Enhance input with memory context
+   * Retrieves relevant memories and injects them into the agent state
+   */
+  private async enhanceInputWithMemoryContext(
+    input: {
+      messages: string[] | HumanMessage[];
+      config?: RunnableConfig;
+      streamMode?: 'values' | 'updates' | 'messages';
+    },
+    threadId: string,
+    networkId: string
+  ): Promise<typeof input> {
+    if (!this.memoryAdapter) {
+      return input;
+    }
+
+    try {
+      // Create a mock agent state for memory context retrieval
+      const mockState: AgentState = {
+        messages: input.messages.map((msg) =>
+          typeof msg === 'string' ? new HumanMessage(msg) : msg
+        ),
+        threadId,
+        userId: (input.config?.metadata?.userId as string) || 'unknown',
+        current: networkId,
+        metadata: {
+          ...input.config?.metadata,
+          networkId,
+        },
+      };
+
+      // Get memory context using the memory adapter
+      const memoryContext = await this.memoryAdapter.getAgentContext(mockState);
+
+      // Enhance the config metadata with memory context
+      const enhancedConfig: RunnableConfig = {
+        ...input.config,
+        metadata: {
+          ...input.config?.metadata,
+          // 🧠 MEMORY SUPERPOWERS: Auto-injected memory context
+          memoryContext: {
+            threadMemories: memoryContext.threadMemories,
+            userMemories: memoryContext.userMemories,
+            agentMemories: memoryContext.agentMemories,
+            userPatterns: memoryContext.userPatterns,
+            relevanceScore: memoryContext.relevanceScore,
+            contextWindow: memoryContext.contextWindow,
+          },
+          memoryEnabled: true,
+          memoryContextSize:
+            memoryContext.threadMemories.length +
+            memoryContext.userMemories.length +
+            memoryContext.agentMemories.length,
+        },
+      };
+
+      return {
+        ...input,
+        config: enhancedConfig,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Memory context enhancement failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return input; // Return original input if enhancement fails
+    }
+  }
+
+  /**
+   * 🧠 AUTOMAGICAL: Store conversation turn in memory
+   * Automatically captures and stores conversation for future context
+   */
+  private async storeConversationInMemory(
+    input: {
+      messages: string[] | HumanMessage[];
+      config?: RunnableConfig;
+    },
+    result: MultiAgentResult,
+    threadId: string,
+    executionId: string,
+    networkId: string
+  ): Promise<void> {
+    if (!this.memoryAdapter || !result.finalState?.messages) {
+      return;
+    }
+
+    try {
+      // Extract human message (input)
+      const humanMessage = input.messages[input.messages.length - 1];
+      const humanContent =
+        typeof humanMessage === 'string' ? humanMessage : humanMessage.content;
+
+      // Extract AI response (output)
+      const aiMessages = result.finalState.messages.filter(
+        (msg) => msg._getType() === 'ai'
+      );
+      const aiContent =
+        aiMessages.length > 0
+          ? aiMessages[aiMessages.length - 1].content
+          : 'No response generated';
+
+      // Store conversation turn using the memory adapter
+      await this.memoryAdapter.storeConversationTurn(
+        threadId,
+        String(humanContent),
+        String(aiContent),
+        {
+          // Rich metadata for memory superpowers
+          executionId,
+          networkId,
+          agentPath: result.executionPath,
+          executionTime: result.executionTime,
+          success: result.success,
+          timestamp: new Date().toISOString(),
+          type: 'multi_agent_conversation',
+          importance: result.success ? 0.8 : 0.5, // Higher importance for successful executions
+          userId: (input.config?.metadata?.userId as string) || 'unknown',
+
+          // Agent execution context
+          agentCount: this.getNetworkConfig(networkId)?.agents?.length || 0,
+          checkpointEnabled: !!this.checkpointAdapter,
+          streamingEnabled: !!this.streamingService,
+        }
+      );
+
+      this.logger.debug(
+        `🧠 Stored conversation turn in memory: ${executionId} (${String(
+          humanContent
+        ).slice(0, 50)}...)`
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to store conversation in memory: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      // Don't throw - memory failures shouldn't break workflow execution
+    }
   }
 
   // ============================================================================

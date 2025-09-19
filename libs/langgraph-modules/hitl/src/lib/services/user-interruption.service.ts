@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
 import { HitlNotificationService } from './hitl-notification.service';
 import {
   IUserInterruptionStorageService,
@@ -32,7 +32,6 @@ export class UserInterruptionService {
    * Request user interruption during workflow execution
    */
   async requestUserInterruption(context: InterruptionContext): Promise<string> {
-    const { generateId } = await import('@hive-academy/langgraph-core');
     const interruptionId = generateId('interrupt');
 
     // Create interruption record

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
 
 /**
  * Feedback type enumeration
@@ -127,7 +127,7 @@ export class FeedbackProcessorService {
     content: FeedbackEntry['content'],
     provider: FeedbackEntry['provider']
   ): Promise<FeedbackEntry> {
-    const feedbackId = this.generateFeedbackId();
+    const feedbackId = generateId('feedback');
 
     const entry: FeedbackEntry = {
       id: feedbackId,
@@ -452,13 +452,5 @@ export class FeedbackProcessorService {
     }
 
     return cleared;
-  }
-
-  /**
-   * Generate unique feedback ID
-   */
-  private generateFeedbackId(): string {
-    const { generateId } = require('@hive-academy/langgraph-core');
-    return generateId('feedback');
   }
 }
