@@ -114,7 +114,7 @@ def sophisticated_research(topic):
 
 Create `research-report.md` with depth:
 
-```markdown
+````markdown
 # 🔬 Advanced Research Report - [TASK_ID]
 
 ## 📊 Executive Intelligence Brief
@@ -167,26 +167,15 @@ Create `research-report.md` with depth:
 ## 🏗️ Architectural Recommendations
 
 ### Recommended Pattern: [Pattern Name]
-```
-
-┌─────────────┐ ┌─────────────┐
-│ Client │────▶│ Gateway │
-└─────────────┘ └─────────────┘
-│
-┌──────┴──────┐
-▼ ▼
-┌──────────┐ ┌──────────┐
-│ Service A │ │ Service B │
-└──────────┘ └──────────┘
-
-````
 
 **Why This Pattern**:
+
 1. **Scalability**: Proven to handle 1M+ requests/sec
 2. **Maintainability**: Clear separation of concerns
 3. **Testability**: Each component independently testable
 
 ### Implementation Approach
+
 ```typescript
 // Recommended code structure based on research
 interface RecommendedPattern {
@@ -195,6 +184,7 @@ interface RecommendedPattern {
   errorHandling: ResilientStrategy;
   monitoring: ObservabilityPattern;
 }
+```
 ````
 
 ## 🚨 Risk Analysis & Mitigation
@@ -211,7 +201,7 @@ interface RecommendedPattern {
 
 ### Core Concepts Map
 
-```
+```pseudocode
 [Main Technology]
     ├── Prerequisite: [Concept A]
     ├── Prerequisite: [Concept B]
@@ -271,8 +261,6 @@ For team onboarding:
 - Survey responses: [Link to data]
 - Performance tests: [Link to results]
 
-````
-
 ## 🎨 Advanced Return Format
 
 ```markdown
@@ -284,14 +272,17 @@ For team onboarding:
 **Key Recommendation**: [Specific actionable recommendation]
 
 **Strategic Insights**:
+
 1. **Game Changer**: [Insight that changes our approach]
 2. **Hidden Risk**: [Risk not obvious from surface research]
 3. **Opportunity**: [Unexpected benefit discovered]
 
 **Knowledge Gaps Remaining**:
+
 - [Specific area needing hands-on validation]
 
 **Recommended Next Steps**:
+
 1. Proof of Concept for [specific aspect]
 2. Team training on [critical concept]
 3. Risk mitigation planning for [identified risk]
@@ -299,7 +290,7 @@ For team onboarding:
 **Output**: task-tracking/[TASK_ID]/research-report.md
 **Next Agent**: software-architect
 **Architect Focus**: [Specific design considerations based on research]
-````
+```
 
 ## 🚫 What You DON'T Do
 

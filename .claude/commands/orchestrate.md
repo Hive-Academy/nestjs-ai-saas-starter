@@ -139,38 +139,43 @@ export REGISTRY_FILE="$REGISTRY_FILE"
 
 Use the Task tool to invoke the project-manager agent with this prompt:
 
-```
+```markdown
 You are the project-manager for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
+
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
 - Registry File: task-tracking/registry.md
 - Task Folder: task-tracking/$TASK_ID/
 
 ## REGISTRY MANAGEMENT
+
 Update your status in the registry file task-tracking/registry.md:
+
 - Find the line that starts with "| $TASK_ID |"
 - Change the status column (3rd column) to "🔄 Active (Project Manager)"
 - Preserve all other columns unchanged
 
 ## YOUR DELIVERABLES
+
 1. Create task-tracking/$TASK_ID/task-description.md with comprehensive requirements
 2. Update registry status to "🔄 Active (Requirements)"
 3. Return delegation to next agent (researcher-expert OR software-architect)
 
 ## INSTRUCTIONS
+
 - Focus ONLY on the user's actual request - no scope expansion
 - Create enterprise-grade requirements with acceptance criteria
 - Analyze risks and dependencies
 - Delegate to researcher-expert if technical research needed, otherwise software-architect
+```
 
 ### 1.2 Validate Project Manager Work
 
 Use the Task tool to invoke the business-analyst agent with this prompt:
 
-```
-
+```markdown
 You are the business-analyst for $TASK_ID - Project Manager Validation Phase.
 
 ## VALIDATION TARGET
@@ -196,6 +201,7 @@ You are the business-analyst for $TASK_ID - Project Manager Validation Phase.
 - REJECT ❌: Re-delegate to project-manager with corrections
 
 Return validation decision with specific evidence.
+```
 
 ### 1.3 Process Validation Result
 
@@ -215,35 +221,41 @@ Only invoke if project-manager delegation specified researcher-expert.
 
 Use the Task tool to invoke the researcher-expert agent with this prompt:
 
-```
+```markdown
 You are the researcher-expert for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
+
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
 - Requirements: task-tracking/$TASK_ID/task-description.md
 
 ## REGISTRY MANAGEMENT
+
 Update your status in the registry file task-tracking/registry.md:
+
 - Find the line that starts with "| $TASK_ID |"
 - Change the status column (3rd column) to "🔄 Active (Research)"
 - Preserve all other columns unchanged
 
 ## YOUR DELIVERABLES
+
 1. Create task-tracking/$TASK_ID/research-report.md with technical findings
 2. Return delegation to software-architect
 
 ## INSTRUCTIONS
+
 - Focus research on user's specific technical needs
 - Research implementation patterns, libraries, best practices
 - Identify potential technical challenges and solutions
+- Provide actionable recommendations for architecture phase
+```
 
 ### 2.2 Validate Researcher Work
 
 Use the Task tool to invoke the business-analyst agent with this prompt:
 
-```
-
+```markdown
 You are the business-analyst for $TASK_ID - Researcher Expert Validation Phase.
 
 ## VALIDATION TARGET
@@ -268,7 +280,6 @@ You are the business-analyst for $TASK_ID - Researcher Expert Validation Phase.
 - REJECT ❌: Re-delegate to researcher-expert
 
 Return validation decision with architect guidance.
-
 ```
 
 ---
@@ -279,8 +290,7 @@ Return validation decision with architect guidance.
 
 Use the Task tool to invoke the software-architect agent with this prompt:
 
-```
-
+```markdown
 You are the software-architect for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
@@ -301,8 +311,7 @@ Update your status in the registry file task-tracking/registry.md:
 ## YOUR DELIVERABLES
 
 1. Create task-tracking/$TASK_ID/implementation-plan.md with technical design
-2. Add future architectural improvements to task-tracking/registry.md
-3. Return delegation to appropriate developer (backend-developer/frontend-developer)
+2. Return delegation to appropriate developer (backend-developer/frontend-developer)
 
 ## INSTRUCTIONS
 
@@ -310,15 +319,16 @@ Update your status in the registry file task-tracking/registry.md:
 - Organize implementation by dependencies and complexity
 - Only move architectural improvements (not user functionality) to future tasks
 - Choose appropriate developer based on implementation needs
+- Provide clear, actionable architecture plan
+```
 
 ### 3.2 Validate Architect Work
 
-```bash
 Use the Task tool to invoke the business-analyst agent:
 
 **Prompt:**
-```
 
+```markdown
 You are the business-analyst for $TASK_ID - Software Architect Validation Phase.
 
 ## VALIDATION TARGET
@@ -338,6 +348,7 @@ You are the business-analyst for $TASK_ID - Software Architect Validation Phase.
 - REJECT ❌: Re-delegate to software-architect with value optimization corrections
 
 Return validation decision with developer assignment.
+```
 
 ---
 
@@ -347,41 +358,46 @@ Return validation decision with developer assignment.
 
 Determine developer type from architect delegation, then use the Task tool to invoke the appropriate agent:
 
-````
+```markdown
 You are the [backend-developer|frontend-developer] for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
+
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
 - Implementation Plan: task-tracking/$TASK_ID/implementation-plan.md
 - Requirements: task-tracking/$TASK_ID/task-description.md
 
 ## REGISTRY MANAGEMENT
+
 Update your status in the registry file task-tracking/registry.md:
+
 - Find the line that starts with "| $TASK_ID |"
 - Change the status column (3rd column) to "🔄 Active (Development)"
 - Preserve all other columns unchanged
 
 ## YOUR DELIVERABLES
+
 1. Implement code changes with REAL business logic (no stubs/simulations)
 2. Create task-tracking/$TASK_ID/progress.md with implementation details
 3. Update registry status when complete
 
 ## CRITICAL REQUIREMENTS
+
 - Implement actual, working functionality using the full stack
 - Use real database connections (ChromaDB + Neo4j + LangGraph)
 - Create production-ready code that solves the user's request
 - Follow the architecture plan exactly
 - NO placeholder implementations or stubs
+```
 
 ### 4.2 Validate Development Work
 
-```bash
 Use the Task tool to invoke the business-analyst agent:
 
 **Prompt:**
-````
 
+```markdown
 You are the business-analyst for $TASK_ID - Development Validation Phase.
 
 ## VALIDATION TARGET
@@ -401,6 +417,7 @@ You are the business-analyst for $TASK_ID - Development Validation Phase.
 - REJECT ❌: Re-delegate to developer with requirement focus
 
 Return validation decision with testing guidance.
+```
 
 ---
 
@@ -410,39 +427,44 @@ Return validation decision with testing guidance.
 
 Use the Task tool to invoke the senior-tester agent with this prompt:
 
-````
+```markdown
 You are the senior-tester for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
+
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
 - Implementation Plan: task-tracking/$TASK_ID/implementation-plan.md
 - Progress Report: task-tracking/$TASK_ID/progress.md
 
 ## REGISTRY MANAGEMENT
+
 Update your status in the registry file task-tracking/registry.md:
+
 - Find the line that starts with "| $TASK_ID |"
 - Change the status column (3rd column) to "🔄 Active (Testing)"
 - Preserve all other columns unchanged
 
 ## YOUR DELIVERABLES
+
 1. Implement tests that verify user's requirements are met
 2. Create task-tracking/$TASK_ID/test-report.md with test results
 
 ## INSTRUCTIONS
+
 - Test actual functionality implemented by developers
 - Focus on user acceptance criteria from requirements
 - Test real integrations (ChromaDB, Neo4j, LangGraph)
 - Verify production-ready behavior, not theoretical edge cases
+```
 
 ### 5.2 Validate Testing Work
 
-```bash
 Use the Task tool to invoke the business-analyst agent:
 
 **Prompt:**
-````
 
+```markdown
 You are the business-analyst for $TASK_ID - Senior Tester Validation Phase.
 
 ## VALIDATION TARGET
@@ -460,6 +482,7 @@ User's acceptance criteria covered by tests?
 - REJECT ❌: Re-delegate to senior-tester
 
 Return validation decision.
+```
 
 ---
 
@@ -469,10 +492,11 @@ Return validation decision.
 
 Use the Task tool to invoke the code-reviewer agent with this prompt:
 
-````
+```markdown
 You are the code-reviewer for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
+
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
 - Requirements: task-tracking/$TASK_ID/task-description.md
@@ -480,30 +504,35 @@ You are the code-reviewer for $TASK_ID in ORCHESTRATION mode.
 - Test Report: task-tracking/$TASK_ID/test-report.md
 
 ## REGISTRY MANAGEMENT
+
 Update your status in the registry file task-tracking/registry.md:
+
 - Find the line that starts with "| $TASK_ID |"
 - Change the status column (3rd column) to "🔄 Active (Code Review)"
 - Preserve all other columns unchanged
 
 ## YOUR DELIVERABLES
+
 1. Create task-tracking/$TASK_ID/code-review.md with review results
 2. Return APPROVED/NEEDS_REVISION decision
 
 ## REVIEW CRITERIA
+
 - Implementation solves user's original request
 - Code quality meets production standards
 - Real functionality (no stubs or placeholders)
 - Proper integration with full stack (ChromaDB + Neo4j + LangGraph)
 - Tests validate user requirements
+- No unrelated technical improvements
+```
 
 ### 6.2 Final Validation
 
-```bash
 Use the Task tool to invoke the business-analyst agent:
 
 **Prompt:**
-````
 
+```markdown
 You are the business-analyst for $TASK_ID - Final Code Review Validation.
 
 ## VALIDATION TARGET
@@ -521,6 +550,7 @@ Does the complete solution address the user's original request: "$USER_REQUEST"?
 - REJECT ❌: Re-delegate for corrections
 
 Return final validation decision.
+```
 
 ---
 
@@ -569,26 +599,31 @@ Report completion with:
 
 Use the Task tool to invoke the modernization-detector agent with this prompt:
 
-```
+```markdown
 You are the modernization-detector for $TASK_ID in ORCHESTRATION mode.
 
 ## TASK CONTEXT
+
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
 - All task deliverables in: task-tracking/$TASK_ID/
 
 ## REGISTRY MANAGEMENT
+
 Update your status in the registry file task-tracking/registry.md:
+
 - Find the line that starts with "| $TASK_ID |"
 - Change the status column (3rd column) to "🔄 Active (Future Work)"
 - Preserve all other columns unchanged
 
 ## YOUR DELIVERABLES
+
 1. Create task-tracking/$TASK_ID/future-enhancements.md with consolidation
 2. Update task-tracking/registry.md with properly categorized future tasks
 3. Create/Update task-tracking/future-work-dashboard.md (project-wide view)
 
 ## INSTRUCTIONS
+
 - Consolidate all future work opportunities from task deliverables
 - Identify additional modernization opportunities from implemented code
 - Properly categorize and prioritize future tasks
@@ -599,20 +634,23 @@ Update your status in the registry file task-tracking/registry.md:
 
 Use the Task tool to invoke the business-analyst agent with this prompt:
 
-```
+```markdown
 You are the business-analyst for $TASK_ID - Future Work Consolidation Validation Phase.
 
 ## VALIDATION TARGET
+
 - Agent: modernization-detector
 - Deliverable: task-tracking/$TASK_ID/future-enhancements.md
 
 ## VALIDATION CRITERIA
+
 - All future recommendations from task deliverables captured
 - Future work properly categorized and prioritized
 - Each item has clear effort estimates and business value
 - Registry updated with actionable future tasks
 
 ## DECISION REQUIRED
+
 - APPROVE ✅: Future work properly consolidated and visible
 - REJECT ❌: Re-delegate to modernization-detector with improvements
 

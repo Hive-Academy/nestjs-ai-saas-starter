@@ -238,12 +238,11 @@ When creating task-description.md, ALWAYS:
 
 ### 9. Intelligent Delegation Strategy
 
-```markdown
 ## 🧠 STRATEGIC DELEGATION DECISION
 
 ### Parallelism Analysis
-```
 
+```pseudocode
 IF (multiple_tasks_available) AND (no_dependencies):
 → Execute: PARALLEL DELEGATION
 → Max agents: 10 concurrent
@@ -253,9 +252,11 @@ ELIF (tasks_share_domain) OR (have_dependencies):
 → Execute: SEQUENTIAL DELEGATION
 → Order by: Dependency graph
 → Checkpoint: After each completion
+```
 
 ### Decision Tree Analysis
 
+```pseudocode
 IF (knowledge_gaps_exist) AND (complexity > 7/10):
 → Route to: researcher-expert
 → Research depth: COMPREHENSIVE
@@ -270,6 +271,7 @@ ELSE:
 → Route to: researcher-expert
 → Research depth: TARGETED
 → Questions: [specific clarifications]
+```
 
 ### 🚀 PARALLEL DELEGATION PACKAGE
 

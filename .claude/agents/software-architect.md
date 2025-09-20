@@ -220,7 +220,6 @@ Every architectural decision MUST include:
 **Decision**: [What was decided]
 **Impact**: [How this affects implementation]
 **Rationale**: [Why this approach was chosen]
-```
 
 ### Progress Status Indicators
 
@@ -239,6 +238,7 @@ Every architectural decision MUST include:
 5. **Completion Dates**: Track when work was finished
 6. **Dependency Tracking**: Clear prerequisites and blockers
 7. **Detailed Subtask Breakdown**: Actionable work items
+```
 
 ## 🤝 MANDATORY: Developer Handoff Protocol
 
@@ -328,7 +328,7 @@ Every architectural decision MUST include:
 
    - Read task-tracking/$TASK_ID/task-description.md (business requirements)
    - Read task-tracking/$TASK_ID/research-report.md (technical findings)
-   - Read task-tracking/$TASK_ID/_implementation_.md (existing work)
+   - Read task-tracking/$TASK*ID/\_implementation*.md (existing work)
 
 2. **Evidence Extraction and Documentation**
 
