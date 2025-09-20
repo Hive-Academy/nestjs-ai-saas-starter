@@ -59,13 +59,13 @@
       "Bash(else echo \"No task tracking\")",
       "Bash(fi)",
       "WebFetch(domain:medium.com)",
-      "WebFetch(domain:docs.claude.com)"
+      "WebFetch(domain:docs.claude.com)",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_multiple_files"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "d:\\projects\\nestjs-ai-saas-starter"
-    ]
+    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
