@@ -657,12 +657,40 @@ If multiple validation failures occur (>3 retries):
 
 ## Workflow Principles
 
-1. **Trunk-Based Development**: Each task gets its own feature branch
-2. **Sequential Agent Execution**: No parallel execution to prevent conflicts
-3. **Validation Gates**: Every agent validated by business-analyst
-4. **User Focus**: Original request drives all decisions
-5. **Value Optimization**: Implementation strategy based on user value and dependencies
-6. **Clean Git History**: Proper commits and PR creation
-7. **Registry Management**: Single source of truth for all tasks
+1. **Predictable Task IDs**: Sequential TASK_YYYY_NNN format for easy tracking
+2. **Registry-First Approach**: Single source of truth in task-tracking/registry.md
+3. **Verbal Instructions**: Environment-agnostic instructions instead of bash commands
+4. **Sequential Agent Execution**: No parallel execution to prevent conflicts
+5. **Validation Gates**: Every agent output validated by business-analyst
+6. **User Focus**: Original request drives all decisions without scope expansion
+7. **Real Implementation**: Zero tolerance for stubs, placeholders, or simulations
+8. **Full Stack Integration**: Every feature uses ChromaDB + Neo4j + LangGraph
 
-**Remember**: This is workflow orchestration only. All implementation details live in individual agent definitions.
+## Key Improvements in This Version
+
+### ✅ Removed Dependencies
+
+- No more .claude/commands/agent-bootstrap.md
+- No more .claude/commands/task-management.md
+- No more .claude/commands/registry-utils.md
+- No complex function extraction from markdown files
+
+### ✅ Environment Agnostic
+
+- Replaced bash commands with clear verbal instructions
+- Works across different operating systems and environments
+- Agents can interpret instructions in their own context
+
+### ✅ Predictable Task Management
+
+- Consistent TASK_YYYY_NNN format (e.g., TASK_2025_001, TASK_2025_002)
+- Sequential numbering resets each year
+- Zero-padded 3-digit numbers for natural sorting
+
+### ✅ Simplified Agent Instructions
+
+- Clear, direct prompts for each agent
+- Consistent registry management pattern
+- Standardized deliverable requirements
+
+**Remember**: This orchestrates workflow only. All implementation details live in individual agent definitions under .claude/agents/

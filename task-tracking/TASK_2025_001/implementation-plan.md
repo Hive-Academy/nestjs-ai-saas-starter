@@ -40,14 +40,17 @@
 
 **Authority Decision**: workflow-engine maintains execution authority, multi-agent delegates
 
-### Critical Overlap 2: Streaming Execution Systems ✅ CONFIRMED
+### Critical Overlap 2: Streaming Execution Systems ❌ INFRASTRUCTURE CONFLICT IDENTIFIED
 
-**Evidence Sources**:
+**CORRECTED ANALYSIS** (Based on Infrastructure Validation Report):
 
-- **workflow-engine**: `StreamingWorkflowBase` (600+ lines) - Enterprise-grade streaming
-- **multi-agent**: `WorkflowStreamingService` delegation - Competing implementation
+**NOT A CONFLICT** - These are legitimate specialized streaming services:
 
-**Authority Decision**: workflow-engine maintains streaming authority, standardize interfaces
+- **workflow-engine**: `StreamingWorkflowBase` - Individual workflow execution streaming
+- **multi-agent**: `WorkflowStreamingService` - Agent coordination & network event streaming
+- **Both use shared infrastructure**: `IStreamingService` adapter pattern (see INFRASTRUCTURE_VALIDATION_REPORT.md lines 64-152)
+
+**Updated Authority Decision**: Respect existing infrastructure architecture - no consolidation needed for streaming
 
 ### Critical Overlap 3: Graph Compilation Authority ✅ LIKELY CONFIRMED
 
@@ -58,6 +61,27 @@
 - **multi-agent**: Internal compilation via delegation
 
 **Authority Decision**: workflow-engine maintains graph compilation, functional-api focuses on decorator translation
+
+## 🚨 MAJOR INFRASTRUCTURE CORRECTION
+
+**CRITICAL UPDATE** (Based on INFRASTRUCTURE_VALIDATION_REPORT.md):
+
+### **Streaming Architecture Reality**
+
+The existing infrastructure uses a **sophisticated adapter pattern** where:
+
+- All modules use shared `IStreamingService` adapter (lines 64-152 in infrastructure report)
+- Each module has **legitimate specialized streaming** for their domain:
+  - `workflow-engine`: Individual workflow execution streaming
+  - `multi-agent`: Agent coordination & network event streaming
+  - `hitl`: Approval & human interaction streaming
+
+### **Updated Consolidation Strategy**
+
+**REMOVE from scope**: Any streaming consolidation - it's already properly architected
+**FOCUS on**: Only `WorkflowManagerService` execution delegation (lines 108-149, 154-239)
+
+**Key Change**: Respect existing infrastructure, don't consolidate what's already well-architected.
 
 ## 🎯 Validated Library Authorities (Post-Consolidation)
 
