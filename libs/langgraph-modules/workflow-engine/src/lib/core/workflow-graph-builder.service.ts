@@ -48,15 +48,18 @@ export interface GraphBuilderOptions {
   stateAnnotation?: any;
 }
 
-export type NodeHandler<TState = WorkflowState> = (state: TState) => Promise<Partial<TState> | Command<TState>>;
+export type NodeHandler<TState = WorkflowState> = (
+  state: TState
+) => Promise<Partial<TState> | Command<TState>>;
 
-export type EdgeCondition<TState = WorkflowState> = (state: TState) => string | null;
+export type EdgeCondition<TState = WorkflowState> = (
+  state: TState
+) => string | null;
 
 @Injectable()
 export class WorkflowGraphBuilderService {
   private readonly logger = new Logger(WorkflowGraphBuilderService.name);
   private readonly graphs = new Map<string, StateGraph<any>>();
-  private readonly graphMetrics = new Map<string, any>(); // Enhanced with memory learning
 
   constructor(
     private readonly metadataProcessor: MetadataProcessorService,
@@ -89,11 +92,16 @@ export class WorkflowGraphBuilderService {
     this.logger.debug(`Building workflow graph: ${definition.name}`);
 
     // 🧠 MEMORY INTELLIGENCE: Apply learned optimization patterns
-    const optimizedOptions = await this.enhanceWithOptimizationPatterns(definition, options);
+    const optimizedOptions = await this.enhanceWithOptimizationPatterns(
+      definition,
+      options
+    );
 
     // Create state graph with appropriate annotation
     const stateAnnotation =
-      optimizedOptions.stateAnnotation || definition.channels || WorkflowStateAnnotation;
+      optimizedOptions.stateAnnotation ||
+      definition.channels ||
+      WorkflowStateAnnotation;
 
     const graph = new StateGraph<TState>(stateAnnotation);
 
@@ -105,9 +113,14 @@ export class WorkflowGraphBuilderService {
       const nodeStartTime = performance.now();
       this.addNode(graph, node, optimizedOptions);
       const nodeTime = performance.now() - nodeStartTime;
-      
+
       // Store node performance data
-      await this.storeNodePerformanceData(definition.name, node, nodeTime, graphComplexity);
+      await this.storeNodePerformanceData(
+        definition.name,
+        node,
+        nodeTime,
+        graphComplexity
+      );
     }
 
     // Add edges with routing intelligence
@@ -126,9 +139,18 @@ export class WorkflowGraphBuilderService {
     const buildTime = performance.now() - startTime;
 
     // 🧠 MEMORY LEARNING: Store compilation performance and patterns
-    await this.storeGraphCompilationData(definition, buildTime, graphComplexity, optimizedOptions);
+    await this.storeGraphCompilationData(
+      definition,
+      buildTime,
+      graphComplexity,
+      optimizedOptions
+    );
 
-    this.logger.debug(`Workflow graph built successfully: ${definition.name} (${buildTime.toFixed(2)}ms)`);
+    this.logger.debug(
+      `Workflow graph built successfully: ${
+        definition.name
+      } (${buildTime.toFixed(2)}ms)`
+    );
     return graph;
   }
 
@@ -243,7 +265,9 @@ export class WorkflowGraphBuilderService {
     returnTo?: string
   ): void {
     const toolNode = new ToolNode(tools);
-    this.safeAddNode(graph, nodeId, async (state: TState) => toolNode.invoke(state));
+    this.safeAddNode(graph, nodeId, async (state: TState) =>
+      toolNode.invoke(state)
+    );
 
     // Add routing back to the calling node
     if (returnTo) {
@@ -336,7 +360,7 @@ export class WorkflowGraphBuilderService {
       'supervisor' as any,
       ((state: TState) => {
         // Check if a specific worker should be called
-        const {nextWorker} = (state as any);
+        const { nextWorker } = state as any;
         if (nextWorker && workers[nextWorker]) {
           return nextWorker;
         }
@@ -609,7 +633,9 @@ export class WorkflowGraphBuilderService {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(() => { reject(new Error('Execution timeout')); }, timeout)
+        setTimeout(() => {
+          reject(new Error('Execution timeout'));
+        }, timeout)
       ),
     ]);
   }
@@ -622,9 +648,11 @@ export class WorkflowGraphBuilderService {
     options: GraphBuilderOptions = {}
   ): Promise<any> {
     const startTime = performance.now();
-    
+
     // 🧠 MEMORY INTELLIGENCE: Apply learned compilation optimizations
-    const optimizedCompileOptions = await this.getOptimizedCompileOptions(options);
+    const optimizedCompileOptions = await this.getOptimizedCompileOptions(
+      options
+    );
 
     const compileOptions: any = { ...optimizedCompileOptions };
 
@@ -647,7 +675,9 @@ export class WorkflowGraphBuilderService {
     // 🧠 MEMORY LEARNING: Store compilation performance data
     await this.storeCompilationPerformance(compileOptions, compileTime);
 
-    this.logger.debug(`Graph compiled successfully (${compileTime.toFixed(2)}ms)`);
+    this.logger.debug(
+      `Graph compiled successfully (${compileTime.toFixed(2)}ms)`
+    );
     return compiledGraph;
   }
 
@@ -690,7 +720,9 @@ export class WorkflowGraphBuilderService {
    * This follows the 2025 LangGraph pattern for graph compilation intelligence,
    * where previous compilation performance and patterns inform future optimizations.
    */
-  private async enhanceWithOptimizationPatterns<TState extends WorkflowState = WorkflowState>(
+  private async enhanceWithOptimizationPatterns<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: WorkflowDefinition<TState>,
     options: GraphBuilderOptions
   ): Promise<GraphBuilderOptions> {
@@ -701,12 +733,12 @@ export class WorkflowGraphBuilderService {
 
     try {
       const namespace = `graphs.compilation.optimizations`;
-      
+
       // Retrieve learned optimization patterns for this graph type
       const optimizationData = await this.memoryAdapter.search({
         query: 'graph optimization patterns',
         namespace: [namespace],
-        limit: 10
+        limit: 10,
       });
 
       if (!optimizationData || optimizationData.length === 0) {
@@ -715,18 +747,21 @@ export class WorkflowGraphBuilderService {
 
       // Apply learned optimizations
       const enhancedOptions = { ...options };
-      
+
       for (const memory of optimizationData) {
         try {
           const optimization = JSON.parse(memory.content);
-          
+
           // Apply interrupt optimizations based on learned patterns
           if (optimization.optimalInterrupts && !enhancedOptions.interrupt) {
             enhancedOptions.interrupt = optimization.optimalInterrupts;
           }
 
           // Apply debug mode based on success patterns
-          if (optimization.debugRecommendation !== undefined && enhancedOptions.debug === undefined) {
+          if (
+            optimization.debugRecommendation !== undefined &&
+            enhancedOptions.debug === undefined
+          ) {
             enhancedOptions.debug = optimization.debugRecommendation;
           }
 
@@ -734,15 +769,15 @@ export class WorkflowGraphBuilderService {
           if (optimization.channelOptimizations && !enhancedOptions.channels) {
             enhancedOptions.channels = optimization.channelOptimizations;
           }
-
         } catch (parseError) {
           this.logger.debug('Failed to parse optimization memory:', parseError);
         }
       }
 
-      this.logger.debug(`Applied ${optimizationData.length} optimization patterns to graph ${definition.name}`);
+      this.logger.debug(
+        `Applied ${optimizationData.length} optimization patterns to graph ${definition.name}`
+      );
       return enhancedOptions;
-
     } catch (error) {
       this.logger.error('Failed to enhance with optimization patterns:', error);
       return options;
@@ -766,28 +801,33 @@ export class WorkflowGraphBuilderService {
   } {
     const nodeCount = definition.nodes.length;
     const edgeCount = definition.edges.length;
-    const conditionalEdgeCount = definition.edges.filter(edge => typeof edge.to !== 'string').length;
-    
+    const conditionalEdgeCount = definition.edges.filter(
+      (edge) => typeof edge.to !== 'string'
+    ).length;
+
     // Estimate node complexity based on configuration
-    const nodeComplexities = definition.nodes.map(node => {
+    const nodeComplexities = definition.nodes.map((node) => {
       let complexity = 1;
       if (node.config?.timeout) complexity += 1;
       if (node.config?.retry) complexity += 1;
       if (node.config?.tools && node.config.tools.length > 0) complexity += 2;
       return complexity;
     });
-    
-    const averageNodeComplexity = nodeComplexities.reduce((a, b) => a + b, 0) / nodeCount || 0;
-    
+
+    const averageNodeComplexity =
+      nodeComplexities.reduce((a, b) => a + b, 0) / nodeCount || 0;
+
     // Detect special node types (inferred from node ID and tools configuration)
-    const hasToolNodes = definition.nodes.some(node => 
-      node.id.toLowerCase().includes('tool') || 
-      (node.config?.tools && node.config.tools.length > 0)
+    const hasToolNodes = definition.nodes.some(
+      (node) =>
+        node.id.toLowerCase().includes('tool') ||
+        (node.config?.tools && node.config.tools.length > 0)
     );
-    
-    const hasSubgraphs = definition.nodes.some(node => 
-      node.id.toLowerCase().includes('subgraph') ||
-      node.id.toLowerCase().includes('workflow')
+
+    const hasSubgraphs = definition.nodes.some(
+      (node) =>
+        node.id.toLowerCase().includes('subgraph') ||
+        node.id.toLowerCase().includes('workflow')
     );
 
     // Calculate max depth (simplified - would need proper graph traversal)
@@ -795,8 +835,12 @@ export class WorkflowGraphBuilderService {
 
     // Overall complexity assessment
     let complexity: 'low' | 'medium' | 'high' | 'very_high' = 'low';
-    const complexityScore = nodeCount + (edgeCount * 0.5) + (conditionalEdgeCount * 2) + (averageNodeComplexity * nodeCount);
-    
+    const complexityScore =
+      nodeCount +
+      edgeCount * 0.5 +
+      conditionalEdgeCount * 2 +
+      averageNodeComplexity * nodeCount;
+
     if (complexityScore > 50) complexity = 'very_high';
     else if (complexityScore > 25) complexity = 'high';
     else if (complexityScore > 10) complexity = 'medium';
@@ -809,14 +853,16 @@ export class WorkflowGraphBuilderService {
       hasToolNodes,
       hasSubgraphs,
       maxDepth,
-      complexity
+      complexity,
     };
   }
 
   /**
    * Store node performance data for learning
    */
-  private async storeNodePerformanceData<TState extends WorkflowState = WorkflowState>(
+  private async storeNodePerformanceData<
+    TState extends WorkflowState = WorkflowState
+  >(
     graphName: string,
     node: WorkflowNode<TState>,
     executionTime: number,
@@ -826,13 +872,13 @@ export class WorkflowGraphBuilderService {
 
     try {
       const namespace = `graphs.compilation.nodes.${node.id}`;
-      
+
       const nodePerformanceData = {
         graphName,
         nodeId: node.id,
         executionTime,
         timestamp: new Date().toISOString(),
-        
+
         // Node configuration context
         nodeConfig: {
           hasTimeout: !!node.config?.timeout,
@@ -856,24 +902,27 @@ export class WorkflowGraphBuilderService {
           isSlowNode: executionTime > 10, // > 10ms considered slow for node setup
           relativeSpeed: this.categorizeNodeSpeed(executionTime),
           optimizationNeeded: executionTime > 50, // > 50ms needs optimization
-        }
+        },
       };
 
-      await this.memoryAdapter.store(namespace, JSON.stringify(nodePerformanceData), {
-        type: 'fact',
-        source: 'graph_node_performance',
-        agentId: 'workflow_graph_builder',
-        importance: executionTime > 20 ? 0.8 : 0.6, // Slow nodes are more important to remember
-        persistent: true,
-        tags: JSON.stringify([
-          'node_performance',
-          'graph_optimization',
-          node.id,
-          graphComplexity.complexity,
-          this.categorizeNodeSpeed(executionTime)
-        ])
-      });
-
+      await this.memoryAdapter.store(
+        namespace,
+        JSON.stringify(nodePerformanceData),
+        {
+          type: 'fact',
+          source: 'graph_node_performance',
+          agentId: 'workflow_graph_builder',
+          importance: executionTime > 20 ? 0.8 : 0.6, // Slow nodes are more important to remember
+          persistent: true,
+          tags: JSON.stringify([
+            'node_performance',
+            'graph_optimization',
+            node.id,
+            graphComplexity.complexity,
+            this.categorizeNodeSpeed(executionTime),
+          ]),
+        }
+      );
     } catch (error) {
       this.logger.error('Failed to store node performance data:', error);
     }
@@ -882,7 +931,9 @@ export class WorkflowGraphBuilderService {
   /**
    * Store graph compilation performance and patterns
    */
-  private async storeGraphCompilationData<TState extends WorkflowState = WorkflowState>(
+  private async storeGraphCompilationData<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: WorkflowDefinition<TState>,
     buildTime: number,
     graphComplexity: any,
@@ -892,12 +943,12 @@ export class WorkflowGraphBuilderService {
 
     try {
       const namespace = `graphs.compilation.events.${definition.name}`;
-      
+
       const compilationData = {
         graphName: definition.name,
         buildTime,
         timestamp: new Date().toISOString(),
-        
+
         // Graph structure data
         structure: {
           nodeCount: graphComplexity.nodeCount,
@@ -911,8 +962,10 @@ export class WorkflowGraphBuilderService {
         buildConfig: {
           hasCheckpointer: !!options.checkpointer,
           hasInterrupts: !!options.interrupt,
-          interruptPoints: options.interrupt ? 
-            (options.interrupt.before?.length || 0) + (options.interrupt.after?.length || 0) : 0,
+          interruptPoints: options.interrupt
+            ? (options.interrupt.before?.length || 0) +
+              (options.interrupt.after?.length || 0)
+            : 0,
           debugMode: !!options.debug,
           hasCustomChannels: !!options.channels,
         },
@@ -920,39 +973,59 @@ export class WorkflowGraphBuilderService {
         // Performance analysis
         performance: {
           buildTimeMs: buildTime,
-          efficiency: this.categorizeGraphEfficiency(buildTime, graphComplexity),
+          efficiency: this.categorizeGraphEfficiency(
+            buildTime,
+            graphComplexity
+          ),
           needsOptimization: buildTime > 100, // > 100ms compilation time
-          scalabilityScore: this.calculateScalabilityScore(graphComplexity, buildTime),
+          scalabilityScore: this.calculateScalabilityScore(
+            graphComplexity,
+            buildTime
+          ),
         },
 
         // Learning signals for future optimizations
         optimizationSignals: {
           slowCompilation: buildTime > 100,
-          complexGraph: graphComplexity.complexity === 'high' || graphComplexity.complexity === 'very_high',
+          complexGraph:
+            graphComplexity.complexity === 'high' ||
+            graphComplexity.complexity === 'very_high',
           manyConditionalEdges: graphComplexity.conditionalEdgeCount > 5,
           largeNodeCount: graphComplexity.nodeCount > 20,
-          suggestedOptimizations: this.generateOptimizationSuggestions(graphComplexity, buildTime, options),
-        }
+          suggestedOptimizations: this.generateOptimizationSuggestions(
+            graphComplexity,
+            buildTime,
+            options
+          ),
+        },
       };
 
-      await this.memoryAdapter.store(namespace, JSON.stringify(compilationData), {
-        type: 'fact',
-        source: 'graph_compilation',
-        agentId: 'workflow_graph_builder',
-        importance: buildTime > 50 ? 0.9 : 0.7, // Slow compilations are more important
-        persistent: true,
-        tags: JSON.stringify([
-          'graph_compilation',
-          'performance_data',
-          definition.name,
-          graphComplexity.complexity,
-          this.categorizeGraphEfficiency(buildTime, graphComplexity)
-        ])
-      });
+      await this.memoryAdapter.store(
+        namespace,
+        JSON.stringify(compilationData),
+        {
+          type: 'fact',
+          source: 'graph_compilation',
+          agentId: 'workflow_graph_builder',
+          importance: buildTime > 50 ? 0.9 : 0.7, // Slow compilations are more important
+          persistent: true,
+          tags: JSON.stringify([
+            'graph_compilation',
+            'performance_data',
+            definition.name,
+            graphComplexity.complexity,
+            this.categorizeGraphEfficiency(buildTime, graphComplexity),
+          ]),
+        }
+      );
 
       // Also store optimization patterns separately for future reuse
-      await this.storeOptimizationPatterns(definition, graphComplexity, buildTime, options);
-
+      await this.storeOptimizationPatterns(
+        definition,
+        graphComplexity,
+        buildTime,
+        options
+      );
     } catch (error) {
       this.logger.error('Failed to store graph compilation data:', error);
     }
@@ -969,18 +1042,19 @@ export class WorkflowGraphBuilderService {
 
     try {
       const namespace = `graphs.compilation.performance`;
-      
+
       const performanceData = {
         compileTime,
         timestamp: new Date().toISOString(),
-        
+
         // Compile configuration analysis
         configuration: {
           hasCheckpointer: !!compileOptions.checkpointer,
           hasInterruptBefore: !!compileOptions.interruptBefore,
           hasInterruptAfter: !!compileOptions.interruptAfter,
-          interruptCount: (compileOptions.interruptBefore?.length || 0) + 
-                         (compileOptions.interruptAfter?.length || 0),
+          interruptCount:
+            (compileOptions.interruptBefore?.length || 0) +
+            (compileOptions.interruptAfter?.length || 0),
         },
 
         // Performance metrics
@@ -993,24 +1067,31 @@ export class WorkflowGraphBuilderService {
         // Optimization learning
         learningSignals: {
           checkpointerImpact: !!compileOptions.checkpointer,
-          interruptImpact: compileOptions.interruptBefore || compileOptions.interruptAfter,
-          baselinePerformance: !compileOptions.checkpointer && !compileOptions.interruptBefore && !compileOptions.interruptAfter,
-        }
+          interruptImpact:
+            compileOptions.interruptBefore || compileOptions.interruptAfter,
+          baselinePerformance:
+            !compileOptions.checkpointer &&
+            !compileOptions.interruptBefore &&
+            !compileOptions.interruptAfter,
+        },
       };
 
-      await this.memoryAdapter.store(namespace, JSON.stringify(performanceData), {
-        type: 'fact',
-        source: 'compilation_performance',
-        agentId: 'workflow_graph_builder',
-        importance: compileTime > 30 ? 0.8 : 0.6,
-        persistent: true,
-        tags: JSON.stringify([
-          'compilation_performance',
-          'optimization_data',
-          this.categorizeCompilationSpeed(compileTime)
-        ])
-      });
-
+      await this.memoryAdapter.store(
+        namespace,
+        JSON.stringify(performanceData),
+        {
+          type: 'fact',
+          source: 'compilation_performance',
+          agentId: 'workflow_graph_builder',
+          importance: compileTime > 30 ? 0.8 : 0.6,
+          persistent: true,
+          tags: JSON.stringify([
+            'compilation_performance',
+            'optimization_data',
+            this.categorizeCompilationSpeed(compileTime),
+          ]),
+        }
+      );
     } catch (error) {
       this.logger.error('Failed to store compilation performance:', error);
     }
@@ -1026,11 +1107,11 @@ export class WorkflowGraphBuilderService {
 
     try {
       const namespace = `graphs.compilation.performance`;
-      
+
       const performanceData = await this.memoryAdapter.search({
         query: 'compilation performance optimization data',
         namespace: [namespace],
-        limit: 20
+        limit: 20,
       });
 
       if (!performanceData || performanceData.length === 0) {
@@ -1039,7 +1120,7 @@ export class WorkflowGraphBuilderService {
 
       // Analyze performance patterns to determine optimal settings
       const optimizations: any = {};
-      
+
       let fastCompilations = 0;
       let slowCompilations = 0;
       let checkpointerBenefit = 0;
@@ -1048,26 +1129,35 @@ export class WorkflowGraphBuilderService {
       for (const memory of performanceData) {
         try {
           const data = JSON.parse(memory.content);
-          
-          if (data.performance.efficiency === 'fast' || data.performance.efficiency === 'very_fast') {
+
+          if (
+            data.performance.efficiency === 'fast' ||
+            data.performance.efficiency === 'very_fast'
+          ) {
             fastCompilations++;
-            
+
             // Learn from fast compilations
             if (data.configuration.hasCheckpointer) checkpointerBenefit++;
-            if (data.configuration.hasInterruptBefore || data.configuration.hasInterruptAfter) interruptBenefit++;
+            if (
+              data.configuration.hasInterruptBefore ||
+              data.configuration.hasInterruptAfter
+            )
+              interruptBenefit++;
           } else {
             slowCompilations++;
           }
-          
         } catch (parseError) {
-          this.logger.debug('Failed to parse compilation performance memory:', parseError);
+          this.logger.debug(
+            'Failed to parse compilation performance memory:',
+            parseError
+          );
         }
       }
 
       // Apply learned optimizations only if we have enough data
       if (performanceData.length >= 5) {
         const totalCompilations = fastCompilations + slowCompilations;
-        
+
         // If checkpointer generally helps performance, suggest its use
         if (checkpointerBenefit / totalCompilations > 0.6) {
           optimizations.recommendCheckpointer = true;
@@ -1079,13 +1169,15 @@ export class WorkflowGraphBuilderService {
         }
       }
 
-      this.logger.debug('Applied compilation optimizations based on learned patterns', {
-        dataPoints: performanceData.length,
-        optimizations
-      });
+      this.logger.debug(
+        'Applied compilation optimizations based on learned patterns',
+        {
+          dataPoints: performanceData.length,
+          optimizations,
+        }
+      );
 
       return optimizations;
-
     } catch (error) {
       this.logger.error('Failed to get optimized compile options:', error);
       return {};
@@ -1095,7 +1187,9 @@ export class WorkflowGraphBuilderService {
   /**
    * Store optimization patterns for future graph building
    */
-  private async storeOptimizationPatterns<TState extends WorkflowState = WorkflowState>(
+  private async storeOptimizationPatterns<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: WorkflowDefinition<TState>,
     graphComplexity: any,
     buildTime: number,
@@ -1105,7 +1199,7 @@ export class WorkflowGraphBuilderService {
 
     try {
       const namespace = `graphs.compilation.optimizations`;
-      
+
       const optimizationPattern = {
         graphName: definition.name,
         graphType: this.classifyGraphType(definition),
@@ -1124,34 +1218,42 @@ export class WorkflowGraphBuilderService {
 
         // Performance outcome
         outcome: {
-          efficiency: this.categorizeGraphEfficiency(buildTime, graphComplexity),
+          efficiency: this.categorizeGraphEfficiency(
+            buildTime,
+            graphComplexity
+          ),
           successful: buildTime < 200, // Consider successful if < 200ms
           scalable: graphComplexity.nodeCount < 50 || buildTime < 500,
         },
 
         // Recommendations for similar graphs
         recommendations: {
-          optimalInterrupts: this.generateInterruptRecommendations(graphComplexity),
+          optimalInterrupts:
+            this.generateInterruptRecommendations(graphComplexity),
           debugRecommendation: buildTime > 100 ? true : false, // Debug mode for slow graphs
-          channelOptimizations: this.generateChannelOptimizations(graphComplexity),
-        }
+          channelOptimizations:
+            this.generateChannelOptimizations(graphComplexity),
+        },
       };
 
-      await this.memoryAdapter.store(namespace, JSON.stringify(optimizationPattern), {
-        type: 'preference', // Optimization patterns are preferences for future builds
-        source: 'graph_optimization_pattern',
-        agentId: 'workflow_graph_builder',
-        importance: 0.8,
-        persistent: true,
-        tags: JSON.stringify([
-          'graph_optimization',
-          'performance_pattern',
-          definition.name,
-          graphComplexity.complexity,
-          this.classifyGraphType(definition)
-        ])
-      });
-
+      await this.memoryAdapter.store(
+        namespace,
+        JSON.stringify(optimizationPattern),
+        {
+          type: 'preference', // Optimization patterns are preferences for future builds
+          source: 'graph_optimization_pattern',
+          agentId: 'workflow_graph_builder',
+          importance: 0.8,
+          persistent: true,
+          tags: JSON.stringify([
+            'graph_optimization',
+            'performance_pattern',
+            definition.name,
+            graphComplexity.complexity,
+            this.classifyGraphType(definition),
+          ]),
+        }
+      );
     } catch (error) {
       this.logger.error('Failed to store optimization patterns:', error);
     }
@@ -1175,10 +1277,14 @@ export class WorkflowGraphBuilderService {
   /**
    * Categorize graph compilation efficiency
    */
-  private categorizeGraphEfficiency(buildTime: number, complexity: any): string {
-    const complexityMultiplier = complexity.nodeCount * 2 + complexity.edgeCount;
+  private categorizeGraphEfficiency(
+    buildTime: number,
+    complexity: any
+  ): string {
+    const complexityMultiplier =
+      complexity.nodeCount * 2 + complexity.edgeCount;
     const efficiencyRatio = buildTime / Math.max(complexityMultiplier, 1);
-    
+
     if (efficiencyRatio < 2) return 'very_efficient';
     if (efficiencyRatio < 5) return 'efficient';
     if (efficiencyRatio < 10) return 'moderate';
@@ -1200,38 +1306,50 @@ export class WorkflowGraphBuilderService {
   /**
    * Calculate scalability score for graph
    */
-  private calculateScalabilityScore(complexity: any, buildTime: number): number {
+  private calculateScalabilityScore(
+    complexity: any,
+    buildTime: number
+  ): number {
     const baseScore = 100;
     const complexityPenalty = complexity.nodeCount * 2 + complexity.edgeCount;
     const timePenalty = buildTime / 10;
-    
-    return Math.max(0, Math.min(100, baseScore - complexityPenalty - timePenalty));
+
+    return Math.max(
+      0,
+      Math.min(100, baseScore - complexityPenalty - timePenalty)
+    );
   }
 
   /**
    * Generate optimization suggestions based on analysis
    */
   private generateOptimizationSuggestions(
-    complexity: any, 
-    buildTime: number, 
+    complexity: any,
+    buildTime: number,
     options: GraphBuilderOptions
   ): string[] {
     const suggestions: string[] = [];
-    
+
     if (buildTime > 100) {
       suggestions.push('Consider enabling debug mode for performance analysis');
     }
-    
+
     if (complexity.conditionalEdgeCount > 5) {
-      suggestions.push('High conditional edge count - consider simplifying routing logic');
+      suggestions.push(
+        'High conditional edge count - consider simplifying routing logic'
+      );
     }
-    
+
     if (complexity.nodeCount > 20 && !options.interrupt) {
-      suggestions.push('Large graph detected - consider adding interrupt points for better control');
+      suggestions.push(
+        'Large graph detected - consider adding interrupt points for better control'
+      );
     }
-    
+
     if (complexity.complexity === 'very_high' && !options.checkpointer) {
-      suggestions.push('Complex graph - checkpointing recommended for reliability');
+      suggestions.push(
+        'Complex graph - checkpointing recommended for reliability'
+      );
     }
 
     return suggestions;
@@ -1243,33 +1361,40 @@ export class WorkflowGraphBuilderService {
   private classifyGraphType<TState extends WorkflowState = WorkflowState>(
     definition: WorkflowDefinition<TState>
   ): string {
-    const nodeIds = definition.nodes.map(n => n.id.toLowerCase());
-    
-    if (nodeIds.some(id => id.includes('supervisor'))) return 'supervisor';
-    if (nodeIds.some(id => id.includes('pipeline'))) return 'pipeline';
-    if (nodeIds.some(id => id.includes('approval') || id.includes('human'))) return 'hitl';
-    if (nodeIds.some(id => id.includes('tool'))) return 'tool_calling';
-    if (definition.edges.filter(e => typeof e.to !== 'string').length > 3) return 'conditional_heavy';
-    
+    const nodeIds = definition.nodes.map((n) => n.id.toLowerCase());
+
+    if (nodeIds.some((id) => id.includes('supervisor'))) return 'supervisor';
+    if (nodeIds.some((id) => id.includes('pipeline'))) return 'pipeline';
+    if (nodeIds.some((id) => id.includes('approval') || id.includes('human')))
+      return 'hitl';
+    if (nodeIds.some((id) => id.includes('tool'))) return 'tool_calling';
+    if (definition.edges.filter((e) => typeof e.to !== 'string').length > 3)
+      return 'conditional_heavy';
+
     return 'standard';
   }
 
   /**
    * Generate interrupt recommendations based on complexity
    */
-  private generateInterruptRecommendations(complexity: any): { before?: string[]; after?: string[] } | null {
+  private generateInterruptRecommendations(
+    complexity: any
+  ): { before?: string[]; after?: string[] } | null {
     if (complexity.nodeCount < 5) return null;
-    
+
     const recommendations: { before?: string[]; after?: string[] } = {};
-    
+
     if (complexity.hasToolNodes) {
       recommendations.before = ['tool_execution'];
     }
-    
-    if (complexity.complexity === 'high' || complexity.complexity === 'very_high') {
+
+    if (
+      complexity.complexity === 'high' ||
+      complexity.complexity === 'very_high'
+    ) {
       recommendations.after = ['validation', 'checkpoint'];
     }
-    
+
     return Object.keys(recommendations).length > 0 ? recommendations : null;
   }
 
@@ -1278,32 +1403,31 @@ export class WorkflowGraphBuilderService {
    */
   private generateChannelOptimizations(complexity: any): any | null {
     if (complexity.complexity === 'low') return null;
-    
+
     // For complex graphs, suggest optimized channel configuration
     return {
       optimizedForComplexity: true,
       bufferSize: complexity.nodeCount > 20 ? 'large' : 'standard',
-      parallelization: complexity.nodeCount > 10
+      parallelization: complexity.nodeCount > 10,
     };
   }
 
   /**
    * Store decorator pattern usage data for optimization learning
    */
-  private async storeDecoratorPatternData<TState extends WorkflowState = WorkflowState>(
-    workflowClass: any,
-    definition: WorkflowDefinition<TState>
-  ): Promise<void> {
+  private async storeDecoratorPatternData<
+    TState extends WorkflowState = WorkflowState
+  >(workflowClass: any, definition: WorkflowDefinition<TState>): Promise<void> {
     if (!this.memoryAdapter) return;
 
     try {
       const namespace = `graphs.compilation.decorator_patterns`;
-      
+
       const decoratorData = {
         className: workflowClass.name,
         graphName: definition.name,
         timestamp: new Date().toISOString(),
-        
+
         // Decorator pattern analysis
         decoratorMetadata: {
           nodeCount: definition.nodes.length,
@@ -1316,7 +1440,8 @@ export class WorkflowGraphBuilderService {
         // Class metadata analysis
         classMetadata: {
           hasConstructor: !!workflowClass.constructor,
-          methodCount: Object.getOwnPropertyNames(workflowClass.prototype).length,
+          methodCount: Object.getOwnPropertyNames(workflowClass.prototype)
+            .length,
           className: workflowClass.name,
         },
 
@@ -1324,8 +1449,9 @@ export class WorkflowGraphBuilderService {
         patterns: {
           decoratorComplexity: this.assessDecoratorComplexity(definition),
           usagePattern: this.identifyDecoratorUsagePattern(definition),
-          optimizationPotential: this.assessDecoratorOptimizationPotential(definition),
-        }
+          optimizationPotential:
+            this.assessDecoratorOptimizationPotential(definition),
+        },
       };
 
       await this.memoryAdapter.store(namespace, JSON.stringify(decoratorData), {
@@ -1339,10 +1465,9 @@ export class WorkflowGraphBuilderService {
           'graph_metadata',
           workflowClass.name,
           definition.name,
-          this.analyzeGraphComplexity(definition).complexity
-        ])
+          this.analyzeGraphComplexity(definition).complexity,
+        ]),
       });
-
     } catch (error) {
       this.logger.error('Failed to store decorator pattern data:', error);
     }
@@ -1351,15 +1476,17 @@ export class WorkflowGraphBuilderService {
   /**
    * Assess decorator complexity for learning
    */
-  private assessDecoratorComplexity<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): 'simple' | 'moderate' | 'complex' {
+  private assessDecoratorComplexity<
+    TState extends WorkflowState = WorkflowState
+  >(definition: WorkflowDefinition<TState>): 'simple' | 'moderate' | 'complex' {
     const nodeCount = definition.nodes.length;
     const edgeCount = definition.edges.length;
-    const conditionalEdges = definition.edges.filter(e => typeof e.to !== 'string').length;
-    
-    const complexityScore = nodeCount + (edgeCount * 0.5) + (conditionalEdges * 2);
-    
+    const conditionalEdges = definition.edges.filter(
+      (e) => typeof e.to !== 'string'
+    ).length;
+
+    const complexityScore = nodeCount + edgeCount * 0.5 + conditionalEdges * 2;
+
     if (complexityScore < 5) return 'simple';
     if (complexityScore < 15) return 'moderate';
     return 'complex';
@@ -1368,29 +1495,37 @@ export class WorkflowGraphBuilderService {
   /**
    * Identify decorator usage patterns
    */
-  private identifyDecoratorUsagePattern<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): string {
-    const nodeIds = definition.nodes.map(n => n.id.toLowerCase());
-    
-    if (nodeIds.some(id => id.includes('start') && id.includes('end'))) return 'linear';
-    if (definition.edges.filter(e => typeof e.to !== 'string').length > nodeIds.length * 0.5) return 'branching';
-    if (nodeIds.some(id => id.includes('parallel'))) return 'parallel';
-    if (nodeIds.some(id => id.includes('loop') || id.includes('retry'))) return 'iterative';
-    
+  private identifyDecoratorUsagePattern<
+    TState extends WorkflowState = WorkflowState
+  >(definition: WorkflowDefinition<TState>): string {
+    const nodeIds = definition.nodes.map((n) => n.id.toLowerCase());
+
+    if (nodeIds.some((id) => id.includes('start') && id.includes('end')))
+      return 'linear';
+    if (
+      definition.edges.filter((e) => typeof e.to !== 'string').length >
+      nodeIds.length * 0.5
+    )
+      return 'branching';
+    if (nodeIds.some((id) => id.includes('parallel'))) return 'parallel';
+    if (nodeIds.some((id) => id.includes('loop') || id.includes('retry')))
+      return 'iterative';
+
     return 'standard';
   }
 
   /**
    * Assess optimization potential for decorator patterns
    */
-  private assessDecoratorOptimizationPotential<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): 'low' | 'medium' | 'high' {
+  private assessDecoratorOptimizationPotential<
+    TState extends WorkflowState = WorkflowState
+  >(definition: WorkflowDefinition<TState>): 'low' | 'medium' | 'high' {
     const complexity = this.analyzeGraphComplexity(definition);
-    
-    if (complexity.complexity === 'very_high' || complexity.nodeCount > 20) return 'high';
-    if (complexity.complexity === 'high' || complexity.conditionalEdgeCount > 3) return 'medium';
+
+    if (complexity.complexity === 'very_high' || complexity.nodeCount > 20)
+      return 'high';
+    if (complexity.complexity === 'high' || complexity.conditionalEdgeCount > 3)
+      return 'medium';
     return 'low';
   }
 }

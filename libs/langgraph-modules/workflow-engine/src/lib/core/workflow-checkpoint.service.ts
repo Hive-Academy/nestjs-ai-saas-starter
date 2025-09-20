@@ -3,28 +3,46 @@ import {
   ICheckpointAdapter,
   NodeIdBuilder,
 } from '@hive-academy/langgraph-core';
+import {
+  WorkflowCheckpointRecord,
+  WorkflowCheckpointListResult,
+  WorkflowCheckpointMetadata,
+  WorkflowExecutionMetadata,
+  WorkflowPerformanceMetadata,
+  WorkflowBusinessMetadata,
+} from '../interfaces/workflow-metadata.interface';
 
-export interface WorkflowCheckpointRecord {
-  id: string;
-  thread_id: string;
-  checkpoint: {
-    version: number;
-    data: any;
-  };
-  metadata: {
-    source: string;
-    type: string;
-    executionId: string;
-    created_at: string;
-    [key: string]: any;
+/**
+ * Standard workflow checkpoint data structure
+ */
+export interface WorkflowCheckpointData {
+  /** Workflow execution ID */
+  readonly executionId: string;
+  /** Checkpoint timestamp */
+  readonly timestamp: string;
+  /** Checkpoint type */
+  readonly type: WorkflowExecutionMetadata['type'];
+  /** Workflow input data */
+  readonly input?: unknown;
+  /** Workflow configuration */
+  readonly config?: unknown;
+  /** Current workflow state */
+  readonly state?: unknown;
+  /** Execution status */
+  readonly status?: 'started' | 'running' | 'completed' | 'failed';
+  /** Error information if applicable */
+  readonly error?: {
+    message: string;
+    stack?: string;
   };
 }
 
-export interface WorkflowCheckpointListResult {
-  checkpoints: WorkflowCheckpointRecord[];
-  total: number;
-  hasMore: boolean;
-}
+/**
+ * Combined metadata type for workflow checkpoints
+ */
+export type WorkflowCheckpointCombinedMetadata = WorkflowCheckpointMetadata<
+  WorkflowPerformanceMetadata & WorkflowBusinessMetadata
+>;
 
 /**
  * Service for managing workflow checkpoint operations
@@ -53,9 +71,9 @@ export class WorkflowCheckpointService {
   generateThreadId(executionId: string): string {
     try {
       return NodeIdBuilder.create()
-        .addScope('workflow-engine')
-        .addScope('execution')
-        .addIdentifier(executionId)
+        .domain('workflow-engine')
+        .phase('execution')
+        .activity(executionId)
         .build();
     } catch (error) {
       this.logger.warn('NodeIdBuilder failed, using fallback pattern:', error);
@@ -65,13 +83,13 @@ export class WorkflowCheckpointService {
   }
 
   /**
-   * Save a checkpoint for workflow execution
+   * Save a checkpoint for workflow execution with type-safe metadata
    */
-  async saveCheckpoint(
+  async saveCheckpoint<TMetadata = Record<string, unknown>>(
     executionId: string,
-    data: any,
-    type: 'initial' | 'progress' | 'final' | 'error' = 'progress',
-    metadata: Record<string, any> = {}
+    data: WorkflowCheckpointData,
+    type: WorkflowExecutionMetadata['type'] = 'progress',
+    customMetadata: TMetadata = {} as TMetadata
   ): Promise<void> {
     if (!this.checkpointingEnabled || !this.checkpointAdapter) {
       this.logger.debug(
@@ -85,7 +103,10 @@ export class WorkflowCheckpointService {
       const timestamp = new Date().toISOString();
       const checkpointId = `${threadId}_${type}_${Date.now()}`;
 
-      const checkpointData: WorkflowCheckpointRecord = {
+      const checkpointData: WorkflowCheckpointRecord<
+        WorkflowCheckpointData,
+        TMetadata
+      > = {
         id: checkpointId,
         thread_id: threadId,
         checkpoint: {
@@ -98,15 +119,24 @@ export class WorkflowCheckpointService {
           },
         },
         metadata: {
-          source: 'workflow-engine',
-          type,
+          timestamp,
+          source: type === 'initial' ? 'input' : 'update',
+          step: type === 'initial' ? 0 : 1,
+          parents: {},
           executionId,
+          type,
           created_at: timestamp,
-          ...metadata,
-        },
+          payload: customMetadata,
+        } as WorkflowCheckpointMetadata<TMetadata>,
       };
 
-      await this.checkpointAdapter.saveCheckpoint(threadId, checkpointData, checkpointData.metadata);
+      // Extract base metadata for LangGraph compatibility
+      const { payload, ...baseMetadata } = checkpointData.metadata;
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        checkpointData,
+        baseMetadata
+      );
       this.logger.debug(
         `Saved ${type} checkpoint for execution ${executionId} with thread ID ${threadId}`
       );
@@ -120,9 +150,11 @@ export class WorkflowCheckpointService {
   }
 
   /**
-   * Resume workflow from checkpoint
+   * Resume workflow from checkpoint with type safety
    */
-  async resumeWorkflow(executionId: string): Promise<any | null> {
+  async resumeWorkflow<TData = WorkflowCheckpointData>(
+    executionId: string
+  ): Promise<TData | null> {
     if (!this.checkpointingEnabled || !this.checkpointAdapter) {
       this.logger.debug(
         `Checkpoint adapter not available, cannot resume ${executionId}`
@@ -142,7 +174,7 @@ export class WorkflowCheckpointService {
       this.logger.log(
         `Resuming workflow execution ${executionId} from checkpoint`
       );
-      return checkpoint.channel_values;
+      return checkpoint.channel_values as TData;
     } catch (error) {
       this.logger.error(
         `Failed to resume workflow for execution ${executionId}:`,
@@ -153,13 +185,16 @@ export class WorkflowCheckpointService {
   }
 
   /**
-   * List checkpoints for a workflow execution
+   * List checkpoints for a workflow execution with type safety
    */
-  async listCheckpoints(
+  async listCheckpoints<
+    TData = WorkflowCheckpointData,
+    TMetadata = Record<string, unknown>
+  >(
     executionId: string,
     limit = 50,
     before?: string
-  ): Promise<WorkflowCheckpointListResult> {
+  ): Promise<WorkflowCheckpointListResult<TData, TMetadata>> {
     if (!this.checkpointingEnabled || !this.checkpointAdapter) {
       this.logger.debug(
         `Checkpoint adapter not available, returning empty list for ${executionId}`
@@ -174,8 +209,39 @@ export class WorkflowCheckpointService {
         before,
       });
 
+      // Convert BaseCheckpointTuple[] to WorkflowCheckpointRecord[] with type safety
+      const checkpoints: WorkflowCheckpointRecord<TData, TMetadata>[] = (
+        result || []
+      ).map((tuple, index) => {
+        const [_, checkpoint, metadata] = tuple;
+        const baseCheckpoint = checkpoint as {
+          id?: string;
+          channel_values?: TData;
+        };
+        const baseMetadata = metadata as WorkflowCheckpointMetadata<TMetadata>;
+
+        return {
+          id: baseCheckpoint.id || `checkpoint-${index}`,
+          thread_id: threadId,
+          checkpoint: {
+            version: 1,
+            data: baseCheckpoint.channel_values || ({} as TData),
+          },
+          metadata: {
+            timestamp: baseMetadata.timestamp || new Date().toISOString(),
+            source: baseMetadata.source || 'update',
+            step: baseMetadata.step || 1,
+            parents: baseMetadata.parents || {},
+            executionId: baseMetadata.executionId || executionId,
+            type: baseMetadata.type || 'progress',
+            created_at: baseMetadata.created_at || baseMetadata.timestamp,
+            payload: baseMetadata.payload,
+          } as WorkflowCheckpointMetadata<TMetadata>,
+        };
+      });
+
       return {
-        checkpoints: [...(result || [])],
+        checkpoints,
         total: result?.length || 0,
         hasMore: (result?.length || 0) >= limit,
       };
@@ -189,11 +255,14 @@ export class WorkflowCheckpointService {
   }
 
   /**
-   * Get checkpoint history for a workflow execution
+   * Get checkpoint history for a workflow execution with type safety
    */
-  async getCheckpointHistory(
+  async getCheckpointHistory<
+    TData = WorkflowCheckpointData,
+    TMetadata = Record<string, unknown>
+  >(
     executionId: string
-  ): Promise<WorkflowCheckpointRecord[]> {
+  ): Promise<WorkflowCheckpointRecord<TData, TMetadata>[]> {
     if (!this.checkpointingEnabled || !this.checkpointAdapter) {
       this.logger.debug(
         `Checkpoint adapter not available, returning empty history for ${executionId}`
@@ -203,16 +272,44 @@ export class WorkflowCheckpointService {
 
     try {
       const threadId = this.generateThreadId(executionId);
-      const checkpoints = await this.checkpointAdapter.listCheckpoints(
-        threadId,
-        {
-          limit: 100, // Get more for history view
-        }
-      );
+      const result = await this.checkpointAdapter.listCheckpoints(threadId, {
+        limit: 100, // Get more for history view
+      });
+
+      // Convert BaseCheckpointTuple[] to WorkflowCheckpointRecord[] with type safety
+      const checkpoints: WorkflowCheckpointRecord<TData, TMetadata>[] = (
+        result || []
+      ).map((tuple, index) => {
+        const [_, checkpoint, metadata] = tuple;
+        const baseCheckpoint = checkpoint as {
+          id?: string;
+          channel_values?: TData;
+        };
+        const baseMetadata = metadata as WorkflowCheckpointMetadata<TMetadata>;
+
+        return {
+          id: baseCheckpoint.id || `checkpoint-${index}`,
+          thread_id: threadId,
+          checkpoint: {
+            version: 1,
+            data: baseCheckpoint.channel_values || ({} as TData),
+          },
+          metadata: {
+            timestamp: baseMetadata.timestamp || new Date().toISOString(),
+            source: baseMetadata.source || 'update',
+            step: baseMetadata.step || 1,
+            parents: baseMetadata.parents || {},
+            executionId: baseMetadata.executionId || executionId,
+            type: baseMetadata.type || 'progress',
+            created_at: baseMetadata.created_at || baseMetadata.timestamp,
+            payload: baseMetadata.payload,
+          } as WorkflowCheckpointMetadata<TMetadata>,
+        };
+      });
 
       // Sort by creation time (most recent first)
-      return [...(checkpoints || [])].sort(
-        (a: WorkflowCheckpointRecord, b: WorkflowCheckpointRecord) =>
+      return checkpoints.sort(
+        (a, b) =>
           new Date(b.metadata.created_at).getTime() -
           new Date(a.metadata.created_at).getTime()
       );
@@ -241,21 +338,53 @@ export class WorkflowCheckpointService {
 
     try {
       const threadId = this.generateThreadId(executionId);
-      const checkpoints = await this.checkpointAdapter.listCheckpoints(
-        threadId,
-        {
-          limit: 1000, // Get all for cleanup
-        }
-      );
+      const result = await this.checkpointAdapter.listCheckpoints(threadId, {
+        limit: 1000, // Get all for cleanup
+      });
 
-      if (!checkpoints || checkpoints.length <= keepLatest) {
+      if (!result || result.length <= keepLatest) {
         this.logger.debug(`No cleanup needed for execution ${executionId}`);
         return 0;
       }
 
+      // Convert BaseCheckpointTuple[] to WorkflowCheckpointRecord[] with type safety
+      const checkpoints: WorkflowCheckpointRecord<
+        WorkflowCheckpointData,
+        Record<string, unknown>
+      >[] = result.map((tuple, index) => {
+        const [_, checkpoint, metadata] = tuple;
+        const baseCheckpoint = checkpoint as {
+          id?: string;
+          channel_values?: WorkflowCheckpointData;
+        };
+        const baseMetadata = metadata as WorkflowCheckpointMetadata<
+          Record<string, unknown>
+        >;
+
+        return {
+          id: baseCheckpoint.id || `checkpoint-${index}`,
+          thread_id: threadId,
+          checkpoint: {
+            version: 1,
+            data:
+              baseCheckpoint.channel_values || ({} as WorkflowCheckpointData),
+          },
+          metadata: {
+            timestamp: baseMetadata.timestamp || new Date().toISOString(),
+            source: baseMetadata.source || 'update',
+            step: baseMetadata.step || 1,
+            parents: baseMetadata.parents || {},
+            executionId: baseMetadata.executionId || executionId,
+            type: baseMetadata.type || 'progress',
+            created_at: baseMetadata.created_at || baseMetadata.timestamp,
+            payload: baseMetadata.payload,
+          } as WorkflowCheckpointMetadata<Record<string, unknown>>,
+        };
+      });
+
       // Sort by creation time (most recent first)
-      const sortedCheckpoints = [...checkpoints].sort(
-        (a: WorkflowCheckpointRecord, b: WorkflowCheckpointRecord) =>
+      const sortedCheckpoints = checkpoints.sort(
+        (a, b) =>
           new Date(b.metadata.created_at).getTime() -
           new Date(a.metadata.created_at).getTime()
       );
@@ -267,7 +396,10 @@ export class WorkflowCheckpointService {
       for (const checkpoint of checkpointsToDelete) {
         try {
           if (this.checkpointAdapter.deleteCheckpoint) {
-            await this.checkpointAdapter.deleteCheckpoint(checkpoint.id);
+            await this.checkpointAdapter.deleteCheckpoint(
+              threadId,
+              checkpoint.id
+            );
             deletedCount++;
           }
         } catch (deleteError) {

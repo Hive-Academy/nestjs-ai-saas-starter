@@ -11,6 +11,7 @@ import {
   TimeTravelServiceInterface,
   BranchInfo,
 } from '../interfaces/time-travel.interface';
+// Removed unused import
 import { BranchManagerService } from './branch-manager.service';
 import { WorkflowReplayService } from './workflow-replay.service';
 import { ExecutionHistoryService } from './execution-history.service';
@@ -61,8 +62,14 @@ export class TimeTravelService
 
   async registerWorkflow(registration: {
     name: string;
-    instance: any;
-    metadata: any;
+    instance: {
+      [key: string]: (...args: unknown[]) => unknown;
+    };
+    metadata: {
+      entrypoint: string;
+      domain: string;
+      [key: string]: unknown;
+    };
   }): Promise<void> {
     return this.workflowRegistry.registerWorkflow(registration);
   }
@@ -107,7 +114,11 @@ export class TimeTravelService
     testScenario: {
       name: string;
       stateModifications: Partial<T>;
-      expectedOutcome: any;
+      expectedOutcome: {
+        status?: 'completed' | 'failed';
+        outputContains?: string[];
+        stateContains?: Partial<T>;
+      };
     }
   ): Promise<{
     passed: boolean;
@@ -225,14 +236,14 @@ export class TimeTravelService
     changes: Array<{
       checkpointId: string;
       timestamp: Date;
-      value: any;
+      value: unknown;
       valueType: string;
     }>;
     summary: {
       totalChanges: number;
       uniqueValues: number;
-      firstValue: any;
-      lastValue: any;
+      firstValue: unknown;
+      lastValue: unknown;
     };
   }> {
     return this.executionHistory.analyzeStateEvolution(threadId, fieldPath);
@@ -244,7 +255,7 @@ export class TimeTravelService
       nodeType?: ExecutionHistoryNode['nodeType'];
       hasError?: boolean;
       workflowName?: string;
-      stateContains?: Record<string, any>;
+      stateContains?: Record<string, unknown>;
       timeRange?: { from: Date; to: Date };
     }
   ): Promise<ExecutionHistoryNode | null> {

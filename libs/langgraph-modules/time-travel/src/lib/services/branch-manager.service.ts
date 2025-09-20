@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import {
   ICheckpointAdapter,
+  IMemoryAdapter,
   normalizeNodeId,
   NodeIdBuilder,
 } from '@hive-academy/langgraph-core';
@@ -11,6 +12,10 @@ import {
   CheckpointNotFoundError,
   BranchOptionsSchema,
 } from '../interfaces/time-travel.interface';
+import {
+  TimeTravelOperationPayloads,
+  CreateBranchMetadata,
+} from '../interfaces/time-travel-metadata.interface';
 
 /**
  * Service responsible for managing workflow execution branches
@@ -26,7 +31,7 @@ export class BranchManagerService {
     private readonly checkpointAdapter: ICheckpointAdapter,
     @Optional()
     @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: any
+    private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
   /**
@@ -75,21 +80,62 @@ export class BranchManagerService {
       channel_values: branchedState,
     };
 
-    // Save branch checkpoint with branch metadata
+    // Create properly typed branch metadata
+    const branchMetadata: CreateBranchMetadata<TimeTravelOperationPayloads.BranchOperationPayload> =
+      {
+        executionId: `exec_${crypto.randomUUID()}`,
+        type: 'progress',
+        created_at: new Date().toISOString(),
+        nodeId: 'branch-creation',
+        workflowName: (checkpoint.channel_values as any)?.workflowName,
+        timeTravelType: 'branch',
+        sourceInfo: {
+          threadId,
+          checkpointId: fromCheckpointId,
+          timestamp: new Date().toISOString(),
+        },
+        target: {
+          threadId: branchThreadId,
+          timestamp: new Date().toISOString(),
+        },
+        branchInfo: {
+          branchId,
+          branchName: branchOptions.name,
+          description: branchOptions.description,
+          parentThreadId: threadId,
+          parentCheckpointId: fromCheckpointId,
+          createdAt: new Date().toISOString(),
+          status: 'active',
+        },
+        stateModifications: branchOptions.stateModifications
+          ? {
+              modificationType: 'partial',
+              modifiedFields: Object.keys(branchOptions.stateModifications),
+              originalValues: {},
+              newValues: branchOptions.stateModifications,
+            }
+          : undefined,
+        payload: {
+          creationStrategy: 'fork',
+          expectedDivergence: 'moderate',
+          purpose: 'experiment',
+          creator: {
+            type: 'system',
+            id: 'branch-manager-service',
+          },
+        },
+        // BaseCheckpointMetadata required fields
+        timestamp: new Date().toISOString(),
+        source: 'fork', // Required enum value from BaseCheckpointMetadata
+        step: 0,
+        parents: {},
+      };
+
+    // Save branch checkpoint with typed metadata
     await this.checkpointAdapter.saveCheckpoint(
       branchThreadId,
       branchCheckpoint,
-      {
-        timestamp: new Date().toISOString(),
-        branchName: branchOptions.name,
-        parentThreadId: threadId,
-        parentCheckpointId: fromCheckpointId,
-        branchCreatedAt: new Date().toISOString(),
-        branchDescription: branchOptions.description,
-        source: 'fork',
-        step: 0,
-        parents: {},
-      }
+      branchMetadata
     );
 
     // Store branch info
@@ -304,10 +350,9 @@ export class BranchManagerService {
 
     try {
       // Store branch creation memory with time-travel namespace
-      await this.memoryAdapter.store({
-        namespace: `time-travel.branches.${branchInfo.parentThreadId}`,
-        key: `branch-creation-${branchId}`,
-        content: JSON.stringify({
+      await this.memoryAdapter.store(
+        `time-travel.branches.${branchInfo.parentThreadId}`,
+        JSON.stringify({
           branchInfo,
           creationContext: {
             originalState: branchedState,
@@ -325,20 +370,23 @@ export class BranchManagerService {
             branchStrategy: this.analyzeBranchStrategy(branchOptions),
           },
         }),
-        metadata: {
-          type: 'branch-creation',
+        {
+          type: 'fact',
+          source: 'branch_creation',
           branchId,
           parentThreadId: branchInfo.parentThreadId,
           timestamp: branchInfo.createdAt.toISOString(),
           importance: 0.8, // High importance for branch analysis
-        },
-      });
+        }
+      );
 
       this.logger.debug(
         `🧠 Stored branch creation memory for branch ${branchId}`
       );
     } catch (error) {
-      this.logger.warn(`Failed to store branch memory: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to store branch memory: ${errorMessage}`);
       // Don't throw - memory storage failure shouldn't break branching
     }
   }
@@ -359,8 +407,8 @@ export class BranchManagerService {
 
     try {
       const branchMemories = await this.memoryAdapter.search({
-        namespace: `time-travel.branches.${threadId}`,
         query: 'branch creation patterns',
+        threadId: `time-travel.branches.${threadId}`,
         limit: 10,
         minRelevance: 0.3,
       });
@@ -392,9 +440,11 @@ export class BranchManagerService {
             );
           }
         } catch (parseError) {
-          this.logger.warn(
-            `Failed to parse branch memory: ${parseError.message}`
-          );
+          const errorMessage =
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError);
+          this.logger.warn(`Failed to parse branch memory: ${errorMessage}`);
         }
       }
 
@@ -404,8 +454,10 @@ export class BranchManagerService {
 
       return patterns;
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `Failed to retrieve branching patterns: ${error.message}`
+        `Failed to retrieve branching patterns: ${errorMessage}`
       );
       return {
         commonModifications: {},
@@ -430,10 +482,9 @@ export class BranchManagerService {
       const branchInfo = this.branches.get(branchId);
       if (!branchInfo) return;
 
-      await this.memoryAdapter.store({
-        namespace: `time-travel.branches.${threadId}`,
-        key: `branch-merge-${branchId}`,
-        content: JSON.stringify({
+      await this.memoryAdapter.store(
+        `time-travel.branches.${threadId}`,
+        JSON.stringify({
           branchId,
           branchName: branchInfo.name,
           mergeStrategy,
@@ -442,20 +493,23 @@ export class BranchManagerService {
           checkpointCount: branchInfo.checkpointCount,
           lessons: this.extractMergeLessons(mergeStrategy, outcome),
         }),
-        metadata: {
-          type: 'branch-merge',
+        {
+          type: 'fact',
+          source: 'branch_merge',
           branchId,
           outcome,
           timestamp: new Date().toISOString(),
           importance: outcome === 'failed' ? 0.9 : 0.7, // Failed merges are more important to learn from
-        },
-      });
+        }
+      );
 
       this.logger.debug(
         `🧠 Stored branch merge memory for branch ${branchId}: ${outcome}`
       );
     } catch (error) {
-      this.logger.warn(`Failed to store branch merge memory: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to store branch merge memory: ${errorMessage}`);
     }
   }
 

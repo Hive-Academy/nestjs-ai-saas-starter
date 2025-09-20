@@ -1,11 +1,29 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
-import { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import {
+  ICheckpointAdapter,
+  IMemoryAdapter,
+} from '@hive-academy/langgraph-core';
 import {
   ReplayOptions,
   WorkflowExecution,
   CheckpointNotFoundError,
   ReplayOptionsSchema,
 } from '../interfaces/time-travel.interface';
+// Removed unused imports
+
+/**
+ * Workflow registration interface for type safety
+ */
+interface WorkflowRegistration {
+  instance: {
+    [key: string]: (...args: any[]) => any;
+  };
+  metadata: {
+    entrypoint: string;
+    domain: string;
+    [key: string]: unknown;
+  };
+}
 
 /**
  * Service responsible for workflow replay functionality
@@ -19,10 +37,10 @@ export class WorkflowReplayService {
     @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter,
     @Inject('WORKFLOW_REGISTRY')
-    private readonly workflowRegistry: Map<string, unknown>,
+    private readonly workflowRegistry: Map<string, WorkflowRegistration>,
     @Optional()
     @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: any
+    private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
   /**
@@ -108,11 +126,10 @@ export class WorkflowReplayService {
         );
       }
 
-      const workflowInstance = (workflowRegistration as any).instance;
+      const workflowInstance = workflowRegistration.instance;
 
       // Determine entry point based on workflow metadata
-      const entrypoint =
-        (workflowRegistration as any).metadata?.entrypoint || 'execute';
+      const entrypoint = workflowRegistration.metadata.entrypoint || 'execute';
 
       // Execute the actual workflow method
       const result = await workflowInstance[entrypoint](modifiedState);
@@ -385,5 +402,129 @@ export class WorkflowReplayService {
         }`,
       };
     }
+  }
+
+  /**
+   * 🧠 MEMORY INTEGRATION: Store replay outcome for future optimization
+   * Private method to store replay results in memory for learning and analysis
+   */
+  private async storeReplayMemory<T extends Record<string, unknown>>(
+    originalThreadId: string,
+    checkpointId: string,
+    execution: WorkflowExecution<T>,
+    options: ReplayOptions<T>
+  ): Promise<void> {
+    if (!this.memoryAdapter) {
+      return; // Graceful degradation when memory adapter not available
+    }
+
+    try {
+      // Store replay memory with time-travel namespace
+      await this.memoryAdapter.store(
+        `time-travel.replays.${originalThreadId}`,
+        JSON.stringify({
+          originalThreadId,
+          checkpointId,
+          replayThreadId: execution.threadId,
+          executionData: {
+            status: execution.status,
+            startTime: execution.startTime,
+            endTime: execution.endTime,
+            duration: execution.endTime
+              ? execution.endTime.getTime() - execution.startTime.getTime()
+              : null,
+            error: execution.error?.message,
+          },
+          replayOptions: {
+            hasStateModifications: !!options.stateModifications,
+            modificationCount: options.stateModifications
+              ? Object.keys(options.stateModifications).length
+              : 0,
+            replaySpeed: options.replaySpeed || 1.0,
+            preserveTimestamps: options.preserveTimestamps || false,
+            skippedNodes: options.skipNodes?.length || 0,
+          },
+          analysisData: {
+            success: execution.status === 'completed',
+            checkpointCount: execution.checkpoints.length,
+            stateSize: JSON.stringify(execution.state).length,
+            hasResult: !!execution.result,
+            lessons: this.extractReplayLessons(execution, options),
+          },
+        }),
+        {
+          type: 'workflow-replay',
+          originalThreadId,
+          checkpointId,
+          replayThreadId: execution.threadId,
+          status: execution.status,
+          timestamp: new Date().toISOString(),
+          importance: execution.status === 'failed' ? 0.9 : 0.7, // Failed replays are more important to learn from
+        }
+      );
+
+      this.logger.debug(
+        `🧠 Stored replay memory for execution ${execution.executionId}`
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to store replay memory: ${errorMessage}`);
+      // Don't throw - memory storage failure shouldn't break replay functionality
+    }
+  }
+
+  /**
+   * Extract lessons learned from replay execution
+   * Private helper method to analyze replay outcomes for future optimization
+   */
+  private extractReplayLessons<T extends Record<string, unknown>>(
+    execution: WorkflowExecution<T>,
+    options: ReplayOptions<T>
+  ): string[] {
+    const lessons: string[] = [];
+
+    if (execution.status === 'failed') {
+      lessons.push(
+        'Replay failed - review checkpoint state and workflow compatibility'
+      );
+      if (options.stateModifications) {
+        lessons.push(
+          'State modifications may have caused incompatibility - validate modification patterns'
+        );
+      }
+      lessons.push(
+        'Consider alternative replay strategies or checkpoint selection'
+      );
+    } else if (execution.status === 'completed') {
+      if (options.stateModifications) {
+        lessons.push(
+          'State modifications successful - good pattern for similar scenarios'
+        );
+      }
+      if (options.replaySpeed && options.replaySpeed !== 1.0) {
+        lessons.push(
+          `Replay speed ${options.replaySpeed}x worked well - consider for similar replays`
+        );
+      }
+      lessons.push(
+        'Replay completed successfully - workflow and checkpoint are compatible'
+      );
+    }
+
+    // Analysis based on execution duration
+    if (execution.endTime && execution.startTime) {
+      const duration =
+        execution.endTime.getTime() - execution.startTime.getTime();
+      if (duration > 10000) {
+        // > 10 seconds
+        lessons.push('Long replay duration - consider optimization strategies');
+      } else if (duration < 1000) {
+        // < 1 second
+        lessons.push('Fast replay - good performance characteristics');
+      }
+    }
+
+    return lessons;
   }
 }

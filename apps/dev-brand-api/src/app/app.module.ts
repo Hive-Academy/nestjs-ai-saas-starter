@@ -110,32 +110,38 @@ import {
       },
     }),
 
-    // HITL module WITH CHECKPOINT INTEGRATION - adapter injection
+    // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
     HitlModule.forRootAsync({
-      useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+      useFactory: async (
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
+      ) => ({
         ...getHitlConfig(),
         checkpointAdapter,
+        memoryAdapter,
         adapters: {
           storage: Neo4jHitlStorageAdapter,
           interruptionStorage: Neo4jInterruptionStorageAdapter,
         },
       }),
-      inject: ['ICheckpointAdapter'],
+      inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // Workflow engine WITH STREAMING AND CHECKPOINT - adapter injection
+    // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
     WorkflowEngineModule.forRootAsync({
       useFactory: async (
         streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
       ): Promise<WorkflowEngineModuleOptions> => {
         return {
           ...getWorkflowEngineConfig(),
           streamingAdapter,
           checkpointAdapter,
+          memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter'],
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
     // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
@@ -155,34 +161,40 @@ import {
       inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // Functional API with checkpoint AND STREAMING - adapter injection
+    // Functional API with STREAMING, CHECKPOINT, AND MEMORY - adapter injection
     FunctionalApiModule.forRootAsync({
       useFactory: async (
         streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
       ): Promise<any> => {
         return {
           ...getFunctionalApiConfig(),
           streamingAdapter,
           checkpointAdapter,
+          memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter'], // Inject adapter via string token
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
 
-    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT - adapter injection
+    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT AND MEMORY - adapter injection
     ...(process.env.NODE_ENV !== 'production' ||
     process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
       ? [
           TimeTravelModule.forRootAsync({
-            useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+            useFactory: async (
+              checkpointAdapter: ICheckpointAdapter,
+              memoryAdapter: IMemoryAdapter
+            ) => ({
               ...getTimeTravelConfig(),
               checkpointAdapter,
+              memoryAdapter,
             }),
-            inject: ['ICheckpointAdapter'],
+            inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
           }),
         ]
       : []),

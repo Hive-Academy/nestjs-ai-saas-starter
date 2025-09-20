@@ -779,15 +779,6 @@ export interface MultiAgentModuleOptions {
     cohere?: {
       version?: string;
     };
-
-    // Deprecated - for backward compatibility only
-    apiKey?: string;
-    baseURL?: string;
-    defaultHeaders?: Record<string, string>;
-    llmProvider?: 'openai' | 'anthropic' | 'openrouter';
-    openrouterBaseUrl?: string;
-    openrouterSiteUrl?: string;
-    openrouterAppName?: string;
   };
 
   /**

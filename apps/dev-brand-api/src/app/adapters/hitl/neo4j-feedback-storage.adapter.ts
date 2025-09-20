@@ -26,7 +26,9 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
 
   constructor(private readonly neo4jService: Neo4jService) {
     super();
-    this.logger.debug('Neo4jFeedbackStorageAdapter initialized with Neo4jService');
+    this.logger.debug(
+      'Neo4jFeedbackStorageAdapter initialized with Neo4jService'
+    );
   }
 
   /**
@@ -75,7 +77,9 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       };
 
       await this.neo4jService.write(cypher, parameters);
-      this.logger.debug(`Stored feedback ${feedback.id} for execution ${feedback.executionId}`);
+      this.logger.debug(
+        `Stored feedback ${feedback.id} for execution ${feedback.executionId}`
+      );
     } catch (error) {
       this.logger.error(`Failed to store feedback ${feedback.id}:`, error);
       throw new FeedbackStorageError(
@@ -98,7 +102,7 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.read(cypher, { feedbackId });
-      
+
       if (result.records.length === 0) {
         return null;
       }
@@ -131,14 +135,17 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.read(cypher, { executionId });
-      
-      return result.records.map(record => {
+
+      return result.records.map((record) => {
         const feedbackNode = record.get('f').properties;
         const providerNode = record.get('p')?.properties;
         return this.mapNodeToFeedbackEntry(feedbackNode, providerNode);
       });
     } catch (error) {
-      this.logger.error(`Failed to get feedback for execution ${executionId}:`, error);
+      this.logger.error(
+        `Failed to get feedback for execution ${executionId}:`,
+        error
+      );
       throw new FeedbackStorageError(
         'Failed to retrieve feedback by execution from Neo4j',
         'getFeedbackByExecution',
@@ -171,14 +178,19 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       };
 
       const result = await this.neo4jService.write(cypher, parameters);
-      
+
       if (result.records.length === 0) {
         throw new Error(`Feedback ${feedbackId} not found`);
       }
 
-      this.logger.debug(`Updated feedback ${feedbackId} status to processed: ${processed}`);
+      this.logger.debug(
+        `Updated feedback ${feedbackId} status to processed: ${processed}`
+      );
     } catch (error) {
-      this.logger.error(`Failed to update feedback ${feedbackId} status:`, error);
+      this.logger.error(
+        `Failed to update feedback ${feedbackId} status:`,
+        error
+      );
       throw new FeedbackStorageError(
         'Failed to update feedback status in Neo4j',
         'updateFeedbackStatus',
@@ -199,8 +211,9 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.write(cypher, { feedbackId });
-      const deletedCount = result.records[0]?.get('deletedCount')?.toNumber() || 0;
-      
+      const deletedCount =
+        result.records[0]?.get('deletedCount')?.toNumber() || 0;
+
       this.logger.debug(`Deleted feedback ${feedbackId}: ${deletedCount > 0}`);
       return deletedCount > 0;
     } catch (error) {
@@ -227,8 +240,8 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.read(cypher, { type });
-      
-      return result.records.map(record => {
+
+      return result.records.map((record) => {
         const feedbackNode = record.get('f').properties;
         const providerNode = record.get('p')?.properties;
         return this.mapNodeToFeedbackEntry(feedbackNode, providerNode);
@@ -257,14 +270,17 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.read(cypher, { providerId });
-      
-      return result.records.map(record => {
+
+      return result.records.map((record) => {
         const feedbackNode = record.get('f').properties;
         const providerNode = record.get('p')?.properties;
         return this.mapNodeToFeedbackEntry(feedbackNode, providerNode);
       });
     } catch (error) {
-      this.logger.error(`Failed to get feedback by provider ${providerId}:`, error);
+      this.logger.error(
+        `Failed to get feedback by provider ${providerId}:`,
+        error
+      );
       throw new FeedbackStorageError(
         'Failed to retrieve feedback by provider from Neo4j',
         'getFeedbackByProvider',
@@ -287,8 +303,8 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.read(cypher, {});
-      
-      return result.records.map(record => {
+
+      return result.records.map((record) => {
         const feedbackNode = record.get('f').properties;
         const providerNode = record.get('p')?.properties;
         return this.mapNodeToFeedbackEntry(feedbackNode, providerNode);
@@ -320,11 +336,11 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const countsResult = await this.neo4jService.read(countsCypher, {});
-      
+
       // Calculate analytics
-      let totalFeedback = 0;
-      let processedCount = 0;
-      let unprocessedCount = 0;
+      const totalFeedback = 0;
+      const processedCount = 0;
+      const unprocessedCount = 0;
       const byType: Record<FeedbackType, number> = {
         [FeedbackType.APPROVAL]: 0,
         [FeedbackType.REJECTION]: 0,
@@ -344,8 +360,8 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
 
       const providerResult = await this.neo4jService.read(providerCypher, {});
       const byProvider: Record<string, number> = {};
-      
-      providerResult.records.forEach(record => {
+
+      providerResult.records.forEach((record) => {
         const providerId = record.get('providerId');
         const count = record.get('count').toNumber();
         if (providerId) {
@@ -365,7 +381,7 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
 
       const trendsResult = await this.neo4jService.read(trendsCypher, {});
       const trendsRecord = trendsResult.records[0];
-      
+
       const recentTrends = {
         positive: trendsRecord?.get('positive')?.toNumber() || 0,
         negative: trendsRecord?.get('negative')?.toNumber() || 0,
@@ -373,7 +389,8 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       };
 
       // Calculate success rate and other metrics
-      const successRate = totalFeedback > 0 ? processedCount / totalFeedback : 0;
+      const successRate =
+        totalFeedback > 0 ? processedCount / totalFeedback : 0;
 
       return {
         totalFeedback: totalFeedback || countsResult.records.length,
@@ -387,7 +404,8 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
         topPatterns: [], // Placeholder - would need pattern analysis
         learningMetrics: {
           averageConfidence: 0.7, // Placeholder
-          improvementTrends: recentTrends.positive > recentTrends.negative ? 0.1 : -0.1,
+          improvementTrends:
+            recentTrends.positive > recentTrends.negative ? 0.1 : -0.1,
           adaptationRate: successRate,
         },
         lastUpdated: new Date(),
@@ -416,8 +434,8 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
       `;
 
       const result = await this.neo4jService.read(cypher, {});
-      
-      return result.records.map(record => {
+
+      return result.records.map((record) => {
         const feedbackNode = record.get('f').properties;
         const providerNode = record.get('p')?.properties;
         return this.mapNodeToFeedbackEntry(feedbackNode, providerNode);
@@ -445,11 +463,11 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
 
       const result = await this.neo4jService.read(cypher, {});
       const executionFeedback: Record<string, FeedbackEntry[]> = {};
-      
-      result.records.forEach(record => {
+
+      result.records.forEach((record) => {
         const executionId = record.get('executionId');
         const feedbackList = record.get('feedbackList');
-        
+
         if (executionId) {
           executionFeedback[executionId] = feedbackList.map((item: any) => {
             const feedbackNode = item.feedback.properties;
@@ -473,10 +491,10 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
   /**
    * Cleanup old feedback entries
    */
-  async cleanup(maxAge: number = 86400000): Promise<number> {
+  async cleanup(maxAge = 86400000): Promise<number> {
     try {
       const cutoffDate = new Date(Date.now() - maxAge);
-      
+
       const cypher = `
         MATCH (f:FeedbackEntry)
         WHERE f.timestamp < datetime($cutoffDate)
@@ -484,13 +502,14 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
         RETURN count(f) as deletedCount
       `;
 
-      const result = await this.neo4jService.write(cypher, { 
-        cutoffDate: cutoffDate.toISOString() 
+      const result = await this.neo4jService.write(cypher, {
+        cutoffDate: cutoffDate.toISOString(),
       });
-      
-      const deletedCount = result.records[0]?.get('deletedCount')?.toNumber() || 0;
+
+      const deletedCount =
+        result.records[0]?.get('deletedCount')?.toNumber() || 0;
       this.logger.debug(`Cleaned up ${deletedCount} old feedback entries`);
-      
+
       return deletedCount;
     } catch (error) {
       this.logger.error('Failed to cleanup old feedback:', error);
@@ -519,10 +538,16 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
   /**
    * Map Neo4j node properties to FeedbackEntry
    */
-  private mapNodeToFeedbackEntry(feedbackNode: any, providerNode?: any): FeedbackEntry {
-    const content = feedbackNode.content ? JSON.parse(feedbackNode.content) : {};
-    const processingResult = feedbackNode.processingResult ? 
-      JSON.parse(feedbackNode.processingResult) : undefined;
+  private mapNodeToFeedbackEntry(
+    feedbackNode: any,
+    providerNode?: any
+  ): FeedbackEntry {
+    const content = feedbackNode.content
+      ? JSON.parse(feedbackNode.content)
+      : {};
+    const processingResult = feedbackNode.processingResult
+      ? JSON.parse(feedbackNode.processingResult)
+      : undefined;
 
     return {
       id: feedbackNode.id,

@@ -22,6 +22,7 @@ export * from './lib/base/agent-node.base';
 
 // Interfaces
 export * from './lib/interfaces/workflow-engine.interface';
+export type * from './lib/interfaces/workflow-metadata.interface';
 
 // Constants
 export * from './lib/constants';

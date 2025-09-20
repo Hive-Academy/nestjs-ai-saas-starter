@@ -102,9 +102,13 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     if (this.memoryAdapter) {
       try {
         await this.storeAgentRegistration(definition);
-        this.logger.debug(`🧠 Agent ${definition.id} registered with memory tracking`);
+        this.logger.debug(
+          `🧠 Agent ${definition.id} registered with memory tracking`
+        );
       } catch (error) {
-        this.logger.warn(`Failed to store agent registration in memory: ${error}`);
+        this.logger.warn(
+          `Failed to store agent registration in memory: ${error}`
+        );
       }
     }
   }
@@ -133,11 +137,18 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     // 🧠 MEMORY SUPERPOWERS: Enhance with agent compatibility patterns
     if (this.memoryAdapter && agents.length > 0) {
       try {
-        const enhancedAgents = await this.enhanceAgentsWithCompatibility(agents, capability);
-        this.logger.debug(`🧠 Enhanced ${agents.length} agents with compatibility patterns for capability: ${capability}`);
+        const enhancedAgents = await this.enhanceAgentsWithCompatibility(
+          agents,
+          capability
+        );
+        this.logger.debug(
+          `🧠 Enhanced ${agents.length} agents with compatibility patterns for capability: ${capability}`
+        );
         return enhancedAgents;
       } catch (error) {
-        this.logger.warn(`Failed to enhance agents with compatibility: ${error}`);
+        this.logger.warn(
+          `Failed to enhance agents with compatibility: ${error}`
+        );
       }
     }
 
@@ -195,12 +206,21 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     let coordinationContext: any = {};
     if (this.memoryAdapter) {
       try {
-        coordinationContext = await this.getOptimalCoordinationContext(networkId, input);
-        this.logger.debug(`🧠 Retrieved coordination context for network ${networkId}`, {
-          agentCompatibility: coordinationContext.agentCompatibility?.length || 0,
-          networkOptimizations: coordinationContext.networkOptimizations?.length || 0,
-          performancePatterns: coordinationContext.performancePatterns?.length || 0
-        });
+        coordinationContext = await this.getOptimalCoordinationContext(
+          networkId,
+          input
+        );
+        this.logger.debug(
+          `🧠 Retrieved coordination context for network ${networkId}`,
+          {
+            agentCompatibility:
+              coordinationContext.agentCompatibility?.length || 0,
+            networkOptimizations:
+              coordinationContext.networkOptimizations?.length || 0,
+            performancePatterns:
+              coordinationContext.performancePatterns?.length || 0,
+          }
+        );
       } catch (error) {
         this.logger.warn(`Failed to get coordination context: ${error}`);
       }
@@ -288,7 +308,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
 
     // 🧠 MEMORY SUPERPOWERS: Track execution start time for performance learning
     const executionStartTime = Date.now();
-    
+
     const result = await this.networkManager.executeWorkflow(networkId, {
       ...enhancedInput,
       config: checkpointConfig,
@@ -305,9 +325,11 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           result,
           coordinationContext,
           executionTime: Date.now() - executionStartTime,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        this.logger.debug(`🧠 Stored coordination event for learning: ${executionId}`);
+        this.logger.debug(
+          `🧠 Stored coordination event for learning: ${executionId}`
+        );
       } catch (error) {
         this.logger.warn(`Failed to store coordination event: ${error}`);
       }
@@ -477,12 +499,19 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     let networkOptimizations: any = {};
     if (this.memoryAdapter) {
       try {
-        networkOptimizations = await this.getOptimalNetworkConfiguration(networkId, agents, networkType);
-        this.logger.debug(`🧠 Retrieved network optimizations for ${networkId}`, {
-          agentOrderOptimized: networkOptimizations.agentOrder?.length > 0,
-          topologyOptimized: !!networkOptimizations.topology,
-          performanceTuned: !!networkOptimizations.performance
-        });
+        networkOptimizations = await this.getOptimalNetworkConfiguration(
+          networkId,
+          agents,
+          networkType
+        );
+        this.logger.debug(
+          `🧠 Retrieved network optimizations for ${networkId}`,
+          {
+            agentOrderOptimized: networkOptimizations.agentOrder?.length > 0,
+            topologyOptimized: !!networkOptimizations.topology,
+            performanceTuned: !!networkOptimizations.performance,
+          }
+        );
       } catch (error) {
         this.logger.warn(`Failed to get network optimizations: ${error}`);
       }
@@ -515,9 +544,11 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           type: 'swarm',
           agents,
           config: {
-            enableDynamicHandoffs: networkOptimizations.dynamicHandoffs !== false,
+            enableDynamicHandoffs:
+              networkOptimizations.dynamicHandoffs !== false,
             messageHistory: {
-              removeHandoffMessages: networkOptimizations.cleanMessages !== false,
+              removeHandoffMessages:
+                networkOptimizations.cleanMessages !== false,
               addAgentAttribution: networkOptimizations.attribution !== false,
             },
             contextIsolation: {
@@ -555,9 +586,11 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           type: networkType,
           agents,
           optimizations: networkOptimizations,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        this.logger.debug(`🧠 Stored network creation event: ${createdNetworkId}`);
+        this.logger.debug(
+          `🧠 Stored network creation event: ${createdNetworkId}`
+        );
       } catch (error) {
         this.logger.warn(`Failed to store network creation event: ${error}`);
       }
@@ -1093,7 +1126,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         role: (agent.metadata?.role as string) || 'agent',
         metadata: agent.metadata,
         registeredAt: new Date().toISOString(),
-        type: 'agent_registration'
+        type: 'agent_registration',
       };
 
       await this.memoryAdapter.store(
@@ -1105,7 +1138,12 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           agentId: agent.id,
           importance: 0.7,
           persistent: true,
-          tags: JSON.stringify(['agent', 'registration', agent.id, 'coordination'])
+          tags: JSON.stringify([
+            'agent',
+            'registration',
+            agent.id,
+            'coordination',
+          ]),
         }
       );
     } catch (error) {
@@ -1127,7 +1165,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       const compatibilityMemories = await this.memoryAdapter.search({
         query: `capability ${capability} agent compatibility performance`,
         limit: 20,
-        minRelevance: 0.6
+        minRelevance: 0.6,
       });
 
       // Extract performance scores for each agent
@@ -1156,13 +1194,13 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       });
 
       // Add compatibility metadata
-      enhancedAgents.forEach(agent => {
+      enhancedAgents.forEach((agent) => {
         const compatibleAgents = agentCompatibility.get(agent.id) || [];
         agent.metadata = {
           ...agent.metadata,
           learnedPerformance: agentPerformance.get(agent.id) || 0.5,
           compatibleAgents,
-          memoryEnhanced: true
+          memoryEnhanced: true,
         };
       });
 
@@ -1184,33 +1222,37 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
 
     try {
       const query = input.messages?.[0]?.content || input.messages?.[0] || '';
-      
+
       // Phase 1: Get agent compatibility patterns
       const compatibilityMemories = await this.memoryAdapter.search({
         query: `network ${networkId} agent compatibility success`,
         limit: 10,
-        minRelevance: 0.7
+        minRelevance: 0.7,
       });
 
       // Phase 2: Get network optimization patterns
       const optimizationMemories = await this.memoryAdapter.search({
         query: `network optimization topology performance ${query}`,
         limit: 5,
-        minRelevance: 0.6
+        minRelevance: 0.6,
       });
 
       // Phase 3: Get performance patterns for similar tasks
       const performanceMemories = await this.memoryAdapter.search({
         query: `agent performance execution success ${query}`,
         limit: 15,
-        minRelevance: 0.5
+        minRelevance: 0.5,
       });
 
       return {
-        agentCompatibility: this.extractCompatibilityPatterns(compatibilityMemories),
-        networkOptimizations: this.extractOptimizationPatterns(optimizationMemories),
-        performancePatterns: this.extractPerformancePatterns(performanceMemories),
-        contextGenerated: new Date().toISOString()
+        agentCompatibility: this.extractCompatibilityPatterns(
+          compatibilityMemories
+        ),
+        networkOptimizations:
+          this.extractOptimizationPatterns(optimizationMemories),
+        performancePatterns:
+          this.extractPerformancePatterns(performanceMemories),
+        contextGenerated: new Date().toISOString(),
       };
     } catch (error) {
       this.logger.warn(`Failed to get coordination context: ${error}`);
@@ -1234,8 +1276,14 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     if (!this.memoryAdapter) return;
 
     try {
-      const { networkId, executionId, result, executionTime, coordinationContext } = eventData;
-      
+      const {
+        networkId,
+        executionId,
+        result,
+        executionTime,
+        coordinationContext,
+      } = eventData;
+
       // Store overall coordination event
       const coordinationEvent = {
         networkId,
@@ -1246,7 +1294,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         coordinationContext,
         inputType: typeof eventData.input.messages?.[0],
         outputQuality: result.success ? 0.8 : 0.3,
-        timestamp: eventData.timestamp
+        timestamp: eventData.timestamp,
       };
 
       await this.memoryAdapter.store(
@@ -1263,8 +1311,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
             'coordination',
             'execution',
             networkId,
-            result.success ? 'success' : 'failure'
-          ])
+            result.success ? 'success' : 'failure',
+          ]),
         }
       );
 
@@ -1272,7 +1320,6 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       if (result.executionPath && Array.isArray(result.executionPath)) {
         await this.storeAgentPerformanceData(result.executionPath, eventData);
       }
-
     } catch (error) {
       this.logger.warn(`Failed to store coordination event: ${error}`);
     }
@@ -1292,7 +1339,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         const agentId = executionPath[i];
         const isLastAgent = i === executionPath.length - 1;
         const wasSuccessful = eventData.result.success;
-        
+
         const performanceData = {
           agentId,
           networkId: eventData.networkId,
@@ -1306,8 +1353,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           context: {
             previousAgents: executionPath.slice(0, i),
             nextAgents: executionPath.slice(i + 1),
-            coordinationContext: eventData.coordinationContext
-          }
+            coordinationContext: eventData.coordinationContext,
+          },
         };
 
         await this.memoryAdapter.store(
@@ -1325,8 +1372,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
               'agent',
               agentId,
               eventData.networkId,
-              wasSuccessful ? 'success' : 'failure'
-            ])
+              wasSuccessful ? 'success' : 'failure',
+            ]),
           }
         );
       }
@@ -1350,26 +1397,32 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       const topologyMemories = await this.memoryAdapter.search({
         query: `network ${networkType} topology optimization agent order`,
         limit: 10,
-        minRelevance: 0.6
+        minRelevance: 0.6,
       });
 
       // Get configuration optimization patterns
       const configMemories = await this.memoryAdapter.search({
         query: `network ${networkType} configuration performance success`,
         limit: 5,
-        minRelevance: 0.7
+        minRelevance: 0.7,
       });
 
       const optimizations: any = {};
 
       // Extract agent order optimization
-      const agentOrderPatterns = this.extractAgentOrderPatterns(topologyMemories, agents);
+      const agentOrderPatterns = this.extractAgentOrderPatterns(
+        topologyMemories,
+        agents
+      );
       if (agentOrderPatterns.length > 0) {
         optimizations.agentOrder = agentOrderPatterns;
       }
 
       // Extract configuration optimizations
-      const configOptimizations = this.extractConfigurationOptimizations(configMemories, networkType);
+      const configOptimizations = this.extractConfigurationOptimizations(
+        configMemories,
+        networkType
+      );
       if (Object.keys(configOptimizations).length > 0) {
         optimizations.configuration = configOptimizations;
       }
@@ -1377,14 +1430,19 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       // Network type specific optimizations
       switch (networkType) {
         case 'swarm':
-          optimizations.dynamicHandoffs = this.shouldEnableDynamicHandoffs(topologyMemories);
-          optimizations.cleanMessages = this.shouldCleanMessages(configMemories);
+          optimizations.dynamicHandoffs =
+            this.shouldEnableDynamicHandoffs(topologyMemories);
+          optimizations.cleanMessages =
+            this.shouldCleanMessages(configMemories);
           optimizations.attribution = this.shouldAddAttribution(configMemories);
           optimizations.isolation = this.shouldEnableIsolation(configMemories);
           break;
-        
+
         case 'hierarchical':
-          optimizations.levels = this.getOptimalHierarchy(topologyMemories, agents);
+          optimizations.levels = this.getOptimalHierarchy(
+            topologyMemories,
+            agents
+          );
           break;
       }
 
@@ -1412,10 +1470,12 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         networkId: eventData.networkId,
         type: eventData.type,
         agentCount: eventData.agents.length,
-        agentIds: eventData.agents.map(a => a.id),
-        agentCapabilities: eventData.agents.flatMap(a => a.capabilities || []),
+        agentIds: eventData.agents.map((a) => a.id),
+        agentCapabilities: eventData.agents.flatMap(
+          (a) => a.capabilities || []
+        ),
         optimizations: eventData.optimizations,
-        timestamp: eventData.timestamp
+        timestamp: eventData.timestamp,
       };
 
       await this.memoryAdapter.store(
@@ -1432,8 +1492,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
             'network',
             'creation',
             eventData.type,
-            eventData.networkId
-          ])
+            eventData.networkId,
+          ]),
         }
       );
     } catch (error) {
@@ -1450,7 +1510,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    */
   private extractCompatibilityPatterns(memories: any[]): any[] {
     const patterns: any[] = [];
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1470,7 +1530,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    */
   private extractOptimizationPatterns(memories: any[]): any[] {
     const patterns: any[] = [];
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1490,7 +1550,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
    */
   private extractPerformancePatterns(memories: any[]): any[] {
     const patterns: any[] = [];
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1498,7 +1558,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
           patterns.push({
             agentId: data.agentId,
             score: data.performanceScore,
-            context: data.context
+            context: data.context,
           });
         }
       } catch {
@@ -1512,15 +1572,20 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   /**
    * Extract agent order patterns from topology memories
    */
-  private extractAgentOrderPatterns(memories: any[], agents: AgentDefinition[]): string[] {
-    const agentIds = agents.map(a => a.id);
+  private extractAgentOrderPatterns(
+    memories: any[],
+    agents: AgentDefinition[]
+  ): string[] {
+    const agentIds = agents.map((a) => a.id);
     const orderPatterns: { [key: string]: number } = {};
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
         if (data.agentOrder && Array.isArray(data.agentOrder)) {
-          const relevantOrder = data.agentOrder.filter((id: string) => agentIds.includes(id));
+          const relevantOrder = data.agentOrder.filter((id: string) =>
+            agentIds.includes(id)
+          );
           const orderKey = relevantOrder.join(',');
           orderPatterns[orderKey] = (orderPatterns[orderKey] || 0) + 1;
         }
@@ -1530,18 +1595,23 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     }
 
     // Return the most common order pattern, or original order if no patterns found
-    const bestPattern = Object.keys(orderPatterns).reduce((a, b) => 
-      orderPatterns[a] > orderPatterns[b] ? a : b, '');
-    
+    const bestPattern = Object.keys(orderPatterns).reduce(
+      (a, b) => (orderPatterns[a] > orderPatterns[b] ? a : b),
+      ''
+    );
+
     return bestPattern ? bestPattern.split(',') : agentIds;
   }
 
   /**
    * Extract configuration optimizations from memories
    */
-  private extractConfigurationOptimizations(memories: any[], networkType: string): any {
+  private extractConfigurationOptimizations(
+    memories: any[],
+    networkType: string
+  ): any {
     const optimizations: any = {};
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1562,7 +1632,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   private shouldEnableDynamicHandoffs(memories: any[]): boolean {
     let successCount = 0;
     let totalCount = 0;
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1577,7 +1647,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       }
     }
 
-    return totalCount > 0 ? (successCount / totalCount) > 0.6 : true; // Default to true
+    return totalCount > 0 ? successCount / totalCount > 0.6 : true; // Default to true
   }
 
   /**
@@ -1586,7 +1656,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   private shouldCleanMessages(memories: any[]): boolean {
     let successCount = 0;
     let totalCount = 0;
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1601,7 +1671,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       }
     }
 
-    return totalCount > 0 ? (successCount / totalCount) > 0.5 : true; // Default to true
+    return totalCount > 0 ? successCount / totalCount > 0.5 : true; // Default to true
   }
 
   /**
@@ -1610,7 +1680,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   private shouldAddAttribution(memories: any[]): boolean {
     let successCount = 0;
     let totalCount = 0;
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1625,7 +1695,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       }
     }
 
-    return totalCount > 0 ? (successCount / totalCount) > 0.7 : true; // Default to true
+    return totalCount > 0 ? successCount / totalCount > 0.7 : true; // Default to true
   }
 
   /**
@@ -1634,7 +1704,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   private shouldEnableIsolation(memories: any[]): boolean {
     let successCount = 0;
     let totalCount = 0;
-    
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
@@ -1649,24 +1719,29 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       }
     }
 
-    return totalCount > 0 ? (successCount / totalCount) > 0.6 : false; // Default to false
+    return totalCount > 0 ? successCount / totalCount > 0.6 : false; // Default to false
   }
 
   /**
    * Get optimal hierarchy levels based on learned patterns
    */
-  private getOptimalHierarchy(memories: any[], agents: AgentDefinition[]): string[][] {
-    const agentIds = agents.map(a => a.id);
-    
+  private getOptimalHierarchy(
+    memories: any[],
+    agents: AgentDefinition[]
+  ): string[][] {
+    const agentIds = agents.map((a) => a.id);
+
     for (const memory of memories) {
       try {
         const data = JSON.parse(memory.content);
         if (data.levels && Array.isArray(data.levels) && data.success) {
           // Filter levels to only include agents we have
-          const relevantLevels = data.levels.map((level: string[]) => 
-            level.filter(id => agentIds.includes(id))
-          ).filter((level: string[]) => level.length > 0);
-          
+          const relevantLevels = data.levels
+            .map((level: string[]) =>
+              level.filter((id) => agentIds.includes(id))
+            )
+            .filter((level: string[]) => level.length > 0);
+
           if (relevantLevels.length > 0) {
             return relevantLevels;
           }
@@ -1821,54 +1896,5 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       );
       // Don't throw - memory failures shouldn't break workflow execution
     }
-  }
-
-  // ============================================================================
-  // LEGACY COMPATIBILITY (Deprecated methods for backward compatibility)
-  // ============================================================================
-
-  /**
-   * @deprecated Use setupNetwork() instead
-   */
-  async createSupervisorWorkflow(
-    supervisorAgent: string,
-    workerAgents: readonly string[],
-    options: any = {}
-  ): Promise<string> {
-    this.logger.warn(
-      'createSupervisorWorkflow is deprecated, use setupNetwork instead'
-    );
-
-    const agents = [supervisorAgent, ...workerAgents]
-      .map((id) => this.agentRegistry.findAgent(id))
-      .filter(Boolean) as AgentDefinition[];
-
-    return this.setupNetwork(`supervisor_${Date.now()}`, agents, 'supervisor', {
-      workers: [...workerAgents],
-      ...options,
-    });
-  }
-
-  /**
-   * @deprecated Use createNetwork() directly instead
-   */
-  async createAgentNetwork(
-    name: string,
-    agents: readonly AgentDefinition[],
-    topology: any
-  ): Promise<string> {
-    this.logger.warn(
-      'createAgentNetwork is deprecated, use createNetwork instead'
-    );
-
-    return this.createNetwork({
-      id: `network_${name}_${Date.now()}`,
-      type: 'supervisor',
-      agents,
-      config: {
-        systemPrompt: `Network ${name} coordinator`,
-        workers: agents.map((a) => a.id),
-      },
-    });
   }
 }
