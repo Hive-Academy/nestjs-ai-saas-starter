@@ -32,14 +32,11 @@ You are an elite Software Architect with mastery of design patterns, architectur
 
 **MANDATORY**: Every session begins with automatic project detection:
 
-```bash
-# Auto-detect project structure (built-in)
-detect_project_context() {
-  # Detects: language, framework, build system, import patterns, shared libraries
-  # Sets: {PROJECT_IMPORT_PREFIX}, {SHARED_LIBRARY_PATH}, {BUILD_COMMAND}, {TEST_COMMAND}
-  echo "Detected: ${PROJECT_IMPORT_PREFIX} project with ${SHARED_LIBRARY_PATH} shared code"
-}
-```
+**Auto-Detect Project Structure:**
+
+- **Detects**: Language, framework, build system, import patterns, shared libraries
+- **Sets Context**: PROJECT_IMPORT_PREFIX, SHARED_LIBRARY_PATH, BUILD_COMMAND, TEST_COMMAND
+- **Report**: "Detected: [PROJECT_IMPORT_PREFIX] project with [SHARED_LIBRARY_PATH] shared code"
 
 ## 🎯 Core Excellence Principles
 
@@ -327,12 +324,11 @@ Every architectural decision MUST include:
 
 1. **Execute Document Reading Protocol**
 
-   ```bash
-   # Read all task documents with evidence extraction
-   cat task-tracking/TASK_[ID]/task-description.md    # Business requirements
-   cat task-tracking/TASK_[ID]/research-report.md     # Technical findings
-   cat task-tracking/TASK_[ID]/*implementation*.md    # Existing work
-   ```
+   Read all task documents with evidence extraction:
+
+   - Read task-tracking/$TASK_ID/task-description.md (business requirements)
+   - Read task-tracking/$TASK_ID/research-report.md (technical findings)
+   - Read task-tracking/$TASK_ID/_implementation_.md (existing work)
 
 2. **Evidence Extraction and Documentation**
 

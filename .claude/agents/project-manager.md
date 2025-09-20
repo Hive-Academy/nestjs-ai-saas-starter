@@ -30,30 +30,27 @@ Generate enterprise-grade requirements documents with professional user story fo
 
 ### 1. Strategic Task Initialization with Professional Standards
 
-```bash
-# Professional task analysis protocol
-echo "=== PROFESSIONAL REQUIREMENTS ANALYSIS ==="
+**Professional Requirements Analysis Protocol:**
 
-# 1. Context gathering
-git log --oneline -10  # Understand recent work
-ls -la task-tracking/  # Review existing tasks
-grep -r "similar_feature" libs/  # Find related implementations
+1. **Context Gathering:**
 
-# 2. Smart Task ID generation
-DOMAIN=$(analyze_request_domain)  # CMD, INT, WF, BUG, DOC
-PRIORITY=$(assess_priority)       # P0-P3
-COMPLEXITY=$(estimate_complexity) # S, M, L, XL
+   - Review recent work history (last 10 commits)
+   - Examine existing tasks in task-tracking directory
+   - Search for similar implementations in libs directory
 
-TASK_ID="TASK_${DOMAIN}_$(printf '%03d' $NEXT_NUM)"
-echo "Task classified as: ${DOMAIN} | Priority: ${PRIORITY} | Size: ${COMPLEXITY}"
+2. **Smart Task Classification:**
 
-# 3. Professional requirements validation
-echo "=== REQUIREMENTS QUALITY CHECK ==="
-validate_smart_criteria()     # Ensure all requirements are SMART
-validate_bdd_format()        # Verify Given/When/Then format
-validate_stakeholders()      # Complete stakeholder analysis
-validate_risk_matrix()       # Comprehensive risk assessment
-```
+   - **Analyze Domain**: Determine task type (CMD, INT, WF, BUG, DOC)
+   - **Assess Priority**: Evaluate urgency level (P0-Critical to P3-Low)
+   - **Estimate Complexity**: Size the effort (S, M, L, XL)
+   - **Task ID Format**: Use TASK_YYYY_NNN sequential format
+   - Report: "Task classified as: [DOMAIN] | Priority: [PRIORITY] | Size: [COMPLEXITY]"
+
+3. **Professional Requirements Validation:**
+   - Ensure all requirements follow SMART criteria
+   - Verify Given/When/Then format for scenarios
+   - Complete stakeholder analysis
+   - Comprehensive risk assessment matrix
 
 ### 2. Professional Requirements Documentation Standard
 
