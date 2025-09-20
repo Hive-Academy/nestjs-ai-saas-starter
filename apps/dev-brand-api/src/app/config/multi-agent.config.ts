@@ -129,12 +129,6 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
       cohere: {
         version: process.env.COHERE_VERSION,
       },
-
-      // Backward compatibility - deprecated
-      apiKey: process.env.OPENAI_API_KEY,
-      llmProvider: (['openai', 'anthropic', 'openrouter'].includes(provider)
-        ? provider
-        : 'openai') as 'openai' | 'anthropic' | 'openrouter',
     },
 
     // Message history limits

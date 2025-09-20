@@ -5,9 +5,7 @@
     "moduleResolution": "bundler",
     "declaration": true,
     "declarationMap": true,
-    "outDir": "../../../dist/libs/langgraph-time-travel",
-    "composite": false,
-    "skipLibCheck": true
+    "outDir": "../../../dist/libs/langgraph-time-travel"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]

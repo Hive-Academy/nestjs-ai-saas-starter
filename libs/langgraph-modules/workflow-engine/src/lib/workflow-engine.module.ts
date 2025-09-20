@@ -10,6 +10,7 @@ import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor
 import {
   IStreamingService,
   ICheckpointAdapter,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 export interface WorkflowEngineModuleOptions {
@@ -33,6 +34,7 @@ export interface WorkflowEngineModuleOptions {
   // Optional adapters for external services
   streamingAdapter?: IStreamingService;
   checkpointAdapter?: ICheckpointAdapter;
+  memoryAdapter?: IMemoryAdapter;
 }
 
 @Module({})
