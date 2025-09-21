@@ -1,12 +1,11 @@
 import {
-  Injectable,
-  inject,
-  signal,
   computed,
   DestroyRef,
+  inject,
+  Injectable,
+  signal
 } from '@angular/core';
 import * as THREE from 'three';
-import { injectStore } from 'angular-three';
 
 // Strict interface definitions following Angular best practices
 // Interface removed as it was not being used
@@ -33,9 +32,10 @@ interface HybridGroupConfig {
   providedIn: 'root',
 })
 export class AngularThreeFoundationService {
-  // Angular Three store integration using inject() function
-  private readonly ngtStore = injectStore({ optional: true });
+  // Angular Three store integration - get dynamically when needed
+  private ngtStore: any = null;
   private readonly destroyRef = inject(DestroyRef);
+
 
   // Foundation state - now managed by Angular Three with strict typing
   private readonly _isInitialized = signal(false);
@@ -46,9 +46,18 @@ export class AngularThreeFoundationService {
   readonly canvasReady = this._canvasReady.asReadonly();
 
   // Angular Three computed properties for reactive access with strict typing
-  readonly scene = computed((): THREE.Scene | null => this.ngtStore?.get('scene') || null);
-  readonly camera = computed((): THREE.Camera | null => this.ngtStore?.get('camera') || null);
-  readonly renderer = computed((): THREE.WebGLRenderer | null => this.ngtStore?.get('gl') || null);
+  readonly scene = computed((): THREE.Scene | null => {
+    const store = this.getStore();
+    return store?.get('scene') || null;
+  });
+  readonly camera = computed((): THREE.Camera | null => {
+    const store = this.getStore();
+    return store?.get('camera') || null;
+  });
+  readonly renderer = computed((): THREE.WebGLRenderer | null => {
+    const store = this.getStore();
+    return store?.get('gl') || null;
+  });
 
   // Performance monitoring with strict typing
   private readonly _frameTime = signal(16);
@@ -65,9 +74,38 @@ export class AngularThreeFoundationService {
   );
 
   readonly aspectRatio = computed(() => {
-    const size = this.ngtStore?.get('size');
+    const store = this.getStore();
+    const size = store?.get('size');
     return size ? size.width / size.height : 1;
   });
+
+  /**
+   * Get Angular Three store dynamically when needed
+   * This allows the store to be captured after NgtCanvas is initialized
+   */
+  private getStore(): any {
+    if (!this.ngtStore) {
+      try {
+        // Try to access the store from the global Angular Three context
+        // This is a fallback approach when inject context isn't available
+        const globalThis = window as any;
+        if (globalThis.NgtStore) {
+          this.ngtStore = globalThis.NgtStore;
+        }
+      } catch (error) {
+        // Store not available yet
+      }
+    }
+    return this.ngtStore;
+  }
+
+  /**
+   * Set the store reference from a component that has access to it
+   * This should be called from the HybridSceneComponent when the canvas is created
+   */
+  setStore(store: any): void {
+    this.ngtStore = store;
+  }
 
   /**
    * Initialize Angular Three foundation
@@ -75,17 +113,18 @@ export class AngularThreeFoundationService {
    */
   async initialize(): Promise<boolean> {
     try {
-      // Wait for Angular Three store to be available
-      if (!this.ngtStore) {
-        console.warn('Angular Three store not available. Ensure NgtCanvas is properly configured.');
-        return false;
-      }
-
-      // Wait for scene and renderer to be ready with timeout
+      // Wait for Angular Three store to be available with timeout
       let attempts = 0;
       const maxAttempts = 50; // 5 second timeout
 
       while (attempts < maxAttempts) {
+        const store = this.getStore();
+        if (!store) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+          continue;
+        }
+
         const scene = this.scene();
         const renderer = this.renderer();
 

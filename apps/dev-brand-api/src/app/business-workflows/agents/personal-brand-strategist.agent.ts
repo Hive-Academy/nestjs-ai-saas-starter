@@ -1,26 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import type { AgentState } from '@hive-academy/langgraph-multi-agent';
+import type { WorkflowAgentState } from '../types';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
-import { StoreMemory, MemoryContext } from '@hive-academy/langgraph-memory';
+// Note: Memory decorators will be available in future version
+// import { StoreMemory, MemoryContext } from '@hive-academy/langgraph-memory';
 import {
   Entrypoint,
   Task,
   Node,
   Edge,
+  FunctionalWorkflow as Workflow,
 } from '@hive-academy/langgraph-functional-api';
 import type {
   TaskExecutionContext,
   TaskExecutionResult,
 } from '@hive-academy/langgraph-functional-api';
+import {
+  DeclarativeWorkflowBase,
+  WorkflowGraphBuilderService,
+  SubgraphManagerService,
+  MetadataProcessorService,
+  WorkflowStreamService,
+} from '@hive-academy/langgraph-workflow-engine';
+import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
 
 /**
- * Enhanced Personal Brand Strategist Agent - Workflow Agent Type
+ * 🆕 ENHANCED: Personal Brand Strategist Agent - Unified Decorator Demo
  * 
- * This agent demonstrates the new workflow-agent architecture with internal
- * multi-step workflow using @Entrypoint, @Task, @Node, and @Edge decorators.
+ * This agent demonstrates the enhanced decorator architecture:
+ * 1. Unified @Agent decorator (eliminates @Workflow duplication)
+ * 2. Functional @Edge decorators (boolean return methods)
  * 
  * The agent internally executes multiple steps:
  * 1. Initialize brand analysis
@@ -34,12 +46,18 @@ import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory
 @Agent({
   id: 'personal-brand-strategist',
   name: 'Personal Brand Strategist',
-  type: 'workflow-agent', // 🆕 New workflow agent type
+  type: 'workflow-agent', // 🆕 Enhanced workflow agent type
   capabilities: ['brand-analysis', 'strategic-positioning', 'career-guidance'],
   tools: ['memory-analysis', 'brand-optimization', 'strategy-generation'],
   priority: 'high',
   executionTime: 'medium',
-  workflowConfig: {
+  // 🆕 ENHANCEMENT: Unified workflow configuration (eliminates @Workflow duplication)
+  workflow: {
+    name: 'brand-strategist-workflow',
+    description: 'Enhanced Personal Brand Strategist with internal multi-step workflow',
+    streaming: true,
+    confidenceThreshold: 0.7,
+    metrics: true,
     enableInternalStreaming: true,
     enableInternalCheckpointing: true,
     internalTimeout: 60000,
@@ -49,12 +67,32 @@ import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory
     stateKey: 'brand-strategist-workflow',
   },
 })
+// 🆕 ENHANCEMENT: No separate @Workflow decorator needed!
 @Injectable()
-export class PersonalBrandStrategistAgent {
+export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
+  
+  // 🆕 ENHANCEMENT: workflowConfig now automatically derived from @Agent decorator
+  // No need to manually specify - automatically configured from unified workflow property
+
   constructor(
     private readonly llm: LlmProviderService,
-    private readonly memory: PersonalBrandMemoryService
-  ) {}
+    private readonly memory: PersonalBrandMemoryService,
+    @Inject(EventEmitter2) eventEmitter: EventEmitter2,
+    @Inject(WorkflowGraphBuilderService) graphBuilder: WorkflowGraphBuilderService,
+    @Inject(SubgraphManagerService) subgraphManager: SubgraphManagerService,
+    @Inject(MetadataProcessorService) metadataProcessor: MetadataProcessorService,
+    @Optional() @Inject(WorkflowStreamService) streamService?: WorkflowStreamService,
+    @Optional() eventProcessor?: EventStreamProcessorService
+  ) {
+    super(
+      eventEmitter,
+      graphBuilder,
+      subgraphManager,
+      metadataProcessor,
+      streamService,
+      eventProcessor
+    );
+  }
 
   /**
    * Entry point for the internal brand strategy workflow
@@ -85,7 +123,7 @@ export class PersonalBrandStrategistAgent {
    */
   @Task({ dependsOn: ['initializeBrandAnalysis'] })
   @StreamProgress({ enabled: true })
-  @MemoryContext({ contextKey: 'brand-data-gathering' })
+  // @MemoryContext({ contextKey: 'brand-data-gathering' }) // TODO: Implement when decorator available
   async gatherBrandData(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = (state.metadata?.githubUsername as string) || 'developer';
@@ -234,20 +272,24 @@ Format as JSON with: { score, strengths, improvements, positioning }
   }
 
   /**
-   * Edge definition: route to optimization path for strong brands
+   * 🆕 ENHANCED: Functional edge - route to optimization path for strong brands
+   * Now uses boolean return instead of condition property
    */
-  @Edge('assessBrandStrength', 'optimizeBrand', { 
-    condition: (state: any) => state.metadata?.brandScore > 0.7 
-  })
-  optimizePathEdge() {}
+  @Edge('assessBrandStrength', 'optimizeBrand')
+  shouldOptimizeBrand(state: WorkflowAgentState): boolean {
+    const brandScore = (state.metadata?.brandScore as number) || 0.5;
+    return brandScore > 0.7;
+  }
 
   /**
-   * Edge definition: route to rebuild path for weak brands
+   * 🆕 ENHANCED: Functional edge - route to rebuild path for weak brands
+   * Now uses boolean return instead of condition property
    */
-  @Edge('assessBrandStrength', 'rebuildStrategy', { 
-    condition: (state: any) => state.metadata?.brandScore <= 0.7 
-  })
-  rebuildPathEdge() {}
+  @Edge('assessBrandStrength', 'rebuildStrategy')
+  shouldRebuildBrand(state: WorkflowAgentState): boolean {
+    const brandScore = (state.metadata?.brandScore as number) || 0.5;
+    return brandScore <= 0.7;
+  }
 
   /**
    * Optimization strategy for strong brands
@@ -366,7 +408,7 @@ Provide structured, actionable plan.
    * Final task: consolidate strategy and prepare output
    */
   @Task({ dependsOn: ['optimizeBrand', 'rebuildStrategy'] })
-  @StoreMemory({ key: 'brand-strategy' })
+  // @StoreMemory({ key: 'brand-strategy' }) // TODO: Implement when decorator available
   async generateFinalStrategy(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = (state.metadata?.githubUsername as string) || 'developer';

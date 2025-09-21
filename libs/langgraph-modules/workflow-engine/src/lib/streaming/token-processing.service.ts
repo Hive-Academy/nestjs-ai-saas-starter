@@ -1,12 +1,11 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { BaseMessage } from '@langchain/core/messages';
 import type {
-  TokenData,
   StreamUpdate,
   StreamTokenDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
 import { StreamEventType } from '@hive-academy/langgraph-streaming';
-import { IStreamingService } from '@hive-academy/langgraph-core';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
 
 /**
  * Workflow Token Processing Service

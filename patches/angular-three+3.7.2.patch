@@ -1,0 +1,3490 @@
+diff --git a/node_modules/angular-three/fesm2022/angular-three.mjs b/node_modules/angular-three/fesm2022/angular-three.mjs
+index 79bf2fe..cc548b0 100644
+--- a/node_modules/angular-three/fesm2022/angular-three.mjs
++++ b/node_modules/angular-three/fesm2022/angular-three.mjs
+@@ -1,5 +1,5 @@
+ import * as i0 from '@angular/core';
+-import { untracked, computed, signal, ElementRef, input, inject, ViewContainerRef, TemplateRef, effect, DestroyRef, Directive, InjectionToken, DebugNode, RendererFactory2, Injectable, makeEnvironmentProviders, EnvironmentInjector, InjectFlags, runInInjectionContext, createEnvironmentInjector, Component, NgZone, Injector, booleanAttribute, output, viewChild, afterNextRender, ChangeDetectionStrategy, Pipe, CUSTOM_ELEMENTS_SCHEMA, contentChild, model, Renderer2 } from '@angular/core';
++import { untracked, computed, signal, ElementRef, input, inject, ViewContainerRef, TemplateRef, effect, DestroyRef, Directive, InjectionToken, DebugNode, RendererFactory2, Injectable, makeEnvironmentProviders, EnvironmentInjector, runInInjectionContext, createEnvironmentInjector, Component, NgZone, Injector, booleanAttribute, output, viewChild, afterNextRender, ChangeDetectionStrategy, Pipe, CUSTOM_ELEMENTS_SCHEMA, contentChild, model, Renderer2 } from '@angular/core';
+ import { outputFromObservable } from '@angular/core/rxjs-interop';
+ import { provideResizeOptions, NgxResize } from 'ngxtension/resize';
+ import { MathUtils, WebGLRenderer, OrthographicCamera, PerspectiveCamera, Vector3, Vector2, Clock, Layers, ColorManagement, RGBAFormat, UnsignedByteType, EventDispatcher, Raycaster, Scene, PCFSoftShadowMap, BasicShadowMap, PCFShadowMap, VSMShadowMap, NoToneMapping, ACESFilmicToneMapping, Vector4 } from 'three';
+@@ -2494,17 +2494,17 @@ class NgtOutletEnvironmentInjector extends EnvironmentInjector {
+         this.routeEnvInjector = routeEnvInjector;
+         this.ngtEnvInjector = ngtEnvInjector;
+     }
+-    get(token, notFoundValue, flags = InjectFlags.Default) {
++    get(token, notFoundValue, flags = 0) {
+         const options = {};
+         if (typeof flags === 'object') {
+             Object.assign(options, flags);
+         }
+         else {
+             Object.assign(options, {
+-                optional: !!(flags & InjectFlags.Optional),
+-                host: !!(flags & InjectFlags.Host),
+-                self: !!(flags & InjectFlags.Self),
+-                skipSelf: !!(flags & InjectFlags.SkipSelf),
++                optional: !!(flags & 1),
++                host: !!(flags & 2),
++                self: !!(flags & 4),
++                skipSelf: !!(flags & 8),
+             });
+         }
+         if (token === RendererFactory2) {
+diff --git a/node_modules/angular-three/fesm2022/angular-three.mjs.backup b/node_modules/angular-three/fesm2022/angular-three.mjs.backup
+new file mode 100644
+index 0000000..79bf2fe
+--- /dev/null
++++ b/node_modules/angular-three/fesm2022/angular-three.mjs.backup
+@@ -0,0 +1,3450 @@
++import * as i0 from '@angular/core';
++import { untracked, computed, signal, ElementRef, input, inject, ViewContainerRef, TemplateRef, effect, DestroyRef, Directive, InjectionToken, DebugNode, RendererFactory2, Injectable, makeEnvironmentProviders, EnvironmentInjector, InjectFlags, runInInjectionContext, createEnvironmentInjector, Component, NgZone, Injector, booleanAttribute, output, viewChild, afterNextRender, ChangeDetectionStrategy, Pipe, CUSTOM_ELEMENTS_SCHEMA, contentChild, model, Renderer2 } from '@angular/core';
++import { outputFromObservable } from '@angular/core/rxjs-interop';
++import { provideResizeOptions, NgxResize } from 'ngxtension/resize';
++import { MathUtils, WebGLRenderer, OrthographicCamera, PerspectiveCamera, Vector3, Vector2, Clock, Layers, ColorManagement, RGBAFormat, UnsignedByteType, EventDispatcher, Raycaster, Scene, PCFSoftShadowMap, BasicShadowMap, PCFShadowMap, VSMShadowMap, NoToneMapping, ACESFilmicToneMapping, Vector4 } from 'three';
++import { DOCUMENT } from '@angular/common';
++import { Subject, filter } from 'rxjs';
++import { createInjectionToken } from 'ngxtension/create-injection-token';
++import { assertInjector } from 'ngxtension/assert-injector';
++import * as i1 from '@angular/router';
++import { RouterOutlet, ActivationEnd } from '@angular/router';
++
++const STORE_COMPUTED_KEY = '__ngt_signal_store_computed__';
++function reducer(state) {
++    return (previous) => {
++        const partial = typeof state === 'function' ? state(previous) : state;
++        Object.keys(partial).forEach((key) => {
++            const typedKey = key;
++            if (partial[typedKey] === undefined && previous[typedKey] != null) {
++                partial[typedKey] = previous[typedKey];
++            }
++        });
++        return partial;
++    };
++}
++function updater(_source) {
++    return (state) => {
++        const updater = reducer(state);
++        // TODO: (chau) I'm keeping this one around for now.
++        untracked(() => {
++            _source.update((previous) => ({ ...previous, ...updater(previous) }));
++        });
++    };
++}
++function getter(_source) {
++    return (...keys) => {
++        const root = untracked(_source);
++        if (keys.length === 0)
++            return root;
++        return keys.reduce((value, key) => value[key], root);
++    };
++}
++function selector(_state, computedCache) {
++    return (...keysAndOptions) => {
++        if (keysAndOptions.length === 0)
++            return _state;
++        if (keysAndOptions.length === 1 && typeof keysAndOptions[0] === 'object') {
++            const cachedKey = STORE_COMPUTED_KEY.concat(JSON.stringify(keysAndOptions[0]));
++            if (!computedCache.has(cachedKey)) {
++                computedCache.set(cachedKey, computed(_state, keysAndOptions));
++            }
++            return computedCache.get(cachedKey);
++        }
++        const [keys, options] = parseStoreOptions(keysAndOptions);
++        const joinedKeys = keys.join('-');
++        const cachedKeys = joinedKeys.concat(JSON.stringify(options));
++        if (!computedCache.has(cachedKeys)) {
++            computedCache.set(cachedKeys, computed(() => keys.reduce((value, key) => value[key], _state()), options));
++        }
++        return computedCache.get(cachedKeys);
++    };
++}
++function parseStoreOptions(keysAndOptions) {
++    if (typeof keysAndOptions.at(-1) === 'object') {
++        return [keysAndOptions.slice(0, -1), keysAndOptions.at(-1)];
++    }
++    return [keysAndOptions, { equal: Object.is }];
++}
++function signalStore(initialState = {}, options) {
++    let source;
++    let update;
++    let get;
++    let select;
++    let state;
++    const computedCache = new Map();
++    if (!options) {
++        options = { equal: Object.is };
++    }
++    if (typeof initialState === 'function') {
++        source = signal({}, options);
++        state = source.asReadonly();
++        get = getter(source);
++        update = updater(source);
++        select = selector(state, computedCache);
++        source.set(initialState({ update, get, select }));
++    }
++    else {
++        source = signal(initialState, options);
++        state = source.asReadonly();
++        get = getter(source);
++        update = updater(source);
++        select = selector(state, computedCache);
++    }
++    const store = { select, get, update, state };
++    Object.defineProperty(store, 'snapshot', {
++        get: untracked.bind({}, state),
++        configurable: false,
++        enumerable: false,
++    });
++    return store;
++}
++
++const is = {
++    obj: (a) => a === Object(a) && !Array.isArray(a) && typeof a !== 'function',
++    material: (a) => !!a && a.isMaterial,
++    geometry: (a) => !!a && a.isBufferGeometry,
++    orthographicCamera: (a) => !!a && a.isOrthographicCamera,
++    perspectiveCamera: (a) => !!a && a.isPerspectiveCamera,
++    camera: (a) => !!a && a.isCamera,
++    renderer: (a) => !!a && typeof a === 'object' && 'render' in a && typeof a['render'] === 'function',
++    scene: (a) => !!a && a.isScene,
++    ref: (a) => a instanceof ElementRef,
++    instance: (a) => !!a && !!a['__ngt__'],
++    object3D: (a) => !!a && a.isObject3D,
++    // instance: (a: unknown): a is NgtInstanceNode => !!a && !!(a as NgtAnyRecord)['__ngt__'],
++    // ref: (a: unknown): a is ElementRef => a instanceof ElementRef,
++    colorSpaceExist: (object) => 'colorSpace' in object || 'outputColorSpace' in object,
++    equ(a, b, { arrays = 'shallow', objects = 'reference', strict = true } = {}) {
++        // Wrong type or one of the two undefined, doesn't match
++        if (typeof a !== typeof b || !!a !== !!b)
++            return false;
++        // Atomic, just compare a against b
++        if (typeof a === 'string' || typeof a === 'number')
++            return a === b;
++        const isObj = is.obj(a);
++        if (isObj && objects === 'reference')
++            return a === b;
++        const isArr = Array.isArray(a);
++        if (isArr && arrays === 'reference')
++            return a === b;
++        // Array or Object, shallow compare first to see if it's a match
++        if ((isArr || isObj) && a === b)
++            return true;
++        // Last resort, go through keys
++        let i;
++        for (i in a)
++            if (!(i in b))
++                return false;
++        for (i in strict ? b : a)
++            if (a[i] !== b[i])
++                return false;
++        if (i === void 0) {
++            if (isArr && a.length === 0 && b.length === 0)
++                return true;
++            if (isObj && Object.keys(a).length === 0 && Object.keys(b).length === 0)
++                return true;
++            if (a !== b)
++                return false;
++        }
++        return true;
++    },
++};
++
++function checkNeedsUpdate(value) {
++    if (value !== null && is.obj(value) && 'needsUpdate' in value) {
++        value['needsUpdate'] = true;
++        if ('uniformsNeedUpdate' in value)
++            value['uniformsNeedUpdate'] = true;
++    }
++}
++function checkUpdate(value) {
++    // TODO (chau): this is messing with PivotControls. Re-evaluate later
++    // if (is.object3D(value)) value.updateMatrix();
++    if (is.camera(value)) {
++        if (is.perspectiveCamera(value) || is.orthographicCamera(value))
++            value.updateProjectionMatrix();
++        value.updateMatrixWorld();
++    }
++    // NOTE: skip checkNeedsUpdate for CubeTexture
++    if (value && value.isCubeTexture)
++        return;
++    checkNeedsUpdate(value);
++}
++function updateCamera(camera, size) {
++    if (!camera.manual) {
++        if (is.orthographicCamera(camera)) {
++            camera.left = size.width / -2;
++            camera.right = size.width / 2;
++            camera.top = size.height / 2;
++            camera.bottom = size.height / -2;
++        }
++        else {
++            camera.aspect = size.width / size.height;
++        }
++        camera.updateProjectionMatrix();
++        camera.updateMatrixWorld();
++    }
++}
++
++function getLocalState(obj) {
++    if (!obj)
++        return undefined;
++    return obj['__ngt__'];
++}
++function invalidateInstance(instance) {
++    let store = getLocalState(instance)?.store;
++    if (store) {
++        while (store.snapshot.previousRoot) {
++            store = store.snapshot.previousRoot;
++        }
++        if (store.snapshot.internal.frames === 0) {
++            store.snapshot.invalidate();
++        }
++    }
++    checkUpdate(instance);
++}
++function prepare(object, localState) {
++    const instance = object;
++    if (localState?.primitive || !instance.__ngt__) {
++        const { instanceStore = signalStore({
++            parent: null,
++            objects: [],
++            nonObjects: [],
++            geometryStamp: Date.now(),
++        }), ...rest } = localState || {};
++        const nonObjects = instanceStore.select('nonObjects');
++        const geometryStamp = instanceStore.select('geometryStamp');
++        const nonObjectsChanged = computed(() => {
++            const [_nonObjects] = [nonObjects(), geometryStamp()];
++            return _nonObjects;
++        });
++        instance.__ngt__ = {
++            previousAttach: null,
++            store: null,
++            memoized: {},
++            eventCount: 0,
++            handlers: {},
++            instanceStore,
++            parent: instanceStore.select('parent'),
++            objects: instanceStore.select('objects'),
++            nonObjects: nonObjectsChanged,
++            add(object, type) {
++                const current = instance.__ngt__.instanceStore.snapshot[type];
++                const foundIndex = current.findIndex((node) => object === node || (!!object.uuid && !!node.uuid && object.uuid === node.uuid));
++                if (foundIndex > -1) {
++                    current.splice(foundIndex, 1, object);
++                    instance.__ngt__.instanceStore.update({ [type]: current });
++                }
++                else {
++                    instance.__ngt__.instanceStore.update((prev) => ({ [type]: [...prev[type], object] }));
++                }
++                notifyAncestors(instance.__ngt__.instanceStore.snapshot.parent, type);
++            },
++            remove(object, type) {
++                instance.__ngt__.instanceStore.update((prev) => ({ [type]: prev[type].filter((node) => node !== object) }));
++                notifyAncestors(instance.__ngt__.instanceStore.snapshot.parent, type);
++            },
++            setParent(parent) {
++                instance.__ngt__.instanceStore.update({ parent });
++            },
++            updateGeometryStamp() {
++                instance.__ngt__.instanceStore.update({ geometryStamp: Date.now() });
++            },
++            ...rest,
++        };
++    }
++    return instance;
++}
++function notifyAncestors(instance, type) {
++    if (!instance)
++        return;
++    const localState = getLocalState(instance);
++    if (!localState)
++        return;
++    const { parent } = localState.instanceStore.snapshot;
++    localState.instanceStore.update({ [type]: (localState.instanceStore.snapshot[type] || []).slice() });
++    notifyAncestors(parent, type);
++}
++
++const idCache = {};
++function makeId(event) {
++    if (event) {
++        return (event.eventObject || event.object).uuid + '/' + event.index + event.instanceId;
++    }
++    const newId = MathUtils.generateUUID();
++    // ensure not already used
++    if (!idCache[newId]) {
++        idCache[newId] = true;
++        return newId;
++    }
++    return makeId();
++}
++function makeDpr(dpr, window) {
++    // Err on the side of progress by assuming 2x dpr if we can't detect it
++    // This will happen in workers where window is defined but dpr isn't.
++    const target = typeof window !== 'undefined' ? (window.devicePixelRatio ?? 2) : 1;
++    return Array.isArray(dpr) ? Math.min(Math.max(dpr[0], target), dpr[1]) : dpr;
++}
++function makeRendererInstance(glOptions, canvas) {
++    const customRenderer = (typeof glOptions === 'function' ? glOptions(canvas) : glOptions);
++    if (is.renderer(customRenderer))
++        return customRenderer;
++    return new WebGLRenderer({
++        powerPreference: 'high-performance',
++        canvas,
++        antialias: true,
++        alpha: true,
++        ...glOptions,
++    });
++}
++function makeCameraInstance(isOrthographic, size) {
++    if (isOrthographic)
++        return new OrthographicCamera(0, 0, 0, 0, 0.1, 1000);
++    return new PerspectiveCamera(75, size.width / size.height, 0.1, 1000);
++}
++function makeObjectGraph(object) {
++    const data = { nodes: {}, materials: {} };
++    if (object) {
++        object.traverse((child) => {
++            if (child.name)
++                data.nodes[child.name] = child;
++            if ('material' in child && !data.materials[child.material.name]) {
++                data.materials[child.material.name] = child.material;
++            }
++        });
++    }
++    return data;
++}
++
++/**
++ * Release pointer captures.
++ * This is called by releasePointerCapture in the API, and when an object is removed.
++ */
++function releaseInternalPointerCapture(capturedMap, obj, captures, pointerId) {
++    const captureData = captures.get(obj);
++    if (captureData) {
++        captures.delete(obj);
++        // If this was the last capturing object for this pointer
++        if (captures.size === 0) {
++            capturedMap.delete(pointerId);
++            captureData.target.releasePointerCapture(pointerId);
++        }
++    }
++}
++function removeInteractivity(store, object) {
++    const { internal } = store.snapshot;
++    // Removes every trace of an object from the data store
++    internal.interaction = internal.interaction.filter((o) => o !== object);
++    internal.initialHits = internal.initialHits.filter((o) => o !== object);
++    internal.hovered.forEach((value, key) => {
++        if (value.eventObject === object || value.object === object) {
++            // Clear out intersects, they are outdated by now
++            internal.hovered.delete(key);
++        }
++    });
++    internal.capturedMap.forEach((captures, pointerId) => {
++        releaseInternalPointerCapture(internal.capturedMap, object, captures, pointerId);
++    });
++}
++function createEvents(store) {
++    /** Calculates delta */
++    function calculateDistance(event) {
++        const internal = store.get('internal');
++        const dx = event.offsetX - internal.initialClick[0];
++        const dy = event.offsetY - internal.initialClick[1];
++        return Math.round(Math.sqrt(dx * dx + dy * dy));
++    }
++    /** Returns true if an instance has a valid pointer-event registered, this excludes scroll, clicks etc */
++    function filterPointerEvents(objects) {
++        return objects.filter((obj) => ['move', 'over', 'enter', 'out', 'leave'].some((name) => {
++            const eventName = `pointer${name}`;
++            return getLocalState(obj)?.handlers?.[eventName];
++        }));
++    }
++    function intersect(event, filter) {
++        const state = store.get();
++        const duplicates = new Set();
++        const intersections = [];
++        // Allow callers to eliminate event objects
++        const eventsObjects = filter ? filter(state.internal.interaction) : state.internal.interaction;
++        // Reset all raycaster cameras to undefined
++        for (let i = 0; i < eventsObjects.length; i++) {
++            const objectRootState = getLocalState(eventsObjects[i])?.store.snapshot;
++            if (objectRootState) {
++                objectRootState.raycaster.camera = undefined;
++            }
++        }
++        if (!state.previousRoot) {
++            // Make sure root-level pointer and ray are set up
++            state.events.compute?.(event, store, null);
++        }
++        function handleRaycast(obj) {
++            const objStore = getLocalState(obj)?.store;
++            const objState = objStore?.snapshot;
++            // Skip event handling when noEvents is set, or when the raycasters camera is null
++            if (!objState || !objState.events.enabled || objState.raycaster.camera === null)
++                return [];
++            // When the camera is undefined we have to call the event layers update function
++            if (objState.raycaster.camera === undefined) {
++                objState.events.compute?.(event, objStore, objState.previousRoot);
++                // If the camera is still undefined we have to skip this layer entirely
++                if (objState.raycaster.camera === undefined)
++                    objState.raycaster.camera = null;
++            }
++            // Intersect object by object
++            return objState.raycaster.camera ? objState.raycaster.intersectObject(obj, true) : [];
++        }
++        // Collect events
++        let hits = eventsObjects
++            // Intersect objects
++            .flatMap(handleRaycast)
++            // Sort by event priority and distance
++            .sort((a, b) => {
++            const aState = getLocalState(a.object)?.store.snapshot;
++            const bState = getLocalState(b.object)?.store.snapshot;
++            if (!aState || !bState)
++                return a.distance - b.distance;
++            return bState.events.priority - aState.events.priority || a.distance - b.distance;
++        })
++            // Filter out duplicates
++            .filter((item) => {
++            const id = makeId(item);
++            if (duplicates.has(id))
++                return false;
++            duplicates.add(id);
++            return true;
++        });
++        // https://github.com/mrdoob/three.js/issues/16031
++        // Allow custom userland intersect sort order, this likely only makes sense on the root filter
++        if (state.events.filter)
++            hits = state.events.filter(hits, store);
++        // Bubble up the events, find the event source (eventObject)
++        for (const hit of hits) {
++            let eventObject = hit.object;
++            // bubble event up
++            while (eventObject) {
++                if (getLocalState(eventObject)?.eventCount)
++                    intersections.push({ ...hit, eventObject });
++                eventObject = eventObject.parent;
++            }
++        }
++        // If the interaction is captured, make all capturing targets part of the intersect.
++        if ('pointerId' in event && state.internal.capturedMap.has(event.pointerId)) {
++            for (const captureData of state.internal.capturedMap.get(event.pointerId).values()) {
++                if (!duplicates.has(makeId(captureData.intersection)))
++                    intersections.push(captureData.intersection);
++            }
++        }
++        return intersections;
++    }
++    /**  Handles intersections by forwarding them to handlers */
++    function handleIntersects(intersections, event, delta, callback) {
++        const rootState = store.snapshot;
++        // If anything has been found, forward it to the event listeners
++        if (intersections.length) {
++            const localState = { stopped: false };
++            for (const hit of intersections) {
++                const { raycaster, pointer, camera, internal } = getLocalState(hit.object)?.store.snapshot || rootState;
++                const unprojectedPoint = new Vector3(pointer.x, pointer.y, 0).unproject(camera);
++                const hasPointerCapture = (id) => internal.capturedMap.get(id)?.has(hit.eventObject) ?? false;
++                const setPointerCapture = (id) => {
++                    const captureData = { intersection: hit, target: event.target };
++                    if (internal.capturedMap.has(id)) {
++                        // if the pointerId was previously captured, we add the hit to the
++                        // event capturedMap.
++                        internal.capturedMap.get(id).set(hit.eventObject, captureData);
++                    }
++                    else {
++                        // if the pointerId was not previously captured, we create a map
++                        // containing the hitObject, and the hit. hitObject is used for
++                        // faster access.
++                        internal.capturedMap.set(id, new Map([[hit.eventObject, captureData]]));
++                    }
++                    // Call the original event now
++                    event.target.setPointerCapture(id);
++                };
++                const releasePointerCapture = (id) => {
++                    const captures = internal.capturedMap.get(id);
++                    if (captures) {
++                        releaseInternalPointerCapture(internal.capturedMap, hit.eventObject, captures, id);
++                    }
++                };
++                // Add native event props
++                const extractEventProps = {};
++                // This iterates over the event's properties including the inherited ones. Native PointerEvents have most of their props as getters which are inherited, but polyfilled PointerEvents have them all as their own properties (i.e. not inherited). We can't use Object.keys() or Object.entries() as they only return "own" properties; nor Object.getPrototypeOf(event) as that *doesn't* return "own" properties, only inherited ones.
++                for (const prop in event) {
++                    const property = event[prop];
++                    // Only copy over atomics, leave functions alone as these should be
++                    // called as event.nativeEvent.fn()
++                    if (typeof property !== 'function')
++                        extractEventProps[prop] = property;
++                }
++                const raycastEvent = {
++                    ...hit,
++                    ...extractEventProps,
++                    pointer,
++                    intersections,
++                    stopped: localState.stopped,
++                    delta,
++                    unprojectedPoint,
++                    ray: raycaster.ray,
++                    camera,
++                    // Hijack stopPropagation, which just sets a flag
++                    stopPropagation() {
++                        // https://github.com/pmndrs/react-three-fiber/issues/596
++                        // Events are not allowed to stop propagation if the pointer has been captured
++                        const capturesForPointer = 'pointerId' in event && internal.capturedMap.get(event.pointerId);
++                        // We only authorize stopPropagation...
++                        if (
++                        // ...if this pointer hasn't been captured
++                        !capturesForPointer ||
++                            // ... or if the hit object is capturing the pointer
++                            capturesForPointer.has(hit.eventObject)) {
++                            raycastEvent.stopped = localState.stopped = true;
++                            // Propagation is stopped, remove all other hover records
++                            // An event handler is only allowed to flush other handlers if it is hovered itself
++                            if (internal.hovered.size &&
++                                Array.from(internal.hovered.values()).find((i) => i.eventObject === hit.eventObject)) {
++                                // Objects cannot flush out higher up objects that have already caught the event
++                                const higher = intersections.slice(0, intersections.indexOf(hit));
++                                cancelPointer([...higher, hit]);
++                            }
++                        }
++                    },
++                    // there should be a distinction between target and currentTarget
++                    target: { hasPointerCapture, setPointerCapture, releasePointerCapture },
++                    currentTarget: { hasPointerCapture, setPointerCapture, releasePointerCapture },
++                    nativeEvent: event,
++                };
++                // Call subscribers
++                callback(raycastEvent);
++                // Event bubbling may be interrupted by stopPropagation
++                if (localState.stopped)
++                    break;
++            }
++        }
++        return intersections;
++    }
++    function cancelPointer(intersections) {
++        const internal = store.get('internal');
++        for (const hoveredObj of internal.hovered.values()) {
++            // When no objects were hit or the the hovered object wasn't found underneath the cursor
++            // we call onPointerOut and delete the object from the hovered-elements map
++            if (!intersections.length ||
++                !intersections.find((hit) => hit.object === hoveredObj.object &&
++                    hit.index === hoveredObj.index &&
++                    hit.instanceId === hoveredObj.instanceId)) {
++                const eventObject = hoveredObj.eventObject;
++                const instance = getLocalState(eventObject);
++                const handlers = instance?.handlers;
++                internal.hovered.delete(makeId(hoveredObj));
++                if (instance?.eventCount) {
++                    // Clear out intersects, they are outdated by now
++                    const data = { ...hoveredObj, intersections };
++                    handlers?.pointerout?.(data);
++                    handlers?.pointerleave?.(data);
++                }
++            }
++        }
++    }
++    function pointerMissed(event, objects) {
++        for (let i = 0; i < objects.length; i++) {
++            const instance = getLocalState(objects[i]);
++            instance?.handlers.pointermissed?.(event);
++        }
++    }
++    function handlePointer(name) {
++        // Deal with cancelation
++        switch (name) {
++            case 'pointerleave':
++            case 'pointercancel':
++                return () => cancelPointer([]);
++            case 'lostpointercapture':
++                return (event) => {
++                    const { internal } = store.snapshot;
++                    if ('pointerId' in event && internal.capturedMap.has(event.pointerId)) {
++                        // If the object event interface had lostpointercapture, we'd call it here on every
++                        // object that's getting removed. We call it on the next frame because lostpointercapture
++                        // fires before pointerup. Otherwise pointerUp would never be called if the event didn't
++                        // happen in the object it originated from, leaving components in a in-between state.
++                        requestAnimationFrame(() => {
++                            // Only release if pointer-up didn't do it already
++                            if (internal.capturedMap.has(event.pointerId)) {
++                                internal.capturedMap.delete(event.pointerId);
++                                cancelPointer([]);
++                            }
++                        });
++                    }
++                };
++        }
++        // Any other pointer goes here ...
++        return function handleEvent(event) {
++            // NOTE: pointerMissed$ on NgtStore is private
++            const pointerMissed$ = store['pointerMissed$'];
++            const internal = store.get('internal');
++            // prepareRay(event)
++            internal.lastEvent.nativeElement = event;
++            // Get fresh intersects
++            const isPointerMove = name === 'pointermove';
++            const isClickEvent = name === 'click' || name === 'contextmenu' || name === 'dblclick';
++            const filter = isPointerMove ? filterPointerEvents : undefined;
++            const hits = intersect(event, filter);
++            const delta = isClickEvent ? calculateDistance(event) : 0;
++            // Save initial coordinates on pointer-down
++            if (name === 'pointerdown') {
++                internal.initialClick = [event.offsetX, event.offsetY];
++                internal.initialHits = hits.map((hit) => hit.eventObject);
++            }
++            // If a click yields no results, pass it back to the user as a miss
++            // Missed events have to come first in order to establish user-land side-effect clean up
++            if (isClickEvent && !hits.length) {
++                if (delta <= 2) {
++                    pointerMissed(event, internal.interaction);
++                    pointerMissed$.next(event);
++                }
++            }
++            // Take care of unhover
++            if (isPointerMove)
++                cancelPointer(hits);
++            function onIntersect(data) {
++                const eventObject = data.eventObject;
++                const instance = getLocalState(eventObject);
++                const handlers = instance?.handlers;
++                // Check presence of handlers
++                if (!instance?.eventCount)
++                    return;
++                /*
++        MAYBE TODO, DELETE IF NOT:
++          Check if the object is captured, captured events should not have intersects running in parallel
++          But wouldn't it be better to just replace capturedMap with a single entry?
++          Also, are we OK with straight up making picking up multiple objects impossible?
++
++        const pointerId = (data as ThreeEvent<PointerEvent>).pointerId
++        if (pointerId !== undefined) {
++          const capturedMeshSet = internal.capturedMap.get(pointerId)
++          if (capturedMeshSet) {
++            const captured = capturedMeshSet.get(eventObject)
++            if (captured && captured.localState.stopped) return
++          }
++        }*/
++                if (isPointerMove) {
++                    // Move event ...
++                    if (handlers?.pointerover || handlers?.pointerenter || handlers?.pointerout || handlers?.pointerleave) {
++                        // When enter or out is present take care of hover-state
++                        const id = makeId(data);
++                        const hoveredItem = internal.hovered.get(id);
++                        if (!hoveredItem) {
++                            // If the object wasn't previously hovered, book it and call its handler
++                            internal.hovered.set(id, data);
++                            handlers.pointerover?.(data);
++                            handlers.pointerenter?.(data);
++                        }
++                        else if (hoveredItem.stopped) {
++                            // If the object was previously hovered and stopped, we shouldn't allow other items to proceed
++                            data.stopPropagation();
++                        }
++                    }
++                    // Call mouse move
++                    handlers?.pointermove?.(data);
++                }
++                else {
++                    // All other events ...
++                    const handler = handlers?.[name];
++                    if (handler) {
++                        // Forward all events back to their respective handlers with the exception of click events,
++                        // which must use the initial target
++                        if (!isClickEvent || internal.initialHits.includes(eventObject)) {
++                            // Missed events have to come first
++                            pointerMissed(event, internal.interaction.filter((object) => !internal.initialHits.includes(object)));
++                            // Now call the handler
++                            handler(data);
++                        }
++                    }
++                    else {
++                        // Trigger onPointerMissed on all elements that have pointer over/out handlers, but not click and weren't hit
++                        if (isClickEvent && internal.initialHits.includes(eventObject)) {
++                            pointerMissed(event, internal.interaction.filter((object) => !internal.initialHits.includes(object)));
++                        }
++                    }
++                }
++            }
++            handleIntersects(hits, event, delta, onIntersect);
++        };
++    }
++    return { handlePointer };
++}
++
++const DOM_EVENTS = {
++    click: false,
++    contextmenu: false,
++    dblclick: false,
++    wheel: false, // passive wheel errors with OrbitControls
++    pointerdown: true,
++    pointerup: true,
++    pointerleave: true,
++    pointermove: true,
++    pointercancel: true,
++    lostpointercapture: true,
++};
++const supportedEvents = [
++    'click',
++    'contextmenu',
++    'dblclick',
++    'pointerup',
++    'pointerdown',
++    'pointerover',
++    'pointerout',
++    'pointerenter',
++    'pointerleave',
++    'pointermove',
++    'pointermissed',
++    'pointercancel',
++    'wheel',
++];
++function createPointerEvents(store) {
++    const { handlePointer } = createEvents(store);
++    return {
++        priority: 1,
++        enabled: true,
++        compute: (event, root) => {
++            const state = root.get();
++            // https://github.com/pmndrs/react-three-fiber/pull/782
++            // Events trigger outside of canvas when moved, use offsetX/Y by default and allow overrides
++            state.pointer.set((event.offsetX / state.size.width) * 2 - 1, -(event.offsetY / state.size.height) * 2 + 1);
++            state.raycaster.setFromCamera(state.pointer, state.camera);
++        },
++        connected: undefined,
++        handlers: Object.keys(DOM_EVENTS).reduce((handlers, supportedEventName) => {
++            handlers[supportedEventName] = handlePointer(supportedEventName);
++            return handlers;
++        }, {}),
++        update: () => {
++            const { events, internal } = store.get();
++            if (internal.lastEvent?.nativeElement && events.handlers)
++                events.handlers.pointermove(internal.lastEvent.nativeElement);
++        },
++        connect: (target) => {
++            const state = store.get();
++            state.events.disconnect?.();
++            state.setEvents({ connected: target });
++            Object.entries(state.events.handlers ?? {}).forEach(([eventName, eventHandler]) => {
++                const passive = DOM_EVENTS[eventName];
++                target.addEventListener(eventName, eventHandler, { passive });
++            });
++        },
++        disconnect: () => {
++            const { events, setEvents } = store.get();
++            if (events.connected) {
++                Object.entries(events.handlers ?? {}).forEach(([eventName, eventHandler]) => {
++                    if (events.connected instanceof HTMLElement) {
++                        events.connected.removeEventListener(eventName, eventHandler);
++                    }
++                });
++                setEvents({ connected: undefined });
++            }
++        },
++    };
++}
++
++const ROUTED_SCENE = '__ngt_renderer_is_routed_scene__';
++const HTML = '__ngt_renderer_is_html';
++const NON_ROOT = '__ngt_renderer_is_non_root__';
++const SPECIAL_INTERNAL_ADD_COMMENT = '__ngt_renderer_add_comment__';
++const SPECIAL_INTERNAL_SET_PARENT_COMMENT = '__ngt_renderer_set_parent_comment__';
++const DOM_PARENT = '__ngt_dom_parent__';
++const SPECIAL_DOM_TAG = {
++    NGT_PORTAL: 'ngt-portal',
++    NGT_PRIMITIVE: 'ngt-primitive',
++    NGT_VALUE: 'ngt-value',
++};
++const SPECIAL_PROPERTIES = {
++    RENDER_PRIORITY: 'priority',
++    ATTACH: 'attach',
++    RAW_VALUE: 'rawValue',
++    PARAMETERS: 'parameters',
++};
++const SPECIAL_EVENTS = {
++    BEFORE_RENDER: 'beforeRender',
++    UPDATED: 'updated',
++    ATTACHED: 'attached',
++};
++const THREE_NATIVE_EVENTS = ['added', 'removed', 'childadded', 'childremoved', 'disposed'];
++
++class NgtArgs {
++    constructor() {
++        this.args = input.required();
++        this.vcr = inject(ViewContainerRef);
++        this.template = inject(TemplateRef);
++        this.injected = false;
++        this.injectedArgs = null;
++        const commentNode = this.vcr.element.nativeElement;
++        if (commentNode[SPECIAL_INTERNAL_ADD_COMMENT]) {
++            commentNode[SPECIAL_INTERNAL_ADD_COMMENT]('args');
++            delete commentNode[SPECIAL_INTERNAL_ADD_COMMENT];
++        }
++        effect(() => {
++            const value = this.args();
++            if (value == null || !Array.isArray(value) || (value.length === 1 && value[0] === null))
++                return;
++            if (is.equ(value, this.injectedArgs)) {
++                // we have the same value as before, no need to update
++                return;
++            }
++            this.injected = false;
++            this.injectedArgs = value;
++            this.createView();
++        });
++        inject(DestroyRef).onDestroy(() => {
++            this.view?.destroy();
++        });
++    }
++    get value() {
++        if (this.validate()) {
++            this.injected = true;
++            return this.injectedArgs;
++        }
++        return null;
++    }
++    validate() {
++        return !this.injected && !!this.injectedArgs?.length;
++    }
++    createView() {
++        if (this.view && !this.view.destroyed)
++            this.view.destroy();
++        this.view = this.vcr.createEmbeddedView(this.template);
++        this.view.detectChanges();
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtArgs, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "17.1.0", version: "19.1.4", type: NgtArgs, isStandalone: true, selector: "ng-template[args]", inputs: { args: { classPropertyName: "args", publicName: "args", isSignal: true, isRequired: true, transformFunction: null } }, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtArgs, decorators: [{
++            type: Directive,
++            args: [{ selector: 'ng-template[args]' }]
++        }], ctorParameters: () => [] });
++
++const roots = new Map();
++function createSubs(callback, subs) {
++    const sub = { callback };
++    subs.add(sub);
++    return () => void subs.delete(sub);
++}
++const globalEffects = new Set();
++const globalAfterEffects = new Set();
++const globalTailEffects = new Set();
++/**
++ * Adds a global render callback which is called each frame.
++ * @see https://docs.pmnd.rs/react-three-fiber/api/additional-exports#addEffect
++ */
++const addEffect = (callback) => createSubs(callback, globalEffects);
++/**
++ * Adds a global after-render callback which is called each frame.
++ * @see https://docs.pmnd.rs/react-three-fiber/api/additional-exports#addAfterEffect
++ */
++const addAfterEffect = (callback) => createSubs(callback, globalAfterEffects);
++/**
++ * Adds a global callback which is called when rendering stops.
++ * @see https://docs.pmnd.rs/react-three-fiber/api/additional-exports#addTail
++ */
++const addTail = (callback) => createSubs(callback, globalTailEffects);
++function run(effects, timestamp) {
++    if (!effects.size)
++        return;
++    for (const { callback } of effects.values()) {
++        callback(timestamp);
++    }
++}
++function flushGlobalEffects(type, timestamp) {
++    switch (type) {
++        case 'before':
++            return run(globalEffects, timestamp);
++        case 'after':
++            return run(globalAfterEffects, timestamp);
++        case 'tail':
++            return run(globalTailEffects, timestamp);
++    }
++}
++function render(timestamp, store, frame) {
++    const state = store.snapshot;
++    // Run local effects
++    let delta = state.clock.getDelta();
++    // In frameloop='never' mode, clock times are updated using the provided timestamp
++    if (state.frameloop === 'never' && typeof timestamp === 'number') {
++        delta = timestamp - state.clock.elapsedTime;
++        state.clock.oldTime = state.clock.elapsedTime;
++        state.clock.elapsedTime = timestamp;
++    }
++    // Call subscribers (beforeRender)
++    const subscribers = state.internal.subscribers;
++    for (let i = 0; i < subscribers.length; i++) {
++        const subscription = subscribers[i];
++        subscription.callback({ ...subscription.store.snapshot, delta, frame });
++    }
++    // Render content
++    if (!state.internal.priority && state.gl.render)
++        state.gl.render(state.scene, state.camera);
++    // Decrease frame count
++    state.internal.frames = Math.max(0, state.internal.frames - 1);
++    return state.frameloop === 'always' ? 1 : state.internal.frames;
++}
++function createLoop(roots) {
++    let running = false;
++    let repeat;
++    let frame;
++    let beforeRenderInProgress = false;
++    function loop(timestamp) {
++        frame = requestAnimationFrame(loop);
++        running = true;
++        repeat = 0;
++        // Run effects
++        flushGlobalEffects('before', timestamp);
++        // Render all roots
++        beforeRenderInProgress = true;
++        for (const root of roots.values()) {
++            const state = root.snapshot;
++            // If the frameloop is invalidated, do not run another frame
++            if (state.internal.active &&
++                (state.frameloop === 'always' || state.internal.frames > 0) &&
++                !state.gl.xr?.isPresenting) {
++                repeat += render(timestamp, root);
++            }
++        }
++        beforeRenderInProgress = false;
++        // Run after-effects
++        flushGlobalEffects('after', timestamp);
++        // Stop the loop if nothing invalidates it
++        if (repeat === 0) {
++            // Tail call effects, they are called when rendering stops
++            flushGlobalEffects('tail', timestamp);
++            // Flag end of operation
++            running = false;
++            return cancelAnimationFrame(frame);
++        }
++    }
++    function invalidate(store, frames = 1) {
++        const state = store?.snapshot;
++        if (!state)
++            return roots.forEach((root) => invalidate(root, frames));
++        if (state.gl.xr?.isPresenting || !state.internal.active || state.frameloop === 'never')
++            return;
++        if (frames > 1) {
++            // legacy support for people using frames parameters
++            // Increase frames, do not go higher than 60
++            state.internal.frames = Math.min(60, state.internal.frames + frames);
++        }
++        else {
++            if (beforeRenderInProgress) {
++                //called from within a beforeRender, it means the user wants an additional frame
++                state.internal.frames = 2;
++            }
++            else {
++                //the user need a new frame, no need to increment further than 1
++                state.internal.frames = 1;
++            }
++        }
++        // If the render-loop isn't active, start it
++        if (!running) {
++            running = true;
++            requestAnimationFrame(loop);
++        }
++    }
++    function advance(timestamp, runGlobalEffects = true, store, frame) {
++        if (runGlobalEffects)
++            flushGlobalEffects('before', timestamp);
++        if (!store)
++            for (const root of roots.values())
++                render(timestamp, root);
++        else
++            render(timestamp, store, frame);
++        if (runGlobalEffects)
++            flushGlobalEffects('after', timestamp);
++    }
++    return { loop, invalidate, advance };
++}
++const [injectLoop] = createInjectionToken(() => createLoop(roots));
++
++function storeFactory(previousStore) {
++    const loop = injectLoop();
++    const document = inject(DOCUMENT);
++    const window = document.defaultView || undefined;
++    // NOTE: using Subject because we do not care about late-subscribers
++    const pointerMissed$ = new Subject();
++    const store = signalStore(({ get, update }) => {
++        const { invalidate, advance } = loop;
++        const position = new Vector3();
++        const defaultTarget = new Vector3();
++        const tempTarget = new Vector3();
++        function getCurrentViewport(camera = get('camera'), target = defaultTarget, size = get('size')) {
++            const { width, height, top, left } = size;
++            const aspect = width / height;
++            if (target.isVector3)
++                tempTarget.copy(target);
++            else
++                tempTarget.set(...target);
++            const distance = camera.getWorldPosition(position).distanceTo(tempTarget);
++            if (is.orthographicCamera(camera)) {
++                return { width: width / camera.zoom, height: height / camera.zoom, top, left, factor: 1, distance, aspect };
++            }
++            const fov = (camera.fov * Math.PI) / 180; // convert vertical fov to radians
++            const h = 2 * Math.tan(fov / 2) * distance; // visible height
++            const w = h * (width / height);
++            return { width: w, height: h, top, left, factor: width / w, distance, aspect };
++        }
++        let performanceTimeout = undefined;
++        const setPerformanceCurrent = (current) => update((state) => ({ performance: { ...state.performance, current } }));
++        const pointer = new Vector2();
++        return {
++            pointerMissed$: pointerMissed$.asObservable(),
++            events: { priority: 1, enabled: true, connected: false },
++            invalidate: (frames = 1) => invalidate(store, frames),
++            advance: (timestamp, runGlobalEffects) => advance(timestamp, runGlobalEffects, store),
++            legacy: false,
++            linear: false,
++            flat: false,
++            controls: null,
++            clock: new Clock(),
++            pointer,
++            frameloop: 'always',
++            performance: {
++                current: 1,
++                min: 0.5,
++                max: 1,
++                debounce: 200,
++                regress: () => {
++                    const state = get();
++                    // Clear timeout
++                    if (performanceTimeout)
++                        clearTimeout(performanceTimeout);
++                    // Set lower bound performance
++                    if (state.performance.current !== state.performance.min)
++                        setPerformanceCurrent(state.performance.min);
++                    // Go back to upper bound performance after a while unless something regresses meanwhile
++                    performanceTimeout = setTimeout(() => {
++                        setPerformanceCurrent(get('performance', 'max'));
++                        // safeDetectChanges(cdr);
++                    }, state.performance.debounce);
++                },
++            },
++            size: { width: 0, height: 0, top: 0, left: 0, updateStyle: false },
++            viewport: {
++                initialDpr: window?.devicePixelRatio || 1,
++                dpr: window?.devicePixelRatio || 1,
++                width: 0,
++                height: 0,
++                top: 0,
++                left: 0,
++                aspect: 0,
++                distance: 0,
++                factor: 0,
++                getCurrentViewport,
++            },
++            setEvents: (events) => update((state) => ({ ...state, events: { ...state.events, ...events } })),
++            setSize: (width, height, top, left) => {
++                const camera = get('camera');
++                const size = { width, height, top: top || 0, left: left || 0 };
++                update((state) => ({
++                    size,
++                    viewport: { ...state.viewport, ...getCurrentViewport(camera, defaultTarget, size) },
++                }));
++            },
++            setDpr: (dpr) => update((state) => {
++                const resolved = makeDpr(dpr, window);
++                return { viewport: { ...state.viewport, dpr: resolved, initialDpr: state.viewport.initialDpr || resolved } };
++            }),
++            setFrameloop: (frameloop = 'always') => {
++                const clock = get('clock');
++                // if frameloop === "never" clock.elapsedTime is updated using advance(timestamp)
++                clock.stop();
++                clock.elapsedTime = 0;
++                if (frameloop !== 'never') {
++                    clock.start();
++                    clock.elapsedTime = 0;
++                }
++                update(() => ({ frameloop }));
++            },
++            previousRoot: previousStore,
++            internal: {
++                active: false,
++                priority: 0,
++                frames: 0,
++                lastEvent: new ElementRef(null),
++                interaction: [],
++                hovered: new Map(),
++                subscribers: [],
++                initialClick: [0, 0],
++                initialHits: [],
++                capturedMap: new Map(),
++                subscribe: (callback, priority = 0, _store = store) => {
++                    const internal = get('internal');
++                    // If this subscription was given a priority, it takes rendering into its own hands
++                    // For that reason we switch off automatic rendering and increase the manual flag
++                    // As long as this flag is positive there can be no internal rendering at all
++                    // because there could be multiple render subscriptions
++                    internal.priority = internal.priority + (priority > 0 ? 1 : 0);
++                    internal.subscribers.push({ callback, priority, store: _store });
++                    // Register subscriber and sort layers from lowest to highest, meaning,
++                    // highest priority renders last (on top of the other frames)
++                    internal.subscribers = internal.subscribers.sort((a, b) => (a.priority || 0) - (b.priority || 0));
++                    return () => {
++                        const internal = get('internal');
++                        if (internal?.subscribers) {
++                            // Decrease manual flag if this subscription had a priority
++                            internal.priority = internal.priority - (priority > 0 ? 1 : 0);
++                            // Remove subscriber from list
++                            internal.subscribers = internal.subscribers.filter((s) => s.callback !== callback);
++                        }
++                    };
++                },
++            },
++        };
++    });
++    Object.defineProperty(store, 'pointerMissed$', { get: () => pointerMissed$ });
++    let { size: oldSize, viewport: { dpr: oldDpr }, camera: oldCamera, } = store.snapshot;
++    effect(() => {
++        const { camera: newCamera, size: newSize, viewport: { dpr: newDpr }, gl, } = store.state();
++        // Resize camera and renderer on changes to size and pixel-ratio
++        if (newSize !== oldSize || newDpr !== oldDpr) {
++            oldSize = newSize;
++            oldDpr = newDpr;
++            // Update camera & renderer
++            updateCamera(newCamera, newSize);
++            gl.setPixelRatio(newDpr);
++            const updateStyle = typeof HTMLCanvasElement !== 'undefined' && gl.domElement instanceof HTMLCanvasElement;
++            gl.setSize(newSize.width, newSize.height, updateStyle);
++        }
++        // Update viewport once the camera changes
++        if (newCamera !== oldCamera) {
++            oldCamera = newCamera;
++            updateCamera(newCamera, newSize);
++            // Update viewport
++            store.update((state) => ({ viewport: { ...state.viewport, ...state.viewport.getCurrentViewport(newCamera) } }));
++        }
++    });
++    return store;
++}
++const NGT_STORE = new InjectionToken('NgtStore Token');
++function provideStore(store) {
++    if (store) {
++        return { provide: NGT_STORE, useFactory: store };
++    }
++    return { provide: NGT_STORE, useFactory: storeFactory };
++}
++function injectStore(options) {
++    return inject(NGT_STORE, options);
++}
++
++class NgtParent {
++    constructor() {
++        this.parent = input.required();
++        this.vcr = inject(ViewContainerRef);
++        this.template = inject(TemplateRef);
++        this.store = injectStore();
++        this.scene = this.store.select('scene');
++        this.injected = false;
++        this.injectedParent = null;
++        this._parent = computed(() => {
++            const parent = this.parent();
++            const rawParent = typeof parent === 'function' ? parent() : parent;
++            if (!rawParent)
++                return null;
++            const scene = this.scene();
++            if (typeof rawParent === 'string') {
++                return scene.getObjectByName(rawParent);
++            }
++            if ('nativeElement' in rawParent) {
++                return rawParent.nativeElement;
++            }
++            return rawParent;
++        });
++        const commentNode = this.vcr.element.nativeElement;
++        if (commentNode[SPECIAL_INTERNAL_ADD_COMMENT]) {
++            commentNode[SPECIAL_INTERNAL_ADD_COMMENT]('parent');
++            delete commentNode[SPECIAL_INTERNAL_ADD_COMMENT];
++        }
++        effect(() => {
++            const parent = this._parent();
++            if (!parent)
++                return;
++            this.injected = false;
++            this.injectedParent = parent;
++            this.createView();
++        });
++        inject(DestroyRef).onDestroy(() => {
++            this.view?.destroy();
++        });
++    }
++    get value() {
++        if (this.validate()) {
++            this.injected = true;
++            return this.injectedParent;
++        }
++        return null;
++    }
++    validate() {
++        return !this.injected && !!this.injectedParent;
++    }
++    createView() {
++        if (this.view && !this.view.destroyed)
++            this.view.destroy();
++        const comment = this.vcr.element.nativeElement;
++        if (comment[SPECIAL_INTERNAL_SET_PARENT_COMMENT]) {
++            comment[SPECIAL_INTERNAL_SET_PARENT_COMMENT](this.injectedParent);
++        }
++        this.view = this.vcr.createEmbeddedView(this.template);
++        this.view.detectChanges();
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtParent, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "17.1.0", version: "19.1.4", type: NgtParent, isStandalone: true, selector: "ng-template[parent]", inputs: { parent: { classPropertyName: "parent", publicName: "parent", isSignal: true, isRequired: true, transformFunction: null } }, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtParent, decorators: [{
++            type: Directive,
++            args: [{ selector: 'ng-template[parent]' }]
++        }], ctorParameters: () => [] });
++
++// This function prepares a set of changes to be applied to the instance
++function diffProps(instance, props) {
++    const propsEntries = Object.entries(props);
++    const changes = [];
++    for (const [propKey, propValue] of propsEntries) {
++        let key = propKey;
++        if (is.colorSpaceExist(instance)) {
++            if (propKey === 'encoding') {
++                key = 'colorSpace';
++            }
++            else if (propKey === 'outputEncoding') {
++                key = 'outputColorSpace';
++            }
++        }
++        if (is.equ(propValue, instance[key]))
++            continue;
++        changes.push([propKey, propValue]);
++    }
++    return changes;
++}
++// NOTE: this is a workaround to give the instance a change to have the store from the parent.
++//  we clear this property after the applyProps is done
++const NGT_APPLY_PROPS = '__ngt_apply_props__';
++// This function applies a set of changes to the instance
++function applyProps(instance, props) {
++    // if props is empty
++    if (!Object.keys(props).length)
++        return instance;
++    // filter equals, and reserved props
++    const localState = getLocalState(instance);
++    const rootState = localState?.store?.snapshot ?? instance[NGT_APPLY_PROPS]?.snapshot ?? {};
++    const changes = diffProps(instance, props);
++    for (let i = 0; i < changes.length; i++) {
++        let [key, value] = changes[i];
++        // Alias (output)encoding => (output)colorSpace (since r152)
++        // https://github.com/pmndrs/react-three-fiber/pull/2829
++        if (is.colorSpaceExist(instance)) {
++            const sRGBEncoding = 3001;
++            const SRGBColorSpace = 'srgb';
++            const LinearSRGBColorSpace = 'srgb-linear';
++            if (key === 'encoding') {
++                key = 'colorSpace';
++                value = value === sRGBEncoding ? SRGBColorSpace : LinearSRGBColorSpace;
++            }
++            else if (key === 'outputEncoding') {
++                key = 'outputColorSpace';
++                value = value === sRGBEncoding ? SRGBColorSpace : LinearSRGBColorSpace;
++            }
++        }
++        const currentInstance = instance;
++        const targetProp = currentInstance[key];
++        // special treatmen for objects with support for set/copy, and layers
++        if (targetProp && targetProp['set'] && (targetProp['copy'] || targetProp instanceof Layers)) {
++            const isColor = targetProp.isColor;
++            // if value is an array
++            if (Array.isArray(value)) {
++                if (targetProp['fromArray'])
++                    targetProp['fromArray'](value);
++                else
++                    targetProp['set'](...value);
++            } // test again target.copy
++            else if (targetProp['copy'] &&
++                value &&
++                value.constructor &&
++                targetProp.constructor.name === value.constructor.name) {
++                targetProp['copy'](value);
++                if (!ColorManagement && !rootState.linear && isColor)
++                    targetProp['convertSRGBToLinear']();
++            } // if nothing else fits, just set the single value, ignore undefined
++            else if (value !== undefined) {
++                const isColor = targetProp.isColor;
++                // allow setting array scalars
++                if (!isColor && targetProp['setScalar'])
++                    targetProp['setScalar'](value);
++                // layers have no copy function, copy the mask
++                else if (targetProp instanceof Layers && value instanceof Layers)
++                    targetProp.mask = value.mask;
++                // otherwise just set ...
++                else
++                    targetProp['set'](value);
++                // auto-convert srgb
++                if (!ColorManagement && !rootState?.linear && isColor)
++                    targetProp.convertSRGBToLinear();
++            }
++        } // else just overwrite the value
++        else {
++            currentInstance[key] = value;
++            // auto-convert srgb textures
++            if (currentInstance[key]?.isTexture &&
++                currentInstance[key].format === RGBAFormat &&
++                currentInstance[key].type === UnsignedByteType) {
++                const texture = currentInstance[key];
++                if (rootState?.gl) {
++                    if (is.colorSpaceExist(texture) && is.colorSpaceExist(rootState.gl))
++                        texture.colorSpace = rootState.gl.outputColorSpace;
++                    // @ts-expect-error - old version of threejs
++                    else
++                        texture.encoding = rootState.gl.outputEncoding;
++                }
++            }
++        }
++        checkUpdate(currentInstance[key]);
++        checkUpdate(targetProp);
++        invalidateInstance(instance);
++    }
++    const instanceHandlersCount = localState?.eventCount;
++    const parent = localState?.instanceStore?.get('parent');
++    if (parent && rootState.internal && instance['raycast'] && instanceHandlersCount !== localState?.eventCount) {
++        // Pre-emptively remove the instance from the interaction manager
++        const index = rootState.internal.interaction.indexOf(instance);
++        if (index > -1)
++            rootState.internal.interaction.splice(index, 1);
++        // Add the instance to the interaction manager only when it has handlers
++        if (localState?.eventCount)
++            rootState.internal.interaction.push(instance);
++    }
++    if (parent && localState?.onUpdate && changes.length) {
++        localState.onUpdate(instance);
++    }
++    // clearing the intermediate store from the instance
++    if (instance[NGT_APPLY_PROPS]) {
++        delete instance[NGT_APPLY_PROPS];
++    }
++    return instance;
++}
++
++const catalogue = {};
++function extend(objects) {
++    Object.assign(catalogue, objects);
++}
++const [injectCatalogue] = createInjectionToken(() => catalogue);
++
++function createNode(type, node, document) {
++    const state = [type, null, [], false, undefined, undefined, undefined, undefined];
++    const rendererNode = Object.assign(node, { __ngt_renderer__: state });
++    // NOTE: assign ownerDocument to node so we can use HostListener in Component
++    if (!rendererNode['ownerDocument'])
++        rendererNode['ownerDocument'] = document;
++    // NOTE: assign injectorFactory on non-three type since
++    // rendererNode is an instance of DOM Node
++    if (state[0 /* NgtRendererClassId.type */] !== 'three') {
++        state[7 /* NgtRendererClassId.debugNodeFactory */] = () => {
++            if (!state[6 /* NgtRendererClassId.debugNode */]) {
++                state[6 /* NgtRendererClassId.debugNode */] = new DebugNode(rendererNode);
++            }
++            return state[6 /* NgtRendererClassId.debugNode */];
++        };
++    }
++    if (!('getAttribute' in rendererNode) || typeof rendererNode['getAttribute'] !== 'function') {
++        const nodeGetAttribute = (name) => rendererNode[name];
++        nodeGetAttribute['__ngt_renderer__'] = true;
++        Object.defineProperty(rendererNode, 'getAttribute', { value: nodeGetAttribute, configurable: true });
++    }
++    return rendererNode;
++}
++function isDOM(node) {
++    const rS = node['__ngt_renderer__'];
++    return !rS || node instanceof Element || node instanceof Document || node instanceof Window;
++}
++function getClosestParentWithInstance(node) {
++    let parent = node.__ngt_renderer__[1 /* NgtRendererClassId.parent */];
++    if (parent &&
++        parent.__ngt_renderer__[0 /* NgtRendererClassId.type */] === 'portal' &&
++        parent.__ngt_renderer__[5 /* NgtRendererClassId.portalContainer */]?.__ngt_renderer__[0 /* NgtRendererClassId.type */] === 'three') {
++        return parent.__ngt_renderer__[5 /* NgtRendererClassId.portalContainer */];
++    }
++    while (parent && parent.__ngt_renderer__[0 /* NgtRendererClassId.type */] !== 'three') {
++        parent = parent.__ngt_renderer__[5 /* NgtRendererClassId.portalContainer */]
++            ? parent.__ngt_renderer__[5 /* NgtRendererClassId.portalContainer */]
++            : parent.__ngt_renderer__[1 /* NgtRendererClassId.parent */];
++    }
++    return parent;
++}
++function setParent(node, parent) {
++    if (!node.__ngt_renderer__[1 /* NgtRendererClassId.parent */]) {
++        node.__ngt_renderer__[1 /* NgtRendererClassId.parent */] = parent;
++    }
++}
++function addChild(node, child) {
++    if (!node.__ngt_renderer__[2 /* NgtRendererClassId.children */].includes(child)) {
++        node.__ngt_renderer__[2 /* NgtRendererClassId.children */].push(child);
++    }
++}
++function removeChild(node, child) {
++    const index = node.__ngt_renderer__?.[2 /* NgtRendererClassId.children */].findIndex((c) => child === c);
++    if (index >= 0) {
++        node.__ngt_renderer__[2 /* NgtRendererClassId.children */].splice(index, 1);
++    }
++}
++
++function attach(object, value, paths = [], useApplyProps = false) {
++    const [base, ...remaining] = paths;
++    if (!base)
++        return;
++    if (remaining.length === 0) {
++        if (useApplyProps)
++            applyProps(object, { [base]: value });
++        else
++            object[base] = value;
++    }
++    else {
++        assignEmpty(object, base, useApplyProps);
++        attach(object[base], value, remaining, useApplyProps);
++    }
++}
++function detach(parent, child, attachProp) {
++    const childLocalState = getLocalState(child);
++    if (childLocalState) {
++        if (Array.isArray(attachProp))
++            attach(parent, childLocalState.previousAttach, attachProp, childLocalState.isRaw);
++        else
++            childLocalState.previousAttach?.();
++    }
++}
++function assignEmpty(obj, base, shouldAssignStoreForApplyProps = false) {
++    if ((!Object.hasOwn(obj, base) && Reflect && !!Reflect.has && !Reflect.has(obj, base)) || obj[base] === undefined) {
++        obj[base] = {};
++    }
++    if (shouldAssignStoreForApplyProps) {
++        const localState = getLocalState(obj[base]);
++        // if we already have local state, bail out
++        if (localState)
++            return;
++        const parentLocalState = getLocalState(obj);
++        // if parent doesn't have local state, bail out
++        if (!parentLocalState)
++            return;
++        Object.assign(obj[base], { [NGT_APPLY_PROPS]: parentLocalState.store });
++    }
++}
++function createAttachFunction(cb) {
++    return (parent, child, store) => cb({ parent, child, store });
++}
++
++function kebabToPascal(str) {
++    if (!str)
++        return str; // Handle empty input
++    let pascalStr = '';
++    let capitalizeNext = true; // Flag to track capitalization
++    for (let i = 0; i < str.length; i++) {
++        const char = str[i];
++        if (char === '-') {
++            capitalizeNext = true;
++            continue;
++        }
++        pascalStr += capitalizeNext ? char.toUpperCase() : char;
++        capitalizeNext = false;
++    }
++    return pascalStr;
++}
++function attachThreeChild(parent, child) {
++    const pLS = getLocalState(parent);
++    const cLS = getLocalState(child);
++    if (!pLS || !cLS) {
++        throw new Error(`[NGT] THREE instances need to be prepared with local state.`);
++    }
++    // whether the child is added to the parent with parent.add()
++    let added = false;
++    // assign store on child if not already exist
++    // or child store is not the same as parent store
++    // or child store is the parent of parent store
++    if (!cLS.store || cLS.store !== pLS.store || cLS.store === pLS.store.get('previousRoot')) {
++        cLS.store = pLS.store;
++        const grandchildren = [
++            ...(cLS.objects ? untracked(cLS.objects) : []),
++            ...(cLS.nonObjects ? untracked(cLS.nonObjects) : []),
++        ];
++        for (const grandchild of grandchildren) {
++            const grandChildLS = getLocalState(grandchild);
++            if (!grandChildLS)
++                continue;
++            grandChildLS.store = cLS.store;
++        }
++    }
++    if (cLS.attach) {
++        const attachProp = cLS.attach;
++        if (typeof attachProp === 'function') {
++            let attachCleanUp = undefined;
++            if (cLS.isRaw) {
++                if (cLS.instanceStore.get('parent') !== parent) {
++                    cLS.setParent(parent);
++                }
++                // at this point we don't have rawValue yet, so we bail and wait until the Renderer recalls attach
++                if (child.__ngt_renderer__[4 /* NgtRendererClassId.rawValue */] === undefined)
++                    return;
++                attachCleanUp = attachProp(parent, child.__ngt_renderer__[4 /* NgtRendererClassId.rawValue */], cLS.store);
++            }
++            else {
++                attachCleanUp = attachProp(parent, child, cLS.store);
++            }
++            if (attachCleanUp)
++                cLS.previousAttach = attachCleanUp;
++        }
++        else {
++            // we skip attach none if set explicitly
++            if (attachProp[0] === 'none') {
++                invalidateInstance(child);
++                return;
++            }
++            // handle material array
++            if (attachProp[0] === 'material' &&
++                attachProp[1] &&
++                typeof Number(attachProp[1]) === 'number' &&
++                is.material(child) &&
++                !Array.isArray(parent['material'])) {
++                parent['material'] = [];
++            }
++            // attach
++            if (cLS.isRaw) {
++                if (cLS.instanceStore.get('parent') !== parent) {
++                    cLS.setParent(parent);
++                }
++                // at this point we don't have rawValue yet, so we bail and wait until the Renderer recalls attach
++                if (child.__ngt_renderer__[4 /* NgtRendererClassId.rawValue */] === undefined)
++                    return;
++                attach(parent, child.__ngt_renderer__[4 /* NgtRendererClassId.rawValue */], attachProp, true);
++            }
++            else {
++                attach(parent, child, attachProp);
++            }
++            // save value
++            cLS.previousAttach = attachProp.reduce((value, property) => value[property], parent);
++        }
++    }
++    else if (is.object3D(parent) && is.object3D(child)) {
++        parent.add(child);
++        added = true;
++    }
++    if (pLS.add) {
++        pLS.add(child, added ? 'objects' : 'nonObjects');
++    }
++    if (cLS.parent && untracked(cLS.parent) !== parent) {
++        cLS.setParent(parent);
++    }
++    // NOTE: this does not mean that the child is actually attached to the parent on the scenegraph.
++    //  a child on the Angular template can also emit onAttach
++    if (cLS.onAttach)
++        cLS.onAttach({ parent, node: child });
++    invalidateInstance(child);
++    invalidateInstance(parent);
++}
++function removeThreeChild(child, parent, dispose) {
++    const pLS = getLocalState(parent);
++    const cLS = getLocalState(child);
++    // clear parent ref
++    cLS?.setParent(null);
++    // remove child from parent
++    pLS?.remove?.(child, 'objects');
++    pLS?.remove?.(child, 'nonObjects');
++    if (parent) {
++        if (cLS?.attach) {
++            detach(parent, child, cLS.attach);
++        }
++        else if (is.object3D(parent) && is.object3D(child)) {
++            parent.remove(child);
++            const store = cLS?.store || pLS?.store;
++            if (store)
++                removeInteractivity(store, child);
++        }
++    }
++    const isPrimitive = cLS?.primitive;
++    if (!isPrimitive) {
++        removeThreeRecursive(cLS?.instanceStore.get('objects') || [], child, !!dispose);
++        removeThreeRecursive(child.children, child, !!dispose);
++    }
++    // dispose
++    if (!isPrimitive && child['dispose'] && !is.scene(child)) {
++        queueMicrotask(() => child['dispose']());
++    }
++    if (parent) {
++        invalidateInstance(parent);
++    }
++}
++function removeThreeRecursive(array, parent, dispose) {
++    if (array)
++        [...array].forEach((child) => removeThreeChild(child, parent, dispose));
++}
++function processThreeEvent(instance, priority, eventName, callback) {
++    const lS = getLocalState(instance);
++    if (!lS) {
++        console.warn('[NGT] instance has not been prepared yet.');
++        return () => { };
++    }
++    if (eventName === SPECIAL_EVENTS.BEFORE_RENDER) {
++        return lS.store
++            .get('internal')
++            .subscribe((state) => callback({ state, object: instance }), priority || lS.priority || 0);
++    }
++    if (eventName === SPECIAL_EVENTS.ATTACHED) {
++        lS.onAttach = callback;
++        if (lS.parent && untracked(lS.parent)) {
++            lS.onAttach({ parent: untracked(lS.parent), node: instance });
++        }
++        return () => {
++            lS.onAttach = undefined;
++        };
++    }
++    if (eventName === SPECIAL_EVENTS.UPDATED) {
++        lS.onUpdate = callback;
++        return () => {
++            lS.onUpdate = undefined;
++        };
++    }
++    if (THREE_NATIVE_EVENTS.includes(eventName) && instance instanceof EventDispatcher) {
++        // NOTE: rename to dispose because that's the event type, not disposed.
++        if (eventName === 'disposed') {
++            eventName = 'dispose';
++        }
++        if (instance.parent && (eventName === 'added' || eventName === 'removed')) {
++            callback({ type: eventName, target: instance });
++        }
++        instance.addEventListener(eventName, callback);
++        return () => instance.removeEventListener(eventName, callback);
++    }
++    if (!lS.handlers)
++        lS.handlers = {};
++    // try to get the previous handler. compound might have one, the THREE object might also have one with the same name
++    const previousHandler = lS.handlers[eventName];
++    // readjust the callback
++    const updatedCallback = (event) => {
++        if (previousHandler)
++            previousHandler(event);
++        callback(event);
++    };
++    Object.assign(lS.handlers, { [eventName]: updatedCallback });
++    // increment the count everytime
++    lS.eventCount += 1;
++    // but only add the instance (target) to the interaction array (so that it is handled by the EventManager with Raycast)
++    // the first time eventCount is incremented
++    if (lS.eventCount === 1 && instance['raycast']) {
++        let root = lS.store;
++        while (root.get('previousRoot')) {
++            root = root.get('previousRoot');
++        }
++        const interactions = root.get('internal', 'interaction') || [];
++        interactions.push(instance);
++    }
++    // clean up the event listener by removing the target from the interaction array
++    return () => {
++        const lS = getLocalState(instance);
++        if (lS) {
++            lS.eventCount -= 1;
++            const interactions = lS.store.get('internal', 'interaction') || [];
++            const index = interactions.findIndex((obj) => obj.uuid === instance.uuid);
++            if (index >= 0)
++                interactions.splice(index, 1);
++        }
++    };
++}
++
++class NgtRendererFactory {
++    constructor() {
++        this.delegateRendererFactory = inject(RendererFactory2, { skipSelf: true });
++        this.document = inject(DOCUMENT);
++        this.catalogue = injectCatalogue();
++        this.rootStore = injectStore();
++        this.portalCommentsNodes = [];
++        this.rendererMap = new Map();
++        this.routedSet = new Set();
++    }
++    createRenderer(hostElement, type) {
++        const delegateRenderer = this.delegateRendererFactory.createRenderer(hostElement, type);
++        if (!type)
++            return delegateRenderer;
++        // NOTE: might need to revisit this
++        if (type['type'][HTML]) {
++            this.rendererMap.set(type.id, delegateRenderer);
++            return delegateRenderer;
++        }
++        if (type['type'][ROUTED_SCENE]) {
++            this.routedSet.add(type.id);
++        }
++        const isNonRoot = type['type'][NON_ROOT];
++        let renderer = this.rendererMap.get(type.id);
++        if (!renderer) {
++            this.rendererMap.set(type.id, (renderer = new NgtRenderer(delegateRenderer, this.rootStore, this.document, this.portalCommentsNodes, this.catalogue, 
++            // setting root scene if there's no routed scene OR this component is the routed Scene
++            !hostElement && !isNonRoot && (this.routedSet.size === 0 || this.routedSet.has(type.id)))));
++        }
++        return renderer;
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRendererFactory, deps: [], target: i0.ɵɵFactoryTarget.Injectable }); }
++    static { this.ɵprov = i0.ɵɵngDeclareInjectable({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRendererFactory }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRendererFactory, decorators: [{
++            type: Injectable
++        }] });
++class NgtRenderer {
++    constructor(delegate, rootStore, document, portalCommentsNodes, catalogue, isRoot = true) {
++        this.delegate = delegate;
++        this.rootStore = rootStore;
++        this.document = document;
++        this.portalCommentsNodes = portalCommentsNodes;
++        this.catalogue = catalogue;
++        this.isRoot = isRoot;
++        this.argsCommentNodes = [];
++        this.parentCommentNodes = [];
++        this.createText = this.delegate.createText.bind(this.delegate);
++        this.destroy = this.delegate.destroy.bind(this.delegate);
++        this.destroyNode = null;
++        this.selectRootElement = this.delegate.selectRootElement.bind(this.delegate);
++        this.nextSibling = this.delegate.nextSibling.bind(this.delegate);
++        this.addClass = this.delegate.addClass.bind(this.delegate);
++        this.removeClass = this.delegate.removeClass.bind(this.delegate);
++        this.setStyle = this.delegate.setStyle.bind(this.delegate);
++        this.removeStyle = this.delegate.removeStyle.bind(this.delegate);
++        this.setValue = this.delegate.setValue.bind(this.delegate);
++    }
++    createElement(name, namespace) {
++        const element = this.delegate.createElement(name, namespace);
++        // if there's namespace, we don't do anything
++        if (namespace) {
++            return createNode('dom', element, this.document);
++        }
++        // on first pass, we return the Root Scene as the root node
++        if (this.isRoot) {
++            this.isRoot = false;
++            const node = createNode('three', this.rootStore.snapshot.scene, this.document);
++            node.__ngt_renderer__[7 /* NgtRendererClassId.debugNodeFactory */] = () => {
++                if (!node.__ngt_renderer__[6 /* NgtRendererClassId.debugNode */]) {
++                    node.__ngt_renderer__[6 /* NgtRendererClassId.debugNode */] = new DebugNode(element);
++                }
++                return node.__ngt_renderer__[6 /* NgtRendererClassId.debugNode */];
++            };
++            return node;
++        }
++        if (name === SPECIAL_DOM_TAG.NGT_PORTAL) {
++            return createNode('portal', element, this.document);
++        }
++        if (name === SPECIAL_DOM_TAG.NGT_VALUE) {
++            return createNode('three', prepare({ __ngt_renderer__: { rawValue: undefined } }, { store: this.rootStore, isRaw: true }), this.document);
++        }
++        const [injectedArgs, injectedParent] = [
++            this.getNgtDirective(NgtArgs, this.argsCommentNodes)?.value || [],
++            this.getNgtDirective(NgtParent, this.parentCommentNodes)?.value,
++        ];
++        if (name === SPECIAL_DOM_TAG.NGT_PRIMITIVE) {
++            if (!injectedArgs[0])
++                throw new Error(`[NGT] ngt-primitive without args is invalid`);
++            const object = injectedArgs[0];
++            let localState = getLocalState(object);
++            if (!localState) {
++                // NOTE: if an object isn't already "prepared", we prepare it
++                prepare(object, { store: this.rootStore, primitive: true });
++                localState = getLocalState(object);
++            }
++            const primitiveNode = createNode('three', object, this.document);
++            if (injectedParent) {
++                primitiveNode.__ngt_renderer__[1 /* NgtRendererClassId.parent */] = injectedParent;
++            }
++            return primitiveNode;
++        }
++        const threeName = kebabToPascal(name.startsWith('ngt-') ? name.slice(4) : name);
++        const threeTarget = this.catalogue[threeName];
++        // we have the THREE constructor here, handle it
++        if (threeTarget) {
++            const instance = prepare(new threeTarget(...injectedArgs), { store: this.rootStore });
++            const node = createNode('three', instance, this.document);
++            const localState = getLocalState(instance);
++            // auto-attach for geometry and material
++            if (is.geometry(instance)) {
++                localState.attach = ['geometry'];
++            }
++            else if (is.material(instance)) {
++                localState.attach = ['material'];
++            }
++            if (injectedParent) {
++                node.__ngt_renderer__[1 /* NgtRendererClassId.parent */] = injectedParent;
++            }
++            return node;
++        }
++        return createNode('dom', element, this.document);
++    }
++    createComment(value) {
++        const comment = this.delegate.createComment(value);
++        const commentNode = createNode('comment', comment, this.document);
++        // NOTE: we attach an arrow function to the Comment node
++        //  In our directives, we can call this function to then start tracking the RendererNode
++        //  this is done to limit the amount of Nodes we need to process for getCreationState
++        comment[SPECIAL_INTERNAL_ADD_COMMENT] = (node) => {
++            if (node === 'args') {
++                this.argsCommentNodes.push(comment);
++            }
++            else if (node === 'parent') {
++                this.parentCommentNodes.push(comment);
++                comment[SPECIAL_INTERNAL_SET_PARENT_COMMENT] = (ngtParent) => {
++                    commentNode.__ngt_renderer__[1 /* NgtRendererClassId.parent */] = ngtParent;
++                };
++            }
++            else if (typeof node === 'object') {
++                this.portalCommentsNodes.push(node);
++            }
++        };
++        return commentNode;
++    }
++    appendChild(parent, newChild) {
++        const pRS = parent.__ngt_renderer__;
++        const cRS = newChild.__ngt_renderer__;
++        if (pRS[0 /* NgtRendererClassId.type */] === 'dom' &&
++            (newChild instanceof Text || cRS[0 /* NgtRendererClassId.type */] === 'dom')) {
++            addChild(parent, newChild);
++            if (newChild[DOM_PARENT] && newChild[DOM_PARENT] instanceof HTMLElement) {
++                this.delegate.appendChild(newChild[DOM_PARENT], newChild);
++                return;
++            }
++            this.delegate.appendChild(parent, newChild);
++            if (cRS) {
++                setParent(newChild, parent);
++                if (this.shouldFindGrandparentInstance(pRS, cRS, newChild)) {
++                    // we'll try to get the grandparent instance here so that we can run appendChild with both instances
++                    const closestGrandparentInstance = getClosestParentWithInstance(parent);
++                    if (closestGrandparentInstance)
++                        this.appendChild(closestGrandparentInstance, newChild);
++                }
++            }
++            return;
++        }
++        if (cRS?.[0 /* NgtRendererClassId.type */] === 'comment') {
++            setParent(newChild, parent);
++            return;
++        }
++        setParent(newChild, parent);
++        addChild(parent, newChild);
++        // if new child is a portal
++        if (cRS?.[0 /* NgtRendererClassId.type */] === 'portal') {
++            if (!cRS[5 /* NgtRendererClassId.portalContainer */])
++                this.processPortalContainer(newChild);
++            if (cRS[5 /* NgtRendererClassId.portalContainer */]) {
++                this.appendChild(parent, cRS[5 /* NgtRendererClassId.portalContainer */]);
++            }
++            return;
++        }
++        // if parent is a portal
++        if (pRS[0 /* NgtRendererClassId.type */] === 'portal') {
++            if (!pRS[5 /* NgtRendererClassId.portalContainer */])
++                this.processPortalContainer(parent);
++            if (pRS[5 /* NgtRendererClassId.portalContainer */]) {
++                this.appendChild(pRS[5 /* NgtRendererClassId.portalContainer */], newChild);
++            }
++            return;
++        }
++        // if both are three instances, straightforward case
++        if (pRS[0 /* NgtRendererClassId.type */] === 'three' && cRS?.[0 /* NgtRendererClassId.type */] === 'three') {
++            const cLS = getLocalState(newChild);
++            // if child already attached to a parent, skip
++            if (cLS?.instanceStore?.get('parent'))
++                return;
++            if (parent === newChild)
++                return;
++            // attach THREE child
++            attachThreeChild(parent, newChild);
++            return;
++        }
++        // if only the parent is the THREE instance
++        if (pRS[0 /* NgtRendererClassId.type */] === 'three') {
++            for (const renderChild of cRS?.[2 /* NgtRendererClassId.children */] || []) {
++                this.appendChild(parent, renderChild);
++            }
++        }
++        if (this.shouldFindGrandparentInstance(pRS, cRS, newChild)) {
++            // we'll try to get the grandparent instance here so that we can run appendChild with both instances
++            const closestGrandparentInstance = getClosestParentWithInstance(parent);
++            if (closestGrandparentInstance)
++                this.appendChild(closestGrandparentInstance, newChild);
++            return;
++        }
++    }
++    insertBefore(parent, newChild) {
++        // NOTE: not sure why this is here. investigate when we have time
++        // if (parent instanceof HTMLElement && (newChild instanceof HTMLElement || newChild instanceof Text)) {
++        // 	return this.delegate.appendChild(parent, newChild);
++        // }
++        if (parent == null || !parent.__ngt_renderer__ || parent === newChild)
++            return;
++        this.appendChild(parent, newChild);
++    }
++    removeChild(parent, oldChild, isHostElement, calledByNgt = false) {
++        if (!calledByNgt && parent == null) {
++            parent = this.parentNode(oldChild);
++            return this.removeChild(parent, oldChild, isHostElement, true);
++        }
++        if (parent == null) {
++            parent = (untracked(() => getLocalState(oldChild)?.parent?.()) ||
++                oldChild.__ngt_renderer__?.[1 /* NgtRendererClassId.parent */]);
++        }
++        const cRS = oldChild.__ngt_renderer__;
++        // if parent is still falsy, we don't know what to do with the parent.
++        // we'll just remove the child and destroy it
++        if (parent == null) {
++            if (cRS) {
++                // if the child is the root scene, we don't want to destroy it
++                if (is.scene(oldChild) && oldChild.name === '__ngt_root_scene__')
++                    return;
++                if (cRS[0 /* NgtRendererClassId.type */] === 'three') {
++                    removeThreeChild(oldChild, undefined, true);
++                }
++                // otherwise, we'll destroy it
++                this.destroyInternal(oldChild, undefined);
++            }
++            return;
++        }
++        const pRS = parent.__ngt_renderer__;
++        if ((!cRS || !pRS) &&
++            parent instanceof Element &&
++            (oldChild instanceof Element || oldChild instanceof Text || oldChild instanceof Comment)) {
++            this.delegate.removeChild(parent, oldChild);
++            this.destroyInternal(oldChild, parent);
++            return;
++        }
++        if (cRS[0 /* NgtRendererClassId.type */] === 'dom' && (!pRS || pRS[0 /* NgtRendererClassId.type */] === 'dom')) {
++            this.delegate.removeChild(parent, oldChild);
++            this.destroyInternal(oldChild, parent);
++            return;
++        }
++        if (pRS[0 /* NgtRendererClassId.type */] === 'three' && cRS[0 /* NgtRendererClassId.type */] === 'three') {
++            removeThreeChild(oldChild, parent, true);
++            this.destroyInternal(oldChild, parent);
++            return;
++        }
++        if (pRS[0 /* NgtRendererClassId.type */] === 'portal' &&
++            pRS[5 /* NgtRendererClassId.portalContainer */]?.__ngt_renderer__[0 /* NgtRendererClassId.type */] === 'three') {
++            this.removeChild(pRS[5 /* NgtRendererClassId.portalContainer */], oldChild, isHostElement);
++            return;
++        }
++        if (pRS[0 /* NgtRendererClassId.type */] === 'three') {
++            this.destroyInternal(oldChild, parent);
++            return;
++        }
++        const closestGrandparentInstance = getClosestParentWithInstance(parent);
++        if (closestGrandparentInstance)
++            this.removeChild(closestGrandparentInstance, oldChild, isHostElement);
++        this.destroyInternal(oldChild, closestGrandparentInstance);
++    }
++    parentNode(node) {
++        const rS = node.__ngt_renderer__;
++        if (rS?.[1 /* NgtRendererClassId.parent */])
++            return rS[1 /* NgtRendererClassId.parent */];
++        return this.delegate.parentNode(node);
++    }
++    setAttributeInternal(el, name, value, _namespace) {
++        const rS = el.__ngt_renderer__;
++        if (rS[3 /* NgtRendererClassId.destroyed */])
++            return false;
++        if (rS[0 /* NgtRendererClassId.type */] === 'three') {
++            if (name === SPECIAL_PROPERTIES.RENDER_PRIORITY) {
++                // NOTE: priority needs to be set as an attribute string so that they can be set as early as possible
++                // we convert that string to a number. if it's invalid, default 0
++                let priority = Number(value);
++                if (isNaN(priority)) {
++                    priority = 0;
++                    console.warn(`[NGT] "priority" is an invalid number, default to 0`);
++                }
++                const localState = getLocalState(el);
++                if (localState)
++                    localState.priority = priority;
++            }
++            else if (name === SPECIAL_PROPERTIES.ATTACH) {
++                // NOTE: handle attach as string
++                const paths = value.split('.');
++                if (paths.length) {
++                    const localState = getLocalState(el);
++                    if (localState)
++                        localState.attach = paths;
++                }
++            }
++            else {
++                // NOTE: coercion
++                let maybeCoerced = value;
++                if (maybeCoerced === '' || maybeCoerced === 'true' || maybeCoerced === 'false') {
++                    maybeCoerced = maybeCoerced === 'true' || maybeCoerced === '';
++                }
++                else if (!isNaN(Number(maybeCoerced))) {
++                    maybeCoerced = Number(maybeCoerced);
++                }
++                if (name === SPECIAL_PROPERTIES.RAW_VALUE) {
++                    rS[4 /* NgtRendererClassId.rawValue */] = maybeCoerced;
++                }
++                else {
++                    applyProps(el, { [name]: maybeCoerced });
++                }
++            }
++            return false;
++        }
++        return true;
++    }
++    setAttribute(el, name, value, namespace) {
++        const useDelegate = this.setAttributeInternal(el, name, value, namespace);
++        if (useDelegate) {
++            this.delegate.setAttribute(el, name, value);
++        }
++    }
++    removeAttribute(el, name, namespace) {
++        const useDelegate = this.setAttributeInternal(el, name, undefined, namespace);
++        if (useDelegate) {
++            this.delegate.removeAttribute(el, name, namespace);
++        }
++    }
++    setProperty(el, name, value) {
++        const rS = el.__ngt_renderer__;
++        if (!rS || rS[3 /* NgtRendererClassId.destroyed */])
++            return;
++        const localState = getLocalState(el);
++        if (rS[0 /* NgtRendererClassId.type */] === 'three') {
++            if (name === SPECIAL_PROPERTIES.PARAMETERS) {
++                // NOTE: short-cut for null raycast to prevent upstream from creating a nullRaycast property
++                if ('raycast' in value && value['raycast'] === null) {
++                    value['raycast'] = () => null;
++                }
++                applyProps(el, value);
++                if ('geometry' in value && value['geometry'].isBufferGeometry) {
++                    localState?.updateGeometryStamp();
++                }
++                return;
++            }
++            const parent = localState?.instanceStore.get('parent') || rS[1 /* NgtRendererClassId.parent */];
++            // [rawValue]
++            if (localState?.isRaw && name === SPECIAL_PROPERTIES.RAW_VALUE) {
++                rS[4 /* NgtRendererClassId.rawValue */] = value;
++                if (parent)
++                    attachThreeChild(parent, el);
++                return;
++            }
++            // [attach]
++            if (name === SPECIAL_PROPERTIES.ATTACH) {
++                if (localState)
++                    localState.attach = Array.isArray(value)
++                        ? value.map((v) => v.toString())
++                        : typeof value === 'function'
++                            ? value
++                            : typeof value === 'string'
++                                ? value.split('.')
++                                : [value];
++                if (parent)
++                    attachThreeChild(parent, el);
++                return;
++            }
++            // NOTE: short-cut for null raycast to prevent upstream from creating a nullRaycast property
++            if (name === 'raycast' && value === null) {
++                value = () => null;
++            }
++            applyProps(el, { [name]: value });
++            if (name === 'geometry' && value.isBufferGeometry) {
++                localState?.updateGeometryStamp();
++            }
++            return;
++        }
++        return this.delegate.setProperty(el, name, value);
++    }
++    listen(target, eventName, callback) {
++        const rS = target.__ngt_renderer__;
++        // if the target doesn't have __ngt_renderer__, we delegate
++        // if target is DOM node, we delegate
++        if (!rS || isDOM(target)) {
++            return this.delegate.listen(target, eventName, callback);
++        }
++        if (rS[0 /* NgtRendererClassId.type */] === 'three') {
++            const instance = target;
++            const localState = getLocalState(instance);
++            const priority = localState?.priority ?? 0;
++            return processThreeEvent(instance, priority, eventName, callback);
++        }
++        // @ts-expect-error - we know that target is not DOM node
++        if (target === this.rootStore.snapshot.scene) {
++            let [domTarget, event] = eventName.split(':');
++            if (event == null) {
++                event = domTarget;
++                domTarget = '';
++            }
++            const eventTarget = domTarget === 'window'
++                ? target['ownerDocument']['defaultView']
++                : target['ownerDocument'];
++            return this.delegate.listen(eventTarget, event, callback);
++        }
++        return () => { };
++    }
++    destroyInternal(node, parent) {
++        const rS = node.__ngt_renderer__;
++        if (!rS || rS[3 /* NgtRendererClassId.destroyed */])
++            return;
++        if (rS[0 /* NgtRendererClassId.type */] === 'three') {
++            const localState = getLocalState(node);
++            if (localState?.instanceStore) {
++                localState.instanceStore.get('objects').forEach((obj) => this.destroyInternal(obj, parent));
++                localState.instanceStore.get('nonObjects').forEach((obj) => this.destroyInternal(obj, parent));
++            }
++            if (localState?.onUpdate)
++                delete localState.onUpdate;
++            if (localState?.onAttach)
++                delete localState.onAttach;
++            delete localState['objects'];
++            delete localState['nonObjects'];
++            delete localState['parent'];
++            delete localState['add'];
++            delete localState['remove'];
++            delete localState['store'];
++            delete localState['handlers'];
++            if (!localState?.primitive) {
++                delete node['__ngt__'];
++            }
++        }
++        if (rS[0 /* NgtRendererClassId.type */] === 'comment') {
++            rS[6 /* NgtRendererClassId.debugNode */] = null;
++            rS[7 /* NgtRendererClassId.debugNodeFactory */] = null;
++            delete node[SPECIAL_INTERNAL_ADD_COMMENT];
++            this.removeCommentNode(node, this.argsCommentNodes);
++        }
++        if (rS[0 /* NgtRendererClassId.type */] === 'portal') {
++            rS[6 /* NgtRendererClassId.debugNode */] = null;
++            rS[7 /* NgtRendererClassId.debugNodeFactory */] = null;
++            this.removeCommentNode(node, this.portalCommentsNodes);
++        }
++        // nullify parent
++        rS[1 /* NgtRendererClassId.parent */] = null;
++        for (const renderChild of rS[2 /* NgtRendererClassId.children */] || []) {
++            if (renderChild.__ngt_renderer__?.[0 /* NgtRendererClassId.type */] === 'three' && parent) {
++                if (parent.__ngt_renderer__?.[0 /* NgtRendererClassId.type */] === 'three') {
++                    removeThreeChild(renderChild, parent, true);
++                    continue;
++                }
++                const closestInstance = getClosestParentWithInstance(parent);
++                if (closestInstance) {
++                    removeThreeChild(renderChild, closestInstance, true);
++                }
++            }
++            this.destroyInternal(renderChild, parent);
++        }
++        rS[2 /* NgtRendererClassId.children */] = [];
++        rS[3 /* NgtRendererClassId.destroyed */] = true;
++        if ('getAttribute' in node &&
++            typeof node['getAttribute'] === 'function' &&
++            !!Reflect.get(node['getAttribute'], '__ngt_renderer__')) {
++            delete node['getAttribute'];
++        }
++        if (parent) {
++            removeChild(parent, node);
++        }
++    }
++    removeCommentNode(node, nodes) {
++        const index = nodes.findIndex((comment) => comment === node);
++        if (index > -1) {
++            nodes.splice(index, 1);
++        }
++    }
++    processPortalContainer(portal) {
++        const injector = portal.__ngt_renderer__[7 /* NgtRendererClassId.debugNodeFactory */]?.()?.injector;
++        if (!injector)
++            return;
++        const portalStore = injector.get(NGT_STORE, null);
++        if (!portalStore)
++            return;
++        const portalContainer = portalStore.get('scene');
++        if (!portalContainer)
++            return;
++        const localState = getLocalState(portalContainer);
++        if (localState) {
++            localState.store = portalStore;
++        }
++        portal.__ngt_renderer__[5 /* NgtRendererClassId.portalContainer */] = createNode('three', portalContainer, this.document);
++    }
++    shouldFindGrandparentInstance(pRS, cRS, child) {
++        const pType = pRS[0 /* NgtRendererClassId.type */];
++        const cType = cRS[0 /* NgtRendererClassId.type */];
++        const cLS = getLocalState(child);
++        // if child is three but haven't been attached to a parent yet
++        const isDanglingThreeChild = cType === 'three' && !cLS?.instanceStore?.get('parent');
++        // or both parent and child are DOM elements
++        // or they are compound AND haven't had a THREE instance yet
++        const isParentStillDOM = pType === 'dom';
++        const isChildStillDOM = cType === 'dom';
++        return isDanglingThreeChild || (isParentStillDOM && isChildStillDOM) || isParentStillDOM;
++    }
++    getNgtDirective(directive, commentNodes) {
++        let directiveInstance;
++        const destroyed = [];
++        let i = commentNodes.length - 1;
++        while (i >= 0) {
++            const comment = commentNodes[i];
++            if (comment.__ngt_renderer__[3 /* NgtRendererClassId.destroyed */]) {
++                destroyed.push(i);
++                i--;
++                continue;
++            }
++            const injector = comment.__ngt_renderer__[7 /* NgtRendererClassId.debugNodeFactory */]?.()?.injector;
++            if (!injector) {
++                i--;
++                continue;
++            }
++            const instance = injector.get(directive, null);
++            if (instance &&
++                typeof instance === 'object' &&
++                'validate' in instance &&
++                typeof instance.validate === 'function' &&
++                instance.validate()) {
++                directiveInstance = instance;
++                break;
++            }
++            i--;
++        }
++        destroyed.forEach((index) => {
++            commentNodes.splice(index, 1);
++        });
++        return directiveInstance;
++    }
++    get data() {
++        return this.delegate.data;
++    }
++}
++function provideNgtRenderer(store) {
++    const providers = [
++        NgtRendererFactory,
++        { provide: RendererFactory2, useExisting: NgtRendererFactory },
++        provideStore(() => store),
++    ];
++    return makeEnvironmentProviders(providers);
++}
++
++const shallowLoose = { objects: 'shallow', strict: false };
++function injectCanvasRootInitializer(injector) {
++    return assertInjector(injectCanvasRootInitializer, injector, () => {
++        const injectedStore = injectStore();
++        const loop = injectLoop();
++        return (canvas) => {
++            const exist = roots.has(canvas);
++            let store = roots.get(canvas);
++            if (store) {
++                console.warn('[NGT] Same canvas root is being created twice');
++            }
++            store ||= injectedStore;
++            if (!store) {
++                throw new Error('[NGT] No store initialized');
++            }
++            if (!exist) {
++                roots.set(canvas, store);
++            }
++            let isConfigured = false;
++            let lastCamera;
++            return {
++                isConfigured,
++                destroy: (timeout = 500) => {
++                    const root = roots.get(canvas);
++                    if (root) {
++                        root.update((state) => ({ internal: { ...state.internal, active: false } }));
++                        setTimeout(() => {
++                            try {
++                                const state = root.get();
++                                state.events.disconnect?.();
++                                state.gl?.renderLists?.dispose?.();
++                                state.gl?.forceContextLoss?.();
++                                if (state.gl?.xr)
++                                    state.xr.disconnect();
++                                dispose(state);
++                                roots.delete(canvas);
++                            }
++                            catch (e) {
++                                console.error('[NGT] Unexpected error while destroying Canvas Root', e);
++                            }
++                        }, timeout);
++                    }
++                },
++                configure: (inputs) => {
++                    const { shadows = false, linear = false, flat = false, legacy = false, orthographic = false, frameloop = 'always', dpr = [1, 2], gl: glOptions, size: sizeOptions, camera: cameraOptions, raycaster: raycasterOptions, scene: sceneOptions, events, lookAt, performance, } = inputs;
++                    const state = store.snapshot;
++                    const stateToUpdate = {};
++                    // setup renderer
++                    let gl = state.gl;
++                    if (!state.gl)
++                        stateToUpdate.gl = gl = makeRendererInstance(glOptions, canvas);
++                    // setup raycaster
++                    let raycaster = state.raycaster;
++                    if (!raycaster)
++                        stateToUpdate.raycaster = raycaster = new Raycaster();
++                    // set raycaster options
++                    const { params, ...options } = raycasterOptions || {};
++                    if (!is.equ(options, raycaster, shallowLoose))
++                        applyProps(raycaster, options);
++                    if (!is.equ(params, raycaster.params, shallowLoose)) {
++                        applyProps(raycaster, { params: { ...raycaster.params, ...(params || {}) } });
++                    }
++                    // Create default camera, don't overwrite any user-set state
++                    if (!state.camera || (state.camera === lastCamera && !is.equ(lastCamera, cameraOptions, shallowLoose))) {
++                        lastCamera = cameraOptions;
++                        const isCamera = is.camera(cameraOptions);
++                        let camera = isCamera ? cameraOptions : makeCameraInstance(orthographic, sizeOptions ?? state.size);
++                        if (!isCamera) {
++                            camera.position.z = 5;
++                            if (cameraOptions) {
++                                applyProps(camera, cameraOptions);
++                                if ('aspect' in cameraOptions ||
++                                    'left' in cameraOptions ||
++                                    'right' in cameraOptions ||
++                                    'top' in cameraOptions ||
++                                    'bottom' in cameraOptions) {
++                                    Object.assign(camera, { manual: true });
++                                    camera?.updateProjectionMatrix();
++                                }
++                            }
++                            // always look at center or passed-in lookAt by default
++                            if (!state.camera && !cameraOptions?.rotation && !cameraOptions?.quaternion) {
++                                if (Array.isArray(lookAt))
++                                    camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
++                                else if (lookAt?.isVector3)
++                                    camera.lookAt(lookAt);
++                                else
++                                    camera.lookAt(0, 0, 0);
++                            }
++                            // update projection matrix after applyprops
++                            camera.updateProjectionMatrix?.();
++                        }
++                        if (!is.instance(camera))
++                            camera = prepare(camera, { store });
++                        stateToUpdate.camera = camera;
++                        // Configure raycaster
++                        // https://github.com/pmndrs/react-xr/issues/300
++                        raycaster.camera = camera;
++                    }
++                    // Set up scene (one time only!)
++                    if (!state.scene) {
++                        let scene;
++                        if (is.scene(sceneOptions)) {
++                            scene = sceneOptions;
++                        }
++                        else {
++                            scene = new Scene();
++                            if (sceneOptions)
++                                applyProps(scene, sceneOptions);
++                        }
++                        applyProps(scene, {
++                            name: '__ngt_root_scene__',
++                            setAttribute: (name, value) => {
++                                if (canvas instanceof HTMLCanvasElement) {
++                                    if (canvas.parentElement) {
++                                        canvas.parentElement.setAttribute(name, value);
++                                    }
++                                    else {
++                                        canvas.setAttribute(name, value);
++                                    }
++                                }
++                            },
++                        });
++                        stateToUpdate.scene = prepare(scene, { store });
++                    }
++                    // Set up XR (one time only!)
++                    if (!state.xr) {
++                        // Handle frame behavior in WebXR
++                        const handleXRFrame = (timestamp, frame) => {
++                            const state = store.snapshot;
++                            if (state.frameloop === 'never')
++                                return;
++                            loop.advance(timestamp, true, store, frame);
++                        };
++                        // Toggle render switching on session
++                        const handleSessionChange = () => {
++                            const state = store.snapshot;
++                            state.gl.xr.enabled = state.gl.xr.isPresenting;
++                            state.gl.xr.setAnimationLoop(state.gl.xr.isPresenting ? handleXRFrame : null);
++                            if (!state.gl.xr.isPresenting)
++                                loop.invalidate(store);
++                        };
++                        // WebXR session manager
++                        const xr = {
++                            connect: () => {
++                                gl.xr.addEventListener('sessionstart', handleSessionChange);
++                                gl.xr.addEventListener('sessionend', handleSessionChange);
++                            },
++                            disconnect: () => {
++                                gl.xr.removeEventListener('sessionstart', handleSessionChange);
++                                gl.xr.removeEventListener('sessionend', handleSessionChange);
++                            },
++                        };
++                        // Subscribe to WebXR session events
++                        if (gl.xr && typeof gl.xr.addEventListener === 'function')
++                            xr.connect();
++                        stateToUpdate.xr = xr;
++                    }
++                    // Set shadowmap
++                    if (gl.shadowMap) {
++                        const oldEnabled = gl.shadowMap.enabled;
++                        const oldType = gl.shadowMap.type;
++                        gl.shadowMap.enabled = !!shadows;
++                        if (typeof shadows === 'boolean') {
++                            gl.shadowMap.type = PCFSoftShadowMap;
++                        }
++                        else if (typeof shadows === 'string') {
++                            const types = {
++                                basic: BasicShadowMap,
++                                percentage: PCFShadowMap,
++                                soft: PCFSoftShadowMap,
++                                variance: VSMShadowMap,
++                            };
++                            gl.shadowMap.type = types[shadows] ?? PCFSoftShadowMap;
++                        }
++                        else if (is.obj(shadows)) {
++                            Object.assign(gl.shadowMap, shadows);
++                        }
++                        if (oldEnabled !== gl.shadowMap.enabled || oldType !== gl.shadowMap.type)
++                            checkNeedsUpdate(gl.shadowMap);
++                    }
++                    // Safely set color management if available.
++                    // Avoid accessing ColorManagement to play nice with older versions
++                    if (ColorManagement) {
++                        const colorManagement = ColorManagement;
++                        if ('enabled' in colorManagement)
++                            colorManagement['enabled'] = !legacy;
++                        else if ('legacyMode' in colorManagement)
++                            colorManagement['legacyMode'] = legacy;
++                    }
++                    if (!isConfigured) {
++                        // set color space and tonemapping preferences once
++                        const LinearEncoding = 3000;
++                        const sRGBEncoding = 3001;
++                        applyProps(gl, {
++                            outputEncoding: linear ? LinearEncoding : sRGBEncoding,
++                            toneMapping: flat ? NoToneMapping : ACESFilmicToneMapping,
++                        });
++                    }
++                    // Update color management state
++                    if (state.legacy !== legacy)
++                        stateToUpdate.legacy = legacy;
++                    if (state.linear !== linear)
++                        stateToUpdate.linear = linear;
++                    if (state.flat !== flat)
++                        stateToUpdate.flat = flat;
++                    // Set gl props
++                    if (gl.setClearAlpha) {
++                        gl.setClearAlpha(0);
++                    }
++                    gl.setPixelRatio(makeDpr(state.viewport.dpr));
++                    gl.setSize(sizeOptions?.width ?? state.size.width, sizeOptions?.height ?? state.size.height);
++                    if (is.obj(glOptions) &&
++                        !(typeof glOptions === 'function') &&
++                        !is.renderer(glOptions) &&
++                        !is.equ(glOptions, gl, shallowLoose)) {
++                        applyProps(gl, glOptions);
++                    }
++                    // Store events internally
++                    if (events && !state.events.handlers)
++                        stateToUpdate.events = events(store);
++                    // Check performance
++                    if (performance && !is.equ(performance, state.performance, shallowLoose)) {
++                        stateToUpdate.performance = { ...state.performance, ...performance };
++                    }
++                    if (Object.keys(stateToUpdate).length) {
++                        store.update(stateToUpdate);
++                    }
++                    // Check size, allow it to take on container bounds initially
++                    const size = computeInitialSize(canvas, sizeOptions);
++                    if (!is.equ(size, state.size, shallowLoose)) {
++                        state.setSize(size.width, size.height, size.top, size.left);
++                    }
++                    // Check pixelratio
++                    if (dpr && state.viewport.dpr !== makeDpr(dpr))
++                        state.setDpr(dpr);
++                    // Check frameloop
++                    if (state.frameloop !== frameloop)
++                        state.setFrameloop(frameloop);
++                    isConfigured = true;
++                },
++            };
++        };
++    });
++}
++function computeInitialSize(canvas, defaultSize) {
++    if (defaultSize)
++        return defaultSize;
++    if (typeof HTMLCanvasElement !== 'undefined' && canvas instanceof HTMLCanvasElement && canvas.parentElement) {
++        return canvas.parentElement.getBoundingClientRect();
++    }
++    if (typeof OffscreenCanvas !== 'undefined' && canvas instanceof OffscreenCanvas) {
++        return { width: canvas.width, height: canvas.height, top: 0, left: 0 };
++    }
++    return { width: 0, height: 0, top: 0, left: 0 };
++}
++// Disposes an object and all its properties
++function dispose(obj) {
++    if (obj.dispose && obj.type !== 'Scene')
++        obj.dispose();
++    for (const p in obj) {
++        p.dispose?.();
++        delete obj[p];
++    }
++}
++
++var _a$1;
++/**
++ * This is a custom EnvironmentInjector that returns the RendererFactory2 from the `ngtEnvironmentInjector`
++ * for `NgtRendererFactory`
++ */
++class NgtOutletEnvironmentInjector extends EnvironmentInjector {
++    constructor(routeEnvInjector, ngtEnvInjector) {
++        super();
++        this.routeEnvInjector = routeEnvInjector;
++        this.ngtEnvInjector = ngtEnvInjector;
++    }
++    get(token, notFoundValue, flags = InjectFlags.Default) {
++        const options = {};
++        if (typeof flags === 'object') {
++            Object.assign(options, flags);
++        }
++        else {
++            Object.assign(options, {
++                optional: !!(flags & InjectFlags.Optional),
++                host: !!(flags & InjectFlags.Host),
++                self: !!(flags & InjectFlags.Self),
++                skipSelf: !!(flags & InjectFlags.SkipSelf),
++            });
++        }
++        if (token === RendererFactory2) {
++            return this.ngtEnvInjector.get(token, notFoundValue, options);
++        }
++        return this.routeEnvInjector.get(token, notFoundValue, options);
++    }
++    runInContext(fn) {
++        try {
++            return runInInjectionContext(this.routeEnvInjector, fn);
++        }
++        catch { }
++        return runInInjectionContext(this.ngtEnvInjector, fn);
++    }
++    destroy() {
++        this.routeEnvInjector.destroy();
++    }
++}
++/**
++ * This is a custom RouterOutlet that modifies `activateWith` to inherit the `EnvironmentInjector`
++ * that contains the custom `NgtRendererFactory`.
++ *
++ * Use this with extreme caution.
++ */
++class NgtRouterOutlet extends RouterOutlet {
++    constructor() {
++        super(...arguments);
++        this.environmentInjector = inject(EnvironmentInjector);
++    }
++    activateWith(activatedRoute, environmentInjector) {
++        const activateWithEnvInjector = this.environmentInjector === environmentInjector
++            ? environmentInjector
++            : createEnvironmentInjector([], new NgtOutletEnvironmentInjector(environmentInjector, this.environmentInjector));
++        return super.activateWith(activatedRoute, activateWithEnvInjector);
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRouterOutlet, deps: null, target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "19.1.4", type: NgtRouterOutlet, isStandalone: true, selector: "ngt-router-outlet", usesInheritance: true, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRouterOutlet, decorators: [{
++            type: Directive,
++            args: [{ selector: 'ngt-router-outlet' }]
++        }] });
++class NgtRoutedScene {
++    static { _a$1 = ROUTED_SCENE; }
++    static { this[_a$1] = true; }
++    constructor(router, cdr) {
++        effect((onCleanup) => {
++            const sub = router.events
++                .pipe(filter((event) => event instanceof ActivationEnd))
++                .subscribe(cdr.detectChanges.bind(cdr));
++            onCleanup(() => sub.unsubscribe());
++        });
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRoutedScene, deps: [{ token: i1.Router }, { token: i0.ChangeDetectorRef }], target: i0.ɵɵFactoryTarget.Component }); }
++    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "14.0.0", version: "19.1.4", type: NgtRoutedScene, isStandalone: true, selector: "ngt-routed-scene", ngImport: i0, template: `
++		<ngt-router-outlet />
++	`, isInline: true, dependencies: [{ kind: "directive", type: NgtRouterOutlet, selector: "ngt-router-outlet" }] }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtRoutedScene, decorators: [{
++            type: Component,
++            args: [{
++                    selector: 'ngt-routed-scene',
++                    template: `
++		<ngt-router-outlet />
++	`,
++                    imports: [NgtRouterOutlet],
++                }]
++        }], ctorParameters: () => [{ type: i1.Router }, { type: i0.ChangeDetectorRef }] });
++
++class NgtCanvas {
++    constructor() {
++        this.store = injectStore();
++        this.initRoot = injectCanvasRootInitializer();
++        this.host = inject(ElementRef);
++        this.zone = inject(NgZone);
++        this.environmentInjector = inject(EnvironmentInjector);
++        this.injector = inject(Injector);
++        this.sceneGraph = input.required({
++            transform: (value) => {
++                if (value === 'routed')
++                    return NgtRoutedScene;
++                return value;
++            },
++        });
++        this.gl = input();
++        this.size = input();
++        this.shadows = input(false, {
++            transform: (value) => {
++                if (value === '')
++                    return booleanAttribute(value);
++                return value;
++            },
++        });
++        this.legacy = input(false, { transform: booleanAttribute });
++        this.linear = input(false, { transform: booleanAttribute });
++        this.flat = input(false, { transform: booleanAttribute });
++        this.orthographic = input(false, { transform: booleanAttribute });
++        this.frameloop = input('always');
++        this.performance = input();
++        this.dpr = input([1, 2]);
++        this.raycaster = input();
++        this.scene = input();
++        this.camera = input();
++        this.events = input(createPointerEvents);
++        this.eventSource = input();
++        this.eventPrefix = input('offset');
++        this.lookAt = input();
++        this.created = output();
++        this.rendered = output();
++        this.pointerMissed = outputFromObservable(this.store.get('pointerMissed$'));
++        this.glCanvas = viewChild.required('glCanvas');
++        this.glCanvasViewContainerRef = viewChild.required('glCanvas', { read: ViewContainerRef });
++        this.hbPointerEvents = computed(() => (this.eventSource() ? 'none' : 'auto'));
++        // NOTE: this signal is updated outside of Zone
++        this.resizeResult = signal({}, { equal: Object.is });
++        this.configurator = signal(null);
++        // NOTE: this means that everything in NgtCanvas will be in afterNextRender.
++        // this allows the content of NgtCanvas to use effect instead of afterNextRender
++        afterNextRender(() => {
++            const canvasElement = this.glCanvas().nativeElement;
++            this.zone.runOutsideAngular(() => {
++                this.configurator.set(this.initRoot(canvasElement));
++            });
++            effect(() => {
++                const resizeResult = this.resizeResult();
++                if (!resizeResult.width || resizeResult.width <= 0 || !resizeResult.height || resizeResult.height <= 0)
++                    return;
++                const configurator = this.configurator();
++                if (!configurator)
++                    return;
++                const canvasOptions = {
++                    gl: this.gl(),
++                    shadows: this.shadows(),
++                    legacy: this.legacy(),
++                    linear: this.linear(),
++                    flat: this.flat(),
++                    orthographic: this.orthographic(),
++                    frameloop: this.frameloop(),
++                    performance: this.performance(),
++                    dpr: this.dpr(),
++                    raycaster: this.raycaster(),
++                    scene: this.scene(),
++                    camera: this.camera(),
++                    events: this.events(),
++                    eventSource: this.eventSource(),
++                    eventPrefix: this.eventPrefix(),
++                    lookAt: this.lookAt(),
++                    size: resizeResult,
++                };
++                this.zone.runOutsideAngular(() => {
++                    configurator.configure(canvasOptions);
++                    if (this.glRef) {
++                        this.glRef.changeDetectorRef.detectChanges();
++                    }
++                    else {
++                        this.noZoneRender();
++                    }
++                });
++            }, { injector: this.injector });
++        });
++        inject(DestroyRef).onDestroy(() => {
++            this.glRef?.destroy();
++            this.glEnvironmentInjector?.destroy();
++            this.configurator()?.destroy();
++        });
++    }
++    noZoneRender() {
++        // NOTE: destroy previous instances if existed
++        this.glEnvironmentInjector?.destroy();
++        this.glRef?.destroy();
++        // NOTE: Flag the canvas active, rendering will now begin
++        this.store.update((state) => ({ internal: { ...state.internal, active: true } }));
++        const [state, eventSource, eventPrefix] = [
++            this.store.snapshot,
++            untracked(this.eventSource),
++            untracked(this.eventPrefix),
++        ];
++        // connect to event source
++        state.events.connect?.(eventSource ? (is.ref(eventSource) ? eventSource.nativeElement : eventSource) : this.host.nativeElement);
++        // setup compute for eventPrefix
++        if (eventPrefix) {
++            state.setEvents({
++                compute: (event, store) => {
++                    const { pointer, raycaster, camera, size } = store.snapshot;
++                    const x = event[(eventPrefix + 'X')];
++                    const y = event[(eventPrefix + 'Y')];
++                    pointer.set((x / size.width) * 2 - 1, -(y / size.height) * 2 + 1);
++                    raycaster.setFromCamera(pointer, camera);
++                },
++            });
++        }
++        // emit created event if observed
++        this.created.emit(this.store.snapshot);
++        if (!this.store.get('events', 'connected')) {
++            this.store.get('events').connect?.(untracked(this.glCanvas).nativeElement);
++        }
++        this.glEnvironmentInjector = createEnvironmentInjector([provideNgtRenderer(this.store)], this.environmentInjector);
++        this.glRef = untracked(this.glCanvasViewContainerRef).createComponent(untracked(this.sceneGraph), {
++            environmentInjector: this.glEnvironmentInjector,
++            injector: this.injector,
++        });
++        this.glRef.changeDetectorRef.detectChanges();
++        this.rendered.emit(this.glRef);
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtCanvas, deps: [], target: i0.ɵɵFactoryTarget.Component }); }
++    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.2.0", version: "19.1.4", type: NgtCanvas, isStandalone: true, selector: "ngt-canvas", inputs: { sceneGraph: { classPropertyName: "sceneGraph", publicName: "sceneGraph", isSignal: true, isRequired: true, transformFunction: null }, gl: { classPropertyName: "gl", publicName: "gl", isSignal: true, isRequired: false, transformFunction: null }, size: { classPropertyName: "size", publicName: "size", isSignal: true, isRequired: false, transformFunction: null }, shadows: { classPropertyName: "shadows", publicName: "shadows", isSignal: true, isRequired: false, transformFunction: null }, legacy: { classPropertyName: "legacy", publicName: "legacy", isSignal: true, isRequired: false, transformFunction: null }, linear: { classPropertyName: "linear", publicName: "linear", isSignal: true, isRequired: false, transformFunction: null }, flat: { classPropertyName: "flat", publicName: "flat", isSignal: true, isRequired: false, transformFunction: null }, orthographic: { classPropertyName: "orthographic", publicName: "orthographic", isSignal: true, isRequired: false, transformFunction: null }, frameloop: { classPropertyName: "frameloop", publicName: "frameloop", isSignal: true, isRequired: false, transformFunction: null }, performance: { classPropertyName: "performance", publicName: "performance", isSignal: true, isRequired: false, transformFunction: null }, dpr: { classPropertyName: "dpr", publicName: "dpr", isSignal: true, isRequired: false, transformFunction: null }, raycaster: { classPropertyName: "raycaster", publicName: "raycaster", isSignal: true, isRequired: false, transformFunction: null }, scene: { classPropertyName: "scene", publicName: "scene", isSignal: true, isRequired: false, transformFunction: null }, camera: { classPropertyName: "camera", publicName: "camera", isSignal: true, isRequired: false, transformFunction: null }, events: { classPropertyName: "events", publicName: "events", isSignal: true, isRequired: false, transformFunction: null }, eventSource: { classPropertyName: "eventSource", publicName: "eventSource", isSignal: true, isRequired: false, transformFunction: null }, eventPrefix: { classPropertyName: "eventPrefix", publicName: "eventPrefix", isSignal: true, isRequired: false, transformFunction: null }, lookAt: { classPropertyName: "lookAt", publicName: "lookAt", isSignal: true, isRequired: false, transformFunction: null } }, outputs: { created: "created", rendered: "rendered", pointerMissed: "pointerMissed" }, host: { properties: { "style.pointerEvents": "hbPointerEvents()" }, styleAttribute: "display: block;position: relative;width: 100%;height: 100%;overflow: hidden;" }, providers: [
++            provideResizeOptions({
++                emitInZone: false,
++                emitInitialResult: true,
++                debounce: { scroll: 50, resize: 0 },
++            }),
++            provideStore(),
++        ], viewQueries: [{ propertyName: "glCanvas", first: true, predicate: ["glCanvas"], descendants: true, isSignal: true }, { propertyName: "glCanvasViewContainerRef", first: true, predicate: ["glCanvas"], descendants: true, read: ViewContainerRef, isSignal: true }], ngImport: i0, template: `
++		<div (ngxResize)="resizeResult.set($event)" style="height: 100%; width: 100%;">
++			<canvas #glCanvas style="display: block;"></canvas>
++		</div>
++	`, isInline: true, dependencies: [{ kind: "directive", type: NgxResize, selector: "[ngxResize]", inputs: ["ngxResizeOptions"], outputs: ["ngxResize"] }], changeDetection: i0.ChangeDetectionStrategy.OnPush }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtCanvas, decorators: [{
++            type: Component,
++            args: [{
++                    selector: 'ngt-canvas',
++                    template: `
++		<div (ngxResize)="resizeResult.set($event)" style="height: 100%; width: 100%;">
++			<canvas #glCanvas style="display: block;"></canvas>
++		</div>
++	`,
++                    imports: [NgxResize],
++                    providers: [
++                        provideResizeOptions({
++                            emitInZone: false,
++                            emitInitialResult: true,
++                            debounce: { scroll: 50, resize: 0 },
++                        }),
++                        provideStore(),
++                    ],
++                    host: {
++                        style: 'display: block;position: relative;width: 100%;height: 100%;overflow: hidden;',
++                        '[style.pointerEvents]': 'hbPointerEvents()',
++                    },
++                    changeDetection: ChangeDetectionStrategy.OnPush,
++                }]
++        }], ctorParameters: () => [] });
++
++class NgtSelection {
++    constructor() {
++        this.enabled = input(true, { alias: 'ngtSelection', transform: booleanAttribute });
++        this.source = signal([]);
++        this.selected = this.source.asReadonly();
++    }
++    update(...args) {
++        if (!this.enabled())
++            return;
++        this.source.update(...args);
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtSelection, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "17.1.0", version: "19.1.4", type: NgtSelection, isStandalone: true, selector: "[ngtSelection]", inputs: { enabled: { classPropertyName: "enabled", publicName: "ngtSelection", isSignal: true, isRequired: false, transformFunction: null } }, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtSelection, decorators: [{
++            type: Directive,
++            args: [{ selector: '[ngtSelection]' }]
++        }] });
++class NgtSelect {
++    constructor() {
++        this.enabled = input(false, { transform: booleanAttribute, alias: 'ngtSelect' });
++        const elementRef = inject(ElementRef);
++        const selection = inject(NgtSelection);
++        effect((onCleanup) => {
++            const selectionEnabled = selection.enabled();
++            if (!selectionEnabled)
++                return;
++            const enabled = this.enabled();
++            if (!enabled)
++                return;
++            const host = elementRef.nativeElement;
++            if (!host)
++                return;
++            const localState = getLocalState(host);
++            if (!localState)
++                return;
++            // ngt-mesh[ngtSelect]
++            if (host.type === 'Mesh') {
++                selection.update((prev) => [...prev, host]);
++                onCleanup(() => selection.update((prev) => prev.filter((el) => el !== host)));
++                return;
++            }
++            const [collection] = [untracked(selection.selected), localState.objects()];
++            let changed = false;
++            const current = [];
++            host.traverse((child) => {
++                child.type === 'Mesh' && current.push(child);
++                if (collection.indexOf(child) === -1)
++                    changed = true;
++            });
++            if (!changed)
++                return;
++            selection.update((prev) => [...prev, ...current]);
++            onCleanup(() => {
++                selection.update((prev) => prev.filter((el) => !current.includes(el)));
++            });
++        });
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtSelect, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "17.1.0", version: "19.1.4", type: NgtSelect, isStandalone: true, selector: "ngt-group[ngtSelect], ngt-mesh[ngtSelect]", inputs: { enabled: { classPropertyName: "enabled", publicName: "ngtSelect", isSignal: true, isRequired: false, transformFunction: null } }, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtSelect, decorators: [{
++            type: Directive,
++            args: [{ selector: 'ngt-group[ngtSelect], ngt-mesh[ngtSelect]' }]
++        }], ctorParameters: () => [] });
++
++var _a;
++const NGT_HTML_DOM_ELEMENT = new InjectionToken('NGT_HTML_DOM_ELEMENT');
++function provideHTMLDomElement(...args) {
++    if (args.length === 0) {
++        return { provide: NGT_HTML_DOM_ELEMENT, useFactory: () => 'gl' };
++    }
++    if (args.length === 1) {
++        return { provide: NGT_HTML_DOM_ELEMENT, useFactory: args[0] };
++    }
++    return { provide: NGT_HTML_DOM_ELEMENT, useFactory: args.pop(), deps: args };
++}
++class NgtHTML {
++    static { _a = HTML; }
++    static { this[_a] = true; }
++    constructor() {
++        this.store = injectStore();
++        this.destroyRef = inject(DestroyRef);
++        this.host = inject(ElementRef);
++        this.domElement = inject(NGT_HTML_DOM_ELEMENT, { self: true, optional: true });
++        if (this.domElement === 'gl') {
++            Object.assign(this.host.nativeElement, {
++                [DOM_PARENT]: this.store.snapshot.gl.domElement.parentElement,
++            });
++        }
++        else if (this.domElement) {
++            Object.assign(this.host.nativeElement, { [DOM_PARENT]: this.domElement });
++        }
++        this.destroyRef.onDestroy(() => {
++            this.host.nativeElement[DOM_PARENT] = null;
++            delete this.host.nativeElement[DOM_PARENT];
++        });
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtHTML, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "19.1.4", type: NgtHTML, isStandalone: true, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtHTML, decorators: [{
++            type: Directive
++        }], ctorParameters: () => [] });
++
++const cached = new Map();
++const memoizedLoaders = new WeakMap();
++function normalizeInputs(input) {
++    let urls = [];
++    if (Array.isArray(input)) {
++        urls = input;
++    }
++    else if (typeof input === 'string') {
++        urls = [input];
++    }
++    else {
++        urls = Object.values(input);
++    }
++    return urls.map((url) => (url.includes('undefined') || url.includes('null') || !url ? '' : url));
++}
++function load(loaderConstructorFactory, inputs, { extensions, onLoad, onProgress, } = {}) {
++    return () => {
++        const urls = normalizeInputs(inputs());
++        let loader = memoizedLoaders.get(loaderConstructorFactory(urls));
++        if (!loader) {
++            loader = new (loaderConstructorFactory(urls))();
++            memoizedLoaders.set(loaderConstructorFactory(urls), loader);
++        }
++        if (extensions)
++            extensions(loader);
++        return urls.map((url) => {
++            if (url === '')
++                return Promise.resolve(null);
++            if (!cached.has(url)) {
++                cached.set(url, new Promise((resolve, reject) => {
++                    loader.load(url, (data) => {
++                        if ('scene' in data) {
++                            Object.assign(data, makeObjectGraph(data['scene']));
++                        }
++                        if (onLoad) {
++                            onLoad(data);
++                        }
++                        resolve(data);
++                    }, onProgress, (error) => reject(new Error(`[NGT] Could not load ${url}: ${error?.message}`)));
++                }));
++            }
++            return cached.get(url);
++        });
++    };
++}
++function _injectLoader(loaderConstructorFactory, inputs, { extensions, onProgress, onLoad, injector, } = {}) {
++    return assertInjector(_injectLoader, injector, () => {
++        const response = signal(null);
++        const cachedResultPromisesEffect = load(loaderConstructorFactory, inputs, {
++            extensions,
++            onProgress,
++            onLoad: onLoad,
++        });
++        effect(() => {
++            const originalUrls = inputs();
++            const cachedResultPromises = cachedResultPromisesEffect();
++            Promise.all(cachedResultPromises).then((results) => {
++                response.update(() => {
++                    if (Array.isArray(originalUrls))
++                        return results;
++                    if (typeof originalUrls === 'string')
++                        return results[0];
++                    const keys = Object.keys(originalUrls);
++                    return keys.reduce((result, key) => {
++                        result[key] = results[keys.indexOf(key)];
++                        return result;
++                    }, {});
++                });
++            });
++        });
++        return response.asReadonly();
++    });
++}
++_injectLoader.preload = (loaderConstructorFactory, inputs, extensions, onLoad) => {
++    const effects = load(loaderConstructorFactory, inputs, { extensions, onLoad })();
++    if (effects) {
++        void Promise.all(effects);
++    }
++};
++_injectLoader.destroy = () => {
++    cached.clear();
++};
++_injectLoader.clear = (urls) => {
++    const urlToClear = Array.isArray(urls) ? urls : [urls];
++    urlToClear.forEach((url) => {
++        cached.delete(url);
++    });
++};
++const injectLoader = _injectLoader;
++
++const RGBA_REGEX = /rgba?\((\d+),\s*(\d+),\s*(\d+),?\s*(\d*\.?\d+)?\)/;
++const DEFAULT_COLOR = 0x000000;
++class NgtHexify {
++    constructor() {
++        this.document = inject(DOCUMENT, { optional: true });
++        this.cache = {};
++    }
++    /**
++     * transforms a:
++     * - hex string to a hex number
++     * - rgb string to a hex number
++     * - rgba string to a hex number
++     * - css color string to a hex number
++     *
++     * always default to black if failed
++     * @param value
++     */
++    transform(value) {
++        if (value == null)
++            return DEFAULT_COLOR;
++        if (value.startsWith('#')) {
++            if (!this.cache[value]) {
++                this.cache[value] = this.hexStringToNumber(value);
++            }
++            return this.cache[value];
++        }
++        if (!this.ctx) {
++            this.ctx = this.document?.createElement('canvas').getContext('2d');
++        }
++        if (!this.ctx) {
++            console.warn('[NGT] hexify: canvas context is not available');
++            return DEFAULT_COLOR;
++        }
++        this.ctx.fillStyle = value;
++        const computedValue = this.ctx.fillStyle;
++        if (computedValue.startsWith('#')) {
++            if (!this.cache[computedValue]) {
++                this.cache[computedValue] = this.hexStringToNumber(computedValue);
++            }
++            return this.cache[computedValue];
++        }
++        if (!computedValue.startsWith('rgba')) {
++            console.warn(`[NGT] hexify: invalid color format. Expected rgba or hex, receive: ${computedValue}`);
++            return DEFAULT_COLOR;
++        }
++        const match = computedValue.match(RGBA_REGEX);
++        if (!match) {
++            console.warn(`[NGT] hexify: invalid color format. Expected rgba or hex, receive: ${computedValue}`);
++            return DEFAULT_COLOR;
++        }
++        const r = parseInt(match[1], 10);
++        const g = parseInt(match[2], 10);
++        const b = parseInt(match[3], 10);
++        const a = match[4] ? parseFloat(match[4]) : 1.0;
++        const cacheKey = `${r}:${g}:${b}:${a}`;
++        // check result from cache
++        if (!this.cache[cacheKey]) {
++            // Convert the components to hex strings
++            const hexR = this.componentToHex(r);
++            const hexG = this.componentToHex(g);
++            const hexB = this.componentToHex(b);
++            const hexA = this.componentToHex(Math.round(a * 255));
++            // Combine the hex components into a single hex string
++            const hex = `#${hexR}${hexG}${hexB}${hexA}`;
++            this.cache[cacheKey] = this.hexStringToNumber(hex);
++        }
++        return this.cache[cacheKey];
++    }
++    hexStringToNumber(hexString) {
++        return parseInt(hexString.replace('#', ''), 16);
++    }
++    componentToHex(component) {
++        const hex = component.toString(16);
++        return hex.length === 1 ? '0' + hex : hex;
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtHexify, deps: [], target: i0.ɵɵFactoryTarget.Pipe }); }
++    static { this.ɵpipe = i0.ɵɵngDeclarePipe({ minVersion: "14.0.0", version: "19.1.4", ngImport: i0, type: NgtHexify, isStandalone: true, name: "hexify" }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtHexify, decorators: [{
++            type: Pipe,
++            args: [{ name: 'hexify', pure: true }]
++        }] });
++
++class NgtPortalBeforeRender {
++    constructor() {
++        this.portalStore = injectStore();
++        this.renderPriority = input(1);
++        this.parentScene = input.required();
++        this.parentCamera = input.required();
++        effect((onCleanup) => {
++            // track state
++            const [renderPriority, { internal }] = [this.renderPriority(), this.portalStore.state()];
++            let oldClean;
++            const cleanup = internal.subscribe(({ gl, scene, camera }) => {
++                const [parentScene, parentCamera] = [untracked(this.parentScene), untracked(this.parentCamera)];
++                oldClean = gl.autoClear;
++                if (renderPriority === 1) {
++                    // clear scene and render with default
++                    gl.autoClear = true;
++                    gl.render(parentScene, parentCamera);
++                }
++                // disable cleaning
++                gl.autoClear = false;
++                gl.clearDepth();
++                gl.render(scene, camera);
++                // restore
++                gl.autoClear = oldClean;
++            }, renderPriority, this.portalStore);
++            onCleanup(() => cleanup());
++        });
++    }
++    onPointerOver() {
++        /* noop */
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtPortalBeforeRender, deps: [], target: i0.ɵɵFactoryTarget.Component }); }
++    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.1.0", version: "19.1.4", type: NgtPortalBeforeRender, isStandalone: true, selector: "ngt-portal-before-render", inputs: { renderPriority: { classPropertyName: "renderPriority", publicName: "renderPriority", isSignal: true, isRequired: false, transformFunction: null }, parentScene: { classPropertyName: "parentScene", publicName: "parentScene", isSignal: true, isRequired: true, transformFunction: null }, parentCamera: { classPropertyName: "parentCamera", publicName: "parentCamera", isSignal: true, isRequired: true, transformFunction: null } }, ngImport: i0, template: `
++		<!-- Without an element that receives pointer events state.pointer will always be 0/0 -->
++		<ngt-group (pointerover)="onPointerOver()" attach="none" />
++	`, isInline: true }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtPortalBeforeRender, decorators: [{
++            type: Component,
++            args: [{
++                    selector: 'ngt-portal-before-render',
++                    template: `
++		<!-- Without an element that receives pointer events state.pointer will always be 0/0 -->
++		<ngt-group (pointerover)="onPointerOver()" attach="none" />
++	`,
++                    schemas: [CUSTOM_ELEMENTS_SCHEMA],
++                }]
++        }], ctorParameters: () => [] });
++class NgtPortalContent {
++    constructor() {
++        const { element: comment } = inject(ViewContainerRef);
++        const { element: parentComment } = inject(ViewContainerRef, { skipSelf: true });
++        const commentNode = comment.nativeElement;
++        if (commentNode[SPECIAL_INTERNAL_ADD_COMMENT]) {
++            commentNode[SPECIAL_INTERNAL_ADD_COMMENT](parentComment.nativeElement);
++            delete commentNode[SPECIAL_INTERNAL_ADD_COMMENT];
++        }
++    }
++    static ngTemplateContextGuard(_, ctx) {
++        return true;
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtPortalContent, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "19.1.4", type: NgtPortalContent, isStandalone: true, selector: "ng-template[portalContent]", ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtPortalContent, decorators: [{
++            type: Directive,
++            args: [{ selector: 'ng-template[portalContent]' }]
++        }], ctorParameters: () => [] });
++// Keys that shouldn't be copied between stores
++const privateKeys = [
++    'setSize',
++    'setFrameloop',
++    'setDpr',
++    'events',
++    'setEvents',
++    'invalidate',
++    'advance',
++    'size',
++    'viewport',
++];
++class NgtPortal {
++    constructor() {
++        this.container = input.required();
++        this.state = input({});
++        /**
++         * @decsription turn this on to enable "HUD" like rendering
++         */
++        this.autoRender = input(false);
++        this.autoRenderPriority = input(1);
++        this.portalContent = contentChild.required(NgtPortalContent, { read: TemplateRef });
++        this.portalAnchor = viewChild.required('anchor', { read: ViewContainerRef });
++        this.injector = inject(Injector);
++        this.portalStore = injectStore({ self: true });
++        this.parentStore = injectStore({ skipSelf: true });
++        this.parentScene = this.parentStore.select('scene');
++        this.parentCamera = this.parentStore.select('camera');
++        this.raycaster = new Raycaster();
++        this.pointer = new Vector2();
++        this.portalRendered = signal(false);
++        this.shouldAutoRender = computed(() => this.portalRendered() && this.autoRender());
++        const parentState = this.parentStore.select();
++        // NOTE: we run this in afterNextRender for inputs to resolve
++        afterNextRender(() => {
++            const previousState = this.parentStore.snapshot;
++            const { events = {}, size = {}, ...rest } = this.state();
++            let container = this.container();
++            if (!is.instance(container)) {
++                container = prepare(container, { store: this.portalStore });
++            }
++            const localState = getLocalState(container);
++            if (localState && !localState.store) {
++                localState.store = this.portalStore;
++            }
++            this.portalStore.update({
++                ...previousState,
++                scene: container,
++                raycaster: this.raycaster,
++                pointer: this.pointer,
++                events: { ...previousState.events, ...events },
++                size: { ...previousState.size, ...size },
++                previousRoot: this.parentStore,
++                ...rest,
++                setEvents: (events) => this.portalStore.update((state) => ({ ...state, events: { ...state.events, ...events } })),
++            });
++            effect(() => {
++                const state = this.state();
++                const _parentState = parentState();
++                this.portalStore.update((prev) => this.inject(_parentState, prev, state, untracked(this.container)));
++                if (this.portalView) {
++                    this.portalView.detectChanges();
++                    return;
++                }
++                this.portalView = untracked(this.portalAnchor).createEmbeddedView(untracked(this.portalContent), { container: untracked(this.container), injector: this.injector }, { injector: this.injector });
++                this.portalView.detectChanges();
++                this.portalRendered.set(true);
++            }, { injector: this.injector });
++        });
++        inject(DestroyRef).onDestroy(() => {
++            this.portalView?.destroy();
++        });
++    }
++    inject(parentState, portalState, injectedState, container) {
++        const { events = {}, size, ...rest } = injectedState;
++        const intersect = { ...parentState }; // all prev state props
++        Object.keys(parentState).forEach((key) => {
++            if (privateKeys.includes(key) ||
++                (parentState[key] !== portalState[key] &&
++                    portalState[key])) {
++                delete intersect[key];
++            }
++        });
++        let viewport = undefined;
++        if (portalState && size) {
++            const camera = portalState.camera;
++            // Calculate the override viewport, if present
++            viewport = parentState.viewport.getCurrentViewport(camera, new Vector3(), size);
++            // Update the portal camera, if it differs from the previous layer
++            if (camera !== parentState.camera) {
++                updateCamera(camera, size);
++            }
++        }
++        return {
++            ...intersect,
++            scene: container,
++            raycaster: this.raycaster,
++            pointer: this.pointer,
++            events: { ...parentState.events, ...(portalState.events || {}), ...(events || {}) },
++            size: { ...parentState.size, ...(size || {}) },
++            viewport: { ...parentState.viewport, ...(viewport || {}) },
++            ...rest,
++        };
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtPortal, deps: [], target: i0.ɵɵFactoryTarget.Component }); }
++    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "19.1.4", type: NgtPortal, isStandalone: true, selector: "ngt-portal", inputs: { container: { classPropertyName: "container", publicName: "container", isSignal: true, isRequired: true, transformFunction: null }, state: { classPropertyName: "state", publicName: "state", isSignal: true, isRequired: false, transformFunction: null }, autoRender: { classPropertyName: "autoRender", publicName: "autoRender", isSignal: true, isRequired: false, transformFunction: null }, autoRenderPriority: { classPropertyName: "autoRenderPriority", publicName: "autoRenderPriority", isSignal: true, isRequired: false, transformFunction: null } }, providers: [provideStore(() => signalStore({}))], queries: [{ propertyName: "portalContent", first: true, predicate: NgtPortalContent, descendants: true, read: TemplateRef, isSignal: true }], viewQueries: [{ propertyName: "portalAnchor", first: true, predicate: ["anchor"], descendants: true, read: ViewContainerRef, isSignal: true }], ngImport: i0, template: `
++		<ng-container #anchor />
++
++		@if (shouldAutoRender()) {
++			<ngt-portal-before-render
++				[renderPriority]="autoRenderPriority()"
++				[parentScene]="parentScene()"
++				[parentCamera]="parentCamera()"
++			/>
++		}
++	`, isInline: true, dependencies: [{ kind: "component", type: NgtPortalBeforeRender, selector: "ngt-portal-before-render", inputs: ["renderPriority", "parentScene", "parentCamera"] }], changeDetection: i0.ChangeDetectionStrategy.OnPush }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtPortal, decorators: [{
++            type: Component,
++            args: [{
++                    selector: 'ngt-portal',
++                    template: `
++		<ng-container #anchor />
++
++		@if (shouldAutoRender()) {
++			<ngt-portal-before-render
++				[renderPriority]="autoRenderPriority()"
++				[parentScene]="parentScene()"
++				[parentCamera]="parentCamera()"
++			/>
++		}
++	`,
++                    imports: [NgtPortalBeforeRender],
++                    schemas: [CUSTOM_ELEMENTS_SCHEMA],
++                    changeDetection: ChangeDetectionStrategy.OnPush,
++                    providers: [provideStore(() => signalStore({}))],
++                }]
++        }], ctorParameters: () => [] });
++
++/**
++ * `injectBeforeRender` invokes its callback on every frame. Hence, the notion of tracking
++ * changes (i.e: signals) does not really matter since we're getting latest values of the things we need on every frame anyway.
++ *
++ * If `priority` is dynamic, consumers should set up `injectBeforeRender` in
++ * an `effect` and track `priority` changes. Make use of `onCleanup` to clean up
++ * previous before render subscription
++ *
++ * @example
++ * ```ts
++ * const injector = inject(Injector);
++ *
++ * effect((onCleanup) => {
++ *   const priority = this.priority(); // track priority
++ *
++ *   const sub = injectBeforeRender(
++ *    ({ gl, camera }) => {
++ *      // before render logic
++ *    },
++ *    {
++ *      priority,
++ *      injector, // injector is needed since injectBeforeRender is invoked in effect body
++ *    }
++ *   });
++ *
++ *   onCleanup(() => sub());
++ * });
++ * ```
++ */
++function injectBeforeRender(cb, { priority = 0, injector } = {}) {
++    return assertInjector(injectBeforeRender, injector, () => {
++        const store = injectStore();
++        const sub = store.get('internal').subscribe(cb, priority, store);
++        inject(DestroyRef).onDestroy(() => void sub());
++        return sub;
++    });
++}
++
++function resolveRef(ref) {
++    if (is.ref(ref)) {
++        return ref.nativeElement;
++    }
++    return ref;
++}
++
++/**
++ * As host directive:
++ * - outputs: [
++ * 'click',
++ * 'dblclick',
++ * 'contextmenu',
++ * 'pointerup',
++ * 'pointerdown',
++ * 'pointerover',
++ * 'pointerout',
++ * 'pointerenter',
++ * 'pointerleave',
++ * 'pointermove',
++ * 'pointermissed',
++ * 'pointercancel',
++ * 'wheel',
++ * ]
++ * - inputs: [
++ *   'ngtObjectEvents'
++ *   ]
++ */
++class NgtObjectEvents {
++    constructor() {
++        this.click = output();
++        this.dblclick = output();
++        this.contextmenu = output();
++        this.pointerup = output();
++        this.pointerdown = output();
++        this.pointerover = output();
++        this.pointerout = output();
++        this.pointerenter = output();
++        this.pointerleave = output();
++        this.pointermove = output();
++        this.pointermissed = output();
++        this.pointercancel = output();
++        this.wheel = output();
++        // NOTE: we use model here to allow for the hostDirective host to set this value
++        this.ngtObjectEvents = model();
++        injectObjectEvents(this.ngtObjectEvents, {
++            click: this.emitEvent('click'),
++            dblclick: this.emitEvent('dblclick'),
++            contextmenu: this.emitEvent('contextmenu'),
++            pointerup: this.emitEvent('pointerup'),
++            pointerdown: this.emitEvent('pointerdown'),
++            pointerover: this.emitEvent('pointerover'),
++            pointerout: this.emitEvent('pointerout'),
++            pointerenter: this.emitEvent('pointerenter'),
++            pointerleave: this.emitEvent('pointerleave'),
++            pointermove: this.emitEvent('pointermove'),
++            pointermissed: this.emitEvent('pointermissed'),
++            pointercancel: this.emitEvent('pointercancel'),
++            wheel: this.emitEvent('wheel'),
++        });
++    }
++    emitEvent(eventName) {
++        return this[eventName].emit.bind(this[eventName]);
++    }
++    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtObjectEvents, deps: [], target: i0.ɵɵFactoryTarget.Directive }); }
++    static { this.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "17.1.0", version: "19.1.4", type: NgtObjectEvents, isStandalone: true, selector: "[ngtObjectEvents]", inputs: { ngtObjectEvents: { classPropertyName: "ngtObjectEvents", publicName: "ngtObjectEvents", isSignal: true, isRequired: false, transformFunction: null } }, outputs: { click: "click", dblclick: "dblclick", contextmenu: "contextmenu", pointerup: "pointerup", pointerdown: "pointerdown", pointerover: "pointerover", pointerout: "pointerout", pointerenter: "pointerenter", pointerleave: "pointerleave", pointermove: "pointermove", pointermissed: "pointermissed", pointercancel: "pointercancel", wheel: "wheel", ngtObjectEvents: "ngtObjectEventsChange" }, ngImport: i0 }); }
++}
++i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "19.1.4", ngImport: i0, type: NgtObjectEvents, decorators: [{
++            type: Directive,
++            args: [{ selector: '[ngtObjectEvents]' }]
++        }], ctorParameters: () => [] });
++function injectObjectEvents(target, events, { injector } = {}) {
++    return assertInjector(injectObjectEvents, injector, () => {
++        const renderer = inject(Renderer2);
++        const cleanUps = [];
++        effect((onCleanup) => {
++            const targetRef = resolveRef(target());
++            if (!targetRef)
++                return;
++            Object.entries(events).forEach(([eventName, eventHandler]) => {
++                cleanUps.push(renderer.listen(targetRef, eventName, eventHandler));
++            });
++            onCleanup(() => {
++                cleanUps.forEach((cleanUp) => cleanUp());
++            });
++        });
++        inject(DestroyRef).onDestroy(() => {
++            cleanUps.forEach((cleanUp) => cleanUp());
++        });
++        return cleanUps;
++    });
++}
++
++function getEmitter(emitterRef) {
++    if (!emitterRef || !emitterRef['listeners'] || emitterRef['destroyed'])
++        return undefined;
++    return emitterRef.emit.bind(emitterRef);
++}
++function hasListener(...emitterRefs) {
++    return emitterRefs.some((emitterRef) => emitterRef && !emitterRef['destroyed'] && emitterRef['listeners'] && emitterRef['listeners'].length > 0);
++}
++
++function omit(objFn, keysToOmit) {
++    return computed(() => {
++        const obj = objFn();
++        const result = {};
++        for (const key of Object.keys(obj)) {
++            if (keysToOmit.includes(key))
++                continue;
++            Object.assign(result, { [key]: obj[key] });
++        }
++        return result;
++    }, { equal: (a, b) => is.equ(a, b, { objects: 'shallow', arrays: 'shallow' }) });
++}
++function pick(objFn, keyOrKeys) {
++    if (Array.isArray(keyOrKeys)) {
++        return computed(() => {
++            const obj = objFn();
++            const result = {};
++            for (const key of keyOrKeys) {
++                if (!(key in obj))
++                    continue;
++                Object.assign(result, { [key]: obj[key] });
++            }
++            return result;
++        });
++    }
++    return computed(() => objFn()[keyOrKeys]);
++}
++function merge(objFn, toMerge, mode = 'override') {
++    if (mode === 'override')
++        return computed(() => ({ ...objFn(), ...toMerge }));
++    return computed(() => ({ ...toMerge, ...objFn() }));
++}
++function createVectorComputed(vectorCtor) {
++    return ((inputOrOptions, keyOrKeepUndefined, keepUndefined) => {
++        if (typeof keyOrKeepUndefined === 'undefined' || typeof keyOrKeepUndefined === 'boolean') {
++            keepUndefined = !!keyOrKeepUndefined;
++            const input = inputOrOptions;
++            return computed(() => {
++                const value = input();
++                if (keepUndefined && value == undefined)
++                    return undefined;
++                if (typeof value === 'number')
++                    return new vectorCtor().setScalar(value);
++                else if (value)
++                    return new vectorCtor(...value);
++                else
++                    return new vectorCtor();
++            }, { equal: (a, b) => !!a && !!b && a.equals(b) });
++        }
++        const options = inputOrOptions;
++        const key = keyOrKeepUndefined;
++        return computed(() => {
++            const value = options()[key];
++            if (keepUndefined && value == undefined)
++                return undefined;
++            if (typeof value === 'number')
++                return new vectorCtor().setScalar(value);
++            else if (value)
++                return new vectorCtor(...value);
++            else
++                return new vectorCtor();
++        }, { equal: (a, b) => !!a && !!b && a.equals(b) });
++    });
++}
++const vector2 = createVectorComputed(Vector2);
++const vector3 = createVectorComputed(Vector3);
++const vector4 = createVectorComputed(Vector4);
++
++/**
++ * Generated bundle index. Do not edit.
++ */
++
++export { HTML, NGT_APPLY_PROPS, NGT_STORE, NON_ROOT, NgtArgs, NgtCanvas, NgtHTML, NgtHexify, NgtObjectEvents, NgtParent, NgtPortal, NgtPortalBeforeRender, NgtPortalContent, NgtRenderer, NgtRendererFactory, NgtRoutedScene, NgtRouterOutlet, NgtSelect, NgtSelection, ROUTED_SCENE, addAfterEffect, addEffect, addTail, applyProps, attach, checkNeedsUpdate, checkUpdate, createAttachFunction, detach, dispose, extend, flushGlobalEffects, getEmitter, getLocalState, hasListener, injectBeforeRender, injectCanvasRootInitializer, injectLoader, injectLoop, injectObjectEvents, injectStore, invalidateInstance, is, makeCameraInstance, makeDpr, makeId, makeObjectGraph, makeRendererInstance, merge, omit, pick, prepare, privateKeys, provideHTMLDomElement, provideNgtRenderer, provideStore, resolveRef, roots, signalStore, updateCamera, vector2, vector3, vector4 };
++//# sourceMappingURL=angular-three.mjs.map

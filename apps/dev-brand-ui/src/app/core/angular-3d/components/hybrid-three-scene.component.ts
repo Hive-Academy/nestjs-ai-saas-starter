@@ -1,11 +1,11 @@
-import { Component, OnInit, input, computed, inject, effect } from '@angular/core';
+import { Component, OnInit, input, effect } from '@angular/core';
 import { injectStore } from 'angular-three';
 import * as THREE from 'three';
 
 /**
  * Phase 2 Implementation: Hybrid Declarative/Programmatic approach
  * This represents the 3D scene content that will be rendered inside NgtCanvas
- * 
+ *
  * Migrated to Angular best practices with signals-based configuration
  * while maintaining compatibility with current Angular Three patterns
  */
@@ -23,16 +23,16 @@ export class HybridThreeSceneComponent implements OnInit {
 
   // Input signals for lighting configuration following Angular best practices
   readonly backgroundColor = input<string>('#f0f0f0');
-  
+
   // Ambient light configuration signals
   readonly ambientLightColor = input<number>(0xffffff);
   readonly ambientLightIntensity = input<number>(0.4);
-  
+
   // Directional light configuration signals
   readonly directionalLightColor = input<number>(0xffffff);
   readonly directionalLightIntensity = input<number>(0.8);
   readonly directionalShadowsEnabled = input<boolean>(true);
-  
+
   // Point light configuration signals
   readonly pointLightColor = input<number>(0xffffff);
   readonly pointLightIntensity = input<number>(0.3);
@@ -123,7 +123,7 @@ export class HybridThreeSceneComponent implements OnInit {
     // Set position from signal
     const [x, y, z] = this.directionalLightPosition();
     this.directionalLight.position.set(x, y, z);
-    
+
     // Configure shadows if enabled
     if (this.directionalShadowsEnabled()) {
       this.directionalLight.castShadow = true;
@@ -141,14 +141,14 @@ export class HybridThreeSceneComponent implements OnInit {
 
     const shadowCamera = this.directionalLight.shadow.camera as THREE.OrthographicCamera;
     const bounds = this.shadowCameraBounds();
-    
+
     shadowCamera.near = this.shadowCameraNear();
     shadowCamera.far = this.shadowCameraFar();
     shadowCamera.left = -bounds;
     shadowCamera.right = bounds;
     shadowCamera.top = bounds;
     shadowCamera.bottom = -bounds;
-    
+
     const mapSize = this.shadowMapSize();
     this.directionalLight.shadow.mapSize.setScalar(mapSize);
   }
@@ -186,10 +186,10 @@ export class HybridThreeSceneComponent implements OnInit {
     if (this.directionalLight) {
       this.directionalLight.color.setHex(this.directionalLightColor());
       this.directionalLight.intensity = this.directionalLightIntensity();
-      
+
       const [x, y, z] = this.directionalLightPosition();
       this.directionalLight.position.set(x, y, z);
-      
+
       // Update shadow settings
       if (this.directionalShadowsEnabled()) {
         this.directionalLight.castShadow = true;
@@ -207,7 +207,7 @@ export class HybridThreeSceneComponent implements OnInit {
     if (this.pointLight) {
       this.pointLight.color.setHex(this.pointLightColor());
       this.pointLight.intensity = this.pointLightIntensity();
-      
+
       const [x, y, z] = this.pointLightPosition();
       this.pointLight.position.set(x, y, z);
     }

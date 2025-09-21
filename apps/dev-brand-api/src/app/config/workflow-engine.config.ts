@@ -1,13 +1,13 @@
 import type { WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
 
 // Centralized imports for all agents, tools, and workflows
-import { DocumentProcessingTools } from '../business-workflows/core/tools/document-processing.tools';
 import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
+import { GitHubIntegrationTools } from '../business-workflows/core/tools/github-integration.tools';
 import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist.agent';
 import { ContentCreatorAgent } from '../business-workflows/agents/content-creator.agent';
 import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer.agent';
-import { CustomerSupportAgent } from '../business-workflows/agents/customer-support.agent';
-import { EnhancedSupportWorkflow } from '../business-workflows/workflows/enhanced-support.workflow';
+import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+import { DevBrandChatWorkflow } from '../business-workflows/workflows/devbrand-chat.workflow';
 
 /**
  * Workflow Engine Module Configuration for dev-brand-api
@@ -20,16 +20,16 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
       PersonalBrandStrategistAgent,
       ContentCreatorAgent,
       GitHubCodeAnalyzerAgent,
-      CustomerSupportAgent,
     ],
     
     tools: [
-      DocumentProcessingTools,
       WebResearchTools,
+      GitHubIntegrationTools,
     ],
     
     workflows: [
-      EnhancedSupportWorkflow,
+      DevBrandSupervisorWorkflow,
+      DevBrandChatWorkflow,
     ],
     
     // Workflow engine configuration

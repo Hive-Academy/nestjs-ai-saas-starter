@@ -5,7 +5,8 @@
     "moduleResolution": "bundler",
     "emitDecoratorMetadata": false,
     "module": "preserve",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "downlevelIteration": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

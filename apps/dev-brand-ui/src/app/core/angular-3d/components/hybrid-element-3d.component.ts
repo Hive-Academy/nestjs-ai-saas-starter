@@ -12,11 +12,9 @@ import {
   ElementRef,
   viewChild,
 } from '@angular/core';
-import { injectStore } from 'angular-three';
 import * as THREE from 'three';
 
 import { EnhancedContentTextureService } from '../services/enhanced-content-texture.service';
-import { AngularThreeFoundationService } from '../services/angular-three-foundation.service';
 import { AnimationService } from '../services/animation.service';
 
 // Strict type definitions following Angular best practices
@@ -24,6 +22,7 @@ interface ElementConfig {
   readonly width: number;
   readonly height: number;
   readonly interactive: boolean;
+  readonly type?: 'content' | 'decoration' | 'interactive';
 }
 
 interface AnimationConfig {
@@ -57,8 +56,8 @@ interface ElementInteractionEvent {
   template: `
     <!-- Phase 2: Enhanced with Angular Three integration -->
     <!-- DOM content container for texture generation -->
-    <div #contentContainer 
-         class="hybrid-content-container" 
+    <div #contentContainer
+         class="hybrid-content-container"
          [style.width.px]="config().width"
          [style.height.px]="config().height"
          [style.opacity]="showDOMContent() ? 1 : 0"
@@ -72,7 +71,7 @@ interface ElementInteractionEvent {
       display: block;
       position: relative;
     }
-    
+
     .hybrid-content-container {
       box-sizing: border-box;
       padding: 16px;
@@ -84,17 +83,17 @@ interface ElementInteractionEvent {
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       transition: all 0.3s ease;
     }
-    
+
     :host(.interactive) .hybrid-content-container {
       cursor: pointer;
     }
-    
+
     :host(.hovered) .hybrid-content-container {
       background: rgba(255, 255, 255, 1);
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
       transform: scale(1.02);
     }
-    
+
     :host(.performance-optimized) .hybrid-content-container {
       will-change: transform, opacity;
     }
@@ -130,8 +129,7 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
 
   // Dependency injection with inject() function - Phase 2 enhanced
   private readonly textureService = inject(EnhancedContentTextureService);
-  private readonly ngtStore = injectStore({ optional: true });
-  private readonly angularThreeFoundation = inject(AngularThreeFoundationService);
+  private readonly animationService = inject(AnimationService);
 
   // State management signals
   private readonly _isHovered = signal(false);
@@ -143,10 +141,8 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
   private readonly _group = signal<THREE.Group | null>(null);
 
   // Component state and lifecycle - Phase 2 enhanced
-  private element3D?: THREE.Object3D;
-  private isInitialized = false;
-  private animationCleanup?: () => void;
-  private performanceMonitor?: { interval: NodeJS.Timeout; lastTime: number };
+  private performanceMonitor?: { interval: ReturnType<typeof setInterval>; lastTime: number };
+  private animationTimelineId?: string;
 
   // Readonly accessors for state
   readonly isHovered = this._isHovered.asReadonly();
@@ -277,7 +273,7 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.isInitialized = true;
+    // Component initialization complete
   }
 
   ngOnDestroy(): void {
@@ -285,6 +281,8 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     this.cleanupThreeJSResources();
     // Cleanup performance monitoring
     this.stopPerformanceMonitoring();
+    // Cleanup animations - Phase 2 enhanced
+    this.cleanupAnimation();
   }
 
   // Phase 2: Performance monitoring methods
@@ -293,22 +291,22 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
 
     const startTime = performance.now();
     let frameCount = 0;
-    
+
     const interval = setInterval(() => {
       frameCount++;
       const currentTime = performance.now();
       const elapsedTime = currentTime - startTime;
-      
+
       if (elapsedTime >= 1000) { // Report every second
         const fps = Math.round((frameCount * 1000) / elapsedTime);
-        const memoryUsage = (performance as any).memory ? 
+        const memoryUsage = (performance as any).memory ?
           Math.round((performance as any).memory.usedJSHeapSize / 1048576) : 0;
-          
+
         this.performanceUpdate.emit({ fps, memoryUsage });
         frameCount = 0;
       }
     }, 16); // ~60fps monitoring
-    
+
     this.performanceMonitor = { interval, lastTime: startTime };
   }
 
@@ -499,74 +497,123 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Phase 2: Enhanced GSAP Animation Integration
   private setupAnimation(config: AnimationConfig): void {
-    // Animation setup will be enhanced with GSAP integration in Phase 2
-    switch (config.type) {
-      case 'fade':
-        this.animateFade(config.duration);
-        break;
-      case 'scale':
-        this.animateScale(config.duration);
-        break;
-      case 'slide':
-        this.animateSlide(config.duration);
-        break;
-      default:
-        console.warn(`Unknown animation type: ${config.type}`);
+    // Cleanup previous animation
+    this.cleanupAnimation();
+
+    const mesh = this._mesh();
+    if (!mesh) {
+      console.warn('Cannot setup animation: mesh not available');
+      return;
+    }
+
+    // Create animation timeline with GSAP service
+    this.animationTimelineId = this.animationService.createTimeline({
+      name: `Element Animation - ${this.elementId()}`,
+      animations: [config],
+      targets: [{
+        elementId: this.elementId(),
+        object3D: mesh,
+        position: this.position(),
+        rotation: this.initialRotation(),
+        scale: this.initialScale(),
+        opacity: this.opacity()
+      }]
+    });
+
+    // Add animation to timeline based on type
+    this.animationService.addAnimationToTimeline(
+      this.animationTimelineId,
+      {
+        elementId: this.elementId(),
+        object3D: mesh,
+        position: this.getAnimationTargetPosition(config),
+        rotation: this.getAnimationTargetRotation(config),
+        scale: this.getAnimationTargetScale(config),
+        opacity: this.getAnimationTargetOpacity(config)
+      },
+      {
+        ...config,
+        ease: this.getAnimationEasing(config.type),
+        autoplay: true
+      }
+    );
+
+    // Start animation if configured to autoplay
+    if (config.type !== 'fade' || this.opacity() > 0) {
+      this.animationService.playTimeline(this.animationTimelineId);
     }
   }
 
-  private animateFade(duration: number): void {
-    // Simple fade animation - will be enhanced with GSAP in Phase 2
-    const startOpacity = 0;
-    const endOpacity = this.opacity();
-    const startTime = Date.now();
+  private getAnimationTargetPosition(config: AnimationConfig): readonly [number, number, number] {
+    const currentPos = this.position();
 
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const currentOpacity = startOpacity + (endOpacity - startOpacity) * progress;
-
-      this._currentOpacity.set(currentOpacity);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    animate();
+    switch (config.type) {
+      case 'slide':
+        // Slide animation moves from current position to target
+        return [currentPos[0] + 100, currentPos[1], currentPos[2]] as const;
+      default:
+        return currentPos;
+    }
   }
 
-  private animateScale(duration: number): void {
-    // Simple scale animation - will be enhanced with GSAP in Phase 2
-    const startScale: readonly [number, number, number] = [0, 0, 0];
-    const endScale = this.initialScale();
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      const currentScale: readonly [number, number, number] = [
-        startScale[0] + (endScale[0] - startScale[0]) * progress,
-        startScale[1] + (endScale[1] - startScale[1]) * progress,
-        startScale[2] + (endScale[2] - startScale[2]) * progress,
-      ];
-
-      this._scale.set(currentScale);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    animate();
+  private getAnimationTargetRotation(config: AnimationConfig): readonly [number, number, number] {
+    switch (config.type) {
+      case 'fade':
+      case 'scale':
+        return this.initialRotation();
+      case 'slide':
+        // Add slight rotation for slide effect
+        return [0, Math.PI * 0.1, 0] as const;
+      default:
+        return this.initialRotation();
+    }
   }
 
-  private animateSlide(duration: number): void {
-    // Placeholder for slide animation - will be implemented in Phase 2
-    console.log(`Slide animation not yet implemented (duration: ${duration}ms)`);
+  private getAnimationTargetScale(config: AnimationConfig): readonly [number, number, number] {
+    switch (config.type) {
+      case 'scale':
+        return this.initialScale();
+      case 'fade':
+        return this.initialScale();
+      case 'slide':
+        return this.initialScale();
+      default:
+        return this.initialScale();
+    }
   }
+
+  private getAnimationTargetOpacity(config: AnimationConfig): number {
+    switch (config.type) {
+      case 'fade':
+        return this.opacity();
+      default:
+        return this.opacity();
+    }
+  }
+
+  private getAnimationEasing(type: AnimationConfig['type']): string {
+    switch (type) {
+      case 'fade':
+        return 'power2.out';
+      case 'scale':
+        return 'back.out(1.7)';
+      case 'slide':
+        return 'power3.inOut';
+      default:
+        return 'power2.out';
+    }
+  }
+
+  private cleanupAnimation(): void {
+    if (this.animationTimelineId) {
+      this.animationService.removeTimeline(this.animationTimelineId);
+      this.animationTimelineId = undefined;
+    }
+  }
+
+
 
   private cleanupThreeJSResources(): void {
     // Cleanup Three.js resources

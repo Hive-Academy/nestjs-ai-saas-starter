@@ -145,6 +145,7 @@
     "madge": "8.0.0",
     "ngxtension": "6.0.0",
     "nx": "21.5.1",
+    "patch-package": "8.0.0",
     "postcss": "^8.4.5",
     "prettier": "^2.6.2",
     "rollup": "4.49.0",

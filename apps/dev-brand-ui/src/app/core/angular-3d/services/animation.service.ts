@@ -1,12 +1,12 @@
 /**
  * AnimationService - Phase 2 Enhanced
- * 
+ *
  * Modern Angular service for GSAP animation integration with Angular Three reactive patterns.
  * Follows Angular 20.1.6 best practices with signals, inject() function, and strict TypeScript.
  * Coordinates with Angular Three store for synchronized 3D animations.
  */
 
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, effect } from '@angular/core';
 import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { injectStore } from 'angular-three';
@@ -87,8 +87,8 @@ export class AnimationService {
   private readonly masterTimeline = gsap.timeline({ paused: true });
   private readonly activeTimelines = new Map<string, gsap.core.Timeline>();
   private readonly animationTargets = new Map<string, ElementAnimationTarget>();
-  private performanceMonitor?: NodeJS.Timeout;
-  
+  private performanceMonitor?: ReturnType<typeof setInterval>;
+
   // Readonly accessors following Angular best practices
   readonly animationState = this._animationState.asReadonly();
   readonly performanceMetrics = this._performanceMetrics.asReadonly();
@@ -97,7 +97,7 @@ export class AnimationService {
   readonly isAnimating = computed(() => this.animationState().isPlaying);
   readonly animationProgress = computed(() => this.animationState().progress);
   readonly activeAnimationCount = computed(() => this.animationState().activeAnimations.length);
-  
+
   readonly canPlayAnimations = computed(() => {
     const state = this.animationState();
     return state.timelines.length > 0 && !state.isPlaying;
@@ -127,7 +127,7 @@ export class AnimationService {
    */
   createTimeline(config: Omit<AnimationTimeline, 'id'>): string {
     const timelineId = `timeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const timeline: AnimationTimeline = {
       id: timelineId,
       ...config
@@ -154,8 +154,8 @@ export class AnimationService {
    * Add animation to timeline with Three.js object integration
    */
   addAnimationToTimeline(
-    timelineId: string, 
-    target: ElementAnimationTarget, 
+    timelineId: string,
+    target: ElementAnimationTarget,
     config: AnimationConfig
   ): void {
     const timeline = this.activeTimelines.get(timelineId);
@@ -275,6 +275,76 @@ export class AnimationService {
   }
 
   /**
+   * Direct GSAP animation for DOM elements (compatibility method)
+   */
+  animate(config: {
+    element: HTMLElement;
+    properties: any;
+    duration: number;
+    ease?: string;
+    delay?: number;
+    repeat?: number;
+    yoyo?: boolean;
+    from?: any;
+  }): gsap.core.Tween {
+    const tween = config.from
+      ? gsap.fromTo(config.element, config.from, {
+          ...config.properties,
+          duration: config.duration,
+          ease: config.ease || 'power2.out',
+          delay: config.delay || 0,
+          repeat: config.repeat || 0,
+          yoyo: config.yoyo || false
+        })
+      : gsap.to(config.element, {
+          ...config.properties,
+          duration: config.duration,
+          ease: config.ease || 'power2.out',
+          delay: config.delay || 0,
+          repeat: config.repeat || 0,
+          yoyo: config.yoyo || false
+        });
+
+    // Track the animation
+    this.trackActiveAnimations();
+    return tween;
+  }
+
+  /**
+   * Camera animation (compatibility method)
+   */
+  animateCamera(config: {
+    position: [number, number, number];
+    target: [number, number, number];
+    duration: number;
+  }): void {
+    // This would typically work with Angular Three's camera
+    // For now, we'll create a basic implementation
+    console.log('Camera animation requested:', config);
+  }
+
+  /**
+   * Kill all animations for a specific element (compatibility method)
+   */
+  kill(element: HTMLElement): void {
+    gsap.killTweensOf(element);
+    this.trackActiveAnimations();
+  }
+
+  /**
+   * Update animation state for tracking
+   */
+  private trackActiveAnimations(): void {
+    const activeAnimations = this.activeTimelines.size > 0 ? Array.from(this.activeTimelines.keys()) : [];
+
+    this._animationState.update(state => ({
+      ...state,
+      activeAnimations,
+      isPlaying: activeAnimations.length > 0
+    }));
+  }
+
+  /**
    * Cleanup all animations and resources
    */
   dispose(): void {
@@ -314,7 +384,7 @@ export class AnimationService {
     // React to Angular Three store changes if available
     effect(() => {
       if (this.ngtStore) {
-        const store = this.ngtStore();
+        const store = this.ngtStore;
         // Sync animation state with Angular Three scene state
         this.syncWithThreeStore(store);
       }
@@ -334,9 +404,9 @@ export class AnimationService {
     target: ElementAnimationTarget,
     config: AnimationConfig
   ): void {
-    const { object3D, domElement } = target;
+    const { object3D, domElement: _domElement } = target;
     const duration = config.duration / 1000; // Convert to seconds
-    
+
     switch (config.type) {
       case 'fade':
         if (object3D && 'material' in object3D && object3D.material) {
@@ -422,7 +492,7 @@ export class AnimationService {
     this.updateAnimationState(state => ({
       ...state,
       isPlaying: true,
-      activeAnimations: [...new Set([...state.activeAnimations, timelineId])]
+      activeAnimations: Array.from(new Set([...state.activeAnimations, timelineId]))
     }));
   }
 
@@ -450,8 +520,8 @@ export class AnimationService {
       if (deltaTime >= 1000) {
         const fps = Math.round((frameCount * 1000) / deltaTime);
         const animationCount = this.activeAnimationCount();
-        const memoryUsage = (performance as any).memory 
-          ? Math.round((performance as any).memory.usedJSHeapSize / 1048576) 
+        const memoryUsage = (performance as any).memory
+          ? Math.round((performance as any).memory.usedJSHeapSize / 1048576)
           : 0;
 
         this._performanceMetrics.set({

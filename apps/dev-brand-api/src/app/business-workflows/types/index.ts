@@ -6,6 +6,24 @@
 // Customer Support Types
 export type * from './customer-support.types';
 
+// Agent workflow state bridge
+import type { AgentState } from '@hive-academy/langgraph-multi-agent';
+
+/**
+ * WorkflowAgentState - Bridge interface that extends both AgentState and includes workflow-specific properties
+ * This satisfies both the multi-agent system requirements and the workflow engine requirements
+ */
+export interface WorkflowAgentState extends AgentState {
+  executionId: string;
+  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  currentNode?: string;
+  completedNodes: string[];
+  confidence: number;
+  timestamps: { started: Date; updated?: Date; completed?: Date; };
+  retryCount: number;
+  startedAt: Date;
+}
+
 // Shared Business Types
 export interface BaseEntity {
   id: string;
