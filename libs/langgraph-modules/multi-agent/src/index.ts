@@ -32,5 +32,11 @@ export * from './lib/decorators/tool.decorator';
 export * from './lib/decorators/agent.decorator';
 export * from './lib/decorators/workflow.decorator';
 
+// Enhanced Agent Architecture Types (Workflow Agent Support)
+export type {
+  AgentType,
+  WorkflowAgentConfig,
+} from './lib/decorators/agent.decorator';
+
 // Configuration utilities
 export * from './lib/utils/multi-agent-config.accessor';

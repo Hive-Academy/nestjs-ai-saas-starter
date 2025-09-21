@@ -222,6 +222,7 @@ export class FunctionalApiModule {
       'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
     > {
     return {
+      // NOTE: No workflow registration - handled by WorkflowEngineModule
       workflows: options.workflows ?? [],
       defaultTimeout: options.defaultTimeout ?? 30000,
       defaultRetryCount: options.defaultRetryCount ?? 3,

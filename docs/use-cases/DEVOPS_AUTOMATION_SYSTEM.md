@@ -4,11 +4,18 @@
 
 This use case demonstrates a comprehensive AI-powered DevOps pipeline that combines code analysis, security scanning, deployment automation, and human oversight for safe software delivery.
 
+Updated to align with the latest architecture improvements:
+
+- Dual agent types support (simple-agent and workflow-agent) via the Agent-Workflow Bridge when appropriate
+- Unified decorator composition with a single enhanced @RequiresApproval across modules
+- Typed metadata for streaming/checkpoints; conservative defaults for production environments
+- Centralized registration pattern and platform-backed audit trails
+
 **Modules Used**: workflow-engine + functional-api + multi-agent + hitl + platform
 
 ## System Architecture
 
-```
+```text
 Code Changes → AI Analysis → Build & Test → Deployment Planning → Human Approval → Platform Execution
      ↓             ↓            ↓              ↓                 ↓               ↓
   Repository    Multi-Agent   Automated     Risk Assessment   Approval Chain   Audit Trail
@@ -211,6 +218,28 @@ export class CodeReviewerAgent {
     if (riskScore >= 5) return 'high';
     if (riskScore >= 3) return 'medium';
     return 'low';
+  }
+}
+
+// WORKFLOW-AGENT: A focused internal workflow for code analysis, compiled via AgentWorkflowBridgeService
+class CodeReviewInternalWorkflow {
+  @Entrypoint()
+  async analyze(params: { files: string[]; language: string; base: string; head: string }) {
+    const staticRes = await this.runStatic(params);
+    const securityRes = await this.runSecurity(params);
+    return { staticRes, securityRes } as const;
+  }
+
+  @Task()
+  async runStatic({ files, language }: { files: string[]; language: string }) {
+    // Delegate to static analysis subsystem; returns typed metrics
+    return { metrics: { filesAnalyzed: files.length, language } } as const;
+  }
+
+  @Task()
+  async runSecurity({ files }: { files: string[] }) {
+    // Delegate to security subsystem; returns typed vulnerability counts
+    return { vulnerabilities: { critical: 0, high: 0, medium: 1, low: 3 }, filesScanned: files.length } as const;
   }
 }
 ```
@@ -511,6 +540,10 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
     },
   };
 
+  // Note: The centralized registry compiles and validates this workflow before execution.
+  // Agents may be simple or workflow-agents; the AgentWorkflowBridgeService compiles
+  // internal micro-workflows to single nodes while preserving external interfaces.
+
   @StartNode({
     description: 'Initialize CI/CD pipeline with repository context',
     timeout: 60000,
@@ -568,7 +601,10 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
 
     const analysisPrompt = this.buildAnalysisPrompt(state);
 
-    const analysisResult = await this.multiAgentCoordinator.executeSimpleWorkflow(analysisNetworkId, analysisPrompt);
+    const analysisResult = await this.multiAgentCoordinator.executeSimpleWorkflow(
+      analysisNetworkId,
+      analysisPrompt
+    );
 
     // Calculate combined confidence with security weighting
     const codeConfidence = analysisResult.finalState.metadata.codeAnalysis?.confidence || 0;
@@ -591,7 +627,7 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
         agentInteractions: analysisResult.finalState.messages.length,
         analysisExecutionTime: Date.now() - state.startTime.getTime(),
       },
-    };
+    } satisfies Partial<DevOpsState>;
   }
 
   @Node({
@@ -619,7 +655,7 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
           buildFailed: true,
           buildError: buildResult.error,
         },
-      };
+      } satisfies Partial<DevOpsState>;
     }
 
     // Execute comprehensive test suite
@@ -647,7 +683,7 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
         buildDuration: buildResult.duration,
         testDuration: testResult.duration,
       },
-    };
+    } satisfies Partial<DevOpsState>;
   }
 
   @Node({
@@ -779,7 +815,7 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
         auditTrailAvailable: true,
         deploymentCompleted: true,
       },
-    };
+    } satisfies Partial<DevOpsState>;
   }
 
   @Node({
@@ -804,7 +840,7 @@ export class DevOpsCICDWorkflow extends StreamingWorkflowBase<DevOpsState> {
         monitoringActive: monitoringSetup.active,
         pipelineCompleted: true,
       },
-    };
+    } satisfies Partial<DevOpsState>;
   }
 
   // Edge definitions
@@ -952,6 +988,13 @@ Focus on ${environment} deployment requirements and provide detailed risk assess
     throw new Error('Deployment monitoring timeout');
   }
 }
+
+// Note: For streaming/checkpoint metadata, use project-standard generic metadata types
+// to ensure strict typing of streamed events and recovery checkpoints throughout the pipeline.
+
+## References
+
+- See the [LangGraph Modules Integration Guide](./LANGGRAPH_MODULES_INTEGRATION_GUIDE.md) for unified decorator composition and AgentWorkflowBridgeService patterns
 ```
 
 ### 3. Integration Service

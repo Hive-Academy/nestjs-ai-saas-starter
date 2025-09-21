@@ -12,11 +12,14 @@ import type {
 export type WorkflowProvider = new (...args: any[]) => any;
 
 /**
- * Configuration options for the Functional API module
+ * Configuration options for the Functional API module (PURE CONFIGURATION)
+ * NOTE: Registration is now handled by WorkflowEngineModule centrally
  */
 export interface FunctionalApiModuleOptions {
+
   /**
-   * Explicitly registered workflow providers (replaces discovery)
+   * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's workflow registration system
    */
   readonly workflows?: WorkflowProvider[];
 

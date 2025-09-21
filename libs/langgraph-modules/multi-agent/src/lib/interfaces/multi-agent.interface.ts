@@ -701,23 +701,28 @@ export type WorkflowProvider = new (...args: any[]) => any;
 export type AgentProvider = new (...args: any[]) => any;
 
 /**
- * Multi-agent module configuration (2025 pattern with explicit registration)
+ * Multi-agent module configuration (2025 pattern - PURE CONFIGURATION ONLY)
+ * NOTE: Registration is now handled by WorkflowEngineModule centrally
  */
 export interface MultiAgentModuleOptions {
+
   /**
-   * Explicitly registered tool providers (replaces discovery)
+   * CENTRALIZED REGISTRATION: Agent providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's agent registration system
+   */
+  agents?: AgentProvider[];
+
+  /**
+   * CENTRALIZED REGISTRATION: Tool providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's tool registration system
    */
   tools?: ToolProvider[];
 
   /**
-   * Explicitly registered workflow providers (replaces discovery)
+   * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's workflow registration system
    */
   workflows?: WorkflowProvider[];
-
-  /**
-   * Explicitly registered agent providers (replaces discovery)
-   */
-  agents?: AgentProvider[];
 
   /**
    * Default LLM configuration with simple provider selection

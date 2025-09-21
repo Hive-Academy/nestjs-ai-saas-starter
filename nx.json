@@ -143,7 +143,8 @@
       "libs/langgraph-modules/functional-api",
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
-      "libs/langgraph-modules/platform"
+      "libs/langgraph-modules/platform",
+      "@hive-academy/langgraph-shared-interfaces"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",

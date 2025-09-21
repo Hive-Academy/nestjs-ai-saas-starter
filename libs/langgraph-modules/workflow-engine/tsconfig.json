@@ -13,6 +13,9 @@
       "path": "../streaming"
     },
     {
+      "path": "../multi-agent"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {

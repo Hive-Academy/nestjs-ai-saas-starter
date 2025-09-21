@@ -4,11 +4,18 @@
 
 This use case demonstrates an AI-powered medical diagnosis system that combines symptom analysis, diagnostic reasoning, and physician oversight for safe medical decision-making.
 
+Updated to align with the latest architecture improvements:
+
+- Dual agent types support (simple-agent and workflow-agent) with seamless orchestration via the Agent-Workflow Bridge
+- Unified decorator composition with a single enhanced @RequiresApproval across modules
+- Typed metadata for streaming (no any types) and strongly-typed state updates
+- Centralized registration pattern and conservative streaming defaults for clinical safety
+
 **Modules Used**: workflow-engine + functional-api + multi-agent + hitl
 
 ## System Architecture
 
-```
+```text
 Patient Symptoms → AI Medical Agents → Diagnostic Assessment → Physician Review → Treatment Plan
       ↓                ↓                      ↓                    ↓              ↓
    Symptom Input    Multi-Agent         Risk Assessment     Approval Chain    Care Protocol
@@ -19,7 +26,12 @@ Patient Symptoms → AI Medical Agents → Diagnostic Assessment → Physician R
 
 ### 1. Medical Specialist Agents
 
-#### Symptom Analyzer Agent
+Agents illustrate both supported patterns:
+
+- SymptomAnalyzerAgent is a simple-agent with focused tools
+- DiagnosticianAgent is modeled as a workflow-agent with internal reasoning steps (compiled to a single node externally)
+
+#### Symptom Analyzer Agent (simple-agent)
 
 ```typescript
 @Agent({
@@ -171,7 +183,7 @@ export class SymptomAnalyzerAgent {
 }
 ```
 
-#### Diagnostician Agent
+#### Diagnostician Agent (workflow-agent with internal steps)
 
 ```typescript
 @Agent({
@@ -328,6 +340,21 @@ export class DiagnosticianAgent {
       requiresSpecialist: this.determineSpecialistNeed(primaryDiagnosis),
       followUpRecommendations: this.generateFollowUpPlan(primaryDiagnosis),
     };
+  }
+}
+
+// Internal micro-workflow inside the agent (compiled to a single external node)
+export class DiagnosticianInternalWorkflow {
+  @Entrypoint()
+  async diagnose(state: MedicalState) {
+    return await this.performComprehensiveDiagnosis(state.symptomAnalysis, state.patientHistory, state.physicalExam);
+  }
+
+  @Task()
+  async scoreAndRank({ differentialDiagnosis }: { differentialDiagnosis: any[] }) {
+    // Example of a typed internal step
+    const ranked = differentialDiagnosis.sort((a, b) => b.probability - a.probability);
+    return { ranked } as const;
   }
 }
 ```
@@ -525,7 +552,10 @@ export class MedicalDiagnosisWorkflow extends StreamingWorkflowBase<MedicalState
 
     const analysisPrompt = this.buildMedicalAnalysisPrompt(state);
 
-    const medicalAnalysisResult = await this.multiAgentCoordinator.executeSimpleWorkflow(medicalNetworkId, analysisPrompt);
+    const medicalAnalysisResult = await this.multiAgentCoordinator.executeSimpleWorkflow(
+      medicalNetworkId,
+      analysisPrompt
+    );
 
     // Calculate combined confidence considering medical criticality
     const symptomConfidence = medicalAnalysisResult.finalState.metadata.symptomAnalysis?.confidence || 0;
@@ -553,6 +583,7 @@ export class MedicalDiagnosisWorkflow extends StreamingWorkflowBase<MedicalState
     };
   }
 
+  // Unified @RequiresApproval decorator with medical risk evaluator and escalation
   @Node({
     type: 'llm',
     description: 'Generate treatment plan with physician oversight',
@@ -601,6 +632,7 @@ export class MedicalDiagnosisWorkflow extends StreamingWorkflowBase<MedicalState
         return diagnosis?.riskLevel === 'low' && (state.confidence || 0) >= 0.9 && routineConditions.includes(diagnosis?.primaryDiagnosis?.name);
       },
     },
+    // Before/after handlers enable validation hooks for clinical safety
     handlers: {
       beforeApproval: async (state) => {
         // Pre-approval medical validation
@@ -825,7 +857,7 @@ export class MedicalDiagnosisService {
         patientPreferences: await this.ehr.getPatientPreferences(patientCase.patientId),
       };
 
-      // Execute medical diagnosis workflow
+      // Execute medical diagnosis workflow (streaming-enabled; centralized registry compiles/validates)
       const result = await this.workflowManager.executeWorkflow('medical-diagnosis-workflow', medicalState, {
         streaming: true,
         timeout: 3600000, // 1 hour maximum
@@ -920,7 +952,7 @@ export class MedicalDiagnosisService {
       defaultTimeout: 600000, // 10 minutes
     }),
     MultiAgentModule.forRoot({
-      agents: [SymptomAnalyzerAgent, DiagnosticianAgent, TreatmentPlannerAgent],
+      agents: [SymptomAnalyzerAgent, DiagnosticianAgent, TreatmentPlannerAgent], // Dual agent types supported
       defaultLlm: { provider: 'openai', model: 'gpt-4' },
     }),
     HitlModule.forRoot({
@@ -950,6 +982,11 @@ export class HealthcareModule {}
 4. **Comprehensive Risk Assessment**: Multi-factor medical risk evaluation
 5. **EHR Integration**: Seamless integration with Electronic Health Records
 6. **Care Team Coordination**: Automated healthcare team notifications
+
+References and next steps:
+
+- See the [LangGraph Modules Integration Guide](./LANGGRAPH_MODULES_INTEGRATION_GUIDE.md) for unified decorator composition and agent-workflow bridging patterns
+- Ensure state types and metadata follow strict typing conventions to maintain safety and auditability
 
 ## Usage Example
 

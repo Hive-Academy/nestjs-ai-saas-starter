@@ -2,7 +2,6 @@ import {
   Component,
   ViewChild,
   ElementRef,
-  AfterViewInit,
   OnDestroy,
   input,
   output,
@@ -15,23 +14,41 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { fromEvent, debounceTime } from 'rxjs';
 import * as THREE from 'three';
+import { NgtCanvas } from 'angular-three';
 
 import { AngularThreeFoundationService } from '../services/angular-three-foundation.service';
 import { HybridUIService } from '../services/hybrid-ui.service';
+// HybridElement3DComponent import removed as it's not used in template
 import type { HybridUIServiceConfig } from '../interfaces';
+
+// Strict interface definitions following Angular best practices
+interface HybridSceneConfig extends HybridUIServiceConfig {
+  readonly shadows: boolean;
+  readonly antialias: boolean;
+  readonly alpha: boolean;
+  readonly powerPreference: 'default' | 'high-performance' | 'low-power';
+}
 
 @Component({
   selector: 'app-hybrid-scene',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NgtCanvas],
   template: `
     <div class="hybrid-scene-container" #container>
-      <canvas
-        #canvas
+      <ngt-canvas
+        [sceneGraph]="sceneGraphComponent()"
         class="hybrid-scene-canvas"
         [class.initialized]="initialized()"
         [class.performance-optimal]="performanceOptimal()"
-      ></canvas>
+        [gl]="rendererConfig()"
+        [performance]="performanceConfig()"
+        [shadows]="shadowsEnabled()"
+        [dpr]="devicePixelRatio()"
+        [frameloop]="frameloopMode()"
+        (created)="onCanvasCreated($event)"
+      >
+        <!-- Default scene content will be handled by Angular Three -->
+      </ngt-canvas>
 
       <!-- Performance overlay -->
       @if (showPerformanceOverlay()) {
@@ -212,19 +229,22 @@ import type { HybridUIServiceConfig } from '../interfaces';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HybridSceneComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('canvas', { static: true }) canvas!: ElementRef<HTMLCanvasElement>;
+export class HybridSceneComponent implements OnDestroy {
   @ViewChild('container', { static: true })
   container!: ElementRef<HTMLDivElement>;
 
-  // Inputs
-  readonly config = input<Partial<HybridUIServiceConfig>>({});
+  // Inputs with strict typing following Angular best practices
+  readonly config = input<Partial<HybridSceneConfig>>({});
   readonly enablePerformanceOverlay = input(false);
   readonly autoResize = input(true);
   readonly contentVisible = input(true);
   readonly backgroundColor = input<string>('transparent');
-  readonly cameraPosition = input<[number, number, number]>([0, 0, 5]);
-  readonly cameraTarget = input<[number, number, number]>([0, 0, 0]);
+  readonly cameraPosition = input<readonly [number, number, number]>([0, 0, 5] as const);
+  readonly cameraTarget = input<readonly [number, number, number]>([0, 0, 0] as const);
+  readonly enableShadows = input(true);
+  readonly antialias = input(true);
+  readonly alpha = input(true);
+  readonly powerPreference = input<'default' | 'high-performance' | 'low-power'>('high-performance');
 
   // Outputs
   readonly sceneInitialized = output<void>();
@@ -252,106 +272,58 @@ export class HybridSceneComponent implements AfterViewInit, OnDestroy {
   private animationId: number | null = null;
   private resizeObserver: ResizeObserver | null = null;
 
-  // Computed properties
+  // Computed properties for Angular Three configuration
   readonly initialized = computed(() => this.isInitialized());
-  readonly showPerformanceOverlay = computed(() =>
-    this.enablePerformanceOverlay()
-  );
-  readonly performanceOptimal = computed(
-    () => this.currentPerformance().isOptimal
-  );
+  readonly showPerformanceOverlay = computed(() => this.enablePerformanceOverlay());
+  readonly performanceOptimal = computed(() => this.currentPerformance().isOptimal);
   readonly fps = computed(() => Math.round(this.currentPerformance().fps));
   readonly memoryUsageMB = computed(() =>
     Math.round(this.currentPerformance().memoryUsage / (1024 * 1024))
   );
 
-  async ngAfterViewInit(): Promise<void> {
-    await this.initializeScene();
-    this.setupEventListeners();
-    this.startRenderLoop();
+  // Angular Three specific computed properties
+  readonly rendererConfig = computed(() => ({
+    antialias: this.antialias(),
+    alpha: this.alpha(),
+    powerPreference: this.powerPreference(),
+    precision: 'highp' as const,
+    logarithmicDepthBuffer: false,
+    localClippingEnabled: false
+  }));
+
+  readonly performanceConfig = computed(() => ({
+    min: 0.5,
+    max: 1,
+    debounce: 200,
+    regress: true
+  }));
+
+  readonly shadowsEnabled = computed(() => this.enableShadows());
+  readonly devicePixelRatio = computed(() => Math.min(window.devicePixelRatio, 2));
+  readonly frameloopMode = computed(() => 'always' as const);
+
+  // Scene graph component (placeholder - will be implemented in Phase 2)
+  readonly sceneGraphComponent = computed(() => 'routed' as const);
+
+  // Canvas creation handler
+  protected onCanvasCreated(event: any): void {
+    console.log('Angular Three Canvas created:', event);
+    this.angularThreeFoundation.initialize().then((success) => {
+      if (success) {
+        this.isInitialized.set(true);
+        this.sceneInitialized.emit();
+        this.setupEventListeners();
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.cleanup();
   }
 
-  private async initializeScene(): Promise<void> {
-    try {
-      // Initialize Angular Three foundation
-      await this.angularThreeFoundation.initialize();
 
-      // Setup renderer
-      this.renderer = this.angularThreeFoundation.setupRenderer(
-        this.canvas.nativeElement
-      );
 
-      // Get scene and camera from foundation
-      this.scene = this.angularThreeFoundation.scene();
-      this.camera =
-        this.angularThreeFoundation.camera() as THREE.PerspectiveCamera;
 
-      if (!this.scene || !this.camera) {
-        throw new Error('Failed to initialize scene or camera');
-      }
-
-      // Configure camera
-      const cameraPos = this.cameraPosition();
-      const cameraTarget = this.cameraTarget();
-
-      this.camera.position.set(...cameraPos);
-      this.camera.lookAt(new THREE.Vector3(...cameraTarget));
-
-      // Configure scene
-      if (this.backgroundColor() !== 'transparent') {
-        this.scene.background = new THREE.Color(this.backgroundColor());
-      }
-
-      // Add default lighting
-      this.setupDefaultLighting();
-
-      // Update hybrid service configuration
-      const serviceConfig = this.config();
-      if (serviceConfig && Object.keys(serviceConfig).length > 0) {
-        this.hybridService.updateConfig(serviceConfig);
-      }
-
-      this.isInitialized.set(true);
-      this.sceneInitialized.emit();
-    } catch (error) {
-      console.error('Failed to initialize hybrid scene:', error);
-      throw error;
-    }
-  }
-
-  private setupDefaultLighting(): void {
-    if (!this.scene) return;
-
-    // Ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-    this.scene.add(ambientLight);
-
-    // Directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
-    directionalLight.castShadow = true;
-
-    // Configure shadow camera
-    directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -10;
-    directionalLight.shadow.camera.right = 10;
-    directionalLight.shadow.camera.top = 10;
-    directionalLight.shadow.camera.bottom = -10;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-
-    this.scene.add(directionalLight);
-
-    // Point light for additional illumination
-    const pointLight = new THREE.PointLight(0xffffff, 0.3, 30);
-    pointLight.position.set(-5, 5, 5);
-    this.scene.add(pointLight);
-  }
 
   private setupEventListeners(): void {
     if (!this.autoResize()) return;
@@ -385,46 +357,7 @@ export class HybridSceneComponent implements AfterViewInit, OnDestroy {
     this.angularThreeFoundation.updateCameraAspect(width, height);
   }
 
-  private startRenderLoop(): void {
-    if (!this.renderer || !this.scene || !this.camera) return;
 
-    let lastTime = performance.now();
-    let frameCount = 0;
-    let totalFrameTime = 0;
-
-    const render = (currentTime: number) => {
-      const deltaTime = currentTime - lastTime;
-      lastTime = currentTime;
-
-      // Update performance metrics
-      frameCount++;
-      totalFrameTime += deltaTime;
-
-      if (frameCount >= 60) {
-        const avgFrameTime = totalFrameTime / frameCount;
-        const fps = 1000 / avgFrameTime;
-
-        this.currentPerformance.set({
-          fps,
-          memoryUsage: this.hybridService.performance().memoryUsage,
-          isOptimal: fps >= 30 && avgFrameTime < 33,
-        });
-
-        this.performanceUpdate.emit(this.currentPerformance());
-
-        frameCount = 0;
-        totalFrameTime = 0;
-      }
-
-      // Render the scene
-      this.renderer!.render(this.scene!, this.camera!);
-
-      // Continue the loop
-      this.animationId = requestAnimationFrame(render);
-    };
-
-    this.animationId = requestAnimationFrame(render);
-  }
 
   /**
    * Get the current scene instance
@@ -450,7 +383,7 @@ export class HybridSceneComponent implements AfterViewInit, OnDestroy {
   /**
    * Update camera position
    */
-  updateCameraPosition(position: [number, number, number]): void {
+  updateCameraPosition(position: readonly [number, number, number]): void {
     if (this.camera) {
       this.camera.position.set(...position);
     }
@@ -459,7 +392,7 @@ export class HybridSceneComponent implements AfterViewInit, OnDestroy {
   /**
    * Update camera target
    */
-  updateCameraTarget(target: [number, number, number]): void {
+  updateCameraTarget(target: readonly [number, number, number]): void {
     if (this.camera) {
       this.camera.lookAt(new THREE.Vector3(...target));
     }

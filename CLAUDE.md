@@ -74,25 +74,25 @@ Located under `@libs/langgraph-modules/`:
 Each library has its own comprehensive CLAUDE.md file with detailed guidance:
 
 - **ChromaDB**: [libs/nestjs-chromadb/CLAUDE.md](./libs/nestjs-chromadb/CLAUDE.md)
-  - Vector database patterns, embedding strategies, semantic search
+    - Vector database patterns, embedding strategies, semantic search
 - **Neo4j**: [libs/nestjs-neo4j/CLAUDE.md](./libs/nestjs-neo4j/CLAUDE.md)
-  - Graph modeling, transaction patterns, Cypher optimization
+    - Graph modeling, transaction patterns, Cypher optimization
 - **LangGraph Core**: [libs/nestjs-langgraph/CLAUDE.md](./libs/nestjs-langgraph/CLAUDE.md)
-  - Workflow orchestration, streaming, tool autodiscovery, HITL
+    - Workflow orchestration, streaming, tool autodiscovery, HITL
 - **Memory Module**: [libs/langgraph-modules/memory/CLAUDE.md](./libs/langgraph-modules/memory/CLAUDE.md)
-  - Context management, summarization, retention policies
+    - Context management, summarization, retention policies
 - **Checkpoint Module**: [libs/langgraph-modules/checkpoint/CLAUDE.md](./libs/langgraph-modules/checkpoint/CLAUDE.md)
-  - State persistence, recovery, multi-backend storage
+    - State persistence, recovery, multi-backend storage
 - **Functional API**: [libs/langgraph-modules/functional-api/CLAUDE.md](./libs/langgraph-modules/functional-api/CLAUDE.md)
-  - Pure functions, immutability, pipeline composition
+    - Pure functions, immutability, pipeline composition
 - **Multi-Agent**: [libs/langgraph-modules/multi-agent/CLAUDE.md](./libs/langgraph-modules/multi-agent/CLAUDE.md)
-  - Agent coordination, network topology, communication
+    - Agent coordination, network topology, communication
 - **Platform**: [libs/langgraph-modules/platform/CLAUDE.md](./libs/langgraph-modules/platform/CLAUDE.md)
-  - LangGraph Platform integration, hosted assistants
+    - LangGraph Platform integration, hosted assistants
 - **Time Travel**: [libs/langgraph-modules/time-travel/CLAUDE.md](./libs/langgraph-modules/time-travel/CLAUDE.md)
-  - Workflow debugging, state history, replay mechanisms
+    - Workflow debugging, state history, replay mechanisms
 - **Monitoring**: [libs/langgraph-modules/monitoring/CLAUDE.md](./libs/langgraph-modules/monitoring/CLAUDE.md)
-  - Observability, metrics, production monitoring
+    - Observability, metrics, production monitoring
 
 ## Common Development Commands
 
@@ -323,7 +323,7 @@ LANGGRAPH_ENDPOINT=your_endpoint
 
 For detailed implementation guidance, always refer to the specific library CLAUDE.md files listed above. Each contains comprehensive documentation tailored to that library's domain and patterns.
 
-# Important Instructions
+## Important Instructions
 
 **Implement complete, production-ready solutions that utilize the full AI stack.**
 
@@ -441,46 +441,6 @@ For library-specific work, always consult the relevant CLAUDE.md file first to u
 2. **Central Control**: Claude Code orchestrates all interactions
 3. **No Direct Communication**: Agents return to main thread
 4. **Structured Returns**: Agents use delegation protocol
-
-### Available Agents
-
-| Agent              | Symbol | Primary Role              | Invocation Trigger |
-| ------------------ | ------ | ------------------------- | ------------------ |
-| project-manager    | 🪃     | Requirements, planning    | Complex tasks      |
-| researcher-expert  | 🔎     | Technical research        | Knowledge gaps     |
-| software-architect | 🏗️     | Design, subtask breakdown | After requirements |
-| senior-developer   | 💻     | Implementation            | Execution phase    |
-| senior-tester      | 🧪     | Testing, validation       | New components     |
-| code-reviewer      | 🔍     | Quality assurance         | Before completion  |
-
-### Delegation Protocol
-
-```markdown
-## DELEGATION REQUEST
-
-**Next Agent**: [agent-name]
-**Task**: [specific task]
-**Artifacts**: [files to pass]
-**Expected Outcome**: [deliverable]
-```
-
-### Sequential Workflow Pattern
-
-```mermaid
-User → Claude Code → Check Registry → Route
-    ↓
-project-manager → Returns delegation
-    ↓
-Claude Code → software-architect → Returns delegation
-    ↓
-Claude Code → senior-developer → Implements
-    ↓
-Claude Code → senior-tester → Tests
-    ↓
-Claude Code → code-reviewer → Final review
-    ↓
-Complete → Update Registry → Return to User
-```
 
 ### 🎯 ORCHESTRATOR COMMAND WORKFLOW
 

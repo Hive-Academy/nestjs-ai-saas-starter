@@ -4,11 +4,18 @@
 
 This use case demonstrates a sophisticated AI-powered trading system that combines market analysis, risk assessment, and human oversight for safe algorithmic trading.
 
+Updated to align with the latest architecture improvements:
+
+- Dual agent types support (simple-agent and workflow-agent) with seamless orchestration via the Agent-Workflow Bridge
+- Unified decorator composition with a single enhanced @RequiresApproval across modules
+- Typed metadata for streaming and checkpoints to avoid any types in state transitions
+- Centralized registration pattern and streaming-first execution for auditability
+
 **Modules Used**: workflow-engine + functional-api + multi-agent + hitl + platform
 
 ## System Architecture
 
-```
+```text
 Market Data → AI Agents → Risk Assessment → Human Approval → Platform Execution
      ↓            ↓             ↓               ↓               ↓
   Real-time   Multi-Agent   Confidence    Approval Chain   Audit Trail
@@ -19,7 +26,12 @@ Market Data → AI Agents → Risk Assessment → Human Approval → Platform Ex
 
 ### 1. Trading Agents
 
-#### Market Analyzer Agent
+The system uses dual agent types:
+
+- MarketAnalyzerAgent illustrates a simple-agent pattern with tools and a single nodeFunction
+- RiskAssessorAgent demonstrates a workflow-agent pattern by encapsulating a small internal workflow (compiled to a single node externally via the AgentWorkflowBridgeService)
+
+#### Market Analyzer Agent (simple-agent)
 
 ```typescript
 @Agent({
@@ -106,7 +118,7 @@ export class MarketAnalyzerAgent {
 }
 ```
 
-#### Risk Assessor Agent
+#### Risk Assessor Agent (workflow-agent with internal steps)
 
 ```typescript
 @Agent({
@@ -186,6 +198,34 @@ export class RiskAssessorAgent {
     };
   }
 }
+
+// Internal micro-workflow inside the agent (compiled to a single external node)
+// This leverages the functional-api decorators internally; externally, the AgentWorkflowBridgeService
+// compiles and presents the agent as a single node preserving the agent interface.
+export class RiskAssessorAgentInternalWorkflow {
+  @Entrypoint()
+  async assess(state: TradingState) {
+    return await this.aggregateRisk(state);
+  }
+
+  @Task()
+  async aggregateRisk(state: TradingState) {
+    // Compose multiple risk factors and return a typed partial update
+    const positionRisk = await this.calculatePositionRisk(state.proposedTrade);
+    const marketRisk = await this.assessMarketRisk(state.marketAnalysis);
+    const portfolioRisk = await this.assessPortfolioRisk(state.proposedTrade, state.portfolioContext);
+
+    const overall = this.combineRiskFactors([positionRisk, marketRisk, portfolioRisk]);
+    return {
+      riskAssessment: {
+        level: this.categorizeRiskLevel(overall.score),
+        score: overall.score,
+        factors: overall.factors,
+        confidence: overall.confidence,
+      },
+    } satisfies Partial<TradingState>;
+  }
+}
 ```
 
 ### 2. Trading Workflow
@@ -262,7 +302,10 @@ export class AlgorithmicTradingWorkflow extends StreamingWorkflowBase<TradingSta
       }
     );
 
-    const analysisResult = await this.multiAgentCoordinator.executeSimpleWorkflow(analysisNetworkId, `Analyze trading opportunity for ${state.targetSymbol} with ${state.proposedTrade?.amount} shares`);
+    const analysisResult = await this.multiAgentCoordinator.executeSimpleWorkflow(
+      analysisNetworkId,
+      `Analyze trading opportunity for ${state.targetSymbol} with ${state.proposedTrade?.amount} shares`
+    );
 
     const combinedConfidence = Math.min(analysisResult.finalState.metadata.marketAnalysis?.confidence || 0, analysisResult.finalState.metadata.riskAssessment?.confidence || 0);
 
@@ -279,6 +322,7 @@ export class AlgorithmicTradingWorkflow extends StreamingWorkflowBase<TradingSta
     };
   }
 
+  // Enhanced HITL via unified @RequiresApproval decorator with risk evaluator
   @Node({
     type: 'llm',
     description: 'Generate AI trading recommendation',
@@ -335,6 +379,7 @@ export class AlgorithmicTradingWorkflow extends StreamingWorkflowBase<TradingSta
         return amount < 50000 && riskScore < 3 && state.marketSession?.isOpen;
       },
     },
+    // Before/after handlers enable validation and audit hooks
     handlers: {
       beforeApproval: async (state) => {
         // Pre-approval validation
@@ -387,7 +432,7 @@ export class AlgorithmicTradingWorkflow extends StreamingWorkflowBase<TradingSta
     timeout: 180000,
   })
   async executeTrade(state: TradingState): Promise<Partial<TradingState>> {
-    // Create platform thread for audit trail
+    // Create platform thread for audit trail (Platform module)
     const platformThread = await this.platformClient.post('/threads', {
       metadata: {
         trade_id: state.proposedTrade.id,
@@ -400,7 +445,7 @@ export class AlgorithmicTradingWorkflow extends StreamingWorkflowBase<TradingSta
       },
     });
 
-    // Execute trade through platform for complete audit trail
+    // Execute trade through platform for complete audit trail with streaming
     const executionRun = await this.platformClient.post(`/threads/${platformThread.thread_id}/runs`, {
       assistant_id: 'trade-execution-assistant',
       input: {
@@ -423,7 +468,7 @@ export class AlgorithmicTradingWorkflow extends StreamingWorkflowBase<TradingSta
       stream_mode: 'values',
     });
 
-    // Wait for execution completion
+  // Wait for execution completion and capture audit data
     const executionResult = await this.monitorTradeExecution(platformThread.thread_id, executionRun.run_id);
 
     return {
@@ -563,7 +608,7 @@ export class TradingSystemService {
         marketData: await this.marketDataService.getRealTimeData([tradingParams.symbol]),
       };
 
-      // Execute trading workflow
+      // Execute trading workflow (streaming-enabled; centralized registry ensures the workflow is compiled/validated)
       const result = await this.workflowManager.executeWorkflow('algorithmic-trading-workflow', initialState, {
         streaming: true,
         timeout: 900000, // 15 minutes max
@@ -614,7 +659,7 @@ export class TradingSystemService {
       defaultTimeout: 300000,
     }),
     MultiAgentModule.forRoot({
-      agents: [MarketAnalyzerAgent, RiskAssessorAgent],
+      agents: [MarketAnalyzerAgent, RiskAssessorAgent], // Dual agent types supported (simple + workflow agents)
       defaultLlm: { provider: 'openai', model: 'gpt-4' },
     }),
     HitlModule.forRoot({
@@ -648,6 +693,11 @@ export class TradingSystemModule {}
 4. **Real-time Streaming**: Live updates during trade execution
 5. **Comprehensive Risk Management**: Multiple risk assessment layers
 6. **Regulatory Compliance**: Built-in compliance checks and audit trails
+
+References and next steps:
+
+- See the [LangGraph Modules Integration Guide](./LANGGRAPH_MODULES_INTEGRATION_GUIDE.md) for decorator composition, agent-workflow bridging, and centralized registration patterns
+- Configure typed metadata for checkpoints/streams per project conventions to enforce type safety end-to-end
 
 ## Usage Example
 

@@ -11,13 +11,11 @@ import { ToolRegistrationService } from './services/tool-registration.service';
 import { MultiAgentModuleInitializer } from './services/multi-agent-module-initializer.service';
 // Workflow services (internal infrastructure)
 import { WorkflowRegistryService } from './services/workflow-registry.service';
-import { WorkflowExecutionService } from './services/workflow-execution.service';
 import { WorkflowCheckpointService } from './services/workflow-checkpoint.service';
 import { WorkflowManagerService } from './services/workflow-manager.service';
 import { WorkflowInstanceService } from './services/workflow-instance.service';
 import { WorkflowCanonicalIdService } from './services/workflow-canonical-id.service';
 // Specialized workflow services (extracted from god services)
-import { WorkflowStreamingService } from './services/workflow-streaming.service';
 import { WorkflowMetricsService } from './services/workflow-metrics.service';
 import { AgentStatusTrackingService } from './services/agent-status-tracking.service';
 // Tool services
@@ -74,10 +72,8 @@ export class MultiAgentModule {
       WorkflowCheckpointService,
       WorkflowInstanceService,
       WorkflowCanonicalIdService,
-      WorkflowExecutionService,
       WorkflowManagerService,
       // Specialized workflow services (SRP-compliant)
-      WorkflowStreamingService,
       WorkflowMetricsService,
       AgentStatusTrackingService,
       // Tool service aliases
@@ -94,7 +90,10 @@ export class MultiAgentModule {
 
     return {
       module: MultiAgentModule,
-      imports: [EventEmitterModule.forRoot()],
+      imports: [
+        EventEmitterModule.forRoot(),
+
+      ],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -107,8 +106,8 @@ export class MultiAgentModule {
         // They provide powerful infrastructure but are implementation details
         // Workflow facade service (external interface)
         WorkflowManagerService,
-        // NOTE: WorkflowRegistryService and WorkflowExecutionService are internal-only
-        // They provide workflow infrastructure but are implementation details
+        // NOTE: WorkflowRegistryService and internal services delegate to workflow-engine
+        // WorkflowManagerService provides the external facade for workflow operations
         // Tool services for external use
         ToolRegistryService,
         ToolRegistrationService,
@@ -158,10 +157,8 @@ export class MultiAgentModule {
       WorkflowCheckpointService,
       WorkflowInstanceService,
       WorkflowCanonicalIdService,
-      WorkflowExecutionService,
       WorkflowManagerService,
       // Specialized workflow services (SRP-compliant)
-      WorkflowStreamingService,
       WorkflowMetricsService,
       AgentStatusTrackingService,
       // Tool service aliases
@@ -178,7 +175,10 @@ export class MultiAgentModule {
 
     return {
       module: MultiAgentModule,
-      imports: [EventEmitterModule.forRoot()],
+      imports: [
+        EventEmitterModule.forRoot(),
+
+      ],
       providers,
       exports: [
         // Main facade service (primary interface)
@@ -191,8 +191,8 @@ export class MultiAgentModule {
         // They provide powerful infrastructure but are implementation details
         // Workflow facade service (external interface)
         WorkflowManagerService,
-        // NOTE: WorkflowRegistryService and WorkflowExecutionService are internal-only
-        // They provide workflow infrastructure but are implementation details
+        // NOTE: WorkflowRegistryService and internal services delegate to workflow-engine
+        // WorkflowManagerService provides the external facade for workflow operations
         // Tool services for external use
         ToolRegistryService,
         ToolRegistrationService,
@@ -237,10 +237,7 @@ export class MultiAgentModule {
         ...DEFAULT_MULTI_AGENT_OPTIONS.checkpointing,
         ...options.checkpointing,
       },
-      // Preserve tools, agents, workflows arrays - critical for explicit registration
-      tools: options.tools || [],
-      agents: options.agents || [],
-      workflows: options.workflows || [],
+      // NOTE: No registration arrays - WorkflowEngineModule handles all registration
       // Preserve adapters if provided
       checkpointAdapter: options.checkpointAdapter,
       streamingAdapter: options.streamingAdapter,

@@ -2,6 +2,7 @@ import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
 import type {
   IStreamingService,
   ICheckpointAdapter,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -34,10 +35,11 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
  */
 export function getWorkflowEngineConfigWithDefaults(): Omit<
   Required<WorkflowEngineModuleOptions>,
-  'streamingAdapter' | 'checkpointAdapter'
+  'streamingAdapter' | 'checkpointAdapter' | 'memoryAdapter'
 > & {
   streamingAdapter?: IStreamingService;
   checkpointAdapter?: ICheckpointAdapter;
+  memoryAdapter?: IMemoryAdapter;
 } {
   const config = getWorkflowEngineConfig();
 
@@ -58,7 +60,11 @@ export function getWorkflowEngineConfigWithDefaults(): Omit<
       logLevel: config.debugging?.logLevel ?? 'info',
       traceExecution: config.debugging?.traceExecution ?? false,
     },
+    agents: config.agents ?? [],
+    tools: config.tools ?? [],
+    workflows: config.workflows ?? [],
     streamingAdapter: config.streamingAdapter,
     checkpointAdapter: config.checkpointAdapter,
+    memoryAdapter: config.memoryAdapter,
   };
 }

@@ -1,4 +1,23 @@
-import type { WorkflowExecutionMetadata } from '@hive-academy/langgraph-workflow-engine';
+/**
+ * Workflow execution metadata (inlined to break circular dependency)
+ * Originally from @hive-academy/langgraph-workflow-engine
+ */
+export interface WorkflowExecutionMetadata {
+  /** Execution ID for tracking */
+  readonly executionId: string;
+  /** Thread ID for grouping */
+  readonly threadId: string;
+  /** Workflow name */
+  readonly workflowName: string;
+  /** Execution timestamp */
+  readonly timestamp: string;
+  /** Execution type */
+  readonly type: 'node' | 'edge' | 'workflow' | 'error' | 'checkpoint';
+  /** Node ID if applicable */
+  readonly nodeId?: string;
+  /** Additional metadata */
+  readonly metadata?: Record<string, unknown>;
+}
 
 /**
  * Base time-travel metadata that extends workflow execution metadata

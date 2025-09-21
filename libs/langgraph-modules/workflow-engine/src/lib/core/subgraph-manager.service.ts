@@ -1,10 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { StateGraph, END } from '@langchain/langgraph';
-import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
-import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 import type { WorkflowState } from '../interfaces';
 import { CompilationCacheService } from './compilation-cache.service';
-import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
+import { WorkflowStateAnnotation, ICheckpointAdapter } from '@hive-academy/langgraph-core';
 
 export interface SubgraphOptions {
   /**
@@ -148,7 +146,10 @@ export class SubgraphManagerService {
   private readonly subgraphs = new Map<string, CompiledSubgraph<any>>();
   private readonly activeSubgraphs = new Map<string, SubgraphContext>();
 
-  constructor(private readonly cacheService: CompilationCacheService) {}
+  constructor(
+    private readonly cacheService: CompilationCacheService,
+    @Optional() private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {}
 
   /**
    * Compile a subgraph with caching support
@@ -281,13 +282,6 @@ export class SubgraphManagerService {
     }
   }
 
-  /**
-   * Create a checkpointer for workflow persistence
-   */
-  async createCheckpointer(config?: any): Promise<BaseCheckpointSaver> {
-    // Use the existing getCheckpointer method with enhanced configuration
-    return this.getCheckpointer(config || { type: 'memory' });
-  }
 
   /**
    * Create a subgraph from a workflow definition
@@ -576,14 +570,11 @@ export class SubgraphManagerService {
 
   /**
    * Private: Get checkpointer
+   * @deprecated Use injected ICheckpointAdapter instead
    */
-  private async getCheckpointer(config: any): Promise<BaseCheckpointSaver> {
-    // Use SQLite in-memory checkpointer for better performance
-    if (config.type === 'sqlite' && config.path) {
-      return SqliteSaver.fromConnString(config.path);
-    }
-
-    // Default to in-memory SQLite
-    return SqliteSaver.fromConnString(':memory:');
+  private async getCheckpointer(config: any): Promise<ICheckpointAdapter | null> {
+    // Return the injected adapter instead of creating a new one
+    this.logger.warn('getCheckpointer is deprecated. Use injected ICheckpointAdapter instead.');
+    return this.checkpointAdapter || null;
   }
 }

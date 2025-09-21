@@ -102,7 +102,7 @@ export interface WorkflowDecoratorOptions {
  * }
  * ```
  */
-export function Workflow(options: WorkflowDecoratorOptions): ClassDecorator {
+export function AgenticWorkflow(options: WorkflowDecoratorOptions): ClassDecorator {
   return function (target: any) {
     // Validate that the class has an execute method
     const prototype = target.prototype;

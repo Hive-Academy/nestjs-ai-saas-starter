@@ -1,8 +1,53 @@
 import { SetMetadata } from '@nestjs/common';
 
 /**
- * Agent configuration interface for the @Agent decorator
- * Extends the base AgentDefinition to support declarative patterns
+ * Agent type enumeration for enhanced agent architecture
+ */
+export type AgentType = 'simple-agent' | 'workflow-agent';
+
+/**
+ * Workflow configuration for workflow-agent types
+ */
+export interface WorkflowAgentConfig {
+  /**
+   * Enable internal streaming for workflow steps
+   */
+  enableInternalStreaming?: boolean;
+
+  /**
+   * Enable internal checkpointing for workflow persistence
+   */
+  enableInternalCheckpointing?: boolean;
+
+  /**
+   * Internal workflow timeout in milliseconds
+   */
+  internalTimeout?: number;
+
+  /**
+   * Enable internal workflow error recovery
+   */
+  enableErrorRecovery?: boolean;
+
+  /**
+   * Maximum number of internal workflow retries
+   */
+  maxInternalRetries?: number;
+
+  /**
+   * Enable workflow step progress tracking
+   */
+  enableStepProgress?: boolean;
+
+  /**
+   * Internal workflow state persistence key
+   */
+  stateKey?: string;
+}
+
+/**
+ * Enhanced agent configuration interface for the @Agent decorator
+ * Supports both simple agents and workflow agents with internal workflows
  */
 export interface AgentConfig {
   /**
@@ -19,6 +64,13 @@ export interface AgentConfig {
    * Agent description for supervisor routing
    */
   description: string;
+
+  /**
+   * Agent type - determines internal architecture
+   * - 'simple-agent': Traditional single nodeFunction agent
+   * - 'workflow-agent': Multi-step internal workflow agent
+   */
+  type?: AgentType;
 
   /**
    * System prompt for this agent
@@ -54,6 +106,12 @@ export interface AgentConfig {
    * Output format specification
    */
   outputFormat?: string;
+
+  /**
+   * Workflow configuration for workflow-agent types
+   * Only applicable when type is 'workflow-agent'
+   */
+  workflowConfig?: WorkflowAgentConfig;
 }
 
 /**
@@ -95,6 +153,7 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
       id: config.id || target.name.toLowerCase().replace(/agent$/, ''),
       name: config.name || target.name.replace(/Agent$/, ''),
       description: config.description || `Agent: ${target.name}`,
+      type: config.type || 'simple-agent', // Default to simple agent for backward compatibility
       ...config,
     };
 

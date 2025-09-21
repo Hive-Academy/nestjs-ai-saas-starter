@@ -172,7 +172,10 @@ export class HybridUIService {
     const id = this.generateElementId();
 
     // Create Angular Three group
-    const ngtGroup = this.angularThreeFoundation.createHybridGroup(id);
+    const ngtGroup = this.angularThreeFoundation.createHybridGroup({
+      name: id,
+      userData: { type: 'hybrid-element', createdAt: Date.now() }
+    });
 
     // Apply Angular Three configuration
     if (config.angularThree) {

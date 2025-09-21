@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Workflow,
+  AgenticWorkflow,
   WorkflowResult,
   AgentState,
 } from '@hive-academy/langgraph-multi-agent';
@@ -23,7 +23,7 @@ import type { TicketRequest } from '../types';
  * - Weighted decision-making across multiple agent opinions
  * - Network topology management (supervisor, hierarchical, weighted)
  */
-@Workflow({
+@AgenticWorkflow({
   id: 'enhanced-support-orchestration',
   name: 'Enhanced Support Orchestration',
   description:

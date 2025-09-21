@@ -4,6 +4,13 @@
 
 **Use Case**: AI-powered content creation pipeline that generates, reviews, and optimizes marketing content across multiple channels with brand compliance and performance optimization.
 
+Updated to align with the latest architecture improvements:
+
+- Dual agent types support (simple-agent and workflow-agent) with orchestration via the Agent-Workflow Bridge
+- Unified decorator composition with a single enhanced @RequiresApproval across modules
+- Typed metadata for streaming/checkpoints to avoid any types in state transitions
+- Centralized registration pattern and streaming-first execution for auditability
+
 **Business Value**:
 
 - **Content Velocity**: 10x faster content production with AI assistance
@@ -18,6 +25,7 @@
 
 ```typescript
 // MULTI-AGENT: Content creation agents with specialized roles
+// Note: Agents can be simple-agents or workflow-agents (internal micro-workflows compiled to a single node via the bridge)
 @Agent({
   id: 'content-strategist',
   name: 'Content Strategy Specialist',
@@ -54,7 +62,7 @@ export class ContentStrategistAgent {
     return await this.marketAnalytics.getTrends(industry, targetMarket, timeframe);
   }
 
-  // HITL: Strategic approval for campaign direction
+  // HITL: Strategic approval for campaign direction (unified decorator)
   @RequiresApproval({
     confidenceThreshold: 0.85,
     riskThreshold: ApprovalRiskLevel.HIGH,
@@ -84,7 +92,7 @@ export class CopywriterAgent {
         callToAction: content.cta,
         seoScore: content.seoMetrics.score,
       },
-    };
+    } satisfies Partial<ContentState>;
   }
 
   // MULTI-AGENT: Content generation tool
@@ -105,6 +113,76 @@ export class CopywriterAgent {
       length: wordCount,
       toneOfVoice: tone,
     });
+  }
+}
+
+// WORKFLOW-AGENT: SEO optimizer with an internal micro-workflow compiled via the AgentWorkflowBridgeService
+@Agent({
+  id: 'seo-optimizer',
+  name: 'SEO Optimization Specialist',
+  capabilities: ['keyword_analysis', 'on_page_optimization', 'readability_improvement'],
+  tools: ['keyword_research', 'readability_checker', 'serp_simulator'],
+})
+@Injectable()
+export class SEOOptimizerAgent {
+  // Externally exposed as a single node; internally backed by a tiny workflow (see below)
+  async nodeFunction(state: ContentState): Promise<Partial<ContentState>> {
+    const optimized = await this.optimizeDraftInternally(state);
+    return {
+      draft: {
+        ...state.draft,
+        body: optimized.body,
+        seoScore: optimized.seoScore,
+      },
+      metadata: {
+        ...state.metadata,
+        optimizationApplied: true,
+        optimizationDetails: optimized.details,
+      },
+    } satisfies Partial<ContentState>;
+  }
+
+  // Bridge entry that triggers the internal workflow
+  private async optimizeDraftInternally(state: ContentState) {
+    const wf = new SEOOptimizerAgentInternalWorkflow();
+    return wf.optimize({
+      body: state.draft?.body ?? '',
+      keywords: state.strategy?.keyMessages ?? [],
+      tone: state.strategy?.toneOfVoice ?? 'neutral',
+    });
+  }
+}
+
+// INTERNAL MICRO-WORKFLOW (Functional API) — compiled to a single external node via AgentWorkflowBridgeService
+class SEOOptimizerAgentInternalWorkflow {
+  @Entrypoint()
+  async optimize(params: { body: string; keywords: string[]; tone: string }) {
+    const step1 = await this.enhanceKeywords(params);
+    const step2 = await this.improveReadability(step1);
+    return step2;
+  }
+
+  @Task()
+  async enhanceKeywords({ body, keywords, tone }: { body: string; keywords: string[]; tone: string }) {
+    // Apply keyword placement strategy
+    const enhancedBody = this.insertKeywords(body, keywords, tone);
+    return { body: enhancedBody, details: { keywordsApplied: keywords.length } } as const;
+  }
+
+  @Task()
+  async improveReadability(prev: { body: string; details: any }) {
+    const score = this.estimateReadability(prev.body);
+    return { body: prev.body, seoScore: Math.min(100, 60 + score), details: { ...prev.details, readabilityScore: score } } as const;
+  }
+
+  private insertKeywords(body: string, keywords: string[], tone: string): string {
+    // Simplified example — real implementation would be more nuanced
+    return `${body}\n\nOptimized for: ${keywords.join(', ')} | Tone: ${tone}`;
+  }
+  private estimateReadability(body: string): number {
+    // Simplified heuristic
+    const words = body.split(/\s+/).length;
+    return Math.max(0, 100 - Math.floor(words / 10));
   }
 }
 
@@ -143,7 +221,7 @@ export class BrandComplianceAgent {
     return await this.brandValidator.checkCompliance(content, brandId, contentType);
   }
 
-  // HITL: High-risk brand compliance violations require approval
+  // HITL: High-risk brand compliance violations require approval (unified decorator)
   @RequiresApproval({
     when: (state) => state.compliance?.violations?.some((v) => v.severity === 'HIGH'),
     confidenceThreshold: 0.9,
@@ -233,7 +311,7 @@ export class ContentCreationWorkflow extends DeclarativeWorkflowBase<ContentStat
       brandGuidelines: state.brand.guidelines,
     });
 
-    return { compliance: result.finalState.compliance };
+    return { compliance: result.finalState.compliance } satisfies Partial<ContentState>;
   }
 
   // FUNCTIONAL-API: Platform deployment with approval
@@ -280,7 +358,7 @@ export class ContentCreationWorkflow extends DeclarativeWorkflowBase<ContentStat
       });
     }
 
-    return { deployments, status: 'live' };
+    return { deployments, status: 'live' } satisfies Partial<ContentState>;
   }
 
   // FUNCTIONAL-API: Performance monitoring end node
@@ -293,7 +371,7 @@ export class ContentCreationWorkflow extends DeclarativeWorkflowBase<ContentStat
         reportingSchedule: 'daily',
       },
       completedAt: new Date(),
-    };
+    } satisfies Partial<ContentState>;
   }
 
   // FUNCTIONAL-API: Edge definitions for workflow flow
@@ -386,6 +464,13 @@ interface ContentDraft {
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
   seoScore: number;
 }
+
+// Note: For streaming/checkpoint metadata, use project-standard generic metadata types
+// to ensure strict typing of streamed events and recovery checkpoints.
+
+## References
+
+- See the [LangGraph Modules Integration Guide](./LANGGRAPH_MODULES_INTEGRATION_GUIDE.md) for unified decorator composition and AgentWorkflowBridgeService patterns
 ```
 
 ### Service Integration

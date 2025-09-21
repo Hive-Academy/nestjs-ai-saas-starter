@@ -18,6 +18,9 @@
     },
     {
       "path": "../streaming/tsconfig.lib.json"
+    },
+    {
+      "path": "../multi-agent/tsconfig.lib.json"
     }
   ]
 }

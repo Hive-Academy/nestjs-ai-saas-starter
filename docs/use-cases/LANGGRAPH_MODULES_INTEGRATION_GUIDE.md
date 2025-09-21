@@ -9,6 +9,7 @@
 - **Core Classes**: `UnifiedWorkflowBase`, `DeclarativeWorkflowBase`, `StreamingWorkflowBase`
 - **No Direct Decorators**: Base classes for other modules to extend
 - **Key Services**: `WorkflowGraphBuilderService`, `SubgraphManagerService`, `WorkflowStreamService`
+- **Bridge & Registration**: Provides centralized registration patterns and integrates with AgentWorkflowBridgeService for dual agent types
 
 ### 2. @libs/langgraph-modules/multi-agent
 
@@ -17,6 +18,7 @@
 - **Decorators**: `@Agent` (class-level), `@Workflow` (class-level), `@Tool` (method-level)
 - **Patterns**: Supervisor, Swarm, Hierarchical coordination
 - **Key Services**: `MultiAgentCoordinatorService`, `WorkflowManagerService`, `AgentRegistryService`
+- **Bridge**: Workflow-agent support via AgentWorkflowBridgeService (internal micro-workflows compiled to a single node)
 
 ### 3. @libs/langgraph-modules/functional-api
 
@@ -25,6 +27,7 @@
 - **Decorators**: `@Workflow` (class-level), `@Node` (method-level), `@Edge` (method-level), `@Entrypoint` (method-level), `@Task` (method-level)
 - **Two Paradigms**: Functional workflows (`@Entrypoint`/`@Task`) + Declarative workflows (`@Node`/`@Edge`)
 - **Key Services**: `FunctionalWorkflowService`, `GraphGeneratorService`
+- **Composition**: Unified decorator composition across modules via centralized registration
 
 ### 4. @libs/langgraph-modules/platform
 
@@ -41,6 +44,7 @@
 - **Decorators**: `@RequiresApproval` (method-level), `@ApprovalHandler` (method-level)
 - **Key Services**: `HumanApprovalService`, `ConfidenceEvaluatorService`, `ApprovalChainService`
 - **Features**: Risk assessment, confidence evaluation, approval chains
+- **Unified Decorators**: Single enhanced `@RequiresApproval` supports cross-module composition (HITL + workflow + multi-agent)
 
 ### 6. @libs/langgraph-modules/streaming
 
@@ -68,26 +72,28 @@
 
 ## 🔗 Decorator Compatibility Matrix
 
-### What Works Together:
+### What Works Together
 
 | Class-Level Decorator        | Compatible Method-Level Decorators                                                                                                                                                                                                                                                  | Library Source                    | Notes                                                   |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------- |
-| `@Agent` (multi-agent)       | `@Tool` (multi-agent)<br>`@RequiresApproval` (hitl)<br>`@StreamToken` (streaming)<br>`@StreamEvent` (streaming)<br>`@StreamProgress` (streaming)                                                                                                                                    | Multi-Agent + HITL + Streaming    | Agents with tools, approval requirements, and streaming |
-| `@Workflow` (functional-api) | `@Node` (functional-api)<br>`@Edge` (functional-api)<br>`@StartNode` (functional-api)<br>`@EndNode` (functional-api)<br>`@ApprovalNode` (functional-api)<br>`@RequiresApproval` (hitl)<br>`@StreamToken` (streaming)<br>`@StreamEvent` (streaming)<br>`@StreamProgress` (streaming) | Functional-API + HITL + Streaming | Declarative workflows with oversight and streaming      |
-| `@Workflow` (functional-api) | `@Entrypoint` (functional-api)<br>`@Task` (functional-api)<br>`@StreamAll` (streaming)                                                                                                                                                                                              | Functional-API + Streaming        | Functional programming with streaming                   |
-| `@Workflow` (multi-agent)    | Built-in execute method only<br>`@StreamEvent` (streaming)                                                                                                                                                                                                                          | Multi-Agent + Streaming           | Multi-agent workflow orchestration with streaming       |
+| `@Agent` (multi-agent)       | `@Tool` (multi-agent) / `@RequiresApproval` (hitl) / `@StreamToken` (streaming) / `@StreamEvent` (streaming) / `@StreamProgress` (streaming)                                                                                                                                    | Multi-Agent + HITL + Streaming    | Agents with tools, approval requirements, and streaming |
+| `@Workflow` (functional-api) | `@Node` (functional-api) / `@Edge` (functional-api) / `@StartNode` (functional-api) / `@EndNode` (functional-api) / `@ApprovalNode` (functional-api) / `@RequiresApproval` (hitl) / `@StreamToken` (streaming) / `@StreamEvent` (streaming) / `@StreamProgress` (streaming) | Functional-API + HITL + Streaming | Declarative workflows with oversight and streaming      |
+| `@Workflow` (functional-api) | `@Entrypoint` (functional-api) / `@Task` (functional-api) / `@StreamAll` (streaming)                                                                                                                                                                                              | Functional-API + Streaming        | Functional programming with streaming                   |
+| `@Workflow` (multi-agent)    | Built-in execute method only / `@StreamEvent` (streaming)                                                                                                                                                                                                                           | Multi-Agent + Streaming           | Multi-agent workflow orchestration with streaming       |
 
-### What DOESN'T Work Together:
+### What DOESN'T Work Together
 
 ❌ **@Agent + @Node/@Edge**: Agents use `nodeFunction` method, not `@Node` decorators  
 ❌ **@Entrypoint/@Task + @Node/@Edge**: Different paradigms - use one or the other  
 ❌ **Multiple @Workflow decorators**: Each class can only have one workflow type
 
+Note: Workflow-agents can define internal micro-workflows with `@Entrypoint`/`@Task` inside the agent class or in a companion class, compiled to a single external node via the AgentWorkflowBridgeService.
+
 ## 🏗️ Integration Architecture Patterns
 
 ### Pattern 1: Complete Enterprise AI Workflow
 
-_Combines workflow-engine + functional-api + hitl_
+Combines workflow-engine + functional-api + hitl
 
 ```typescript
 // FOUNDATION: workflow-engine base class + FUNCTIONAL-API: declarative structure
@@ -136,10 +142,10 @@ export class EnterpriseCustomerServiceWorkflow extends DeclarativeWorkflowBase<C
 
 ### Pattern 2: Multi-Agent + Workflow-Engine Integration
 
-_Sophisticated agent coordination within workflow contexts_
+Sophisticated agent coordination within workflow contexts
 
 ```typescript
-// MULTI-AGENT: Agent definitions
+// MULTI-AGENT: Agent definitions (simple-agent)
 @Agent({
   id: 'researcher',
   name: 'Research Specialist',
@@ -176,7 +182,7 @@ export class ResearchAgent {
   }
 }
 
-// WORKFLOW-ENGINE: Orchestrating workflow that uses agents
+// WORKFLOW-ENGINE: Orchestrating workflow that uses agents (centralized registration compiles/validates)
 @Workflow({
   name: 'content-creation-pipeline',
   streaming: true,
@@ -213,7 +219,7 @@ export class ContentCreationWorkflow extends StreamingWorkflowBase<ContentState>
 
 ### Pattern 3: Platform Integration with HITL
 
-_LangGraph Platform integration with human oversight_
+LangGraph Platform integration with human oversight
 
 ```typescript
 @Injectable()
@@ -237,6 +243,20 @@ export class PlatformHitlIntegrationService {
 }
 ```
 
+## 🧭 Centralized Registration & Bridge Patterns
+
+- Centralized Registration: All decorators and modules resolve to a single source of truth; workflows are compiled and validated before execution
+- AgentWorkflowBridgeService: Compiles internal agent micro-workflows into single external nodes, preserving the agent interface while enabling rich internal steps
+- Typed Metadata: Use project-standard generic metadata types for streaming events and checkpoints; avoid any types in state transitions
+
+## 🔁 Cross-References
+
+- Use Cases:
+    - Content Marketing: Demonstrates a workflow-agent (`SEOOptimizerAgent`) with internal micro-workflow compiled via the bridge; unified @RequiresApproval
+    - DevOps Automation: Shows internal workflow for code review analysis and platform-backed audit trails
+    - Financial Trading: Emphasizes risk-based approvals, platform execution, and dual agent types
+    - Healthcare Diagnosis: Highlights conservative confidence thresholds, escalation strategies, and typed metadata
+
 ## 🎯 Best Practice Usage Patterns
 
 ### When to Use Each Module
@@ -252,7 +272,7 @@ export class PlatformHitlIntegrationService {
 
 ### Integration Hierarchy
 
-```
+```text
 workflow-engine (Foundation)
     ↓
 functional-api (Adds declarative capabilities)

@@ -32,12 +32,12 @@
     "rxjs": "7.8.2",
     "@langchain/langgraph": "^0.4.3",
     "reflect-metadata": "^0.1.13",
-    "@langchain/langgraph-checkpoint": "^0.1.0",
-    "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
     "@hive-academy/langgraph-streaming": "0.0.1",
     "@hive-academy/langgraph-core": "0.0.1",
     "@hive-academy/langgraph-functional-api": "0.0.1",
-    "@nestjs/config": "4.0.2"
+    "@nestjs/config": "4.0.2",
+    "@hive-academy/langgraph-multi-agent": "0.0.1",
+    "@nestjs/core": "^11.0.0"
   },
   "devDependencies": {
     "rollup": "4.49.0",
