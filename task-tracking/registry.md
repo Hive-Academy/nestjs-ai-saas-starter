@@ -2,12 +2,12 @@
 
 ## Sequential Task Management System
 
-| Task ID       | Title                              | Status     | Type    | Priority | Effort | Identified During | Created    |
-| ------------- | ---------------------------------- | ---------- | ------- | -------- | ------ | ----------------- | ---------- |
-| TASK_2025_001 | Codebase overlap analysis findings | ⏳ Pending | Feature | P1-High  | M      | TASK_2025_001     | 2025-09-20 |
-| TASK_2025_002 | Complete agent decorator upgrade   | ✅ Complete | Feature | P0-Critical | L   | User Request      | 2025-09-21 |
-| TASK_2025_003 | Business-Workflows Module Comprehensive Transformation | 🔄 Active | Feature | P0-Critical | XL | User Request | 2025-09-21 |
-| TASK_2025_004 | Decorator Architecture Enhancement - Unified @Agent and Functional @Edge | ✅ Complete | Feature | P0-Critical | L | User Request | 2025-09-21 |
+| Task ID       | Title                                                                    | Status      | Type    | Priority    | Effort | Identified During | Created    |
+| ------------- | ------------------------------------------------------------------------ | ----------- | ------- | ----------- | ------ | ----------------- | ---------- |
+| TASK_2025_001 | Codebase overlap analysis findings                                       | ⏳ Pending  | Feature | P1-High     | M      | TASK_2025_001     | 2025-09-20 |
+| TASK_2025_002 | Complete agent decorator upgrade                                         | ✅ Complete | Feature | P0-Critical | L      | User Request      | 2025-09-21 |
+| TASK_2025_003 | Business-Workflows Module Comprehensive Transformation                   | 🔄 Active   | Feature | P0-Critical | XL     | User Request      | 2025-09-21 |
+| TASK_2025_004 | Decorator Architecture Enhancement - Unified @Agent and Functional @Edge | ✅ Complete | Feature | P0-Critical | L      | User Request      | 2025-09-21 |
 
 ## Registry Statistics
 
@@ -32,3 +32,4 @@
 - **P3-Low**: Nice to have, when time allows
 
 **Format**: `TASK_YYYY_NNN` (e.g., TASK_2025_001, TASK_2025_002)
+| TASK_2025_005 | Neo4j Library Enhancement - AI/LangGraph Specializations (Phase 6 → 5 → 7) | 🔄 Active | Feature | P0-Critical | XL | User Request | 2025-09-22 |
