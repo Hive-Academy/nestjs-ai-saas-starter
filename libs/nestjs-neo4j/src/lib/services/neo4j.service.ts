@@ -11,23 +11,19 @@ import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.inte
 import type {
   QueryResult,
   BulkOperation,
-  BulkResult,
+  BulkResult,QueryOptions
 } from '../interfaces/query-result.interface';
 import type { SessionOptions } from '../interfaces/neo4j-connection.interface';
-import type {
-  EnhancedQueryOptions,
-  EnhancedQueryResult,
-} from '../interfaces/query-result.interface';
 import { Neo4jQueryService } from './neo4j-query.service';
 import { Neo4jMetricsService } from './neo4j-metrics.service';
 
 /**
- * Neo4j Service with enhanced features
+ * Neo4j Service with  features
  * Main service that coordinates with child services for specific functionality
  *
  * Features:
  * - Full backward compatibility with existing API
- * - Enhanced query execution with retry and metrics
+ * -  query execution with retry and metrics
  * - Connection pooling optimization
  * - Performance monitoring
  * - Type safety with strict mode compliance
@@ -42,194 +38,10 @@ export class Neo4jService {
     private readonly queryService: Neo4jQueryService,
     private readonly metricsService: Neo4jMetricsService
   ) {
-    this.logger.log('Neo4j Service initialized with enhanced features');
+    this.logger.log('Neo4j Service initialized with  features');
   }
 
-  // ==================== ORIGINAL API (100% BACKWARD COMPATIBLE) ====================
 
-  /**
-   * Execute a read operation with session callback
-   */
-  async read<T>(
-    operation: (session: Session) => Promise<T>,
-    database?: string
-  ): Promise<T> {
-    const session = this.driver.session({
-      database: database ?? this.options.database,
-      defaultAccessMode: neo4jSession.READ,
-    });
-
-    try {
-      return await operation(session);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Read operation failed: ${message}`, stack);
-      throw error;
-    } finally {
-      await session.close();
-    }
-  }
-
-  /**
-   * Execute a read query (legacy method for backward compatibility)
-   */
-  async readQuery<T = Record<string, unknown>>(
-    cypher: string,
-    params?: Record<string, unknown>,
-    database?: string
-  ): Promise<T[]> {
-    return this.read(async (session) => {
-      const result = await session.run(cypher, params);
-      return result.records.map((record) => record.toObject() as T);
-    }, database);
-  }
-
-  /**
-   * Execute a write operation with session callback
-   */
-  async write<T>(
-    operation: (session: Session) => Promise<T>,
-    database?: string
-  ): Promise<T> {
-    const session = this.driver.session({
-      database: database ?? this.options.database,
-      defaultAccessMode: neo4jSession.WRITE,
-    });
-
-    try {
-      return await operation(session);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Write operation failed: ${message}`, stack);
-      throw error;
-    } finally {
-      await session.close();
-    }
-  }
-
-  /**
-   * Execute a write query (legacy method for backward compatibility)
-   */
-  async writeQuery<T = Record<string, unknown>>(
-    cypher: string,
-    params?: Record<string, unknown>,
-    database?: string
-  ): Promise<T[]> {
-    return this.write(async (session) => {
-      const result = await session.run(cypher, params);
-      return result.records.map((record) => record.toObject() as T);
-    }, database);
-  }
-
-  /**
-   * Execute any query with detailed result information
-   */
-  async run<T = Record<string, unknown>>(
-    cypher: string,
-    params?: Record<string, unknown>,
-    options?: SessionOptions
-  ): Promise<QueryResult<T>> {
-    const sessionConfig = {
-      database: options?.database ?? this.options.database,
-      defaultAccessMode: options?.defaultAccessMode
-        ? options.defaultAccessMode === 'READ'
-          ? neo4jSession.READ
-          : neo4jSession.WRITE
-        : neo4jSession.WRITE,
-      bookmarks: options?.bookmarks,
-      fetchSize: options?.fetchSize,
-    };
-
-    const session = this.driver.session(sessionConfig);
-
-    try {
-      const result = await session.run(cypher, params);
-
-      return {
-        records: result.records.map((record) => record.toObject() as T),
-        summary: {
-          query: {
-            text: result.summary.query.text,
-            parameters: result.summary.query.parameters,
-          },
-          counters: result.summary.counters.updates(),
-          updateStatistics: {
-            containsUpdates: result.summary.counters.containsUpdates(),
-            containsSystemUpdates:
-              result.summary.counters.containsSystemUpdates?.() || false,
-          },
-          plan: result.summary.plan || undefined,
-          profile: result.summary.profile || undefined,
-          notifications: result.summary.notifications.map((n) => ({
-            code: n.code,
-            title: n.title,
-            description: n.description,
-            severity: n.severity as 'WARNING' | 'INFORMATION' | 'UNKNOWN',
-            position:
-              n.position &&
-              'offset' in n.position &&
-              typeof n.position.offset === 'number' &&
-              typeof n.position.line === 'number' &&
-              typeof n.position.column === 'number'
-                ? {
-                    offset: n.position.offset,
-                    line: n.position.line,
-                    column: n.position.column,
-                  }
-                : undefined,
-          })),
-          server: {
-            address: result.summary.server.address ?? '',
-            version: result.summary.server.agent ?? '',
-          },
-          resultConsumedAfter: result.summary.resultConsumedAfter.toNumber(),
-          resultAvailableAfter: result.summary.resultAvailableAfter.toNumber(),
-          database: result.summary.database
-            ? {
-                name: result.summary.database.name ?? '',
-              }
-            : undefined,
-        },
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Query execution failed: ${message}`, stack);
-      throw error;
-    } finally {
-      await session.close();
-    }
-  }
-
-  /**
-   * Execute operations in a transaction
-   */
-  async runInTransaction<T>(
-    work: (session: Session) => Promise<T>,
-    database?: string
-  ): Promise<T> {
-    const session = this.driver.session({
-      database: database ?? this.options.database,
-      defaultAccessMode: neo4jSession.WRITE,
-    });
-
-    try {
-      return await session.executeWrite(async (tx) => {
-        // Create a session-like object with transaction methods
-        const sessionProxy = this.createSessionProxy(session, tx);
-        return await work(sessionProxy);
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Transaction failed: ${message}`, stack);
-      throw error;
-    } finally {
-      await session.close();
-    }
-  }
 
   /**
    * Execute read operations in a transaction
@@ -285,7 +97,7 @@ export class Neo4jService {
               });
             }
           }
-        }, database);
+        }, database as any);
       } catch (error) {
         // Session-level error
         for (const operation of batch) {
@@ -304,20 +116,6 @@ export class Neo4jService {
       errors,
       totalOperations: operations.length,
     };
-  }
-
-  /**
-   * Verify database connectivity
-   */
-  async verifyConnectivity(): Promise<boolean> {
-    try {
-      await this.driver.verifyConnectivity();
-      return true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Connectivity check failed: ${message}`);
-      return false;
-    }
   }
 
   /**
@@ -343,18 +141,18 @@ export class Neo4jService {
     return this.driver;
   }
 
-  // ==================== ENHANCED API (NEW FEATURES) ====================
+  // ====================  API (NEW FEATURES) ====================
 
   /**
-   * Execute a query with enhanced options and monitoring
+   * Execute a query with  options and monitoring
    * Delegates to QueryService for implementation
    */
-  async runEnhanced<T = Record<string, unknown>>(
+  async run<T = Record<string, unknown>>(
     cypher: string,
     params?: Record<string, unknown>,
-    options?: EnhancedQueryOptions
-  ): Promise<EnhancedQueryResult<T>> {
-    return this.queryService.runEnhanced<T>(
+    options?: QueryOptions
+  ): Promise<QueryResult<T>> {
+    return this.queryService.run<T>(
       this.driver,
       cypher,
       params,
@@ -363,41 +161,41 @@ export class Neo4jService {
   }
 
   /**
-   * Execute a read operation with enhanced features
+   * Execute a read operation with  features
    */
-  async readEnhanced<T>(
+  async read<T>(
     operation: (session: Session) => Promise<T>,
-    options?: EnhancedQueryOptions
+    options?: QueryOptions
   ): Promise<T> {
-    const enhancedOptions: EnhancedQueryOptions = {
+    const newOptions: QueryOptions = {
       ...options,
       defaultAccessMode: 'READ',
     };
 
-    return this.executeWithEnhancedSession(operation, enhancedOptions);
+    return this.executeWithSession(operation, newOptions);
   }
 
   /**
-   * Execute a write operation with enhanced features
+   * Execute a write operation with  features
    */
-  async writeEnhanced<T>(
+  async write<T>(
     operation: (session: Session) => Promise<T>,
-    options?: EnhancedQueryOptions
+    options?: QueryOptions
   ): Promise<T> {
-    const enhancedOptions: EnhancedQueryOptions = {
+    const newOptions: QueryOptions = {
       ...options,
       defaultAccessMode: 'WRITE',
     };
 
-    return this.executeWithEnhancedSession(operation, enhancedOptions);
+    return this.executeWithSession(operation, newOptions);
   }
 
   /**
-   * Execute operations in a transaction with enhanced error handling
+   * Execute operations in a transaction with  error handling
    */
-  async runInEnhancedTransaction<T>(
+  async runInTransaction<T>(
     work: (tx: ManagedTransaction) => Promise<T>,
-    options?: EnhancedQueryOptions & { transactionConfig?: any }
+    options?: QueryOptions & { transactionConfig?: any }
   ): Promise<T> {
     const session = this.driver.session({
       database: options?.database ?? this.options.database,
@@ -435,9 +233,9 @@ export class Neo4jService {
   }
 
   /**
-   * Verify connectivity with enhanced error reporting
+   * Verify connectivity with  error reporting
    */
-  async verifyEnhancedConnectivity(): Promise<{
+  async verifyConnectivity(): Promise<{
     connected: boolean;
     latency?: number;
     serverInfo?: any;
@@ -494,16 +292,16 @@ export class Neo4jService {
   }
 
   /**
-   * Get enhanced health information
+   * Get  health information
    */
-  async getEnhancedHealth(): Promise<{
+  async getHealth(): Promise<{
     status: 'healthy' | 'unhealthy' | 'degraded';
     performanceMetrics: any;
     connectionInfo: any;
     errorRate: number;
     averageResponseTime: number;
   }> {
-    const connectivity = await this.verifyEnhancedConnectivity();
+    const connectivity = await this.verifyConnectivity();
     const metrics = this.getMetrics();
     const connectionInfo = this.getConnectionPoolMetrics();
 
@@ -540,11 +338,11 @@ export class Neo4jService {
   }
 
   /**
-   * Execute operation with enhanced session management
+   * Execute operation with  session management
    */
-  private async executeWithEnhancedSession<T>(
+  private async executeWithSession<T>(
     operation: (session: Session) => Promise<T>,
-    options?: EnhancedQueryOptions
+    options?: QueryOptions
   ): Promise<T> {
     const session = this.driver.session({
       database: options?.database ?? this.options.database,
@@ -561,7 +359,7 @@ export class Neo4jService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Enhanced session operation failed: ${message}`, stack);
+      this.logger.error(` session operation failed: ${message}`, stack);
       throw error;
     } finally {
       await session.close();

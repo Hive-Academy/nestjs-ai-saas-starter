@@ -1,5 +1,5 @@
 /**
- * Metadata interfaces for the enhanced decorator framework
+ * Metadata interfaces for the  decorator framework
  */
 
 /**
@@ -35,7 +35,7 @@ export interface QueryExecutionOptions {
   /** Retry configuration */
   retry?: RetryOptions;
   /** Transaction configuration */
-  transaction?: EnhancedTransactionOptions;
+  transaction?: TransactionOptions;
 }
 
 /**
@@ -73,9 +73,9 @@ export interface RetryOptions {
 }
 
 /**
- * Transaction configuration for enhanced decorators
+ * Transaction configuration for  decorators
  */
-export interface EnhancedTransactionOptions {
+export interface TransactionOptions {
   /** Transaction timeout */
   timeout?: number;
   /** Transaction metadata */
@@ -202,9 +202,186 @@ export interface QueryMethodConfig extends BaseDecoratorMetadata {
 }
 
 /**
+ * Phase 7: Type Safety Configurations
+ */
+
+/**
+ * Typed Cypher query configuration
+ */
+export interface TypedCypherQueryConfig extends BaseDecoratorMetadata {
+  /** Cypher query with compile-time validation */
+  query: string;
+  /** Compile-time validation options */
+  compiletimeValidation?: {
+    strictParams?: boolean;
+    inferReturnType?: boolean;
+    validatePropertyPaths?: boolean;
+  };
+  /** Runtime execution options */
+  runtime?: {
+    cache?: { ttl: number; key?: string };
+    retry?: { attempts: number; delay: number };
+    transactionMode?: 'READ' | 'WRITE';
+  };
+  /** Development helpers */
+  dev?: {
+    showQueryInfo?: boolean;
+    validateSchema?: boolean;
+  };
+}
+
+/**
+ * Phase 5: Security Configurations
+ */
+
+/**
+ * Authorization configuration
+ */
+export interface AuthorizeConfig extends BaseDecoratorMetadata {
+  /** Required roles for access */
+  roles?: string[];
+  /** Required permissions */
+  permissions?: string[];
+  /** Tenant isolation configuration */
+  tenantIsolation?: {
+    enabled: boolean;
+    tenantProperty?: string;
+    autoInject?: boolean;
+  };
+  /** Resource-based access control */
+  resourceAccess?: {
+    resourceType: string;
+    actions: string[];
+    ownershipCheck?: {
+      ownerProperty: string;
+      allowOwnerAccess: boolean;
+    };
+  };
+  /** Custom authorization function */
+  customAuthorizer?: (context: any, metadata: any) => Promise<boolean> | boolean;
+}
+
+/**
+ * Input validation configuration
+ */
+export interface ValidateInputConfig extends BaseDecoratorMetadata {
+  /** Schema validation */
+  schema?: {
+    parameterSchema?: Record<string, any>;
+    validatePropertyTypes?: boolean;
+  };
+  /** Sanitization rules */
+  sanitization?: {
+    stripHtml?: boolean;
+    escapeSpecialChars?: boolean;
+    allowedCharsPattern?: RegExp;
+    maxStringLength?: number;
+  };
+  /** SQL/Cypher injection prevention */
+  injectionPrevention?: {
+    enabled: boolean;
+    suspiciousPatterns?: RegExp[];
+    onDetection: 'throw' | 'sanitize' | 'log';
+  };
+  /** Custom validators */
+  customValidators?: Array<{
+    name: string;
+    validator: (value: any, context: any) => boolean | Promise<boolean>;
+    message: string;
+  }>;
+}
+
+/**
+ * Audit logging configuration
+ */
+export interface AuditLogConfig extends BaseDecoratorMetadata {
+  /** Enable audit logging */
+  enabled: boolean;
+  /** What to log */
+  logLevel: 'minimal' | 'standard' | 'detailed' | 'full';
+  /** Include sensitive data */
+  includeSensitiveData?: boolean;
+  /** Log successful operations */
+  logSuccess?: boolean;
+  /** Log failed operations */
+  logFailures?: boolean;
+  /** Custom audit fields */
+  customFields?: Record<string, any>;
+  /** Audit storage configuration */
+  storage?: {
+    storeInNeo4j?: boolean;
+    externalService?: string;
+    retentionDays?: number;
+  };
+}
+
+/**
+ * Rate limiting configuration
+ */
+export interface RateLimitConfig extends BaseDecoratorMetadata {
+  /** Maximum requests per window */
+  requests: number;
+  /** Time window (e.g., '1m', '1h', '1d') */
+  window: string;
+  /** Rate limiting strategy */
+  strategy: 'fixed-window' | 'sliding-window' | 'token-bucket';
+  /** Key generation for rate limiting */
+  keyGenerator?: {
+    includeUserId?: boolean;
+    includeTenantId?: boolean;
+    includeIpAddress?: boolean;
+    customKey?: (context: any) => string;
+  };
+  /** Action when limit exceeded */
+  onLimitExceeded?: {
+    response: 'throw' | 'queue' | 'reject';
+    message?: string;
+    retryAfter?: number;
+  };
+}
+
+/**
+ * Data encryption configuration
+ */
+export interface EncryptSensitiveConfig extends BaseDecoratorMetadata {
+  /** Fields to encrypt before storing */
+  encryptFields?: string[];
+  /** Fields to mask in logs */
+  maskFields?: string[];
+  /** Encryption algorithm */
+  algorithm?: 'aes-256-gcm' | 'aes-256-cbc';
+  /** Key rotation */
+  keyRotation?: {
+    enabled: boolean;
+    intervalDays: number;
+  };
+  /** Audit trail for encryption */
+  auditEncryption?: boolean;
+}
+
+/**
+ * Decorator composition metadata for conflict resolution
+ */
+export interface DecoratorCompositionMetadata {
+  /** Decorator type category */
+  type: 'query' | 'security' | 'validation' | 'type-safety' | 'workflow';
+  /** Execution priority (higher = earlier) */
+  priority: number;
+  /** Conflicting decorators */
+  conflicts: string[];
+  /** Required dependencies */
+  dependencies: string[];
+  /** Performance impact level */
+  performanceImpact: 'low' | 'medium' | 'high';
+  /** Decorator version */
+  version: string;
+}
+
+/**
  * Metadata keys for storing decorator information
  */
 export const DECORATOR_METADATA_KEYS = {
+  //  decorators (Phase 1)
   CYPHER_QUERY: Symbol('cypher-query'),
   REPOSITORY: Symbol('repository'),
   ENTITY: Symbol('entity'),
@@ -216,6 +393,22 @@ export const DECORATOR_METADATA_KEYS = {
   TRANSACTION: Symbol('transaction'),
   PROFILING: Symbol('profiling'),
   METRICS: Symbol('metrics'),
+
+  // Phase 7: Advanced Type Safety decorators
+  TYPED_CYPHER_QUERY: Symbol('typed-cypher-query'),
+  TYPE_VALIDATION: Symbol('type-validation'),
+  COMPILE_TIME_CHECK: Symbol('compile-time-check'),
+
+  // Phase 5: Security & Validation decorators
+  AUTHORIZE: Symbol('authorize'),
+  VALIDATE_INPUT: Symbol('validate-input'),
+  AUDIT_LOG: Symbol('audit-log'),
+  RATE_LIMIT: Symbol('rate-limit'),
+  ENCRYPT_SENSITIVE: Symbol('encrypt-sensitive'),
+  TENANT_ISOLATION: Symbol('tenant-isolation'),
+
+  // Decorator composition metadata
+  DECORATOR_COMPOSITION: Symbol('decorator-composition'),
 } as const;
 
 /**
@@ -240,5 +433,5 @@ export type DecoratorMetadataValue<
   : T extends 'RETRY'
   ? RetryOptions
   : T extends 'TRANSACTION'
-  ? EnhancedTransactionOptions
+  ? TransactionOptions
   : any;

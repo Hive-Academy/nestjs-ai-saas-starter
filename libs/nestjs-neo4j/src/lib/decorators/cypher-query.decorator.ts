@@ -29,7 +29,7 @@ export interface CypherQueryConfig<
 }
 
 /**
- * Enhanced @CypherQuery decorator for type-safe Cypher query execution
+ *  @CypherQuery decorator for type-safe Cypher query execution
  *
  * Features:
  * - Type safety with return type inference
@@ -95,7 +95,7 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
     // Store original method for potential chaining
     const originalMethod = descriptor.value;
 
-    // Replace method implementation with enhanced query executor
+    // Replace method implementation with  query executor
     descriptor.value = async function (this: any, ...args: any[]) {
       // Get the Neo4j service instance
       const neo4jService = this.getNeo4jService?.() || this.neo4jService;
@@ -114,10 +114,10 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
       }
 
       try {
-        // Execute query with enhanced service if available
+        // Execute query with  service if available
         let result;
-        if (typeof neo4jService.runEnhanced === 'function') {
-          result = await neo4jService.runEnhanced(
+        if (typeof neo4jService.run === 'function') {
+          result = await neo4jService.run(
             metadata.query,
             params,
             metadata.options
@@ -134,19 +134,19 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
         // Transform result based on return type configuration
         return transformResult(result, metadata.returnType);
       } catch (error) {
-        // Enhanced error handling
-        const enhancedError = new Error(
+        //  error handling
+        const returnedError = new Error(
           `Query execution failed in ${metadata.id}: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
-        enhancedError.stack = error instanceof Error ? error.stack : undefined;
-        (enhancedError as any).originalError = error;
-        (enhancedError as any).queryId = metadata.id;
-        (enhancedError as any).query = metadata.query;
-        (enhancedError as any).parameters = params;
+        returnedError.stack = error instanceof Error ? error.stack : undefined;
+        (returnedError as any).originalError = error;
+        (returnedError as any).queryId = metadata.id;
+        (returnedError as any).query = metadata.query;
+        (returnedError as any).parameters = params;
 
-        throw enhancedError;
+        throw returnedError;
       }
     };
 

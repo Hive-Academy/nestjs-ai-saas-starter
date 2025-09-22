@@ -26,7 +26,7 @@ export interface Neo4jRepositoryConfig {
 }
 
 /**
- * Enhanced @Neo4jRepository decorator for repository pattern implementation
+ *  @Neo4jRepository decorator for repository pattern implementation
  *
  * Features:
  * - Auto-generation of basic CRUD operations
@@ -93,7 +93,7 @@ export function Neo4jRepository(config: Neo4jRepositoryConfig): ClassDecorator {
     }
 
     // Enhance constructor to inject Neo4j service
-    const enhancedConstructor = class extends constructor {
+    const newConstructor = class extends constructor {
       protected neo4jService: any;
       protected entityLabel: string = label;
       protected defaultOptions: QueryExecutionOptions =
@@ -108,7 +108,7 @@ export function Neo4jRepository(config: Neo4jRepositoryConfig): ClassDecorator {
         if (!this.neo4jService) {
           throw new Error(
             `Neo4j service not found in ${constructor.name}. ` +
-              'Ensure Neo4jService or Neo4jEnhancedService is injected in the constructor.'
+              'Ensure Neo4jService or Neo4jService is injected in the constructor.'
           );
         }
       }
@@ -121,7 +121,7 @@ export function Neo4jRepository(config: Neo4jRepositoryConfig): ClassDecorator {
           (arg) =>
             arg &&
             (typeof arg.run === 'function' ||
-              typeof arg.runEnhanced === 'function')
+              typeof arg.run === 'function')
         );
       }
 
@@ -142,8 +142,8 @@ export function Neo4jRepository(config: Neo4jRepositoryConfig): ClassDecorator {
       ): Promise<T> {
         const mergedOptions = { ...this.defaultOptions, ...options };
 
-        if (typeof this.neo4jService.runEnhanced === 'function') {
-          const result = await this.neo4jService.runEnhanced(
+        if (typeof this.neo4jService.run === 'function') {
+          const result = await this.neo4jService.run(
             query,
             params,
             mergedOptions
@@ -161,11 +161,11 @@ export function Neo4jRepository(config: Neo4jRepositoryConfig): ClassDecorator {
     };
 
     // Preserve original class name and metadata
-    Object.defineProperty(enhancedConstructor, 'name', {
+    Object.defineProperty(newConstructor, 'name', {
       value: constructor.name,
     });
 
-    return enhancedConstructor as any;
+    return newConstructor as any;
   };
 }
 

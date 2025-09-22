@@ -77,7 +77,7 @@ export interface GraphPattern {
 }
 
 /**
- * Enhanced repository for graph-specific operations
+ *  repository for graph-specific operations
  *
  * This class extends BaseRepository with graph database specific functionality:
  * - Graph traversals and path finding

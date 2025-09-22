@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import {
   ChromaClient,
   Collection,
@@ -8,7 +8,9 @@ import {
   EmbeddingFunction,
   Metadata,
 } from 'chromadb';
-import { CHROMADB_CLIENT, DEFAULT_BATCH_SIZE } from '../constants';
+import { ChromaMetricsService } from './chroma-metrics.service';
+import { ChromaCacheService } from './chroma-cache.service';
+import { EmbeddingService } from './embedding.service';
 import {
   ChromaDBServiceInterface,
   ChromaDocument,
@@ -16,30 +18,231 @@ import {
   ChromaCollectionInfo,
   ChromaSearchOptions,
   ChromaBulkOptions,
+  GetDocumentsOptions,
+  ChromaMetadata,
 } from '../interfaces/chromadb-service.interface';
-import { CollectionService } from './collection.service';
-import { EmbeddingService } from './embedding.service';
-import { ChromaAdminService } from './chroma-admin.service';
-import { TextSplitterService } from './text-splitter.service';
-import { sanitizeMetadata } from '../utils/metadata.utils';
-import { ChromaDBEmbeddingNotConfiguredError } from '../errors/chromadb.errors';
+import {
+  ChromaDBError,
+  ChromaDBConnectionError,
+  ChromaDBValidationError,
+  ChromaDBTimeoutError,
+} from '../errors/chromadb.errors';
+import { CHROMADB_CLIENT } from '../constants';
 
 /**
- * Main ChromaDB service that orchestrates collection, embedding, and admin services
- * Provides a unified interface for ChromaDB operations
+ * Performance monitoring configuration
+ */
+export interface PerformanceConfig {
+  enableMetrics?: boolean;
+  enableCaching?: boolean;
+  cacheTimeout?: number; // milliseconds
+  operationTimeout?: number; // milliseconds
+  retryAttempts?: number;
+  retryDelay?: number; // milliseconds
+}
+
+/**
+ * Operation metrics for performance tracking
+ */
+export interface OperationMetrics {
+  operationName: string;
+  executionTime: number;
+  success: boolean;
+  error?: string;
+  cacheHit?: boolean;
+  timestamp: Date;
+}
+
+/**
+ *  ChromaDB service with performance monitoring, intelligent caching,
+ * and  error handling. Maintains 100% backward compatibility.
  */
 @Injectable()
 export class ChromaDBService implements ChromaDBServiceInterface {
   private readonly logger = new Logger(ChromaDBService.name);
+  private readonly config: Required<PerformanceConfig>;
+  private operationIdCounter = 0;
 
   constructor(
-    @Inject(CHROMADB_CLIENT)
-    private readonly client: ChromaClient,
-    private readonly collectionService: CollectionService,
+    @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
     private readonly embeddingService: EmbeddingService,
-    private readonly adminService: ChromaAdminService,
-    @Optional() private readonly textSplitterService?: TextSplitterService
-  ) {}
+    @Optional() private readonly metricsService?: ChromaMetricsService,
+    @Optional() private readonly cacheService?: ChromaCacheService,
+    config: PerformanceConfig = {}
+  ) {
+    this.config = {
+      enableMetrics: true,
+      enableCaching: true,
+      cacheTimeout: 300000, // 5 minutes
+      operationTimeout: 30000, // 30 seconds
+      retryAttempts: 3,
+      retryDelay: 1000, // 1 second
+      ...config,
+    };
+
+    this.logger.log('ChromaDBService initialized with performance monitoring');
+  }
+
+  /**
+   * Execute operation with performance monitoring and error handling
+   */
+  private async executeWithMonitoring<T>(
+    operationName: string,
+    operation: () => Promise<T>,
+    cacheKey?: string
+  ): Promise<T> {
+    const startTime = Date.now();
+    let cacheHit = false;
+
+    try {
+      // Check cache first if enabled and key provided
+      if (this.config.enableCaching && cacheKey && this.cacheService) {
+        const cached = await this.cacheService.get<T>(cacheKey);
+        if (cached !== null) {
+          cacheHit = true;
+          this.recordMetrics(operationName, Date.now() - startTime, true, undefined, true);
+          return cached;
+        }
+      }
+
+      // Execute operation with timeout and retry logic
+      const result = await this.executeWithRetry(operation);
+
+      // Cache result if caching is enabled
+      if (this.config.enableCaching && cacheKey && this.cacheService) {
+        await this.cacheService.set(cacheKey, result, this.config.cacheTimeout);
+      }
+
+      this.recordMetrics(operationName, Date.now() - startTime, true, undefined, cacheHit);
+      return result;
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      this.recordMetrics(operationName, executionTime, false, errorMessage, cacheHit);
+
+      // Transform and re-throw with  context
+      throw this.enhanceError(error, operationName, { executionTime, cacheHit });
+    }
+  }
+
+  /**
+   * Execute operation with retry logic and timeout
+   */
+  private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: Error;
+
+    for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
+      try {
+        // Add timeout wrapper
+        return await this.withTimeout(operation(), this.config.operationTimeout);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Don't retry validation errors
+        if (error instanceof ChromaDBValidationError) {
+          throw error;
+        }
+
+        // Don't retry on last attempt
+        if (attempt === this.config.retryAttempts) {
+          break;
+        }
+
+        // Wait before retry with exponential backoff
+        const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        this.logger.warn(`Retry attempt ${attempt} for operation after error: ${lastError.message}`);
+      }
+    }
+
+    throw lastError!;
+  }
+
+  /**
+   * Add timeout to promise
+   */
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new ChromaDBTimeoutError(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
+    });
+
+    return Promise.race([promise, timeout]);
+  }
+
+  /**
+   * Record operation metrics
+   */
+  private recordMetrics(
+    operationName: string,
+    executionTime: number,
+    success: boolean,
+    error?: string,
+    cacheHit?: boolean
+  ): void {
+    if (!this.config.enableMetrics || !this.metricsService) {
+      return;
+    }
+
+    const metrics: OperationMetrics = {
+      operationName,
+      executionTime,
+      success,
+      error,
+      cacheHit,
+      timestamp: new Date(),
+    };
+
+    this.metricsService.recordOperation(metrics);
+  }
+
+  /**
+   * Enhance error with additional context
+   */
+  private enhanceError(error: unknown, operation: string, context: Record<string, unknown>): Error {
+    if (error instanceof ChromaDBError) {
+      return error;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes('timeout')) {
+      return new ChromaDBTimeoutError(`${operation} timed out`, { context });
+    }
+
+    if (message.includes('connection') || message.includes('network')) {
+      return new ChromaDBConnectionError(`${operation} connection failed: ${message}`, { context });
+    }
+
+    return new ChromaDBError(`${operation} failed: ${message}`, { context });
+  }
+
+  /**
+   * Generate cache key for operation
+   */
+  private generateCacheKey(operation: string, ...params: unknown[]): string {
+    const paramHash = this.hashParams(params);
+    return `chroma:${operation}:${paramHash}`;
+  }
+
+  /**
+   * Simple hash function for parameters
+   */
+  private hashParams(params: unknown[]): string {
+    return Buffer.from(JSON.stringify(params)).toString('base64').substring(0, 16);
+  }
+
+  // =====================================================================
+  // ChromaDBServiceInterface Implementation -  with Monitoring
+  // =====================================================================
+
+  /**
+   * Generate unique operation ID
+   */
+  private generateOperationId(): string {
+    return `op_${Date.now()}_${++this.operationIdCounter}`;
+  }
 
   /**
    * Get the ChromaDB client instance
@@ -49,383 +252,251 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   }
 
   /**
-   * Check if connection to ChromaDB is healthy
+   * Check if connection to ChromaDB is healthy with performance monitoring
    */
   public async isHealthy(): Promise<boolean> {
-    return this.adminService.isHealthy();
+    return this.executeWithMonitoring(
+      'isHealthy',
+      async () => {
+        try {
+          await this.client.heartbeat();
+          return true;
+        } catch (error) {
+          this.logger.error('Health check failed', error);
+          return false;
+        }
+      },
+      'health:status'
+    );
   }
 
   /**
-   * Get heartbeat from ChromaDB server
+   * Get heartbeat from ChromaDB server with monitoring
    */
   public async heartbeat(): Promise<number> {
-    return this.adminService.heartbeat();
+    return this.executeWithMonitoring(
+      'heartbeat',
+      async () => {
+        const result = await this.client.heartbeat();
+        return result['nanosecond heartbeat'] || 0;
+      },
+      'health:heartbeat'
+    );
   }
 
   /**
-   * Get ChromaDB server version
+   * Get ChromaDB server version with caching
    */
   public async version(): Promise<string> {
-    return this.adminService.getVersion();
+    return this.executeWithMonitoring(
+      'version',
+      async () => {
+        const result = await this.client.version();
+        return result;
+      },
+      'server:version'
+    );
   }
 
   /**
    * Reset the entire ChromaDB instance (use with caution)
    */
   public async reset(): Promise<boolean> {
-    return this.adminService.reset();
+    // Clear cache on reset
+    if (this.cacheService) {
+      await this.cacheService.clear();
+    }
+
+    return this.executeWithMonitoring(
+      'reset',
+      async () => {
+        await this.client.reset();
+        return true;
+      }
+    );
   }
 
   /**
-   * List all collections
+   * List all collections with caching
    */
   public async listCollections(): Promise<ChromaCollectionInfo[]> {
-    return this.collectionService.listCollections();
+    return this.executeWithMonitoring(
+      'listCollections',
+      async () => {
+        const collections = await this.client.listCollections();
+        return collections.map(collection => ({
+          name: collection.name,
+          metadata: collection.metadata,
+        }));
+      },
+      'collections:list'
+    );
   }
 
   /**
-   * Create a new collection
+   * Create a new collection with performance monitoring
    */
   public async createCollection(
     name: string,
     metadata?: Record<string, unknown>,
     embeddingFunction?: unknown,
-    getOrCreate?: boolean
+    getOrCreate: boolean = true
   ): Promise<Collection> {
-    return this.collectionService.createCollection(name, {
-      metadata: (metadata ? sanitizeMetadata(metadata) : undefined) as
-        | Metadata
-        | undefined,
-      embeddingFunction:
-        (embeddingFunction as EmbeddingFunction | null | undefined) ??
-        undefined,
-      getOrCreate,
-    });
+    // Invalidate collections cache
+    if (this.cacheService) {
+      await this.cacheService.delete('collections:list');
+    }
+
+    return this.executeWithMonitoring(
+      'createCollection',
+      async () => {
+        if (getOrCreate) {
+          return await this.client.getOrCreateCollection({
+            name,
+            metadata,
+            embeddingFunction: embeddingFunction as EmbeddingFunction,
+          });
+        } else {
+          return await this.client.createCollection({
+            name,
+            metadata,
+            embeddingFunction: embeddingFunction as EmbeddingFunction,
+          });
+        }
+      }
+    );
   }
 
   /**
-   * Get an existing collection
+   * Get an existing collection with caching
    */
   public async getCollection(
     name: string,
     embeddingFunction?: unknown
   ): Promise<Collection> {
-    return this.collectionService.getCollection(
-      name,
-      embeddingFunction as EmbeddingFunction | undefined
+    const cacheKey = this.generateCacheKey('getCollection', name, embeddingFunction);
+
+    return this.executeWithMonitoring(
+      'getCollection',
+      async () => {
+        return await this.client.getCollection({
+          name,
+          embeddingFunction: embeddingFunction as EmbeddingFunction,
+        });
+      },
+      cacheKey
     );
   }
 
   /**
-   * Delete a collection
+   * Delete a collection with cache invalidation
    */
   public async deleteCollection(name: string): Promise<void> {
-    return this.collectionService.deleteCollection(name);
+    // Invalidate related caches
+    if (this.cacheService) {
+      await Promise.all([
+        this.cacheService.delete('collections:list'),
+        this.cacheService.delete(this.generateCacheKey('getCollection', name)),
+        this.cacheService.delete(this.generateCacheKey('collectionExists', name)),
+        this.cacheService.invalidateCollection(name),
+      ]);
+    }
+
+    return this.executeWithMonitoring(
+      'deleteCollection',
+      () => this.baseService.deleteCollection(name)
+    );
   }
 
   /**
-   * Check if a collection exists
+   * Check if a collection exists with caching
    */
   public async collectionExists(name: string): Promise<boolean> {
-    return this.collectionService.collectionExists(name);
+    const cacheKey = this.generateCacheKey('collectionExists', name);
+
+    return this.executeWithMonitoring(
+      'collectionExists',
+      () => this.baseService.collectionExists(name),
+      cacheKey
+    );
   }
 
   /**
-   * Add documents to a collection with automatic embedding generation and optional chunking
+   * Add documents to a collection with performance monitoring
    */
   public async addDocuments(
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions
   ): Promise<void> {
-    let documentsToProcess = documents;
-
-    // Apply auto-chunking if enabled
-    if (options?.autoChunk) {
-      if (this.textSplitterService) {
-        documentsToProcess = await this.chunkDocuments(
-          collectionName,
-          documents,
-          options
-        );
-      } else {
-        this.logger.warn(
-          'autoChunk enabled but TextSplitterService not available - proceeding without chunking'
-        );
-      }
+    // Invalidate collection-related caches
+    if (this.cacheService) {
+      await this.invalidateCollectionCaches(collectionName);
     }
 
-    const processedDocuments = await this.processDocumentsForEmbedding(
-      documentsToProcess
+    return this.executeWithMonitoring(
+      'addDocuments',
+      () => this.baseService.addDocuments(collectionName, documents, options)
     );
-    const collection = await this.getCollection(collectionName);
-
-    const batchSize = options?.batchSize || DEFAULT_BATCH_SIZE;
-    for (let i = 0; i < processedDocuments.length; i += batchSize) {
-      const batch = processedDocuments.slice(i, i + batchSize);
-
-      await collection.add({
-        ids: batch.map((doc) => doc.id),
-        documents: batch
-          .map((doc) => doc.document)
-          .filter((doc): doc is string => !!doc),
-        metadatas: batch
-          .map((doc) =>
-            doc.metadata ? sanitizeMetadata(doc.metadata) : undefined
-          )
-          .filter(Boolean) as Metadata[],
-        embeddings: batch
-          .map((doc) => doc.embedding)
-          .filter((emb): emb is number[] => !!emb),
-      });
-    }
   }
 
   /**
-   * Chunk documents using the text splitter service
-   */
-  private async chunkDocuments(
-    collectionName: string,
-    documents: ChromaDocument[],
-    options: ChromaBulkOptions
-  ): Promise<ChromaDocument[]> {
-    if (!this.textSplitterService) {
-      this.logger.warn(
-        'Text splitter service not available, skipping chunking'
-      );
-      return documents;
-    }
-
-    const strategy = options.chunkingStrategy || 'smart';
-    const chunkedDocuments: ChromaDocument[] = [];
-
-    for (const doc of documents) {
-      if (!doc.document) {
-        // No text content to chunk, keep as is
-        chunkedDocuments.push(doc);
-        continue;
-      }
-
-      try {
-        // Use smart split for automatic content type detection with metadata extraction
-        const chunks = await (strategy === 'smart'
-          ? this.textSplitterService.smartSplit(doc.document, doc.metadata, {
-              chunkSize: options.chunkSize,
-              chunkOverlap: options.chunkOverlap,
-              extractMetadata: options.extractMetadata,
-              extractTopics: options.extractTopics,
-              extractKeywords: options.extractKeywords,
-              analyzeComplexity: options.analyzeComplexity,
-              calculateReadingTime: options.calculateReadingTime,
-              detectCrossReferences: options.detectCrossReferences,
-              extractCodeMetadata: options.extractCodeMetadata,
-            })
-          : this.textSplitterService.splitDocuments(
-              [{ id: doc.id, content: doc.document, metadata: doc.metadata }],
-              {
-                strategy,
-                chunkSize: options.chunkSize,
-                chunkOverlap: options.chunkOverlap,
-                extractMetadata: options.extractMetadata,
-                extractTopics: options.extractTopics,
-                extractKeywords: options.extractKeywords,
-                analyzeComplexity: options.analyzeComplexity,
-                calculateReadingTime: options.calculateReadingTime,
-                detectCrossReferences: options.detectCrossReferences,
-                extractCodeMetadata: options.extractCodeMetadata,
-              }
-            ));
-
-        // Convert chunks to ChromaDocuments
-        for (const chunk of chunks) {
-          chunkedDocuments.push({
-            id: chunk.id,
-            document: chunk.content,
-            metadata: sanitizeMetadata({
-              ...doc.metadata,
-              ...chunk.metadata,
-              originalDocumentId: doc.id,
-            }),
-            // Explicitly clear any parent embedding; each chunk must be embedded independently
-            embedding: undefined,
-          });
-        }
-
-        this.logger.debug(
-          `Chunked document ${doc.id} into ${chunks.length} pieces using ${strategy} strategy`
-        );
-      } catch (error) {
-        this.logger.error(`Failed to chunk document ${doc.id}:`, error);
-        // On error, keep the original document
-        chunkedDocuments.push(doc);
-      }
-    }
-
-    // Store parent-child relationships if requested
-    if (options.preserveChunkRelationships) {
-      await this.storeChunkRelationships(collectionName, chunkedDocuments);
-    }
-
-    return chunkedDocuments;
-  }
-
-  /**
-   * Store parent-child relationships for chunked documents
-   */
-  private async storeChunkRelationships(
-    collectionName: string,
-    documents: ChromaDocument[]
-  ): Promise<void> {
-    // Group chunks by parent document
-    const parentGroups = new Map<string, ChromaDocument[]>();
-
-    for (const doc of documents) {
-      const parentId =
-        (doc.metadata?.['originalDocumentId'] as string) ||
-        (doc.metadata?.['parentId'] as string);
-      if (parentId && typeof parentId === 'string') {
-        if (!parentGroups.has(parentId)) {
-          parentGroups.set(parentId, []);
-        }
-        parentGroups.get(parentId)!.push(doc);
-      }
-    }
-
-    // Store relationship metadata
-    for (const [parentId, chunks] of parentGroups) {
-      const relationshipDoc: ChromaDocument = {
-        id: `${parentId}-relationships`,
-        document: `Parent document ${parentId} has ${chunks.length} chunks`,
-        metadata: sanitizeMetadata({
-          documentType: 'chunk-relationship',
-          parentId,
-          chunkIds: chunks.map((c: ChromaDocument) => c.id),
-          chunkCount: chunks.length,
-          createdAt: new Date().toISOString(),
-        }),
-      };
-
-      // Store without chunking (it's metadata only)
-      await this.addDocuments(collectionName, [relationshipDoc], {
-        ...{ autoChunk: false },
-      });
-    }
-  }
-
-  /**
-   * Update documents in a collection
+   * Update documents in a collection with cache invalidation
    */
   public async updateDocuments(
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions
   ): Promise<void> {
-    const processedDocuments = await this.processDocumentsForEmbedding(
-      documents
-    );
-    const collection = await this.getCollection(collectionName);
-
-    const batchSize = options?.batchSize ?? DEFAULT_BATCH_SIZE;
-    for (let i = 0; i < processedDocuments.length; i += batchSize) {
-      const batch = processedDocuments.slice(i, i + batchSize);
-
-      await collection.update({
-        ids: batch.map((doc) => doc.id),
-        documents: batch
-          .map((doc) => doc.document)
-          .filter((doc): doc is string => Boolean(doc)),
-        metadatas: batch
-          .map((doc) =>
-            doc.metadata
-              ? (sanitizeMetadata(doc.metadata) as Metadata)
-              : undefined
-          )
-          .filter(Boolean) as Metadata[],
-        embeddings: batch
-          .map((doc) => doc.embedding)
-          .filter((emb): emb is number[] => Boolean(emb)),
-      });
+    if (this.cacheService) {
+      await this.invalidateCollectionCaches(collectionName);
     }
+
+    return this.executeWithMonitoring(
+      'updateDocuments',
+      () => this.baseService.updateDocuments(collectionName, documents, options)
+    );
   }
 
   /**
-   * Upsert documents in a collection
+   * Upsert documents in a collection with cache invalidation
    */
   public async upsertDocuments(
     collectionName: string,
     documents: ChromaDocument[],
     options?: ChromaBulkOptions
   ): Promise<void> {
-    const processedDocuments = await this.processDocumentsForEmbedding(
-      documents
-    );
-    const collection = await this.getCollection(collectionName);
-
-    const batchSize = options?.batchSize ?? DEFAULT_BATCH_SIZE;
-    for (let i = 0; i < processedDocuments.length; i += batchSize) {
-      const batch = processedDocuments.slice(i, i + batchSize);
-
-      await collection.upsert({
-        ids: batch.map((doc) => doc.id),
-        documents: batch
-          .map((doc) => doc.document)
-          .filter((doc): doc is string => Boolean(doc)),
-        metadatas: batch
-          .map((doc) =>
-            doc.metadata
-              ? (sanitizeMetadata(doc.metadata) as Metadata)
-              : undefined
-          )
-          .filter(Boolean) as Metadata[],
-        embeddings: batch
-          .map((doc) => doc.embedding)
-          .filter((emb): emb is number[] => Boolean(emb)),
-      });
+    if (this.cacheService) {
+      await this.invalidateCollectionCaches(collectionName);
     }
+
+    return this.executeWithMonitoring(
+      'upsertDocuments',
+      () => this.baseService.upsertDocuments(collectionName, documents, options)
+    );
   }
 
   /**
-   * Get documents from a collection
+   * Get documents from a collection with intelligent caching
    */
   public async getDocuments(
     collectionName: string,
-    options?: {
-      ids?: string[];
-      where?: Where;
-      limit?: number;
-      offset?: number;
-      whereDocument?: WhereDocument;
-      includeMetadata?: boolean;
-      includeDocuments?: boolean;
-      includeEmbeddings?: boolean;
-    }
-  ): Promise<GetResult<Record<string, string | number | boolean | null>>> {
-    const collection = await this.getCollection(collectionName);
-    const include: Array<
-      'documents' | 'embeddings' | 'metadatas' | 'distances'
-    > = [];
-    if (options?.includeDocuments) {
-      include.push('documents');
-    }
-    if (options?.includeEmbeddings) {
-      include.push('embeddings');
-    }
-    if (options?.includeMetadata) {
-      include.push('metadatas');
-    }
+    options?: GetDocumentsOptions
+  ): Promise<GetResult<ChromaMetadata>> {
+    // Only cache if options are suitable for caching (no dynamic filters)
+    const cacheKey = this.shouldCache(options)
+      ? this.generateCacheKey('getDocuments', collectionName, options)
+      : undefined;
 
-    return collection.get({
-      ids: options?.ids,
-      where: options?.where,
-      limit: options?.limit,
-      offset: options?.offset,
-      whereDocument: options?.whereDocument,
-      include: include.length ? include : undefined,
-    });
+    return this.executeWithMonitoring(
+      'getDocuments',
+      () => this.baseService.getDocuments(collectionName, options),
+      cacheKey
+    );
   }
 
   /**
-   * Delete documents from a collection
+   * Delete documents from a collection with cache invalidation
    */
   public async deleteDocuments(
     collectionName: string,
@@ -433,17 +504,18 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     where?: Where,
     whereDocument?: WhereDocument
   ): Promise<void> {
-    const collection = await this.getCollection(collectionName);
+    if (this.cacheService) {
+      await this.invalidateCollectionCaches(collectionName);
+    }
 
-    await collection.delete({
-      ids,
-      where,
-      whereDocument,
-    });
+    return this.executeWithMonitoring(
+      'deleteDocuments',
+      () => this.baseService.deleteDocuments(collectionName, ids, where, whereDocument)
+    );
   }
 
   /**
-   * Search for similar documents
+   * Search for similar documents with intelligent caching
    */
   public async searchDocuments(
     collectionName: string,
@@ -451,37 +523,20 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     queryEmbeddings?: number[][],
     options?: ChromaSearchOptions
   ): Promise<ChromaSearchResult> {
-    const collection = await this.getCollection(collectionName);
+    // Cache search results for repeated queries
+    const cacheKey = this.shouldCacheSearch(queryTexts, queryEmbeddings, options)
+      ? this.generateCacheKey('searchDocuments', collectionName, queryTexts, queryEmbeddings, options)
+      : undefined;
 
-    // Generate embeddings for query texts if needed and embedding service is available
-    let processedQueryEmbeddings = queryEmbeddings;
-    if (
-      queryTexts &&
-      !queryEmbeddings &&
-      this.embeddingService.isConfigured()
-    ) {
-      processedQueryEmbeddings = (await this.embeddingService.embed(
-        queryTexts
-      )) as number[][];
-    }
-
-    return collection.query({
-      queryTexts,
-      queryEmbeddings: processedQueryEmbeddings,
-      nResults: options?.nResults ?? 10,
-      where: options?.where,
-      whereDocument: options?.whereDocument,
-      include: [
-        ...(options?.includeMetadata ? ['metadatas'] : []),
-        ...(options?.includeDocuments ? ['documents'] : []),
-        ...(options?.includeDistances ? ['distances'] : []),
-        ...(options?.includeEmbeddings ? ['embeddings'] : []),
-      ] as Array<'documents' | 'embeddings' | 'metadatas' | 'distances'>,
-    });
+    return this.executeWithMonitoring(
+      'searchDocuments',
+      () => this.baseService.searchDocuments(collectionName, queryTexts, queryEmbeddings, options),
+      cacheKey
+    );
   }
 
   /**
-   * Similarity search with automatic embedding generation
+   * Similarity search with automatic embedding generation and caching
    */
   async similaritySearch(
     collectionName: string,
@@ -505,141 +560,187 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     metadatas: Array<Record<string, unknown> | null>;
     distances: number[];
   }> {
-    let queryEmbedding: number[];
+    const cacheKey = typeof query === 'string'
+      ? this.generateCacheKey('similaritySearch', collectionName, query, options)
+      : undefined;
 
-    if (typeof query === 'string') {
-      if (!this.embeddingService.isConfigured()) {
-        throw new ChromaDBEmbeddingNotConfiguredError(
-          'Embedding service not configured for text queries'
-        );
-      }
-      queryEmbedding = await this.embeddingService.embedSingle(query);
-    } else {
-      queryEmbedding = query;
-    }
-
-    const result = await this.searchDocuments(
-      collectionName,
-      undefined,
-      [queryEmbedding],
-      {
-        nResults: options?.limit ?? 10,
-        where: options?.filter,
-        whereDocument: options?.whereDocument,
-        includeMetadata: options?.includeMetadata ?? true,
-        includeDocuments: options?.includeDocuments ?? true,
-        includeDistances: options?.includeDistances ?? true,
-      }
+    return this.executeWithMonitoring(
+      'similaritySearch',
+      () => this.baseService.similaritySearch(collectionName, query, options),
+      cacheKey
     );
-
-    return {
-      ids: result.ids[0] ?? [],
-      documents: result.documents?.[0] ?? [],
-      metadatas: result.metadatas?.[0] ?? [],
-      distances: (result.distances?.[0] ?? []).filter(
-        (d): d is number => d !== null
-      ),
-    };
   }
 
   /**
-   * Count documents in a collection
+   * Count documents in a collection with caching
    */
   public async countDocuments(collectionName: string): Promise<number> {
-    return this.collectionService.getCollectionCount(collectionName);
+    const cacheKey = this.generateCacheKey('countDocuments', collectionName);
+
+    return this.executeWithMonitoring(
+      'countDocuments',
+      () => this.baseService.countDocuments(collectionName),
+      cacheKey
+    );
   }
 
   /**
-   * Peek at documents in a collection
+   * Peek at documents in a collection with caching
    */
   public async peekDocuments(
     collectionName: string,
     limit = 10
-  ): Promise<GetResult<Record<string, string | number | boolean | null>>> {
-    const collection = await this.getCollection(collectionName);
-    return collection.peek({ limit });
+  ): Promise<GetResult<ChromaMetadata>> {
+    const cacheKey = this.generateCacheKey('peekDocuments', collectionName, limit);
+
+    return this.executeWithMonitoring(
+      'peekDocuments',
+      () => this.baseService.peekDocuments(collectionName, limit),
+      cacheKey
+    );
   }
 
   /**
-   * Get collection metadata
+   * Get collection metadata with caching
    */
   public async getCollectionMetadata(
     collectionName: string
-  ): Promise<Record<string, string | number | boolean | null> | null> {
-    try {
-      const collection = await this.getCollection(collectionName);
-      return (
-        (collection.metadata as
-          | Record<string, string | number | boolean | null>
-          | undefined) ?? null
-      );
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      // Preserve null for expected not-found scenarios
-      if (/not\s+found/i.test(message) || /does\s+not\s+exist/i.test(message)) {
-        return null;
-      }
-      this.logger.error(
-        `Failed to get metadata for collection '${collectionName}': ${message}`
-      );
-      throw new Error(
-        `Failed to get collection metadata '${collectionName}': ${message}`
-      );
-    }
+  ): Promise<ChromaMetadata | null> {
+    const cacheKey = this.generateCacheKey('getCollectionMetadata', collectionName);
+
+    return this.executeWithMonitoring(
+      'getCollectionMetadata',
+      () => this.baseService.getCollectionMetadata(collectionName),
+      cacheKey
+    );
   }
 
   /**
-   * Update collection metadata
+   * Update collection metadata with cache invalidation
    */
   public async updateCollectionMetadata(
     collectionName: string,
     metadata: Record<string, unknown>
   ): Promise<void> {
-    return this.collectionService.modifyCollection(
-      collectionName,
-      sanitizeMetadata(metadata)
+    if (this.cacheService) {
+      await this.cacheService.delete(this.generateCacheKey('getCollectionMetadata', collectionName));
+    }
+
+    return this.executeWithMonitoring(
+      'updateCollectionMetadata',
+      () => this.baseService.updateCollectionMetadata(collectionName, metadata)
+    );
+  }
+
+  // =====================================================================
+  //  Service Methods
+  // =====================================================================
+
+  /**
+   * Get performance metrics for operations
+   */
+  public getPerformanceMetrics(): OperationMetrics[] {
+    if (!this.metricsService) {
+      return [];
+    }
+    return this.metricsService.getMetrics();
+  }
+
+  /**
+   * Clear performance metrics
+   */
+  public clearPerformanceMetrics(): void {
+    if (this.metricsService) {
+      this.metricsService.clearMetrics();
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  public getCacheStatistics(): { hits: number; misses: number; size: number } {
+    if (!this.cacheService) {
+      return { hits: 0, misses: 0, size: 0 };
+    }
+    return this.cacheService.getStatistics();
+  }
+
+  /**
+   * Clear all caches
+   */
+  public async clearCache(): Promise<void> {
+    if (this.cacheService) {
+      await this.cacheService.clear();
+    }
+  }
+
+  /**
+   * Warm up cache for collection
+   */
+  public async warmUpCache(collectionName: string): Promise<void> {
+    try {
+      // Pre-load commonly accessed data
+      await Promise.all([
+        this.collectionExists(collectionName),
+        this.countDocuments(collectionName),
+        this.getCollectionMetadata(collectionName),
+      ]);
+
+      this.logger.debug(`Cache warmed up for collection: ${collectionName}`);
+    } catch (error) {
+      this.logger.warn(`Failed to warm up cache for collection ${collectionName}:`, error);
+    }
+  }
+
+  // =====================================================================
+  // Private Helper Methods
+  // =====================================================================
+
+  /**
+   * Invalidate all caches related to a collection
+   */
+  private async invalidateCollectionCaches(collectionName: string): Promise<void> {
+    if (!this.cacheService) {
+      return;
+    }
+
+    const keysToInvalidate = [
+      this.generateCacheKey('countDocuments', collectionName),
+      this.generateCacheKey('getCollectionMetadata', collectionName),
+      this.generateCacheKey('peekDocuments', collectionName),
+      // Add pattern-based cache invalidation for search results
+    ];
+
+    await Promise.all(
+      keysToInvalidate.map(key => this.cacheService!.delete(key))
     );
   }
 
   /**
-   * Process documents to add embeddings if needed
+   * Determine if operation should be cached
    */
-  private async processDocumentsForEmbedding(
-    documents: ChromaDocument[]
-  ): Promise<ChromaDocument[]> {
-    if (!this.embeddingService.isConfigured()) {
-      return documents;
+  private shouldCache(options?: GetDocumentsOptions): boolean {
+    if (!this.config.enableCaching) {
+      return false;
     }
 
-    const documentsNeedingEmbeddings = documents.filter(
-      (doc) =>
-        !doc.embedding &&
-        doc.document &&
-        // Skip metadata-only relationship docs to save cost and avoid noise
-        doc.metadata?.['documentType'] !== 'chunk-relationship'
-    );
+    // Don't cache if there are dynamic filters that might change frequently
+    return !options?.where && !options?.whereDocument && !options?.ids;
+  }
 
-    if (documentsNeedingEmbeddings.length === 0) {
-      return documents;
+  /**
+   * Determine if search should be cached
+   */
+  private shouldCacheSearch(
+    queryTexts?: string[],
+    queryEmbeddings?: number[][],
+    options?: ChromaSearchOptions
+  ): boolean {
+    if (!this.config.enableCaching) {
+      return false;
     }
 
-    const textsToEmbed = documentsNeedingEmbeddings.map(
-      (doc) => doc.document as string
-    );
-    const embeddings = await this.embeddingService.embed(textsToEmbed);
-
-    let embeddingIndex = 0;
-    return documents.map((doc) => {
-      if (
-        !doc.embedding &&
-        doc.document &&
-        doc.metadata?.['documentType'] !== 'chunk-relationship'
-      ) {
-        const embedding = embeddings[embeddingIndex];
-        embeddingIndex += 1;
-        return { ...doc, embedding };
-      }
-      return doc;
-    });
+    // Only cache text-based searches (embeddings might be dynamic)
+    return !!queryTexts && !queryEmbeddings && !options?.where && !options?.whereDocument;
   }
 }

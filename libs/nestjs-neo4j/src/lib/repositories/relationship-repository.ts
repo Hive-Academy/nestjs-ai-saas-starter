@@ -59,7 +59,7 @@ export interface BatchRelationshipOperation<TRel = any> {
 }
 
 /**
- * Enhanced repository for relationship management
+ *  repository for relationship management
  *
  * This class provides comprehensive relationship management functionality:
  * - CRUD operations for relationships

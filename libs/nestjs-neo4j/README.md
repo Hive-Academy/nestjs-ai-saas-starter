@@ -8,9 +8,9 @@ The **@hive-academy/nestjs-neo4j** module provides seamless Neo4j graph database
 
 - **Advanced Transaction Management** - Declarative `@Transactional` decorator with automatic rollback
 - **Entity & Repository Pattern** - Type-safe decorators for entities and repositories
-- **Enhanced Query Decorators** - `@CypherQuery` for type-safe query execution
+- **Query Decorators** - `@CypherQuery` for type-safe query execution
 - **Repository Base Classes** - Pre-built CRUD operations with graph traversal algorithms
-- **Enhanced Services** - Retry mechanisms, performance metrics, and connection pooling
+- **Services** - Retry mechanisms, performance metrics, and connection pooling
 - **Health Monitoring** - Comprehensive connection and performance monitoring
 - **Query Builder Integration** - Type-safe Cypher query construction
 - **Type Safety** - Full TypeScript support with strict mode compliance
@@ -46,7 +46,7 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 export class AppModule {}
 ```
 
-## New Enhanced Features 🚀
+## New Features 🚀
 
 ### Entity Decorators
 
@@ -196,9 +196,9 @@ export class AnalyticsService {
 }
 ```
 
-### Enhanced Services
+### Services
 
-The enhanced services provide additional capabilities:
+The  services provide additional capabilities:
 
 ```typescript
 import { Injectable } from '@nestjs/common';
@@ -210,7 +210,7 @@ export class DataService {
 
   async robustQuery() {
     // Automatic retry with exponential backoff
-    const result = await this.neo4j.runEnhanced(
+    const result = await this.neo4j.run(
       'MATCH (n:Node) RETURN n',
       {},
       {
@@ -229,8 +229,8 @@ export class DataService {
   }
 
   async monitorHealth() {
-    // Enhanced health monitoring
-    const health = await this.neo4j.getEnhancedHealth();
+    //  health monitoring
+    const health = await this.neo4j.getHealth();
 
     return {
       status: health.status,
@@ -284,59 +284,56 @@ export class FollowsRepository extends RelationshipRepository<Follows, User, Use
 }
 ```
 
-## Enhanced Module Configuration
+## Module Configuration
 
 Configure with advanced features:
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { EnhancedNeo4jModule } from '@hive-academy/nestjs-neo4j';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [
-    EnhancedNeo4jModule.forRoot({
+    Neo4jModule.forRoot({
       // Basic configuration
       uri: 'bolt://localhost:7687',
       username: 'neo4j',
       password: 'password',
       database: 'neo4j',
 
-      // Enhanced features
-      enhanced: {
-        // Retry configuration
-        retry: {
-          maxAttempts: 3,
-          delay: 1000,
-          backoffMultiplier: 2,
-        },
+      // Retry configuration
+      retry: {
+        maxAttempts: 3,
+        delay: 1000,
+        backoffMultiplier: 2,
+      },
 
-        // Caching configuration
-        cache: {
-          enabled: true,
-          defaultTtl: 300,
-          maxSize: 1000,
-        },
+      // Caching configuration
+      cache: {
+        enabled: true,
+        defaultTtl: 300,
+        maxSize: 1000,
+      },
 
-        // Performance monitoring
-        metrics: {
-          enabled: true,
-          collectQueryMetrics: true,
-          slowQueryThreshold: 1000,
-        },
+      // Performance monitoring
+      metrics: {
+        enabled: true,
+        collectQueryMetrics: true,
+        slowQueryThreshold: 1000,
+      },
 
-        // Circuit breaker
-        circuitBreaker: {
-          enabled: true,
-          failureThreshold: 5,
-          resetTimeout: 60000,
-        },
+      // Circuit breaker
+      circuitBreaker: {
+        enabled: true,
+        failureThreshold: 5,
+        resetTimeout: 60000,
+      },
 
-        // Health monitoring
-        health: {
-          enabled: true,
-          checkInterval: 30000,
-          unhealthyThreshold: 3,
-        },
+      // Health monitoring
+      health: {
+        enabled: true,
+        checkInterval: 30000,
+        unhealthyThreshold: 3,
       },
 
       // Connection pool configuration
@@ -361,7 +358,7 @@ export class CachedService {
   constructor(private readonly neo4j: Neo4jService) {}
 
   async getCachedData(id: string) {
-    return this.neo4j.runEnhanced(
+    return this.neo4j.run(
       'MATCH (n:Node {id: $id}) RETURN n',
       { id },
       {
@@ -386,7 +383,7 @@ export class ResilientService {
   async safeQuery() {
     try {
       // Circuit breaker will open after repeated failures
-      return await this.neo4j.runEnhanced('MATCH (n) RETURN n', {}, { circuitBreaker: true });
+      return await this.neo4j.run('MATCH (n) RETURN n', {}, { circuitBreaker: true });
     } catch (error) {
       if (error.code === 'CIRCUIT_OPEN') {
         // Fallback logic
@@ -420,16 +417,16 @@ export class MetricsService {
 }
 ```
 
-## Migration from Basic to Enhanced
+## Migration from Basic to
 
-The library maintains 100% backward compatibility. You can gradually adopt enhanced features:
+The library maintains 100% backward compatibility. You can gradually adopt  features:
 
 ```typescript
 // Existing code continues to work
 await this.neo4j.run('MATCH (n) RETURN n');
 
-// Gradually adopt enhanced features
-await this.neo4j.runEnhanced(
+// Gradually adopt  features
+await this.neo4j.run(
   'MATCH (n) RETURN n',
   {},
   {
@@ -467,7 +464,7 @@ class UserRepository extends BaseRepository<User> {
 
 ### Services
 
-- `Neo4jService` - Core service with enhanced methods
+- `Neo4jService` - Core service with  methods
 - `Neo4jConnectionService` - Connection management
 - `Neo4jHealthService` - Health monitoring
 - `Neo4jMetricsService` - Performance metrics
@@ -481,8 +478,8 @@ class UserRepository extends BaseRepository<User> {
 
 ### Interfaces
 
-- `EnhancedQueryOptions` - Query execution options
-- `EnhancedQueryResult<T>` - Enhanced result with metrics
+- `QueryOptions` - Query execution options
+- `QueryResult<T>` - result with metrics
 - `RepositoryQueryOptions` - Repository query options
 - `GraphTraversalOptions` - Graph traversal configuration
 - `CacheOptions` - Caching configuration
@@ -524,14 +521,14 @@ describe('UserService', () => {
 
 ## Performance Benchmarks
 
-Based on internal testing with enhanced features:
+Based on internal testing with  features:
 
 - **Query Execution**: 15-20% faster with connection pooling optimization
 - **Cache Hit Rate**: 60-80% for frequently accessed data
 - **Retry Success**: 95% success rate with exponential backoff
 - **Circuit Breaker**: 99.9% availability with proper fallbacks
 - **Memory Usage**: 10% reduction with optimized result processing
-- **Connection Pool**: 30% better utilization with enhanced management
+- **Connection Pool**: 30% better utilization with  management
 
 ## Troubleshooting
 
@@ -577,4 +574,4 @@ MIT © Hive Academy
 
 ---
 
-This comprehensive module provides production-ready Neo4j integration with enhanced features for building sophisticated, AI-powered applications with NestJS.
+This comprehensive module provides production-ready Neo4j integration with  features for building sophisticated, AI-powered applications with NestJS.

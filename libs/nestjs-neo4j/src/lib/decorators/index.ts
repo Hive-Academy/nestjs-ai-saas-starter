@@ -1,5 +1,5 @@
 /**
- * Enhanced Neo4j Decorators
+ *  Neo4j Decorators
  *
  * This module provides a comprehensive decorator ecosystem for Neo4j integration:
  *

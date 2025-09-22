@@ -1,15 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Driver, Session, session as neo4jSession } from 'neo4j-driver';
 import type {
+  QueryOptions,
   QueryResult,
-  EnhancedQueryOptions,
-  EnhancedQueryResult,
 } from '../interfaces/query-result.interface';
 import { Neo4jMetricsService } from './neo4j-metrics.service';
 
 /**
  * Neo4j Query Service
- * Handles enhanced query execution with retry, caching, and profiling
+ * Handles  query execution with retry, caching, and profiling
  */
 @Injectable()
 export class Neo4jQueryService {
@@ -18,14 +17,14 @@ export class Neo4jQueryService {
   constructor(private readonly metricsService: Neo4jMetricsService) {}
 
   /**
-   * Execute a query with enhanced options and monitoring
+   * Execute a query with  options and monitoring
    */
-  async runEnhanced<T = Record<string, unknown>>(
+  async run<T = Record<string, unknown>>(
     driver: Driver,
     cypher: string,
     params?: Record<string, unknown>,
-    options?: EnhancedQueryOptions
-  ): Promise<EnhancedQueryResult<T>> {
+    options?: QueryOptions
+  ): Promise<QueryResult<T>> {
     const startTime = Date.now();
     const queryId = this.metricsService.generateQueryId();
     const sessionStartTime = Date.now();
@@ -35,7 +34,7 @@ export class Neo4jQueryService {
 
     let session: Session;
     try {
-      session = this.createEnhancedSession(driver, options);
+      session = this.createSession(driver, options);
       const sessionCreationTime = Date.now() - sessionStartTime;
       this.metricsService.updateConnectionMetrics(sessionCreationTime);
     } catch (error) {
@@ -57,7 +56,7 @@ export class Neo4jQueryService {
       try {
         const planningStartTime = Date.now();
 
-        // Configure session with enhanced options
+        // Configure session with  options
         const result = await this.executeQueryWithProfiling(
           session,
           cypher,
@@ -68,8 +67,8 @@ export class Neo4jQueryService {
         const planningTime = Date.now() - planningStartTime;
         const executionTime = Date.now() - startTime;
 
-        // Build enhanced result
-        const enhancedResult: EnhancedQueryResult<T> = {
+        // Build  result
+        const returnedResult: QueryResult<T> = {
           records: result.records as T[],
           summary: result.summary,
           performance: {
@@ -96,12 +95,12 @@ export class Neo4jQueryService {
         if (options?.metrics?.enabled !== false) {
           this.metricsService.collectQueryMetrics(
             cypher,
-            enhancedResult as EnhancedQueryResult<Record<string, unknown>>,
+            returnedResult as QueryResult<Record<string, unknown>>,
             options
           );
         }
 
-        return enhancedResult;
+        return returnedResult;
       } catch (error) {
         retryCount++;
 
@@ -137,12 +136,9 @@ export class Neo4jQueryService {
   }
 
   /**
-   * Create an enhanced session with optimized configuration
+   * Create an  session with optimized configuration
    */
-  private createEnhancedSession(
-    driver: Driver,
-    options?: EnhancedQueryOptions
-  ): Session {
+  private createSession(driver: Driver, options?: QueryOptions): Session {
     return driver.session({
       database: options?.database,
       defaultAccessMode:
@@ -161,7 +157,7 @@ export class Neo4jQueryService {
     session: Session,
     cypher: string,
     params?: Record<string, unknown>,
-    options?: EnhancedQueryOptions
+    options?: QueryOptions
   ): Promise<QueryResult> {
     let queryToExecute = cypher;
 

@@ -74,7 +74,7 @@ export interface Neo4jRelationshipConfig {
 }
 
 /**
- * Enhanced @Neo4jEntity decorator for entity mapping
+ *  @Neo4jEntity decorator for entity mapping
  *
  * Features:
  * - Automatic property and relationship mapping
@@ -144,7 +144,7 @@ export function Neo4jEntity(config: Neo4jEntityConfig): ClassDecorator {
 }
 
 /**
- * Enhanced @Neo4jProperty decorator for property mapping
+ *  @Neo4jProperty decorator for property mapping
  *
  * Features:
  * - Automatic type inference
@@ -191,7 +191,7 @@ export function Neo4jProperty(
 }
 
 /**
- * Enhanced @Neo4jRelationship decorator for relationship mapping
+ *  @Neo4jRelationship decorator for relationship mapping
  *
  * Features:
  * - Type-safe relationship definitions

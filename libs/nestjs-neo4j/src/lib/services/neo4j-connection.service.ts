@@ -12,7 +12,7 @@ import type { Neo4jConnection } from '../interfaces/neo4j-connection.interface';
 import type { ConnectionPoolMetrics } from '../interfaces/query-result.interface';
 
 /**
- * Neo4j Connection Service with enhanced features:
+ * Neo4j Connection Service with  features:
  * - Advanced connection pool monitoring
  * - Connection health tracking
  * - Automatic recovery mechanisms
@@ -28,7 +28,7 @@ export class Neo4jConnectionService
   private isConnectionEstablished = false;
   private retryCount = 0;
 
-  // Enhanced features
+  //  features
   private connectionPool: ConnectionPoolMetrics;
   private healthCheckInterval?: NodeJS.Timeout;
   private lastHealthCheck?: Date;
@@ -43,7 +43,7 @@ export class Neo4jConnectionService
     @Inject(NEO4J_DRIVER) public readonly driver: Driver,
     @Inject(NEO4J_OPTIONS) private readonly options: Neo4jModuleOptions
   ) {
-    // Initialize enhanced connection pool monitoring
+    // Initialize  connection pool monitoring
     this.connectionPool = {
       totalConnections: 0,
       activeConnections: 0,
@@ -56,7 +56,7 @@ export class Neo4jConnectionService
     };
 
     this.logger.log(
-      'Neo4j Connection Service initialized with enhanced monitoring'
+      'Neo4j Connection Service initialized with  monitoring'
     );
   }
 
@@ -181,10 +181,10 @@ export class Neo4jConnectionService
     };
   }
 
-  // ==================== ENHANCED API (NEW FEATURES) ====================
+  // ====================  API (NEW FEATURES) ====================
 
   /**
-   * Enhanced connection with detailed metrics
+   *  connection with detailed metrics
    */
   async connectWithMetrics(): Promise<{
     success: boolean;
@@ -209,7 +209,7 @@ export class Neo4jConnectionService
       // Record successful connection
       this.recordConnectionAttempt(true, latency);
 
-      this.logger.log(`Enhanced connection established in ${latency}ms`);
+      this.logger.log(` connection established in ${latency}ms`);
 
       return {
         success: true,
@@ -226,7 +226,7 @@ export class Neo4jConnectionService
       this.recordConnectionAttempt(false, latency, errorMessage);
 
       this.logger.error(
-        `Enhanced connection failed after ${latency}ms: ${errorMessage}`
+        ` connection failed after ${latency}ms: ${errorMessage}`
       );
 
       return {
@@ -237,9 +237,9 @@ export class Neo4jConnectionService
   }
 
   /**
-   * Get enhanced connection status with detailed information
+   * Get  connection status with detailed information
    */
-  async getEnhancedConnectionStatus(): Promise<{
+  async getConnectionStatus(): Promise<{
     connected: boolean;
     serverInfo?: any;
     clusterInfo?: any;
@@ -432,9 +432,9 @@ export class Neo4jConnectionService
   }
 
   /**
-   * Get connection information with enhanced details
+   * Get connection information with  details
    */
-  getEnhancedConnectionInfo() {
+  getConnectionInfo() {
     return {
       ...this.getConnectionInfo(),
       poolMetrics: this.connectionPool,

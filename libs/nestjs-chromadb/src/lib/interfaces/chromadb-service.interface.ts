@@ -131,7 +131,7 @@ export interface ChromaBulkOptions {
   chunkSize?: number;
   chunkOverlap?: number;
   preserveChunkRelationships?: boolean;
-  // Enhanced metadata extraction options
+  //  metadata extraction options
   extractMetadata?: boolean;
   extractTopics?: boolean;
   extractKeywords?: boolean;

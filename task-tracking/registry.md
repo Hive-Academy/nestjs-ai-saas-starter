@@ -11,8 +11,8 @@
 
 ## Registry Statistics
 
-- **Total Tasks**: 4
-- **Active**: 1
+- **Total Tasks**: 5
+- **Active**: 2
 - **Pending**: 1
 - **Complete**: 2
 
@@ -32,4 +32,5 @@
 - **P3-Low**: Nice to have, when time allows
 
 **Format**: `TASK_YYYY_NNN` (e.g., TASK_2025_001, TASK_2025_002)
-| TASK_2025_005 | Neo4j Library Enhancement - AI/LangGraph Specializations (Phase 6 → 5 → 7) | 🔄 Active | Feature | P0-Critical | XL | User Request | 2025-09-22 |
+| TASK_2025_005 | Neo4j Library Enhancement - AI/LangGraph Specializations (Phase 6 → 5 → 7) | 🔄 Active (Development) | Feature | P0-Critical | XL | User Request | 2025-09-22 |
+| TASK_2025_006 | ChromaDB Library Enhancement - Decorator Ecosystem & Type Safety (Phase 1-3) | 🔄 Active (Implementation) | Feature | P0-Critical | XL | User Request | 2025-09-22 |

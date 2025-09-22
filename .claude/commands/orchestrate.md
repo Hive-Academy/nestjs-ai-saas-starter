@@ -56,11 +56,24 @@ echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
 git branch --show-current
 git status --short
 
-# Clean git state (commit any pending work)
+# Clean git state (commit AND PUSH any pending work)
 if ! git diff --quiet; then
     echo "Committing pending work before new task..."
     git add .
     git commit -m "chore: checkpoint before starting new task"
+    
+    # CRITICAL: Push to remote to prevent local tangled commits
+    echo "Pushing pending work to remote..."
+    git push origin $(git branch --show-current)
+    echo "✅ Pending work safely pushed to remote"
+fi
+
+# Also check for unpushed commits
+UNPUSHED=$(git log @{u}.. --oneline 2>/dev/null | wc -l)
+if [ "$UNPUSHED" -gt 0 ]; then
+    echo "⚠️ Found $UNPUSHED unpushed commits, pushing to remote..."
+    git push origin $(git branch --show-current)
+    echo "✅ All commits pushed to remote"
 fi
 
 # Generate predictable sequential TASK_ID with format: TASK_YYYY_NNN
@@ -115,7 +128,40 @@ git push -u origin "$BRANCH_NAME"
 
 # Create task folder structure
 mkdir -p "task-tracking/$TASK_ID"
-echo "User Request: $USER_REQUEST" > "task-tracking/$TASK_ID/context.md"
+
+# Create comprehensive context file with user intent AND conversation summary
+cat > "task-tracking/$TASK_ID/context.md" << EOF
+# Task Context for $TASK_ID
+
+## User Intent
+$USER_REQUEST
+
+## Conversation Summary
+[ORCHESTRATOR NOTE: This section MUST be populated with actual conversation details when running /orchestrate]
+- Key decisions made in the conversation
+- Technical constraints discussed
+- Specific requirements mentioned
+- Any clarifications or scope adjustments
+- Referenced files or components
+- Previous attempts or approaches discussed
+- User preferences and coding style requirements
+- Any warnings or important context from the user
+
+## Technical Context
+- Branch: $BRANCH_NAME
+- Created: $CREATED_TIME
+- Task Type: $TASK_TYPE
+- Priority: $TASK_PRIORITY
+- Effort Estimate: $TASK_EFFORT
+
+## Important Notes
+- Any warnings or critical information from the conversation
+- Dependencies or prerequisites discussed
+- Expected outcomes or success criteria
+
+---
+*This context file provides agents with both the user's original request and valuable conversation history to ensure accurate implementation.*
+EOF
 
 # Commit task setup
 git add .
@@ -146,6 +192,7 @@ You are the project-manager for $TASK_ID in ORCHESTRATION mode.
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - Registry File: task-tracking/registry.md
 - Task Folder: task-tracking/$TASK_ID/
 
@@ -228,6 +275,7 @@ You are the researcher-expert for $TASK_ID in ORCHESTRATION mode.
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - Requirements: task-tracking/$TASK_ID/task-description.md
 
 ## REGISTRY MANAGEMENT
@@ -297,6 +345,7 @@ You are the software-architect for $TASK_ID in ORCHESTRATION mode.
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - Requirements: task-tracking/$TASK_ID/task-description.md
 - Research: task-tracking/$TASK_ID/research-report.md (if exists)
 
@@ -365,6 +414,7 @@ You are the [backend-developer|frontend-developer] for $TASK_ID in ORCHESTRATION
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - Implementation Plan: task-tracking/$TASK_ID/implementation-plan.md
 - Requirements: task-tracking/$TASK_ID/task-description.md
 
@@ -434,6 +484,7 @@ You are the senior-tester for $TASK_ID in ORCHESTRATION mode.
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - Implementation Plan: task-tracking/$TASK_ID/implementation-plan.md
 - Progress Report: task-tracking/$TASK_ID/progress.md
 
@@ -499,6 +550,7 @@ You are the code-reviewer for $TASK_ID in ORCHESTRATION mode.
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - Requirements: task-tracking/$TASK_ID/task-description.md
 - Implementation Plan: task-tracking/$TASK_ID/implementation-plan.md
 - Test Report: task-tracking/$TASK_ID/test-report.md
@@ -606,6 +658,7 @@ You are the modernization-detector for $TASK_ID in ORCHESTRATION mode.
 
 - Task ID: $TASK_ID
 - User Request: "$USER_REQUEST"
+- Full Context: task-tracking/$TASK_ID/context.md (includes conversation summary)
 - All task deliverables in: task-tracking/$TASK_ID/
 
 ## REGISTRY MANAGEMENT

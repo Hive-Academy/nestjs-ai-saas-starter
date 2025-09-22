@@ -3,7 +3,7 @@ import { Driver } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
 import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
 import type {
-  EnhancedHealthIndicator,
+  HealthIndicator,
   ComprehensiveMetrics,
   ConnectionPoolMetrics,
 } from '../interfaces/query-result.interface';
@@ -25,7 +25,7 @@ export interface Neo4jHealthIndicator {
 }
 
 /**
- * Neo4j Health Service with enhanced features:
+ * Neo4j Health Service with  features:
  * - Comprehensive database metrics
  * - Performance monitoring
  * - Cluster health monitoring
@@ -37,7 +37,7 @@ export interface Neo4jHealthIndicator {
 export class Neo4jHealthService {
   private readonly logger = new Logger(Neo4jHealthService.name);
 
-  // Enhanced features
+  //  features
   private healthHistory: Array<{
     timestamp: Date;
     status: 'up' | 'down' | 'degraded';
@@ -56,7 +56,7 @@ export class Neo4jHealthService {
     @Inject(NEO4J_OPTIONS) private readonly options: Neo4jModuleOptions
   ) {
     this.logger.log(
-      'Neo4j Health Service initialized with enhanced monitoring'
+      'Neo4j Health Service initialized with  monitoring'
     );
   }
 
@@ -159,12 +159,12 @@ export class Neo4jHealthService {
     }
   }
 
-  // ==================== ENHANCED API (NEW FEATURES) ====================
+  // ====================  API (NEW FEATURES) ====================
 
   /**
    * Comprehensive health check with detailed diagnostics
    */
-  async checkEnhancedHealth(): Promise<EnhancedHealthIndicator> {
+  async checkHealth(): Promise<HealthIndicator> {
     const startTime = Date.now();
 
     try {
@@ -183,10 +183,10 @@ export class Neo4jHealthService {
       const responseTime = Date.now() - startTime;
       const status = this.determineHealthStatus(responseTime, poolMetrics);
 
-      const healthIndicator: EnhancedHealthIndicator = {
-        name: 'neo4j-enhanced',
+      const healthIndicator: HealthIndicator = {
+        name: 'neo4j-',
         status,
-        message: `Neo4j Enhanced is ${status}`,
+        message: `Neo4j  is ${status}`,
         details: {
           database: databaseInfo.name,
           version: databaseInfo.version,
@@ -210,10 +210,10 @@ export class Neo4jHealthService {
       // Record error
       this.recordError(errorMessage, undefined, this.categorizeError(error));
 
-      const healthIndicator: EnhancedHealthIndicator = {
-        name: 'neo4j-enhanced',
+      const healthIndicator: HealthIndicator = {
+        name: 'neo4j-',
         status: 'down',
-        message: `Neo4j Enhanced health check failed: ${errorMessage}`,
+        message: `Neo4j  health check failed: ${errorMessage}`,
         details: {
           database: this.options.database,
           responseTime,
@@ -452,7 +452,7 @@ export class Neo4jHealthService {
    * Get connection pool metrics
    */
   private async getConnectionPoolMetrics(): Promise<ConnectionPoolMetrics> {
-    // This would typically be integrated with the enhanced connection service
+    // This would typically be integrated with the  connection service
     // For now, return basic metrics
     return {
       totalConnections: 10,
@@ -620,7 +620,7 @@ export class Neo4jHealthService {
   /**
    * Record health check result
    */
-  private recordHealthCheck(healthIndicator: EnhancedHealthIndicator): void {
+  private recordHealthCheck(healthIndicator: HealthIndicator): void {
     this.healthHistory.push({
       timestamp: new Date(),
       status: healthIndicator.status,

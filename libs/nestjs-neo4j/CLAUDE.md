@@ -8,13 +8,13 @@ The **@hive-academy/nestjs-neo4j** module provides seamless Neo4j graph database
 
 - **Advanced Transaction Management** - Declarative `@Transactional` decorator with automatic rollback
 - **Entity & Repository Pattern** - Type-safe decorators for entities and repositories
-- **Enhanced Query Decorators** - `@CypherQuery` for type-safe query execution
+- **Query Decorators** - `@CypherQuery` for type-safe query execution
 - **Repository Base Classes** - Pre-built CRUD operations with graph traversal algorithms
-- **Enhanced Services** - Retry mechanisms, performance metrics, and connection pooling
+- **Services** - Retry mechanisms, performance metrics, and connection pooling
 - **Multiple Session Modes** - Read, write, and transaction-aware operations
 - **Query Builder Integration** - Type-safe Cypher query construction
 - **Health Monitoring** - Comprehensive connection and performance monitoring
-- **Enhanced Error Handling** - Detailed error boundaries with recovery strategies
+- **Error Handling** - Detailed error boundaries with recovery strategies
 - **Type Safety** - Full TypeScript support with strict mode compliance
 - **Production Ready** - Circuit breakers, caching, and error recovery
 
@@ -48,7 +48,7 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 export class AppModule {}
 ```
 
-## New Enhanced Features (Phase 1) 🚀
+## New Features (Phase 1) 🚀
 
 ### Entity & Repository Decorators
 
@@ -137,13 +137,13 @@ export class SocialGraphRepository extends GraphRepository<User> {
 }
 ```
 
-### Enhanced Services
+### Services
 
-All services now include enhanced capabilities:
+All services now include  capabilities:
 
 ```typescript
-// Enhanced query execution with retry and caching
-const result = await this.neo4j.runEnhanced(
+//  query execution with retry and caching
+const result = await this.neo4j.run(
   'MATCH (n:Node) RETURN n',
   {},
   {
@@ -500,49 +500,46 @@ export class GraphService {
 }
 ```
 
-## Enhanced Module Configuration
+## Module Configuration
 
-Configure the module with enhanced features:
+Configure the module with  features:
 
 ```typescript
-import { EnhancedNeo4jModule } from '@hive-academy/nestjs-neo4j';
+import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [
-    EnhancedNeo4jModule.forRoot({
+    Neo4jModule.forRoot({
       // Basic configuration
       uri: 'bolt://localhost:7687',
       username: 'neo4j',
       password: 'password',
       database: 'neo4j',
 
-      // Enhanced features
-      enhanced: {
-        retry: {
-          maxAttempts: 3,
-          delay: 1000,
-          backoffMultiplier: 2,
-        },
-        cache: {
-          enabled: true,
-          defaultTtl: 300,
-          maxSize: 1000,
-        },
-        metrics: {
-          enabled: true,
-          collectQueryMetrics: true,
-          slowQueryThreshold: 1000,
-        },
-        circuitBreaker: {
-          enabled: true,
-          failureThreshold: 5,
-          resetTimeout: 60000,
-        },
-        health: {
-          enabled: true,
-          checkInterval: 30000,
-          unhealthyThreshold: 3,
-        },
+      retry: {
+        maxAttempts: 3,
+        delay: 1000,
+        backoffMultiplier: 2,
+      },
+      cache: {
+        enabled: true,
+        defaultTtl: 300,
+        maxSize: 1000,
+      },
+      metrics: {
+        enabled: true,
+        collectQueryMetrics: true,
+        slowQueryThreshold: 1000,
+      },
+      circuitBreaker: {
+        enabled: true,
+        failureThreshold: 5,
+        resetTimeout: 60000,
+      },
+      health: {
+        enabled: true,
+        checkInterval: 30000,
+        unhealthyThreshold: 3,
       },
     }),
   ],
@@ -780,19 +777,19 @@ async getLargeDataset(offset: number, limit: number): Promise<any[]> {
 - `GraphRepository<T>` - Graph algorithms, shortest path, centrality, community detection
 - `RelationshipRepository<TRel, TSource, TTarget>` - Relationship CRUD, bidirectional queries
 
-### Enhanced Service Methods
+### Service Methods
 
-- `runEnhanced()` - Query execution with retry, caching, and metrics
-- `readEnhanced()` - Enhanced read operations
-- `writeEnhanced()` - Enhanced write operations
-- `verifyEnhancedConnectivity()` - Advanced health checking
+- `run()` - Query execution with retry, caching, and metrics
+- `read()` - read operations
+- `write()` - write operations
+- `verifyConnectivity()` - Advanced health checking
 - `getMetrics()` - Performance metrics collection
 - `clearCache()` - Cache management
 
 ### New Interfaces
 
-- `EnhancedQueryOptions` - Options for enhanced queries
-- `EnhancedQueryResult<T>` - Results with performance metadata
+- `QueryOptions` - Options for  queries
+- `QueryResult<T>` - Results with performance metadata
 - `RepositoryQueryOptions` - Repository query configuration
 - `GraphTraversalOptions` - Graph traversal settings
 - `RelationshipQueryOptions` - Relationship query configuration
@@ -802,14 +799,14 @@ async getLargeDataset(offset: number, limit: number): Promise<any[]> {
 
 ## Migration Guide
 
-The library maintains 100% backward compatibility. After your refactoring to remove the 'Enhanced' suffix:
+The library maintains 100% backward compatibility. After your refactoring to remove the '' suffix:
 
 ```typescript
 // Old code continues to work
 await this.neo4j.run('MATCH (n) RETURN n');
 
-// New enhanced features available on same service
-await this.neo4j.runEnhanced(
+// New  features available on same service
+await this.neo4j.run(
   'MATCH (n) RETURN n',
   {},
   {
@@ -840,4 +837,4 @@ class UserRepository extends BaseRepository<User> {
 - **Memory Usage**: 10% reduction with optimized processing
 - **Connection Pool**: 30% better utilization
 
-This comprehensive module provides production-ready Neo4j integration with advanced transaction management, entity/repository patterns, enhanced services with retry/caching/metrics, health monitoring, and sophisticated graph operations for building intelligent AI-powered applications.
+This comprehensive module provides production-ready Neo4j integration with advanced transaction management, entity/repository patterns,  services with retry/caching/metrics, health monitoring, and sophisticated graph operations for building intelligent AI-powered applications.

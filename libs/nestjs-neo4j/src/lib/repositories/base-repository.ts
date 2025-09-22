@@ -1,13 +1,13 @@
 import { Logger } from '@nestjs/common';
 import type {
-  EnhancedQueryOptions,
-  EnhancedQueryResult,
+  QueryOptions,
+  QueryResult,
 } from '../interfaces/query-result.interface';
 
 /**
  * Query options for repository operations
  */
-export interface RepositoryQueryOptions extends EnhancedQueryOptions {
+export interface RepositoryQueryOptions extends QueryOptions {
   /** Include soft-deleted records */
   includeSoftDeleted?: boolean;
   /** Populate relationships */
@@ -426,10 +426,10 @@ export abstract class BaseRepository<T = any> {
     try {
       let result: any;
 
-      if (typeof this.neo4jService.runEnhanced === 'function') {
-        const enhancedResult: EnhancedQueryResult =
-          await this.neo4jService.runEnhanced(query, params, mergedOptions);
-        result = enhancedResult.records;
+      if (typeof this.neo4jService.run === 'function') {
+        const returnedResult: QueryResult =
+          await this.neo4jService.run(query, params, mergedOptions);
+        result = returnedResult.records;
       } else {
         const standardResult = await this.neo4jService.run(
           query,

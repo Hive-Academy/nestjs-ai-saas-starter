@@ -21,7 +21,7 @@ export interface TextSplitterOptions {
   encodingName?: string;
   allowedSpecial?: 'all' | Array<string>;
   disallowedSpecial?: 'all' | Array<string>;
-  // Enhanced metadata extraction options
+  //  metadata extraction options
   extractMetadata?: boolean;
   extractTopics?: boolean;
   extractKeywords?: boolean;
@@ -120,7 +120,7 @@ export class TextSplitterService {
         // Split the document
         const chunks = await splitter.splitDocuments([langchainDoc]);
 
-        // Convert to our chunked document format with enhanced metadata
+        // Convert to our chunked document format with  metadata
         const chunkedDocs = await Promise.all(chunks.map(async (chunk, index) => {
           const baseMetadata = {
             ...chunk.metadata,

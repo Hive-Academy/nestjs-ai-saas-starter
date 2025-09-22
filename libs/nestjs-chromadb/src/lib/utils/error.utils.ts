@@ -96,7 +96,7 @@ export function hasMessage(error: unknown): error is { message: string } {
 }
 
 /**
- * Enhanced error handling for ChromaDB operations
+ *  error handling for ChromaDB operations
  */
 export class ChromaDBErrorHandler {
   /**

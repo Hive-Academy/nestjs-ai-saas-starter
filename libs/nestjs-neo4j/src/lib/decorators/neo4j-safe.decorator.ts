@@ -102,7 +102,7 @@ export function Neo4jSafe(options?: Neo4jSafeOptions): MethodDecorator {
         // Transform result back if it contains Neo4j data
         return transformResultFromNeo4j(result);
       } catch (error) {
-        // Enhanced error context for Neo4j operations
+        //  error context for Neo4j operations
         const errorContext = {
           method: String(propertyKey),
           args: args.map((arg) => (typeof arg === 'object' ? '[Object]' : arg)),

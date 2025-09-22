@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import type {
   QueryMetrics,
   ConnectionPoolMetrics,
-  EnhancedQueryResult,
-  EnhancedQueryOptions,
+  QueryResult,
+  QueryOptions,
 } from '../interfaces/query-result.interface';
 
 /**
@@ -117,8 +117,8 @@ export class Neo4jMetricsService {
    */
   collectQueryMetrics(
     cypher: string,
-    result: EnhancedQueryResult,
-    options?: EnhancedQueryOptions
+    result: QueryResult,
+    options?: QueryOptions
   ): void {
     const queryPattern = this.extractQueryPattern(cypher);
     const metrics: QueryMetrics = {

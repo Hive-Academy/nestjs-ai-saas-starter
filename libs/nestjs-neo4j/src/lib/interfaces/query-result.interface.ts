@@ -36,7 +36,7 @@ export interface QueryNotification {
   };
 }
 
-export interface QueryResult<T = Record<string, unknown>> {
+export interface BaseQueryResult<T = Record<string, unknown>> {
   records: T[];
   summary?: {
     query: {
@@ -88,12 +88,12 @@ export interface BulkResult {
   totalOperations: number;
 }
 
-// ==================== ENHANCED INTERFACES ====================
+// ====================  INTERFACES ====================
 
 /**
- * Enhanced query options for improved functionality
+ *  query options for improved functionality
  */
-export interface EnhancedQueryOptions {
+export interface QueryOptions {
   /** Database to execute query against */
   database?: string;
   /** Default access mode for the session */
@@ -128,10 +128,10 @@ export interface EnhancedQueryOptions {
 }
 
 /**
- * Enhanced query result with additional metadata
+ *  query result with additional metadata
  */
-export interface EnhancedQueryResult<T = Record<string, unknown>>
-  extends QueryResult<T> {
+export interface QueryResult<T = Record<string, unknown>>
+  extends BaseQueryResult<T> {
   /** Performance metrics */
   performance?: {
     executionTime: number;
@@ -187,9 +187,9 @@ export interface ConnectionPoolMetrics {
 }
 
 /**
- * Enhanced health check result
+ *  health check result
  */
-export interface EnhancedHealthIndicator {
+export interface HealthIndicator {
   name: string;
   status: 'up' | 'down' | 'degraded';
   message?: string;

@@ -2,12 +2,21 @@
 export * from './lib/nestjs-chromadb.module';
 
 // Services
-export * from './lib/services/chromadb.service';
+export type {
+  PerformanceConfig,
+  OperationMetrics as ChromaDBOperationMetrics,
+} from './lib/services/chromadb.service';
+export { ChromaDBService } from './lib/services/chromadb.service';
 export * from './lib/services/collection.service';
 export * from './lib/services/embedding.service';
 export * from './lib/services/chroma-admin.service';
 export * from './lib/services/text-splitter.service';
 export * from './lib/services/metadata-extractor.service';
+
+//  Services
+export type { AggregatedMetrics } from './lib/services/chroma-metrics.service';
+export { ChromaMetricsService } from './lib/services/chroma-metrics.service';
+export { ChromaCacheService } from './lib/services/chroma-cache.service';
 
 // Interfaces
 export type * from './lib/interfaces/chromadb-module-options.interface';
@@ -15,7 +24,17 @@ export type * from './lib/interfaces/chromadb-service.interface';
 export type * from './lib/interfaces/embedding-function.interface';
 export type * from './lib/interfaces/embedding-service.interface';
 
-// Decorators
+// Type Safety Foundation
+export type {
+  CollectionConfig as CollectionNamesConfig,
+  CollectionRegistry,
+} from './lib/types/collection-names.type';
+export * from './lib/types/document-types.interface';
+
+// Decorators - Core Ecosystem
+export * from './lib/decorators';
+
+// Legacy Decorators (backward compatibility)
 export * from './lib/decorators/inject-chromadb.decorator';
 export * from './lib/decorators/inject-collection.decorator';
 export * from './lib/decorators/embed.decorator';
