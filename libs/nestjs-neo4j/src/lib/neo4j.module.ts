@@ -7,6 +7,8 @@ import {
   Neo4jModuleOptionsFactory,
 } from './interfaces/neo4j-module-options.interface';
 import { Neo4jService } from './services/neo4j.service';
+import { Neo4jQueryService } from './services/neo4j-query.service';
+import { Neo4jMetricsService } from './services/neo4j-metrics.service';
 import { Neo4jConnectionService } from './services/neo4j-connection.service';
 import { Neo4jHealthService } from './services/neo4j-health.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';
@@ -45,6 +47,8 @@ export class Neo4jModule {
     const providers = [
       optionsProvider,
       driverProvider,
+      Neo4jMetricsService,
+      Neo4jQueryService,
       Neo4jService,
       Neo4jConnectionService,
       Neo4jHealthService,
@@ -55,6 +59,8 @@ export class Neo4jModule {
       providers,
       exports: [
         Neo4jService,
+        Neo4jQueryService,
+        Neo4jMetricsService,
         Neo4jConnectionService,
         Neo4jHealthService,
         NEO4J_DRIVER,
@@ -85,6 +91,8 @@ export class Neo4jModule {
         },
         inject: [NEO4J_OPTIONS],
       },
+      Neo4jMetricsService,
+      Neo4jQueryService,
       Neo4jService,
       Neo4jConnectionService,
       Neo4jHealthService,
@@ -96,6 +104,8 @@ export class Neo4jModule {
       providers,
       exports: [
         Neo4jService,
+        Neo4jQueryService,
+        Neo4jMetricsService,
         Neo4jConnectionService,
         Neo4jHealthService,
         NEO4J_DRIVER,

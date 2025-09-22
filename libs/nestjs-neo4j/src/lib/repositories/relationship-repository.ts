@@ -1,0 +1,645 @@
+import { BaseRepository, type RepositoryQueryOptions } from './base-repository';
+
+/**
+ * Relationship query options
+ */
+export interface RelationshipQueryOptions extends RepositoryQueryOptions {
+  /** Include source node in results */
+  includeSource?: boolean;
+  /** Include target node in results */
+  includeTarget?: boolean;
+  /** Include relationship properties */
+  includeProperties?: boolean;
+}
+
+/**
+ * Relationship creation data
+ */
+export interface CreateRelationshipData<TRel = any> {
+  /** Source node ID */
+  sourceId: string;
+  /** Target node ID */
+  targetId: string;
+  /** Relationship properties */
+  properties?: Partial<TRel>;
+  /** Source node label (if different from default) */
+  sourceLabel?: string;
+  /** Target node label (if different from default) */
+  targetLabel?: string;
+}
+
+/**
+ * Relationship result with optional node data
+ */
+export interface RelationshipResult<TRel = any, TSource = any, TTarget = any> {
+  /** Relationship data */
+  relationship: TRel;
+  /** Source node (if included) */
+  source?: TSource;
+  /** Target node (if included) */
+  target?: TTarget;
+  /** Relationship ID */
+  id?: string;
+}
+
+/**
+ * Batch relationship operation
+ */
+export interface BatchRelationshipOperation<TRel = any> {
+  /** Operation type */
+  type: 'CREATE' | 'UPDATE' | 'DELETE';
+  /** Source node ID */
+  sourceId: string;
+  /** Target node ID */
+  targetId: string;
+  /** Relationship properties (for CREATE/UPDATE) */
+  properties?: Partial<TRel>;
+  /** Update data (for UPDATE) */
+  updates?: Partial<TRel>;
+}
+
+/**
+ * Enhanced repository for relationship management
+ *
+ * This class provides comprehensive relationship management functionality:
+ * - CRUD operations for relationships
+ * - Batch relationship operations
+ * - Relationship traversal and queries
+ * - Type-safe relationship handling
+ * - Source and target node management
+ * - Relationship property management
+ *
+ * @template TRel The relationship type this repository manages
+ * @template TSource The source node type
+ * @template TTarget The target node type
+ */
+export abstract class RelationshipRepository<
+  TRel = any,
+  TSource = any,
+  TTarget = any
+> extends BaseRepository<TRel> {
+  protected abstract readonly relationshipType: string;
+  protected abstract readonly sourceLabel: string;
+  protected abstract readonly targetLabel: string;
+
+  /**
+   * Create a new relationship between two nodes
+   */
+  async createRelationship(
+    data: CreateRelationshipData<TRel>,
+    options?: RelationshipQueryOptions
+  ): Promise<RelationshipResult<TRel, TSource, TTarget>> {
+    const sourceLabel = data.sourceLabel || this.sourceLabel;
+    const targetLabel = data.targetLabel || this.targetLabel;
+    const relationshipData = this.mapToNeo4j(data.properties || {});
+
+    // Add timestamps
+    const now = new Date().toISOString();
+    relationshipData.createdAt = relationshipData.createdAt || now;
+    relationshipData.updatedAt = now;
+
+    const query = `
+      MATCH (source:${sourceLabel} {id: $sourceId})
+      MATCH (target:${targetLabel} {id: $targetId})
+      CREATE (source)-[rel:${this.relationshipType} $properties]->(target)
+      RETURN rel
+      ${options?.includeSource ? ', source' : ''}
+      ${options?.includeTarget ? ', target' : ''}
+    `;
+
+    const mergedOptions = {
+      ...this.defaultOptions,
+      ...options,
+      accessMode: 'WRITE' as const,
+    };
+    const result = await this.executeQuery(
+      query,
+      {
+        sourceId: data.sourceId,
+        targetId: data.targetId,
+        properties: relationshipData,
+      },
+      mergedOptions
+    );
+
+    if (result.length === 0) {
+      throw new Error(`Failed to create relationship ${this.relationshipType}`);
+    }
+
+    const record = result[0];
+    return this.buildRelationshipResult(record, options);
+  }
+
+  /**
+   * Find relationships by source node
+   */
+  async findBySource(
+    sourceId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+      this.relationshipType
+    }]->(target:${this.targetLabel})
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      RETURN rel
+      ${options?.includeSource ? ', source' : ''}
+      ${options?.includeTarget ? ', target' : ''}
+    `;
+
+    const result = await this.executeQuery(query, { sourceId }, options);
+    return result.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
+  }
+
+  /**
+   * Find relationships by target node
+   */
+  async findByTarget(
+    targetId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
+    const query = `
+      MATCH (source:${this.sourceLabel})-[rel:${
+      this.relationshipType
+    }]->(target:${this.targetLabel} {id: $targetId})
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      RETURN rel
+      ${options?.includeSource ? ', source' : ''}
+      ${options?.includeTarget ? ', target' : ''}
+    `;
+
+    const result = await this.executeQuery(query, { targetId }, options);
+    return result.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
+  }
+
+  /**
+   * Find relationship between specific source and target
+   */
+  async findBetween(
+    sourceId: string,
+    targetId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<RelationshipResult<TRel, TSource, TTarget> | null> {
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+      this.relationshipType
+    }]->(target:${this.targetLabel} {id: $targetId})
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      RETURN rel
+      ${options?.includeSource ? ', source' : ''}
+      ${options?.includeTarget ? ', target' : ''}
+      LIMIT 1
+    `;
+
+    const result = await this.executeQuery(
+      query,
+      { sourceId, targetId },
+      options
+    );
+    return result.length > 0
+      ? this.buildRelationshipResult(result[0], options)
+      : null;
+  }
+
+  /**
+   * Update relationship properties
+   */
+  async updateRelationship(
+    sourceId: string,
+    targetId: string,
+    updates: Partial<TRel>,
+    options?: RelationshipQueryOptions
+  ): Promise<RelationshipResult<TRel, TSource, TTarget> | null> {
+    const updateData = this.mapToNeo4j(updates);
+    updateData.updatedAt = new Date().toISOString();
+
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+      this.relationshipType
+    }]->(target:${this.targetLabel} {id: $targetId})
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      SET rel += $updates
+      RETURN rel
+      ${options?.includeSource ? ', source' : ''}
+      ${options?.includeTarget ? ', target' : ''}
+    `;
+
+    const mergedOptions = {
+      ...this.defaultOptions,
+      ...options,
+      accessMode: 'WRITE' as const,
+    };
+    const result = await this.executeQuery(
+      query,
+      { sourceId, targetId, updates: updateData },
+      mergedOptions
+    );
+
+    return result.length > 0
+      ? this.buildRelationshipResult(result[0], options)
+      : null;
+  }
+
+  /**
+   * Delete relationship between specific nodes
+   */
+  async deleteRelationship(
+    sourceId: string,
+    targetId: string,
+    options?: RelationshipQueryOptions & { hard?: boolean }
+  ): Promise<boolean> {
+    if (options?.hard) {
+      return this.hardDeleteRelationship(sourceId, targetId, options);
+    } else {
+      return this.softDeleteRelationship(sourceId, targetId, options);
+    }
+  }
+
+  /**
+   * Soft delete relationship
+   */
+  async softDeleteRelationship(
+    sourceId: string,
+    targetId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<boolean> {
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+      WHERE rel.deletedAt IS NULL
+      SET rel.deletedAt = $deletedAt
+      RETURN count(rel) > 0 as deleted
+    `;
+
+    const mergedOptions = {
+      ...this.defaultOptions,
+      ...options,
+      accessMode: 'WRITE' as const,
+    };
+    const result = await this.executeQuery<{ deleted: boolean }>(
+      query,
+      { sourceId, targetId, deletedAt: new Date().toISOString() },
+      mergedOptions
+    );
+
+    return result[0]?.deleted || false;
+  }
+
+  /**
+   * Hard delete relationship
+   */
+  async hardDeleteRelationship(
+    sourceId: string,
+    targetId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<boolean> {
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+      DELETE rel
+      RETURN count(rel) > 0 as deleted
+    `;
+
+    const mergedOptions = {
+      ...this.defaultOptions,
+      ...options,
+      accessMode: 'WRITE' as const,
+    };
+    const result = await this.executeQuery<{ deleted: boolean }>(
+      query,
+      { sourceId, targetId },
+      mergedOptions
+    );
+
+    return result[0]?.deleted || false;
+  }
+
+  /**
+   * Delete all relationships from a source node
+   */
+  async deleteAllFromSource(
+    sourceId: string,
+    options?: RelationshipQueryOptions & { hard?: boolean }
+  ): Promise<number> {
+    const deleteClause = options?.hard
+      ? 'DELETE rel'
+      : 'SET rel.deletedAt = $deletedAt';
+
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+      this.relationshipType
+    }]->()
+      ${options?.hard ? '' : 'WHERE rel.deletedAt IS NULL'}
+      ${deleteClause}
+      RETURN count(rel) as deletedCount
+    `;
+
+    const params: Record<string, any> = { sourceId };
+    if (!options?.hard) {
+      params.deletedAt = new Date().toISOString();
+    }
+
+    const mergedOptions = {
+      ...this.defaultOptions,
+      ...options,
+      accessMode: 'WRITE' as const,
+    };
+    const result = await this.executeQuery<{ deletedCount: number }>(
+      query,
+      params,
+      mergedOptions
+    );
+
+    return result[0]?.deletedCount || 0;
+  }
+
+  /**
+   * Delete all relationships to a target node
+   */
+  async deleteAllToTarget(
+    targetId: string,
+    options?: RelationshipQueryOptions & { hard?: boolean }
+  ): Promise<number> {
+    const deleteClause = options?.hard
+      ? 'DELETE rel'
+      : 'SET rel.deletedAt = $deletedAt';
+
+    const query = `
+      MATCH ()-[rel:${this.relationshipType}]->(target:${
+      this.targetLabel
+    } {id: $targetId})
+      ${options?.hard ? '' : 'WHERE rel.deletedAt IS NULL'}
+      ${deleteClause}
+      RETURN count(rel) as deletedCount
+    `;
+
+    const params: Record<string, any> = { targetId };
+    if (!options?.hard) {
+      params.deletedAt = new Date().toISOString();
+    }
+
+    const mergedOptions = {
+      ...this.defaultOptions,
+      ...options,
+      accessMode: 'WRITE' as const,
+    };
+    const result = await this.executeQuery<{ deletedCount: number }>(
+      query,
+      params,
+      mergedOptions
+    );
+
+    return result[0]?.deletedCount || 0;
+  }
+
+  /**
+   * Count relationships by source
+   */
+  async countBySource(
+    sourceId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<number> {
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+      this.relationshipType
+    }]->()
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      RETURN count(rel) as count
+    `;
+
+    const result = await this.executeQuery<{ count: number }>(
+      query,
+      { sourceId },
+      options
+    );
+    return result[0]?.count || 0;
+  }
+
+  /**
+   * Count relationships by target
+   */
+  async countByTarget(
+    targetId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<number> {
+    const query = `
+      MATCH ()-[rel:${this.relationshipType}]->(target:${
+      this.targetLabel
+    } {id: $targetId})
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      RETURN count(rel) as count
+    `;
+
+    const result = await this.executeQuery<{ count: number }>(
+      query,
+      { targetId },
+      options
+    );
+    return result[0]?.count || 0;
+  }
+
+  /**
+   * Check if relationship exists between nodes
+   */
+  async relationshipExists(
+    sourceId: string,
+    targetId: string,
+    options?: RelationshipQueryOptions
+  ): Promise<boolean> {
+    const query = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+      this.relationshipType
+    }]->(target:${this.targetLabel} {id: $targetId})
+      ${this.buildSoftDeleteFilter(options, 'rel')}
+      RETURN count(rel) > 0 as exists
+    `;
+
+    const result = await this.executeQuery<{ exists: boolean }>(
+      query,
+      { sourceId, targetId },
+      options
+    );
+    return result[0]?.exists || false;
+  }
+
+  /**
+   * Batch relationship operations
+   */
+  async batchOperations(
+    operations: BatchRelationshipOperation<TRel>[],
+    options?: RelationshipQueryOptions
+  ): Promise<{
+    success: boolean;
+    results: Array<{ success: boolean; error?: string }>;
+  }> {
+    const results: Array<{ success: boolean; error?: string }> = [];
+    let allSuccess = true;
+
+    // Group operations by type for optimization
+    const createOps = operations.filter((op) => op.type === 'CREATE');
+    const updateOps = operations.filter((op) => op.type === 'UPDATE');
+    const deleteOps = operations.filter((op) => op.type === 'DELETE');
+
+    try {
+      // Execute create operations
+      if (createOps.length > 0) {
+        const createResults = await this.batchCreate(createOps, options);
+        results.push(...createResults);
+        allSuccess = allSuccess && createResults.every((r) => r.success);
+      }
+
+      // Execute update operations
+      if (updateOps.length > 0) {
+        const updateResults = await this.batchUpdate(updateOps, options);
+        results.push(...updateResults);
+        allSuccess = allSuccess && updateResults.every((r) => r.success);
+      }
+
+      // Execute delete operations
+      if (deleteOps.length > 0) {
+        const deleteResults = await this.batchDelete(deleteOps, options);
+        results.push(...deleteResults);
+        allSuccess = allSuccess && deleteResults.every((r) => r.success);
+      }
+
+      return { success: allSuccess, results };
+    } catch (error) {
+      this.logger.error(
+        `Batch relationship operations failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return {
+        success: false,
+        results: [
+          ...results,
+          {
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * Build relationship result object
+   */
+  private buildRelationshipResult(
+    record: any,
+    options?: RelationshipQueryOptions
+  ): RelationshipResult<TRel, TSource, TTarget> {
+    const result: RelationshipResult<TRel, TSource, TTarget> = {
+      relationship: this.mapFromNeo4j(record.rel || record),
+    };
+
+    if (options?.includeSource && record.source) {
+      result.source = record.source as TSource;
+    }
+
+    if (options?.includeTarget && record.target) {
+      result.target = record.target as TTarget;
+    }
+
+    return result;
+  }
+
+  /**
+   * Build soft delete filter for relationships
+   */
+  protected override buildSoftDeleteFilter(
+    options?: RelationshipQueryOptions,
+    relVariable = 'rel'
+  ): string {
+    if (options?.includeSoftDeleted) {
+      return '';
+    }
+    return `WHERE ${relVariable}.deletedAt IS NULL`;
+  }
+
+  /**
+   * Batch create operations
+   */
+  private async batchCreate(
+    operations: BatchRelationshipOperation<TRel>[],
+    options?: RelationshipQueryOptions
+  ): Promise<Array<{ success: boolean; error?: string }>> {
+    const results: Array<{ success: boolean; error?: string }> = [];
+
+    for (const op of operations) {
+      try {
+        await this.createRelationship(
+          {
+            sourceId: op.sourceId,
+            targetId: op.targetId,
+            properties: op.properties,
+          },
+          options
+        );
+        results.push({ success: true });
+      } catch (error) {
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Batch update operations
+   */
+  private async batchUpdate(
+    operations: BatchRelationshipOperation<TRel>[],
+    options?: RelationshipQueryOptions
+  ): Promise<Array<{ success: boolean; error?: string }>> {
+    const results: Array<{ success: boolean; error?: string }> = [];
+
+    for (const op of operations) {
+      try {
+        await this.updateRelationship(
+          op.sourceId,
+          op.targetId,
+          op.updates || {},
+          options
+        );
+        results.push({ success: true });
+      } catch (error) {
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Batch delete operations
+   */
+  private async batchDelete(
+    operations: BatchRelationshipOperation<TRel>[],
+    options?: RelationshipQueryOptions
+  ): Promise<Array<{ success: boolean; error?: string }>> {
+    const results: Array<{ success: boolean; error?: string }> = [];
+
+    for (const op of operations) {
+      try {
+        await this.deleteRelationship(op.sourceId, op.targetId, options);
+        results.push({ success: true });
+      } catch (error) {
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return results;
+  }
+}
