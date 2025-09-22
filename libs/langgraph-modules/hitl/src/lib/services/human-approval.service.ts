@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { type WorkflowState } from '@hive-academy/langgraph-core';
+import { WorkflowState } from '@hive-academy/langgraph-core';
 // Removed unused imports - services delegated to HitlApprovalRequestService
 import { ApprovalProcessingService } from './approval-processing.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
@@ -20,7 +20,12 @@ import { HitlApprovalRequestService } from './hitl-approval-request.service';
 // User interruption interfaces - removed as using direct service access
 import { HITL_EVENTS } from '../constants';
 import { RequiresApprovalOptions } from '../decorators/approval.decorator';
-import { ApprovalWorkflowState, HumanApprovalRequest, HumanApprovalResponse, ApprovalWorkflowStats } from './approval-workflow.types';
+import {
+  ApprovalWorkflowState,
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowStats,
+} from './approval-workflow.types';
 
 // Storage interface for HITL operations
 interface IHitlStorageService {
@@ -33,7 +38,11 @@ interface IHitlStorageService {
 
 // Re-export moved types for backward compatibility
 export { ApprovalWorkflowState } from './approval-workflow.types';
-export type { HumanApprovalRequest, HumanApprovalResponse, ApprovalWorkflowStats } from './approval-workflow.types';
+export type {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowStats,
+} from './approval-workflow.types';
 
 /**
  * Core Human Approval Service - orchestrates specialized HITL services
@@ -58,11 +67,15 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     @Inject('IHitlStorageService')
     private readonly hitlStorage: IHitlStorageService // Required
   ) {
-    this.logger.log('🎯 Human Approval Service initialized with specialized services');
+    this.logger.log(
+      '🎯 Human Approval Service initialized with specialized services'
+    );
   }
 
   async onModuleInit(): Promise<void> {
-    this.logger.log('Human Approval Service initializing with specialized services');
+    this.logger.log(
+      'Human Approval Service initializing with specialized services'
+    );
     await this.hitlRecoveryService.recoverPendingApprovals();
     this.setupEventListeners();
     this.logger.log('✅ Human Approval Service initialized');
@@ -96,7 +109,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       (id) => this.handleTimeout(id)
     );
   }
-
 
   /**
    * Process human approval response
@@ -146,19 +158,32 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (result.success && request) {
-      await this.hitlCheckpointService.saveApprovalState(request, 'approval_processed', {
-        decision: response.decision,
-        approver: response.approver,
-        nextState: result.nextState,
-      });
+      await this.hitlCheckpointService.saveApprovalState(
+        request,
+        'approval_processed',
+        {
+          decision: response.decision,
+          approver: response.approver,
+          nextState: result.nextState,
+        }
+      );
     }
 
     if (result.success && request) {
       try {
-        await this.hitlMemoryLearningService.learnFromHumanFeedback(request, response);
-        this.logger.debug(`🧠 Learned from human feedback for request ${requestId}`);
+        await this.hitlMemoryLearningService.learnFromHumanFeedback(
+          request,
+          response
+        );
+        this.logger.debug(
+          `🧠 Learned from human feedback for request ${requestId}`
+        );
       } catch (error) {
-        this.logger.warn(`Failed to learn from human feedback: ${error instanceof Error ? error.message : String(error)}`);
+        this.logger.warn(
+          `Failed to learn from human feedback: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
       }
     }
 
@@ -177,7 +202,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         request = storageRequest;
       }
     }
-    
+
     if (!request) return;
 
     // Save timeout state via recovery service
@@ -203,8 +228,10 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
 
       if (!request) {
         // If not in cache, check storage by execution ID
-        const approvals = await this.hitlStorage.getByExecutionId(event.executionId);
-        request = approvals.find(r => r.executionId === event.executionId);
+        const approvals = await this.hitlStorage.getByExecutionId(
+          event.executionId
+        );
+        request = approvals.find((r) => r.executionId === event.executionId);
         if (request) {
           this.approvalCache.set(request.id, request); // Update cache
         }
@@ -285,7 +312,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get approval request by ID
    */
-  async getApprovalRequest(requestId: string): Promise<HumanApprovalRequest | undefined> {
+  async getApprovalRequest(
+    requestId: string
+  ): Promise<HumanApprovalRequest | undefined> {
     // Check cache first
     let request = this.approvalCache.get(requestId);
     if (!request) {
@@ -308,7 +337,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get approvals for execution
    */
-  async getApprovalsForExecution(executionId: string): Promise<HumanApprovalRequest[]> {
+  async getApprovalsForExecution(
+    executionId: string
+  ): Promise<HumanApprovalRequest[]> {
     return await this.hitlStorage.getByExecutionId(executionId);
   }
 
@@ -410,11 +441,12 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     nodeId: string,
     checkpointId?: string
   ): Promise<HumanApprovalRequest | null> {
-    const restoredRequest = await this.hitlCheckpointService.resumeApprovalWorkflow(
-      executionId,
-      nodeId,
-      checkpointId
-    );
+    const restoredRequest =
+      await this.hitlCheckpointService.resumeApprovalWorkflow(
+        executionId,
+        nodeId,
+        checkpointId
+      );
 
     if (restoredRequest) {
       // Add to cache and re-setup timeout if needed

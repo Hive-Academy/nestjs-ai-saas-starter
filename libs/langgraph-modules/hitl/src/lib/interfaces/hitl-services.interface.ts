@@ -1,5 +1,8 @@
-import { HumanApprovalRequest, HumanApprovalResponse } from '../services/approval-workflow.types';
-import { BaseCheckpointTuple } from '@hive-academy/langgraph-core';
+import type {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+} from '../services/approval-workflow.types';
+import type { BaseCheckpointTuple } from '@hive-academy/langgraph-core';
 
 /**
  * Interface for HITL Memory Learning Service
@@ -33,7 +36,9 @@ export interface IHitlMemoryLearningService {
    * @param response The human response
    * @returns Quality rating
    */
-  assessFeedbackQuality(response: HumanApprovalResponse): 'high' | 'medium' | 'low';
+  assessFeedbackQuality(
+    response: HumanApprovalResponse
+  ): 'high' | 'medium' | 'low';
 
   /**
    * Calculate the importance of feedback for learning

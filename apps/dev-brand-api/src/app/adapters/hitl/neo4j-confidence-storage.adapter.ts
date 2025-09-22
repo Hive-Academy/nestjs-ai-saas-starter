@@ -9,11 +9,9 @@ import type {
   FeatureVector,
   ConfidenceAnalytics,
   PatternInsights,
-} from '@hive-academy/langgraph-modules/hitl';
-import type {
   ApprovalPattern,
   ConfidenceFactor,
-} from '@hive-academy/langgraph-modules/hitl';
+} from '@hive-academy/langgraph-hitl';
 
 /**
  * Neo4j-based implementation of confidence storage service
@@ -268,7 +266,7 @@ export class Neo4jConfidenceStorageAdapter
     const query = `
       MERGE (e:Execution {id: $executionId})
       SET e.lastUpdated = datetime()
-      
+
       WITH e
       UNWIND $factors as factor
       CREATE (cf:ConfidenceFactor {
@@ -378,7 +376,7 @@ export class Neo4jConfidenceStorageAdapter
     const query = `
       MATCH (e:Execution {id: $executionId})-[r:HAS_CONFIDENCE_FACTOR]->(cf:ConfidenceFactor)
       DELETE r, cf
-      
+
       WITH e
       UNWIND $factors as factor
       CREATE (newCf:ConfidenceFactor {

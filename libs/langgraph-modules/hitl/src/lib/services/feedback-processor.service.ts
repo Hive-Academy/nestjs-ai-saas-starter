@@ -1,44 +1,48 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
-import { 
+import {
   IFeedbackStorageService,
   FeedbackEntry,
   FeedbackType,
   ProcessingResult,
   FeedbackAnalytics,
-  FeedbackStorageError
+  FeedbackStorageError,
 } from '../interfaces/feedback-storage.interface';
 
 // Types now imported from feedback-storage.interface.ts
 
 /**
  * Service for processing and managing human feedback
- * 
+ *
  * CRITICAL: Uses adapter-first pattern for persistent storage.
  * Human feedback is essential for AI learning and must never be lost.
  */
 @Injectable()
 export class FeedbackProcessorService implements OnModuleInit {
   private readonly logger = new Logger(FeedbackProcessorService.name);
-  
+
   // ✅ CORRECT: Maps used ONLY for performance caching
   private readonly feedbackCache = new Map<string, FeedbackEntry>();
   private readonly executionCache = new Map<string, FeedbackEntry[]>();
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
-    @Inject(IFeedbackStorageService) 
+    @Inject(IFeedbackStorageService)
     private readonly feedbackStorage: IFeedbackStorageService
   ) {
-    this.logger.log('💬 Feedback Processor Service initialized with adapter-first storage');
+    this.logger.log(
+      '💬 Feedback Processor Service initialized with adapter-first storage'
+    );
   }
 
   /**
    * Module initialization with recovery and fail-fast patterns
    */
   async onModuleInit(): Promise<void> {
-    this.logger.log('Feedback Processor Service initializing with persistent storage');
+    this.logger.log(
+      'Feedback Processor Service initializing with persistent storage'
+    );
     await this.recoverActiveFeedback();
     await this.startFeedbackProcessingPipeline();
     this.logger.log('✅ Feedback Processor Service initialized');
@@ -51,20 +55,32 @@ export class FeedbackProcessorService implements OnModuleInit {
     try {
       // Recover all active feedback entries
       const activeFeedback = await this.feedbackStorage.getAllActiveFeedback();
-      activeFeedback.forEach(feedback => {
+      activeFeedback.forEach((feedback) => {
         this.feedbackCache.set(feedback.id, feedback);
       });
 
       // Rebuild execution feedback mapping
-      const executionFeedback = await this.feedbackStorage.getAllExecutionFeedback();
-      Object.entries(executionFeedback).forEach(([executionId, feedbackList]) => {
-        this.executionCache.set(executionId, feedbackList);
-      });
+      const executionFeedback =
+        await this.feedbackStorage.getAllExecutionFeedback();
+      Object.entries(executionFeedback).forEach(
+        ([executionId, feedbackList]) => {
+          this.executionCache.set(executionId, feedbackList);
+        }
+      );
 
-      this.logger.log(`✅ Recovered ${activeFeedback.length} feedback entries across ${Object.keys(executionFeedback).length} executions`);
+      this.logger.log(
+        `✅ Recovered ${activeFeedback.length} feedback entries across ${
+          Object.keys(executionFeedback).length
+        } executions`
+      );
     } catch (error) {
-      this.logger.error('❌ CRITICAL: Failed to recover feedback data - service will fail fast', error);
-      throw new Error('Cannot initialize FeedbackProcessorService without persistent storage recovery');
+      this.logger.error(
+        '❌ CRITICAL: Failed to recover feedback data - service will fail fast',
+        error
+      );
+      throw new Error(
+        'Cannot initialize FeedbackProcessorService without persistent storage recovery'
+      );
     }
   }
 
@@ -75,13 +91,18 @@ export class FeedbackProcessorService implements OnModuleInit {
     try {
       // Process any unprocessed feedback from recovery
       const unprocessed = await this.feedbackStorage.getUnprocessedFeedback();
-      this.logger.log(`🔄 Starting processing pipeline for ${unprocessed.length} unprocessed feedback entries`);
-      
+      this.logger.log(
+        `🔄 Starting processing pipeline for ${unprocessed.length} unprocessed feedback entries`
+      );
+
       for (const feedback of unprocessed) {
         try {
           await this.processFeedback(feedback.id, {} as any); // Will be fixed in next transform
         } catch (error) {
-          this.logger.warn(`Failed to process recovered feedback ${feedback.id}:`, error);
+          this.logger.warn(
+            `Failed to process recovered feedback ${feedback.id}:`,
+            error
+          );
         }
       }
     } catch (error) {
@@ -118,10 +139,10 @@ export class FeedbackProcessorService implements OnModuleInit {
     try {
       // ✅ CORRECT: Store in adapter first
       await this.feedbackStorage.storeFeedback(entry);
-      
+
       // ✅ CORRECT: Cache for performance
       this.feedbackCache.set(feedbackId, entry);
-      
+
       // Update execution cache
       const executionFeedback = this.executionCache.get(executionId) || [];
       executionFeedback.push(entry);
@@ -135,10 +156,15 @@ export class FeedbackProcessorService implements OnModuleInit {
         timestamp: new Date(),
       });
 
-      this.logger.log(`Submitted feedback ${feedbackId} for execution ${executionId}`);
+      this.logger.log(
+        `Submitted feedback ${feedbackId} for execution ${executionId}`
+      );
       return entry;
     } catch (error) {
-      this.logger.error(`Failed to submit feedback for execution ${executionId}:`, error);
+      this.logger.error(
+        `Failed to submit feedback for execution ${executionId}:`,
+        error
+      );
       throw new FeedbackStorageError(
         'Failed to store feedback entry',
         'submitFeedback',
@@ -157,7 +183,8 @@ export class FeedbackProcessorService implements OnModuleInit {
     // ✅ CORRECT: Load from cache first, then storage
     let feedback = this.feedbackCache.get(feedbackId);
     if (!feedback) {
-      feedback = (await this.feedbackStorage.getFeedback(feedbackId)) || undefined;
+      feedback =
+        (await this.feedbackStorage.getFeedback(feedbackId)) || undefined;
       if (feedback) {
         this.feedbackCache.set(feedbackId, feedback); // Update cache
       }
@@ -169,10 +196,14 @@ export class FeedbackProcessorService implements OnModuleInit {
 
     if (feedback.processed) {
       this.logger.warn(`Feedback ${feedbackId} already processed`);
-      return feedback.processingResult?.appliedChanges as Partial<TState> || {};
+      return (
+        (feedback.processingResult?.appliedChanges as Partial<TState>) || {}
+      );
     }
 
-    this.logger.log(`Processing feedback ${feedbackId} of type ${feedback.type}`);
+    this.logger.log(
+      `Processing feedback ${feedbackId} of type ${feedback.type}`
+    );
 
     try {
       // Process based on feedback type
@@ -188,11 +219,17 @@ export class FeedbackProcessorService implements OnModuleInit {
           break;
 
         case FeedbackType.MODIFICATION:
-          stateUpdate = this.processModificationFeedback(feedback, currentState);
+          stateUpdate = this.processModificationFeedback(
+            feedback,
+            currentState
+          );
           break;
 
         case FeedbackType.CLARIFICATION:
-          stateUpdate = this.processClarificationFeedback(feedback, currentState);
+          stateUpdate = this.processClarificationFeedback(
+            feedback,
+            currentState
+          );
           break;
 
         case FeedbackType.RATING:
@@ -209,14 +246,18 @@ export class FeedbackProcessorService implements OnModuleInit {
         success: true,
         appliedChanges: stateUpdate as Record<string, unknown>,
         timestamp: new Date(),
-        learningInsights: this.extractLearningInsights(feedback, stateUpdate)
+        learningInsights: this.extractLearningInsights(feedback, stateUpdate),
       };
 
       // ✅ CORRECT: Update storage first
       await this.feedbackStorage.updateFeedbackStatus(feedbackId, true, result);
-      
+
       // ✅ CORRECT: Update cache
-      const updatedFeedback = { ...feedback, processed: true, processingResult: result };
+      const updatedFeedback = {
+        ...feedback,
+        processed: true,
+        processingResult: result,
+      };
       this.feedbackCache.set(feedbackId, updatedFeedback);
 
       // Emit processing completion
@@ -230,7 +271,8 @@ export class FeedbackProcessorService implements OnModuleInit {
 
       return stateUpdate;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
 
       const result: ProcessingResult = {
         success: false,
@@ -240,9 +282,13 @@ export class FeedbackProcessorService implements OnModuleInit {
 
       // Update storage with error
       await this.feedbackStorage.updateFeedbackStatus(feedbackId, true, result);
-      
+
       // Update cache with error
-      const updatedFeedback = { ...feedback, processed: true, processingResult: result };
+      const updatedFeedback = {
+        ...feedback,
+        processed: true,
+        processingResult: result,
+      };
       this.feedbackCache.set(feedbackId, updatedFeedback);
 
       // Emit error event
@@ -259,34 +305,44 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Extract AI learning insights from feedback processing
    */
-  private extractLearningInsights(feedback: FeedbackEntry, stateUpdate: any): ProcessingResult['learningInsights'] {
+  private extractLearningInsights(
+    feedback: FeedbackEntry,
+    stateUpdate: any
+  ): ProcessingResult['learningInsights'] {
     const patterns: string[] = [];
     const improvements: string[] = [];
     let confidence = 0.5;
 
     // Extract patterns based on feedback type
     switch (feedback.type) {
-      case FeedbackType.APPROVAL:
+      case FeedbackType.APPROVAL: {
         patterns.push('positive_workflow_outcome');
         improvements.push('maintain_current_approach');
         confidence = 0.8;
         break;
-      
-      case FeedbackType.REJECTION:
+      }
+
+      case FeedbackType.REJECTION: {
         patterns.push('workflow_rejection_pattern');
         improvements.push('revise_decision_logic');
         confidence = 0.3;
         break;
+      }
 
-      case FeedbackType.MODIFICATION:
+      case FeedbackType.MODIFICATION: {
         patterns.push('modification_request_pattern');
         if (feedback.content.modifications) {
-          improvements.push(`apply_modification: ${Object.keys(feedback.content.modifications).join(', ')}`);
+          improvements.push(
+            `apply_modification: ${Object.keys(
+              feedback.content.modifications
+            ).join(', ')}`
+          );
         }
         confidence = 0.6;
         break;
+      }
 
-      case FeedbackType.RATING:
+      case FeedbackType.RATING: {
         const rating = feedback.content.rating || 3;
         patterns.push(`rating_${rating}_pattern`);
         if (rating >= 4) {
@@ -297,12 +353,13 @@ export class FeedbackProcessorService implements OnModuleInit {
           confidence = 0.3;
         }
         break;
+      }
     }
 
     return {
       patterns,
       improvements,
-      confidence
+      confidence,
     };
   }
 
@@ -449,19 +506,24 @@ export class FeedbackProcessorService implements OnModuleInit {
 
     // Load from storage
     try {
-      const feedback = await this.feedbackStorage.getFeedbackByExecution(executionId);
-      
+      const feedback = await this.feedbackStorage.getFeedbackByExecution(
+        executionId
+      );
+
       // Update cache
       this.executionCache.set(executionId, feedback);
-      
+
       // Also update individual feedback cache
-      feedback.forEach(entry => {
+      feedback.forEach((entry) => {
         this.feedbackCache.set(entry.id, entry);
       });
-      
+
       return feedback;
     } catch (error) {
-      this.logger.error(`Failed to load feedback for execution ${executionId}:`, error);
+      this.logger.error(
+        `Failed to load feedback for execution ${executionId}:`,
+        error
+      );
       return [];
     }
   }
@@ -492,7 +554,9 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Compute analytics from feedback entries (fallback method)
    */
-  private computeAnalyticsFromEntries(entries: FeedbackEntry[]): FeedbackAnalytics {
+  private computeAnalyticsFromEntries(
+    entries: FeedbackEntry[]
+  ): FeedbackAnalytics {
     const byType: Record<FeedbackType, number> = {
       [FeedbackType.APPROVAL]: 0,
       [FeedbackType.REJECTION]: 0,
@@ -518,18 +582,26 @@ export class FeedbackProcessorService implements OnModuleInit {
 
       if (entry.processed) {
         processedCount++;
-        
+
         if (entry.processingResult) {
-          const processingTime = entry.processingResult.timestamp.getTime() - entry.timestamp.getTime();
+          const processingTime =
+            entry.processingResult.timestamp.getTime() -
+            entry.timestamp.getTime();
           totalProcessingTime += processingTime;
           processingTimeCount++;
         }
       }
 
       // Sentiment analysis
-      if (entry.type === FeedbackType.APPROVAL || (entry.type === FeedbackType.RATING && (entry.content.rating || 0) >= 4)) {
+      if (
+        entry.type === FeedbackType.APPROVAL ||
+        (entry.type === FeedbackType.RATING && (entry.content.rating || 0) >= 4)
+      ) {
         positive++;
-      } else if (entry.type === FeedbackType.REJECTION || (entry.type === FeedbackType.RATING && (entry.content.rating || 0) <= 2)) {
+      } else if (
+        entry.type === FeedbackType.REJECTION ||
+        (entry.type === FeedbackType.RATING && (entry.content.rating || 0) <= 2)
+      ) {
         negative++;
       } else {
         neutral++;
@@ -547,18 +619,22 @@ export class FeedbackProcessorService implements OnModuleInit {
       unprocessedCount: entries.length - processedCount,
       byType,
       byProvider,
-      avgProcessingTime: processingTimeCount > 0 ? totalProcessingTime / processingTimeCount : 0,
+      avgProcessingTime:
+        processingTimeCount > 0 ? totalProcessingTime / processingTimeCount : 0,
       recentTrends: { positive, negative, neutral },
-      successRate: entries.length > 0 
-        ? entries.filter(e => e.processingResult?.success).length / entries.length 
-        : 0,
+      successRate:
+        entries.length > 0
+          ? entries.filter((e) => e.processingResult?.success).length /
+            entries.length
+          : 0,
       topPatterns: [],
       learningMetrics: {
-        averageConfidence: ratingCount > 0 ? totalRating / ratingCount / 5 : 0.5,
+        averageConfidence:
+          ratingCount > 0 ? totalRating / ratingCount / 5 : 0.5,
         improvementTrends: positive > negative ? 0.1 : -0.1,
-        adaptationRate: processedCount / Math.max(entries.length, 1)
+        adaptationRate: processedCount / Math.max(entries.length, 1),
       },
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
@@ -569,22 +645,22 @@ export class FeedbackProcessorService implements OnModuleInit {
     try {
       // Clear from storage first
       const cleared = await this.feedbackStorage.cleanup(olderThanMs);
-      
+
       // Clear from cache
       const now = Date.now();
       let cacheCleared = 0;
-      
+
       for (const [id, entry] of this.feedbackCache.entries()) {
         if (now - entry.timestamp.getTime() > olderThanMs) {
           this.feedbackCache.delete(id);
           cacheCleared++;
         }
       }
-      
+
       // Clear from execution cache
       for (const [executionId, entries] of this.executionCache.entries()) {
-        const filtered = entries.filter(entry => 
-          now - entry.timestamp.getTime() <= olderThanMs
+        const filtered = entries.filter(
+          (entry) => now - entry.timestamp.getTime() <= olderThanMs
         );
         if (filtered.length !== entries.length) {
           this.executionCache.set(executionId, filtered);
@@ -592,7 +668,9 @@ export class FeedbackProcessorService implements OnModuleInit {
       }
 
       if (cleared > 0) {
-        this.logger.debug(`Cleared ${cleared} old feedback entries from storage and ${cacheCleared} from cache`);
+        this.logger.debug(
+          `Cleared ${cleared} old feedback entries from storage and ${cacheCleared} from cache`
+        );
       }
 
       return cleared;
@@ -615,7 +693,9 @@ export class FeedbackProcessorService implements OnModuleInit {
     } catch (error) {
       this.logger.error('Failed to get unprocessed feedback:', error);
       // Fallback to cache
-      return Array.from(this.feedbackCache.values()).filter(entry => !entry.processed);
+      return Array.from(this.feedbackCache.values()).filter(
+        (entry) => !entry.processed
+      );
     }
   }
 
@@ -626,10 +706,10 @@ export class FeedbackProcessorService implements OnModuleInit {
     try {
       // Check storage adapter health
       const storageHealthy = await this.feedbackStorage.healthCheck();
-      
+
       // Check cache health
       const cacheHealthy = this.feedbackCache.size >= 0; // Basic cache check
-      
+
       return storageHealthy && cacheHealthy;
     } catch (error) {
       this.logger.error('Health check failed:', error);

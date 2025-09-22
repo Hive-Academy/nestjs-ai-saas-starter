@@ -14,7 +14,7 @@ jest.mock('socket.io', () => ({
 jest.setTimeout(15000);
 import { Test } from '@nestjs/testing';
 import { EventStreamProcessorService } from './services/event-stream-processor.service';
-import { StreamingWebSocketGateway } from './services/streaming-websocket-gateway.service';
+import { StreamingWebSocketService } from './services/streaming-websocket.service';
 import { TokenStreamingService } from './services/token-streaming.service';
 import { WebSocketBridgeService } from './services/websocket-bridge.service';
 import {
@@ -47,7 +47,7 @@ describe('StreamingModule', () => {
       expect(moduleRef.get(WebSocketBridgeService)).toBeDefined();
 
       // Should NOT have gateway service (disabled explicitly)
-      expect(() => moduleRef.get(StreamingWebSocketGateway)).toThrow();
+      expect(() => moduleRef.get(StreamingWebSocketService)).toThrow();
 
       // Should have streaming options
       const options = moduleRef.get('STREAMING_OPTIONS');
@@ -71,7 +71,7 @@ describe('StreamingModule', () => {
       expect(moduleRef.get(WebSocketBridgeService)).toBeDefined();
 
       // Should NOT have gateway service (not enabled)
-      expect(() => moduleRef.get(StreamingWebSocketGateway)).toThrow();
+      expect(() => moduleRef.get(StreamingWebSocketService)).toThrow();
 
       // Should have default options
       const options = moduleRef.get('STREAMING_OPTIONS');
@@ -98,7 +98,7 @@ describe('StreamingModule', () => {
           },
           // Override real gateway with lightweight stub to avoid socket.io setup
           {
-            provide: StreamingWebSocketGateway,
+            provide: StreamingWebSocketService,
             useValue: { onModuleInit: jest.fn(), getStats: () => ({}) },
           },
         ],
@@ -110,7 +110,7 @@ describe('StreamingModule', () => {
       expect(moduleRef.get(WebSocketBridgeService)).toBeDefined();
 
       // Should have gateway service (enabled via websocket.enabled)
-      expect(moduleRef.get(StreamingWebSocketGateway)).toBeDefined();
+      expect(moduleRef.get(StreamingWebSocketService)).toBeDefined();
 
       // Should have gateway config
       const gatewayConfig = moduleRef.get('WEBSOCKET_GATEWAY_CONFIG');
@@ -141,7 +141,7 @@ describe('StreamingModule', () => {
             useValue: { emit: jest.fn() },
           },
           {
-            provide: StreamingWebSocketGateway,
+            provide: StreamingWebSocketService,
             useValue: { onModuleInit: jest.fn(), getStats: () => ({}) },
           },
         ],
@@ -153,7 +153,7 @@ describe('StreamingModule', () => {
       expect(moduleRef.get(WebSocketBridgeService)).toBeDefined();
 
       // Should have gateway service (enabled via gateway.enabled)
-      expect(moduleRef.get(StreamingWebSocketGateway)).toBeDefined();
+      expect(moduleRef.get(StreamingWebSocketService)).toBeDefined();
 
       // Should have merged gateway config
       const gatewayConfig = moduleRef.get('WEBSOCKET_GATEWAY_CONFIG');
@@ -190,7 +190,7 @@ describe('StreamingModule', () => {
       expect(moduleRef.get(WebSocketBridgeService)).toBeDefined();
 
       // Should NOT have gateway service (explicitly disabled)
-      expect(() => moduleRef.get(StreamingWebSocketGateway)).toThrow();
+      expect(() => moduleRef.get(StreamingWebSocketService)).toThrow();
     });
   });
 
@@ -218,7 +218,7 @@ describe('StreamingModule', () => {
       }).compile();
 
       // Should NOT have gateway service (gateway.enabled takes priority)
-      expect(() => moduleRef.get(StreamingWebSocketGateway)).toThrow();
+      expect(() => moduleRef.get(StreamingWebSocketService)).toThrow();
     });
 
     it.skip('should merge configuration properly', async () => {
@@ -248,7 +248,7 @@ describe('StreamingModule', () => {
             useValue: { emit: jest.fn() },
           },
           {
-            provide: StreamingWebSocketGateway,
+            provide: StreamingWebSocketService,
             useValue: { onModuleInit: jest.fn(), getStats: () => ({}) },
           },
         ],

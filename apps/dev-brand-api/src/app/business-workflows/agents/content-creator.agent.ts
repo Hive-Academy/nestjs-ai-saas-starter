@@ -14,20 +14,29 @@ import type {
 } from '@hive-academy/langgraph-functional-api';
 import { AIMessage } from '@langchain/core/messages';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
-import { AgentExecutionError, MemoryServiceError, LLMProviderError } from '../core/errors/business-workflow.errors';
-import { Validate, Required, IsContentType, IsPlatform } from '../core/validation/workflow.validators';
+import {
+  AgentExecutionError,
+  MemoryServiceError,
+  LLMProviderError,
+} from '../core/errors/business-workflow.errors';
+import {
+  Validate,
+  Required,
+  IsContentType,
+  IsPlatform,
+} from '../core/validation/workflow.validators';
 import { Optimize } from '../core/performance/optimization.decorators';
 
 /**
  * Enhanced Content Creator Agent - Workflow Agent Type
- * 
+ *
  * Creates optimized content for multiple platforms using sophisticated workflow:
  * ✅ Brand voice and strategy analysis from memory
  * ✅ Multi-platform content generation (LinkedIn, Dev.to, etc.)
  * ✅ Content optimization based on platform best practices
  * ✅ Quality assessment and refinement
  * ✅ Engagement prediction and enhancement
- * 
+ *
  * Internal workflow steps:
  * 1. Initialize content creation workflow
  * 2. Gather comprehensive brand context from memory
@@ -35,7 +44,7 @@ import { Optimize } from '../core/performance/optimization.decorators';
  * 4. Optimize content for engagement and reach
  * 5. Assess content quality (decision point)
  * 6. Finalize and package content for delivery
- * 
+ *
  * BUSINESS VALUE: Transforms personal achievements into engaging platform content
  * Externally appears as single node to other workflows.
  */
@@ -70,14 +79,14 @@ import { Optimize } from '../core/performance/optimization.decorators';
 })
 @Workflow({
   name: 'content-creator-workflow',
-  description: 'Creates optimized content for multiple platforms using sophisticated workflow',
+  description:
+    'Creates optimized content for multiple platforms using sophisticated workflow',
   streaming: true,
   confidenceThreshold: 0.7,
   metrics: true,
 })
 @Injectable()
 export class ContentCreatorAgent {
-
   constructor(
     private readonly llm: LlmProviderService,
     private readonly memory: PersonalBrandMemoryService
@@ -89,11 +98,14 @@ export class ContentCreatorAgent {
    */
   @Entrypoint({ timeout: 10000 })
   @StreamProgress({ enabled: true, includeETA: true })
-  async initializeContentCreation(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async initializeContentCreation(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
-    const githubUsername = (state.metadata?.githubUsername as string) || 'developer';
+    const githubUsername =
+      (state.metadata?.githubUsername as string) || 'developer';
     const achievements = (state.metadata?.achievements as any[]) || [];
-    
+
     return {
       state: {
         ...state,
@@ -117,7 +129,9 @@ export class ContentCreatorAgent {
    */
   @Task({ dependsOn: ['initializeContentCreation'] })
   @StreamProgress({ enabled: true })
-  async gatherBrandContext(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async gatherBrandContext(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const achievements = (state.metadata?.achievements as any[]) || [];
@@ -125,7 +139,8 @@ export class ContentCreatorAgent {
     try {
       const [voice, strategy, devContext] = await Promise.all([
         this.memory.getBrandVoice(githubUsername),
-        this.memory.getBrandStrategy?.(githubUsername) || state.metadata?.brandStrategy,
+        this.memory.getBrandStrategy?.(githubUsername) ||
+          state.metadata?.brandStrategy,
         this.memory.getDevContext(githubUsername),
       ]);
 
@@ -172,7 +187,7 @@ export class ContentCreatorAgent {
     cache: { ttl: 600000, maxSize: 50 }, // 10 minute cache for content generation
     circuitBreaker: { failureThreshold: 2, resetTimeout: 15000 },
     timeout: 45000,
-    metrics: { trackExecutionTime: true, trackErrorRate: true }
+    metrics: { trackExecutionTime: true, trackErrorRate: true },
   })
   async generatePlatformContent(
     @Required() context: TaskExecutionContext
@@ -185,10 +200,20 @@ export class ContentCreatorAgent {
 
     try {
       const model = await this.llm.getLLM({ temperature: 0.6, maxTokens: 900 });
-      
+
       // Create sophisticated prompts based on brand context
-      const linkedinPrompt = this.buildLinkedInPrompt(githubUsername, achievements, brandVoice, brandStrategy);
-      const devtoPrompt = this.buildDevToPrompt(githubUsername, achievements, brandVoice, brandStrategy);
+      const linkedinPrompt = this.buildLinkedInPrompt(
+        githubUsername,
+        achievements,
+        brandVoice,
+        brandStrategy
+      );
+      const devtoPrompt = this.buildDevToPrompt(
+        githubUsername,
+        achievements,
+        brandVoice,
+        brandStrategy
+      );
 
       const [linkedinResponse, devtoResponse] = await Promise.all([
         model.invoke([{ role: 'user', content: linkedinPrompt }]),
@@ -210,7 +235,7 @@ export class ContentCreatorAgent {
 
       if (!devtoContent || devtoContent.length < 100) {
         throw new LLMProviderError(
-          'openai', 
+          'openai',
           'generateDevToContent',
           'Generated Dev.to content too short or empty',
           { contentLength: devtoContent?.length || 0, githubUsername }
@@ -240,7 +265,11 @@ export class ContentCreatorAgent {
         'openai',
         'generatePlatformContent',
         error.message || 'Content generation failed',
-        { githubUsername, achievementCount: achievements.length, originalError: error.message }
+        {
+          githubUsername,
+          achievementCount: achievements.length,
+          originalError: error.message,
+        }
       );
 
       throw contentError;
@@ -253,7 +282,9 @@ export class ContentCreatorAgent {
    */
   @Task({ dependsOn: ['generatePlatformContent'] })
   @StreamProgress({ enabled: true })
-  async optimizeContent(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async optimizeContent(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const rawLinkedinContent = state.metadata?.rawLinkedinContent as string;
     const rawDevtoContent = state.metadata?.rawDevtoContent as string;
@@ -261,11 +292,20 @@ export class ContentCreatorAgent {
 
     try {
       // Apply platform-specific optimizations
-      const optimizedLinkedin = this.optimizeLinkedInContent(rawLinkedinContent, achievements);
-      const optimizedDevto = this.optimizeDevToContent(rawDevtoContent, achievements);
-      
+      const optimizedLinkedin = this.optimizeLinkedInContent(
+        rawLinkedinContent,
+        achievements
+      );
+      const optimizedDevto = this.optimizeDevToContent(
+        rawDevtoContent,
+        achievements
+      );
+
       // Calculate engagement predictions
-      const linkedinEngagement = this.predictEngagement('linkedin', optimizedLinkedin);
+      const linkedinEngagement = this.predictEngagement(
+        'linkedin',
+        optimizedLinkedin
+      );
       const devtoEngagement = this.predictEngagement('devto', optimizedDevto);
 
       return {
@@ -290,7 +330,8 @@ export class ContentCreatorAgent {
           metadata: {
             ...state.metadata,
             currentStep: 'optimization-fallback',
-            linkedinContent: rawLinkedinContent || 'Content generated successfully',
+            linkedinContent:
+              rawLinkedinContent || 'Content generated successfully',
             devtoContent: rawDevtoContent || 'Article content ready',
             error: error.message,
           },
@@ -303,18 +344,21 @@ export class ContentCreatorAgent {
    * Assess content quality - decision point in workflow
    */
   @Node({ type: 'condition' })
-  async assessContentQuality(context: TaskExecutionContext): Promise<{ route: string }> {
+  async assessContentQuality(
+    context: TaskExecutionContext
+  ): Promise<{ route: string }> {
     const { state } = context;
     const linkedinContent = state.metadata?.linkedinContent as string;
     const devtoContent = state.metadata?.devtoContent as string;
     const achievements = (state.metadata?.achievements as any[]) || [];
-    
+
     // Quality assessment criteria
-    const hasSubstantialContent = linkedinContent.length > 100 && devtoContent.length > 100;
+    const hasSubstantialContent =
+      linkedinContent.length > 100 && devtoContent.length > 100;
     const hasAchievements = achievements.length > 0;
     const linkedinEngagement = state.metadata?.linkedinEngagement || 0;
     const devtoEngagement = state.metadata?.devtoEngagement || 0;
-    
+
     const qualityScore = this.calculateQualityScore({
       hasSubstantialContent,
       hasAchievements,
@@ -322,7 +366,7 @@ export class ContentCreatorAgent {
       devtoEngagement,
       contentLength: linkedinContent.length + devtoContent.length,
     });
-    
+
     return {
       route: qualityScore > 0.7 ? 'high-quality' : 'standard',
     };
@@ -333,7 +377,9 @@ export class ContentCreatorAgent {
    */
   @Task({ dependsOn: ['assessContentQuality'] })
   @StreamProgress({ enabled: true })
-  async finalizeContent(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async finalizeContent(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const linkedinContent = state.metadata?.linkedinContent as string;
@@ -354,16 +400,16 @@ export class ContentCreatorAgent {
     return {
       state: {
         ...state,
-        messages: [
-          new AIMessage(finalMessage),
-        ],
+        messages: [new AIMessage(finalMessage)],
         metadata: {
           ...state.metadata,
           currentStep: 'completed',
           contentCreated: true,
           workflowCompleted: true,
           contentEndTime: new Date(),
-          totalProcessingTime: Date.now() - (state.metadata?.contentStartTime?.getTime() || Date.now()),
+          totalProcessingTime:
+            Date.now() -
+            (state.metadata?.contentStartTime?.getTime() || Date.now()),
           finalStage: true,
         },
         next: undefined, // Content creation is final step
@@ -372,47 +418,57 @@ export class ContentCreatorAgent {
   }
 
   // Define workflow edges
-  @Edge('assessContentQuality', 'finalizeContent', { 
+  @Edge('assessContentQuality', 'finalizeContent', {
     condition: (state: WorkflowAgentState) => {
       const linkedinContent = state.metadata?.linkedinContent as string;
       const devtoContent = state.metadata?.devtoContent as string;
       const achievements = (state.metadata?.achievements as any[]) || [];
       const linkedinEngagement = state.metadata?.linkedinEngagement || 0;
       const devtoEngagement = state.metadata?.devtoEngagement || 0;
-      
-      const qualityScore = this.calculateQualityScore({
-        hasSubstantialContent: linkedinContent?.length > 100 && devtoContent?.length > 100,
-        hasAchievements: achievements.length > 0,
-        linkedinEngagement,
-        devtoEngagement,
-        contentLength: (linkedinContent?.length || 0) + (devtoContent?.length || 0),
-      });
-      
-      return qualityScore > 0.7;
-    }
-  })
-  routeHighQuality() {}
 
-  @Edge('assessContentQuality', 'finalizeContent', { 
+      const qualityScore = this.calculateQualityScore({
+        hasSubstantialContent:
+          linkedinContent?.length > 100 && devtoContent?.length > 100,
+        hasAchievements: achievements.length > 0,
+        linkedinEngagement,
+        devtoEngagement,
+        contentLength:
+          (linkedinContent?.length || 0) + (devtoContent?.length || 0),
+      });
+
+      return qualityScore > 0.7;
+    },
+  })
+  routeHighQuality(): void {
+    // High quality content detected - proceeding to optimization
+    this.logger.log('Routing to optimization for high-quality content');
+  }
+
+  @Edge('assessContentQuality', 'finalizeContent', {
     condition: (state: WorkflowAgentState) => {
       const linkedinContent = state.metadata?.linkedinContent as string;
       const devtoContent = state.metadata?.devtoContent as string;
       const achievements = (state.metadata?.achievements as any[]) || [];
       const linkedinEngagement = state.metadata?.linkedinEngagement || 0;
       const devtoEngagement = state.metadata?.devtoEngagement || 0;
-      
+
       const qualityScore = this.calculateQualityScore({
-        hasSubstantialContent: linkedinContent?.length > 100 && devtoContent?.length > 100,
+        hasSubstantialContent:
+          linkedinContent?.length > 100 && devtoContent?.length > 100,
         hasAchievements: achievements.length > 0,
         linkedinEngagement,
         devtoEngagement,
-        contentLength: (linkedinContent?.length || 0) + (devtoContent?.length || 0),
+        contentLength:
+          (linkedinContent?.length || 0) + (devtoContent?.length || 0),
       });
-      
+
       return qualityScore <= 0.7;
-    }
+    },
   })
-  routeStandard() {}
+  routeStandard(): void {
+    // Standard quality content detected - proceeding to finalization
+    this.logger.log('Routing to finalization for standard-quality content');
+  }
 
   /**
    * Build sophisticated LinkedIn prompt with brand context
@@ -427,12 +483,22 @@ export class ContentCreatorAgent {
 
 CONTEXT:
 - Developer: ${username}
-- Brand Voice: ${brandVoice?.tone || 'professional'} tone, ${brandVoice?.style || 'technical'} style
+- Brand Voice: ${brandVoice?.tone || 'professional'} tone, ${
+      brandVoice?.style || 'technical'
+    } style
 - Brand Strategy: ${brandStrategy?.positioning || 'Technical Excellence'}
 - Achievements: ${achievements.length} technical accomplishments
 
 KEY ACHIEVEMENTS TO HIGHLIGHT:
-${achievements.slice(0, 3).map((a: any, i: number) => `${i + 1}. ${a.description || a.title || 'Technical achievement'} (${a.impact || 'high'} impact)`).join('\n')}
+${achievements
+  .slice(0, 3)
+  .map(
+    (a: any, i: number) =>
+      `${i + 1}. ${a.description || a.title || 'Technical achievement'} (${
+        a.impact || 'high'
+      } impact)`
+  )
+  .join('\n')}
 
 REQUIREMENTS:
 - Professional tone matching brand voice
@@ -458,12 +524,22 @@ Create an engaging LinkedIn post that positions ${username} as a skilled develop
 
 CONTEXT:
 - Developer: ${username}
-- Brand Voice: ${brandVoice?.tone || 'professional'} tone, ${brandVoice?.style || 'technical'} style
+- Brand Voice: ${brandVoice?.tone || 'professional'} tone, ${
+      brandVoice?.style || 'technical'
+    } style
 - Brand Strategy: ${brandStrategy?.positioning || 'Technical Excellence'}
 - Recent Achievements: ${achievements.length} technical accomplishments
 
 TOP TECHNICAL ACHIEVEMENTS:
-${achievements.slice(0, 3).map((a: any, i: number) => `${i + 1}. ${a.description || a.title || 'Technical achievement'} - ${a.technologies?.join(', ') || 'Modern tech stack'}`).join('\n')}
+${achievements
+  .slice(0, 3)
+  .map(
+    (a: any, i: number) =>
+      `${i + 1}. ${a.description || a.title || 'Technical achievement'} - ${
+        a.technologies?.join(', ') || 'Modern tech stack'
+      }`
+  )
+  .join('\n')}
 
 REQUIREMENTS:
 - Technical but accessible writing style
@@ -479,25 +555,37 @@ Create an article introduction that establishes ${username} as a knowledgeable d
   /**
    * Optimize LinkedIn content for engagement
    */
-  private optimizeLinkedInContent(content: string, achievements: any[]): string {
+  private optimizeLinkedInContent(
+    content: string,
+    achievements: any[]
+  ): string {
     // Add LinkedIn-specific optimizations
     let optimized = content;
-    
+
     // Ensure proper spacing for readability
     if (!optimized.includes('\n\n')) {
       optimized = optimized.replace(/\. /g, '.\n\n');
     }
-    
+
     // Add engagement elements if missing
-    if (!optimized.includes('💡') && !optimized.includes('🚀') && !optimized.includes('✨')) {
+    if (
+      !optimized.includes('💡') &&
+      !optimized.includes('🚀') &&
+      !optimized.includes('✨')
+    ) {
       optimized = '🚀 ' + optimized;
     }
-    
+
     // Ensure call-to-action
-    if (!optimized.toLowerCase().includes('what') && !optimized.toLowerCase().includes('share') && !optimized.toLowerCase().includes('thoughts')) {
-      optimized += '\n\nWhat\'s your experience with similar challenges? Share your thoughts in the comments!';
+    if (
+      !optimized.toLowerCase().includes('what') &&
+      !optimized.toLowerCase().includes('share') &&
+      !optimized.toLowerCase().includes('thoughts')
+    ) {
+      optimized +=
+        "\n\nWhat's your experience with similar challenges? Share your thoughts in the comments!";
     }
-    
+
     return optimized;
   }
 
@@ -506,43 +594,63 @@ Create an article introduction that establishes ${username} as a knowledgeable d
    */
   private optimizeDevToContent(content: string, achievements: any[]): string {
     let optimized = content;
-    
+
     // Ensure technical focus
-    if (!optimized.toLowerCase().includes('code') && !optimized.toLowerCase().includes('technical') && !optimized.toLowerCase().includes('development')) {
-      optimized += '\n\nIn this article, we\'ll dive deep into the technical implementation and lessons learned.';
+    if (
+      !optimized.toLowerCase().includes('code') &&
+      !optimized.toLowerCase().includes('technical') &&
+      !optimized.toLowerCase().includes('development')
+    ) {
+      optimized +=
+        "\n\nIn this article, we'll dive deep into the technical implementation and lessons learned.";
     }
-    
+
     // Add learning promise
-    if (!optimized.toLowerCase().includes('learn') && !optimized.toLowerCase().includes('discover')) {
-      optimized += '\n\nYou\'ll learn practical techniques you can apply to your own projects.';
+    if (
+      !optimized.toLowerCase().includes('learn') &&
+      !optimized.toLowerCase().includes('discover')
+    ) {
+      optimized +=
+        "\n\nYou'll learn practical techniques you can apply to your own projects.";
     }
-    
+
     return optimized;
   }
 
   /**
    * Predict engagement score for platform
    */
-  private predictEngagement(platform: 'linkedin' | 'devto', content: string): number {
+  private predictEngagement(
+    platform: 'linkedin' | 'devto',
+    content: string
+  ): number {
     let score = 0.5; // Base score
-    
+
     // Content length optimization
     if (platform === 'linkedin') {
       if (content.length >= 150 && content.length <= 300) score += 0.2;
     } else {
       if (content.length >= 200 && content.length <= 400) score += 0.2;
     }
-    
+
     // Engagement elements
     if (content.includes('?')) score += 0.1; // Questions increase engagement
-    if (content.match(/[🚀💡✨🎯]/)) score += 0.1; // Emojis (but not too many)
-    if (content.toLowerCase().includes('share') || content.toLowerCase().includes('comment')) score += 0.1;
-    
+    if (content.match(/[🚀💡✨🎯]/u)) score += 0.1; // Emojis (but not too many)
+    if (
+      content.toLowerCase().includes('share') ||
+      content.toLowerCase().includes('comment')
+    )
+      score += 0.1;
+
     // Technical relevance for dev.to
-    if (platform === 'devto' && (content.toLowerCase().includes('technical') || content.toLowerCase().includes('code'))) {
+    if (
+      platform === 'devto' &&
+      (content.toLowerCase().includes('technical') ||
+        content.toLowerCase().includes('code'))
+    ) {
       score += 0.1;
     }
-    
+
     return Math.min(1.0, score);
   }
 
@@ -557,13 +665,13 @@ Create an article introduction that establishes ${username} as a knowledgeable d
     contentLength: number;
   }): number {
     let score = 0;
-    
+
     if (criteria.hasSubstantialContent) score += 0.3;
     if (criteria.hasAchievements) score += 0.2;
     if (criteria.linkedinEngagement > 0.6) score += 0.2;
     if (criteria.devtoEngagement > 0.6) score += 0.2;
     if (criteria.contentLength > 500) score += 0.1;
-    
+
     return score;
   }
 
@@ -588,14 +696,18 @@ Create an article introduction that establishes ${username} as a knowledgeable d
 📱 **LINKEDIN POST:**
 ${linkedinContent}
 
-*Engagement Prediction: ${Math.round(linkedinEngagement * 100)}% • Optimized for professional network*
+*Engagement Prediction: ${Math.round(
+      linkedinEngagement * 100
+    )}% • Optimized for professional network*
 
 ---
 
 📝 **DEV.TO ARTICLE INTRO:**
 ${devtoContent}
 
-*Engagement Prediction: ${Math.round(devtoEngagement * 100)}% • Optimized for developer community*
+*Engagement Prediction: ${Math.round(
+      devtoEngagement * 100
+    )}% • Optimized for developer community*
 
 ---
 

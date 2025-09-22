@@ -266,6 +266,50 @@ export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageSer
   }
 
   /**
+   * Get all active interruptions across all executions (for recovery)
+   */
+  async getAllActiveInterruptions(): Promise<readonly UserInterruption[]> {
+    const query = `
+      MATCH (i:UserInterruption)
+      WHERE i.status = 'pending'
+      OPTIONAL MATCH (i)-[:HAS_RESPONSE]->(r:InterruptionResponse)
+      RETURN i, r
+      ORDER BY i.createdAt ASC
+    `;
+
+    try {
+      const result = await this.neo4jService.run(query, {});
+
+      const interruptions: UserInterruption[] = [];
+
+      for (const record of result.records) {
+        const interruptionNode = (record as any).get('i');
+        const responseNode = (record as any).get('r');
+
+        const interruption = this.mapNodeToInterruption(
+          interruptionNode,
+          responseNode
+        );
+        if (interruption) {
+          interruptions.push(interruption);
+        }
+      }
+
+      this.logger.debug(
+        `Found ${interruptions.length} active interruptions across all executions`
+      );
+      return interruptions;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to get all active interruptions: ${errorMsg}`,
+        error
+      );
+      throw new Error(`Failed to get all active interruptions: ${errorMsg}`);
+    }
+  }
+
+  /**
    * Clean up expired interruptions
    */
   async cleanupExpiredInterruptions(): Promise<number> {

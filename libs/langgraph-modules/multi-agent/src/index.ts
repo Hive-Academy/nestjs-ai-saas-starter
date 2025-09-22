@@ -36,6 +36,7 @@ export * from './lib/decorators/workflow.decorator';
 export type {
   AgentType,
   WorkflowAgentConfig,
+  AgentWorkflowConfig,
 } from './lib/decorators/agent.decorator';
 
 // Configuration utilities

@@ -1,7 +1,4 @@
-import {
-  NoOpStreamingService,
-  IStreamingService,
-} from '@hive-academy/langgraph-core';
+import { NoOpStreamingService } from '@hive-academy/langgraph-core';
 import {
   MultiAgentCoordinatorService,
   MultiAgentModule,

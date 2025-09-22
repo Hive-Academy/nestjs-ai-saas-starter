@@ -31,14 +31,18 @@ export * from './lib/constants';
 
 // Interfaces
 export type * from './lib/interfaces/hitl.interface';
-export { IHitlStorageService, HitlStorageError, InvalidApprovalDataError } from './lib/interfaces/hitl-storage.interface';
+export {
+  IHitlStorageService,
+  HitlStorageError,
+  InvalidApprovalDataError,
+} from './lib/interfaces/hitl-storage.interface';
 export type { IApprovalChainStorageService } from './lib/interfaces/approval-chain-storage.interface';
 export type { ApprovalChainStorageConfig } from './lib/interfaces/approval-chain-storage.interface';
 export type {
   ApprovalStorageData,
   ApprovalStorageStatus,
   ApprovalStorageResponse,
-  HitlStorageStats
+  HitlStorageStats,
 } from './lib/interfaces/hitl-storage.interface';
 export {
   IUserInterruptionService,
@@ -51,3 +55,28 @@ export type {
   InterruptionContext,
   UserInterruptionResponse,
 } from './lib/interfaces/user-interruption.interface';
+
+// Approval Chain Types
+export type {
+  ApprovalLevel,
+  ApprovalRequest,
+} from './lib/services/approval-chain.service';
+
+// Confidence Storage Types
+export type {
+  IConfidenceStorageService,
+  ConfidenceStorageOptions,
+  MLTrainingSet,
+  MLPredictionResult,
+  ConfidenceOutcome,
+  FeatureVector,
+  ConfidenceAnalytics,
+  PatternInsights,
+  IConfidenceStorageFactory,
+} from './lib/interfaces/confidence-storage.interface';
+
+// Confidence Evaluator Types
+export type {
+  ApprovalPattern,
+  ConfidenceFactor,
+} from './lib/services/confidence-evaluator.service';

@@ -46,10 +46,10 @@ export interface WorkflowAgentConfig {
 }
 
 /**
- * 🆕 ENHANCED: Unified workflow configuration interface
+ * 🆕 ENHANCED: Agent-specific workflow configuration interface
  * Combines workflow metadata with agent-specific workflow settings
  */
-export interface WorkflowConfig {
+export interface AgentWorkflowConfig {
   /**
    * Workflow name
    */
@@ -178,7 +178,7 @@ export interface AgentConfig {
    * When provided with type: 'workflow-agent', eliminates need for separate @Workflow decorator
    * Only applicable when type is 'workflow-agent'
    */
-  workflow?: WorkflowConfig;
+  workflow?: AgentWorkflowConfig;
 
   /**
    * @deprecated Use 'workflow' property instead for new implementations
@@ -198,7 +198,7 @@ export const AGENT_METADATA_KEY = 'agent:config';
  *
  * This decorator automatically registers agents with the AgentRegistryService
  * and provides a clean, declarative way to configure multi-agent systems.
- * 
+ *
  * NEW: When type is 'workflow-agent' and workflow config is provided,
  * automatically applies @Workflow decorator capabilities, eliminating duplication.
  *
@@ -221,7 +221,7 @@ export const AGENT_METADATA_KEY = 'agent:config';
  *   }
  * }
  * ```
- * 
+ *
  * @example 🆕 ENHANCED: Unified Workflow Agent (eliminates @Workflow duplication)
  * ```typescript
  * @Agent({
@@ -259,27 +259,30 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
       // Create workflow configuration from unified config
       const workflowConfig = {
         name: agentConfig.workflow.name || `${agentConfig.id}-workflow`,
-        description: agentConfig.workflow.description || agentConfig.description,
+        description:
+          agentConfig.workflow.description || agentConfig.description,
         streaming: agentConfig.workflow.streaming ?? true,
         confidenceThreshold: agentConfig.workflow.confidenceThreshold ?? 0.7,
         metrics: agentConfig.workflow.metrics ?? true,
       };
-      
+
       // Apply workflow metadata (equivalent to @Workflow decorator)
       SetMetadata('workflow:config', workflowConfig)(target);
       SetMetadata('workflow:marker', true)(target);
-      
+
       // Store internal workflow configuration for agent runtime
       const internalWorkflowConfig = {
-        enableInternalStreaming: agentConfig.workflow.enableInternalStreaming ?? true,
-        enableInternalCheckpointing: agentConfig.workflow.enableInternalCheckpointing ?? true,
+        enableInternalStreaming:
+          agentConfig.workflow.enableInternalStreaming ?? true,
+        enableInternalCheckpointing:
+          agentConfig.workflow.enableInternalCheckpointing ?? true,
         internalTimeout: agentConfig.workflow.internalTimeout ?? 60000,
         enableErrorRecovery: agentConfig.workflow.enableErrorRecovery ?? true,
         maxInternalRetries: agentConfig.workflow.maxInternalRetries ?? 2,
         enableStepProgress: agentConfig.workflow.enableStepProgress ?? true,
         stateKey: agentConfig.workflow.stateKey || `${agentConfig.id}-state`,
       };
-      
+
       // Merge internal workflow config into agent config for backward compatibility
       agentConfig.workflowConfig = internalWorkflowConfig;
     }

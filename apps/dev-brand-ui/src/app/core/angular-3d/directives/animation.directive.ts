@@ -1,23 +1,26 @@
 /**
  * AnimationDirective - Phase 2 Enhanced
- * 
+ *
  * Modern Angular directive for declarative animation binding with GSAP integration.
  * Follows Angular 20.1.6 best practices with signals, inject() function, and strict TypeScript.
  */
 
-import { 
-  Directive, 
-  ElementRef, 
-  inject, 
-  input, 
-  output, 
-  effect, 
-  OnInit, 
+import {
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  output,
+  effect,
+  OnInit,
   OnDestroy,
   signal,
-  computed
+  computed,
 } from '@angular/core';
-import { AnimationService, AnimationConfig } from '../services/animation.service';
+import {
+  AnimationService,
+  AnimationConfig,
+} from '../services/animation.service';
 
 export interface DirectiveAnimationConfig extends AnimationConfig {
   readonly trigger?: 'immediate' | 'hover' | 'click' | 'visible' | 'manual';
@@ -32,10 +35,10 @@ export interface AnimationEvent {
 
 /**
  * Declarative animation directive for template integration
- * 
+ *
  * Usage:
- * <div appAnimation 
- *      [config]="animConfig" 
+ * <div appAnimation
+ *      [config]="animConfig"
  *      trigger="hover"
  *      (animationEvent)="onAnimationEvent($event)">
  *   Content to animate
@@ -50,8 +53,8 @@ export interface AnimationEvent {
     '[class.animation-playing]': 'isPlaying()',
     '(mouseenter)': 'onMouseEnter()',
     '(mouseleave)': 'onMouseLeave()',
-    '(click)': 'onClick()'
-  }
+    '(click)': 'onClick()',
+  },
 })
 export class AnimationDirective implements OnInit, OnDestroy {
   // Input signals with strict typing
@@ -109,7 +112,7 @@ export class AnimationDirective implements OnInit, OnDestroy {
     const timelineId = this.getOrCreateTimeline();
     this.animationService.playTimeline(timelineId);
     this._isPlaying.set(true);
-    
+
     this.emitAnimationEvent('start', 0);
   }
 
@@ -120,7 +123,7 @@ export class AnimationDirective implements OnInit, OnDestroy {
     if (timelineId) {
       this.animationService.pauseTimeline(timelineId);
       this._isPlaying.set(false);
-      
+
       const state = this.animationService.getTimelineState(timelineId);
       this.emitAnimationEvent('pause', state?.progress ?? 0);
     }
@@ -131,7 +134,7 @@ export class AnimationDirective implements OnInit, OnDestroy {
     if (timelineId) {
       this.animationService.stopTimeline(timelineId);
       this._isPlaying.set(false);
-      
+
       this.emitAnimationEvent('complete', 0);
     }
   }
@@ -151,7 +154,11 @@ export class AnimationDirective implements OnInit, OnDestroy {
 
   protected onClick(): void {
     if (this.config().trigger === 'click') {
-      this.isPlaying() ? this.stop() : this.play();
+      if (this.isPlaying()) {
+        this.stop();
+      } else {
+        this.play();
+      }
     }
   }
 
@@ -178,12 +185,12 @@ export class AnimationDirective implements OnInit, OnDestroy {
     effect(() => {
       const animState = this.animationService.animationState();
       const timelineId = this.getTimelineId();
-      
+
       if (timelineId) {
         const isActive = animState.activeAnimations.includes(timelineId);
         if (this._isPlaying() !== isActive) {
           this._isPlaying.set(isActive);
-          
+
           if (!isActive) {
             this.emitAnimationEvent('complete', 1);
           }
@@ -194,11 +201,11 @@ export class AnimationDirective implements OnInit, OnDestroy {
 
   private getOrCreateTimeline(): string {
     let timelineId = this.getTimelineId();
-    
+
     if (!timelineId) {
       timelineId = this.createTimeline();
     }
-    
+
     return timelineId;
   }
 
@@ -209,30 +216,36 @@ export class AnimationDirective implements OnInit, OnDestroy {
   private createTimeline(): string {
     const config = this.config();
     const element = this.elementRef.nativeElement;
-    
+
     // Create timeline through animation service
     const timelineId = this.animationService.createTimeline({
       name: `Directive Animation - ${this.elementId()}`,
       animations: [config],
-      targets: [{
-        elementId: this.elementId(),
-        domElement: element,
-        position: [0, 0, 0] as const,
-        rotation: [0, 0, 0] as const,
-        scale: [1, 1, 1] as const,
-        opacity: 1
-      }]
+      targets: [
+        {
+          elementId: this.elementId(),
+          domElement: element,
+          position: [0, 0, 0] as const,
+          rotation: [0, 0, 0] as const,
+          scale: [1, 1, 1] as const,
+          opacity: 1,
+        },
+      ],
     });
 
     // Add the animation to the timeline
-    this.animationService.addAnimationToTimeline(timelineId, {
-      elementId: this.elementId(),
-      domElement: element,
-      position: this.getTargetPosition(config),
-      rotation: this.getTargetRotation(config),
-      scale: this.getTargetScale(config),
-      opacity: this.getTargetOpacity(config)
-    }, config);
+    this.animationService.addAnimationToTimeline(
+      timelineId,
+      {
+        elementId: this.elementId(),
+        domElement: element,
+        position: this.getTargetPosition(config),
+        rotation: this.getTargetRotation(config),
+        scale: this.getTargetScale(config),
+        opacity: this.getTargetOpacity(config),
+      },
+      config
+    );
 
     // Store timeline ID if we created it
     if (!this.timelineId()) {
@@ -252,7 +265,9 @@ export class AnimationDirective implements OnInit, OnDestroy {
     this.timelineIdInternal = this.createTimeline();
   }
 
-  private getTargetPosition(config: DirectiveAnimationConfig): readonly [number, number, number] {
+  private getTargetPosition(
+    config: DirectiveAnimationConfig
+  ): readonly [number, number, number] {
     switch (config.type) {
       case 'slide':
         // Default slide animation moves element right and down
@@ -262,7 +277,9 @@ export class AnimationDirective implements OnInit, OnDestroy {
     }
   }
 
-  private getTargetRotation(config: DirectiveAnimationConfig): readonly [number, number, number] {
+  private getTargetRotation(
+    config: DirectiveAnimationConfig
+  ): readonly [number, number, number] {
     switch (config.type) {
       case 'rotate':
         // Default rotation around Y-axis
@@ -272,7 +289,9 @@ export class AnimationDirective implements OnInit, OnDestroy {
     }
   }
 
-  private getTargetScale(config: DirectiveAnimationConfig): readonly [number, number, number] {
+  private getTargetScale(
+    config: DirectiveAnimationConfig
+  ): readonly [number, number, number] {
     switch (config.type) {
       case 'scale':
         // Default scale up animation
@@ -292,11 +311,14 @@ export class AnimationDirective implements OnInit, OnDestroy {
     }
   }
 
-  private emitAnimationEvent(phase: AnimationEvent['phase'], progress: number): void {
+  private emitAnimationEvent(
+    phase: AnimationEvent['phase'],
+    progress: number
+  ): void {
     this.animationEvent.emit({
       elementId: this.elementId(),
       phase,
-      progress
+      progress,
     });
   }
 }

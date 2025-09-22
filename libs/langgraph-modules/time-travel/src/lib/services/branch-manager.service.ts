@@ -84,10 +84,12 @@ export class BranchManagerService {
     const branchMetadata: CreateBranchMetadata<TimeTravelOperationPayloads.BranchOperationPayload> =
       {
         executionId: `exec_${crypto.randomUUID()}`,
-        type: 'progress',
+        threadId: branchThreadId,
+        type: 'checkpoint',
         created_at: new Date().toISOString(),
         nodeId: 'branch-creation',
-        workflowName: (checkpoint.channel_values as any)?.workflowName,
+        workflowName:
+          (checkpoint.channel_values as any)?.workflowName || 'unknown',
         timeTravelType: 'branch',
         sourceInfo: {
           threadId,

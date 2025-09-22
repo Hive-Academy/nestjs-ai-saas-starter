@@ -1,24 +1,20 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { StateGraph } from '@langchain/langgraph';
-import type {
-  StreamMetadata,
-} from '@hive-academy/langgraph-streaming';
+import type { StreamMetadata } from '@hive-academy/langgraph-streaming';
 import {
   StreamEventDecoratorMetadata,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
 import type { IStreamingService } from '@hive-academy/langgraph-core';
-import {
-  WorkflowPerformanceMetadata,
-} from '../interfaces/workflow-metadata.interface';
+import { WorkflowPerformanceMetadata } from '../interfaces/workflow-metadata.interface';
 
 /**
  * Stream Event Processor Service - Adapter Pattern Implementation
- * 
+ *
  * Delegates all streaming operations to IStreamingService adapter.
  * Provides simplified event processing and delegation coordination.
- * 
+ *
  * Responsibilities:
  * - Event delegation to streaming adapter
  * - Progress delegation to streaming adapter
@@ -37,7 +33,9 @@ export class StreamEventProcessorService {
   /**
    * Stream execution - delegates to adapter
    */
-  async streamExecution<TState extends Record<string, any> = Record<string, any>>(
+  async streamExecution<
+    TState extends Record<string, any> = Record<string, any>
+  >(
     graph: StateGraph<TState>,
     input: TState,
     options: {
@@ -48,15 +46,17 @@ export class StreamEventProcessorService {
     }
   ): Promise<void> {
     const { executionId, streamConfig } = options;
-    
-    this.logger.debug(`Delegating stream execution for ${executionId} to adapter`);
-    
+
+    this.logger.debug(
+      `Delegating stream execution for ${executionId} to adapter`
+    );
+
     try {
       // Delegate execution start event to adapter
       await this.streamingService.emitEvent('execution_start', {
         executionId,
         input,
-        config: streamConfig
+        config: streamConfig,
       });
 
       // Setup streaming configuration
@@ -68,45 +68,54 @@ export class StreamEventProcessorService {
         const result = await (graph as any).invoke(input, streamingOptions);
         // Simulate streaming by yielding the result
         const update = result;
-        
+
         // Delegate update processing to adapter
         this.streamingService.streamEvent(executionId, 'workflow', update);
 
         // Delegate progress events if configured
         if (streamConfig?.enableProgress) {
-          this.streamingService.streamProgress(executionId, 'workflow', this.extractProgressData(update));
+          this.streamingService.streamProgress(
+            executionId,
+            'workflow',
+            this.extractProgressData(update)
+          );
         }
-
       } catch (invocationError) {
-        this.logger.error(`Failed to invoke graph for ${executionId}:`, invocationError);
-        const errorMessage = invocationError instanceof Error ? invocationError.message : String(invocationError);
-        
+        this.logger.error(
+          `Failed to invoke graph for ${executionId}:`,
+          invocationError
+        );
+        const errorMessage =
+          invocationError instanceof Error
+            ? invocationError.message
+            : String(invocationError);
+
         // Delegate error event to adapter
         await this.streamingService.emitEvent('execution_error', {
           executionId,
           error: errorMessage,
-          phase: 'invocation'
+          phase: 'invocation',
         });
       }
 
       // Delegate execution completion event to adapter
       await this.streamingService.emitEvent('execution_complete', {
         executionId,
-        completed: true
+        completed: true,
       });
 
       this.logger.debug(`Stream execution completed for ${executionId}`);
-
     } catch (error) {
       this.logger.error(`Stream execution failed for ${executionId}:`, error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       // Delegate fatal error to adapter
       await this.streamingService.emitEvent('execution_error', {
         executionId,
         error: errorMessage,
         phase: 'execution',
-        fatal: true
+        fatal: true,
       });
     }
   }
@@ -123,12 +132,14 @@ export class StreamEventProcessorService {
     // Apply event filtering if configured - simplified since filter is complex type
     if (config?.filter) {
       // Simple filtering - just log that filtering would be applied
-      this.logger.debug(`Filter configured for ${executionId}:${nodeId} - would apply filtering`);
+      this.logger.debug(
+        `Filter configured for ${executionId}:${nodeId} - would apply filtering`
+      );
     }
 
     // Delegate to adapter
     this.streamingService.streamEvent(executionId, nodeId, event);
-    
+
     // Emit to local EventEmitter2 for backwards compatibility
     this.eventEmitter.emit('stream.event', { executionId, nodeId, event });
 
@@ -175,11 +186,11 @@ export class StreamEventProcessorService {
   /**
    * Emit progress event - delegates to adapter
    */
-  async emitProgress(
-    executionId: string,
-    progressData: any
-  ): Promise<void> {
-    return this.streamingService.emitProgress('workflow_progress', { executionId, ...progressData });
+  async emitProgress(executionId: string, progressData: any): Promise<void> {
+    return this.streamingService.emitProgress('workflow_progress', {
+      executionId,
+      ...progressData,
+    });
   }
 
   /**
@@ -189,14 +200,14 @@ export class StreamEventProcessorService {
     executionId: string,
     nodeId: string,
     metadata: TMetadata,
-    isInitial: boolean = false
+    isInitial = false
   ): void {
     const checkpointData = {
       metadata,
       isInitial,
       timestamp: new Date().toISOString(),
     };
-    
+
     this.streamingService.streamEvent(executionId, nodeId, checkpointData);
   }
 
@@ -207,14 +218,14 @@ export class StreamEventProcessorService {
     executionId: string,
     nodeId: string,
     metadata: TMetadata,
-    isInitial: boolean = false
+    isInitial = false
   ): any {
     const checkpointData = {
       metadata,
       isInitial,
       timestamp: new Date().toISOString(),
     };
-    
+
     this.streamingService.streamEvent(executionId, nodeId, checkpointData);
     return checkpointData;
   }
@@ -226,17 +237,16 @@ export class StreamEventProcessorService {
     executionId: string,
     nodeId: string,
     metadata: any,
-    metadataType: string = 'general'
+    metadataType = 'general'
   ): void {
     const metadataEvent = {
       metadata,
       metadataType,
       extractedAt: new Date().toISOString(),
     };
-    
+
     this.streamingService.streamEvent(executionId, nodeId, metadataEvent);
   }
-
 
   /**
    * Apply event filters - utility method
@@ -261,14 +271,17 @@ export class StreamEventProcessorService {
         }
       }
     }
-    
+
     return true;
   }
 
   /**
    * Extract progress data from update - utility method
    */
-  extractProgressData(update: any, config?: StreamProgressDecoratorMetadata): any {
+  extractProgressData(
+    update: any,
+    config?: StreamProgressDecoratorMetadata
+  ): any {
     // Simplified progress extraction
     return {
       completed: this.extractCompletedSteps(update),

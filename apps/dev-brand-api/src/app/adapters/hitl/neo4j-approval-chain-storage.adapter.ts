@@ -1,21 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import {
+import type {
   IApprovalChainStorageService,
   ApprovalLevel,
   ApprovalRequest,
 } from '@hive-academy/langgraph-hitl';
-
 /**
  * Neo4j implementation of approval chain storage service
  * Provides persistent storage for approval chains and requests using Neo4j graph database
  */
 @Injectable()
-export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageService {
+export class Neo4jApprovalChainStorageAdapter
+  implements IApprovalChainStorageService
+{
   private readonly logger = new Logger(Neo4jApprovalChainStorageAdapter.name);
 
   constructor(private readonly neo4jService: Neo4jService) {
-    this.logger.debug('Neo4jApprovalChainStorageAdapter initialized with Neo4jService');
+    this.logger.debug(
+      'Neo4jApprovalChainStorageAdapter initialized with Neo4jService'
+    );
   }
 
   // Chain Management
@@ -23,7 +26,10 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
   /**
    * Store an approval chain configuration
    */
-  async storeApprovalChain(chainId: string, levels: ApprovalLevel[]): Promise<void> {
+  async storeApprovalChain(
+    chainId: string,
+    levels: ApprovalLevel[]
+  ): Promise<void> {
     if (!chainId?.trim()) {
       throw new Error('Chain ID is required');
     }
@@ -63,22 +69,30 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       const result = await this.neo4jService.run(cypher, {
         chainId,
         levelCount: levels.length,
-        levels: levels.map(level => ({
+        levels: levels.map((level) => ({
           id: level.id,
           name: level.name,
           priority: level.priority,
           policy: level.policy,
           approvers: JSON.stringify(level.approvers),
-          conditions: level.conditions ? JSON.stringify(level.conditions) : null,
+          conditions: level.conditions
+            ? JSON.stringify(level.conditions)
+            : null,
           timeoutMs: level.timeoutMs || null,
           autoApproveOnTimeout: level.autoApproveOnTimeout || false,
         })),
       });
 
-      this.logger.debug(`Stored approval chain ${chainId} with ${levels.length} levels`);
+      this.logger.debug(
+        `Stored approval chain ${chainId} with ${levels.length} levels`
+      );
     } catch (error) {
       this.logger.error(`Failed to store approval chain ${chainId}`, error);
-      throw new Error(`Failed to store approval chain: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to store approval chain: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -104,16 +118,22 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
         return null;
       }
 
-      const levels = result.records.map(record => {
+      const levels = result.records.map((record) => {
         const levelNode = (record as any).level.properties;
         return this.mapNodeToApprovalLevel(levelNode);
       });
 
-      this.logger.debug(`Retrieved approval chain ${chainId} with ${levels.length} levels`);
+      this.logger.debug(
+        `Retrieved approval chain ${chainId} with ${levels.length} levels`
+      );
       return levels;
     } catch (error) {
       this.logger.error(`Failed to get approval chain ${chainId}`, error);
-      throw new Error(`Failed to get approval chain: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get approval chain: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -131,22 +151,30 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       const result = await this.neo4jService.run(cypher);
       const chains: Record<string, ApprovalLevel[]> = {};
 
-      result.records.forEach(record => {
+      result.records.forEach((record) => {
         const chainId = (record as any).chainId;
         const levelNodes = (record as any).levels;
-        
+
         const levels = levelNodes
           .map((node: any) => this.mapNodeToApprovalLevel(node.properties))
-          .sort((a: ApprovalLevel, b: ApprovalLevel) => a.priority - b.priority);
-          
+          .sort(
+            (a: ApprovalLevel, b: ApprovalLevel) => a.priority - b.priority
+          );
+
         chains[chainId] = levels;
       });
 
-      this.logger.debug(`Retrieved ${Object.keys(chains).length} approval chains`);
+      this.logger.debug(
+        `Retrieved ${Object.keys(chains).length} approval chains`
+      );
       return chains;
     } catch (error) {
       this.logger.error('Failed to get all approval chains', error);
-      throw new Error(`Failed to get all approval chains: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get all approval chains: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -180,7 +208,11 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       return wasDeleted;
     } catch (error) {
       this.logger.error(`Failed to delete approval chain ${chainId}`, error);
-      throw new Error(`Failed to delete approval chain: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to delete approval chain: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -226,8 +258,15 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
 
       this.logger.debug(`Stored approval request ${request.id}`);
     } catch (error) {
-      this.logger.error(`Failed to store approval request ${request.id}`, error);
-      throw new Error(`Failed to store approval request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to store approval request ${request.id}`,
+        error
+      );
+      throw new Error(
+        `Failed to store approval request: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -259,14 +298,20 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       return request;
     } catch (error) {
       this.logger.error(`Failed to get approval request ${requestId}`, error);
-      throw new Error(`Failed to get approval request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get approval request: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
   /**
    * Get all approval requests for a specific execution
    */
-  async getApprovalRequestsByExecution(executionId: string): Promise<ApprovalRequest[]> {
+  async getApprovalRequestsByExecution(
+    executionId: string
+  ): Promise<ApprovalRequest[]> {
     if (!executionId?.trim()) {
       throw new Error('Execution ID is required');
     }
@@ -280,16 +325,25 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
 
       const result = await this.neo4jService.run(cypher, { executionId });
 
-      const requests = result.records.map(record => {
+      const requests = result.records.map((record) => {
         const requestNode = (record as any).req.properties;
         return this.mapNodeToApprovalRequest(requestNode);
       });
 
-      this.logger.debug(`Found ${requests.length} approval requests for execution ${executionId}`);
+      this.logger.debug(
+        `Found ${requests.length} approval requests for execution ${executionId}`
+      );
       return requests;
     } catch (error) {
-      this.logger.error(`Failed to get approval requests for execution ${executionId}`, error);
-      throw new Error(`Failed to get approval requests by execution: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to get approval requests for execution ${executionId}`,
+        error
+      );
+      throw new Error(
+        `Failed to get approval requests by execution: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -320,10 +374,19 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
         metadata: metadata ? JSON.stringify(metadata) : null,
       });
 
-      this.logger.debug(`Updated approval request ${requestId} status to ${status}`);
+      this.logger.debug(
+        `Updated approval request ${requestId} status to ${status}`
+      );
     } catch (error) {
-      this.logger.error(`Failed to update approval request ${requestId} status`, error);
-      throw new Error(`Failed to update approval request status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to update approval request ${requestId} status`,
+        error
+      );
+      throw new Error(
+        `Failed to update approval request status: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -359,8 +422,15 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
 
       this.logger.debug(`Updated approval request ${request.id}`);
     } catch (error) {
-      this.logger.error(`Failed to update approval request ${request.id}`, error);
-      throw new Error(`Failed to update approval request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to update approval request ${request.id}`,
+        error
+      );
+      throw new Error(
+        `Failed to update approval request: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -387,13 +457,22 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       if (wasDeleted) {
         this.logger.debug(`Deleted approval request ${requestId}`);
       } else {
-        this.logger.debug(`Approval request ${requestId} not found for deletion`);
+        this.logger.debug(
+          `Approval request ${requestId} not found for deletion`
+        );
       }
 
       return wasDeleted;
     } catch (error) {
-      this.logger.error(`Failed to delete approval request ${requestId}`, error);
-      throw new Error(`Failed to delete approval request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to delete approval request ${requestId}`,
+        error
+      );
+      throw new Error(
+        `Failed to delete approval request: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -413,7 +492,7 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
 
       const result = await this.neo4jService.run(cypher);
 
-      const requests = result.records.map(record => {
+      const requests = result.records.map((record) => {
         const requestNode = (record as any).req.properties;
         return this.mapNodeToApprovalRequest(requestNode);
       });
@@ -422,14 +501,20 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       return requests;
     } catch (error) {
       this.logger.error('Failed to get all active requests', error);
-      throw new Error(`Failed to get all active requests: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to get all active requests: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
   /**
    * Get pending approvals for a specific approver
    */
-  async getPendingApprovalsForApprover(approverId: string): Promise<ApprovalRequest[]> {
+  async getPendingApprovalsForApprover(
+    approverId: string
+  ): Promise<ApprovalRequest[]> {
     if (!approverId?.trim()) {
       throw new Error('Approver ID is required');
     }
@@ -446,21 +531,32 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       const result = await this.neo4jService.run(cypher, { approverId });
 
       const requests = result.records
-        .map(record => {
+        .map((record) => {
           const requestNode = (record as any).req.properties;
           return this.mapNodeToApprovalRequest(requestNode);
         })
-        .filter(request => {
+        .filter((request) => {
           // Additional filtering in memory to check if approver is in current level
           const currentLevel = request.chain[request.currentLevel];
-          return currentLevel?.approvers?.some(approver => approver.id === approverId);
+          return currentLevel?.approvers?.some(
+            (approver) => approver.id === approverId
+          );
         });
 
-      this.logger.debug(`Found ${requests.length} pending approvals for approver ${approverId}`);
+      this.logger.debug(
+        `Found ${requests.length} pending approvals for approver ${approverId}`
+      );
       return requests;
     } catch (error) {
-      this.logger.error(`Failed to get pending approvals for approver ${approverId}`, error);
-      throw new Error(`Failed to get pending approvals for approver: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to get pending approvals for approver ${approverId}`,
+        error
+      );
+      throw new Error(
+        `Failed to get pending approvals for approver: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -490,7 +586,11 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       return deletedCount;
     } catch (error) {
       this.logger.error('Failed to cleanup old requests', error);
-      throw new Error(`Failed to cleanup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to cleanup: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
     }
   }
 
@@ -502,7 +602,7 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       const cypher = 'RETURN 1 as result';
       const result = await this.neo4jService.run(cypher);
       const isHealthy = result.records.length > 0;
-      
+
       this.logger.debug(`Health check result: ${isHealthy}`);
       return isHealthy;
     } catch (error) {
@@ -524,7 +624,9 @@ export class Neo4jApprovalChainStorageAdapter implements IApprovalChainStorageSe
       priority: Number(levelNode.priority),
       policy: levelNode.policy,
       approvers: levelNode.approvers ? JSON.parse(levelNode.approvers) : [],
-      conditions: levelNode.conditions ? JSON.parse(levelNode.conditions) : undefined,
+      conditions: levelNode.conditions
+        ? JSON.parse(levelNode.conditions)
+        : undefined,
       timeoutMs: levelNode.timeoutMs ? Number(levelNode.timeoutMs) : undefined,
       autoApproveOnTimeout: Boolean(levelNode.autoApproveOnTimeout),
     };

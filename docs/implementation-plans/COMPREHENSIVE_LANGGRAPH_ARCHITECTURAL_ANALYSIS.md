@@ -17,10 +17,10 @@
 
 - **Purpose**: Core human-in-the-loop approval workflows
 - **Features**:
-    - Basic approval requests with confidence thresholds
-    - Approval chain integration
-    - Risk assessment
-    - Timeout handling with escalation
+  - Basic approval requests with confidence thresholds
+  - Approval chain integration
+  - Risk assessment
+  - Timeout handling with escalation
 - **Dependencies**: `@hive-academy/langgraph-core` types
 - **Lines of Code**: ~400 lines
 - **Responsibility**: Single-purpose HITL functionality
@@ -29,24 +29,24 @@
 
 - **Purpose**: Multi-agent consensus with HITL integration
 - **Features**:
-    - Multi-agent consensus strategies (unanimous, majority, weighted, expert-panel)
-    - Workflow integration with pause/resume
-    - Complex approval routing and escalation
-    - Enhanced approval validators
+  - Multi-agent consensus strategies (unanimous, majority, weighted, expert-panel)
+  - Workflow integration with pause/resume
+  - Complex approval routing and escalation
+  - Enhanced approval validators
 - **Dependencies**: Multiple cross-module dependencies
-- **Lines of Code**: ~800+ lines  
+- **Lines of Code**: ~800+ lines
 - **Responsibility**: Multi-agent coordination + HITL (violates SRP)
 
 ### 1.2 Duplication Assessment
 
-| Feature | HITL Module | Workflow-Engine Module | Assessment |
-|---------|-------------|------------------------|------------|
-| Basic Approval | ✅ Core Implementation | ✅ Enhanced Version | **DUPLICATE** |
-| Confidence Thresholds | ✅ Native Support | ✅ Wrapper Implementation | **DUPLICATE** |
-| Risk Assessment | ✅ Dedicated Service | ✅ Inline Logic | **DUPLICATE** |
-| Timeout Handling | ✅ Service-based | ✅ Promise-based | **DUPLICATE** |
-| Multi-agent Consensus | ❌ Not Supported | ✅ Core Feature | **LEGITIMATE** |
-| Workflow Integration | ❌ Basic | ✅ Advanced | **ENHANCEMENT** |
+| Feature               | HITL Module            | Workflow-Engine Module    | Assessment      |
+| --------------------- | ---------------------- | ------------------------- | --------------- |
+| Basic Approval        | ✅ Core Implementation | ✅ Enhanced Version       | **DUPLICATE**   |
+| Confidence Thresholds | ✅ Native Support      | ✅ Wrapper Implementation | **DUPLICATE**   |
+| Risk Assessment       | ✅ Dedicated Service   | ✅ Inline Logic           | **DUPLICATE**   |
+| Timeout Handling      | ✅ Service-based       | ✅ Promise-based          | **DUPLICATE**   |
+| Multi-agent Consensus | ❌ Not Supported       | ✅ Core Feature           | **LEGITIMATE**  |
+| Workflow Integration  | ❌ Basic               | ✅ Advanced               | **ENHANCEMENT** |
 
 **Root Cause**: Workflow-engine module attempted to enhance HITL functionality instead of composing with existing HITL services.
 
@@ -54,22 +54,22 @@
 
 ### 2.1 HITL Module Services (Correctly Scoped)
 
-| Service | Responsibility | SOLID Compliance | Coupling Level |
-|---------|---------------|------------------|----------------|
-| `HumanApprovalService` | Core approval logic | ✅ SRP | Low |
-| `ConfidenceEvaluatorService` | Confidence scoring | ✅ SRP | Low |
-| `ApprovalChainService` | Chain management | ✅ SRP | Medium |
-| `FeedbackProcessorService` | Feedback handling | ✅ SRP | Low |
-| `ApprovalTimeoutService` | Timeout management | ✅ SRP | Low |
+| Service                      | Responsibility      | SOLID Compliance | Coupling Level |
+| ---------------------------- | ------------------- | ---------------- | -------------- |
+| `HumanApprovalService`       | Core approval logic | ✅ SRP           | Low            |
+| `ConfidenceEvaluatorService` | Confidence scoring  | ✅ SRP           | Low            |
+| `ApprovalChainService`       | Chain management    | ✅ SRP           | Medium         |
+| `FeedbackProcessorService`   | Feedback handling   | ✅ SRP           | Low            |
+| `ApprovalTimeoutService`     | Timeout management  | ✅ SRP           | Low            |
 
 ### 2.2 Workflow-Engine Services (Boundary Violations)
 
-| Service | Responsibility | SOLID Violations | Issue |
-|---------|---------------|------------------|--------|
-| `AgentWorkflowBridgeService` | Agent coordination + workflow bridging | ⚠️ SRP | Too many responsibilities |
-| `EnhancedDecoratorTranslationService` | Multi-module translation | ❌ DIP | Direct dependencies on HITL |
-| `CentralRegistryService` | Global agent registry | ✅ SRP | Correctly scoped |
-| `WorkflowExecutionService` | Workflow execution + HITL | ❌ SRP | Should delegate to HITL |
+| Service                               | Responsibility                         | SOLID Violations | Issue                       |
+| ------------------------------------- | -------------------------------------- | ---------------- | --------------------------- |
+| `AgentWorkflowBridgeService`          | Agent coordination + workflow bridging | ⚠️ SRP           | Too many responsibilities   |
+| `EnhancedDecoratorTranslationService` | Multi-module translation               | ❌ DIP           | Direct dependencies on HITL |
+| `CentralRegistryService`              | Global agent registry                  | ✅ SRP           | Correctly scoped            |
+| `WorkflowExecutionService`            | Workflow execution + HITL              | ❌ SRP           | Should delegate to HITL     |
 
 ### 2.3 Cross-Module Coupling Issues
 
@@ -152,31 +152,31 @@ Functional-API ─────┴───────────────�
 
 ### 4.2 Responsibility Ownership Issues
 
-| Capability | Current Owner | Should Be Owned By | Justification |
-|-----------|---------------|-------------------|---------------|
-| Basic Approval Logic | Both modules | HITL Only | Core domain responsibility |
-| Confidence Evaluation | Both modules | HITL Only | Domain-specific logic |
-| Multi-agent Consensus | Workflow-Engine | Multi-Agent Module | Better domain fit |
-| Workflow Integration | Workflow-Engine | Workflow-Engine | Correct ownership |
-| Approval Chains | HITL | HITL | Correct ownership |
+| Capability            | Current Owner   | Should Be Owned By | Justification              |
+| --------------------- | --------------- | ------------------ | -------------------------- |
+| Basic Approval Logic  | Both modules    | HITL Only          | Core domain responsibility |
+| Confidence Evaluation | Both modules    | HITL Only          | Domain-specific logic      |
+| Multi-agent Consensus | Workflow-Engine | Multi-Agent Module | Better domain fit          |
+| Workflow Integration  | Workflow-Engine | Workflow-Engine    | Correct ownership          |
+| Approval Chains       | HITL            | HITL               | Correct ownership          |
 
 ## 5. Root Cause Analysis
 
 ### 5.1 Primary Architectural Debt Sources
 
 1. **Premature Optimization**: Workflow-engine tried to enhance HITL instead of composing
-2. **Unclear Module Boundaries**: No clear ownership model for shared functionality  
+2. **Unclear Module Boundaries**: No clear ownership model for shared functionality
 3. **Copy-Paste Programming**: Duplicating logic instead of proper abstraction
 4. **Insufficient Abstraction**: Missing shared interfaces for cross-module communication
 
 ### 5.2 Technical Debt Metrics
 
-| Metric | Current State | Target State | Gap |
-|--------|---------------|--------------|-----|
-| Duplicate Code Lines | ~400 lines | 0 lines | 100% reduction needed |
-| Circular Dependencies | 5 identified | 0 | Complete elimination |
-| TypeScript Errors | 30+ errors | 0 errors | Full type safety |
-| Service Responsibilities | 3.2 avg per service | 1.0 max | 70% reduction |
+| Metric                   | Current State       | Target State | Gap                   |
+| ------------------------ | ------------------- | ------------ | --------------------- |
+| Duplicate Code Lines     | ~400 lines          | 0 lines      | 100% reduction needed |
+| Circular Dependencies    | 5 identified        | 0            | Complete elimination  |
+| TypeScript Errors        | 30+ errors          | 0 errors     | Full type safety      |
+| Service Responsibilities | 3.2 avg per service | 1.0 max      | 70% reduction         |
 
 ## 6. Proposed Architectural Solution
 
@@ -185,7 +185,7 @@ Functional-API ─────┴───────────────�
 **Phase 1: Shared Interface Layer**
 
 ```typescript
-// New: @hive-academy/langgraph-shared-interfaces
+// New: @hive-academy/langgraph-core
 export interface IApprovalService {
   requestApproval(request: ApprovalRequest): Promise<ApprovalResponse>;
   evaluateConfidence(state: WorkflowState): Promise<number>;
@@ -199,7 +199,7 @@ export interface IMultiAgentConsensus {
 **Phase 2: Module Responsibility Realignment**
 
 - **HITL Module**: Pure approval logic, confidence evaluation, chain management
-- **Workflow-Engine**: Workflow orchestration, execution control, integration coordination  
+- **Workflow-Engine**: Workflow orchestration, execution control, integration coordination
 - **Multi-Agent Module**: Agent consensus, coordination strategies, voting mechanisms
 
 **Phase 3: Composition Over Inheritance**
@@ -208,11 +208,8 @@ export interface IMultiAgentConsensus {
 // Workflow-Engine composes with HITL instead of duplicating
 @Injectable()
 export class WorkflowExecutionService {
-  constructor(
-    private readonly hitlService: IApprovalService,
-    private readonly consensusService: IMultiAgentConsensus
-  ) {}
-  
+  constructor(private readonly hitlService: IApprovalService, private readonly consensusService: IMultiAgentConsensus) {}
+
   async executeWithApproval(step: WorkflowStep) {
     // Delegate to HITL for approval logic
     const approval = await this.hitlService.requestApproval(request);
@@ -245,7 +242,7 @@ export class WorkflowExecutionService {
 - **Software Architect**: Create shared interface layer
 - **Priority**: P0-Critical (blocking other work)
 
-### Phase 2: Decorator Consolidation (2-3 days)  
+### Phase 2: Decorator Consolidation (2-3 days)
 
 - **Backend Developer**: Merge decorator implementations
 - **Senior Tester**: Comprehensive approval workflow testing
@@ -305,7 +302,7 @@ export class WorkflowExecutionService {
 ### 10.2 Agent Delegation Strategy
 
 - **project-manager**: Overall coordination and milestone tracking
-- **software-architect**: Design shared interfaces and module boundaries  
+- **software-architect**: Design shared interfaces and module boundaries
 - **backend-developer**: Implement type fixes and service consolidation
 - **senior-tester**: Create comprehensive test coverage for approval workflows
 - **code-reviewer**: Validate architectural compliance and quality gates

@@ -8,10 +8,10 @@ import type {
 
 /**
  * Stream Management Service - Adapter Pattern Implementation
- * 
+ *
  * Delegates all streaming operations to IStreamingService adapter.
  * Provides simplified configuration management for workflow-engine.
- * 
+ *
  * Responsibilities:
  * - Configuration delegation to streaming adapter
  * - Simple health status reporting
@@ -20,7 +20,7 @@ import type {
 @Injectable()
 export class StreamManagementService {
   private readonly logger = new Logger(StreamManagementService.name);
-  
+
   constructor(private readonly streamingService: IStreamingService) {}
 
   /**
@@ -31,7 +31,9 @@ export class StreamManagementService {
     nodeId: string;
     config: StreamTokenDecoratorMetadata;
   }): Promise<void> {
-    this.logger.debug(`Initializing token stream for ${options.executionId}:${options.nodeId}`);
+    this.logger.debug(
+      `Initializing token stream for ${options.executionId}:${options.nodeId}`
+    );
     return this.streamingService.initializeTokenStream(options);
   }
 
@@ -44,7 +46,12 @@ export class StreamManagementService {
     token: string,
     metadata?: Record<string, unknown>
   ): void {
-    return this.streamingService.streamToken(executionId, nodeId, token, metadata);
+    return this.streamingService.streamToken(
+      executionId,
+      nodeId,
+      token,
+      metadata
+    );
   }
 
   /**
@@ -112,7 +119,10 @@ export class StreamManagementService {
   closeStream(executionId: string): void {
     this.logger.debug(`Closing stream for ${executionId}`);
     // Delegate to adapter if it has this capability
-    if ('closeStream' in this.streamingService && typeof this.streamingService.closeStream === 'function') {
+    if (
+      'closeStream' in this.streamingService &&
+      typeof this.streamingService.closeStream === 'function'
+    ) {
       this.streamingService.closeStream(executionId);
     }
   }
@@ -120,47 +130,55 @@ export class StreamManagementService {
   /**
    * Get token stream config - simplified mock for adapter pattern
    */
-  getTokenStreamConfig(executionId: string, nodeId: string): StreamTokenDecoratorMetadata | null {
+  getTokenStreamConfig(
+    executionId: string,
+    nodeId: string
+  ): StreamTokenDecoratorMetadata | null {
     // Simplified - return default config since adapter manages this
     return {
       methodName: 'default',
       enabled: true,
       bufferSize: 100,
-      flushInterval: 1000
+      flushInterval: 1000,
     };
   }
 
   /**
    * Set token stream config - delegates to adapter
    */
-  setTokenStreamConfig(executionId: string, nodeId: string, config: StreamTokenDecoratorMetadata): void {
-    this.logger.debug(`Setting token stream config for ${executionId}:${nodeId}`);
+  setTokenStreamConfig(
+    executionId: string,
+    nodeId: string,
+    config: StreamTokenDecoratorMetadata
+  ): void {
+    this.logger.debug(
+      `Setting token stream config for ${executionId}:${nodeId}`
+    );
     // Delegate to adapter if it has this capability
-    if ('setTokenStreamConfig' in this.streamingService && typeof this.streamingService.setTokenStreamConfig === 'function') {
+    if (
+      'setTokenStreamConfig' in this.streamingService &&
+      typeof this.streamingService.setTokenStreamConfig === 'function'
+    ) {
       this.streamingService.setTokenStreamConfig(executionId, nodeId, config);
     }
   }
 
   /**
-   * Get stream - simplified mock for adapter pattern
-   */
-  getStream(executionId: string): any {
-    this.logger.debug(`Getting stream for ${executionId}`);
-    // Return mock observable since adapter manages streams
-    return {
-      pipe: () => ({
-        subscribe: () => ({ unsubscribe: () => {} })
-      })
-    };
-  }
-
-  /**
    * Update streaming config - delegates to adapter
    */
-  updateStreamingConfig(data: { executionId: string; nodeId: string; config: any }): void {
-    this.logger.debug(`Updating streaming config for ${data.executionId}:${data.nodeId}`);
+  updateStreamingConfig(data: {
+    executionId: string;
+    nodeId: string;
+    config: any;
+  }): void {
+    this.logger.debug(
+      `Updating streaming config for ${data.executionId}:${data.nodeId}`
+    );
     // Delegate to adapter if it has this capability
-    if ('updateStreamingConfig' in this.streamingService && typeof this.streamingService.updateStreamingConfig === 'function') {
+    if (
+      'updateStreamingConfig' in this.streamingService &&
+      typeof this.streamingService.updateStreamingConfig === 'function'
+    ) {
       this.streamingService.updateStreamingConfig(data);
     }
   }
@@ -179,7 +197,10 @@ export class StreamManagementService {
   cleanupStaleStreams(): number {
     this.logger.debug('Cleaning up stale streams');
     // Delegate to adapter if it has this capability
-    if ('cleanupStaleStreams' in this.streamingService && typeof this.streamingService.cleanupStaleStreams === 'function') {
+    if (
+      'cleanupStaleStreams' in this.streamingService &&
+      typeof this.streamingService.cleanupStaleStreams === 'function'
+    ) {
       return this.streamingService.cleanupStaleStreams();
     }
     return 0;
@@ -188,10 +209,19 @@ export class StreamManagementService {
   /**
    * Set event stream config - delegates to adapter
    */
-  setEventStreamConfig(executionId: string, nodeId: string, config: StreamEventDecoratorMetadata): void {
-    this.logger.debug(`Setting event stream config for ${executionId}:${nodeId}`);
+  setEventStreamConfig(
+    executionId: string,
+    nodeId: string,
+    config: StreamEventDecoratorMetadata
+  ): void {
+    this.logger.debug(
+      `Setting event stream config for ${executionId}:${nodeId}`
+    );
     // Delegate to adapter if it has this capability
-    if ('setEventStreamConfig' in this.streamingService && typeof this.streamingService.setEventStreamConfig === 'function') {
+    if (
+      'setEventStreamConfig' in this.streamingService &&
+      typeof this.streamingService.setEventStreamConfig === 'function'
+    ) {
       this.streamingService.setEventStreamConfig(executionId, nodeId, config);
     }
   }
@@ -199,11 +229,24 @@ export class StreamManagementService {
   /**
    * Set progress stream config - delegates to adapter
    */
-  setProgressStreamConfig(executionId: string, nodeId: string, config: StreamProgressDecoratorMetadata): void {
-    this.logger.debug(`Setting progress stream config for ${executionId}:${nodeId}`);
+  setProgressStreamConfig(
+    executionId: string,
+    nodeId: string,
+    config: StreamProgressDecoratorMetadata
+  ): void {
+    this.logger.debug(
+      `Setting progress stream config for ${executionId}:${nodeId}`
+    );
     // Delegate to adapter if it has this capability
-    if ('setProgressStreamConfig' in this.streamingService && typeof this.streamingService.setProgressStreamConfig === 'function') {
-      this.streamingService.setProgressStreamConfig(executionId, nodeId, config);
+    if (
+      'setProgressStreamConfig' in this.streamingService &&
+      typeof this.streamingService.setProgressStreamConfig === 'function'
+    ) {
+      this.streamingService.setProgressStreamConfig(
+        executionId,
+        nodeId,
+        config
+      );
     }
   }
 

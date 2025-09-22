@@ -12,6 +12,9 @@ import {
   Neo4jGraphAdapter,
   Neo4jHitlStorageAdapter,
   Neo4jInterruptionStorageAdapter,
+  Neo4jConfidenceStorageAdapter,
+  Neo4jFeedbackStorageAdapter,
+  Neo4jApprovalChainStorageAdapter,
 } from './adapters';
 
 // LangGraph modules with proper streaming integration
@@ -122,6 +125,9 @@ import {
         adapters: {
           storage: Neo4jHitlStorageAdapter,
           interruptionStorage: Neo4jInterruptionStorageAdapter,
+          confidenceStorage: Neo4jConfidenceStorageAdapter,
+          feedbackStorage: Neo4jFeedbackStorageAdapter,
+          approvalChainStorage: Neo4jApprovalChainStorageAdapter,
         },
       }),
       inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
@@ -209,6 +215,17 @@ import {
     BusinessWorkflowsModule,
   ],
   controllers: [HealthController],
-  providers: [AppStreamingManager],
+  providers: [
+    AppStreamingManager,
+    // HITL Adapters
+    Neo4jHitlStorageAdapter,
+    Neo4jInterruptionStorageAdapter,
+    Neo4jConfidenceStorageAdapter,
+    Neo4jFeedbackStorageAdapter,
+    Neo4jApprovalChainStorageAdapter,
+    // Memory Adapters
+    ChromaVectorAdapter,
+    Neo4jGraphAdapter,
+  ],
 })
 export class AppModule {}

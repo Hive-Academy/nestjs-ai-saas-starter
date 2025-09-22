@@ -1,4 +1,7 @@
-import { ApprovalLevel, ApprovalRequest } from '../services/approval-chain.service';
+import type {
+  ApprovalLevel,
+  ApprovalRequest,
+} from '../services/approval-chain.service';
 
 /**
  * Storage interface for approval chains and requests
@@ -40,7 +43,9 @@ export interface IApprovalChainStorageService {
   /**
    * Get all approval requests for a specific execution
    */
-  getApprovalRequestsByExecution(executionId: string): Promise<ApprovalRequest[]>;
+  getApprovalRequestsByExecution(
+    executionId: string
+  ): Promise<ApprovalRequest[]>;
 
   /**
    * Update approval request status and metadata
@@ -70,7 +75,9 @@ export interface IApprovalChainStorageService {
   /**
    * Get pending approvals for a specific approver
    */
-  getPendingApprovalsForApprover(approverId: string): Promise<ApprovalRequest[]>;
+  getPendingApprovalsForApprover(
+    approverId: string
+  ): Promise<ApprovalRequest[]>;
 
   /**
    * Cleanup old requests and chains

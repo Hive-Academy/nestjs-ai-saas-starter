@@ -1,6 +1,6 @@
 /**
  * Comprehensive Validation Decorators for Business Workflows
- * 
+ *
  * Provides enterprise-grade validation with:
  * - Type-safe validation decorators
  * - Context-aware error messages
@@ -10,7 +10,10 @@
  */
 
 import 'reflect-metadata';
-import { InputValidationError, StateValidationError } from '../errors/business-workflow.errors';
+import {
+  InputValidationError,
+  StateValidationError,
+} from '../errors/business-workflow.errors';
 
 // ============================================================================
 // VALIDATION METADATA KEYS
@@ -51,7 +54,11 @@ interface StateValidation {
  * Ensures the field is not null, undefined, or empty string
  */
 export function Required(message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'required',
       message: message || `Field is required`,
@@ -59,7 +66,13 @@ export function Required(message?: string) {
 
     if (typeof parameterIndex === 'number') {
       // Parameter validation
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       // Property validation
       addPropertyValidation(target, propertyKey as string, validationRule);
@@ -71,15 +84,29 @@ export function Required(message?: string) {
  * String length validation
  */
 export function StringLength(min?: number, max?: number, message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'stringLength',
       constraint: { min, max },
-      message: message || `String length must be between ${min || 0} and ${max || 'unlimited'} characters`,
+      message:
+        message ||
+        `String length must be between ${min || 0} and ${
+          max || 'unlimited'
+        } characters`,
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -89,8 +116,15 @@ export function StringLength(min?: number, max?: number, message?: string) {
 /**
  * Type validation
  */
-export function IsType(expectedType: 'string' | 'number' | 'boolean' | 'object' | 'array', message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+export function IsType(
+  expectedType: 'string' | 'number' | 'boolean' | 'object' | 'array',
+  message?: string
+) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'isType',
       constraint: expectedType,
@@ -98,7 +132,13 @@ export function IsType(expectedType: 'string' | 'number' | 'boolean' | 'object' 
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -109,14 +149,24 @@ export function IsType(expectedType: 'string' | 'number' | 'boolean' | 'object' 
  * Email validation
  */
 export function IsEmail(message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'isEmail',
       message: message || 'Must be a valid email address',
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -127,14 +177,24 @@ export function IsEmail(message?: string) {
  * URL validation
  */
 export function IsUrl(message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'isUrl',
       message: message || 'Must be a valid URL',
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -145,7 +205,11 @@ export function IsUrl(message?: string) {
  * Pattern validation (regex)
  */
 export function Matches(pattern: RegExp, message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'matches',
       constraint: pattern,
@@ -153,7 +217,13 @@ export function Matches(pattern: RegExp, message?: string) {
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -164,15 +234,26 @@ export function Matches(pattern: RegExp, message?: string) {
  * Numeric range validation
  */
 export function Range(min?: number, max?: number, message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'range',
       constraint: { min, max },
-      message: message || `Value must be between ${min || '-∞'} and ${max || '+∞'}`,
+      message:
+        message || `Value must be between ${min || '-∞'} and ${max || '+∞'}`,
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -182,16 +263,34 @@ export function Range(min?: number, max?: number, message?: string) {
 /**
  * Array validation
  */
-export function IsArray(minLength?: number, maxLength?: number, message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+export function IsArray(
+  minLength?: number,
+  maxLength?: number,
+  message?: string
+) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'isArray',
       constraint: { minLength, maxLength },
-      message: message || `Must be an array with length between ${minLength || 0} and ${maxLength || 'unlimited'}`,
+      message:
+        message ||
+        `Must be an array with length between ${minLength || 0} and ${
+          maxLength || 'unlimited'
+        }`,
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -202,15 +301,27 @@ export function IsArray(minLength?: number, maxLength?: number, message?: string
  * Enum validation
  */
 export function IsEnum(enumObject: any, message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'isEnum',
       constraint: enumObject,
-      message: message || `Value must be one of: ${Object.values(enumObject).join(', ')}`,
+      message:
+        message ||
+        `Value must be one of: ${Object.values(enumObject).join(', ')}`,
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'value');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'value'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -225,10 +336,11 @@ export function IsEnum(enumObject: any, message?: string) {
  * GitHub username validation
  */
 export function IsGitHubUsername(message?: string) {
-  const githubUsernamePattern = /^[a-zA-Z0-9]([a-zA-Z0-9\-]){0,38}$/;
+  const githubUsernamePattern = /^[a-zA-Z0-9]([a-zA-Z0-9-]){0,38}$/;
   return Matches(
     githubUsernamePattern,
-    message || 'Must be a valid GitHub username (1-39 characters, alphanumeric and hyphens)'
+    message ||
+      'Must be a valid GitHub username (1-39 characters, alphanumeric and hyphens)'
   );
 }
 
@@ -265,10 +377,11 @@ export function IsContentType(message?: string) {
  * Agent ID validation
  */
 export function IsAgentId(message?: string) {
-  const agentPattern = /^[a-z][a-z0-9\-]*[a-z0-9]$/;
+  const agentPattern = /^[a-z][a-z0-9-]*[a-z0-9]$/;
   return Matches(
     agentPattern,
-    message || 'Agent ID must be lowercase, start with letter, and contain only letters, numbers, and hyphens'
+    message ||
+      'Agent ID must be lowercase, start with letter, and contain only letters, numbers, and hyphens'
   );
 }
 
@@ -276,14 +389,24 @@ export function IsAgentId(message?: string) {
  * Workflow state validation
  */
 export function IsWorkflowState(message?: string) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+  return function (
+    target: any,
+    propertyKey: string | symbol | undefined,
+    parameterIndex?: number
+  ) {
     const validationRule: ValidationRule = {
       type: 'isWorkflowState',
       message: message || 'Must be a valid workflow state object',
     };
 
     if (typeof parameterIndex === 'number') {
-      addParameterValidation(target, propertyKey as string, parameterIndex, validationRule, 'state');
+      addParameterValidation(
+        target,
+        propertyKey as string,
+        parameterIndex,
+        validationRule,
+        'state'
+      );
     } else {
       addPropertyValidation(target, propertyKey as string, validationRule);
     }
@@ -297,12 +420,16 @@ export function IsWorkflowState(message?: string) {
 /**
  * Validate all parameters of a method
  */
-export function ValidateParameters(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function ValidateParameters(
+  target: any,
+  propertyKey: string,
+  descriptor: PropertyDescriptor
+) {
   const originalMethod = descriptor.value;
 
   descriptor.value = function (...args: any[]) {
     const parameterValidations = getParameterValidations(target, propertyKey);
-    
+
     if (parameterValidations.length > 0) {
       validateParameters(args, parameterValidations, propertyKey);
     }
@@ -316,13 +443,19 @@ export function ValidateParameters(target: any, propertyKey: string, descriptor:
 /**
  * Validate workflow state before method execution
  */
-export function ValidateState(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function ValidateState(
+  target: any,
+  propertyKey: string,
+  descriptor: PropertyDescriptor
+) {
   const originalMethod = descriptor.value;
 
   descriptor.value = function (...args: any[]) {
     // Find state parameter (usually first or second parameter)
-    const stateArg = args.find(arg => arg && typeof arg === 'object' && arg.metadata);
-    
+    const stateArg = args.find(
+      (arg) => arg && typeof arg === 'object' && arg.metadata
+    );
+
     if (stateArg) {
       validateWorkflowState(stateArg, propertyKey);
     }
@@ -336,11 +469,15 @@ export function ValidateState(target: any, propertyKey: string, descriptor: Prop
 /**
  * Comprehensive validation (both parameters and state)
  */
-export function Validate(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function Validate(
+  target: any,
+  propertyKey: string,
+  descriptor: PropertyDescriptor
+) {
   // Apply both parameter and state validation
   ValidateParameters(target, propertyKey, descriptor);
   ValidateState(target, propertyKey, descriptor);
-  
+
   return descriptor;
 }
 
@@ -358,30 +495,45 @@ function addParameterValidation(
   rule: ValidationRule,
   parameterName: string
 ) {
-  const existingValidations = Reflect.getMetadata(PARAMETER_METADATA_KEY, target, methodName) || [];
-  
-  let paramValidation = existingValidations.find((pv: ParameterValidation) => pv.index === parameterIndex);
+  const existingValidations =
+    Reflect.getMetadata(PARAMETER_METADATA_KEY, target, methodName) || [];
+
+  let paramValidation = existingValidations.find(
+    (pv: ParameterValidation) => pv.index === parameterIndex
+  );
   if (!paramValidation) {
     paramValidation = { index: parameterIndex, rules: [], parameterName };
     existingValidations.push(paramValidation);
   }
-  
+
   paramValidation.rules.push(rule);
-  Reflect.defineMetadata(PARAMETER_METADATA_KEY, existingValidations, target, methodName);
+  Reflect.defineMetadata(
+    PARAMETER_METADATA_KEY,
+    existingValidations,
+    target,
+    methodName
+  );
 }
 
 /**
  * Add property validation metadata
  */
-function addPropertyValidation(target: any, propertyKey: string, rule: ValidationRule) {
-  const existingValidations = Reflect.getMetadata(VALIDATION_METADATA_KEY, target) || [];
-  
-  let propValidation = existingValidations.find((pv: StateValidation) => pv.propertyKey === propertyKey);
+function addPropertyValidation(
+  target: any,
+  propertyKey: string,
+  rule: ValidationRule
+) {
+  const existingValidations =
+    Reflect.getMetadata(VALIDATION_METADATA_KEY, target) || [];
+
+  let propValidation = existingValidations.find(
+    (pv: StateValidation) => pv.propertyKey === propertyKey
+  );
   if (!propValidation) {
     propValidation = { propertyKey, rules: [] };
     existingValidations.push(propValidation);
   }
-  
+
   propValidation.rules.push(rule);
   Reflect.defineMetadata(VALIDATION_METADATA_KEY, existingValidations, target);
 }
@@ -389,24 +541,32 @@ function addPropertyValidation(target: any, propertyKey: string, rule: Validatio
 /**
  * Get parameter validations for a method
  */
-function getParameterValidations(target: any, methodName: string): ParameterValidation[] {
+function getParameterValidations(
+  target: any,
+  methodName: string
+): ParameterValidation[] {
   return Reflect.getMetadata(PARAMETER_METADATA_KEY, target, methodName) || [];
 }
 
 /**
  * Validate method parameters
  */
-function validateParameters(args: any[], validations: ParameterValidation[], methodName: string) {
+function validateParameters(
+  args: any[],
+  validations: ParameterValidation[],
+  methodName: string
+) {
   for (const validation of validations) {
     const value = args[validation.index];
-    
+
     for (const rule of validation.rules) {
       const isValid = validateValue(value, rule);
       if (!isValid) {
         throw new InputValidationError(
           validation.parameterName,
           value,
-          rule.message || `Validation failed for parameter ${validation.parameterName}`,
+          rule.message ||
+            `Validation failed for parameter ${validation.parameterName}`,
           { methodName, parameterIndex: validation.index, rule: rule.type }
         );
       }
@@ -479,21 +639,24 @@ function validateValue(value: any, rule: ValidationRule): boolean {
     case 'required':
       return value !== null && value !== undefined && value !== '';
 
-    case 'stringLength':
+    case 'stringLength': {
       if (typeof value !== 'string') return false;
       const { min: minVal = 0, max: maxVal = Infinity } = rule.constraint;
       return value.length >= minVal && value.length <= maxVal;
+    }
 
-    case 'isType':
+    case 'isType': {
       if (rule.constraint === 'array') {
         return Array.isArray(value);
       }
       return typeof value === rule.constraint;
+    }
 
-    case 'isEmail':
+    case 'isEmail': {
       if (typeof value !== 'string') return false;
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       return emailPattern.test(value);
+    }
 
     case 'isUrl':
       if (typeof value !== 'string') return false;
@@ -508,15 +671,21 @@ function validateValue(value: any, rule: ValidationRule): boolean {
       if (typeof value !== 'string') return false;
       return rule.constraint.test(value);
 
-    case 'range':
+    case 'range': {
       if (typeof value !== 'number') return false;
-      const { min: minRange = -Infinity, max: maxRange = Infinity } = rule.constraint;
+      const { min: minRange = -Infinity, max: maxRange = Infinity } =
+        rule.constraint;
       return value >= minRange && value <= maxRange;
+    }
 
-    case 'isArray':
+    case 'isArray': {
       if (!Array.isArray(value)) return false;
-      const { minLength: minArrayLength = 0, maxLength: maxArrayLength = Infinity } = rule.constraint;
+      const {
+        minLength: minArrayLength = 0,
+        maxLength: maxArrayLength = Infinity,
+      } = rule.constraint;
       return value.length >= minArrayLength && value.length <= maxArrayLength;
+    }
 
     case 'isEnum':
       return Object.values(rule.constraint).includes(value);
@@ -546,7 +715,10 @@ function validateWorkflowStateStructure(value: any): boolean {
 /**
  * Manual validation function for custom scenarios
  */
-export function validateValue(value: any, rules: ValidationRule[]): { isValid: boolean; errors: string[] } {
+export function validateValueWithRules(
+  value: any,
+  rules: ValidationRule[]
+): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   for (const rule of rules) {
@@ -573,8 +745,8 @@ export function validateObject(
 
   for (const [key, rules] of Object.entries(schema)) {
     const value = obj[key];
-    const result = validateValue(value, rules);
-    
+    const result = validateValueWithRules(value, rules);
+
     if (!result.isValid) {
       errors[key] = result.errors;
     }
@@ -587,4 +759,4 @@ export function validateObject(
 }
 
 // Export validation rule interface for custom validators
-export { ValidationRule, ParameterValidation, StateValidation };
+export type { ValidationRule, ParameterValidation, StateValidation };

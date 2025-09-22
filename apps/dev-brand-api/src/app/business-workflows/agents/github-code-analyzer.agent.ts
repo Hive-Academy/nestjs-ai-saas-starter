@@ -24,8 +24,15 @@ import {
 import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { GitHubIntegrationTools } from '../core/tools/github-integration.tools';
-import { GitHubIntegrationError, AgentExecutionError } from '../core/errors/business-workflow.errors';
-import { Validate, IsGitHubUsername, Required } from '../core/validation/workflow.validators';
+import {
+  GitHubIntegrationError,
+  AgentExecutionError,
+} from '../core/errors/business-workflow.errors';
+import {
+  Validate,
+  IsGitHubUsername,
+  Required,
+} from '../core/validation/workflow.validators';
 import { Optimize } from '../core/performance/optimization.decorators';
 
 /**
@@ -61,7 +68,12 @@ import { Optimize } from '../core/performance/optimization.decorators';
     'developer-insights',
     'ai-synthesis',
   ],
-  tools: ['github-analyzer', 'achievement-extractor', 'developer-insights', 'ai-synthesis'],
+  tools: [
+    'github-analyzer',
+    'achievement-extractor',
+    'developer-insights',
+    'ai-synthesis',
+  ],
   priority: 'high',
   executionTime: 'fast',
   workflowConfig: {
@@ -76,14 +88,14 @@ import { Optimize } from '../core/performance/optimization.decorators';
 })
 @Workflow({
   name: 'github-analyzer-workflow',
-  description: 'AI-powered GitHub repository analysis and achievement extraction',
+  description:
+    'AI-powered GitHub repository analysis and achievement extraction',
   streaming: true,
   confidenceThreshold: 0.8,
   metrics: true,
 })
 @Injectable()
 export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
-  
   // Required abstract property implementation
   public readonly workflowConfig = {
     enableInternalStreaming: true,
@@ -99,10 +111,14 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
     private readonly llmProvider: LlmProviderService,
     private readonly githubTools: GitHubIntegrationTools,
     @Inject(EventEmitter2) eventEmitter: EventEmitter2,
-    @Inject(WorkflowGraphBuilderService) graphBuilder: WorkflowGraphBuilderService,
+    @Inject(WorkflowGraphBuilderService)
+    graphBuilder: WorkflowGraphBuilderService,
     @Inject(SubgraphManagerService) subgraphManager: SubgraphManagerService,
-    @Inject(MetadataProcessorService) metadataProcessor: MetadataProcessorService,
-    @Optional() @Inject(WorkflowStreamService) streamService?: WorkflowStreamService,
+    @Inject(MetadataProcessorService)
+    metadataProcessor: MetadataProcessorService,
+    @Optional()
+    @Inject(WorkflowStreamService)
+    streamService?: WorkflowStreamService,
     @Optional() eventProcessor?: EventStreamProcessorService
   ) {
     super(
@@ -121,7 +137,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    */
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
-  async initializeGitHubAnalysis(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async initializeGitHubAnalysis(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
 
@@ -140,7 +158,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
       typeof state.metadata?.timeframe === 'string'
         ? state.metadata.timeframe
         : 'month';
-    
+
     return {
       state: {
         ...state,
@@ -169,7 +187,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
     cache: { ttl: 900000, maxSize: 100 }, // 15 minute cache for GitHub data
     circuitBreaker: { failureThreshold: 3, resetTimeout: 30000 },
     timeout: 90000,
-    metrics: { trackExecutionTime: true, trackErrorRate: true }
+    metrics: { trackExecutionTime: true, trackErrorRate: true },
   })
   async analyzeGitHubActivity(
     @Required() context: TaskExecutionContext
@@ -201,7 +219,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
       };
     } catch (error: any) {
       console.error('❌ GitHub analysis failed:', error);
-      
+
       // Create structured error with context
       const githubError = new GitHubIntegrationError(
         'analyzeGitHubActivity',
@@ -221,7 +239,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    */
   @Task({ dependsOn: ['analyzeGitHubActivity'] })
   @StreamProgress({ enabled: true })
-  async extractAchievements(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async extractAchievements(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubData = state.metadata?.githubData;
 
@@ -266,18 +286,21 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    */
   @Task({ dependsOn: ['extractAchievements'] })
   @StreamProgress({ enabled: true })
-  async generateDeveloperInsights(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async generateDeveloperInsights(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const githubData = state.metadata?.githubData;
 
     try {
       console.log('🔍 Generating developer insights...');
-      const developerInsights = await this.githubTools.generateDeveloperInsights({
-        username: githubUsername,
-        commits: githubData?.commits || [],
-        repositories: githubData?.repositories || [],
-      });
+      const developerInsights =
+        await this.githubTools.generateDeveloperInsights({
+          username: githubUsername,
+          commits: githubData?.commits || [],
+          repositories: githubData?.repositories || [],
+        });
 
       return {
         state: {
@@ -298,7 +321,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
           metadata: {
             ...state.metadata,
             currentStep: 'insights-error',
-            developerInsights: { technicalExpertise: { breadth: 'Full-stack', complexity: 'High' } },
+            developerInsights: {
+              technicalExpertise: { breadth: 'Full-stack', complexity: 'High' },
+            },
             error: error.message,
           },
         },
@@ -313,7 +338,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   @Task({ dependsOn: ['generateDeveloperInsights'] })
   @StreamProgress({ enabled: true })
   @StreamToken({ enabled: true, format: 'structured' })
-  async synthesizeWithAI(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async synthesizeWithAI(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const githubData = state.metadata?.githubData;
@@ -351,7 +378,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
       };
     } catch (error) {
       console.error('❌ AI synthesis failed:', error);
-      const fallbackAnalysis = this.generateFallbackGitHubAnalysis(githubUsername, state.metadata?.timeframe as string);
+      const fallbackAnalysis = this.generateFallbackGitHubAnalysis(
+        githubUsername,
+        state.metadata?.timeframe as string
+      );
       return {
         state: {
           ...state,
@@ -371,15 +401,19 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    * Assess analysis quality and confidence - decision point
    */
   @Node({ type: 'condition' })
-  async assessAnalysisQuality(context: TaskExecutionContext): Promise<{ route: string }> {
+  async assessAnalysisQuality(
+    context: TaskExecutionContext
+  ): Promise<{ route: string }> {
     const { state } = context;
     const githubData = state.metadata?.githubData;
     const achievements = state.metadata?.achievements || [];
-    const hasRealData = githubData && githubData.summary && achievements.length > 0;
-    const hasAIAnalysis = state.metadata?.aiAnalysis && state.metadata.aiAnalysis.length > 100;
-    
+    const hasRealData =
+      githubData && githubData.summary && achievements.length > 0;
+    const hasAIAnalysis =
+      state.metadata?.aiAnalysis && state.metadata.aiAnalysis.length > 100;
+
     const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
-    
+
     return {
       route: confidenceScore > 0.8 ? 'high-confidence' : 'standard',
     };
@@ -390,7 +424,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    */
   @Task({ dependsOn: ['assessAnalysisQuality'] })
   @StreamProgress({ enabled: true })
-  async finalizeAnalysis(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  async finalizeAnalysis(
+    context: TaskExecutionContext
+  ): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const timeframe = state.metadata?.timeframe as string;
@@ -401,16 +437,21 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
 
     console.log('✅ GitHub Code Analyzer: Analysis completed with AI insights');
 
-    const analysisMessage = mode === 'fallback' 
-      ? this.buildFallbackMessage(githubUsername, aiAnalysis)
-      : this.buildSuccessMessage(githubUsername, timeframe, aiAnalysis, githubData, achievements);
+    const analysisMessage =
+      mode === 'fallback'
+        ? this.buildFallbackMessage(githubUsername, aiAnalysis)
+        : this.buildSuccessMessage(
+            githubUsername,
+            timeframe,
+            aiAnalysis,
+            githubData,
+            achievements
+          );
 
     return {
       state: {
         ...state,
-        messages: [
-          new AIMessage(analysisMessage),
-        ],
+        messages: [new AIMessage(analysisMessage)],
         scratchpad: `GitHub analysis completed for: ${githubUsername}\nAchievements found: ${achievements.length}\nMode: ${mode}`,
         metadata: {
           ...state.metadata,
@@ -418,8 +459,15 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
           githubAnalysisCompleted: true,
           workflowCompleted: true,
           analysisEndTime: new Date(),
-          totalProcessingTime: Date.now() - (state.metadata?.analysisStartTime?.getTime() || Date.now()),
-          toolsUsed: ['github-analyzer', 'achievement-extractor', 'developer-insights', 'ai-synthesis'],
+          totalProcessingTime:
+            Date.now() -
+            (state.metadata?.analysisStartTime?.getTime() || Date.now()),
+          toolsUsed: [
+            'github-analyzer',
+            'achievement-extractor',
+            'developer-insights',
+            'ai-synthesis',
+          ],
           confidenceScore: mode === 'fallback' ? 0.7 : 0.95,
         },
         next: 'personal-brand-strategist',
@@ -429,29 +477,39 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   }
 
   // Define workflow edges
-  @Edge('assessAnalysisQuality', 'finalizeAnalysis', { 
+  @Edge('assessAnalysisQuality', 'finalizeAnalysis', {
     condition: (state: WorkflowAgentState) => {
       const githubData = state.metadata?.githubData;
       const achievements = state.metadata?.achievements || [];
-      const hasRealData = githubData && githubData.summary && achievements.length > 0;
-      const hasAIAnalysis = state.metadata?.aiAnalysis && state.metadata.aiAnalysis.length > 100;
+      const hasRealData =
+        githubData && githubData.summary && achievements.length > 0;
+      const hasAIAnalysis =
+        state.metadata?.aiAnalysis && state.metadata.aiAnalysis.length > 100;
       const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
       return confidenceScore > 0.8;
-    }
+    },
   })
-  routeHighConfidence() {}
+  routeHighConfidence(): void {
+    // High confidence analysis detected - proceeding to deep analysis
+    this.logger.log('Routing to deep analysis for high-confidence results');
+  }
 
-  @Edge('assessAnalysisQuality', 'finalizeAnalysis', { 
+  @Edge('assessAnalysisQuality', 'finalizeAnalysis', {
     condition: (state: WorkflowAgentState) => {
       const githubData = state.metadata?.githubData;
       const achievements = state.metadata?.achievements || [];
-      const hasRealData = githubData && githubData.summary && achievements.length > 0;
-      const hasAIAnalysis = state.metadata?.aiAnalysis && state.metadata.aiAnalysis.length > 100;
+      const hasRealData =
+        githubData && githubData.summary && achievements.length > 0;
+      const hasAIAnalysis =
+        state.metadata?.aiAnalysis && state.metadata.aiAnalysis.length > 100;
       const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
       return confidenceScore <= 0.8;
-    }
+    },
   })
-  routeStandard() {}
+  routeStandard(): void {
+    // Standard confidence analysis detected - proceeding to finalization
+    this.logger.log('Routing to finalization for standard-confidence results');
+  }
 
   /**
    * Build success message for real analysis
@@ -474,7 +532,9 @@ ${aiAnalysis}
 **📊 TECHNICAL METRICS:**
 • **Repositories Analyzed:** ${githubData?.summary?.totalRepositories || 0}
 • **Commits Analyzed:** ${githubData?.summary?.totalCommits || 0}
-• **Lines of Code:** ${githubData?.summary?.linesOfCode?.toLocaleString() || '0'}
+• **Lines of Code:** ${
+      githubData?.summary?.linesOfCode?.toLocaleString() || '0'
+    }
 • **Productivity Score:** ${githubData?.summary?.productivityScore || 0}/100
 
 **🎯 ACHIEVEMENTS EXTRACTED:** ${achievements.length}
@@ -483,9 +543,16 @@ ${achievements
   .map((a: any) => `• ${a.description} (${a.impact} impact)`)
   .join('\n')}
 
-**💡 PRIMARY TECHNOLOGIES:** ${githubData?.patterns?.primaryLanguages?.join(', ') || 'Multiple technologies'}
+**💡 PRIMARY TECHNOLOGIES:** ${
+      githubData?.patterns?.primaryLanguages?.join(', ') ||
+      'Multiple technologies'
+    }
 
-**⚡ WORKING PATTERNS:** ${githubData?.patterns?.workingHours || 'Standard hours'} | Focus: ${githubData?.patterns?.focusAreas?.join(', ') || 'Full-stack development'}
+**⚡ WORKING PATTERNS:** ${
+      githubData?.patterns?.workingHours || 'Standard hours'
+    } | Focus: ${
+      githubData?.patterns?.focusAreas?.join(', ') || 'Full-stack development'
+    }
 
 ---
 *Analysis powered by GitHub API + AI insights for personal branding*`;
@@ -494,7 +561,10 @@ ${achievements
   /**
    * Build fallback message for demo mode
    */
-  private buildFallbackMessage(githubUsername: string, fallbackAnalysis: string): string {
+  private buildFallbackMessage(
+    githubUsername: string,
+    fallbackAnalysis: string
+  ): string {
     return `💻 **GITHUB CODE ANALYSIS** (Demo Mode)
 
 **Developer:** ${githubUsername}

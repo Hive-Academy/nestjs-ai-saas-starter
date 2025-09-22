@@ -1,6 +1,6 @@
 /**
  * Performance Optimization Decorators for Business Workflows
- * 
+ *
  * Provides enterprise-grade performance optimizations:
  * - Intelligent caching with TTL and invalidation
  * - Request batching and deduplication
@@ -46,12 +46,12 @@ class SimpleCache {
   get(key: string): any {
     const item = this.cache.get(key);
     if (!item) return undefined;
-    
+
     if (Date.now() > item.expiry) {
       this.cache.delete(key);
       return undefined;
     }
-    
+
     return item.value;
   }
 
@@ -61,7 +61,7 @@ class SimpleCache {
       const firstKey = this.cache.keys().next().value;
       this.cache.delete(firstKey);
     }
-    
+
     this.cache.set(key, {
       value,
       expiry: Date.now() + ttl,
@@ -88,18 +88,23 @@ const globalCache = new SimpleCache(5000);
  * Cache method results with configurable TTL and invalidation
  */
 export function Cache(config: Partial<CacheConfig> = {}) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     const cacheConfig: CacheConfig = {
       ttl: 300000, // 5 minutes default
       maxSize: 1000,
-      keyGenerator: (args) => `${target.constructor.name}_${propertyKey}_${JSON.stringify(args)}`,
+      keyGenerator: (args) =>
+        `${target.constructor.name}_${propertyKey}_${JSON.stringify(args)}`,
       ...config,
     };
 
     descriptor.value = async function (...args: any[]) {
       const cacheKey = cacheConfig.keyGenerator!(args);
-      
+
       // Try to get from cache
       const cachedResult = globalCache.get(cacheKey);
       if (cachedResult !== undefined) {
@@ -108,16 +113,21 @@ export function Cache(config: Partial<CacheConfig> = {}) {
 
       // Execute original method
       const result = await originalMethod.apply(this, args);
-      
+
       // Cache the result
       globalCache.set(cacheKey, result, cacheConfig.ttl);
-      
+
       return result;
     };
 
     // Store metadata for cache management
-    Reflect.defineMetadata(CACHE_METADATA_KEY, cacheConfig, target, propertyKey);
-    
+    Reflect.defineMetadata(
+      CACHE_METADATA_KEY,
+      cacheConfig,
+      target,
+      propertyKey
+    );
+
     return descriptor;
   };
 }
@@ -126,19 +136,23 @@ export function Cache(config: Partial<CacheConfig> = {}) {
  * Invalidate cache entries based on patterns or keys
  */
 export function InvalidateCache(pattern?: string | RegExp) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
       const result = await originalMethod.apply(this, args);
-      
+
       // Invalidate cache entries
       if (pattern) {
         // TODO: Implement pattern-based cache invalidation
         // For now, clear all cache
         globalCache.clear();
       }
-      
+
       return result;
     };
 
@@ -158,20 +172,27 @@ interface BatchConfig {
 
 // Batch processing manager
 class BatchManager {
-  private batches = new Map<string, {
-    items: Array<{ args: any[]; resolve: Function; reject: Function }>;
-    timeout: NodeJS.Timeout;
-  }>();
+  private batches = new Map<
+    string,
+    {
+      items: Array<{
+        args: any[];
+        resolve: (value: any) => void;
+        reject: (reason?: any) => void;
+      }>;
+      timeout: NodeJS.Timeout;
+    }
+  >();
 
   addToBatch(
     batchKey: string,
     args: any[],
     config: BatchConfig,
-    executor: Function
+    executor: (...args: any[]) => Promise<any>
   ): Promise<any> {
     return new Promise((resolve, reject) => {
       let batch = this.batches.get(batchKey);
-      
+
       if (!batch) {
         batch = {
           items: [],
@@ -192,7 +213,11 @@ class BatchManager {
     });
   }
 
-  private async executeBatch(batchKey: string, executor: Function, config: BatchConfig) {
+  private async executeBatch(
+    batchKey: string,
+    executor: (...args: any[]) => Promise<any>,
+    config: BatchConfig
+  ) {
     const batch = this.batches.get(batchKey);
     if (!batch) return;
 
@@ -202,7 +227,7 @@ class BatchManager {
     try {
       // Execute all items in the batch
       const results = await Promise.allSettled(
-        batch.items.map(item => executor.apply(null, item.args))
+        batch.items.map((item) => executor(...item.args))
       );
 
       // Resolve/reject individual promises
@@ -216,7 +241,7 @@ class BatchManager {
       });
     } catch (error) {
       // Reject all promises in case of batch failure
-      batch.items.forEach(item => item.reject(error));
+      batch.items.forEach((item) => item.reject(error));
     }
   }
 }
@@ -227,7 +252,11 @@ const batchManager = new BatchManager();
  * Batch similar requests together for efficient processing
  */
 export function Batch(config: Partial<BatchConfig> = {}) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     const batchConfig: BatchConfig = {
       maxBatchSize: 10,
@@ -238,10 +267,20 @@ export function Batch(config: Partial<BatchConfig> = {}) {
 
     descriptor.value = async function (...args: any[]) {
       const batchKey = batchConfig.keyExtractor!(args);
-      return batchManager.addToBatch(batchKey, args, batchConfig, originalMethod.bind(this));
+      return batchManager.addToBatch(
+        batchKey,
+        args,
+        batchConfig,
+        originalMethod.bind(this)
+      );
     };
 
-    Reflect.defineMetadata(BATCH_METADATA_KEY, batchConfig, target, propertyKey);
+    Reflect.defineMetadata(
+      BATCH_METADATA_KEY,
+      batchConfig,
+      target,
+      propertyKey
+    );
     return descriptor;
   };
 }
@@ -318,8 +357,14 @@ const circuitBreakers = new Map<string, CircuitBreakerImpl>();
 /**
  * Implement circuit breaker pattern for external service calls
  */
-export function CircuitBreakerDecorator(config: Partial<CircuitBreakerConfig> = {}) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function CircuitBreakerDecorator(
+  config: Partial<CircuitBreakerConfig> = {}
+) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     const cbConfig: CircuitBreakerConfig = {
       failureThreshold: 5,
@@ -335,7 +380,12 @@ export function CircuitBreakerDecorator(config: Partial<CircuitBreakerConfig> = 
       return circuitBreaker.execute(() => originalMethod.apply(this, args));
     };
 
-    Reflect.defineMetadata(CIRCUIT_BREAKER_METADATA_KEY, cbConfig, target, propertyKey);
+    Reflect.defineMetadata(
+      CIRCUIT_BREAKER_METADATA_KEY,
+      cbConfig,
+      target,
+      propertyKey
+    );
     return descriptor;
   };
 }
@@ -372,7 +422,11 @@ const methodMetrics = new Map<string, MethodMetrics>();
  * Collect performance metrics for method execution
  */
 export function Metrics(config: Partial<MetricsConfig> = {}) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     const metricsConfig: MetricsConfig = {
       trackExecutionTime: true,
@@ -390,8 +444,12 @@ export function Metrics(config: Partial<MetricsConfig> = {}) {
         return originalMethod.apply(this, args);
       }
 
-      const startTime = metricsConfig.trackExecutionTime ? performance.now() : 0;
-      const startMemory = metricsConfig.trackMemoryUsage ? process.memoryUsage().heapUsed : 0;
+      const startTime = metricsConfig.trackExecutionTime
+        ? performance.now()
+        : 0;
+      const startMemory = metricsConfig.trackMemoryUsage
+        ? process.memoryUsage().heapUsed
+        : 0;
 
       let metrics = methodMetrics.get(metricsKey);
       if (!metrics) {
@@ -411,11 +469,12 @@ export function Metrics(config: Partial<MetricsConfig> = {}) {
 
         // Update success metrics
         metrics.callCount++;
-        
+
         if (metricsConfig.trackExecutionTime) {
           const executionTime = performance.now() - startTime;
           metrics.totalExecutionTime += executionTime;
-          metrics.averageExecutionTime = metrics.totalExecutionTime / metrics.callCount;
+          metrics.averageExecutionTime =
+            metrics.totalExecutionTime / metrics.callCount;
         }
 
         if (metricsConfig.trackMemoryUsage) {
@@ -442,7 +501,12 @@ export function Metrics(config: Partial<MetricsConfig> = {}) {
       }
     };
 
-    Reflect.defineMetadata(METRICS_METADATA_KEY, metricsConfig, target, propertyKey);
+    Reflect.defineMetadata(
+      METRICS_METADATA_KEY,
+      metricsConfig,
+      target,
+      propertyKey
+    );
     return descriptor;
   };
 }
@@ -455,7 +519,11 @@ export function Metrics(config: Partial<MetricsConfig> = {}) {
  * Add timeout to method execution
  */
 export function Timeout(timeoutMs: number) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -463,13 +531,20 @@ export function Timeout(timeoutMs: number) {
         originalMethod.apply(this, args),
         new Promise((_, reject) => {
           setTimeout(() => {
-            reject(new Error(`Method ${propertyKey} timed out after ${timeoutMs}ms`));
+            reject(
+              new Error(`Method ${propertyKey} timed out after ${timeoutMs}ms`)
+            );
           }, timeoutMs);
         }),
       ]);
     };
 
-    Reflect.defineMetadata(TIMEOUT_METADATA_KEY, timeoutMs, target, propertyKey);
+    Reflect.defineMetadata(
+      TIMEOUT_METADATA_KEY,
+      timeoutMs,
+      target,
+      propertyKey
+    );
     return descriptor;
   };
 }
@@ -482,7 +557,11 @@ export function Timeout(timeoutMs: number) {
  * Limit concurrent executions of a method
  */
 export function ConcurrencyLimit(maxConcurrent: number) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     const originalMethod = descriptor.value;
     let currentExecutions = 0;
     const queue: Array<() => void> = [];
@@ -524,7 +603,10 @@ export function ConcurrencyLimit(maxConcurrent: number) {
 /**
  * Get metrics for a specific method
  */
-export function getMethodMetrics(className: string, methodName: string): MethodMetrics | undefined {
+export function getMethodMetrics(
+  className: string,
+  methodName: string
+): MethodMetrics | undefined {
   return methodMetrics.get(`${className}_${methodName}`);
 }
 
@@ -545,7 +627,10 @@ export function clearMetrics(): void {
 /**
  * Get circuit breaker state
  */
-export function getCircuitBreakerState(className: string, methodName: string): CircuitState | undefined {
+export function getCircuitBreakerState(
+  className: string,
+  methodName: string
+): CircuitState | undefined {
   const circuitBreaker = circuitBreakers.get(`${className}_${methodName}`);
   return circuitBreaker?.getState();
 }
@@ -570,14 +655,20 @@ export function clearCache(): void {
 /**
  * Performance monitoring decorator that combines multiple optimizations
  */
-export function Optimize(config: {
-  cache?: Partial<CacheConfig>;
-  metrics?: Partial<MetricsConfig>;
-  circuitBreaker?: Partial<CircuitBreakerConfig>;
-  timeout?: number;
-  concurrencyLimit?: number;
-} = {}) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+export function Optimize(
+  config: {
+    cache?: Partial<CacheConfig>;
+    metrics?: Partial<MetricsConfig>;
+    circuitBreaker?: Partial<CircuitBreakerConfig>;
+    timeout?: number;
+    concurrencyLimit?: number;
+  } = {}
+) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor
+  ) {
     // Apply multiple decorators in order
     if (config.cache) {
       Cache(config.cache)(target, propertyKey, descriptor);
@@ -586,13 +677,21 @@ export function Optimize(config: {
       Metrics(config.metrics)(target, propertyKey, descriptor);
     }
     if (config.circuitBreaker) {
-      CircuitBreakerDecorator(config.circuitBreaker)(target, propertyKey, descriptor);
+      CircuitBreakerDecorator(config.circuitBreaker)(
+        target,
+        propertyKey,
+        descriptor
+      );
     }
     if (config.timeout) {
       Timeout(config.timeout)(target, propertyKey, descriptor);
     }
     if (config.concurrencyLimit) {
-      ConcurrencyLimit(config.concurrencyLimit)(target, propertyKey, descriptor);
+      ConcurrencyLimit(config.concurrencyLimit)(
+        target,
+        propertyKey,
+        descriptor
+      );
     }
 
     return descriptor;
@@ -600,11 +699,12 @@ export function Optimize(config: {
 }
 
 // Export types for external use
-export {
+export type {
   CacheConfig,
   BatchConfig,
   CircuitBreakerConfig,
   MetricsConfig,
   MethodMetrics,
-  CircuitState,
 };
+
+export { CircuitState };
