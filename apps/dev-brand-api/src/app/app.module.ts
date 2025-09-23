@@ -17,6 +17,10 @@ import {
   Neo4jApprovalChainStorageAdapter,
 } from './adapters';
 
+
+
+// Remove non-existent entity and repository imports for now
+
 // LangGraph modules with proper streaming integration
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
@@ -65,11 +69,23 @@ import {
       isGlobal: true,
     }),
 
-    // Core database modules
+    // Core database modules - Enhanced with decorator and performance support
     ChromaDBModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        getChromaDBConfig(configService),
+      useFactory: async (configService: ConfigService) => ({
+        ...getChromaDBConfig(configService),
+        // Enable new decorator-driven features
+        decorators: {
+          enabled: true,
+          autoGenerate: true,
+          typeValidation: true,
+        },
+        performance: {
+          caching: true,
+          monitoring: true,
+          circuitBreaker: true,
+        },
+      }),
       inject: [ConfigService],
     }),
 
@@ -80,12 +96,12 @@ import {
         getNeo4jConfig(configService),
     }),
 
-    // Memory module with adapters
+    // Memory module with enhanced adapters
     MemoryModule.forRoot({
       ...getMemoryConfig(),
       adapters: {
         vector: ChromaVectorAdapter,
-        graph: Neo4jGraphAdapter,
+        graph: Neo4jGraphAdapter, // Use enhanced adapter
       },
     }),
 
@@ -217,12 +233,14 @@ import {
   controllers: [HealthController],
   providers: [
     AppStreamingManager,
+
     // HITL Adapters
     Neo4jHitlStorageAdapter,
     Neo4jInterruptionStorageAdapter,
     Neo4jConfidenceStorageAdapter,
     Neo4jFeedbackStorageAdapter,
     Neo4jApprovalChainStorageAdapter,
+
     // Memory Adapters
     ChromaVectorAdapter,
     Neo4jGraphAdapter,

@@ -1,12 +1,12 @@
 /**
  * @fileoverview Decorator Metadata Management System
- * 
+ *
  * This module provides robust metadata handling for decorator composition
  * and conflict resolution in the ChromaDB decorator ecosystem. It enables
  * safe combination of multiple decorators without runtime conflicts.
  */
 
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 
 /**
  * Decorator metadata interface for composition and conflict detection
@@ -44,13 +44,13 @@ export class DecoratorMetadataRegistry {
    * Store decorator metadata on target
    */
   static setMetadata(
-    target: Type<any> | Function | Object,
+    target: Type<any> | ((...args: any[]) => any) | object,
     propertyKey: string | symbol | undefined,
     metadata: DecoratorMetadata
   ): void {
     const metadataArray = this.getMetadata(target, propertyKey) || [];
     metadataArray.push(metadata);
-    
+
     if (propertyKey) {
       // Method/property decorator
       Reflect.defineMetadata(this.METHOD_METADATA_KEY, metadataArray, target, propertyKey);
@@ -64,7 +64,7 @@ export class DecoratorMetadataRegistry {
    * Get decorator metadata from target
    */
   static getMetadata(
-    target: Type<any> | Function | Object,
+    target: Type<any> | ((...args: any[]) => any) | object,
     propertyKey?: string | symbol
   ): DecoratorMetadata[] {
     if (propertyKey) {
@@ -78,7 +78,7 @@ export class DecoratorMetadataRegistry {
    * Check if decorator is already applied
    */
   static hasDecorator(
-    target: Type<any> | Function | Object,
+    target: Type<any> | Function | object,
     decoratorName: string,
     propertyKey?: string | symbol
   ): boolean {
@@ -90,13 +90,13 @@ export class DecoratorMetadataRegistry {
    * Remove decorator metadata
    */
   static removeMetadata(
-    target: Type<any> | Function | Object,
+    target: Type<any> | Function | object,
     decoratorName: string,
     propertyKey?: string | symbol
   ): void {
     const metadata = this.getMetadata(target, propertyKey);
     const filtered = metadata.filter(meta => meta.name !== decoratorName);
-    
+
     if (propertyKey) {
       Reflect.defineMetadata(this.METHOD_METADATA_KEY, filtered, target, propertyKey);
     } else {
@@ -108,7 +108,7 @@ export class DecoratorMetadataRegistry {
    * Clear all decorator metadata
    */
   static clearMetadata(
-    target: Type<any> | Function | Object,
+    target: Type<any> | Function | object,
     propertyKey?: string | symbol
   ): void {
     if (propertyKey) {
@@ -192,7 +192,7 @@ export class DecoratorCompositionValidator {
    */
   private static validateDuplicates(decorators: DecoratorMetadata[], errors: string[]): void {
     const seen = new Set<string>();
-    
+
     for (const decorator of decorators) {
       if (seen.has(decorator.name)) {
         errors.push(`Duplicate decorator: '${decorator.name}' is applied multiple times`);
@@ -339,7 +339,7 @@ export class DecoratorExecutionPipeline {
   ): Promise<T> {
     // Validate decorator composition
     const validation = DecoratorCompositionValidator.validate(context.metadata);
-    
+
     if (!validation.valid) {
       throw new Error(
         `Decorator composition error: ${validation.errors.join(', ')}`
@@ -352,10 +352,10 @@ export class DecoratorExecutionPipeline {
     }
 
     // Execute decorators in priority order
-    let result = await originalMethod.apply(context.target, context.args);
+    const result = await originalMethod.apply(context.target, context.args);
 
     // Apply post-processing from decorators (in reverse order)
-    for (const metadata of validation.executionOrder.reverse()) {
+    for (const metadata of [...validation.executionOrder].reverse()) {
       // Each decorator can transform the result
       // This is handled by specific decorator implementations
     }
@@ -368,7 +368,7 @@ export class DecoratorExecutionPipeline {
  * Utility function to get all decorators applied to a class or method
  */
 export function getAppliedDecorators(
-  target: Type<any> | Function | Object,
+  target: Type<any> | Function | object,
   propertyKey?: string | symbol
 ): DecoratorMetadata[] {
   return DecoratorMetadataRegistry.getMetadata(target, propertyKey);
@@ -378,7 +378,7 @@ export function getAppliedDecorators(
  * Utility function to check if a specific decorator is applied
  */
 export function hasDecorator(
-  target: Type<any> | Function | Object,
+  target: Type<any> | Function | object,
   decoratorName: string,
   propertyKey?: string | symbol
 ): boolean {
@@ -389,7 +389,7 @@ export function hasDecorator(
  * Utility function to validate decorator composition on a target
  */
 export function validateDecoratorComposition(
-  target: Type<any> | Function | Object,
+  target: Type<any> | Function | object,
   propertyKey?: string | symbol
 ): CompositionValidationResult {
   const metadata = DecoratorMetadataRegistry.getMetadata(target, propertyKey);

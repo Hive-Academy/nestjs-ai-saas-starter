@@ -147,7 +147,7 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
     const metadata = DecoratorMetadataBuilder.createCoreMetadata(
       'VectorQuery',
       'method',
-      config
+      config as unknown as Record<string, unknown>
     );
 
     DecoratorMetadataRegistry.setMetadata(target, propertyKey, metadata);
@@ -156,7 +156,7 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
     const originalMethod = descriptor.value;
 
     // Replace method with  implementation
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: any[]) {
       const queryParams = args[0] as VectorQueryParams || {};
 
       try {
@@ -204,8 +204,8 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
           ids: result.ids[0] || [],
           documents: result.documents[0] as Array<TDocument | null> || [],
           metadatas: result.metadatas[0] as Array<TDocument['metadata'] | null> || [],
-          distances: result.distances[0] || [],
-          embeddings: result.embeddings?.[0],
+          distances: (result.distances?.[0] || []).filter((d): d is number => d !== null),
+          embeddings: (result.embeddings?.[0] || []).filter((e): e is number[] => e !== null),
           queryTime,
           cacheHit: false, // TODO: Implement cache hit detection
         };
@@ -382,10 +382,11 @@ async function handleVectorQueryError(
       if (originalMethod && typeof originalMethod === 'function') {
         try {
           return await originalMethod.apply(this, args);
-        } catch (fallbackError) {
+        } catch (fallbackError: unknown) {
           // If fallback also fails, throw  error
+          const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
           throw new VectorQueryError(
-            `Vector query failed: ${error.message}. Fallback also failed: ${fallbackError.message}`,
+            `Vector query failed: ${error.message}. Fallback also failed: ${fallbackMessage}`,
             { originalError: error, fallbackError }
           );
         }
@@ -448,9 +449,9 @@ export class VectorQueryBuilder<TDocument extends BaseDocument = BaseDocument> {
    */
   where(field: keyof TDocument['metadata'], value: any): this {
     if (!this.params.filters) {
-      this.params.filters = {};
+      this.params.filters = {} as Where;
     }
-    this.params.filters[field as string] = value;
+    (this.params.filters as any)[field as string] = value;
     return this;
   }
 
@@ -459,9 +460,9 @@ export class VectorQueryBuilder<TDocument extends BaseDocument = BaseDocument> {
    */
   whereIn(field: keyof TDocument['metadata'], values: any[]): this {
     if (!this.params.filters) {
-      this.params.filters = {};
+      this.params.filters = {} as Where;
     }
-    this.params.filters[field as string] = { $in: values };
+    (this.params.filters as any)[field as string] = { $in: values };
     return this;
   }
 

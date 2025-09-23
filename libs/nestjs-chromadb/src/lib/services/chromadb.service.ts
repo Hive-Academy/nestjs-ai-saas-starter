@@ -1,33 +1,29 @@
-import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
-  ChromaClient,
   Collection,
-  WhereDocument,
-  Where,
+  CollectionMetadata,
   GetResult,
-  EmbeddingFunction,
-  Metadata,
+  Where,
+  WhereDocument,
 } from 'chromadb';
-import { ChromaMetricsService } from './chroma-metrics.service';
-import { ChromaCacheService } from './chroma-cache.service';
-import { EmbeddingService } from './embedding.service';
-import {
-  ChromaDBServiceInterface,
-  ChromaDocument,
-  ChromaSearchResult,
+import { ChromaDBServiceInterface } from '../interfaces/chromadb-service.interface';
+import type {
+  BaseDocument,
+  ChromaWireDocument,
+  ChromaBulkOptions,
   ChromaCollectionInfo,
   ChromaSearchOptions,
-  ChromaBulkOptions,
+  ChromaSearchResult,
   GetDocumentsOptions,
-  ChromaMetadata,
-} from '../interfaces/chromadb-service.interface';
-import {
-  ChromaDBError,
-  ChromaDBConnectionError,
-  ChromaDBValidationError,
-  ChromaDBTimeoutError,
-} from '../errors/chromadb.errors';
-import { CHROMADB_CLIENT } from '../constants';
+  toChromaWireDocuments,
+  fromChromaWireDocuments,
+} from '../types/core.interface';
+import { ChromaCacheService } from './chroma-cache.service';
+import { ChromaMetricsService } from './chroma-metrics.service';
+import { ChromaDBConnectionService } from './core/chromadb-connection.service';
+import { ChromaDBOperationsService } from './core/chromadb-operations.service';
+import { ChromaDBValidationService } from './core/chromadb-validation.service';
+import { EmbeddingService } from './embedding.service';
 
 /**
  * Performance monitoring configuration
@@ -35,10 +31,10 @@ import { CHROMADB_CLIENT } from '../constants';
 export interface PerformanceConfig {
   enableMetrics?: boolean;
   enableCaching?: boolean;
-  cacheTimeout?: number; // milliseconds
-  operationTimeout?: number; // milliseconds
+  cacheTimeout?: number;
+  operationTimeout?: number;
   retryAttempts?: number;
-  retryDelay?: number; // milliseconds
+  retryDelay?: number;
 }
 
 /**
@@ -54,21 +50,24 @@ export interface OperationMetrics {
 }
 
 /**
- *  ChromaDB service with performance monitoring, intelligent caching,
- * and  error handling. Maintains 100% backward compatibility.
+ * ChromaDB Service - Main Facade
+ *
+ * Coordinates all ChromaDB operations through specialized services
+ * Following Facade Pattern - provides unified interface to complex subsystem
+ * Following Dependency Inversion Principle - depends on abstractions
  */
 @Injectable()
 export class ChromaDBService implements ChromaDBServiceInterface {
   private readonly logger = new Logger(ChromaDBService.name);
-  private readonly config: Required<PerformanceConfig>;
-  private operationIdCounter = 0;
+  private readonly config: PerformanceConfig;
 
   constructor(
-    @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
-    private readonly embeddingService: EmbeddingService,
+    private readonly connectionService: ChromaDBConnectionService,
+    private readonly operationsService: ChromaDBOperationsService,
+    private readonly validationService: ChromaDBValidationService,
     @Optional() private readonly metricsService?: ChromaMetricsService,
     @Optional() private readonly cacheService?: ChromaCacheService,
-    config: PerformanceConfig = {}
+    @Optional() private readonly embeddingService?: EmbeddingService
   ) {
     this.config = {
       enableMetrics: true,
@@ -77,14 +76,11 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       operationTimeout: 30000, // 30 seconds
       retryAttempts: 3,
       retryDelay: 1000, // 1 second
-      ...config,
     };
-
-    this.logger.log('ChromaDBService initialized with performance monitoring');
   }
 
   /**
-   * Execute operation with performance monitoring and error handling
+   * Execute operation with comprehensive monitoring, caching, and error handling
    */
   private async executeWithMonitoring<T>(
     operationName: string,
@@ -105,8 +101,8 @@ export class ChromaDBService implements ChromaDBServiceInterface {
         }
       }
 
-      // Execute operation with timeout and retry logic
-      const result = await this.executeWithRetry(operation);
+      // Execute operation
+      const result = await operation();
 
       // Cache result if caching is enabled
       if (this.config.enableCaching && cacheKey && this.cacheService) {
@@ -120,55 +116,8 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       this.recordMetrics(operationName, executionTime, false, errorMessage, cacheHit);
-
-      // Transform and re-throw with  context
-      throw this.enhanceError(error, operationName, { executionTime, cacheHit });
+      throw error;
     }
-  }
-
-  /**
-   * Execute operation with retry logic and timeout
-   */
-  private async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-    let lastError: Error;
-
-    for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
-      try {
-        // Add timeout wrapper
-        return await this.withTimeout(operation(), this.config.operationTimeout);
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        // Don't retry validation errors
-        if (error instanceof ChromaDBValidationError) {
-          throw error;
-        }
-
-        // Don't retry on last attempt
-        if (attempt === this.config.retryAttempts) {
-          break;
-        }
-
-        // Wait before retry with exponential backoff
-        const delay = this.config.retryDelay * Math.pow(2, attempt - 1);
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        this.logger.warn(`Retry attempt ${attempt} for operation after error: ${lastError.message}`);
-      }
-    }
-
-    throw lastError!;
-  }
-
-  /**
-   * Add timeout to promise
-   */
-  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-    const timeout = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new ChromaDBTimeoutError(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
-    });
-
-    return Promise.race([promise, timeout]);
   }
 
   /**
@@ -198,105 +147,78 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   }
 
   /**
-   * Enhance error with additional context
+   * Generate cache key for operations
    */
-  private enhanceError(error: unknown, operation: string, context: Record<string, unknown>): Error {
-    if (error instanceof ChromaDBError) {
-      return error;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (message.includes('timeout')) {
-      return new ChromaDBTimeoutError(`${operation} timed out`, { context });
-    }
-
-    if (message.includes('connection') || message.includes('network')) {
-      return new ChromaDBConnectionError(`${operation} connection failed: ${message}`, { context });
-    }
-
-    return new ChromaDBError(`${operation} failed: ${message}`, { context });
+  private generateCacheKey(operation: string, ...params: any[]): string {
+    const key = `${operation}:${params.map(p => JSON.stringify(p)).join(':')}`;
+    return key.length > 200 ? `${key.substring(0, 200)}:${this.hashCode(key)}` : key;
   }
 
   /**
-   * Generate cache key for operation
+   * Simple hash function for cache keys
    */
-  private generateCacheKey(operation: string, ...params: unknown[]): string {
-    const paramHash = this.hashParams(params);
-    return `chroma:${operation}:${paramHash}`;
+  private hashCode(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
   }
 
-  /**
-   * Simple hash function for parameters
-   */
-  private hashParams(params: unknown[]): string {
-    return Buffer.from(JSON.stringify(params)).toString('base64').substring(0, 16);
-  }
-
-  // =====================================================================
-  // ChromaDBServiceInterface Implementation -  with Monitoring
-  // =====================================================================
-
-  /**
-   * Generate unique operation ID
-   */
-  private generateOperationId(): string {
-    return `op_${Date.now()}_${++this.operationIdCounter}`;
-  }
+  // ========================================
+  // Connection and Health Operations
+  // ========================================
 
   /**
    * Get the ChromaDB client instance
    */
-  public getClient(): ChromaClient {
-    return this.client;
+  public getClient() {
+    return this.connectionService.getClient();
   }
 
   /**
-   * Check if connection to ChromaDB is healthy with performance monitoring
+   * Check if ChromaDB connection is healthy
    */
   public async isHealthy(): Promise<boolean> {
     return this.executeWithMonitoring(
       'isHealthy',
-      async () => {
-        try {
-          await this.client.heartbeat();
-          return true;
-        } catch (error) {
-          this.logger.error('Health check failed', error);
-          return false;
-        }
-      },
-      'health:status'
+      async () => this.connectionService.isHealthy()
     );
   }
 
   /**
-   * Get heartbeat from ChromaDB server with monitoring
+   * Get heartbeat from ChromaDB server
    */
   public async heartbeat(): Promise<number> {
     return this.executeWithMonitoring(
       'heartbeat',
       async () => {
-        const result = await this.client.heartbeat();
-        return result['nanosecond heartbeat'] || 0;
-      },
-      'health:heartbeat'
+        const client = this.connectionService.getClient();
+        const start = Date.now();
+        await client.heartbeat();
+        return Date.now() - start;
+      }
     );
   }
 
   /**
-   * Get ChromaDB server version with caching
+   * Get ChromaDB server version
    */
   public async version(): Promise<string> {
     return this.executeWithMonitoring(
       'version',
       async () => {
-        const result = await this.client.version();
-        return result;
-      },
-      'server:version'
+        const client = this.connectionService.getClient();
+        return client.version();
+      }
     );
   }
+
+  // ========================================
+  // Collection Management Operations
+  // ========================================
 
   /**
    * Reset the entire ChromaDB instance (use with caution)
@@ -309,10 +231,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
 
     return this.executeWithMonitoring(
       'reset',
-      async () => {
-        await this.client.reset();
-        return true;
-      }
+      async () => this.operationsService.reset()
     );
   }
 
@@ -322,13 +241,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   public async listCollections(): Promise<ChromaCollectionInfo[]> {
     return this.executeWithMonitoring(
       'listCollections',
-      async () => {
-        const collections = await this.client.listCollections();
-        return collections.map(collection => ({
-          name: collection.name,
-          metadata: collection.metadata,
-        }));
-      },
+      async () => this.operationsService.listCollections(),
       'collections:list'
     );
   }
@@ -338,10 +251,16 @@ export class ChromaDBService implements ChromaDBServiceInterface {
    */
   public async createCollection(
     name: string,
-    metadata?: Record<string, unknown>,
+    metadata?: CollectionMetadata,
     embeddingFunction?: unknown,
-    getOrCreate: boolean = true
+    getOrCreate = true
   ): Promise<Collection> {
+    // Validate collection name
+    const validation = this.validationService.validateCollectionName(name);
+    if (!validation.isValid) {
+      throw new Error(`Invalid collection name: ${validation.errors.join(', ')}`);
+    }
+
     // Invalidate collections cache
     if (this.cacheService) {
       await this.cacheService.delete('collections:list');
@@ -349,21 +268,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
 
     return this.executeWithMonitoring(
       'createCollection',
-      async () => {
-        if (getOrCreate) {
-          return await this.client.getOrCreateCollection({
-            name,
-            metadata,
-            embeddingFunction: embeddingFunction as EmbeddingFunction,
-          });
-        } else {
-          return await this.client.createCollection({
-            name,
-            metadata,
-            embeddingFunction: embeddingFunction as EmbeddingFunction,
-          });
-        }
-      }
+      async () => this.operationsService.createCollection(name, metadata, embeddingFunction, getOrCreate)
     );
   }
 
@@ -378,12 +283,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
 
     return this.executeWithMonitoring(
       'getCollection',
-      async () => {
-        return await this.client.getCollection({
-          name,
-          embeddingFunction: embeddingFunction as EmbeddingFunction,
-        });
-      },
+      async () => this.operationsService.getCollection(name, embeddingFunction),
       cacheKey
     );
   }
@@ -394,109 +294,110 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   public async deleteCollection(name: string): Promise<void> {
     // Invalidate related caches
     if (this.cacheService) {
-      await Promise.all([
-        this.cacheService.delete('collections:list'),
-        this.cacheService.delete(this.generateCacheKey('getCollection', name)),
-        this.cacheService.delete(this.generateCacheKey('collectionExists', name)),
-        this.cacheService.invalidateCollection(name),
-      ]);
+      await this.cacheService.deletePattern(`*${name}*`);
+      await this.cacheService.delete('collections:list');
     }
 
     return this.executeWithMonitoring(
       'deleteCollection',
-      () => this.baseService.deleteCollection(name)
+      async () => this.operationsService.deleteCollection(name)
     );
   }
 
   /**
-   * Check if a collection exists with caching
+   * Check if collection exists
    */
   public async collectionExists(name: string): Promise<boolean> {
-    const cacheKey = this.generateCacheKey('collectionExists', name);
+    const cacheKey = `exists:${name}`;
 
     return this.executeWithMonitoring(
       'collectionExists',
-      () => this.baseService.collectionExists(name),
+      async () => this.operationsService.collectionExists(name),
       cacheKey
     );
   }
 
+  // ========================================
+  // Document Operations
+  // ========================================
+
   /**
-   * Add documents to a collection with performance monitoring
+   * Add documents to collection with validation and embedding
    */
-  public async addDocuments(
+  public async addDocuments<T extends BaseDocument>(
     collectionName: string,
-    documents: ChromaDocument[],
+    documents: T[],
     options?: ChromaBulkOptions
   ): Promise<void> {
-    // Invalidate collection-related caches
+    // Validate documents
+    const validatedDocs = this.validationService.validateAndSanitize(documents);
+
+    // Generate embeddings if embedding service is available and no embeddings provided
+    const processedDocs = await this.processEmbeddings(validatedDocs, options);
+
+    // Invalidate collection cache
     if (this.cacheService) {
-      await this.invalidateCollectionCaches(collectionName);
+      await this.cacheService.deletePattern(`*${collectionName}*`);
     }
 
     return this.executeWithMonitoring(
       'addDocuments',
-      () => this.baseService.addDocuments(collectionName, documents, options)
+      async () => this.operationsService.addDocuments(collectionName, processedDocs, options)
     );
   }
 
   /**
-   * Update documents in a collection with cache invalidation
+   * Update documents in collection
    */
-  public async updateDocuments(
+  public async updateDocuments<T extends BaseDocument>(
     collectionName: string,
-    documents: ChromaDocument[],
+    documents: T[],
     options?: ChromaBulkOptions
   ): Promise<void> {
+    // Validate documents
+    const validatedDocs = this.validationService.validateAndSanitize(documents);
+
+    // Generate embeddings if needed
+    const processedDocs = await this.processEmbeddings(validatedDocs, options);
+
+    // Invalidate collection cache
     if (this.cacheService) {
-      await this.invalidateCollectionCaches(collectionName);
+      await this.cacheService.deletePattern(`*${collectionName}*`);
     }
 
     return this.executeWithMonitoring(
       'updateDocuments',
-      () => this.baseService.updateDocuments(collectionName, documents, options)
+      async () => this.operationsService.updateDocuments(collectionName, processedDocs, options)
     );
   }
 
   /**
-   * Upsert documents in a collection with cache invalidation
+   * Upsert documents in collection
    */
-  public async upsertDocuments(
+  public async upsertDocuments<T extends BaseDocument>(
     collectionName: string,
-    documents: ChromaDocument[],
+    documents: T[],
     options?: ChromaBulkOptions
   ): Promise<void> {
+    // Validate documents
+    const validatedDocs = this.validationService.validateAndSanitize(documents);
+
+    // Generate embeddings if needed
+    const processedDocs = await this.processEmbeddings(validatedDocs, options);
+
+    // Invalidate collection cache
     if (this.cacheService) {
-      await this.invalidateCollectionCaches(collectionName);
+      await this.cacheService.deletePattern(`*${collectionName}*`);
     }
 
     return this.executeWithMonitoring(
       'upsertDocuments',
-      () => this.baseService.upsertDocuments(collectionName, documents, options)
+      async () => this.operationsService.upsertDocuments(collectionName, processedDocs, options)
     );
   }
 
   /**
-   * Get documents from a collection with intelligent caching
-   */
-  public async getDocuments(
-    collectionName: string,
-    options?: GetDocumentsOptions
-  ): Promise<GetResult<ChromaMetadata>> {
-    // Only cache if options are suitable for caching (no dynamic filters)
-    const cacheKey = this.shouldCache(options)
-      ? this.generateCacheKey('getDocuments', collectionName, options)
-      : undefined;
-
-    return this.executeWithMonitoring(
-      'getDocuments',
-      () => this.baseService.getDocuments(collectionName, options),
-      cacheKey
-    );
-  }
-
-  /**
-   * Delete documents from a collection with cache invalidation
+   * Delete documents from collection
    */
   public async deleteDocuments(
     collectionName: string,
@@ -504,243 +405,193 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     where?: Where,
     whereDocument?: WhereDocument
   ): Promise<void> {
+    // Invalidate collection cache
     if (this.cacheService) {
-      await this.invalidateCollectionCaches(collectionName);
+      await this.cacheService.deletePattern(`*${collectionName}*`);
     }
 
     return this.executeWithMonitoring(
       'deleteDocuments',
-      () => this.baseService.deleteDocuments(collectionName, ids, where, whereDocument)
+      async () => this.operationsService.deleteDocuments(collectionName, ids, where, whereDocument)
     );
   }
 
   /**
-   * Search for similar documents with intelligent caching
+   * Get documents from collection
    */
-  public async searchDocuments(
+  public async getDocuments(
     collectionName: string,
-    queryTexts?: string[],
-    queryEmbeddings?: number[][],
-    options?: ChromaSearchOptions
-  ): Promise<ChromaSearchResult> {
-    // Cache search results for repeated queries
-    const cacheKey = this.shouldCacheSearch(queryTexts, queryEmbeddings, options)
-      ? this.generateCacheKey('searchDocuments', collectionName, queryTexts, queryEmbeddings, options)
-      : undefined;
+    options: GetDocumentsOptions = {}
+  ): Promise<GetResult> {
+    const cacheKey = this.generateCacheKey('getDocuments', collectionName, options);
 
     return this.executeWithMonitoring(
-      'searchDocuments',
-      () => this.baseService.searchDocuments(collectionName, queryTexts, queryEmbeddings, options),
+      'getDocuments',
+      async () => this.operationsService.getDocuments(collectionName, options),
       cacheKey
     );
   }
 
   /**
-   * Similarity search with automatic embedding generation and caching
-   */
-  async similaritySearch(
-    collectionName: string,
-    query: string | number[],
-    options?: Omit<
-      ChromaSearchOptions,
-      | 'includeMetadata'
-      | 'includeDocuments'
-      | 'includeDistances'
-      | 'includeEmbeddings'
-    > & {
-      limit?: number;
-      filter?: Where;
-      includeMetadata?: boolean;
-      includeDocuments?: boolean;
-      includeDistances?: boolean;
-    }
-  ): Promise<{
-    ids: string[];
-    documents: Array<string | null>;
-    metadatas: Array<Record<string, unknown> | null>;
-    distances: number[];
-  }> {
-    const cacheKey = typeof query === 'string'
-      ? this.generateCacheKey('similaritySearch', collectionName, query, options)
-      : undefined;
-
-    return this.executeWithMonitoring(
-      'similaritySearch',
-      () => this.baseService.similaritySearch(collectionName, query, options),
-      cacheKey
-    );
-  }
-
-  /**
-   * Count documents in a collection with caching
+   * Count documents in collection
    */
   public async countDocuments(collectionName: string): Promise<number> {
-    const cacheKey = this.generateCacheKey('countDocuments', collectionName);
+    const cacheKey = `count:${collectionName}`;
 
     return this.executeWithMonitoring(
       'countDocuments',
-      () => this.baseService.countDocuments(collectionName),
+      async () => this.operationsService.countDocuments(collectionName),
       cacheKey
     );
   }
 
   /**
-   * Peek at documents in a collection with caching
+   * Peek documents from collection
    */
   public async peekDocuments(
     collectionName: string,
     limit = 10
-  ): Promise<GetResult<ChromaMetadata>> {
-    const cacheKey = this.generateCacheKey('peekDocuments', collectionName, limit);
-
+  ): Promise<GetResult> {
     return this.executeWithMonitoring(
       'peekDocuments',
-      () => this.baseService.peekDocuments(collectionName, limit),
+      async () => this.operationsService.peekDocuments(collectionName, limit)
+    );
+  }
+
+  /**
+   * Search documents in collection
+   */
+  public async searchDocuments(
+    collectionName: string,
+    queryTexts: string[],
+    queryEmbeddings?: number[][],
+    options: ChromaSearchOptions = {}
+  ): Promise<ChromaSearchResult> {
+    // Validate search options
+    const validation = this.validationService.validateSearchOptions(options);
+    if (!validation.isValid) {
+      throw new Error(`Invalid search options: ${validation.errors.join(', ')}`);
+    }
+
+    // Generate embeddings for query texts if embedding service is available
+    let processedQueryEmbeddings = queryEmbeddings;
+    if (queryTexts.length > 0 && !queryEmbeddings && this.embeddingService) {
+      try {
+        processedQueryEmbeddings = await this.embeddingService.generateEmbeddings(queryTexts);
+      } catch (error) {
+        this.logger.warn(`Failed to generate query embeddings: ${error}`);
+      }
+    }
+
+    const cacheKey = this.generateCacheKey('searchDocuments', collectionName, queryTexts, processedQueryEmbeddings, options);
+
+    return this.executeWithMonitoring(
+      'searchDocuments',
+      async () => this.operationsService.searchDocuments(
+        collectionName,
+        queryTexts,
+        processedQueryEmbeddings,
+        options
+      ),
       cacheKey
     );
   }
 
   /**
-   * Get collection metadata with caching
+   * Get collection metadata
    */
-  public async getCollectionMetadata(
-    collectionName: string
-  ): Promise<ChromaMetadata | null> {
-    const cacheKey = this.generateCacheKey('getCollectionMetadata', collectionName);
+  public async getCollectionMetadata(name: string): Promise<Record<string, any> | null> {
+    const cacheKey = `metadata:${name}`;
 
     return this.executeWithMonitoring(
       'getCollectionMetadata',
-      () => this.baseService.getCollectionMetadata(collectionName),
+      async () => this.operationsService.getCollectionMetadata(name),
       cacheKey
     );
   }
 
   /**
-   * Update collection metadata with cache invalidation
+   * Update collection metadata
    */
   public async updateCollectionMetadata(
-    collectionName: string,
-    metadata: Record<string, unknown>
+    name: string,
+    metadata: Record<string, any>
   ): Promise<void> {
+    // Invalidate metadata cache
     if (this.cacheService) {
-      await this.cacheService.delete(this.generateCacheKey('getCollectionMetadata', collectionName));
+      await this.cacheService.delete(`metadata:${name}`);
     }
 
     return this.executeWithMonitoring(
       'updateCollectionMetadata',
-      () => this.baseService.updateCollectionMetadata(collectionName, metadata)
+      async () => this.operationsService.updateCollectionMetadata(name, metadata)
     );
   }
 
-  // =====================================================================
-  //  Service Methods
-  // =====================================================================
-
   /**
-   * Get performance metrics for operations
+   * Similarity search with automatic embedding generation
    */
-  public getPerformanceMetrics(): OperationMetrics[] {
-    if (!this.metricsService) {
-      return [];
-    }
-    return this.metricsService.getMetrics();
+  public async similaritySearch(
+    collectionName: string,
+    query: string,
+    options: { limit?: number; where?: Where; whereDocument?: WhereDocument } = {}
+  ): Promise<{
+    ids: string[];
+    documents: (string | null)[];
+    metadatas: (Record<string, unknown> | null)[];
+    distances: number[];
+  }> {
+    const searchOptions: ChromaSearchOptions = {
+      nResults: options.limit || 10,
+      where: options.where,
+      whereDocument: options.whereDocument,
+      includeDistances: true,
+    };
+
+    const results = await this.searchDocuments(collectionName, [query], undefined, searchOptions);
+
+    return {
+      ids: results.ids[0] || [],
+      documents: results.documents?.[0] || [],
+      metadatas: results.metadatas?.[0] || [],
+      distances: results.distances?.[0] || [],
+    };
   }
 
   /**
-   * Clear performance metrics
+   * Process embeddings for documents if embedding service is available
    */
-  public clearPerformanceMetrics(): void {
-    if (this.metricsService) {
-      this.metricsService.clearMetrics();
+  private async processEmbeddings(
+    documents: ChromaDocument[],
+    options?: ChromaBulkOptions
+  ): Promise<ChromaDocument[]> {
+    if (!this.embeddingService) {
+      return documents;
     }
-  }
 
-  /**
-   * Get cache statistics
-   */
-  public getCacheStatistics(): { hits: number; misses: number; size: number } {
-    if (!this.cacheService) {
-      return { hits: 0, misses: 0, size: 0 };
+    const docsNeedingEmbeddings = documents.filter(
+      doc => doc.document && !doc.embedding
+    );
+
+    if (docsNeedingEmbeddings.length === 0) {
+      return documents;
     }
-    return this.cacheService.getStatistics();
-  }
 
-  /**
-   * Clear all caches
-   */
-  public async clearCache(): Promise<void> {
-    if (this.cacheService) {
-      await this.cacheService.clear();
-    }
-  }
-
-  /**
-   * Warm up cache for collection
-   */
-  public async warmUpCache(collectionName: string): Promise<void> {
     try {
-      // Pre-load commonly accessed data
-      await Promise.all([
-        this.collectionExists(collectionName),
-        this.countDocuments(collectionName),
-        this.getCollectionMetadata(collectionName),
-      ]);
+      const texts = docsNeedingEmbeddings.map(doc => doc.document!);
+      const embeddings = await this.embeddingService.generateEmbeddings(texts);
 
-      this.logger.debug(`Cache warmed up for collection: ${collectionName}`);
+      // Map embeddings back to documents
+      let embeddingIndex = 0;
+      return documents.map(doc => {
+        if (doc.document && !doc.embedding) {
+          return { ...doc, embedding: embeddings[embeddingIndex++] };
+        }
+        return doc;
+      });
     } catch (error) {
-      this.logger.warn(`Failed to warm up cache for collection ${collectionName}:`, error);
+      this.logger.warn(`Failed to generate embeddings: ${error}`);
+      return documents;
     }
-  }
-
-  // =====================================================================
-  // Private Helper Methods
-  // =====================================================================
-
-  /**
-   * Invalidate all caches related to a collection
-   */
-  private async invalidateCollectionCaches(collectionName: string): Promise<void> {
-    if (!this.cacheService) {
-      return;
-    }
-
-    const keysToInvalidate = [
-      this.generateCacheKey('countDocuments', collectionName),
-      this.generateCacheKey('getCollectionMetadata', collectionName),
-      this.generateCacheKey('peekDocuments', collectionName),
-      // Add pattern-based cache invalidation for search results
-    ];
-
-    await Promise.all(
-      keysToInvalidate.map(key => this.cacheService!.delete(key))
-    );
-  }
-
-  /**
-   * Determine if operation should be cached
-   */
-  private shouldCache(options?: GetDocumentsOptions): boolean {
-    if (!this.config.enableCaching) {
-      return false;
-    }
-
-    // Don't cache if there are dynamic filters that might change frequently
-    return !options?.where && !options?.whereDocument && !options?.ids;
-  }
-
-  /**
-   * Determine if search should be cached
-   */
-  private shouldCacheSearch(
-    queryTexts?: string[],
-    queryEmbeddings?: number[][],
-    options?: ChromaSearchOptions
-  ): boolean {
-    if (!this.config.enableCaching) {
-      return false;
-    }
-
-    // Only cache text-based searches (embeddings might be dynamic)
-    return !!queryTexts && !queryEmbeddings && !options?.where && !options?.whereDocument;
   }
 }

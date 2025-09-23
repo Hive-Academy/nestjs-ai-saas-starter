@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ChromaDBService } from '../services/chromadb.service';
+import { ChromaDBService } from '../chromadb.service';
 
 export interface HealthIndicatorResult {
   readonly [key: string]: {

@@ -201,6 +201,148 @@ export interface TextProcessingConfig {
 }
 
 /**
+ * Decorator configuration for ChromaDB operations
+ */
+export interface DecoratorConfig {
+  /**
+   * Enable decorator functionality (default: false)
+   */
+  enabled?: boolean;
+
+  /**
+   * Auto-generate repository methods (default: true when enabled)
+   */
+  autoGenerate?: boolean;
+
+  /**
+   * Enable runtime type validation (default: true when enabled)
+   */
+  typeValidation?: boolean;
+
+  /**
+   * Enable automatic metadata generation (default: true when enabled)
+   */
+  autoMetadata?: boolean;
+
+  /**
+   * Global caching configuration for decorators
+   */
+  caching?: {
+    enabled?: boolean;
+    defaultTtl?: number;
+    strategy?: 'memory' | 'redis' | 'custom';
+    keyPrefix?: string;
+  };
+
+  /**
+   * Global profiling configuration for decorators
+   */
+  profiling?: {
+    enabled?: boolean;
+    slowQueryThreshold?: number;
+    samplingRate?: number;
+    includeStackTrace?: boolean;
+  };
+
+  /**
+   * Global retry configuration for decorators
+   */
+  retry?: {
+    enabled?: boolean;
+    maxAttempts?: number;
+    baseDelay?: number;
+    strategy?: 'linear' | 'exponential';
+    retryableErrors?: (string | RegExp)[];
+  };
+}
+
+/**
+ * Performance monitoring configuration
+ */
+export interface PerformanceConfig {
+  /**
+   * Enable performance monitoring (default: false)
+   */
+  caching?: boolean;
+
+  /**
+   * Enable performance profiling and metrics (default: false)
+   */
+  monitoring?: boolean;
+
+  /**
+   * Enable circuit breaker pattern (default: false)
+   */
+  circuitBreaker?: boolean;
+
+  /**
+   * Circuit breaker configuration
+   */
+  circuitBreakerOptions?: {
+    failureThreshold?: number;
+    resetTimeout?: number;
+    monitoringPeriod?: number;
+  };
+
+  /**
+   * Performance metrics collection configuration
+   */
+  metricsOptions?: {
+    collectEmbeddingTime?: boolean;
+    collectSearchTime?: boolean;
+    collectBatchTime?: boolean;
+    histogramBuckets?: number[];
+  };
+}
+
+/**
+ * Multi-tenant configuration
+ */
+export interface MultiTenantConfig {
+  /**
+   * Enable multi-tenancy support (default: false)
+   */
+  enabled?: boolean;
+
+  /**
+   * Default tenant isolation strategy
+   */
+  defaultStrategy?: 'prefix' | 'suffix' | 'separate' | 'metadata';
+
+  /**
+   * Tenant field separator for prefix/suffix strategies
+   */
+  separator?: string;
+
+  /**
+   * Security level for tenant isolation
+   */
+  security?: 'strict' | 'loose' | 'custom';
+
+  /**
+   * Default tenant configuration
+   */
+  defaults?: {
+    tenant?: string;
+    database?: string;
+    collection?: string;
+  };
+
+  /**
+   * Cross-tenant operations configuration
+   */
+  crossTenant?: {
+    enabled?: boolean;
+    requireAuth?: boolean;
+    auditLog?: boolean;
+    rateLimiting?: {
+      requests?: number;
+      window?: number;
+    };
+  };
+}
+
+/**
  * ChromaDB module configuration options
  */
 export interface ChromaDBModuleOptions {
@@ -270,6 +412,21 @@ export interface ChromaDBModuleOptions {
    * Global input validation configuration
    */
   validation?: InputValidationConfig;
+
+  /**
+   * Decorator-driven development configuration
+   */
+  decorators?: DecoratorConfig;
+
+  /**
+   * Performance monitoring and optimization configuration
+   */
+  performance?: PerformanceConfig;
+
+  /**
+   * Multi-tenant support configuration
+   */
+  multiTenant?: MultiTenantConfig;
 }
 
 /**

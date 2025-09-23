@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Driver, Session, session as neo4jSession } from 'neo4j-driver';
-import type {
-  QueryOptions,
-  QueryResult,
-} from '../interfaces/query-result.interface';
+import { QueryOptions, QueryResult } from '../interfaces/query-result.interface';
 import { Neo4jMetricsService } from './neo4j-metrics.service';
 
 /**

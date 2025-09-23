@@ -178,6 +178,10 @@ export class Neo4jConnectionService
       database: this.options.database,
       isConnected: this.isConnectionEstablished,
       retryCount: this.retryCount,
+      poolMetrics: this.connectionPool,
+      healthHistory: this.connectionHistory.slice(-10),
+      lastHealthCheck: this.lastHealthCheck,
+      monitoringActive: !!this.healthCheckInterval,
     };
   }
 
@@ -431,18 +435,6 @@ export class Neo4jConnectionService
     }
   }
 
-  /**
-   * Get connection information with  details
-   */
-  getConnectionInfo() {
-    return {
-      ...this.getConnectionInfo(),
-      poolMetrics: this.connectionPool,
-      healthHistory: this.connectionHistory.slice(-10), // Last 10 records
-      lastHealthCheck: this.lastHealthCheck,
-      monitoringActive: !!this.healthCheckInterval,
-    };
-  }
 
   // ==================== PRIVATE HELPER METHODS ====================
 

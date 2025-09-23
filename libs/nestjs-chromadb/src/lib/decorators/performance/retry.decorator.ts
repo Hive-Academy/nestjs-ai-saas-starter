@@ -252,7 +252,7 @@ export function Retry(config: RetryConfig = {}): MethodDecorator {
           
           // Success - reset circuit breaker and return result
           if (finalConfig.circuitBreaker.enabled) {
-            resetCircuitBreaker(circuitBreaker);
+            resetCircuitBreakerState(circuitBreaker);
           }
           
           updateStatistics('success', undefined, attempt);
@@ -404,7 +404,7 @@ export function Retry(config: RetryConfig = {}): MethodDecorator {
     });
     
     Object.defineProperty(target, `${String(propertyKey)}_resetCircuitBreaker`, {
-      value: () => resetCircuitBreaker(circuitBreaker),
+      value: () => resetCircuitBreakerState(circuitBreaker),
       writable: false,
       enumerable: false,
     });
@@ -545,7 +545,7 @@ function recordCircuitBreakerFailure(
 /**
  * Reset the circuit breaker after a successful operation
  */
-function resetCircuitBreaker(circuitBreaker: CircuitBreakerState): void {
+function resetCircuitBreakerState(circuitBreaker: CircuitBreakerState): void {
   circuitBreaker.failures = 0;
   circuitBreaker.isOpen = false;
   circuitBreaker.nextAttemptTime = 0;

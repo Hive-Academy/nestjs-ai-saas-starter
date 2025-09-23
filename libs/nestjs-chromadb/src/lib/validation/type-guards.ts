@@ -3,10 +3,10 @@
  */
 
 import type {
-  ChromaDocument,
+  ChromaWireDocument,
   ChromaSearchOptions,
   ChromaBulkOptions,
-} from '../interfaces/chromadb-service.interface';
+} from '../types/core.interface';
 import type {
   ChromaDBModuleOptions,
   EmbeddingConfig,
@@ -110,9 +110,9 @@ export function isValidDocumentFilter(value: unknown): boolean {
 }
 
 /**
- * Type guard to check if a value is a valid ChromaDocument
+ * Type guard to check if a value is a valid ChromaWireDocument
  */
-export function isValidChromaDocument(value: unknown): value is ChromaDocument {
+export function isValidChromaDocument(value: unknown): value is ChromaWireDocument {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -143,11 +143,11 @@ export function isValidChromaDocument(value: unknown): value is ChromaDocument {
 }
 
 /**
- * Type guard to check if a value is a valid array of ChromaDocuments
+ * Type guard to check if a value is a valid array of ChromaWireDocuments
  */
 export function isValidChromaDocumentArray(
   value: unknown
-): value is ChromaDocument[] {
+): value is ChromaWireDocument[] {
   return Array.isArray(value) && value.every(isValidChromaDocument);
 }
 
@@ -290,7 +290,7 @@ export function isValidCollectionConfig(
 export function validateChromaDocument(
   value: unknown,
   context?: string
-): asserts value is ChromaDocument {
+): asserts value is ChromaWireDocument {
   if (!isValidChromaDocument(value)) {
     throw new ChromaDBValidationError(
       `Invalid ChromaDocument${context ? ` in ${context}` : ''}`,
@@ -306,7 +306,7 @@ export function validateChromaDocument(
 export function validateChromaDocumentArray(
   value: unknown,
   context?: string
-): asserts value is ChromaDocument[] {
+): asserts value is ChromaWireDocument[] {
   if (!isValidChromaDocumentArray(value)) {
     throw new ChromaDBValidationError(
       `Invalid ChromaDocument array${context ? ` in ${context}` : ''}`,

@@ -31,6 +31,63 @@ This NestJS AI SaaS Starter is a sophisticated monorepo designed for building en
 3. **NEVER CREATE TYPES**: Search codebase for shared types and core interfaces FIRST, document search in progress.md, extend don't duplicate
 4. **NO BACKWARD COMPATIBILITY**: Never work on or target backward compatibility unless verbally asked for by the user
 5. **NO RE-EXPORTS**: Never re-export a type or service from a library inside another library
+6. **NO CODE DUPLICATION**: Never create parallel implementations (v1, v2, legacy, enhanced versions)
+7. **NO COMPATIBILITY LAYERS**: Never build bridges, adapters, or version compatibility systems
+
+### 🔴 EXPANDED ANTI-BACKWARD COMPATIBILITY MANDATE
+
+**ZERO TOLERANCE FOR BACKWARD COMPATIBILITY CODE:**
+
+- ❌ **NEVER** create multiple versions of the same functionality (ServiceV1, ServiceV2, ServiceLegacy)
+- ❌ **NEVER** implement backward compatibility for APIs, services, databases, or UI components
+- ❌ **NEVER** maintain legacy implementations alongside new ones
+- ❌ **NEVER** create compatibility adapters, version bridges, or migration layers
+- ❌ **NEVER** use feature flags or conditional logic to support multiple versions
+- ❌ **NEVER** plan migration strategies that preserve old implementations for compatibility
+- ✅ **ALWAYS** directly replace existing functionality with modernized implementations
+- ✅ **ALWAYS** modernize existing code in-place rather than creating parallel versions
+
+**IMPLEMENTATION ENFORCEMENT:**
+
+- Replace existing APIs, services, and components directly, don't version them
+- Modify existing code instead of creating "enhanced" or "improved" versions
+- Update database schemas and configurations directly rather than maintaining multiple versions
+- Refactor existing business logic instead of creating compatibility layers
+
+**AUTOMATIC REJECTION TRIGGERS:**
+
+- File names with version suffixes (service.v1.ts, component.legacy.tsx, api.enhanced.js)
+- API endpoints with version paths (/api/v1/, /api/v2/, /api/legacy/)
+- Class/interface names with version indicators (UserServiceV1, UserServiceLegacy)
+- Database migrations that maintain old + new schemas simultaneously
+- Feature flags enabling multiple implementation versions
+- Conditional logic supporting both old and new approaches
+
+**CODE QUALITY ENFORCEMENT:**
+
+```typescript
+// ✅ CORRECT: Direct replacement
+export class UserService {
+  // Updated implementation replaces existing
+}
+
+// ❌ FORBIDDEN: Versioned implementations
+export class UserServiceV1 { /* old */ }
+export class UserServiceV2 { /* new */ }
+export class UserServiceLegacy { /* compatibility */ }
+export class UserServiceEnhanced { /* parallel */ }
+
+// ✅ CORRECT: Direct API replacement
+@Get('users')
+getUsers() { /* updated implementation */ }
+
+// ❌ FORBIDDEN: Versioned APIs
+@Get('v1/users')
+getUsersV1() { /* old */ }
+
+@Get('v2/users')
+getUsersV2() { /* new */ }
+```
 
 ### ENFORCEMENT RULES
 
@@ -44,6 +101,8 @@ This NestJS AI SaaS Starter is a sophisticated monorepo designed for building en
 8. **Error Context**: Always include relevant debugging info
 9. **Testing**: 80% coverage minimum with real integrations
 10. **Type Discovery**: Per Type Search Protocol
+11. **Anti-Backward Compatibility**: Automatic rejection of versioned code, compatibility layers, and parallel implementations
+12. **Direct Replacement**: All modernization and improvements must replace existing code, not supplement it
 
 ## Technical Architecture
 
@@ -295,6 +354,37 @@ LANGGRAPH_ENDPOINT=your_endpoint
 - Write unit tests for new features
 - Document breaking changes in CHANGELOG
 
+### ⚠️ Anti-Backward Compatibility Development Principles
+
+**MANDATORY DEVELOPMENT APPROACH:**
+
+- ✅ **DIRECT REPLACEMENT**: Always modify existing code instead of creating new versions
+- ✅ **SINGLE IMPLEMENTATION**: One authoritative implementation per feature/component
+- ✅ **IN-PLACE MODERNIZATION**: Update existing files rather than creating parallel versions
+- ❌ **NO VERSIONED FILES**: Never create files with version suffixes (service.v1.ts, component.legacy.tsx)
+- ❌ **NO COMPATIBILITY LAYERS**: Never build adapters, bridges, or version compatibility systems
+- ❌ **NO FEATURE FLAGS FOR VERSIONS**: Never use conditional logic to support multiple implementations
+
+**DEVELOPMENT WORKFLOW ENFORCEMENT:**
+
+```bash
+# ✅ CORRECT: Direct file modification
+git add src/services/user.service.ts  # Updated existing file
+
+# ❌ FORBIDDEN: Versioned file creation
+git add src/services/user.service.v1.ts  # Old version
+git add src/services/user.service.v2.ts  # New version
+git add src/services/user.service.enhanced.ts  # Enhanced version
+```
+
+**CODE REVIEW CHECKPOINTS:**
+
+- ✓ No files with version indicators in names
+- ✓ No classes/interfaces with version suffixes
+- ✓ No conditional logic supporting multiple implementations
+- ✓ No compatibility adapters or bridge patterns
+- ✓ All improvements made to existing implementations directly
+
 ### Testing Strategy
 
 - **Unit Tests**: Mock external dependencies, test individual services
@@ -331,7 +421,24 @@ For detailed implementation guidance, always refer to the specific library CLAUD
 - **BUILD complete integrations between ChromaDB, Neo4j, and LangGraph**
 - **IMPLEMENT actual business logic, not stubs or simulations**
 - **WIRE all components together with real data flows**
+- **REPLACE existing implementations directly, never create parallel versions**
+- **MODERNIZE in-place rather than building compatibility layers**
 - **Only use emojis if the user explicitly requests it**
+
+### 🔴 FUNDAMENTAL ANTI-BACKWARD COMPATIBILITY PRINCIPLE
+
+**NEVER create duplicated functionality with small additions in completely new files. This is strictly forbidden at all costs.**
+
+**ENFORCEMENT:**
+- ❌ **FORBIDDEN**: Creating ServiceV1, ServiceV2, ServiceEnhanced, ServiceLegacy
+- ❌ **FORBIDDEN**: Maintaining old + new implementations simultaneously
+- ❌ **FORBIDDEN**: Building compatibility layers or version bridges
+- ❌ **FORBIDDEN**: Using feature flags to support multiple versions
+- ✅ **REQUIRED**: Direct replacement of existing functionality
+- ✅ **REQUIRED**: In-place modernization of existing code
+- ✅ **REQUIRED**: Single authoritative implementation per feature
+
+**This principle applies to ALL development activities: planning, coding, testing, and deployment.**
 
 For library-specific work, always consult the relevant CLAUDE.md file first to understand the domain-specific patterns and best practices.
 

@@ -5,15 +5,15 @@ import {
   CollectionMetadata,
   EmbeddingFunction,
 } from 'chromadb';
-import { CHROMADB_CLIENT } from '../constants';
-import type { CollectionConfig  } from '../interfaces/chromadb-module-options.interface';
-import { getErrorMessage } from '../utils/error.utils';
-import { EmbeddingService } from './embedding.service';
+import { CHROMADB_CLIENT } from '../../constants';
+import type { CollectionConfig  } from '../../interfaces/chromadb-module-options.interface';
+import { getErrorMessage } from '../../utils/error.utils';
+import { EmbeddingService } from '../embedding.service';
 import {
   ChromaDBCollectionNotFoundError,
-} from '../errors/chromadb.errors';
-import { safeAsyncOperation } from '../utils/error.utils';
-import { validateCollectionName } from '../validation/type-guards';
+} from '../../errors/chromadb.errors';
+import { safeAsyncOperation } from '../../utils/error.utils';
+import { validateCollectionName } from '../../validation/type-guards';
 
 /**
  * Collection management service

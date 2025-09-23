@@ -2,9 +2,14 @@ import type { Neo4jModuleOptions } from '@hive-academy/nestjs-neo4j';
 import type { ConfigService } from '@nestjs/config';
 
 /**
- * Neo4j Configuration Factory
+ * Enhanced Neo4j Configuration Factory
  *
- * Provides centralized configuration for Neo4j connections and settings
+ * Provides centralized configuration for Neo4j connections with enhanced features:
+ * - Constraint management and auto-creation
+ * - Caching and query optimization
+ * - Multi-tenancy support
+ * - Circuit breaker and retry mechanisms
+ * - Metrics and monitoring
  */
 export const getNeo4jConfig = (...args: unknown[]): Neo4jModuleOptions => {
   const configService = args[0] as ConfigService;
@@ -32,6 +37,40 @@ export const getNeo4jConfig = (...args: unknown[]): Neo4jModuleOptions => {
         10
       ),
       encrypted: configService.get('NEO4J_ENCRYPTED', 'false') === 'true',
+    },
+
+    // Enhanced features configuration
+    enhanced: {
+      retry: {
+        maxAttempts: parseInt(configService.get('NEO4J_RETRY_ATTEMPTS', '3'), 10),
+        delay: parseInt(configService.get('NEO4J_RETRY_DELAY', '1000'), 10),
+        backoffMultiplier: 2,
+      },
+      cache: {
+        enabled: configService.get('NEO4J_CACHE_ENABLED', 'true') === 'true',
+        defaultTtl: parseInt(configService.get('NEO4J_CACHE_TTL', '300'), 10),
+        maxSize: parseInt(configService.get('NEO4J_CACHE_MAX_SIZE', '1000'), 10),
+      },
+      metrics: {
+        enabled: configService.get('NEO4J_METRICS_ENABLED', 'true') === 'true',
+        collectQueryMetrics: true,
+        slowQueryThreshold: 1000,
+      },
+      circuitBreaker: {
+        enabled: configService.get('NEO4J_CIRCUIT_BREAKER', 'true') === 'true',
+        failureThreshold: 5,
+        resetTimeout: 60000,
+      },
+      constraints: {
+        autoCreateConstraints: configService.get('NEO4J_AUTO_CONSTRAINTS', 'true') === 'true',
+        enableValidation: true,
+        collectStatistics: true,
+      },
+      multiTenant: {
+        enabled: configService.get('NEO4J_MULTI_TENANT', 'true') === 'true',
+        isolation: 'database' as const,
+        defaultTenant: configService.get('NEO4J_DEFAULT_TENANT', 'default'),
+      },
     },
 
     healthCheck: configService.get('NEO4J_HEALTH_CHECK', 'true') === 'true',

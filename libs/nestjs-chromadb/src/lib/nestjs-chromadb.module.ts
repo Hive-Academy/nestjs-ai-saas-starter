@@ -24,7 +24,7 @@ import {
 } from './interfaces/chromadb-module-options.interface';
 import { ChromaAdminService } from './services/chroma-admin.service';
 import { ChromaDBService } from './services/chromadb.service';
-import { CollectionService } from './services/collection.service';
+import { ChromaDBCollectionService } from './services/core/chromadb-collection.service';
 import { EmbeddingService } from './services/embedding.service';
 import { TextSplitterService } from './services/text-splitter.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
@@ -76,12 +76,12 @@ export class ChromaDBModule {
         inject: [CHROMADB_OPTIONS],
       },
       {
-        provide: CollectionService,
+        provide: ChromaDBCollectionService,
         useFactory: (
           client: ChromaClient,
           embeddingService: EmbeddingService
         ) => {
-          return new CollectionService(client, embeddingService);
+          return new ChromaDBCollectionService(client, embeddingService);
         },
         inject: [CHROMADB_CLIENT, EmbeddingService],
       },
@@ -102,7 +102,7 @@ export class ChromaDBModule {
       providers,
       exports: [
         ChromaDBService,
-        CollectionService,
+        ChromaDBCollectionService,
         EmbeddingService,
         ChromaAdminService,
         TextSplitterService,
@@ -143,12 +143,12 @@ export class ChromaDBModule {
         inject: [CHROMADB_OPTIONS],
       },
       {
-        provide: CollectionService,
+        provide: ChromaDBCollectionService,
         useFactory: (
           client: ChromaClient,
           embeddingService: EmbeddingService
         ) => {
-          return new CollectionService(client, embeddingService);
+          return new ChromaDBCollectionService(client, embeddingService);
         },
         inject: [CHROMADB_CLIENT, EmbeddingService],
       },
@@ -170,7 +170,7 @@ export class ChromaDBModule {
       providers,
       exports: [
         ChromaDBService,
-        CollectionService,
+        ChromaDBCollectionService,
         EmbeddingService,
         ChromaAdminService,
         TextSplitterService,
@@ -188,7 +188,7 @@ export class ChromaDBModule {
     const providers: Provider[] = collections.map((config) => ({
       provide: `COLLECTION_${config.name.toUpperCase()}`,
       useFactory: async (
-        collectionService: CollectionService,
+        collectionService: ChromaDBCollectionService,
         embeddingService: EmbeddingService
       ) => {
         const embeddingFn =
@@ -198,7 +198,7 @@ export class ChromaDBModule {
           embeddingFunction: embeddingFn,
         });
       },
-      inject: [CollectionService, EmbeddingService],
+      inject: [ChromaDBCollectionService, EmbeddingService],
     }));
 
     return {

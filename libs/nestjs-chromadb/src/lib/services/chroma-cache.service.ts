@@ -427,6 +427,233 @@ export class ChromaCacheService implements OnModuleDestroy {
   }
 
   /**
+   * Invalidate all cache entries for a specific collection
+   */
+  async invalidateCollection(collectionName: string): Promise<number> {
+    const pattern = `^chroma:.*:.*${collectionName}.*`;
+    return await this.deletePattern(pattern);
+  }
+
+  /**
+   * Invalidate cache entries by operation type
+   */
+  async invalidateByOperation(operation: string): Promise<number> {
+    const pattern = `^chroma:${operation}:`;
+    return await this.deletePattern(pattern);
+  }
+
+  /**
+   * Cache vector search results with special handling for embeddings
+   */
+  async cacheVectorSearch(
+    collectionName: string,
+    queryHash: string,
+    results: any,
+    ttl?: number
+  ): Promise<void> {
+    const key = `chroma:vectorSearch:${collectionName}:${queryHash}`;
+    
+    // Use longer TTL for vector searches as they're computationally expensive
+    const vectorTtl = ttl ?? this.config.defaultTtl * 2;
+    
+    await this.set(key, results, vectorTtl);
+  }
+
+  /**
+   * Get cached vector search results
+   */
+  async getCachedVectorSearch(
+    collectionName: string,
+    queryHash: string
+  ): Promise<any | null> {
+    const key = `chroma:vectorSearch:${collectionName}:${queryHash}`;
+    return await this.get(key);
+  }
+
+  /**
+   * Cache embedding results
+   */
+  async cacheEmbedding(
+    text: string,
+    embedding: number[],
+    ttl?: number
+  ): Promise<void> {
+    const textHash = this.hashString(text);
+    const key = `chroma:embedding:${textHash}`;
+    
+    // Embeddings rarely change, use longer TTL
+    const embeddingTtl = ttl ?? this.config.defaultTtl * 5;
+    
+    await this.set(key, embedding, embeddingTtl);
+  }
+
+  /**
+   * Get cached embedding
+   */
+  async getCachedEmbedding(text: string): Promise<number[] | null> {
+    const textHash = this.hashString(text);
+    const key = `chroma:embedding:${textHash}`;
+    return await this.get<number[]>(key);
+  }
+
+  /**
+   * Batch cache embeddings
+   */
+  async cacheEmbeddingBatch(
+    textEmbeddingPairs: Array<{ text: string; embedding: number[] }>,
+    ttl?: number
+  ): Promise<void> {
+    const promises = textEmbeddingPairs.map(({ text, embedding }) =>
+      this.cacheEmbedding(text, embedding, ttl)
+    );
+    
+    await Promise.all(promises);
+  }
+
+  /**
+   * Get cache statistics specific to vector operations
+   */
+  getVectorStatistics(): {
+    vectorSearches: number;
+    embeddings: number;
+    totalVectorCacheSize: number;
+    vectorHitRate: number;
+  } {
+    const vectorKeys = this.getKeys().filter(key => 
+      key.startsWith('chroma:vectorSearch:') || key.startsWith('chroma:embedding:')
+    );
+
+    const vectorSearchKeys = vectorKeys.filter(key => key.startsWith('chroma:vectorSearch:'));
+    const embeddingKeys = vectorKeys.filter(key => key.startsWith('chroma:embedding:'));
+
+    const vectorEntries = vectorKeys.map(key => this.cache.get(key)).filter(Boolean);
+    const totalVectorCacheSize = vectorEntries.reduce((sum, entry) => sum + (entry?.size || 0), 0);
+
+    // Calculate hit rate for vector operations (approximation)
+    const vectorOperations = this.stats.hits + this.stats.misses;
+    const vectorHitRate = vectorOperations > 0 ? 
+      (vectorKeys.length / vectorOperations) : 0;
+
+    return {
+      vectorSearches: vectorSearchKeys.length,
+      embeddings: embeddingKeys.length,
+      totalVectorCacheSize,
+      vectorHitRate,
+    };
+  }
+
+  /**
+   * Preload commonly used embeddings
+   */
+  async preloadEmbeddings(
+    texts: string[],
+    embeddingGenerator: (texts: string[]) => Promise<number[][]>
+  ): Promise<void> {
+    const uncachedTexts: string[] = [];
+    
+    // Check which texts are not cached
+    for (const text of texts) {
+      const cached = await this.getCachedEmbedding(text);
+      if (!cached) {
+        uncachedTexts.push(text);
+      }
+    }
+
+    if (uncachedTexts.length === 0) {
+      return; // All embeddings already cached
+    }
+
+    // Generate embeddings for uncached texts
+    try {
+      const embeddings = await embeddingGenerator(uncachedTexts);
+      
+      // Cache the new embeddings
+      const pairs = uncachedTexts.map((text, index) => ({
+        text,
+        embedding: embeddings[index],
+      }));
+      
+      await this.cacheEmbeddingBatch(pairs);
+      
+      this.logger.log(`Preloaded ${uncachedTexts.length} embeddings`);
+    } catch (error) {
+      this.logger.error('Failed to preload embeddings:', error);
+    }
+  }
+
+  /**
+   * Smart cache eviction for vector operations
+   * Prioritizes keeping vector searches and embeddings
+   */
+  private async evictSmartVector(targetSize: number): Promise<void> {
+    const entries = Array.from(this.cache.entries());
+    
+    // Separate vector and non-vector entries
+    const vectorEntries: Array<[string, CacheEntry]> = [];
+    const nonVectorEntries: Array<[string, CacheEntry]> = [];
+    
+    entries.forEach(([key, entry]) => {
+      if (key.startsWith('chroma:vectorSearch:') || key.startsWith('chroma:embedding:')) {
+        vectorEntries.push([key, entry]);
+      } else {
+        nonVectorEntries.push([key, entry]);
+      }
+    });
+
+    // Sort non-vector entries by LRU
+    nonVectorEntries.sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+    
+    // Sort vector entries by access count and recency (keep frequently used)
+    vectorEntries.sort(([, a], [, b]) => {
+      const scoreA = a.accessCount + (Date.now() - a.lastAccessed) / 1000000; // Blend access count and recency
+      const scoreB = b.accessCount + (Date.now() - b.lastAccessed) / 1000000;
+      return scoreA - scoreB;
+    });
+
+    let evictedSize = 0;
+    
+    // First evict non-vector entries
+    for (const [key, entry] of nonVectorEntries) {
+      this.cache.delete(key);
+      evictedSize += entry.size;
+      
+      if (evictedSize >= targetSize) {
+        return;
+      }
+    }
+
+    // If still need to evict, remove least valuable vector entries
+    for (const [key, entry] of vectorEntries) {
+      this.cache.delete(key);
+      evictedSize += entry.size;
+      
+      if (evictedSize >= targetSize) {
+        break;
+      }
+    }
+
+    if (evictedSize > 0) {
+      this.logger.debug(`Smart vector eviction: ${(evictedSize / 1024 / 1024).toFixed(1)}MB removed`);
+    }
+  }
+
+  /**
+   * Hash a string for consistent cache key generation
+   */
+  private hashString(str: string): string {
+    let hash = 0;
+    if (str.length === 0) return hash.toString();
+    
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    return Math.abs(hash).toString(36);
+  }
+
+  /**
    * Estimate the size of a value in bytes
    */
   private estimateSize(value: unknown): number {
@@ -435,6 +662,11 @@ export class ChromaCacheService implements OnModuleDestroy {
     }
 
     try {
+      // Special handling for embeddings (number arrays)
+      if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'number') {
+        return value.length * 8 + 64; // 8 bytes per float + array overhead
+      }
+
       // For simple types
       if (typeof value === 'string') {
         return value.length * 2; // UTF-16 encoding

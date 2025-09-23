@@ -281,33 +281,6 @@ async resilientOperation(): Promise<void> {}
 
 **Goal**: Ensure seamless integration with existing dev-brand-api usage patterns.
 
-#### 4.1 Backward Compatibility Layer
-
-```typescript
-// Enhanced service extends existing service
-@Injectable()
-export class ChromaDBEnhancedService extends ChromaDBService {
-  // All existing methods remain unchanged
-  // New enhanced methods added with "Enhanced" suffix or new names
-  
-  // Existing searchDocuments method unchanged
-  async searchDocuments(/* existing signature */): Promise<ChromaSearchResult> {
-    return super.searchDocuments(/* forward to existing implementation */);
-  }
-  
-  // New enhanced search method
-  @VectorQuery('auto')
-  @Cached({ ttl: 300000 })
-  @Profiled({ threshold: 500 })
-  async searchDocumentsEnhanced<T extends CollectionName>(
-    collection: T,
-    query: EnhancedSearchQuery<T>
-  ): Promise<EnhancedSearchResult<T>> {
-    // Enhanced implementation with full decorator support
-  }
-}
-```
-
 #### 4.2 Migration Strategy
 
 ```typescript
