@@ -1,8 +1,4 @@
-import {
-  BaseRepository,
-  type RepositoryQueryOptions,
-  FindOptions,
-} from './base-repository';
+import { BaseRepository, type RepositoryQueryOptions } from './base-repository';
 
 /**
  * Graph traversal options
@@ -416,7 +412,7 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     const params: Record<string, any> = {};
 
     // Build node patterns
-    const nodePatterns = pattern.nodes.map((node) => {
+    pattern.nodes.map((node) => {
       const labels = node.labels
         ? node.labels.map((l) => `:${l}`).join('')
         : `:${this.entityLabel}`;
@@ -438,8 +434,7 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
 
     // Build relationship patterns
     const relationshipPatterns = pattern.relationships.map((rel) => {
-      const direction =
-        rel.direction === 'IN' ? '<-' : rel.direction === 'OUT' ? '->' : '-';
+      // direction variable not needed because we embed direction in relPattern
       const relPattern =
         rel.direction === 'BOTH'
           ? `-[:${rel.type}]-`
@@ -527,9 +522,49 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
    * Extract nodes from path object
    */
   private extractPathNodes(path: any): Array<{ node: T; relationship?: any }> {
-    // This would need to be implemented based on the actual path structure
-    // returned by Neo4j. For now, return empty array
-    return [];
+    if (!path) return [];
+
+    // neo4j-driver Path structure: { start, end, segments, length }
+    // Each segment: { start, relationship, end }
+    // We will produce an ordered list of nodes; each entry after the first
+    // will also carry the relationship that CONNECTS it to the previous node.
+    try {
+      const segments: any[] = Array.isArray(path.segments) ? path.segments : [];
+      if (segments.length === 0) {
+        // Single node path (start === end) or empty
+        if (path.start) {
+          return [
+            {
+              node: this.mapFromNeo4j({
+                n: this.normalizeDriverNode(path.start),
+              }),
+            },
+          ];
+        }
+        return [];
+      }
+
+      const result: Array<{ node: T; relationship?: any }> = [];
+
+      // Push first start node
+      const firstStart = segments[0].start;
+      result.push({
+        node: this.mapFromNeo4j({ n: this.normalizeDriverNode(firstStart) }),
+      });
+
+      for (const segment of segments) {
+        const rel = segment.relationship;
+        const endNode = segment.end;
+        result.push({
+          node: this.mapFromNeo4j({ n: this.normalizeDriverNode(endNode) }),
+          relationship: this.normalizeDriverRelationship(rel),
+        });
+      }
+      return result;
+    } catch (e) {
+      // Fallback – never throw from helper
+      return [];
+    }
   }
 
   /**
@@ -578,8 +613,116 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
   private async findConnectedComponentsBasic(
     options?: ClusteringOptions & RepositoryQueryOptions
   ): Promise<Array<{ componentId: string; nodes: T[] }>> {
-    // Basic implementation without GDS
-    // This would require a more complex algorithm to properly detect components
-    return [];
+    // Basic (non-GDS) implementation using in-memory DFS/BFS.
+    // Strategy:
+    // 1. Fetch all nodes of this label (respecting soft-delete filter unless included)
+    // 2. Fetch undirected relationships between nodes of this label
+    // 3. Build adjacency map and run BFS to collect components
+
+    // Step 1: nodes
+    const nodesQuery = `MATCH (n:${this.entityLabel}) ${
+      options?.includeSoftDeleted ? '' : 'WHERE n.deletedAt IS NULL'
+    } RETURN id(n) as id, n`;
+    const relTypes = options?.relationshipTypes || ['*'];
+    const relFilter =
+      relTypes.length === 1 && relTypes[0] === '*'
+        ? ''
+        : `AND type(r) IN [${relTypes.map((t) => `'${t}'`).join(', ')}]`;
+    const relQuery = `MATCH (a:${this.entityLabel})-[r]-(:${
+      this.entityLabel
+    }) ${
+      options?.includeSoftDeleted ? '' : 'WHERE a.deletedAt IS NULL'
+    } ${relFilter} RETURN id(startNode(r)) as source, id(endNode(r)) as target`;
+
+    const nodeRecords = await this.executeQuery<{ id: number; n: any }>(
+      nodesQuery,
+      {},
+      options
+    );
+    const relRecords = await this.executeQuery<{
+      source: number;
+      target: number;
+    }>(relQuery, {}, options);
+
+    const nodeMap = new Map<number, any>();
+    nodeRecords.forEach((rec) => {
+      nodeMap.set(rec.id, rec.n);
+    });
+
+    // Build adjacency (undirected)
+    const adjacency = new Map<number, Set<number>>();
+    const ensure = (id: number) => {
+      if (!adjacency.has(id)) adjacency.set(id, new Set());
+      return adjacency.get(id)!;
+    };
+    nodeMap.forEach((_, id) => ensure(id));
+    relRecords.forEach(({ source, target }) => {
+      ensure(source).add(target);
+      ensure(target).add(source);
+    });
+
+    const visited = new Set<number>();
+    const components: Array<{ componentId: string; nodes: T[] }> = [];
+    let idx = 0;
+
+    for (const id of nodeMap.keys()) {
+      if (visited.has(id)) continue;
+      idx++;
+      const queue = [id];
+      visited.add(id);
+      const componentNodeIds: number[] = [];
+      while (queue.length) {
+        const current = queue.shift()!;
+        componentNodeIds.push(current);
+        const neighbors = adjacency.get(current);
+        if (neighbors) {
+          for (const nb of neighbors) {
+            if (!visited.has(nb)) {
+              visited.add(nb);
+              queue.push(nb);
+            }
+          }
+        }
+      }
+      const nodes = componentNodeIds.map((nid) =>
+        this.mapFromNeo4j({ n: nodeMap.get(nid) })
+      );
+      components.push({ componentId: `component-${idx}`, nodes });
+    }
+
+    return components;
+  }
+
+  /**
+   * Normalize a neo4j Node into a plain object preserving id & labels.
+   */
+  private normalizeDriverNode(node: any): any {
+    if (!node) return node;
+    // Heuristic: driver Node has identity & labels & properties
+    if ('properties' in node) {
+      return {
+        id: node.properties.id || node.identity?.toString?.(),
+        labels: Array.isArray(node.labels) ? node.labels : [],
+        ...node.properties,
+      };
+    }
+    return node; // Already plain
+  }
+
+  /**
+   * Normalize a neo4j Relationship to a lightweight object.
+   */
+  private normalizeDriverRelationship(rel: any): any {
+    if (!rel) return rel;
+    if ('properties' in rel) {
+      return {
+        id: rel.properties.id || rel.identity?.toString?.(),
+        type: rel.type,
+        start: rel.startNodeElementId || rel.startNodeId || rel.start,
+        end: rel.endNodeElementId || rel.endNodeId || rel.end,
+        ...rel.properties,
+      };
+    }
+    return rel;
   }
 }

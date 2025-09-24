@@ -5,9 +5,9 @@
  * type safety throughout the repository operations.
  */
 
-import type { BaseDocument } from '../../types/document-types.interface';
+import type { BaseDocument } from '../../types/core.interface';
 import type { ChromaDBService } from '../../services/chromadb.service';
-import type { ChromaMetadata } from '../../interfaces/chromadb-service.interface';
+import type { Metadata as ChromaMetadata } from 'chromadb';
 import type { GetResult, QueryResult } from 'chromadb';
 
 /**
@@ -58,7 +58,9 @@ export function isValidBaseDocument<TDocument extends BaseDocument>(
 /**
  * Type guard to validate ChromaDB service instance
  */
-export function isValidChromaDBService(value: unknown): value is ChromaDBService {
+export function isValidChromaDBService(
+  value: unknown
+): value is ChromaDBService {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
@@ -83,7 +85,7 @@ export function isValidChromaDBService(value: unknown): value is ChromaDBService
     'countDocuments',
     'peekDocuments',
     'getCollectionMetadata',
-    'updateCollectionMetadata'
+    'updateCollectionMetadata',
   ];
 
   for (const method of requiredMethods) {
@@ -122,13 +124,19 @@ export function isValidChromaResult(
 
   // All arrays should have the same length
   const length = result.ids.length;
-  if (result.documents.length !== length || result.metadatas.length !== length) {
+  if (
+    result.documents.length !== length ||
+    result.metadatas.length !== length
+  ) {
     return false;
   }
 
   // Check optional arrays if present
   if (result.embeddings !== undefined) {
-    if (!Array.isArray(result.embeddings) || result.embeddings.length !== length) {
+    if (
+      !Array.isArray(result.embeddings) ||
+      result.embeddings.length !== length
+    ) {
       return false;
     }
   }
@@ -167,10 +175,12 @@ export function isValidChromaMetadata(value: unknown): value is ChromaMetadata {
       return false;
     }
 
-    if (val !== null &&
-        typeof val !== 'string' &&
-        typeof val !== 'number' &&
-        typeof val !== 'boolean') {
+    if (
+      val !== null &&
+      typeof val !== 'string' &&
+      typeof val !== 'number' &&
+      typeof val !== 'boolean'
+    ) {
       return false;
     }
   }
@@ -233,7 +243,9 @@ export function validateRepositoryOperationOptions(
   // Validate metadata if present
   if (opts.metadata !== undefined) {
     if (!isValidChromaMetadata(opts.metadata)) {
-      errors.push('metadata must be compatible with ChromaDB (string, number, boolean, or null values only)');
+      errors.push(
+        'metadata must be compatible with ChromaDB (string, number, boolean, or null values only)'
+      );
     }
   }
 
@@ -252,7 +264,9 @@ export function assertValidDocument<TDocument extends BaseDocument>(
   context = 'document'
 ): asserts value is TDocument {
   if (!isValidBaseDocument<TDocument>(value)) {
-    throw new Error(`Invalid ${context}: object does not conform to BaseDocument interface`);
+    throw new Error(
+      `Invalid ${context}: object does not conform to BaseDocument interface`
+    );
   }
 }
 
@@ -264,7 +278,9 @@ export function assertValidChromaDBService(
   context = 'ChromaDB service'
 ): asserts value is ChromaDBService {
   if (!isValidChromaDBService(value)) {
-    throw new Error(`Invalid ${context}: object does not implement ChromaDBService interface`);
+    throw new Error(
+      `Invalid ${context}: object does not implement ChromaDBService interface`
+    );
   }
 }
 
@@ -276,7 +292,9 @@ export function assertValidChromaResult(
   context = 'ChromaDB result'
 ): asserts value is GetResult<ChromaMetadata> | QueryResult<ChromaMetadata> {
   if (!isValidChromaResult(value)) {
-    throw new Error(`Invalid ${context}: object does not conform to ChromaDB result format`);
+    throw new Error(
+      `Invalid ${context}: object does not conform to ChromaDB result format`
+    );
   }
 }
 
@@ -335,10 +353,12 @@ export class TypeSafeConverter {
     const result: ChromaMetadata = {};
 
     for (const [key, value] of Object.entries(metadata)) {
-      if (value === null ||
-          typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean') {
+      if (
+        value === null ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
         result[key] = value;
       } else if (value !== undefined) {
         // Convert complex types to string representation
@@ -358,7 +378,9 @@ export class TypeSafeConverter {
  * Runtime type checking decorator for repository methods
  */
 export function TypeSafeMethod<TArgs extends unknown[], TReturn>(
-  validate: (args: TArgs) => void = () => {}
+  validate: (args: TArgs) => void = () => {
+    // Default validation does nothing
+  }
 ) {
   return function (
     target: unknown,

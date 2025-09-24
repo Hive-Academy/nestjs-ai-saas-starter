@@ -6,10 +6,7 @@ import { io, type Socket } from 'socket.io-client';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
-import {
-  StreamingServiceAdapter,
-
-} from '@hive-academy/langgraph-streaming';
+import { StreamingServiceAdapter } from '@hive-academy/langgraph-streaming';
 
 describe('WebSocket Streaming Integration E2E', () => {
   let app: INestApplication;

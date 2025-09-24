@@ -5,14 +5,12 @@
  * including naming strategies, security levels, and default configurations.
  */
 
+import type { TenantIsolationConfig } from '../../services/multi-tenant/tenant-context.service';
+import type { MultiTenantConfig } from '../../services/multi-tenant/multi-tenant.service';
 import type {
-  TenantIsolationConfig,
-} from './tenant-aware.decorator';
-import type {
-  MultiTenantConfig,
   TenantResourceLimits,
   TenantSecurityPolicy,
-} from './multi-tenant-services';
+} from '../../services/multi-tenant/tenant-validation.service';
 
 /**
  * Predefined tenant naming strategies
@@ -48,7 +46,12 @@ export const TENANT_SECURITY_LEVELS = {
   STANDARD: {
     level: 'standard',
     description: 'Standard security with resource limits and audit logging',
-    features: ['collection_isolation', 'resource_limits', 'audit_logging', 'encryption_at_rest'],
+    features: [
+      'collection_isolation',
+      'resource_limits',
+      'audit_logging',
+      'encryption_at_rest',
+    ],
     requiredTier: 'pro',
   },
   ENTERPRISE: {
@@ -106,7 +109,10 @@ export const DEFAULT_RESOURCE_LIMITS = {
 /**
  * Predefined security policies
  */
-export const PREDEFINED_SECURITY_POLICIES: Record<string, TenantSecurityPolicy> = {
+export const PREDEFINED_SECURITY_POLICIES: Record<
+  string,
+  TenantSecurityPolicy
+> = {
   GDPR_COMPLIANCE: {
     policyId: 'gdpr-compliance',
     name: 'GDPR Compliance Policy',
@@ -212,37 +218,38 @@ export const PREDEFINED_SECURITY_POLICIES: Record<string, TenantSecurityPolicy> 
 /**
  * Default tenant isolation configurations
  */
-export const DEFAULT_ISOLATION_CONFIGS: Record<string, TenantIsolationConfig> = {
-  BASIC: {
-    namingStrategy: 'prefix',
-    tenantExtraction: 'header',
-    strictValidation: false,
-    enableTenantCaching: false,
-    enableAuditLog: false,
-    defaultTenant: 'default',
-    allowCrossTenant: false,
-  },
+export const DEFAULT_ISOLATION_CONFIGS: Record<string, TenantIsolationConfig> =
+  {
+    BASIC: {
+      namingStrategy: 'prefix',
+      tenantExtraction: 'header',
+      strictValidation: false,
+      enableTenantCaching: false,
+      enableAuditLog: false,
+      defaultTenant: 'default',
+      allowCrossTenant: false,
+    },
 
-  STANDARD: {
-    namingStrategy: 'separate',
-    tenantExtraction: 'jwt',
-    strictValidation: true,
-    enableTenantCaching: true,
-    cacheTtl: 300000, // 5 minutes
-    enableAuditLog: true,
-    allowCrossTenant: false,
-  },
+    STANDARD: {
+      namingStrategy: 'separate',
+      tenantExtraction: 'jwt',
+      strictValidation: true,
+      enableTenantCaching: true,
+      cacheTtl: 300000, // 5 minutes
+      enableAuditLog: true,
+      allowCrossTenant: false,
+    },
 
-  ENTERPRISE: {
-    namingStrategy: 'separate',
-    tenantExtraction: 'jwt',
-    strictValidation: true,
-    enableTenantCaching: true,
-    cacheTtl: 600000, // 10 minutes
-    enableAuditLog: true,
-    allowCrossTenant: true,
-  },
-} as const;
+    ENTERPRISE: {
+      namingStrategy: 'separate',
+      tenantExtraction: 'jwt',
+      strictValidation: true,
+      enableTenantCaching: true,
+      cacheTtl: 600000, // 10 minutes
+      enableAuditLog: true,
+      allowCrossTenant: true,
+    },
+  } as const;
 
 /**
  * Default multi-tenant configuration

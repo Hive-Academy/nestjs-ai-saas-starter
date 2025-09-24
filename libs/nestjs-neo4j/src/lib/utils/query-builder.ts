@@ -393,7 +393,6 @@ export function cypher(): CypherQueryBuilder {
 export function safeCypher(): CypherQueryBuilder {
   const builder = new CypherQueryBuilder();
   // Override addParameter to always use safe mode
-  const originalAddParameter = builder.addParameter.bind(builder);
   builder.addParameter = function (name: string, value: any) {
     return builder.addSafeParameter(name, value);
   };

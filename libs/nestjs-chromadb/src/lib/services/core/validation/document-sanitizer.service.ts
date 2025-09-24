@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { BaseDocument } from '../../../types/document-types.interface';
-import type {
-  DocumentValidationSchema,
-  ValidationResult,
-} from '../../../types/core.interface';
+import type { Metadata as ChromaMetadata } from 'chromadb';
 import { ChromaDBValidationError } from '../../../errors/chromadb.errors';
+import type {
+  BaseDocument,
+  DocumentValidationSchema,
+} from '../../../types/core.interface';
 import { DocumentValidatorService } from './document-validator.service';
 
 /**
@@ -27,10 +27,15 @@ export class DocumentSanitizerService {
     schema?: DocumentValidationSchema,
     throwOnError = true
   ): T[] {
-    const validation = this.documentValidator.validateDocuments(documents, schema);
+    const validation = this.documentValidator.validateDocuments(
+      documents,
+      schema
+    );
 
     if (!validation.isValid) {
-      const errorMessage = `Document validation failed: ${validation.errors.join('; ')}`;
+      const errorMessage = `Document validation failed: ${validation.errors.join(
+        '; '
+      )}`;
 
       if (throwOnError) {
         throw new ChromaDBValidationError(errorMessage, '', null, {
@@ -44,11 +49,13 @@ export class DocumentSanitizerService {
     }
 
     if (validation.warnings.length > 0) {
-      this.logger.warn(`Document validation warnings: ${validation.warnings.join('; ')}`);
+      this.logger.warn(
+        `Document validation warnings: ${validation.warnings.join('; ')}`
+      );
     }
 
     // Sanitize documents
-    return documents.map(doc => this.sanitizeDocument(doc));
+    return documents.map((doc) => this.sanitizeDocument(doc));
   }
 
   /**
@@ -89,13 +96,19 @@ export class DocumentSanitizerService {
    */
   private sanitizeDocumentText(text: string): string {
     // Remove null characters and other control characters except newlines and tabs
-    let sanitized = text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+    let sanitized = text.replace(
+      /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g,
+      ''
+    );
 
     // Normalize whitespace
     sanitized = sanitized.replace(/\s+/g, ' ').trim();
 
     // Remove leading/trailing whitespace from each line
-    sanitized = sanitized.split('\n').map(line => line.trim()).join('\n');
+    sanitized = sanitized
+      .split('\n')
+      .map((line) => line.trim())
+      .join('\n');
 
     // Remove excessive newlines (more than 2 consecutive)
     sanitized = sanitized.replace(/\n{3,}/g, '\n\n');
@@ -118,7 +131,9 @@ export class DocumentSanitizerService {
       // Sanitize key (remove special characters, normalize)
       const cleanKey = this.sanitizeMetadataKey(key);
       if (!cleanKey) {
-        this.logger.warn(`Skipping metadata key '${key}' - invalid after sanitization`);
+        this.logger.warn(
+          `Skipping metadata key '${key}' - invalid after sanitization`
+        );
         return;
       }
 
@@ -166,7 +181,9 @@ export class DocumentSanitizerService {
     // ChromaDB only supports string, number, and boolean values
     if (typeof value === 'string') {
       // Remove null characters and normalize whitespace
-      return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim();
+      return value
+        .replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/g, '')
+        .trim();
     }
 
     if (typeof value === 'number') {
@@ -183,7 +200,9 @@ export class DocumentSanitizerService {
       try {
         return String(value).trim();
       } catch (error) {
-        this.logger.warn(`Failed to convert metadata value to string: ${error}`);
+        this.logger.warn(
+          `Failed to convert metadata value to string: ${error}`
+        );
         return '';
       }
     }
@@ -201,15 +220,17 @@ export class DocumentSanitizerService {
     }
 
     return embedding
-      .map(value => {
+      .map((value) => {
         // Ensure it's a finite number
         if (typeof value !== 'number' || !isFinite(value)) {
-          this.logger.warn(`Invalid embedding value ${value}, replacing with 0`);
+          this.logger.warn(
+            `Invalid embedding value ${value}, replacing with 0`
+          );
           return 0;
         }
         return value;
       })
-      .filter(value => value !== null && value !== undefined);
+      .filter((value) => value !== null && value !== undefined);
   }
 
   /**
@@ -262,7 +283,11 @@ export class DocumentSanitizerService {
    */
   sanitizeCollectionName(name: string): string {
     if (typeof name !== 'string') {
-      throw new ChromaDBValidationError('Collection name must be a string', '', null);
+      throw new ChromaDBValidationError(
+        'Collection name must be a string',
+        '',
+        null
+      );
     }
 
     let sanitized = name.trim().toLowerCase();

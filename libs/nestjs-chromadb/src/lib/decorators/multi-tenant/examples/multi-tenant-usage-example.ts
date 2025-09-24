@@ -5,44 +5,39 @@
  * showcasing tenant isolation, security policies, and enterprise-grade features.
  */
 
-import { Injectable, Controller, Get, Post, Body, Headers } from '@nestjs/common';
+import { Controller, Injectable } from '@nestjs/common';
 import { ChromaDBService } from '../../../services/chromadb.service';
-import { BaseDocument } from '../../../types/document-types.interface';
 import {
-  TenantAware,
-  CrossTenant,
+  BaseDocument,
+  toChromaWireDocument,
+} from '../../../types/core.interface';
+import {
+  MultiTenantService,
   TenantAwareRepository,
   TenantContext,
   TenantIsolationConfig,
-} from '../tenant-aware.decorator';
-import {
-  MultiTenantChromaService,
-  TenantRegistryService,
-} from '../multi-tenant-services';
-import {
-  TENANT_CONSTANTS,
-  DEFAULT_TENANT_CONFIG,
-} from '../tenant-constants';
+  TenantRegistration,
+} from '../index';
 
 // =====================================================================
 // Document Type Definitions
 // =====================================================================
 
-type UserDocument = BaseDocument<{
+export type UserDocument = BaseDocument<{
   name: string;
   email: string;
   role: 'user' | 'admin' | 'manager';
   department: string;
   createdAt: string;
-}>
+}>;
 
-type DocumentMetadata = BaseDocument<{
+export type DocumentMetadata = BaseDocument<{
   title: string;
   author: string;
   category: string;
   classification: 'public' | 'internal' | 'confidential' | 'restricted';
   tags: string[];
-}>
+}>;
 
 // =====================================================================
 // Basic Tenant-Aware Service
@@ -55,14 +50,22 @@ export class UserManagementService {
   /**
    * Search users within tenant with automatic collection prefixing
    * Collection automatically becomes: 'tenant_{tenantId}_users'
+   *
+   * @example Usage with TenantAware decorator:
+   * @TenantAware(
+   *   {
+   *     namingStrategy: 'prefix',
+   *     tenantExtraction: 'header',
+   *     enableTenantCaching: true,
+   *     enableAuditLog: true,
+   *     strictValidation: true,
+   *   },
+   *   {
+   *     skipTenantValidation: false,
+   *     allowCrossTenant: false,
+   *   }
+   * )
    */
-  @TenantAware({
-    namingStrategy: 'prefix',
-    tenantExtraction: 'header',
-    enableTenantCaching: true,
-    enableAuditLog: true,
-    strictValidation: true,
-  })
   async searchUsers(query: string, limit = 10): Promise<UserDocument[]> {
     return this.chromaService.searchDocuments('users', [query], undefined, {
       nResults: limit,
@@ -72,14 +75,21 @@ export class UserManagementService {
 
   /**
    * Create user with automatic tenant metadata enrichment
+   *
+   * @example Usage with TenantAware decorator:
+   * @TenantAware(
+   *   {
+   *     namingStrategy: 'prefix',
+   *     tenantExtraction: 'header',
+   *     enableAuditLog: true,
+   *   },
+   *   {
+   *     skipTenantValidation: false,
+   *   }
+   * )
    */
-  @TenantAware({
-    namingStrategy: 'prefix',
-    tenantExtraction: 'header',
-    enableAuditLog: true,
-  })
   async createUser(userData: Omit<UserDocument, 'id'>): Promise<UserDocument> {
-    const enrichedUser = {
+    const enrichedUser: UserDocument = {
       ...userData,
       id: `user_${Date.now()}`,
       metadata: {
@@ -88,20 +98,31 @@ export class UserManagementService {
       },
     };
 
-    await this.chromaService.addDocuments('users', [enrichedUser]);
+    // Convert to wire format for ChromaDB with metadata normalization
+    const wireDoc = toChromaWireDocument(enrichedUser);
+    await this.chromaService.addDocuments('users', [wireDoc]);
     return enrichedUser;
   }
 
   /**
    * Batch user operations with tenant isolation
+   *
+   * @example Usage with TenantAware decorator:
+   * @TenantAware(
+   *   {
+   *     namingStrategy: 'separate',
+   *     tenantExtraction: 'jwt',
+   *     enableTenantCaching: true,
+   *   },
+   *   {
+   *     skipTenantValidation: false,
+   *   }
+   * )
    */
-  @TenantAware({
-    namingStrategy: 'separate',
-    tenantExtraction: 'jwt',
-    enableTenantCaching: true,
-  })
-  async batchCreateUsers(users: Omit<UserDocument, 'id'>[]): Promise<UserDocument[]> {
-    const enrichedUsers = users.map((user, index) => ({
+  async batchCreateUsers(
+    users: Omit<UserDocument, 'id'>[]
+  ): Promise<UserDocument[]> {
+    const enrichedUsers: UserDocument[] = users.map((user, index) => ({
       ...user,
       id: `user_${Date.now()}_${index}`,
       metadata: {
@@ -110,7 +131,9 @@ export class UserManagementService {
       },
     }));
 
-    await this.chromaService.addDocuments('users', enrichedUsers, { batchSize: 50 });
+    // Convert to wire format for ChromaDB with metadata normalization
+    const wireDocs = enrichedUsers.map(toChromaWireDocument);
+    await this.chromaService.addDocuments('users', wireDocs, { batchSize: 50 });
     return enrichedUsers;
   }
 }
@@ -125,14 +148,22 @@ export class DocumentManagementService {
 
   /**
    * Search documents with classification-based filtering
+   * Collection: '{tenantId}:documents'
+   *
+   * @example Usage with TenantAware decorator:
+   * @TenantAware(
+   *   {
+   *     namingStrategy: 'separate',
+   *     tenantExtraction: 'jwt',
+   *     enableTenantCaching: true,
+   *     cacheTtl: 600000, // 10 minutes
+   *     enableAuditLog: true,
+   *   },
+   *   {
+   *     skipTenantValidation: false,
+   *   }
+   * )
    */
-  @TenantAware({
-    namingStrategy: 'separate', // Collection: '{tenantId}:documents'
-    tenantExtraction: 'jwt',
-    enableTenantCaching: true,
-    cacheTtl: 600000, // 10 minutes
-    enableAuditLog: true,
-  })
   async searchDocuments(
     query: string,
     classification?: 'public' | 'internal' | 'confidential' | 'restricted'
@@ -148,40 +179,59 @@ export class DocumentManagementService {
       searchOptions.where = { classification };
     }
 
-    return this.chromaService.searchDocuments('documents', [query], undefined, searchOptions) as any;
+    return this.chromaService.searchDocuments(
+      'documents',
+      [query],
+      undefined,
+      searchOptions
+    ) as any;
   }
 
   /**
    * Create document with automatic classification validation
+   *
+   * @example Usage with TenantAware decorator:
+   * @TenantAware(
+   *   {
+   *     namingStrategy: 'separate',
+   *     tenantExtraction: 'jwt',
+   *     strictValidation: true,
+   *     enableAuditLog: true,
+   *   },
+   *   {
+   *     skipTenantValidation: false,
+   *   }
+   * )
    */
-  @TenantAware({
-    namingStrategy: 'separate',
-    tenantExtraction: 'jwt',
-    strictValidation: true,
-    enableAuditLog: true,
-  })
-  async createDocument(document: Omit<DocumentMetadata, 'id'>): Promise<DocumentMetadata> {
+  async createDocument(
+    document: Omit<DocumentMetadata, 'id'>
+  ): Promise<DocumentMetadata> {
     // Validate classification level based on tenant permissions
     await this.validateDocumentClassification(document.metadata.classification);
 
-    const enrichedDocument = {
+    const enrichedDocument: DocumentMetadata = {
       ...document,
       id: `doc_${Date.now()}`,
       metadata: {
         ...document.metadata,
-        createdAt: new Date().toISOString(),
-        createdBy: 'current-user', // Would come from JWT in real implementation
+        // createdBy: 'current-user', // Would come from JWT in real implementation
       },
     };
 
-    await this.chromaService.addDocuments('documents', [enrichedDocument]);
+    // Convert to wire format for ChromaDB with metadata normalization
+    const wireDoc = toChromaWireDocument(enrichedDocument);
+    await this.chromaService.addDocuments('documents', [wireDoc]);
     return enrichedDocument;
   }
 
-  private async validateDocumentClassification(classification: string): Promise<void> {
+  private async validateDocumentClassification(
+    classification: string
+  ): Promise<void> {
     // In real implementation, this would check user permissions
     if (classification === 'restricted') {
-      throw new Error('Insufficient permissions to create restricted documents');
+      throw new Error(
+        'Insufficient permissions to create restricted documents'
+      );
     }
   }
 }
@@ -192,81 +242,88 @@ export class DocumentManagementService {
 
 @Injectable()
 export class AdminService {
-  constructor(
-    private readonly multiTenantService: MultiTenantChromaService,
-    private readonly tenantRegistry: TenantRegistryService
-  ) {}
+  constructor(private readonly multiTenantService: MultiTenantService) {}
 
   /**
-   * Search across all tenant collections (requires admin permissions)
+   * Create tenant collection
    */
-  @CrossTenant({
-    requiredPermissions: ['admin', 'cross-tenant-read'],
-    auditLevel: 'detailed',
-    maxTenants: 50,
-  })
-  async globalSearch(query: string, collection: string): Promise<Array<{ tenantId: string; results: any[] }>> {
-    // Get all active tenants
-    const tenants = await this.tenantRegistry.listTenants({ status: 'active' });
-    const tenantIds = tenants.map(t => t.tenantId).slice(0, 50); // Limit for performance
-
-    return this.multiTenantService.searchAcrossTenants(
-      { tenantId: 'admin', permissions: ['admin', 'cross-tenant-read'] } as TenantContext,
-      query,
-      collection,
-      tenantIds,
-      { maxResults: 20 }
+  async createTenantCollection(
+    tenantId: string,
+    baseCollection: string,
+    metadata: Record<string, unknown> = {}
+  ): Promise<any> {
+    const tenantContext: TenantContext = {
+      tenantId,
+      tier: 'enterprise',
+    };
+    return this.multiTenantService.createTenantCollection(
+      tenantContext,
+      baseCollection,
+      metadata
     );
   }
 
   /**
-   * Tenant analytics and metrics
+   * Search across multiple tenants (admin operation)
    */
-  @CrossTenant({
-    requiredPermissions: ['admin', 'analytics'],
-    auditLevel: 'detailed',
-  })
-  async getTenantAnalytics(tenantId?: string): Promise<any> {
-    if (tenantId) {
-      // Single tenant metrics
-      return this.multiTenantService.getTenantMetrics(tenantId, {
-        start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        end: new Date(),
-      });
-    } else {
-      // All tenants overview
-      const tenants = await this.tenantRegistry.listTenants({ status: 'active' });
-      const analytics = await Promise.all(
-        tenants.map(async tenant => ({
-          tenantId: tenant.tenantId,
-          metrics: await this.multiTenantService.getTenantMetrics(tenant.tenantId, {
-            start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            end: new Date(),
-          }),
-        }))
-      );
-
-      return {
-        totalTenants: tenants.length,
-        analytics,
-      };
-    }
+  async searchAcrossTenants(
+    adminTenantId: string,
+    query: string,
+    baseCollection: string,
+    tenantIds: string[]
+  ): Promise<any[]> {
+    const adminContext: TenantContext = {
+      tenantId: adminTenantId,
+      tier: 'enterprise',
+    };
+    return this.multiTenantService.searchAcrossTenants(
+      adminContext,
+      query,
+      baseCollection,
+      tenantIds
+    );
   }
 
   /**
-   * Tenant management operations
+   * Create tenant registration example (simplified)
    */
-  @CrossTenant({
-    requiredPermissions: ['admin', 'tenant-management'],
-    auditLevel: 'detailed',
-  })
-  async deleteTenantData(tenantId: string): Promise<void> {
+  createTenantRegistration(
+    tenantId: string,
+    config?: Partial<TenantRegistration>
+  ): TenantRegistration {
+    const now = new Date();
+    const registration: TenantRegistration = {
+      tenantId,
+      name: `Tenant ${tenantId}`,
+      status: 'active',
+      tier: 'pro',
+      resourceLimits: {
+        maxCollections: 100,
+        maxDocumentsPerCollection: 10000,
+        maxTotalDocuments: 100000,
+        maxStorageBytes: 1024 * 1024 * 1024, // 1GB
+        maxRequestsPerMinute: 1000,
+        maxConcurrentOperations: 10,
+        maxEmbeddingOperationsPerDay: 10000,
+      },
+      securityPolicies: [],
+      metadata: {},
+      createdAt: now,
+      updatedAt: now,
+      collections: [],
+      ...config,
+    };
+    return registration;
+  }
+
+  /**
+   * Cleanup tenant resources
+   */
+  async cleanupTenant(adminTenantId: string, tenantId: string): Promise<void> {
     const adminContext: TenantContext = {
-      tenantId: 'admin',
-      permissions: ['admin', 'cross-tenant-write', 'tenant-management'],
+      tenantId: adminTenantId,
       tier: 'enterprise',
     };
-
     await this.multiTenantService.deleteTenant(adminContext, tenantId);
   }
 }
@@ -300,7 +357,9 @@ export class UserRepository extends TenantAwareRepository<UserDocument> {
     this.validateTenantAccess(enrichedUser);
 
     const collection = this.getTenantCollection('users');
-    await this.chromaService.addDocuments(collection, [enrichedUser]);
+    // Convert to wire format and add to ChromaDB
+    const wireDoc = toChromaWireDocument(enrichedUser);
+    await this.chromaService.addDocuments(collection, [wireDoc]);
 
     return enrichedUser;
   }
@@ -308,7 +367,10 @@ export class UserRepository extends TenantAwareRepository<UserDocument> {
   /**
    * Search similar users within tenant
    */
-  async findSimilarUsers(user: UserDocument, limit = 5): Promise<UserDocument[]> {
+  async findSimilarUsers(
+    user: UserDocument,
+    limit = 5
+  ): Promise<UserDocument[]> {
     this.validateTenantAccess(user);
 
     const collection = this.getTenantCollection('users');
@@ -335,23 +397,32 @@ export class UserController {
   /**
    * Search users endpoint with tenant context from headers
    * Headers: { 'x-tenant-id': 'company-123' }
+   *
+   * @example Usage with decorators:
+   * @Get('search')
+   * async searchUsers(
+   *   @Headers('x-tenant-id') tenantId: string,
+   *   @Headers('query') query: string
+   * )
    */
-  @Get('search')
-  async searchUsers(
-    @Headers('x-tenant-id') tenantId: string,
-    @Headers('query') query: string
-  ): Promise<UserDocument[]> {
+  async searchUsers(tenantId: string, query: string): Promise<UserDocument[]> {
     // Tenant context is automatically extracted by @TenantAware decorator
     return this.userService.searchUsers(query, 10);
   }
 
   /**
    * Create user with tenant validation
+   *
+   * @example Usage with decorators:
+   * @Post()
+   * async createUser(
+   *   @Headers('x-tenant-id') tenantId: string,
+   *   @Body() userData: Omit<UserDocument, 'id'>
+   * )
    */
-  @Post()
   async createUser(
-    @Headers('x-tenant-id') tenantId: string,
-    @Body() userData: Omit<UserDocument, 'id'>
+    tenantId: string,
+    userData: Omit<UserDocument, 'id'>
   ): Promise<UserDocument> {
     // Set tenant context for repository
     this.userRepository.setTenantContext({
@@ -364,11 +435,17 @@ export class UserController {
 
   /**
    * Find similar users within tenant
+   *
+   * @example Usage with decorators:
+   * @Post('similar')
+   * async findSimilarUsers(
+   *   @Headers('x-tenant-id') tenantId: string,
+   *   @Body() user: UserDocument
+   * )
    */
-  @Post('similar')
   async findSimilarUsers(
-    @Headers('x-tenant-id') tenantId: string,
-    @Body() user: UserDocument
+    tenantId: string,
+    user: UserDocument
   ): Promise<UserDocument[]> {
     this.userRepository.setTenantContext({
       tenantId,

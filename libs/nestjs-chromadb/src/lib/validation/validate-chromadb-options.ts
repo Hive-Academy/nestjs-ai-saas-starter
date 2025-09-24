@@ -5,7 +5,6 @@ import type {
   OpenAIEmbeddingConfig,
   CohereEmbeddingConfig,
   CustomEmbeddingConfig,
-  HuggingFaceEmbeddingConfig,
 } from '../interfaces/chromadb-module-options.interface';
 
 const logger = new Logger('ChromaDBConfigValidation');

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChromaClientError, Where, WhereDocument } from 'chromadb';
-import type { BaseDocument } from '../../types/document-types.interface';
+import type { BaseDocument } from '../../types/core.interface';
 import { TypeConversionUtils } from '../../utils/data/type-conversion.utils';
 import { ChromaDBCollectionService } from './chromadb-collection.service';
 import { ChromaDBDocumentService } from './chromadb-document.service';
@@ -28,7 +28,7 @@ export class ChromaDBRepositoryService {
     collection: string,
     document: T
   ): Promise<T> {
-    const chromaDoc = this.typeUtils.toChromaDocument(document);
+    const chromaDoc = this.typeUtils.toChromaWireDocument(document);
     await this.documentService.addDocuments(collection, [chromaDoc]);
     return document;
   }
@@ -40,7 +40,7 @@ export class ChromaDBRepositoryService {
     collection: string,
     documents: T[]
   ): Promise<T[]> {
-    const chromaDocs = this.typeUtils.toChromaDocuments(documents);
+    const chromaDocs = this.typeUtils.toChromaWireDocuments(documents);
     await this.documentService.addDocuments(collection, chromaDocs);
     return documents;
   }
@@ -52,7 +52,9 @@ export class ChromaDBRepositoryService {
     collection: string,
     id: string
   ): Promise<T | null> {
-    const result = await this.documentService.getDocuments(collection, { ids: [id] });
+    const result = await this.documentService.getDocuments(collection, {
+      ids: [id],
+    });
 
     if (result.ids.length === 0 || !result.documents?.[0]) {
       return null;
@@ -104,11 +106,13 @@ export class ChromaDBRepositoryService {
   ): Promise<T> {
     const existing = await this.findById<T>(collection, id);
     if (!existing) {
-      throw new ChromaClientError(`Document with ID '${id}' not found in collection '${collection}'`);
+      throw new ChromaClientError(
+        `Document with ID '${id}' not found in collection '${collection}'`
+      );
     }
 
     const updated = { ...existing, ...updates } as T;
-    const chromaDoc = this.typeUtils.toChromaDocument(updated);
+    const chromaDoc = this.typeUtils.toChromaWireDocument(updated);
 
     await this.documentService.updateDocuments(collection, [chromaDoc]);
     return updated;
@@ -122,18 +126,21 @@ export class ChromaDBRepositoryService {
     updates: Array<{ id: string; data: Partial<T> }>
   ): Promise<T[]> {
     // Get all existing documents
-    const ids = updates.map(u => u.id);
+    const ids = updates.map((u) => u.id);
     const existingDocs = await this.findByIds<T>(collection, ids);
 
     // Create bulk update payload using type utils
-    const chromaDocs = this.typeUtils.createBulkUpdatePayloads(existingDocs, updates);
+    const chromaDocs = this.typeUtils.createBulkUpdatePayloads(
+      existingDocs,
+      updates
+    );
 
     await this.documentService.updateDocuments(collection, chromaDocs);
 
     // Return updated documents
-    return existingDocs.map(existing => {
-      const update = updates.find(u => u.id === existing.id);
-      return update ? { ...existing, ...update.data } as T : existing;
+    return existingDocs.map((existing) => {
+      const update = updates.find((u) => u.id === existing.id);
+      return update ? ({ ...existing, ...update.data } as T) : existing;
     });
   }
 
@@ -145,7 +152,9 @@ export class ChromaDBRepositoryService {
       await this.documentService.deleteDocuments(collection, [id]);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to delete document '${id}' from collection '${collection}': ${error}`);
+      this.logger.error(
+        `Failed to delete document '${id}' from collection '${collection}': ${error}`
+      );
       return false;
     }
   }
@@ -158,7 +167,9 @@ export class ChromaDBRepositoryService {
       await this.documentService.deleteDocuments(collection, ids);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to delete documents from collection '${collection}': ${error}`);
+      this.logger.error(
+        `Failed to delete documents from collection '${collection}': ${error}`
+      );
       return false;
     }
   }
@@ -205,7 +216,10 @@ export class ChromaDBRepositoryService {
       return this.collectionService.countDocuments(collection);
     }
 
-    const result = await this.documentService.getDocuments(collection, { where, whereDocument });
+    const result = await this.documentService.getDocuments(collection, {
+      where,
+      whereDocument,
+    });
     return result.ids.length;
   }
 
@@ -216,7 +230,7 @@ export class ChromaDBRepositoryService {
     collection: string,
     document: T
   ): Promise<T> {
-    const chromaDoc = this.typeUtils.toChromaDocument(document);
+    const chromaDoc = this.typeUtils.toChromaWireDocument(document);
     await this.documentService.upsertDocuments(collection, [chromaDoc]);
     return document;
   }
@@ -228,7 +242,7 @@ export class ChromaDBRepositoryService {
     collection: string,
     documents: T[]
   ): Promise<T[]> {
-    const chromaDocs = this.typeUtils.toChromaDocuments(documents);
+    const chromaDocs = this.typeUtils.toChromaWireDocuments(documents);
     await this.documentService.upsertDocuments(collection, chromaDocs);
     return documents;
   }

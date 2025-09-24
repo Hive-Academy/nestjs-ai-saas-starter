@@ -5,7 +5,7 @@
  * Uses proper layering: Application types (BaseDocument) + Wire types (ChromaDB native)
  */
 
-import type { Metadata, GetResult, QueryResult } from 'chromadb';
+import type { Metadata, QueryResult } from 'chromadb';
 
 // ========================================
 // Core Document Types (Application Layer)
@@ -31,7 +31,7 @@ export interface BaseDocument<TMetadata = Record<string, any>> {
  */
 export interface ChromaWireDocument {
   readonly id: string;
-  readonly document?: string;  // ChromaDB expects 'document' not 'content'
+  readonly document?: string; // ChromaDB expects 'document' not 'content'
   readonly metadata?: Metadata; // ChromaDB's native Metadata type
   readonly embedding?: number[]; // Mutable array for ChromaDB operations
 }
@@ -56,7 +56,8 @@ export interface ChromaSearchOptions {
 /**
  * Search result type - uses ChromaDB's native QueryResult
  */
-export type ChromaSearchResult<TMetadata = Metadata> = QueryResult<TMetadata>;
+export type ChromaSearchResult<TMetadata extends Metadata = Metadata> =
+  QueryResult<TMetadata>;
 
 /**
  * Options for getting documents
@@ -67,7 +68,9 @@ export interface GetDocumentsOptions {
   readonly limit?: number;
   readonly offset?: number;
   readonly whereDocument?: Record<string, any>;
-  readonly include?: ReadonlyArray<'metadatas' | 'documents' | 'distances' | 'embeddings'>;
+  readonly include?: ReadonlyArray<
+    'metadatas' | 'documents' | 'distances' | 'embeddings'
+  >;
   readonly includeMetadata?: boolean;
   readonly includeDocuments?: boolean;
   readonly includeEmbeddings?: boolean;
@@ -81,7 +84,13 @@ export interface ChromaBulkOptions {
   readonly upsert?: boolean;
   readonly validateIds?: boolean;
   readonly autoChunk?: boolean;
-  readonly chunkingStrategy?: 'recursive' | 'token' | 'character' | 'markdown' | 'semantic' | 'smart';
+  readonly chunkingStrategy?:
+    | 'recursive'
+    | 'token'
+    | 'character'
+    | 'markdown'
+    | 'semantic'
+    | 'smart';
   readonly chunkSize?: number;
   readonly chunkOverlap?: number;
   readonly preserveChunkRelationships?: boolean;
@@ -117,12 +126,23 @@ export interface ChromaCollectionInfo<TMetadata = Metadata> {
  * Document validation schema
  */
 export interface DocumentValidationSchema {
-  readonly requireId?: boolean;  readonly requireDocument?: boolean;  readonly requireMetadata?: boolean;  readonly maxDocumentLength?: number;
+  readonly requireId?: boolean;
+  readonly requireDocument?: boolean;
+  readonly requireMetadata?: boolean;
+  readonly maxDocumentLength?: number;
   readonly required?: readonly string[];
   readonly optional?: readonly string[];
-  readonly types?: Record<string, 'string' | 'number' | 'boolean' | 'object' | 'array'>;
+  readonly types?: Record<
+    string,
+    'string' | 'number' | 'boolean' | 'object' | 'array'
+  >;
   readonly patterns?: Record<string, RegExp>;
-  readonly ranges?: Record<string, { readonly min?: number; readonly max?: number }>;
+  readonly ranges?: Record<
+    string,
+    { readonly min?: number; readonly max?: number }
+  >;
+  readonly forbiddenMetadataKeys?: readonly string[];
+  readonly metadataValidation?: Record<string, unknown>;
 }
 
 /**
@@ -140,29 +160,85 @@ export interface MutableValidationResult {
 
 export interface ValidationResult {
   readonly isValid: boolean;
-  readonly errors:  string[];
-  readonly warnings:  string[];
+  readonly errors: string[];
+  readonly warnings: string[];
   readonly validatedData?: any;
 }
 
 // ========================================
-// Type Conversion Utilities
+// Safe Type Conversion Utilities
 // ========================================
 
 /**
- * Convert BaseDocument to ChromaWireDocument for ChromaDB operations
+ * Safely convert readonly embedding array to mutable array
  */
-export function toChromaWireDocument<T extends BaseDocument>(doc: T): ChromaWireDocument {
+export function toMutableEmbedding(
+  embedding?: readonly number[]
+): number[] | undefined {
+  return embedding ? [...embedding] : undefined;
+}
+
+/**
+ * Safely convert mutable embedding array to readonly array
+ */
+export function toReadonlyEmbedding(
+  embedding?: number[]
+): readonly number[] | undefined {
+  return embedding ? Object.freeze([...embedding]) : undefined;
+}
+
+/**
+ * Safely normalize metadata to ChromaDB Metadata type
+ */
+export function normalizeMetadata(metadata: any): Metadata {
+  if (!metadata || typeof metadata !== 'object') {
+    return {};
+  }
+
+  const normalized: Metadata = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    // ChromaDB only supports string, number, and boolean values
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      normalized[key] = value;
+    } else if (Array.isArray(value)) {
+      // Convert arrays to comma-separated strings
+      normalized[key] = value.join(',');
+    } else if (value != null) {
+      // Convert other types to strings
+      try {
+        normalized[key] = String(value);
+      } catch (error) {
+        // Skip invalid values
+      }
+    }
+    // Skip null and undefined values
+  }
+
+  return normalized;
+}
+
+/**
+ * Convert BaseDocument to ChromaWireDocument for ChromaDB operations
+ * Uses safe conversion functions to handle readonly/mutable type differences
+ */
+export function toChromaWireDocument<T extends BaseDocument>(
+  doc: T
+): ChromaWireDocument {
   return {
     id: doc.id,
     document: doc.content,
-    metadata: doc.metadata as Metadata,
-    embedding: doc.embedding ? [...doc.embedding] : undefined,
+    metadata: normalizeMetadata(doc.metadata),
+    embedding: toMutableEmbedding(doc.embedding),
   };
 }
 
 /**
  * Convert ChromaWireDocument to BaseDocument for application use
+ * Uses safe conversion functions to handle readonly/mutable type differences
  */
 export function fromChromaWireDocument<TMetadata = Record<string, any>>(
   wireDoc: ChromaWireDocument,
@@ -172,7 +248,7 @@ export function fromChromaWireDocument<TMetadata = Record<string, any>>(
     id: wireDoc.id,
     content: wireDoc.document || '',
     metadata: (wireDoc.metadata || {}) as TMetadata,
-    embedding: wireDoc.embedding ? Object.freeze([...wireDoc.embedding]) : undefined,
+    embedding: toReadonlyEmbedding(wireDoc.embedding),
     ...additionalFields,
   };
 }
@@ -180,7 +256,9 @@ export function fromChromaWireDocument<TMetadata = Record<string, any>>(
 /**
  * Convert array of BaseDocuments to ChromaWireDocuments
  */
-export function toChromaWireDocuments<T extends BaseDocument>(docs: readonly T[]): ChromaWireDocument[] {
+export function toChromaWireDocuments<T extends BaseDocument>(
+  docs: readonly T[]
+): ChromaWireDocument[] {
   return docs.map(toChromaWireDocument);
 }
 
@@ -190,7 +268,7 @@ export function toChromaWireDocuments<T extends BaseDocument>(docs: readonly T[]
 export function fromChromaWireDocuments<TMetadata = Record<string, any>>(
   wireDocs: readonly ChromaWireDocument[]
 ): BaseDocument<TMetadata>[] {
-  return wireDocs.map(doc => fromChromaWireDocument<TMetadata>(doc));
+  return wireDocs.map((doc) => fromChromaWireDocument<TMetadata>(doc));
 }
 
 /**
@@ -212,13 +290,53 @@ export function isBaseDocument(value: unknown): value is BaseDocument {
 /**
  * Type guard for ChromaWireDocument
  */
-export function isChromaWireDocument(value: unknown): value is ChromaWireDocument {
+export function isChromaWireDocument(
+  value: unknown
+): value is ChromaWireDocument {
   return (
     typeof value === 'object' &&
     value !== null &&
     'id' in value &&
     typeof (value as ChromaWireDocument).id === 'string'
   );
+}
+
+/**
+ * Get content from either document type (union type handler)
+ */
+export function getContentFromDocument(
+  doc: ChromaWireDocument | BaseDocument
+): string {
+  if ('document' in doc && doc.document !== undefined) {
+    return doc.document; // ChromaWireDocument
+  }
+  if ('content' in doc) {
+    return doc.content; // BaseDocument
+  }
+  return '';
+}
+
+/**
+ * Create a complete QueryResult with all required properties
+ */
+export function createQueryResult<TMetadata extends Metadata = Metadata>(
+  ids: string[][],
+  documents?: (string | null)[][] | null,
+  metadatas?: (TMetadata | null)[][] | null,
+  distances?: (number | null)[][] | null,
+  embeddings?: (number[] | null)[][] | null,
+  include?: string[],
+  uris?: (string | null)[][] | null
+): QueryResult<TMetadata> {
+  return {
+    ids,
+    documents: documents || [[]],
+    metadatas: metadatas || [[]],
+    distances: distances || [[]],
+    embeddings: embeddings || [[]],
+    include: include || [],
+    uris: uris || [[]],
+  } as QueryResult<TMetadata>;
 }
 
 // ========================================

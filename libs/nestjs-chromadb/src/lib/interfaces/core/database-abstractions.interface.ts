@@ -1,11 +1,19 @@
 /**
  * @fileoverview Database Abstraction Interfaces - Core ChromaDB Service Contracts
- * 
+ *
  * This file defines the interfaces for dependency inversion principle implementation,
  * allowing different implementations of core database functionality.
  */
 
-import type { ChromaClient, Collection, CollectionMetadata, Where, WhereDocument, GetResult } from 'chromadb';
+import type {
+  ChromaClient,
+  Collection,
+  CollectionMetadata,
+  Where,
+  WhereDocument,
+  GetResult,
+  Metadata as ChromaMetadata,
+} from 'chromadb';
 import type {
   BaseDocument,
   ChromaWireDocument,
@@ -59,16 +67,13 @@ export interface IChromaConnection {
 
 /**
  * Core Operations Interface - combines high-level and low-level operations
- * 
+ *
  * Abstracts CRUD and collection management operations with full type safety
  * Following Interface Segregation Principle
  */
 export interface IChromaOperations {
   // High-level Generic Operations (Repository Pattern)
-  create<T extends BaseDocument>(
-    collection: string,
-    document: T
-  ): Promise<T>;
+  create<T extends BaseDocument>(collection: string, document: T): Promise<T>;
 
   createMany<T extends BaseDocument>(
     collection: string,
@@ -174,7 +179,10 @@ export interface IChromaOperations {
   ): Promise<ChromaSearchResult>;
 
   getCollectionMetadata(name: string): Promise<Record<string, any> | null>;
-  updateCollectionMetadata(name: string, metadata: Record<string, any>): Promise<void>;
+  updateCollectionMetadata(
+    name: string,
+    metadata: Record<string, any>
+  ): Promise<void>;
 
   reset(): Promise<boolean>;
 }
@@ -189,7 +197,7 @@ export interface IChromaValidation {
    * Validate a single document with optional schema
    */
   validateDocument<T extends BaseDocument>(
-    document: T, 
+    document: T,
     schema?: DocumentValidationSchema
   ): ValidationResult;
 
@@ -197,7 +205,7 @@ export interface IChromaValidation {
    * Validate multiple documents with optional schema
    */
   validateDocuments<T extends BaseDocument>(
-    documents: T[], 
+    documents: T[],
     schema?: DocumentValidationSchema
   ): ValidationResult;
 
@@ -205,7 +213,7 @@ export interface IChromaValidation {
    * Validate metadata structure
    */
   validateMetadata(
-    metadata: ChromaMetadata, 
+    metadata: ChromaMetadata,
     schema?: DocumentValidationSchema
   ): ValidationResult;
 

@@ -6,7 +6,7 @@
  */
 
 import type { Where, WhereDocument } from 'chromadb';
-import type { BaseDocument } from '../../types/document-types.interface';
+import type { BaseDocument } from '../../types/core.interface';
 
 /**
  * Repository operation options for fine-grained control
@@ -41,7 +41,9 @@ export interface RepositorySearchOptions extends RepositoryOperationOptions {
 /**
  * Result wrapper for bulk operations
  */
-export interface RepositoryOperationResult<TDocument extends BaseDocument = BaseDocument> {
+export interface RepositoryOperationResult<
+  TDocument extends BaseDocument = BaseDocument
+> {
   /** Successfully processed documents */
   success: TDocument[];
   /** Failed operations with error details */
@@ -61,14 +63,19 @@ export interface RepositoryOperationResult<TDocument extends BaseDocument = Base
 /**
  * Input type for document creation (omits auto-generated fields)
  */
-export type CreateDocumentInput<TDocument extends BaseDocument> = Omit<TDocument, 'id'> & {
+export type CreateDocumentInput<TDocument extends BaseDocument> = Omit<
+  TDocument,
+  'id'
+> & {
   id?: string; // Optional ID for manual specification
 };
 
 /**
  * Search result with similarity score
  */
-export interface SearchResultWithScore<TDocument extends BaseDocument = BaseDocument> {
+export interface SearchResultWithScore<
+  TDocument extends BaseDocument = BaseDocument
+> {
   /** The document */
   document: TDocument;
   /** Similarity score (0-1, higher is more similar) */
@@ -83,7 +90,9 @@ export interface SearchResultWithScore<TDocument extends BaseDocument = BaseDocu
  * This class defines the contract for repository operations and ensures
  * type safety throughout the decorator system.
  */
-export abstract class BaseChromaRepository<TDocument extends BaseDocument = BaseDocument> {
+export abstract class BaseChromaRepository<
+  TDocument extends BaseDocument = BaseDocument
+> {
   // =====================================================================
   // CRUD OPERATIONS
   // =====================================================================
@@ -123,9 +132,7 @@ export abstract class BaseChromaRepository<TDocument extends BaseDocument = Base
   /**
    * Find all documents in the collection
    */
-  abstract findAll(
-    options?: RepositoryOperationOptions
-  ): Promise<TDocument[]>;
+  abstract findAll(options?: RepositoryOperationOptions): Promise<TDocument[]>;
 
   /**
    * Update a document by ID
@@ -220,10 +227,7 @@ export abstract class BaseChromaRepository<TDocument extends BaseDocument = Base
   /**
    * Count documents matching criteria
    */
-  abstract count(
-    where?: Where,
-    whereDocument?: WhereDocument
-  ): Promise<number>;
+  abstract count(where?: Where, whereDocument?: WhereDocument): Promise<number>;
 
   /**
    * Check if a document exists by ID
@@ -272,6 +276,6 @@ export function isBaseChromaRepository<T extends BaseDocument>(
 /**
  * Constructor type for repository classes
  */
-export type RepositoryConstructor<TDocument extends BaseDocument = BaseDocument> = new (
-  ...args: any[]
-) => BaseChromaRepository<TDocument>;
+export type RepositoryConstructor<
+  TDocument extends BaseDocument = BaseDocument
+> = new (...args: any[]) => BaseChromaRepository<TDocument>;

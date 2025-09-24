@@ -1,9 +1,9 @@
 /**
  * @fileoverview Node Model Service for Neo4j Node Operations
- * 
+ *
  * This service extends the BaseModelService specifically for Neo4j nodes.
  * It provides node-specific operations, relationship management, and graph traversal.
- * 
+ *
  * Features:
  * - Node-specific CRUD operations
  * - Relationship management (create, delete, query)
@@ -13,21 +13,24 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { BaseModelService, BaseEntity, EntityMetadata, ModelQueryOptions } from './base-model.service';
+import {
+  BaseModelService,
+  BaseEntity,
+  ModelQueryOptions,
+} from './base-model.service';
 import { Neo4jService } from '../services/neo4j.service';
-import { QueryResult, Path, Node, Relationship } from 'neo4j-driver';
+// Removed unused imports from neo4j-driver (QueryResult, Path, Node, Relationship)
 import {
   Neo4jProperties,
   Neo4jWhereClause,
-  Neo4jCompatibleEntity
+  Neo4jCompatibleEntity,
 } from '../types/neo4j-types';
+import type { Path, Node } from 'neo4j-driver';
 
 /**
  * Node-specific entity interface
  */
-export interface NodeEntity extends BaseEntity {
-  // Note: labels is handled separately from properties to avoid index signature conflicts
-}
+export type NodeEntity = BaseEntity; // Simplified: no additional members at present
 
 /**
  * Relationship creation options
@@ -50,7 +53,8 @@ export interface CreateRelationshipOptions {
 /**
  * Relationship query options
  */
-export interface RelationshipQueryOptions extends ModelQueryOptions<Neo4jCompatibleEntity> {
+export interface RelationshipQueryOptions
+  extends ModelQueryOptions<Neo4jCompatibleEntity> {
   /** Relationship types to include */
   types?: string[];
   /** Relationship direction */
@@ -81,7 +85,11 @@ export interface TraversalOptions {
   nodeFilter?: Neo4jWhereClause;
   relationshipFilter?: Neo4jWhereClause;
   /** Path uniqueness */
-  uniqueness?: 'NODE_GLOBAL' | 'RELATIONSHIP_GLOBAL' | 'NODE_PATH' | 'RELATIONSHIP_PATH';
+  uniqueness?:
+    | 'NODE_GLOBAL'
+    | 'RELATIONSHIP_GLOBAL'
+    | 'NODE_PATH'
+    | 'RELATIONSHIP_PATH';
 }
 
 /**
@@ -127,7 +135,9 @@ export interface NodeStatistics {
  * Neo4j Node Model Service
  */
 @Injectable()
-export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseModelService<T> {
+export abstract class Neo4jNodeModelService<
+  T extends NodeEntity
+> extends BaseModelService<T> {
   constructor(protected override readonly neo4j: Neo4jService) {
     super(neo4j);
   }
@@ -142,17 +152,22 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     return this.neo4j.write(async (session) => {
       // Build the query based on options
       let query: string;
-      let params: Record<string, any> = {
+      const params: Record<string, any> = {
         sourceId,
         targetId: options.targetId,
         relType: options.type,
-        relProps: options.properties || {}
+        relProps: options.properties || {},
       };
 
       if (options.createTarget && options.targetData) {
         // Create target node if it doesn't exist
-        const targetLabels = [this.metadata.label, ...(this.metadata.additionalLabels || [])];
-        const targetLabelsClause = targetLabels.map(label => `:${label}`).join('');
+        const targetLabels = [
+          this.metadata.label,
+          ...(this.metadata.additionalLabels || []),
+        ];
+        const targetLabelsClause = targetLabels
+          .map((label) => `:${label}`)
+          .join('');
 
         query = `
           MATCH (source:${this.metadata.label} {id: $sourceId})
@@ -165,11 +180,12 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       } else {
         // Target node must exist
         const direction = options.direction || 'OUT';
-        const relPattern = direction === 'OUT' 
-          ? `(source)-[r:${options.type} $relProps]->(target)`
-          : direction === 'IN'
-          ? `(target)-[r:${options.type} $relProps]->(source)`
-          : `(source)-[r:${options.type} $relProps]-(target)`;
+        const relPattern =
+          direction === 'OUT'
+            ? `(source)-[r:${options.type} $relProps]->(target)`
+            : direction === 'IN'
+            ? `(target)-[r:${options.type} $relProps]->(source)`
+            : `(source)-[r:${options.type} $relProps]-(target)`;
 
         query = `
           MATCH (source:${this.metadata.label} {id: $sourceId})
@@ -180,22 +196,28 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       }
 
       const result = await session.run(query, params);
-      
+
       if (result.records.length === 0) {
-        throw new Error(`Failed to create relationship between ${sourceId} and ${options.targetId}`);
+        throw new Error(
+          `Failed to create relationship between ${sourceId} and ${options.targetId}`
+        );
       }
 
       const record = result.records[0];
       return {
-        source: this.transformOutput(record.get('source').properties as any) as T,
-        target: this.transformOutput(record.get('target').properties as any) as T,
+        source: this.transformOutput(
+          record.get('source').properties as any
+        ) as T,
+        target: this.transformOutput(
+          record.get('target').properties as any
+        ) as T,
         relationship: {
           id: record.get('r').identity.toString(),
           type: record.get('r').type,
           properties: record.get('r').properties,
           startNodeId: record.get('r').start.toString(),
-          endNodeId: record.get('r').end.toString()
-        }
+          endNodeId: record.get('r').end.toString(),
+        },
       };
     });
   }
@@ -210,7 +232,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
   ): Promise<boolean> {
     return this.neo4j.write(async (session) => {
       const typeFilter = relationshipType ? `:${relationshipType}` : '';
-      
+
       const result = await session.run(
         `
         MATCH (source:${this.metadata.label} {id: $sourceId})-[r${typeFilter}]-(target:${this.metadata.label} {id: $targetId})
@@ -250,11 +272,16 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     // Build WHERE clause
     const whereConditions: string[] = [];
     if (options.relationshipWhere) {
-      for (const [key, value] of Object.entries(options.relationshipWhere)) {
-        whereConditions.push(`ALL(rel in r WHERE rel.${key} = $relWhere.${key})`);
+      for (const [key] of Object.entries(options.relationshipWhere)) {
+        whereConditions.push(
+          `ALL(rel in r WHERE rel.${key} = $relWhere.${key})`
+        );
       }
     }
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(' AND ')}`
+        : '';
 
     // Build ORDER and LIMIT clauses
     const orderClause = this.buildOrderClause(options.orderBy);
@@ -270,9 +297,9 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         ${orderClause}
         ${limitClause}
         `,
-        { 
+        {
           nodeId,
-          relWhere: options.relationshipWhere || {}
+          relWhere: options.relationshipWhere || {},
         }
       );
 
@@ -280,18 +307,22 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       const relationships: any[] = [];
 
       for (const record of result.records) {
-        nodes.push(this.transformOutput(record.get('related').properties as any) as T);
-        
+        nodes.push(
+          this.transformOutput(record.get('related').properties as any) as T
+        );
+
         if (options.includeRelationshipProperties) {
           const rels = record.get('r');
           const relArray = Array.isArray(rels) ? rels : [rels];
-          relationships.push(...relArray.map(rel => ({
-            id: rel.identity.toString(),
-            type: rel.type,
-            properties: rel.properties,
-            startNodeId: rel.start.toString(),
-            endNodeId: rel.end.toString()
-          })));
+          relationships.push(
+            ...relArray.map((rel) => ({
+              id: rel.identity.toString(),
+              type: rel.type,
+              properties: rel.properties,
+              startNodeId: rel.start.toString(),
+              endNodeId: rel.end.toString(),
+            }))
+          );
         }
       }
 
@@ -308,7 +339,8 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     relationshipTypes: string[] = [],
     maxDepth = 10
   ): Promise<GraphPath | null> {
-    const typeFilter = relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
+    const typeFilter =
+      relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -343,7 +375,8 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     } = {}
   ): Promise<GraphPath[]> {
     const { relationshipTypes = [], maxDepth = 5, limit = 10 } = options;
-    const typeFilter = relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
+    const typeFilter =
+      relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -357,7 +390,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         { startNodeId, endNodeId, limit }
       );
 
-      return result.records.map(record => {
+      return result.records.map((record) => {
         const path = record.get('path') as Path;
         return this.transformPath(path);
       });
@@ -379,11 +412,12 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       direction = 'BOTH',
       nodeLabels = [],
       nodeFilter = {},
-      relationshipFilter = {}
+      relationshipFilter = {},
     } = options;
 
     // Build relationship pattern
-    const typeFilter = relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
+    const typeFilter =
+      relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
     let relPattern: string;
 
     if (direction === 'OUT') {
@@ -398,12 +432,16 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     const labelFilter = nodeLabels.length > 0 ? `:${nodeLabels.join(':')}` : '';
 
     // Build WHERE conditions
-    const nodeConditions = Object.entries(nodeFilter).map(([key, value]) => `n.${key} = $nodeFilter.${key}`);
-    const relConditions = Object.entries(relationshipFilter).map(([key, value]) => 
-      `ALL(rel in r WHERE rel.${key} = $relationshipFilter.${key})`
+    const nodeConditions = Object.entries(nodeFilter).map(
+      ([key, value]) => `n.${key} = $nodeFilter.${key}`
+    );
+    const relConditions = Object.entries(relationshipFilter).map(
+      ([key, value]) =>
+        `ALL(rel in r WHERE rel.${key} = $relationshipFilter.${key})`
     );
     const allConditions = [...nodeConditions, ...relConditions];
-    const whereClause = allConditions.length > 0 ? `WHERE ${allConditions.join(' AND ')}` : '';
+    const whereClause =
+      allConditions.length > 0 ? `WHERE ${allConditions.join(' AND ')}` : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -417,7 +455,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         {
           startNodeId,
           nodeFilter,
-          relationshipFilter
+          relationshipFilter,
         }
       );
 
@@ -431,7 +469,10 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         const rels = record.get('r');
 
         // Collect unique nodes
-        nodesMap.set(node.identity.toString(), this.transformOutput(node.properties as any || {}) as T);
+        nodesMap.set(
+          node.identity.toString(),
+          this.transformOutput((node.properties as any) || {}) as T
+        );
 
         // Collect unique relationships
         const relArray = Array.isArray(rels) ? rels : [rels];
@@ -441,7 +482,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
             type: rel.type,
             properties: rel.properties,
             startNodeId: rel.start.toString(),
-            endNodeId: rel.end.toString()
+            endNodeId: rel.end.toString(),
           });
         }
 
@@ -452,7 +493,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       return {
         nodes: Array.from(nodesMap.values()),
         relationships: Array.from(relationshipsMap.values()),
-        paths
+        paths,
       };
     });
   }
@@ -460,12 +501,17 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
   /**
    * Get node degree (number of relationships)
    */
-  async getNodeDegree(nodeId: string, relationshipTypes?: string[]): Promise<{
+  async getNodeDegree(
+    nodeId: string,
+    relationshipTypes?: string[]
+  ): Promise<{
     inDegree: number;
     outDegree: number;
     totalDegree: number;
   }> {
-    const typeFilter = relationshipTypes?.length ? `:${relationshipTypes.join('|')}` : '';
+    const typeFilter = relationshipTypes?.length
+      ? `:${relationshipTypes.join('|')}`
+      : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -473,7 +519,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         MATCH (n:${this.metadata.label} {id: $nodeId})
         OPTIONAL MATCH (n)<-[inRel${typeFilter}]-()
         OPTIONAL MATCH (n)-[outRel${typeFilter}]->()
-        RETURN 
+        RETURN
           count(DISTINCT inRel) as inDegree,
           count(DISTINCT outRel) as outDegree,
           count(DISTINCT inRel) + count(DISTINCT outRel) as totalDegree
@@ -485,7 +531,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       return {
         inDegree: record.get('inDegree').toNumber(),
         outDegree: record.get('outDegree').toNumber(),
-        totalDegree: record.get('totalDegree').toNumber()
+        totalDegree: record.get('totalDegree').toNumber(),
       };
     });
   }
@@ -498,7 +544,9 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     distance: number,
     relationshipTypes?: string[]
   ): Promise<T[]> {
-    const typeFilter = relationshipTypes?.length ? `:${relationshipTypes.join('|')}` : '';
+    const typeFilter = relationshipTypes?.length
+      ? `:${relationshipTypes.join('|')}`
+      : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -511,8 +559,9 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         { nodeId }
       );
 
-      return result.records.map(record => 
-        this.transformOutput(record.get('neighbor').properties as any) as T
+      return result.records.map(
+        (record) =>
+          this.transformOutput(record.get('neighbor').properties as any) as T
       );
     });
   }
@@ -529,13 +578,13 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
     // This would integrate with Neo4j Graph Data Science library
     // For now, return basic degree centrality
     const degree = await this.getNodeDegree(nodeId);
-    
+
     return {
       // Would be calculated using GDS algorithms
       betweennessCentrality: undefined,
       closenessCentrality: undefined,
       eigenvectorCentrality: undefined,
-      pageRank: undefined
+      pageRank: undefined,
     };
   }
 
@@ -555,7 +604,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         MATCH (n:${this.metadata.label})
         OPTIONAL MATCH (n)-[r]-()
         WITH n, count(r) as degree
-        RETURN 
+        RETURN
           avg(degree) as avgDegree,
           max(degree) as maxDegree,
           n.id as maxDegreeNodeId
@@ -573,10 +622,15 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
       );
 
       const totalNodes = labelResult.records[0].get('totalNodes').toNumber();
-      const avgDegree = degreeResult.records[0]?.get('avgDegree')?.toNumber() || 0;
-      const maxDegree = degreeResult.records[0]?.get('maxDegree')?.toNumber() || 0;
-      const maxDegreeNodeId = degreeResult.records[0]?.get('maxDegreeNodeId') || '';
-      const components = componentResult.records[0].get('components').toNumber();
+      const avgDegree =
+        degreeResult.records[0]?.get('avgDegree')?.toNumber() || 0;
+      const maxDegree =
+        degreeResult.records[0]?.get('maxDegree')?.toNumber() || 0;
+      const maxDegreeNodeId =
+        degreeResult.records[0]?.get('maxDegreeNodeId') || '';
+      const components = componentResult.records[0]
+        .get('components')
+        .toNumber();
 
       return {
         totalNodes,
@@ -584,9 +638,9 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         averageDegree: avgDegree,
         highestDegreeNode: {
           id: maxDegreeNodeId,
-          degree: maxDegree
+          degree: maxDegree,
         },
-        connectedComponents: components
+        connectedComponents: components,
       };
     });
   }
@@ -600,9 +654,13 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
 
     // Transform nodes
     for (const node of path.segments) {
-      const startNode = this.transformOutput(node.start.properties as any || {}) as NodeEntity;
-      const endNode = this.transformOutput(node.end.properties as any || {}) as NodeEntity;
-      
+      const startNode = this.transformOutput(
+        (node.start.properties as any) || {}
+      ) as NodeEntity;
+      const endNode = this.transformOutput(
+        (node.end.properties as any) || {}
+      ) as NodeEntity;
+
       if (nodes.length === 0) {
         nodes.push(startNode);
       }
@@ -614,14 +672,14 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         type: node.relationship.type,
         properties: node.relationship.properties,
         startNodeId: node.relationship.start.toString(),
-        endNodeId: node.relationship.end.toString()
+        endNodeId: node.relationship.end.toString(),
       });
     }
 
     return {
       nodes,
       relationships,
-      length: path.length
+      length: path.length,
     };
   }
 
@@ -654,7 +712,7 @@ export abstract class Neo4jNodeModelService<T extends NodeEntity> extends BaseMo
         const result = await this.createRelationship(sourceNode.id!, {
           targetId: targetNode.id!,
           type: relData.type,
-          properties: relData.properties
+          properties: relData.properties,
         });
 
         relationships.push(result.relationship);

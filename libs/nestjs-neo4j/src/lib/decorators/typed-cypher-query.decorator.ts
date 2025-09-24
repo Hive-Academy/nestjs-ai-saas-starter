@@ -22,20 +22,49 @@ import { DECORATOR_METADATA_KEYS } from './decorator-metadata.interface';
 
 // Basic Cypher keywords for validation
 type CypherKeyword =
-  | 'MATCH' | 'CREATE' | 'MERGE' | 'SET' | 'DELETE' | 'REMOVE'
-  | 'RETURN' | 'WITH' | 'WHERE' | 'ORDER' | 'LIMIT' | 'SKIP'
-  | 'UNION' | 'CALL' | 'YIELD' | 'UNWIND' | 'FOREACH'
-  | 'match' | 'create' | 'merge' | 'set' | 'delete' | 'remove'
-  | 'return' | 'with' | 'where' | 'order' | 'limit' | 'skip'
-  | 'union' | 'call' | 'yield' | 'unwind' | 'foreach';
+  | 'MATCH'
+  | 'CREATE'
+  | 'MERGE'
+  | 'SET'
+  | 'DELETE'
+  | 'REMOVE'
+  | 'RETURN'
+  | 'WITH'
+  | 'WHERE'
+  | 'ORDER'
+  | 'LIMIT'
+  | 'SKIP'
+  | 'UNION'
+  | 'CALL'
+  | 'YIELD'
+  | 'UNWIND'
+  | 'FOREACH'
+  | 'match'
+  | 'create'
+  | 'merge'
+  | 'set'
+  | 'delete'
+  | 'remove'
+  | 'return'
+  | 'with'
+  | 'where'
+  | 'order'
+  | 'limit'
+  | 'skip'
+  | 'union'
+  | 'call'
+  | 'yield'
+  | 'unwind'
+  | 'foreach';
 
 // Extract the starting keyword from a query
 type ExtractStartKeyword<T extends string> =
   T extends `${infer K extends CypherKeyword}${string}` ? K : never;
 
 // Validate that a query starts with a valid Cypher keyword
-type ValidCypherQuery<T extends string> =
-  ExtractStartKeyword<T> extends never ? never : T;
+type ValidCypherQuery<T extends string> = ExtractStartKeyword<T> extends never
+  ? never
+  : T;
 
 // Extract parameter names from a query (e.g., $userId, $name)
 type ExtractParams<T extends string> =
@@ -53,14 +82,22 @@ type ParamsFromQuery<T extends string> = {
 // Extract RETURN clause to infer return type structure
 type ExtractReturnClause<T extends string> =
   T extends `${string}RETURN ${infer ReturnPart}`
-    ? ReturnPart extends `${infer Returns}${' WHERE' | ' ORDER' | ' LIMIT' | string}`
+    ? ReturnPart extends `${infer Returns}${
+        | ' WHERE'
+        | ' ORDER'
+        | ' LIMIT'
+        | string}`
       ? Returns
       : ReturnPart
     : T extends `${string}return ${infer ReturnPart}`
-      ? ReturnPart extends `${infer Returns}${' where' | ' order' | ' limit' | string}`
-        ? Returns
-        : ReturnPart
-      : never;
+    ? ReturnPart extends `${infer Returns}${
+        | ' where'
+        | ' order'
+        | ' limit'
+        | string}`
+      ? Returns
+      : ReturnPart
+    : never;
 
 // Node label extraction from MATCH clauses
 type ExtractNodeLabels<T extends string> =
@@ -70,8 +107,7 @@ type ExtractNodeLabels<T extends string> =
       : ExtractNodeLabels<Rest>
     : never;
 
-// Property path validation for IntelliSense
-type NodeProperty<TLabel extends string, TProp extends string> = `${TLabel}.${TProp}`;
+// (Removed unused NodeProperty helper type)
 
 /**
  * Advanced configuration for type-safe Cypher queries
@@ -154,9 +190,7 @@ export function TypedCypherQuery<
   TQuery extends string,
   TReturn = unknown,
   TParams extends Record<string, unknown> = ParamsFromQuery<TQuery>
->(
-  config: TypedCypherQueryConfig<TQuery, TReturn, TParams>
-): MethodDecorator {
+>(config: TypedCypherQueryConfig<TQuery, TReturn, TParams>): MethodDecorator {
   return function (
     target: any,
     propertyKey: string | symbol,
@@ -173,36 +207,44 @@ export function TypedCypherQuery<
         extractedParams: extractParameterNames(config.query),
         extractedLabels: extractNodeLabels(config.query),
         returnClause: extractReturnClause(config.query),
-        hasValidSyntax: isValidCypherSyntax(config.query)
-      }
+        hasValidSyntax: isValidCypherSyntax(config.query),
+      },
     };
 
     // Set metadata
-    SetMetadata(DECORATOR_METADATA_KEYS.TYPED_CYPHER_QUERY || 'TYPED_CYPHER_QUERY', metadata)(
-      target,
-      propertyKey,
-      descriptor
-    );
+    SetMetadata(
+      DECORATOR_METADATA_KEYS.TYPED_CYPHER_QUERY || 'TYPED_CYPHER_QUERY',
+      metadata
+    )(target, propertyKey, descriptor);
 
     // Development logging
     if (config.dev?.showQueryInfo && process.env.NODE_ENV === 'development') {
-      console.log(`🔍 TypedCypherQuery Analysis for ${target.constructor.name}.${String(propertyKey)}:`);
+      console.log(
+        `🔍 TypedCypherQuery Analysis for ${target.constructor.name}.${String(
+          propertyKey
+        )}:`
+      );
       console.log(`  Query: ${config.query}`);
-      console.log(`  Parameters: ${JSON.stringify(metadata.typeInfo.extractedParams)}`);
-      console.log(`  Labels: ${JSON.stringify(metadata.typeInfo.extractedLabels)}`);
+      console.log(
+        `  Parameters: ${JSON.stringify(metadata.typeInfo.extractedParams)}`
+      );
+      console.log(
+        `  Labels: ${JSON.stringify(metadata.typeInfo.extractedLabels)}`
+      );
       console.log(`  Return: ${metadata.typeInfo.returnClause}`);
       console.log(`  Valid: ${metadata.typeInfo.hasValidSyntax}`);
     }
 
-    //  method implementation
-    const originalMethod = descriptor.value;
+    // Implementation replaces method body with wrapper adding runtime validation & execution
 
     descriptor.value = async function (this: any, ...args: any[]) {
       const neo4jService = this.neo4jService || this.getNeo4jService?.();
 
       if (!neo4jService) {
         throw new Error(
-          `TypedCypherQuery: Neo4j service not found in ${target.constructor.name}.${String(propertyKey)}`
+          `TypedCypherQuery: Neo4j service not found in ${
+            target.constructor.name
+          }.${String(propertyKey)}`
         );
       }
 
@@ -211,7 +253,11 @@ export function TypedCypherQuery<
 
       // Runtime parameter validation (if compile-time validation is enabled)
       if (config.compiletimeValidation?.strictParams) {
-        validateRuntimeParameters(params, metadata.typeInfo.extractedParams, config.query);
+        validateRuntimeParameters(
+          params,
+          metadata.typeInfo.extractedParams,
+          config.query
+        );
       }
 
       try {
@@ -219,14 +265,22 @@ export function TypedCypherQuery<
         const executionOptions = {
           ...config.runtime,
           // Add type information to execution context
-          typeMetadata: metadata.typeInfo
+          typeMetadata: metadata.typeInfo,
         };
 
         let result;
         if (typeof neo4jService.run === 'function') {
-          result = await neo4jService.run(config.query, params, executionOptions);
+          result = await neo4jService.run(
+            config.query,
+            params,
+            executionOptions
+          );
         } else {
-          result = await neo4jService.run(config.query, params, executionOptions);
+          result = await neo4jService.run(
+            config.query,
+            params,
+            executionOptions
+          );
         }
 
         // Transform result if return type is specified
@@ -235,11 +289,12 @@ export function TypedCypherQuery<
         }
 
         return result;
-
       } catch (error) {
         //  error with type information
         const typedError = new Error(
-          `TypedCypherQuery execution failed in ${target.constructor.name}.${String(propertyKey)}: ${
+          `TypedCypherQuery execution failed in ${
+            target.constructor.name
+          }.${String(propertyKey)}: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
@@ -265,7 +320,7 @@ export function TypedQuery<TQuery extends string>(
 ): MethodDecorator {
   return TypedCypherQuery({
     query,
-    ...options
+    ...options,
   });
 }
 
@@ -280,7 +335,7 @@ export function TypedMatch<
 ): MethodDecorator {
   return TypedCypherQuery({
     query: query as ValidCypherQuery<TQuery>,
-    ...options
+    ...options,
   });
 }
 
@@ -297,9 +352,9 @@ export function TypedCreate<
     query: query as ValidCypherQuery<TQuery>,
     runtime: {
       transactionMode: 'WRITE',
-      ...options?.runtime
+      ...options?.runtime,
     },
-    ...options
+    ...options,
   });
 }
 
@@ -310,20 +365,17 @@ export function FindNodeByProperty<
   TLabel extends string,
   TProp extends string,
   TValue = unknown
->(
-  label: TLabel,
-  property: TProp,
-  returnType?: () => TValue
-): MethodDecorator {
-  const query = `MATCH (n:${label} {${property}: $${property}}) RETURN n` as const;
+>(label: TLabel, property: TProp, returnType?: () => TValue): MethodDecorator {
+  const query =
+    `MATCH (n:${label} {${property}: $${property}}) RETURN n` as const;
 
   return TypedCypherQuery({
     query: query as ValidCypherQuery<typeof query>,
     returnType,
     compiletimeValidation: {
       strictParams: true,
-      inferReturnType: true
-    }
+      inferReturnType: true,
+    },
   });
 }
 
@@ -345,22 +397,28 @@ export function TypedRelationshipQuery<
   }
 ): MethodDecorator {
   const direction = options?.direction || 'OUT';
-  const dirSymbol = direction === 'IN' ? '<-' : direction === 'OUT' ? '->' : '-';
-  const relPattern = direction === 'IN'
-    ? `<-[:${relationshipType}]-`
-    : direction === 'OUT'
-    ? `-[:${relationshipType}]->`
-    : `-[:${relationshipType}]-`;
+  let relPattern: string;
+  switch (direction) {
+    case 'IN':
+      relPattern = `<-[:${relationshipType}]-`;
+      break;
+    case 'BOTH':
+      relPattern = `-[:${relationshipType}]-`;
+      break;
+    case 'OUT':
+    default:
+      relPattern = `-[:${relationshipType}]->`;
+  }
 
-  const query = `MATCH (source:${sourceLabel})-[:${relationshipType}]->(target:${targetLabel}) RETURN source, target`;
+  const query = `MATCH (source:${sourceLabel})${relPattern}(target:${targetLabel}) RETURN source, target`;
 
   return TypedCypherQuery({
     query: query as ValidCypherQuery<typeof query>,
     returnType: options?.returnType,
     compiletimeValidation: {
       strictParams: true,
-      validatePropertyPaths: true
-    }
+      validatePropertyPaths: true,
+    },
   });
 }
 
@@ -371,30 +429,58 @@ export function TypedRelationshipQuery<
 function extractParameterNames(query: string): string[] {
   const paramPattern = /\$(\w+)/g;
   const matches = [...query.matchAll(paramPattern)];
-  return matches.map(match => match[1]);
+  return matches.map((match) => match[1]);
 }
 
 function extractNodeLabels(query: string): string[] {
   const labelPattern = /\([\w\s]*:(\w+)[\s\w}]*\)/g;
   const matches = [...query.matchAll(labelPattern)];
-  return matches.map(match => match[1]);
+  return matches.map((match) => match[1]);
 }
 
 function extractReturnClause(query: string): string | null {
-  const returnMatch = query.match(/RETURN\s+(.+?)(?:\s+(?:ORDER|LIMIT|WHERE|$))/i);
+  const returnMatch = query.match(
+    /RETURN\s+(.+?)(?:\s+(?:ORDER|LIMIT|WHERE|$))/i
+  );
   return returnMatch ? returnMatch[1].trim() : null;
 }
 
 function isValidCypherSyntax(query: string): boolean {
   const validKeywords = [
-    'MATCH', 'CREATE', 'MERGE', 'SET', 'DELETE', 'REMOVE', 'RETURN',
-    'WITH', 'WHERE', 'ORDER', 'LIMIT', 'SKIP', 'UNION', 'CALL', 'YIELD',
-    'match', 'create', 'merge', 'set', 'delete', 'remove', 'return',
-    'with', 'where', 'order', 'limit', 'skip', 'union', 'call', 'yield'
+    'MATCH',
+    'CREATE',
+    'MERGE',
+    'SET',
+    'DELETE',
+    'REMOVE',
+    'RETURN',
+    'WITH',
+    'WHERE',
+    'ORDER',
+    'LIMIT',
+    'SKIP',
+    'UNION',
+    'CALL',
+    'YIELD',
+    'match',
+    'create',
+    'merge',
+    'set',
+    'delete',
+    'remove',
+    'return',
+    'with',
+    'where',
+    'order',
+    'limit',
+    'skip',
+    'union',
+    'call',
+    'yield',
   ];
 
   const trimmed = query.trim();
-  return validKeywords.some(keyword =>
+  return validKeywords.some((keyword) =>
     trimmed.toLowerCase().startsWith(keyword.toLowerCase())
   );
 }
@@ -419,16 +505,23 @@ function validateRuntimeParameters(
   query: string
 ): void {
   const providedKeys = Object.keys(providedParams);
-  const missingParams = expectedParams.filter(param => !providedKeys.includes(param));
+  const missingParams = expectedParams.filter(
+    (param) => !providedKeys.includes(param)
+  );
 
   if (missingParams.length > 0) {
     throw new Error(
-      `TypedCypherQuery: Missing required parameters: ${missingParams.join(', ')} in query: ${query}`
+      `TypedCypherQuery: Missing required parameters: ${missingParams.join(
+        ', '
+      )} in query: ${query}`
     );
   }
 }
 
-function transformTypedResult(result: any, returnTypeFactory: () => unknown): unknown {
+function transformTypedResult(
+  result: any,
+  returnTypeFactory: () => unknown
+): unknown {
   if (!result?.records) return result;
 
   // For now, return the raw result - could be  with actual type transformation
@@ -440,8 +533,9 @@ function transformTypedResult(result: any, returnTypeFactory: () => unknown): un
  */
 
 // Utility type to check if a string is a valid Cypher query
-export type IsCypherQuery<T extends string> =
-  ValidCypherQuery<T> extends never ? false : true;
+export type IsCypherQuery<T extends string> = ValidCypherQuery<T> extends never
+  ? false
+  : true;
 
 // Utility type to extract parameter types from a query
 export type QueryParameters<T extends string> = ParamsFromQuery<T>;
@@ -462,8 +556,10 @@ export type ValidateParams<
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace TypedCypherExamples {
   // ✅ Valid queries with proper types
-  export type ValidUserQuery = ValidCypherQuery<'MATCH (u:User {id: $userId}) RETURN u'>;
-  export type UserQueryParams = QueryParameters<'MATCH (u:User {id: $userId}) RETURN u'>; // { userId: unknown }
+  export type ValidUserQuery =
+    ValidCypherQuery<'MATCH (u:User {id: $userId}) RETURN u'>;
+  export type UserQueryParams =
+    QueryParameters<'MATCH (u:User {id: $userId}) RETURN u'>; // { userId: unknown }
 
   // ❌ Invalid queries (compile-time errors)
   // export type InvalidQuery = ValidCypherQuery<'INVALID (u:User) RETURN u'>; // never

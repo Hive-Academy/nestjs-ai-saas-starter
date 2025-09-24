@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Driver, Session, session as neo4jSession } from 'neo4j-driver';
-import { QueryOptions, QueryResult } from '../interfaces/query-result.interface';
+import {
+  QueryOptions,
+  QueryResult,
+} from '../interfaces/query-result.interface';
 import { Neo4jMetricsService } from './neo4j-metrics.service';
 
 /**
@@ -34,6 +37,7 @@ export class Neo4jQueryService {
       session = this.createSession(driver, options);
       const sessionCreationTime = Date.now() - sessionStartTime;
       this.metricsService.updateConnectionMetrics(sessionCreationTime);
+      this.metricsService.incrementActiveSessions();
     } catch (error) {
       this.metricsService.recordConnectionAttempt(false);
       this.logger.error(
@@ -76,9 +80,12 @@ export class Neo4jQueryService {
             retryCount,
           },
           connectionInfo: {
-            poolSize: 10, // TODO: Get from metrics service
-            activeConnections: 5,
-            idleConnections: 5,
+            poolSize:
+              this.metricsService.getConnectionPoolMetrics().maxPoolSize,
+            activeConnections:
+              this.metricsService.getConnectionPoolMetrics().activeConnections,
+            idleConnections:
+              this.metricsService.getConnectionPoolMetrics().idleConnections,
           },
           metadata: {
             queryId,
@@ -124,6 +131,7 @@ export class Neo4jQueryService {
       } finally {
         if (session && retryCount > maxRetries) {
           await session.close();
+          this.metricsService.decrementActiveSessions();
         }
       }
     }

@@ -2,7 +2,6 @@ import { Injectable, Inject, Logger } from '@nestjs/common';
 import {
   Driver,
   Session,
-  Transaction,
   ManagedTransaction,
   session as neo4jSession,
 } from 'neo4j-driver';
@@ -11,7 +10,8 @@ import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.inte
 import type {
   QueryResult,
   BulkOperation,
-  BulkResult,QueryOptions
+  BulkResult,
+  QueryOptions,
 } from '../interfaces/query-result.interface';
 import type { SessionOptions } from '../interfaces/neo4j-connection.interface';
 import { Neo4jQueryService } from './neo4j-query.service';
@@ -41,8 +41,6 @@ export class Neo4jService {
     this.logger.log('Neo4j Service initialized with  features');
   }
 
-
-
   /**
    * Execute read operations in a transaction
    */
@@ -54,9 +52,12 @@ export class Neo4jService {
       database: database ?? this.options.database,
       defaultAccessMode: neo4jSession.READ,
     });
+    // Track metrics
+    this.metricsService.incrementActiveSessions();
 
     try {
-      return await session.executeRead(work);
+      const result = await session.executeRead(work);
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       const stack = error instanceof Error ? error.stack : undefined;
@@ -64,6 +65,7 @@ export class Neo4jService {
       throw error;
     } finally {
       await session.close();
+      this.metricsService.decrementActiveSessions();
     }
   }
 
@@ -152,12 +154,7 @@ export class Neo4jService {
     params?: Record<string, unknown>,
     options?: QueryOptions
   ): Promise<QueryResult<T>> {
-    return this.queryService.run<T>(
-      this.driver,
-      cypher,
-      params,
-      options
-    );
+    return this.queryService.run<T>(this.driver, cypher, params, options);
   }
 
   /**
@@ -197,38 +194,38 @@ export class Neo4jService {
     work: (tx: ManagedTransaction) => Promise<T>,
     options?: QueryOptions & { transactionConfig?: any }
   ): Promise<T> {
-    const session = this.driver.session({
-      database: options?.database ?? this.options.database,
-      defaultAccessMode:
-        options?.defaultAccessMode === 'READ'
-          ? neo4jSession.READ
-          : neo4jSession.WRITE,
-    });
-
     let retryCount = 0;
     const maxRetries = options?.retry?.enabled
       ? options.retry.attempts || 3
       : 0;
 
     while (retryCount <= maxRetries) {
+      const session = this.driver.session({
+        database: options?.database ?? this.options.database,
+        defaultAccessMode:
+          options?.defaultAccessMode === 'READ'
+            ? neo4jSession.READ
+            : neo4jSession.WRITE,
+      });
+      this.metricsService.incrementActiveSessions();
       try {
-        return await session.executeWrite(work, options?.transactionConfig);
+        const result = await session.executeWrite(
+          work,
+          options?.transactionConfig
+        );
+        return result;
       } catch (error) {
         retryCount++;
-
         if (retryCount > maxRetries || !this.isRetryableError(error)) {
           throw error;
         }
-
         const delay = options?.retry?.delay || 1000;
         await this.delay(delay * Math.pow(2, retryCount - 1));
       } finally {
-        if (retryCount > maxRetries) {
-          await session.close();
-        }
+        await session.close();
+        this.metricsService.decrementActiveSessions();
       }
     }
-
     throw new Error('Transaction failed after all retry attempts');
   }
 
@@ -327,15 +324,7 @@ export class Neo4jService {
   /**
    * Create session proxy for transaction-based operations
    */
-  private createSessionProxy(
-    session: Session,
-    tx: ManagedTransaction
-  ): Session {
-    return {
-      ...session,
-      run: tx.run.bind(tx),
-    } as Session;
-  }
+  // Removed unused createSessionProxy helper
 
   /**
    * Execute operation with  session management
@@ -353,6 +342,7 @@ export class Neo4jService {
       bookmarks: options?.bookmarks,
       fetchSize: options?.fetchSize,
     });
+    this.metricsService.incrementActiveSessions();
 
     try {
       return await operation(session);
@@ -363,6 +353,7 @@ export class Neo4jService {
       throw error;
     } finally {
       await session.close();
+      this.metricsService.decrementActiveSessions();
     }
   }
 

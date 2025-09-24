@@ -1,9 +1,9 @@
 /**
  * @fileoverview Relationship Model Service for Neo4j Relationship Operations
- * 
+ *
  * This service extends the BaseModelService specifically for Neo4j relationships.
  * It provides relationship-specific operations, pattern matching, and relationship analytics.
- * 
+ *
  * Features:
  * - Relationship-specific CRUD operations
  * - Bidirectional relationship management
@@ -13,13 +13,17 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { BaseModelService, BaseEntity, EntityMetadata, ModelQueryOptions } from './base-model.service';
+import {
+  BaseModelService,
+  BaseEntity,
+  ModelQueryOptions,
+} from './base-model.service';
 import { Neo4jService } from '../services/neo4j.service';
-import { QueryResult, Relationship, Node } from 'neo4j-driver';
+import type { Relationship, Node } from 'neo4j-driver';
 import {
   Neo4jProperties,
   Neo4jWhereClause,
-  Neo4jCompatibleEntity
+  Neo4jCompatibleEntity,
 } from '../types/neo4j-types';
 
 /**
@@ -61,7 +65,8 @@ export interface CreateRelationshipOptions {
 /**
  * Relationship query options
  */
-export interface RelationshipQueryOptions extends ModelQueryOptions<Neo4jCompatibleEntity> {
+export interface RelationshipQueryOptions
+  extends ModelQueryOptions<Neo4jCompatibleEntity> {
   /** Start node ID filter */
   startNodeId?: string;
   /** End node ID filter */
@@ -146,7 +151,9 @@ export interface BidirectionalRelationship<T extends RelationshipEntity> {
  * Neo4j Relationship Model Service
  */
 @Injectable()
-export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity> extends BaseModelService<T> {
+export abstract class Neo4jRelationshipModelService<
+  T extends RelationshipEntity
+> extends BaseModelService<T> {
   constructor(protected override readonly neo4j: Neo4jService) {
     super(neo4j);
   }
@@ -156,7 +163,10 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
    */
   async createRelationship(options: CreateRelationshipOptions): Promise<T> {
     // Validate self-relationship
-    if (!options.allowSelfRelationship && options.startNodeId === options.endNodeId) {
+    if (
+      !options.allowSelfRelationship &&
+      options.startNodeId === options.endNodeId
+    ) {
       throw new Error('Self-relationships are not allowed');
     }
 
@@ -170,11 +180,13 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
 
       const nodeResult = await session.run(nodeCheckQuery, {
         startNodeId: options.startNodeId,
-        endNodeId: options.endNodeId
+        endNodeId: options.endNodeId,
       });
 
       if (nodeResult.records.length === 0) {
-        throw new Error(`Start node ${options.startNodeId} or end node ${options.endNodeId} not found`);
+        throw new Error(
+          `Start node ${options.startNodeId} or end node ${options.endNodeId} not found`
+        );
       }
 
       const startNode = nodeResult.records[0].get('start');
@@ -182,16 +194,28 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
 
       // Validate node labels if specified
       if (options.startNodeLabels) {
-        const hasLabels = options.startNodeLabels.every(label => startNode.labels.includes(label));
+        const hasLabels = options.startNodeLabels.every((label) =>
+          startNode.labels.includes(label)
+        );
         if (!hasLabels) {
-          throw new Error(`Start node does not have required labels: ${options.startNodeLabels.join(', ')}`);
+          throw new Error(
+            `Start node does not have required labels: ${options.startNodeLabels.join(
+              ', '
+            )}`
+          );
         }
       }
 
       if (options.endNodeLabels) {
-        const hasLabels = options.endNodeLabels.every(label => endNode.labels.includes(label));
+        const hasLabels = options.endNodeLabels.every((label) =>
+          endNode.labels.includes(label)
+        );
         if (!hasLabels) {
-          throw new Error(`End node does not have required labels: ${options.endNodeLabels.join(', ')}`);
+          throw new Error(
+            `End node does not have required labels: ${options.endNodeLabels.join(
+              ', '
+            )}`
+          );
         }
       }
 
@@ -204,7 +228,7 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
           `,
           {
             startNodeId: options.startNodeId,
-            endNodeId: options.endNodeId
+            endNodeId: options.endNodeId,
           }
         );
       }
@@ -217,7 +241,7 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         id: relationshipId,
         createdAt: now,
         updatedAt: now,
-        version: 1
+        version: 1,
       };
 
       const createQuery = `
@@ -230,7 +254,7 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
       const result = await session.run(createQuery, {
         startNodeId: options.startNodeId,
         endNodeId: options.endNodeId,
-        properties: relationshipProperties
+        properties: relationshipProperties,
       });
 
       const record = result.records[0];
@@ -247,13 +271,13 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
    */
   async findByPattern(pattern: RelationshipPattern): Promise<T[]> {
     // Build MATCH clauses
-    const nodeMatches = pattern.nodes.map(node => {
+    const nodeMatches = pattern.nodes.map((node) => {
       const labels = node.labels ? `:${node.labels.join(':')}` : '';
       const props = node.properties ? ' $' + node.variable + 'Props' : '';
       return `(${node.variable}${labels}${props})`;
     });
 
-    const relMatches = pattern.relationships.map(rel => {
+    const relMatches = pattern.relationships.map((rel) => {
       const type = rel.type ? `:${rel.type}` : '';
       const props = rel.properties ? ' $' + rel.variable + 'Props' : '';
       const direction = rel.direction;
@@ -268,21 +292,24 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
     });
 
     // Build WHERE clause
-    const whereClause = pattern.where && pattern.where.length > 0 
-      ? `WHERE ${pattern.where.join(' AND ')}` 
-      : '';
+    const whereClause =
+      pattern.where && pattern.where.length > 0
+        ? `WHERE ${pattern.where.join(' AND ')}`
+        : '';
 
     // Build RETURN clause
-    const returnClause = pattern.returnClause || pattern.relationships.map(rel => rel.variable).join(', ');
+    const returnClause =
+      pattern.returnClause ||
+      pattern.relationships.map((rel) => rel.variable).join(', ');
 
     // Build parameters
     const params: Record<string, any> = {};
-    pattern.nodes.forEach(node => {
+    pattern.nodes.forEach((node) => {
       if (node.properties) {
         params[node.variable + 'Props'] = node.properties;
       }
     });
-    pattern.relationships.forEach(rel => {
+    pattern.relationships.forEach((rel) => {
       if (rel.properties) {
         params[rel.variable + 'Props'] = rel.properties;
       }
@@ -296,8 +323,8 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(query, params);
-      
-      return result.records.map(record => {
+
+      return result.records.map((record) => {
         // Assuming first relationship variable for simplicity
         const relVar = pattern.relationships[0].variable;
         const rel = record.get(relVar) as Relationship;
@@ -314,9 +341,10 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
     endNodeId: string,
     options: RelationshipQueryOptions = {}
   ): Promise<T[]> {
-    const typeFilter = options.types && options.types.length > 0 
-      ? `:${options.types.join('|')}` 
-      : '';
+    const typeFilter =
+      options.types && options.types.length > 0
+        ? `:${options.types.join('|')}`
+        : '';
 
     const direction = options.direction || 'BOTH';
     let relPattern: string;
@@ -330,13 +358,16 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
     }
 
     // Build property filters
-    const propertyConditions = options.propertyFilters 
-      ? Object.entries(options.propertyFilters).map(([key, value]) => `r.${key} = $propFilters.${key}`)
+    const propertyConditions = options.propertyFilters
+      ? Object.entries(options.propertyFilters).map(
+          ([key, value]) => `r.${key} = $propFilters.${key}`
+        )
       : [];
 
-    const whereClause = propertyConditions.length > 0 
-      ? `WHERE ${propertyConditions.join(' AND ')}`
-      : '';
+    const whereClause =
+      propertyConditions.length > 0
+        ? `WHERE ${propertyConditions.join(' AND ')}`
+        : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -350,11 +381,11 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         {
           startNodeId,
           endNodeId,
-          propFilters: options.propertyFilters || {}
+          propFilters: options.propertyFilters || {},
         }
       );
 
-      return result.records.map(record => {
+      return result.records.map((record) => {
         const rel = record.get('r') as Relationship;
         const start = record.get('start') as Node;
         const end = record.get('end') as Node;
@@ -370,9 +401,10 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
     nodeId: string,
     options: RelationshipQueryOptions = {}
   ): Promise<T[]> {
-    const typeFilter = options.types && options.types.length > 0 
-      ? `:${options.types.join('|')}` 
-      : '';
+    const typeFilter =
+      options.types && options.types.length > 0
+        ? `:${options.types.join('|')}`
+        : '';
 
     const direction = options.direction || 'BOTH';
     let relPattern: string;
@@ -387,9 +419,13 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
 
     // Build filters
     const conditions: string[] = [];
-    
+
     if (options.propertyFilters) {
-      conditions.push(...Object.entries(options.propertyFilters).map(([key, value]) => `r.${key} = $propFilters.${key}`));
+      conditions.push(
+        ...Object.entries(options.propertyFilters).map(
+          ([key, value]) => `r.${key} = $propFilters.${key}`
+        )
+      );
     }
 
     if (options.startNodeLabels && direction !== 'IN') {
@@ -400,7 +436,8 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
       conditions.push(`ALL(label IN $endLabels WHERE label IN labels(other))`);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const orderClause = this.buildOrderClause(options.orderBy);
     const limitClause = this.buildLimitClause(options.limit, options.skip);
 
@@ -418,20 +455,20 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
           nodeId,
           propFilters: options.propertyFilters || {},
           startLabels: options.startNodeLabels || [],
-          endLabels: options.endNodeLabels || []
+          endLabels: options.endNodeLabels || [],
         }
       );
 
-      return result.records.map(record => {
+      return result.records.map((record) => {
         const rel = record.get('r') as Relationship;
         const node = record.get('n') as Node;
         const other = record.get('other') as Node;
-        
+
         // Determine which is start and which is end based on relationship direction
         const isOutgoing = rel.start.toString() === node.identity.toString();
         const start = isOutgoing ? node : other;
         const end = isOutgoing ? other : node;
-        
+
         return this.transformRelationshipResult(rel, start, end) as T;
       });
     });
@@ -442,7 +479,9 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
    */
   async updateRelationship(
     relationshipId: string,
-    updates: Partial<Omit<T, 'id' | 'createdAt' | 'type' | 'startNodeId' | 'endNodeId'>>
+    updates: Partial<
+      Omit<T, 'id' | 'createdAt' | 'type' | 'startNodeId' | 'endNodeId'>
+    >
   ): Promise<T> {
     return this.neo4j.write(async (session) => {
       // Get current relationship for optimistic locking
@@ -463,11 +502,11 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
       const updateProps = {
         ...updates,
         updatedAt: new Date(),
-        version: newVersion
+        version: newVersion,
       };
 
       const setClause = Object.keys(updateProps)
-        .map(key => `r.${key} = $updates.${key}`)
+        .map((key) => `r.${key} = $updates.${key}`)
         .join(', ');
 
       // Update with version check
@@ -480,12 +519,14 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         {
           relationshipId,
           currentVersion,
-          updates: updateProps
+          updates: updateProps,
         }
       );
 
       if (updateResult.records.length === 0) {
-        throw new Error(`Relationship ${relationshipId} was modified by another process`);
+        throw new Error(
+          `Relationship ${relationshipId} was modified by another process`
+        );
       }
 
       const record = updateResult.records[0];
@@ -543,15 +584,15 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
             id: this.generateRelationshipId(forwardType),
             createdAt: new Date(),
             updatedAt: new Date(),
-            version: 1
+            version: 1,
           },
           reverseProps: {
             ...properties,
             id: this.generateRelationshipId(reverseType),
             createdAt: new Date(),
             updatedAt: new Date(),
-            version: 1
-          }
+            version: 1,
+          },
         }
       );
 
@@ -566,8 +607,8 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         reverse: this.transformRelationshipResult(r2, n2, n1) as T,
         nodes: {
           start: n1.properties,
-          end: n2.properties
-        }
+          end: n2.properties,
+        },
       };
     });
   }
@@ -575,17 +616,19 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
   /**
    * Get relationship analytics
    */
-  async getRelationshipAnalytics(options: {
-    relationshipTypes?: string[];
-    nodeLabels?: string[];
-  } = {}): Promise<RelationshipAnalytics> {
+  async getRelationshipAnalytics(
+    options: {
+      relationshipTypes?: string[];
+      nodeLabels?: string[];
+    } = {}
+  ): Promise<RelationshipAnalytics> {
     return this.neo4j.read(async (session) => {
-      const typeFilter = options.relationshipTypes?.length 
-        ? `:${options.relationshipTypes.join('|')}` 
+      const typeFilter = options.relationshipTypes?.length
+        ? `:${options.relationshipTypes.join('|')}`
         : '';
 
-      const labelFilter = options.nodeLabels?.length 
-        ? `:${options.nodeLabels.join(':')}` 
+      const labelFilter = options.nodeLabels?.length
+        ? `:${options.nodeLabels.join(':')}`
         : '';
 
       // Get total relationships and breakdown by type
@@ -612,7 +655,7 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         MATCH (n${labelFilter})
         OPTIONAL MATCH (n)-[inRel${typeFilter}]-()
         OPTIONAL MATCH (n)-[outRel${typeFilter}]-()
-        WITH n, 
+        WITH n,
              count(DISTINCT inRel) as inDegree,
              count(DISTINCT outRel) as outDegree,
              count(DISTINCT inRel) + count(DISTINCT outRel) as totalDegree
@@ -623,12 +666,12 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         `
       );
 
-      const mostConnectedNodes = degreeResult.records.map(record => ({
+      const mostConnectedNodes = degreeResult.records.map((record) => ({
         nodeId: record.get('nodeId'),
         labels: record.get('labels'),
         inDegree: record.get('inDegree').toNumber(),
         outDegree: record.get('outDegree').toNumber(),
-        totalDegree: record.get('totalDegree').toNumber()
+        totalDegree: record.get('totalDegree').toNumber(),
       }));
 
       // Calculate density (simplified)
@@ -638,13 +681,16 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
 
       const nodeCount = nodeResult.records[0].get('nodeCount').toNumber();
       const maxPossibleRelationships = nodeCount * (nodeCount - 1);
-      const density = maxPossibleRelationships > 0 ? totalRelationships / maxPossibleRelationships : 0;
+      const density =
+        maxPossibleRelationships > 0
+          ? totalRelationships / maxPossibleRelationships
+          : 0;
 
       return {
         totalRelationships,
         relationshipsByType,
         mostConnectedNodes,
-        density
+        density,
       };
     });
   }
@@ -658,7 +704,8 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
     relationshipTypes: string[],
     maxLength = 5
   ): Promise<Array<{ relationships: T[]; length: number; weight?: number }>> {
-    const typeFilter = relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
+    const typeFilter =
+      relationshipTypes.length > 0 ? `:${relationshipTypes.join('|')}` : '';
 
     return this.neo4j.read(async (session) => {
       const result = await session.run(
@@ -672,20 +719,22 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
         { startNodeId, endNodeId }
       );
 
-      return result.records.map(record => {
+      return result.records.map((record) => {
         const rels = record.get('rels') as Relationship[];
         const length = record.get('pathLength').toNumber();
 
-        const relationships = rels.map(rel => this.transformRelationshipOutput(rel) as T);
+        const relationships = rels.map(
+          (rel) => this.transformRelationshipOutput(rel) as T
+        );
 
         return {
           relationships,
           length,
           // Could calculate weight based on relationship properties
           weight: relationships.reduce((sum, rel) => {
-            const weight = rel["weight"] as number;
+            const weight = rel['weight'] as number;
             return sum + (typeof weight === 'number' ? weight : 1);
-          }, 0)
+          }, 0),
         };
       });
     });
@@ -715,7 +764,11 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
   /**
    * Transform Neo4j relationship to RelationshipEntity
    */
-  protected transformRelationshipResult(rel: Relationship, start: Node, end: Node): RelationshipEntity {
+  protected transformRelationshipResult(
+    rel: Relationship,
+    start: Node,
+    end: Node
+  ): RelationshipEntity {
     return {
       id: rel.properties.id || rel.identity.toString(),
       type: rel.type,
@@ -724,7 +777,7 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
       createdAt: rel.properties.createdAt,
       updatedAt: rel.properties.updatedAt,
       version: rel.properties.version,
-      ...rel.properties
+      ...rel.properties,
     } as RelationshipEntity;
   }
 
@@ -740,7 +793,7 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
       createdAt: rel.properties.createdAt,
       updatedAt: rel.properties.updatedAt,
       version: rel.properties.version,
-      ...rel.properties
+      ...rel.properties,
     } as RelationshipEntity;
   }
 
@@ -748,6 +801,8 @@ export abstract class Neo4jRelationshipModelService<T extends RelationshipEntity
    * Generate unique ID for relationships
    */
   protected generateRelationshipId(type: string): string {
-    return `${type.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${type.toLowerCase()}_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
   }
 }

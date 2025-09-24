@@ -10,7 +10,7 @@ import { ChromaDBCollectionService } from './chromadb-collection.service';
 import { ChromaDBDocumentService } from './chromadb-document.service';
 import { ChromaDBRepositoryService } from './chromadb-repository.service';
 import { IChromaOperations } from '../../interfaces/core/database-abstractions.interface';
-import type { BaseDocument } from '../../types/document-types.interface';
+import type { BaseDocument } from '../../types/core.interface';
 import {
   ChromaDocument,
   ChromaSearchResult,

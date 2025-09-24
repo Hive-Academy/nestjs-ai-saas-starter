@@ -1,8 +1,5 @@
 import 'reflect-metadata';
-import {
-  getNeo4jConfig,
-  getNeo4jConfigWithDefaults,
-} from '../utils/neo4j-config.accessor';
+// Removed unused config accessors (were imported but never referenced)
 
 export interface Neo4jParamValidationOptions {
   /**

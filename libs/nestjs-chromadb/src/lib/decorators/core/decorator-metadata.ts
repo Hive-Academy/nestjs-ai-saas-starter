@@ -36,9 +36,12 @@ export interface CompositionValidationResult {
  * Metadata storage for tracking applied decorators
  */
 export class DecoratorMetadataRegistry {
-  private static readonly METADATA_KEY = Symbol('chroma-decorator-metadata');
-  private static readonly CLASS_METADATA_KEY = Symbol('chroma-class-decorator-metadata');
-  private static readonly METHOD_METADATA_KEY = Symbol('chroma-method-decorator-metadata');
+  private static readonly CLASS_METADATA_KEY = Symbol(
+    'chroma-class-decorator-metadata'
+  );
+  private static readonly METHOD_METADATA_KEY = Symbol(
+    'chroma-method-decorator-metadata'
+  );
 
   /**
    * Store decorator metadata on target
@@ -53,7 +56,12 @@ export class DecoratorMetadataRegistry {
 
     if (propertyKey) {
       // Method/property decorator
-      Reflect.defineMetadata(this.METHOD_METADATA_KEY, metadataArray, target, propertyKey);
+      Reflect.defineMetadata(
+        this.METHOD_METADATA_KEY,
+        metadataArray,
+        target,
+        propertyKey
+      );
     } else {
       // Class decorator
       Reflect.defineMetadata(this.CLASS_METADATA_KEY, metadataArray, target);
@@ -68,7 +76,9 @@ export class DecoratorMetadataRegistry {
     propertyKey?: string | symbol
   ): DecoratorMetadata[] {
     if (propertyKey) {
-      return Reflect.getMetadata(this.METHOD_METADATA_KEY, target, propertyKey) || [];
+      return (
+        Reflect.getMetadata(this.METHOD_METADATA_KEY, target, propertyKey) || []
+      );
     } else {
       return Reflect.getMetadata(this.CLASS_METADATA_KEY, target) || [];
     }
@@ -78,27 +88,32 @@ export class DecoratorMetadataRegistry {
    * Check if decorator is already applied
    */
   static hasDecorator(
-    target: Type<any> | Function | object,
+    target: Type<any> | ((...args: any[]) => any) | object,
     decoratorName: string,
     propertyKey?: string | symbol
   ): boolean {
     const metadata = this.getMetadata(target, propertyKey);
-    return metadata.some(meta => meta.name === decoratorName);
+    return metadata.some((meta) => meta.name === decoratorName);
   }
 
   /**
    * Remove decorator metadata
    */
   static removeMetadata(
-    target: Type<any> | Function | object,
+    target: Type<any> | ((...args: any[]) => any) | object,
     decoratorName: string,
     propertyKey?: string | symbol
   ): void {
     const metadata = this.getMetadata(target, propertyKey);
-    const filtered = metadata.filter(meta => meta.name !== decoratorName);
+    const filtered = metadata.filter((meta) => meta.name !== decoratorName);
 
     if (propertyKey) {
-      Reflect.defineMetadata(this.METHOD_METADATA_KEY, filtered, target, propertyKey);
+      Reflect.defineMetadata(
+        this.METHOD_METADATA_KEY,
+        filtered,
+        target,
+        propertyKey
+      );
     } else {
       Reflect.defineMetadata(this.CLASS_METADATA_KEY, filtered, target);
     }
@@ -108,7 +123,7 @@ export class DecoratorMetadataRegistry {
    * Clear all decorator metadata
    */
   static clearMetadata(
-    target: Type<any> | Function | object,
+    target: Type<any> | ((...args: any[]) => any) | object,
     propertyKey?: string | symbol
   ): void {
     if (propertyKey) {
@@ -126,7 +141,9 @@ export class DecoratorCompositionValidator {
   /**
    * Validate decorator composition and determine execution order
    */
-  static validate(decorators: DecoratorMetadata[]): CompositionValidationResult {
+  static validate(
+    decorators: DecoratorMetadata[]
+  ): CompositionValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -153,10 +170,13 @@ export class DecoratorCompositionValidator {
   /**
    * Check for decorator conflicts
    */
-  private static validateConflicts(decorators: DecoratorMetadata[], errors: string[]): void {
+  private static validateConflicts(
+    decorators: DecoratorMetadata[],
+    errors: string[]
+  ): void {
     for (const decorator of decorators) {
       for (const conflictName of decorator.conflicts) {
-        const hasConflict = decorators.some(d => d.name === conflictName);
+        const hasConflict = decorators.some((d) => d.name === conflictName);
         if (hasConflict) {
           errors.push(
             `Decorator conflict: '${decorator.name}' conflicts with '${conflictName}'`
@@ -174,7 +194,7 @@ export class DecoratorCompositionValidator {
     errors: string[],
     warnings: string[]
   ): void {
-    const decoratorNames = new Set(decorators.map(d => d.name));
+    const decoratorNames = new Set(decorators.map((d) => d.name));
 
     for (const decorator of decorators) {
       for (const dependency of decorator.dependencies) {
@@ -190,12 +210,17 @@ export class DecoratorCompositionValidator {
   /**
    * Check for duplicate decorators
    */
-  private static validateDuplicates(decorators: DecoratorMetadata[], errors: string[]): void {
+  private static validateDuplicates(
+    decorators: DecoratorMetadata[],
+    errors: string[]
+  ): void {
     const seen = new Set<string>();
 
     for (const decorator of decorators) {
       if (seen.has(decorator.name)) {
-        errors.push(`Duplicate decorator: '${decorator.name}' is applied multiple times`);
+        errors.push(
+          `Duplicate decorator: '${decorator.name}' is applied multiple times`
+        );
       }
       seen.add(decorator.name);
     }
@@ -204,7 +229,9 @@ export class DecoratorCompositionValidator {
   /**
    * Determine execution order based on priority and dependencies
    */
-  private static determineExecutionOrder(decorators: DecoratorMetadata[]): DecoratorMetadata[] {
+  private static determineExecutionOrder(
+    decorators: DecoratorMetadata[]
+  ): DecoratorMetadata[] {
     // Sort by priority (descending) and then by dependencies
     const sorted = [...decorators].sort((a, b) => {
       // First, sort by priority
@@ -355,7 +382,7 @@ export class DecoratorExecutionPipeline {
     const result = await originalMethod.apply(context.target, context.args);
 
     // Apply post-processing from decorators (in reverse order)
-    for (const metadata of [...validation.executionOrder].reverse()) {
+    for (const _metadata of [...validation.executionOrder].reverse()) {
       // Each decorator can transform the result
       // This is handled by specific decorator implementations
     }
@@ -368,7 +395,7 @@ export class DecoratorExecutionPipeline {
  * Utility function to get all decorators applied to a class or method
  */
 export function getAppliedDecorators(
-  target: Type<any> | Function | object,
+  target: Type<any> | ((...args: any[]) => any) | object,
   propertyKey?: string | symbol
 ): DecoratorMetadata[] {
   return DecoratorMetadataRegistry.getMetadata(target, propertyKey);
@@ -378,18 +405,22 @@ export function getAppliedDecorators(
  * Utility function to check if a specific decorator is applied
  */
 export function hasDecorator(
-  target: Type<any> | Function | object,
+  target: Type<any> | ((...args: any[]) => any) | object,
   decoratorName: string,
   propertyKey?: string | symbol
 ): boolean {
-  return DecoratorMetadataRegistry.hasDecorator(target, decoratorName, propertyKey);
+  return DecoratorMetadataRegistry.hasDecorator(
+    target,
+    decoratorName,
+    propertyKey
+  );
 }
 
 /**
  * Utility function to validate decorator composition on a target
  */
 export function validateDecoratorComposition(
-  target: Type<any> | Function | object,
+  target: Type<any> | ((...args: any[]) => any) | object,
   propertyKey?: string | symbol
 ): CompositionValidationResult {
   const metadata = DecoratorMetadataRegistry.getMetadata(target, propertyKey);

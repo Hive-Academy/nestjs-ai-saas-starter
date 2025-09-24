@@ -1,9 +1,9 @@
 /**
  * @fileoverview Base Model Service for Neo4j Operations
- * 
+ *
  * This service provides a high-level abstraction layer for working with Neo4j entities.
  * It implements common CRUD operations, validation, and type safety for graph entities.
- * 
+ *
  * Features:
  * - Generic type-safe CRUD operations
  * - Entity validation and transformation
@@ -12,19 +12,15 @@
  * - Hook system for custom business logic
  */
 
-import { Injectable, Type } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Neo4jService } from '../services/neo4j.service';
-import { QueryResult, Node, Relationship } from 'neo4j-driver';
-import type { Record } from 'neo4j-driver';
 import {
   Neo4jPrimitive,
-  Neo4jProperties,
   Neo4jWhereClause,
-  Neo4jSortOrder,
   Neo4jSortOrderArray,
   Neo4jCompatibleEntity,
   Neo4jCreateData,
-  Neo4jUpdateData
+  Neo4jUpdateData,
 } from '../types/neo4j-types';
 
 /**
@@ -68,7 +64,9 @@ export interface EntityMetadata<T = any> {
 /**
  * Query options for model operations
  */
-export interface ModelQueryOptions<T extends Neo4jCompatibleEntity = Neo4jCompatibleEntity> {
+export interface ModelQueryOptions<
+  T extends Neo4jCompatibleEntity = Neo4jCompatibleEntity
+> {
   /** Include deleted entities (soft delete) */
   includeDeleted?: boolean;
   /** Sort options */
@@ -96,11 +94,16 @@ export interface ModelQueryOptions<T extends Neo4jCompatibleEntity = Neo4jCompat
 export interface EntityHooks<T extends BaseEntity> {
   beforeCreate?(entity: Partial<T>): Promise<Partial<T>> | Partial<T>;
   afterCreate?(entity: T): Promise<void> | void;
-  beforeUpdate?(id: string, updates: Partial<T>): Promise<Partial<T>> | Partial<T>;
+  beforeUpdate?(
+    id: string,
+    updates: Partial<T>
+  ): Promise<Partial<T>> | Partial<T>;
   afterUpdate?(entity: T): Promise<void> | void;
   beforeDelete?(id: string): Promise<void> | void;
   afterDelete?(id: string): Promise<void> | void;
-  beforeFind?(query: ModelQueryOptions): Promise<ModelQueryOptions> | ModelQueryOptions;
+  beforeFind?(
+    query: ModelQueryOptions
+  ): Promise<ModelQueryOptions> | ModelQueryOptions;
   afterFind?(entities: T[]): Promise<T[]> | T[];
 }
 
@@ -122,7 +125,7 @@ export abstract class BaseModelService<T extends BaseEntity> {
     const entityData = { ...this.metadata.defaults, ...data } as Partial<T>;
 
     // Run before create hook
-    const processedData = this.hooks.beforeCreate 
+    const processedData = this.hooks.beforeCreate
       ? await this.hooks.beforeCreate(entityData)
       : entityData;
 
@@ -143,8 +146,11 @@ export abstract class BaseModelService<T extends BaseEntity> {
     } as any;
 
     // Build labels clause
-    const labels = [this.metadata.label, ...(this.metadata.additionalLabels || [])];
-    const labelsClause = labels.map(label => `:${label}`).join('');
+    const labels = [
+      this.metadata.label,
+      ...(this.metadata.additionalLabels || []),
+    ];
+    const labelsClause = labels.map((label) => `:${label}`).join('');
 
     // Execute creation query
     const result = await this.neo4j.write(async (session) => {
@@ -153,7 +159,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
         { properties: finalData as any }
       );
 
-      return this.transformOutput(queryResult.records[0].get('n').properties) as T;
+      return this.transformOutput(
+        queryResult.records[0].get('n').properties
+      ) as T;
     });
 
     // Run after create hook
@@ -167,12 +175,18 @@ export abstract class BaseModelService<T extends BaseEntity> {
   /**
    * Find entity by ID
    */
-  async findById(id: string, options: ModelQueryOptions<T> = {}): Promise<T | null> {
-    const processedOptions = this.hooks.beforeFind 
+  async findById(
+    id: string,
+    options: ModelQueryOptions<T> = {}
+  ): Promise<T | null> {
+    const processedOptions = this.hooks.beforeFind
       ? await this.hooks.beforeFind(options)
       : options;
 
-    const whereClause = this.buildWhereClause({ id, ...processedOptions.where }, processedOptions);
+    const whereClause = this.buildWhereClause(
+      { id, ...processedOptions.where },
+      processedOptions
+    );
     const includeClause = this.buildIncludeClause(processedOptions.include);
 
     const result = await this.neo4j.read(async (session) => {
@@ -180,7 +194,11 @@ export abstract class BaseModelService<T extends BaseEntity> {
         `
         MATCH (n:${this.metadata.label} ${whereClause})
         ${includeClause}
-        RETURN n ${processedOptions.include ? ', ' + processedOptions.include.join(', ') : ''}
+        RETURN n ${
+          processedOptions.include
+            ? ', ' + processedOptions.include.join(', ')
+            : ''
+        }
         `,
         { id }
       );
@@ -189,7 +207,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
         return null;
       }
 
-      return this.transformOutput(queryResult.records[0].get('n').properties) as T;
+      return this.transformOutput(
+        queryResult.records[0].get('n').properties
+      ) as T;
     });
 
     if (result && this.hooks.afterFind) {
@@ -204,13 +224,19 @@ export abstract class BaseModelService<T extends BaseEntity> {
    * Find multiple entities
    */
   async findMany(options: ModelQueryOptions<T> = {}): Promise<T[]> {
-    const processedOptions = this.hooks.beforeFind 
+    const processedOptions = this.hooks.beforeFind
       ? await this.hooks.beforeFind(options)
       : options;
 
-    const whereClause = this.buildWhereClause(processedOptions.where, processedOptions);
+    const whereClause = this.buildWhereClause(
+      processedOptions.where,
+      processedOptions
+    );
     const orderClause = this.buildOrderClause(processedOptions.orderBy);
-    const limitClause = this.buildLimitClause(processedOptions.limit, processedOptions.skip);
+    const limitClause = this.buildLimitClause(
+      processedOptions.limit,
+      processedOptions.skip
+    );
     const includeClause = this.buildIncludeClause(processedOptions.include);
 
     const results = await this.neo4j.read(async (session) => {
@@ -218,14 +244,18 @@ export abstract class BaseModelService<T extends BaseEntity> {
         `
         MATCH (n:${this.metadata.label} ${whereClause})
         ${includeClause}
-        RETURN n ${processedOptions.include ? ', ' + processedOptions.include.join(', ') : ''}
+        RETURN n ${
+          processedOptions.include
+            ? ', ' + processedOptions.include.join(', ')
+            : ''
+        }
         ${orderClause}
         ${limitClause}
         `
       );
 
-      return queryResult.records.map(record => 
-        this.transformOutput(record.get('n').properties) as T
+      return queryResult.records.map(
+        (record) => this.transformOutput(record.get('n').properties) as T
       );
     });
 
@@ -241,7 +271,7 @@ export abstract class BaseModelService<T extends BaseEntity> {
    */
   async update(id: string, updates: Neo4jUpdateData<T>): Promise<T> {
     // Run before update hook
-    const processedUpdates = this.hooks.beforeUpdate 
+    const processedUpdates = this.hooks.beforeUpdate
       ? await this.hooks.beforeUpdate(id, updates as Partial<T>)
       : updates;
 
@@ -249,7 +279,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
     this.validateEntity(processedUpdates as Partial<T>, false);
 
     // Transform input data
-    const transformedUpdates = this.transformInput(processedUpdates as Partial<T>);
+    const transformedUpdates = this.transformInput(
+      processedUpdates as Partial<T>
+    );
 
     // Add system properties
     const finalUpdates = {
@@ -259,7 +291,7 @@ export abstract class BaseModelService<T extends BaseEntity> {
 
     // Build update clauses
     const setClause = Object.keys(finalUpdates)
-      .map(key => `n.${key} = $updates.${key}`)
+      .map((key) => `n.${key} = $updates.${key}`)
       .join(', ');
 
     const result = await this.neo4j.write(async (session) => {
@@ -283,11 +315,11 @@ export abstract class BaseModelService<T extends BaseEntity> {
         SET ${setClause}, n.version = $newVersion
         RETURN n
         `,
-        { 
-          id, 
+        {
+          id,
           currentVersion,
           newVersion,
-          updates: finalUpdates 
+          updates: finalUpdates,
         }
       );
 
@@ -295,7 +327,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
         throw new Error(`Entity with id ${id} was modified by another process`);
       }
 
-      return this.transformOutput(updateResult.records[0].get('n').properties) as T;
+      return this.transformOutput(
+        updateResult.records[0].get('n').properties
+      ) as T;
     });
 
     // Run after update hook
@@ -336,10 +370,10 @@ export abstract class BaseModelService<T extends BaseEntity> {
           SET n.deletedAt = $deletedAt, n.updatedAt = $updatedAt
           RETURN count(n) as updatedCount
           `,
-          { 
-            id, 
+          {
+            id,
             deletedAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           }
         );
 
@@ -402,7 +436,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
     return results;
   }
 
-  async updateMany(updates: Array<{ id: string; data: Neo4jUpdateData<T> }>): Promise<T[]> {
+  async updateMany(
+    updates: Array<{ id: string; data: Neo4jUpdateData<T> }>
+  ): Promise<T[]> {
     const results: T[] = [];
 
     for (const update of updates) {
@@ -453,7 +489,8 @@ export abstract class BaseModelService<T extends BaseEntity> {
       for (const [field, pattern] of Object.entries(format)) {
         const value = data[field as keyof T];
         if (value != null) {
-          const regex = typeof pattern === 'string' ? new RegExp(pattern) : pattern;
+          const regex =
+            typeof pattern === 'string' ? new RegExp(pattern) : pattern;
           if (!regex.test(String(value))) {
             throw new Error(`Field '${field}' does not match required format`);
           }
@@ -467,10 +504,14 @@ export abstract class BaseModelService<T extends BaseEntity> {
         const value = data[field as keyof T];
         if (typeof value === 'number') {
           if (constraint.min != null && value < constraint.min) {
-            throw new Error(`Field '${field}' must be at least ${constraint.min}`);
+            throw new Error(
+              `Field '${field}' must be at least ${constraint.min}`
+            );
           }
           if (constraint.max != null && value > constraint.max) {
-            throw new Error(`Field '${field}' must be at most ${constraint.max}`);
+            throw new Error(
+              `Field '${field}' must be at most ${constraint.max}`
+            );
           }
         }
       }
@@ -484,9 +525,13 @@ export abstract class BaseModelService<T extends BaseEntity> {
     if (!this.metadata.transforms?.input) return data;
 
     const transformed = { ...data };
-    for (const [field, transform] of Object.entries(this.metadata.transforms.input)) {
+    for (const [field, transform] of Object.entries(
+      this.metadata.transforms.input
+    )) {
       if (field in transformed) {
-        transformed[field as keyof T] = transform(transformed[field as keyof T]);
+        transformed[field as keyof T] = transform(
+          transformed[field as keyof T]
+        );
       }
     }
 
@@ -500,7 +545,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
     if (!this.metadata.transforms?.output) return data as Partial<T>;
 
     const transformed = { ...data };
-    for (const [field, transform] of Object.entries(this.metadata.transforms.output)) {
+    for (const [field, transform] of Object.entries(
+      this.metadata.transforms.output
+    )) {
       if (field in transformed) {
         transformed[field] = transform(transformed[field]);
       }
@@ -512,7 +559,10 @@ export abstract class BaseModelService<T extends BaseEntity> {
   /**
    * Build WHERE clause for queries
    */
-  protected buildWhereClause(where?: Neo4jWhereClause, options: ModelQueryOptions<T> = {}): string {
+  protected buildWhereClause(
+    where?: Neo4jWhereClause,
+    options: ModelQueryOptions<T> = {}
+  ): string {
     const conditions: string[] = [];
 
     // Add soft delete filter
@@ -538,7 +588,9 @@ export abstract class BaseModelService<T extends BaseEntity> {
   protected buildOrderClause(orderBy?: Neo4jSortOrderArray<T>): string {
     if (!orderBy || orderBy.length === 0) return '';
 
-    const orderExpressions = orderBy.map(order => `n.${order.property} ${order.direction}`);
+    const orderExpressions = orderBy.map(
+      (order) => `n.${order.property} ${order.direction}`
+    );
     return `ORDER BY ${orderExpressions.join(', ')}`;
   }
 
@@ -566,13 +618,17 @@ export abstract class BaseModelService<T extends BaseEntity> {
     if (!include || include.length === 0) return '';
 
     // This would be expanded to handle relationship traversal
-    return include.map(rel => `OPTIONAL MATCH (n)-[:${rel.toUpperCase()}]->(${rel})`).join('\n');
+    return include
+      .map((rel) => `OPTIONAL MATCH (n)-[:${rel.toUpperCase()}]->(${rel})`)
+      .join('\n');
   }
 
   /**
    * Generate unique ID for new entities
    */
   protected generateId(): string {
-    return `${this.metadata.label.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `${this.metadata.label.toLowerCase()}_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
   }
 }

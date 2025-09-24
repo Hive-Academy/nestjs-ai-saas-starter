@@ -3,7 +3,6 @@ import { Driver } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
 import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
 import type {
-  HealthIndicator,
   ComprehensiveMetrics,
   ConnectionPoolMetrics,
 } from '../interfaces/query-result.interface';
@@ -55,9 +54,7 @@ export class Neo4jHealthService {
     @Inject(NEO4J_DRIVER) private readonly driver: Driver,
     @Inject(NEO4J_OPTIONS) private readonly options: Neo4jModuleOptions
   ) {
-    this.logger.log(
-      'Neo4j Health Service initialized with  monitoring'
-    );
+    this.logger.log('Neo4j Health Service initialized with  monitoring');
   }
 
   // ==================== ORIGINAL API (100% BACKWARD COMPATIBLE) ====================
@@ -82,7 +79,7 @@ export class Neo4jHealthService {
 
         const responseTime = Date.now() - startTime;
 
-        return {
+        const indicator: Neo4jHealthIndicator = {
           name: 'neo4j',
           status: 'up',
           message: 'Neo4j is healthy',
@@ -93,12 +90,23 @@ export class Neo4jHealthService {
             responseTime,
           },
         };
+        // Record health history
+        this.healthHistory.push({
+          timestamp: new Date(),
+          status: 'up',
+          responseTime,
+          details: indicator.details,
+        });
+        if (this.healthHistory.length > 200) {
+          this.healthHistory.splice(0, this.healthHistory.length - 200);
+        }
+        return indicator;
       } finally {
         await session.close();
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      return {
+      const indicator: Neo4jHealthIndicator = {
         name: 'neo4j',
         status: 'down',
         message: `Neo4j health check failed: ${message}`,
@@ -107,6 +115,16 @@ export class Neo4jHealthService {
           responseTime: Date.now() - startTime,
         },
       };
+      this.healthHistory.push({
+        timestamp: new Date(),
+        status: 'down',
+        responseTime: indicator.details?.responseTime || 0,
+        details: indicator.details,
+      });
+      if (this.healthHistory.length > 200) {
+        this.healthHistory.splice(0, this.healthHistory.length - 200);
+      }
+      return indicator;
     }
   }
 
@@ -158,7 +176,6 @@ export class Neo4jHealthService {
       await session.close();
     }
   }
-
 
   /**
    * Get comprehensive database and performance metrics
@@ -321,64 +338,7 @@ export class Neo4jHealthService {
   /**
    * Get database information
    */
-  private async getDatabaseInfo(): Promise<{
-    name: string;
-    version: string;
-    edition: string;
-  }> {
-    const session = this.driver.session({
-      database: this.options.database,
-    });
-
-    try {
-      const result = await session.run(
-        'CALL dbms.components() YIELD name, versions, edition'
-      );
-      const [record] = result.records;
-
-      return {
-        name: this.options.database || 'neo4j',
-        version: record?.get('versions')[0] || 'unknown',
-        edition: record?.get('edition') || 'unknown',
-      };
-    } finally {
-      await session.close();
-    }
-  }
-
-  /**
-   * Get cluster information
-   */
-  private async getClusterInfo(): Promise<any> {
-    try {
-      const session = this.driver.session({ database: 'system' });
-
-      try {
-        const result = await session.run(`
-          CALL dbms.cluster.overview()
-          YIELD id, addresses, role, groups, database
-          RETURN id, addresses, role, groups, database
-        `);
-
-        const servers = result.records.map(
-          (record) => record.get('addresses')[0] || ''
-        );
-        const roles = result.records.map((record) => record.get('role') || '');
-
-        return {
-          role: 'LEADER' as const, // Simplified - would need proper detection
-          servers,
-          writableMembers: roles.filter((role) => role === 'LEADER').length,
-          readOnlyMembers: roles.filter((role) => role === 'FOLLOWER').length,
-        };
-      } finally {
-        await session.close();
-      }
-    } catch (error) {
-      // Not a cluster or no access
-      return undefined;
-    }
-  }
+  // Removed unused getDatabaseInfo & getClusterInfo helpers
 
   /**
    * Get connection pool metrics
@@ -476,9 +436,9 @@ export class Neo4jHealthService {
   /**
    * Get constraint statistics
    */
-  private async getConstraintStats(session: any): Promise<Record<string, any>> {
+  private async getConstraintStats(__s: any): Promise<Record<string, any>> {
     try {
-      const result = await session.run(
+      const result = await __s.run(
         'SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties'
       );
       const constraintStats: Record<string, any> = {};
@@ -521,69 +481,15 @@ export class Neo4jHealthService {
   /**
    * Determine health status based on metrics
    */
-  private determineHealthStatus(
-    responseTime: number,
-    poolMetrics: ConnectionPoolMetrics
-  ): 'up' | 'down' | 'degraded' {
-    // Define thresholds
-    const WARNING_RESPONSE_TIME = 1000; // 1 second
-    const CRITICAL_RESPONSE_TIME = 5000; // 5 seconds
-    const CRITICAL_POOL_UTILIZATION = 0.9; // 90%
-
-    const poolUtilization =
-      poolMetrics.totalConnections > 0
-        ? poolMetrics.activeConnections / poolMetrics.totalConnections
-        : 0;
-
-    if (
-      responseTime > CRITICAL_RESPONSE_TIME ||
-      poolUtilization > CRITICAL_POOL_UTILIZATION
-    ) {
-      return 'degraded';
-    }
-
-    if (responseTime > WARNING_RESPONSE_TIME) {
-      return 'degraded';
-    }
-
-    return 'up';
-  }
+  // Removed determineHealthStatus (unused)
 
   /**
    * Record health check result
    */
-  private recordHealthCheck(healthIndicator: HealthIndicator): void {
-    this.healthHistory.push({
-      timestamp: new Date(),
-      status: healthIndicator.status,
-      responseTime: healthIndicator.details?.responseTime || 0,
-      details: healthIndicator.details,
-    });
-
-    // Keep only last 100 health checks
-    if (this.healthHistory.length > 100) {
-      this.healthHistory.splice(0, this.healthHistory.length - 100);
-    }
-  }
+  // Removed recordHealthCheck (unused)
 
   /**
    * Categorize error for tracking
    */
-  private categorizeError(error: any): string {
-    if (error.code) {
-      return error.code;
-    }
-
-    const message =
-      error instanceof Error ? error.message : String(error) || '';
-
-    if (message.includes('ServiceUnavailable')) return 'ServiceUnavailable';
-    if (message.includes('SessionExpired')) return 'SessionExpired';
-    if (message.includes('TransientError')) return 'TransientError';
-    if (message.includes('DatabaseUnavailable')) return 'DatabaseUnavailable';
-    if (message.includes('timeout')) return 'Timeout';
-    if (message.includes('connection')) return 'ConnectionError';
-
-    return 'Unknown';
-  }
+  // Removed categorizeError (unused)
 }

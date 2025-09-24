@@ -7,18 +7,21 @@ The `@ChromaRepository` decorator is a powerful class-level decorator that autom
 ## Key Features
 
 ### ✅ Auto-Generated Methods
+
 - **CRUD Operations**: create, createMany, findById, findByIds, findAll, update, updateMany, upsert, upsertMany, delete, deleteMany, deleteByFilter
 - **Search Operations**: search, searchWithScores, searchSimilar
 - **Aggregation Operations**: count, exists, peek
 - **Collection Operations**: clear, getCollectionInfo
 
 ### ✅ Type Safety
+
 - Full TypeScript generics support
 - Typed document interfaces with custom metadata
 - Type-safe search options and filters
 - Compile-time validation of document structures
 
 ### ✅ Performance Features
+
 - Intelligent caching with collection-aware strategies
 - Batch processing for bulk operations
 - Auto-embedding with configurable models
@@ -26,6 +29,7 @@ The `@ChromaRepository` decorator is a powerful class-level decorator that autom
 - Retry logic with circuit breaker patterns
 
 ### ✅ Data Management
+
 - Automatic timestamp generation
 - Auto-generated IDs
 - Soft delete support
@@ -33,6 +37,7 @@ The `@ChromaRepository` decorator is a powerful class-level decorator that autom
 - Metadata sanitization for ChromaDB compatibility
 
 ### ✅ Integration
+
 - Seamless integration with existing ChromaDBService
 - Compatible with performance decorators (@Cached, @Profiled, @Retry)
 - Works with @VectorQuery decorator
@@ -43,11 +48,12 @@ The `@ChromaRepository` decorator is a powerful class-level decorator that autom
 ### Basic Repository
 
 ```typescript
-interface UserDocument extends BaseDocument<{
-  name: string;
-  email: string;
-  age: number;
-}> {}
+interface UserDocument
+  extends BaseDocument<{
+    name: string;
+    email: string;
+    age: number;
+  }> {}
 
 @Injectable()
 @ChromaRepository({
@@ -60,7 +66,7 @@ export class UserRepository {
   constructor(private chromaService: ChromaDBService) {}
 
   // All CRUD methods are auto-generated!
-  
+
   // Add custom business methods
   async findByEmail(email: string): Promise<UserDocument | null> {
     const users = await this.findAll({ where: { email } });
@@ -106,22 +112,22 @@ export class ProductRepository {
 interface ChromaRepositoryConfig {
   // Required
   collection: string;
-  
+
   // Embedding & AI
   autoEmbed?: boolean;
   defaultEmbeddingModel?: string;
-  
+
   // Performance
   enableCaching?: boolean;
   enableBatch?: boolean;
   defaultBatchSize?: number;
-  
+
   // Data Management
   enableValidation?: boolean;
   autoTimestamp?: boolean;
   autoGenerateIds?: boolean;
   enableSoftDelete?: boolean;
-  
+
   // Error Handling
   errorHandling?: 'throw' | 'log_and_continue' | 'silent';
 }
@@ -130,6 +136,7 @@ interface ChromaRepositoryConfig {
 ## Auto-Generated Method Signatures
 
 ### CRUD Operations
+
 ```typescript
 create(document: Omit<TDocument, 'id'>, options?: RepositoryOperationOptions): Promise<TDocument>
 createMany(documents: Omit<TDocument, 'id'>[], options?: RepositoryOperationOptions): Promise<RepositoryOperationResult<TDocument>>
@@ -146,6 +153,7 @@ deleteByFilter(where?: Where, whereDocument?: WhereDocument, options?: Repositor
 ```
 
 ### Search Operations
+
 ```typescript
 search(query: string, options?: RepositorySearchOptions): Promise<TDocument[]>
 searchWithScores(query: string, options?: RepositorySearchOptions): Promise<Array<{ document: TDocument; score: number }>>
@@ -153,6 +161,7 @@ searchSimilar(embedding: number[], options?: RepositorySearchOptions): Promise<T
 ```
 
 ### Aggregation Operations
+
 ```typescript
 count(where?: Where, whereDocument?: WhereDocument): Promise<number>
 exists(id: string): Promise<boolean>
@@ -160,6 +169,7 @@ peek(limit?: number): Promise<TDocument[]>
 ```
 
 ### Collection Operations
+
 ```typescript
 clear(): Promise<void>
 getCollectionInfo(): Promise<{ name: string; count: number; metadata?: Record<string, unknown> }>
@@ -168,6 +178,7 @@ getCollectionInfo(): Promise<{ name: string; count: number; metadata?: Record<st
 ## Operation Options
 
 ### Repository Operation Options
+
 ```typescript
 interface RepositoryOperationOptions {
   skipValidation?: boolean;
@@ -179,6 +190,7 @@ interface RepositoryOperationOptions {
 ```
 
 ### Repository Search Options
+
 ```typescript
 interface RepositorySearchOptions extends RepositoryOperationOptions {
   limit?: number;
@@ -197,35 +209,41 @@ interface RepositorySearchOptions extends RepositoryOperationOptions {
 ## Advanced Features
 
 ### Automatic Document Enrichment
+
 - Auto-generated IDs using timestamp + random string
 - Automatic timestamp management (createdAt, updatedAt)
 - Version tracking for document updates
 - Custom metadata injection
 
 ### Intelligent Caching
+
 - Collection-aware cache keys
 - Automatic cache invalidation on mutations
 - Background refresh strategies
 - Configurable TTL and refresh thresholds
 
 ### Batch Processing
+
 - Configurable batch sizes for bulk operations
 - Automatic chunking for large datasets
 - Progress tracking and error handling
 - Memory-efficient processing
 
 ### Soft Delete Support
+
 - Mark documents as deleted instead of removing
 - Automatic deletedAt timestamps
 - Option to force hard delete
 - Filter out soft-deleted documents in queries
 
 ### Error Handling Strategies
+
 - **throw**: Propagate all errors (default)
 - **log_and_continue**: Log errors but continue operation
 - **silent**: Suppress non-critical errors
 
 ### Metadata Sanitization
+
 - Automatic conversion of complex types to ChromaDB-compatible format
 - JSON serialization for objects and arrays
 - Type safety for metadata values
@@ -234,6 +252,7 @@ interface RepositorySearchOptions extends RepositoryOperationOptions {
 ## Integration with Performance Decorators
 
 ### Caching Integration
+
 ```typescript
 @ChromaRepository({ enableCaching: true })
 class MyRepository {
@@ -245,6 +264,7 @@ class MyRepository {
 ```
 
 ### Profiling Integration
+
 ```typescript
 @ChromaRepository({ collection: 'items' })
 class MyRepository {
@@ -256,6 +276,7 @@ class MyRepository {
 ```
 
 ### Retry Integration
+
 ```typescript
 @ChromaRepository({ collection: 'items' })
 class MyRepository {
@@ -273,12 +294,7 @@ The decorator provides comprehensive error handling with context:
 ```typescript
 // Error types
 class ChromaRepositoryError extends Error {
-  constructor(
-    message: string,
-    public operation: string,
-    public collection: string,
-    public context?: Record<string, unknown>
-  ) {
+  constructor(message: string, public operation: string, public collection: string, public context?: Record<string, unknown>) {
     super(message);
   }
 }
@@ -297,6 +313,7 @@ try {
 ## Testing
 
 ### Unit Testing
+
 ```typescript
 describe('UserRepository', () => {
   let repository: UserRepository;
@@ -310,11 +327,11 @@ describe('UserRepository', () => {
   it('should create a user with auto-generated ID', async () => {
     const userData = {
       content: 'User profile',
-      metadata: { name: 'John', email: 'john@example.com' }
+      metadata: { name: 'John', email: 'john@example.com' },
     };
 
     const result = await repository.create(userData);
-    
+
     expect(result.id).toBeDefined();
     expect(result.createdAt).toBeDefined();
     expect(mockChromaService.addDocuments).toHaveBeenCalled();
@@ -323,6 +340,7 @@ describe('UserRepository', () => {
 ```
 
 ### Integration Testing
+
 ```typescript
 describe('UserRepository Integration', () => {
   let repository: UserRepository;
@@ -337,7 +355,7 @@ describe('UserRepository Integration', () => {
     // Test create
     const user = await repository.create({
       content: 'Test user',
-      metadata: { name: 'Test', email: 'test@example.com' }
+      metadata: { name: 'Test', email: 'test@example.com' },
     });
 
     // Test read
@@ -346,7 +364,7 @@ describe('UserRepository Integration', () => {
 
     // Test update
     const updated = await repository.update(user.id, {
-      metadata: { name: 'Updated' }
+      metadata: { name: 'Updated' },
     });
     expect(updated?.metadata.name).toBe('Updated');
 
@@ -360,18 +378,21 @@ describe('UserRepository Integration', () => {
 ## Performance Considerations
 
 ### Memory Management
+
 - Use batch processing for large datasets
 - Implement pagination for large result sets
 - Configure appropriate cache TTL values
 - Monitor memory usage with profiling decorators
 
 ### Query Optimization
+
 - Use specific filters to reduce result sets
 - Leverage embedding similarity for semantic search
 - Implement proper indexing strategies
 - Cache frequently accessed data
 
 ### Scalability
+
 - Configure batch sizes based on system capacity
 - Use background refresh for cache strategies
 - Implement circuit breaker patterns for reliability

@@ -5,17 +5,18 @@
  * operations by providing declarative vector search with automatic embedding generation.
  */
 
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ChromaClient, type Where, type WhereDocument } from 'chromadb';
+import { Logger } from '@nestjs/common';
+import type { Where, WhereDocument } from 'chromadb';
 import {
   DecoratorMetadataRegistry,
   DecoratorMetadataBuilder,
-  DecoratorExecutionContext,
 } from './decorator-metadata';
 import type { ChromaDBService } from '../../services/chromadb.service';
-import type { ChromaSearchResult, ChromaSearchOptions } from '../../interfaces/chromadb-service.interface';
-import { CollectionName, TypedCollectionName } from '../../types/collection-names.type';
-import type { BaseDocument } from '../../types/document-types.interface';
+import type {
+  ChromaSearchResult,
+  ChromaSearchOptions,
+  BaseDocument,
+} from '../../types/core.interface';
 
 /**
  * Configuration for @VectorQuery decorator
@@ -96,7 +97,9 @@ export interface VectorQueryParams {
 /**
  *  vector search result with type safety
  */
-export interface TypedVectorSearchResult<TDocument extends BaseDocument = BaseDocument> {
+export interface TypedVectorSearchResult<
+  TDocument extends BaseDocument = BaseDocument
+> {
   ids: string[];
   documents: Array<TDocument | null>;
   metadatas: Array<TDocument['metadata'] | null>;
@@ -142,7 +145,11 @@ export interface TypedVectorSearchResult<TDocument extends BaseDocument = BaseDo
 export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
   config: VectorQueryConfig
 ): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
     // Store decorator metadata
     const metadata = DecoratorMetadataBuilder.createCoreMetadata(
       'VectorQuery',
@@ -156,8 +163,11 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
     const originalMethod = descriptor.value;
 
     // Replace method with  implementation
-    descriptor.value = async function (this: any, ...args: any[]) {
-      const queryParams = args[0] as VectorQueryParams || {};
+    descriptor.value = async function (
+      this: any,
+      ...args: any[]
+    ): Promise<any> {
+      const queryParams = (args[0] as VectorQueryParams) || {};
 
       try {
         // Get ChromaDB  service
@@ -187,7 +197,7 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
           // Use provided embedding
           result = await chromaService.searchDocuments(
             config.collection,
-            undefined,
+            [],
             [queryParams.embedding],
             searchOptions
           );
@@ -202,10 +212,15 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
         // Transform result
         const returnedResult: TypedVectorSearchResult<TDocument> = {
           ids: result.ids[0] || [],
-          documents: result.documents[0] as Array<TDocument | null> || [],
-          metadatas: result.metadatas[0] as Array<TDocument['metadata'] | null> || [],
-          distances: (result.distances?.[0] || []).filter((d): d is number => d !== null),
-          embeddings: (result.embeddings?.[0] || []).filter((e): e is number[] => e !== null),
+          documents: (result.documents[0] as Array<TDocument | null>) || [],
+          metadatas:
+            (result.metadatas[0] as Array<TDocument['metadata'] | null>) || [],
+          distances: (result.distances?.[0] || []).filter(
+            (d): d is number => d !== null
+          ),
+          embeddings: (result.embeddings?.[0] || []).filter(
+            (e): e is number[] => e !== null
+          ),
           queryTime,
           cacheHit: false, // TODO: Implement cache hit detection
         };
@@ -216,7 +231,6 @@ export function VectorQuery<TDocument extends BaseDocument = BaseDocument>(
         }
 
         return returnedResult;
-
       } catch (error) {
         return handleVectorQueryError(error, config, originalMethod, args);
       }
@@ -255,7 +269,10 @@ function getChromaService(instance: any): ChromaDBService {
 /**
  * Validate query parameters
  */
-function validateQueryParameters(params: VectorQueryParams, config: VectorQueryConfig): void {
+function validateQueryParameters(
+  params: VectorQueryParams,
+  config: VectorQueryConfig
+): void {
   if (!params.query && !params.embedding) {
     throw new VectorQueryError(
       'Either query text or embedding vector must be provided'
@@ -268,22 +285,21 @@ function validateQueryParameters(params: VectorQueryParams, config: VectorQueryC
     );
   }
 
-  if (params.embedding && (!Array.isArray(params.embedding) || params.embedding.length === 0)) {
+  if (
+    params.embedding &&
+    (!Array.isArray(params.embedding) || params.embedding.length === 0)
+  ) {
     throw new VectorQueryError(
       'Embedding vector must be a non-empty array of numbers'
     );
   }
 
   if (params.limit && (params.limit < 1 || params.limit > 1000)) {
-    throw new VectorQueryError(
-      'Limit must be between 1 and 1000'
-    );
+    throw new VectorQueryError('Limit must be between 1 and 1000');
   }
 
   if (params.threshold && (params.threshold < 0 || params.threshold > 1)) {
-    throw new VectorQueryError(
-      'Similarity threshold must be between 0 and 1'
-    );
+    throw new VectorQueryError('Similarity threshold must be between 0 and 1');
   }
 }
 
@@ -302,9 +318,12 @@ function prepareSearchOptions(
     where: mergeFilters(config.defaultFilters, params.filters),
     whereDocument: params.documentFilters,
     includeMetadata: params.includeMetadata ?? config.includeMetadata ?? true,
-    includeDocuments: params.includeDocuments ?? config.includeDocuments ?? true,
-    includeDistances: params.includeDistances ?? config.includeDistances ?? true,
-    includeEmbeddings: params.includeEmbeddings ?? config.includeEmbeddings ?? false,
+    includeDocuments:
+      params.includeDocuments ?? config.includeDocuments ?? true,
+    includeDistances:
+      params.includeDistances ?? config.includeDistances ?? true,
+    includeEmbeddings:
+      params.includeEmbeddings ?? config.includeEmbeddings ?? false,
   };
 
   // Apply similarity threshold if provided
@@ -312,16 +331,17 @@ function prepareSearchOptions(
     // Add distance filter based on threshold
     // This is implementation-specific to ChromaDB distance calculation
     const distanceThreshold = 1 - threshold; // Convert similarity to distance
-    if (options.where) {
-      options.where = {
-        $and: [
-          options.where,
-          { distance: { $lte: distanceThreshold } }
-        ]
-      };
-    } else {
-      options.where = { distance: { $lte: distanceThreshold } };
-    }
+    const updatedWhere = options.where
+      ? {
+          $and: [options.where, { distance: { $lte: distanceThreshold } }],
+        }
+      : { distance: { $lte: distanceThreshold } };
+
+    // Create new options object to avoid readonly property assignment
+    return {
+      ...options,
+      where: updatedWhere,
+    };
   }
 
   return options;
@@ -330,7 +350,10 @@ function prepareSearchOptions(
 /**
  * Merge multiple filter objects
  */
-function mergeFilters(defaultFilters?: Where, paramFilters?: Where): Where | undefined {
+function mergeFilters(
+  defaultFilters?: Where,
+  paramFilters?: Where
+): Where | undefined {
   if (!defaultFilters && !paramFilters) {
     return undefined;
   }
@@ -345,7 +368,7 @@ function mergeFilters(defaultFilters?: Where, paramFilters?: Where): Where | und
 
   // Merge both filters with AND logic
   return {
-    $and: [defaultFilters!, paramFilters!]
+    $and: [defaultFilters!, paramFilters!],
   };
 }
 
@@ -355,7 +378,7 @@ function mergeFilters(defaultFilters?: Where, paramFilters?: Where): Where | und
 async function handleVectorQueryError(
   error: any,
   config: VectorQueryConfig,
-  originalMethod: Function,
+  originalMethod: (...args: any[]) => any,
   args: any[]
 ): Promise<any> {
   const logger = new Logger('VectorQuery');
@@ -384,7 +407,10 @@ async function handleVectorQueryError(
           return await originalMethod.apply(this, args);
         } catch (fallbackError: unknown) {
           // If fallback also fails, throw  error
-          const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          const fallbackMessage =
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : String(fallbackError);
           throw new VectorQueryError(
             `Vector query failed: ${error.message}. Fallback also failed: ${fallbackMessage}`,
             { originalError: error, fallbackError }
@@ -400,7 +426,10 @@ async function handleVectorQueryError(
  * Custom error class for vector query operations
  */
 export class VectorQueryError extends Error {
-  constructor(message: string, public readonly context?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    public readonly context?: Record<string, unknown>
+  ) {
     super(message);
     this.name = 'VectorQueryError';
   }
@@ -517,7 +546,9 @@ export class VectorQueryBuilder<TDocument extends BaseDocument = BaseDocument> {
 /**
  * Utility function to create a vector query builder
  */
-export function createVectorQueryBuilder<TDocument extends BaseDocument = BaseDocument>(): VectorQueryBuilder<TDocument> {
+export function createVectorQueryBuilder<
+  TDocument extends BaseDocument = BaseDocument
+>(): VectorQueryBuilder<TDocument> {
   return new VectorQueryBuilder<TDocument>();
 }
 

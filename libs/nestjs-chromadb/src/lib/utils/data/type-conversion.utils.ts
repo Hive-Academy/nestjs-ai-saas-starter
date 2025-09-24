@@ -1,16 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { GetResult, Metadata } from 'chromadb';
+import { GetResult, Metadata, QueryResult } from 'chromadb';
 import { BaseDocument } from '../../types/core.interface';
 import {
   ChromaWireDocument,
   ChromaSearchResult,
   toChromaWireDocument,
-  fromChromaWireDocument,
+  getContentFromDocument,
+  createQueryResult,
+  normalizeMetadata,
 } from '../../types/core.interface';
 
 /**
  * Type Conversion Utilities
- * 
+ *
  * Handles conversion between ChromaDB raw types and typed documents
  * Eliminates duplicate code across services following DRY principle
  */
@@ -21,15 +23,19 @@ export class TypeConversionUtils {
   /**
    * Convert BaseDocument to ChromaWireDocument
    */
-  toChromaWireDocument<T extends BaseDocument>(document: T): ChromaWireDocument {
+  toChromaWireDocument<T extends BaseDocument>(
+    document: T
+  ): ChromaWireDocument {
     return toChromaWireDocument(document);
   }
 
   /**
    * Convert multiple BaseDocuments to ChromaWireDocuments
    */
-  toChromaWireDocuments<T extends BaseDocument>(documents: T[]): ChromaWireDocument[] {
-    return documents.map(doc => this.toChromaWireDocument(doc));
+  toChromaWireDocuments<T extends BaseDocument>(
+    documents: T[]
+  ): ChromaWireDocument[] {
+    return documents.map((doc) => this.toChromaWireDocument(doc));
   }
 
   /**
@@ -64,20 +70,22 @@ export class TypeConversionUtils {
    */
   parseDocuments<T extends BaseDocument>(result: GetResult): T[] {
     const documents: T[] = [];
-    
+
     for (let i = 0; i < result.ids.length; i++) {
       documents.push(this.parseDocument<T>(result, i));
     }
-    
+
     return documents;
   }
 
   /**
    * Parse search results into typed documents
    */
-  parseSearchResults<T extends BaseDocument>(searchResult: ChromaSearchResult): T[] {
+  parseSearchResults<T extends BaseDocument>(
+    searchResult: ChromaSearchResult
+  ): T[] {
     const documents: T[] = [];
-    
+
     if (!searchResult.documents?.[0]) {
       return documents;
     }
@@ -107,7 +115,7 @@ export class TypeConversionUtils {
         metadata: (metadata || {}) as Metadata,
       } as T);
     }
-    
+
     return documents;
   }
 
@@ -129,11 +137,11 @@ export class TypeConversionUtils {
     existingDocs: T[],
     updates: Array<{ id: string; data: Partial<T> }>
   ): ChromaWireDocument[] {
-    const updateMap = new Map(updates.map(u => [u.id, u.data]));
-    
+    const updateMap = new Map(updates.map((u) => [u.id, u.data]));
+
     return existingDocs
-      .filter(doc => updateMap.has(doc.id))
-      .map(doc => {
+      .filter((doc) => updateMap.has(doc.id))
+      .map((doc) => {
         const updateData = updateMap.get(doc.id)!;
         return this.createUpdatePayload(doc, updateData);
       });
@@ -170,53 +178,34 @@ export class TypeConversionUtils {
   }
 
   /**
-   * Validate and normalize metadata
+   * Validate and normalize metadata using core utility
    */
   normalizeMetadata(metadata: unknown): Metadata {
-    if (!metadata || typeof metadata !== 'object') {
-      return {};
-    }
-
-    const normalized: Metadata = {};
-    const obj = metadata as Record<string, unknown>;
-
-    for (const [key, value] of Object.entries(obj)) {
-      // ChromaDB only supports string, number, and boolean values
-      if (
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean'
-      ) {
-        normalized[key] = value;
-      } else if (value != null) {
-        // Convert other types to strings
-        try {
-          normalized[key] = String(value);
-        } catch (error) {
-          this.logger.warn(`Failed to convert metadata value for key ${key}: ${error}`);
-        }
-      }
-      // Skip null and undefined values
-    }
-
-    return normalized;
+    return normalizeMetadata(metadata);
   }
 
   /**
    * Create search result with consistent structure
+   * Uses the complete QueryResult interface with all properties
    */
-  createSearchResult<T extends BaseDocument>(
+  createSearchResult<TMetadata extends Metadata = Metadata>(
     ids: string[][],
-    documents: (string | null)[][] | null,
-    metadatas: (Metadata | null)[][] | null,
-    distances?: number[][] | null
-  ): ChromaSearchResult {
-    return {
+    documents?: (string | null)[][] | null,
+    metadatas?: (TMetadata | null)[][] | null,
+    distances?: (number | null)[][] | null,
+    embeddings?: (number[] | null)[][] | null,
+    include?: string[],
+    uris?: (string | null)[][] | null
+  ): ChromaSearchResult<TMetadata> {
+    return createQueryResult(
       ids,
       documents,
       metadatas,
       distances,
-    };
+      embeddings,
+      include,
+      uris
+    );
   }
 
   /**
@@ -232,15 +221,19 @@ export class TypeConversionUtils {
       ids: searchResult.ids[0] || [],
       documents: searchResult.documents?.[0] || [],
       metadatas: searchResult.metadatas?.[0] || [],
-      distances: searchResult.distances?.[0] || [],
+      distances:
+        searchResult.distances?.[0]?.filter((d): d is number => d !== null) ??
+        [],
     };
   }
 
   /**
    * Check if document needs embedding generation
+   * Uses union type handler to safely access content
    */
   needsEmbedding(document: ChromaWireDocument | BaseDocument): boolean {
-    return Boolean(document.document && !document.embedding);
+    const content = getContentFromDocument(document);
+    return Boolean(content && !document.embedding);
   }
 
   /**
@@ -249,7 +242,7 @@ export class TypeConversionUtils {
   filterDocumentsNeedingEmbeddings<T extends ChromaWireDocument | BaseDocument>(
     documents: T[]
   ): T[] {
-    return documents.filter(doc => this.needsEmbedding(doc));
+    return documents.filter((doc) => this.needsEmbedding(doc));
   }
 
   /**
@@ -260,12 +253,29 @@ export class TypeConversionUtils {
     embeddings: number[][]
   ): T[] {
     let embeddingIndex = 0;
-    
-    return documents.map(doc => {
+
+    return documents.map((doc) => {
       if (this.needsEmbedding(doc)) {
         return { ...doc, embedding: embeddings[embeddingIndex++] };
       }
       return doc;
     });
+  }
+
+  /**
+   * Convert raw result to complete QueryResult with all required properties
+   */
+  convertToQueryResult<TMetadata extends Metadata = Metadata>(
+    result: any
+  ): QueryResult<TMetadata> {
+    return createQueryResult<TMetadata>(
+      result.ids || [[]],
+      result.documents || [[]],
+      result.metadatas || [[]],
+      result.distances || [[]],
+      result.embeddings || [[]],
+      result.include || [],
+      result.uris || [[]]
+    );
   }
 }

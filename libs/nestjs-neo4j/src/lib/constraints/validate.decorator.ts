@@ -1,6 +1,6 @@
 /**
  * @fileoverview Validation constraint decorators for Neo4j
- * 
+ *
  * Implements comprehensive property validation including format validation,
  * range validation, length validation, and custom validation functions.
  * Provides runtime validation before database operations.
@@ -37,10 +37,10 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
 
 /**
  * @Validate property decorator for comprehensive property validation
- * 
+ *
  * Provides extensive validation capabilities including format validation,
  * range validation, length validation, and custom validation functions.
- * 
+ *
  * Features:
  * - Format validation (email, URL, UUID, regex patterns)
  * - Range validation for numeric values
@@ -48,7 +48,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  * - Custom validation functions
  * - Async validation support
  * - Detailed error reporting
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -61,7 +61,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *   })
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @Validate({
  *     validation: {
  *       range: { min: 18, max: 120 }
@@ -69,7 +69,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *   })
  *   @Neo4jProperty()
  *   age: number;
- * 
+ *
  *   @Validate({
  *     validation: {
  *       length: { min: 8, max: 100 },
@@ -81,7 +81,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *   })
  *   @Neo4jProperty()
  *   username: string;
- * 
+ *
  *   @Validate({
  *     validation: {
  *       format: { pattern: /^[A-Z]{2,4}$/, flags: 'i' },
@@ -92,13 +92,13 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *   countryCode: string;
  * }
  * ```
- * 
+ *
  * @param config - Validation configuration
  */
 export function Validate(config: ValidateConfig): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
     const propertyName = String(propertyKey);
-    
+
     // Validate configuration
     validateValidationConfig(propertyName, config);
 
@@ -107,31 +107,52 @@ export function Validate(config: ValidateConfig): PropertyDecorator {
     const label = entityMetadata?.label || target.constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<ValidationConstraintMetadata>({
-      type: 'VALIDATION',
-      target: 'property',
-      properties: [propertyName],
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_${propertyName}_validation`,
-        errorMessage: config.errorMessage || `Validation failed for property '${propertyName}'`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        validation: config.validation,
-      },
-      description: config.description || `Validation constraint on ${label}.${propertyName}`,
-    });
+    const constraintMetadata =
+      createConstraintMetadata<ValidationConstraintMetadata>({
+        type: 'VALIDATION',
+        target: 'property',
+        properties: [propertyName],
+        label,
+        options: {
+          name:
+            config.name || `${label.toLowerCase()}_${propertyName}_validation`,
+          errorMessage:
+            config.errorMessage ||
+            `Validation failed for property '${propertyName}'`,
+          createOnStartup: config.createOnStartup !== false, // Default to true
+          validation: config.validation,
+        },
+        description:
+          config.description ||
+          `Validation constraint on ${label}.${propertyName}`,
+      });
 
     // Store constraint metadata on the property
-    const existingPropertyConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, target) || new Map();
-    const propertyConstraints = existingPropertyConstraints.get(propertyKey) || [];
+    const existingPropertyConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+        target
+      ) || new Map();
+    const propertyConstraints =
+      existingPropertyConstraints.get(propertyKey) || [];
     propertyConstraints.push(constraintMetadata);
     existingPropertyConstraints.set(propertyKey, propertyConstraints);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, existingPropertyConstraints)(target);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+      existingPropertyConstraints
+    )(target);
 
     // Also store in validation constraints collection
-    const existingValidationConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.VALIDATION, target.constructor) || [];
+    const existingValidationConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.VALIDATION,
+        target.constructor
+      ) || [];
     existingValidationConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.VALIDATION, existingValidationConstraints)(target.constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.VALIDATION,
+      existingValidationConstraints
+    )(target.constructor);
 
     // Add validation methods to the prototype
     addValidationMethods(target, constraintMetadata);
@@ -145,7 +166,9 @@ export function Validate(config: ValidateConfig): PropertyDecorator {
 /**
  * @Email decorator for email validation
  */
-export function Email(config: Omit<ValidateConfig, 'validation'> = {}): PropertyDecorator {
+export function Email(
+  config: Omit<ValidateConfig, 'validation'> = {}
+): PropertyDecorator {
   return Validate({
     ...config,
     validation: {
@@ -159,7 +182,9 @@ export function Email(config: Omit<ValidateConfig, 'validation'> = {}): Property
 /**
  * @Url decorator for URL validation
  */
-export function Url(config: Omit<ValidateConfig, 'validation'> = {}): PropertyDecorator {
+export function Url(
+  config: Omit<ValidateConfig, 'validation'> = {}
+): PropertyDecorator {
   return Validate({
     ...config,
     validation: {
@@ -173,7 +198,9 @@ export function Url(config: Omit<ValidateConfig, 'validation'> = {}): PropertyDe
 /**
  * @Uuid decorator for UUID validation
  */
-export function Uuid(config: Omit<ValidateConfig, 'validation'> = {}): PropertyDecorator {
+export function Uuid(
+  config: Omit<ValidateConfig, 'validation'> = {}
+): PropertyDecorator {
   return Validate({
     ...config,
     validation: {
@@ -197,7 +224,9 @@ export function Range(
       range,
       required: true,
     },
-    errorMessage: config.errorMessage || `Must be between ${range.min || '-∞'} and ${range.max || '∞'}`,
+    errorMessage:
+      config.errorMessage ||
+      `Must be between ${range.min || '-∞'} and ${range.max || '∞'}`,
   });
 }
 
@@ -214,7 +243,9 @@ export function Length(
       length,
       required: true,
     },
-    errorMessage: config.errorMessage || `Length must be between ${length.min || 0} and ${length.max || '∞'}`,
+    errorMessage:
+      config.errorMessage ||
+      `Length must be between ${length.min || 0} and ${length.max || '∞'}`,
   });
 }
 
@@ -248,7 +279,8 @@ export function Custom(
       custom: validator,
       required: true,
     },
-    errorMessage: config.errorMessage || validator.message || 'Custom validation failed',
+    errorMessage:
+      config.errorMessage || validator.message || 'Custom validation failed',
   });
 }
 
@@ -264,7 +296,11 @@ function addValidationMethods(
 
   // Add validation method
   if (!prototype[methodName]) {
-    prototype[methodName] = async function (): Promise<{ valid: boolean; errors: string[]; value?: any }> {
+    prototype[methodName] = async function (): Promise<{
+      valid: boolean;
+      errors: string[];
+      value?: any;
+    }> {
       const errors: string[] = [];
       const value = this[propertyName];
       const validation = constraintMetadata.options.validation;
@@ -282,7 +318,11 @@ function addValidationMethods(
 
       // Format validation
       if (validation.format) {
-        const formatResult = validateFormat(value, validation.format, propertyName);
+        const formatResult = validateFormat(
+          value,
+          validation.format,
+          propertyName
+        );
         if (!formatResult.valid) {
           errors.push(...formatResult.errors);
         }
@@ -290,7 +330,11 @@ function addValidationMethods(
 
       // Range validation
       if (validation.range) {
-        const rangeResult = validateRange(value, validation.range, propertyName);
+        const rangeResult = validateRange(
+          value,
+          validation.range,
+          propertyName
+        );
         if (!rangeResult.valid) {
           errors.push(...rangeResult.errors);
         }
@@ -298,7 +342,11 @@ function addValidationMethods(
 
       // Length validation
       if (validation.length) {
-        const lengthResult = validateLength(value, validation.length, propertyName);
+        const lengthResult = validateLength(
+          value,
+          validation.length,
+          propertyName
+        );
         if (!lengthResult.valid) {
           errors.push(...lengthResult.errors);
         }
@@ -306,7 +354,12 @@ function addValidationMethods(
 
       // Custom validation
       if (validation.custom) {
-        const customResult = await validateCustom(value, validation.custom, propertyName, this);
+        const customResult = await validateCustom(
+          value,
+          validation.custom,
+          propertyName,
+          this
+        );
         if (!customResult.valid) {
           errors.push(...customResult.errors);
         }
@@ -323,7 +376,11 @@ function addValidationMethods(
   // Add sync validation method (for non-async validations)
   const syncMethodName = `validatePropertySync_${propertyName}`;
   if (!prototype[syncMethodName]) {
-    prototype[syncMethodName] = function (): { valid: boolean; errors: string[]; value?: any } {
+    prototype[syncMethodName] = function (): {
+      valid: boolean;
+      errors: string[];
+      value?: any;
+    } {
       const errors: string[] = [];
       const value = this[propertyName];
       const validation = constraintMetadata.options.validation;
@@ -341,7 +398,11 @@ function addValidationMethods(
 
       // Format validation
       if (validation.format) {
-        const formatResult = validateFormat(value, validation.format, propertyName);
+        const formatResult = validateFormat(
+          value,
+          validation.format,
+          propertyName
+        );
         if (!formatResult.valid) {
           errors.push(...formatResult.errors);
         }
@@ -349,7 +410,11 @@ function addValidationMethods(
 
       // Range validation
       if (validation.range) {
-        const rangeResult = validateRange(value, validation.range, propertyName);
+        const rangeResult = validateRange(
+          value,
+          validation.range,
+          propertyName
+        );
         if (!rangeResult.valid) {
           errors.push(...rangeResult.errors);
         }
@@ -357,7 +422,11 @@ function addValidationMethods(
 
       // Length validation
       if (validation.length) {
-        const lengthResult = validateLength(value, validation.length, propertyName);
+        const lengthResult = validateLength(
+          value,
+          validation.length,
+          propertyName
+        );
         if (!lengthResult.valid) {
           errors.push(...lengthResult.errors);
         }
@@ -370,10 +439,17 @@ function addValidationMethods(
           if (typeof result === 'string') {
             errors.push(result);
           } else if (result === false) {
-            errors.push(validation.custom.message || `Custom validation failed for '${propertyName}'`);
+            errors.push(
+              validation.custom.message ||
+                `Custom validation failed for '${propertyName}'`
+            );
           }
         } catch (error) {
-          errors.push(`Custom validation error for '${propertyName}': ${error instanceof Error ? error.message : String(error)}`);
+          errors.push(
+            `Custom validation error for '${propertyName}': ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
         }
       }
 
@@ -389,11 +465,17 @@ function addValidationMethods(
 /**
  * Format validation implementation
  */
-function validateFormat(value: any, format: ValidationFormat, propertyName: string): { valid: boolean; errors: string[] } {
+function validateFormat(
+  value: any,
+  format: ValidationFormat,
+  propertyName: string
+): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   if (typeof value !== 'string') {
-    errors.push(`Property '${propertyName}' must be a string for format validation`);
+    errors.push(
+      `Property '${propertyName}' must be a string for format validation`
+    );
     return { valid: false, errors };
   }
 
@@ -407,11 +489,13 @@ function validateFormat(value: any, format: ValidationFormat, propertyName: stri
         errorMessage = 'Must be a valid email address';
         break;
       case 'url':
-        regex = /^https?:\/\/(?:[-\w.])+(?:[:\d]+)?(?:\/(?:[\w._~!$&'()*+,;=:@]|%[\da-f]{2})*)*(?:\?(?:[\w._~!$&'()*+,;=:@/?]|%[\da-f]{2})*)?(?:#(?:[\w._~!$&'()*+,;=:@/?]|%[\da-f]{2})*)?$/i;
+        regex =
+          /^https?:\/\/(?:[-\w.])+(?:[:\d]+)?(?:\/(?:[\w._~!$&'()*+,;=:@]|%[\da-f]{2})*)*(?:\?(?:[\w._~!$&'()*+,;=:@/?]|%[\da-f]{2})*)?(?:#(?:[\w._~!$&'()*+,;=:@/?]|%[\da-f]{2})*)?$/i;
         errorMessage = 'Must be a valid URL';
         break;
       case 'uuid':
-        regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        regex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         errorMessage = 'Must be a valid UUID';
         break;
       case 'date':
@@ -419,7 +503,8 @@ function validateFormat(value: any, format: ValidationFormat, propertyName: stri
         errorMessage = 'Must be a valid date (YYYY-MM-DD)';
         break;
       case 'datetime':
-        regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
+        regex =
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
         errorMessage = 'Must be a valid datetime (ISO 8601)';
         break;
       case 'time':
@@ -427,11 +512,11 @@ function validateFormat(value: any, format: ValidationFormat, propertyName: stri
         errorMessage = 'Must be a valid time (HH:MM:SS)';
         break;
       case 'phone':
-        regex = /^\+?[\d\s\-\(\)]+$/;
+        regex = /^\+?[\d\s\-()]+$/;
         errorMessage = 'Must be a valid phone number';
         break;
       case 'creditcard':
-        regex = /^\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}$/;
+        regex = /^\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}$/;
         errorMessage = 'Must be a valid credit card number';
         break;
       case 'json':
@@ -470,17 +555,25 @@ function validateFormat(value: any, format: ValidationFormat, propertyName: stri
 /**
  * Range validation implementation
  */
-function validateRange(value: any, range: RangeValidation, propertyName: string): { valid: boolean; errors: string[] } {
+function validateRange(
+  value: any,
+  range: RangeValidation,
+  propertyName: string
+): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   if (typeof value !== 'number') {
-    errors.push(`Property '${propertyName}' must be a number for range validation`);
+    errors.push(
+      `Property '${propertyName}' must be a number for range validation`
+    );
     return { valid: false, errors };
   }
 
   if (range.min !== undefined) {
     if (range.exclusive && value <= range.min) {
-      errors.push(`Property '${propertyName}' must be greater than ${range.min}`);
+      errors.push(
+        `Property '${propertyName}' must be greater than ${range.min}`
+      );
     } else if (!range.exclusive && value < range.min) {
       errors.push(`Property '${propertyName}' must be at least ${range.min}`);
     }
@@ -503,7 +596,11 @@ function validateRange(value: any, range: RangeValidation, propertyName: string)
 /**
  * Length validation implementation
  */
-function validateLength(value: any, length: LengthValidation, propertyName: string): { valid: boolean; errors: string[] } {
+function validateLength(
+  value: any,
+  length: LengthValidation,
+  propertyName: string
+): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   let valueLength: number;
@@ -513,13 +610,17 @@ function validateLength(value: any, length: LengthValidation, propertyName: stri
   } else if (Array.isArray(value)) {
     valueLength = value.length;
   } else {
-    errors.push(`Property '${propertyName}' must be a string or array for length validation`);
+    errors.push(
+      `Property '${propertyName}' must be a string or array for length validation`
+    );
     return { valid: false, errors };
   }
 
   if (length.exact !== undefined) {
     if (valueLength !== length.exact) {
-      errors.push(`Property '${propertyName}' must be exactly ${length.exact} characters/items long`);
+      errors.push(
+        `Property '${propertyName}' must be exactly ${length.exact} characters/items long`
+      );
     }
     return {
       valid: errors.length === 0,
@@ -528,11 +629,15 @@ function validateLength(value: any, length: LengthValidation, propertyName: stri
   }
 
   if (length.min !== undefined && valueLength < length.min) {
-    errors.push(`Property '${propertyName}' must be at least ${length.min} characters/items long`);
+    errors.push(
+      `Property '${propertyName}' must be at least ${length.min} characters/items long`
+    );
   }
 
   if (length.max !== undefined && valueLength > length.max) {
-    errors.push(`Property '${propertyName}' must be at most ${length.max} characters/items long`);
+    errors.push(
+      `Property '${propertyName}' must be at most ${length.max} characters/items long`
+    );
   }
 
   return {
@@ -558,10 +663,16 @@ async function validateCustom(
     if (typeof result === 'string') {
       errors.push(result);
     } else if (result === false) {
-      errors.push(custom.message || `Custom validation failed for '${propertyName}'`);
+      errors.push(
+        custom.message || `Custom validation failed for '${propertyName}'`
+      );
     }
   } catch (error) {
-    errors.push(`Custom validation error for '${propertyName}': ${error instanceof Error ? error.message : String(error)}`);
+    errors.push(
+      `Custom validation error for '${propertyName}': ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 
   return {
@@ -573,7 +684,10 @@ async function validateCustom(
 /**
  * Validate validation constraint configuration
  */
-function validateValidationConfig(propertyName: string, config: ValidateConfig): void {
+function validateValidationConfig(
+  propertyName: string,
+  config: ValidateConfig
+): void {
   if (!propertyName || typeof propertyName !== 'string') {
     throw new Error('Validate decorator requires a valid property name');
   }
@@ -587,15 +701,31 @@ function validateValidationConfig(propertyName: string, config: ValidateConfig):
   // Validate format configuration
   if (validation.format) {
     if (typeof validation.format === 'string') {
-      const validFormats = ['email', 'url', 'uuid', 'date', 'datetime', 'time', 'phone', 'creditcard', 'json'];
+      const validFormats = [
+        'email',
+        'url',
+        'uuid',
+        'date',
+        'datetime',
+        'time',
+        'phone',
+        'creditcard',
+        'json',
+      ];
       if (!validFormats.includes(validation.format)) {
         throw new Error(`Invalid format type: ${validation.format}`);
       }
     } else if (typeof validation.format === 'object') {
-      if ('pattern' in validation.format && !(validation.format.pattern instanceof RegExp)) {
+      if (
+        'pattern' in validation.format &&
+        !(validation.format.pattern instanceof RegExp)
+      ) {
         throw new Error('Format pattern must be a RegExp');
       }
-      if ('regex' in validation.format && typeof validation.format.regex !== 'string') {
+      if (
+        'regex' in validation.format &&
+        typeof validation.format.regex !== 'string'
+      ) {
         throw new Error('Format regex must be a string');
       }
     } else {
@@ -608,13 +738,23 @@ function validateValidationConfig(propertyName: string, config: ValidateConfig):
     if (typeof validation.range !== 'object') {
       throw new Error('Range validation must be an object');
     }
-    if (validation.range.min !== undefined && typeof validation.range.min !== 'number') {
+    if (
+      validation.range.min !== undefined &&
+      typeof validation.range.min !== 'number'
+    ) {
       throw new Error('Range min must be a number');
     }
-    if (validation.range.max !== undefined && typeof validation.range.max !== 'number') {
+    if (
+      validation.range.max !== undefined &&
+      typeof validation.range.max !== 'number'
+    ) {
       throw new Error('Range max must be a number');
     }
-    if (validation.range.min !== undefined && validation.range.max !== undefined && validation.range.min > validation.range.max) {
+    if (
+      validation.range.min !== undefined &&
+      validation.range.max !== undefined &&
+      validation.range.min > validation.range.max
+    ) {
       throw new Error('Range min cannot be greater than max');
     }
   }
@@ -624,16 +764,29 @@ function validateValidationConfig(propertyName: string, config: ValidateConfig):
     if (typeof validation.length !== 'object') {
       throw new Error('Length validation must be an object');
     }
-    if (validation.length.min !== undefined && typeof validation.length.min !== 'number') {
+    if (
+      validation.length.min !== undefined &&
+      typeof validation.length.min !== 'number'
+    ) {
       throw new Error('Length min must be a number');
     }
-    if (validation.length.max !== undefined && typeof validation.length.max !== 'number') {
+    if (
+      validation.length.max !== undefined &&
+      typeof validation.length.max !== 'number'
+    ) {
       throw new Error('Length max must be a number');
     }
-    if (validation.length.exact !== undefined && typeof validation.length.exact !== 'number') {
+    if (
+      validation.length.exact !== undefined &&
+      typeof validation.length.exact !== 'number'
+    ) {
       throw new Error('Length exact must be a number');
     }
-    if (validation.length.min !== undefined && validation.length.max !== undefined && validation.length.min > validation.length.max) {
+    if (
+      validation.length.min !== undefined &&
+      validation.length.max !== undefined &&
+      validation.length.min > validation.length.max
+    ) {
       throw new Error('Length min cannot be greater than max');
     }
   }
@@ -646,7 +799,10 @@ function validateValidationConfig(propertyName: string, config: ValidateConfig):
     if (typeof validation.custom.validator !== 'function') {
       throw new Error('Custom validator must be a function');
     }
-    if (validation.custom.message && typeof validation.custom.message !== 'string') {
+    if (
+      validation.custom.message &&
+      typeof validation.custom.message !== 'string'
+    ) {
       throw new Error('Custom validation message must be a string');
     }
   }
@@ -655,8 +811,12 @@ function validateValidationConfig(propertyName: string, config: ValidateConfig):
 /**
  * Utility function to extract validation constraints from a class
  */
-export function getValidationConstraints(constructor: any): ValidationConstraintMetadata[] {
-  return Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.VALIDATION, constructor) || [];
+export function getValidationConstraints(
+  constructor: any
+): ValidationConstraintMetadata[] {
+  return (
+    Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.VALIDATION, constructor) || []
+  );
 }
 
 /**
@@ -669,7 +829,9 @@ export function hasValidationConstraints(constructor: any): boolean {
 /**
  * Utility to validate all validation constraints on an entity
  */
-export async function validateAllValidationConstraints(entity: any): Promise<{ valid: boolean; errors: string[] }> {
+export async function validateAllValidationConstraints(
+  entity: any
+): Promise<{ valid: boolean; errors: string[] }> {
   const constructor = entity.constructor;
   const constraints = getValidationConstraints(constructor);
   const allErrors: string[] = [];
@@ -677,7 +839,7 @@ export async function validateAllValidationConstraints(entity: any): Promise<{ v
   for (const constraint of constraints) {
     const propertyName = constraint.properties[0];
     const methodName = `validateProperty_${propertyName}`;
-    
+
     if (typeof entity[methodName] === 'function') {
       const result = await entity[methodName]();
       if (!result.valid) {
@@ -695,7 +857,10 @@ export async function validateAllValidationConstraints(entity: any): Promise<{ v
 /**
  * Utility to validate all validation constraints synchronously
  */
-export function validateAllValidationConstraintsSync(entity: any): { valid: boolean; errors: string[] } {
+export function validateAllValidationConstraintsSync(entity: any): {
+  valid: boolean;
+  errors: string[];
+} {
   const constructor = entity.constructor;
   const constraints = getValidationConstraints(constructor);
   const allErrors: string[] = [];
@@ -703,7 +868,7 @@ export function validateAllValidationConstraintsSync(entity: any): { valid: bool
   for (const constraint of constraints) {
     const propertyName = constraint.properties[0];
     const methodName = `validatePropertySync_${propertyName}`;
-    
+
     if (typeof entity[methodName] === 'function') {
       const result = entity[methodName]();
       if (!result.valid) {

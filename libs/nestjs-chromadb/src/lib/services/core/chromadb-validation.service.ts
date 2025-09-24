@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Metadata as ChromaMetadata } from 'chromadb';
 import type {
   ChromaBulkOptions,
   ChromaSearchOptions,
@@ -6,7 +7,7 @@ import type {
   ValidationResult,
 } from '../../types/core.interface';
 import { IChromaValidation } from '../../interfaces/core/database-abstractions.interface';
-import type { BaseDocument } from '../../types/document-types.interface';
+import type { BaseDocument } from '../../types/core.interface';
 import { DocumentValidatorService } from './validation/document-validator.service';
 import { OptionsValidatorService } from './validation/options-validator.service';
 import { DocumentSanitizerService } from './validation/document-sanitizer.service';
@@ -93,7 +94,11 @@ export class ChromaDBValidationService implements IChromaValidation {
     schema?: DocumentValidationSchema,
     throwOnError = true
   ): T[] {
-    return this.documentSanitizer.validateAndSanitize(documents, schema, throwOnError);
+    return this.documentSanitizer.validateAndSanitize(
+      documents,
+      schema,
+      throwOnError
+    );
   }
 
   /**

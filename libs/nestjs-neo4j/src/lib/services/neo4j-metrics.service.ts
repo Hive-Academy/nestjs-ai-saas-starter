@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type {
   QueryMetrics,
   ConnectionPoolMetrics,
@@ -12,7 +12,6 @@ import type {
  */
 @Injectable()
 export class Neo4jMetricsService {
-  private readonly logger = new Logger(Neo4jMetricsService.name);
   private readonly queryMetrics: Map<string, QueryMetrics[]> = new Map();
   private readonly connectionMetrics: ConnectionPoolMetrics;
   private queryCounter = 0;
@@ -29,6 +28,37 @@ export class Neo4jMetricsService {
       averageConnectionTime: 0,
       lastResetTime: new Date(),
     };
+  }
+
+  /**
+   * Track a session acquisition (approximation of pool usage)
+   */
+  incrementActiveSessions(): void {
+    this.connectionMetrics.activeConnections++;
+    this.connectionMetrics.totalConnections = Math.max(
+      this.connectionMetrics.totalConnections,
+      this.connectionMetrics.activeConnections
+    );
+    this.connectionMetrics.idleConnections = Math.max(
+      0,
+      this.connectionMetrics.totalConnections -
+        this.connectionMetrics.activeConnections
+    );
+  }
+
+  /**
+   * Track a session release
+   */
+  decrementActiveSessions(): void {
+    this.connectionMetrics.activeConnections = Math.max(
+      0,
+      this.connectionMetrics.activeConnections - 1
+    );
+    this.connectionMetrics.idleConnections = Math.max(
+      0,
+      this.connectionMetrics.totalConnections -
+        this.connectionMetrics.activeConnections
+    );
   }
 
   /**

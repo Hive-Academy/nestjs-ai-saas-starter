@@ -7,6 +7,19 @@ export type {
   OperationMetrics as ChromaDBOperationMetrics,
 } from './lib/services/chromadb.service';
 export { ChromaDBService } from './lib/services/chromadb.service';
+
+// Facade Services (new specialized services)
+export { ChromaDBService as ChromaDBFacadeService } from './lib/services/chromadb-facade.service';
+// Removed duplicate PerformanceConfig import - using only line 49
+export { ChromaDBPerformanceService } from './lib/services/facade/chromadb-performance.service';
+export type { EmbeddingProcessingOptions } from './lib/services/facade/chromadb-embedding-processor.service';
+export { ChromaDBEmbeddingProcessorService } from './lib/services/facade/chromadb-embedding-processor.service';
+
+// Repository Operations (new split components)
+export { CrudOperations } from './lib/decorators/repository/operations/crud-operations';
+export { SearchOperations } from './lib/decorators/repository/operations/search-operations';
+export { AggregationOperations } from './lib/decorators/repository/operations/aggregation-operations';
+export { RepositoryHelpers } from './lib/decorators/repository/operations/repository-helpers';
 export * from './lib/services/core/collection.service';
 export * from './lib/services/embedding.service';
 export * from './lib/services/chroma-admin.service';
@@ -16,7 +29,32 @@ export * from './lib/services/metadata-extractor.service';
 //  Services
 export type { AggregatedMetrics } from './lib/services/chroma-metrics.service';
 export { ChromaMetricsService } from './lib/services/chroma-metrics.service';
-export { ChromaCacheService } from './lib/services/chroma-cache.service';
+// Caching services - separate exports for services and types
+export {
+  ChromaCacheService,
+  CacheOperationsService,
+  CacheStatisticsService,
+  CacheCleanupService,
+  VectorCacheService,
+  CacheKeyGeneratorService,
+  TtlCalculatorService,
+  SizeEstimatorService,
+} from './lib/services/caching';
+
+export type {
+  ICacheOperations,
+  ICacheStatistics,
+  ICacheCleanup,
+  IVectorCacheOperations,
+  ICacheKeyGenerator,
+  ITtlCalculator,
+  CacheStatistics,
+  VectorStatistics,
+  HealthStatus,
+  CacheEntry,
+  CacheConfig,
+  MutableCacheStats,
+} from './lib/services/caching';
 
 // Service Interfaces (now use consolidated types)
 export type { ChromaDBServiceInterface } from './lib/interfaces/chromadb-service.interface';
@@ -65,7 +103,6 @@ export type {
   isChromaWireDocument,
 } from './lib/types/core.interface';
 
-
 // Decorators - Core Ecosystem
 export * from './lib/decorators';
 
@@ -98,6 +135,14 @@ export {
   validateMetadataSchema,
   type MetadataSchema,
 } from './lib/utils/metadata.utils';
+export {
+  handleUnknownError,
+  logUnknownError,
+  getErrorMessage,
+  getErrorStack,
+  createTypedError,
+  type ErrorContext,
+} from './lib/utils/error-handling.utils';
 
 // Errors
 export * from './lib/errors/chromadb.errors';

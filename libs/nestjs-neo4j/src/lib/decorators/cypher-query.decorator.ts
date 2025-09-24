@@ -14,19 +14,33 @@ export interface CypherQueryConfig<
   TReturn = any,
   TParams = Record<string, any>
 > {
-  /** Cypher query string */
-  query: string;
-  /** Return type factory function */
+  /** Return type factory function (used to transform records) */
   returnType?: () => TReturn;
-  /** Query execution options */
+  /** Query execution options (cache / retry / metrics / access mode) */
   options?: QueryExecutionOptions;
   /** Parameter validation options */
   validation?: ValidationOptions;
-  /** Description for documentation */
+  /** Static description (can be overridden inline) */
   description?: string;
-  /** Tags for categorization */
+  /** Static tags (merged with inline tags) */
   tags?: string[];
 }
+
+// Inline return shapes supported by the decorator implementation
+type InlineCypherShape =
+  | string
+  | {
+      query: string;
+      params?: Record<string, any>;
+      description?: string;
+      tags?: string[];
+    }
+  | {
+      cypher: string;
+      parameters?: Record<string, any>;
+      description?: string;
+      tags?: string[];
+    }; // query builder compatibility
 
 /**
  *  @CypherQuery decorator for type-safe Cypher query execution
@@ -65,13 +79,10 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) {
-    // Validate configuration
-    validateCypherQueryConfig(config);
-
-    // Store metadata for runtime use
+    // Initial metadata placeholder; actual query captured at runtime for inline DX
     const metadata: QueryMethodConfig = {
       id: `${target.constructor.name}.${String(propertyKey)}`,
-      query: config.query,
+      query: '<INLINE>',
       description: config.description,
       tags: config.tags,
       enabled: true,
@@ -95,7 +106,7 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
     // Store original method for potential chaining
     const originalMethod = descriptor.value;
 
-    // Replace method implementation with  query executor
+    // Replace method implementation with inline query executor
     descriptor.value = async function (this: any, ...args: any[]) {
       // Get the Neo4j service instance
       const neo4jService = this.getNeo4jService?.() || this.neo4jService;
@@ -104,9 +115,35 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
           `Neo4j service not found. Ensure your class has a 'neo4jService' property or 'getNeo4jService()' method.`
         );
       }
+      // Execute original method to obtain inline query definition
+      let inlineResult: InlineCypherShape;
+      try {
+        inlineResult = await originalMethod.apply(this, args);
+      } catch (e) {
+        throw new Error(
+          `Failed executing inline query factory for ${metadata.id}: ${
+            e instanceof Error ? e.message : String(e)
+          }`
+        );
+      }
 
-      // Extract parameters from method arguments
-      const params = extractParameters(args, String(propertyKey));
+      const { finalQuery, finalParams, inlineDescription, inlineTags } =
+        normalizeInlineShape(inlineResult, args);
+
+      // Update metadata snapshot (non-mutating for other decorators, but helpful for introspection)
+      metadata.query = finalQuery;
+      if (inlineDescription) metadata.description = inlineDescription;
+      if (inlineTags?.length) {
+        metadata.tags = Array.from(
+          new Set([...(metadata.tags || []), ...inlineTags])
+        );
+      }
+
+      validateInlineQuery(finalQuery);
+
+      // Extract parameters; explicit params from inline shape override auto extraction
+      const params =
+        finalParams ?? extractParameters(args, String(propertyKey));
 
       // Validate parameters if validation is enabled
       if (metadata.validation?.enabled !== false) {
@@ -114,22 +151,11 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
       }
 
       try {
-        // Execute query with  service if available
-        let result;
-        if (typeof neo4jService.run === 'function') {
-          result = await neo4jService.run(
-            metadata.query,
-            params,
-            metadata.options
-          );
-        } else {
-          // Fallback to standard service
-          result = await neo4jService.run(
-            metadata.query,
-            params,
-            metadata.options
-          );
-        }
+        const result = await neo4jService.run(
+          metadata.query,
+          params,
+          metadata.options
+        );
 
         // Transform result based on return type configuration
         return transformResult(result, metadata.returnType);
@@ -162,14 +188,14 @@ export function CypherQuery<TReturn = any, TParams = Record<string, any>>(
 /**
  * Simplified @Query decorator for basic queries
  */
+// Deprecated shortcut removed – DX now prefers inline explicit query in method body.
 export function Query<TReturn = any>(
-  query: string,
-  options?: Omit<CypherQueryConfig<TReturn>, 'query'>
+  _query: string,
+  _options?: Omit<CypherQueryConfig<TReturn>, 'returnType'>
 ): MethodDecorator {
-  return CypherQuery({
-    query,
-    ...options,
-  });
+  throw new Error(
+    'Query() shortcut removed. Use @CypherQuery() with inline return instead.'
+  );
 }
 
 /**
@@ -182,13 +208,23 @@ export function FindOne<TEntity>(
   const label = getEntityLabel(entityType);
   const query = `MATCH (n:${label} {id: $id}) RETURN n LIMIT 1`;
 
-  return CypherQuery({
-    query,
-    returnType: entityType,
-    description: `Find single ${label} by ID`,
-    tags: ['findOne', 'read'],
-    ...options,
-  });
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    CypherQuery({
+      returnType: entityType,
+      description: `Find single ${label} by ID`,
+      tags: ['findOne', 'read', ...(options?.tags || [])],
+      options: options?.options,
+      validation: options?.validation,
+    })(target, propertyKey, descriptor);
+    const original = descriptor.value;
+    descriptor.value = function (this: any, params: { id: string }) {
+      return { query, params };
+    };
+  };
 }
 
 /**
@@ -201,13 +237,22 @@ export function FindMany<TEntity>(
   const label = getEntityLabel(entityType);
   const query = `MATCH (n:${label}) WHERE n.executionId = $executionId RETURN n`;
 
-  return CypherQuery({
-    query,
-    returnType: () => [entityType()] as TEntity[],
-    description: `Find multiple ${label} entities`,
-    tags: ['findMany', 'read'],
-    ...options,
-  });
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    CypherQuery({
+      returnType: () => [entityType()] as TEntity[],
+      description: `Find multiple ${label} entities`,
+      tags: ['findMany', 'read', ...(options?.tags || [])],
+      options: options?.options,
+      validation: options?.validation,
+    })(target, propertyKey, descriptor);
+    descriptor.value = function (this: any, params: { executionId: string }) {
+      return { query, params };
+    };
+  };
 }
 
 /**
@@ -220,17 +265,22 @@ export function Create<TEntity>(
   const label = getEntityLabel(entityType);
   const query = `CREATE (n:${label} $data) RETURN n`;
 
-  return CypherQuery({
-    query,
-    returnType: entityType,
-    description: `Create new ${label} entity`,
-    tags: ['create', 'write'],
-    options: {
-      ...options?.options,
-      accessMode: 'WRITE',
-    },
-    ...options,
-  });
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    CypherQuery({
+      returnType: entityType,
+      description: `Create new ${label} entity`,
+      tags: ['create', 'write', ...(options?.tags || [])],
+      options: { ...(options?.options || {}), accessMode: 'WRITE' },
+      validation: options?.validation,
+    })(target, propertyKey, descriptor);
+    descriptor.value = function (this: any, data: any) {
+      return { query, params: { data } };
+    };
+  };
 }
 
 /**
@@ -243,17 +293,25 @@ export function Update<TEntity>(
   const label = getEntityLabel(entityType);
   const query = `MATCH (n:${label} {id: $id}) SET n += $updates RETURN n`;
 
-  return CypherQuery({
-    query,
-    returnType: entityType,
-    description: `Update ${label} entity`,
-    tags: ['update', 'write'],
-    options: {
-      ...options?.options,
-      accessMode: 'WRITE',
-    },
-    ...options,
-  });
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    CypherQuery({
+      returnType: entityType,
+      description: `Update ${label} entity`,
+      tags: ['update', 'write', ...(options?.tags || [])],
+      options: { ...(options?.options || {}), accessMode: 'WRITE' },
+      validation: options?.validation,
+    })(target, propertyKey, descriptor);
+    descriptor.value = function (
+      this: any,
+      params: { id: string; updates: any }
+    ) {
+      return { query, params };
+    };
+  };
 }
 
 /**
@@ -266,34 +324,34 @@ export function Delete(
   const label = getEntityLabel(entityType);
   const query = `MATCH (n:${label} {id: $id}) DELETE n RETURN count(n) > 0 as deleted`;
 
-  return CypherQuery({
-    query,
-    returnType: () => Boolean,
-    description: `Delete ${label} entity`,
-    tags: ['delete', 'write'],
-    options: {
-      ...options?.options,
-      accessMode: 'WRITE',
-    },
-    ...options,
-  });
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    CypherQuery({
+      returnType: () => Boolean,
+      description: `Delete ${label} entity`,
+      tags: ['delete', 'write', ...(options?.tags || [])],
+      options: { ...(options?.options || {}), accessMode: 'WRITE' },
+      validation: options?.validation,
+    })(target, propertyKey, descriptor);
+    descriptor.value = function (this: any, params: { id: string }) {
+      return { query, params };
+    };
+  };
 }
-
-/**
- * Validate CypherQuery configuration
- */
-function validateCypherQueryConfig(config: CypherQueryConfig): void {
-  if (!config.query || typeof config.query !== 'string') {
-    throw new Error('CypherQuery decorator requires a valid query string');
+// Validation for inline mode after extraction
+function validateInlineQuery(query: string): void {
+  if (!query || typeof query !== 'string') {
+    throw new Error('Inline Cypher query must be a non-empty string');
   }
-
-  if (config.query.trim().length === 0) {
-    throw new Error('CypherQuery cannot be empty');
+  const trimmed = query.trim();
+  if (trimmed.length === 0) {
+    throw new Error('Inline Cypher query cannot be empty');
   }
-
-  // Basic Cypher syntax validation
-  const normalizedQuery = config.query.toLowerCase().trim();
-  const validKeywords = [
+  const firstToken = trimmed.split(/\s+/)[0].toLowerCase();
+  const valid = [
     'match',
     'create',
     'merge',
@@ -305,17 +363,48 @@ function validateCypherQueryConfig(config: CypherQueryConfig): void {
     'call',
     'show',
   ];
-  const hasValidKeyword = validKeywords.some((keyword) =>
-    normalizedQuery.startsWith(keyword)
-  );
-
-  if (!hasValidKeyword) {
+  if (!valid.includes(firstToken)) {
     throw new Error(
-      `Invalid Cypher query: must start with a valid keyword (${validKeywords.join(
+      `Invalid Cypher query: must start with a valid keyword (${valid.join(
         ', '
       )})`
     );
   }
+}
+
+function normalizeInlineShape(
+  inline: InlineCypherShape,
+  args: any[]
+): {
+  finalQuery: string;
+  finalParams?: Record<string, any>;
+  inlineDescription?: string;
+  inlineTags?: string[];
+} {
+  if (typeof inline === 'string') {
+    return { finalQuery: inline };
+  }
+  if (inline && typeof inline === 'object') {
+    if ('query' in inline) {
+      return {
+        finalQuery: inline.query,
+        finalParams: inline.params,
+        inlineDescription: inline.description,
+        inlineTags: inline.tags,
+      };
+    }
+    if ('cypher' in inline) {
+      return {
+        finalQuery: inline.cypher,
+        finalParams: inline.parameters,
+        inlineDescription: inline.description,
+        inlineTags: inline.tags,
+      };
+    }
+  }
+  throw new Error(
+    `Unsupported inline query return shape. Expected string or {query,params} / {cypher,parameters}. Got: ${typeof inline}`
+  );
 }
 
 /**

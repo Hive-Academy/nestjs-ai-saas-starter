@@ -63,32 +63,39 @@ export interface MultiTenantQueryConfig {
  * }
  * ```
  */
-export function TenantIsolated(config: TenantIsolationConfig = { enabled: true }): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
+export function TenantIsolated(
+  config: TenantIsolationConfig = { enabled: true }
+): MethodDecorator {
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
     // Set tenant isolation metadata
-    SetMetadata(DECORATOR_METADATA_KEYS.TENANT_ISOLATION || 'TENANT_ISOLATION', config)(
-      target, propertyKey, descriptor
-    );
+    SetMetadata(
+      DECORATOR_METADATA_KEYS.TENANT_ISOLATION || 'TENANT_ISOLATION',
+      config
+    )(target, propertyKey, descriptor);
 
     const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-      const instance = this;
-
       try {
         // Get multi-tenant service
-        const multiTenantService = instance.multiTenantNeo4j || instance.multiTenantNeo4jService;
+        const multiTenantService =
+          this.multiTenantNeo4j || this.multiTenantNeo4jService;
 
         if (!multiTenantService) {
-          throw new Error(`TenantIsolated: Multi-tenant Neo4j service not found in ${target.constructor.name}`);
+          throw new Error(
+            `TenantIsolated: Multi-tenant Neo4j service not found in ${target.constructor.name}`
+          );
         }
 
         // Execute with tenant isolation
-        const result = await originalMethod.apply(instance, args);
+        const result = await originalMethod.apply(this, args);
 
         return result;
-
       } catch (error) {
         console.error(`TenantIsolated: Error in ${methodName}:`, error);
         throw error;
@@ -111,34 +118,43 @@ export function TenantIsolated(config: TenantIsolationConfig = { enabled: true }
  * ```
  */
 export function RequireTenantFeatures(features: string[]): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
-    SetMetadata('REQUIRED_TENANT_FEATURES', features)(target, propertyKey, descriptor);
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    SetMetadata('REQUIRED_TENANT_FEATURES', features)(
+      target,
+      propertyKey,
+      descriptor
+    );
 
     const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-      const instance = this;
-
       try {
         // Get tenant context
-        const tenantContext = instance.tenantContext || instance.tenantContextService;
+        const tenantContext = this.tenantContext || this.tenantContextService;
 
         if (!tenantContext) {
-          throw new Error(`RequireTenantFeatures: Tenant context not found in ${target.constructor.name}`);
+          throw new Error(
+            `RequireTenantFeatures: Tenant context not found in ${target.constructor.name}`
+          );
         }
 
         // Check each required feature
         for (const feature of features) {
           const hasFeature = await tenantContext.hasFeature(feature);
           if (!hasFeature) {
-            throw new Error(`Feature '${feature}' not available for current tenant`);
+            throw new Error(
+              `Feature '${feature}' not available for current tenant`
+            );
           }
         }
 
         // Execute original method
-        return await originalMethod.apply(instance, args);
-
+        return await originalMethod.apply(this, args);
       } catch (error) {
         console.error(`RequireTenantFeatures: Error in ${methodName}:`, error);
         throw error;
@@ -169,22 +185,31 @@ export function ValidateTenantLimits(limits: {
   queryLimit?: string;
   storageLimit?: string;
 }): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
-    SetMetadata('TENANT_LIMITS_VALIDATION', limits)(target, propertyKey, descriptor);
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    SetMetadata('TENANT_LIMITS_VALIDATION', limits)(
+      target,
+      propertyKey,
+      descriptor
+    );
 
     const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-      const instance = this;
-
       try {
         // Get tenant context and multi-tenant service
-        const tenantContext = instance.tenantContext || instance.tenantContextService;
-        const multiTenantService = instance.multiTenantNeo4j || instance.multiTenantNeo4jService;
+        const tenantContext = this.tenantContext || this.tenantContextService;
+        const multiTenantService =
+          this.multiTenantNeo4j || this.multiTenantNeo4jService;
 
         if (!tenantContext || !multiTenantService) {
-          throw new Error(`ValidateTenantLimits: Required services not found in ${target.constructor.name}`);
+          throw new Error(
+            `ValidateTenantLimits: Required services not found in ${target.constructor.name}`
+          );
         }
 
         // Get current tenant stats
@@ -206,7 +231,10 @@ export function ValidateTenantLimits(limits: {
                 continue;
             }
 
-            const withinLimits = await tenantContext.checkLimit(limitProperty as any, currentValue);
+            const withinLimits = await tenantContext.checkLimit(
+              limitProperty as any,
+              currentValue
+            );
             if (!withinLimits) {
               throw new Error(`Tenant ${limitType} exceeded`);
             }
@@ -214,8 +242,7 @@ export function ValidateTenantLimits(limits: {
         }
 
         // Execute original method
-        return await originalMethod.apply(instance, args);
-
+        return await originalMethod.apply(this, args);
       } catch (error) {
         console.error(`ValidateTenantLimits: Error in ${methodName}:`, error);
         throw error;
@@ -252,23 +279,28 @@ export function MultiTenantQuery(config: {
   requiredFeatures?: string[];
   validateLimits?: boolean;
 }): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
     // Set multi-tenant query metadata
     SetMetadata('MULTI_TENANT_QUERY', config)(target, propertyKey, descriptor);
 
-    const originalMethod = descriptor.value;
+    // const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-      const instance = this;
-
       try {
         // Get services
-        const tenantContext = instance.tenantContext || instance.tenantContextService;
-        const multiTenantService = instance.multiTenantNeo4j || instance.multiTenantNeo4jService;
+        const tenantContext = this.tenantContext || this.tenantContextService;
+        const multiTenantService =
+          this.multiTenantNeo4j || this.multiTenantNeo4jService;
 
         if (!tenantContext || !multiTenantService) {
-          throw new Error(`MultiTenantQuery: Required services not found in ${target.constructor.name}`);
+          throw new Error(
+            `MultiTenantQuery: Required services not found in ${target.constructor.name}`
+          );
         }
 
         // Validate tenant features if required
@@ -276,24 +308,23 @@ export function MultiTenantQuery(config: {
           for (const feature of config.requiredFeatures) {
             const hasFeature = await tenantContext.hasFeature(feature);
             if (!hasFeature) {
-              throw new Error(`Feature '${feature}' required for ${methodName}`);
+              throw new Error(
+                `Feature '${feature}' required for ${methodName}`
+              );
             }
           }
         }
 
         // Extract parameters from method arguments
-        const params = args.length === 1 && typeof args[0] === 'object' ? args[0] : {};
+        const params =
+          args.length === 1 && typeof args[0] === 'object' ? args[0] : {};
 
         // Execute multi-tenant query
-        const result = await multiTenantService.run(
-          config.query,
-          params,
-          {
-            includeTenantMetadata: config.tenantIsolation?.includeTenantMetadata,
-            trackAnalytics: config.tenantIsolation?.trackAnalytics,
-            validateLimits: config.validateLimits
-          }
-        );
+        const result = await multiTenantService.run(config.query, params, {
+          includeTenantMetadata: config.tenantIsolation?.includeTenantMetadata,
+          trackAnalytics: config.tenantIsolation?.trackAnalytics,
+          validateLimits: config.validateLimits,
+        });
 
         // Transform result if return type specified
         if (config.returnType) {
@@ -304,7 +335,6 @@ export function MultiTenantQuery(config: {
         }
 
         return result;
-
       } catch (error) {
         console.error(`MultiTenantQuery: Error in ${methodName}:`, error);
         throw error;
@@ -327,28 +357,38 @@ export function MultiTenantQuery(config: {
  * ```
  */
 export function TenantAdminOperation(): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
-    SetMetadata('TENANT_ADMIN_OPERATION', true)(target, propertyKey, descriptor);
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    SetMetadata('TENANT_ADMIN_OPERATION', true)(
+      target,
+      propertyKey,
+      descriptor
+    );
 
     const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-      const instance = this;
-
       try {
         // Get multi-tenant service
-        const multiTenantService = instance.multiTenantNeo4j || instance.multiTenantNeo4jService;
+        const multiTenantService =
+          this.multiTenantNeo4j || this.multiTenantNeo4jService;
 
         if (!multiTenantService) {
-          throw new Error(`TenantAdminOperation: Multi-tenant service not found in ${target.constructor.name}`);
+          throw new Error(
+            `TenantAdminOperation: Multi-tenant service not found in ${target.constructor.name}`
+          );
         }
 
         // Execute as admin operation (bypasses tenant context)
-        return await multiTenantService.adminOperation(async (baseService: any) => {
-          return await originalMethod.apply(instance, args);
-        });
-
+        return await multiTenantService.adminOperation(
+          async (baseService: any) => {
+            return await originalMethod.apply(this, args);
+          }
+        );
       } catch (error) {
         console.error(`TenantAdminOperation: Error in ${methodName}:`, error);
         throw error;
@@ -378,22 +418,29 @@ export function CollectTenantMetrics(config: {
   category?: string;
   includeResourceUsage?: boolean;
 }): MethodDecorator {
-  return function (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) {
-    SetMetadata('TENANT_METRICS_COLLECTION', config)(target, propertyKey, descriptor);
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    SetMetadata('TENANT_METRICS_COLLECTION', config)(
+      target,
+      propertyKey,
+      descriptor
+    );
 
     const originalMethod = descriptor.value;
-    const methodName = String(propertyKey);
+    // const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-      const instance = this;
       const startTime = Date.now();
 
       try {
         // Get tenant context
-        const tenantContext = instance.tenantContext || instance.tenantContextService;
+        const tenantContext = this.tenantContext || this.tenantContextService;
 
         // Execute original method
-        const result = await originalMethod.apply(instance, args);
+        const result = await originalMethod.apply(this, args);
 
         // Collect metrics
         const executionTime = Date.now() - startTime;
@@ -402,14 +449,18 @@ export function CollectTenantMetrics(config: {
           const tenantMetadata = await tenantContext.getTenantMetadata();
 
           // In a real implementation, this would send to metrics service
-          console.log(`Metrics: ${config.operation} for tenant ${tenantMetadata.tenantId} took ${executionTime}ms`);
+          console.log(
+            `Metrics: ${config.operation} for tenant ${tenantMetadata.tenantId} took ${executionTime}ms`
+          );
         }
 
         return result;
-
       } catch (error) {
         const executionTime = Date.now() - startTime;
-        console.error(`CollectTenantMetrics: ${config.operation} failed after ${executionTime}ms:`, error);
+        console.error(
+          `CollectTenantMetrics: ${config.operation} failed after ${executionTime}ms:`,
+          error
+        );
         throw error;
       }
     };
@@ -438,7 +489,7 @@ export class MultiTenantDecorators {
       requiredFeatures: Reflect.getMetadata('REQUIRED_TENANT_FEATURES', target),
       limitValidation: Reflect.getMetadata('TENANT_LIMITS_VALIDATION', target),
       isAdminOperation: Reflect.getMetadata('TENANT_ADMIN_OPERATION', target),
-      metricsConfig: Reflect.getMetadata('TENANT_METRICS_COLLECTION', target)
+      metricsConfig: Reflect.getMetadata('TENANT_METRICS_COLLECTION', target),
     };
   }
 
@@ -447,27 +498,25 @@ export class MultiTenantDecorators {
    */
   static hasMultiTenantDecorators(target: any, propertyKey: string): boolean {
     const metadata = this.getMultiTenantMetadata(target);
-    return Object.values(metadata).some(value => value !== undefined);
+    return Object.values(metadata).some((value) => value !== undefined);
   }
 }
 
 /**
  * Type guards for multi-tenant decorator validation
  */
-export namespace MultiTenantTypeGuards {
-  export function isTenantIsolated(target: any, propertyKey: string): boolean {
-    return Reflect.hasMetadata('TENANT_ISOLATION', target, propertyKey);
-  }
+export function isTenantIsolated(target: any, propertyKey: string): boolean {
+  return Reflect.hasMetadata('TENANT_ISOLATION', target, propertyKey);
+}
 
-  export function hasRequiredFeatures(target: any, propertyKey: string): boolean {
-    return Reflect.hasMetadata('REQUIRED_TENANT_FEATURES', target, propertyKey);
-  }
+export function hasRequiredFeatures(target: any, propertyKey: string): boolean {
+  return Reflect.hasMetadata('REQUIRED_TENANT_FEATURES', target, propertyKey);
+}
 
-  export function hasLimitValidation(target: any, propertyKey: string): boolean {
-    return Reflect.hasMetadata('TENANT_LIMITS_VALIDATION', target, propertyKey);
-  }
+export function hasLimitValidation(target: any, propertyKey: string): boolean {
+  return Reflect.hasMetadata('TENANT_LIMITS_VALIDATION', target, propertyKey);
+}
 
-  export function isAdminOperation(target: any, propertyKey: string): boolean {
-    return Reflect.hasMetadata('TENANT_ADMIN_OPERATION', target, propertyKey);
-  }
+export function isAdminOperation(target: any, propertyKey: string): boolean {
+  return Reflect.hasMetadata('TENANT_ADMIN_OPERATION', target, propertyKey);
 }
