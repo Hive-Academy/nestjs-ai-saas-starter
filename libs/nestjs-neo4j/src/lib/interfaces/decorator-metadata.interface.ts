@@ -87,7 +87,7 @@ export interface TransactionOptions {
 /**
  * Parameter validation configuration
  */
-export interface ValidationOptions {
+export interface QueryValidationOptions {
   /** Enable parameter validation */
   enabled?: boolean;
   /** Maximum parameter depth */
@@ -196,7 +196,7 @@ export interface QueryMethodConfig extends BaseDecoratorMetadata {
   /** Query execution options */
   options?: QueryExecutionOptions;
   /** Parameter validation */
-  validation?: ValidationOptions;
+  validation?: QueryValidationOptions;
   /** Parameter mapping */
   parameterMapping?: Record<string, PropertyMapping>;
 }
@@ -204,31 +204,6 @@ export interface QueryMethodConfig extends BaseDecoratorMetadata {
 /**
  * Phase 7: Type Safety Configurations
  */
-
-/**
- * Typed Cypher query configuration
- */
-export interface TypedCypherQueryConfig extends BaseDecoratorMetadata {
-  /** Cypher query with compile-time validation */
-  query: string;
-  /** Compile-time validation options */
-  compiletimeValidation?: {
-    strictParams?: boolean;
-    inferReturnType?: boolean;
-    validatePropertyPaths?: boolean;
-  };
-  /** Runtime execution options */
-  runtime?: {
-    cache?: { ttl: number; key?: string };
-    retry?: { attempts: number; delay: number };
-    transactionMode?: 'READ' | 'WRITE';
-  };
-  /** Development helpers */
-  dev?: {
-    showQueryInfo?: boolean;
-    validateSchema?: boolean;
-  };
-}
 
 /**
  * Phase 5: Security Configurations
@@ -258,7 +233,10 @@ export interface AuthorizeConfig extends BaseDecoratorMetadata {
     };
   };
   /** Custom authorization function */
-  customAuthorizer?: (context: any, metadata: any) => Promise<boolean> | boolean;
+  customAuthorizer?: (
+    context: any,
+    metadata: any
+  ) => Promise<boolean> | boolean;
 }
 
 /**
@@ -427,7 +405,7 @@ export type DecoratorMetadataValue<
   : T extends 'RELATIONSHIP'
   ? RelationshipMapping
   : T extends 'VALIDATION'
-  ? ValidationOptions
+  ? QueryValidationOptions
   : T extends 'CACHE'
   ? CacheOptions
   : T extends 'RETRY'

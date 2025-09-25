@@ -1,6 +1,6 @@
 /**
  * @fileoverview Index constraint decorators for Neo4j
- * 
+ *
  * Implements INDEX creation for both single properties and compound property combinations.
  * Supports various index types including BTREE, TEXT, RANGE, POINT, and LOOKUP indexes.
  */
@@ -10,9 +10,8 @@ import {
   CONSTRAINT_METADATA_KEYS,
   type IndexConstraintMetadata,
   type IndexOptions,
-  type IndexConfig,
   createConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 
 /**
  * Configuration for index decorators
@@ -38,17 +37,17 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
 
 /**
  * @Index class-level decorator for compound indexes
- * 
+ *
  * Creates an index on a combination of properties for improved query performance.
  * Use this when you need to optimize queries that filter on multiple properties together.
- * 
+ *
  * Features:
  * - Multiple index types (BTREE, TEXT, RANGE, POINT, LOOKUP)
  * - Configurable index providers
  * - Unique index support
  * - Custom index configuration
  * - Performance optimization for queries
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -57,22 +56,22 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
  * export class User {
  *   @Neo4jProperty()
  *   status: string;
- * 
+ *
  *   @Neo4jProperty()
  *   createdAt: Date;
- * 
+ *
  *   @Neo4jProperty()
  *   tenantId: string;
- * 
+ *
  *   @Neo4jProperty()
  *   email: string;
  * }
- * 
+ *
  * // Text index for full-text search
  * @Index(['title', 'content'], {
  *   type: 'TEXT',
  *   name: 'article_fulltext_index',
- *   config: { 
+ *   config: {
  *     'fulltext.analyzer': 'standard',
  *     'fulltext.eventually_consistent': true
  *   }
@@ -80,12 +79,12 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
  * export class Article {
  *   @Neo4jProperty()
  *   title: string;
- * 
+ *
  *   @Neo4jProperty()
  *   content: string;
  * }
  * ```
- * 
+ *
  * @param properties - Array of property names to index together
  * @param config - Additional configuration options
  */
@@ -102,34 +101,50 @@ export function Index(
     const label = entityMetadata?.label || constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<IndexConstraintMetadata>({
-      type: 'INDEX',
-      target: 'class',
-      properties: [...properties], // Create a copy to avoid mutations
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_index_${properties.join('_')}`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        indexConfig: {
-          type: config.type || 'BTREE',
-          provider: config.provider,
-          config: config.config,
-          unique: config.unique || false,
-          name: config.name,
+    const constraintMetadata =
+      createConstraintMetadata<IndexConstraintMetadata>({
+        type: 'INDEX',
+        target: 'class',
+        properties: [...properties], // Create a copy to avoid mutations
+        label,
+        options: {
+          name:
+            config.name ||
+            `${label.toLowerCase()}_index_${properties.join('_')}`,
+          createOnStartup: config.createOnStartup !== false, // Default to true
+          indexConfig: {
+            type: config.type || 'BTREE',
+            provider: config.provider,
+            config: config.config,
+            unique: config.unique || false,
+            name: config.name,
+          },
         },
-      },
-      description: config.description || `Index on ${label} for properties: ${properties.join(', ')}`,
-    });
+        description:
+          config.description ||
+          `Index on ${label} for properties: ${properties.join(', ')}`,
+      });
 
     // Store constraint metadata on the class
-    const existingIndexConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.INDEX, constructor) || [];
+    const existingIndexConstraints =
+      Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.INDEX, constructor) || [];
     existingIndexConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.INDEX, existingIndexConstraints)(constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.INDEX,
+      existingIndexConstraints
+    )(constructor);
 
     // Also add to class constraints collection
-    const existingClassConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, constructor) || [];
+    const existingClassConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+        constructor
+      ) || [];
     existingClassConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, existingClassConstraints)(constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+      existingClassConstraints
+    )(constructor);
 
     // Add index utility methods to the prototype
     addIndexMethods(constructor.prototype, constraintMetadata);
@@ -140,16 +155,16 @@ export function Index(
 
 /**
  * @IndexProperty property-level decorator for single property indexes
- * 
+ *
  * Creates an index on a single property. Use this as a property decorator
  * when you need to optimize queries that filter on a specific property.
- * 
+ *
  * Features:
  * - Simple property-level usage
  * - Type-safe property targeting
  * - Configurable index types
  * - Performance optimization
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -157,26 +172,26 @@ export function Index(
  *   @IndexProperty()
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @IndexProperty({
  *     type: 'TEXT',
  *     name: 'user_search_index'
  *   })
  *   @Neo4jProperty()
  *   searchableContent: string;
- * 
+ *
  *   @IndexProperty({
  *     type: 'RANGE',
  *     config: { 'spatial.cartesian.min': [-100, -100], 'spatial.cartesian.max': [100, 100] }
  *   })
  *   @Neo4jProperty()
  *   location: { x: number; y: number };
- * 
+ *
  *   @Neo4jProperty()
  *   name: string; // Not indexed
  * }
  * ```
- * 
+ *
  * @param config - Configuration options for the index
  */
 export function IndexProperty(
@@ -184,7 +199,7 @@ export function IndexProperty(
 ): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
     const propertyName = String(propertyKey);
-    
+
     // Validate configuration
     validateIndexPropertyConfig(propertyName, config);
 
@@ -193,36 +208,50 @@ export function IndexProperty(
     const label = entityMetadata?.label || target.constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<IndexConstraintMetadata>({
-      type: 'INDEX',
-      target: 'property',
-      properties: [propertyName],
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_${propertyName}_index`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        indexConfig: {
-          type: config.type || 'BTREE',
-          provider: config.provider,
-          config: config.config,
-          unique: config.unique || false,
-          name: config.name,
+    const constraintMetadata =
+      createConstraintMetadata<IndexConstraintMetadata>({
+        type: 'INDEX',
+        target: 'property',
+        properties: [propertyName],
+        label,
+        options: {
+          name: config.name || `${label.toLowerCase()}_${propertyName}_index`,
+          createOnStartup: config.createOnStartup !== false, // Default to true
+          indexConfig: {
+            type: config.type || 'BTREE',
+            provider: config.provider,
+            config: config.config,
+            unique: config.unique || false,
+            name: config.name,
+          },
         },
-      },
-      description: config.description || `Index on ${label}.${propertyName}`,
-    });
+        description: config.description || `Index on ${label}.${propertyName}`,
+      });
 
     // Store constraint metadata on the property
-    const existingPropertyConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, target) || new Map();
-    const propertyConstraints = existingPropertyConstraints.get(propertyKey) || [];
+    const existingPropertyConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+        target
+      ) || new Map();
+    const propertyConstraints =
+      existingPropertyConstraints.get(propertyKey) || [];
     propertyConstraints.push(constraintMetadata);
     existingPropertyConstraints.set(propertyKey, propertyConstraints);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, existingPropertyConstraints)(target);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+      existingPropertyConstraints
+    )(target);
 
     // Also store in index constraints collection
-    const existingIndexConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.INDEX, target.constructor) || [];
+    const existingIndexConstraints =
+      Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.INDEX, target.constructor) ||
+      [];
     existingIndexConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.INDEX, existingIndexConstraints)(target.constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.INDEX,
+      existingIndexConstraints
+    )(target.constructor);
 
     // Add index utility methods to the prototype
     addIndexMethods(target, constraintMetadata);
@@ -235,9 +264,9 @@ export function IndexProperty(
 
 /**
  * @TextIndex decorator for full-text search indexes
- * 
+ *
  * Creates a TEXT index optimized for full-text search operations.
- * 
+ *
  * @example
  * ```typescript
  * @TextIndex(['title', 'content'], {
@@ -247,7 +276,7 @@ export function IndexProperty(
  * export class Article {
  *   @Neo4jProperty()
  *   title: string;
- * 
+ *
  *   @Neo4jProperty()
  *   content: string;
  * }
@@ -266,16 +295,16 @@ export function TextIndex(
 
 /**
  * @RangeIndex decorator for range query optimization
- * 
+ *
  * Creates a RANGE index optimized for range queries and sorting.
- * 
+ *
  * @example
  * ```typescript
  * @RangeIndex(['createdAt', 'updatedAt'])
  * export class TimestampedEntity {
  *   @Neo4jProperty()
  *   createdAt: Date;
- * 
+ *
  *   @Neo4jProperty()
  *   updatedAt: Date;
  * }
@@ -294,15 +323,15 @@ export function RangeIndex(
 
 /**
  * @PointIndex decorator for spatial/geographic data
- * 
+ *
  * Creates a POINT index for spatial queries and geographic data.
- * 
+ *
  * @example
  * ```typescript
  * @PointIndex(['location'], {
- *   config: { 
- *     'spatial.cartesian.min': [-180, -90], 
- *     'spatial.cartesian.max': [180, 90] 
+ *   config: {
+ *     'spatial.cartesian.min': [-180, -90],
+ *     'spatial.cartesian.max': [180, 90]
  *   }
  * })
  * export class Location {
@@ -324,16 +353,16 @@ export function PointIndex(
 
 /**
  * @LookupIndex decorator for exact match optimization
- * 
+ *
  * Creates a LOOKUP index optimized for exact value lookups.
- * 
+ *
  * @example
  * ```typescript
  * @LookupIndex(['status', 'category'])
  * export class Product {
  *   @Neo4jProperty()
  *   status: 'active' | 'inactive' | 'pending';
- * 
+ *
  *   @Neo4jProperty()
  *   category: string;
  * }
@@ -352,9 +381,9 @@ export function LookupIndex(
 
 /**
  * Multiple indexes decorator for complex entities
- * 
+ *
  * Allows defining multiple indexes on a single entity in a single decorator.
- * 
+ *
  * @example
  * ```typescript
  * @Indexes([
@@ -365,16 +394,16 @@ export function LookupIndex(
  * export class User {
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @Neo4jProperty()
  *   status: string;
- * 
+ *
  *   @Neo4jProperty()
  *   createdAt: Date;
- * 
+ *
  *   @Neo4jProperty()
  *   title: string;
- * 
+ *
  *   @Neo4jProperty()
  *   content: string;
  * }
@@ -387,14 +416,14 @@ export function Indexes(
     // Apply each index constraint
     indexes.forEach((indexConfig, index) => {
       const { properties, ...config } = indexConfig;
-      
+
       // Add index suffix to avoid naming conflicts
       const configWithIndex = {
         ...config,
         name: config.name || `index_${index}`,
         description: config.description || `Index ${index + 1}`,
       };
-      
+
       Index(properties, configWithIndex)(constructor);
     });
 
@@ -410,7 +439,7 @@ function addIndexMethods(
   constraintMetadata: IndexConstraintMetadata
 ): void {
   const methodSuffix = constraintMetadata.properties.join('_');
-  
+
   // Add index info method
   const infoMethodName = `getIndexInfo_${methodSuffix}`;
   if (!prototype[infoMethodName]) {
@@ -450,13 +479,20 @@ function addIndexMethods(
       missingProperties: string[];
     } {
       const indexProperties = new Set(constraintMetadata.properties);
-      const queryPropsSet = new Set(queryProperties);
-      
-      const coveredProperties = queryProperties.filter(prop => indexProperties.has(prop));
-      const missingProperties = queryProperties.filter(prop => !indexProperties.has(prop));
-      
-      const coverageRatio = queryProperties.length > 0 ? coveredProperties.length / queryProperties.length : 1;
-      const covered = missingProperties.length === 0 && queryProperties.length > 0;
+
+      const coveredProperties = queryProperties.filter((prop) =>
+        indexProperties.has(prop)
+      );
+      const missingProperties = queryProperties.filter(
+        (prop) => !indexProperties.has(prop)
+      );
+
+      const coverageRatio =
+        queryProperties.length > 0
+          ? coveredProperties.length / queryProperties.length
+          : 1;
+      const covered =
+        missingProperties.length === 0 && queryProperties.length > 0;
 
       return {
         covered,
@@ -470,7 +506,10 @@ function addIndexMethods(
 /**
  * Validate index configuration
  */
-function validateIndexConfig(properties: string[], config: IndexDecoratorConfig): void {
+function validateIndexConfig(
+  properties: string[],
+  config: IndexDecoratorConfig
+): void {
   // Validate properties array
   if (!Array.isArray(properties)) {
     throw new Error('Index decorator requires an array of property names');
@@ -498,7 +537,9 @@ function validateIndexConfig(properties: string[], config: IndexDecoratorConfig)
 
     // Basic validation for Neo4j property names
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(property)) {
-      throw new Error(`Index property '${property}' must be a valid Neo4j property name`);
+      throw new Error(
+        `Index property '${property}' must be a valid Neo4j property name`
+      );
     }
   });
 
@@ -507,8 +548,13 @@ function validateIndexConfig(properties: string[], config: IndexDecoratorConfig)
     throw new Error('Index name must be a string');
   }
 
-  if (config.type && !['BTREE', 'TEXT', 'RANGE', 'POINT', 'LOOKUP'].includes(config.type)) {
-    throw new Error('Index type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP');
+  if (
+    config.type &&
+    !['BTREE', 'TEXT', 'RANGE', 'POINT', 'LOOKUP'].includes(config.type)
+  ) {
+    throw new Error(
+      'Index type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP'
+    );
   }
 
   if (config.provider && typeof config.provider !== 'string') {
@@ -527,14 +573,19 @@ function validateIndexConfig(properties: string[], config: IndexDecoratorConfig)
 /**
  * Validate index property constraint configuration
  */
-function validateIndexPropertyConfig(propertyName: string, config: Omit<IndexDecoratorConfig, 'properties'>): void {
+function validateIndexPropertyConfig(
+  propertyName: string,
+  config: Omit<IndexDecoratorConfig, 'properties'>
+): void {
   if (!propertyName || typeof propertyName !== 'string') {
     throw new Error('IndexProperty decorator requires a valid property name');
   }
 
   // Basic validation for Neo4j property names
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(propertyName)) {
-    throw new Error(`IndexProperty '${propertyName}' must be a valid Neo4j property name`);
+    throw new Error(
+      `IndexProperty '${propertyName}' must be a valid Neo4j property name`
+    );
   }
 
   // Validate configuration options (same as validateIndexConfig but without properties)
@@ -542,8 +593,13 @@ function validateIndexPropertyConfig(propertyName: string, config: Omit<IndexDec
     throw new Error('IndexProperty name must be a string');
   }
 
-  if (config.type && !['BTREE', 'TEXT', 'RANGE', 'POINT', 'LOOKUP'].includes(config.type)) {
-    throw new Error('IndexProperty type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP');
+  if (
+    config.type &&
+    !['BTREE', 'TEXT', 'RANGE', 'POINT', 'LOOKUP'].includes(config.type)
+  ) {
+    throw new Error(
+      'IndexProperty type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP'
+    );
   }
 
   if (config.provider && typeof config.provider !== 'string') {
@@ -562,7 +618,9 @@ function validateIndexPropertyConfig(propertyName: string, config: Omit<IndexDec
 /**
  * Utility function to extract index constraints from a class
  */
-export function getIndexConstraints(constructor: any): IndexConstraintMetadata[] {
+export function getIndexConstraints(
+  constructor: any
+): IndexConstraintMetadata[] {
   return Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.INDEX, constructor) || [];
 }
 
@@ -576,15 +634,22 @@ export function hasIndexConstraints(constructor: any): boolean {
 /**
  * Generate Neo4j CREATE INDEX query
  */
-export function generateIndexQuery(
-  constraint: IndexConstraintMetadata
-): { query: string; name: string } {
-  const indexName = constraint.options?.indexConfig?.name || constraint.options?.name || 
-    `${constraint.label?.toLowerCase() || 'node'}_index_${constraint.properties.join('_')}`;
-  
-  const propertiesClause = constraint.properties.map(prop => `n.${prop}`).join(', ');
+export function generateIndexQuery(constraint: IndexConstraintMetadata): {
+  query: string;
+  name: string;
+} {
+  const indexName =
+    constraint.options?.indexConfig?.name ||
+    constraint.options?.name ||
+    `${
+      constraint.label?.toLowerCase() || 'node'
+    }_index_${constraint.properties.join('_')}`;
+
+  const propertiesClause = constraint.properties
+    .map((prop) => `n.${prop}`)
+    .join(', ');
   const indexType = constraint.options?.indexConfig?.type || 'BTREE';
-  
+
   let query: string;
 
   if (indexType === 'TEXT') {
@@ -597,19 +662,21 @@ export function generateIndexQuery(
     // Regular index
     query = `CREATE INDEX ${indexName} FOR (n:${constraint.label}) ON (${propertiesClause})`;
   }
-  
+
   // Add provider options if specified
   if (constraint.options?.indexConfig?.provider) {
     query += ` OPTIONS {indexProvider: '${constraint.options.indexConfig.provider}'`;
-    
+
     // Add custom config if provided
     if (constraint.options.indexConfig.config) {
-      const configEntries = Object.entries(constraint.options.indexConfig.config)
+      const configEntries = Object.entries(
+        constraint.options.indexConfig.config
+      )
         .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
         .join(', ');
       query += `, ${configEntries}`;
     }
-    
+
     query += '}';
   }
 

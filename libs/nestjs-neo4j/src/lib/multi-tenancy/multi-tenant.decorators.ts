@@ -6,7 +6,7 @@
  */
 
 import { SetMetadata, Injectable } from '@nestjs/common';
-import { DECORATOR_METADATA_KEYS } from '../decorators/decorator-metadata.interface';
+import { DECORATOR_METADATA_KEYS } from '../interfaces/decorator-metadata.interface';
 
 /**
  * Tenant isolation configuration
@@ -117,13 +117,14 @@ export function TenantIsolated(
  * }
  * ```
  */
-export function RequireTenantFeatures(features: string[]): MethodDecorator {
+export function RequireTenantFeatures(features?: string[]): MethodDecorator {
   return function (
     target: any,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) {
-    SetMetadata('REQUIRED_TENANT_FEATURES', features)(
+    const finalFeatures = features || [];
+    SetMetadata('REQUIRED_TENANT_FEATURES', finalFeatures)(
       target,
       propertyKey,
       descriptor
@@ -144,7 +145,7 @@ export function RequireTenantFeatures(features: string[]): MethodDecorator {
         }
 
         // Check each required feature
-        for (const feature of features) {
+        for (const feature of finalFeatures) {
           const hasFeature = await tenantContext.hasFeature(feature);
           if (!hasFeature) {
             throw new Error(
@@ -272,7 +273,7 @@ export function ValidateTenantLimits(limits: {
  * }
  * ```
  */
-export function MultiTenantQuery(config: {
+export function MultiTenantQuery(config?: {
   query: string;
   returnType?: () => any;
   tenantIsolation?: TenantIsolationConfig;
@@ -285,12 +286,19 @@ export function MultiTenantQuery(config: {
     descriptor: PropertyDescriptor
   ) {
     // Set multi-tenant query metadata
-    SetMetadata('MULTI_TENANT_QUERY', config)(target, propertyKey, descriptor);
+    const finalConfig = config || { query: 'MATCH (n) RETURN n LIMIT 1' };
+    SetMetadata('MULTI_TENANT_QUERY', finalConfig)(
+      target,
+      propertyKey,
+      descriptor
+    );
 
     // const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
+      const finalConfig = config || { query: 'MATCH (n) RETURN n LIMIT 1' };
+
       try {
         // Get services
         const tenantContext = this.tenantContext || this.tenantContextService;
@@ -304,8 +312,8 @@ export function MultiTenantQuery(config: {
         }
 
         // Validate tenant features if required
-        if (config.requiredFeatures) {
-          for (const feature of config.requiredFeatures) {
+        if (finalConfig.requiredFeatures) {
+          for (const feature of finalConfig.requiredFeatures) {
             const hasFeature = await tenantContext.hasFeature(feature);
             if (!hasFeature) {
               throw new Error(
@@ -320,14 +328,15 @@ export function MultiTenantQuery(config: {
           args.length === 1 && typeof args[0] === 'object' ? args[0] : {};
 
         // Execute multi-tenant query
-        const result = await multiTenantService.run(config.query, params, {
-          includeTenantMetadata: config.tenantIsolation?.includeTenantMetadata,
-          trackAnalytics: config.tenantIsolation?.trackAnalytics,
-          validateLimits: config.validateLimits,
+        const result = await multiTenantService.run(finalConfig.query, params, {
+          includeTenantMetadata:
+            finalConfig.tenantIsolation?.includeTenantMetadata,
+          trackAnalytics: finalConfig.tenantIsolation?.trackAnalytics,
+          validateLimits: finalConfig.validateLimits,
         });
 
         // Transform result if return type specified
-        if (config.returnType) {
+        if (finalConfig.returnType) {
           return result.records.map((record: any) => {
             // Simplified transformation - would be more sophisticated in real implementation
             return record._fields[0];
@@ -413,7 +422,7 @@ export function TenantAdminOperation(): MethodDecorator {
  * }
  * ```
  */
-export function CollectTenantMetrics(config: {
+export function CollectTenantMetrics(config?: {
   operation: string;
   category?: string;
   includeResourceUsage?: boolean;
@@ -423,7 +432,8 @@ export function CollectTenantMetrics(config: {
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) {
-    SetMetadata('TENANT_METRICS_COLLECTION', config)(
+    const finalConfig = config || { operation: 'unknown-operation' };
+    SetMetadata('TENANT_METRICS_COLLECTION', finalConfig)(
       target,
       propertyKey,
       descriptor
@@ -433,6 +443,7 @@ export function CollectTenantMetrics(config: {
     // const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
+      const finalConfig = config || { operation: 'unknown-operation' };
       const startTime = Date.now();
 
       try {
@@ -450,7 +461,7 @@ export function CollectTenantMetrics(config: {
 
           // In a real implementation, this would send to metrics service
           console.log(
-            `Metrics: ${config.operation} for tenant ${tenantMetadata.tenantId} took ${executionTime}ms`
+            `Metrics: ${finalConfig.operation} for tenant ${tenantMetadata.tenantId} took ${executionTime}ms`
           );
         }
 
@@ -458,7 +469,7 @@ export function CollectTenantMetrics(config: {
       } catch (error) {
         const executionTime = Date.now() - startTime;
         console.error(
-          `CollectTenantMetrics: ${config.operation} failed after ${executionTime}ms:`,
+          `CollectTenantMetrics: ${finalConfig.operation} failed after ${executionTime}ms:`,
           error
         );
         throw error;

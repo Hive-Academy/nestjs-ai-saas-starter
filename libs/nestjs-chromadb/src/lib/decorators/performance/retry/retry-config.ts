@@ -5,9 +5,7 @@
  * including validation, defaults, and preset configurations.
  */
 
-import type { RetryStrategy } from './retry-strategies';
 import type { CircuitBreakerConfig } from './circuit-breaker';
-import type { ErrorClassificationConfig } from './error-classifier';
 
 /**
  * Timeout configuration for individual attempts

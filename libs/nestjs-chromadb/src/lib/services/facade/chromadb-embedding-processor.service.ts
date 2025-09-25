@@ -176,7 +176,9 @@ export class ChromaDBEmbeddingProcessorService {
 
       const batchResults = await Promise.all(batchPromises);
       batchResults.forEach((batchEmbeddings) => {
-        allEmbeddings.push(...batchEmbeddings);
+        allEmbeddings.push(
+          ...batchEmbeddings.map((embedding) => [...embedding])
+        );
       });
     } else {
       // Process batches sequentially
@@ -186,7 +188,9 @@ export class ChromaDBEmbeddingProcessorService {
         );
 
         const batchEmbeddings = await this.embeddingService.embed(batches[i]);
-        allEmbeddings.push(...batchEmbeddings);
+        allEmbeddings.push(
+          ...batchEmbeddings.map((embedding) => [...embedding])
+        );
       }
     }
 

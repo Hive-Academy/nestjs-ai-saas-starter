@@ -7,27 +7,29 @@ import type { Metadata } from 'chromadb';
 /**
  * Sanitize metadata to ensure ChromaDB compatibility
  */
-export function sanitizeMetadata(
-  metadata: Record<string, any>
-): Metadata {
+export function sanitizeMetadata(metadata: Record<string, any>): Metadata {
   const sanitized: Metadata = {};
 
   for (const [key, value] of Object.entries(metadata)) {
     // Sanitize key (remove invalid characters)
     const sanitizedKey = key.replace(/[^a-zA-Z0-9_-]/g, '_');
-    
+
     // Skip undefined values, but allow null
     if (value === undefined) {
       continue;
     }
-    
+
     if (value === null) {
       sanitized[sanitizedKey] = null;
       continue;
     }
 
     // Convert value to supported types
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
       sanitized[sanitizedKey] = value as string | number | boolean;
     } else if (typeof value === 'object') {
       // Convert objects to JSON strings
@@ -44,9 +46,10 @@ export function sanitizeMetadata(
 /**
  * Validate metadata for ChromaDB compatibility
  */
-export function validateMetadata(
-  metadata: Record<string, any>
-): { isValid: boolean; errors: string[] } {
+export function validateMetadata(metadata: Record<string, any>): {
+  isValid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   if (!metadata || typeof metadata !== 'object') {
@@ -56,14 +59,18 @@ export function validateMetadata(
   for (const [key, value] of Object.entries(metadata)) {
     // Check key format
     if (!/^[a-zA-Z0-9_-]+$/.test(key)) {
-      errors.push(`Invalid metadata key "${key}": only alphanumeric, underscore, and dash characters are allowed`);
+      errors.push(
+        `Invalid metadata key "${key}": only alphanumeric, underscore, and dash characters are allowed`
+      );
     }
 
     // Check value types
     if (value !== null && value !== undefined) {
       const valueType = typeof value;
       if (!['string', 'number', 'boolean'].includes(valueType)) {
-        errors.push(`Invalid metadata value type for "${key}": ${valueType}. Only string, number, and boolean are supported`);
+        errors.push(
+          `Invalid metadata value type for "${key}": ${valueType}. Only string, number, and boolean are supported`
+        );
       }
     }
   }
@@ -229,7 +236,10 @@ export function formatMetadataForDisplay(
 
     if (typeof value === 'string') {
       // Try to parse JSON strings if requested
-      if (parseJsonStrings && value.startsWith('{') || value.startsWith('[')) {
+      if (
+        (parseJsonStrings && value.startsWith('{')) ||
+        value.startsWith('[')
+      ) {
         try {
           formattedValue = JSON.parse(value);
         } catch {
@@ -247,7 +257,10 @@ export function formatMetadataForDisplay(
       }
 
       // Truncate long strings
-      if (typeof formattedValue === 'string' && formattedValue.length > maxStringLength) {
+      if (
+        typeof formattedValue === 'string' &&
+        formattedValue.length > maxStringLength
+      ) {
         formattedValue = formattedValue.substring(0, maxStringLength) + '...';
       }
     }
@@ -299,27 +312,41 @@ export function validateMetadataSchema(
 
     // Type validation
     if (typeof value !== config.type) {
-      errors.push(`Field "${field}" should be of type ${config.type}, got ${typeof value}`);
+      errors.push(
+        `Field "${field}" should be of type ${config.type}, got ${typeof value}`
+      );
       continue;
     }
 
     // Enum validation
     if (config.enum && !config.enum.includes(value)) {
-      errors.push(`Field "${field}" should be one of [${config.enum.join(', ')}], got "${value}"`);
+      errors.push(
+        `Field "${field}" should be one of [${config.enum.join(
+          ', '
+        )}], got "${value}"`
+      );
     }
 
     // Number range validation
     if (config.type === 'number') {
       if (config.min !== undefined && value < config.min) {
-        errors.push(`Field "${field}" should be >= ${config.min}, got ${value}`);
+        errors.push(
+          `Field "${field}" should be >= ${config.min}, got ${value}`
+        );
       }
       if (config.max !== undefined && value > config.max) {
-        errors.push(`Field "${field}" should be <= ${config.max}, got ${value}`);
+        errors.push(
+          `Field "${field}" should be <= ${config.max}, got ${value}`
+        );
       }
     }
 
     // String pattern validation
-    if (config.type === 'string' && config.pattern && !config.pattern.test(value)) {
+    if (
+      config.type === 'string' &&
+      config.pattern &&
+      !config.pattern.test(value)
+    ) {
       errors.push(`Field "${field}" does not match required pattern`);
     }
   }

@@ -18,6 +18,9 @@ export interface TenantContext {
   /** Tenant organization/company name */
   readonly organizationId?: string;
 
+  /** Tenant display name */
+  readonly tenantName?: string;
+
   /** User identifier within the tenant */
   readonly userId?: string;
 
@@ -41,11 +44,30 @@ export interface TenantIsolationConfig {
   /** Collection naming strategy */
   namingStrategy: 'prefix' | 'suffix' | 'separate' | 'custom';
 
+  /** Legacy naming strategy alias */
+  namespacingStrategy?: 'prefix' | 'suffix' | 'separate' | 'custom';
+
   /** Custom naming function */
   customNaming?: (collection: string, tenantId: string) => string;
 
   /** Tenant ID extraction strategy */
   tenantExtraction: 'header' | 'query' | 'jwt' | 'context' | 'custom';
+
+  /** Metadata fields configuration */
+  metadataFields?: {
+    tenantId?: string;
+    tenantName?: string;
+    organizationId?: string;
+  };
+
+  /** Document filtering strategy */
+  documentFiltering?: 'none' | 'content_prefix' | 'metadata_reference';
+
+  /** Inject tenant metadata into documents */
+  injectTenantMetadata?: boolean;
+
+  /** Maximum items per query for resource limiting */
+  maxItemsPerQuery?: number;
 
   /** Custom tenant extraction function */
   customExtraction?: (context: ExecutionContext) => Promise<string> | string;

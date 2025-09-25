@@ -30,11 +30,9 @@ export class ChromaDBHealthIndicator {
       }
 
       const heartbeat = await this.chromaDBService.heartbeat();
-      const version = await this.chromaDBService.version();
 
       return this.getStatus(key, true, {
         heartbeat,
-        version,
         status: 'connected',
       });
     } catch (error) {
@@ -59,16 +57,24 @@ export class ChromaDBHealthIndicator {
       }
 
       const heartbeat = await this.chromaDBService.heartbeat();
-      const version = await this.chromaDBService.version();
       const collections = await this.chromaDBService.listCollections();
 
       return this.getStatus(key, true, {
         heartbeat,
-        version,
         status: 'connected',
         collections: {
           count: collections.length,
-          names: collections.map(c => c.name),
+          names: collections.map((c) => {
+            if (typeof c === 'string') return c;
+            if (
+              typeof c === 'object' &&
+              c &&
+              'name' in c &&
+              typeof c.name === 'string'
+            )
+              return c.name;
+            return 'unknown';
+          }),
         },
       });
     } catch (error) {
@@ -77,23 +83,33 @@ export class ChromaDBHealthIndicator {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      throw new HealthCheckError('ChromaDB detailed health check failed', result);
+      throw new HealthCheckError(
+        'ChromaDB detailed health check failed',
+        result
+      );
     }
   }
 
   /**
    * Test a specific collection's health
    */
-  public async isCollectionHealthy(key: string, collectionName: string): Promise<HealthIndicatorResult> {
+  public async isCollectionHealthy(
+    key: string,
+    collectionName: string
+  ): Promise<HealthIndicatorResult> {
     try {
-      const exists = await this.chromaDBService.collectionExists(collectionName);
+      const exists = await this.chromaDBService.collectionExists(
+        collectionName
+      );
 
       if (!exists) {
         throw new Error(`Collection '${collectionName}' does not exist`);
       }
 
       const count = await this.chromaDBService.countDocuments(collectionName);
-      const metadata = await this.chromaDBService.getCollectionMetadata(collectionName);
+      const metadata = await this.chromaDBService.getCollectionMetadata(
+        collectionName
+      );
 
       return this.getStatus(key, true, {
         collection: collectionName,
@@ -108,11 +124,18 @@ export class ChromaDBHealthIndicator {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      throw new HealthCheckError(`ChromaDB collection '${collectionName}' health check failed`, result);
+      throw new HealthCheckError(
+        `ChromaDB collection '${collectionName}' health check failed`,
+        result
+      );
     }
   }
 
-  protected getStatus(key: string, isHealthy: boolean, data?: Record<string, unknown>): HealthIndicatorResult {
+  protected getStatus(
+    key: string,
+    isHealthy: boolean,
+    data?: Record<string, unknown>
+  ): HealthIndicatorResult {
     return {
       [key]: {
         status: isHealthy ? 'up' : 'down',

@@ -398,7 +398,6 @@ export interface TimeTravelCheckpointFilter<
 /**
  * Common time-travel metadata payload types for specific use cases
  */
-// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace TimeTravelOperationPayloads {
   /** Branch creation and management payloads */
   export interface BranchOperationPayload {

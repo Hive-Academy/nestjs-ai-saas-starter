@@ -5,7 +5,7 @@
  * Following Single Responsibility Principle - handles only CRUD operations
  */
 
-import { Logger } from '@nestjs/common';
+// Logger removed - operations log via parent service
 import type { BaseDocument } from '../../../types/core.interface';
 import type {
   ChromaRepositoryConfig,
@@ -23,7 +23,7 @@ import {
  * Handles Create, Read, Update, Delete operations for repository pattern
  */
 export class CrudOperations<TDocument extends BaseDocument = BaseDocument> {
-  private readonly logger = new Logger(CrudOperations.name);
+  // Logger removed - operations log via parent service
   private readonly helpers: RepositoryHelpers<TDocument>;
 
   constructor(

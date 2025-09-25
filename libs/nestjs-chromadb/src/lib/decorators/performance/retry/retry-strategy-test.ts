@@ -8,7 +8,6 @@
 import { Injectable } from '@nestjs/common';
 import { Retry } from './retry.decorator';
 import { RetryConfigPresets } from './retry-config';
-import { StrategyPresets } from './retry-strategies';
 import { CircuitBreakerFactory } from './circuit-breaker';
 import { ErrorClassificationPresets } from './error-classifier';
 

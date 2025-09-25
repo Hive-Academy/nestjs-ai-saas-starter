@@ -1,11 +1,4 @@
-import {
-  DynamicModule,
-  Global,
-  InjectionToken,
-  Module,
-  OptionalFactoryDependency,
-  Provider,
-} from '@nestjs/common';
+import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 import type { ChromaClient } from 'chromadb';
 import {
   CHROMADB_CLIENT,
@@ -21,7 +14,7 @@ import {
   ChromaDBModuleOptions,
   ChromaDBOptionsFactory,
   CollectionConfig,
-} from './interfaces/chromadb-module-options.interface';
+} from './interfaces/config';
 import { ChromaAdminService } from './services/chroma-admin.service';
 import { ChromaDBService } from './services/chromadb.service';
 import { ChromaDBCollectionService } from './services/core/chromadb-collection.service';
@@ -77,13 +70,10 @@ export class ChromaDBModule {
       },
       {
         provide: ChromaDBCollectionService,
-        useFactory: (
-          client: ChromaClient,
-          embeddingService: EmbeddingService
-        ) => {
-          return new ChromaDBCollectionService(client, embeddingService);
+        useFactory: (connectionService: any) => {
+          return new ChromaDBCollectionService(connectionService);
         },
-        inject: [CHROMADB_CLIENT, EmbeddingService],
+        inject: ['ChromaDBConnectionService'],
       },
       {
         provide: ChromaAdminService,
@@ -144,13 +134,10 @@ export class ChromaDBModule {
       },
       {
         provide: ChromaDBCollectionService,
-        useFactory: (
-          client: ChromaClient,
-          embeddingService: EmbeddingService
-        ) => {
-          return new ChromaDBCollectionService(client, embeddingService);
+        useFactory: (connectionService: any) => {
+          return new ChromaDBCollectionService(connectionService);
         },
-        inject: [CHROMADB_CLIENT, EmbeddingService],
+        inject: ['ChromaDBConnectionService'],
       },
       {
         provide: ChromaAdminService,
@@ -193,10 +180,11 @@ export class ChromaDBModule {
       ) => {
         const embeddingFn =
           config.embeddingFunction ?? embeddingService.getEmbeddingFunction();
-        return collectionService.getOrCreateCollection(config.name, {
-          metadata: config.metadata,
-          embeddingFunction: embeddingFn,
-        });
+        return collectionService.createCollection(
+          config.name,
+          config.metadata,
+          embeddingFn
+        );
       },
       inject: [ChromaDBCollectionService, EmbeddingService],
     }));

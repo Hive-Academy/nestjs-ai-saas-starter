@@ -48,14 +48,18 @@ export interface ClassificationResult {
  * Intelligent error classifier using multiple strategies
  */
 export class ErrorClassifier {
-  private readonly config: Required<ErrorClassificationConfig>;
+  private readonly config: Required<
+    Omit<ErrorClassificationConfig, 'customPredicate'>
+  > & {
+    customPredicate?: (error: Error, attempt: number) => ErrorClassification;
+  };
 
   constructor(config: ErrorClassificationConfig) {
     this.config = {
       retryableErrors: config.retryableErrors,
       nonRetryableErrors: config.nonRetryableErrors,
       circuitBreakerErrors: config.circuitBreakerErrors ?? [],
-      customPredicate: config.customPredicate,
+      customPredicate: config.customPredicate ?? undefined,
       defaultClassification:
         config.defaultClassification ?? ErrorClassification.NON_RETRYABLE,
     };

@@ -9,8 +9,9 @@ Instead of workflow decorators that would compete with your existing adapter arc
 ### **Phase 7: Advanced Type Safety** (Maximum DX Impact)
 
 #### 1. **Compile-Time Cypher Validation**
+
 ```typescript
-@TypedCypherQuery({
+@CypherQuery({
   query: 'MATCH (u:User {id: $userId}) RETURN u.name, u.email',
   compiletimeValidation: { strictParams: true, inferReturnType: true }
 })
@@ -23,20 +24,23 @@ async getUserInfo(params: { userId: string }): Promise<{name: string, email: str
 ```
 
 #### 2. **Template Literal Type System**
+
 - **Compile-time validation**: Catches errors before deployment
 - **Parameter type inference**: Automatic type checking from query structure
 - **Return type inference**: IntelliSense knows what your queries return
 - **Property path validation**: Full IDE support for Neo4j properties
 
 #### 3. **Specialized Type-Safe Decorators**
+
 - `@TypedMatch` - Type-safe MATCH queries
-- `@TypedCreate` - Type-safe CREATE operations  
+- `@TypedCreate` - Type-safe CREATE operations
 - `@FindNodeByProperty` - Property-based node finding
 - `@TypedRelationshipQuery` - Relationship traversal with types
 
 ### **Phase 5: Enterprise Security** (Maximum Security Impact)
 
 #### 1. **Authorization & Access Control**
+
 ```typescript
 @Authorize({
   roles: ['admin', 'user-manager'],
@@ -56,6 +60,7 @@ async secureOperation() {
 ```
 
 #### 2. **Input Validation & Sanitization**
+
 ```typescript
 @ValidateInput({
   schema: { /* JSON schema validation */ },
@@ -71,6 +76,7 @@ async validateMethod() {
 ```
 
 #### 3. **Audit Logging & Compliance**
+
 ```typescript
 @AuditLog({
   enabled: true,
@@ -87,6 +93,7 @@ async auditedOperation() {
 ```
 
 #### 4. **Rate Limiting & Protection**
+
 ```typescript
 @RateLimit({
   requests: 100,
@@ -103,6 +110,7 @@ async protectedOperation() {
 ```
 
 #### 5. **Data Encryption**
+
 ```typescript
 @EncryptSensitive({
   encryptFields: ['cardNumber', 'cvv'],
@@ -121,31 +129,39 @@ async handleSensitiveData() {
 ## 🏗️ **Architecture Benefits**
 
 ### **✅ Enhances Your Existing Architecture**
+
 - **Decorators**: Enhance Neo4j operations with type safety + security
 - **Your Adapters**: Continue handling LangGraph integration unchanged
 - **Perfect Harmony**: No competing systems, complementary capabilities
 
 ### **✅ Adapter Integration Example**
+
 ```typescript
 @Injectable()
 export class MyWorkflowService {
   constructor(
     private neo4j: Neo4jService,
-    private hitlAdapter: Neo4jHitlStorageAdapter,    // Your existing adapter
-    private memoryAdapter: Neo4jGraphAdapter         // Your existing adapter
+    private hitlAdapter: Neo4jHitlStorageAdapter, // Your existing adapter
+    private memoryAdapter: Neo4jGraphAdapter // Your existing adapter
   ) {}
 
-  @TypedCypherQuery({ /* type safety */ })
-  @Authorize({ /* security */ })
-  @AuditLog({ /* compliance */ })
+  @CypherQuery({
+    /* type safety */
+  })
+  @Authorize({
+    /* security */
+  })
+  @AuditLog({
+    /* compliance */
+  })
   async myMethod() {
     // 1. Decorators provide enhanced Neo4j operations
     const result = await this.typeSafeQuery();
-    
+
     // 2. Adapters handle LangGraph integration
     await this.memoryAdapter.createMemoryEntry(result);
     await this.hitlAdapter.storeApprovalRequest(data);
-    
+
     // No conflicts - perfect separation of concerns
   }
 }
@@ -154,12 +170,14 @@ export class MyWorkflowService {
 ## 📊 **Value Delivered**
 
 ### **Phase 7: Type Safety Value**
+
 - **Developer Experience**: ⭐⭐⭐⭐⭐ (Excellent IntelliSense, compile-time errors)
 - **Risk Reduction**: ⭐⭐⭐⭐⭐ (Catches errors before deployment)
 - **Implementation Cost**: ⭐⭐⭐⭐⭐ (Zero runtime overhead)
 - **Adoption Ease**: ⭐⭐⭐⭐⭐ (Drop-in replacement for existing decorators)
 
 ### **Phase 5: Security Value**
+
 - **Enterprise Ready**: ⭐⭐⭐⭐⭐ (RBAC, audit, encryption, compliance)
 - **Risk Reduction**: ⭐⭐⭐⭐⭐ (Injection prevention, rate limiting)
 - **Compliance**: ⭐⭐⭐⭐⭐ (7-year audit retention, GDPR ready)
@@ -168,12 +186,14 @@ export class MyWorkflowService {
 ## 🚀 **Files Created**
 
 ### **Core Implementation**
+
 1. `typed-cypher-query.decorator.ts` - Phase 7 compile-time validation
 2. `security.decorators.ts` - Phase 5 enterprise security features
 3. `decorator-metadata.interface.ts` - Updated with new interfaces
 4. `advanced-decorators.example.ts` - Comprehensive usage examples
 
 ### **Integration**
+
 - Updated `index.ts` with new exports
 - Metadata interfaces for all new decorators
 - Full TypeScript type system integration
@@ -181,18 +201,21 @@ export class MyWorkflowService {
 ## 🎯 **Immediate Benefits for Your Team**
 
 ### **For Development**
+
 1. **Compile-time safety**: Catch Neo4j query errors at build time
 2. **Better IntelliSense**: Full IDE support for Cypher queries
 3. **Type inference**: Automatic type checking from query structure
 4. **Refactoring safety**: TypeScript ensures query consistency
 
 ### **For Production**
+
 1. **Enterprise security**: RBAC, audit trails, rate limiting
 2. **Compliance ready**: 7-year audit retention, GDPR compliance
 3. **Injection protection**: Automatic Cypher injection prevention
 4. **Performance monitoring**: Built-in metrics and logging
 
 ### **For Architecture**
+
 1. **Adapter harmony**: Enhances without competing with existing patterns
 2. **Gradual adoption**: Can be added incrementally to existing services
 3. **Zero breaking changes**: Fully backward compatible
@@ -201,6 +224,7 @@ export class MyWorkflowService {
 ## 📈 **Usage Patterns**
 
 ### **Start Simple**
+
 ```typescript
 @TypedQuery('MATCH (u:User {id: $userId}) RETURN u')
 async findUser(params: { userId: string }): Promise<User> {
@@ -209,6 +233,7 @@ async findUser(params: { userId: string }): Promise<User> {
 ```
 
 ### **Add Security**
+
 ```typescript
 @TypedQuery('MATCH (u:User {id: $userId}) RETURN u')
 @Authorize({ roles: ['user'] })
@@ -219,8 +244,9 @@ async findUser(params: { userId: string }): Promise<User> {
 ```
 
 ### **Full Enterprise**
+
 ```typescript
-@TypedCypherQuery({ /* compile-time validation */ })
+@CypherQuery({ /* compile-time validation */ })
 @Authorize({ /* RBAC + tenant isolation */ })
 @ValidateInput({ /* schema + injection prevention */ })
 @AuditLog({ /* compliance logging */ })
@@ -232,7 +258,3 @@ async enterpriseMethod() {
 ```
 
 ## ✅ **Completion Status**
-
-<function_calls>
-<invoke name="TodoWrite">
-<parameter name="todos">[{"content": "Implement Phase 7: Advanced Type Safety decorators for Neo4j", "status": "completed", "activeForm": "Implementing Phase 7: Advanced Type Safety decorators for Neo4j"}, {"content": "Implement Phase 5: Security & validation decorators for Neo4j operations", "status": "completed", "activeForm": "Implementing Phase 5: Security & validation decorators for Neo4j operations"}, {"content": "Update decorator metadata interface for new decorators", "status": "completed", "activeForm": "Updating decorator metadata interface for new decorators"}, {"content": "Export new decorators and update library index", "status": "completed", "activeForm": "Exporting new decorators and updating library index"}, {"content": "Create comprehensive examples and documentation", "status": "completed", "activeForm": "Creating comprehensive examples and documentation"}]

@@ -577,7 +577,7 @@ export abstract class Neo4jNodeModelService<
   }> {
     // This would integrate with Neo4j Graph Data Science library
     // For now, return basic degree centrality
-    const degree = await this.getNodeDegree(nodeId);
+    // const degree = await this.getNodeDegree(nodeId);
 
     return {
       // Would be calculated using GDS algorithms

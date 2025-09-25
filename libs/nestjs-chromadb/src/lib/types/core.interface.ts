@@ -163,6 +163,7 @@ export interface ValidationResult {
   readonly errors: string[];
   readonly warnings: string[];
   readonly validatedData?: any;
+  readonly details?: Record<string, unknown>;
 }
 
 // ========================================
@@ -299,6 +300,26 @@ export function isChromaWireDocument(
     'id' in value &&
     typeof (value as ChromaWireDocument).id === 'string'
   );
+}
+
+/**
+ * Type guard for valid collection names (SINGLE SOURCE OF TRUTH)
+ * Uses ChromaDB's strict naming requirements
+ */
+export function isValidCollectionName(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= 63 &&
+    /^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$/.test(value)
+  );
+}
+
+/**
+ * Type guard for document arrays (SINGLE SOURCE OF TRUTH)
+ */
+export function isDocumentArray(value: unknown): value is BaseDocument[] {
+  return Array.isArray(value) && value.every((item) => isBaseDocument(item));
 }
 
 /**

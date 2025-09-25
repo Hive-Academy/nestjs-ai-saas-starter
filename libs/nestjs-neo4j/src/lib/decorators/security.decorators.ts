@@ -10,8 +10,8 @@
  * - Multi-tenant isolation
  */
 
-import { SetMetadata, ExecutionContext } from '@nestjs/common';
-import { DECORATOR_METADATA_KEYS } from './decorator-metadata.interface';
+import { SetMetadata } from '@nestjs/common';
+import { DECORATOR_METADATA_KEYS } from '../interfaces/decorator-metadata.interface';
 
 /**
  * Authorization configuration
@@ -189,14 +189,15 @@ export interface EncryptSensitiveConfig {
  * }
  * ```
  */
-export function Authorize(config: AuthorizeConfig): MethodDecorator {
+export function Authorize(config?: AuthorizeConfig): MethodDecorator {
   return function (
-    target: any,
+    target: object,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
-  ) {
+  ): PropertyDescriptor {
     // Store authorization metadata
-    SetMetadata(DECORATOR_METADATA_KEYS.AUTHORIZE || 'AUTHORIZE', config)(
+    const finalConfig = config || {};
+    SetMetadata(DECORATOR_METADATA_KEYS.AUTHORIZE || 'AUTHORIZE', finalConfig)(
       target,
       propertyKey,
       descriptor
@@ -206,8 +207,6 @@ export function Authorize(config: AuthorizeConfig): MethodDecorator {
     const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
-
-
       try {
         // Get current execution context (user, tenant, etc.)
         const context = await getExecutionContext(this);
@@ -215,7 +214,7 @@ export function Authorize(config: AuthorizeConfig): MethodDecorator {
         // Perform authorization check
         const isAuthorized = await checkAuthorization(
           context,
-          config,
+          finalConfig,
           methodName
         );
 
@@ -224,17 +223,17 @@ export function Authorize(config: AuthorizeConfig): MethodDecorator {
             `Access denied for ${methodName}: insufficient permissions`
           );
           (error as any).code = 'AUTHORIZATION_FAILED';
-          (error as any).requiredRoles = config.roles;
-          (error as any).requiredPermissions = config.permissions;
+          (error as any).requiredRoles = finalConfig.roles;
+          (error as any).requiredPermissions = finalConfig.permissions;
           throw error;
         }
 
         // Auto-inject tenant isolation if configured
         if (
-          config.tenantIsolation?.enabled &&
-          config.tenantIsolation.autoInject
+          finalConfig.tenantIsolation?.enabled &&
+          finalConfig.tenantIsolation.autoInject
         ) {
-          args = injectTenantFilter(args, context, config.tenantIsolation);
+          args = injectTenantFilter(args, context, finalConfig.tenantIsolation);
         }
 
         // Execute original method
@@ -292,15 +291,18 @@ export function Authorize(config: AuthorizeConfig): MethodDecorator {
  * }
  * ```
  */
-export function ValidateInput(config: ValidateInputConfig): MethodDecorator {
+export function ValidateInput(config?: ValidateInputConfig): MethodDecorator {
   return function (
-    target: any,
+    target: object,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
-  ) {
+  ): PropertyDescriptor {
+    const finalConfig = config || {
+      injectionPrevention: { enabled: false, onDetection: 'log' as const },
+    };
     SetMetadata(
       DECORATOR_METADATA_KEYS.VALIDATE_INPUT || 'VALIDATE_INPUT',
-      config
+      finalConfig
     )(target, propertyKey, descriptor);
 
     const originalMethod = descriptor.value;
@@ -311,7 +313,7 @@ export function ValidateInput(config: ValidateInputConfig): MethodDecorator {
         // Validate and sanitize input parameters
         const validatedArgs = await validateAndSanitizeInput(
           args,
-          config,
+          finalConfig,
           methodName
         );
 
@@ -361,13 +363,17 @@ export function ValidateInput(config: ValidateInputConfig): MethodDecorator {
  * }
  * ```
  */
-export function AuditLog(config: AuditLogConfig): MethodDecorator {
+export function AuditLog(config?: AuditLogConfig): MethodDecorator {
   return function (
-    target: any,
+    target: object,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
-  ) {
-    SetMetadata(DECORATOR_METADATA_KEYS.AUDIT_LOG || 'AUDIT_LOG', config)(
+  ): PropertyDescriptor {
+    const finalConfig = config || {
+      enabled: false,
+      logLevel: 'minimal' as const,
+    };
+    SetMetadata(DECORATOR_METADATA_KEYS.AUDIT_LOG || 'AUDIT_LOG', finalConfig)(
       target,
       propertyKey,
       descriptor
@@ -382,7 +388,7 @@ export function AuditLog(config: AuditLogConfig): MethodDecorator {
 
       try {
         // Log method entry
-        if (config.enabled) {
+        if (finalConfig.enabled) {
           await logAuditEvent(
             this,
             {
@@ -390,13 +396,13 @@ export function AuditLog(config: AuditLogConfig): MethodDecorator {
               event: 'method_entry',
               methodName,
               timestamp: new Date(),
-              parameters: config.includeSensitiveData
+              parameters: finalConfig.includeSensitiveData
                 ? args
                 : sanitizeForAudit(args),
               context: await getExecutionContext(this),
-              customFields: config.customFields,
+              customFields: finalConfig.customFields,
             },
-            config
+            finalConfig
           );
         }
 
@@ -404,7 +410,7 @@ export function AuditLog(config: AuditLogConfig): MethodDecorator {
         const result = await originalMethod.apply(this, args);
 
         // Log successful completion
-        if (config.enabled && config.logSuccess !== false) {
+        if (finalConfig.enabled && finalConfig.logSuccess !== false) {
           await logAuditEvent(
             this,
             {
@@ -413,20 +419,20 @@ export function AuditLog(config: AuditLogConfig): MethodDecorator {
               methodName,
               timestamp: new Date(),
               executionTime: Date.now() - startTime,
-              result: config.includeSensitiveData
+              result: finalConfig.includeSensitiveData
                 ? result
                 : sanitizeForAudit(result),
               context: await getExecutionContext(this),
-              customFields: config.customFields,
+              customFields: finalConfig.customFields,
             },
-            config
+            finalConfig
           );
         }
 
         return result;
       } catch (error) {
         // Log failure
-        if (config.enabled && config.logFailures !== false) {
+        if (finalConfig.enabled && finalConfig.logFailures !== false) {
           await logAuditEvent(
             this,
             {
@@ -440,9 +446,9 @@ export function AuditLog(config: AuditLogConfig): MethodDecorator {
                 stack: error instanceof Error ? error.stack : undefined,
               },
               context: await getExecutionContext(this),
-              customFields: config.customFields,
+              customFields: finalConfig.customFields,
             },
-            config
+            finalConfig
           );
         }
 
@@ -481,17 +487,21 @@ export function AuditLog(config: AuditLogConfig): MethodDecorator {
  * }
  * ```
  */
-export function RateLimit(config: RateLimitConfig): MethodDecorator {
+export function RateLimit(config?: RateLimitConfig): MethodDecorator {
   return function (
-    target: any,
+    target: object,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
-  ) {
-    SetMetadata(DECORATOR_METADATA_KEYS.RATE_LIMIT || 'RATE_LIMIT', config)(
-      target,
-      propertyKey,
-      descriptor
-    );
+  ): PropertyDescriptor {
+    const finalConfig = config || {
+      requests: 100,
+      window: '1m',
+      strategy: 'fixed-window' as const,
+    };
+    SetMetadata(
+      DECORATOR_METADATA_KEYS.RATE_LIMIT || 'RATE_LIMIT',
+      finalConfig
+    )(target, propertyKey, descriptor);
 
     const originalMethod = descriptor.value;
     const methodName = String(propertyKey);
@@ -499,18 +509,23 @@ export function RateLimit(config: RateLimitConfig): MethodDecorator {
     descriptor.value = async function (this: any, ...args: any[]) {
       // Generate rate limiting key
       const context = await getExecutionContext(this);
-      const rateLimitKey = generateRateLimitKey(context, config, methodName);
+      const rateLimitKey = generateRateLimitKey(
+        context,
+        finalConfig,
+        methodName
+      );
 
       // Check rate limit
-      const isAllowed = await checkRateLimit(rateLimitKey, config);
+      const isAllowed = await checkRateLimit(rateLimitKey, finalConfig);
 
       if (!isAllowed) {
         const error = new Error(
-          config.onLimitExceeded?.message ||
+          finalConfig.onLimitExceeded?.message ||
             `Rate limit exceeded for ${methodName}`
         );
         (error as any).code = 'RATE_LIMIT_EXCEEDED';
-        (error as any).retryAfter = config.onLimitExceeded?.retryAfter || 60;
+        (error as any).retryAfter =
+          finalConfig.onLimitExceeded?.retryAfter || 60;
         throw error;
       }
 
@@ -518,7 +533,7 @@ export function RateLimit(config: RateLimitConfig): MethodDecorator {
       const result = await originalMethod.apply(this, args);
 
       // Increment rate limit counter
-      await incrementRateLimit(rateLimitKey, config);
+      await incrementRateLimit(rateLimitKey, finalConfig);
 
       return result;
     };
@@ -550,17 +565,16 @@ export function EncryptSensitive(
   config: EncryptSensitiveConfig
 ): MethodDecorator {
   return function (
-    target: any,
+    target: object,
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
-  ) {
+  ): PropertyDescriptor {
     SetMetadata(
       DECORATOR_METADATA_KEYS.ENCRYPT_SENSITIVE || 'ENCRYPT_SENSITIVE',
       config
     )(target, propertyKey, descriptor);
 
     const originalMethod = descriptor.value;
-    const methodName = String(propertyKey);
 
     descriptor.value = async function (this: any, ...args: any[]) {
       // Encrypt sensitive fields in arguments

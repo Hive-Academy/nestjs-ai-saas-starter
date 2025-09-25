@@ -1,6 +1,6 @@
 /**
  * @fileoverview Constraint metadata interfaces for Neo4j constraint system
- * 
+ *
  * Defines the type system for constraint decorators and metadata collection.
  * Supports both class-level compound constraints and property-level single constraints.
  */
@@ -34,7 +34,7 @@ export interface BaseConstraintMetadata {
 /**
  * Constraint types supported by the system
  */
-export type ConstraintType = 
+export type ConstraintType =
   | 'NODE_KEY'
   | 'UNIQUE'
   | 'NOT_NULL'
@@ -208,7 +208,7 @@ export interface ValidationConfig {
 /**
  * Format validation options
  */
-export type ValidationFormat = 
+export type ValidationFormat =
   | 'email'
   | 'url'
   | 'uuid'
@@ -250,7 +250,10 @@ export interface LengthValidation {
  */
 export interface CustomValidation {
   /** Validation function */
-  validator: (value: any, entity?: any) => boolean | string | Promise<boolean | string>;
+  validator: (
+    value: any,
+    entity?: any
+  ) => boolean | string | Promise<boolean | string>;
   /** Error message for validation failure */
   message?: string;
   /** Whether validation is async */
@@ -260,7 +263,7 @@ export interface CustomValidation {
 /**
  * Union type for all constraint metadata
  */
-export type ConstraintMetadata = 
+export type ConstraintMetadata =
   | NodeKeyConstraintMetadata
   | UniqueConstraintMetadata
   | NotNullConstraintMetadata
@@ -351,7 +354,7 @@ export const CONSTRAINT_METADATA_KEYS = {
   INDEX: Symbol('constraint-index'),
   VALIDATION: Symbol('constraint-validation'),
   CUSTOM: Symbol('constraint-custom'),
-  
+
   // Collection keys for multiple constraints
   CLASS_CONSTRAINTS: Symbol('class-constraints'),
   PROPERTY_CONSTRAINTS: Symbol('property-constraints'),
@@ -361,34 +364,50 @@ export const CONSTRAINT_METADATA_KEYS = {
 /**
  * Utility type for constraint metadata values
  */
-export type ConstraintMetadataValue<T extends keyof typeof CONSTRAINT_METADATA_KEYS> = 
-  T extends 'NODE_KEY' ? NodeKeyConstraintMetadata :
-  T extends 'UNIQUE' ? UniqueConstraintMetadata :
-  T extends 'NOT_NULL' ? NotNullConstraintMetadata :
-  T extends 'INDEX' ? IndexConstraintMetadata :
-  T extends 'VALIDATION' ? ValidationConstraintMetadata :
-  ConstraintMetadata;
+export type ConstraintMetadataValue<
+  T extends keyof typeof CONSTRAINT_METADATA_KEYS
+> = T extends 'NODE_KEY'
+  ? NodeKeyConstraintMetadata
+  : T extends 'UNIQUE'
+  ? UniqueConstraintMetadata
+  : T extends 'NOT_NULL'
+  ? NotNullConstraintMetadata
+  : T extends 'INDEX'
+  ? IndexConstraintMetadata
+  : T extends 'VALIDATION'
+  ? ValidationConstraintMetadata
+  : ConstraintMetadata;
 
 /**
  * Type guard functions for constraint metadata
  */
-export function isNodeKeyConstraint(constraint: ConstraintMetadata): constraint is NodeKeyConstraintMetadata {
+export function isNodeKeyConstraint(
+  constraint: ConstraintMetadata
+): constraint is NodeKeyConstraintMetadata {
   return constraint.type === 'NODE_KEY';
 }
 
-export function isUniqueConstraint(constraint: ConstraintMetadata): constraint is UniqueConstraintMetadata {
+export function isUniqueConstraint(
+  constraint: ConstraintMetadata
+): constraint is UniqueConstraintMetadata {
   return constraint.type === 'UNIQUE';
 }
 
-export function isNotNullConstraint(constraint: ConstraintMetadata): constraint is NotNullConstraintMetadata {
+export function isNotNullConstraint(
+  constraint: ConstraintMetadata
+): constraint is NotNullConstraintMetadata {
   return constraint.type === 'NOT_NULL';
 }
 
-export function isIndexConstraint(constraint: ConstraintMetadata): constraint is IndexConstraintMetadata {
+export function isIndexConstraint(
+  constraint: ConstraintMetadata
+): constraint is IndexConstraintMetadata {
   return constraint.type === 'INDEX';
 }
 
-export function isValidationConstraint(constraint: ConstraintMetadata): constraint is ValidationConstraintMetadata {
+export function isValidationConstraint(
+  constraint: ConstraintMetadata
+): constraint is ValidationConstraintMetadata {
   return constraint.type === 'VALIDATION';
 }
 

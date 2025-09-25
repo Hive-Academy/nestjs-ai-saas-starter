@@ -56,16 +56,26 @@ export type {
   MutableCacheStats,
 } from './lib/services/caching';
 
-// Service Interfaces (now use consolidated types)
-export type { ChromaDBServiceInterface } from './lib/interfaces/chromadb-service.interface';
+// Service Interfaces - following Interface Segregation Principle
+export type {
+  ChromaDBServiceInterface,
+  ChromaDBConnectionServiceInterface,
+  ChromaDBCollectionServiceInterface,
+  ChromaDBDocumentServiceInterface,
+  ChromaDBSearchServiceInterface,
+} from './lib/interfaces/core';
 export type * from './lib/interfaces/embedding-function.interface';
 export type * from './lib/interfaces/embedding-service.interface';
 
-// Module Options Interfaces (specific exports to avoid conflicts)
+// Module Options Interfaces - segregated and focused
 export type {
   ChromaDBModuleOptions,
   ChromaDBModuleAsyncOptions,
   ChromaDBOptionsFactory,
+  ChromaDBConnectionOptions,
+  ChromaDBEmbeddingOptions,
+  ChromaDBPerformanceOptions,
+  ChromaDBMultiTenantOptions,
   ChromaDBClientOptions,
   EmbeddingConfig,
   CollectionConfig,
@@ -79,7 +89,7 @@ export type {
   CustomEmbeddingConfig,
   InputValidationConfig,
   EmbeddingProviderType,
-} from './lib/interfaces/chromadb-module-options.interface';
+} from './lib/interfaces/config';
 
 // Consolidated Type System (SINGLE SOURCE OF TRUTH)
 export type {
@@ -99,8 +109,6 @@ export type {
   fromChromaWireDocument,
   toChromaWireDocuments,
   fromChromaWireDocuments,
-  isBaseDocument,
-  isChromaWireDocument,
 } from './lib/types/core.interface';
 
 // Decorators - Core Ecosystem
@@ -160,7 +168,6 @@ export {
   isValidChromaDocumentArray,
   isValidSearchOptions,
   isValidBulkOptions,
-  isValidCollectionName,
   isValidEmbeddingConfig,
   isValidCollectionConfig,
   validateChromaDocument,
@@ -173,6 +180,14 @@ export {
   validateModuleOptions,
   createTypeChecker,
 } from './lib/validation/type-guards';
+
+// Core type guards (centralized in core.interface.ts)
+export {
+  isValidCollectionName,
+  isDocumentArray,
+  isBaseDocument,
+  isChromaWireDocument,
+} from './lib/types/core.interface';
 
 // Constants
 export * from './lib/constants';

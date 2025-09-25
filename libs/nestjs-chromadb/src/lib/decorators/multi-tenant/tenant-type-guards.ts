@@ -7,6 +7,16 @@ import type {
   TenantIsolationConfig,
 } from '../../services/multi-tenant/tenant-context.service';
 import type { BaseDocument } from '../../types/core.interface';
+import {
+  isValidCollectionName,
+  isDocumentArray,
+} from '../../types/core.interface';
+
+// Re-export for use in other modules
+export {
+  isValidCollectionName,
+  isDocumentArray,
+} from '../../types/core.interface';
 
 /**
  * Type guard for checking if value is a valid tenant context
@@ -75,21 +85,6 @@ export function isValidTenantId(value: unknown): value is string {
     /^[a-zA-Z0-9_-]+$/.test(value) &&
     !value.startsWith('-') &&
     !value.endsWith('-')
-  );
-}
-
-/**
- * Type guard for checking if string is a valid collection name
- */
-export function isValidCollectionName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    value.length < 200 &&
-    /^[a-zA-Z0-9_:-]+$/.test(value) &&
-    !value.includes(' ') &&
-    !value.includes('\n') &&
-    !value.includes('\t')
   );
 }
 
@@ -195,22 +190,6 @@ export function canPerformCrossTenantOperations(
   return (
     context.tier === 'enterprise' &&
     hasRequiredPermissions(context, ['cross-tenant-access'])
-  );
-}
-
-/**
- * Type guard for checking if value is an array of documents
- */
-export function isDocumentArray(value: unknown): value is BaseDocument[] {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every(
-      (item) =>
-        typeof item === 'object' &&
-        item !== null &&
-        typeof (item as any).id === 'string'
-    )
   );
 }
 

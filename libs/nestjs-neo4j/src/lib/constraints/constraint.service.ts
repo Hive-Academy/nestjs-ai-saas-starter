@@ -1,6 +1,6 @@
 /**
  * @fileoverview Neo4j Constraint Service
- * 
+ *
  * This service manages the lifecycle of Neo4j constraints including:
  * - Automatic constraint discovery from decorated entities
  * - Constraint creation and management
@@ -10,7 +10,7 @@
  */
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
+// import { ModuleRef } from '@nestjs/core'; // TODO: Future use for dependency resolution
 import { Neo4jService } from '../services/neo4j.service';
 import {
   ConstraintMetadata,
@@ -18,7 +18,6 @@ import {
   ConstraintValidationResult,
   ConstraintStatistics,
   ConstraintConflict,
-  CONSTRAINT_METADATA_KEYS,
   isNodeKeyConstraint,
   isUniqueConstraint,
   isNotNullConstraint,
@@ -29,7 +28,7 @@ import {
   NotNullConstraintMetadata,
   IndexConstraintMetadata,
   ValidationConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 import {
   generateNodeKeyConstraintQuery,
   getNodeKeyConstraints,
@@ -42,13 +41,8 @@ import {
   generateNotNullConstraintQuery,
   getNotNullConstraints,
 } from './not-null.decorator';
-import {
-  generateIndexQuery,
-  getIndexConstraints,
-} from './index.decorator';
-import {
-  getValidationConstraints,
-} from './validate.decorator';
+import { generateIndexQuery, getIndexConstraints } from './index.decorator';
+import { getValidationConstraints } from './validate.decorator';
 
 /**
  * Configuration for the constraint service
@@ -112,7 +106,10 @@ export interface EntityConstraintInfo {
 export class ConstraintService implements OnModuleInit {
   private readonly logger = new Logger(ConstraintService.name);
   private readonly entityRegistry = new Map<string, EntityConstraintInfo>();
-  private readonly constraintCache = new Map<string, ConstraintCreationStatus>();
+  private readonly constraintCache = new Map<
+    string,
+    ConstraintCreationStatus
+  >();
   private statistics: ConstraintStatistics = {
     total: 0,
     byType: {
@@ -133,7 +130,7 @@ export class ConstraintService implements OnModuleInit {
 
   constructor(
     private readonly neo4j: Neo4jService,
-    private readonly moduleRef: ModuleRef,
+    // private readonly moduleRef: ModuleRef, // TODO: Future use for dependency resolution
     private readonly config: ConstraintServiceConfig = {}
   ) {
     // Set default configuration
@@ -170,7 +167,9 @@ export class ConstraintService implements OnModuleInit {
     }
 
     if (this.config.enableLogging) {
-      this.logger.log(`Constraint service initialized with ${this.statistics.total} constraints`);
+      this.logger.log(
+        `Constraint service initialized with ${this.statistics.total} constraints`
+      );
     }
   }
 
@@ -179,7 +178,7 @@ export class ConstraintService implements OnModuleInit {
    */
   registerEntity(entityClass: any, label?: string): EntityConstraintInfo {
     const entityLabel = label || entityClass.name;
-    
+
     // Extract all constraints from the entity
     const nodeKeyConstraints = getNodeKeyConstraints(entityClass);
     const uniqueConstraints = getUniqueConstraints(entityClass);
@@ -211,7 +210,9 @@ export class ConstraintService implements OnModuleInit {
     this.entityRegistry.set(entityLabel, entityInfo);
 
     if (this.config.enableLogging && allConstraints.length > 0) {
-      this.logger.log(`Registered entity ${entityLabel} with ${allConstraints.length} constraints`);
+      this.logger.log(
+        `Registered entity ${entityLabel} with ${allConstraints.length} constraints`
+      );
     }
 
     return entityInfo;
@@ -232,11 +233,11 @@ export class ConstraintService implements OnModuleInit {
     for (const entityInfo of this.entityRegistry.values()) {
       for (const constraint of entityInfo.constraints) {
         processed++;
-        
+
         try {
           const result = await this.createConstraint(constraint);
           results.push(result);
-          
+
           if (result.success) {
             created++;
           } else {
@@ -270,9 +271,11 @@ export class ConstraintService implements OnModuleInit {
   /**
    * Create a single constraint
    */
-  async createConstraint(constraint: ConstraintMetadata): Promise<ConstraintCreationStatus> {
+  async createConstraint(
+    constraint: ConstraintMetadata
+  ): Promise<ConstraintCreationStatus> {
     const constraintId = this.getConstraintId(constraint);
-    
+
     // Check if constraint already exists in cache
     const cached = this.constraintCache.get(constraintId);
     if (cached && cached.success) {
@@ -311,7 +314,9 @@ export class ConstraintService implements OnModuleInit {
       this.constraintCache.set(constraintId, result);
 
       if (this.config.enableLogging) {
-        this.logger.log(`Created ${constraint.type} constraint: ${queryInfo.name}`);
+        this.logger.log(
+          `Created ${constraint.type} constraint: ${queryInfo.name}`
+        );
       }
 
       return result;
@@ -327,7 +332,9 @@ export class ConstraintService implements OnModuleInit {
       this.constraintCache.set(constraintId, result);
 
       if (this.config.enableLogging) {
-        this.logger.error(`Failed to create ${constraint.type} constraint: ${result.error}`);
+        this.logger.error(
+          `Failed to create ${constraint.type} constraint: ${result.error}`
+        );
       }
 
       return result;
@@ -337,7 +344,10 @@ export class ConstraintService implements OnModuleInit {
   /**
    * Validate an entity against its constraints
    */
-  async validateEntity(entity: any, entityClass?: any): Promise<ConstraintValidationResult> {
+  async validateEntity(
+    entity: any,
+    entityClass?: any
+  ): Promise<ConstraintValidationResult> {
     const entityType = entityClass || entity.constructor;
     const entityInfo = this.getEntityInfo(entityType);
 
@@ -358,10 +368,10 @@ export class ConstraintService implements OnModuleInit {
       if (isNodeKeyConstraint(constraint) || isUniqueConstraint(constraint)) {
         for (const property of constraint.properties) {
           const value = entity[property];
-          
+
           if (value === null || value === undefined) {
-            const allowPartial = isNodeKeyConstraint(constraint) 
-              ? constraint.options?.allowPartial 
+            const allowPartial = isNodeKeyConstraint(constraint)
+              ? constraint.options?.allowPartial
               : false;
             if (!allowPartial) {
               errors.push({
@@ -377,7 +387,7 @@ export class ConstraintService implements OnModuleInit {
       } else if (isNotNullConstraint(constraint)) {
         const property = constraint.properties[0];
         const value = entity[property];
-        
+
         if (value === null || value === undefined) {
           errors.push({
             property,
@@ -389,7 +399,11 @@ export class ConstraintService implements OnModuleInit {
         }
 
         // Check for empty strings if configured
-        if (constraint.options?.treatEmptyAsNull && typeof value === 'string' && value.trim() === '') {
+        if (
+          constraint.options?.treatEmptyAsNull &&
+          typeof value === 'string' &&
+          value.trim() === ''
+        ) {
           errors.push({
             property,
             message: `Property '${property}' cannot be empty`,
@@ -453,7 +467,9 @@ export class ConstraintService implements OnModuleInit {
       return true;
     } catch (error) {
       if (this.config.enableLogging) {
-        this.logger.error(`Failed to drop constraint ${constraintName}: ${error}`);
+        this.logger.error(
+          `Failed to drop constraint ${constraintName}: ${error}`
+        );
       }
       return false;
     }
@@ -465,7 +481,7 @@ export class ConstraintService implements OnModuleInit {
   async listDatabaseConstraints(): Promise<any[]> {
     return this.neo4j.read(async (session) => {
       const result = await session.run('SHOW CONSTRAINTS');
-      return result.records.map(record => record.toObject());
+      return result.records.map((record) => record.toObject());
     });
   }
 
@@ -506,8 +522,9 @@ export class ConstraintService implements OnModuleInit {
       }
     }
 
-    const successfulConstraints = Array.from(this.constraintCache.values())
-      .filter(status => status.success).length;
+    const successfulConstraints = Array.from(
+      this.constraintCache.values()
+    ).filter((status) => status.success).length;
 
     this.statistics = {
       total,
@@ -522,6 +539,8 @@ export class ConstraintService implements OnModuleInit {
    * Generate a unique ID for a constraint
    */
   private getConstraintId(constraint: ConstraintMetadata): string {
-    return `${constraint.type}_${constraint.label}_${constraint.properties.join('_')}_${constraint.target}`;
+    return `${constraint.type}_${constraint.label}_${constraint.properties.join(
+      '_'
+    )}_${constraint.target}`;
   }
 }

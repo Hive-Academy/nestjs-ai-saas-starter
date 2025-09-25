@@ -7,321 +7,40 @@ import type {
   TenantContext,
   TenantIsolationConfig,
 } from '../../services/multi-tenant/tenant-context.service';
-import { TenantIsolationService } from '../../services/multi-tenant/tenant-isolation.service';
+import { getErrorMessage } from '../../utils/error-handling.utils';
+
+// Re-export types and classes
+export type {
+  ArgumentTransformer,
+  ArgumentTransformationResult,
+  TransformationResult,
+} from './transformation-types';
+export { TenantTransformationError } from './transformation-types';
+
+// Re-export transformers
+export { CollectionNameTransformer } from './collection-transformer';
+export { OptionsObjectTransformer } from './options-transformer';
+export { DocumentArrayTransformer } from './document-transformer';
+
+// Import transformer classes for use in main class
+import type {
+  ArgumentTransformer,
+  ArgumentTransformationResult,
+  TransformationResult,
+} from './transformation-types';
+import { CollectionNameTransformer } from './collection-transformer';
+import { OptionsObjectTransformer } from './options-transformer';
+import { DocumentArrayTransformer } from './document-transformer';
 
 /**
- * Transformation error with context
- */
-export class TenantTransformationError extends Error {
-  constructor(
-    message: string,
-    public readonly argumentIndex: number,
-    public readonly argumentValue: unknown,
-    public readonly tenantId?: string
-  ) {
-    super(message);
-    this.name = 'TenantTransformationError';
-  }
-}
-
-/**
- * Transformation result for a single argument
- */
-export interface ArgumentTransformationResult {
-  readonly originalValue: unknown;
-  readonly transformedValue: unknown;
-  readonly wasTransformed: boolean;
-  readonly transformationType: string;
-  readonly metadata?: Record<string, unknown>;
-}
-
-/**
- * Complete transformation result
- */
-export interface TransformationResult {
-  readonly originalArgs: unknown[];
-  readonly transformedArgs: unknown[];
-  readonly transformations: ArgumentTransformationResult[];
-  readonly collectionsTransformed: string[];
-  readonly metadata: Record<string, unknown>;
-}
-
-/**
- * Argument transformer interface
- */
-export interface ArgumentTransformer {
-  readonly name: string;
-  readonly priority: number;
-  canTransform(value: unknown, index: number): boolean;
-  transform(
-    value: unknown,
-    index: number,
-    tenantContext: TenantContext,
-    config: TenantIsolationConfig
-  ): ArgumentTransformationResult;
-}
-
-/**
- * Collection name transformer
- */
-export class CollectionNameTransformer implements ArgumentTransformer {
-  readonly name = 'collection-name';
-  readonly priority = 100;
-  private readonly logger = new Logger(CollectionNameTransformer.name);
-  private readonly isolationService = new TenantIsolationService();
-
-  canTransform(value: unknown): boolean {
-    return typeof value === 'string' && this.isCollectionName(value);
-  }
-
-  transform(
-    value: unknown,
-    index: number,
-    tenantContext: TenantContext,
-    config: TenantIsolationConfig
-  ): ArgumentTransformationResult {
-    const collectionName = String(value);
-
-    try {
-      // Generate tenant-aware collection name
-      const result = this.isolationService.generateTenantCollection(
-        collectionName,
-        tenantContext.tenantId,
-        config
-      );
-
-      this.logger.debug(
-        `Transformed collection: ${collectionName} -> ${result.tenantCollection} for tenant ${tenantContext.tenantId}`
-      );
-
-      return {
-        originalValue: value,
-        transformedValue: result.tenantCollection,
-        wasTransformed: true,
-        transformationType: 'collection-name',
-        metadata: {
-          baseCollection: result.baseCollection,
-          tenantId: result.tenantId,
-          namingStrategy: result.namingStrategy,
-          argumentIndex: index,
-        },
-      };
-    } catch (error) {
-      throw new TenantTransformationError(
-        `Failed to transform collection name: ${error.message}`,
-        index,
-        value,
-        tenantContext.tenantId
-      );
-    }
-  }
-
-  private isCollectionName(value: string): boolean {
-    // Collection name heuristics
-    return (
-      value.length > 0 &&
-      value.length < 200 &&
-      !value.includes(' ') &&
-      !value.includes('\n') &&
-      !value.includes('\t') &&
-      !/^https?:\/\//.test(value) && // Not a URL
-      !value.includes('@') && // Not an email
-      !/^\d+$/.test(value) && // Not just numbers
-      /^[a-zA-Z0-9_-]+$/.test(value) // Valid collection characters
-    );
-  }
-}
-
-/**
- * Options object transformer (for nested collection references)
- */
-export class OptionsObjectTransformer implements ArgumentTransformer {
-  readonly name = 'options-object';
-  readonly priority = 80;
-  private readonly logger = new Logger(OptionsObjectTransformer.name);
-  private readonly isolationService = new TenantIsolationService();
-
-  canTransform(value: unknown): boolean {
-    return (
-      typeof value === 'object' &&
-      value !== null &&
-      !Array.isArray(value) &&
-      this.hasCollectionReferences(value as Record<string, unknown>)
-    );
-  }
-
-  transform(
-    value: unknown,
-    index: number,
-    tenantContext: TenantContext,
-    config: TenantIsolationConfig
-  ): ArgumentTransformationResult {
-    const options = value as Record<string, unknown>;
-    const transformedOptions = { ...options };
-    const transformedCollections: string[] = [];
-
-    try {
-      // Transform known collection reference fields
-      const collectionFields = [
-        'collection',
-        'collectionName',
-        'fromCollection',
-        'toCollection',
-      ];
-
-      for (const field of collectionFields) {
-        if (typeof options[field] === 'string') {
-          const result = this.isolationService.generateTenantCollection(
-            String(options[field]),
-            tenantContext.tenantId,
-            config
-          );
-
-          transformedOptions[field] = result.tenantCollection;
-          transformedCollections.push(result.tenantCollection);
-        }
-      }
-
-      // Transform array of collection names
-      if (Array.isArray(options.collections)) {
-        transformedOptions.collections = options.collections.map((col) => {
-          if (typeof col === 'string') {
-            const result = this.isolationService.generateTenantCollection(
-              col,
-              tenantContext.tenantId,
-              config
-            );
-            transformedCollections.push(result.tenantCollection);
-            return result.tenantCollection;
-          }
-          return col;
-        });
-      }
-
-      const wasTransformed = transformedCollections.length > 0;
-
-      if (wasTransformed) {
-        this.logger.debug(
-          `Transformed options object with ${transformedCollections.length} collection references for tenant ${tenantContext.tenantId}`
-        );
-      }
-
-      return {
-        originalValue: value,
-        transformedValue: transformedOptions,
-        wasTransformed,
-        transformationType: 'options-object',
-        metadata: {
-          transformedCollections,
-          fieldsTransformed: Object.keys(transformedOptions).filter(
-            (key) => options[key] !== transformedOptions[key]
-          ),
-          argumentIndex: index,
-        },
-      };
-    } catch (error) {
-      throw new TenantTransformationError(
-        `Failed to transform options object: ${error.message}`,
-        index,
-        value,
-        tenantContext.tenantId
-      );
-    }
-  }
-
-  private hasCollectionReferences(options: Record<string, unknown>): boolean {
-    const collectionFields = [
-      'collection',
-      'collectionName',
-      'fromCollection',
-      'toCollection',
-      'collections',
-    ];
-
-    return collectionFields.some((field) => {
-      const value = options[field];
-      return typeof value === 'string' || Array.isArray(value);
-    });
-  }
-}
-
-/**
- * Document array transformer (adds tenant metadata)
- */
-export class DocumentArrayTransformer implements ArgumentTransformer {
-  readonly name = 'document-array';
-  readonly priority = 60;
-  private readonly logger = new Logger(DocumentArrayTransformer.name);
-
-  canTransform(value: unknown): boolean {
-    return Array.isArray(value) && this.isDocumentArray(value);
-  }
-
-  transform(
-    value: unknown,
-    index: number,
-    tenantContext: TenantContext,
-    config: TenantIsolationConfig
-  ): ArgumentTransformationResult {
-    const documents = value as Array<Record<string, unknown>>;
-
-    try {
-      const transformedDocuments = documents.map((doc) => ({
-        ...doc,
-        metadata: {
-          ...((doc.metadata as Record<string, unknown>) || {}),
-          tenantId: tenantContext.tenantId,
-          organizationId: tenantContext.organizationId,
-          transformedAt: new Date().toISOString(),
-        },
-      }));
-
-      this.logger.debug(
-        `Enriched ${documents.length} documents with tenant metadata for tenant ${tenantContext.tenantId}`
-      );
-
-      return {
-        originalValue: value,
-        transformedValue: transformedDocuments,
-        wasTransformed: true,
-        transformationType: 'document-array',
-        metadata: {
-          documentCount: documents.length,
-          tenantId: tenantContext.tenantId,
-          argumentIndex: index,
-        },
-      };
-    } catch (error) {
-      throw new TenantTransformationError(
-        `Failed to transform document array: ${error.message}`,
-        index,
-        value,
-        tenantContext.tenantId
-      );
-    }
-  }
-
-  private isDocumentArray(value: unknown[]): boolean {
-    // Check if array contains document-like objects
-    return (
-      value.length > 0 &&
-      value.every(
-        (item) =>
-          typeof item === 'object' && item !== null && !Array.isArray(item)
-      )
-    );
-  }
-}
-
-/**
- * Query parameters transformer
+ * Query parameters transformer for tenant filtering
  */
 export class QueryParametersTransformer implements ArgumentTransformer {
   readonly name = 'query-parameters';
   readonly priority = 70;
   private readonly logger = new Logger(QueryParametersTransformer.name);
 
-  canTransform(value: unknown): boolean {
+  canTransform(value: unknown, index: number): boolean {
     return (
       typeof value === 'object' &&
       value !== null &&
@@ -386,12 +105,17 @@ export class QueryParametersTransformer implements ArgumentTransformer {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      throw new TenantTransformationError(
-        `Failed to transform query parameters: ${errorMessage}`,
-        index,
-        value,
-        tenantContext.tenantId
-      );
+      this.logger.error(`Query parameter transformation failed:`, errorMessage);
+
+      return {
+        originalValue: value,
+        transformedValue: value,
+        wasTransformed: false,
+        transformationType: this.name,
+        metadata: {
+          error: errorMessage,
+        },
+      };
     }
   }
 
@@ -485,8 +209,10 @@ export class TenantArgumentTransformer {
               }
             } catch (error) {
               this.logger.error(
-                `Transformer ${transformer.name} failed for argument ${i}: ${error.message}`,
-                error.stack
+                `Transformer ${
+                  transformer.name
+                } failed for argument ${i}: ${getErrorMessage(error)}`,
+                error instanceof Error ? error.stack : undefined
               );
               throw error;
             }
@@ -538,8 +264,10 @@ export class TenantArgumentTransformer {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to transform arguments for tenant ${tenantContext.tenantId}: ${error.message}`,
-        error.stack
+        `Failed to transform arguments for tenant ${
+          tenantContext.tenantId
+        }: ${getErrorMessage(error)}`,
+        error instanceof Error ? error.stack : undefined
       );
       throw error;
     }

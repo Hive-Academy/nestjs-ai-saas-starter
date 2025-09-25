@@ -15,7 +15,9 @@ export interface EmbeddingMetadata {
 /**
  * Generic interface for embedding service implementations
  */
-export interface EmbeddingServiceInterface<TVector extends EmbeddingVector = EmbeddingVector> {
+export interface EmbeddingServiceInterface<
+  TVector extends EmbeddingVector = EmbeddingVector
+> {
   /**
    * Check if the embedding service is properly configured
    */
@@ -50,7 +52,9 @@ export interface EmbeddingServiceInterface<TVector extends EmbeddingVector = Emb
 /**
  * Document structure for embedding operations with type constraints
  */
-export interface EmbeddableDocument<TVector extends EmbeddingVector = EmbeddingVector> {
+export interface EmbeddableDocument<
+  TVector extends EmbeddingVector = EmbeddingVector
+> {
   readonly document?: string;
   readonly embedding?: TVector;
   readonly [key: string]: unknown;
@@ -59,7 +63,9 @@ export interface EmbeddableDocument<TVector extends EmbeddingVector = EmbeddingV
 /**
  * Options for embedding operations with type constraints
  */
-export interface EmbeddingOperationOptions<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface EmbeddingOperationOptions<
+  T extends Record<string, unknown> = Record<string, unknown>
+> {
   readonly field?: keyof T;
   readonly target?: keyof T;
   readonly includeEmbedding?: boolean;
@@ -70,7 +76,9 @@ export interface EmbeddingOperationOptions<T extends Record<string, unknown> = R
 /**
  * Result of an embedding operation
  */
-export interface EmbeddingResult<TVector extends EmbeddingVector = EmbeddingVector> {
+export interface EmbeddingResult<
+  TVector extends EmbeddingVector = EmbeddingVector
+> {
   readonly success: boolean;
   readonly embedding?: TVector;
   readonly error?: string;
@@ -89,7 +97,9 @@ export interface BatchEmbeddingRequest {
 /**
  * Batch embedding response
  */
-export interface BatchEmbeddingResponse<TVector extends EmbeddingVector = EmbeddingVector> {
+export interface BatchEmbeddingResponse<
+  TVector extends EmbeddingVector = EmbeddingVector
+> {
   readonly embeddings: readonly TVector[];
   readonly ids?: readonly string[];
   readonly metadata?: EmbeddingMetadata;

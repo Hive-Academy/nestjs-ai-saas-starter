@@ -8,6 +8,10 @@ import {
   logUnknownError,
   getErrorMessage,
 } from '../../utils/error-handling.utils';
+import type { ValidationResult } from '../../types/core.interface';
+
+// Re-export ValidationResult for use in other modules
+export type { ValidationResult } from '../../types/core.interface';
 
 /**
  * Tenant resource limits
@@ -108,16 +112,6 @@ export interface TenantRegistration {
     region: string;
     compliance: string[];
   };
-}
-
-/**
- * Validation result interface
- */
-export interface ValidationResult {
-  readonly isValid: boolean;
-  readonly errors: string[];
-  readonly warnings: string[];
-  readonly details?: Record<string, unknown>;
 }
 
 /**

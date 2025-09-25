@@ -1,9 +1,9 @@
 /**
  * @fileoverview Neo4j Constraint System - Main Export Index
- * 
+ *
  * This module provides a comprehensive constraint system for Neo4j entities
  * with hybrid decorator support (both class-level and property-level constraints).
- * 
+ *
  * Features:
  * - NODE KEY constraints for compound uniqueness
  * - UNIQUE constraints (single and compound)
@@ -15,7 +15,7 @@
  */
 
 // Constraint metadata interfaces and types
-export * from './constraint-metadata.interface';
+export * from '../interfaces/constraint-metadata.interface';
 
 // Constraint decorators
 export * from './node-key.decorator';
@@ -38,7 +38,7 @@ export type {
   NotNullConstraintMetadata,
   IndexConstraintMetadata,
   ValidationConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 
 // Re-export constraint decorator configuration types
 export type { NodeKeyConfig } from './node-key.decorator';
@@ -78,4 +78,4 @@ export {
 } from './validate.decorator';
 
 // Re-export metadata keys
-export { CONSTRAINT_METADATA_KEYS } from './constraint-metadata.interface';
+export { CONSTRAINT_METADATA_KEYS } from '../interfaces/constraint-metadata.interface';

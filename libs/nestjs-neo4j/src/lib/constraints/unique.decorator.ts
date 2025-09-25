@@ -1,6 +1,6 @@
 /**
  * @fileoverview Unique constraint decorators for Neo4j
- * 
+ *
  * Implements UNIQUE constraints for both single properties and compound property combinations.
  * Supports both class-level decorators for compound unique constraints and property-level
  * decorators for single property unique constraints.
@@ -12,7 +12,7 @@ import {
   type UniqueConstraintMetadata,
   type UniqueOptions,
   createConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 
 /**
  * Configuration for unique constraint decorators
@@ -38,17 +38,17 @@ export interface UniqueConfig extends Omit<UniqueOptions, 'validation'> {
 
 /**
  * @Unique class-level decorator for compound unique constraints
- * 
+ *
  * Creates a unique constraint on a combination of properties.
  * Use this when you need to ensure uniqueness across multiple properties together.
- * 
+ *
  * Features:
  * - Ensures uniqueness of property combinations
  * - Automatically creates backing index
  * - Runtime validation before database operations
  * - Configurable null handling
  * - Custom error messages
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -57,17 +57,17 @@ export interface UniqueConfig extends Omit<UniqueOptions, 'validation'> {
  * export class User {
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @Neo4jProperty()
  *   tenantId: string;
- * 
+ *
  *   @Neo4jProperty()
  *   username: string;
- * 
+ *
  *   @Neo4jProperty()
  *   domain: string;
  * }
- * 
+ *
  * // With custom configuration
  * @Unique(['email'], {
  *   name: 'user_email_unique',
@@ -80,48 +80,71 @@ export interface UniqueConfig extends Omit<UniqueOptions, 'validation'> {
  *   email: string;
  * }
  * ```
- * 
+ *
  * @param properties - Array of property names that must be unique together
  * @param config - Additional configuration options
  */
 export function Unique(
   properties: string[],
-  config: UniqueConfig = {}
+  config?: UniqueConfig
 ): ClassDecorator {
   return function (constructor: any) {
     // Validate input parameters
-    validateUniqueConfig(properties, config);
+    const finalConfig = config || {};
+    validateUniqueConfig(properties, finalConfig);
 
     // Get entity metadata for label information
     const entityMetadata = Reflect.getMetadata('entity', constructor);
     const label = entityMetadata?.label || constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<UniqueConstraintMetadata>({
-      type: 'UNIQUE',
-      target: 'class',
-      properties: [...properties], // Create a copy to avoid mutations
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_unique_${properties.join('_')}`,
-        errorMessage: config.errorMessage || `Unique constraint violation: properties ${properties.join(', ')} must be unique`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        nullsDistinct: config.nullsDistinct !== false, // Default to true
-        provider: config.provider,
-        caseSensitive: config.caseSensitive !== false, // Default to true
-      },
-      description: config.description || `Unique constraint on ${label} for properties: ${properties.join(', ')}`,
-    });
+    const constraintMetadata =
+      createConstraintMetadata<UniqueConstraintMetadata>({
+        type: 'UNIQUE',
+        target: 'class',
+        properties: [...properties], // Create a copy to avoid mutations
+        label,
+        options: {
+          name:
+            finalConfig.name ||
+            `${label.toLowerCase()}_unique_${properties.join('_')}`,
+          errorMessage:
+            finalConfig.errorMessage ||
+            `Unique constraint violation: properties ${properties.join(
+              ', '
+            )} must be unique`,
+          createOnStartup: finalConfig.createOnStartup !== false, // Default to true
+          nullsDistinct: finalConfig.nullsDistinct !== false, // Default to true
+          provider: finalConfig.provider,
+          caseSensitive: finalConfig.caseSensitive !== false, // Default to true
+        },
+        description:
+          finalConfig.description ||
+          `Unique constraint on ${label} for properties: ${properties.join(
+            ', '
+          )}`,
+      });
 
     // Store constraint metadata on the class
-    const existingUniqueConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, constructor) || [];
+    const existingUniqueConstraints =
+      Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, constructor) || [];
     existingUniqueConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, existingUniqueConstraints)(constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.UNIQUE,
+      existingUniqueConstraints
+    )(constructor);
 
     // Also add to class constraints collection
-    const existingClassConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, constructor) || [];
+    const existingClassConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+        constructor
+      ) || [];
     existingClassConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, existingClassConstraints)(constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+      existingClassConstraints
+    )(constructor);
 
     // Add validation methods to the prototype
     addUniqueValidationMethods(constructor.prototype, constraintMetadata);
@@ -132,16 +155,16 @@ export function Unique(
 
 /**
  * @UniqueProperty property-level decorator for single property unique constraints
- * 
+ *
  * Creates a unique constraint on a single property. Use this as a property decorator
  * when you need to ensure a single property is unique across all entities.
- * 
+ *
  * Features:
  * - Simple property-level usage
  * - Type-safe property targeting
  * - Configurable null handling
  * - Runtime validation
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -149,7 +172,7 @@ export function Unique(
  *   @UniqueProperty()
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @UniqueProperty({
  *     name: 'user_username_unique',
  *     caseSensitive: false,
@@ -157,55 +180,77 @@ export function Unique(
  *   })
  *   @Neo4jProperty()
  *   username: string;
- * 
+ *
  *   @Neo4jProperty()
  *   name: string;
  * }
  * ```
- * 
+ *
  * @param config - Configuration options for the unique constraint
  */
 export function UniqueProperty(
-  config: Omit<UniqueConfig, 'properties'> = {}
+  config?: Omit<UniqueConfig, 'properties'>
 ): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
     const propertyName = String(propertyKey);
-    
+
     // Validate configuration
-    validateUniquePropertyConfig(propertyName, config);
+    const finalConfig = config || {};
+    validateUniquePropertyConfig(propertyName, finalConfig);
 
     // Get entity metadata for label information
     const entityMetadata = Reflect.getMetadata('entity', target.constructor);
     const label = entityMetadata?.label || target.constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<UniqueConstraintMetadata>({
-      type: 'UNIQUE',
-      target: 'property',
-      properties: [propertyName],
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_${propertyName}_unique`,
-        errorMessage: config.errorMessage || `Property '${propertyName}' must be unique`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        nullsDistinct: config.nullsDistinct !== false, // Default to true
-        provider: config.provider,
-        caseSensitive: config.caseSensitive !== false, // Default to true
-      },
-      description: config.description || `Unique constraint on ${label}.${propertyName}`,
-    });
+    const constraintMetadata =
+      createConstraintMetadata<UniqueConstraintMetadata>({
+        type: 'UNIQUE',
+        target: 'property',
+        properties: [propertyName],
+        label,
+        options: {
+          name:
+            finalConfig.name || `${label.toLowerCase()}_${propertyName}_unique`,
+          errorMessage:
+            finalConfig.errorMessage ||
+            `Property '${propertyName}' must be unique`,
+          createOnStartup: finalConfig.createOnStartup !== false, // Default to true
+          nullsDistinct: finalConfig.nullsDistinct !== false, // Default to true
+          provider: finalConfig.provider,
+          caseSensitive: finalConfig.caseSensitive !== false, // Default to true
+        },
+        description:
+          finalConfig.description ||
+          `Unique constraint on ${label}.${propertyName}`,
+      });
 
     // Store constraint metadata on the property
-    const existingPropertyConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, target) || new Map();
-    const propertyConstraints = existingPropertyConstraints.get(propertyKey) || [];
+    const existingPropertyConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+        target
+      ) || new Map();
+    const propertyConstraints =
+      existingPropertyConstraints.get(propertyKey) || [];
     propertyConstraints.push(constraintMetadata);
     existingPropertyConstraints.set(propertyKey, propertyConstraints);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, existingPropertyConstraints)(target);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+      existingPropertyConstraints
+    )(target);
 
     // Also store in unique constraints collection
-    const existingUniqueConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, target.constructor) || [];
+    const existingUniqueConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.UNIQUE,
+        target.constructor
+      ) || [];
     existingUniqueConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, existingUniqueConstraints)(target.constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.UNIQUE,
+      existingUniqueConstraints
+    )(target.constructor);
 
     // Add validation methods to the prototype
     addUniqueValidationMethods(target, constraintMetadata);
@@ -214,10 +259,10 @@ export function UniqueProperty(
 
 /**
  * Multiple unique constraints decorator for complex entities
- * 
+ *
  * Allows defining multiple unique constraints on a single entity in a single decorator.
  * Useful for entities that need multiple uniqueness guarantees.
- * 
+ *
  * @example
  * ```typescript
  * @UniqueConstraints([
@@ -228,13 +273,13 @@ export function UniqueProperty(
  * export class User {
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @Neo4jProperty()
  *   username: string;
- * 
+ *
  *   @Neo4jProperty()
  *   domain: string;
- * 
+ *
  *   @Neo4jProperty()
  *   externalId?: string;
  * }
@@ -247,14 +292,14 @@ export function UniqueConstraints(
     // Apply each unique constraint
     constraints.forEach((constraintConfig, index) => {
       const { properties, ...config } = constraintConfig;
-      
+
       // Add index suffix to avoid naming conflicts
       const configWithIndex = {
         ...config,
         name: config.name || `unique_constraint_${index}`,
         description: config.description || `Unique constraint ${index + 1}`,
       };
-      
+
       Unique(properties, configWithIndex)(constructor);
     });
 
@@ -292,14 +337,22 @@ function addUniqueValidationMethods(
         values[property] = value;
 
         // Case sensitivity handling for strings
-        if (typeof value === 'string' && constraintMetadata.options?.caseSensitive === false) {
+        if (
+          typeof value === 'string' &&
+          constraintMetadata.options?.caseSensitive === false
+        ) {
           values[property] = value.toLowerCase();
         }
       }
 
       // If all values are null and nullsDistinct is false, skip validation
-      const hasNonNullValues = Object.values(values).some(v => v !== null && v !== undefined);
-      if (!hasNonNullValues && constraintMetadata.options?.nullsDistinct === false) {
+      const hasNonNullValues = Object.values(values).some(
+        (v) => v !== null && v !== undefined
+      );
+      if (
+        !hasNonNullValues &&
+        constraintMetadata.options?.nullsDistinct === false
+      ) {
         return { valid: true, errors: [] };
       }
 
@@ -320,7 +373,10 @@ function addUniqueValidationMethods(
         let value = this[property];
 
         // Apply case sensitivity transformation
-        if (typeof value === 'string' && constraintMetadata.options?.caseSensitive === false) {
+        if (
+          typeof value === 'string' &&
+          constraintMetadata.options?.caseSensitive === false
+        ) {
           value = value.toLowerCase();
         }
 
@@ -334,13 +390,16 @@ function addUniqueValidationMethods(
   // Add Cypher query generation for uniqueness checks
   const queryMethodName = `getUniqueQuery_${methodSuffix}`;
   if (!prototype[queryMethodName]) {
-    prototype[queryMethodName] = function (excludeId?: string): { query: string; params: Record<string, any> } {
+    prototype[queryMethodName] = function (excludeId?: string): {
+      query: string;
+      params: Record<string, any>;
+    } {
       const values = this[extractMethodName]();
       const conditions: string[] = [];
       const params: Record<string, any> = {};
 
       // Build WHERE conditions
-      constraintMetadata.properties.forEach(prop => {
+      constraintMetadata.properties.forEach((prop) => {
         const value = values[prop];
         if (value !== null && value !== undefined) {
           conditions.push(`n.${prop} = $${prop}`);
@@ -356,7 +415,8 @@ function addUniqueValidationMethods(
         params.excludeId = excludeId;
       }
 
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const whereClause =
+        conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       return {
         query: `MATCH (n:${constraintMetadata.label}) ${whereClause} RETURN count(n) as count`,
@@ -369,7 +429,10 @@ function addUniqueValidationMethods(
 /**
  * Validate unique constraint configuration
  */
-function validateUniqueConfig(properties: string[], config: UniqueConfig): void {
+function validateUniqueConfig(
+  properties: string[],
+  config: UniqueConfig
+): void {
   // Validate properties array
   if (!Array.isArray(properties)) {
     throw new Error('Unique decorator requires an array of property names');
@@ -397,7 +460,9 @@ function validateUniqueConfig(properties: string[], config: UniqueConfig): void 
 
     // Basic validation for Neo4j property names
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(property)) {
-      throw new Error(`Unique property '${property}' must be a valid Neo4j property name`);
+      throw new Error(
+        `Unique property '${property}' must be a valid Neo4j property name`
+      );
     }
   });
 
@@ -410,11 +475,17 @@ function validateUniqueConfig(properties: string[], config: UniqueConfig): void 
     throw new Error('Unique errorMessage must be a string');
   }
 
-  if (config.nullsDistinct !== undefined && typeof config.nullsDistinct !== 'boolean') {
+  if (
+    config.nullsDistinct !== undefined &&
+    typeof config.nullsDistinct !== 'boolean'
+  ) {
     throw new Error('Unique nullsDistinct must be a boolean');
   }
 
-  if (config.caseSensitive !== undefined && typeof config.caseSensitive !== 'boolean') {
+  if (
+    config.caseSensitive !== undefined &&
+    typeof config.caseSensitive !== 'boolean'
+  ) {
     throw new Error('Unique caseSensitive must be a boolean');
   }
 
@@ -426,14 +497,19 @@ function validateUniqueConfig(properties: string[], config: UniqueConfig): void 
 /**
  * Validate unique property constraint configuration
  */
-function validateUniquePropertyConfig(propertyName: string, config: Omit<UniqueConfig, 'properties'>): void {
+function validateUniquePropertyConfig(
+  propertyName: string,
+  config: Omit<UniqueConfig, 'properties'>
+): void {
   if (!propertyName || typeof propertyName !== 'string') {
     throw new Error('UniqueProperty decorator requires a valid property name');
   }
 
   // Basic validation for Neo4j property names
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(propertyName)) {
-    throw new Error(`UniqueProperty '${propertyName}' must be a valid Neo4j property name`);
+    throw new Error(
+      `UniqueProperty '${propertyName}' must be a valid Neo4j property name`
+    );
   }
 
   // Validate configuration options (same as validateUniqueConfig but without properties)
@@ -445,11 +521,17 @@ function validateUniquePropertyConfig(propertyName: string, config: Omit<UniqueC
     throw new Error('UniqueProperty errorMessage must be a string');
   }
 
-  if (config.nullsDistinct !== undefined && typeof config.nullsDistinct !== 'boolean') {
+  if (
+    config.nullsDistinct !== undefined &&
+    typeof config.nullsDistinct !== 'boolean'
+  ) {
     throw new Error('UniqueProperty nullsDistinct must be a boolean');
   }
 
-  if (config.caseSensitive !== undefined && typeof config.caseSensitive !== 'boolean') {
+  if (
+    config.caseSensitive !== undefined &&
+    typeof config.caseSensitive !== 'boolean'
+  ) {
     throw new Error('UniqueProperty caseSensitive must be a boolean');
   }
 
@@ -461,8 +543,12 @@ function validateUniquePropertyConfig(propertyName: string, config: Omit<UniqueC
 /**
  * Utility function to extract unique constraints from a class
  */
-export function getUniqueConstraints(constructor: any): UniqueConstraintMetadata[] {
-  return Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, constructor) || [];
+export function getUniqueConstraints(
+  constructor: any
+): UniqueConstraintMetadata[] {
+  return (
+    Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.UNIQUE, constructor) || []
+  );
 }
 
 /**
@@ -478,13 +564,18 @@ export function hasUniqueConstraints(constructor: any): boolean {
 export function generateUniqueConstraintQuery(
   constraint: UniqueConstraintMetadata
 ): { query: string; name: string } {
-  const constraintName = constraint.options?.name || 
-    `${constraint.label?.toLowerCase() || 'node'}_unique_${constraint.properties.join('_')}`;
-  
-  const propertiesClause = constraint.properties.map(prop => `n.${prop}`).join(', ');
-  
+  const constraintName =
+    constraint.options?.name ||
+    `${
+      constraint.label?.toLowerCase() || 'node'
+    }_unique_${constraint.properties.join('_')}`;
+
+  const propertiesClause = constraint.properties
+    .map((prop) => `n.${prop}`)
+    .join(', ');
+
   let query = `CREATE CONSTRAINT ${constraintName} FOR (n:${constraint.label}) REQUIRE (${propertiesClause}) IS UNIQUE`;
-  
+
   // Add provider options if specified
   if (constraint.options?.provider) {
     query += ` OPTIONS {indexProvider: '${constraint.options.provider}'}`;

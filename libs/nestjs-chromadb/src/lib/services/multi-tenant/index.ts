@@ -20,7 +20,6 @@ export type {
   TenantResourceLimits,
   TenantSecurityPolicy,
   TenantRegistration,
-  ValidationResult,
   OperationValidationContext,
 } from './tenant-validation.service';
 

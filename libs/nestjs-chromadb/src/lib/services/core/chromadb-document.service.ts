@@ -17,7 +17,6 @@ import type {
   GetDocumentsOptions,
 } from '../../types/core.interface';
 
-
 /**
  * ChromaDB Document Operations Service
  *
@@ -42,17 +41,25 @@ export class ChromaDBDocumentService {
     options?: ChromaBulkOptions
   ): Promise<void> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
       const batchSize = options?.batchSize || 100;
 
       // Process documents in batches
       for (let i = 0; i < documents.length; i += batchSize) {
         const batch = documents.slice(i, i + batchSize);
 
-        const ids = batch.map(doc => doc.id);
-        const docs = batch.map(doc => doc.document).filter(Boolean) as string[];
-        const metadatas = batch.map(doc => doc.metadata).filter(Boolean) as Metadata[];
-        const embeddings = batch.map(doc => doc.embedding).filter(Boolean) as number[][];
+        const ids = batch.map((doc) => doc.id);
+        const docs = batch
+          .map((doc) => doc.document)
+          .filter(Boolean) as string[];
+        const metadatas = batch
+          .map((doc) => doc.metadata)
+          .filter(Boolean) as Metadata[];
+        const embeddings = batch
+          .map((doc) => doc.embedding)
+          .filter(Boolean) as number[][];
 
         try {
           await collection.add({
@@ -62,7 +69,11 @@ export class ChromaDBDocumentService {
             embeddings: embeddings.length > 0 ? embeddings : undefined,
           });
 
-          this.logger.debug(`Added batch ${Math.floor(i / batchSize) + 1} with ${batch.length} documents`);
+          this.logger.debug(
+            `Added batch ${Math.floor(i / batchSize) + 1} with ${
+              batch.length
+            } documents`
+          );
         } catch (error) {
           throw new ChromaClientError(
             `Failed to add documents batch ${Math.floor(i / batchSize) + 1}: ${
@@ -72,7 +83,9 @@ export class ChromaDBDocumentService {
         }
       }
 
-      this.logger.log(`Successfully added ${documents.length} documents to collection '${collectionName}'`);
+      this.logger.log(
+        `Successfully added ${documents.length} documents to collection '${collectionName}'`
+      );
     });
   }
 
@@ -85,17 +98,25 @@ export class ChromaDBDocumentService {
     options?: ChromaBulkOptions
   ): Promise<void> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
       const batchSize = options?.batchSize || 100;
 
       // Process documents in batches
       for (let i = 0; i < documents.length; i += batchSize) {
         const batch = documents.slice(i, i + batchSize);
 
-        const ids = batch.map(doc => doc.id);
-        const docs = batch.map(doc => doc.document).filter(Boolean) as string[];
-        const metadatas = batch.map(doc => doc.metadata).filter(Boolean) as Metadata[];
-        const embeddings = batch.map(doc => doc.embedding).filter(Boolean) as number[][];
+        const ids = batch.map((doc) => doc.id);
+        const docs = batch
+          .map((doc) => doc.document)
+          .filter(Boolean) as string[];
+        const metadatas = batch
+          .map((doc) => doc.metadata)
+          .filter(Boolean) as Metadata[];
+        const embeddings = batch
+          .map((doc) => doc.embedding)
+          .filter(Boolean) as number[][];
 
         try {
           await collection.update({
@@ -105,17 +126,23 @@ export class ChromaDBDocumentService {
             embeddings: embeddings.length > 0 ? embeddings : undefined,
           });
 
-          this.logger.debug(`Updated batch ${Math.floor(i / batchSize) + 1} with ${batch.length} documents`);
+          this.logger.debug(
+            `Updated batch ${Math.floor(i / batchSize) + 1} with ${
+              batch.length
+            } documents`
+          );
         } catch (error) {
           throw new ChromaClientError(
-            `Failed to update documents batch ${Math.floor(i / batchSize) + 1}: ${
-              error instanceof Error ? error.message : error
-            }`
+            `Failed to update documents batch ${
+              Math.floor(i / batchSize) + 1
+            }: ${error instanceof Error ? error.message : error}`
           );
         }
       }
 
-      this.logger.log(`Successfully updated ${documents.length} documents in collection '${collectionName}'`);
+      this.logger.log(
+        `Successfully updated ${documents.length} documents in collection '${collectionName}'`
+      );
     });
   }
 
@@ -128,17 +155,25 @@ export class ChromaDBDocumentService {
     options?: ChromaBulkOptions
   ): Promise<void> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
       const batchSize = options?.batchSize || 100;
 
       // Process documents in batches
       for (let i = 0; i < documents.length; i += batchSize) {
         const batch = documents.slice(i, i + batchSize);
 
-        const ids = batch.map(doc => doc.id);
-        const docs = batch.map(doc => doc.document).filter(Boolean) as string[];
-        const metadatas = batch.map(doc => doc.metadata).filter(Boolean) as Metadata[];
-        const embeddings = batch.map(doc => doc.embedding).filter(Boolean) as number[][];
+        const ids = batch.map((doc) => doc.id);
+        const docs = batch
+          .map((doc) => doc.document)
+          .filter(Boolean) as string[];
+        const metadatas = batch
+          .map((doc) => doc.metadata)
+          .filter(Boolean) as Metadata[];
+        const embeddings = batch
+          .map((doc) => doc.embedding)
+          .filter(Boolean) as number[][];
 
         try {
           await collection.upsert({
@@ -148,17 +183,23 @@ export class ChromaDBDocumentService {
             embeddings: embeddings.length > 0 ? embeddings : undefined,
           });
 
-          this.logger.debug(`Upserted batch ${Math.floor(i / batchSize) + 1} with ${batch.length} documents`);
+          this.logger.debug(
+            `Upserted batch ${Math.floor(i / batchSize) + 1} with ${
+              batch.length
+            } documents`
+          );
         } catch (error) {
           throw new ChromaClientError(
-            `Failed to upsert documents batch ${Math.floor(i / batchSize) + 1}: ${
-              error instanceof Error ? error.message : error
-            }`
+            `Failed to upsert documents batch ${
+              Math.floor(i / batchSize) + 1
+            }: ${error instanceof Error ? error.message : error}`
           );
         }
       }
 
-      this.logger.log(`Successfully upserted ${documents.length} documents in collection '${collectionName}'`);
+      this.logger.log(
+        `Successfully upserted ${documents.length} documents in collection '${collectionName}'`
+      );
     });
   }
 
@@ -172,7 +213,9 @@ export class ChromaDBDocumentService {
     whereDocument?: WhereDocument
   ): Promise<void> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
 
       try {
         await collection.delete({
@@ -182,7 +225,9 @@ export class ChromaDBDocumentService {
         });
 
         const deleteCount = ids ? ids.length : 'filtered';
-        this.logger.log(`Successfully deleted ${deleteCount} documents from collection '${collectionName}'`);
+        this.logger.log(
+          `Successfully deleted ${deleteCount} documents from collection '${collectionName}'`
+        );
       } catch (error) {
         throw new ChromaClientError(
           `Failed to delete documents from collection '${collectionName}': ${
@@ -201,7 +246,9 @@ export class ChromaDBDocumentService {
     options: GetDocumentsOptions = {}
   ): Promise<GetResult> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
 
       try {
         const result = await collection.get({
@@ -213,7 +260,9 @@ export class ChromaDBDocumentService {
           include: options.include as Include,
         });
 
-        this.logger.debug(`Retrieved ${result.ids.length} documents from collection '${collectionName}'`);
+        this.logger.debug(
+          `Retrieved ${result.ids.length} documents from collection '${collectionName}'`
+        );
         return result;
       } catch (error) {
         throw new ChromaClientError(
@@ -228,16 +277,17 @@ export class ChromaDBDocumentService {
   /**
    * Peek documents from collection
    */
-  async peekDocuments(
-    collectionName: string,
-    limit = 10
-  ): Promise<GetResult> {
+  async peekDocuments(collectionName: string, limit = 10): Promise<GetResult> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
 
       try {
         const result = await collection.peek({ limit });
-        this.logger.debug(`Peeked ${result.ids.length} documents from collection '${collectionName}'`);
+        this.logger.debug(
+          `Peeked ${result.ids.length} documents from collection '${collectionName}'`
+        );
         return result;
       } catch (error) {
         throw new ChromaClientError(
@@ -259,12 +309,17 @@ export class ChromaDBDocumentService {
     options: ChromaSearchOptions = {}
   ): Promise<ChromaSearchResult> {
     return this.connectionService.executeWithRetry(async () => {
-      const collection = await this.collectionService.getCollection(collectionName);
+      const collection = await this.collectionService.getCollection(
+        collectionName
+      );
 
       try {
         const result = await collection.query({
           queryTexts: queryTexts.length > 0 ? queryTexts : undefined,
-          queryEmbeddings: queryEmbeddings && queryEmbeddings.length > 0 ? queryEmbeddings : undefined,
+          queryEmbeddings:
+            queryEmbeddings && queryEmbeddings.length > 0
+              ? queryEmbeddings
+              : undefined,
           nResults: options.nResults || 10,
           where: options.where,
           whereDocument: options.whereDocument,
@@ -282,8 +337,13 @@ export class ChromaDBDocumentService {
           distances: result.distances,
         };
 
-        const resultCount = result.ids.reduce((total, ids) => total + ids.length, 0);
-        this.logger.debug(`Search returned ${resultCount} results from collection '${collectionName}'`);
+        const resultCount = result.ids.reduce(
+          (total, ids) => total + ids.length,
+          0
+        );
+        this.logger.debug(
+          `Search returned ${resultCount} results from collection '${collectionName}'`
+        );
 
         return searchResult;
       } catch (error) {

@@ -177,6 +177,14 @@ export class CircuitBreaker {
   }
 
   /**
+   * Get current circuit breaker state
+   * @returns Current state
+   */
+  get state(): CircuitBreakerState {
+    return this.internalState.state;
+  }
+
+  /**
    * Get current circuit breaker statistics
    * @returns Current statistics
    */

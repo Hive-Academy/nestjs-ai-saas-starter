@@ -1,6 +1,6 @@
 /**
  * @fileoverview NodeKey constraint decorator for Neo4j
- * 
+ *
  * Implements NODE KEY constraints which ensure uniqueness of a combination of properties
  * and automatically create an index. Node keys are the strongest constraint type in Neo4j.
  */
@@ -11,7 +11,7 @@ import {
   type NodeKeyConstraintMetadata,
   type NodeKeyOptions,
   createConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 
 /**
  * Configuration for the @NodeKey decorator
@@ -35,17 +35,17 @@ export interface NodeKeyConfig extends Omit<NodeKeyOptions, 'validation'> {
 
 /**
  * @NodeKey decorator for creating compound node key constraints
- * 
+ *
  * Node keys ensure that a combination of properties is unique across all nodes
  * with the same label. They also automatically create an index for performance.
- * 
+ *
  * Features:
  * - Ensures uniqueness of property combinations
  * - Automatically creates backing index
  * - Supports compound keys (multiple properties)
  * - Runtime validation before database operations
  * - Automatic constraint creation on application startup
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -53,14 +53,14 @@ export interface NodeKeyConfig extends Omit<NodeKeyOptions, 'validation'> {
  * export class User {
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @Neo4jProperty()
  *   tenantId: string;
- * 
+ *
  *   @Neo4jProperty()
  *   name: string;
  * }
- * 
+ *
  * // Custom configuration
  * @NodeKey(['id'], {
  *   name: 'user_id_key',
@@ -72,7 +72,7 @@ export interface NodeKeyConfig extends Omit<NodeKeyOptions, 'validation'> {
  *   id: string;
  * }
  * ```
- * 
+ *
  * @param properties - Array of property names that form the node key
  * @param config - Additional configuration options
  */
@@ -89,28 +89,49 @@ export function NodeKey(
     const label = entityMetadata?.label || constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<NodeKeyConstraintMetadata>({
-      type: 'NODE_KEY',
-      target: 'class',
-      properties: [...properties], // Create a copy to avoid mutations
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_node_key_${properties.join('_')}`,
-        errorMessage: config.errorMessage || `Node key violation: properties ${properties.join(', ')} must be unique`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        allowPartial: config.allowPartial || false,
-        provider: config.provider,
-      },
-      description: config.description || `Node key constraint on ${label} for properties: ${properties.join(', ')}`,
-    });
+    const constraintMetadata =
+      createConstraintMetadata<NodeKeyConstraintMetadata>({
+        type: 'NODE_KEY',
+        target: 'class',
+        properties: [...properties], // Create a copy to avoid mutations
+        label,
+        options: {
+          name:
+            config.name ||
+            `${label.toLowerCase()}_node_key_${properties.join('_')}`,
+          errorMessage:
+            config.errorMessage ||
+            `Node key violation: properties ${properties.join(
+              ', '
+            )} must be unique`,
+          createOnStartup: config.createOnStartup !== false, // Default to true
+          allowPartial: config.allowPartial || false,
+          provider: config.provider,
+        },
+        description:
+          config.description ||
+          `Node key constraint on ${label} for properties: ${properties.join(
+            ', '
+          )}`,
+      });
 
     // Store constraint metadata on the class
-    SetMetadata(CONSTRAINT_METADATA_KEYS.NODE_KEY, constraintMetadata)(constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.NODE_KEY,
+      constraintMetadata
+    )(constructor);
 
     // Also add to class constraints collection
-    const existingClassConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, constructor) || [];
+    const existingClassConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+        constructor
+      ) || [];
     existingClassConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, existingClassConstraints)(constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+      existingClassConstraints
+    )(constructor);
 
     // Add validation methods to the prototype
     addNodeKeyValidationMethods(constructor.prototype, constraintMetadata);
@@ -121,10 +142,10 @@ export function NodeKey(
 
 /**
  * Multiple node keys decorator for complex entities
- * 
+ *
  * Allows defining multiple node key constraints on a single entity.
  * Useful for entities that need multiple uniqueness guarantees.
- * 
+ *
  * @example
  * ```typescript
  * @NodeKeys([
@@ -134,13 +155,13 @@ export function NodeKey(
  * export class User {
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @Neo4jProperty()
  *   tenantId: string;
- * 
+ *
  *   @Neo4jProperty()
  *   username: string;
- * 
+ *
  *   @Neo4jProperty()
  *   domain: string;
  * }
@@ -153,14 +174,14 @@ export function NodeKeys(
     // Apply each node key constraint
     nodeKeys.forEach((nodeKeyConfig, index) => {
       const { properties, ...config } = nodeKeyConfig;
-      
+
       // Add index suffix to avoid naming conflicts
       const configWithIndex = {
         ...config,
         name: config.name || `${config.name || 'node_key'}_${index}`,
         description: config.description || `Node key constraint ${index + 1}`,
       };
-      
+
       NodeKey(properties, configWithIndex)(constructor);
     });
 
@@ -175,7 +196,9 @@ function addNodeKeyValidationMethods(
   prototype: any,
   constraintMetadata: NodeKeyConstraintMetadata
 ): void {
-  const methodName = `validateNodeKey_${constraintMetadata.properties.join('_')}`;
+  const methodName = `validateNodeKey_${constraintMetadata.properties.join(
+    '_'
+  )}`;
 
   // Add validation method
   if (!prototype[methodName]) {
@@ -189,7 +212,9 @@ function addNodeKeyValidationMethods(
 
         if (value === null || value === undefined) {
           if (!constraintMetadata.options?.allowPartial) {
-            errors.push(`Node key property '${property}' cannot be null or undefined`);
+            errors.push(
+              `Node key property '${property}' cannot be null or undefined`
+            );
           }
         } else {
           values[property] = value;
@@ -214,7 +239,9 @@ function addNodeKeyValidationMethods(
   }
 
   // Add node key value extraction method
-  const extractMethodName = `getNodeKeyValues_${constraintMetadata.properties.join('_')}`;
+  const extractMethodName = `getNodeKeyValues_${constraintMetadata.properties.join(
+    '_'
+  )}`;
   if (!prototype[extractMethodName]) {
     prototype[extractMethodName] = function (): Record<string, any> {
       const values: Record<string, any> = {};
@@ -231,12 +258,17 @@ function addNodeKeyValidationMethods(
   }
 
   // Add Cypher query generation for node key checks
-  const queryMethodName = `getNodeKeyQuery_${constraintMetadata.properties.join('_')}`;
+  const queryMethodName = `getNodeKeyQuery_${constraintMetadata.properties.join(
+    '_'
+  )}`;
   if (!prototype[queryMethodName]) {
-    prototype[queryMethodName] = function (): { query: string; params: Record<string, any> } {
+    prototype[queryMethodName] = function (): {
+      query: string;
+      params: Record<string, any>;
+    } {
       const values = this[extractMethodName]();
       const whereConditions = constraintMetadata.properties
-        .map(prop => `n.${prop} = $${prop}`)
+        .map((prop) => `n.${prop} = $${prop}`)
         .join(' AND ');
 
       return {
@@ -250,7 +282,10 @@ function addNodeKeyValidationMethods(
 /**
  * Validate node key configuration
  */
-function validateNodeKeyConfig(properties: string[], config: NodeKeyConfig): void {
+function validateNodeKeyConfig(
+  properties: string[],
+  config: NodeKeyConfig
+): void {
   // Validate properties array
   if (!Array.isArray(properties)) {
     throw new Error('NodeKey decorator requires an array of property names');
@@ -278,7 +313,9 @@ function validateNodeKeyConfig(properties: string[], config: NodeKeyConfig): voi
 
     // Basic validation for Neo4j property names
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(property)) {
-      throw new Error(`NodeKey property '${property}' must be a valid Neo4j property name`);
+      throw new Error(
+        `NodeKey property '${property}' must be a valid Neo4j property name`
+      );
     }
   });
 
@@ -291,7 +328,10 @@ function validateNodeKeyConfig(properties: string[], config: NodeKeyConfig): voi
     throw new Error('NodeKey errorMessage must be a string');
   }
 
-  if (config.allowPartial !== undefined && typeof config.allowPartial !== 'boolean') {
+  if (
+    config.allowPartial !== undefined &&
+    typeof config.allowPartial !== 'boolean'
+  ) {
     throw new Error('NodeKey allowPartial must be a boolean');
   }
 
@@ -303,7 +343,9 @@ function validateNodeKeyConfig(properties: string[], config: NodeKeyConfig): voi
   if (config.provider) {
     const validProviders = ['btree-1.0', 'range-1.0', 'text-1.0', 'point-1.0'];
     if (!validProviders.includes(config.provider)) {
-      console.warn(`NodeKey provider '${config.provider}' is not a standard Neo4j index provider`);
+      console.warn(
+        `NodeKey provider '${config.provider}' is not a standard Neo4j index provider`
+      );
     }
   }
 }
@@ -311,9 +353,17 @@ function validateNodeKeyConfig(properties: string[], config: NodeKeyConfig): voi
 /**
  * Utility function to extract node key constraints from a class
  */
-export function getNodeKeyConstraints(constructor: any): NodeKeyConstraintMetadata[] {
-  const classConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS, constructor) || [];
-  return classConstraints.filter((constraint: any) => constraint.type === 'NODE_KEY');
+export function getNodeKeyConstraints(
+  constructor: any
+): NodeKeyConstraintMetadata[] {
+  const classConstraints =
+    Reflect.getMetadata(
+      CONSTRAINT_METADATA_KEYS.CLASS_CONSTRAINTS,
+      constructor
+    ) || [];
+  return classConstraints.filter(
+    (constraint: any) => constraint.type === 'NODE_KEY'
+  );
 }
 
 /**
@@ -329,13 +379,18 @@ export function hasNodeKeyConstraints(constructor: any): boolean {
 export function generateNodeKeyConstraintQuery(
   constraint: NodeKeyConstraintMetadata
 ): { query: string; name: string } {
-  const constraintName = constraint.options?.name || 
-    `${constraint.label?.toLowerCase() || 'node'}_node_key_${constraint.properties.join('_')}`;
-  
-  const propertiesClause = constraint.properties.map(prop => `n.${prop}`).join(', ');
-  
+  const constraintName =
+    constraint.options?.name ||
+    `${
+      constraint.label?.toLowerCase() || 'node'
+    }_node_key_${constraint.properties.join('_')}`;
+
+  const propertiesClause = constraint.properties
+    .map((prop) => `n.${prop}`)
+    .join(', ');
+
   let query = `CREATE CONSTRAINT ${constraintName} FOR (n:${constraint.label}) REQUIRE (${propertiesClause}) IS NODE KEY`;
-  
+
   // Add provider options if specified
   if (constraint.options?.provider) {
     query += ` OPTIONS {indexProvider: '${constraint.options.provider}'}`;

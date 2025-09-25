@@ -17,7 +17,7 @@ import {
   type LengthValidation,
   type CustomValidation,
   createConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 
 /**
  * Configuration for validation decorators
@@ -95,12 +95,19 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *
  * @param config - Validation configuration
  */
-export function Validate(config: ValidateConfig): PropertyDecorator {
+export function Validate(config?: ValidateConfig): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
     const propertyName = String(propertyKey);
 
+    // Default configuration if none provided
+    const finalConfig = config || {
+      validation: {
+        required: false,
+      },
+    };
+
     // Validate configuration
-    validateValidationConfig(propertyName, config);
+    validateValidationConfig(propertyName, finalConfig);
 
     // Get entity metadata for label information
     const entityMetadata = Reflect.getMetadata('entity', target.constructor);
@@ -115,15 +122,16 @@ export function Validate(config: ValidateConfig): PropertyDecorator {
         label,
         options: {
           name:
-            config.name || `${label.toLowerCase()}_${propertyName}_validation`,
+            finalConfig.name ||
+            `${label.toLowerCase()}_${propertyName}_validation`,
           errorMessage:
-            config.errorMessage ||
+            finalConfig.errorMessage ||
             `Validation failed for property '${propertyName}'`,
-          createOnStartup: config.createOnStartup !== false, // Default to true
-          validation: config.validation,
+          createOnStartup: finalConfig.createOnStartup !== false, // Default to true
+          validation: finalConfig.validation,
         },
         description:
-          config.description ||
+          finalConfig.description ||
           `Validation constraint on ${label}.${propertyName}`,
       });
 
@@ -164,16 +172,25 @@ export function Validate(config: ValidateConfig): PropertyDecorator {
  */
 
 /**
+ * Options for shorthand validation decorators
+ */
+export interface ShorthandValidationConfig
+  extends Omit<ValidateConfig, 'validation'> {
+  /** Whether the field is required */
+  required?: boolean;
+}
+
+/**
  * @Email decorator for email validation
  */
 export function Email(
-  config: Omit<ValidateConfig, 'validation'> = {}
+  config: ShorthandValidationConfig = {}
 ): PropertyDecorator {
   return Validate({
     ...config,
     validation: {
       format: 'email',
-      required: true,
+      required: config.required ?? true,
     },
     errorMessage: config.errorMessage || 'Must be a valid email address',
   });

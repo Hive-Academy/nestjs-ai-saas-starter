@@ -18,6 +18,7 @@ export interface TenantCollectionResult {
   readonly baseCollection: string;
   readonly tenantId: string;
   readonly namingStrategy: string;
+  readonly prefix?: string;
 }
 
 /**
@@ -83,6 +84,10 @@ export class TenantIsolationService {
         baseCollection,
         tenantId,
         namingStrategy: config.namingStrategy,
+        prefix:
+          config.namingStrategy === 'prefix'
+            ? `tenant_${tenantId}_`
+            : undefined,
       };
     } catch (error: unknown) {
       logUnknownError(

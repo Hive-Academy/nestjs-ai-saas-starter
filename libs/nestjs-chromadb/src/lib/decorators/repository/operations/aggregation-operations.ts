@@ -5,7 +5,7 @@
  * Following Single Responsibility Principle - handles only aggregation and statistics
  */
 
-import { Logger } from '@nestjs/common';
+// Logger removed - operations log via parent service
 import type { Where, WhereDocument } from 'chromadb';
 import type { BaseDocument } from '../../../types/core.interface';
 import type { ChromaRepositoryConfig } from '../repository-metadata';
@@ -19,7 +19,6 @@ import { repositoryErrorHandler } from '../repository-validator';
 export class AggregationOperations<
   TDocument extends BaseDocument = BaseDocument
 > {
-  private readonly logger = new Logger(AggregationOperations.name);
   private readonly helpers: RepositoryHelpers<TDocument>;
 
   constructor(

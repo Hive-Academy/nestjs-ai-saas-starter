@@ -18,23 +18,29 @@ export type * from './lib/interfaces/query-result.interface';
 // Core Type Definitions
 export type * from './lib/types/neo4j-types';
 
-// Decorators
+// Safety & Validation Decorators (PRIMARY)
+export {
+  Safe,
+  type SafeConfig,
+  type SafeContext,
+  type SafeValidationError,
+} from './lib/decorators/safe.decorator';
+
+// Core Decorators
 export * from './lib/decorators/inject-neo4j.decorator';
 export * from './lib/decorators/transactional.decorator';
-export * from './lib/decorators/neo4j-safe.decorator';
-export * from './lib/decorators/validate-neo4j-params.decorator';
+
+// Legacy Decorators (DEPRECATED - use @Safe() instead)
+export {
+  Neo4jSafe,
+  type Neo4jSafeOptions,
+} from './lib/decorators/safe.decorator';
 
 //  Decorator Framework
 export * from './lib/decorators/cypher-query.decorator';
 export * from './lib/decorators/repository.decorator';
 export * from './lib/decorators/entity.decorator';
-export type * from './lib/decorators/decorator-metadata.interface';
-
-// Phase 7: Advanced Type Safety Decorators
-export {
-  TypedCypherQuery,
-  type TypedCypherQueryConfig as TypedQueryConfig,
-} from './lib/decorators/typed-cypher-query.decorator';
+export * from './lib/interfaces/decorator-metadata.interface';
 
 // Phase 5: Security & Validation Decorators
 export {
@@ -125,13 +131,16 @@ export type {
 
 // Explicitly re-export transaction options to avoid conflicts
 export type { TransactionOptions as BasicTransactionOptions } from './lib/interfaces/neo4j-connection.interface';
-export type { TransactionOptions, ValidationOptions } from './lib/decorators/decorator-metadata.interface';
+export type { TransactionOptions } from './lib/interfaces/decorator-metadata.interface';
 
 // =============================================================================
 // CONVENIENCE RE-EXPORTS FOR COMMON USE CASES
 // =============================================================================
 
-//  Decorator Shortcuts
+// Safety Decorator Shortcuts (RECOMMENDED)
+// Safe is already exported above in the primary exports section
+
+//  Query Decorator Shortcuts
 export {
   CypherQuery,
   Query,

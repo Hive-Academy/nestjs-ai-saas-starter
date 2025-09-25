@@ -1,13 +1,13 @@
 /**
  * @fileoverview Decorator Usage Examples and Documentation
- * 
+ *
  * This module provides comprehensive examples and usage patterns for the
  * ChromaDB decorator ecosystem, demonstrating best practices and common patterns.
  */
 
 /**
  * Example usage patterns for ChromaDB decorators
- * 
+ *
  * @example Using individual decorators
  * ```typescript
  * @Injectable()
@@ -35,7 +35,7 @@
  *   }
  * }
  * ```
- * 
+ *
  * @example Using repository pattern
  * ```typescript
  * @Injectable()
@@ -47,7 +47,7 @@
  * })
  * export class UserRepository implements ChromaRepository<UserDocument> {
  *   // All CRUD methods auto-generated
- *   
+ *
  *   @VectorQuery({
  *     collection: 'users',
  *     autoEmbed: true,
@@ -58,19 +58,19 @@
  *   }
  * }
  * ```
- * 
+ *
  * @example Using presets
  * ```typescript
  * import { applyDecoratorPreset, DecoratorPresets } from './utils/decorator-presets';
- * 
+ *
  * const config = applyDecoratorPreset('production', {
  *   vectorQuery: { defaultLimit: 20 },
  *   caching: { ttl: 1800000 }, // 30 minutes
  * });
- * 
+ *
  * // Apply config to your decorators...
  * ```
- * 
+ *
  * @example Multi-tenant usage
  * ```typescript
  * @Injectable()
@@ -90,7 +90,7 @@
  *   }
  * }
  * ```
- * 
+ *
  * @example Performance monitoring
  * ```typescript
  * @Injectable()
@@ -152,7 +152,7 @@ export const DECORATOR_BEST_PRACTICES = {
     'Profiled',
     'Retry',
   ],
-  
+
   /**
    * Performance recommendations
    */
@@ -162,7 +162,7 @@ export const DECORATOR_BEST_PRACTICES = {
     BATCH_OPERATIONS: 'Enable batch operations for bulk processing',
     CIRCUIT_BREAKER: 'Use circuit breaker for external dependencies',
   },
-  
+
   /**
    * Error handling recommendations
    */
@@ -172,7 +172,7 @@ export const DECORATOR_BEST_PRACTICES = {
     LOGGING: 'Log retries and circuit breaker state changes',
     VALIDATION: 'Enable parameter validation in development',
   },
-  
+
   /**
    * Multi-tenancy recommendations
    */

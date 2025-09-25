@@ -131,10 +131,10 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     weight?: number;
   } | null> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? ''
-        : `|${relationshipTypes.join('|')}`;
+    // const typeFilter =
+    //   relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+    //     ? ''
+    //     : `|${relationshipTypes.join('|')}`;
 
     const maxLength = options?.maxLength || 10;
     const weightClause = options?.weightProperty

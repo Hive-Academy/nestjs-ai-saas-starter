@@ -1,6 +1,15 @@
-import { Injectable, Logger, Inject, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { ChromaClient } from 'chromadb';
-import { ChromaDBConnectionError, ChromaDBTimeoutError } from '../../errors/chromadb.errors';
+import {
+  ChromaDBConnectionError,
+  ChromaDBTimeoutError,
+} from '../../errors/chromadb.errors';
 import { CHROMADB_CLIENT } from '../../constants';
 import { IChromaConnection } from '../../interfaces/core/database-abstractions.interface';
 
@@ -33,7 +42,9 @@ export interface ConnectionHealth {
  * Following Single Responsibility Principle - only manages connections
  */
 @Injectable()
-export class ChromaDBConnectionService implements IChromaConnection, OnModuleInit, OnModuleDestroy {
+export class ChromaDBConnectionService
+  implements IChromaConnection, OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(ChromaDBConnectionService.name);
   private isConnected = false;
   private connectionTime?: number;
@@ -87,7 +98,8 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
       this.isConnected = false;
       this.connectionTime = undefined;
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to connect to ChromaDB: ${errorMessage}`);
 
       throw new ChromaDBConnectionError(
@@ -117,10 +129,10 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
    */
   getClient(): ChromaClient {
     if (!this.isConnected) {
-      throw new ChromaDBConnectionError(
-        'ChromaDB client not connected',
-        { host: this.config.host, port: this.config.port }
-      );
+      throw new ChromaDBConnectionError('ChromaDB client not connected', {
+        host: this.config.host,
+        port: this.config.port,
+      });
     }
 
     return this.client;
@@ -135,7 +147,9 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
       this.lastHealthCheck = new Date();
       return true;
     } catch (error) {
-      this.logger.warn(`Health check failed: ${error instanceof Error ? error.message : error}`);
+      this.logger.warn(
+        `Health check failed: ${error instanceof Error ? error.message : error}`
+      );
       return false;
     }
   }
@@ -187,7 +201,9 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
         const delay = this.config.retryDelay ?? 1000 * Math.pow(2, attempt - 1);
         await this.delay(delay);
 
-        this.logger.warn(`Connection retry attempt ${attempt} after error: ${lastError.message}`);
+        this.logger.warn(
+          `Connection retry attempt ${attempt} after error: ${lastError.message}`
+        );
       }
     }
 
@@ -206,7 +222,9 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
       );
     } catch (error) {
       throw new ChromaDBConnectionError(
-        `Connection test failed: ${error instanceof Error ? error.message : error}`,
+        `Connection test failed: ${
+          error instanceof Error ? error.message : error
+        }`,
         { host: this.config.host, port: this.config.port }
       );
     }
@@ -215,10 +233,16 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
   /**
    * Add timeout to promise
    */
-  private async withTimeout<T>(promise: Promise<T>, timeoutMs = 10000): Promise<T> {
+  private async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs = 10000
+  ): Promise<T> {
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(
-        () => reject(new ChromaDBTimeoutError(`Operation timed out after ${timeoutMs}ms`)),
+        () =>
+          reject(
+            new ChromaDBTimeoutError(`Operation timed out after ${timeoutMs}ms`)
+          ),
         timeoutMs
       );
     });
@@ -254,15 +278,23 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
    * Check if error is connection-related
    */
   private isConnectionError(error: unknown): boolean {
-    if (error instanceof ChromaDBConnectionError || error instanceof ChromaDBTimeoutError) {
+    if (
+      error instanceof ChromaDBConnectionError ||
+      error instanceof ChromaDBTimeoutError
+    ) {
       return true;
     }
 
-    const errorMessage = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-    return errorMessage.includes('connection') ||
-           errorMessage.includes('network') ||
-           errorMessage.includes('timeout') ||
-           errorMessage.includes('econnrefused');
+    const errorMessage =
+      error instanceof Error
+        ? error.message.toLowerCase()
+        : String(error).toLowerCase();
+    return (
+      errorMessage.includes('connection') ||
+      errorMessage.includes('network') ||
+      errorMessage.includes('timeout') ||
+      errorMessage.includes('econnrefused')
+    );
   }
 
   /**
@@ -289,6 +321,6 @@ export class ChromaDBConnectionService implements IChromaConnection, OnModuleIni
    * Simple delay utility
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

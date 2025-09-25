@@ -17,8 +17,8 @@ import {
   TenantValidationService,
   TenantRegistration,
   TenantResourceLimits,
-  ValidationResult,
 } from './tenant-validation.service';
+import { ValidationResult } from '../../types/core.interface';
 import {
   logUnknownError,
   handleUnknownError,

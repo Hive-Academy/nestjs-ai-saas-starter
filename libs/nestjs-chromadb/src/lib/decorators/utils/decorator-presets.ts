@@ -6,7 +6,7 @@
  */
 
 import type { VectorQueryConfig } from '../core/vector-query.decorator';
-import type { ChromaRepositoryConfig } from '../core/chroma-repository.decorator';
+import type { ChromaRepositoryConfig } from '../repository/repository-decorator';
 import type { CachedConfig } from '../performance/cached.decorator';
 import type { ProfiledConfig } from '../performance/profiled.decorator';
 import type { RetryConfig } from '../performance/retry.decorator';
@@ -52,13 +52,21 @@ export function validateDecoratorCombination(
   const suggestions: string[] = [];
 
   // Check for conflicting configurations
-  if (configs.caching?.collectionAware && configs.retry?.circuitBreaker?.enabled) {
+  if (
+    configs.caching?.collectionAware &&
+    configs.retry?.circuitBreaker?.enabled
+  ) {
     warnings.push(
       'Circuit breaker and caching enabled together may lead to inconsistent behavior during failures'
     );
   }
 
-  if (configs.profiling?.samplingRate && configs.profiling.samplingRate < 1 && configs.retry?.maxAttempts && configs.retry.maxAttempts > 1) {
+  if (
+    configs.profiling?.samplingRate &&
+    configs.profiling.samplingRate < 1 &&
+    configs.retry?.maxAttempts &&
+    configs.retry.maxAttempts > 1
+  ) {
     warnings.push(
       'Profiling with sampling may not capture all retry attempts accurately'
     );
@@ -77,7 +85,10 @@ export function validateDecoratorCombination(
     );
   }
 
-  if (configs.profiling?.slowQueryThreshold && !configs.profiling.samplingRate) {
+  if (
+    configs.profiling?.slowQueryThreshold &&
+    !configs.profiling.samplingRate
+  ) {
     suggestions.push(
       'Consider using sampling for high-frequency operations to reduce overhead'
     );
@@ -303,20 +314,25 @@ export function applyDecoratorPreset(
   const preset = DecoratorPresets[presetName];
 
   return {
-    vectorQuery: preset.vectorQuery && overrides.vectorQuery
-      ? { ...preset.vectorQuery, ...overrides.vectorQuery }
-      : preset.vectorQuery || overrides.vectorQuery,
-    repository: preset.repository && overrides.repository
-      ? { ...preset.repository, ...overrides.repository }
-      : preset.repository || overrides.repository,
-    caching: preset.caching && overrides.caching
-      ? { ...preset.caching, ...overrides.caching }
-      : preset.caching || overrides.caching,
-    profiling: preset.profiling && overrides.profiling
-      ? { ...preset.profiling, ...overrides.profiling }
-      : preset.profiling || overrides.profiling,
-    retry: preset.retry && overrides.retry
-      ? { ...preset.retry, ...overrides.retry }
-      : preset.retry || overrides.retry,
+    vectorQuery:
+      preset.vectorQuery && overrides.vectorQuery
+        ? { ...preset.vectorQuery, ...overrides.vectorQuery }
+        : preset.vectorQuery || overrides.vectorQuery,
+    repository:
+      preset.repository && overrides.repository
+        ? { ...preset.repository, ...overrides.repository }
+        : preset.repository || overrides.repository,
+    caching:
+      preset.caching && overrides.caching
+        ? { ...preset.caching, ...overrides.caching }
+        : preset.caching || overrides.caching,
+    profiling:
+      preset.profiling && overrides.profiling
+        ? { ...preset.profiling, ...overrides.profiling }
+        : preset.profiling || overrides.profiling,
+    retry:
+      preset.retry && overrides.retry
+        ? { ...preset.retry, ...overrides.retry }
+        : preset.retry || overrides.retry,
   };
 }

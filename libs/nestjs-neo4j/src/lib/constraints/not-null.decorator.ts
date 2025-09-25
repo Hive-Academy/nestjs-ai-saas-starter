@@ -1,6 +1,6 @@
 /**
  * @fileoverview NotNull constraint decorator for Neo4j
- * 
+ *
  * Implements NOT NULL constraints for properties to ensure they cannot be null or undefined.
  * Note: Neo4j currently supports property existence constraints, but this decorator provides
  * both runtime validation and can be used to create property existence constraints.
@@ -12,7 +12,7 @@ import {
   type NotNullConstraintMetadata,
   type NotNullOptions,
   createConstraintMetadata,
-} from './constraint-metadata.interface';
+} from '../interfaces/constraint-metadata.interface';
 
 /**
  * Configuration for the @NotNull decorator
@@ -34,17 +34,17 @@ export interface NotNullConfig extends Omit<NotNullOptions, 'validation'> {
 
 /**
  * @NotNull property decorator for enforcing non-null constraints
- * 
+ *
  * Ensures that a property cannot be null or undefined. Provides runtime validation
  * and can create property existence constraints in Neo4j.
- * 
+ *
  * Features:
  * - Runtime validation before database operations
  * - Property existence constraint creation in Neo4j
  * - Configurable empty string handling
  * - Default value support
  * - Custom error messages
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -52,66 +52,90 @@ export interface NotNullConfig extends Omit<NotNullOptions, 'validation'> {
  *   @NotNull()
  *   @Neo4jProperty()
  *   id: string;
- * 
+ *
  *   @NotNull({
  *     errorMessage: 'Email is required',
  *     treatEmptyAsNull: true
  *   })
  *   @Neo4jProperty()
  *   email: string;
- * 
+ *
  *   @NotNull({
  *     defaultValue: 'Unknown',
  *     treatEmptyAsNull: true
  *   })
  *   @Neo4jProperty()
  *   name: string;
- * 
+ *
  *   @Neo4jProperty()
  *   optionalField?: string; // Not decorated with @NotNull
  * }
  * ```
- * 
+ *
  * @param config - Configuration options for the not null constraint
  */
-export function NotNull(config: NotNullConfig = {}): PropertyDecorator {
+export function NotNull(config?: NotNullConfig): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
     const propertyName = String(propertyKey);
-    
+
+    const finalConfig = config || {};
+
     // Validate configuration
-    validateNotNullConfig(propertyName, config);
+    validateNotNullConfig(propertyName, finalConfig);
 
     // Get entity metadata for label information
     const entityMetadata = Reflect.getMetadata('entity', target.constructor);
     const label = entityMetadata?.label || target.constructor.name;
 
     // Create constraint metadata
-    const constraintMetadata = createConstraintMetadata<NotNullConstraintMetadata>({
-      type: 'NOT_NULL',
-      target: 'property',
-      properties: [propertyName],
-      label,
-      options: {
-        name: config.name || `${label.toLowerCase()}_${propertyName}_not_null`,
-        errorMessage: config.errorMessage || `Property '${propertyName}' cannot be null or undefined`,
-        createOnStartup: config.createOnStartup !== false, // Default to true
-        treatEmptyAsNull: config.treatEmptyAsNull || false,
-        defaultValue: config.defaultValue,
-      },
-      description: config.description || `Not null constraint on ${label}.${propertyName}`,
-    });
+    const constraintMetadata =
+      createConstraintMetadata<NotNullConstraintMetadata>({
+        type: 'NOT_NULL',
+        target: 'property',
+        properties: [propertyName],
+        label,
+        options: {
+          name:
+            finalConfig.name ||
+            `${label.toLowerCase()}_${propertyName}_not_null`,
+          errorMessage:
+            finalConfig.errorMessage ||
+            `Property '${propertyName}' cannot be null or undefined`,
+          createOnStartup: finalConfig.createOnStartup !== false, // Default to true
+          treatEmptyAsNull: finalConfig.treatEmptyAsNull || false,
+          defaultValue: finalConfig.defaultValue,
+        },
+        description:
+          finalConfig.description ||
+          `Not null constraint on ${label}.${propertyName}`,
+      });
 
     // Store constraint metadata on the property
-    const existingPropertyConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, target) || new Map();
-    const propertyConstraints = existingPropertyConstraints.get(propertyKey) || [];
+    const existingPropertyConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+        target
+      ) || new Map();
+    const propertyConstraints =
+      existingPropertyConstraints.get(propertyKey) || [];
     propertyConstraints.push(constraintMetadata);
     existingPropertyConstraints.set(propertyKey, propertyConstraints);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS, existingPropertyConstraints)(target);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.PROPERTY_CONSTRAINTS,
+      existingPropertyConstraints
+    )(target);
 
     // Also store in not null constraints collection
-    const existingNotNullConstraints = Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.NOT_NULL, target.constructor) || [];
+    const existingNotNullConstraints =
+      Reflect.getMetadata(
+        CONSTRAINT_METADATA_KEYS.NOT_NULL,
+        target.constructor
+      ) || [];
     existingNotNullConstraints.push(constraintMetadata);
-    SetMetadata(CONSTRAINT_METADATA_KEYS.NOT_NULL, existingNotNullConstraints)(target.constructor);
+    SetMetadata(
+      CONSTRAINT_METADATA_KEYS.NOT_NULL,
+      existingNotNullConstraints
+    )(target.constructor);
 
     // Add validation methods to the prototype
     addNotNullValidationMethods(target, constraintMetadata);
@@ -123,10 +147,10 @@ export function NotNull(config: NotNullConfig = {}): PropertyDecorator {
 
 /**
  * @Required decorator - alias for @NotNull with treatEmptyAsNull: true
- * 
+ *
  * Convenience decorator that treats empty strings as null values.
  * Useful for form validation where empty strings should be considered invalid.
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -134,27 +158,31 @@ export function NotNull(config: NotNullConfig = {}): PropertyDecorator {
  *   @Required()
  *   @Neo4jProperty()
  *   email: string; // Cannot be null, undefined, or empty string
- * 
+ *
  *   @Required({ defaultValue: 'Anonymous' })
  *   @Neo4jProperty()
  *   name: string; // Uses default if empty
  * }
  * ```
  */
-export function Required(config: Omit<NotNullConfig, 'treatEmptyAsNull'> = {}): PropertyDecorator {
+export function Required(
+  config?: Omit<NotNullConfig, 'treatEmptyAsNull'>
+): PropertyDecorator {
+  const finalConfig = config || {};
   return NotNull({
-    ...config,
+    ...finalConfig,
     treatEmptyAsNull: true,
-    errorMessage: config.errorMessage || `Property is required and cannot be empty`,
+    errorMessage:
+      finalConfig.errorMessage || `Property is required and cannot be empty`,
   });
 }
 
 /**
  * @NotEmpty decorator - ensures strings are not empty (but can be null)
- * 
+ *
  * Different from @Required - allows null/undefined but not empty strings.
  * Useful when a property is optional but must have content when provided.
- * 
+ *
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
@@ -165,14 +193,22 @@ export function Required(config: Omit<NotNullConfig, 'treatEmptyAsNull'> = {}): 
  * }
  * ```
  */
-export function NotEmpty(config: Omit<NotNullConfig, 'treatEmptyAsNull'> = {}): PropertyDecorator {
+export function NotEmpty(
+  config?: Omit<NotNullConfig, 'treatEmptyAsNull'>
+): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
     const propertyName = String(propertyKey);
-    
+
+    const finalConfig = config || {};
+
     const notEmptyConfig: NotNullConfig = {
-      ...config,
-      name: config.name || `${target.constructor.name.toLowerCase()}_${propertyName}_not_empty`,
-      errorMessage: config.errorMessage || `Property '${propertyName}' cannot be empty`,
+      ...finalConfig,
+      name:
+        finalConfig.name ||
+        `${target.constructor.name.toLowerCase()}_${propertyName}_not_empty`,
+      errorMessage:
+        finalConfig.errorMessage ||
+        `Property '${propertyName}' cannot be empty`,
       // Custom validation for not empty
     };
 
@@ -196,7 +232,11 @@ function addNotNullValidationMethods(
 
   // Add validation method
   if (!prototype[methodName]) {
-    prototype[methodName] = function (): { valid: boolean; errors: string[]; value?: any } {
+    prototype[methodName] = function (): {
+      valid: boolean;
+      errors: string[];
+      value?: any;
+    } {
       const errors: string[] = [];
       let value = this[propertyName];
 
@@ -207,18 +247,28 @@ function addNotNullValidationMethods(
           value = constraintMetadata.options.defaultValue;
           this[propertyName] = value;
         } else {
-          errors.push(constraintMetadata.options?.errorMessage || `Property '${propertyName}' cannot be null or undefined`);
+          errors.push(
+            constraintMetadata.options?.errorMessage ||
+              `Property '${propertyName}' cannot be null or undefined`
+          );
         }
       }
 
       // Check for empty strings if configured
-      if (constraintMetadata.options?.treatEmptyAsNull && typeof value === 'string' && value.trim() === '') {
+      if (
+        constraintMetadata.options?.treatEmptyAsNull &&
+        typeof value === 'string' &&
+        value.trim() === ''
+      ) {
         // Use default value if provided
         if (constraintMetadata.options?.defaultValue !== undefined) {
           value = constraintMetadata.options.defaultValue;
           this[propertyName] = value;
         } else {
-          errors.push(constraintMetadata.options?.errorMessage || `Property '${propertyName}' cannot be empty`);
+          errors.push(
+            constraintMetadata.options?.errorMessage ||
+              `Property '${propertyName}' cannot be empty`
+          );
         }
       }
 
@@ -237,16 +287,21 @@ function addNotNullValidationMethods(
       let value = this[propertyName];
 
       // Apply default value if null/undefined
-      if ((value === null || value === undefined) && constraintMetadata.options?.defaultValue !== undefined) {
+      if (
+        (value === null || value === undefined) &&
+        constraintMetadata.options?.defaultValue !== undefined
+      ) {
         value = constraintMetadata.options.defaultValue;
         this[propertyName] = value;
       }
 
       // Apply default value if empty string and treatEmptyAsNull is true
-      if (constraintMetadata.options?.treatEmptyAsNull && 
-          typeof value === 'string' && 
-          value.trim() === '' && 
-          constraintMetadata.options?.defaultValue !== undefined) {
+      if (
+        constraintMetadata.options?.treatEmptyAsNull &&
+        typeof value === 'string' &&
+        value.trim() === '' &&
+        constraintMetadata.options?.defaultValue !== undefined
+      ) {
         value = constraintMetadata.options.defaultValue;
         this[propertyName] = value;
       }
@@ -268,7 +323,10 @@ function addPropertyValidation(
   const privatePropertyName = `_${propertyName}`;
 
   // Store the original property descriptor
-  const originalDescriptor = Object.getOwnPropertyDescriptor(prototype, propertyKey);
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    prototype,
+    propertyKey
+  );
 
   // Define new property with validation
   Object.defineProperty(prototype, propertyKey, {
@@ -277,15 +335,20 @@ function addPropertyValidation(
     },
     set(value: any): void {
       // Apply default value if null/undefined
-      if ((value === null || value === undefined) && constraintMetadata.options?.defaultValue !== undefined) {
+      if (
+        (value === null || value === undefined) &&
+        constraintMetadata.options?.defaultValue !== undefined
+      ) {
         value = constraintMetadata.options.defaultValue;
       }
 
       // Apply default value if empty string and treatEmptyAsNull is true
-      if (constraintMetadata.options?.treatEmptyAsNull && 
-          typeof value === 'string' && 
-          value.trim() === '' && 
-          constraintMetadata.options?.defaultValue !== undefined) {
+      if (
+        constraintMetadata.options?.treatEmptyAsNull &&
+        typeof value === 'string' &&
+        value.trim() === '' &&
+        constraintMetadata.options?.defaultValue !== undefined
+      ) {
         value = constraintMetadata.options.defaultValue;
       }
 
@@ -304,14 +367,19 @@ function addPropertyValidation(
       },
       set(value: any): void {
         // Apply our validation first
-        if ((value === null || value === undefined) && constraintMetadata.options?.defaultValue !== undefined) {
+        if (
+          (value === null || value === undefined) &&
+          constraintMetadata.options?.defaultValue !== undefined
+        ) {
           value = constraintMetadata.options.defaultValue;
         }
 
-        if (constraintMetadata.options?.treatEmptyAsNull && 
-            typeof value === 'string' && 
-            value.trim() === '' && 
-            constraintMetadata.options?.defaultValue !== undefined) {
+        if (
+          constraintMetadata.options?.treatEmptyAsNull &&
+          typeof value === 'string' &&
+          value.trim() === '' &&
+          constraintMetadata.options?.defaultValue !== undefined
+        ) {
           value = constraintMetadata.options.defaultValue;
         }
 
@@ -328,7 +396,10 @@ function addPropertyValidation(
 /**
  * Add not empty validation (separate from not null)
  */
-function addNotEmptyValidation(prototype: any, propertyKey: string | symbol): void {
+function addNotEmptyValidation(
+  prototype: any,
+  propertyKey: string | symbol
+): void {
   const propertyName = String(propertyKey);
   const methodName = `validateNotEmpty_${propertyName}`;
 
@@ -338,7 +409,12 @@ function addNotEmptyValidation(prototype: any, propertyKey: string | symbol): vo
       const value = this[propertyName];
 
       // Allow null/undefined for NotEmpty (different from Required)
-      if (value !== null && value !== undefined && typeof value === 'string' && value.trim() === '') {
+      if (
+        value !== null &&
+        value !== undefined &&
+        typeof value === 'string' &&
+        value.trim() === ''
+      ) {
         errors.push(`Property '${propertyName}' cannot be empty`);
       }
 
@@ -353,14 +429,19 @@ function addNotEmptyValidation(prototype: any, propertyKey: string | symbol): vo
 /**
  * Validate not null constraint configuration
  */
-function validateNotNullConfig(propertyName: string, config: NotNullConfig): void {
+function validateNotNullConfig(
+  propertyName: string,
+  config: NotNullConfig
+): void {
   if (!propertyName || typeof propertyName !== 'string') {
     throw new Error('NotNull decorator requires a valid property name');
   }
 
   // Basic validation for Neo4j property names
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(propertyName)) {
-    throw new Error(`NotNull property '${propertyName}' must be a valid Neo4j property name`);
+    throw new Error(
+      `NotNull property '${propertyName}' must be a valid Neo4j property name`
+    );
   }
 
   // Validate configuration options
@@ -372,11 +453,17 @@ function validateNotNullConfig(propertyName: string, config: NotNullConfig): voi
     throw new Error('NotNull errorMessage must be a string');
   }
 
-  if (config.treatEmptyAsNull !== undefined && typeof config.treatEmptyAsNull !== 'boolean') {
+  if (
+    config.treatEmptyAsNull !== undefined &&
+    typeof config.treatEmptyAsNull !== 'boolean'
+  ) {
     throw new Error('NotNull treatEmptyAsNull must be a boolean');
   }
 
-  if (config.createOnStartup !== undefined && typeof config.createOnStartup !== 'boolean') {
+  if (
+    config.createOnStartup !== undefined &&
+    typeof config.createOnStartup !== 'boolean'
+  ) {
     throw new Error('NotNull createOnStartup must be a boolean');
   }
 }
@@ -384,8 +471,12 @@ function validateNotNullConfig(propertyName: string, config: NotNullConfig): voi
 /**
  * Utility function to extract not null constraints from a class
  */
-export function getNotNullConstraints(constructor: any): NotNullConstraintMetadata[] {
-  return Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.NOT_NULL, constructor) || [];
+export function getNotNullConstraints(
+  constructor: any
+): NotNullConstraintMetadata[] {
+  return (
+    Reflect.getMetadata(CONSTRAINT_METADATA_KEYS.NOT_NULL, constructor) || []
+  );
 }
 
 /**
@@ -401,11 +492,14 @@ export function hasNotNullConstraints(constructor: any): boolean {
 export function generateNotNullConstraintQuery(
   constraint: NotNullConstraintMetadata
 ): { query: string; name: string } {
-  const constraintName = constraint.options?.name || 
-    `${constraint.label?.toLowerCase() || 'node'}_${constraint.properties[0]}_exists`;
-  
+  const constraintName =
+    constraint.options?.name ||
+    `${constraint.label?.toLowerCase() || 'node'}_${
+      constraint.properties[0]
+    }_exists`;
+
   const propertyName = constraint.properties[0];
-  
+
   // Neo4j property existence constraint
   const query = `CREATE CONSTRAINT ${constraintName} FOR (n:${constraint.label}) REQUIRE n.${propertyName} IS NOT NULL`;
 
@@ -418,7 +512,10 @@ export function generateNotNullConstraintQuery(
 /**
  * Utility to validate all not null constraints on an entity
  */
-export function validateAllNotNullConstraints(entity: any): { valid: boolean; errors: string[] } {
+export function validateAllNotNullConstraints(entity: any): {
+  valid: boolean;
+  errors: string[];
+} {
   const constructor = entity.constructor;
   const constraints = getNotNullConstraints(constructor);
   const allErrors: string[] = [];
@@ -426,7 +523,7 @@ export function validateAllNotNullConstraints(entity: any): { valid: boolean; er
   for (const constraint of constraints) {
     const propertyName = constraint.properties[0];
     const methodName = `validateNotNull_${propertyName}`;
-    
+
     if (typeof entity[methodName] === 'function') {
       const result = entity[methodName]();
       if (!result.valid) {

@@ -11,7 +11,6 @@ export abstract class ChromaDBError extends Error {
 
   public abstract readonly code: string;
 
-
   constructor(
     message: string,
     context?: Record<string, unknown>,
@@ -88,7 +87,12 @@ export class ChromaDBCollectionNotFoundError extends ChromaDBCollectionError {
     context?: Record<string, unknown>,
     cause?: Error
   ) {
-    super(`Collection '${collectionName}' not found`, collectionName, context, cause);
+    super(
+      `Collection '${collectionName}' not found`,
+      collectionName,
+      context,
+      cause
+    );
   }
 }
 
@@ -166,7 +170,11 @@ export class ChromaDBSearchError extends ChromaDBError {
     context?: Record<string, unknown>,
     cause?: Error
   ) {
-    super(message, { ...context, query: typeof query === 'string' ? query : '[vector]' }, cause);
+    super(
+      message,
+      { ...context, query: typeof query === 'string' ? query : '[vector]' },
+      cause
+    );
   }
 }
 

@@ -436,7 +436,6 @@ export class GlobalPerformanceMonitor {
       // Find all profiled methods
       for (const prop of Object.getOwnPropertyNames(instance)) {
         if (prop.endsWith('_getStats')) {
-          const methodName = prop.replace('_getStats', '');
           const methodStats = instance[prop]();
           if (methodStats) {
             stats.push(methodStats);

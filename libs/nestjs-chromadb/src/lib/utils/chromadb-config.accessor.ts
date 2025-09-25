@@ -1,4 +1,4 @@
-import type { ChromaDBModuleOptions } from '../interfaces/chromadb-module-options.interface';
+import type { ChromaDBModuleOptions } from '../interfaces/config/module-options.interface';
 
 /**
  * Global storage for ChromaDB module configuration

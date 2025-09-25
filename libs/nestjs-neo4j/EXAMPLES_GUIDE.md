@@ -10,7 +10,7 @@
 3. Relationships (create/query/analytics)
 4. Graph Traversal & Path Finding (with fallback)
 5. Connected Components (GDS + in-memory fallback)
-6. Typed Cypher Queries (`@TypedCypherQuery` / `@CypherQuery`)
+6. Typed Cypher Queries (`@CypherQuery` / `@CypherQuery`)
 7. Constraints & Index Decorators
 8. Transactions & Retry Strategies
 9. Metrics & Health Monitoring
@@ -128,7 +128,7 @@ const components = await graphRepo.findConnectedComponents({ relationshipTypes: 
 ```typescript
 @Injectable()
 export class AnalyticsService {
-  @TypedCypherQuery<`MATCH (u:User {id: $userId})-[:POSTED]->(p:Post) RETURN p LIMIT $limit`, { userId: string; limit: number }, { p: { id: string; title: string } }>()
+  @CypherQuery<`MATCH (u:User {id: $userId})-[:POSTED]->(p:Post) RETURN p LIMIT $limit`, { userId: string; limit: number }, { p: { id: string; title: string } }>()
   async userPosts(): Promise<Array<{ id: string; title: string }>> {
     return [] as any;
   }

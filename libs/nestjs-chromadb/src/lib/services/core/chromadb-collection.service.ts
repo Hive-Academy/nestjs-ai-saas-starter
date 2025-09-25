@@ -6,9 +6,7 @@ import {
   EmbeddingFunction,
 } from 'chromadb';
 import { ChromaDBConnectionService } from './chromadb-connection.service';
-import {
-  ChromaCollectionInfo,
-} from '../../interfaces/chromadb-service.interface';
+import { ChromaCollectionInfo } from '../../interfaces/chromadb-service.interface';
 import {
   ChromaDBError,
   ChromaDBCollectionNotFoundError,
@@ -34,7 +32,7 @@ export class ChromaDBCollectionService {
       const client = this.connectionService.getClient();
       const collections = await client.listCollections();
 
-      return collections.map(collection => ({
+      return collections.map((collection) => ({
         name: collection.name,
         id: collection.id || collection.name,
         metadata: collection.metadata,
@@ -47,7 +45,7 @@ export class ChromaDBCollectionService {
    */
   async createCollection(
     name: string,
-    metadata?:CollectionMetadata,
+    metadata?: CollectionMetadata,
     embeddingFunction?: unknown,
     getOrCreate = true
   ): Promise<Collection> {
@@ -87,7 +85,9 @@ export class ChromaDBCollectionService {
         });
       } catch (error) {
         if (error instanceof Error && error.message.includes('not found')) {
-          throw new ChromaDBCollectionNotFoundError(`Collection '${name}' not found`);
+          throw new ChromaDBCollectionNotFoundError(
+            `Collection '${name}' not found`
+          );
         }
         throw error;
       }
@@ -106,7 +106,9 @@ export class ChromaDBCollectionService {
         this.logger.log(`Collection '${name}' deleted successfully`);
       } catch (error) {
         if (error instanceof Error && error.message.includes('not found')) {
-          throw new ChromaDBCollectionNotFoundError(`Collection '${name}' not found`);
+          throw new ChromaDBCollectionNotFoundError(
+            `Collection '${name}' not found`
+          );
         }
         throw error;
       }
@@ -131,7 +133,9 @@ export class ChromaDBCollectionService {
   /**
    * Get collection metadata
    */
-  async getCollectionMetadata(name: string): Promise<Record<string, any> | null> {
+  async getCollectionMetadata(
+    name: string
+  ): Promise<Record<string, any> | null> {
     return this.connectionService.executeWithRetry(async () => {
       try {
         const collection = await this.getCollection(name);
@@ -177,7 +181,9 @@ export class ChromaDBCollectionService {
 
       try {
         const count = await collection.count();
-        this.logger.debug(`Collection '${collectionName}' contains ${count} documents`);
+        this.logger.debug(
+          `Collection '${collectionName}' contains ${count} documents`
+        );
         return count;
       } catch (error) {
         throw new ChromaClientError(
@@ -202,7 +208,9 @@ export class ChromaDBCollectionService {
         return true;
       } catch (error) {
         throw new ChromaClientError(
-          `Failed to reset ChromaDB: ${error instanceof Error ? error.message : error}`
+          `Failed to reset ChromaDB: ${
+            error instanceof Error ? error.message : error
+          }`
         );
       }
     });

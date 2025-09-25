@@ -1,40 +1,63 @@
 /**
- *  Neo4j Decorators
+ * Neo4j Decorators - Enhanced Existing Decorators with Smart Defaults
  *
- * This module provides a comprehensive decorator ecosystem for Neo4j integration:
+ * This module provides enhanced versions of existing Neo4j decorators with smart defaults
+ * and better ergonomics while maintaining full backward compatibility.
  *
- * Query Decorators:
- * - @CypherQuery: Type-safe Cypher query execution with caching and retry
- * - @Query: Simplified query decorator
+ * ## Enhanced Core Decorators
+ * - @Neo4jEntity: Entity mapping with string shorthand and namespace helpers
+ *   - NEW: @Neo4jEntity('User') string shorthand
+ *   - NEW: @Neo4jEntity.Timestamped('User') helper methods
+ *   - ENHANCED: Smart defaults for ID strategy and property
+ * - @Neo4jProperty: Property mapping with intelligent auto-detection
+ *   - ENHANCED: Auto-detects timestamps (*At fields)
+ *   - ENHANCED: Auto-detects emails, URLs, JSON fields
+ *   - ENHANCED: Smart ID generation with crypto.randomUUID fallback
+ *   - ENHANCED: Boolean and Number field transformation
+ * - @Neo4jRelationship: Relationship mapping (unchanged)
+ * - @Id, @CreatedAt, @UpdatedAt, @JsonProperty: Convenience decorators (unchanged)
+ *
+ * ## Query Decorators
+ * - @CypherQuery: Type-safe Cypher query execution with simplified configuration
  * - @FindOne, @FindMany, @Create, @Update, @Delete: Semantic CRUD decorators
  *
- * Repository Decorators:
+ * ## Repository & Utility Decorators
  * - @Neo4jRepository: Repository pattern with auto-generated CRUD methods
- * - @Repository: Simplified repository decorator
+ * - @Transactional: Transaction management
+ * - @InjectNeo4j: Dependency injection
+ * - @Safe: Unified validation and transformation
  *
- * Entity Decorators:
- * - @Neo4jEntity: Entity mapping with flexible configuration
- * - @Neo4jProperty: Property mapping with transformation support
- * - @Neo4jRelationship: Relationship mapping with type safety
- * - @Id, @CreatedAt, @UpdatedAt, @JsonProperty: Convenience property decorators
+ * ## Constraint Decorators (Re-exported from constraints module)
+ * - @NotNull, @Required, @NotEmpty, @Unique, @Index, @NodeKey, @Validate
  *
- * Features:
- * - Full TypeScript type safety
- * - Automatic parameter validation
- * - Query caching and retry mechanisms
- * - Performance profiling and metrics
- * - Transaction support
- * - Error handling and recovery
+ * ## Key Features
+ * - **BACKWARD COMPATIBLE**: All existing code continues to work unchanged
+ * - **SMART DEFAULTS**: Automatic detection of common patterns
+ * - **STRING SHORTHANDS**: Simpler syntax for common cases
+ * - **NAMESPACE HELPERS**: Predefined configurations for common entity types
+ * - **ZERO NEW DECORATORS**: Only enhanced existing ones
+ * - **TYPE SAFETY**: Complete TypeScript support with proper inference
+ * - **PRODUCTION READY**: Comprehensive error handling and validation
  */
 
 // Metadata interfaces and types
-export * from './decorator-metadata.interface';
+export * from '../interfaces/decorator-metadata.interface';
 
-// Query decorators
+// ENHANCED: Entity mapping decorators (existing decorators with smart defaults)
+export * from './entity.decorator';
+
+// Safety and validation decorators
+export * from './safe.decorator';
+
+// Query decorators (enhanced existing @CypherQuery)
 export * from './cypher-query.decorator';
 
 // Repository decorators
 export * from './repository.decorator';
 
-// Entity mapping decorators
-export * from './entity.decorator';
+// Utility decorators
+export * from './inject-neo4j.decorator';
+export * from './transactional.decorator';
+
+// Constraint decorators (re-exported for convenience)
+export * from '../constraints';

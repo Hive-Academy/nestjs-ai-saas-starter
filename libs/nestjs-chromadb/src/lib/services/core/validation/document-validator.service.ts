@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { getErrorMessage } from '../../../utils/error-handling.utils';
 import type {
   BaseDocument,
   DocumentValidationSchema,
@@ -63,7 +64,10 @@ export class DocumentValidatorService {
 
     // Validate metadata
     if (document.metadata) {
-      const metadataValidation = this.validateMetadata(document.metadata, validationSchema);
+      const metadataValidation = this.validateMetadata(
+        document.metadata,
+        validationSchema
+      );
       result.errors.push(...metadataValidation.errors);
       result.warnings.push(...metadataValidation.warnings);
     } else if (validationSchema.required?.includes('metadata')) {
@@ -80,7 +84,11 @@ export class DocumentValidatorService {
     result.isValid = result.errors.length === 0;
 
     if (!result.isValid) {
-      this.logger.warn(`Document validation failed for ID '${document.id}': ${result.errors.join(', ')}`);
+      this.logger.warn(
+        `Document validation failed for ID '${
+          document.id
+        }': ${result.errors.join(', ')}`
+      );
     }
 
     return result;
@@ -111,10 +119,12 @@ export class DocumentValidatorService {
     }
 
     // Check for duplicate IDs
-    const ids = documents.map(doc => doc.id).filter(Boolean);
+    const ids = documents.map((doc) => doc.id).filter(Boolean);
     const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
     if (duplicateIds.length > 0) {
-      result.errors.push(`Duplicate document IDs found: ${[...new Set(duplicateIds)].join(', ')}`);
+      result.errors.push(
+        `Duplicate document IDs found: ${[...new Set(duplicateIds)].join(', ')}`
+      );
     }
 
     // Validate each document
@@ -122,11 +132,15 @@ export class DocumentValidatorService {
       const docValidation = this.validateDocument(doc, schema);
 
       if (!docValidation.isValid) {
-        result.errors.push(`Document at index ${index}: ${docValidation.errors.join(', ')}`);
+        result.errors.push(
+          `Document at index ${index}: ${docValidation.errors.join(', ')}`
+        );
       }
 
       result.warnings.push(
-        ...docValidation.warnings.map(warning => `Document at index ${index}: ${warning}`)
+        ...docValidation.warnings.map(
+          (warning) => `Document at index ${index}: ${warning}`
+        )
       );
     });
 
@@ -165,7 +179,9 @@ export class DocumentValidatorService {
       }
 
       if (value === undefined) {
-        result.warnings.push(`Metadata key '${key}' has undefined value, will be ignored`);
+        result.warnings.push(
+          `Metadata key '${key}' has undefined value, will be ignored`
+        );
       }
 
       // ChromaDB only supports string, number, and boolean values
@@ -182,30 +198,28 @@ export class DocumentValidatorService {
       }
     });
 
-    // Check allowed keys
-    if (schema?.allowedMetadataKeys) {
-      const invalidKeys = Object.keys(metadata).filter(
-        key => !schema.allowedMetadataKeys!.includes(key)
-      );
-      if (invalidKeys.length > 0) {
-        result.errors.push(`Invalid metadata keys: ${invalidKeys.join(', ')}`);
-      }
-    }
+    // Allowed metadata keys validation would go here if needed in the future
 
     // Check forbidden keys
     if (schema?.forbiddenMetadataKeys) {
-      const forbiddenKeys = Object.keys(metadata).filter(
-        key => schema.forbiddenMetadataKeys!.includes(key)
+      const forbiddenKeys = Object.keys(metadata).filter((key) =>
+        schema.forbiddenMetadataKeys!.includes(key)
       );
       if (forbiddenKeys.length > 0) {
-        result.errors.push(`Forbidden metadata keys: ${forbiddenKeys.join(', ')}`);
+        result.errors.push(
+          `Forbidden metadata keys: ${forbiddenKeys.join(', ')}`
+        );
       }
     }
 
     // Apply custom validation rules
     if (schema?.metadataValidation) {
       Object.entries(schema.metadataValidation).forEach(([key, validator]) => {
-        if (Object.prototype.hasOwnProperty.call(metadata, key) && !validator(metadata[key])) {
+        if (
+          Object.prototype.hasOwnProperty.call(metadata, key) &&
+          typeof validator === 'function' &&
+          !validator(metadata[key])
+        ) {
           result.errors.push(`Metadata key '${key}' failed custom validation`);
         }
       });
@@ -219,7 +233,7 @@ export class DocumentValidatorService {
   /**
    * Validate embedding vector
    */
-  validateEmbedding(embedding: number[]): ValidationResult {
+  validateEmbedding(embedding: readonly number[]): ValidationResult {
     const result: MutableValidationResult = {
       isValid: true,
       errors: [],
@@ -239,20 +253,24 @@ export class DocumentValidatorService {
     }
 
     // Check if all values are numbers
-    const nonNumbers = embedding.filter(value => typeof value !== 'number' || isNaN(value));
+    const nonNumbers = embedding.filter(
+      (value) => typeof value !== 'number' || isNaN(value)
+    );
     if (nonNumbers.length > 0) {
       result.errors.push('All embedding values must be valid numbers');
     }
 
     // Check for infinite values
-    const infiniteValues = embedding.filter(value => !isFinite(value));
+    const infiniteValues = embedding.filter((value) => !isFinite(value));
     if (infiniteValues.length > 0) {
       result.errors.push('Embedding contains infinite or NaN values');
     }
 
     // Warning for very large embeddings
     if (embedding.length > 4096) {
-      result.warnings.push(`Large embedding dimension (${embedding.length}), consider dimensionality reduction`);
+      result.warnings.push(
+        `Large embedding dimension (${embedding.length}), consider dimensionality reduction`
+      );
     }
 
     result.isValid = result.errors.length === 0;

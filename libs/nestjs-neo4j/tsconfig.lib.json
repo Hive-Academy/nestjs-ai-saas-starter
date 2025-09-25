@@ -4,17 +4,16 @@
     "outDir": "../../dist/libs/nestjs-neo4j",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "emitDeclarationOnly": false,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "emitDeclarationOnly": true,
+    "experimentalDecorators": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "downlevelIteration": true,
+    "useDefineForClassFields": true
   },
   "include": ["src/**/*.ts"],
   "references": [],
-  "exclude": [
-    "jest.config.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/**/examples/**/*.ts",
-    "src/**/*.example.ts"
-  ]
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
 }
