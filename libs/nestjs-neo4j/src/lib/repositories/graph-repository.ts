@@ -1,4 +1,30 @@
-import { BaseRepository, type RepositoryQueryOptions } from './base-repository';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectNeo4j } from '../decorators/inject-neo4j.decorator';
+import type { QueryResult } from '../interfaces/query-result.interface';
+import { Neo4jQueryBuilder } from '../query-builder/neo4j-query-builder';
+import type { Neo4jService } from '../services/neo4j.service';
+
+/**
+ * Query options for repository operations
+ */
+export interface RepositoryQueryOptions {
+  /** Database name */
+  database?: string;
+  /** Transaction context */
+  transactionId?: string;
+  /** Include soft deleted entities */
+  includeSoftDeleted?: boolean;
+  /** Cache configuration */
+  cache?: {
+    enabled: boolean;
+    ttl?: number;
+  };
+  /** Retry configuration */
+  retry?: {
+    attempts: number;
+    delay?: number;
+  };
+}
 
 /**
  * Graph traversal options
@@ -73,9 +99,9 @@ export interface GraphPattern {
 }
 
 /**
- *  repository for graph-specific operations
+ * Specialized repository for graph-specific operations
  *
- * This class extends BaseRepository with graph database specific functionality:
+ * This class provides graph database specific functionality:
  * - Graph traversals and path finding
  * - Relationship management
  * - Pattern matching
@@ -83,9 +109,50 @@ export interface GraphPattern {
  * - Centrality calculations
  * - Community detection
  *
+ * For basic CRUD operations, use @FindOne, @FindMany, @CreateEntity decorators instead.
+ *
  * @template T The entity type this repository manages
  */
-export abstract class GraphRepository<T = any> extends BaseRepository<T> {
+@Injectable()
+export class GraphRepository<T extends Record<string, any> = Record<string, any>> {
+  protected readonly logger = new Logger(GraphRepository.name);
+
+  constructor(
+    @InjectNeo4j() protected readonly neo4jService: Neo4jService,
+    protected readonly entityLabel = 'Entity'
+  ) {}
+
+  /**
+   * Execute a query with the Neo4j service
+   */
+  protected async query<R = Record<string, any>>(
+    cypher: string,
+    params?: Record<string, any>,
+    options?: RepositoryQueryOptions
+  ): Promise<QueryResult<R>> {
+    const result = await this.neo4jService.run<R>(cypher, params, options as any);
+    return result;
+  }
+
+  /**
+   * Execute a query (alias for backward compatibility)
+   */
+  protected async executeQuery<R = T>(
+    cypher: string,
+    params?: Record<string, any>,
+    options?: RepositoryQueryOptions
+  ): Promise<QueryResult<R>> {
+    return this.query<R>(cypher, params, options);
+  }
+
+  /**
+   * Map Neo4j result to entity
+   */
+  protected mapFromNeo4j<R = T>(record: Record<string, any>): R {
+    // Simple mapping - can be overridden in subclasses
+    return (record.properties || record) as R;
+  }
+
   /**
    * Find all neighbors of a node
    */
@@ -94,28 +161,43 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     options?: GraphTraversalOptions & RepositoryQueryOptions
   ): Promise<T[]> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? ''
-        : `:${relationshipTypes.join('|')}`;
-
-    const direction = this.getRelationshipDirection(options?.direction);
     const maxDepth = options?.maxDepth || 1;
 
-    const query = `
-      MATCH (source:${this.entityLabel} {id: $nodeId})
-      ${direction.replace('REL', `r${typeFilter}`)}
-      (neighbor:${this.entityLabel})
-      WHERE neighbor.id <> $nodeId
-      ${this.buildNodeFilter(options?.nodeFilter, 'neighbor')}
-      ${this.buildRelationshipFilter(options?.relationshipFilter, 'r')}
-      ${this.buildSoftDeleteFilter(options, 'neighbor')}
-      RETURN DISTINCT neighbor
-      LIMIT ${maxDepth * 100}
-    `;
+    const builder = new Neo4jQueryBuilder<T>()
+      .match('source', () => ({ constructor: { name: this.entityLabel } } as T), { id: nodeId } as any);
 
-    const result = await this.executeQuery<T>(query, { nodeId }, options);
-    return result.map((record) => this.mapFromNeo4j(record));
+    // Add relationship traversal based on direction and types
+    const relType = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+      ? '*'
+      : relationshipTypes.join('|');
+
+    builder.raw(`MATCH (source)-[r:${relType}]-(neighbor:${this.entityLabel})`);
+    builder.whereRaw('neighbor.id <> $nodeId', { nodeId });
+
+    // Apply node filters
+    if (options?.nodeFilter && Object.keys(options.nodeFilter).length > 0) {
+      Object.entries(options.nodeFilter).forEach(([key, value]) => {
+        builder.whereRaw(`neighbor.${key} = $nodeFilter_${key}`, { [`nodeFilter_${key}`]: value });
+      });
+    }
+
+    // Apply relationship filters
+    if (options?.relationshipFilter && Object.keys(options.relationshipFilter).length > 0) {
+      Object.entries(options.relationshipFilter).forEach(([key, value]) => {
+        builder.whereRaw(`r.${key} = $relFilter_${key}`, { [`relFilter_${key}`]: value });
+      });
+    }
+
+    // Apply soft delete filter
+    if (!options?.includeSoftDeleted) {
+      builder.whereRaw('neighbor.deletedAt IS NULL');
+    }
+
+    builder.returnDistinct(['neighbor']).limit(maxDepth * 100);
+
+    const queryResult = builder.build();
+    const result = await this.executeQuery<Record<string, any>[]>(queryResult.query, queryResult.params, options);
+    return result.records?.map((record: Record<string, any>) => this.mapFromNeo4j<T>(record)) || [];
   }
 
   /**
@@ -165,11 +247,11 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
         length: number;
       }>(query, { fromId, toId }, options);
 
-      if (result.length === 0) {
+      if (!result.records || result.records.length === 0) {
         return null;
       }
 
-      const pathData = result[0];
+      const pathData = result.records[0] ;
       // Transform path data to our format
       const pathNodes = this.extractPathNodes(pathData.path);
 
@@ -215,12 +297,9 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
       LIMIT 100
     `;
 
-    const result = await this.executeQuery<{
-      path: any;
-      pathLength: number;
-    }>(query, { fromId, toId }, options);
+    const result = await this.executeQuery(query, { fromId, toId }, options);
 
-    return result.map((record) => ({
+    return result.records?.map((record: Record<string, any>) => ({
       path: this.extractPathNodes(record.path),
       length: record.pathLength,
     }));
@@ -235,32 +314,37 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     options?: GraphTraversalOptions & RepositoryQueryOptions
   ): Promise<Array<{ node: T; distance: number }>> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
+    const typeFilter = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+      ? '*'
+      : relationshipTypes.join('|');
 
-    const query = `
-      MATCH (source:${this.entityLabel} {id: $nodeId})
-      MATCH path = (source)-[*1..${distance}:${typeFilter}]-(target:${
-      this.entityLabel
-    })
-      WHERE source <> target
-      ${this.buildNodeFilter(options?.nodeFilter, 'target')}
-      ${this.buildSoftDeleteFilter(options, 'target')}
-      RETURN DISTINCT target, length(path) as distance
-      ORDER BY distance
-    `;
+    const builder = new Neo4jQueryBuilder<T>()
+      .match('source', () => ({ constructor: { name: this.entityLabel } } as T), { id: nodeId } as any)
+      .raw(`MATCH path = (source)-[*1..${distance}:${typeFilter}]-(target:${this.entityLabel})`)
+      .whereRaw('source.id <> target.id');
 
-    const result = await this.executeQuery<{
-      target: T;
-      distance: number;
-    }>(query, { nodeId }, options);
+    // Apply node filters
+    if (options?.nodeFilter && Object.keys(options.nodeFilter).length > 0) {
+      Object.entries(options.nodeFilter).forEach(([key, value]) => {
+        builder.whereRaw(`target.${key} = $targetFilter_${key}`, { [`targetFilter_${key}`]: value });
+      });
+    }
 
-    return result.map((record) => ({
-      node: this.mapFromNeo4j({ n: record.target }),
+    // Apply soft delete filter
+    if (!options?.includeSoftDeleted) {
+      builder.whereRaw('target.deletedAt IS NULL');
+    }
+
+    builder.returnDistinct(['target', 'length(path) as distance'])
+      .orderBy('distance', 'ASC');
+
+    const queryResult = builder.build();
+    const result = await this.executeQuery<Record<string, any>[]>(queryResult.query, queryResult.params, options);
+
+    return result.records?.map((record: Record<string, any>) => ({
+      node: this.mapFromNeo4j<T>({ n: record.target }),
       distance: record.distance,
-    }));
+    })) || [];
   }
 
   /**
@@ -272,29 +356,32 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     options?: GraphTraversalOptions & RepositoryQueryOptions
   ): Promise<T[]> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
+    const typeFilter = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+      ? '*'
+      : relationshipTypes.join('|');
 
-    const query = `
-      MATCH (node1:${
-        this.entityLabel
-      } {id: $nodeId1})-[:${typeFilter}]-(common:${
-      this.entityLabel
-    })-[:${typeFilter}]-(node2:${this.entityLabel} {id: $nodeId2})
-      WHERE common.id <> $nodeId1 AND common.id <> $nodeId2
-      ${this.buildNodeFilter(options?.nodeFilter, 'common')}
-      ${this.buildSoftDeleteFilter(options, 'common')}
-      RETURN DISTINCT common
-    `;
+    const builder = new Neo4jQueryBuilder<T>()
+      .raw(`MATCH (node1:${this.entityLabel} {id: $nodeId1})-[:${typeFilter}]-(common:${this.entityLabel})-[:${typeFilter}]-(node2:${this.entityLabel} {id: $nodeId2})`,
+        { nodeId1, nodeId2 })
+      .whereRaw('common.id <> $nodeId1 AND common.id <> $nodeId2', { nodeId1, nodeId2 });
 
-    const result = await this.executeQuery<T>(
-      query,
-      { nodeId1, nodeId2 },
-      options
-    );
-    return result.map((record) => this.mapFromNeo4j(record));
+    // Apply node filters
+    if (options?.nodeFilter && Object.keys(options.nodeFilter).length > 0) {
+      Object.entries(options.nodeFilter).forEach(([key, value]) => {
+        builder.whereRaw(`common.${key} = $commonFilter_${key}`, { [`commonFilter_${key}`]: value });
+      });
+    }
+
+    // Apply soft delete filter
+    if (!options?.includeSoftDeleted) {
+      builder.whereRaw('common.deletedAt IS NULL');
+    }
+
+    builder.returnDistinct(['common']);
+
+    const queryResult = builder.build();
+    const result = await this.executeQuery<Record<string, any>[]>(queryResult.query, queryResult.params, options);
+    return result.records?.map((record: Record<string, any>) => this.mapFromNeo4j<T>(record)) || [];
   }
 
   /**
@@ -308,26 +395,20 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     } & RepositoryQueryOptions
   ): Promise<number> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? ''
-        : `:${relationshipTypes.join('|')}`;
+    const typeFilter = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+      ? ''
+      : `:${relationshipTypes.join('|')}`;
 
     const direction = this.getRelationshipDirection(options?.direction);
 
-    const query = `
-      MATCH (node:${this.entityLabel} {id: $nodeId})
-      ${direction.replace('REL', `r${typeFilter}`)}
-      (neighbor)
-      RETURN count(DISTINCT neighbor) as degree
-    `;
+    const builder = new Neo4jQueryBuilder<T>()
+      .match('node', () => ({ constructor: { name: this.entityLabel } } as T), { id: nodeId } as unknown as Partial<T>)
+      .raw(`MATCH (node)${direction.replace('REL', `r${typeFilter}`)}(neighbor)`)
+      .return(['count(DISTINCT neighbor) as degree']);
 
-    const result = await this.executeQuery<{ degree: number }>(
-      query,
-      { nodeId },
-      options
-    );
-    return result[0]?.degree || 0;
+    const queryResult = builder.build();
+    const result = await this.executeQuery(queryResult.query, queryResult.params, options);
+    return (result.records?.[0] as Record<string, any>)?.degree || 0;
   }
 
   /**
@@ -359,15 +440,12 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     `;
 
     try {
-      const result = await this.executeQuery<{
-        componentId: string;
-        nodes: T[];
-      }>(query, {}, options);
+      const result = await this.executeQuery(query, {}, options);
 
-      return result.map((record) => ({
+      return result.records?.map((record: Record<string, any>) => ({
         componentId: record.componentId,
-        nodes: record.nodes.map((node) => this.mapFromNeo4j({ n: node })),
-      }));
+        nodes: record.nodes.map((node: any) => this.mapFromNeo4j<T>({ n: node })),
+      })) || [];
     } catch (error) {
       // Fallback to basic connected components
       return this.findConnectedComponentsBasic(options);
@@ -382,23 +460,23 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     options?: RepositoryQueryOptions
   ): Promise<Array<Record<string, T>>> {
     const { query, params } = this.buildPatternQuery(pattern);
-    const result = await this.executeQuery<Record<string, T>>(
+    const result = await this.executeQuery(
       query,
       params,
       options
     );
 
-    return result.map((record) => {
+    return result.records?.map((record: Record<string, any>) => {
       const mapped: Record<string, T> = {};
       pattern.nodes.forEach((node) => {
         if (record[node.variable]) {
-          mapped[node.variable] = this.mapFromNeo4j({
+          mapped[node.variable] = this.mapFromNeo4j<T>({
             n: record[node.variable],
           });
         }
       });
       return mapped;
-    });
+    }) || [];
   }
 
   /**
@@ -469,46 +547,11 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
     }
   }
 
-  /**
-   * Build node filter clause
-   */
-  private buildNodeFilter(
-    filter?: Record<string, any>,
-    nodeVariable = 'n'
-  ): string {
-    if (!filter || Object.keys(filter).length === 0) {
-      return '';
-    }
-
-    const conditions = Object.entries(filter).map(
-      ([key, value]) => `${nodeVariable}.${key} = ${JSON.stringify(value)}`
-    );
-
-    return `AND ${conditions.join(' AND ')}`;
-  }
-
-  /**
-   * Build relationship filter clause
-   */
-  private buildRelationshipFilter(
-    filter?: Record<string, any>,
-    relVariable = 'r'
-  ): string {
-    if (!filter || Object.keys(filter).length === 0) {
-      return '';
-    }
-
-    const conditions = Object.entries(filter).map(
-      ([key, value]) => `${relVariable}.${key} = ${JSON.stringify(value)}`
-    );
-
-    return `AND ${conditions.join(' AND ')}`;
-  }
 
   /**
    * Build soft delete filter for specific node variable
    */
-  protected override buildSoftDeleteFilter(
+  protected buildSoftDeleteFilter(
     options?: RepositoryQueryOptions,
     nodeVariable = 'n'
   ): string {
@@ -592,18 +635,17 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
       RETURN path, length(path) as pathLength
     `;
 
-    const result = await this.executeQuery<{
-      path: any;
-      pathLength: number;
-    }>(query, { fromId, toId }, options);
+    const result = await this.executeQuery(query, { fromId, toId }, options);
 
-    if (result.length === 0) {
+    if (!result.records || result.records.length === 0) {
       return null;
     }
 
+    const firstRecord = result.records[0] as Record<string, any>;
+
     return {
-      path: this.extractPathNodes(result[0].path),
-      length: result[0].pathLength,
+      path: this.extractPathNodes(firstRecord.path),
+      length: firstRecord.pathLength,
     };
   }
 
@@ -634,18 +676,18 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
       options?.includeSoftDeleted ? '' : 'WHERE a.deletedAt IS NULL'
     } ${relFilter} RETURN id(startNode(r)) as source, id(endNode(r)) as target`;
 
-    const nodeRecords = await this.executeQuery<{ id: number; n: any }>(
+    const nodeResult = await this.executeQuery(
       nodesQuery,
       {},
       options
     );
-    const relRecords = await this.executeQuery<{
-      source: number;
-      target: number;
-    }>(relQuery, {}, options);
+    const relResult = await this.executeQuery(relQuery, {}, options);
+
+    const nodeRecords = (nodeResult.records || []) as Record<string, any>[];
+    const relRecords = (relResult.records || []) as Record<string, any>[];
 
     const nodeMap = new Map<number, any>();
-    nodeRecords.forEach((rec) => {
+    nodeRecords.forEach((rec: Record<string, any>) => {
       nodeMap.set(rec.id, rec.n);
     });
 
@@ -656,7 +698,8 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
       return adjacency.get(id)!;
     };
     nodeMap.forEach((_, id) => ensure(id));
-    relRecords.forEach(({ source, target }) => {
+    relRecords.forEach((record: Record<string, any>) => {
+      const { source, target } = record;
       ensure(source).add(target);
       ensure(target).add(source);
     });

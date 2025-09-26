@@ -932,7 +932,7 @@ function isValidJsonString(str: string): boolean {
   }
 
   const trimmed = str.trim();
-  if (!trimmed.match(/^[{[].*[}\]]$/s)) {
+  if (!trimmed.match(/^[{[].*[}]]$/)) {
     return false;
   }
 

@@ -79,7 +79,7 @@ export function Retry(config: RetryConfig = {}): MethodDecorator {
       'Retry',
       'method',
       [], // No dependencies
-      resolvedConfig
+      resolvedConfig as unknown as Record<string, unknown>
     );
 
     DecoratorMetadataRegistry.setMetadata(target, propertyKey, metadata);
@@ -179,7 +179,7 @@ async function executeWithRetry(
       context.logger.warn('Circuit breaker is open, skipping operation');
     }
 
-    return handleFallback(context, args, new Error('Circuit breaker is open'));
+    return handleFallback(context, args, new Error('Circuit breaker is open'), this);
   }
 
   let lastError: Error = new Error('Unknown error');
@@ -267,7 +267,7 @@ async function executeWithRetry(
     );
   }
 
-  return handleFallback(context, args, lastError);
+  return handleFallback(context, args, lastError, this);
 }
 
 /**
@@ -298,10 +298,11 @@ async function executeWithTimeout<T>(
 async function handleFallback(
   context: RetryContext,
   args: any[],
-  error: Error
+  error: Error,
+  target: any
 ): Promise<any> {
   if (context.config.fallback.enabled) {
-    updateRetryStatistics(this, context.operationName, {
+    updateRetryStatistics(target, context.operationName, {
       fallbackExecutions: context.statistics.fallbackExecutions + 1,
     });
 
@@ -310,7 +311,7 @@ async function handleFallback(
     }
 
     if (context.config.fallback.fallbackFunction) {
-      return await context.config.fallback.fallbackFunction.apply(this, args);
+      return await context.config.fallback.fallbackFunction.apply(target, args);
     } else if (context.config.fallback.fallbackValue !== undefined) {
       return context.config.fallback.fallbackValue;
     }

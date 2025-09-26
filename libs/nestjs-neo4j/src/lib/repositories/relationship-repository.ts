@@ -1,4 +1,29 @@
-import { BaseRepository, type RepositoryQueryOptions } from './base-repository';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectNeo4j } from '../decorators/inject-neo4j.decorator';
+import type { Neo4jService } from '../services/neo4j.service';
+import type { QueryResult } from '../interfaces/query-result.interface';
+import { Neo4jQueryBuilder } from '../query-builder/neo4j-query-builder';
+import type { BaseEntity } from '../types/neo4j-types';
+
+/**
+ * Query options for repository operations
+ */
+export interface RepositoryQueryOptions {
+  /** Database name */
+  database?: string;
+  /** Transaction context */
+  transactionId?: string;
+  /** Cache configuration */
+  cache?: {
+    enabled: boolean;
+    ttl?: number;
+  };
+  /** Retry configuration */
+  retry?: {
+    attempts: number;
+    delay?: number;
+  };
+}
 
 /**
  * Relationship query options
@@ -10,6 +35,8 @@ export interface RelationshipQueryOptions extends RepositoryQueryOptions {
   includeTarget?: boolean;
   /** Include relationship properties */
   includeProperties?: boolean;
+  /** Include soft-deleted relationships */
+  includeSoftDeleted?: boolean;
 }
 
 /**
@@ -59,7 +86,7 @@ export interface BatchRelationshipOperation<TRel = any> {
 }
 
 /**
- *  repository for relationship management
+ * Specialized repository for relationship management
  *
  * This class provides comprehensive relationship management functionality:
  * - CRUD operations for relationships
@@ -69,18 +96,73 @@ export interface BatchRelationshipOperation<TRel = any> {
  * - Source and target node management
  * - Relationship property management
  *
+ * For basic node CRUD operations, use @FindOne, @FindMany, @CreateEntity decorators instead.
+ *
  * @template TRel The relationship type this repository manages
  * @template TSource The source node type
  * @template TTarget The target node type
  */
-export abstract class RelationshipRepository<
-  TRel = any,
-  TSource = any,
-  TTarget = any
-> extends BaseRepository<TRel> {
-  protected abstract readonly relationshipType: string;
-  protected abstract readonly sourceLabel: string;
-  protected abstract readonly targetLabel: string;
+@Injectable()
+export class RelationshipRepository<
+  TRel extends Record<string, any> = Record<string, any>,
+  TSource extends Record<string, any> = Record<string, any>,
+  TTarget extends Record<string, any> = Record<string, any>
+> {
+  protected readonly logger = new Logger(RelationshipRepository.name);
+  protected readonly relationshipType: string = 'RELATES_TO';
+  protected readonly sourceLabel: string = 'Entity';
+  protected readonly targetLabel: string = 'Entity';
+
+  constructor(
+    @InjectNeo4j() protected readonly neo4jService: Neo4jService
+  ) {}
+
+  /**
+   * Execute a query with the Neo4j service
+   */
+  protected async query<R = any>(
+    cypher: string,
+    params?: Record<string, any>,
+    options?: RepositoryQueryOptions
+  ): Promise<QueryResult<R>> {
+    const result = await this.neo4jService.run(cypher, params, options as any);
+    return result as QueryResult<R>;
+  }
+
+  /**
+   * Execute a query (alias for backward compatibility)
+   */
+  protected async executeQuery<R = any>(
+    cypher: string,
+    params?: Record<string, any>,
+    options?: RepositoryQueryOptions
+  ): Promise<QueryResult<R>> {
+    return this.query<R>(cypher, params, options);
+  }
+
+  /**
+   * Map data to Neo4j compatible format
+   */
+  protected mapToNeo4j(data: any): Record<string, any> {
+    // Simple mapping - can be overridden in subclasses
+    return { ...data };
+  }
+
+  /**
+   * Map Neo4j result to entity
+   */
+  protected mapFromNeo4j(record: any): any {
+    // Simple mapping - can be overridden in subclasses
+    return record;
+  }
+
+
+  /**
+   * Default query options
+   */
+  protected get defaultOptions(): RepositoryQueryOptions {
+    return {};
+  }
 
   /**
    * Create a new relationship between two nodes
@@ -98,35 +180,35 @@ export abstract class RelationshipRepository<
     relationshipData.createdAt = relationshipData.createdAt || now;
     relationshipData.updatedAt = now;
 
-    const query = `
-      MATCH (source:${sourceLabel} {id: $sourceId})
-      MATCH (target:${targetLabel} {id: $targetId})
-      CREATE (source)-[rel:${this.relationshipType} $properties]->(target)
-      RETURN rel
-      ${options?.includeSource ? ', source' : ''}
-      ${options?.includeTarget ? ', target' : ''}
-    `;
+    const builder = new Neo4jQueryBuilder()
+      .match('source', () => ({ constructor: { name: sourceLabel } } as BaseEntity), { id: data.sourceId } as Partial<BaseEntity>)
+      .match('target', () => ({ constructor: { name: targetLabel } } as BaseEntity), { id: data.targetId } as Partial<BaseEntity>)
+      .raw(`CREATE (source)-[rel:${this.relationshipType} $properties]->(target)`, { properties: relationshipData });
 
+    // Build return clause based on options
+    const returnVars = ['rel'];
+    if (options?.includeSource) returnVars.push('source');
+    if (options?.includeTarget) returnVars.push('target');
+    builder.return(returnVars);
+
+    const queryResult = builder.build();
     const mergedOptions = {
       ...this.defaultOptions,
       ...options,
       accessMode: 'WRITE' as const,
     };
+    
     const result = await this.executeQuery(
-      query,
-      {
-        sourceId: data.sourceId,
-        targetId: data.targetId,
-        properties: relationshipData,
-      },
+      queryResult.query,
+      queryResult.params,
       mergedOptions
     );
 
-    if (result.length === 0) {
+    if (!result.records || result.records.length === 0) {
       throw new Error(`Failed to create relationship ${this.relationshipType}`);
     }
 
-    const record = result[0];
+    const record = result.records[0];
     return this.buildRelationshipResult(record, options);
   }
 
@@ -137,20 +219,26 @@ export abstract class RelationshipRepository<
     sourceId: string,
     options?: RelationshipQueryOptions
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
-    const query = `
-      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
-      this.relationshipType
-    }]->(target:${this.targetLabel})
-      ${this.buildSoftDeleteFilter(options, 'rel')}
-      RETURN rel
-      ${options?.includeSource ? ', source' : ''}
-      ${options?.includeTarget ? ', target' : ''}
-    `;
+    const builder = new Neo4jQueryBuilder()
+      .raw(`MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})`, 
+        { sourceId });
 
-    const result = await this.executeQuery(query, { sourceId }, options);
-    return result.map((record) =>
+    // Apply soft delete filter
+    if (!options?.includeSoftDeleted) {
+      builder.where('rel.deletedAt', '=', null);
+    }
+
+    // Build return clause based on options
+    const returnVars = ['rel'];
+    if (options?.includeSource) returnVars.push('source');
+    if (options?.includeTarget) returnVars.push('target');
+    builder.return(returnVars);
+
+    const queryResult = builder.build();
+    const result = await this.executeQuery(queryResult.query, queryResult.params, options);
+    return result.records?.map((record: Record<string, any>) =>
       this.buildRelationshipResult(record, options)
-    );
+    ) || [];
   }
 
   /**
@@ -160,20 +248,26 @@ export abstract class RelationshipRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
-    const query = `
-      MATCH (source:${this.sourceLabel})-[rel:${
-      this.relationshipType
-    }]->(target:${this.targetLabel} {id: $targetId})
-      ${this.buildSoftDeleteFilter(options, 'rel')}
-      RETURN rel
-      ${options?.includeSource ? ', source' : ''}
-      ${options?.includeTarget ? ', target' : ''}
-    `;
+    const builder = new Neo4jQueryBuilder()
+      .raw(`MATCH (source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`, 
+        { targetId });
 
-    const result = await this.executeQuery(query, { targetId }, options);
-    return result.map((record) =>
+    // Apply soft delete filter
+    if (!options?.includeSoftDeleted) {
+      builder.where('rel.deletedAt', '=', null);
+    }
+
+    // Build return clause based on options
+    const returnVars = ['rel'];
+    if (options?.includeSource) returnVars.push('source');
+    if (options?.includeTarget) returnVars.push('target');
+    builder.return(returnVars);
+
+    const queryResult = builder.build();
+    const result = await this.executeQuery(queryResult.query, queryResult.params, options);
+    return result.records?.map((record: Record<string, any>) =>
       this.buildRelationshipResult(record, options)
-    );
+    ) || [];
   }
 
   /**
@@ -200,8 +294,8 @@ export abstract class RelationshipRepository<
       { sourceId, targetId },
       options
     );
-    return result.length > 0
-      ? this.buildRelationshipResult(result[0], options)
+    return result.records && result.records.length > 0
+      ? this.buildRelationshipResult(result.records[0], options)
       : null;
   }
 
@@ -217,30 +311,39 @@ export abstract class RelationshipRepository<
     const updateData = this.mapToNeo4j(updates);
     updateData.updatedAt = new Date().toISOString();
 
-    const query = `
-      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
-      this.relationshipType
-    }]->(target:${this.targetLabel} {id: $targetId})
-      ${this.buildSoftDeleteFilter(options, 'rel')}
-      SET rel += $updates
-      RETURN rel
-      ${options?.includeSource ? ', source' : ''}
-      ${options?.includeTarget ? ', target' : ''}
-    `;
+    const builder = new Neo4jQueryBuilder()
+      .raw(`MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`, 
+        { sourceId, targetId });
 
+    // Apply soft delete filter
+    if (!options?.includeSoftDeleted) {
+      builder.where('rel.deletedAt', '=', null);
+    }
+
+    // Add SET clause
+    builder.set(updateData);
+
+    // Build return clause based on options
+    const returnVars = ['rel'];
+    if (options?.includeSource) returnVars.push('source');
+    if (options?.includeTarget) returnVars.push('target');
+    builder.return(returnVars);
+
+    const queryResult = builder.build();
     const mergedOptions = {
       ...this.defaultOptions,
       ...options,
       accessMode: 'WRITE' as const,
     };
+    
     const result = await this.executeQuery(
-      query,
-      { sourceId, targetId, updates: updateData },
+      queryResult.query,
+      queryResult.params,
       mergedOptions
     );
 
-    return result.length > 0
-      ? this.buildRelationshipResult(result[0], options)
+    return result.records && result.records.length > 0
+      ? this.buildRelationshipResult(result.records[0], options)
       : null;
   }
 
@@ -279,13 +382,13 @@ export abstract class RelationshipRepository<
       ...options,
       accessMode: 'WRITE' as const,
     };
-    const result = await this.executeQuery<{ deleted: boolean }>(
+    const result = await this.executeQuery(
       query,
       { sourceId, targetId, deletedAt: new Date().toISOString() },
       mergedOptions
     );
 
-    return result[0]?.deleted || false;
+    return (result.records?.[0] as { deleted: boolean })?.deleted || false;
   }
 
   /**
@@ -307,13 +410,13 @@ export abstract class RelationshipRepository<
       ...options,
       accessMode: 'WRITE' as const,
     };
-    const result = await this.executeQuery<{ deleted: boolean }>(
+    const result = await this.executeQuery(
       query,
       { sourceId, targetId },
       mergedOptions
     );
 
-    return result[0]?.deleted || false;
+    return (result.records?.[0] as { deleted: boolean })?.deleted || false;
   }
 
   /**
@@ -346,13 +449,13 @@ export abstract class RelationshipRepository<
       ...options,
       accessMode: 'WRITE' as const,
     };
-    const result = await this.executeQuery<{ deletedCount: number }>(
+    const result = await this.executeQuery(
       query,
       params,
       mergedOptions
     );
 
-    return result[0]?.deletedCount || 0;
+    return (result.records?.[0] as { deletedCount: number })?.deletedCount || 0;
   }
 
   /**
@@ -385,13 +488,13 @@ export abstract class RelationshipRepository<
       ...options,
       accessMode: 'WRITE' as const,
     };
-    const result = await this.executeQuery<{ deletedCount: number }>(
+    const result = await this.executeQuery(
       query,
       params,
       mergedOptions
     );
 
-    return result[0]?.deletedCount || 0;
+    return (result.records?.[0] as { deletedCount: number })?.deletedCount || 0;
   }
 
   /**
@@ -409,12 +512,12 @@ export abstract class RelationshipRepository<
       RETURN count(rel) as count
     `;
 
-    const result = await this.executeQuery<{ count: number }>(
+    const result = await this.executeQuery(
       query,
       { sourceId },
       options
     );
-    return result[0]?.count || 0;
+    return (result.records?.[0] as { count: number })?.count || 0;
   }
 
   /**
@@ -432,12 +535,12 @@ export abstract class RelationshipRepository<
       RETURN count(rel) as count
     `;
 
-    const result = await this.executeQuery<{ count: number }>(
+    const result = await this.executeQuery(
       query,
       { targetId },
       options
     );
-    return result[0]?.count || 0;
+    return (result.records?.[0] as { count: number })?.count || 0;
   }
 
   /**
@@ -456,12 +559,12 @@ export abstract class RelationshipRepository<
       RETURN count(rel) > 0 as exists
     `;
 
-    const result = await this.executeQuery<{ exists: boolean }>(
+    const result = await this.executeQuery(
       query,
       { sourceId, targetId },
       options
     );
-    return result[0]?.exists || false;
+    return (result.records?.[0] as { exists: boolean })?.exists || false;
   }
 
   /**
@@ -549,7 +652,7 @@ export abstract class RelationshipRepository<
   /**
    * Build soft delete filter for relationships
    */
-  protected override buildSoftDeleteFilter(
+  protected buildSoftDeleteFilter(
     options?: RelationshipQueryOptions,
     relVariable = 'rel'
   ): string {

@@ -1,22 +1,23 @@
 // =============================================================================
-// CORE EXPORTS (Backward Compatible with  Features)
+// CORE EXPORTS
 // =============================================================================
 
 // Module
-export * from './lib/neo4j.module';
+export { Neo4jModule } from './lib/neo4j.module';
 
-// Services (now include all  features)
-export * from './lib/services/neo4j.service';
-export * from './lib/services/neo4j-connection.service';
-export * from './lib/services/neo4j-health.service';
+// Services
+export { Neo4jService } from './lib/services/neo4j.service';
+export { Neo4jConnectionService } from './lib/services/neo4j-connection.service';
+export { Neo4jHealthService } from './lib/services/neo4j-health.service';
 
-// Interfaces (includes  interfaces)
-export type * from './lib/interfaces/neo4j-module-options.interface';
+// Interfaces
+export type { Neo4jModuleOptions } from './lib/interfaces/neo4j-module-options.interface';
 export type * from './lib/interfaces/neo4j-connection.interface';
-export type * from './lib/interfaces/query-result.interface';
+export type { QueryResult, QueryOptions, QueryMetrics } from './lib/interfaces/query-result.interface';
 
 // Core Type Definitions
 export type * from './lib/types/neo4j-types';
+export type { BaseEntity } from './lib/types/neo4j-types';
 
 // Safety & Validation Decorators (PRIMARY)
 export {
@@ -27,8 +28,8 @@ export {
 } from './lib/decorators/safe.decorator';
 
 // Core Decorators
-export * from './lib/decorators/inject-neo4j.decorator';
-export * from './lib/decorators/transactional.decorator';
+export { InjectNeo4j, InjectNeo4jSession, InjectNeo4jDriver, InjectNeo4jConnection } from './lib/decorators/inject-neo4j.decorator';
+export { Transactional } from './lib/decorators/transactional.decorator';
 
 // Legacy Decorators (DEPRECATED - use @Safe() instead)
 export {
@@ -36,13 +37,27 @@ export {
   type Neo4jSafeOptions,
 } from './lib/decorators/safe.decorator';
 
-//  Decorator Framework
-export * from './lib/decorators/cypher-query.decorator';
-export * from './lib/decorators/repository.decorator';
-export * from './lib/decorators/entity.decorator';
-export * from './lib/interfaces/decorator-metadata.interface';
+// Decorator Framework
+export {
+  CypherQuery,
+  type CypherQueryConfig,
+} from './lib/decorators/cypher-query.decorator';
+export {
+  Repository,
+  Neo4jRepository,
+} from './lib/repositories/repository.decorator';
+export {
+  Neo4jEntity,
+  Neo4jProp,
+  Neo4jRelationship,
+  Id,
+  CreatedAt,
+  UpdatedAt,
+  JsonProperty,
+} from './lib/decorators/entity.decorator';
+export type * from './lib/interfaces/decorator-metadata.interface';
 
-// Phase 5: Security & Validation Decorators
+// Security & Validation Decorators
 export {
   Authorize,
   ValidateInput,
@@ -56,53 +71,57 @@ export {
   type EncryptSensitiveConfig as SecurityEncryptSensitiveConfig,
 } from './lib/decorators/security.decorators';
 
-// Constraint System (Schema Management)
-export * from './lib/constraints';
-export * from './lib/constraints/constraint.service';
-
-// Model Services Architecture
+// Constraint System
 export {
-  BaseModelService,
-  type EntityMetadata,
-  type ModelQueryOptions,
-  type EntityHooks,
-  type BaseEntity,
-} from './lib/models/base-model.service';
-
-export {
-  Neo4jNodeModelService,
-  type NodeEntity,
-  type CreateRelationshipOptions,
-  type RelationshipQueryOptions as NodeRelationshipQueryOptions,
-  type TraversalOptions,
-  type GraphPath,
-  type NodeStatistics,
-} from './lib/models/node-model.service';
-
-export {
-  Neo4jRelationshipModelService,
-  type RelationshipEntity,
-  type CreateRelationshipOptions as RelCreateOptions,
-  type RelationshipQueryOptions as RelModelQueryOptions,
-  type RelationshipPattern,
-  type RelationshipAnalytics,
-  type BidirectionalRelationship,
-} from './lib/models/relationship-model.service';
+  ConstraintService,
+  ClassIndex,
+  PropIndex,
+  Indexes,
+  TextIndex,
+  RangeIndex,
+  PointIndex,
+  LookupIndex,
+  NotNull,
+  NodeKey,
+  Unique,
+  ClassUnique,
+  PropUnique,
+  UniqueConstraints,
+  Validate,
+} from './lib/constraints';
 
 // Multi-Tenancy Support
-export * from './lib/multi-tenancy/multi-tenant.module';
-export * from './lib/multi-tenancy/multi-tenant-neo4j.service';
-export * from './lib/multi-tenancy/tenant-context.service';
+export { MultiTenantNeo4jModule } from './lib/multi-tenancy/multi-tenant.module';
+export { MultiTenantNeo4jService } from './lib/multi-tenancy/multi-tenant-neo4j.service';
+export { TenantContextService } from './lib/multi-tenancy/tenant-context.service';
 export * from './lib/multi-tenancy/multi-tenant.decorators';
 
-// Repository Framework
-export * from './lib/repositories/base-repository';
-export * from './lib/repositories/graph-repository';
-export * from './lib/repositories/relationship-repository';
+// Repository Framework (Specialized repositories only)
+export {
+  GraphRepository,
+  type GraphTraversalOptions,
+  type ShortestPathOptions,
+  type ClusteringOptions,
+  type GraphPattern,
+} from './lib/repositories/graph-repository';
+export {
+  RelationshipRepository,
+  type RelationshipQueryOptions,
+  type CreateRelationshipData,
+  type RelationshipResult,
+  type BatchRelationshipOperation,
+} from './lib/repositories/relationship-repository';
 
 // Utils
 export * from './lib/utils/query-builder';
 export * from './lib/utils/parameter-serializer';
+
+// Type-Safe Query Builder
+export {
+  Neo4jQueryBuilder,
+  TypedQueryBuilder,
+  createQueryBuilder,
+} from './lib/query-builder/neo4j-query-builder';
 
 // Constants
 export * from './lib/constants';
@@ -115,98 +134,26 @@ export {
   isNeo4jConfigured,
 } from './lib/utils/neo4j-config.accessor';
 
-// =============================================================================
-// TYPE EXPORTS FOR  FEATURES
-// =============================================================================
+// Entity CRUD operations are now internal to @Repository decorator
+// Use @Repository or @Neo4jRepository decorator for CRUD operations
+// The FindOptions type is still exported for repository method signatures
+export { type FindOptions } from './lib/repositories/crud-operations';
 
-//  Query Types
-export type {
-  QueryOptions,
-  QueryResult,
-  QueryMetrics,
-  ConnectionPoolMetrics,
-  HealthIndicator,
-  ComprehensiveMetrics,
-} from './lib/interfaces/query-result.interface';
-
-// Explicitly re-export transaction options to avoid conflicts
-export type { TransactionOptions as BasicTransactionOptions } from './lib/interfaces/neo4j-connection.interface';
-export type { TransactionOptions } from './lib/interfaces/decorator-metadata.interface';
-
-// =============================================================================
-// CONVENIENCE RE-EXPORTS FOR COMMON USE CASES
-// =============================================================================
-
-// Safety Decorator Shortcuts (RECOMMENDED)
-// Safe is already exported above in the primary exports section
-
-//  Query Decorator Shortcuts
+// Base Repository Interface for TypeScript support
 export {
-  CypherQuery,
-  Query,
-  FindOne,
-  FindMany,
-  Create,
-  Update,
-  Delete,
-} from './lib/decorators/cypher-query.decorator';
-
-export {
-  Neo4jRepository,
-  Repository,
-} from './lib/decorators/repository.decorator';
-
-export {
-  Neo4jEntity,
-  Neo4jProperty,
-  Neo4jRelationship,
-  Id,
-  CreatedAt,
-  UpdatedAt,
-  JsonProperty,
-} from './lib/decorators/entity.decorator';
-
-// Repository Shortcuts
-export {
-  BaseRepository,
-  GraphRepository,
-  RelationshipRepository,
-} from './lib/repositories/index';
+  type IBaseRepository,
+  BaseRepositoryService,
+} from './lib/repositories/base-repository.interface';
 
 // =============================================================================
-// TYPE DEFINITIONS FOR TYPE SAFETY
+// EXAMPLES AND DOCUMENTATION
 // =============================================================================
 
-// Core Neo4j Types
-export type {
-  Neo4jPrimitive,
-  Neo4jProperties,
-  Neo4jQueryParams,
-  Neo4jWhereClause,
-  Neo4jSortOrder,
-  Neo4jSortOrderArray,
-  Neo4jRecordShape,
-  Neo4jPropertyMap,
-  Neo4jPartialPropertyMap,
-  Neo4jQueryResult,
-  Neo4jNodeIdentity,
-  Neo4jRelationshipIdentity,
-  Neo4jTransactionContext,
-  Neo4jQueryOptions,
-  Neo4jCreateData,
-  Neo4jUpdateData,
-  Neo4jCompatibleEntity,
-  Neo4jPropertyConstraints,
-  Neo4jBulkCreateData,
-  Neo4jBulkUpdateData,
-  Neo4jIndexDefinition,
-  Neo4jConstraintDefinition,
-  Neo4jOperationError,
-} from './lib/types/neo4j-types';
-
-// Type Guards
+// Query Builder Examples
+export type * from './lib/examples';
 export {
-  isNeo4jPrimitive,
-  isNeo4jProperties,
-  isNeo4jCompatibleEntity,
-} from './lib/types/neo4j-types';
+  QUERY_BUILDER_EXAMPLES,
+  EXAMPLE_CATEGORIES,
+  type QueryBuilderExampleType,
+  type ExampleCategoryType,
+} from './lib/examples';

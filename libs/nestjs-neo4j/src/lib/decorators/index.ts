@@ -9,7 +9,7 @@
  *   - NEW: @Neo4jEntity('User') string shorthand
  *   - NEW: @Neo4jEntity.Timestamped('User') helper methods
  *   - ENHANCED: Smart defaults for ID strategy and property
- * - @Neo4jProperty: Property mapping with intelligent auto-detection
+ * - @Neo4jProp: Property mapping with intelligent auto-detection
  *   - ENHANCED: Auto-detects timestamps (*At fields)
  *   - ENHANCED: Auto-detects emails, URLs, JSON fields
  *   - ENHANCED: Smart ID generation with crypto.randomUUID fallback
@@ -52,8 +52,6 @@ export * from './safe.decorator';
 // Query decorators (enhanced existing @CypherQuery)
 export * from './cypher-query.decorator';
 
-// Repository decorators
-export * from './repository.decorator';
 
 // Utility decorators
 export * from './inject-neo4j.decorator';

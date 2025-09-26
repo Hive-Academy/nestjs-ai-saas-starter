@@ -70,11 +70,15 @@
       "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
       "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
       "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
-      "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)"
+      "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
+      "Read(D:\\d\\projects\\nestjs-ai-saas-starter/**)",
+      "Read(\\d\\projects\\nestjs-ai-saas-starter\\libs/**)"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
+    "additionalDirectories": [
+      "d:\\projects\\nestjs-ai-saas-starter"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

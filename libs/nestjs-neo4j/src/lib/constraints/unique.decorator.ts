@@ -37,7 +37,7 @@ export interface UniqueConfig extends Omit<UniqueOptions, 'validation'> {
 }
 
 /**
- * @Unique class-level decorator for compound unique constraints
+ * @ClassUnique class-level decorator for compound unique constraints
  *
  * Creates a unique constraint on a combination of properties.
  * Use this when you need to ensure uniqueness across multiple properties together.
@@ -52,31 +52,31 @@ export interface UniqueConfig extends Omit<UniqueOptions, 'validation'> {
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
- * @Unique(['email', 'tenantId'])
- * @Unique(['username', 'domain'])
+ * @ClassUnique(['email', 'tenantId'])
+ * @ClassUnique(['username', 'domain'])
  * export class User {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   tenantId: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   username: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   domain: string;
  * }
  *
  * // With custom configuration
- * @Unique(['email'], {
+ * @ClassUnique(['email'], {
  *   name: 'user_email_unique',
  *   errorMessage: 'Email address must be unique',
  *   nullsDistinct: true,
  *   caseSensitive: false
  * })
  * export class UniqueUser {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  * }
  * ```
@@ -84,7 +84,7 @@ export interface UniqueConfig extends Omit<UniqueOptions, 'validation'> {
  * @param properties - Array of property names that must be unique together
  * @param config - Additional configuration options
  */
-export function Unique(
+export function ClassUnique(
   properties: string[],
   config?: UniqueConfig
 ): ClassDecorator {
@@ -154,7 +154,7 @@ export function Unique(
 }
 
 /**
- * @UniqueProperty property-level decorator for single property unique constraints
+ * @PropUnique property-level decorator for single property unique constraints
  *
  * Creates a unique constraint on a single property. Use this as a property decorator
  * when you need to ensure a single property is unique across all entities.
@@ -169,26 +169,26 @@ export function Unique(
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
  * export class User {
- *   @UniqueProperty()
- *   @Neo4jProperty()
+ *   @PropUnique()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @UniqueProperty({
+ *   @PropUnique({
  *     name: 'user_username_unique',
  *     caseSensitive: false,
  *     errorMessage: 'Username must be unique'
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   username: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   name: string;
  * }
  * ```
  *
  * @param config - Configuration options for the unique constraint
  */
-export function UniqueProperty(
+export function PropUnique(
   config?: Omit<UniqueConfig, 'properties'>
 ): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
@@ -271,16 +271,16 @@ export function UniqueProperty(
  *   { properties: ['externalId'], nullsDistinct: false }
  * ])
  * export class User {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   username: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   domain: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   externalId?: string;
  * }
  * ```

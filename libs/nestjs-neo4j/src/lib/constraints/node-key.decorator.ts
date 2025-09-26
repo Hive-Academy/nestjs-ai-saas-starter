@@ -51,13 +51,13 @@ export interface NodeKeyConfig extends Omit<NodeKeyOptions, 'validation'> {
  * @Neo4jEntity({ label: 'User' })
  * @NodeKey(['email', 'tenantId'])
  * export class User {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   tenantId: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   name: string;
  * }
  *
@@ -68,7 +68,7 @@ export interface NodeKeyConfig extends Omit<NodeKeyOptions, 'validation'> {
  *   provider: 'btree-1.0'
  * })
  * export class UniqueUser {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   id: string;
  * }
  * ```
@@ -153,16 +153,16 @@ export function NodeKey(
  *   { properties: ['username', 'domain'] }
  * ])
  * export class User {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   tenantId: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   username: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   domain: string;
  * }
  * ```

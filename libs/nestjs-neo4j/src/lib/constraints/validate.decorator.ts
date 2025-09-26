@@ -59,7 +59,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *       required: true
  *     }
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
  *   @Validate({
@@ -67,7 +67,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *       range: { min: 18, max: 120 }
  *     }
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   age: number;
  *
  *   @Validate({
@@ -79,7 +79,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *       }
  *     }
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   username: string;
  *
  *   @Validate({
@@ -88,7 +88,7 @@ export interface ValidateConfig extends Omit<ValidationOptions, 'validation'> {
  *       required: true
  *     }
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   countryCode: string;
  * }
  * ```

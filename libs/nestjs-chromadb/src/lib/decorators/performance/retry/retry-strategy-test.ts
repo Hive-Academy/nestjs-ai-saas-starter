@@ -9,7 +9,7 @@ import { Injectable } from '@nestjs/common';
 import { Retry } from './retry.decorator';
 import { RetryConfigPresets } from './retry-config';
 import { CircuitBreakerFactory } from './circuit-breaker';
-import { ErrorClassificationPresets } from './error-classifier';
+// import { ErrorClassificationPresets } from './error-classifier';
 
 /**
  * Example service demonstrating Strategy pattern usage
@@ -95,8 +95,11 @@ export class RetryStrategyTestService {
       // Custom fibonacci-like backoff
       return Math.min(baseDelay * Math.pow(1.618, attempt), 10000);
     },
-    circuitBreaker:
-      CircuitBreakerFactory.createNetworkCircuitBreaker().getStats(),
+    circuitBreaker: {
+      enabled: true,
+      failureThreshold: 5,
+      resetTimeout: 30000,
+    },
     timeout: {
       enabled: true,
       timeoutMs: 3000,
@@ -124,14 +127,14 @@ export function demonstrateStrategyPattern(): void {
     console.log(`\n${strategyType.toUpperCase()} Strategy:`);
 
     // Create strategy with factory
-    const config = {
-      backoffMultiplier: 2,
-      maxDelay: 30000,
-      customDelay:
-        strategyType === 'custom'
-          ? (attempt: number, base: number) => base * attempt * 500
-          : undefined,
-    };
+    // const config = {
+    //   backoffMultiplier: 2,
+    //   maxDelay: 30000,
+    //   customDelay:
+    //     strategyType === 'custom'
+    //       ? (attempt: number, base: number) => base * attempt * 500
+    //       : undefined,
+    // };
 
     // Test delay calculation for 5 attempts
     for (let attempt = 1; attempt <= 5; attempt++) {
@@ -156,7 +159,7 @@ export function demonstrateStrategyPattern(): void {
 
   // 3. Error Classification Demonstration
   console.log('\n=== Error Classification ===');
-  const errorClassifier = ErrorClassificationPresets.network();
+  // const errorClassifier = ErrorClassificationPresets.network();
 
   const testErrors = [
     new Error('ECONNRESET: Connection reset'),

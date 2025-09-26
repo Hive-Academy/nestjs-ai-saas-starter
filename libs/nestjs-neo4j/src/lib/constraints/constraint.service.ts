@@ -230,7 +230,7 @@ export class ConstraintService implements OnModuleInit {
     let created = 0;
     let failed = 0;
 
-    for (const entityInfo of this.entityRegistry.values()) {
+    for (const entityInfo of Array.from(this.entityRegistry.values())) {
       for (const constraint of entityInfo.constraints) {
         processed++;
 
@@ -514,7 +514,7 @@ export class ConstraintService implements OnModuleInit {
       property: 0,
     };
 
-    for (const entityInfo of this.entityRegistry.values()) {
+    for (const entityInfo of Array.from(this.entityRegistry.values())) {
       for (const constraint of entityInfo.constraints) {
         total++;
         byType[constraint.type]++;

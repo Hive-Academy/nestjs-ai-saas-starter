@@ -4,17 +4,17 @@
  */
 
 import type {
-  ModuleMetadata,
-  Type,
-  Provider,
   InjectionToken,
+  ModuleMetadata,
   OptionalFactoryDependency,
+  Provider,
+  Type,
 } from '@nestjs/common';
 
 import type { ChromaDBConnectionOptions } from './connection-options.interface';
 import type { ChromaDBEmbeddingOptions } from './embedding-options.interface';
-import type { ChromaDBPerformanceOptions } from './performance-options.interface';
 import type { ChromaDBMultiTenantOptions } from './multi-tenant-options.interface';
+import type { ChromaDBPerformanceOptions } from './performance-options.interface';
 
 /**
  * Complete ChromaDB module configuration options
@@ -61,33 +61,31 @@ export interface ChromaDBModuleAsyncOptions
 
 // Re-export all focused interfaces for backward compatibility at module level
 export type {
+  ChromaDBClientOptions,
   ChromaDBConnectionOptions,
-  ChromaDBEmbeddingOptions,
-  ChromaDBPerformanceOptions,
-  ChromaDBMultiTenantOptions,
+  CollectionConfig,
+  HttpClientOptions,
 } from './connection-options.interface';
 export type {
-  EmbeddingConfig,
-  EmbeddingProviderType,
-  OpenAIEmbeddingConfig,
-  HuggingFaceEmbeddingConfig,
+  ChromaDBEmbeddingOptions,
   CohereEmbeddingConfig,
   CustomEmbeddingConfig,
+  EmbeddingConfig,
+  EmbeddingProviderType,
+  HuggingFaceEmbeddingConfig,
   InputValidationConfig,
+  OpenAIEmbeddingConfig,
 } from './embedding-options.interface';
 export type {
-  PerformanceConfig,
+  ChromaDBMultiTenantOptions,
+  DecoratorConfig,
+  MultiTenantConfig,
+} from './multi-tenant-options.interface';
+export type {
   CachingConfig,
+  ChromaDBPerformanceOptions,
+  PerformanceConfig,
   ProfilingConfig,
   RetryConfig,
   TextProcessingConfig,
 } from './performance-options.interface';
-export type {
-  MultiTenantConfig,
-  DecoratorConfig,
-} from './multi-tenant-options.interface';
-export type {
-  ChromaDBClientOptions,
-  HttpClientOptions,
-  CollectionConfig,
-} from './connection-options.interface';

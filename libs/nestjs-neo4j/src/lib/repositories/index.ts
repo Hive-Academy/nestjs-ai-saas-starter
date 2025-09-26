@@ -1,15 +1,8 @@
 /**
- * Neo4j Repository Framework
+ * Neo4j Specialized Repository Framework
  *
- * This module provides a comprehensive repository pattern implementation for Neo4j:
- *
- * Base Repository:
- * - Standard CRUD operations with type safety
- * - Pagination and sorting utilities
- * - Soft delete support
- * - Query builder helpers
- * - Error handling and logging
- * - Performance monitoring integration
+ * This module provides specialized repository implementations for advanced graph operations.
+ * For basic CRUD operations, use the @Repository decorator or entity CRUD decorators instead.
  *
  * Graph Repository:
  * - Graph traversals and path finding
@@ -26,6 +19,10 @@
  * - Type-safe relationship handling
  * - Source and target node management
  *
+ * For Basic CRUD Operations:
+ * - Use @FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity decorators
+ * - Or use @Repository decorator for auto-generated repositories
+ *
  * Features:
  * - Full TypeScript type safety
  * - Automatic query optimization
@@ -35,6 +32,22 @@
  * - Metrics collection
  */
 
-export * from './base-repository';
-export * from './graph-repository';
-export * from './relationship-repository';
+// BaseRepository removed - use @Repository decorator instead
+export {
+  GraphRepository,
+  type GraphTraversalOptions,
+  type ShortestPathOptions,
+  type ClusteringOptions,
+  type GraphPattern,
+} from './graph-repository';
+export {
+  RelationshipRepository,
+  type RelationshipQueryOptions,
+  type CreateRelationshipData,
+  type RelationshipResult,
+  type BatchRelationshipOperation,
+} from './relationship-repository';
+
+
+// Repository decorators
+export * from './repository.decorator';

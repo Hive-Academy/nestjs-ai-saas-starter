@@ -8,7 +8,7 @@
 /**
  * Primitive types supported by Neo4j
  */
-export type Neo4jPrimitive = string | number | boolean | Date | null;
+export type Neo4jPrimitive = string | number | boolean | Date | null | Array<string | number | boolean | Date>;
 
 /**
  * Neo4j property object (node or relationship properties)
@@ -131,6 +131,16 @@ export type Neo4jCreateData<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'ver
 export type Neo4jUpdateData<T> = Partial<Omit<T, 'id' | 'createdAt' | 'version'>>;
 
 /**
+ * Base entity interface for entities that require an ID (used in CRUD operations)
+ */
+export interface BaseEntity {
+  id: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  version?: number;
+}
+
+/**
  * Type constraint for entities that can be used with Neo4j operations
  */
 export interface Neo4jCompatibleEntity {
@@ -138,7 +148,7 @@ export interface Neo4jCompatibleEntity {
   createdAt?: Date;
   updatedAt?: Date;
   version?: number;
-  [key: string]: Neo4jPrimitive | undefined;
+  [key: string]: Neo4jPrimitive | Record<string, any> | undefined;
 }
 
 /**

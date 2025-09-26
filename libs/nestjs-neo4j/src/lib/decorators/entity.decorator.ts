@@ -35,7 +35,7 @@ export interface Neo4jEntityConfig {
 }
 
 /**
- * Configuration for the @Neo4jProperty decorator
+ * Configuration for the @Neo4jProp decorator
  */
 export interface Neo4jPropertyConfig {
   /** Property name in Neo4j (defaults to TypeScript property name) */
@@ -102,13 +102,13 @@ export interface Neo4jRelationshipConfig {
  * // String shorthand (NEW)
  * @Neo4jEntity('User')
  * export class User {
- *   @Neo4jProperty() // Smart defaults applied
+ *   @Neo4jProp() // Smart defaults applied
  *   id: string;
  *
- *   @Neo4jProperty() // Auto-detects email field
+ *   @Neo4jProp() // Auto-detects email field
  *   email: string;
  *
- *   @Neo4jProperty() // Auto-detects timestamp field
+ *   @Neo4jProp() // Auto-detects timestamp field
  *   createdAt: Date;
  * }
  *
@@ -119,10 +119,10 @@ export interface Neo4jRelationshipConfig {
  *   idStrategy: 'uuid'
  * })
  * export class DetailedUser {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   id: string;
  *
- *   @Neo4jProperty({ name: 'fullName' })
+ *   @Neo4jProp({ name: 'fullName' })
  *   name: string;
  *
  *   @Neo4jRelationship({
@@ -193,7 +193,7 @@ export function Neo4jEntity(
 }
 
 /**
- *  @Neo4jProperty decorator for property mapping
+ *  @Neo4jProp decorator for property mapping
  *
  * Features:
  * - Automatic type inference
@@ -203,7 +203,7 @@ export function Neo4jEntity(
  * - Optional property handling
  * - Smart defaults based on property names
  */
-export function Neo4jProperty(config?: Neo4jPropertyConfig): PropertyDecorator {
+export function Neo4jProp(config?: Neo4jPropertyConfig): PropertyDecorator {
   return (target: object, propertyKey: string | symbol) => {
     const finalConfig = config || {};
     // Get property type information (optional - requires experimental decorators)
@@ -321,7 +321,7 @@ export function Neo4jRelationship(
 export function Id(
   config?: Omit<Neo4jPropertyConfig, 'name'>
 ): PropertyDecorator {
-  return Neo4jProperty({
+  return Neo4jProp({
     ...(config || {}),
     name: 'id',
   });
@@ -333,7 +333,7 @@ export function Id(
 export function CreatedAt(
   config?: Omit<Neo4jPropertyConfig, 'transform'>
 ): PropertyDecorator {
-  return Neo4jProperty({
+  return Neo4jProp({
     ...(config || {}),
     transform: {
       toNeo4j: (date: Date) => date?.toISOString(),
@@ -348,7 +348,7 @@ export function CreatedAt(
 export function UpdatedAt(
   config?: Omit<Neo4jPropertyConfig, 'transform'>
 ): PropertyDecorator {
-  return Neo4jProperty({
+  return Neo4jProp({
     ...(config || {}),
     transform: {
       toNeo4j: (date: Date) => date?.toISOString(),
@@ -363,7 +363,7 @@ export function UpdatedAt(
 export function JsonProperty(
   config?: Omit<Neo4jPropertyConfig, 'serialized' | 'transform'>
 ): PropertyDecorator {
-  return Neo4jProperty({
+  return Neo4jProp({
     ...(config || {}),
     serialized: true,
     transform: {

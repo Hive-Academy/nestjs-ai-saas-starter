@@ -50,24 +50,24 @@ export interface NotNullConfig extends Omit<NotNullOptions, 'validation'> {
  * @Neo4jEntity({ label: 'User' })
  * export class User {
  *   @NotNull()
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   id: string;
  *
  *   @NotNull({
  *     errorMessage: 'Email is required',
  *     treatEmptyAsNull: true
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
  *   @NotNull({
  *     defaultValue: 'Unknown',
  *     treatEmptyAsNull: true
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   name: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   optionalField?: string; // Not decorated with @NotNull
  * }
  * ```
@@ -156,11 +156,11 @@ export function NotNull(config?: NotNullConfig): PropertyDecorator {
  * @Neo4jEntity({ label: 'User' })
  * export class User {
  *   @Required()
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string; // Cannot be null, undefined, or empty string
  *
  *   @Required({ defaultValue: 'Anonymous' })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   name: string; // Uses default if empty
  * }
  * ```
@@ -188,7 +188,7 @@ export function Required(
  * @Neo4jEntity({ label: 'User' })
  * export class User {
  *   @NotEmpty()
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   description?: string; // Can be null but not empty string
  * }
  * ```

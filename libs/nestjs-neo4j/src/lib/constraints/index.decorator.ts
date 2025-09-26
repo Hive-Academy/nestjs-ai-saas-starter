@@ -36,7 +36,7 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
 }
 
 /**
- * @Index class-level decorator for compound indexes
+ * @ClassIndex class-level decorator for compound indexes
  *
  * Creates an index on a combination of properties for improved query performance.
  * Use this when you need to optimize queries that filter on multiple properties together.
@@ -51,24 +51,24 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
  * @example
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
- * @Index(['status', 'createdAt'])
- * @Index(['tenantId', 'email'], { type: 'BTREE', unique: true })
+ * @ClassIndex(['status', 'createdAt'])
+ * @ClassIndex(['tenantId', 'email'], { type: 'BTREE', unique: true })
  * export class User {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   status: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   createdAt: Date;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   tenantId: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  * }
  *
  * // Text index for full-text search
- * @Index(['title', 'content'], {
+ * @ClassIndex(['title', 'content'], {
  *   type: 'TEXT',
  *   name: 'article_fulltext_index',
  *   config: {
@@ -77,10 +77,10 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
  *   }
  * })
  * export class Article {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   title: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   content: string;
  * }
  * ```
@@ -88,7 +88,7 @@ export interface IndexDecoratorConfig extends Omit<IndexOptions, 'validation'> {
  * @param properties - Array of property names to index together
  * @param config - Additional configuration options
  */
-export function Index(
+export function ClassIndex(
   properties: string[],
   config: IndexDecoratorConfig = {}
 ): ClassDecorator {
@@ -154,7 +154,7 @@ export function Index(
 }
 
 /**
- * @IndexProperty property-level decorator for single property indexes
+ * @PropIndex property-level decorator for single property indexes
  *
  * Creates an index on a single property. Use this as a property decorator
  * when you need to optimize queries that filter on a specific property.
@@ -169,32 +169,32 @@ export function Index(
  * ```typescript
  * @Neo4jEntity({ label: 'User' })
  * export class User {
- *   @IndexProperty()
- *   @Neo4jProperty()
+ *   @PropIndex()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @IndexProperty({
+ *   @PropIndex({
  *     type: 'TEXT',
  *     name: 'user_search_index'
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   searchableContent: string;
  *
- *   @IndexProperty({
+ *   @PropIndex({
  *     type: 'RANGE',
  *     config: { 'spatial.cartesian.min': [-100, -100], 'spatial.cartesian.max': [100, 100] }
  *   })
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   location: { x: number; y: number };
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   name: string; // Not indexed
  * }
  * ```
  *
  * @param config - Configuration options for the index
  */
-export function IndexProperty(
+export function PropIndex(
   config: Omit<IndexDecoratorConfig, 'properties'> = {}
 ): PropertyDecorator {
   return function (target: any, propertyKey: string | symbol) {
@@ -274,10 +274,10 @@ export function IndexProperty(
  *   config: { 'fulltext.analyzer': 'standard' }
  * })
  * export class Article {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   title: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   content: string;
  * }
  * ```
@@ -286,7 +286,7 @@ export function TextIndex(
   properties: string[],
   config: Omit<IndexDecoratorConfig, 'type'> = {}
 ): ClassDecorator {
-  return Index(properties, {
+  return ClassIndex(properties, {
     ...config,
     type: 'TEXT',
     name: config.name || `text_index_${properties.join('_')}`,
@@ -302,10 +302,10 @@ export function TextIndex(
  * ```typescript
  * @RangeIndex(['createdAt', 'updatedAt'])
  * export class TimestampedEntity {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   createdAt: Date;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   updatedAt: Date;
  * }
  * ```
@@ -314,7 +314,7 @@ export function RangeIndex(
   properties: string[],
   config: Omit<IndexDecoratorConfig, 'type'> = {}
 ): ClassDecorator {
-  return Index(properties, {
+  return ClassIndex(properties, {
     ...config,
     type: 'RANGE',
     name: config.name || `range_index_${properties.join('_')}`,
@@ -335,7 +335,7 @@ export function RangeIndex(
  *   }
  * })
  * export class Location {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   location: { x: number; y: number };
  * }
  * ```
@@ -344,7 +344,7 @@ export function PointIndex(
   properties: string[],
   config: Omit<IndexDecoratorConfig, 'type'> = {}
 ): ClassDecorator {
-  return Index(properties, {
+  return ClassIndex(properties, {
     ...config,
     type: 'POINT',
     name: config.name || `point_index_${properties.join('_')}`,
@@ -360,10 +360,10 @@ export function PointIndex(
  * ```typescript
  * @LookupIndex(['status', 'category'])
  * export class Product {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   status: 'active' | 'inactive' | 'pending';
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   category: string;
  * }
  * ```
@@ -372,7 +372,7 @@ export function LookupIndex(
   properties: string[],
   config: Omit<IndexDecoratorConfig, 'type'> = {}
 ): ClassDecorator {
-  return Index(properties, {
+  return ClassIndex(properties, {
     ...config,
     type: 'LOOKUP',
     name: config.name || `lookup_index_${properties.join('_')}`,
@@ -392,19 +392,19 @@ export function LookupIndex(
  *   { properties: ['title', 'content'], type: 'TEXT' }
  * ])
  * export class User {
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   email: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   status: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   createdAt: Date;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   title: string;
  *
- *   @Neo4jProperty()
+ *   @Neo4jProp()
  *   content: string;
  * }
  * ```
@@ -424,7 +424,7 @@ export function Indexes(
         description: config.description || `Index ${index + 1}`,
       };
 
-      Index(properties, configWithIndex)(constructor);
+      ClassIndex(properties, configWithIndex)(constructor);
     });
 
     return constructor;
@@ -512,40 +512,40 @@ function validateIndexConfig(
 ): void {
   // Validate properties array
   if (!Array.isArray(properties)) {
-    throw new Error('Index decorator requires an array of property names');
+    throw new Error('ClassIndex decorator requires an array of property names');
   }
 
   if (properties.length === 0) {
-    throw new Error('Index decorator requires at least one property');
+    throw new Error('ClassIndex decorator requires at least one property');
   }
 
   // Check for duplicate properties
   const uniqueProperties = new Set(properties);
   if (uniqueProperties.size !== properties.length) {
-    throw new Error('Index decorator properties must be unique');
+    throw new Error('ClassIndex decorator properties must be unique');
   }
 
   // Validate property names
   properties.forEach((property, index) => {
     if (typeof property !== 'string') {
-      throw new Error(`Index property at index ${index} must be a string`);
+      throw new Error(`ClassIndex property at index ${index} must be a string`);
     }
 
     if (property.trim().length === 0) {
-      throw new Error(`Index property at index ${index} cannot be empty`);
+      throw new Error(`ClassIndex property at index ${index} cannot be empty`);
     }
 
     // Basic validation for Neo4j property names
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(property)) {
       throw new Error(
-        `Index property '${property}' must be a valid Neo4j property name`
+        `ClassIndex property '${property}' must be a valid Neo4j property name`
       );
     }
   });
 
   // Validate configuration options
   if (config.name && typeof config.name !== 'string') {
-    throw new Error('Index name must be a string');
+    throw new Error('ClassIndex name must be a string');
   }
 
   if (
@@ -553,20 +553,20 @@ function validateIndexConfig(
     !['BTREE', 'TEXT', 'RANGE', 'POINT', 'LOOKUP'].includes(config.type)
   ) {
     throw new Error(
-      'Index type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP'
+      'ClassIndex type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP'
     );
   }
 
   if (config.provider && typeof config.provider !== 'string') {
-    throw new Error('Index provider must be a string');
+    throw new Error('ClassIndex provider must be a string');
   }
 
   if (config.unique !== undefined && typeof config.unique !== 'boolean') {
-    throw new Error('Index unique must be a boolean');
+    throw new Error('ClassIndex unique must be a boolean');
   }
 
   if (config.config && typeof config.config !== 'object') {
-    throw new Error('Index config must be an object');
+    throw new Error('ClassIndex config must be an object');
   }
 }
 
@@ -578,19 +578,19 @@ function validateIndexPropertyConfig(
   config: Omit<IndexDecoratorConfig, 'properties'>
 ): void {
   if (!propertyName || typeof propertyName !== 'string') {
-    throw new Error('IndexProperty decorator requires a valid property name');
+    throw new Error('PropIndex decorator requires a valid property name');
   }
 
   // Basic validation for Neo4j property names
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(propertyName)) {
     throw new Error(
-      `IndexProperty '${propertyName}' must be a valid Neo4j property name`
+      `PropIndex '${propertyName}' must be a valid Neo4j property name`
     );
   }
 
   // Validate configuration options (same as validateIndexConfig but without properties)
   if (config.name && typeof config.name !== 'string') {
-    throw new Error('IndexProperty name must be a string');
+    throw new Error('PropIndex name must be a string');
   }
 
   if (
@@ -598,20 +598,20 @@ function validateIndexPropertyConfig(
     !['BTREE', 'TEXT', 'RANGE', 'POINT', 'LOOKUP'].includes(config.type)
   ) {
     throw new Error(
-      'IndexProperty type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP'
+      'PropIndex type must be one of: BTREE, TEXT, RANGE, POINT, LOOKUP'
     );
   }
 
   if (config.provider && typeof config.provider !== 'string') {
-    throw new Error('IndexProperty provider must be a string');
+    throw new Error('PropIndex provider must be a string');
   }
 
   if (config.unique !== undefined && typeof config.unique !== 'boolean') {
-    throw new Error('IndexProperty unique must be a boolean');
+    throw new Error('PropIndex unique must be a boolean');
   }
 
   if (config.config && typeof config.config !== 'object') {
-    throw new Error('IndexProperty config must be an object');
+    throw new Error('PropIndex config must be an object');
   }
 }
 
