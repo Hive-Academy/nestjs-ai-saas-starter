@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectNeo4j } from '../decorators/inject-neo4j.decorator';
+import { InjectNeogma } from '../neogma/neogma.decorators';
 import type { QueryResult } from '../interfaces/query-result.interface';
-import { Neo4jQueryBuilder } from '../query-builder/neo4j-query-builder';
-import type { Neo4jService } from '../services/neo4j.service';
+import type { Neogma } from 'neogma';
 
 /**
  * Query options for repository operations
@@ -114,24 +113,34 @@ export interface GraphPattern {
  * @template T The entity type this repository manages
  */
 @Injectable()
-export class GraphRepository<T extends Record<string, any> = Record<string, any>> {
+export class GraphRepository<
+  T extends Record<string, any> = Record<string, any>
+> {
   protected readonly logger = new Logger(GraphRepository.name);
 
   constructor(
-    @InjectNeo4j() protected readonly neo4jService: Neo4jService,
+    @InjectNeogma() protected readonly neogma: Neogma,
     protected readonly entityLabel = 'Entity'
   ) {}
 
   /**
-   * Execute a query with the Neo4j service
+   * Execute a query with Neogma
    */
   protected async query<R = Record<string, any>>(
     cypher: string,
     params?: Record<string, any>,
     options?: RepositoryQueryOptions
   ): Promise<QueryResult<R>> {
-    const result = await this.neo4jService.run<R>(cypher, params, options as any);
-    return result;
+    const result = await this.neogma.driver.session().run(cypher, params || {});
+    return {
+      records: result.records.map((record) => record.toObject()) as R[],
+      summary: {
+        query: cypher,
+        parameters: params || {},
+        resultAvailableAfter: result.summary.resultAvailableAfter || 0,
+        resultConsumedAfter: result.summary.resultConsumedAfter || 0,
+      },
+    };
   }
 
   /**
@@ -163,41 +172,57 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
     const relationshipTypes = options?.relationshipTypes || ['*'];
     const maxDepth = options?.maxDepth || 1;
 
-    const builder = new Neo4jQueryBuilder<T>()
-      .match('source', () => ({ constructor: { name: this.entityLabel } } as T), { id: nodeId } as any);
-
     // Add relationship traversal based on direction and types
-    const relType = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-      ? '*'
-      : relationshipTypes.join('|');
+    const relType =
+      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+        ? '*'
+        : relationshipTypes.join('|');
 
-    builder.raw(`MATCH (source)-[r:${relType}]-(neighbor:${this.entityLabel})`);
-    builder.whereRaw('neighbor.id <> $nodeId', { nodeId });
+    // Build query parameters
+    const params: Record<string, any> = { nodeId };
+    const whereConditions: string[] = ['neighbor.id <> $nodeId'];
 
     // Apply node filters
     if (options?.nodeFilter && Object.keys(options.nodeFilter).length > 0) {
       Object.entries(options.nodeFilter).forEach(([key, value]) => {
-        builder.whereRaw(`neighbor.${key} = $nodeFilter_${key}`, { [`nodeFilter_${key}`]: value });
+        const paramKey = `nodeFilter_${key}`;
+        whereConditions.push(`neighbor.${key} = $${paramKey}`);
+        params[paramKey] = value;
       });
     }
 
     // Apply relationship filters
-    if (options?.relationshipFilter && Object.keys(options.relationshipFilter).length > 0) {
+    if (
+      options?.relationshipFilter &&
+      Object.keys(options.relationshipFilter).length > 0
+    ) {
       Object.entries(options.relationshipFilter).forEach(([key, value]) => {
-        builder.whereRaw(`r.${key} = $relFilter_${key}`, { [`relFilter_${key}`]: value });
+        const paramKey = `relFilter_${key}`;
+        whereConditions.push(`r.${key} = $${paramKey}`);
+        params[paramKey] = value;
       });
     }
 
     // Apply soft delete filter
     if (!options?.includeSoftDeleted) {
-      builder.whereRaw('neighbor.deletedAt IS NULL');
+      whereConditions.push('neighbor.deletedAt IS NULL');
     }
 
-    builder.returnDistinct(['neighbor']).limit(maxDepth * 100);
+    const cypher = `
+      MATCH (source:${
+        this.entityLabel
+      } {id: $nodeId})-[r:${relType}]-(neighbor:${this.entityLabel})
+      WHERE ${whereConditions.join(' AND ')}
+      RETURN DISTINCT neighbor
+      LIMIT ${maxDepth * 100}
+    `;
 
-    const queryResult = builder.build();
-    const result = await this.executeQuery<Record<string, any>[]>(queryResult.query, queryResult.params, options);
-    return result.records?.map((record: Record<string, any>) => this.mapFromNeo4j<T>(record)) || [];
+    const result = await this.query<Record<string, any>>(cypher, params);
+    return (
+      result.records?.map((record: any) =>
+        this.mapFromNeo4j<T>(record.neighbor)
+      ) || []
+    );
   }
 
   /**
@@ -251,7 +276,7 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
         return null;
       }
 
-      const pathData = result.records[0] ;
+      const pathData = result.records[0];
       // Transform path data to our format
       const pathNodes = this.extractPathNodes(pathData.path);
 
@@ -314,37 +339,47 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
     options?: GraphTraversalOptions & RepositoryQueryOptions
   ): Promise<Array<{ node: T; distance: number }>> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-      ? '*'
-      : relationshipTypes.join('|');
+    const typeFilter =
+      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+        ? '*'
+        : relationshipTypes.join('|');
 
-    const builder = new Neo4jQueryBuilder<T>()
-      .match('source', () => ({ constructor: { name: this.entityLabel } } as T), { id: nodeId } as any)
-      .raw(`MATCH path = (source)-[*1..${distance}:${typeFilter}]-(target:${this.entityLabel})`)
-      .whereRaw('source.id <> target.id');
+    // Build query parameters
+    const params: Record<string, any> = { nodeId };
+    const whereConditions: string[] = ['source.id <> target.id'];
 
     // Apply node filters
     if (options?.nodeFilter && Object.keys(options.nodeFilter).length > 0) {
       Object.entries(options.nodeFilter).forEach(([key, value]) => {
-        builder.whereRaw(`target.${key} = $targetFilter_${key}`, { [`targetFilter_${key}`]: value });
+        const paramKey = `targetFilter_${key}`;
+        whereConditions.push(`target.${key} = $${paramKey}`);
+        params[paramKey] = value;
       });
     }
 
     // Apply soft delete filter
     if (!options?.includeSoftDeleted) {
-      builder.whereRaw('target.deletedAt IS NULL');
+      whereConditions.push('target.deletedAt IS NULL');
     }
 
-    builder.returnDistinct(['target', 'length(path) as distance'])
-      .orderBy('distance', 'ASC');
+    const cypher = `
+      MATCH (source:${this.entityLabel} {id: $nodeId})
+      MATCH path = (source)-[*1..${distance}:${typeFilter}]-(target:${
+      this.entityLabel
+    })
+      WHERE ${whereConditions.join(' AND ')}
+      RETURN DISTINCT target, length(path) as distance
+      ORDER BY distance ASC
+    `;
 
-    const queryResult = builder.build();
-    const result = await this.executeQuery<Record<string, any>[]>(queryResult.query, queryResult.params, options);
+    const result = await this.query<Record<string, any>>(cypher, params);
 
-    return result.records?.map((record: Record<string, any>) => ({
-      node: this.mapFromNeo4j<T>({ n: record.target }),
-      distance: record.distance,
-    })) || [];
+    return (
+      result.records?.map((record: Record<string, any>) => ({
+        node: this.mapFromNeo4j<T>({ n: record.target }),
+        distance: record.distance,
+      })) || []
+    );
   }
 
   /**
@@ -356,32 +391,47 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
     options?: GraphTraversalOptions & RepositoryQueryOptions
   ): Promise<T[]> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-      ? '*'
-      : relationshipTypes.join('|');
+    const typeFilter =
+      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+        ? '*'
+        : relationshipTypes.join('|');
 
-    const builder = new Neo4jQueryBuilder<T>()
-      .raw(`MATCH (node1:${this.entityLabel} {id: $nodeId1})-[:${typeFilter}]-(common:${this.entityLabel})-[:${typeFilter}]-(node2:${this.entityLabel} {id: $nodeId2})`,
-        { nodeId1, nodeId2 })
-      .whereRaw('common.id <> $nodeId1 AND common.id <> $nodeId2', { nodeId1, nodeId2 });
+    // Build query parameters
+    const params: Record<string, any> = { nodeId1, nodeId2 };
+    const whereConditions: string[] = [
+      'common.id <> $nodeId1 AND common.id <> $nodeId2',
+    ];
 
     // Apply node filters
     if (options?.nodeFilter && Object.keys(options.nodeFilter).length > 0) {
       Object.entries(options.nodeFilter).forEach(([key, value]) => {
-        builder.whereRaw(`common.${key} = $commonFilter_${key}`, { [`commonFilter_${key}`]: value });
+        const paramKey = `commonFilter_${key}`;
+        whereConditions.push(`common.${key} = $${paramKey}`);
+        params[paramKey] = value;
       });
     }
 
     // Apply soft delete filter
     if (!options?.includeSoftDeleted) {
-      builder.whereRaw('common.deletedAt IS NULL');
+      whereConditions.push('common.deletedAt IS NULL');
     }
 
-    builder.returnDistinct(['common']);
+    const cypher = `
+      MATCH (node1:${
+        this.entityLabel
+      } {id: $nodeId1})-[:${typeFilter}]-(common:${
+      this.entityLabel
+    })-[:${typeFilter}]-(node2:${this.entityLabel} {id: $nodeId2})
+      WHERE ${whereConditions.join(' AND ')}
+      RETURN DISTINCT common
+    `;
 
-    const queryResult = builder.build();
-    const result = await this.executeQuery<Record<string, any>[]>(queryResult.query, queryResult.params, options);
-    return result.records?.map((record: Record<string, any>) => this.mapFromNeo4j<T>(record)) || [];
+    const result = await this.query<Record<string, any>>(cypher, params);
+    return (
+      result.records?.map((record: Record<string, any>) =>
+        this.mapFromNeo4j<T>(record.common)
+      ) || []
+    );
   }
 
   /**
@@ -395,19 +445,22 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
     } & RepositoryQueryOptions
   ): Promise<number> {
     const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter = relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-      ? ''
-      : `:${relationshipTypes.join('|')}`;
+    const typeFilter =
+      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
+        ? ''
+        : `:${relationshipTypes.join('|')}`;
 
     const direction = this.getRelationshipDirection(options?.direction);
 
-    const builder = new Neo4jQueryBuilder<T>()
-      .match('node', () => ({ constructor: { name: this.entityLabel } } as T), { id: nodeId } as unknown as Partial<T>)
-      .raw(`MATCH (node)${direction.replace('REL', `r${typeFilter}`)}(neighbor)`)
-      .return(['count(DISTINCT neighbor) as degree']);
+    const directionPattern = direction.replace('REL', `r${typeFilter}`);
 
-    const queryResult = builder.build();
-    const result = await this.executeQuery(queryResult.query, queryResult.params, options);
+    const cypher = `
+      MATCH (node:${this.entityLabel} {id: $nodeId})
+      MATCH (node)${directionPattern}(neighbor)
+      RETURN count(DISTINCT neighbor) as degree
+    `;
+
+    const result = await this.query<Record<string, any>>(cypher, { nodeId });
     return (result.records?.[0] as Record<string, any>)?.degree || 0;
   }
 
@@ -442,10 +495,14 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
     try {
       const result = await this.executeQuery(query, {}, options);
 
-      return result.records?.map((record: Record<string, any>) => ({
-        componentId: record.componentId,
-        nodes: record.nodes.map((node: any) => this.mapFromNeo4j<T>({ n: node })),
-      })) || [];
+      return (
+        result.records?.map((record: Record<string, any>) => ({
+          componentId: record.componentId,
+          nodes: record.nodes.map((node: any) =>
+            this.mapFromNeo4j<T>({ n: node })
+          ),
+        })) || []
+      );
     } catch (error) {
       // Fallback to basic connected components
       return this.findConnectedComponentsBasic(options);
@@ -460,23 +517,21 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
     options?: RepositoryQueryOptions
   ): Promise<Array<Record<string, T>>> {
     const { query, params } = this.buildPatternQuery(pattern);
-    const result = await this.executeQuery(
-      query,
-      params,
-      options
-    );
+    const result = await this.executeQuery(query, params, options);
 
-    return result.records?.map((record: Record<string, any>) => {
-      const mapped: Record<string, T> = {};
-      pattern.nodes.forEach((node) => {
-        if (record[node.variable]) {
-          mapped[node.variable] = this.mapFromNeo4j<T>({
-            n: record[node.variable],
-          });
-        }
-      });
-      return mapped;
-    }) || [];
+    return (
+      result.records?.map((record: Record<string, any>) => {
+        const mapped: Record<string, T> = {};
+        pattern.nodes.forEach((node) => {
+          if (record[node.variable]) {
+            mapped[node.variable] = this.mapFromNeo4j<T>({
+              n: record[node.variable],
+            });
+          }
+        });
+        return mapped;
+      }) || []
+    );
   }
 
   /**
@@ -546,7 +601,6 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
         return '-[REL]-(';
     }
   }
-
 
   /**
    * Build soft delete filter for specific node variable
@@ -676,11 +730,7 @@ export class GraphRepository<T extends Record<string, any> = Record<string, any>
       options?.includeSoftDeleted ? '' : 'WHERE a.deletedAt IS NULL'
     } ${relFilter} RETURN id(startNode(r)) as source, id(endNode(r)) as target`;
 
-    const nodeResult = await this.executeQuery(
-      nodesQuery,
-      {},
-      options
-    );
+    const nodeResult = await this.executeQuery(nodesQuery, {}, options);
     const relResult = await this.executeQuery(relQuery, {}, options);
 
     const nodeRecords = (nodeResult.records || []) as Record<string, any>[];

@@ -1,7 +1,17 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Driver } from 'neo4j-driver';
 import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+// Inline interface due to build configuration issue
+interface Neo4jModuleOptions {
+  url: string;
+  username: string;
+  password: string;
+  database?: string;
+  config?: any;
+  healthCheck?: boolean;
+  retryAttempts?: number;
+  retryDelay?: number;
+}
 import type {
   ComprehensiveMetrics,
   ConnectionPoolMetrics,

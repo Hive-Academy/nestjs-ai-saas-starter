@@ -143,6 +143,7 @@
     "jsonwebtoken": "9.0.2",
     "lint-staged": "^15.0.0",
     "madge": "8.0.0",
+    "neogma": "1.14.1",
     "ngxtension": "6.0.0",
     "nx": "21.5.1",
     "patch-package": "8.0.0",

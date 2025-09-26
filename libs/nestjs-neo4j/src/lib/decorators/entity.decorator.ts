@@ -6,6 +6,8 @@ import {
   type PropertyMapping,
   type RelationshipMapping,
 } from '../interfaces/decorator-metadata.interface';
+import type { Neogma, NeogmaModel, ModelRelatedNodesI } from 'neogma';
+import { getModelToken } from '../neogma/neogma.utils';
 
 /**
  * Configuration for the @Neo4jEntity decorator
@@ -32,6 +34,12 @@ export interface Neo4jEntityConfig {
     /** Node key constraints */
     key?: string[];
   };
+  /** Whether to create actual Neogma model (NEW) */
+  createNeogmaModel?: boolean;
+  /** Neogma model statics configuration (NEW) */
+  statics?: Record<string, any>;
+  /** Neogma model methods configuration (NEW) */
+  methods?: Record<string, any>;
 }
 
 /**
@@ -155,9 +163,10 @@ export function Neo4jEntity(
             label: labelOrConfig,
             idStrategy: 'uuid', // Smart default
             idProperty: 'id', // Smart default
+            createNeogmaModel: true, // NEW: Default to creating Neogma models
             ...optionalConfig,
           }
-        : labelOrConfig;
+        : { createNeogmaModel: true, ...labelOrConfig };
 
     // Validate configuration
     validateEntityConfig(config);
@@ -184,6 +193,11 @@ export function Neo4jEntity(
 
     // Also use SetMetadata for NestJS compatibility (belt and suspenders approach)
     SetMetadata(DECORATOR_METADATA_KEYS.ENTITY, metadata)(constructor);
+
+    // NEW: Create actual Neogma model if enabled
+    if (config.createNeogmaModel) {
+      createNeogmaModel(constructor, config, metadata);
+    }
 
     // Add utility methods to the prototype
     addEntityMethods(constructor.prototype, metadata);
@@ -747,6 +761,119 @@ function generateId(): string {
 }
 
 /**
+ * NEW: Create actual Neogma model from entity configuration
+ */
+function createNeogmaModel(
+  constructor: any,
+  config: Neo4jEntityConfig,
+  metadata: EntityConfig
+): void {
+  // Extract property mappings from entity
+  const properties: Map<string, PropertyMapping> =
+    Reflect.getMetadata(
+      DECORATOR_METADATA_KEYS.PROPERTY,
+      constructor.prototype
+    ) || new Map();
+
+  const relationships: Map<string, RelationshipMapping> =
+    Reflect.getMetadata(
+      DECORATOR_METADATA_KEYS.RELATIONSHIP,
+      constructor.prototype
+    ) || new Map();
+
+  // Build Neogma model schema from property mappings
+  const neogmaSchema: Record<string, any> = {};
+  const neogmaRelationships: Record<string, ModelRelatedNodesI> = {};
+
+  // Process properties
+  properties.forEach((propertyMapping, key) => {
+    if (typeof key === 'string') {
+      neogmaSchema[propertyMapping.neo4jName] = {
+        type: propertyMapping.serialized
+          ? 'string'
+          : inferNeogmaType(propertyMapping),
+        required: !propertyMapping.type?.optional,
+        default: propertyMapping.defaultValue,
+      };
+    }
+  });
+
+  // Process relationships
+  relationships.forEach((relationshipMapping, key) => {
+    if (typeof key === 'string') {
+      neogmaRelationships[key] = {
+        model: relationshipMapping.targetType,
+        direction: relationshipMapping.direction.toLowerCase() as 'in' | 'out',
+        name: relationshipMapping.type,
+        properties: relationshipMapping.propertiesType
+          ? {
+              model: relationshipMapping.propertiesType,
+            }
+          : undefined,
+      };
+    }
+  });
+
+  // Create Neogma model configuration
+  const neogmaModelConfig = {
+    label: metadata.label,
+    schema: neogmaSchema,
+    relationships: neogmaRelationships,
+    primaryKeyField: metadata.idProperty,
+    statics: config.statics || {},
+    methods: config.methods || {},
+  };
+
+  // Store Neogma model configuration for DI registration
+  Reflect.defineMetadata('NEOGMA_MODEL_CONFIG', neogmaModelConfig, constructor);
+
+  // Store model token for dependency injection
+  const modelToken = getModelToken(constructor.name);
+  Reflect.defineMetadata('NEOGMA_MODEL_TOKEN', modelToken, constructor);
+
+  // Add static method to get Neogma model configuration
+  if (!constructor.getNeogmaModelConfig) {
+    constructor.getNeogmaModelConfig = () => neogmaModelConfig;
+  }
+
+  // Add static method to get model token
+  if (!constructor.getModelToken) {
+    constructor.getModelToken = () => modelToken;
+  }
+}
+
+/**
+ * Infer Neogma type from property mapping
+ */
+function inferNeogmaType(propertyMapping: PropertyMapping): string {
+  // If property has explicit type information
+  if (propertyMapping.type?.type) {
+    const typeConstructor = propertyMapping.type.type();
+    if (typeConstructor === String) return 'string';
+    if (typeConstructor === Number) return 'number';
+    if (typeConstructor === Boolean) return 'boolean';
+    if (typeConstructor === Date) return 'datetime';
+    if (typeConstructor === Array) return 'array';
+  }
+
+  // If property is serialized, it's stored as string
+  if (propertyMapping.serialized) return 'string';
+
+  // If property has transform functions, analyze them
+  if (propertyMapping.transform?.toNeo4j) {
+    // Try to infer from transform function
+    const transformStr = propertyMapping.transform.toNeo4j.toString();
+    if (transformStr.includes('toISOString')) return 'datetime';
+    if (transformStr.includes('JSON.stringify')) return 'string';
+    if (transformStr.includes('Number(')) return 'number';
+    if (transformStr.includes('Boolean(')) return 'boolean';
+  }
+
+  // Default to string for safety
+  return 'string';
+}
+
+/**
  * Enhanced @Neo4jEntity namespace with helper methods (same decorator, different configs)
  */
 export namespace Neo4jEntity {
@@ -759,6 +886,7 @@ export namespace Neo4jEntity {
   ) =>
     Neo4jEntity(label, {
       idStrategy: 'uuid',
+      createNeogmaModel: true,
       ...config,
       additionalLabels: ['Timestamped', ...(config?.additionalLabels || [])],
       description:
@@ -775,6 +903,7 @@ export namespace Neo4jEntity {
   ) =>
     Neo4jEntity(label, {
       idStrategy: 'uuid',
+      createNeogmaModel: true,
       ...config,
       additionalLabels: ['SoftDelete', ...(config?.additionalLabels || [])],
       description:
@@ -791,6 +920,7 @@ export namespace Neo4jEntity {
   ) =>
     Neo4jEntity(label, {
       idStrategy: 'uuid',
+      createNeogmaModel: true,
       ...config,
       additionalLabels: [
         'Auditable',
@@ -811,6 +941,7 @@ export namespace Neo4jEntity {
   ) =>
     Neo4jEntity(label, {
       idStrategy: 'uuid',
+      createNeogmaModel: true,
       ...config,
       additionalLabels: ['Tenanted', ...(config?.additionalLabels || [])],
       description: config?.description || `Multi-tenant ${label} entity`,

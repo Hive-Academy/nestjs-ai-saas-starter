@@ -1,6 +1,6 @@
 /**
  * @fileoverview Neo4j Type Definitions
- * 
+ *
  * This file provides comprehensive type definitions for Neo4j operations,
  * ensuring type safety across all database interactions.
  */
@@ -8,7 +8,13 @@
 /**
  * Primitive types supported by Neo4j
  */
-export type Neo4jPrimitive = string | number | boolean | Date | null | Array<string | number | boolean | Date>;
+export type Neo4jPrimitive =
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | Array<string | number | boolean | Date>;
 
 /**
  * Neo4j property object (node or relationship properties)
@@ -18,28 +24,33 @@ export type Neo4jProperties = Record<string, Neo4jPrimitive>;
 /**
  * Query parameter types for Neo4j operations
  */
-export type Neo4jQueryParams = Record<string, Neo4jPrimitive | Neo4jPrimitive[]>;
+export type Neo4jQueryParams = Record<
+  string,
+  Neo4jPrimitive | Neo4jPrimitive[]
+>;
 
 /**
  * Where clause interface for type-safe filtering
  */
 export interface Neo4jWhereClause {
-  [key: string]: Neo4jPrimitive | {
-    $in?: Neo4jPrimitive[];
-    $gt?: number | Date;
-    $lt?: number | Date;
-    $gte?: number | Date;
-    $lte?: number | Date;
-    $regex?: string;
-    $exists?: boolean;
-    $ne?: Neo4jPrimitive;
-  };
+  [key: string]:
+    | Neo4jPrimitive
+    | {
+        $in?: Neo4jPrimitive[];
+        $gt?: number | Date;
+        $lt?: number | Date;
+        $gte?: number | Date;
+        $lte?: number | Date;
+        $regex?: string;
+        $exists?: boolean;
+        $ne?: Neo4jPrimitive;
+      };
 }
 
 /**
  * Sort order specification with proper type constraints
  */
-export interface Neo4jSortOrder<T = any> {
+export interface Neo4jSortOrder<T = Neo4jRecordShape> {
   property: Extract<keyof T, string> | string;
   direction: 'ASC' | 'DESC';
 }
@@ -66,7 +77,9 @@ export type Neo4jPartialPropertyMap<T> = Partial<Neo4jPropertyMap<T>>;
 /**
  * Sort order array type
  */
-export type Neo4jSortOrderArray<T = any> = Array<Neo4jSortOrder<T>>;
+export type Neo4jSortOrderArray<T = Neo4jRecordShape> = Array<
+  Neo4jSortOrder<T>
+>;
 
 /**
  * Query result transformation type
@@ -105,7 +118,7 @@ export interface Neo4jRelationshipIdentity {
 export interface Neo4jTransactionContext {
   transactionId?: string;
   timeout?: number;
-  metadata?: Record<string, any>;
+  metadata?: Neo4jProperties;
 }
 
 /**
@@ -123,22 +136,22 @@ export interface Neo4jQueryOptions<T = Neo4jRecordShape> {
 /**
  * Create operation data type (excludes system fields)
  */
-export type Neo4jCreateData<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'version'>;
+export type Neo4jCreateData<T> = Omit<
+  T,
+  'id' | 'createdAt' | 'updatedAt' | 'version'
+>;
 
 /**
  * Update operation data type (excludes immutable fields)
  */
-export type Neo4jUpdateData<T> = Partial<Omit<T, 'id' | 'createdAt' | 'version'>>;
+export type Neo4jUpdateData<T> = Partial<
+  Omit<T, 'id' | 'createdAt' | 'version'>
+>;
 
 /**
- * Base entity interface for entities that require an ID (used in CRUD operations)
+ * DELETED: BaseEntity interface - now use Neogma's NeogmaModel directly
+ * See ELIMINATION_MAPPING.md for details
  */
-export interface BaseEntity {
-  id: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  version?: number;
-}
 
 /**
  * Type constraint for entities that can be used with Neo4j operations
@@ -148,7 +161,7 @@ export interface Neo4jCompatibleEntity {
   createdAt?: Date;
   updatedAt?: Date;
   version?: number;
-  [key: string]: Neo4jPrimitive | Record<string, any> | undefined;
+  [key: string]: Neo4jPrimitive | Neo4jProperties | undefined;
 }
 
 /**
@@ -204,29 +217,49 @@ export interface Neo4jOperationError extends Error {
   code: string;
   query?: string;
   parameters?: Neo4jQueryParams;
-  context?: Record<string, any>;
+  context?: Neo4jProperties;
 }
 
 /**
  * Type guards for runtime type checking
  */
-export function isNeo4jPrimitive(value: any): value is Neo4jPrimitive {
-  return value === null || 
-         typeof value === 'string' || 
-         typeof value === 'number' || 
-         typeof value === 'boolean' || 
-         value instanceof Date;
+export function isNeo4jPrimitive(value: unknown): value is Neo4jPrimitive {
+  return (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    value instanceof Date ||
+    (Array.isArray(value) &&
+      value.every(
+        (v) =>
+          typeof v === 'string' ||
+          typeof v === 'number' ||
+          typeof v === 'boolean' ||
+          v instanceof Date
+      ))
+  );
 }
 
-export function isNeo4jProperties(value: any): value is Neo4jProperties {
-  return typeof value === 'object' && value !== null &&
-         Object.values(value).every(v => isNeo4jPrimitive(v));
+export function isNeo4jProperties(value: unknown): value is Neo4jProperties {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.values(value as Record<string, unknown>).every((v) =>
+      isNeo4jPrimitive(v)
+    )
+  );
 }
 
-export function isNeo4jCompatibleEntity(value: any): value is Neo4jCompatibleEntity {
-  return typeof value === 'object' && value !== null &&
-         (!value.id || typeof value.id === 'string') &&
-         (!value.createdAt || value.createdAt instanceof Date) &&
-         (!value.updatedAt || value.updatedAt instanceof Date) &&
-         (!value.version || typeof value.version === 'number');
+export function isNeo4jCompatibleEntity(
+  value: unknown
+): value is Neo4jCompatibleEntity {
+  if (typeof value !== 'object' || value === null) return false;
+  const entity = value as Record<string, unknown>;
+  return (
+    (!entity.id || typeof entity.id === 'string') &&
+    (!entity.createdAt || entity.createdAt instanceof Date) &&
+    (!entity.updatedAt || entity.updatedAt instanceof Date) &&
+    (!entity.version || typeof entity.version === 'number')
+  );
 }

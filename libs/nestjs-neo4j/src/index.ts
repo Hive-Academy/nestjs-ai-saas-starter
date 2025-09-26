@@ -5,19 +5,31 @@
 // Module
 export { Neo4jModule } from './lib/neo4j.module';
 
-// Services
+// Services - Modern Neogma-based services (PRIMARY)
+export { NeogmaService } from './lib/services/neogma.service';
+export { NeogmaMetricsService } from './lib/services/neogma-metrics.service';
+export { NeogmaConnectionService } from './lib/services/neogma-connection.service';
+
+// Legacy Services (DEPRECATED - use Neogma services instead)
 export { Neo4jService } from './lib/services/neo4j.service';
 export { Neo4jConnectionService } from './lib/services/neo4j-connection.service';
 export { Neo4jHealthService } from './lib/services/neo4j-health.service';
 
-// Interfaces
-export type { Neo4jModuleOptions } from './lib/interfaces/neo4j-module-options.interface';
-export type * from './lib/interfaces/neo4j-connection.interface';
-export type { QueryResult, QueryOptions, QueryMetrics } from './lib/interfaces/query-result.interface';
+// Neogma Integration - Direct Access
+// TODO: Fix syntax issue - temporarily disabled entire neogma export
+// export * from './lib/neogma';
+// export { InjectModel, getModelToken } from './lib/neogma/neogma.decorators';
+// Query Builder now uses Neogma directly - import { QueryBuilder } from 'neogma'
+
+// Interfaces - temporarily disabled due to build configuration issue
+// export type { Neo4jModuleOptions } from './lib/interfaces/neo4j-module-options.interface';
+// Temporarily disabled due to build configuration issue
+// export type * from './lib/interfaces/neo4j-connection.interface';
+// export type { QueryResult, QueryOptions, QueryMetrics } from './lib/interfaces/query-result.interface';
 
 // Core Type Definitions
 export type * from './lib/types/neo4j-types';
-export type { BaseEntity } from './lib/types/neo4j-types';
+// BaseEntity deleted - use Neogma's NeogmaModel instead
 
 // Safety & Validation Decorators (PRIMARY)
 export {
@@ -28,7 +40,12 @@ export {
 } from './lib/decorators/safe.decorator';
 
 // Core Decorators
-export { InjectNeo4j, InjectNeo4jSession, InjectNeo4jDriver, InjectNeo4jConnection } from './lib/decorators/inject-neo4j.decorator';
+export {
+  InjectNeo4j,
+  InjectNeo4jSession,
+  InjectNeo4jDriver,
+  InjectNeo4jConnection,
+} from './lib/decorators/inject-neo4j.decorator';
 export { Transactional } from './lib/decorators/transactional.decorator';
 
 // Legacy Decorators (DEPRECATED - use @Safe() instead)
@@ -83,7 +100,6 @@ export {
   LookupIndex,
   NotNull,
   NodeKey,
-  Unique,
   ClassUnique,
   PropUnique,
   UniqueConstraints,
@@ -116,12 +132,7 @@ export {
 export * from './lib/utils/query-builder';
 export * from './lib/utils/parameter-serializer';
 
-// Type-Safe Query Builder
-export {
-  Neo4jQueryBuilder,
-  TypedQueryBuilder,
-  createQueryBuilder,
-} from './lib/query-builder/neo4j-query-builder';
+// Query Builder types are now exported above in the main Neogma integration section
 
 // Constants
 export * from './lib/constants';
@@ -149,11 +160,11 @@ export {
 // EXAMPLES AND DOCUMENTATION
 // =============================================================================
 
-// Query Builder Examples
-export type * from './lib/examples';
-export {
-  QUERY_BUILDER_EXAMPLES,
-  EXAMPLE_CATEGORIES,
-  type QueryBuilderExampleType,
-  type ExampleCategoryType,
-} from './lib/examples';
+// // Query Builder Examples
+// export type * from './lib/examples';
+// export {
+//   QUERY_BUILDER_EXAMPLES,
+//   EXAMPLE_CATEGORIES,
+//   type QueryBuilderExampleType,
+//   type ExampleCategoryType,
+// } from './lib/examples';

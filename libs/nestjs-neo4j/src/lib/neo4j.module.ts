@@ -1,22 +1,53 @@
 import { DynamicModule, Module, Global, Provider, Type } from '@nestjs/common';
 import * as neo4j from 'neo4j-driver';
 import { NEO4J_OPTIONS, NEO4J_DRIVER, DEFAULT_NEO4J_CONFIG } from './constants';
-import {
-  Neo4jModuleOptions,
-  Neo4jModuleAsyncOptions,
-  Neo4jModuleOptionsFactory,
-} from './interfaces/neo4j-module-options.interface';
+// Inline interfaces due to build configuration issue
+interface Neo4jModuleOptions {
+  url: string;
+  username: string;
+  password: string;
+  database?: string;
+  config?: {
+    logger?: (message: string) => void;
+    disableLosslessIntegers?: boolean;
+    encrypted?: boolean;
+    maxConnectionLifetime?: number;
+    maxConnectionPoolSize?: number;
+    connectionAcquisitionTimeout?: number;
+    disableDriverMetrics?: boolean;
+  };
+  healthCheck?: boolean;
+  retryAttempts?: number;
+  retryDelay?: number;
+}
+
+interface Neo4jModuleOptionsFactory {
+  createNeo4jOptions(): Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
+}
+
+interface Neo4jModuleAsyncOptions {
+  name?: string;
+  imports?: any[];
+  useExisting?: any;
+  useClass?: any;
+  useFactory?: (
+    ...args: any[]
+  ) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
+  inject?: any[];
+}
 import { Neo4jService } from './services/neo4j.service';
-import { Neo4jQueryService } from './services/neo4j-query.service';
-import { Neo4jMetricsService } from './services/neo4j-metrics.service';
+import { NeogmaService } from './services/neogma.service';
+import { NeogmaMetricsService } from './services/neogma-metrics.service';
+import { NeogmaConnectionService } from './services/neogma-connection.service';
 import { Neo4jConnectionService } from './services/neo4j-connection.service';
 import { Neo4jHealthService } from './services/neo4j-health.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';
+import { NeogmaModule } from './neogma/neogma.module';
 @Global()
 @Module({})
 export class Neo4jModule {
   /**
-   * Register Neo4j module synchronously
+   * Register Neo4j module synchronously with Neogma integration
    */
   public static forRoot(options: Neo4jModuleOptions): DynamicModule {
     // Store config for decorator access
@@ -36,7 +67,7 @@ export class Neo4jModule {
         };
 
         return neo4j.driver(
-          options.uri,
+          options.url,
           neo4j.auth.basic(options.username, options.password),
           config
         );
@@ -44,11 +75,21 @@ export class Neo4jModule {
       inject: [],
     };
 
+    // Convert Neo4j options to Neogma format
+    const neogmaOptions = {
+      url: options.url,
+      username: options.username,
+      password: options.password,
+      database: options.database,
+      config: options.config,
+    };
+
     const providers = [
       optionsProvider,
       driverProvider,
-      Neo4jMetricsService,
-      Neo4jQueryService,
+      NeogmaService,
+      NeogmaMetricsService,
+      NeogmaConnectionService,
       Neo4jService,
       Neo4jConnectionService,
       Neo4jHealthService,
@@ -56,11 +97,13 @@ export class Neo4jModule {
 
     return {
       module: Neo4jModule,
+      imports: [NeogmaModule.forRoot(neogmaOptions)],
       providers,
       exports: [
+        NeogmaService,
+        NeogmaMetricsService,
+        NeogmaConnectionService,
         Neo4jService,
-        Neo4jQueryService,
-        Neo4jMetricsService,
         Neo4jConnectionService,
         Neo4jHealthService,
         NEO4J_DRIVER,
@@ -84,28 +127,42 @@ export class Neo4jModule {
           };
 
           return neo4j.driver(
-            moduleOptions.uri,
+            moduleOptions.url,
             neo4j.auth.basic(moduleOptions.username, moduleOptions.password),
             config
           );
         },
         inject: [NEO4J_OPTIONS],
       },
-      Neo4jMetricsService,
-      Neo4jQueryService,
+      NeogmaService,
+      NeogmaMetricsService,
+      NeogmaConnectionService,
       Neo4jService,
       Neo4jConnectionService,
       Neo4jHealthService,
     ];
 
+    // Create Neogma module async import
+    const neogmaModuleImport = NeogmaModule.forRootAsync({
+      useFactory: (moduleOptions: Neo4jModuleOptions) => ({
+        url: moduleOptions.url,
+        username: moduleOptions.username,
+        password: moduleOptions.password,
+        database: moduleOptions.database,
+        config: moduleOptions.config,
+      }),
+      inject: [NEO4J_OPTIONS],
+    });
+
     return {
       module: Neo4jModule,
-      imports: options.imports ?? [],
+      imports: [neogmaModuleImport, ...(options.imports ?? [])],
       providers,
       exports: [
+        NeogmaService,
+        NeogmaMetricsService,
+        NeogmaConnectionService,
         Neo4jService,
-        Neo4jQueryService,
-        Neo4jMetricsService,
         Neo4jConnectionService,
         Neo4jHealthService,
         NEO4J_DRIVER,

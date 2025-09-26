@@ -1,22 +1,30 @@
 /**
- * Internal CRUD operation helpers for @Repository decorator
- * These are NOT exported as decorators - they are internal implementation details
- * used by the @Repository decorator to generate consistent CRUD methods.
+ * CRUD operation helpers using Neogma models directly
+ * These are internal implementation details for the @Repository decorator.
+ * Uses Neogma's model methods: model.findOne(), model.create(), etc.
  */
 
-import { Neo4jQueryBuilder } from '../query-builder/neo4j-query-builder';
-import type { BaseEntity } from '../types/neo4j-types';
-import type { QueryResult } from '../decorators/cypher-query.decorator';
+import type {
+  Neo4jCompatibleEntity,
+  Neo4jQueryParams,
+  Neo4jRecordShape,
+  Neo4jSortOrder,
+} from '../types/neo4j-types';
+import type { Neogma, NeogmaModel } from 'neogma';
 
 /**
- * Options for find operations
+ * Query specification for CRUD operations
  */
-export interface FindOptions<T = any> {
+export interface CrudQuerySpec {
+  query: string;
+  params: Neo4jQueryParams;
+  description: string;
+  tags: string[];
+}
+
+export interface FindOptions<T = Neo4jRecordShape> {
   where?: Partial<T>;
-  orderBy?: Array<{
-    property: keyof T;
-    direction: 'ASC' | 'DESC';
-  }>;
+  orderBy?: Array<Neo4jSortOrder<T>>;
   limit?: number;
   skip?: number;
 }
@@ -47,228 +55,380 @@ export function getEntityLabel(entityType: () => any): string {
 }
 
 /**
- * Generate find one query using Neo4jQueryBuilder
+ * Neogma model interface for type safety
  */
-export function generateFindOneQuery<TEntity extends BaseEntity>(
+export interface NeogmaModelInterface {
+  findOne(options: {
+    where: Record<string, unknown>;
+  }): Promise<{ toJson(): Neo4jCompatibleEntity } | null>;
+  findMany(options?: {
+    where?: Record<string, unknown>;
+    order?: Record<string, string>[];
+    limit?: number;
+    skip?: number;
+  }): Promise<Array<{ toJson(): Neo4jCompatibleEntity }>>;
+  create(
+    data: Record<string, unknown>
+  ): Promise<{ toJson(): Neo4jCompatibleEntity }>;
+  update(
+    data: Record<string, unknown>,
+    options: { where: Record<string, unknown> }
+  ): Promise<{ toJson(): Neo4jCompatibleEntity } | null>;
+  delete(options: {
+    where: Record<string, unknown>;
+    detach?: boolean;
+  }): Promise<number>;
+  count(options?: { where?: Record<string, unknown> }): Promise<number>;
+  getLabel?(): string;
+}
+
+/**
+ * Find one entity using direct Neogma model method
+ */
+export async function findOne<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  id: string
+): Promise<TEntity | null> {
+  try {
+    const result = await model.findOne({ where: { id } });
+    return result ? result.toJson() : null;
+  } catch (error) {
+    console.error('FindOne operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate find one query spec for metadata purposes
+ */
+export function generateFindOneQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   id: string
-): QueryResult {
-  const builder = new Neo4jQueryBuilder()
-    .match('n', entityType, { id } as Partial<TEntity>)
-    .return(['n'])
-    .limit(1);
-    
-  const queryResult = builder.build();
+): CrudQuerySpec {
   const label = getEntityLabel(entityType);
-  
+
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query: `MATCH (n:${label}) WHERE n.id = $id RETURN n LIMIT 1`,
+    params: { id },
     description: `Find ${label} with ID: ${id}`,
-    tags: ['findOne', label.toLowerCase()]
+    tags: ['findOne', label.toLowerCase()],
   };
 }
 
 /**
- * Generate find many query using Neo4jQueryBuilder
+ * Find many entities using direct Neogma model method
  */
-export function generateFindManyQuery<TEntity extends BaseEntity>(
+export async function findMany<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  options?: FindOptions<TEntity>
+): Promise<TEntity[]> {
+  try {
+    const queryOptions: {
+      where?: Partial<TEntity>;
+      order?: Record<string, string>[];
+      limit?: number;
+      skip?: number;
+    } = {};
+
+    if (options?.where) {
+      queryOptions.where = options.where;
+    }
+
+    if (options?.orderBy && options.orderBy.length > 0) {
+      queryOptions.order = options.orderBy.map((order) => ({
+        [order.property as string]: order.direction,
+      }));
+    }
+
+    if (options?.limit) {
+      queryOptions.limit = options.limit;
+    }
+
+    if (options?.skip) {
+      queryOptions.skip = options.skip;
+    }
+
+    const results = await model.findMany(queryOptions);
+    return results.map((result) => result.toJson() as TEntity);
+  } catch (error) {
+    console.error('FindMany operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate find many query spec for metadata purposes
+ */
+export function generateFindManyQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   options?: FindOptions<TEntity>
-): QueryResult {
-  const builder = new Neo4jQueryBuilder<TEntity>()
-    .match('n', entityType);
-
-  // Add WHERE conditions
-  if (options?.where) {
-    const whereConditions: string[] = [];
-    const whereParams: Record<string, any> = {};
-    Object.entries(options.where).forEach(([key, value], index) => {
-      const paramName = `whereParam${index}`;
-      whereConditions.push(`n.${key} = $${paramName}`);
-      whereParams[paramName] = value;
-    });
-    if (whereConditions.length > 0) {
-      builder.whereRaw(whereConditions.join(' AND '), whereParams);
-    }
-  }
-
-  builder.return(['n']);
-
-  // Add ORDER BY clauses
-  if (options?.orderBy && options.orderBy.length > 0) {
-    options.orderBy.forEach(order => {
-      builder.orderBy(`n.${String(order.property)}`, order.direction);
-    });
-  }
-
-  // Add pagination
-  if (options?.skip) {
-    builder.skip(options.skip);
-  }
-  if (options?.limit) {
-    builder.limit(options.limit);
-  }
-
-  const queryResult = builder.build();
+): CrudQuerySpec {
   const label = getEntityLabel(entityType);
-  
+
+  let query = `MATCH (n:${label})`;
+  const params: Neo4jQueryParams = {};
+
+  if (options?.where) {
+    const conditions = Object.entries(options.where)
+      .map(([key, value], index) => {
+        params[`param${index}`] = value;
+        return `n.${key} = $param${index}`;
+      })
+      .join(' AND ');
+    query += ` WHERE ${conditions}`;
+  }
+
+  query += ' RETURN n';
+
+  if (options?.orderBy && options.orderBy.length > 0) {
+    const orderClauses = options.orderBy
+      .map((order) => `n.${String(order.property)} ${order.direction}`)
+      .join(', ');
+    query += ` ORDER BY ${orderClauses}`;
+  }
+
+  if (options?.skip) {
+    query += ` SKIP ${options.skip}`;
+  }
+
+  if (options?.limit) {
+    query += ` LIMIT ${options.limit}`;
+  }
+
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query,
+    params,
     description: `Find ${label} entities with filtering`,
-    tags: ['findMany', label.toLowerCase()]
+    tags: ['findMany', label.toLowerCase()],
   };
 }
 
 /**
- * Generate create entity query using Neo4jQueryBuilder
+ * Create entity using direct Neogma model method
  */
-export function generateCreateQuery<TEntity extends BaseEntity>(
+export async function create<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  data: Partial<TEntity>
+): Promise<TEntity> {
+  try {
+    // Add automatic fields
+    const entityData = {
+      ...data,
+      id:
+        (data as any).id ||
+        `${
+          model.getLabel()?.toLowerCase() || 'entity'
+        }_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await model.create(entityData);
+    return result.toJson() as TEntity;
+  } catch (error) {
+    console.error('Create operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate create query spec for metadata purposes
+ */
+export function generateCreateQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   data: Partial<TEntity>
-): QueryResult {
+): CrudQuerySpec {
   const label = getEntityLabel(entityType);
-  
+
   // Add automatic fields
   const entityData = {
     ...data,
-    id: (data as any).id || `${label.toLowerCase()}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id:
+      (data as any).id ||
+      `${label.toLowerCase()}_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`,
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
-  const builder = new Neo4jQueryBuilder()
-    .create(`(n:${label} $data)`, { data: entityData })
-    .return(['n']);
-
-  const queryResult = builder.build();
-  
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query: `CREATE (n:${label} $entityData) RETURN n`,
+    params: { entityData },
     description: `Create new ${label} entity`,
-    tags: ['create', label.toLowerCase()]
+    tags: ['create', label.toLowerCase()],
   };
 }
 
 /**
- * Generate update entity query using Neo4jQueryBuilder
+ * Update entity using direct Neogma model method
  */
-export function generateUpdateQuery<TEntity extends BaseEntity>(
+export async function update<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  id: string,
+  updates: Partial<TEntity>
+): Promise<TEntity | null> {
+  try {
+    // Add automatic fields
+    const updateData = {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await model.update(updateData, { where: { id } });
+    return result ? (result.toJson() as TEntity) : null;
+  } catch (error) {
+    console.error('Update operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate update query spec for metadata purposes
+ */
+export function generateUpdateQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   id: string,
   updates: Partial<TEntity>
-): QueryResult {
+): CrudQuerySpec {
   const label = getEntityLabel(entityType);
-  
+
   // Add automatic fields
   const updateData = {
     ...updates,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
-  const builder = new Neo4jQueryBuilder()
-    .match('n', entityType, { id } as Partial<TEntity>)
-    .set(updateData)
-    .return(['n']);
+  const setClause = Object.keys(updateData)
+    .map((key) => `n.${key} = $${key}`)
+    .join(', ');
 
-  const queryResult = builder.build();
-  
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query: `MATCH (n:${label}) WHERE n.id = $id SET ${setClause} RETURN n`,
+    params: { id, ...updateData },
     description: `Update ${label} entity with ID: ${id}`,
-    tags: ['update', label.toLowerCase()]
+    tags: ['update', label.toLowerCase()],
   };
 }
 
 /**
- * Generate delete entity query using Neo4jQueryBuilder
+ * Delete entity using direct Neogma model method
  */
-export function generateDeleteQuery<TEntity extends BaseEntity>(
+export async function deleteEntity<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  id: string,
+  options?: DeleteOptions
+): Promise<boolean> {
+  try {
+    const result = await model.delete({
+      where: { id },
+      detach: options?.detach,
+    });
+    return result > 0;
+  } catch (error) {
+    console.error('Delete operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate delete query spec for metadata purposes
+ */
+export function generateDeleteQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   id: string,
   options?: DeleteOptions
-): QueryResult {
+): CrudQuerySpec {
   const label = getEntityLabel(entityType);
-  
-  const builder = new Neo4jQueryBuilder()
-    .match('n', entityType, { id } as Partial<TEntity>);
 
-  if (options?.detach) {
-    builder.detachDelete(['n']);
-  } else {
-    builder.delete(['n']);
-  }
-  
-  builder.return(['count(n) > 0 as deleted']);
+  const deleteClause = options?.detach ? 'DETACH DELETE n' : 'DELETE n';
 
-  const queryResult = builder.build();
-  
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query: `MATCH (n:${label}) WHERE n.id = $id ${deleteClause} RETURN count(n) > 0 as deleted`,
+    params: { id },
     description: `Delete ${label} entity with ID: ${id}`,
-    tags: ['delete', label.toLowerCase()]
+    tags: ['delete', label.toLowerCase()],
   };
 }
 
 /**
- * Generate count entities query using Neo4jQueryBuilder
+ * Count entities using direct Neogma model method
  */
-export function generateCountQuery<TEntity extends BaseEntity>(
+export async function count<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  where?: Partial<TEntity>
+): Promise<number> {
+  try {
+    const queryOptions = where ? { where } : {};
+    const result = await model.count(queryOptions);
+    return result;
+  } catch (error) {
+    console.error('Count operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate count query spec for metadata purposes
+ */
+export function generateCountQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   where?: Partial<TEntity>
-): QueryResult {
-  const builder = new Neo4jQueryBuilder<TEntity>()
-    .match('n', entityType);
+): CrudQuerySpec {
+  const label = getEntityLabel(entityType);
 
-  // Add WHERE conditions
+  let query = `MATCH (n:${label})`;
+  const params: Neo4jQueryParams = {};
+
   if (where) {
-    const whereConditions: string[] = [];
-    const whereParams: Record<string, any> = {};
-    Object.entries(where).forEach(([key, value], index) => {
-      const paramName = `whereParam${index}`;
-      whereConditions.push(`n.${key} = $${paramName}`);
-      whereParams[paramName] = value;
-    });
-    if (whereConditions.length > 0) {
-      builder.whereRaw(whereConditions.join(' AND '), whereParams);
-    }
+    const conditions = Object.entries(where)
+      .map(([key, value], index) => {
+        params[`param${index}`] = value;
+        return `n.${key} = $param${index}`;
+      })
+      .join(' AND ');
+    query += ` WHERE ${conditions}`;
   }
 
-  builder.return(['count(n) as count']);
+  query += ' RETURN count(n) as count';
 
-  const queryResult = builder.build();
-  const label = getEntityLabel(entityType);
-  
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query,
+    params,
     description: `Count ${label} entities`,
-    tags: ['count', label.toLowerCase()]
+    tags: ['count', label.toLowerCase()],
   };
 }
 
 /**
- * Generate exists entity query using Neo4jQueryBuilder
+ * Check if entity exists using direct Neogma model method
  */
-export function generateExistsQuery<TEntity extends BaseEntity>(
+export async function exists<TEntity extends Neo4jCompatibleEntity>(
+  model: NeogmaModelInterface,
+  id: string
+): Promise<boolean> {
+  try {
+    const result = await model.findOne({ where: { id } });
+    return result !== null;
+  } catch (error) {
+    console.error('Exists operation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate exists query spec for metadata purposes
+ */
+export function generateExistsQuery<TEntity extends Neo4jCompatibleEntity>(
   entityType: () => TEntity,
   id: string
-): QueryResult {
-  const builder = new Neo4jQueryBuilder()
-    .match('n', entityType, { id } as Partial<TEntity>)
-    .return(['count(n) > 0 as exists']);
-
-  const queryResult = builder.build();
+): CrudQuerySpec {
   const label = getEntityLabel(entityType);
-  
+
   return {
-    query: queryResult.query,
-    params: queryResult.params,
+    query: `MATCH (n:${label}) WHERE n.id = $id RETURN count(n) > 0 as exists`,
+    params: { id },
     description: `Check if ${label} exists with ID: ${id}`,
-    tags: ['exists', label.toLowerCase()]
+    tags: ['exists', label.toLowerCase()],
   };
 }

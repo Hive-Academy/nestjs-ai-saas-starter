@@ -1,385 +1,316 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+/**
+ * Neo4jService - Modern facade service for backward compatibility
+ *
+ * This service provides a compatibility layer that delegates to the new
+ * NeogmaService while maintaining the existing interface for gradual migration.
+ *
+ * RECOMMENDED: Use NeogmaService directly for new code.
+ */
+
+import { Injectable, Logger } from '@nestjs/common';
+import { NeogmaService, FindOptions } from './neogma.service';
+import { NeogmaMetricsService, SystemHealth } from './neogma-metrics.service';
 import {
-  Driver,
-  Session,
-  ManagedTransaction,
-  session as neo4jSession,
-} from 'neo4j-driver';
-import { NEO4J_DRIVER, NEO4J_OPTIONS } from '../constants';
-import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+  NeogmaConnectionService,
+  ConnectionStatus,
+} from './neogma-connection.service';
 import type {
-  QueryResult,
-  BulkOperation,
-  BulkResult,
-  QueryOptions,
-} from '../interfaces/query-result.interface';
-import type { SessionOptions } from '../interfaces/neo4j-connection.interface';
-import { Neo4jQueryService } from './neo4j-query.service';
-import { Neo4jMetricsService } from './neo4j-metrics.service';
+  Neo4jCompatibleEntity,
+  Neo4jQueryParams,
+} from '../types/neo4j-types';
+import type { Neogma, NeogmaModel } from 'neogma';
 
 /**
- * Neo4j Service with  features
- * Main service that coordinates with child services for specific functionality
+ * Legacy interface for backward compatibility
+ */
+export interface QueryResult<T = any> {
+  records: T[];
+  summary: {
+    query: string;
+    parameters: Neo4jQueryParams;
+    resultAvailableAfter: number;
+    resultConsumedAfter: number;
+  };
+}
+
+/**
+ * Neo4jService - Facade that delegates to modern Neogma services
  *
- * Features:
- * - Full backward compatibility with existing API
- * -  query execution with retry and metrics
- * - Connection pooling optimization
- * - Performance monitoring
- * - Type safety with strict mode compliance
+ * This service maintains backward compatibility while encouraging
+ * migration to the new NeogmaService architecture.
  */
 @Injectable()
 export class Neo4jService {
   private readonly logger = new Logger(Neo4jService.name);
 
   constructor(
-    @Inject(NEO4J_DRIVER) private readonly driver: Driver,
-    @Inject(NEO4J_OPTIONS) private readonly options: Neo4jModuleOptions,
-    private readonly queryService: Neo4jQueryService,
-    private readonly metricsService: Neo4jMetricsService
+    private readonly neogmaService: NeogmaService,
+    private readonly metricsService: NeogmaMetricsService,
+    private readonly connectionService: NeogmaConnectionService
   ) {
-    this.logger.log('Neo4j Service initialized with  features');
+    this.logger.log(
+      'Neo4jService facade initialized - delegates to NeogmaService'
+    );
+  }
+
+  // ==================== MODERN API (RECOMMENDED) ====================
+
+  /**
+   * Find a single entity by ID (RECOMMENDED)
+   */
+  async findOne<T extends Neo4jCompatibleEntity>(
+    model: NeogmaModel,
+    id: string
+  ): Promise<T | null> {
+    return this.neogmaService.findOne<T>(model, id);
   }
 
   /**
-   * Execute read operations in a transaction
+   * Find multiple entities (RECOMMENDED)
    */
-  async runInReadTransaction<T>(
-    work: (tx: ManagedTransaction) => Promise<T>,
-    database?: string
+  async findMany<T extends Neo4jCompatibleEntity>(
+    model: NeogmaModel,
+    options?: FindOptions<T>
+  ): Promise<T[]> {
+    return this.neogmaService.findMany<T>(model, options);
+  }
+
+  /**
+   * Create a new entity (RECOMMENDED)
+   */
+  async create<T extends Neo4jCompatibleEntity>(
+    model: NeogmaModel,
+    data: Partial<T>
   ): Promise<T> {
-    const session = this.driver.session({
-      database: database ?? this.options.database,
-      defaultAccessMode: neo4jSession.READ,
-    });
-    // Track metrics
-    this.metricsService.incrementActiveSessions();
-
-    try {
-      const result = await session.executeRead(work);
-      return result;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Read transaction failed: ${message}`, stack);
-      throw error;
-    } finally {
-      await session.close();
-      this.metricsService.decrementActiveSessions();
-    }
+    return this.neogmaService.create<T>(model, data);
   }
 
   /**
-   * Execute bulk operations
+   * Update an existing entity (RECOMMENDED)
    */
-  async bulkOperation(
-    operations: BulkOperation[],
-    options?: { batchSize?: number; database?: string }
-  ): Promise<BulkResult> {
-    const batchSize = options?.batchSize || 1000;
-    const database = options?.database ?? this.options.database;
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: Array<{ operation: BulkOperation; error: string }> = [];
-
-    for (let i = 0; i < operations.length; i += batchSize) {
-      const batch = operations.slice(i, i + batchSize);
-
-      try {
-        await this.write(async (session) => {
-          for (const operation of batch) {
-            try {
-              await session.run(operation.cypher, operation.params);
-              successCount++;
-            } catch (error) {
-              errorCount++;
-              errors.push({
-                operation,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              });
-            }
-          }
-        }, database as any);
-      } catch (error) {
-        // Session-level error
-        for (const operation of batch) {
-          errorCount++;
-          errors.push({
-            operation,
-            error: error instanceof Error ? error.message : 'Session error',
-          });
-        }
-      }
-    }
-
-    return {
-      successCount,
-      errorCount,
-      errors,
-      totalOperations: operations.length,
-    };
+  async update<T extends Neo4jCompatibleEntity>(
+    model: NeogmaModel,
+    id: string,
+    updates: Partial<T>
+  ): Promise<T | null> {
+    return this.neogmaService.update<T>(model, id, updates);
   }
 
   /**
-   * Get a new session instance
+   * Delete an entity (RECOMMENDED)
    */
-  getSession(options?: SessionOptions): Session {
-    return this.driver.session({
-      database: options?.database ?? this.options.database,
-      defaultAccessMode: options?.defaultAccessMode
-        ? options.defaultAccessMode === 'READ'
-          ? neo4jSession.READ
-          : neo4jSession.WRITE
-        : undefined,
-      bookmarks: options?.bookmarks,
-      fetchSize: options?.fetchSize,
-    });
+  async delete(model: NeogmaModel, id: string): Promise<boolean> {
+    return this.neogmaService.delete(model, id);
   }
 
   /**
-   * Get the driver instance
+   * Count entities (RECOMMENDED)
    */
-  getDriver(): Driver {
-    return this.driver;
+  async count(model: NeogmaModel, where?: any): Promise<number> {
+    return this.neogmaService.count(model, where);
   }
 
-  // ====================  API (NEW FEATURES) ====================
-
   /**
-   * Execute a query with  options and monitoring
-   * Delegates to QueryService for implementation
+   * Execute Cypher query (RECOMMENDED)
    */
-  async run<T = Record<string, unknown>>(
+  async query<T = any>(
     cypher: string,
-    params?: Record<string, unknown>,
-    options?: QueryOptions
+    params?: Neo4jQueryParams
+  ): Promise<T[]> {
+    return this.neogmaService.query<T>(cypher, params);
+  }
+
+  /**
+   * Execute Cypher query for single result (RECOMMENDED)
+   */
+  async queryOne<T = any>(
+    cypher: string,
+    params?: Neo4jQueryParams
+  ): Promise<T | null> {
+    return this.neogmaService.queryOne<T>(cypher, params);
+  }
+
+  /**
+   * Execute operations in transaction (RECOMMENDED)
+   */
+  async transaction<T>(work: (runner: any) => Promise<T>): Promise<T> {
+    return this.neogmaService.transaction<T>(work);
+  }
+
+  // ==================== COMPATIBILITY API ====================
+
+  /**
+   * Legacy run method - converts to modern query format
+   * @deprecated Use query() or queryOne() instead
+   */
+  async run<T = any>(
+    cypher: string,
+    params?: Neo4jQueryParams
   ): Promise<QueryResult<T>> {
-    return this.queryService.run<T>(this.driver, cypher, params, options);
-  }
-
-  /**
-   * Execute a read operation with  features
-   */
-  async read<T>(
-    operation: (session: Session) => Promise<T>,
-    options?: QueryOptions
-  ): Promise<T> {
-    const newOptions: QueryOptions = {
-      ...options,
-      defaultAccessMode: 'READ',
-    };
-
-    return this.executeWithSession(operation, newOptions);
-  }
-
-  /**
-   * Execute a write operation with  features
-   */
-  async write<T>(
-    operation: (session: Session) => Promise<T>,
-    options?: QueryOptions
-  ): Promise<T> {
-    const newOptions: QueryOptions = {
-      ...options,
-      defaultAccessMode: 'WRITE',
-    };
-
-    return this.executeWithSession(operation, newOptions);
-  }
-
-  /**
-   * Execute operations in a transaction with  error handling
-   */
-  async runInTransaction<T>(
-    work: (tx: ManagedTransaction) => Promise<T>,
-    options?: QueryOptions & { transactionConfig?: any }
-  ): Promise<T> {
-    let retryCount = 0;
-    const maxRetries = options?.retry?.enabled
-      ? options.retry.attempts || 3
-      : 0;
-
-    while (retryCount <= maxRetries) {
-      const session = this.driver.session({
-        database: options?.database ?? this.options.database,
-        defaultAccessMode:
-          options?.defaultAccessMode === 'READ'
-            ? neo4jSession.READ
-            : neo4jSession.WRITE,
-      });
-      this.metricsService.incrementActiveSessions();
-      try {
-        const result = await session.executeWrite(
-          work,
-          options?.transactionConfig
-        );
-        return result;
-      } catch (error) {
-        retryCount++;
-        if (retryCount > maxRetries || !this.isRetryableError(error)) {
-          throw error;
-        }
-        const delay = options?.retry?.delay || 1000;
-        await this.delay(delay * Math.pow(2, retryCount - 1));
-      } finally {
-        await session.close();
-        this.metricsService.decrementActiveSessions();
-      }
-    }
-    throw new Error('Transaction failed after all retry attempts');
-  }
-
-  /**
-   * Verify connectivity with  error reporting
-   */
-  async verifyConnectivity(): Promise<{
-    connected: boolean;
-    latency?: number;
-    serverInfo?: any;
-    error?: string;
-  }> {
     const startTime = Date.now();
+    const records = await this.neogmaService.query<T>(cypher, params);
+    const endTime = Date.now();
 
-    try {
-      await this.driver.verifyConnectivity();
-      const latency = Date.now() - startTime;
-      const serverInfo = await this.driver.getServerInfo();
-
-      return {
-        connected: true,
-        latency,
-        serverInfo,
-      };
-    } catch (error) {
-      return {
-        connected: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    // Convert to legacy format
+    return {
+      records,
+      summary: {
+        query: cypher,
+        parameters: params || {},
+        resultAvailableAfter: endTime - startTime,
+        resultConsumedAfter: endTime - startTime,
+      },
+    };
   }
 
-  // ==================== DELEGATE TO CHILD SERVICES ====================
+  /**
+   * Legacy runInTransaction method
+   * @deprecated Use transaction() instead
+   */
+  async runInTransaction<T>(work: (tx: any) => Promise<T>): Promise<T> {
+    this.logger.warn(
+      'runInTransaction is deprecated, use transaction() instead'
+    );
+    return this.neogmaService.transaction<T>(work);
+  }
 
   /**
-   * Get comprehensive metrics summary - delegates to MetricsService
+   * Legacy runQuery method
+   * @deprecated Use query() instead
+   */
+  async runQuery<T = any>(
+    cypher: string,
+    params?: Neo4jQueryParams
+  ): Promise<T[]> {
+    this.logger.warn('runQuery is deprecated, use query() instead');
+    return this.neogmaService.query<T>(cypher, params);
+  }
+
+  /**
+   * Legacy runNeogmaQuery method
+   * @deprecated Use query() instead
+   */
+  async runNeogmaQuery<T = any>(
+    cypher: string,
+    params?: Neo4jQueryParams
+  ): Promise<T[]> {
+    this.logger.warn('runNeogmaQuery is deprecated, use query() instead');
+    return this.neogmaService.query<T>(cypher, params);
+  }
+
+  // ==================== HEALTH & METRICS ====================
+
+  /**
+   * Verify connectivity
+   */
+  async verifyConnectivity(): Promise<ConnectionStatus> {
+    return this.connectionService.verifyConnectivity();
+  }
+
+  /**
+   * Get service metrics
    */
   getMetrics() {
-    return this.metricsService.getMetrics();
+    return this.metricsService.getQueryMetrics();
   }
 
   /**
-   * Get connection pool metrics - delegates to MetricsService
+   * Get connection pool metrics
    */
   getConnectionPoolMetrics() {
-    return this.metricsService.getConnectionPoolMetrics();
+    return this.connectionService.getConnectionInfo();
   }
 
   /**
-   * Get query performance metrics - delegates to MetricsService
+   * Get query performance metrics
    */
-  getQueryMetrics(queryPattern?: string) {
-    return this.metricsService.getQueryMetrics(queryPattern);
+  getQueryMetrics() {
+    return this.metricsService.getQueryMetrics();
   }
 
   /**
-   * Clear metrics data - delegates to MetricsService
+   * Clear metrics data
    */
   clearMetrics(): void {
     this.metricsService.clearMetrics();
   }
 
   /**
-   * Get  health information
+   * Get comprehensive health information
    */
-  async getHealth(): Promise<{
-    status: 'healthy' | 'unhealthy' | 'degraded';
-    performanceMetrics: any;
-    connectionInfo: any;
-    errorRate: number;
-    averageResponseTime: number;
-  }> {
-    const connectivity = await this.verifyConnectivity();
-    const metrics = this.getMetrics();
-    const connectionInfo = this.getConnectionPoolMetrics();
-
-    let status: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-
-    if (!connectivity.connected) {
-      status = 'unhealthy';
-    } else if (metrics.errorRate > 10 || metrics.averageExecutionTime > 5000) {
-      status = 'degraded';
-    }
-
-    return {
-      status,
-      performanceMetrics: metrics,
-      connectionInfo,
-      errorRate: metrics.errorRate,
-      averageResponseTime: metrics.averageExecutionTime,
-    };
-  }
-
-  // ==================== PRIVATE HELPER METHODS ====================
-
-  /**
-   * Create session proxy for transaction-based operations
-   */
-  // Removed unused createSessionProxy helper
-
-  /**
-   * Execute operation with  session management
-   */
-  private async executeWithSession<T>(
-    operation: (session: Session) => Promise<T>,
-    options?: QueryOptions
-  ): Promise<T> {
-    const session = this.driver.session({
-      database: options?.database ?? this.options.database,
-      defaultAccessMode:
-        options?.defaultAccessMode === 'READ'
-          ? neo4jSession.READ
-          : neo4jSession.WRITE,
-      bookmarks: options?.bookmarks,
-      fetchSize: options?.fetchSize,
-    });
-    this.metricsService.incrementActiveSessions();
-
-    try {
-      return await operation(session);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(` session operation failed: ${message}`, stack);
-      throw error;
-    } finally {
-      await session.close();
-      this.metricsService.decrementActiveSessions();
-    }
+  async getHealth(): Promise<SystemHealth> {
+    return this.metricsService.getSystemHealth();
   }
 
   /**
-   * Check if error is retryable
+   * Get the underlying Neogma instance
    */
-  private isRetryableError(error: any): boolean {
-    const retryableErrors = [
-      'ServiceUnavailable',
-      'SessionExpired',
-      'TransientError',
-      'DatabaseUnavailable',
-      'ClusterNotALeader',
-    ];
+  getNeogma(): Neogma {
+    return this.neogmaService.getNeogma();
+  }
 
-    return retryableErrors.some((errorType) =>
-      error instanceof Error
-        ? error.message
-        : String(error)?.includes(errorType) || error.code?.includes(errorType)
+  // ==================== DEPRECATED METHODS ====================
+
+  /**
+   * @deprecated Use NeogmaService.findOne() directly
+   */
+  async read<T>(operation: any): Promise<T> {
+    throw new Error(
+      'read() method is deprecated. Use NeogmaService.findOne() or query() instead.'
     );
   }
 
   /**
-   * Delay utility for retry mechanisms
+   * @deprecated Use NeogmaService.create() or NeogmaService.update() directly
    */
-  private async delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  async write<T>(operation: any): Promise<T> {
+    throw new Error(
+      'write() method is deprecated. Use NeogmaService.create(), update(), or delete() instead.'
+    );
+  }
+
+  /**
+   * @deprecated Use NeogmaConnectionService directly
+   */
+  getDriver(): never {
+    throw new Error(
+      'getDriver() is deprecated. Use NeogmaService methods instead.'
+    );
+  }
+
+  /**
+   * @deprecated Use NeogmaConnectionService directly
+   */
+  getSession(): never {
+    throw new Error(
+      'getSession() is deprecated. Use NeogmaService methods instead.'
+    );
+  }
+
+  /**
+   * @deprecated Bulk operations are handled automatically by NeogmaService
+   */
+  async bulkOperation(): Promise<never> {
+    throw new Error(
+      'bulkOperation() is deprecated. Use multiple create/update/delete calls instead.'
+    );
+  }
+
+  /**
+   * @deprecated Use NeogmaService.transaction() instead
+   */
+  async runInReadTransaction<T>(): Promise<never> {
+    throw new Error(
+      'runInReadTransaction() is deprecated. Use transaction() instead.'
+    );
+  }
+
+  /**
+   * @deprecated Use NeogmaService.query() with QueryBuilder patterns
+   */
+  createQueryBuilder(): never {
+    throw new Error(
+      'createQueryBuilder() is deprecated. Use direct Cypher queries with query() instead.'
+    );
   }
 }

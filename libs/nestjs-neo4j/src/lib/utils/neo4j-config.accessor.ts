@@ -1,4 +1,14 @@
-import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
+// Inline interface due to build configuration issue
+interface Neo4jModuleOptions {
+  url: string;
+  username: string;
+  password: string;
+  database?: string;
+  config?: any;
+  healthCheck?: boolean;
+  retryAttempts?: number;
+  retryDelay?: number;
+}
 
 /**
  * Global storage for Neo4j module configuration

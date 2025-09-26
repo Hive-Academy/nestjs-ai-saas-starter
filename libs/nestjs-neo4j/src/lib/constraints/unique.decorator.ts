@@ -300,7 +300,7 @@ export function UniqueConstraints(
         description: config.description || `Unique constraint ${index + 1}`,
       };
 
-      Unique(properties, configWithIndex)(constructor);
+      ClassUnique(properties, configWithIndex)(constructor);
     });
 
     return constructor;
