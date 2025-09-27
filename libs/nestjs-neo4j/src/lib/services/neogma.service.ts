@@ -10,7 +10,6 @@ import type {
   Neogma,
   NeogmaModel,
   QueryRunner,
-  ModelInstance,
   Where,
 } from 'neogma';
 import { NEO4J_OPTIONS } from '../constants';

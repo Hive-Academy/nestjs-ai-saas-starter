@@ -5,21 +5,25 @@
 // Module
 export { Neo4jModule } from './lib/neo4j.module';
 
-// Services - Modern Neogma-based services (PRIMARY)
-export { NeogmaService } from './lib/services/neogma.service';
+// ==================== MODERN SERVICES (PRIMARY) ====================
+// Use these services for all new development
+
+export { NeogmaService } from './lib/core/neogma.service';
 export { NeogmaMetricsService } from './lib/services/neogma-metrics.service';
 export { NeogmaConnectionService } from './lib/services/neogma-connection.service';
 
-// Legacy Services (DEPRECATED - use Neogma services instead)
-export { Neo4jService } from './lib/services/neo4j.service';
-export { Neo4jConnectionService } from './lib/services/neo4j-connection.service';
-export { Neo4jHealthService } from './lib/services/neo4j-health.service';
+// ==================== LEGACY SERVICES (DEPRECATED) ====================
+// Use these only for gradual migration from existing code
 
-// Neogma Integration - Direct Access
-// TODO: Fix syntax issue - temporarily disabled entire neogma export
-// export * from './lib/neogma';
-// export { InjectModel, getModelToken } from './lib/neogma/neogma.decorators';
-// Query Builder now uses Neogma directly - import { QueryBuilder } from 'neogma'
+export { Neo4jService } from './lib/services/neo4j.service';
+// Legacy services removed - use NeogmaConnectionService and NeogmaMetricsService instead
+
+// ==================== MODERN NEOGMA INTEGRATION ====================
+// Modern decorators and utilities for Neogma integration
+
+export { InjectNeogma } from './lib/neogma/neogma.decorators';
+export type * from './lib/neogma/neogma.interfaces';
+export * from './lib/neogma/neogma.constants';
 
 // Interfaces - temporarily disabled due to build configuration issue
 // export type { Neo4jModuleOptions } from './lib/interfaces/neo4j-module-options.interface';
@@ -29,6 +33,7 @@ export { Neo4jHealthService } from './lib/services/neo4j-health.service';
 
 // Core Type Definitions
 export type * from './lib/types/neo4j-types';
+export type * from './lib/types/neogma-types';
 // BaseEntity deleted - use Neogma's NeogmaModel instead
 
 // Safety & Validation Decorators (PRIMARY)
@@ -116,8 +121,6 @@ export * from './lib/multi-tenancy/multi-tenant.decorators';
 export {
   GraphRepository,
   type GraphTraversalOptions,
-  type ShortestPathOptions,
-  type ClusteringOptions,
   type GraphPattern,
 } from './lib/repositories/graph-repository';
 export {

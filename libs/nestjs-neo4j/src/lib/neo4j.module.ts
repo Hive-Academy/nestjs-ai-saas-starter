@@ -36,11 +36,9 @@ interface Neo4jModuleAsyncOptions {
   inject?: any[];
 }
 import { Neo4jService } from './services/neo4j.service';
-import { NeogmaService } from './services/neogma.service';
+import { NeogmaService } from './core/neogma.service';
 import { NeogmaMetricsService } from './services/neogma-metrics.service';
 import { NeogmaConnectionService } from './services/neogma-connection.service';
-import { Neo4jConnectionService } from './services/neo4j-connection.service';
-import { Neo4jHealthService } from './services/neo4j-health.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';
 import { NeogmaModule } from './neogma/neogma.module';
 @Global()
@@ -87,12 +85,12 @@ export class Neo4jModule {
     const providers = [
       optionsProvider,
       driverProvider,
+      // Modern Neogma services (PRIMARY)
       NeogmaService,
       NeogmaMetricsService,
       NeogmaConnectionService,
+      // Legacy service for gradual migration
       Neo4jService,
-      Neo4jConnectionService,
-      Neo4jHealthService,
     ];
 
     return {
@@ -100,12 +98,13 @@ export class Neo4jModule {
       imports: [NeogmaModule.forRoot(neogmaOptions)],
       providers,
       exports: [
+        // Modern Neogma services (PRIMARY) - Use these for new development
         NeogmaService,
         NeogmaMetricsService,
         NeogmaConnectionService,
+        // Legacy service for gradual migration
         Neo4jService,
-        Neo4jConnectionService,
-        Neo4jHealthService,
+        // Core tokens
         NEO4J_DRIVER,
         NEO4J_OPTIONS,
       ],
@@ -138,8 +137,6 @@ export class Neo4jModule {
       NeogmaMetricsService,
       NeogmaConnectionService,
       Neo4jService,
-      Neo4jConnectionService,
-      Neo4jHealthService,
     ];
 
     // Create Neogma module async import
@@ -159,12 +156,13 @@ export class Neo4jModule {
       imports: [neogmaModuleImport, ...(options.imports ?? [])],
       providers,
       exports: [
+        // Modern Neogma services (PRIMARY) - Use these for new development
         NeogmaService,
         NeogmaMetricsService,
         NeogmaConnectionService,
+        // Legacy service for gradual migration
         Neo4jService,
-        Neo4jConnectionService,
-        Neo4jHealthService,
+        // Core tokens
         NEO4J_DRIVER,
         NEO4J_OPTIONS,
       ],

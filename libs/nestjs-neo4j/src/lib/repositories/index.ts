@@ -36,9 +36,9 @@
 export {
   GraphRepository,
   type GraphTraversalOptions,
-  type ShortestPathOptions,
-  type ClusteringOptions,
   type GraphPattern,
+  type NeighborResult,
+  type PathResult,
 } from './graph-repository';
 export {
   RelationshipRepository,

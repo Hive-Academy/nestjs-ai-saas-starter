@@ -11,6 +11,7 @@
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 // import { ModuleRef } from '@nestjs/core'; // TODO: Future use for dependency resolution
+import type { Session, Record } from 'neo4j-driver';
 import { Neo4jService } from '../services/neo4j.service';
 import {
   ConstraintMetadata,
@@ -299,7 +300,7 @@ export class ConstraintService implements OnModuleInit {
       }
 
       // Execute constraint creation
-      await this.neo4j.write(async (session) => {
+      await this.neo4j.write(async (session: Session) => {
         await session.run(queryInfo.query);
       });
 
@@ -456,7 +457,7 @@ export class ConstraintService implements OnModuleInit {
    */
   async dropConstraint(constraintName: string): Promise<boolean> {
     try {
-      await this.neo4j.write(async (session) => {
+      await this.neo4j.write(async (session: Session) => {
         await session.run(`DROP CONSTRAINT ${constraintName}`);
       });
 
@@ -479,9 +480,9 @@ export class ConstraintService implements OnModuleInit {
    * List all constraints in the database
    */
   async listDatabaseConstraints(): Promise<any[]> {
-    return this.neo4j.read(async (session) => {
+    return this.neo4j.read(async (session: Session) => {
       const result = await session.run('SHOW CONSTRAINTS');
-      return result.records.map((record) => record.toObject());
+      return result.records.map((record: Record) => record.toObject());
     });
   }
 

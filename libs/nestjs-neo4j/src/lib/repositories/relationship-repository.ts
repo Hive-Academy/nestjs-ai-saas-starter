@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectNeogma } from '../neogma/neogma.decorators';
-import type { Neogma } from 'neogma';
-import type { QueryResult } from '../interfaces/query-result.interface';
-import type { Neo4jCompatibleEntity } from '../types/neo4j-types';
+import { NeogmaService } from '../core/neogma.service';
+import type { NeogmaQueryBuilder } from '../types/neogma-types';
+import type { Neo4jQueryParams } from '../types/neo4j-types';
 
 /**
  * Query options for repository operations
@@ -112,26 +111,17 @@ export class RelationshipRepository<
   protected readonly sourceLabel: string = 'Entity';
   protected readonly targetLabel: string = 'Entity';
 
-  constructor(@InjectNeogma() protected readonly neogma: Neogma) {}
+  constructor(protected readonly neogmaService: NeogmaService) {}
 
   /**
-   * Execute a query with Neogma
+   * Execute a query with NeogmaService
    */
   protected async query<R = any>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Neo4jQueryParams,
     options?: RepositoryQueryOptions
-  ): Promise<QueryResult<R>> {
-    const result = await this.neogma.driver.session().run(cypher, params || {});
-    return {
-      records: result.records.map((record) => record.toObject()) as R[],
-      summary: {
-        query: cypher,
-        parameters: params || {},
-        resultAvailableAfter: result.summary.resultAvailableAfter || 0,
-        resultConsumedAfter: result.summary.resultConsumedAfter || 0,
-      },
-    };
+  ): Promise<R[]> {
+    return await this.neogmaService.query<R>(cypher, params);
   }
 
   /**
@@ -139,9 +129,9 @@ export class RelationshipRepository<
    */
   protected async executeQuery<R = any>(
     cypher: string,
-    params?: Record<string, any>,
+    params?: Neo4jQueryParams,
     options?: RepositoryQueryOptions
-  ): Promise<QueryResult<R>> {
+  ): Promise<R[]> {
     return this.query<R>(cypher, params, options);
   }
 
@@ -189,31 +179,20 @@ export class RelationshipRepository<
     if (options?.includeSource) returnVars.push('source');
     if (options?.includeTarget) returnVars.push('target');
 
-    const cypher = `
-      MATCH (source:${sourceLabel} {id: $sourceId})
-      MATCH (target:${targetLabel} {id: $targetId})
-      CREATE (source)-[rel:${this.relationshipType} $properties]->(target)
-      RETURN ${returnVars.join(', ')}
-    `;
+    // Use Neogma QueryBuilder for type-safe relationship creation
+    const queryBuilder: NeogmaQueryBuilder = this.neogmaService.createQueryBuilder()
+      .raw(`MATCH (source:${sourceLabel} {id: $sourceId})`)
+      .raw(`MATCH (target:${targetLabel} {id: $targetId})`)
+      .raw(`CREATE (source)-[rel:${this.relationshipType} $properties]->(target)`)
+      .return(returnVars.join(', '));
 
-    const params = {
-      sourceId: data.sourceId,
-      targetId: data.targetId,
-      properties: relationshipData,
-    };
-    const mergedOptions = {
-      ...this.defaultOptions,
-      ...options,
-      accessMode: 'WRITE' as const,
-    };
+    const result = await this.neogmaService.executeQueryBuilder(queryBuilder.addParams({ sourceId: data.sourceId, targetId: data.targetId, properties: relationshipData }));
 
-    const result = await this.executeQuery(cypher, params, mergedOptions);
-
-    if (!result.records || result.records.length === 0) {
+    if (!result || result.length === 0) {
       throw new Error(`Failed to create relationship ${this.relationshipType}`);
     }
 
-    const record = result.records[0];
+    const record = result[0];
     return this.buildRelationshipResult(record, options);
   }
 
@@ -224,9 +203,8 @@ export class RelationshipRepository<
     sourceId: string,
     options?: RelationshipQueryOptions
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
-    const builder = new QueryBuilder().raw(
-      `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})`,
-      { sourceId }
+    const builder = this.neogmaService.createQueryBuilder().raw(
+      `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})`
     );
 
     // Apply soft delete filter
@@ -247,7 +225,7 @@ export class RelationshipRepository<
       options
     );
     return (
-      result.records?.map((record: Record<string, any>) =>
+      result?.map((record: Record<string, any>) =>
         this.buildRelationshipResult(record, options)
       ) || []
     );
@@ -260,9 +238,8 @@ export class RelationshipRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
-    const builder = new QueryBuilder().raw(
-      `MATCH (source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`,
-      { targetId }
+    const builder = this.neogmaService.createQueryBuilder().raw(
+      `MATCH (source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
     );
 
     // Apply soft delete filter
@@ -283,7 +260,7 @@ export class RelationshipRepository<
       options
     );
     return (
-      result.records?.map((record: Record<string, any>) =>
+      result?.map((record: Record<string, any>) =>
         this.buildRelationshipResult(record, options)
       ) || []
     );
@@ -313,8 +290,8 @@ export class RelationshipRepository<
       { sourceId, targetId },
       options
     );
-    return result.records && result.records.length > 0
-      ? this.buildRelationshipResult(result.records[0], options)
+    return result && result.length > 0
+      ? this.buildRelationshipResult(result[0], options)
       : null;
   }
 
@@ -330,9 +307,8 @@ export class RelationshipRepository<
     const updateData = this.mapToNeo4j(updates);
     updateData.updatedAt = new Date().toISOString();
 
-    const builder = new QueryBuilder().raw(
-      `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`,
-      { sourceId, targetId }
+    const builder = this.neogmaService.createQueryBuilder().raw(
+      `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
     );
 
     // Apply soft delete filter
@@ -349,17 +325,10 @@ export class RelationshipRepository<
     if (options?.includeTarget) returnVars.push('target');
     builder.return(returnVars);
 
-    const queryResult = builder.build();
-    const mergedOptions = {
-      ...this.defaultOptions,
-      ...options,
-      accessMode: 'WRITE' as const,
-    };
+    const result = await this.neogmaService.executeQueryBuilder(builder.addParams({ sourceId, targetId }));
 
-    const result = await this.executeQuery(cypher, params, mergedOptions);
-
-    return result.records && result.records.length > 0
-      ? this.buildRelationshipResult(result.records[0], options)
+    return result && result.length > 0
+      ? this.buildRelationshipResult(result[0], options)
       : null;
   }
 
@@ -404,7 +373,7 @@ export class RelationshipRepository<
       mergedOptions
     );
 
-    return (result.records?.[0] as { deleted: boolean })?.deleted || false;
+    return (result?.[0] as { deleted: boolean })?.deleted || false;
   }
 
   /**
@@ -432,7 +401,7 @@ export class RelationshipRepository<
       mergedOptions
     );
 
-    return (result.records?.[0] as { deleted: boolean })?.deleted || false;
+    return (result?.[0] as { deleted: boolean })?.deleted || false;
   }
 
   /**
@@ -467,7 +436,7 @@ export class RelationshipRepository<
     };
     const result = await this.executeQuery(query, params, mergedOptions);
 
-    return (result.records?.[0] as { deletedCount: number })?.deletedCount || 0;
+    return (result?.[0] as { deletedCount: number })?.deletedCount || 0;
   }
 
   /**
@@ -502,7 +471,7 @@ export class RelationshipRepository<
     };
     const result = await this.executeQuery(query, params, mergedOptions);
 
-    return (result.records?.[0] as { deletedCount: number })?.deletedCount || 0;
+    return (result?.[0] as { deletedCount: number })?.deletedCount || 0;
   }
 
   /**
@@ -521,7 +490,7 @@ export class RelationshipRepository<
     `;
 
     const result = await this.executeQuery(query, { sourceId }, options);
-    return (result.records?.[0] as { count: number })?.count || 0;
+    return (result?.[0] as { count: number })?.count || 0;
   }
 
   /**
@@ -540,7 +509,7 @@ export class RelationshipRepository<
     `;
 
     const result = await this.executeQuery(query, { targetId }, options);
-    return (result.records?.[0] as { count: number })?.count || 0;
+    return (result?.[0] as { count: number })?.count || 0;
   }
 
   /**
@@ -564,7 +533,7 @@ export class RelationshipRepository<
       { sourceId, targetId },
       options
     );
-    return (result.records?.[0] as { exists: boolean })?.exists || false;
+    return (result?.[0] as { exists: boolean })?.exists || false;
   }
 
   /**

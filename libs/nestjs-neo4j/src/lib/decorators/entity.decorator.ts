@@ -6,8 +6,7 @@ import {
   type PropertyMapping,
   type RelationshipMapping,
 } from '../interfaces/decorator-metadata.interface';
-import type { Neogma, NeogmaModel, ModelRelatedNodesI } from 'neogma';
-import { getModelToken } from '../neogma/neogma.utils';
+import type { ModelRelatedNodesI } from 'neogma';
 
 /**
  * Configuration for the @Neo4jEntity decorator
@@ -783,7 +782,7 @@ function createNeogmaModel(
 
   // Build Neogma model schema from property mappings
   const neogmaSchema: Record<string, any> = {};
-  const neogmaRelationships: Record<string, ModelRelatedNodesI> = {};
+  const neogmaRelationships: Record<string, ModelRelatedNodesI<any, any>> = {};
 
   // Process properties
   properties.forEach((propertyMapping, key) => {

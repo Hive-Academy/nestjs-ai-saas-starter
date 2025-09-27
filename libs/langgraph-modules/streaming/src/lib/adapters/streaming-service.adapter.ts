@@ -159,4 +159,31 @@ export class StreamingServiceAdapter implements IStreamingService {
 
     this.webSocketBridge.sendToClient(clientId, streamUpdate);
   }
+
+  // Stream management methods - required by IStreamingService
+  getStream(executionId: string): any {
+    // Return a mock stream object for compatibility
+    return {
+      executionId,
+      asObservable: () => {
+        // Return a basic observable-like object
+        return {
+          subscribe: (observer: any) => {
+            // Basic stream subscription
+            return { unsubscribe: () => {} };
+          }
+        };
+      }
+    };
+  }
+
+  async createStream(executionId: string, options?: any): Promise<any> {
+    // Initialize stream for execution
+    return this.getStream(executionId);
+  }
+
+  closeStream(executionId: string): void {
+    // Close token stream if it exists
+    this.tokenStreamingService.closeTokenStream(executionId, 'all');
+  }
 }
