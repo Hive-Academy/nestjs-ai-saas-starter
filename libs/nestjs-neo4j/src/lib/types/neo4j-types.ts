@@ -5,6 +5,8 @@
  * ensuring type safety across all database interactions.
  */
 
+import type { Integer } from 'neo4j-driver';
+
 /**
  * Primitive types supported by Neo4j
  */
@@ -17,17 +19,24 @@ export type Neo4jPrimitive =
   | Array<string | number | boolean | Date>;
 
 /**
+ * Neo4j compatible value type - more specific than any primitive
+ */
+export type Neo4jCompatibleValue =
+  | Neo4jPrimitive
+  | Neo4jPrimitive[]
+  | Neo4jRecordShape
+  | Neo4jRecordShape[]
+  | Integer;
+
+/**
  * Neo4j property object (node or relationship properties)
  */
 export type Neo4jProperties = Record<string, Neo4jPrimitive>;
 
 /**
- * Query parameter types for Neo4j operations
+ * Query parameter types for Neo4j operations (FIXED: Using Neo4jCompatibleValue)
  */
-export type Neo4jQueryParams = Record<
-  string,
-  Neo4jPrimitive | Neo4jPrimitive[]
->;
+export type Neo4jQueryParams = Record<string, Neo4jCompatibleValue>;
 
 /**
  * Where clause interface for type-safe filtering

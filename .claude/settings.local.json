@@ -41,6 +41,9 @@
       "mcp__browser__browser_screenshot",
       "mcp__browser__browser_get_clickable_elements",
       "Bash(npm run update:libs:*)",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_text_file"
     ],
     "deny": [],
     "ask": [],

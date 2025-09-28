@@ -12,7 +12,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 // import { ModuleRef } from '@nestjs/core'; // TODO: Future use for dependency resolution
 import type { Session, Record } from 'neo4j-driver';
-import { Neo4jService } from '../services/neo4j.service';
+import { NeogmaService } from '../core/neogma.service';
 import {
   ConstraintMetadata,
   ConstraintCreationStatus,
@@ -130,7 +130,7 @@ export class ConstraintService implements OnModuleInit {
   };
 
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: NeogmaService,
     // private readonly moduleRef: ModuleRef, // TODO: Future use for dependency resolution
     private readonly config: ConstraintServiceConfig = {}
   ) {

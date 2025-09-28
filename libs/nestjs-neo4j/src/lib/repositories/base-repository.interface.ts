@@ -4,7 +4,7 @@
  */
 import type { FindOptions } from './crud-operations';
 import type { Neo4jCompatibleEntity } from '../types/neo4j-types';
-import type { NeogmaService } from '../services/neogma.service';
+import type { NeogmaService } from '../core/neogma.service';
 
 /**
  * Base repository interface that provides type safety for auto-generated CRUD methods

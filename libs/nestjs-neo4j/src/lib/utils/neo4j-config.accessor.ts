@@ -40,7 +40,7 @@ export function getNeo4jConfigWithDefaults(): Neo4jModuleOptions {
   const config = getNeo4jConfig();
 
   return {
-    uri: config.uri ?? 'bolt://localhost:7687',
+    url: config.url ?? 'bolt://localhost:7687',
     username: config.username ?? 'neo4j',
     password: config.password ?? 'password',
     database: config.database,
@@ -63,5 +63,5 @@ export function getNeo4jConfigWithDefaults(): Neo4jModuleOptions {
  * Check if Neo4j is configured
  */
 export function isNeo4jConfigured(): boolean {
-  return Object.keys(storedNeo4jConfig).length > 0 && !!storedNeo4jConfig.uri;
+  return Object.keys(storedNeo4jConfig).length > 0 && !!storedNeo4jConfig.url;
 }

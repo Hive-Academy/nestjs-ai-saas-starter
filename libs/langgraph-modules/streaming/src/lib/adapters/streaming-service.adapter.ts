@@ -170,6 +170,7 @@ export class StreamingServiceAdapter implements IStreamingService {
         return {
           subscribe: (observer: any) => {
             // Basic stream subscription
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
             return { unsubscribe: () => {} };
           }
         };

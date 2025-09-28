@@ -71,7 +71,7 @@ export class NeogmaConnectionService implements OnModuleDestroy {
   private readonly logger = new Logger(NeogmaConnectionService.name);
   private connectionStartTime?: number;
   private lastHealthCheck?: ConnectionStatus;
-  private healthCheckInterval?: NodeJS.Timer;
+  private healthCheckInterval?: NodeJS.Timeout;
 
   constructor(
     @InjectNeogma() private readonly neogma: Neogma,

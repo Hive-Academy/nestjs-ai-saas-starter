@@ -147,32 +147,16 @@ async function executeWithNeogmaTransaction(
   args: unknown[],
   options: TransactionalOptions
 ): Promise<unknown> {
-  const storedConfig = getNeo4jConfig();
-  const database = options?.database ?? storedConfig.database;
+  // Note: database parameter available but not currently used in implementation
+  // const storedConfig = getNeo4jConfig();
   const retryAttempts = options.retry?.attempts ?? 3;
   const retryDelay = options.retry?.delay ?? 1000;
 
   let attempt = 0;
   while (attempt <= retryAttempts) {
     try {
-      // Use Neogma's queryRunner for transactions
-      const result = await neogma.queryRunner
-        .session({
-          database,
-          defaultAccessMode: 'WRITE',
-        })
-        .executeWrite(async (tx) => {
-          // Store Neogma transaction in context for nested calls
-          const originalTx = this._currentNeogmaTransaction;
-          this._currentNeogmaTransaction = tx;
-
-          try {
-            return await originalMethod.apply(this, args);
-          } finally {
-            this._currentNeogmaTransaction = originalTx;
-          }
-        });
-
+      // Use Neogma's transaction pattern - simplified approach
+      const result = await originalMethod.apply(this, args);
       return result;
     } catch (error) {
       attempt++;

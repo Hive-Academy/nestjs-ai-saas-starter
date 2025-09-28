@@ -1,15 +1,14 @@
 /**
  * GraphRepository - Specialized repository for graph operations using Neogma models
- * 
+ *
  * This repository provides graph-specific functionality using proper Neogma model operations
  * instead of raw Cypher queries, ensuring type safety and leveraging Neogma's features.
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import type { NeogmaModel as BaseNeogmaModel, Where } from 'neogma';
-import type { NeogmaModel } from '../types/neogma-types';
+import type { Where } from 'neogma';
+import type { NeogmaModel, NeogmaEntity } from '../types/neogma-types';
 import { NeogmaService } from '../core/neogma.service';
-import type { Neo4jCompatibleEntity } from '../types/neo4j-types';
 
 /**
  * Options for graph traversal operations
@@ -75,19 +74,21 @@ export interface GraphPattern {
 
 /**
  * GraphRepository - Modern Neogma-based graph operations
- * 
+ *
  * Uses proper Neogma model operations and QueryBuilder instead of raw Cypher
  */
 @Injectable()
-export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEntity> {
+export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
   protected readonly logger = new Logger(GraphRepository.name);
 
   constructor(
     protected readonly neogmaService: NeogmaService,
-    protected readonly model: NeogmaModel<Record<string, unknown>>,
+    protected readonly model: NeogmaModel<T>,
     protected readonly entityLabel = 'Entity'
   ) {
-    this.logger.log(`GraphRepository initialized for ${entityLabel} using Neogma models`);
+    this.logger.log(
+      `GraphRepository initialized for ${entityLabel} using Neogma models`
+    );
   }
 
   // ==================== CORE GRAPH OPERATIONS ====================
@@ -96,7 +97,7 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
    * Find neighbors of a node using Neogma model-based approach
    */
   async findNeighbors(
-    nodeId: string, 
+    nodeId: string,
     options?: GraphTraversalOptions
   ): Promise<T[]> {
     const startTime = Date.now();
@@ -110,21 +111,44 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
       }
 
       // Use Neogma QueryBuilder for type-safe graph traversal
-      const queryBuilder = this.neogmaService.createQueryBuilder()
+      const queryBuilder = this.neogmaService
+        .createQueryBuilder()
         .raw(`MATCH (start:${this.entityLabel} {id: $id})`)
-        .raw(`MATCH (start)-[${this.buildRelationshipPattern(options)}]-(neighbor:${this.entityLabel})`)
+        .raw(
+          `MATCH (start)-[${this.buildRelationshipPattern(
+            options
+          )}]-(neighbor:${this.entityLabel})`
+        )
         .return('DISTINCT neighbor');
-      
+
       if (options?.limit) {
         queryBuilder.limit(options.limit);
       }
 
-      const results = await this.neogmaService.executeQueryBuilder<T>(queryBuilder.addParams({ id: nodeId }));
-      
-      this.logger.debug(`Found ${results.length} neighbors in ${Date.now() - startTime}ms`);
+      const cypher = `
+        MATCH (n:${this.entityLabel} {id: $id})-[*1..${
+        options?.maxDepth || 3
+      }]-(neighbor)
+        RETURN neighbor
+        ${options?.limit ? `LIMIT ${options.limit}` : ''}
+      `;
+      const queryResult = await this.neogmaService.query(cypher, {
+        id: nodeId,
+      });
+      const results = queryResult.records.map(
+        (record) => record.get('neighbor') as T
+      );
+
+      this.logger.debug(
+        `Found ${results.length} neighbors in ${Date.now() - startTime}ms`
+      );
       return results;
     } catch (error) {
-      this.logger.error(`Failed to find neighbors: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to find neighbors: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -139,32 +163,63 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
   ): Promise<NeighborResult<T>[]> {
     const startTime = Date.now();
     try {
-      this.logger.debug(`Finding nodes within distance ${distance} from ${nodeId}`);
+      this.logger.debug(
+        `Finding nodes within distance ${distance} from ${nodeId}`
+      );
 
       // Use Neogma QueryBuilder for type-safe distance traversal
       const relationshipPattern = this.buildRelationshipPattern(options);
-      const queryBuilder = this.neogmaService.createQueryBuilder()
+      const queryBuilder = this.neogmaService
+        .createQueryBuilder()
         .raw(`MATCH (start:${this.entityLabel} {id: $nodeId})`)
-        .raw(`MATCH path = (start)${relationshipPattern.replace('-', `*1..${distance}-`)}(target:${this.entityLabel})`)
+        .raw(
+          `MATCH path = (start)${relationshipPattern.replace(
+            '-',
+            `*1..${distance}-`
+          )}(target:${this.entityLabel})`
+        )
         .raw('WHERE target.id <> start.id')
         .return('DISTINCT target as node, length(path) as distance')
         .raw('ORDER BY distance');
-      
+
       if (options?.limit) {
         queryBuilder.limit(options.limit);
       }
 
-      const results = await this.neogmaService.executeQueryBuilder<{node: T, distance: number}>(queryBuilder.addParams({ nodeId, distance }));
-      
-      const neighbors = results.map(row => ({
-        node: row.node,
-        distance: row.distance
+      const cypher = `
+        MATCH (start:${this.entityLabel} {id: $nodeId})
+        MATCH (node:${this.entityLabel})
+        WHERE id(node) <> id(start)
+        WITH start, node, 
+             CASE 
+               WHEN (start)--(node) THEN 1
+               ELSE shortestPath((start)-[*..${distance}]-(node))
+             END as path
+        WHERE length(path) <= $distance
+        RETURN node, length(path) as distance
+      `;
+      const queryResult = await this.neogmaService.query(cypher, {
+        nodeId,
+        distance,
+      });
+
+      const neighbors = queryResult.records.map((record) => ({
+        node: record.get('node') as T,
+        distance: record.get('distance').toInt(),
       }));
 
-      this.logger.debug(`Found ${neighbors.length} nodes within distance ${distance} in ${Date.now() - startTime}ms`);
+      this.logger.debug(
+        `Found ${neighbors.length} nodes within distance ${distance} in ${
+          Date.now() - startTime
+        }ms`
+      );
       return neighbors;
     } catch (error) {
-      this.logger.error(`Failed to find nodes within distance: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to find nodes within distance: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -179,7 +234,9 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
   ): Promise<T[]> {
     const startTime = Date.now();
     try {
-      this.logger.debug(`Finding common neighbors between ${nodeId1} and ${nodeId2}`);
+      this.logger.debug(
+        `Finding common neighbors between ${nodeId1} and ${nodeId2}`
+      );
 
       const relationshipClause = this.buildRelationshipClause(options);
       const whereClause = this.buildWhereClause(options?.nodeFilter);
@@ -194,12 +251,26 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
         ${options?.limit ? `LIMIT ${options.limit}` : ''}
       `;
 
-      const results = await this.neogmaService.query<T>(cypher, { nodeId1, nodeId2 });
-      
-      this.logger.debug(`Found ${results.length} common neighbors in ${Date.now() - startTime}ms`);
+      const queryResult = await this.neogmaService.query(cypher, {
+        nodeId1,
+        nodeId2,
+      });
+      const results = queryResult.records.map(
+        (record) => record.get('common') as T
+      );
+
+      this.logger.debug(
+        `Found ${results.length} common neighbors in ${
+          Date.now() - startTime
+        }ms`
+      );
       return results;
     } catch (error) {
-      this.logger.error(`Failed to find common neighbors: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to find common neighbors: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -224,27 +295,45 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
       const cypher = `
         MATCH (start:${this.entityLabel} {id: $fromId})
         MATCH (end:${this.entityLabel} {id: $toId})
-        MATCH path = shortestPath((start)${relationshipClause.replace('-', `*1..${maxDepth}-`)}(end))
+        MATCH path = shortestPath((start)${relationshipClause.replace(
+          '-',
+          `*1..${maxDepth}-`
+        )}(end))
         RETURN nodes(path) as path, length(path) as length
         LIMIT 1
       `;
 
-      const results = await this.neogmaService.query<{path: T[], length: number}>(cypher, { fromId, toId });
-      
-      if (results.length === 0) {
+      const queryResult = await this.neogmaService.query(cypher, {
+        fromId,
+        toId,
+      });
+
+      if (queryResult.records.length === 0) {
         this.logger.debug(`No path found between ${fromId} and ${toId}`);
         return null;
       }
 
-      const result = results[0];
-      this.logger.debug(`Found shortest path with length ${result.length} in ${Date.now() - startTime}ms`);
-      
+      const record = queryResult.records[0];
+      const result = {
+        path: record.get('path') as T[],
+        length: record.get('length').toInt(),
+      };
+      this.logger.debug(
+        `Found shortest path with length ${result.length} in ${
+          Date.now() - startTime
+        }ms`
+      );
+
       return {
         path: result.path,
-        length: result.length
+        length: result.length,
       };
     } catch (error) {
-      this.logger.error(`Failed to find shortest path: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to find shortest path: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -270,14 +359,23 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
         RETURN count(DISTINCT connected) as degree
       `;
 
-      const results = await this.neogmaService.query<{degree: number}>(cypher, { nodeId });
-      
-      const degree = results.length > 0 ? results[0].degree : 0;
-      this.logger.debug(`Calculated degree centrality ${degree} in ${Date.now() - startTime}ms`);
-      
+      const queryResult = await this.neogmaService.query(cypher, { nodeId });
+
+      const degree =
+        queryResult.records.length > 0
+          ? queryResult.records[0].get('degree').toInt()
+          : 0;
+      this.logger.debug(
+        `Calculated degree centrality ${degree} in ${Date.now() - startTime}ms`
+      );
+
       return degree;
     } catch (error) {
-      this.logger.error(`Failed to calculate degree centrality: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to calculate degree centrality: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -285,7 +383,9 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
   /**
    * Find connected components in the graph
    */
-  async findConnectedComponents(options?: GraphTraversalOptions): Promise<Array<{componentId: string, nodes: T[]}>> {
+  async findConnectedComponents(
+    options?: GraphTraversalOptions
+  ): Promise<Array<{ componentId: string; nodes: T[] }>> {
     const startTime = Date.now();
     try {
       this.logger.debug('Finding connected components');
@@ -299,19 +399,33 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
         ${whereClause}
         CALL {
           WITH n
-          MATCH path = (n)${relationshipClause.replace('-', '*-')}(connected:${this.entityLabel})
+          MATCH path = (n)${relationshipClause.replace('-', '*-')}(connected:${
+        this.entityLabel
+      })
           RETURN collect(DISTINCT connected) as component
         }
         RETURN n.id as componentId, component as nodes
         ${options?.limit ? `LIMIT ${options.limit}` : ''}
       `;
 
-      const results = await this.neogmaService.query<{componentId: string, nodes: T[]}>(cypher);
-      
-      this.logger.debug(`Found ${results.length} connected components in ${Date.now() - startTime}ms`);
+      const queryResult = await this.neogmaService.query(cypher);
+      const results = queryResult.records.map((record) => ({
+        componentId: record.get('componentId') as string,
+        nodes: record.get('nodes') as T[],
+      }));
+
+      this.logger.debug(
+        `Found ${results.length} connected components in ${
+          Date.now() - startTime
+        }ms`
+      );
       return results;
     } catch (error) {
-      this.logger.error(`Failed to find connected components: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to find connected components: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -331,7 +445,7 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
 
       // Build MATCH clauses from pattern
       const matchClauses = this.buildPatternMatch(pattern);
-      const returnVars = pattern.nodes.map(node => node.variable);
+      const returnVars = pattern.nodes.map((node) => node.variable);
 
       const cypher = `
         ${matchClauses.join('\n')}
@@ -339,12 +453,27 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
         ${options?.limit ? `LIMIT ${options.limit}` : ''}
       `;
 
-      const results = await this.neogmaService.query<Record<string, T>>(cypher);
-      
-      this.logger.debug(`Pattern matched ${results.length} results in ${Date.now() - startTime}ms`);
+      const queryResult = await this.neogmaService.query(cypher);
+      const results = queryResult.records.map((record) => {
+        const result: Record<string, T> = {};
+        returnVars.forEach((varName) => {
+          result[varName] = record.get(varName) as T;
+        });
+        return result;
+      });
+
+      this.logger.debug(
+        `Pattern matched ${results.length} results in ${
+          Date.now() - startTime
+        }ms`
+      );
       return results;
     } catch (error) {
-      this.logger.error(`Failed to match pattern: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error(
+        `Failed to match pattern: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
       throw error;
     }
   }
@@ -355,11 +484,12 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
    * Build relationship clause for traversal queries
    */
   private buildRelationshipClause(options?: GraphTraversalOptions): string {
-    const types = options?.relationshipTypes?.length ? 
-      options.relationshipTypes.map(type => `:${type}`).join('|') : '';
-    
+    const types = options?.relationshipTypes?.length
+      ? options.relationshipTypes.map((type) => `:${type}`).join('|')
+      : '';
+
     const direction = options?.direction || 'BOTH';
-    
+
     switch (direction) {
       case 'IN':
         return `<-[${types}]-`;
@@ -399,16 +529,20 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
     const clauses: string[] = [];
 
     // Build node matches
-    pattern.nodes.forEach(node => {
-      const labels = node.labels.map(label => `:${label}`).join('');
-      const props = node.properties ? 
-        `{${Object.keys(node.properties).map(key => `${key}: $${key}`).join(', ')}}` : '';
+    pattern.nodes.forEach((node) => {
+      const labels = node.labels.map((label) => `:${label}`).join('');
+      const props = node.properties
+        ? `{${Object.keys(node.properties)
+            .map((key) => `${key}: $${key}`)
+            .join(', ')}}`
+        : '';
       clauses.push(`MATCH (${node.variable}${labels} ${props})`);
     });
 
     // Build relationship matches
-    pattern.relationships.forEach(rel => {
-      const direction = rel.direction === 'IN' ? '<-' : rel.direction === 'OUT' ? '->' : '-';
+    pattern.relationships.forEach((rel) => {
+      const direction =
+        rel.direction === 'IN' ? '<-' : rel.direction === 'OUT' ? '->' : '-';
       const relClause = `(${rel.source})-[:${rel.type}]${direction}(${rel.target})`;
       clauses.push(`MATCH ${relClause}`);
     });
@@ -419,31 +553,17 @@ export class GraphRepository<T extends Neo4jCompatibleEntity = Neo4jCompatibleEn
   // ==================== QUERY BUILDER HELPERS ====================
 
   /**
-   * Convert direction options to QueryBuilder format
-   */
-  private buildDirectionFromOptions(options?: GraphTraversalOptions): 'IN' | 'OUT' | 'BOTH' {
-    return options?.direction || 'BOTH';
-  }
-
-  /**
-   * Convert relationship types to QueryBuilder format
-   */
-  private buildRelationshipTypesFromOptions(options?: GraphTraversalOptions): string[] {
-    return options?.relationshipTypes || [];
-  }
-
-  /**
    * Build relationship pattern for QueryBuilder
    */
   private buildRelationshipPattern(options?: GraphTraversalOptions): string {
     const direction = options?.direction || 'BOTH';
     const types = options?.relationshipTypes;
-    
+
     let pattern = '';
     if (types && types.length > 0) {
       pattern = `:${types.join('|')}`;
     }
-    
+
     switch (direction) {
       case 'IN':
         return `<-[${pattern}]-`;

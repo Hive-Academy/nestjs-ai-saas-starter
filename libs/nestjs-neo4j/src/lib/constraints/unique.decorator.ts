@@ -586,3 +586,6 @@ export function generateUniqueConstraintQuery(
     name: constraintName,
   };
 }
+
+// Alias for convenience - use PropUnique for property-level unique constraints
+export const Unique = PropUnique;

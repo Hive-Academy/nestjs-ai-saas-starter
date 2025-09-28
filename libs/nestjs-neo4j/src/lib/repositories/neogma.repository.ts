@@ -1,6 +1,6 @@
 /**
  * Pure NeogmaRepository - Clean implementation using only Neogma features
- * 
+ *
  * This repository provides type-safe CRUD operations using Neogma models.
  * No raw Cypher, no legacy patterns - pure Neogma model operations.
  */
@@ -11,6 +11,7 @@ import type {
   TypedNeogmaModel,
   NeogmaRepository as INeogmaRepository,
   TypedFindOptions,
+  FindOptions,
 } from '../types/neogma-types';
 import { NeogmaNotFoundError } from '../types/neogma-types';
 import { NeogmaService } from '../core/neogma.service';
@@ -19,14 +20,18 @@ import { NeogmaService } from '../core/neogma.service';
  * Base repository implementation using pure Neogma patterns
  */
 @Injectable()
-export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogmaRepository<T> {
+export abstract class NeogmaRepository<T extends NeogmaEntity>
+  implements INeogmaRepository<T>
+{
   protected readonly logger = new Logger(this.constructor.name);
 
   constructor(
     protected readonly neogmaService: NeogmaService,
     protected readonly modelName: string
   ) {
-    this.logger.log(`${this.constructor.name} initialized for model: ${modelName}`);
+    this.logger.log(
+      `${this.constructor.name} initialized for model: ${modelName}`
+    );
   }
 
   /**
@@ -47,22 +52,41 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
   }
 
   /**
+   * Find all entities (alias for findMany with no options)
+   */
+  async findAll(options?: FindOptions<T>): Promise<T[]> {
+    this.logger.debug(`Finding all ${this.modelName} entities`, options);
+    return this.neogmaService.findMany<T>(this.modelName, options);
+  }
+
+  /**
    * Find multiple entities with type-safe options
    */
   async findMany(options?: TypedFindOptions<T>): Promise<T[]> {
     this.logger.debug(`Finding many ${this.modelName} entities`, options);
-    
-    // Convert our typed options to Neogma format
-    const neogmaOptions = options ? {
-      where: options.where,
-      limit: options.limit,
-      skip: options.skip,
-      orderBy: options.orderBy?.map(order => ({
-        [order.field]: order.direction
-      }))
-    } : undefined;
 
-    return this.neogmaService.findMany<T>(this.modelName, neogmaOptions);
+    // Convert our typed options to Neogma format
+    const neogmaOptions = options
+      ? {
+          where: options.where,
+          limit: options.limit,
+          skip: options.skip,
+          orderBy: options.orderBy
+            ?.map((order) => {
+              const orderObj: { [key: string]: 'ASC' | 'DESC' } = {};
+              orderObj[order.field as string] = order.direction as
+                | 'ASC'
+                | 'DESC';
+              return orderObj;
+            })
+            .filter(Boolean),
+        }
+      : undefined;
+
+    return this.neogmaService.findMany<T>(
+      this.modelName,
+      neogmaOptions as FindOptions<T>
+    );
   }
 
   /**
@@ -76,7 +100,10 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
   /**
    * Update existing entity
    */
-  async update(id: string, data: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T | null> {
+  async update(
+    id: string,
+    data: Partial<Omit<T, 'id' | 'createdAt'>>
+  ): Promise<T | null> {
     this.logger.debug(`Updating ${this.modelName} entity: ${id}`, data);
     return this.neogmaService.update<T>(this.modelName, id, data);
   }
@@ -113,7 +140,9 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
   async findByIdOrFail(id: string): Promise<T> {
     const entity = await this.findById(id);
     if (!entity) {
-      throw new NeogmaNotFoundError(`${this.modelName} with id '${id}' not found`);
+      throw new NeogmaNotFoundError(
+        `${this.modelName} with id '${id}' not found`
+      );
     }
     return entity;
   }
@@ -132,7 +161,9 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
   async findOneOrFail(where: Partial<T>): Promise<T> {
     const entity = await this.findOne(where);
     if (!entity) {
-      throw new NeogmaNotFoundError(`${this.modelName} not found with criteria: ${JSON.stringify(where)}`);
+      throw new NeogmaNotFoundError(
+        `${this.modelName} not found with criteria: ${JSON.stringify(where)}`
+      );
     }
     return entity;
   }
@@ -141,14 +172,14 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
    * Update or create (upsert) entity
    */
   async upsert(
-    where: Partial<T>, 
+    where: Partial<T>,
     updateData: Partial<Omit<T, 'id' | 'createdAt'>>,
     createData: Omit<T, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<T> {
     const existing = await this.findOne(where);
-    
+
     if (existing) {
-      return await this.update(existing.id, updateData) || existing;
+      return (await this.update(existing.id, updateData)) || existing;
     } else {
       return await this.create(createData);
     }
@@ -158,15 +189,15 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
    * Find entities with pagination
    */
   async findWithPagination(
-    page: number, 
-    limit: number, 
+    page: number,
+    limit: number,
     where?: Partial<T>
   ): Promise<{ entities: T[]; total: number; hasMore: boolean }> {
     const skip = (page - 1) * limit;
-    
+
     const [entities, total] = await Promise.all([
       this.findMany({ where, limit: limit + 1, skip }),
-      this.count(where)
+      this.count(where),
     ]);
 
     const hasMore = entities.length > limit;
@@ -175,18 +206,22 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
     return {
       entities: resultEntities,
       total,
-      hasMore
+      hasMore,
     };
   }
 
   /**
    * Bulk create entities
    */
-  async bulkCreate(dataArray: Array<Omit<T, 'id' | 'createdAt' | 'updatedAt'>>): Promise<T[]> {
-    this.logger.debug(`Bulk creating ${dataArray.length} ${this.modelName} entities`);
-    
+  async bulkCreate(
+    dataArray: Array<Omit<T, 'id' | 'createdAt' | 'updatedAt'>>
+  ): Promise<T[]> {
+    this.logger.debug(
+      `Bulk creating ${dataArray.length} ${this.modelName} entities`
+    );
+
     const results: T[] = [];
-    
+
     // Use transaction for bulk operations
     await this.neogmaService.transaction(async () => {
       for (const data of dataArray) {
@@ -203,9 +238,9 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
    */
   async bulkDelete(ids: string[]): Promise<number> {
     this.logger.debug(`Bulk deleting ${ids.length} ${this.modelName} entities`);
-    
+
     let deletedCount = 0;
-    
+
     await this.neogmaService.transaction(async () => {
       for (const id of ids) {
         const success = await this.delete(id);
@@ -235,7 +270,7 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
     // Override in subclasses for specific sanitization
     // Remove any undefined values
     const sanitized = { ...data };
-    Object.keys(sanitized).forEach(key => {
+    Object.keys(sanitized).forEach((key) => {
       if (sanitized[key as keyof TData] === undefined) {
         delete sanitized[key as keyof TData];
       }
@@ -262,7 +297,9 @@ export abstract class NeogmaRepository<T extends NeogmaEntity> implements INeogm
   protected logPerformance(operation: string, startTime: number): void {
     const duration = Date.now() - startTime;
     if (duration > 1000) {
-      this.logger.warn(`Slow operation detected: ${operation} took ${duration}ms`);
+      this.logger.warn(
+        `Slow operation detected: ${operation} took ${duration}ms`
+      );
     } else {
       this.logger.debug(`Operation completed: ${operation} took ${duration}ms`);
     }

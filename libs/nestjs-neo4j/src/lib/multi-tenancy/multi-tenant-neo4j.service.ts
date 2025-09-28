@@ -16,7 +16,7 @@
 import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { Driver, Session, Transaction, QueryResult } from 'neo4j-driver';
 import { TenantContextService } from './tenant-context.service';
-import { Neo4jService } from '../services/neo4j.service';
+import { NeogmaService } from '../core/neogma.service';
 import { Neo4jRecordShape } from '../types/neo4j-types';
 
 /**
@@ -212,7 +212,7 @@ export class MultiTenantNeo4jService {
     private readonly connectionManager: TenantConnectionManager,
     private readonly tenantContext: TenantContextService,
     @Inject('BASE_NEO4J_SERVICE')
-    private readonly baseNeo4jService: Neo4jService
+    private readonly baseNeo4jService: NeogmaService
   ) {}
 
   /**
@@ -415,7 +415,7 @@ export class MultiTenantNeo4jService {
    * Execute admin operation (requires admin privileges)
    */
   async adminOperation<T>(
-    operation: (service: Neo4jService) => Promise<T>
+    operation: (service: NeogmaService) => Promise<T>
   ): Promise<T> {
     // Admin operations use the base service without tenant context
     return operation(this.baseNeo4jService);

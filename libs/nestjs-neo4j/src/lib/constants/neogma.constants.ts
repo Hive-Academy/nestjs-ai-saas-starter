@@ -9,6 +9,4 @@ export const NEOGMA_MODEL_TOKEN = Symbol('NEOGMA_MODEL_TOKEN');
 /**
  * Model token generator for dependency injection
  */
-export function getNeogmaModelToken(modelName: string): string {
-  return `NEOGMA_MODEL_${modelName.toUpperCase()}`;
-}
+export const getNeogmaModelToken = 'NEOGMA_MODEL_TOKEN';

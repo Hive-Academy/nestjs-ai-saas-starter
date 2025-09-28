@@ -1,206 +1,168 @@
 /**
- * Pure Neogma Types - Clean, type-safe interfaces
- * 
- * This file contains all the type definitions for our clean Neogma implementation.
- * No legacy patterns, no mixed approaches - pure Neogma types only.
+ * @fileoverview Neogma Type Definitions - Based on Actual Neogma 1.14.1 API
+ *
+ * This file provides type definitions that properly interface with the real Neogma library.
+ * Based on actual Neogma types and patterns, not custom abstractions.
  */
 
-// Import actual Neogma types for proper type safety
-import type { Neogma as NeogmaInstance, NeogmaModel as BaseNeogmaModel, QueryBuilder, Neo4jSupportedProperties } from 'neogma';
+import type { Record as Neo4jRecord } from 'neo4j-driver';
+import type { QueryBuilder } from 'neogma';
 
-// Core Neogma types - properly typed for enterprise use with correct generics
-export type NeogmaModel<
-  SchemaType extends Neo4jSupportedProperties = Neo4jSupportedProperties,
-  PrimaryKeyField extends Record<string, unknown> = Record<string, unknown>,
-  RelationshipCreationKeys extends Record<string, unknown> = Record<string, unknown>,
-  StaticsType extends Record<string, unknown> = Record<string, unknown>
-> = BaseNeogmaModel<SchemaType, PrimaryKeyField, RelationshipCreationKeys, StaticsType>;
-
-export type NeogmaInstanceType<T> = T & { toJson(): T }; // Instance type with toJson method
-export type Where<T = Record<string, unknown>> = Partial<T>; // Where clause type
-export type Neogma = NeogmaInstance; // The main Neogma instance
-export type NeogmaQueryBuilder = QueryBuilder; // QueryBuilder type from neogma
+// Re-export essential Neogma types for our use
+export type { Neogma, QueryBuilder } from 'neogma';
 
 /**
- * Base entity interface that all Neogma entities must implement
+ * Base entity interface - compatible with Neogma patterns
  */
-export interface NeogmaEntity extends Record<string, unknown> {
+export interface NeogmaEntity {
   id: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: any;
 }
 
 /**
- * Generic Neogma model interface with proper type safety
+ * Find options for our high-level API
  */
-export interface TypedNeogmaModel<T extends NeogmaEntity> {
-  findOne(options: { where: Partial<T> }): Promise<NeogmaInstanceType<T> | null>;
-  findMany(options?: { 
-    where?: Partial<T>; 
-    limit?: number; 
+export interface FindOptions<T = any> {
+  where?: Partial<T>;
+  orderBy?: Array<{ [K in keyof T]?: 'ASC' | 'DESC' }>;
+  limit?: number;
+  skip?: number;
+}
+
+/**
+ * Query result wrapper that includes metrics
+ */
+export interface QueryResult {
+  records: Neo4jRecord[];
+  summary: any;
+  metrics?: {
+    executionTime: number;
+    recordCount: number;
+  };
+}
+
+/**
+ * Service metrics interface
+ */
+export interface NeogmaMetrics {
+  totalQueries: number;
+  averageQueryTime: number;
+  activeConnections: number;
+  errorRate: number;
+  lastError?: string;
+}
+
+/**
+ * High-level model interface for our service layer
+ * This is our abstraction over Neogma models
+ */
+export interface NeogmaModelInterface {
+  findOne(options: {
+    where: Partial<NeogmaEntity>;
+  }): Promise<{ toJson(): Record<string, unknown> } | null>;
+  findMany(options?: {
+    where?: Partial<NeogmaEntity>;
+    limit?: number;
     skip?: number;
-    orderBy?: Array<{ [K in keyof T]?: 'ASC' | 'DESC' }>;
-  }): Promise<NeogmaInstanceType<T>[]>;
-  create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<NeogmaInstanceType<T>>;
+    orderBy?: Array<{ [key: string]: 'ASC' | 'DESC' }>;
+  }): Promise<Array<{ toJson(): Record<string, unknown> }>>;
+  create(
+    data: Omit<NeogmaEntity, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<{ toJson(): Record<string, unknown> }>;
   update(
-    data: Partial<Omit<T, 'id' | 'createdAt'>>, 
-    options: { where: Partial<T> }
-  ): Promise<NeogmaInstanceType<T> | null>;
-  delete(options: { where: Partial<T>; detach?: boolean }): Promise<number>;
-  count(options?: { where?: Partial<T> }): Promise<number>;
+    data: Partial<Omit<NeogmaEntity, 'id' | 'createdAt'>>,
+    options: { where: Partial<NeogmaEntity> }
+  ): Promise<{ toJson(): Record<string, unknown> } | null>;
+  delete(options: {
+    where: Partial<NeogmaEntity>;
+    detach?: boolean;
+  }): Promise<number>;
+  count(options?: { where?: Partial<NeogmaEntity> }): Promise<number>;
   getLabel(): string;
 }
 
 /**
- * Query options for Neogma operations
+ * Typed model interface for type safety
  */
-export interface NeogmaQueryOptions {
-  /** Transaction context */
-  session?: any;
-  /** Database name */
-  database?: string;
-  /** Query timeout */
-  timeout?: number;
-}
+export type TypedNeogmaModel<T extends NeogmaEntity> = NeogmaModelInterface;
 
 /**
- * Find options with type safety
+ * Alias for compatibility
  */
-export interface TypedFindOptions<T extends NeogmaEntity> {
-  where?: Where<T>;
-  limit?: number;
-  skip?: number;
-  orderBy?: Array<{
-    field: keyof T;
-    direction: 'ASC' | 'DESC';
-  }>;
-}
+export type NeogmaModel<T extends NeogmaEntity = NeogmaEntity> =
+  TypedNeogmaModel<T>;
 
 /**
- * Relationship configuration for typed relationships
+ * Our high-level service interface
  */
-export interface TypedRelationshipConfig<
-  TSource extends NeogmaEntity,
-  TTarget extends NeogmaEntity,
-  TRelProps = Record<string, any>
-> {
-  type: string;
-  direction: 'IN' | 'OUT' | 'BOTH';
-  sourceModel: TypedNeogmaModel<TSource>;
-  targetModel: TypedNeogmaModel<TTarget>;
-  properties?: TRelProps;
-}
-
-/**
- * Graph traversal options with full type safety
- */
-export interface TypedGraphTraversalOptions<T extends NeogmaEntity> {
-  maxDepth?: number;
-  minDepth?: number;
-  relationshipTypes?: string[];
-  direction?: 'IN' | 'OUT' | 'BOTH';
-  nodeFilter?: Where<T>;
-  relationshipFilter?: Where;
-  limit?: number;
-}
-
-/**
- * Path result with type safety
- */
-export interface TypedPathResult<T extends NeogmaEntity> {
-  nodes: T[];
-  relationships: any[];
-  length: number;
-  weight?: number;
-}
-
-/**
- * Repository interface with full Neogma typing
- */
-export interface NeogmaRepository<T extends NeogmaEntity> {
-  // Basic CRUD with type safety
-  findById(id: string): Promise<T | null>;
-  findMany(options?: TypedFindOptions<T>): Promise<T[]>;
-  create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>;
-  update(id: string, data: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T | null>;
-  delete(id: string): Promise<boolean>;
-  count(where?: Where<T>): Promise<number>;
-  exists(id: string): Promise<boolean>;
-}
-
-/**
- * Graph repository interface with type safety
- */
-export interface NeogmaGraphRepository<T extends NeogmaEntity> extends NeogmaRepository<T> {
-  // Graph-specific operations
-  findNeighbors(nodeId: string, options?: TypedGraphTraversalOptions<T>): Promise<T[]>;
-  findShortestPath(fromId: string, toId: string): Promise<TypedPathResult<T> | null>;
-  calculateDegreeCentrality(nodeId: string): Promise<number>;
-}
-
-/**
- * Service interface with type safety and QueryBuilder support
- */
-export interface NeogmaService {
-  // Model operations
+export interface INeogmaService {
+  // Model registration (our custom layer)
+  registerModel<T extends NeogmaEntity>(
+    name: string,
+    model: TypedNeogmaModel<T>
+  ): void;
   getModel<T extends NeogmaEntity>(modelName: string): TypedNeogmaModel<T>;
-  
-  // Query operations (legacy - prefer QueryBuilder)
-  query<T = any>(cypher: string, params?: Record<string, any>): Promise<T[]>;
-  queryOne<T = any>(cypher: string, params?: Record<string, any>): Promise<T | null>;
-  
-  // QueryBuilder operations (preferred)
-  createQueryBuilder(): NeogmaQueryBuilder;
-  executeQueryBuilder<T = any>(queryBuilder: NeogmaQueryBuilder): Promise<T[]>;
-  executeQueryBuilderOne<T = any>(queryBuilder: NeogmaQueryBuilder): Promise<T | null>;
-  
-  // Transaction operations
-  transaction<T>(work: (tx: any) => Promise<T>): Promise<T>;
-  
-  // Health operations
-  healthCheck(): Promise<{ connected: boolean; latency?: number }>;
+  getRegisteredModels(): string[];
+
+  // High-level CRUD operations (our abstraction)
+  findById<T extends NeogmaEntity>(
+    modelName: string,
+    id: string
+  ): Promise<T | null>;
+  findMany<T extends NeogmaEntity>(
+    modelName: string,
+    options?: FindOptions<T>
+  ): Promise<T[]>;
+  create<T extends NeogmaEntity>(
+    modelName: string,
+    data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<T>;
+  update<T extends NeogmaEntity>(
+    modelName: string,
+    id: string,
+    updates: Partial<Omit<T, 'id' | 'createdAt'>>
+  ): Promise<T | null>;
+  delete<T extends NeogmaEntity>(
+    modelName: string,
+    id: string,
+    detach?: boolean
+  ): Promise<boolean>;
+  count<T extends NeogmaEntity>(
+    modelName: string,
+    where?: Partial<T>
+  ): Promise<number>;
+  exists<T extends NeogmaEntity>(
+    modelName: string,
+    id: string
+  ): Promise<boolean>;
+
+  // Direct Neogma access
+  run(cypher: string, params?: Record<string, any>): Promise<QueryResult>;
+  createQueryBuilder(): QueryBuilder;
+
+  // Connection management
+  verifyConnectivity(): Promise<void>;
+  close(): Promise<void>;
+
+  // Metrics
+  getMetrics(): NeogmaMetrics;
 }
 
 /**
- * Model registration interface
+ * Neogma query builder interface
+ * This re-exports the actual Neogma QueryBuilder type
  */
-export interface ModelRegistration<T extends NeogmaEntity> {
-  name: string;
-  schema: NeogmaModelSchema<T>;
-  relationships?: Record<string, TypedRelationshipConfig<any, any>>;
-}
+export type NeogmaQueryBuilder = QueryBuilder;
 
 /**
- * Schema definition for Neogma models
- */
-export interface NeogmaModelSchema<T extends NeogmaEntity> {
-  label: string;
-  properties: {
-    [K in keyof T]: {
-      type: 'string' | 'number' | 'boolean' | 'datetime' | 'array' | 'object';
-      required?: boolean;
-      default?: T[K];
-      unique?: boolean;
-      index?: boolean;
-    };
-  };
-  primaryKey?: keyof T;
-}
-
-/**
- * Error types for better error handling
+ * Error classes
  */
 export class NeogmaNotFoundError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'NeogmaNotFoundError';
-  }
-}
-
-export class NeogmaValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'NeogmaValidationError';
   }
 }
 
@@ -212,21 +174,36 @@ export class NeogmaConnectionError extends Error {
 }
 
 /**
- * Transaction context for proper transaction handling
+ * Type aliases for backward compatibility
  */
-export interface NeogmaTransactionContext {
-  id: string;
-  startTime: Date;
-  operations: number;
+export type TypedFindOptions<T> = FindOptions<T>;
+export type NeogmaInstanceType<T> = T & { toJson(): T };
+
+/**
+ * Configuration interfaces
+ */
+export interface TransactionConfig {
+  timeout?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface QueryExecutionOptions {
+  timeout?: number;
+  cache?: {
+    enabled: boolean;
+    ttl: number;
+  };
 }
 
 /**
- * Metrics interface for monitoring
+ * Repository interface for our @Repository decorator
  */
-export interface NeogmaMetrics {
-  totalQueries: number;
-  averageQueryTime: number;
-  activeConnections: number;
-  errorRate: number;
-  lastError?: Error;
+export interface NeogmaRepository<T extends NeogmaEntity = NeogmaEntity> {
+  findById(id: string): Promise<T | null>;
+  findAll(options?: FindOptions<T>): Promise<T[]>;
+  create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>;
+  update(id: string, data: Partial<T>): Promise<T | null>;
+  delete(id: string): Promise<boolean>;
+  count(where?: Partial<T>): Promise<number>;
+  exists(id: string): Promise<boolean>;
 }

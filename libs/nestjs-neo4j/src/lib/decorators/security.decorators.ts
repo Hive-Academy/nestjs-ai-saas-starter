@@ -10,8 +10,51 @@
  * - Multi-tenant isolation
  */
 
-import { SetMetadata } from '@nestjs/common';
+import {
+  SetMetadata,
+  type ExecutionContext,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { DECORATOR_METADATA_KEYS } from '../interfaces/decorator-metadata.interface';
+
+/**
+ * Authentication context interface for real user data
+ */
+export interface AuthContext {
+  /** Authenticated user ID */
+  readonly userId: string;
+  /** Tenant/organization ID for multi-tenancy */
+  readonly tenantId: string;
+  /** User roles for authorization */
+  readonly roles: string[];
+  /** User permissions for fine-grained access control */
+  readonly permissions: string[];
+  /** Client IP address for audit logging */
+  readonly ipAddress?: string;
+  /** Authentication timestamp */
+  readonly timestamp: Date;
+  /** User email for audit trails */
+  readonly userEmail?: string;
+  /** Organization name for context */
+  readonly organizationName?: string;
+  /** Session ID for tracking */
+  readonly sessionId?: string;
+}
+
+/**
+ * User interface from NestJS request context
+ */
+export interface RequestUser {
+  id: string;
+  userId?: string;
+  email?: string;
+  tenantId?: string;
+  organizationId?: string;
+  roles?: string[];
+  permissions?: string[];
+  tier?: 'free' | 'pro' | 'enterprise';
+}
 
 /**
  * Authorization configuration
@@ -605,18 +648,248 @@ class ValidationError extends Error {
   }
 }
 
-// Get current execution context
-async function getExecutionContext(instance: any): Promise<any> {
-  // In a real implementation, this would extract user context from request
-  // This is a simplified version
-  return {
-    userId: 'current-user-id',
-    tenantId: 'current-tenant-id',
-    roles: ['user'],
-    permissions: ['read', 'write'],
-    ipAddress: '127.0.0.1',
-    timestamp: new Date(),
+// Logger for security operations
+const securityLogger = new Logger('Neo4jSecurity');
+
+/**
+ * Extract real authentication context from NestJS ExecutionContext
+ *
+ * This function implements enterprise-grade authentication context extraction
+ * following the same patterns used in the ChromaDB multi-tenant system.
+ *
+ * @param instance - The service instance (contains execution context)
+ * @returns Promise<AuthContext> - Real user authentication context
+ * @throws UnauthorizedException - When authentication context is unavailable
+ */
+async function getExecutionContext(instance: any): Promise<AuthContext> {
+  try {
+    // Extract execution context from various sources
+    let executionContext: ExecutionContext | undefined;
+    let request: any;
+
+    // Strategy 1: Direct execution context (from guards/interceptors)
+    if (
+      instance.context &&
+      typeof instance.context.switchToHttp === 'function'
+    ) {
+      executionContext = instance.context;
+      request = executionContext?.switchToHttp().getRequest();
+    }
+    // Strategy 2: Request object directly attached
+    else if (instance.request || instance.req) {
+      request = instance.request || instance.req;
+    }
+    // Strategy 3: Look for context in method parameters or service injection
+    else if (instance.httpArgumentsHost) {
+      request = instance.httpArgumentsHost.getRequest();
+    }
+
+    if (!request) {
+      securityLogger.error('No request context available for authentication');
+      throw new UnauthorizedException(
+        'Request context not available for authentication'
+      );
+    }
+
+    // CWE-285 FIX: Real authentication context extraction (REQUIREMENT 2)
+    const user = await extractUserFromRequest(request);
+
+    if (!user) {
+      throw new UnauthorizedException('User authentication required');
+    }
+
+    // Validate required user fields
+    const userId = user.id || user.userId;
+    if (!userId) {
+      securityLogger.error('User ID missing from authenticated user context');
+      throw new UnauthorizedException('User ID is required for authentication');
+    }
+
+    // Extract tenant information (required for multi-tenancy)
+    const tenantId = await extractTenantFromUser(user, request);
+    if (!tenantId) {
+      securityLogger.warn(`No tenant context available for user ${userId}`);
+      throw new UnauthorizedException(
+        'Tenant context is required for authorization'
+      );
+    }
+
+    // Extract user permissions (from roles or direct permissions)
+    const permissions = await getUserPermissions(user);
+
+    // Extract client IP for audit logging
+    const ipAddress = extractClientIP(request);
+
+    // Extract session information
+    const sessionId =
+      request.sessionID || request.session?.id || `session_${Date.now()}`;
+
+    const authContext: AuthContext = {
+      userId,
+      tenantId,
+      roles: user.roles || [],
+      permissions,
+      ipAddress,
+      timestamp: new Date(),
+      userEmail: user.email,
+      organizationName: user.organizationId,
+      sessionId,
+    };
+
+    securityLogger.debug(
+      `Authentication context extracted for user ${userId} in tenant ${tenantId}`
+    );
+    return authContext;
+  } catch (error) {
+    if (error instanceof UnauthorizedException) {
+      throw error;
+    }
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    securityLogger.error(
+      `Authentication context extraction failed: ${errorMessage}`
+    );
+    throw new UnauthorizedException(
+      `Authentication context extraction failed: ${errorMessage}`
+    );
+  }
+}
+
+/**
+ * Extract tenant ID from authenticated user context
+ *
+ * @param user - Authenticated user object
+ * @param request - HTTP request object for additional context
+ * @returns Promise<string> - Tenant ID
+ */
+async function extractTenantFromUser(
+  user: RequestUser,
+  request: any
+): Promise<string | null> {
+  // Strategy 1: Direct tenant ID from user object
+  if (user.tenantId) {
+    return user.tenantId;
+  }
+
+  // Strategy 2: Organization ID as tenant ID
+  if (user.organizationId) {
+    return user.organizationId;
+  }
+
+  // Strategy 3: Extract from headers (for API keys or service-to-service calls)
+  const headerTenantId =
+    request.headers['x-tenant-id'] ||
+    request.headers['tenant-id'] ||
+    request.headers['X-Tenant-ID'];
+  if (headerTenantId) {
+    return String(headerTenantId);
+  }
+
+  // Strategy 4: Extract from query parameters (fallback)
+  const queryTenantId = request.query?.tenantId || request.query?.tenant_id;
+  if (queryTenantId) {
+    return String(queryTenantId);
+  }
+
+  return null;
+}
+
+/**
+ * Extract user permissions from roles and direct permissions
+ *
+ * @param user - Authenticated user object
+ * @returns Promise<string[]> - User permissions array
+ */
+async function getUserPermissions(user: RequestUser): Promise<string[]> {
+  const permissions = new Set<string>();
+
+  // Add direct permissions
+  if (Array.isArray(user.permissions)) {
+    user.permissions.forEach((permission) => permissions.add(permission));
+  }
+
+  // Add role-based permissions
+  if (Array.isArray(user.roles)) {
+    for (const role of user.roles) {
+      const rolePermissions = getRolePermissions(role);
+      rolePermissions.forEach((permission) => permissions.add(permission));
+    }
+  }
+
+  // Add tier-based permissions
+  if (user.tier) {
+    const tierPermissions = getTierPermissions(user.tier);
+    tierPermissions.forEach((permission) => permissions.add(permission));
+  }
+
+  return Array.from(permissions);
+}
+
+/**
+ * Get permissions associated with a role
+ *
+ * @param role - User role
+ * @returns string[] - Permissions for the role
+ */
+function getRolePermissions(role: string): string[] {
+  const rolePermissionMap: Record<string, string[]> = {
+    admin: [
+      'read',
+      'write',
+      'delete',
+      'manage_users',
+      'manage_tenants',
+      'admin',
+    ],
+    'user-manager': ['read', 'write', 'manage_users'],
+    editor: ['read', 'write'],
+    viewer: ['read'],
+    owner: ['read', 'write', 'delete', 'manage_users', 'admin'],
+    member: ['read', 'write'],
+    guest: ['read'],
   };
+
+  return rolePermissionMap[role.toLowerCase()] || [];
+}
+
+/**
+ * Get permissions associated with a subscription tier
+ *
+ * @param tier - Subscription tier
+ * @returns string[] - Permissions for the tier
+ */
+function getTierPermissions(tier: 'free' | 'pro' | 'enterprise'): string[] {
+  const tierPermissionMap: Record<string, string[]> = {
+    free: ['read', 'write'],
+    pro: ['read', 'write', 'advanced_queries', 'export'],
+    enterprise: [
+      'read',
+      'write',
+      'advanced_queries',
+      'export',
+      'admin',
+      'manage_tenants',
+    ],
+  };
+
+  return tierPermissionMap[tier] || [];
+}
+
+/**
+ * Extract client IP address from request
+ *
+ * @param request - HTTP request object
+ * @returns string - Client IP address
+ */
+function extractClientIP(request: any): string {
+  return (
+    request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    request.headers['x-real-ip'] ||
+    request.connection?.remoteAddress ||
+    request.socket?.remoteAddress ||
+    request.ip ||
+    '127.0.0.1'
+  );
 }
 
 // Authorization check
@@ -826,4 +1099,33 @@ function containsSuspiciousPatterns(input: string): boolean {
   ];
 
   return patterns.some((pattern) => pattern.test(input));
+}
+
+// CWE-285 FIX: Real authentication context extraction helper function (REQUIREMENT 2)
+
+/**
+ * Extract real user from request context
+ * This replaces placeholder implementation with actual NestJS authentication
+ */
+async function extractUserFromRequest(request: any): Promise<RequestUser> {
+  // Check multiple sources for user authentication
+  if (request.user) {
+    return request.user;
+  }
+
+  // Check JWT token in Authorization header
+  const authHeader = request.headers?.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    // In real implementation, verify JWT and extract user
+    throw new UnauthorizedException(
+      'JWT verification not implemented - requires real authentication service'
+    );
+  }
+
+  // Check session-based authentication
+  if (request.session?.user) {
+    return request.session.user;
+  }
+
+  throw new UnauthorizedException('No valid authentication found in request');
 }

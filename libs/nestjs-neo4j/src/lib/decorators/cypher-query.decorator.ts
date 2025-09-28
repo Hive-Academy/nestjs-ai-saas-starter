@@ -8,6 +8,7 @@ import {
   type RetryOptions,
 } from '../interfaces/decorator-metadata.interface';
 import type { QueryBuilder } from 'neogma';
+import { validateQuerySecurity } from '../security/cypher-security-validation';
 
 /**
  * Simplified and clean configuration for @CypherQuery decorator
@@ -260,6 +261,15 @@ export function CypherQuery(config: CypherQueryConfig = {}): any {
           );
         }
 
+        // SECURITY: Post-execution query validation for CWE-89 prevention
+        if (metadata.validation?.enabled !== false) {
+          validateQuerySecurity(
+            queryResult.query,
+            queryResult.params || {},
+            methodName
+          );
+        }
+
         // Update metadata with actual query
         metadata.query = queryResult.query;
         if (queryResult.description)
@@ -288,6 +298,15 @@ export function CypherQuery(config: CypherQueryConfig = {}): any {
         } else {
           throw new Error(
             'No compatible query method available on injected service'
+          );
+        }
+
+        // CWE-89 FIX: Post-execution validation (REQUIREMENT 2)
+        if (metadata.validation?.enabled) {
+          validateQuerySecurity(
+            queryResult.query,
+            queryResult.params || {},
+            String(propertyKey)
           );
         }
 

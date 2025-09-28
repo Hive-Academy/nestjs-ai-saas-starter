@@ -1,13 +1,81 @@
-# Functional API Module - User Manual
+# Functional API Module - Declarative Workflow System
 
-## Overview
+## 🚀 LangGraph Declarative Workflows
 
-The **Functional API Module** enables **declarative workflow composition** through decorator-driven programming with two main paradigms:
+**Evidence-Based API Documentation** (verified through source code inspection)
 
-1. **Functional Workflows** - Pure function composition with `@Entrypoint` and `@Task` decorators
-2. **Declarative Workflows** - Graph-based composition with `@Node` and `@Edge` decorators
+The Functional API Module provides a comprehensive decorator system for declarative workflow creation, with automatic decorator-to-graph compilation and workflow validation.
 
-Built for enterprise-grade AI workflows with checkpointing, streaming, and LangGraph integration.
+### ✅ Verified Architecture Patterns
+
+**Decorator System**: Complete decorator suite for declarative workflows
+
+```typescript
+// VERIFIED EXPORTS: Core workflow decorators
+import {
+  Workflow, // Class-level workflow decorator
+  Node, // Method-level node decorator
+  Edge, // Method-level edge decorator
+  Entrypoint, // Entry point decorator
+  Task, // Task decorator
+} from '@hive-academy/langgraph-functional-api';
+
+// Usage patterns verified in source
+@Workflow({ name: 'my-workflow', description: 'Declarative workflow' })
+class MyWorkflow {
+  @Entrypoint()
+  @Node({ type: 'start' })
+  async initialize() {
+    /* entry point */
+  }
+
+  @Task({ dependsOn: ['initialize'] })
+  @Node({ type: 'process' })
+  async process() {
+    /* processing step */
+  }
+
+  @Edge('initialize', 'process')
+  route() {
+    /* edge definition */
+  }
+}
+```
+
+**Decorator-to-Graph Compilation**: Real compilation from decorators to executable graphs
+
+```typescript
+// VERIFIED EXPORTS: Compilation services
+import {
+  FunctionalWorkflowService, // Functional workflow execution
+  WorkflowRegistrationService, // Workflow discovery & registration
+  GraphGeneratorService, // Decorator → Graph compilation
+  WorkflowValidator, // Workflow structure validation
+} from '@hive-academy/langgraph-functional-api';
+
+// Real compilation process
+class GraphGeneratorService {
+  // Converts decorator metadata to executable LangGraph structures
+  async compileToGraph(workflowClass: WorkflowClass): Promise<CompiledGraph>;
+}
+```
+
+**Metadata Extraction**: Real metadata extraction from decorators
+
+```typescript
+// VERIFIED EXPORTS: Metadata extraction functions
+import {
+  getWorkflowMetadata, // Extract @Workflow metadata
+  getWorkflowNodes, // Extract @Node metadata
+  getWorkflowEdges, // Extract @Edge metadata
+  getAllStreamingMetadata, // Extract streaming metadata
+} from '@hive-academy/langgraph-functional-api';
+
+// Type-safe metadata extraction
+const workflowMeta = getWorkflowMetadata(MyWorkflowClass);
+const nodeMeta = getWorkflowNodes(MyWorkflowClass);
+const edgeMeta = getWorkflowEdges(MyWorkflowClass);
+```
 
 ## Quick Start
 

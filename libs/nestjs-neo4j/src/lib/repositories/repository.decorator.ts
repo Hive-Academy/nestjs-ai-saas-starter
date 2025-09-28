@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 import 'reflect-metadata';
 import { SetMetadata, Injectable } from '@nestjs/common';
 import {
@@ -18,16 +19,17 @@ import {
   type DeleteOptions,
   type NeogmaModelInterface,
 } from './crud-operations';
-import { NeogmaService } from '../services/neogma.service';
-import type { NeogmaModel as BaseNeogmaModel } from 'neogma';
-import type { NeogmaModel } from '../types/neogma-types';
+import type { NeogmaModel, NeogmaEntity } from '../types/neogma-types';
+import type { NeogmaService } from '../core/neogma.service';
 
 /**
  * Configuration for the @Neo4jRepository decorator with enterprise-grade type safety
  */
-export interface Neo4jRepositoryConfig<TEntity extends Record<string, unknown> = Record<string, unknown>> {
+export interface Neo4jRepositoryConfig<
+  TEntity extends NeogmaEntity = NeogmaEntity
+> {
   /** Entity type this repository manages - properly typed for type safety */
-  entityType: () => new() => TEntity;
+  entityType: () => new () => TEntity;
   /** Neo4j label for the entity */
   label?: string;
   /** Custom connection name */
@@ -77,19 +79,23 @@ export interface Neo4jRepositoryConfig<TEntity extends Record<string, unknown> =
  * }
  * ```
  */
-export function Neo4jRepository<TEntity extends Record<string, unknown> = Record<string, unknown>>(
+export function Neo4jRepository<TEntity extends NeogmaEntity = NeogmaEntity>(
   config?: Neo4jRepositoryConfig<TEntity>
 ): ClassDecorator {
-  return (constructor: any) => {
+  return (constructor: Function) => {
     // Default configuration if none provided
-    const finalConfig = config || { entityType: () => Object };
+    const finalConfig: Neo4jRepositoryConfig<TEntity> = config || {
+      entityType: () => Object as unknown as new () => TEntity,
+    };
 
     // Validate configuration
-    validateRepositoryConfig(finalConfig);
+    validateRepositoryConfig(
+      finalConfig as Neo4jRepositoryConfig<NeogmaEntity>
+    );
 
     // Extract entity information
-    const entityType = finalConfig.entityType();
-    const label = finalConfig.label || getCrudEntityLabel(entityType);
+    const entityType = finalConfig.entityType;
+    const label = finalConfig.label || getCrudEntityLabel(entityType as any);
 
     // Create repository metadata
     const metadata: RepositoryConfig = {
@@ -124,7 +130,9 @@ export function Neo4jRepository<TEntity extends Record<string, unknown> = Record
     }
 
     // Enhance constructor to inject NeogmaService and model with proper generics
-    const newConstructor = class extends constructor {
+    const newConstructor = class extends (constructor as new (
+      ...args: any[]
+    ) => any) {
       protected neogmaService: NeogmaService;
       protected neogmaModel: NeogmaModel<TEntity>;
       protected entityLabel: string = label;
@@ -136,7 +144,7 @@ export function Neo4jRepository<TEntity extends Record<string, unknown> = Record
 
         // Find and inject NeogmaService from arguments
         this.neogmaService = this.findNeogmaService(args);
-        
+
         if (!this.neogmaService) {
           throw new Error(
             `NeogmaService not found in ${constructor.name}. ` +
@@ -146,7 +154,9 @@ export function Neo4jRepository<TEntity extends Record<string, unknown> = Record
 
         // For now, we'll need to get the model from the entity type
         // This requires the entity to define a static getModel() method
-        this.neogmaModel = this.getModelFromEntityType(entityType);
+        this.neogmaModel = this.getModelFromEntityType(
+          entityType
+        ) as unknown as NeogmaModel<TEntity>;
       }
 
       /**
@@ -155,9 +165,7 @@ export function Neo4jRepository<TEntity extends Record<string, unknown> = Record
       private findNeogmaService(args: any[]): NeogmaService {
         return args.find(
           (arg) =>
-            arg &&
-            arg.constructor &&
-            arg.constructor.name === 'NeogmaService'
+            arg && arg.constructor && arg.constructor.name === 'NeogmaService'
         );
       }
 
@@ -171,22 +179,24 @@ export function Neo4jRepository<TEntity extends Record<string, unknown> = Record
       /**
        * Get the Neogma model for this entity
        */
-      protected getNeogmaModel(): NeogmaModelInterface {
+      protected getNeogmaModel(): NeogmaModel<TEntity> {
         return this.neogmaModel;
       }
 
       /**
        * Get model from entity type - requires entity to have static getModel method
        */
-      private getModelFromEntityType(entityType: () => new() => TEntity): NeogmaModel<TEntity> {
+      private getModelFromEntityType(
+        entityType: () => new () => TEntity
+      ): NeogmaModelInterface {
         try {
           const entity = entityType();
-          
+
           // Try to get model from static method
-          if (entity && typeof entity.getModel === 'function') {
-            return entity.getModel();
+          if (entity && typeof (entity as any).getModel === 'function') {
+            return (entity as any).getModel();
           }
-          
+
           // Fallback: create a mock model interface
           return this.createMockModel(label);
         } catch (error) {
@@ -199,52 +209,86 @@ export function Neo4jRepository<TEntity extends Record<string, unknown> = Record
        */
       private createMockModel(labelName: string): NeogmaModelInterface {
         const service = this.neogmaService;
-        
+
         return {
-          async findOne(options: { where: Record<string, unknown> }): Promise<{ toJson(): Record<string, unknown> } | null> {
+          async findOne(options: {
+            where: Partial<NeogmaEntity>;
+          }): Promise<{ toJson(): Record<string, unknown> } | null> {
             // Use model operations when available, fallback to service
             try {
               const model = service.getModel(labelName);
               const instance = await model.findOne(options);
               return instance;
             } catch {
-              const result = await service.findById(labelName, options.where.id as string);
-              return result ? { toJson: () => result } : null;
+              const id = options.where.id;
+              if (typeof id === 'string') {
+                const result = await service.findById(labelName, id);
+                return result ? { toJson: () => result } : null;
+              }
+              return null;
             }
           },
-          
-          async findMany(options?: Record<string, unknown>): Promise<Array<{ toJson(): Record<string, unknown> }>> {
-            const results = await service.findMany(labelName, {
+
+          async findMany(options?: {
+            where?: Partial<NeogmaEntity>;
+            limit?: number;
+            skip?: number;
+            orderBy?: Array<{ [x: string]: 'ASC' | 'DESC' | undefined }>;
+          }): Promise<Array<{ toJson(): Record<string, unknown> }>> {
+            const findOptions = {
               where: options?.where,
               limit: options?.limit,
               skip: options?.skip,
-              orderBy: options?.orderBy
-            });
-            return results.map(result => ({ toJson: () => result }));
+              orderBy: options?.orderBy,
+            };
+            const results = await service.findMany(labelName, findOptions);
+            return results.map((result) => ({ toJson: () => result }));
           },
-          
-          async create(data: Record<string, unknown>): Promise<{ toJson(): Record<string, unknown> }> {
-            const result = await service.create(labelName, data);
+
+          async create(
+            data: Omit<NeogmaEntity, 'id' | 'createdAt' | 'updatedAt'>
+          ): Promise<{ toJson(): Record<string, unknown> }> {
+            const result = await service.create(labelName, data as any);
             return { toJson: () => result };
           },
-          
-          async update(data: Record<string, unknown>, options: { where: Record<string, unknown> }): Promise<{ toJson(): Record<string, unknown> } | null> {
-            const result = await service.update(labelName, options.where.id as string, data);
-            return result ? { toJson: () => result } : null;
+
+          async update(
+            data: Partial<Omit<NeogmaEntity, 'id' | 'createdAt'>>,
+            options: { where: Partial<NeogmaEntity> }
+          ): Promise<{ toJson(): Record<string, unknown> } | null> {
+            const id = options.where.id;
+            if (typeof id === 'string') {
+              const result = await service.update(labelName, id, data as any);
+              return result ? { toJson: () => result } : null;
+            }
+            return null;
           },
-          
-          async delete(options: { where: Record<string, unknown>; detach?: boolean }): Promise<number> {
-            const success = await service.delete(labelName, options.where.id as string, options.detach);
-            return success ? 1 : 0;
+
+          async delete(options: {
+            where: Partial<NeogmaEntity>;
+            detach?: boolean;
+          }): Promise<number> {
+            const id = options.where.id;
+            if (typeof id === 'string') {
+              const success = await service.delete(
+                labelName,
+                id,
+                options.detach
+              );
+              return success ? 1 : 0;
+            }
+            return 0;
           },
-          
-          async count(options?: { where?: Record<string, unknown> }): Promise<number> {
-            return await service.count(labelName, options?.where);
+
+          async count(options?: {
+            where?: Partial<NeogmaEntity>;
+          }): Promise<number> {
+            return await service.count(labelName, options?.where as any);
           },
-          
+
           getLabel(): string {
             return labelName;
-          }
+          },
         };
       }
     };
@@ -277,12 +321,10 @@ function addAutoGeneratedMethods(
   metadata: RepositoryConfig
 ): void {
   const prototype = constructor.prototype;
-  const entityType = metadata.entityType;
 
   // Auto-generate findById method using new CRUD operations
   if (!prototype.findById) {
     prototype.findById = async function (id: string): Promise<any> {
-      const neogmaService = this.getNeogmaService();
       const model = this.getNeogmaModel();
       return await findOne(model, id);
     };

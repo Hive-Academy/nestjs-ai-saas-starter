@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NeogmaService } from '../core/neogma.service';
-import type { NeogmaQueryBuilder } from '../types/neogma-types';
 import type { Neo4jQueryParams } from '../types/neo4j-types';
 
 /**
@@ -121,7 +120,20 @@ export class RelationshipRepository<
     params?: Neo4jQueryParams,
     options?: RepositoryQueryOptions
   ): Promise<R[]> {
-    return await this.neogmaService.query<R>(cypher, params);
+    const queryResult = await this.neogmaService.query(cypher, params);
+    return queryResult.records.map((record) => {
+      // Extract the relationship from the record
+      const keys = record.keys;
+      if (keys.length === 1) {
+        return record.get(keys[0]) as R;
+      }
+      // If multiple keys, return an object with all values
+      const result: any = {};
+      keys.forEach((key) => {
+        result[key] = record.get(key);
+      });
+      return result as R;
+    });
   }
 
   /**
@@ -179,20 +191,25 @@ export class RelationshipRepository<
     if (options?.includeSource) returnVars.push('source');
     if (options?.includeTarget) returnVars.push('target');
 
-    // Use Neogma QueryBuilder for type-safe relationship creation
-    const queryBuilder: NeogmaQueryBuilder = this.neogmaService.createQueryBuilder()
-      .raw(`MATCH (source:${sourceLabel} {id: $sourceId})`)
-      .raw(`MATCH (target:${targetLabel} {id: $targetId})`)
-      .raw(`CREATE (source)-[rel:${this.relationshipType} $properties]->(target)`)
-      .return(returnVars.join(', '));
+    // Use raw Cypher for relationship creation
+    const cypher = `
+      MATCH (source:${sourceLabel} {id: $sourceId})
+      MATCH (target:${targetLabel} {id: $targetId})
+      CREATE (source)-[rel:${this.relationshipType} $properties]->(target)
+      RETURN ${returnVars.join(', ')}
+    `;
 
-    const result = await this.neogmaService.executeQueryBuilder(queryBuilder.addParams({ sourceId: data.sourceId, targetId: data.targetId, properties: relationshipData }));
+    const queryResult = await this.neogmaService.query(cypher, {
+      sourceId: data.sourceId,
+      targetId: data.targetId,
+      properties: relationshipData,
+    });
 
-    if (!result || result.length === 0) {
+    if (!queryResult.records || queryResult.records.length === 0) {
       throw new Error(`Failed to create relationship ${this.relationshipType}`);
     }
 
-    const record = result[0];
+    const record = queryResult.records[0];
     return this.buildRelationshipResult(record, options);
   }
 
@@ -203,32 +220,28 @@ export class RelationshipRepository<
     sourceId: string,
     options?: RelationshipQueryOptions
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
-    const builder = this.neogmaService.createQueryBuilder().raw(
-      `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})`
-    );
+    // Build cypher query
+    let cypher = `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})`;
 
     // Apply soft delete filter
     if (!options?.includeSoftDeleted) {
-      builder.where('rel.deletedAt', '=', null);
+      cypher += ` WHERE rel.deletedAt IS NULL`;
     }
 
     // Build return clause based on options
     const returnVars = ['rel'];
     if (options?.includeSource) returnVars.push('source');
     if (options?.includeTarget) returnVars.push('target');
-    builder.return(returnVars);
+    cypher += ` RETURN ${returnVars.join(', ')}`;
 
-    const queryResult = builder.build();
-    const result = await this.executeQuery(
-      queryResult.query,
-      queryResult.params,
-      options
-    );
-    return (
-      result?.map((record: Record<string, any>) =>
-        this.buildRelationshipResult(record, options)
-      ) || []
-    );
+    const queryResult = await this.neogmaService.query(cypher, { sourceId });
+    return queryResult.records.map((record) => {
+      const result: Record<string, any> = {};
+      record.keys.forEach((key) => {
+        result[key as string] = record.get(key);
+      });
+      return this.buildRelationshipResult(result, options);
+    });
   }
 
   /**
@@ -238,32 +251,28 @@ export class RelationshipRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
-    const builder = this.neogmaService.createQueryBuilder().raw(
-      `MATCH (source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build cypher query
+    let cypher = `MATCH (source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`;
 
     // Apply soft delete filter
     if (!options?.includeSoftDeleted) {
-      builder.where('rel.deletedAt', '=', null);
+      cypher += ` WHERE rel.deletedAt IS NULL`;
     }
 
     // Build return clause based on options
     const returnVars = ['rel'];
     if (options?.includeSource) returnVars.push('source');
     if (options?.includeTarget) returnVars.push('target');
-    builder.return(returnVars);
+    cypher += ` RETURN ${returnVars.join(', ')}`;
 
-    const queryResult = builder.build();
-    const result = await this.executeQuery(
-      queryResult.query,
-      queryResult.params,
-      options
-    );
-    return (
-      result?.map((record: Record<string, any>) =>
-        this.buildRelationshipResult(record, options)
-      ) || []
-    );
+    const queryResult = await this.neogmaService.query(cypher, { targetId });
+    return queryResult.records.map((record) => {
+      const result: Record<string, any> = {};
+      record.keys.forEach((key) => {
+        result[key as string] = record.get(key);
+      });
+      return this.buildRelationshipResult(result, options);
+    });
   }
 
   /**
@@ -307,29 +316,41 @@ export class RelationshipRepository<
     const updateData = this.mapToNeo4j(updates);
     updateData.updatedAt = new Date().toISOString();
 
-    const builder = this.neogmaService.createQueryBuilder().raw(
-      `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build cypher query
+    let cypher = `MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`;
 
     // Apply soft delete filter
     if (!options?.includeSoftDeleted) {
-      builder.where('rel.deletedAt', '=', null);
+      cypher += ` WHERE rel.deletedAt IS NULL`;
     }
 
     // Add SET clause
-    builder.set(updateData);
+    const setClause = Object.keys(updateData)
+      .map((key) => `rel.${key} = $${key}`)
+      .join(', ');
+    cypher += ` SET ${setClause}`;
 
     // Build return clause based on options
     const returnVars = ['rel'];
     if (options?.includeSource) returnVars.push('source');
     if (options?.includeTarget) returnVars.push('target');
-    builder.return(returnVars);
+    cypher += ` RETURN ${returnVars.join(', ')}`;
 
-    const result = await this.neogmaService.executeQueryBuilder(builder.addParams({ sourceId, targetId }));
+    const queryResult = await this.neogmaService.query(cypher, {
+      sourceId,
+      targetId,
+      ...updateData,
+    });
 
-    return result && result.length > 0
-      ? this.buildRelationshipResult(result[0], options)
-      : null;
+    if (queryResult.records.length > 0) {
+      const result: Record<string, any> = {};
+      const record = queryResult.records[0];
+      record.keys.forEach((key) => {
+        result[key as string] = record.get(key);
+      });
+      return this.buildRelationshipResult(result, options);
+    }
+    return null;
   }
 
   /**

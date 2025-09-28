@@ -12,11 +12,8 @@ export { NeogmaService } from './lib/core/neogma.service';
 export { NeogmaMetricsService } from './lib/services/neogma-metrics.service';
 export { NeogmaConnectionService } from './lib/services/neogma-connection.service';
 
-// ==================== LEGACY SERVICES (DEPRECATED) ====================
-// Use these only for gradual migration from existing code
-
-export { Neo4jService } from './lib/services/neo4j.service';
-// Legacy services removed - use NeogmaConnectionService and NeogmaMetricsService instead
+// ==================== SERVICE CONSOLIDATION COMPLETE ====================
+// Single authoritative service implementation per TASK_2025_013 Requirement 5
 
 // ==================== MODERN NEOGMA INTEGRATION ====================
 // Modern decorators and utilities for Neogma integration
@@ -25,11 +22,28 @@ export { InjectNeogma } from './lib/neogma/neogma.decorators';
 export type * from './lib/neogma/neogma.interfaces';
 export * from './lib/neogma/neogma.constants';
 
-// Interfaces - temporarily disabled due to build configuration issue
-// export type { Neo4jModuleOptions } from './lib/interfaces/neo4j-module-options.interface';
-// Temporarily disabled due to build configuration issue
-// export type * from './lib/interfaces/neo4j-connection.interface';
-// export type { QueryResult, QueryOptions, QueryMetrics } from './lib/interfaces/query-result.interface';
+// Interfaces - Re-enabled to restore type safety
+export type {
+  Neo4jModuleOptions,
+  Neo4jModuleAsyncOptions,
+  Neo4jConfig,
+  Neo4jModuleOptionsFactory,
+} from './lib/interfaces/neo4j-module-options.interface';
+export type * from './lib/interfaces/neo4j-connection.interface';
+export type {
+  QueryResult,
+  QueryOptions,
+  QueryMetrics,
+  QueryProfile,
+  QueryPlanStep,
+  QueryNotification,
+  BaseQueryResult,
+  BulkOperation,
+  BulkResult,
+  HealthIndicator,
+  ConnectionPoolMetrics,
+  ComprehensiveMetrics,
+} from './lib/interfaces/query-result.interface';
 
 // Core Type Definitions
 export type * from './lib/types/neo4j-types';
@@ -77,7 +91,10 @@ export {
   UpdatedAt,
   JsonProperty,
 } from './lib/decorators/entity.decorator';
-export type * from './lib/interfaces/decorator-metadata.interface';
+export type {
+  RepositoryConfig,
+  DECORATOR_METADATA_KEYS,
+} from './lib/interfaces/decorator-metadata.interface';
 
 // Security & Validation Decorators
 export {
@@ -109,6 +126,7 @@ export {
   PropUnique,
   UniqueConstraints,
   Validate,
+  Unique,
 } from './lib/constraints';
 
 // Multi-Tenancy Support
@@ -132,7 +150,6 @@ export {
 } from './lib/repositories/relationship-repository';
 
 // Utils
-export * from './lib/utils/query-builder';
 export * from './lib/utils/parameter-serializer';
 
 // Query Builder types are now exported above in the main Neogma integration section

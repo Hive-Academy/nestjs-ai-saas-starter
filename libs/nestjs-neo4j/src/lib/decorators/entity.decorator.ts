@@ -786,7 +786,11 @@ function createNeogmaModel(
 
   // Process properties
   properties.forEach((propertyMapping, key) => {
-    if (typeof key === 'string') {
+    if (
+      typeof key === 'string' &&
+      key !== undefined &&
+      propertyMapping.neo4jName
+    ) {
       neogmaSchema[propertyMapping.neo4jName] = {
         type: propertyMapping.serialized
           ? 'string'
@@ -809,7 +813,7 @@ function createNeogmaModel(
               model: relationshipMapping.propertiesType,
             }
           : undefined,
-      };
+      } as any;
     }
   });
 
@@ -827,7 +831,7 @@ function createNeogmaModel(
   Reflect.defineMetadata('NEOGMA_MODEL_CONFIG', neogmaModelConfig, constructor);
 
   // Store model token for dependency injection
-  const modelToken = getModelToken(constructor.name);
+  const modelToken = `${constructor.name}Model`;
   Reflect.defineMetadata('NEOGMA_MODEL_TOKEN', modelToken, constructor);
 
   // Add static method to get Neogma model configuration

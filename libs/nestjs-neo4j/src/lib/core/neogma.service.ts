@@ -1,50 +1,47 @@
 /**
- * Pure NeogmaService - Clean, modern implementation
+ * NeogmaService - Proper Neogma 1.14.1 Integration
  *
- * This service provides a clean, type-safe interface to Neo4j through Neogma.
- * Uses only Neogma's native features - no legacy patterns or raw Cypher.
+ * This service provides a clean interface to Neo4j through the actual Neogma library.
+ * Uses real Neogma API patterns and QueryBuilder, not custom abstractions.
  */
 
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import type { Record as Neo4jRecord } from 'neo4j-driver';
+import type { Neogma } from 'neogma';
+import { QueryBuilder } from 'neogma';
 import { NEOGMA_TOKEN } from '../constants/neogma.constants';
 import {
   type NeogmaEntity,
   type TypedNeogmaModel,
-  type NeogmaService as INeogmaService,
-  type NeogmaTransactionContext,
+  type INeogmaService,
   type NeogmaMetrics,
-  type Neogma,
-  type NeogmaInstanceType,
-  type NeogmaQueryBuilder,
-  NeogmaNotFoundError
+  type FindOptions,
+  type QueryResult,
+  type NeogmaModelInterface,
+  NeogmaNotFoundError,
 } from '../types/neogma-types';
 
 /**
- * Pure NeogmaService implementation
+ * NeogmaService - Bridge between our high-level API and real Neogma
  */
 @Injectable()
 export class NeogmaService implements INeogmaService {
   private readonly logger = new Logger(NeogmaService.name);
-  private readonly models = new Map<string, TypedNeogmaModel<any>>();
+  private readonly models = new Map<string, NeogmaModelInterface>();
 
   // Metrics tracking
   private metrics: NeogmaMetrics = {
     totalQueries: 0,
     averageQueryTime: 0,
     activeConnections: 0,
-    errorRate: 0
+    errorRate: 0,
   };
 
-  constructor(
-    @Inject(NEOGMA_TOKEN) private readonly neogma: Neogma
-  ) {
-  }
+  constructor(@Inject(NEOGMA_TOKEN) private readonly neogma: Neogma) {}
 
   // ==================== MODEL MANAGEMENT ====================
 
   /**
-   * Register a typed Neogma model
+   * Register a model interface for our high-level API
    */
   registerModel<T extends NeogmaEntity>(
     name: string,
@@ -55,7 +52,7 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Get a typed Neogma model
+   * Get a registered model
    */
   getModel<T extends NeogmaEntity>(modelName: string): TypedNeogmaModel<T> {
     const model = this.models.get(modelName);
@@ -72,10 +69,10 @@ export class NeogmaService implements INeogmaService {
     return Array.from(this.models.keys());
   }
 
-  // ==================== ENTITY OPERATIONS ====================
+  // ==================== HIGH-LEVEL CRUD OPERATIONS ====================
 
   /**
-   * Find entity by ID using proper Neogma model
+   * Find entity by ID using the model interface
    */
   async findById<T extends NeogmaEntity>(
     modelName: string,
@@ -84,7 +81,9 @@ export class NeogmaService implements INeogmaService {
     const startTime = Date.now();
     try {
       const model = this.getModel<T>(modelName);
-      const instance = await model.findOne({ where: { id } as Partial<T> });
+      const instance = await model.findOne({
+        where: { id } as Partial<NeogmaEntity>,
+      });
 
       const result = instance ? this.extractEntityData<T>(instance) : null;
       this.recordMetrics(Date.now() - startTime, false);
@@ -98,23 +97,20 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Find multiple entities using Neogma model
+   * Find multiple entities using the model interface
    */
   async findMany<T extends NeogmaEntity>(
     modelName: string,
-    options?: {
-      where?: Partial<T>;
-      limit?: number;
-      skip?: number;
-      orderBy?: Array<{ [K in keyof T]?: 'ASC' | 'DESC' }>;
-    }
+    options?: FindOptions<T>
   ): Promise<T[]> {
     const startTime = Date.now();
     try {
       const model = this.getModel<T>(modelName);
-      const instances = await model.findMany(options);
+      const instances = await model.findMany(options as any);
 
-      const results = instances.map((instance: any) => this.extractEntityData<T>(instance));
+      const results = instances.map((instance: any) =>
+        this.extractEntityData<T>(instance)
+      );
       this.recordMetrics(Date.now() - startTime, false);
 
       return results;
@@ -126,7 +122,7 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Create entity using Neogma model
+   * Create entity using the model interface
    */
   async create<T extends NeogmaEntity>(
     modelName: string,
@@ -136,15 +132,15 @@ export class NeogmaService implements INeogmaService {
     try {
       const model = this.getModel<T>(modelName);
 
-      // Add automatic fields that Neogma expects
+      // Add automatic fields
       const entityData = {
         ...data,
         id: this.generateId(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as any;
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      const instance = await model.create(entityData);
+      const instance = await model.create(entityData as any);
       const result = this.extractEntityData<T>(instance);
 
       this.recordMetrics(Date.now() - startTime, false);
@@ -159,7 +155,7 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Update entity using Neogma model
+   * Update entity using the model interface
    */
   async update<T extends NeogmaEntity>(
     modelName: string,
@@ -173,10 +169,12 @@ export class NeogmaService implements INeogmaService {
       // Add automatic updatedAt
       const updateData = {
         ...updates,
-        updatedAt: new Date().toISOString()
-      } as Partial<T>;
+        updatedAt: new Date(),
+      };
 
-      const instance = await model.update(updateData, { where: { id } as Partial<T> });
+      const instance = await model.update(updateData as any, {
+        where: { id } as any,
+      });
       const result = instance ? this.extractEntityData<T>(instance) : null;
 
       this.recordMetrics(Date.now() - startTime, false);
@@ -191,22 +189,25 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Delete entity using Neogma model
+   * Delete entity using the model interface
    */
-  async delete(modelName: string, id: string, detach = true): Promise<boolean> {
+  async delete<T extends NeogmaEntity>(
+    modelName: string,
+    id: string,
+    detach = true
+  ): Promise<boolean> {
     const startTime = Date.now();
     try {
-      const model = this.getModel(modelName);
-      const deletedCount = await model.delete({
-        where: { id } as any,
-        detach
+      const model = this.getModel<T>(modelName);
+      const result = await model.delete({
+        where: { id } as Partial<NeogmaEntity>,
+        detach,
       });
 
-      const success = deletedCount > 0;
       this.recordMetrics(Date.now() - startTime, false);
-      this.logger.debug(`Deleted entity from ${modelName}: ${id} (success: ${success})`);
+      this.logger.debug(`Deleted entity in ${modelName}: ${id}`);
 
-      return success;
+      return result > 0;
     } catch (error) {
       this.recordMetrics(Date.now() - startTime, true);
       this.handleError(error, `delete(${modelName}, ${id})`);
@@ -215,7 +216,7 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Count entities using Neogma model
+   * Count entities using the model interface
    */
   async count<T extends NeogmaEntity>(
     modelName: string,
@@ -224,10 +225,10 @@ export class NeogmaService implements INeogmaService {
     const startTime = Date.now();
     try {
       const model = this.getModel<T>(modelName);
-      const count = await model.count(where ? { where } : undefined);
+      const result = await model.count({ where: where as any });
 
       this.recordMetrics(Date.now() - startTime, false);
-      return count;
+      return result;
     } catch (error) {
       this.recordMetrics(Date.now() - startTime, true);
       this.handleError(error, `count(${modelName})`);
@@ -236,134 +237,79 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Check if entity exists using Neogma model
+   * Check if entity exists using the model interface
    */
-  async exists(modelName: string, id: string): Promise<boolean> {
-    const count = await this.count(modelName, { id } as any);
-    return count > 0;
+  async exists<T extends NeogmaEntity>(
+    modelName: string,
+    id: string
+  ): Promise<boolean> {
+    const result = await this.findById<T>(modelName, id);
+    return result !== null;
   }
 
-  // ==================== QUERY OPERATIONS ====================
+  // ==================== DIRECT NEOGMA ACCESS ====================
 
   /**
-   * Execute raw query when absolutely necessary
-   * Note: Use model operations instead when possible
+   * Run raw Cypher query using Neogma's QueryRunner
    */
-  async query<T = Record<string, unknown>>(cypher: string, params?: Record<string, unknown>): Promise<T[]> {
+  async run(
+    cypher: string,
+    params: Record<string, any> = {}
+  ): Promise<QueryResult> {
     const startTime = Date.now();
     try {
-      this.logger.warn('Using raw query - consider using model operations instead');
-
       const result = await this.neogma.queryRunner.run(cypher, params);
-      const records = result.records.map((record: Neo4jRecord) => record.toObject() as T);
+
+      const queryResult: QueryResult = {
+        records: result.records,
+        summary: result.summary,
+        metrics: {
+          executionTime: Date.now() - startTime,
+          recordCount: result.records.length,
+        },
+      };
 
       this.recordMetrics(Date.now() - startTime, false);
-      return records;
+      return queryResult;
     } catch (error) {
       this.recordMetrics(Date.now() - startTime, true);
-      this.handleError(error, `query(${cypher.substring(0, 50)}...)`);
+      this.handleError(error, `run(${cypher})`);
       throw error;
     }
   }
 
   /**
-   * Execute query for single result
+   * Create a Neogma QueryBuilder instance
    */
-  async queryOne<T = Record<string, unknown>>(cypher: string, params?: Record<string, unknown>): Promise<T | null> {
-    const results = await this.query<T>(cypher, params);
-    return results.length > 0 ? results[0] : null;
+  createQueryBuilder(): QueryBuilder {
+    return new QueryBuilder();
   }
 
-  // ==================== QUERY BUILDER OPERATIONS ====================
+  // ==================== CONNECTION MANAGEMENT ====================
 
   /**
-   * Create a new QueryBuilder instance with proper Neogma integration
+   * Verify Neo4j connectivity
    */
-  createQueryBuilder(): NeogmaQueryBuilder {
-    const queryBuilder = new (this.neogma.constructor as any).QueryBuilder();
-    // Set the queryRunner to use our Neogma instance
-    queryBuilder.queryRunner = this.neogma.queryRunner;
-    return queryBuilder;
-  }
-
-  /**
-   * Execute a QueryBuilder instance and return typed results
-   */
-  async executeQueryBuilder<T = Record<string, unknown>>(queryBuilder: NeogmaQueryBuilder): Promise<T[]> {
-    const startTime = Date.now();
+  async verifyConnectivity(): Promise<void> {
     try {
-      this.logger.debug('Executing QueryBuilder query');
-      
-      const result = await queryBuilder.run();
-      const records = result.records.map((record: Neo4jRecord) => record.toObject() as T);
-
-      this.recordMetrics(Date.now() - startTime, false);
-      this.logger.debug(`QueryBuilder executed successfully with ${records.length} results`);
-      
-      return records;
+      await this.neogma.verifyConnectivity();
+      this.logger.log('Neo4j connectivity verified');
     } catch (error) {
-      this.recordMetrics(Date.now() - startTime, true);
-      this.handleError(error, 'executeQueryBuilder');
+      this.logger.error('Neo4j connectivity failed:', error);
       throw error;
     }
   }
 
   /**
-   * Execute a QueryBuilder and return single result
+   * Close Neogma connection
    */
-  async executeQueryBuilderOne<T = Record<string, unknown>>(queryBuilder: NeogmaQueryBuilder): Promise<T | null> {
-    const results = await this.executeQueryBuilder<T>(queryBuilder);
-    return results.length > 0 ? results[0] : null;
-  }
-
-  // ==================== TRANSACTION OPERATIONS ====================
-
-  /**
-   * Execute operations in transaction using Neogma
-   */
-  async transaction<T>(work: (context: NeogmaTransactionContext) => Promise<T>): Promise<T> {
-    const startTime = Date.now();
-    const context: NeogmaTransactionContext = {
-      id: this.generateId(),
-      startTime: new Date(),
-      operations: 0
-    };
-
+  async close(): Promise<void> {
     try {
-      this.logger.debug(`Starting transaction: ${context.id}`);
-
-      const result = await (this.neogma as any).queryRunner.executeWrite(async () => {
-        // Execute work with transaction context
-        return await work(context);
-      });
-
-      this.recordMetrics(Date.now() - startTime, false);
-      this.logger.debug(`Transaction completed: ${context.id} (${context.operations} operations)`);
-
-      return result;
+      await this.neogma.driver.close();
+      this.logger.log('Neo4j connection closed');
     } catch (error) {
-      this.recordMetrics(Date.now() - startTime, true);
-      this.logger.error(`Transaction failed: ${context.id} - ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.logger.error('Error closing Neo4j connection:', error);
       throw error;
-    }
-  }
-
-  // ==================== HEALTH & METRICS ====================
-
-  /**
-   * Health check using Neogma
-   */
-  async healthCheck(): Promise<{ connected: boolean; latency?: number; error?: string }> {
-    const startTime = Date.now();
-    try {
-      // Simple connectivity test
-      await (this.neogma as any).queryRunner.run('RETURN 1 as test');
-      const latency = Date.now() - startTime;
-
-      return { connected: true, latency };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return { connected: false, error: errorMessage };
     }
   }
 
@@ -374,34 +320,68 @@ export class NeogmaService implements INeogmaService {
     return { ...this.metrics };
   }
 
+  // ==================== TRANSACTION HELPERS ====================
+
   /**
-   * Clear metrics
+   * Run operations in a transaction
    */
-  clearMetrics(): void {
-    this.metrics = {
-      totalQueries: 0,
-      averageQueryTime: 0,
-      activeConnections: 0,
-      errorRate: 0
-    };
-    this.logger.debug('Metrics cleared');
+  async runInTransaction<T>(
+    operation: (queryRunner: any) => Promise<T>
+  ): Promise<T> {
+    return this.neogma.getTransaction(null, async (tx) => {
+      return operation(tx);
+    });
   }
 
   /**
-   * Get underlying Neogma instance (use sparingly)
+   * Run operations in a write session
    */
-  getNeogma(): Neogma {
-    this.logger.warn('Direct Neogma access - ensure you know what you\'re doing');
-    return this.neogma;
+  async write<T>(operation: (session: any) => Promise<T>): Promise<T> {
+    return this.neogma.getSession(null, async (session) => {
+      return operation(session);
+    });
+  }
+
+  /**
+   * Run operations in a read session
+   */
+  async read<T>(operation: (session: any) => Promise<T>): Promise<T> {
+    return this.neogma.getSession(null, async (session) => {
+      return operation(session);
+    });
+  }
+
+  /**
+   * Alias for run() method - for backward compatibility
+   */
+  async query(
+    cypher: string,
+    params: Record<string, any> = {}
+  ): Promise<QueryResult> {
+    return this.run(cypher, params);
+  }
+
+  /**
+   * Run operations in a transaction - alias for runInTransaction
+   */
+  async transaction<T>(operation: (tx: any) => Promise<T>): Promise<T> {
+    return this.runInTransaction(operation);
   }
 
   // ==================== PRIVATE HELPERS ====================
 
   /**
-   * Extract entity data from Neogma instance
+   * Extract entity data from model instance
    */
-  private extractEntityData<T extends NeogmaEntity>(instance: NeogmaInstanceType<T>): T {
-    return instance.toJson();
+  private extractEntityData<T extends NeogmaEntity>(instance: any): T {
+    // Handle different types of model instance returns
+    if (instance && typeof instance.toJson === 'function') {
+      return instance.toJson();
+    }
+    if (instance && typeof instance === 'object') {
+      return instance as T;
+    }
+    return instance;
   }
 
   /**
@@ -414,30 +394,32 @@ export class NeogmaService implements INeogmaService {
   /**
    * Record operation metrics
    */
-  private recordMetrics(executionTime: number, failed: boolean): void {
+  private recordMetrics(duration: number, isError: boolean): void {
     this.metrics.totalQueries++;
 
     // Update average query time
-    const totalTime = this.metrics.averageQueryTime * (this.metrics.totalQueries - 1) + executionTime;
-    this.metrics.averageQueryTime = totalTime / this.metrics.totalQueries;
+    this.metrics.averageQueryTime =
+      (this.metrics.averageQueryTime * (this.metrics.totalQueries - 1) +
+        duration) /
+      this.metrics.totalQueries;
 
     // Update error rate
-    if (failed) {
-      const totalErrors = Math.floor(this.metrics.errorRate * this.metrics.totalQueries / 100) + 1;
-      this.metrics.errorRate = (totalErrors / this.metrics.totalQueries) * 100;
+    if (isError) {
+      this.metrics.errorRate =
+        (this.metrics.errorRate * (this.metrics.totalQueries - 1) + 1) /
+        this.metrics.totalQueries;
     } else {
-      const totalErrors = Math.floor(this.metrics.errorRate * this.metrics.totalQueries / 100);
-      this.metrics.errorRate = (totalErrors / this.metrics.totalQueries) * 100;
+      this.metrics.errorRate =
+        (this.metrics.errorRate * (this.metrics.totalQueries - 1)) /
+        this.metrics.totalQueries;
     }
   }
 
   /**
-   * Handle and log errors consistently
+   * Handle and log errors
    */
   private handleError(error: any, operation: string): void {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    this.logger.error(`Operation failed [${operation}]: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
-
-    this.metrics.lastError = error instanceof Error ? error : new Error(String(error));
+    this.logger.error(`Error in ${operation}:`, error.message);
+    this.metrics.lastError = error.message;
   }
 }
