@@ -8,7 +8,7 @@
 import { Logger } from '@nestjs/common';
 import type { Where, WhereDocument } from 'chromadb';
 import type { BaseDocument } from '../../types/core.interface';
-import type { ChromaDBService } from '../../services/chromadb.service';
+// import type { ChromaDBService } from '../../services/chromadb.service'; // TODO: Re-enable when used
 import type {
   ChromaRepositoryConfig,
   ChromaRepository,
@@ -43,15 +43,15 @@ export class RepositoryImplementation<
 
   constructor(
     private readonly config: ChromaRepositoryConfig,
-    private readonly _chromaService: ChromaDBService
+    private readonly chromaService?: any // TODO: Type properly when implementation is complete
   ) {
     // Validate configuration
     repositoryValidator.validateCollection(config.collection);
 
     // Initialize specialized operation handlers
-    this.crudOps = new CrudOperations(config, _chromaService);
-    this.searchOps = new SearchOperations(config, _chromaService);
-    this.aggregationOps = new AggregationOperations(config, _chromaService);
+    this.crudOps = new CrudOperations(config, this.chromaService);
+    this.searchOps = new SearchOperations(config, this.chromaService);
+    this.aggregationOps = new AggregationOperations(config, this.chromaService);
   }
 
   // =====================================================================

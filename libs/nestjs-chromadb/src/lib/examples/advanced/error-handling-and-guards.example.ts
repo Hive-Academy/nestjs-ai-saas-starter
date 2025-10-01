@@ -13,7 +13,7 @@ export class ErrorGuardsExampleService implements OnModuleInit {
  private readonly logger = new Logger(ErrorGuardsExampleService.name);
 
  // Example of custom checker built on top of library guard utilities
- private readonly embeddingChecker = createTypeChecker<number[]>(
+ private readonly embeddingChecker: { assert: (value: unknown, context: string) => asserts value is number[] } = createTypeChecker<number[]>(
    'embeddingVector',
    (v: unknown): v is number[] =>
      Array.isArray(v) && v.length > 0 && v.every((n) => typeof n === 'number' && Number.isFinite(n)),

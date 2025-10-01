@@ -33,7 +33,7 @@ export class ConfigForRootAsyncExampleService implements OnModuleInit {
        // In real apps, read from ConfigService/ENV; kept deterministic for examples
        return {
          connection: { host: 'localhost', port: 8000 },
-         performance: { enabled: true },
+         performance: { caching: true, monitoring: true },
        };
      },
    }),

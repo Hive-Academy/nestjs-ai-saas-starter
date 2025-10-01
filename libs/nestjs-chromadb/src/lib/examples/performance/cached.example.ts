@@ -28,17 +28,17 @@ export class CachedExampleService implements OnModuleInit {
    try {
      const first = await this.getDocumentById(collection, 'd-1');
       
-     console.log('Cached example - first fetch (uncached):', first ? 'found' : 'missing', first?.id ?? null);
+     console.log('Cached example - first fetch (uncached):', first ? 'found' : 'missing', first?.id ?? 'no-id');
 
      const second = await this.getDocumentById(collection, 'd-1');
       
-     console.log('Cached example - second fetch (should be cached):', second ? 'found' : 'missing', second?.id ?? null);
+     console.log('Cached example - second fetch (should be cached):', second ? 'found' : 'missing', second?.id ?? 'no-id');
 
      await this.invalidateDocumentCache(collection, 'd-1');
 
      const third = await this.getDocumentById(collection, 'd-1');
       
-     console.log('Cached example - after invalidation (refreshed):', third ? 'found' : 'missing', third?.id ?? null);
+     console.log('Cached example - after invalidation (refreshed):', third ? 'found' : 'missing', third?.id ?? 'no-id');
    } catch (err) {
      const unknownErr = err as unknown;
      const errMsg =
@@ -52,22 +52,23 @@ export class CachedExampleService implements OnModuleInit {
 
  @Cached({
    ttl: 60_000,
-   key: (args: any[]) => `cached:doc:${args[0]}:${args[1]}`,
+   keyGenerator: (...args: any[]) => `cached:doc:${args[0]}:${args[1]}`,
  })
  async getDocumentById(collectionName: string, id: string) {
    const result = await this.chroma.getDocuments(collectionName, { ids: [id] });
    // Chroma returns GetResult shape; return first document (or null)
    const documents = result.documents?.[0] ?? [];
-   return documents[0] ?? null;
+   const documentContent = documents[0] ?? null;
+   
+   // Return an object with id and content for consistency
+   return documentContent ? { id, content: documentContent } : null;
  }
 
  /**
   * Invalidate the cache for a specific document key after an update.
   * Uses the exported InvalidateCache helper (decorator) to demonstrate invalidation.
   */
- @InvalidateCache({
-   key: (args: any[]) => `cached:doc:${args[0]}:${args[1]}`,
- })
+ @InvalidateCache((args: any[]) => `cached:doc:${args[0]}:${args[1]}`)
  async invalidateDocumentCache(collectionName: string, id: string) {
    // noop body - the decorator performs the invalidation side-effect
    return;

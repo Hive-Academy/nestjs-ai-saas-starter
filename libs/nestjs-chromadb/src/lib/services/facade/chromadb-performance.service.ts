@@ -329,8 +329,8 @@ export class ChromaDBPerformanceService {
     if (keyOrPattern) {
       await this.cacheService.delete(keyOrPattern);
     } else {
-      // Clear all chroma-related cache entries
-      await this.cacheService.clear('chroma:*');
+      // Clear all cache entries (pattern-based clearing not supported by clear method)
+      await this.cacheService.clear();
     }
   }
 

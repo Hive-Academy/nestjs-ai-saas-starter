@@ -34,7 +34,7 @@ export class CrossTenantAdminService implements OnModuleInit {
  }
 
  // Cross-tenant read with explicit cap; decorator signals elevated read semantics
- @CrossTenant()
+ @CrossTenant({ requiredPermissions: ['admin', 'cross-tenant-read'] })
  async crossTenantSearch(collection: string, query: string, cap = 10) {
    const res = await this.chroma.searchDocuments(collection, [query], undefined, { nResults: cap });
    // Defensive cap enforcement on returned ids

@@ -1,0 +1,12 @@
+src/lib/decorators/repository/repository-decorator.ts(106,13): error TS2554: Expected 1 arguments, but got 2.
+src/lib/decorators/repository/repository-decorator.ts(183,16): error TS7053: Element implicitly has an 'any' type because expression of type '"_chromaService"' can't be used to index type 'RepositoryImplementation<TDocument>'.
+  Property '_chromaService' does not exist on type 'RepositoryImplementation<TDocument>'.
+src/lib/decorators/repository/repository-implementation.ts(11,1): error TS6133: 'ChromaDBService' is declared but its value is never read.
+src/lib/decorators/repository/repository-implementation.ts(52,47): error TS2552: Cannot find name '_chromaService'. Did you mean 'ChromaDBService'?
+src/lib/decorators/repository/repository-implementation.ts(53,51): error TS2552: Cannot find name '_chromaService'. Did you mean 'ChromaDBService'?
+src/lib/decorators/repository/repository-implementation.ts(54,61): error TS2552: Cannot find name '_chromaService'. Did you mean 'ChromaDBService'?
+src/lib/decorators/repository/repository-test-example.ts(10,1): error TS6133: 'ChromaDBService' is declared but its value is never read.
+src/lib/services/chromadb.service.ts(37,14): error TS2420: Class 'ChromaDBService' incorrectly implements interface 'ChromaDBServiceInterface'.
+  Type 'ChromaDBService' is missing the following properties from type 'ChromaDBServiceInterface': version, reset, getCollection
+src/lib/services/facade/chromadb-embedding-processor.service.ts(164,25): error TS2339: Property 'map' does not exist on type 'Promise<readonly EmbeddingVector[]>'.
+src/lib/services/facade/chromadb-embedding-processor.service.ts(164,29): error TS7006: Parameter 'embedding' implicitly has an 'any' type.

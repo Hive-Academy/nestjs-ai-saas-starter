@@ -9,7 +9,6 @@ import { Controller, Injectable } from '@nestjs/common';
 import { ChromaDBService } from '../../../services/chromadb.service';
 import {
   BaseDocument,
-  toChromaWireDocument,
 } from '../../../types/core.interface';
 import {
   MultiTenantService,
@@ -98,9 +97,8 @@ export class UserManagementService {
       },
     };
 
-    // Convert to wire format for ChromaDB with metadata normalization
-    const wireDoc = toChromaWireDocument(enrichedUser);
-    await this.chromaService.addDocuments('users', [wireDoc]);
+    // Add document directly (service handles wire format conversion internally)
+    await this.chromaService.addDocuments('users', [enrichedUser]);
     return enrichedUser;
   }
 
@@ -131,9 +129,8 @@ export class UserManagementService {
       },
     }));
 
-    // Convert to wire format for ChromaDB with metadata normalization
-    const wireDocs = enrichedUsers.map(toChromaWireDocument);
-    await this.chromaService.addDocuments('users', wireDocs, { batchSize: 50 });
+    // Add documents directly (service handles wire format conversion internally)
+    await this.chromaService.addDocuments('users', enrichedUsers, { batchSize: 50 });
     return enrichedUsers;
   }
 }
@@ -218,9 +215,8 @@ export class DocumentManagementService {
       },
     };
 
-    // Convert to wire format for ChromaDB with metadata normalization
-    const wireDoc = toChromaWireDocument(enrichedDocument);
-    await this.chromaService.addDocuments('documents', [wireDoc]);
+    // Add document directly (service handles wire format conversion internally)
+    await this.chromaService.addDocuments('documents', [enrichedDocument]);
     return enrichedDocument;
   }
 
@@ -357,9 +353,8 @@ export class UserRepository extends TenantAwareRepository<UserDocument> {
     this.validateTenantAccess(enrichedUser);
 
     const collection = this.getTenantCollection('users');
-    // Convert to wire format and add to ChromaDB
-    const wireDoc = toChromaWireDocument(enrichedUser);
-    await this.chromaService.addDocuments(collection, [wireDoc]);
+    // Add document directly (service handles wire format conversion internally)
+    await this.chromaService.addDocuments(collection, [enrichedUser]);
 
     return enrichedUser;
   }

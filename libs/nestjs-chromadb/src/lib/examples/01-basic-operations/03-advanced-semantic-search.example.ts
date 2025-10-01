@@ -11,7 +11,7 @@
  */
 
 import { Injectable, Module, OnModuleInit, Logger } from '@nestjs/common';
-import { ChromaDBModule, ChromaDBFacadeService, ChromaWireDocument } from '../../../index';
+import { ChromaDBModule, ChromaDBFacadeService, BaseDocument } from '../../../index';
 
 // Note: Using generic document structure for this example
 
@@ -71,10 +71,10 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
       this.logger.log('Collection already exists, continuing...');
     }
 
-    const technicalDocs: ChromaWireDocument[] = [
+    const technicalDocs: BaseDocument[] = [
       {
         id: 'react-hooks-guide',
-        document: 'React Hooks Comprehensive Guide: React Hooks revolutionized functional components by allowing state management and lifecycle methods. useState manages local state, useEffect handles side effects and cleanup, useContext provides context consumption, useMemo optimizes expensive calculations, useCallback prevents unnecessary re-renders, and custom hooks enable logic reuse across components.',
+        content: 'React Hooks Comprehensive Guide: React Hooks revolutionized functional components by allowing state management and lifecycle methods. useState manages local state, useEffect handles side effects and cleanup, useContext provides context consumption, useMemo optimizes expensive calculations, useCallback prevents unnecessary re-renders, and custom hooks enable logic reuse across components.',
         metadata: {
           title: 'React Hooks Comprehensive Guide',
           documentType: 'tutorial',
@@ -90,7 +90,7 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
       },
       {
         id: 'nodejs-performance-optimization',
-        document: 'Node.js Performance Optimization Best Practices: Optimize Node.js applications through event loop understanding, non-blocking I/O operations, memory leak prevention, CPU profiling, clustering for multi-core usage, connection pooling for databases, response compression, caching strategies with Redis, and monitoring with APM tools for production environments.',
+        content: 'Node.js Performance Optimization Best Practices: Optimize Node.js applications through event loop understanding, non-blocking I/O operations, memory leak prevention, CPU profiling, clustering for multi-core usage, connection pooling for databases, response compression, caching strategies with Redis, and monitoring with APM tools for production environments.',
         metadata: {
           title: 'Node.js Performance Optimization',
           documentType: 'best-practices',
@@ -106,7 +106,7 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
       },
       {
         id: 'docker-containerization-api',
-        document: 'Docker API Reference for Container Management: Docker API endpoints for container lifecycle management including POST /containers/create for container creation, GET /containers/json for listing, POST /containers/{id}/start for starting, POST /containers/{id}/stop for stopping, DELETE /containers/{id} for removal, and GET /containers/{id}/stats for monitoring resource usage.',
+        content: 'Docker API Reference for Container Management: Docker API endpoints for container lifecycle management including POST /containers/create for container creation, GET /containers/json for listing, POST /containers/{id}/start for starting, POST /containers/{id}/stop for stopping, DELETE /containers/{id} for removal, and GET /containers/{id}/stats for monitoring resource usage.',
         metadata: {
           title: 'Docker API Reference',
           documentType: 'api-reference',
@@ -122,7 +122,7 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
       },
       {
         id: 'typescript-generics-troubleshooting',
-        document: 'TypeScript Generics Troubleshooting Guide: Common TypeScript generics issues include constraint satisfaction errors, type inference failures, complex conditional types, mapped type problems, and utility type misuse. Solutions involve proper constraint definition, explicit type annotations, intermediate type aliases, and understanding variance in generic parameters.',
+        content: 'TypeScript Generics Troubleshooting Guide: Common TypeScript generics issues include constraint satisfaction errors, type inference failures, complex conditional types, mapped type problems, and utility type misuse. Solutions involve proper constraint definition, explicit type annotations, intermediate type aliases, and understanding variance in generic parameters.',
         metadata: {
           title: 'TypeScript Generics Troubleshooting',
           documentType: 'troubleshooting',
@@ -138,7 +138,7 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
       },
       {
         id: 'microservices-architecture-patterns',
-        document: 'Microservices Architecture Patterns and Implementation: Design microservices using domain-driven design, implement service communication via REST APIs and message queues, manage distributed data with event sourcing, handle service discovery and load balancing, implement circuit breaker patterns for resilience, and monitor distributed systems with distributed tracing.',
+        content: 'Microservices Architecture Patterns and Implementation: Design microservices using domain-driven design, implement service communication via REST APIs and message queues, manage distributed data with event sourcing, handle service discovery and load balancing, implement circuit breaker patterns for resilience, and monitor distributed systems with distributed tracing.',
         metadata: {
           title: 'Microservices Architecture Patterns',
           documentType: 'tutorial',
@@ -177,10 +177,10 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
       this.logger.log('Collection already exists, continuing...');
     }
 
-    const codeSnippets: ChromaWireDocument[] = [
+    const codeSnippets: BaseDocument[] = [
       {
         id: 'react-custom-hook-fetch',
-        document: `React Custom Hook for Data Fetching: 
+        content: `React Custom Hook for Data Fetching: 
 import { useState, useEffect } from 'react';
 
 function useFetch<T>(url: string): { data: T | null; loading: boolean; error: string | null } {
@@ -212,7 +212,7 @@ function useFetch<T>(url: string): { data: T | null; loading: boolean; error: st
       },
       {
         id: 'nodejs-middleware-auth',
-        document: `Node.js Authentication Middleware:
+        content: `Node.js Authentication Middleware:
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 
@@ -248,7 +248,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       },
       {
         id: 'python-async-rate-limiter',
-        document: `Python Async Rate Limiter Implementation:
+        content: `Python Async Rate Limiter Implementation:
 import asyncio
 import time
 from collections import defaultdict, deque
@@ -287,7 +287,7 @@ class AsyncRateLimiter:
       },
       {
         id: 'docker-multi-stage-build',
-        document: `Docker Multi-stage Build for Node.js:
+        content: `Docker Multi-stage Build for Node.js:
 # Build stage
 FROM node:18-alpine AS builder
 WORKDIR /app
@@ -373,8 +373,9 @@ CMD ["node", "dist/index.js"]`,
         this.logger.log(`⚡ Search completed in ${searchTime}ms`);
         
         for (let i = 0; i < searchResults.ids[0].length; i++) {
-          const similarity = searchResults.distances?.[0]?.[i] ? 
-            (1 - searchResults.distances[0][i]).toFixed(3) : 'N/A';
+          const distanceValue = searchResults.distances?.[0]?.[i];
+          const similarity = distanceValue !== null && distanceValue !== undefined ? 
+            (1 - distanceValue).toFixed(3) : 'N/A';
           const metadata = searchResults.metadatas?.[0]?.[i];
           const document = searchResults.documents?.[0]?.[i];
           
@@ -440,8 +441,9 @@ CMD ["node", "dist/index.js"]`,
         this.logger.log(`⚡ Code search completed in ${searchTime}ms`);
         
         for (let i = 0; i < codeResults.ids[0].length; i++) {
-          const similarity = codeResults.distances?.[0]?.[i] ? 
-            (1 - codeResults.distances[0][i]).toFixed(3) : 'N/A';
+          const distanceValue = codeResults.distances?.[0]?.[i];
+          const similarity = distanceValue !== null && distanceValue !== undefined ? 
+            (1 - distanceValue).toFixed(3) : 'N/A';
           const metadata = codeResults.metadatas?.[0]?.[i];
           const code = codeResults.documents?.[0]?.[i];
           

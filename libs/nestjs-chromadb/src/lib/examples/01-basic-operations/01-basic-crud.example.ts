@@ -6,7 +6,7 @@
  */
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
-import { ChromaDBModule, ChromaDBFacadeService, ChromaWireDocument } from '../../../index';
+import { ChromaDBModule, ChromaDBFacadeService, BaseDocument } from '../../../index';
 import { 
   DemoLogger,
   PerformanceTimer 
@@ -71,9 +71,9 @@ export class BasicCrudService implements OnModuleInit {
     this.logger.logStep(1, 'CREATE Operations');
 
     // Single document creation
-    const singleDoc: ChromaWireDocument = {
+    const singleDoc: BaseDocument = {
       id: 'create-001',
-      document: 'How to Use Vector Databases: Vector databases store and search high-dimensional embeddings for semantic similarity. This is essential for modern AI applications requiring semantic search capabilities.',
+      content: 'How to Use Vector Databases: Vector databases store and search high-dimensional embeddings for semantic similarity. This is essential for modern AI applications requiring semantic search capabilities.',
       metadata: {
         title: 'How to Use Vector Databases',
         category: 'tutorial',
@@ -96,9 +96,9 @@ export class BasicCrudService implements OnModuleInit {
     this.logger.logResults('Single document created', { id: singleDoc.id }, singleCreateTime);
 
     // Batch document creation with real content
-    const batchDocs: ChromaWireDocument[] = Array.from({ length: 5 }, (_, i) => ({
+    const batchDocs: BaseDocument[] = Array.from({ length: 5 }, (_, i) => ({
       id: `batch-${i + 1}`,
-      document: `Batch Document ${i + 1}: Exploring advanced database concepts including indexing strategies, query optimization, and distributed architectures. This document demonstrates bulk insert capabilities and performance testing scenarios for large-scale data operations.`,
+      content: `Batch Document ${i + 1}: Exploring advanced database concepts including indexing strategies, query optimization, and distributed architectures. This document demonstrates bulk insert capabilities and performance testing scenarios for large-scale data operations.`,
       metadata: {
         title: `Batch Document ${i + 1}`,
         category: 'batch-test',
@@ -219,9 +219,9 @@ export class BasicCrudService implements OnModuleInit {
     this.logger.logStep(3, 'UPDATE Operations');
 
     // Update single document using upsert - demonstrating version control and content enhancement
-    const updatedDoc: ChromaWireDocument = {
+    const updatedDoc: BaseDocument = {
       id: 'create-001', // Same ID to update existing
-      document: 'How to Use Vector Databases - Updated Edition: Vector databases store and search high-dimensional embeddings for semantic similarity. This updated version includes advanced concepts like vector indexing algorithms, similarity metrics, and production optimization strategies for large-scale AI applications.',
+      content: 'How to Use Vector Databases - Updated Edition: Vector databases store and search high-dimensional embeddings for semantic similarity. This updated version includes advanced concepts like vector indexing algorithms, similarity metrics, and production optimization strategies for large-scale AI applications.',
       metadata: {
         title: 'How to Use Vector Databases - Updated Edition',
         category: 'advanced-tutorial',
@@ -262,9 +262,9 @@ export class BasicCrudService implements OnModuleInit {
     });
 
     if (existingBatchDocs.ids?.[0] && Array.isArray(existingBatchDocs.ids[0]) && existingBatchDocs.ids[0].length > 0) {
-      const batchUpdates: ChromaWireDocument[] = existingBatchDocs.ids[0].map((id: string, index: number) => ({
+      const batchUpdates: BaseDocument[] = existingBatchDocs.ids[0].map((id: string, index: number) => ({
         id,
-        document: `Updated Batch Document ${index + 1}: This batch document has been enhanced with advanced content management features, improved metadata structure, and optimized for semantic search performance. The update includes better categorization and tagging systems.`,
+        content: `Updated Batch Document ${index + 1}: This batch document has been enhanced with advanced content management features, improved metadata structure, and optimized for semantic search performance. The update includes better categorization and tagging systems.`,
         metadata: {
           title: `Updated Batch Document ${index + 1}`,
           category: 'updated-batch',
@@ -352,7 +352,7 @@ export class BasicCrudService implements OnModuleInit {
       // Get all documents and delete them
       const docs = await this.chromaDB.getDocuments(this.collectionName);
       if (docs.ids?.[0] && docs.ids[0].length > 0) {
-        await this.chromaDB.deleteDocuments(this.collectionName, docs.ids[0]);
+        await this.chromaDB.deleteDocuments(this.collectionName, Array.isArray(docs.ids[0]) ? docs.ids[0] : [docs.ids[0]]);
         this.logger.logInfo(`Cleaned up ${docs.ids[0].length} documents`);
       } else {
         this.logger.logInfo('No documents to cleanup');

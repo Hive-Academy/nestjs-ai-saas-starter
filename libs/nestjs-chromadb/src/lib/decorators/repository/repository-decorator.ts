@@ -180,7 +180,7 @@ export function ChromaRepository<TDocument extends BaseDocument = BaseDocument>(
 
       // Provide access to ChromaDB service for custom methods
       protected getChromaService(): ChromaDBService {
-        return this.getRepositoryImpl()['_chromaService'];
+        return this.getRepositoryImpl()['chromaService'];
       }
     }
 
