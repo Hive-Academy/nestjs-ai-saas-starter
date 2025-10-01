@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Metadata as ChromaMetadata } from 'chromadb';
 import type {
   ChromaBulkOptions,
@@ -20,7 +20,6 @@ import { DocumentSanitizerService } from './validation/document-sanitizer.servic
  */
 @Injectable()
 export class ChromaDBValidationService implements IChromaValidation {
-  private readonly logger = new Logger(ChromaDBValidationService.name);
 
   constructor(
     private readonly documentValidator: DocumentValidatorService,

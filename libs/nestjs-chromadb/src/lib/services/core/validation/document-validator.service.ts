@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getErrorMessage } from '../../../utils/errors/error-handling.utils';
 import type {
   BaseDocument,
   DocumentValidationSchema,

@@ -24,13 +24,6 @@ interface CohereEmbeddingResponse {
   };
 }
 
-/**
- * Cohere API error response interface
- */
-interface CohereErrorResponse {
-  message?: string;
-  code?: string;
-}
 
 /**
  * Cohere embedding provider

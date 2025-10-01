@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   Collection,
   WhereDocument,
@@ -28,7 +28,6 @@ import {
  */
 @Injectable()
 export class ChromaDBOperationsService implements IChromaOperations {
-  private readonly logger = new Logger(ChromaDBOperationsService.name);
 
   constructor(
     private readonly collectionService: ChromaDBCollectionService,

@@ -6,11 +6,9 @@
  */
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
-import { ChromaDBModule, ChromaDBService, ChromaWireDocument } from '../../../index';
+import { ChromaDBModule, ChromaDBFacadeService, ChromaWireDocument } from '../../../index';
 import { 
-  CollectionHelper,
   DemoLogger,
-  DemoWorkflow,
   PerformanceTimer 
 } from '../shared';
 
@@ -19,13 +17,7 @@ export class BasicCrudService implements OnModuleInit {
   private readonly collectionName = 'basic-crud-example';
   private readonly logger = new DemoLogger();
   private readonly timer = new PerformanceTimer();
-  private readonly collectionHelper: CollectionHelper;
-  private readonly workflow: DemoWorkflow;
-
-  constructor(private readonly chromaDB: ChromaDBService) {
-    this.collectionHelper = new CollectionHelper(this.chromaDB, this.logger);
-    this.workflow = new DemoWorkflow(this.chromaDB, this.collectionHelper, this.logger);
-  }
+  constructor(private readonly chromaDB: ChromaDBFacadeService) {}
 
   async onModuleInit() {
     await this.runBasicCrudExample();
@@ -193,7 +185,7 @@ export class BasicCrudService implements OnModuleInit {
     let avgSimilarity = 'N/A';
     
     if (searchResults.distances?.[0] && searchResults.distances[0].length > 0) {
-      const validDistances = searchResults.distances[0].filter(d => d !== null && typeof d === 'number') as number[];
+      const validDistances = searchResults.distances[0].filter((d: unknown) => d !== null && typeof d === 'number') as number[];
       if (validDistances.length > 0) {
         const avgDistance = validDistances.reduce((sum, dist) => sum + dist, 0) / validDistances.length;
         avgSimilarity = (1 - avgDistance).toFixed(3);

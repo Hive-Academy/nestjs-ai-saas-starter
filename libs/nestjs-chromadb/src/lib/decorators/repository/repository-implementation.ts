@@ -43,15 +43,15 @@ export class RepositoryImplementation<
 
   constructor(
     private readonly config: ChromaRepositoryConfig,
-    private readonly chromaService: ChromaDBService
+    private readonly _chromaService: ChromaDBService
   ) {
     // Validate configuration
     repositoryValidator.validateCollection(config.collection);
 
     // Initialize specialized operation handlers
-    this.crudOps = new CrudOperations(config, chromaService);
-    this.searchOps = new SearchOperations(config, chromaService);
-    this.aggregationOps = new AggregationOperations(config, chromaService);
+    this.crudOps = new CrudOperations(config, _chromaService);
+    this.searchOps = new SearchOperations(config, _chromaService);
+    this.aggregationOps = new AggregationOperations(config, _chromaService);
   }
 
   // =====================================================================

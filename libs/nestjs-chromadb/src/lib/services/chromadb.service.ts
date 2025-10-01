@@ -5,14 +5,16 @@
  * Reduced from 597 LOC to ~200 LOC by delegating to focused service classes
  */
 
-import { Injectable, Logger, Optional } from '@nestjs/common';
-import type { Where, WhereDocument, GetResult } from 'chromadb';
+import { Injectable } from '@nestjs/common';
+import type { Where, WhereDocument, GetResult, Collection } from 'chromadb';
 import { ChromaDBServiceInterface } from '../interfaces/chromadb-service.interface';
 import type {
+  BaseDocument,
   ChromaWireDocument,
   ChromaBulkOptions,
   ChromaSearchOptions,
   ChromaSearchResult,
+  ChromaCollectionInfo,
   GetDocumentsOptions,
 } from '../types/core.interface';
 
@@ -33,7 +35,6 @@ import { ChromaDBEmbeddingProcessorService } from './facade/chromadb-embedding-p
  */
 @Injectable()
 export class ChromaDBService implements ChromaDBServiceInterface {
-  private readonly logger = new Logger(ChromaDBService.name);
 
   constructor(
     private readonly connectionService: ChromaDBConnectionService,
@@ -76,16 +77,20 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   async createCollection(
     name: string,
     metadata?: Record<string, any>,
-    embeddingFunction?: any
-  ): Promise<void> {
+    embeddingFunction?: unknown,
+    getOrCreate?: boolean
+  ): Promise<Collection> {
     return this.performanceService.executeWithMonitoring(
       'createCollection',
-      async () =>
-        this.operationsService.createCollection(
+      async () => {
+        const collection = await this.operationsService.createCollection(
           name,
           metadata,
-          embeddingFunction
-        )
+          embeddingFunction,
+          getOrCreate
+        );
+        return collection;
+      }
     );
   }
 
@@ -99,13 +104,16 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     );
   }
 
-  async listCollections(): Promise<string[]> {
+  async listCollections(): Promise<ChromaCollectionInfo[]> {
     const cacheKey =
       this.performanceService.generateCacheKey('listCollections');
 
     return this.performanceService.executeWithMonitoring(
       'listCollections',
-      async () => this.operationsService.listCollections(),
+      async () => {
+        const collections = await this.operationsService.listCollections();
+        return collections; // operationsService should already return ChromaCollectionInfo[]
+      },
       cacheKey
     );
   }
@@ -140,15 +148,23 @@ export class ChromaDBService implements ChromaDBServiceInterface {
   // Document Operations with Embedding Processing
   // =====================================================================
 
-  async addDocuments(
+  async addDocuments<T extends BaseDocument>(
     collectionName: string,
-    documents: ChromaWireDocument[],
+    documents: T[],
     options?: ChromaBulkOptions
   ): Promise<void> {
+    // Convert BaseDocument to ChromaWireDocument format
+    const wireDocuments: ChromaWireDocument[] = documents.map(doc => ({
+      id: doc.id,
+      document: doc.content,
+      metadata: doc.metadata,
+      embedding: doc.embedding ? [...doc.embedding] : undefined
+    }));
+
     // Process embeddings if needed
     const processedDocuments =
       await this.embeddingProcessor.processDocumentEmbeddings(
-        documents,
+        wireDocuments,
         options
       );
 
@@ -166,15 +182,23 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     );
   }
 
-  async updateDocuments(
+  async updateDocuments<T extends BaseDocument>(
     collectionName: string,
-    documents: ChromaWireDocument[],
+    documents: T[],
     options?: ChromaBulkOptions
   ): Promise<void> {
+    // Convert BaseDocument to ChromaWireDocument format
+    const wireDocuments: ChromaWireDocument[] = documents.map(doc => ({
+      id: doc.id,
+      document: doc.content,
+      metadata: doc.metadata,
+      embedding: doc.embedding ? [...doc.embedding] : undefined
+    }));
+
     // Process embeddings if needed
     const processedDocuments =
       await this.embeddingProcessor.processDocumentEmbeddings(
-        documents,
+        wireDocuments,
         options
       );
 
@@ -192,15 +216,23 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     );
   }
 
-  async upsertDocuments(
+  async upsertDocuments<T extends BaseDocument>(
     collectionName: string,
-    documents: ChromaWireDocument[],
+    documents: T[],
     options?: ChromaBulkOptions
   ): Promise<void> {
+    // Convert BaseDocument to ChromaWireDocument format
+    const wireDocuments: ChromaWireDocument[] = documents.map(doc => ({
+      id: doc.id,
+      document: doc.content,
+      metadata: doc.metadata,
+      embedding: doc.embedding ? [...doc.embedding] : undefined
+    }));
+
     // Process embeddings if needed
     const processedDocuments =
       await this.embeddingProcessor.processDocumentEmbeddings(
-        documents,
+        wireDocuments,
         options
       );
 
@@ -334,7 +366,7 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       ids: results.ids[0] || [],
       documents: results.documents?.[0] || [],
       metadatas: results.metadatas?.[0] || [],
-      distances: results.distances?.[0] || [],
+      distances: (results.distances?.[0] || []).filter((d): d is number => d !== null),
     };
   }
 

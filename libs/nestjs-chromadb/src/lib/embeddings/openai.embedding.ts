@@ -29,16 +29,6 @@ interface OpenAIEmbeddingResponse {
   };
 }
 
-/**
- * OpenAI API error response interface
- */
-interface OpenAIErrorResponse {
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-  };
-}
 
 /**
  * OpenAI embedding provider

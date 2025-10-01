@@ -21,7 +21,6 @@ import type {
  * Document validation service for repository operations
  */
 export class RepositoryValidator {
-  private readonly logger = new Logger(RepositoryValidator.name);
 
   /**
    * Validate a single document before operation

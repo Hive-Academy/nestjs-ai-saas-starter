@@ -1,5 +1,5 @@
 import { Module, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ChromaDBModule, ChromaDBFacadeService, ChromaMetricsService } from '../../../index';
+import { ChromaDBModule, ChromaDBFacadeService, ChromaMetricsService, ChromaDBModuleOptions } from '../../../index';
 
 @Injectable()
 export class ConfigForRootAsyncExampleService implements OnModuleInit {
@@ -29,7 +29,7 @@ export class ConfigForRootAsyncExampleService implements OnModuleInit {
 @Module({
  imports: [
    ChromaDBModule.forRootAsync({
-     useFactory: async () => {
+     useFactory: async (): Promise<ChromaDBModuleOptions> => {
        // In real apps, read from ConfigService/ENV; kept deterministic for examples
        return {
          connection: { host: 'localhost', port: 8000 },

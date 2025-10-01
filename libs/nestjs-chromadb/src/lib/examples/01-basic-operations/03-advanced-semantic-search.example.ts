@@ -11,42 +11,9 @@
  */
 
 import { Injectable, Module, OnModuleInit, Logger } from '@nestjs/common';
-import { ChromaDBModule, ChromaDBService, ChromaWireDocument } from '../../../index';
+import { ChromaDBModule, ChromaDBFacadeService, ChromaWireDocument } from '../../../index';
 
-// Real-world document interfaces
-interface TechnicalDocument {
-  id: string;
-  title: string;
-  content: string;
-  documentType: 'tutorial' | 'api-reference' | 'troubleshooting' | 'best-practices';
-  technology: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  author: string;
-  lastUpdated: string;
-  views: number;
-  rating: number;
-  tags: string[];
-}
-
-interface CodeSnippet {
-  id: string;
-  code: string;
-  language: string;
-  framework: string[];
-  description: string;
-  useCase: string;
-  complexity: number; // 1-10
-  performance: 'low' | 'medium' | 'high';
-  testCoverage: number;
-}
-
-interface SearchResult<T> {
-  document: T;
-  relevanceScore: number;
-  similarity: number;
-  matchedTerms: string[];
-  metadata: Record<string, any>;
-}
+// Note: Using generic document structure for this example
 
 @Injectable()
 export class AdvancedSemanticSearchService implements OnModuleInit {
@@ -54,7 +21,7 @@ export class AdvancedSemanticSearchService implements OnModuleInit {
   private readonly techDocsCollection = 'technical-documentation';
   private readonly codeSnippetsCollection = 'code-snippets';
 
-  constructor(private readonly chromaDB: ChromaDBService) {}
+  constructor(private readonly chromaDB: ChromaDBFacadeService) {}
 
   async onModuleInit() {
     await this.runAdvancedSemanticSearchExample();
@@ -532,7 +499,7 @@ CMD ["node", "dist/index.js"]`,
       this.logger.log(`⚡ Multi-faceted search completed in ${searchTime}ms`);
       
       // Calculate relevance scores based on multiple factors
-      const scoredResults = filteredResults.ids[0].map((id, i) => {
+      const scoredResults = filteredResults.ids[0].map((id: string, i: number) => {
         const similarity = filteredResults.distances?.[0]?.[i] ? 
           1 - filteredResults.distances[0][i] : 0;
         const metadata = filteredResults.metadatas?.[0]?.[i];
@@ -561,9 +528,9 @@ CMD ["node", "dist/index.js"]`,
       });
 
       // Sort by relevance score
-      scoredResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      scoredResults.sort((a: any, b: any) => b.relevanceScore - a.relevanceScore);
       
-      scoredResults.forEach((result, i) => {
+      scoredResults.forEach((result: any, i: number) => {
         this.logger.log(`
 📊 Multi-faceted Result ${i + 1}: ${result.metadata?.title}
    🎯 Relevance Score: ${result.relevanceScore}

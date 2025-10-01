@@ -6,12 +6,12 @@
  */
 
 import type { VectorQueryConfig } from '../core/vector-query.decorator';
-import type { ChromaRepositoryConfig } from '../repository/repository-decorator';
+import type { ChromaRepositoryConfig } from '../repository/repository-metadata';
 import type { CachedConfig } from '../performance/cached.decorator';
 import type { ProfiledConfig } from '../performance/profiled.decorator';
 import type { RetryConfig } from '../performance/retry.decorator';
 import type { TenantIsolationConfig } from '../multi-tenant/tenant-aware.decorator';
-import type { MultiTenantConfig } from '../multi-tenant/multi-tenant-services';
+import type { MultiTenantConfig } from '../../services/multi-tenant';
 
 /**
  * Complete decorator configuration type for advanced usage
@@ -119,7 +119,6 @@ export function createOptimizedDecoratorConfig(
       enableCaching: true,
       cacheTimeout: 300000, // 5 minutes
       validateParams: true,
-      errorHandling: 'throw' as const,
       ...baseConfig.vectorQuery,
     },
 

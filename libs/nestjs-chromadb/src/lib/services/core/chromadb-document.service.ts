@@ -5,8 +5,10 @@ import {
   GetResult,
   Metadata,
   ChromaClientError,
-  Include,
 } from 'chromadb';
+
+// Define Include type locally since it's not exported from chromadb
+type Include = ('metadatas' | 'documents' | 'distances' | 'embeddings')[];
 import { ChromaDBConnectionService } from './chromadb-connection.service';
 import { ChromaDBCollectionService } from './chromadb-collection.service';
 import type {
@@ -254,7 +256,7 @@ export class ChromaDBDocumentService {
         const result = await collection.get({
           ids: options.ids,
           where: options.where,
-          whereDocument: options.whereDocument,
+          whereDocument: options.whereDocument as WhereDocument,
           limit: options.limit,
           offset: options.offset,
           include: options.include as Include,
@@ -322,7 +324,7 @@ export class ChromaDBDocumentService {
               : undefined,
           nResults: options.nResults || 10,
           where: options.where,
-          whereDocument: options.whereDocument,
+          whereDocument: options.whereDocument as WhereDocument,
           include: [
             'documents',
             'metadatas',
@@ -335,7 +337,14 @@ export class ChromaDBDocumentService {
           documents: result.documents,
           metadatas: result.metadatas,
           distances: result.distances,
-        };
+          embeddings: result.embeddings || [[]],
+          include: [
+            'documents',
+            'metadatas',
+            ...(options.includeDistances ? ['distances'] : []),
+          ],
+          uris: result.uris || [[]],
+        } as ChromaSearchResult;
 
         const resultCount = result.ids.reduce(
           (total, ids) => total + ids.length,

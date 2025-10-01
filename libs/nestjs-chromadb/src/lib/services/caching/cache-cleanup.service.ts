@@ -48,7 +48,6 @@ export class CacheCleanupService implements ICacheCleanup {
    * Remove expired entries from cache
    */
   async evictExpired(): Promise<number> {
-    const now = Date.now();
     const expiredKeys: string[] = [];
 
     for (const [key, entry] of this.cache.entries()) {

@@ -9,7 +9,6 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import type {
   ChromaWireDocument,
   ChromaBulkOptions,
-  ChromaSearchOptions,
 } from '../../types/core.interface';
 import { EmbeddingService } from '../embedding.service';
 

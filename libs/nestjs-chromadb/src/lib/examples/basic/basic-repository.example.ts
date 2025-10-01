@@ -4,7 +4,6 @@
 
 import { Module, Injectable, OnModuleInit } from '@nestjs/common';
 import { ChromaDBModule, ChromaDBFacadeService } from '../../../index';
-import { ChromaRepository } from '../../../lib/decorators';
 
 type DocMetadata = { topic?: string; author?: string };
 

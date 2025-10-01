@@ -18,7 +18,6 @@ import {
   TenantRegistration,
   TenantResourceLimits,
 } from './tenant-validation.service';
-import { ValidationResult } from '../../types/core.interface';
 import {
   logUnknownError,
   handleUnknownError,
@@ -110,7 +109,7 @@ export class MultiTenantService implements OnModuleInit {
 
   constructor(
     private readonly chromaService: ChromaDBService,
-    private readonly tenantContextService: TenantContextService,
+    private readonly _tenantContextService: TenantContextService,
     private readonly tenantIsolationService: TenantIsolationService,
     private readonly tenantValidationService: TenantValidationService,
     @Inject('MULTI_TENANT_CONFIG') private readonly config: MultiTenantConfig
