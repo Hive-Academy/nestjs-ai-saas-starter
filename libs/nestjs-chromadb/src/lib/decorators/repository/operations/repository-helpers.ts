@@ -27,10 +27,7 @@ import { repositoryTypeSafety } from '../repository-validator';
 export class RepositoryHelpers<TDocument extends BaseDocument = BaseDocument> {
   private readonly logger = new Logger(RepositoryHelpers.name);
 
-  constructor(
-    private readonly config: ChromaRepositoryConfig,
-    private readonly chromaService: any // ChromaDBService interface
-  ) {}
+  constructor(private readonly config: ChromaRepositoryConfig) {}
 
   // =====================================================================
   // Document Transformation Methods

@@ -13,7 +13,10 @@ import {
   ChromaDBEmbeddingNotConfiguredError,
   ChromaDBConfigurationError,
 } from '../errors/chromadb.errors';
-import { ChromaDBErrorHandler, getErrorMessage } from '../utils/error.utils';
+import {
+  ChromaDBErrorHandler,
+  getErrorMessage,
+} from '../utils/errors/error.utils';
 
 /**
  * Embedding service that manages different embedding providers

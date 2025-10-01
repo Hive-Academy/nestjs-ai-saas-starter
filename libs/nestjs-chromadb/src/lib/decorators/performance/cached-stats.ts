@@ -3,7 +3,7 @@
  * Extracted from cached.decorator.ts for better architecture compliance
  */
 
-import { getErrorMessage } from '../../utils/error-handling.utils';
+import { getErrorMessage } from '../../utils/errors/error-handling.utils';
 import { getCacheService, extractCollectionName } from './cached-utils';
 import type { CacheStatistics } from './cached-types';
 

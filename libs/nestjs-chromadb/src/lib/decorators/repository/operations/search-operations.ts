@@ -5,32 +5,31 @@
  * Following Single Responsibility Principle - handles only search operations
  */
 
-import { Logger } from '@nestjs/common';
+import type { ChromaDBService } from '../../../services/chromadb-facade.service';
 import type { BaseDocument } from '../../../types/core.interface';
 import type {
   ChromaRepositoryConfig,
   RepositorySearchOptions,
   RepositorySearchResultWithScore,
 } from '../repository-metadata';
-import { RepositoryHelpers } from './repository-helpers';
 import {
-  repositoryValidator,
   repositoryErrorHandler,
+  repositoryValidator,
 } from '../repository-validator';
+import { RepositoryHelpers } from './repository-helpers';
 
 /**
  * Search Operations Implementation
  * Handles semantic search, similarity search, and vector operations
  */
 export class SearchOperations<TDocument extends BaseDocument = BaseDocument> {
-  private readonly logger = new Logger(SearchOperations.name);
   private readonly helpers: RepositoryHelpers<TDocument>;
 
   constructor(
     private readonly config: ChromaRepositoryConfig,
-    private readonly chromaService: any // ChromaDBService interface
+    private readonly chromaService: ChromaDBService // ChromaDBService interface
   ) {
-    this.helpers = new RepositoryHelpers(config, chromaService);
+    this.helpers = new RepositoryHelpers(config);
   }
 
   // =====================================================================
@@ -319,20 +318,5 @@ export class SearchOperations<TDocument extends BaseDocument = BaseDocument> {
         ) || []
       );
     }
-  }
-
-  // =====================================================================
-  // Helper Methods for Search
-  // =====================================================================
-
-  private logSearchOperation(
-    operation: string,
-    queryCount: number,
-    resultCount: number,
-    duration: number
-  ): void {
-    this.logger.debug(
-      `${operation} completed: ${queryCount} queries, ${resultCount} results in ${duration}ms`
-    );
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
 import type { CohereEmbeddingConfig } from '../interfaces/config/module-options.interface';
-import { getErrorMessage, getErrorStack } from '../utils/error.utils';
+import { getErrorMessage, getErrorStack } from '../utils/errors/error.utils';
 import { HttpClient, InputValidator } from '../utils/http-client.utils';
 
 /**

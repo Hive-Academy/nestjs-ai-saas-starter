@@ -3,7 +3,7 @@
  * Extracted from cached.decorator.ts for better architecture compliance
  */
 
-import { getErrorMessage } from '../../utils/error-handling.utils';
+import { getErrorMessage } from '../../utils/errors/error-handling.utils';
 import type { ChromaCacheService } from '../../services/caching/chroma-cache.service';
 import type { CachedConfig } from './cached-types';
 

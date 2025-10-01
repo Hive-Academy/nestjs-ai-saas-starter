@@ -2,8 +2,7 @@
  * Utility functions for safe error handling
  */
 
-import type {
-  ChromaDBError} from '../errors/chromadb.errors';
+import type { ChromaDBError } from '../../errors/chromadb.errors';
 import {
   ChromaDBConnectionError,
   ChromaDBCollectionError,
@@ -13,7 +12,7 @@ import {
   ChromaDBValidationError,
   ChromaDBConfigurationError,
   wrapAsChromaDBError,
-} from '../errors/chromadb.errors';
+} from '../../errors/chromadb.errors';
 
 /**
  * Safely extract error message from unknown error type
@@ -88,11 +87,13 @@ export function isError(error: unknown): error is Error {
  * Type guard to check if error has a message property
  */
 export function hasMessage(error: unknown): error is { message: string } {
-  return error !== null &&
-         error !== undefined &&
-         typeof error === 'object' &&
-         'message' in error &&
-         typeof (error as Record<string, unknown>).message === 'string';
+  return (
+    error !== null &&
+    error !== undefined &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>).message === 'string'
+  );
 }
 
 /**
@@ -135,12 +136,7 @@ export class ChromaDBErrorHandler {
     const message = getErrorMessage(error);
     const cause = isError(error) ? error : undefined;
 
-    return new ChromaDBCollectionError(
-      message,
-      collectionName,
-      context,
-      cause
-    );
+    return new ChromaDBCollectionError(message, collectionName, context, cause);
   }
 
   /**
@@ -158,12 +154,7 @@ export class ChromaDBErrorHandler {
     const message = getErrorMessage(error);
     const cause = isError(error) ? error : undefined;
 
-    return new ChromaDBDocumentError(
-      message,
-      documentId,
-      context,
-      cause
-    );
+    return new ChromaDBDocumentError(message, documentId, context, cause);
   }
 
   /**
@@ -181,12 +172,7 @@ export class ChromaDBErrorHandler {
     const message = getErrorMessage(error);
     const cause = isError(error) ? error : undefined;
 
-    return new ChromaDBEmbeddingError(
-      message,
-      provider,
-      context,
-      cause
-    );
+    return new ChromaDBEmbeddingError(message, provider, context, cause);
   }
 
   /**
@@ -204,12 +190,7 @@ export class ChromaDBErrorHandler {
     const message = getErrorMessage(error);
     const cause = isError(error) ? error : undefined;
 
-    return new ChromaDBSearchError(
-      message,
-      query,
-      context,
-      cause
-    );
+    return new ChromaDBSearchError(message, query, context, cause);
   }
 
   /**
@@ -228,13 +209,7 @@ export class ChromaDBErrorHandler {
     const message = getErrorMessage(error);
     const cause = isError(error) ? error : undefined;
 
-    return new ChromaDBValidationError(
-      message,
-      field,
-      value,
-      context,
-      cause
-    );
+    return new ChromaDBValidationError(message, field, value, context, cause);
   }
 
   /**
@@ -252,12 +227,7 @@ export class ChromaDBErrorHandler {
     const message = getErrorMessage(error);
     const cause = isError(error) ? error : undefined;
 
-    return new ChromaDBConfigurationError(
-      message,
-      configField,
-      context,
-      cause
-    );
+    return new ChromaDBConfigurationError(message, configField, context, cause);
   }
 
   /**
@@ -342,4 +312,4 @@ export {
   ChromaDBConfigurationError,
   isChromaDBError,
   wrapAsChromaDBError,
-} from '../errors/chromadb.errors';
+} from '../../errors/chromadb.errors';

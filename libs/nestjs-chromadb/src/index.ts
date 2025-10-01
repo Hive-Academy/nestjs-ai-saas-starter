@@ -1,13 +1,6 @@
 // Module
 export * from './lib/nestjs-chromadb.module';
 
-// Services
-export type {
-  PerformanceConfig as ChromaDBPerformanceConfig,
-  OperationMetrics as ChromaDBOperationMetrics,
-} from './lib/services/chromadb.service';
-export { ChromaDBService } from './lib/services/chromadb.service';
-
 // Facade Services (new specialized services)
 export { ChromaDBService as ChromaDBFacadeService } from './lib/services/chromadb-facade.service';
 // Removed duplicate PerformanceConfig import - using only line 49
@@ -130,7 +123,7 @@ export * from './lib/embeddings/cohere.embedding';
 export * from './lib/embeddings/custom.embedding';
 
 // Utilities
-export * from './lib/utils/vector.utils';
+export * from './lib/utils/data/vector.utils';
 export {
   sanitizeMetadata,
   validateMetadata as validateMetadataFormat,
@@ -142,7 +135,7 @@ export {
   formatMetadataForDisplay,
   validateMetadataSchema,
   type MetadataSchema,
-} from './lib/utils/metadata.utils';
+} from './lib/utils/data/metadata.utils';
 export {
   handleUnknownError,
   logUnknownError,
@@ -150,7 +143,7 @@ export {
   getErrorStack,
   createTypedError,
   type ErrorContext,
-} from './lib/utils/error-handling.utils';
+} from './lib/utils/errors/error-handling.utils';
 
 // Errors
 export * from './lib/errors/chromadb.errors';
@@ -198,4 +191,4 @@ export {
   getChromaDBConfigWithDefaults,
   setChromaDBConfig,
   isChromaDBConfigured,
-} from './lib/utils/chromadb-config.accessor';
+} from './lib/utils/config/chromadb-config.accessor';

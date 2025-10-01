@@ -6,6 +6,324 @@
 
 The Workflow Engine serves as the **central orchestration hub** that coordinates all LangGraph modules through a sophisticated registry pattern and comprehensive service architecture.
 
+## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
+
+**Source Code Analysis Results** (January 2025)
+
+The workflow-engine is the **central coordination hub** that **embeds streaming services** and **registers all agents/tools/workflows** from other modules.
+
+### 🔗 Integration Architecture
+
+| Module             | Integration Pattern     | Usage                                                                                                      | File Reference                                                       |
+| ------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **streaming**      | Embedded Services       | `WorkflowStreamService`, `WorkflowStreamOrchestrator`, `TokenProcessingService` built into workflow-engine | `workflow-engine/src/lib/streaming/*.service.ts`                     |
+| **functional-api** | Decorator Translation   | `MetadataProcessorService` extracts `@Workflow`, `@Node`, `@Edge` metadata                                 | `workflow-engine/src/lib/core/metadata-processor.service.ts:14-101`  |
+| **multi-agent**    | Central Registration    | `CentralRegistryService` registers agents, tools, workflows                                                | `workflow-engine/src/lib/services/central-registry.service.ts:1-276` |
+| **dev-brand-api**  | Production Registration | 3 agents, 2 tools, 2 workflows registered centrally                                                        | `apps/dev-brand-api/src/app/config/workflow-engine.config.ts:19-33`  |
+| **memory**         | Optional Enhancement    | `@Optional() @Inject('IMemoryAdapter')` in `WorkflowGraphBuilderService`                                   | `workflow-engine/src/lib/core/workflow-graph-builder.service.ts`     |
+| **checkpoint**     | Optional Enhancement    | `@Optional() @Inject('ICheckpointAdapter')` in workflow services                                           | `workflow-engine/src/lib/streaming/workflow-stream.service.ts:76-82` |
+
+### 🎯 Key Architectural Insight
+
+**Workflow-Engine is the central hub that coordinates everything**:
+
+```typescript
+// ✅ CORRECT: Workflow-engine coordinates all modules
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
+
+// 1. Multi-agent provides agents and LLM orchestration
+MultiAgentModule.forRoot({ defaultLlm: { provider: 'openai' } });
+
+// 2. Functional-API provides decorators
+FunctionalApiModule.forRoot({ enableStreaming: true });
+
+// 3. Streaming provides decorators (services embedded in workflow-engine)
+StreamingModule.forRoot({ websocket: { enabled: true } });
+
+// 4. Workflow-Engine orchestrates everything
+WorkflowEngineModule.forRoot({
+  agents: [Agent1, Agent2], // From multi-agent
+  tools: [Tool1, Tool2], // From multi-agent
+  workflows: [Workflow1], // From functional-api
+  // Streaming services built-in, decorator metadata extracted automatically
+});
+```
+
+### 📊 Real Production Configuration
+
+**DevBrand API Workflow-Engine Config** (verified source: `workflow-engine.config.ts:1-49`):
+
+```typescript
+import type { WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
+
+// Centralized imports for all agents, tools, and workflows
+import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
+import { GitHubIntegrationTools } from '../business-workflows/core/tools/github-integration.tools';
+import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from '../business-workflows/agents/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer.agent';
+import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+import { DevBrandChatWorkflow } from '../business-workflows/workflows/devbrand-chat.workflow';
+
+/**
+ * Workflow Engine Module Configuration for dev-brand-api
+ * CENTRAL REGISTRATION POINT for agents, tools, and workflows
+ */
+export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
+  return {
+    // ✅ CENTRALIZED REGISTRATION: All providers in one place
+    agents: [PersonalBrandStrategistAgent, ContentCreatorAgent, GitHubCodeAnalyzerAgent],
+
+    tools: [WebResearchTools, GitHubIntegrationTools],
+
+    workflows: [DevBrandSupervisorWorkflow, DevBrandChatWorkflow],
+
+    // Workflow engine configuration
+    compilation: {
+      cacheEnabled: process.env.WORKFLOW_CACHE_ENABLED !== 'false',
+      cacheTTL: parseInt(process.env.WORKFLOW_CACHE_TTL || '300000'), // 5 min
+      optimizeGraphs: process.env.WORKFLOW_OPTIMIZE_GRAPHS !== 'false',
+    },
+  };
+}
+```
+
+**Source Reference**: `apps/dev-brand-api/src/app/config/workflow-engine.config.ts`
+
+### 🔄 Central Registry Service
+
+**CentralRegistryService Pattern** (verified source: `central-registry.service.ts:1-276`):
+
+```typescript
+import { Injectable, Inject, Optional } from '@nestjs/common';
+import type { AgentProvider, ToolProvider, WorkflowProvider } from '@hive-academy/langgraph-multi-agent';
+import type { WorkflowClass } from '@hive-academy/langgraph-functional-api';
+
+/**
+ * Centralized registry for all agents, tools, and workflows.
+ * SINGLE source of truth for registration across all modules.
+ */
+@Injectable()
+export class CentralRegistryService {
+  // Internal registries
+  private readonly agents = new Map<string, AgentProvider>();
+  private readonly tools = new Map<string, ToolProvider>();
+  private readonly workflows = new Map<string, WorkflowProvider | WorkflowClass>();
+
+  // Execution service references (injected from other modules)
+  private multiAgentExecutor?: any;
+  private functionalApiExecutor?: any;
+
+  constructor(
+    @Optional()
+    @Inject('WORKFLOW_ENGINE_AGENTS')
+    private readonly configuredAgents: AgentProvider[] = [],
+
+    @Optional()
+    @Inject('WORKFLOW_ENGINE_TOOLS')
+    private readonly configuredTools: ToolProvider[] = [],
+
+    @Optional()
+    @Inject('WORKFLOW_ENGINE_WORKFLOWS')
+    private readonly configuredWorkflows: (WorkflowProvider | WorkflowClass)[] = []
+  ) {
+    this.initializeRegistry();
+  }
+
+  /**
+   * Initialize the registry with configured providers
+   */
+  private initializeRegistry(): void {
+    // Register configured agents
+    this.configuredAgents.forEach((agent) => {
+      this.registerAgent(agent);
+    });
+
+    // Register configured tools
+    this.configuredTools.forEach((tool) => {
+      this.registerTool(tool);
+    });
+
+    // Register configured workflows
+    this.configuredWorkflows.forEach((workflow) => {
+      this.registerWorkflow(workflow);
+    });
+
+    this.logger.log(`Registry initialized with ${this.agents.size} agents, ` + `${this.tools.size} tools, ${this.workflows.size} workflows`);
+  }
+
+  /**
+   * Execute an agent through the appropriate execution service
+   */
+  async executeAgent(agentId: string, state: any): Promise<any> {
+    const agent = this.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Agent ${agentId} not found in registry`);
+    }
+
+    if (!this.multiAgentExecutor) {
+      throw new Error('Multi-agent executor not available');
+    }
+
+    return this.multiAgentExecutor.executeAgent(agent, state);
+  }
+
+  /**
+   * Execute a workflow through the appropriate execution service
+   */
+  async executeWorkflow(workflowId: string, input: any): Promise<any> {
+    const workflow = this.getWorkflow(workflowId);
+    if (!workflow) {
+      throw new Error(`Workflow ${workflowId} not found in registry`);
+    }
+
+    if (!this.functionalApiExecutor) {
+      throw new Error('Functional API executor not available');
+    }
+
+    return this.functionalApiExecutor.executeWorkflow(workflow, input);
+  }
+}
+```
+
+**Source Reference**: `libs/langgraph-modules/workflow-engine/src/lib/services/central-registry.service.ts`
+
+### 🎛️ Embedded Streaming Services
+
+**Streaming services embedded in workflow-engine** (verified source: `workflow-stream.service.ts:1-100`):
+
+```typescript
+import { Injectable, Inject, Optional } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Observable, Subject, Subscription } from 'rxjs';
+import type { StreamUpdate, TokenData } from '@hive-academy/langgraph-streaming';
+import { getStreamTokenMetadata, getStreamEventMetadata, getStreamProgressMetadata } from '@hive-academy/langgraph-streaming';
+import type { IStreamingService, ICheckpointAdapter } from '@hive-academy/langgraph-core';
+
+/**
+ * Service for managing multi-level streaming of workflow execution.
+ * EMBEDDED in workflow-engine to avoid circular dependencies.
+ */
+@Injectable()
+export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
+  private readonly streams = new Map<string, Subject<StreamUpdate>>();
+  private readonly tokenStreamConfigs = new Map<string, StreamTokenDecoratorMetadata>();
+  private readonly eventStreamConfigs = new Map<string, StreamEventDecoratorMetadata>();
+  private readonly progressStreamConfigs = new Map<string, StreamProgressDecoratorMetadata>();
+
+  constructor(
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    private readonly metadataProcessor: MetadataProcessorService,
+
+    // Inject the streaming service - could be real service or no-op
+    @Inject('IStreamingService')
+    private readonly streamingService: IStreamingService,
+
+    // Inject checkpoint adapter - optional
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {
+    this.checkpointingEnabled = !!this.checkpointAdapter;
+  }
+
+  /**
+   * Create observable stream for workflow execution
+   */
+  createStream(executionId: string, options?: StreamOptions): Observable<StreamUpdate> {
+    const subject = new Subject<StreamUpdate>();
+    this.streams.set(executionId, subject);
+
+    // Extract decorator metadata for streaming configuration
+    if (options?.workflowClass) {
+      const tokenMeta = getStreamTokenMetadata(options.workflowClass.prototype, options.methodName);
+      if (tokenMeta) this.tokenStreamConfigs.set(executionId, tokenMeta);
+    }
+
+    return subject.asObservable();
+  }
+}
+```
+
+**Source Reference**: `libs/langgraph-modules/workflow-engine/src/lib/streaming/workflow-stream.service.ts`
+
+### 🏗️ Complete Ecosystem Integration Example
+
+**Full Workflow-Engine Integration**:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
+import { MemoryModule } from '@hive-academy/langgraph-memory';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { getWorkflowEngineConfig } from './config/workflow-engine.config';
+import { getMultiAgentConfig } from './config/multi-agent.config';
+
+@Module({
+  imports: [
+    // 1. Multi-Agent provides agents, tools, LLM orchestration
+    MultiAgentModule.forRoot(getMultiAgentConfig()),
+
+    // 2. Functional-API provides workflow decorators
+    FunctionalApiModule.forRoot({
+      enableStreaming: true,
+    }),
+
+    // 3. Streaming provides decorators (services embedded in workflow-engine)
+    StreamingModule.forRoot({
+      websocket: { enabled: true },
+    }),
+
+    // 4. Memory provides optional context enhancement
+    MemoryModule.forRoot({
+      chromaDb: { url: process.env.CHROMADB_URL },
+    }),
+
+    // 5. Checkpoint provides optional state persistence
+    CheckpointModule.forRoot({
+      storage: 'redis',
+      redis: { url: process.env.REDIS_URL },
+    }),
+
+    // 6. Workflow-Engine orchestrates everything
+    WorkflowEngineModule.forRoot({
+      ...getWorkflowEngineConfig(),
+      // CentralRegistryService manages all agents/tools/workflows
+      // WorkflowStreamService provides embedded streaming
+      // MetadataProcessorService extracts decorator metadata
+      // Optional memory/checkpoint adapters auto-injected
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### 🎯 Consumer Value Proposition
+
+**Before Workflow-Engine**: Manual coordination between modules
+**With Workflow-Engine**: Central hub coordinates everything automatically
+
+| Feature                  | Manual Coordination   | Workflow-Engine      |
+| ------------------------ | --------------------- | -------------------- |
+| **Agent Registration**   | Manual per module     | Central registry     |
+| **Streaming Services**   | Circular dependencies | Embedded             |
+| **Decorator Processing** | Manual                | Automatic            |
+| **Memory/Checkpoint**    | Manual injection      | Optional auto-inject |
+
+**Key Benefits**:
+
+- ✅ Single registration point for all agents, tools, workflows
+- ✅ Embedded streaming services (no circular deps)
+- ✅ Automatic decorator metadata extraction
+- ✅ Optional memory/checkpoint enhancement
+- ✅ Production-ready graph compilation caching
+
 ### 🏛️ Verified Architecture Patterns
 
 **Central Registry Pattern**: Single source of truth for all agents, tools, and workflows

@@ -6,7 +6,7 @@ import { Injectable, Logger, ExecutionContext } from '@nestjs/common';
 import {
   logUnknownError,
   handleUnknownError,
-} from '../../utils/error-handling.utils';
+} from '../../utils/errors/error-handling.utils';
 
 /**
  * Tenant context interface

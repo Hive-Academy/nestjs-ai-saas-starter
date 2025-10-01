@@ -9,4 +9,7 @@ npx lint-staged
 echo "🏗️  linting affected libraries..."
 npx nx affected:lint --base=HEAD~1
 
+echo " 🏗️  typechecking affected libraries..."
+npm run typecheck:affected
+
 echo "✅ Pre-commit checks passed!"

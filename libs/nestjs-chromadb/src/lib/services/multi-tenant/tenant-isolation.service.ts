@@ -8,7 +8,7 @@ import {
   logUnknownError,
   handleUnknownError,
   getErrorMessage,
-} from '../../utils/error-handling.utils';
+} from '../../utils/errors/error-handling.utils';
 
 /**
  * Tenant collection result

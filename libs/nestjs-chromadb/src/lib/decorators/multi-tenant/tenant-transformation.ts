@@ -7,7 +7,7 @@ import type {
   TenantContext,
   TenantIsolationConfig,
 } from '../../services/multi-tenant/tenant-context.service';
-import { getErrorMessage } from '../../utils/error-handling.utils';
+import { getErrorMessage } from '../../utils/errors/error-handling.utils';
 
 // Re-export types and classes
 export type {

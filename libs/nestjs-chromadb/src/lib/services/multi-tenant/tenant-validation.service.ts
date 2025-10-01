@@ -7,7 +7,7 @@ import { TenantContext } from './tenant-context.service';
 import {
   logUnknownError,
   getErrorMessage,
-} from '../../utils/error-handling.utils';
+} from '../../utils/errors/error-handling.utils';
 import type { ValidationResult } from '../../types/core.interface';
 
 // Re-export ValidationResult for use in other modules

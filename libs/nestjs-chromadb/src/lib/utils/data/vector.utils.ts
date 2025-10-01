@@ -119,7 +119,7 @@ export function findMostSimilar(
   queryVector: number[],
   vectors: number[][],
   topK = 5,
-  metric: 'cosine' | 'euclidean' = 'cosine',
+  metric: 'cosine' | 'euclidean' = 'cosine'
 ): Array<{ index: number; similarity: number; distance: number }> {
   const results = vectors.map((vec, index) => {
     let similarity: number;
@@ -175,7 +175,7 @@ export function batchNormalize(vectors: number[][]): number[][] {
  */
 export function validateVector(
   vector: number[],
-  expectedDimensions?: number,
+  expectedDimensions?: number
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
@@ -189,7 +189,7 @@ export function validateVector(
 
   if (expectedDimensions && vector.length !== expectedDimensions) {
     errors.push(
-      `Expected ${expectedDimensions} dimensions, got ${vector.length}`,
+      `Expected ${expectedDimensions} dimensions, got ${vector.length}`
     );
   }
 
@@ -227,7 +227,7 @@ export function randomUnitVector(dimensions: number): number[] {
 export function distanceToSimilarity(
   distance: number,
   method: 'inverse' | 'negative_exp' | 'gaussian' = 'inverse',
-  sigma?: number,
+  sigma?: number
 ): number {
   switch (method) {
     case 'inverse':
