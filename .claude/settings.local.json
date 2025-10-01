@@ -14,8 +14,6 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(npx nx build:*)",
-      "Bash(for module in hitl monitoring multi-agent memory platform time-travel)",
-      "Bash(do)",
       "Bash(ls:*)",
       "Bash(echo:*)",
       "Bash(done)",
@@ -24,9 +22,6 @@
       "Bash(npx tsc:*)",
       "Bash(node:*)",
       "Bash(npx nx typecheck:*)",
-      "Bash(npx nx run @hive-academy/nestjs-chromadb:typecheck)",
-      "Bash(npx nx run @hive-academy/nestjs-neo4j:typecheck)",
-      "Bash(npx nx run @hive-academy/langgraph-checkpoint:typecheck)",
       "Bash(npx nx run-many:*)",
       "Bash(npm install:*)",
       "Bash(npx nx serve:*)",
@@ -43,7 +38,8 @@
       "Bash(npm run update:libs:*)",
       "mcp__filesystem__list_directory",
       "mcp__filesystem__directory_tree",
-      "mcp__filesystem__read_text_file"
+      "mcp__filesystem__read_text_file",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],
@@ -56,9 +52,5 @@
     "nx-mcp",
     "angular-cli",
     "fetch"
-  ],
-  "statusLine": {
-    "type": "command",
-    "command": "powershell.exe -ExecutionPolicy Bypass -File \"D:\\projects\\nestjs-ai-saas-starter\\.claude\\status-line.ps1\""
-  }
+  ]
 }

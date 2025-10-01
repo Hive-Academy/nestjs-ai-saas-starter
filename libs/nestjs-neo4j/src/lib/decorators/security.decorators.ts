@@ -977,28 +977,31 @@ async function logAuditEvent(
 ): Promise<void> {
   if (config.storage?.storeInNeo4j && instance.neo4jService) {
     try {
-      await instance.neo4jService.write(async (session: any) => {
-        await session.run(
-          `CREATE (audit:AuditLog {
-            id: $auditId,
-            event: $event,
-            methodName: $methodName,
-            timestamp: $timestamp,
-            userId: $userId,
-            tenantId: $tenantId,
-            details: $details
-          })`,
-          {
-            auditId: event.auditId,
-            event: event.event,
-            methodName: event.methodName,
-            timestamp: event.timestamp.toISOString(),
-            userId: event.context?.userId,
-            tenantId: event.context?.tenantId,
-            details: JSON.stringify(event),
-          }
-        );
+      // Use QueryBuilder for audit log creation
+      const queryBuilder = instance.neo4jService.createQueryBuilder();
+
+      queryBuilder.create('(audit:AuditLog)').set({
+        'audit.id': '$auditId',
+        'audit.event': '$event',
+        'audit.methodName': '$methodName',
+        'audit.timestamp': '$timestamp',
+        'audit.userId': '$userId',
+        'audit.tenantId': '$tenantId',
+        'audit.details': '$details',
       });
+
+      // Add parameters to QueryBuilder
+      queryBuilder.getBindParam().add('auditId', event.auditId);
+      queryBuilder.getBindParam().add('event', event.event);
+      queryBuilder.getBindParam().add('methodName', event.methodName);
+      queryBuilder
+        .getBindParam()
+        .add('timestamp', event.timestamp.toISOString());
+      queryBuilder.getBindParam().add('userId', event.context?.userId);
+      queryBuilder.getBindParam().add('tenantId', event.context?.tenantId);
+      queryBuilder.getBindParam().add('details', JSON.stringify(event));
+
+      await queryBuilder.run();
     } catch (error) {
       console.error('Failed to store audit log in Neo4j:', error);
     }

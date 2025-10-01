@@ -279,7 +279,6 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 'off', // Sometimes needed for valid reasons
       '@typescript-eslint/prefer-optional-chain': 'off', // Modern JS feature, auto-fixable
       '@typescript-eslint/no-unnecessary-type-assertion': 'off', // Auto-fixable
-
       // === CONFIGURED WITH FLEXIBILITY ===
       '@typescript-eslint/explicit-function-return-type': [
         'off', // Downgraded to offing

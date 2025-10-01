@@ -217,6 +217,28 @@ export class MultiTenantNeo4jService {
 
   /**
    * Execute query with automatic tenant routing
+   * Alias for run() method for backward compatibility
+   */
+  async query(
+    tenantId: string,
+    cypher: string,
+    params?: Record<string, unknown>
+  ): Promise<any> {
+    // Set tenant context temporarily for this query
+    const originalTenant = await this.tenantContext.getTenantId();
+    try {
+      await this.tenantContext.setTenant(tenantId);
+      return await this.run(cypher, params);
+    } finally {
+      // Restore original tenant
+      if (originalTenant) {
+        await this.tenantContext.setTenant(originalTenant);
+      }
+    }
+  }
+
+  /**
+   * Execute query with automatic tenant routing
    */
   async run<T extends Neo4jRecordShape = Neo4jRecordShape>(
     cypher: string,

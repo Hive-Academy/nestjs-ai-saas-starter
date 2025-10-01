@@ -5,8 +5,11 @@
  * Based on actual Neogma types and patterns, not custom abstractions.
  */
 
-import type { Record as Neo4jRecord } from 'neo4j-driver';
+import type { Record as Neo4jDriverRecord } from 'neo4j-driver';
 import type { QueryBuilder } from 'neogma';
+
+// Use proper Neo4j Record type
+export type Neo4jRecord = Neo4jDriverRecord;
 
 // Re-export essential Neogma types for our use
 export type { Neogma, QueryBuilder } from 'neogma';
@@ -18,13 +21,13 @@ export interface NeogmaEntity {
   id: string;
   createdAt?: Date;
   updatedAt?: Date;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
  * Find options for our high-level API
  */
-export interface FindOptions<T = any> {
+export interface FindOptions<T = unknown> {
   where?: Partial<T>;
   orderBy?: Array<{ [K in keyof T]?: 'ASC' | 'DESC' }>;
   limit?: number;
@@ -61,20 +64,20 @@ export interface NeogmaMetrics {
 export interface NeogmaModelInterface {
   findOne(options: {
     where: Partial<NeogmaEntity>;
-  }): Promise<{ toJson(): Record<string, unknown> } | null>;
+  }): Promise<{ toJson(): { [key: string]: unknown } } | null>;
   findMany(options?: {
     where?: Partial<NeogmaEntity>;
     limit?: number;
     skip?: number;
     orderBy?: Array<{ [key: string]: 'ASC' | 'DESC' }>;
-  }): Promise<Array<{ toJson(): Record<string, unknown> }>>;
+  }): Promise<Array<{ toJson(): { [key: string]: unknown } }>>;
   create(
     data: Omit<NeogmaEntity, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<{ toJson(): Record<string, unknown> }>;
+  ): Promise<{ toJson(): { [key: string]: unknown } }>;
   update(
     data: Partial<Omit<NeogmaEntity, 'id' | 'createdAt'>>,
     options: { where: Partial<NeogmaEntity> }
-  ): Promise<{ toJson(): Record<string, unknown> } | null>;
+  ): Promise<{ toJson(): { [key: string]: unknown } } | null>;
   delete(options: {
     where: Partial<NeogmaEntity>;
     detach?: boolean;
@@ -139,7 +142,10 @@ export interface INeogmaService {
   ): Promise<boolean>;
 
   // Direct Neogma access
-  run(cypher: string, params?: Record<string, any>): Promise<QueryResult>;
+  run(
+    cypher: string,
+    params?: { [key: string]: unknown }
+  ): Promise<QueryResult>;
   createQueryBuilder(): QueryBuilder;
 
   // Connection management
@@ -184,7 +190,7 @@ export type NeogmaInstanceType<T> = T & { toJson(): T };
  */
 export interface TransactionConfig {
   timeout?: number;
-  metadata?: Record<string, any>;
+  metadata?: { [key: string]: unknown };
 }
 
 export interface QueryExecutionOptions {

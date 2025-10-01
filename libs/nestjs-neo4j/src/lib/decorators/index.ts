@@ -28,7 +28,7 @@
  * - @Safe: Unified validation and transformation
  *
  * ## Constraint Decorators (Re-exported from constraints module)
- * - @NotNull, @Required, @NotEmpty, @Unique, @Index, @NodeKey, @Validate
+ * - @NotNull, @Required, @NotEmpty, @Unique, @PropIndex, @ClassIndex, @NodeKey, @Validate
  *
  * ## Key Features
  * - **BACKWARD COMPATIBLE**: All existing code continues to work unchanged
@@ -51,7 +51,6 @@ export * from './safe.decorator';
 
 // Query decorators (enhanced existing @CypherQuery)
 export * from './cypher-query.decorator';
-
 
 // Utility decorators
 export * from './inject-neo4j.decorator';

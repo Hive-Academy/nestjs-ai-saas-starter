@@ -4,14 +4,9 @@
     "outDir": "../../dist/libs/nestjs-neo4j",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "emitDeclarationOnly": true,
     "experimentalDecorators": true,
     "declaration": true,
-    "declarationMap": true,
-    "downlevelIteration": true,
-    "useDefineForClassFields": true
+    "declarationMap": true
   },
   "include": ["src/**/*.ts"],
   "references": [],

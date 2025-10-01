@@ -40,6 +40,22 @@ import { NeogmaMetricsService } from './services/neogma-metrics.service';
 import { NeogmaConnectionService } from './services/neogma-connection.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';
 import { NeogmaModule } from './neogma/neogma.module';
+
+// Modern QueryBuilder Services
+import { NeogmaQueryBuilderService } from './query-builder/neogma-query-builder.service';
+import { NeogmaQueryRunnerService } from './query-builder/neogma-query-runner.service';
+import { NeogmaModelFactoryService } from './query-builder/neogma-model-factory.service';
+
+// Modern Relationship Services (BaseRelationshipService is abstract and not registered)
+import { RelationshipCoreRepository } from './repositories/relationship/relationship-core.repository';
+import { RelationshipBulkOperationsService } from './repositories/relationship/relationship-bulk.service';
+import { RelationshipRepository } from './repositories/relationship/relationship-repository';
+
+// Modern Graph Services (BaseGraphService is abstract and not registered)
+import { GraphTraversalService } from './repositories/graph/graph-traversal.service';
+import { GraphMetricsService } from './repositories/graph/graph-metrics.service';
+import { GraphPatternService } from './repositories/graph/graph-pattern.service';
+import { GraphRepository } from './repositories/graph-repository';
 @Global()
 @Module({})
 export class Neo4jModule {
@@ -91,6 +107,21 @@ export class Neo4jModule {
       NeogmaService,
       NeogmaMetricsService,
       NeogmaConnectionService,
+      // Modern QueryBuilder Services
+      NeogmaQueryBuilderService,
+      NeogmaQueryRunnerService,
+      NeogmaModelFactoryService,
+      // Modern Relationship Services
+      RelationshipCoreRepository,
+      RelationshipBulkOperationsService,
+      // Legacy Facade (for backward compatibility)
+      RelationshipRepository,
+      // Modern Graph Services
+      GraphTraversalService,
+      GraphMetricsService,
+      GraphPatternService,
+      // Legacy Graph Facade (for backward compatibility)
+      GraphRepository,
     ];
 
     return {
@@ -102,6 +133,15 @@ export class Neo4jModule {
         NeogmaService,
         NeogmaMetricsService,
         NeogmaConnectionService,
+        // Modern QueryBuilder Services
+        NeogmaQueryBuilderService,
+        NeogmaQueryRunnerService,
+        NeogmaModelFactoryService,
+        // Modern Relationship Services
+        RelationshipCoreRepository,
+        RelationshipBulkOperationsService,
+        // Legacy Facade (for backward compatibility)
+        RelationshipRepository,
         // Core tokens
         NEO4J_DRIVER,
         NEO4J_OPTIONS,
@@ -131,9 +171,19 @@ export class Neo4jModule {
         },
         inject: [NEO4J_OPTIONS],
       },
+      // Primary Neogma services
       NeogmaService,
       NeogmaMetricsService,
       NeogmaConnectionService,
+      // Modern QueryBuilder Services
+      NeogmaQueryBuilderService,
+      NeogmaQueryRunnerService,
+      NeogmaModelFactoryService,
+      // Modern Relationship Services
+      RelationshipCoreRepository,
+      RelationshipBulkOperationsService,
+      // Legacy Facade (for backward compatibility)
+      RelationshipRepository,
     ];
 
     // Create Neogma module async import
@@ -157,6 +207,15 @@ export class Neo4jModule {
         NeogmaService,
         NeogmaMetricsService,
         NeogmaConnectionService,
+        // Modern QueryBuilder Services
+        NeogmaQueryBuilderService,
+        NeogmaQueryRunnerService,
+        NeogmaModelFactoryService,
+        // Modern Relationship Services
+        RelationshipCoreRepository,
+        RelationshipBulkOperationsService,
+        // Legacy Facade (for backward compatibility)
+        RelationshipRepository,
         // Core tokens
         NEO4J_DRIVER,
         NEO4J_OPTIONS,

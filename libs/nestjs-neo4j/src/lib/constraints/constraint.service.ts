@@ -11,7 +11,7 @@
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 // import { ModuleRef } from '@nestjs/core'; // TODO: Future use for dependency resolution
-import type { Session, Record } from 'neo4j-driver';
+import type { Record } from 'neo4j-driver';
 import { NeogmaService } from '../core/neogma.service';
 import {
   ConstraintMetadata,
@@ -299,10 +299,10 @@ export class ConstraintService implements OnModuleInit {
         throw new Error(`Unsupported constraint type: ${constraint.type}`);
       }
 
-      // Execute constraint creation
-      await this.neo4j.write(async (session: Session) => {
-        await session.run(queryInfo.query);
-      });
+      // Execute constraint creation using QueryBuilder
+      const queryBuilder = this.neo4j.createQueryBuilder();
+      queryBuilder.raw(queryInfo.query);
+      await queryBuilder.run();
 
       const result: ConstraintCreationStatus = {
         constraint,
@@ -457,9 +457,10 @@ export class ConstraintService implements OnModuleInit {
    */
   async dropConstraint(constraintName: string): Promise<boolean> {
     try {
-      await this.neo4j.write(async (session: Session) => {
-        await session.run(`DROP CONSTRAINT ${constraintName}`);
-      });
+      // Use QueryBuilder for dropping constraint
+      const queryBuilder = this.neo4j.createQueryBuilder();
+      queryBuilder.raw(`DROP CONSTRAINT ${constraintName}`);
+      await queryBuilder.run();
 
       if (this.config.enableLogging) {
         this.logger.log(`Dropped constraint: ${constraintName}`);
@@ -480,10 +481,12 @@ export class ConstraintService implements OnModuleInit {
    * List all constraints in the database
    */
   async listDatabaseConstraints(): Promise<any[]> {
-    return this.neo4j.read(async (session: Session) => {
-      const result = await session.run('SHOW CONSTRAINTS');
-      return result.records.map((record: Record) => record.toObject());
-    });
+    // Use QueryBuilder for listing constraints
+    const queryBuilder = this.neo4j.createQueryBuilder();
+    queryBuilder.raw('SHOW CONSTRAINTS');
+
+    const result = await queryBuilder.run();
+    return result.records.map((record: Record) => record.toObject());
   }
 
   /**

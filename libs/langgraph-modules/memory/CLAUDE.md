@@ -1,5 +1,127 @@
 # Memory Module - Dual Storage Orchestration
 
+## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
+
+**Evidence-Based Documentation**: The following integration patterns are verified through direct source code inspection across all modules that import from `@hive-academy/langgraph-memory`.
+
+### Real Module Integration Table
+
+| Module              | Import Pattern   | Usage Type                         | Integration Service           | Dependency            |
+| ------------------- | ---------------- | ---------------------------------- | ----------------------------- | --------------------- |
+| **Multi-Agent**     | `IMemoryAdapter` | `@Optional()` graceful degradation | `NodeFactoryService`          | Optional              |
+| **Workflow-Engine** | `IMemoryAdapter` | `@Optional()` capability detection | `WorkflowGraphBuilderService` | Optional              |
+| **HITL**            | `IMemoryAdapter` | `@Inject()` learning system        | `HitlMemoryLearningService`   | Required for learning |
+| **Functional-API**  | `IMemoryAdapter` | `@Optional()` workflow enhancement | `FunctionalWorkflowService`   | Optional              |
+
+### 🔑 Integration Architecture
+
+**Key Discovery**: Memory is NOT a standalone service in the ecosystem—it's an **adapter-based enhancement system** that other modules optionally inject.
+
+```typescript
+// VERIFIED PATTERN 1: Multi-Agent Memory Enhancement
+// Source: libs/langgraph-modules/multi-agent/src/lib/services/node-factory.service.ts
+@Injectable()
+export class NodeFactoryService {
+  constructor(
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
+  ) {}
+
+  private async enhanceAgentWithMemory(agent: AgentDefinition, state: AgentState, agentExecution: () => Promise<Partial<AgentState>>): Promise<Partial<AgentState>> {
+    // 1. Retrieve memory context BEFORE agent execution
+    if (this.memoryAdapter) {
+      const memoryContext = await this.memoryAdapter.getAgentContext(state);
+      enhancedState = {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          memoryContext: {
+            threadMemories: memoryContext.threadMemories.slice(0, 5),
+            userMemories: memoryContext.userMemories.slice(0, 3),
+          },
+        },
+      };
+    }
+
+    // 2. Execute agent with enhanced state
+    const result = await agentExecution();
+
+    // 3. Store agent execution result in memory
+    if (this.memoryAdapter && result) {
+      await this.memoryAdapter.storeAgentExecution(state, result, agent.id);
+    }
+
+    return result;
+  }
+}
+```
+
+```typescript
+// VERIFIED PATTERN 2: HITL Memory Learning
+// Source: libs/langgraph-modules/hitl/src/lib/services/hitl-memory-learning.service.ts
+@Injectable()
+export class HitlMemoryLearningService implements IHitlMemoryLearningService {
+  constructor(
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter: IMemoryAdapter
+  ) {}
+
+  async learnFromHumanFeedback(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void> {
+    if (!this.memoryAdapter) return;
+
+    const learningThreadId = `hitl-learning-${request.executionId}`;
+
+    // Store rich feedback memory with metadata for learning
+    await this.memoryAdapter.store(learningThreadId, JSON.stringify(feedbackMemory), {
+      type: 'human_feedback',
+      subtype: 'approval_decision',
+      decision: response.decision,
+      confidence: request.confidence.current,
+      importance: this.calculateFeedbackImportance(request, response),
+      // ... rich metadata for pattern recognition
+    });
+  }
+}
+```
+
+```typescript
+// VERIFIED PATTERN 3: Workflow-Engine Memory Enhancement
+// Source: libs/langgraph-modules/workflow-engine/src/lib/core/workflow-graph-builder.service.ts
+@Injectable()
+export class WorkflowGraphBuilderService {
+  constructor(
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
+  ) {}
+
+  async buildFromDefinition<TState extends WorkflowState>(definition: WorkflowDefinition<TState>, options: GraphBuilderOptions = {}): Promise<StateGraph<TState>> {
+    // Apply optimization patterns if memory adapter is available
+    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(definition, options);
+    // Memory-aware graph compilation...
+  }
+}
+```
+
+```typescript
+// VERIFIED PATTERN 4: Functional-API Memory Integration
+// Source: libs/langgraph-modules/functional-api/src/lib/services/functional-workflow.service.ts
+@Injectable()
+export class FunctionalWorkflowService {
+  constructor(
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
+  ) {}
+
+  async executeWorkflow<TState>(workflowName: string, options: WorkflowExecutionOptions = {}): Promise<WorkflowExecutionResult<TState>> {
+    // Memory adapter optionally enhances workflow execution
+    // with context retrieval and result storage
+  }
+}
+```
+
 ## Real API Surface (Source Code Verified)
 
 **Evidence-Based Documentation**: The following exports are verified through direct source code inspection.
@@ -245,11 +367,106 @@ export class ApplicationMemoryService {
 }
 ```
 
-### Workflow-Engine Integration
+### 🚀 Real Multi-Agent Memory Enhancement
+
+**VERIFIED INTEGRATION**: Multi-agent module uses memory adapter to enhance agent execution
+
+```typescript
+// Multi-Agent uses IMemoryAdapter, NOT MemoryService
+import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
+import { IMemoryAdapter } from '@hive-academy/langgraph-core';
+
+@Module({
+  imports: [
+    MemoryModule.forRoot({
+      vectorService: ChromaDBAdapter,
+      graphService: Neo4jAdapter,
+      config: { collection: 'agent-memory' },
+    }),
+    MultiAgentModule.forRootAsync({
+      useFactory: async (memoryAdapter: IMemoryAdapter) => ({
+        // Memory adapter auto-injected and used to enhance agents
+        memoryAdapter, // Optional enhancement
+      }),
+      inject: ['IMemoryAdapter'], // Provided by MemoryModule
+    }),
+  ],
+})
+export class AppModule {}
+
+// Real usage: Memory automatically enhances agent execution
+@Agent({ id: 'memory-enhanced-agent' })
+export class MemoryEnhancedAgent {
+  async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
+    // Memory context automatically added to state.metadata.memoryContext
+    // by NodeFactoryService before this executes
+    const relevantMemories = state.metadata?.memoryContext?.threadMemories || [];
+
+    // Use memory context in agent processing
+    const response = await this.processWithMemory(state.messages, relevantMemories);
+
+    // Result automatically stored in memory by NodeFactoryService after execution
+    return {
+      messages: [new AIMessage(response)],
+      metadata: { ...state.metadata, memoryEnhanced: true },
+    };
+  }
+}
+```
+
+### 🎯 Real HITL Memory Learning
+
+**VERIFIED INTEGRATION**: HITL module uses memory for learning from human feedback
+
+```typescript
+import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
+import { IMemoryAdapter } from '@hive-academy/langgraph-core';
+
+@Module({
+  imports: [
+    MemoryModule.forRoot({
+      vectorService: ChromaDBAdapter,
+      graphService: Neo4jAdapter,
+      config: { collection: 'hitl-learning' },
+    }),
+    HitlModule.forRoot({
+      // Memory adapter auto-injected for learning
+    }),
+  ],
+})
+export class AppModule {}
+
+// Real usage: HITL automatically stores approval patterns in memory
+@Injectable()
+export class ApprovalWorkflowService {
+  constructor(private readonly hitl: HumanApprovalService) {}
+
+  async requestApproval(request: ApprovalRequest): Promise<ApprovalResponse> {
+    const approvalId = await this.hitl.requestApproval('exec-123', {
+      message: 'Deploy to production?',
+      confidence: { current: 0.7, threshold: 0.8 },
+      // ... other approval data
+    });
+
+    // When human responds, HITL automatically stores learning in memory:
+    // - Approval decision (approved/rejected)
+    // - Confidence gap (system confidence vs human decision)
+    // - Response time patterns
+    // - Approver experience level
+    // - Contextual factors for future pattern recognition
+
+    return await this.hitl.processApprovalResponse(approvalId, response);
+  }
+}
+```
+
+### 🛠️ Real Workflow-Engine Memory Integration
+
+**VERIFIED INTEGRATION**: Workflow-engine optionally uses memory for workflow enhancement
 
 ```typescript
 import { WorkflowExecutionService, WorkflowDefinition } from '@hive-academy/langgraph-workflow-engine';
-import { MemoryService, MemoryEntry } from '@hive-academy/langgraph-memory';
+import { IMemoryAdapter } from '@hive-academy/langgraph-core';
 
 @Injectable()
 export class MemoryAwareWorkflowService {
@@ -307,9 +524,131 @@ export class MemoryAwareWorkflowService {
 }
 ```
 
-### Multi-Agent Integration
+### 📊 Real Functional-API Memory Integration
+
+**VERIFIED INTEGRATION**: Functional-API optionally uses memory for workflow context
 
 ```typescript
+import { FunctionalWorkflowService } from '@hive-academy/langgraph-functional-api';
+import { IMemoryAdapter } from '@hive-academy/langgraph-core';
+
+@Module({
+  imports: [
+    MemoryModule.forRoot({
+      vectorService: ChromaDBAdapter,
+      graphService: Neo4jAdapter,
+      config: { collection: 'workflow-memory' },
+    }),
+    FunctionalApiModule.forRoot({
+      // Memory adapter optionally enhances workflows
+    }),
+  ],
+})
+export class AppModule {}
+
+// Real usage: Functional workflows optionally use memory
+@Workflow({ name: 'memory-aware-workflow' })
+export class MemoryAwareWorkflow {
+  @Entrypoint()
+  async initialize(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    // Memory adapter available in context if provided
+    return {
+      state: { initialized: true },
+    };
+  }
+
+  @Task({ dependsOn: ['initialize'] })
+  async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    // Memory enhancement happens automatically if adapter available
+    return {
+      state: { processed: true },
+    };
+  }
+}
+```
+
+### 🔗 Complete Ecosystem Integration Example
+
+**Real production example combining all verified integrations:**
+
+```typescript
+import { Module } from '@nestjs/common';
+import { MemoryModule } from '@hive-academy/langgraph-memory';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { HitlModule } from '@hive-academy/langgraph-hitl';
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
+
+@Module({
+  imports: [
+    // 1. Memory Module provides IMemoryAdapter
+    MemoryModule.forRoot({
+      vectorService: ChromaDBAdapter,
+      graphService: Neo4jAdapter,
+      config: {
+        collection: 'ecosystem-memory',
+        enableAutoSummarization: true,
+        retention: { maxAge: 7 * 24 * 60 * 60 * 1000 },
+      },
+    }),
+
+    // 2. Multi-Agent injects memory for agent enhancement
+    MultiAgentModule.forRootAsync({
+      useFactory: async (memoryAdapter: IMemoryAdapter) => ({
+        memoryAdapter, // Agents auto-enhanced with memory
+      }),
+      inject: ['IMemoryAdapter'],
+    }),
+
+    // 3. HITL uses memory for learning
+    HitlModule.forRoot({
+      // Memory adapter auto-injected for approval learning
+      confidenceThreshold: 0.8,
+    }),
+
+    // 4. Workflow-Engine uses memory for optimization
+    WorkflowEngineModule.forRoot({
+      // Memory adapter auto-injected for workflow enhancement
+      execution: { maxConcurrentWorkflows: 10 },
+    }),
+
+    // 5. Functional-API uses memory for context
+    FunctionalApiModule.forRoot({
+      // Memory adapter auto-injected for workflow context
+      enableCheckpointing: true,
+    }),
+  ],
+})
+export class ProductionEcosystemModule {}
+
+// Real usage: All modules automatically benefit from shared memory
+@Injectable()
+export class ProductionWorkflowService {
+  constructor(private readonly multiAgent: MultiAgentCoordinatorService, private readonly hitl: HumanApprovalService, private readonly functionalWorkflow: FunctionalWorkflowService) {}
+
+  async executeIntelligentWorkflow(input: any): Promise<any> {
+    // 1. Multi-agent automatically uses memory for context
+    const agentResult = await this.multiAgent.executeSimpleWorkflow('agent-network', input.message);
+
+    // 2. HITL automatically learns from approval patterns
+    if (agentResult.confidence < 0.8) {
+      const approval = await this.hitl.requestApproval('exec-123', {
+        message: 'Approve agent result?',
+        confidence: { current: agentResult.confidence, threshold: 0.8 },
+      });
+      // Approval patterns automatically stored in memory for learning
+    }
+
+    // 3. Functional workflow automatically enhanced with memory
+    return await this.functionalWorkflow.executeWorkflow('MemoryAwareWorkflow', { initialState: { agentResult } });
+  }
+}
+```
+
+### Previous Example (Not Accurate)
+
+```typescript
+// ❌ OLD EXAMPLE (NOT VERIFIED): Multi-agent using MemoryService directly
 import { MultiAgentCoordinatorService, AgentDefinition } from '@hive-academy/langgraph-multi-agent';
 import { MemoryService, ExtendedMemoryAdapter, MemoryEntry, MemorySearchOptions } from '@hive-academy/langgraph-memory';
 

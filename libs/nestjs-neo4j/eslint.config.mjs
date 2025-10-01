@@ -4,7 +4,6 @@ export default [...baseConfig,
   {
     files: ['**/*.ts'],
     rules: {
-      '@typescript-eslint/no-namespace': 'off',
-    }
+      '@typescript-eslint/no-namespace': 'off'    }
   }
 ];

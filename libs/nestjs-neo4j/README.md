@@ -10,7 +10,7 @@
 
 A comprehensive, production-ready Neo4j library for NestJS applications that provides:
 
-- ✨ **Entity CRUD Decorators** - Revolutionary 7-decorator system (@FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity, @CountEntities, @ExistsEntity) 
+- ✨ **Entity CRUD Decorators** - Revolutionary 7-decorator system (@FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity, @CountEntities, @ExistsEntity)
 - 🏗️ **Type-Safe Query Builder** - Enterprise Neo4jQueryBuilder with full TypeScript support and fluent API
 - 🔧 **Specialized Repositories** - GraphRepository for graph operations, RelationshipRepository for relationship management
 - 🔒 **Enterprise Security** - 5-decorator security layer with authorization, validation, audit logging, rate limiting, and encryption
@@ -52,9 +52,9 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
     Neo4jModule.forRoot({
       uri: 'bolt://localhost:7687',
       username: 'neo4j',
-      password: 'your-password'
-    })
-  ]
+      password: 'your-password',
+    }),
+  ],
 })
 export class AppModule {}
 ```
@@ -63,10 +63,10 @@ export class AppModule {}
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { 
-  InjectNeo4j, Neo4jService, 
+import {
+  InjectNeo4j, Neo4jService,
   FindOne, FindMany, CreateEntity, UpdateEntity, DeleteEntity, CountEntities, ExistsEntity,
-  FindOptions 
+  FindOptions
 } from '@hive-academy/nestjs-neo4j';
 
 @Injectable()
@@ -75,7 +75,7 @@ export class UserService {
 
   // @Repository decorator eliminates repository boilerplate!
   // Auto-generates: findOne, findMany, create, update, delete, count, exists
-  
+
   async findUserById(id: string): Promise<User | null> {
     // Uses auto-generated this.findOne() method
     // Auto-generated: MATCH (n:User {id: $id}) RETURN n LIMIT 1
@@ -132,22 +132,16 @@ export class UserService {
 ### 4. Define Entities with Decorators
 
 ```typescript
-import { 
-  Neo4jEntity, 
-  Neo4jProp, 
-  Neo4jRelationship,
-  Id, 
-  CreatedAt,
-  Unique,
-  Index 
-} from '@hive-academy/nestjs-neo4j';
+import { Neo4jEntity, Neo4jProp, Neo4jRelationship, Id, CreatedAt, Unique, ClassIndex } from '@hive-academy/nestjs-neo4j';
 
 @Neo4jEntity({
   label: 'User',
   constraints: {
     unique: [['email']],
-    index: ['name', 'createdAt']
-  }
+  },
+})
+@ClassIndex({
+  properties: ['name', 'createdAt'],
 })
 export class User {
   @Id()
@@ -158,14 +152,14 @@ export class User {
   email: string;
 
   @Neo4jProp()
-  @Index()
+  @PropIndex()
   name: string;
 
   @Neo4jRelationship({
     type: 'CREATED',
     direction: 'OUT',
     target: () => Post,
-    isArray: true
+    isArray: true,
   })
   posts: Post[];
 
@@ -259,9 +253,9 @@ npm install neo4j-driver @nestjs/common @nestjs/core reflect-metadata
     Neo4jModule.forRoot({
       uri: 'bolt://localhost:7687',
       username: 'neo4j',
-      password: 'password'
-    })
-  ]
+      password: 'password',
+    }),
+  ],
 })
 export class AppModule {}
 ```
@@ -282,13 +276,13 @@ export class AppModule {}
         config: {
           maxConnectionPoolSize: 100,
           connectionAcquisitionTimeout: 30000,
-          encrypted: true
+          encrypted: true,
         },
         health: { enabled: true, timeout: 5000 },
-        metrics: { enabled: true, prometheusEnabled: true }
-      })
-    })
-  ]
+        metrics: { enabled: true, prometheusEnabled: true },
+      }),
+    }),
+  ],
 })
 export class AppModule {}
 ```
@@ -331,16 +325,16 @@ export class UserService {
       query: 'CREATE (u:User $userData) RETURN u',
       params: { userData },
       description: 'Create new user',
-      tags: ['user', 'creation']
+      tags: ['user', 'creation'],
     };
   }
 
   // Explicit configuration
   @CypherQuery({
-    cache: '30m',         // Cache for 30 minutes
-    retry: 5,             // Retry up to 5 times
-    mode: 'READ',         // Explicit read mode
-    safe: true            // Enable additional safety checks
+    cache: '30m', // Cache for 30 minutes
+    retry: 5, // Retry up to 5 times
+    mode: 'READ', // Explicit read mode
+    safe: true, // Enable additional safety checks
   })
   async getExpensiveAnalytics(): Promise<AnalyticsData> {
     return 'MATCH (u:User) WITH count(u) as total RETURN {total: total}';
@@ -360,26 +354,26 @@ Define type-safe entities with comprehensive mapping:
   constraints: {
     unique: [['email'], ['username']],
     index: ['name', 'createdAt'],
-    key: ['id']
-  }
+    key: ['id'],
+  },
 })
 export class User {
   @Id()
   @NotNull()
   id: string;
 
-  @Neo4jProp({ 
-    validate: (email: string) => /^[^@]+@[^@]+\.[^@]+$/.test(email) 
+  @Neo4jProp({
+    validate: (email: string) => /^[^@]+@[^@]+\.[^@]+$/.test(email),
   })
   @Unique()
-  @Index()
+  @PropIndex()
   email: string;
 
   @Neo4jProp({
     transform: {
       toNeo4j: (name: string) => name.toLowerCase(),
-      fromNeo4j: (name: string) => name.charAt(0).toUpperCase() + name.slice(1)
-    }
+      fromNeo4j: (name: string) => name.charAt(0).toUpperCase() + name.slice(1),
+    },
   })
   name: string;
 
@@ -394,7 +388,7 @@ export class User {
     direction: 'OUT',
     target: () => User,
     isArray: true,
-    propertiesType: () => FollowRelationship
+    propertiesType: () => FollowRelationship,
   })
   following: User[];
 
@@ -443,9 +437,9 @@ export class AdminService {
       actions: ['read', 'write'],
       ownershipCheck: {
         ownerProperty: 'id',
-        allowOwnerAccess: true
-      }
-    }
+        allowOwnerAccess: true,
+      },
+    },
   })
   async updateUserProfile(userId: string, updates: any): Promise<User> {
     // User can only update their own profile unless they're an admin
@@ -457,7 +451,7 @@ export class AdminService {
       const user = context.user;
       const isBusinessHours = new Date().getHours() >= 9 && new Date().getHours() <= 17;
       return user.role === 'ADMIN' || isBusinessHours;
-    }
+    },
   })
   async sensitiveOperation(): Promise<void> {
     // Only admins or during business hours
@@ -476,20 +470,20 @@ export class UserService {
         type: 'object',
         properties: {
           email: { type: 'string', format: 'email' },
-          age: { type: 'number', minimum: 13, maximum: 120 }
+          age: { type: 'number', minimum: 13, maximum: 120 },
         },
-        required: ['email']
-      }
+        required: ['email'],
+      },
     },
     sanitization: {
       stripHtml: true,
       escapeSpecialChars: true,
-      maxStringLength: 1000
+      maxStringLength: 1000,
     },
     injectionPrevention: {
       enabled: true,
-      onDetection: 'throw'
-    }
+      onDetection: 'throw',
+    },
   })
   async createUser(userData: any): Promise<User> {
     // Input is validated and sanitized automatically
@@ -508,9 +502,9 @@ export class UserService {
     includeSensitiveData: false,
     customFields: {
       action: 'user_deletion',
-      criticality: 'high'
+      criticality: 'high',
     },
-    retentionPeriod: '7y'
+    retentionPeriod: '7y',
   })
   @Authorize({ roles: ['ADMIN'] })
   async deleteUser(userId: string): Promise<void> {
@@ -525,10 +519,10 @@ export class UserService {
 @Injectable()
 export class ApiService {
   @RateLimit({
-    windowMs: 60000,        // 1 minute window
-    maxRequests: 100,       // 100 requests per minute
+    windowMs: 60000, // 1 minute window
+    maxRequests: 100, // 100 requests per minute
     keyGenerator: (ctx) => `user:${ctx.user.id}`,
-    skipSuccessfulRequests: false
+    skipSuccessfulRequests: false,
   })
   async searchUsers(term: string): Promise<User[]> {
     // Rate limited per user
@@ -537,7 +531,7 @@ export class ApiService {
   // Dynamic rate limits based on user role
   @RateLimit({
     windowMs: 3600000, // 1 hour
-    maxRequests: (ctx) => ctx.user.role === 'PREMIUM' ? 1000 : 100
+    maxRequests: (ctx) => (ctx.user.role === 'PREMIUM' ? 1000 : 100),
   })
   async bulkOperation(data: any[]): Promise<void> {
     // Higher limits for premium users
@@ -554,7 +548,7 @@ export class SensitiveDataService {
     fields: ['ssn', 'creditCard', 'bankAccount'],
     algorithm: 'aes-256-gcm',
     keyRotation: { enabled: true, rotationIntervalDays: 90 },
-    auditAccess: true
+    auditAccess: true,
   })
   @Authorize({ permissions: ['sensitive-data:write'] })
   async storeSensitiveData(data: SensitiveData): Promise<void> {
@@ -566,8 +560,8 @@ export class SensitiveDataService {
     decryptOnRead: true,
     maskPartially: {
       ssn: '***-**-####',
-      creditCard: '****-****-****-####'
-    }
+      creditCard: '****-****-****-####',
+    },
   })
   @AuditLog({ enabled: true, logLevel: 'full' })
   async getSensitiveData(userId: string): Promise<SensitiveData> {
@@ -587,7 +581,7 @@ export class TenantUserService {
     enabled: true,
     validateAccess: true,
     trackAnalytics: true,
-    validateLimits: true
+    validateLimits: true,
   })
   @CypherQuery({ cache: '10m' })
   async getTenantUsers(): Promise<User[]> {
@@ -600,8 +594,8 @@ export class TenantUserService {
     tenantIsolation: {
       enabled: true,
       tenantProperty: 'tenantId',
-      autoInject: true // Automatically add WHERE u.tenantId = $tenantId
-    }
+      autoInject: true, // Automatically add WHERE u.tenantId = $tenantId
+    },
   })
   async createTenantUser(userData: CreateUserDto): Promise<User> {
     // Tenant ID automatically injected
@@ -616,11 +610,11 @@ export class TenantUserService {
 export class SuperAdminService {
   @Authorize({
     roles: ['SUPER_ADMIN'],
-    permissions: ['cross-tenant:read']
+    permissions: ['cross-tenant:read'],
   })
   @AuditLog({
     enabled: true,
-    customFields: { crossTenant: true, riskLevel: 'high' }
+    customFields: { crossTenant: true, riskLevel: 'high' },
   })
   async getCrossTenantAnalytics(): Promise<TenantAnalytics[]> {
     return this.neo4j.run(`
@@ -648,19 +642,13 @@ export class UserRepository extends BaseRepository<User> {
 
   @Safe()
   async findByEmail(email: string): Promise<User | null> {
-    const users = await this.query(
-      'MATCH (u:User {email: $email}) RETURN u',
-      { email }
-    );
+    const users = await this.query('MATCH (u:User {email: $email}) RETURN u', { email });
     return users[0] || null;
   }
 
   @CypherQuery({ cache: '15m' })
   async findActiveUsers(limit: number = 50): Promise<User[]> {
-    return this.query(
-      'MATCH (u:User {active: true}) RETURN u ORDER BY u.createdAt DESC LIMIT $limit',
-      { limit }
-    );
+    return this.query('MATCH (u:User {active: true}) RETURN u ORDER BY u.createdAt DESC LIMIT $limit', { limit });
   }
 }
 ```
@@ -677,26 +665,32 @@ export class SocialGraphRepository extends GraphRepository {
 
   @Transactional()
   async followUser(followerId: string, followeeId: string): Promise<boolean> {
-    const result = await this.query(`
+    const result = await this.query(
+      `
       MATCH (follower:User {id: $followerId})
       MATCH (followee:User {id: $followeeId})
       WHERE NOT (follower)-[:FOLLOWS]->(followee)
       CREATE (follower)-[r:FOLLOWS {followedAt: datetime()}]->(followee)
       RETURN count(r) > 0 as success
-    `, { followerId, followeeId });
+    `,
+      { followerId, followeeId }
+    );
 
     return result[0]?.success || false;
   }
 
   @CypherQuery({ cache: '30m' })
   async getFollowRecommendations(userId: string): Promise<User[]> {
-    return this.query(`
+    return this.query(
+      `
       MATCH (u:User {id: $userId})-[:FOLLOWS]->()-[:FOLLOWS]->(rec:User)
       WHERE NOT (u)-[:FOLLOWS]->(rec) AND u <> rec
       RETURN rec, count(*) as score
       ORDER BY score DESC
       LIMIT 10
-    `, { userId });
+    `,
+      { userId }
+    );
   }
 }
 ```
@@ -706,18 +700,10 @@ export class SocialGraphRepository extends GraphRepository {
 ```typescript
 @Injectable()
 export class UserSocialService {
-  constructor(
-    private readonly userRepo: UserRepository,
-    private readonly socialRepo: SocialGraphRepository
-  ) {}
+  constructor(private readonly userRepo: UserRepository, private readonly socialRepo: SocialGraphRepository) {}
 
   async getCompleteUserProfile(userId: string): Promise<CompleteProfile> {
-    const [user, followers, following, recommendations] = await Promise.all([
-      this.userRepo.findById(userId),
-      this.socialRepo.getFollowers(userId),
-      this.socialRepo.getFollowing(userId),
-      this.socialRepo.getFollowRecommendations(userId)
-    ]);
+    const [user, followers, following, recommendations] = await Promise.all([this.userRepo.findById(userId), this.socialRepo.getFollowers(userId), this.socialRepo.getFollowing(userId), this.socialRepo.getFollowRecommendations(userId)]);
 
     return { user, followers, following, recommendations };
   }
@@ -747,10 +733,10 @@ Unified safety decorator for parameter validation, sanitization, and injection p
 
 ```typescript
 interface SafeConfig {
-  strict?: boolean;              // Enable strict validation (default: true)
-  log?: boolean;                 // Debug logging (default: false)
-  rules?: SafeValidationRules;   // Validation rules
-  transforms?: SafeTransforms;   // Neo4j transformations
+  strict?: boolean; // Enable strict validation (default: true)
+  log?: boolean; // Debug logging (default: false)
+  rules?: SafeValidationRules; // Validation rules
+  transforms?: SafeTransforms; // Neo4j transformations
   customValidators?: CustomValidator[];
 }
 ```
@@ -761,11 +747,11 @@ Intelligent query decorator with smart defaults and caching.
 
 ```typescript
 interface CypherQueryConfig {
-  cache?: string | boolean;      // Cache duration ('5m', '1h') or boolean
-  retry?: number;               // Retry attempts (auto-detected)
-  mode?: 'READ' | 'WRITE';      // Access mode (auto-detected)
-  safe?: boolean;               // Enable safety validation
-  advanced?: AdvancedOptions;   // Advanced configuration
+  cache?: string | boolean; // Cache duration ('5m', '1h') or boolean
+  retry?: number; // Retry attempts (auto-detected)
+  mode?: 'READ' | 'WRITE'; // Access mode (auto-detected)
+  safe?: boolean; // Enable safety validation
+  advanced?: AdvancedOptions; // Advanced configuration
 }
 ```
 
@@ -809,7 +795,8 @@ Define typed relationships between entities.
 
 #### Constraint Decorators
 
-- `@Index()` - Create database index
+- `@PropIndex()` - Create database index
+- `@ClassIndex()` - Create database index
 - `@Unique()` - Unique constraint
 - `@NotNull()` - Not null constraint
 - `@NodeKey()` - Node key constraint
@@ -819,6 +806,7 @@ Define typed relationships between entities.
 #### GraphRepository<T>
 
 Specialized for graph operations including:
+
 - Graph traversals (findNeighbors, findWithinDistance)
 - Path finding (findShortestPath, findAllPaths)
 - Centrality analysis (calculateDegreeCentrality)
@@ -828,6 +816,7 @@ Specialized for graph operations including:
 #### RelationshipRepository<TRel, TSource, TTarget>
 
 Focused on relationship management including:
+
 - Relationship CRUD operations
 - Bulk relationship operations
 - Advanced relationship querying
@@ -908,8 +897,8 @@ The library has undergone a complete architectural modernization with revolution
        return this.query('MATCH (u:User {id: $id}) RETURN u', { id });
      }
    }
-   
-   // ✅ New: Entity CRUD decorators  
+
+   // ✅ New: Entity CRUD decorators
    @Injectable()
    export class UserService {
      @FindOne(() => User, { cache: '10m', safe: true })
@@ -944,25 +933,25 @@ The library has undergone a complete architectural modernization with revolution
 
    ```typescript
    // Old
-   Neo4jModule.forRoot({ uri, username, password })
-   
+   Neo4jModule.forRoot({ uri, username, password });
+
    // ✅ New: Enhanced configuration with multi-tenancy
    Neo4jModule.forRoot({
      uri: 'bolt://localhost:7687',
-     username: 'neo4j', 
+     username: 'neo4j',
      password: 'password',
      config: {
        maxConnectionPoolSize: 50,
-       connectionAcquisitionTimeout: 30000
+       connectionAcquisitionTimeout: 30000,
      },
      health: { enabled: true, timeout: 5000 },
      metrics: { enabled: true, prometheusEnabled: true },
      multiTenant: {
        enabled: true,
        databasePerTenant: true,
-       tenantResolution: ['header', 'subdomain']
-     }
-   })
+       tenantResolution: ['header', 'subdomain'],
+     },
+   });
    ```
 
 5. **Migrate to Modern Security Patterns**
@@ -971,7 +960,7 @@ The library has undergone a complete architectural modernization with revolution
    // ❌ Old: Basic safety
    @Neo4jSafe()
    async oldMethod() {}
-   
+
    // ✅ New: Comprehensive security
    @Authorize({ roles: ['USER'], permissions: ['data:read'] })
    @ValidateInput({ schema: { /* validation schema */ } })
@@ -989,7 +978,10 @@ The library has undergone a complete architectural modernization with revolution
 - [ ] Configure multi-tenancy if needed
 - [ ] Update module configuration with new options
 - [ ] Test all operations with new decorator system
-   ```
+
+  ```
+
+  ```
 
 ## Support & Contributing
 

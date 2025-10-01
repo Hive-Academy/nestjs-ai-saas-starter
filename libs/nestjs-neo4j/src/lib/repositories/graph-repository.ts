@@ -1,227 +1,94 @@
 /**
- * GraphRepository - Specialized repository for graph operations using Neogma models
+ * @fileoverview Graph Repository Facade
  *
- * This repository provides graph-specific functionality using proper Neogma model operations
- * instead of raw Cypher queries, ensuring type safety and leveraging Neogma's features.
+ * This facade provides a unified interface over the split graph services
+ * for backward compatibility while delegating to the modern QueryBuilder-based services.
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import type { Where } from 'neogma';
-import type { NeogmaModel, NeogmaEntity } from '../types/neogma-types';
-import { NeogmaService } from '../core/neogma.service';
+import { GraphTraversalService } from './graph/graph-traversal.service';
+import { GraphMetricsService } from './graph/graph-metrics.service';
+import { GraphPatternService } from './graph/graph-pattern.service';
+import type {
+  GraphTraversalOptions,
+  NeighborResult,
+  PathResult,
+  GraphPattern,
+} from './graph/base-graph.service';
+import type {
+  CentralityMetric,
+  ConnectedComponent,
+  GraphStatistics,
+  CentralityResult,
+  CommunityDetectionOptions,
+} from './graph/graph-metrics.service';
+import type { PathFindingOptions } from './graph/graph-traversal.service';
+import type {
+  GraphQueryPattern,
+  SubgraphOptions,
+  SubgraphResult,
+  GraphCycle,
+} from './graph/graph-pattern.service';
+import type { NeogmaEntity } from '../types/neogma-types';
 
 /**
- * Options for graph traversal operations
- */
-export interface GraphTraversalOptions {
-  /** Maximum depth for traversal */
-  maxDepth?: number;
-  /** Minimum depth for traversal */
-  minDepth?: number;
-  /** Relationship types to follow */
-  relationshipTypes?: string[];
-  /** Direction of relationships to follow */
-  direction?: 'IN' | 'OUT' | 'BOTH';
-  /** Filter conditions for nodes */
-  nodeFilter?: Where;
-  /** Filter conditions for relationships */
-  relationshipFilter?: Where;
-  /** Include relationship data in results */
-  includeRelationships?: boolean;
-  /** Include path information */
-  includePaths?: boolean;
-  /** Limit number of results */
-  limit?: number;
-}
-
-/**
- * Result for neighbor operations
- */
-export interface NeighborResult<T> {
-  node: T;
-  distance: number;
-  relationship?: any;
-  path?: any[];
-}
-
-/**
- * Path finding result
- */
-export interface PathResult<T> {
-  path: T[];
-  length: number;
-  weight?: number;
-  relationships?: any[];
-}
-
-/**
- * Pattern matching interface for complex graph queries
- */
-export interface GraphPattern {
-  nodes: Array<{
-    variable: string;
-    labels: string[];
-    properties?: Where;
-  }>;
-  relationships: Array<{
-    type: string;
-    direction: 'IN' | 'OUT' | 'BOTH';
-    source: string;
-    target: string;
-    properties?: Where;
-  }>;
-}
-
-/**
- * GraphRepository - Modern Neogma-based graph operations
+ * Graph Repository Facade (LEGACY COMPATIBILITY)
  *
- * Uses proper Neogma model operations and QueryBuilder instead of raw Cypher
+ * This class provides a unified interface over the split graph services:
+ * - GraphTraversalService: Neighbor finding, distance calculations, and path finding
+ * - GraphMetricsService: Centrality calculations and graph analysis
+ * - GraphPatternService: Pattern matching and subgraph operations
+ *
+ * RECOMMENDED: Use GraphTraversalService, GraphMetricsService, and GraphPatternService directly
+ * for new development. This facade is maintained for backward compatibility.
+ *
+ * Migration Guide:
+ * - Traversal operations → GraphTraversalService
+ * - Metrics and centrality → GraphMetricsService
+ * - Pattern matching → GraphPatternService
+ * - All operations use modern QueryBuilder patterns for type safety
+ *
+ * @template T The entity type this repository manages
+ * @deprecated Use GraphTraversalService, GraphMetricsService, and GraphPatternService instead
  */
 @Injectable()
 export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
   protected readonly logger = new Logger(GraphRepository.name);
 
   constructor(
-    protected readonly neogmaService: NeogmaService,
-    protected readonly model: NeogmaModel<T>,
+    private readonly traversalService: GraphTraversalService<T>,
+    private readonly metricsService: GraphMetricsService<T>,
+    private readonly patternService: GraphPatternService<T>,
     protected readonly entityLabel = 'Entity'
   ) {
-    this.logger.log(
-      `GraphRepository initialized for ${entityLabel} using Neogma models`
+    this.logger.warn(
+      'GraphRepository is deprecated. Use GraphTraversalService, GraphMetricsService, and GraphPatternService directly.'
     );
   }
 
-  // ==================== CORE GRAPH OPERATIONS ====================
+  // =============================================================================
+  // CORE GRAPH OPERATIONS (Delegated to GraphTraversalService)
+  // =============================================================================
 
   /**
-   * Find neighbors of a node using Neogma model-based approach
+   * Find neighbors of a node
    */
   async findNeighbors(
     nodeId: string,
     options?: GraphTraversalOptions
   ): Promise<T[]> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug(`Finding neighbors for node ${nodeId}`);
-
-      // Use Neogma's built-in relationship traversal if available
-      const node = await this.model.findOne({ where: { id: nodeId } });
-      if (!node) {
-        return [];
-      }
-
-      // Use Neogma QueryBuilder for type-safe graph traversal
-      const queryBuilder = this.neogmaService
-        .createQueryBuilder()
-        .raw(`MATCH (start:${this.entityLabel} {id: $id})`)
-        .raw(
-          `MATCH (start)-[${this.buildRelationshipPattern(
-            options
-          )}]-(neighbor:${this.entityLabel})`
-        )
-        .return('DISTINCT neighbor');
-
-      if (options?.limit) {
-        queryBuilder.limit(options.limit);
-      }
-
-      const cypher = `
-        MATCH (n:${this.entityLabel} {id: $id})-[*1..${
-        options?.maxDepth || 3
-      }]-(neighbor)
-        RETURN neighbor
-        ${options?.limit ? `LIMIT ${options.limit}` : ''}
-      `;
-      const queryResult = await this.neogmaService.query(cypher, {
-        id: nodeId,
-      });
-      const results = queryResult.records.map(
-        (record) => record.get('neighbor') as T
-      );
-
-      this.logger.debug(
-        `Found ${results.length} neighbors in ${Date.now() - startTime}ms`
-      );
-      return results;
-    } catch (error) {
-      this.logger.error(
-        `Failed to find neighbors: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
+    return this.traversalService.findNeighbors(nodeId, options);
   }
 
   /**
-   * Find nodes within a specific distance using Neogma optimizations
+   * Find nodes within a specific distance
    */
   async findWithinDistance(
     nodeId: string,
     distance: number,
     options?: GraphTraversalOptions
   ): Promise<NeighborResult<T>[]> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug(
-        `Finding nodes within distance ${distance} from ${nodeId}`
-      );
-
-      // Use Neogma QueryBuilder for type-safe distance traversal
-      const relationshipPattern = this.buildRelationshipPattern(options);
-      const queryBuilder = this.neogmaService
-        .createQueryBuilder()
-        .raw(`MATCH (start:${this.entityLabel} {id: $nodeId})`)
-        .raw(
-          `MATCH path = (start)${relationshipPattern.replace(
-            '-',
-            `*1..${distance}-`
-          )}(target:${this.entityLabel})`
-        )
-        .raw('WHERE target.id <> start.id')
-        .return('DISTINCT target as node, length(path) as distance')
-        .raw('ORDER BY distance');
-
-      if (options?.limit) {
-        queryBuilder.limit(options.limit);
-      }
-
-      const cypher = `
-        MATCH (start:${this.entityLabel} {id: $nodeId})
-        MATCH (node:${this.entityLabel})
-        WHERE id(node) <> id(start)
-        WITH start, node, 
-             CASE 
-               WHEN (start)--(node) THEN 1
-               ELSE shortestPath((start)-[*..${distance}]-(node))
-             END as path
-        WHERE length(path) <= $distance
-        RETURN node, length(path) as distance
-      `;
-      const queryResult = await this.neogmaService.query(cypher, {
-        nodeId,
-        distance,
-      });
-
-      const neighbors = queryResult.records.map((record) => ({
-        node: record.get('node') as T,
-        distance: record.get('distance').toInt(),
-      }));
-
-      this.logger.debug(
-        `Found ${neighbors.length} nodes within distance ${distance} in ${
-          Date.now() - startTime
-        }ms`
-      );
-      return neighbors;
-    } catch (error) {
-      this.logger.error(
-        `Failed to find nodes within distance: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
+    return this.traversalService.findWithinDistance(nodeId, distance, options);
   }
 
   /**
@@ -232,50 +99,12 @@ export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
     nodeId2: string,
     options?: GraphTraversalOptions
   ): Promise<T[]> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug(
-        `Finding common neighbors between ${nodeId1} and ${nodeId2}`
-      );
-
-      const relationshipClause = this.buildRelationshipClause(options);
-      const whereClause = this.buildWhereClause(options?.nodeFilter);
-
-      const cypher = `
-        MATCH (node1:${this.entityLabel} {id: $nodeId1})
-        MATCH (node2:${this.entityLabel} {id: $nodeId2})
-        MATCH (node1)${relationshipClause}(common:${this.entityLabel})
-        MATCH (node2)${relationshipClause}(common)
-        ${whereClause}
-        RETURN DISTINCT common
-        ${options?.limit ? `LIMIT ${options.limit}` : ''}
-      `;
-
-      const queryResult = await this.neogmaService.query(cypher, {
-        nodeId1,
-        nodeId2,
-      });
-      const results = queryResult.records.map(
-        (record) => record.get('common') as T
-      );
-
-      this.logger.debug(
-        `Found ${results.length} common neighbors in ${
-          Date.now() - startTime
-        }ms`
-      );
-      return results;
-    } catch (error) {
-      this.logger.error(
-        `Failed to find common neighbors: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
+    return this.traversalService.findCommonNeighbors(nodeId1, nodeId2, options);
   }
 
-  // ==================== PATH FINDING OPERATIONS ====================
+  // =============================================================================
+  // PATH FINDING OPERATIONS (Delegated to GraphTraversalService)
+  // =============================================================================
 
   /**
    * Find shortest path between two nodes
@@ -283,62 +112,37 @@ export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
   async findShortestPath(
     fromId: string,
     toId: string,
-    options?: GraphTraversalOptions
+    options?: PathFindingOptions
   ): Promise<PathResult<T> | null> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug(`Finding shortest path from ${fromId} to ${toId}`);
-
-      const relationshipClause = this.buildRelationshipClause(options);
-      const maxDepth = options?.maxDepth || 10;
-
-      const cypher = `
-        MATCH (start:${this.entityLabel} {id: $fromId})
-        MATCH (end:${this.entityLabel} {id: $toId})
-        MATCH path = shortestPath((start)${relationshipClause.replace(
-          '-',
-          `*1..${maxDepth}-`
-        )}(end))
-        RETURN nodes(path) as path, length(path) as length
-        LIMIT 1
-      `;
-
-      const queryResult = await this.neogmaService.query(cypher, {
-        fromId,
-        toId,
-      });
-
-      if (queryResult.records.length === 0) {
-        this.logger.debug(`No path found between ${fromId} and ${toId}`);
-        return null;
-      }
-
-      const record = queryResult.records[0];
-      const result = {
-        path: record.get('path') as T[],
-        length: record.get('length').toInt(),
-      };
-      this.logger.debug(
-        `Found shortest path with length ${result.length} in ${
-          Date.now() - startTime
-        }ms`
-      );
-
-      return {
-        path: result.path,
-        length: result.length,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to find shortest path: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
+    return this.traversalService.findShortestPath(fromId, toId, options);
   }
 
-  // ==================== GRAPH METRICS ====================
+  /**
+   * Find all paths between two nodes
+   */
+  async findAllPaths(
+    fromId: string,
+    toId: string,
+    options?: PathFindingOptions
+  ): Promise<PathResult<T>[]> {
+    return this.traversalService.findAllPaths(fromId, toId, options);
+  }
+
+  /**
+   * Find k-shortest paths between two nodes
+   */
+  async findKShortestPaths(
+    fromId: string,
+    toId: string,
+    k: number,
+    options?: PathFindingOptions
+  ): Promise<PathResult<T>[]> {
+    return this.traversalService.findKShortestPaths(fromId, toId, k, options);
+  }
+
+  // =============================================================================
+  // GRAPH METRICS (Delegated to GraphMetricsService)
+  // =============================================================================
 
   /**
    * Calculate degree centrality for a node
@@ -347,37 +151,17 @@ export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
     nodeId: string,
     options?: GraphTraversalOptions
   ): Promise<number> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug(`Calculating degree centrality for node ${nodeId}`);
+    return this.metricsService.calculateDegreeCentrality(nodeId, options);
+  }
 
-      const relationshipClause = this.buildRelationshipClause(options);
-
-      const cypher = `
-        MATCH (node:${this.entityLabel} {id: $nodeId})
-        MATCH (node)${relationshipClause}(connected:${this.entityLabel})
-        RETURN count(DISTINCT connected) as degree
-      `;
-
-      const queryResult = await this.neogmaService.query(cypher, { nodeId });
-
-      const degree =
-        queryResult.records.length > 0
-          ? queryResult.records[0].get('degree').toInt()
-          : 0;
-      this.logger.debug(
-        `Calculated degree centrality ${degree} in ${Date.now() - startTime}ms`
-      );
-
-      return degree;
-    } catch (error) {
-      this.logger.error(
-        `Failed to calculate degree centrality: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
+  /**
+   * Calculate centrality scores for all nodes
+   */
+  async calculateCentralityScores(
+    metric: CentralityMetric,
+    options?: GraphTraversalOptions
+  ): Promise<CentralityResult<T>[]> {
+    return this.metricsService.calculateCentralityScores(metric, options);
   }
 
   /**
@@ -385,192 +169,194 @@ export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
    */
   async findConnectedComponents(
     options?: GraphTraversalOptions
-  ): Promise<Array<{ componentId: string; nodes: T[] }>> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug('Finding connected components');
-
-      const relationshipClause = this.buildRelationshipClause(options);
-      const whereClause = this.buildWhereClause(options?.nodeFilter);
-
-      // Use a simplified connected components algorithm
-      const cypher = `
-        MATCH (n:${this.entityLabel})
-        ${whereClause}
-        CALL {
-          WITH n
-          MATCH path = (n)${relationshipClause.replace('-', '*-')}(connected:${
-        this.entityLabel
-      })
-          RETURN collect(DISTINCT connected) as component
-        }
-        RETURN n.id as componentId, component as nodes
-        ${options?.limit ? `LIMIT ${options.limit}` : ''}
-      `;
-
-      const queryResult = await this.neogmaService.query(cypher);
-      const results = queryResult.records.map((record) => ({
-        componentId: record.get('componentId') as string,
-        nodes: record.get('nodes') as T[],
-      }));
-
-      this.logger.debug(
-        `Found ${results.length} connected components in ${
-          Date.now() - startTime
-        }ms`
-      );
-      return results;
-    } catch (error) {
-      this.logger.error(
-        `Failed to find connected components: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
+  ): Promise<ConnectedComponent<T>[]> {
+    return this.metricsService.findConnectedComponents(options);
   }
 
-  // ==================== PATTERN MATCHING ====================
+  /**
+   * Detect communities using various algorithms
+   */
+  async detectCommunities(
+    options?: CommunityDetectionOptions
+  ): Promise<Array<{ communityId: string; nodes: T[]; modularity?: number }>> {
+    return this.metricsService.detectCommunities(options);
+  }
 
   /**
-   * Match complex graph patterns using Neogma
+   * Calculate comprehensive graph statistics
+   */
+  async getGraphStatistics(
+    options?: GraphTraversalOptions
+  ): Promise<GraphStatistics> {
+    return this.metricsService.getGraphStatistics(options);
+  }
+
+  /**
+   * Find nodes with highest centrality scores
+   */
+  async findCentralNodes(
+    metric: CentralityMetric = 'degree',
+    limit = 10,
+    options?: GraphTraversalOptions
+  ): Promise<CentralityResult<T>[]> {
+    return this.metricsService.findCentralNodes(metric, limit, options);
+  }
+
+  /**
+   * Analyze node importance across multiple centrality metrics
+   */
+  async analyzeNodeImportance(
+    nodeId: string,
+    options?: GraphTraversalOptions
+  ): Promise<{ [K in CentralityMetric]: number }> {
+    return this.metricsService.analyzeNodeImportance(nodeId, options);
+  }
+
+  // =============================================================================
+  // PATTERN MATCHING (Delegated to GraphPatternService)
+  // =============================================================================
+
+  /**
+   * Match complex graph patterns
    */
   async matchPattern(
     pattern: GraphPattern,
     options?: { limit?: number }
-  ): Promise<Array<Record<string, T>>> {
-    const startTime = Date.now();
-    try {
-      this.logger.debug('Matching graph pattern', pattern);
-
-      // Build MATCH clauses from pattern
-      const matchClauses = this.buildPatternMatch(pattern);
-      const returnVars = pattern.nodes.map((node) => node.variable);
-
-      const cypher = `
-        ${matchClauses.join('\n')}
-        RETURN ${returnVars.join(', ')}
-        ${options?.limit ? `LIMIT ${options.limit}` : ''}
-      `;
-
-      const queryResult = await this.neogmaService.query(cypher);
-      const results = queryResult.records.map((record) => {
-        const result: Record<string, T> = {};
-        returnVars.forEach((varName) => {
-          result[varName] = record.get(varName) as T;
-        });
-        return result;
-      });
-
-      this.logger.debug(
-        `Pattern matched ${results.length} results in ${
-          Date.now() - startTime
-        }ms`
-      );
-      return results;
-    } catch (error) {
-      this.logger.error(
-        `Failed to match pattern: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-      throw error;
-    }
-  }
-
-  // ==================== HELPER METHODS ====================
-
-  /**
-   * Build relationship clause for traversal queries
-   */
-  private buildRelationshipClause(options?: GraphTraversalOptions): string {
-    const types = options?.relationshipTypes?.length
-      ? options.relationshipTypes.map((type) => `:${type}`).join('|')
-      : '';
-
-    const direction = options?.direction || 'BOTH';
-
-    switch (direction) {
-      case 'IN':
-        return `<-[${types}]-`;
-      case 'OUT':
-        return `-[${types}]->`;
-      case 'BOTH':
-      default:
-        return `-[${types}]-`;
-    }
+  ): Promise<Array<{ [key: string]: T }>> {
+    return this.patternService.matchPattern(pattern, options);
   }
 
   /**
-   * Build WHERE clause from filter conditions
+   * Execute custom graph query pattern
    */
-  private buildWhereClause(filter?: Where): string {
-    if (!filter || Object.keys(filter).length === 0) {
-      return '';
-    }
-
-    // Convert Neogma Where to Cypher WHERE clause
-    const conditions = Object.entries(filter).map(([key, value]) => {
-      if (typeof value === 'string') {
-        return `neighbor.${key} = "${value}"`;
-      } else if (typeof value === 'number' || typeof value === 'boolean') {
-        return `neighbor.${key} = ${value}`;
-      }
-      return `neighbor.${key} = $${key}`;
-    });
-
-    return `WHERE ${conditions.join(' AND ')}`;
+  async executeCustomPattern(
+    pattern: GraphQueryPattern,
+    params?: { [key: string]: unknown }
+  ): Promise<Array<{ [key: string]: unknown }>> {
+    return this.patternService.executeCustomPattern(pattern, params);
   }
 
   /**
-   * Build MATCH clauses from graph pattern
+   * Get subgraph around a set of nodes
    */
-  private buildPatternMatch(pattern: GraphPattern): string[] {
-    const clauses: string[] = [];
-
-    // Build node matches
-    pattern.nodes.forEach((node) => {
-      const labels = node.labels.map((label) => `:${label}`).join('');
-      const props = node.properties
-        ? `{${Object.keys(node.properties)
-            .map((key) => `${key}: $${key}`)
-            .join(', ')}}`
-        : '';
-      clauses.push(`MATCH (${node.variable}${labels} ${props})`);
-    });
-
-    // Build relationship matches
-    pattern.relationships.forEach((rel) => {
-      const direction =
-        rel.direction === 'IN' ? '<-' : rel.direction === 'OUT' ? '->' : '-';
-      const relClause = `(${rel.source})-[:${rel.type}]${direction}(${rel.target})`;
-      clauses.push(`MATCH ${relClause}`);
-    });
-
-    return clauses;
+  async getSubgraph(
+    nodeIds: string[],
+    options?: SubgraphOptions
+  ): Promise<SubgraphResult<T>> {
+    return this.patternService.getSubgraph(nodeIds, options);
   }
 
-  // ==================== QUERY BUILDER HELPERS ====================
+  /**
+   * Expand graph from a starting node
+   */
+  async expandGraph(
+    nodeId: string,
+    depth: number,
+    options?: SubgraphOptions
+  ): Promise<SubgraphResult<T>> {
+    return this.patternService.expandGraph(nodeId, depth, options);
+  }
 
   /**
-   * Build relationship pattern for QueryBuilder
+   * Find cycles in the graph
    */
-  private buildRelationshipPattern(options?: GraphTraversalOptions): string {
-    const direction = options?.direction || 'BOTH';
-    const types = options?.relationshipTypes;
+  async findCycles(
+    maxLength = 10,
+    options?: GraphTraversalOptions
+  ): Promise<GraphCycle<T>[]> {
+    return this.patternService.findCycles(maxLength, options);
+  }
 
-    let pattern = '';
-    if (types && types.length > 0) {
-      pattern = `:${types.join('|')}`;
-    }
+  /**
+   * Find nodes that match a specific structural pattern
+   */
+  async findStructuralPattern(
+    patternDescription: {
+      centerNodeLabel?: string;
+      requiredRelationships: Array<{
+        type: string;
+        direction: 'IN' | 'OUT' | 'BOTH';
+        targetLabel?: string;
+        minCount?: number;
+        maxCount?: number;
+      }>;
+    },
+    options?: GraphTraversalOptions
+  ): Promise<T[]> {
+    return this.patternService.findStructuralPattern(
+      patternDescription,
+      options
+    );
+  }
 
-    switch (direction) {
-      case 'IN':
-        return `<-[${pattern}]-`;
-      case 'OUT':
-        return `-[${pattern}]->`;
-      default:
-        return `-[${pattern}]-`;
-    }
+  /**
+   * Find motifs (small recurring patterns) in the graph
+   */
+  async findMotifs(
+    motifSize = 3,
+    options?: GraphTraversalOptions
+  ): Promise<Array<{ nodes: T[]; pattern: string }>> {
+    return this.patternService.findMotifs(motifSize, options);
+  }
+
+  // =============================================================================
+  // LEGACY COMPATIBILITY METHODS
+  // =============================================================================
+
+  /**
+   * Build relationship clause for traversal queries (legacy compatibility)
+   * @deprecated Use services directly
+   */
+  protected buildRelationshipClause(options?: GraphTraversalOptions): string {
+    return this.traversalService['buildRelationshipClause'](options);
+  }
+
+  /**
+   * Build WHERE clause from filter conditions (legacy compatibility)
+   * @deprecated Use services directly
+   */
+  protected buildWhereClause(
+    filter?: { [key: string]: unknown },
+    nodeVariable = 'n'
+  ): string {
+    return this.traversalService['buildWhereClause'](filter, nodeVariable);
+  }
+
+  /**
+   * Build MATCH clauses from graph pattern (legacy compatibility)
+   * @deprecated Use services directly
+   */
+  protected buildPatternMatch(pattern: GraphPattern): string[] {
+    return this.patternService['buildPatternMatch'](pattern);
+  }
+
+  /**
+   * Build relationship pattern for QueryBuilder (legacy compatibility)
+   * @deprecated Use services directly
+   */
+  protected buildRelationshipPattern(options?: GraphTraversalOptions): string {
+    return this.traversalService['buildRelationshipPattern'](options);
   }
 }
+
+// Type re-exports for external consumption
+export type {
+  GraphTraversalOptions,
+  NeighborResult,
+  PathResult,
+  GraphPattern,
+} from './graph/base-graph.service';
+export type {
+  CentralityMetric,
+  ConnectedComponent,
+  GraphStatistics,
+  CentralityResult,
+  CommunityDetectionOptions,
+} from './graph/graph-metrics.service';
+export type { PathFindingOptions } from './graph/graph-traversal.service';
+export type {
+  GraphQueryPattern,
+  SubgraphOptions,
+  SubgraphResult,
+  GraphCycle,
+} from './graph/graph-pattern.service';

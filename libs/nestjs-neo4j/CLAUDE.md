@@ -14,7 +14,7 @@ The `@hive-academy/nestjs-neo4j` library is an enterprise-grade Neo4j integratio
 - **Multi-Tenant Architecture**: Complete database-per-tenant isolation with automatic routing
 - **Enterprise Security**: Comprehensive security layer with @Safe, @Authorize, @ValidateInput, @AuditLog, @RateLimit, @EncryptSensitive
 - **Query Builder**: Type-safe query construction with fluent API
-- **Constraint Management**: Database constraints via decorators (@Index, @Unique, @NotNull, @NodeKey)
+- **Constraint Management**: Database constraints via decorators (@PropIndex, @ClassIndex, @Unique, @NotNull, @NodeKey)
 - **Performance Optimization**: Metrics service, connection pooling, parameter serialization
 
 ## 🏗️ Core Architecture Components
@@ -163,7 +163,7 @@ class Product {
   sku: string;
 
   @Neo4jProp()
-  @Index() // Regular index
+  @PropIndex() // Regular index
   category: string;
 
   @Neo4jProp()
@@ -833,7 +833,7 @@ async complexOperation() {}
 @Neo4jEntity('User')
 class User {
   @Neo4jProp()
-  @Index() // Add index
+  @PropIndex() // Add index
   email: string;
 }
 ```
@@ -917,7 +917,7 @@ export class UserRepository extends BaseRepositoryService<User> {
 9. **Test thoroughly** - Both unit and integration tests
 10. **Handle errors gracefully** - Use try-catch and proper error messages
 
-### 🎯 RECOMMENDED REPOSITORY PATTERN:
+### 🎯 RECOMMENDED REPOSITORY PATTERN
 
 ```typescript
 @Repository(() => EntityType)

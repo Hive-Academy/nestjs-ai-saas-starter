@@ -95,14 +95,13 @@ getUsersV2() { /* new */ }
 2. **Import Aliases**: Always use @hive-academy/\* paths
 3. **Real Implementations**: NO stubs, mocks, or simulations in production code - implement actual functionality
 4. **Full Stack Integration**: Every feature must use the complete stack (vector + graph + AI workflows)
-5. **Progress Updates**: Per ⏰ Progress Rule (30 minutes)
-6. **Quality Gates**: Must pass 10/10 (see full checklist)
-7. **Branch Strategy**: Sequential by default (see Git Branch Operations)
-8. **Error Context**: Always include relevant debugging info
-9. **Testing**: 80% coverage minimum with real integrations
-10. **Type Discovery**: Per Type Search Protocol
-11. **Anti-Backward Compatibility**: Automatic rejection of versioned code, compatibility layers, and parallel implementations
-12. **Direct Replacement**: All modernization and improvements must replace existing code, not supplement it
+5. **Quality Gates**: Must pass 10/10 (see full checklist)
+6. **Branch Strategy**: Sequential by default (see Git Branch Operations)
+7. **Error Context**: Always include relevant debugging info
+8. **Testing**: 80% coverage minimum with real integrations
+9. **Type Discovery**: Per Type Search Protocol
+10. **Anti-Backward Compatibility**: Automatic rejection of versioned code, compatibility layers, and parallel implementations
+11. **Direct Replacement**: All modernization and improvements must replace existing code, not supplement it
 
 ## Technical Architecture
 

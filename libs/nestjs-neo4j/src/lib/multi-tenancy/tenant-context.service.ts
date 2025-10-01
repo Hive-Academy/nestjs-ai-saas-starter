@@ -13,7 +13,13 @@
  * - Automatic cleanup and optimization
  */
 
-import { Injectable, Scope, Inject, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Scope,
+  Inject,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { Driver } from 'neo4j-driver';
@@ -89,8 +95,8 @@ export class DefaultTenantStrategies {
   static header(headerName = 'x-tenant-id'): TenantResolutionStrategy {
     return {
       extractTenantId: (request: Request) => {
-        return request.headers[headerName] as string || null;
-      }
+        return (request.headers[headerName] as string) || null;
+      },
     };
   }
 
@@ -105,41 +111,41 @@ export class DefaultTenantStrategies {
 
         const subdomain = host.split('.')[0];
         return subdomain !== 'www' && subdomain !== 'api' ? subdomain : null;
-      }
+      },
     };
   }
 
   /**
    * JWT-based tenant resolution (from authenticated user)
    */
-  static jwt(userProperty= 'tenantId'): TenantResolutionStrategy {
+  static jwt(userProperty = 'tenantId'): TenantResolutionStrategy {
     return {
       extractTenantId: (request: Request) => {
         const user = (request as any).user;
         return user?.[userProperty] || null;
-      }
+      },
     };
   }
 
   /**
    * Path-based tenant resolution (/api/tenants/:tenantId/...)
    */
-  static pathParam(paramName= 'tenantId'): TenantResolutionStrategy {
+  static pathParam(paramName = 'tenantId'): TenantResolutionStrategy {
     return {
       extractTenantId: (request: Request) => {
         return (request as any).params?.[paramName] || null;
-      }
+      },
     };
   }
 
   /**
    * Query parameter tenant resolution (?tenantId=...)
    */
-  static queryParam(paramName= 'tenantId'): TenantResolutionStrategy {
+  static queryParam(paramName = 'tenantId'): TenantResolutionStrategy {
     return {
       extractTenantId: (request: Request) => {
-        return request.query[paramName] as string || null;
-      }
+        return (request.query[paramName] as string) || null;
+      },
     };
   }
 }
@@ -155,8 +161,10 @@ export class TenantContextService {
 
   constructor(
     @Inject(REQUEST) private readonly request: Request,
-    @Inject('TENANT_RESOLUTION_STRATEGY') private readonly strategy: TenantResolutionStrategy,
-    @Inject('TENANT_CONFIG_PROVIDER') private readonly configProvider: TenantConfigProvider
+    @Inject('TENANT_RESOLUTION_STRATEGY')
+    private readonly strategy: TenantResolutionStrategy,
+    @Inject('TENANT_CONFIG_PROVIDER')
+    private readonly configProvider: TenantConfigProvider
   ) {}
 
   /**
@@ -172,6 +180,23 @@ export class TenantContextService {
     }
 
     return this._tenantId;
+  }
+
+  /**
+   * Set tenant ID explicitly (for testing or special cases)
+   */
+  async setTenant(tenantId: string): Promise<void> {
+    this._tenantId = tenantId;
+    this._tenantConfig = null;
+    this._validated = false;
+    await this.resolveTenant();
+  }
+
+  /**
+   * Get all tenants from the provider
+   */
+  async getAllTenants(): Promise<TenantConfig[]> {
+    return await this.configProvider.getAllTenants();
   }
 
   /**
@@ -208,7 +233,10 @@ export class TenantContextService {
   /**
    * Check if tenant is within subscription limits
    */
-  async checkLimit(limitType: keyof NonNullable<TenantConfig['subscription']>['limits'], currentValue: number): Promise<boolean> {
+  async checkLimit(
+    limitType: keyof NonNullable<TenantConfig['subscription']>['limits'],
+    currentValue: number
+  ): Promise<boolean> {
     const config = await this.getTenantConfig();
     const limit = config.subscription?.limits[limitType];
 
@@ -235,7 +263,10 @@ export class TenantContextService {
     }
 
     // Check subscription expiry
-    if (config.subscription?.expiresAt && config.subscription.expiresAt < new Date()) {
+    if (
+      config.subscription?.expiresAt &&
+      config.subscription.expiresAt < new Date()
+    ) {
       throw new ForbiddenException('Tenant subscription has expired');
     }
 
@@ -249,7 +280,10 @@ export class TenantContextService {
 
     // Custom validation from strategy
     if (this.strategy.validateAccess) {
-      const isValid = await this.strategy.validateAccess(this.request, tenantId);
+      const isValid = await this.strategy.validateAccess(
+        this.request,
+        tenantId
+      );
       if (!isValid) {
         throw new ForbiddenException('Tenant access validation failed');
       }
@@ -270,7 +304,7 @@ export class TenantContextService {
       plan: config.subscription?.plan,
       region: config.security?.dataRegion,
       features: config.config?.features || [],
-      status: config.status
+      status: config.status,
     };
   }
 
@@ -289,7 +323,9 @@ export class TenantContextService {
     if (this.strategy.getTenantConfig) {
       this._tenantConfig = await this.strategy.getTenantConfig(this._tenantId);
     } else {
-      this._tenantConfig = await this.configProvider.getTenantConfig(this._tenantId);
+      this._tenantConfig = await this.configProvider.getTenantConfig(
+        this._tenantId
+      );
     }
 
     if (!this._tenantConfig) {
@@ -306,9 +342,11 @@ export class TenantContextService {
       return forwarded.split(',')[0].trim();
     }
 
-    return this.request.connection.remoteAddress ||
-           this.request.socket.remoteAddress ||
-           '127.0.0.1';
+    return (
+      this.request.connection.remoteAddress ||
+      this.request.socket.remoteAddress ||
+      '127.0.0.1'
+    );
   }
 }
 
@@ -319,7 +357,10 @@ export interface TenantConfigProvider {
   getTenantConfig(tenantId: string): Promise<TenantConfig | null>;
   getAllTenants(): Promise<TenantConfig[]>;
   createTenant(config: Omit<TenantConfig, 'metadata'>): Promise<TenantConfig>;
-  updateTenant(tenantId: string, updates: Partial<TenantConfig>): Promise<TenantConfig>;
+  updateTenant(
+    tenantId: string,
+    updates: Partial<TenantConfig>
+  ): Promise<TenantConfig>;
   deleteTenant(tenantId: string): Promise<void>;
 }
 
@@ -339,8 +380,8 @@ export class InMemoryTenantConfigProvider implements TenantConfigProvider {
       status: 'active',
       metadata: {
         createdAt: new Date(),
-        createdBy: 'system'
-      }
+        createdBy: 'system',
+      },
     });
   }
 
@@ -352,20 +393,25 @@ export class InMemoryTenantConfigProvider implements TenantConfigProvider {
     return Array.from(this.tenants.values());
   }
 
-  async createTenant(config: Omit<TenantConfig, 'metadata'>): Promise<TenantConfig> {
+  async createTenant(
+    config: Omit<TenantConfig, 'metadata'>
+  ): Promise<TenantConfig> {
     const tenantConfig: TenantConfig = {
       ...config,
       metadata: {
         createdAt: new Date(),
-        createdBy: 'system'
-      }
+        createdBy: 'system',
+      },
     };
 
     this.tenants.set(config.tenantId, tenantConfig);
     return tenantConfig;
   }
 
-  async updateTenant(tenantId: string, updates: Partial<TenantConfig>): Promise<TenantConfig> {
+  async updateTenant(
+    tenantId: string,
+    updates: Partial<TenantConfig>
+  ): Promise<TenantConfig> {
     const existing = this.tenants.get(tenantId);
     if (!existing) {
       throw new Error(`Tenant ${tenantId} not found`);
@@ -414,13 +460,17 @@ export class DatabaseTenantConfigProvider implements TenantConfigProvider {
 
     try {
       const result = await session.run('MATCH (t:Tenant) RETURN t');
-      return result.records.map(record => record.get('t').properties as TenantConfig);
+      return result.records.map(
+        (record) => record.get('t').properties as TenantConfig
+      );
     } finally {
       await session.close();
     }
   }
 
-  async createTenant(config: Omit<TenantConfig, 'metadata'>): Promise<TenantConfig> {
+  async createTenant(
+    config: Omit<TenantConfig, 'metadata'>
+  ): Promise<TenantConfig> {
     const session = this.adminDriver.session();
 
     try {
@@ -428,14 +478,13 @@ export class DatabaseTenantConfigProvider implements TenantConfigProvider {
         ...config,
         metadata: {
           createdAt: new Date(),
-          createdBy: 'system'
-        }
+          createdBy: 'system',
+        },
       };
 
-      await session.run(
-        'CREATE (t:Tenant $config) RETURN t',
-        { config: tenantConfig }
-      );
+      await session.run('CREATE (t:Tenant $config) RETURN t', {
+        config: tenantConfig,
+      });
 
       return tenantConfig;
     } finally {
@@ -443,7 +492,10 @@ export class DatabaseTenantConfigProvider implements TenantConfigProvider {
     }
   }
 
-  async updateTenant(tenantId: string, updates: Partial<TenantConfig>): Promise<TenantConfig> {
+  async updateTenant(
+    tenantId: string,
+    updates: Partial<TenantConfig>
+  ): Promise<TenantConfig> {
     const session = this.adminDriver.session();
 
     try {
@@ -466,10 +518,9 @@ export class DatabaseTenantConfigProvider implements TenantConfigProvider {
     const session = this.adminDriver.session();
 
     try {
-      await session.run(
-        'MATCH (t:Tenant {tenantId: $tenantId}) DELETE t',
-        { tenantId }
-      );
+      await session.run('MATCH (t:Tenant {tenantId: $tenantId}) DELETE t', {
+        tenantId,
+      });
     } finally {
       await session.close();
     }

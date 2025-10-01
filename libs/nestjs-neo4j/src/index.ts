@@ -12,6 +12,13 @@ export { NeogmaService } from './lib/core/neogma.service';
 export { NeogmaMetricsService } from './lib/services/neogma-metrics.service';
 export { NeogmaConnectionService } from './lib/services/neogma-connection.service';
 
+// ==================== MODERN QUERY BUILDER SERVICES ====================
+// Type-safe QueryBuilder services for modern Neo4j operations
+
+export { NeogmaQueryBuilderService } from './lib/query-builder/neogma-query-builder.service';
+export { NeogmaQueryRunnerService } from './lib/query-builder/neogma-query-runner.service';
+export { NeogmaModelFactoryService } from './lib/query-builder/neogma-model-factory.service';
+
 // ==================== SERVICE CONSOLIDATION COMPLETE ====================
 // Single authoritative service implementation per TASK_2025_013 Requirement 5
 
@@ -136,18 +143,54 @@ export { TenantContextService } from './lib/multi-tenancy/tenant-context.service
 export * from './lib/multi-tenancy/multi-tenant.decorators';
 
 // Repository Framework (Specialized repositories only)
+export { GraphRepository } from './lib/repositories/graph-repository';
+
+// Modern Graph Services (Specialized graph operations)
+export { BaseGraphService } from './lib/repositories/graph/base-graph.service';
+export { GraphTraversalService } from './lib/repositories/graph/graph-traversal.service';
+export { GraphMetricsService } from './lib/repositories/graph/graph-metrics.service';
+export { GraphPatternService } from './lib/repositories/graph/graph-pattern.service';
+
+// Graph Service Types (distributed across services)
+export type {
+  NeighborResult,
+  PathResult,
+  GraphQueryOptions,
+  GraphTraversalOptions,
+  GraphPattern,
+} from './lib/repositories/graph/base-graph.service';
+
+export type { PathFindingOptions } from './lib/repositories/graph/graph-traversal.service';
+
+export type {
+  CentralityMetric,
+  ConnectedComponent,
+  GraphStatistics,
+  CentralityResult,
+  CommunityDetectionOptions,
+} from './lib/repositories/graph/graph-metrics.service';
+
+export type {
+  SubgraphOptions,
+  SubgraphResult,
+  GraphCycle,
+  GraphQueryPattern,
+} from './lib/repositories/graph/graph-pattern.service';
+
+// Modern Relationship Services (Post-Split Architecture)
 export {
-  GraphRepository,
-  type GraphTraversalOptions,
-  type GraphPattern,
-} from './lib/repositories/graph-repository';
-export {
-  RelationshipRepository,
+  BaseRelationshipService,
   type RelationshipQueryOptions,
   type CreateRelationshipData,
   type RelationshipResult,
   type BatchRelationshipOperation,
-} from './lib/repositories/relationship-repository';
+  type RepositoryQueryOptions,
+} from './lib/repositories/relationship/base-relationship.service';
+export { RelationshipCoreRepository } from './lib/repositories/relationship/relationship-core.repository';
+export { RelationshipBulkOperationsService } from './lib/repositories/relationship/relationship-bulk.service';
+
+// Legacy Relationship Repository (DEPRECATED - use RelationshipCoreRepository instead)
+export { RelationshipRepository } from './lib/repositories/relationship/relationship-repository';
 
 // Utils
 export * from './lib/utils/parameter-serializer';
