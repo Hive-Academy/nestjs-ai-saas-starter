@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import type { HttpClientOptions } from '../interfaces/config/module-options.interface';
+import type { HttpClientOptions } from '../../interfaces/config/module-options.interface';
 
 /**
  * HTTP client utility with retry logic and timeout support

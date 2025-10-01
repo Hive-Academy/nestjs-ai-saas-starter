@@ -629,7 +629,7 @@ function validateWorkflowState(state: any, methodName: string) {
 /**
  * Validate a single value against a rule
  */
-function validateValue(value: any, rule: ValidationRule): boolean {
+export function validateValue(value: any, rule: ValidationRule): boolean {
   // Handle optional fields
   if (rule.optional && (value === null || value === undefined)) {
     return true;

@@ -13,7 +13,7 @@
 ### ✅ COMPLETED IMPLEMENTATIONS
 
 1. **Centralized Registration Pattern** - Single registration point in WorkflowEngineModule
-2. **Decorator Naming Resolution** - @Workflow → @AgenticWorkflow/@FunctionalWorkflow  
+2. **Decorator Naming Resolution** - @Workflow → @AgenticWorkflow/@FunctionalWorkflow
 3. **Multi-Node Agent Architecture** - @Node, @Edge, @Task, @Entrypoint inside @Agent classes
 4. **Agent-Workflow Bridge** - Complete dual agent type support (simple-agent vs workflow-agent)
 5. **Enhanced Agent Infrastructure** - Internal workflow compilation and execution
@@ -23,8 +23,9 @@
 ### 🏗️ REVOLUTIONARY ARCHITECTURE ACHIEVED
 
 **PersonalBrandStrategistAgent Example** demonstrates the complete solution:
+
 - **@Agent decorator** with type: 'workflow-agent'
-- **Internal workflow decorators**: @Entrypoint, @Task, @Node, @Edge  
+- **Internal workflow decorators**: @Entrypoint, @Task, @Node, @Edge
 - **Multi-step agent execution**: initializeBrandAnalysis → gatherBrandData → analyzeBrandPositioning → assessBrandStrength → (optimizeBrand|rebuildStrategy) → generateFinalStrategy
 - **External interface**: Single node to other workflows
 - **Complete integration**: Streaming, memory, checkpointing, error recovery
@@ -38,15 +39,14 @@ This plan enables building complex agentic workflows using only decorators while
 Enable workflows like this:
 
 ```typescript
-@Workflow({ 
+@Workflow({
   name: 'ai-content-pipeline',
   type: 'multi-agent',
   streaming: { enabled: true, modes: ['token', 'progress'] },
   memory: { enabled: true, namespace: 'content-pipeline' },
-  checkpoint: { enabled: true, interval: '2min' }
+  checkpoint: { enabled: true, interval: '2min' },
 })
 export class AIContentPipeline {
-  
   @StreamToken({ bufferSize: 50 })
   @MemoryContext({ contextKey: 'research-context' })
   @AgentStep({ agent: 'researcher', tools: ['web_search'] })
@@ -54,27 +54,27 @@ export class AIContentPipeline {
     // Agent step with streaming + memory
     return { research: await context.agent.research(context.query) };
   }
-  
-  @Subworkflow({ 
+
+  @Subworkflow({
     name: 'content-generation',
     inputTransform: (state) => ({ topic: state.research.topic }),
-    outputTransform: (result) => ({ content: result.generatedContent })
+    outputTransform: (result) => ({ content: result.generatedContent }),
   })
   async generateContent(context: SubworkflowContext) {
     // Complex sub-process as subgraph
     return { generatedContent: await this.createContent(context.topic) };
   }
-  
+
   @StreamProgress({ includeETA: true, milestones: [25, 50, 75, 100] })
-  @RequiresApproval({ 
+  @RequiresApproval({
     confidenceThreshold: 0.8,
-    multiAgent: { requiredAgents: ['reviewer'], consensusThreshold: 1.0 }
+    multiAgent: { requiredAgents: ['reviewer'], consensusThreshold: 1.0 },
   })
   async qualityReview(context: TaskExecutionContext) {
     // Human + agent approval with progress tracking
     return { approved: true, feedback: context.feedback };
   }
-  
+
   @Command({ type: WorkflowCommandType.GOTO })
   async routeContent(context: TaskExecutionContext): Promise<string> {
     // Sophisticated control flow
@@ -83,14 +83,14 @@ export class AIContentPipeline {
     }
     return context.state.needsRevision ? 'revise' : 'escalate';
   }
-  
+
   @StoreMemory({ key: 'final-content', includeMetadata: true })
   @StreamEvent({ events: [StreamEventType.NODE_COMPLETE] })
   async finalizeContent(context: TaskExecutionContext) {
     // Memory storage + event streaming
-    return { 
+    return {
       finalContent: context.state.content,
-      metadata: { processedAt: new Date(), pipeline: 'ai-content' }
+      metadata: { processedAt: new Date(), pipeline: 'ai-content' },
     };
   }
 }
@@ -129,7 +129,8 @@ export class AIContentPipeline {
 **Achievement**: Complete dual agent type system supporting both simple-agent and workflow-agent architectures
 
 **Key Features Implemented**:
-- **Dual Agent Types**: 
+
+- **Dual Agent Types**:
   - `simple-agent`: Traditional single nodeFunction (existing, backward compatible)
   - `workflow-agent`: Multi-step internal workflows using @Node, @Edge, @Task, @Entrypoint
 - **Internal Workflow Compilation**: StateGraph compilation for workflow-agent types
@@ -142,6 +143,7 @@ export class AIContentPipeline {
 #### ✅ IMPLEMENTED: Centralized Registration Pattern
 
 **Files Modified**:
+
 - `apps/dev-brand-api/src/app/config/workflow-engine.config.ts` - Single registration point
 - `apps/dev-brand-api/src/app/config/multi-agent.config.ts` - Pure configuration only
 
@@ -155,91 +157,66 @@ export class AIContentPipeline {
 
 ```typescript
 export class EnhancedDecoratorTranslationService extends DecoratorTranslationService {
-  
-  async translateDecoratorDefinition<TState>(
-    definition: DecoratorDefinition<TState>,
-    instance: object,
-    config?: DecoratorBridgeConfig
-  ): Promise<EnhancedDecoratorTranslationResult<TState>> {
-    
+  async translateDecoratorDefinition<TState>(definition: DecoratorDefinition<TState>, instance: object, config?: DecoratorBridgeConfig): Promise<EnhancedDecoratorTranslationResult<TState>> {
     // Get base translation
     const baseResult = await super.translateDecoratorDefinition(definition, instance, config);
-    
+
     // Enhance with all decorator metadata
-    const enhancedNodes = await this.enhanceNodesWithAllDecorators(
-      baseResult.nodes, 
-      instance
-    );
-    
+    const enhancedNodes = await this.enhanceNodesWithAllDecorators(baseResult.nodes, instance);
+
     return {
       ...baseResult,
       nodes: enhancedNodes,
-      decoratorMetadata: this.extractAllDecoratorMetadata(instance)
+      decoratorMetadata: this.extractAllDecoratorMetadata(instance),
     };
   }
-  
-  private async enhanceNodesWithAllDecorators<TState>(
-    nodes: WorkflowNode<TState>[],
-    instance: object
-  ): Promise<EnhancedWorkflowNode<TState>[]> {
-    
-    return Promise.all(nodes.map(async node => {
-      const methodName = node.id;
-      
-      // Extract all decorator metadata for this method
-      const decoratorMetadata = {
-        streaming: this.getStreamingMetadata(instance, methodName),
-        memory: this.getMemoryMetadata(instance, methodName),
-        agent: this.getAgentStepMetadata(instance, methodName),
-        subworkflow: this.getSubworkflowMetadata(instance, methodName),
-        command: this.getCommandMetadata(instance, methodName),
-        approval: this.getApprovalMetadata(instance, methodName)
-      };
-      
-      // Enhance node handler to support all decorators
-      const enhancedHandler = await this.createEnhancedHandler(
-        node.handler,
-        decoratorMetadata,
-        instance
-      );
-      
-      return {
-        ...node,
-        handler: enhancedHandler,
-        decoratorMetadata,
-        enhanced: true
-      };
-    }));
+
+  private async enhanceNodesWithAllDecorators<TState>(nodes: WorkflowNode<TState>[], instance: object): Promise<EnhancedWorkflowNode<TState>[]> {
+    return Promise.all(
+      nodes.map(async (node) => {
+        const methodName = node.id;
+
+        // Extract all decorator metadata for this method
+        const decoratorMetadata = {
+          streaming: this.getStreamingMetadata(instance, methodName),
+          memory: this.getMemoryMetadata(instance, methodName),
+          agent: this.getAgentStepMetadata(instance, methodName),
+          subworkflow: this.getSubworkflowMetadata(instance, methodName),
+          command: this.getCommandMetadata(instance, methodName),
+          approval: this.getApprovalMetadata(instance, methodName),
+        };
+
+        // Enhance node handler to support all decorators
+        const enhancedHandler = await this.createEnhancedHandler(node.handler, decoratorMetadata, instance);
+
+        return {
+          ...node,
+          handler: enhancedHandler,
+          decoratorMetadata,
+          enhanced: true,
+        };
+      })
+    );
   }
-  
-  private async createEnhancedHandler<TState>(
-    originalHandler: WorkflowNodeHandler<TState>,
-    metadata: DecoratorMetadata,
-    instance: object
-  ): Promise<WorkflowNodeHandler<TState>> {
-    
+
+  private async createEnhancedHandler<TState>(originalHandler: WorkflowNodeHandler<TState>, metadata: DecoratorMetadata, instance: object): Promise<WorkflowNodeHandler<TState>> {
     return async (state: TState): Promise<Partial<TState>> => {
-      
       // Create enhanced execution context
-      const enhancedContext = await this.createEnhancedExecutionContext(
-        state, 
-        metadata, 
-        instance
-      );
-      
+      const enhancedContext = await this.createEnhancedExecutionContext(state, metadata, instance);
+
       // Execute with decorator enhancements
       if (metadata.agent) {
         return await this.executeAsAgentStep(originalHandler, enhancedContext, metadata.agent);
       }
-      
+
       if (metadata.subworkflow) {
         return await this.executeAsSubworkflow(originalHandler, enhancedContext, metadata.subworkflow);
       }
-      
+
       if (metadata.command) {
         return await this.executeWithCommand(originalHandler, enhancedContext, metadata.command);
       }
-      
+
       // Standard execution with streaming/memory/approval enhancements
       return await this.executeWithEnhancements(originalHandler, enhancedContext, metadata);
     };
@@ -250,6 +227,7 @@ export class EnhancedDecoratorTranslationService extends DecoratorTranslationSer
 #### ✅ RESOLVED: Decorator Naming Resolution
 
 **Files Modified**:
+
 - `libs/langgraph-modules/multi-agent/src/lib/decorators/workflow.decorator.ts` - @Workflow → @AgenticWorkflow
 - `libs/langgraph-modules/functional-api/src/lib/decorators/workflow.decorator.ts` - @Workflow → @FunctionalWorkflow
 - `apps/dev-brand-api/src/app/business-workflows/workflows/enhanced-support.workflow.ts` - Updated imports
@@ -268,18 +246,18 @@ export function Subworkflow(config: SubworkflowConfig = {}) {
       parallel: config.parallel || false,
       streaming: config.streaming,
       memory: config.memory,
-      checkpoint: config.checkpoint
+      checkpoint: config.checkpoint,
     };
-    
+
     Reflect.defineMetadata(SUBWORKFLOW_METADATA_KEY, subworkflowMetadata, target, propertyKey);
-    
+
     // Mark for subgraph compilation
     const originalMethod = descriptor.value;
-    descriptor.value = function(...args: any[]) {
+    descriptor.value = function (...args: any[]) {
       // Will be intercepted during workflow compilation
       return originalMethod.apply(this, args);
     };
-    
+
     return descriptor;
   };
 }
@@ -294,18 +272,18 @@ export function AgentStep(config: AgentStepConfig) {
       coordination: config.coordination || 'sequential',
       timeout: config.timeout,
       streaming: config.streaming,
-      memory: config.memory
+      memory: config.memory,
     };
-    
+
     Reflect.defineMetadata(AGENT_STEP_METADATA_KEY, agentStepMetadata, target, propertyKey);
-    
+
     // Mark for agent integration
     const originalMethod = descriptor.value;
-    descriptor.value = function(...args: any[]) {
+    descriptor.value = function (...args: any[]) {
       // Will be converted to agent node during compilation
       return originalMethod.apply(this, args);
     };
-    
+
     return descriptor;
   };
 }
@@ -317,23 +295,23 @@ export function Command(config: CommandConfig = {}) {
       method: propertyKey,
       type: config.type || WorkflowCommandType.UPDATE,
       condition: config.condition,
-      priority: config.priority || 0
+      priority: config.priority || 0,
     };
-    
+
     Reflect.defineMetadata(COMMAND_METADATA_KEY, commandMetadata, target, propertyKey);
-    
+
     const originalMethod = descriptor.value;
-    descriptor.value = async function(...args: any[]) {
+    descriptor.value = async function (...args: any[]) {
       const result = await originalMethod.apply(this, args);
-      
+
       // Transform result into workflow command
       if (typeof result === 'string' && commandMetadata.type === WorkflowCommandType.GOTO) {
         return new WorkflowCommand(WorkflowCommandType.GOTO, { goto: result });
       }
-      
+
       return new WorkflowCommand(commandMetadata.type, result);
     };
-    
+
     return descriptor;
   };
 }
@@ -348,6 +326,7 @@ export function Command(config: CommandConfig = {}) {
 **Achievement**: Complete working example of workflow-agent with internal multi-step workflow
 
 **Implemented Features**:
+
 ```typescript
 @Agent({
   id: 'personal-brand-strategist',
@@ -367,31 +346,31 @@ export class PersonalBrandStrategistAgent {
   @Entrypoint({ timeout: 10000 })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeBrandAnalysis(context: TaskExecutionContext): Promise<TaskExecutionResult>
-  
+
   @Task({ dependsOn: ['initializeBrandAnalysis'] })
   @StreamProgress({ enabled: true })
   @MemoryContext({ contextKey: 'brand-data-gathering' })
   async gatherBrandData(context: TaskExecutionContext): Promise<TaskExecutionResult>
-  
+
   @Task({ dependsOn: ['gatherBrandData'] })
   @StreamToken({ enabled: true, format: 'structured' })
   async analyzeBrandPositioning(context: TaskExecutionContext): Promise<TaskExecutionResult>
-  
+
   @Node({ type: 'condition' })
   async assessBrandStrength(context: TaskExecutionContext): Promise<{ route: string }>
-  
+
   @Edge('assessBrandStrength', 'optimizeBrand', { condition: (state: any) => state.metadata?.brandScore > 0.7 })
   optimizePathEdge() {}
-  
+
   @Edge('assessBrandStrength', 'rebuildStrategy', { condition: (state: any) => state.metadata?.brandScore <= 0.7 })
   rebuildPathEdge() {}
-  
+
   @Task({ dependsOn: ['assessBrandStrength'] })
   async optimizeBrand(context: TaskExecutionContext): Promise<TaskExecutionResult>
-  
+
   @Task({ dependsOn: ['assessBrandStrength'] })
   async rebuildStrategy(context: TaskExecutionContext): Promise<TaskExecutionResult>
-  
+
   @Task({ dependsOn: ['optimizeBrand', 'rebuildStrategy'] })
   @StoreMemory({ key: 'brand-strategy' })
   async generateFinalStrategy(context: TaskExecutionContext): Promise<TaskExecutionResult>
@@ -403,28 +382,17 @@ export class PersonalBrandStrategistAgent {
 ```typescript
 @Injectable()
 export class AgentWorkflowBridgeService {
-  
-  constructor(
-    private readonly agentRegistry: AgentRegistryService,
-    private readonly universalBridge: UniversalBridgeService,
-    @Optional() private readonly streamingService?: IStreamingService,
-    @Optional() private readonly memoryAdapter?: IMemoryAdapter
-  ) {}
-  
-  async createAgentStepNode<TState>(
-    agentStepMetadata: AgentStepMetadata,
-    workflowContext: WorkflowExecutionContext
-  ): Promise<WorkflowNode<TState>> {
-    
+  constructor(private readonly agentRegistry: AgentRegistryService, private readonly universalBridge: UniversalBridgeService, @Optional() private readonly streamingService?: IStreamingService, @Optional() private readonly memoryAdapter?: IMemoryAdapter) {}
+
+  async createAgentStepNode<TState>(agentStepMetadata: AgentStepMetadata, workflowContext: WorkflowExecutionContext): Promise<WorkflowNode<TState>> {
     const agent = this.agentRegistry.getAgent(agentStepMetadata.agentId);
     if (!agent) {
       throw new Error(`Agent ${agentStepMetadata.agentId} not found`);
     }
-    
+
     return {
       id: agentStepMetadata.method,
       handler: async (state: TState) => {
-        
         // Create agent execution context
         const agentContext: AgentStepContext = {
           agent: agent.instance,
@@ -432,74 +400,52 @@ export class AgentWorkflowBridgeService {
           tools: agentStepMetadata.tools,
           state,
           workflowContext,
-          
+
           // Enhanced context with infrastructure
-          streaming: agentStepMetadata.streaming && this.streamingService ? {
-            streamToken: (token: string) => this.streamingService!.streamToken(
-              workflowContext.executionId,
-              agentStepMetadata.method,
-              token
-            ),
-            streamEvent: (event: any) => this.streamingService!.streamEvent(
-              workflowContext.executionId,
-              agentStepMetadata.method,
-              event
-            )
-          } : undefined,
-          
-          memory: agentStepMetadata.memory && this.memoryAdapter ? {
-            store: (key: string, value: any) => this.memoryAdapter!.store(
-              `agent-${agent.id}`,
-              key,
-              value
-            ),
-            retrieve: (query: any) => this.memoryAdapter!.search(
-              `agent-${agent.id}`,
-              query
-            )
-          } : undefined
+          streaming:
+            agentStepMetadata.streaming && this.streamingService
+              ? {
+                  streamToken: (token: string) => this.streamingService!.streamToken(workflowContext.executionId, agentStepMetadata.method, token),
+                  streamEvent: (event: any) => this.streamingService!.streamEvent(workflowContext.executionId, agentStepMetadata.method, event),
+                }
+              : undefined,
+
+          memory:
+            agentStepMetadata.memory && this.memoryAdapter
+              ? {
+                  store: (key: string, value: any) => this.memoryAdapter!.store(`agent-${agent.id}`, key, value),
+                  retrieve: (query: any) => this.memoryAdapter!.search(`agent-${agent.id}`, query),
+                }
+              : undefined,
         };
-        
+
         // Execute agent with enhanced context
-        const agentResult = await agent.nodeFunction(
-          this.transformWorkflowStateToAgentState(state, agentContext)
-        );
-        
+        const agentResult = await agent.nodeFunction(this.transformWorkflowStateToAgentState(state, agentContext));
+
         // Transform agent result back to workflow state
         return this.transformAgentResultToWorkflowState(agentResult, state);
       },
-      
+
       config: {
         streaming: agentStepMetadata.streaming,
         memory: agentStepMetadata.memory,
         tools: agentStepMetadata.tools,
-        timeout: agentStepMetadata.timeout
-      }
+        timeout: agentStepMetadata.timeout,
+      },
     };
   }
-  
-  async executeAgentCoordinationWorkflow<TState>(
-    agents: string[],
-    coordinationConfig: AgentCoordinationConfig,
-    workflowState: TState
-  ): Promise<TState> {
-    
+
+  async executeAgentCoordinationWorkflow<TState>(agents: string[], coordinationConfig: AgentCoordinationConfig, workflowState: TState): Promise<TState> {
     // Create coordination workflow using workflow-engine
-    const coordinationDefinition = await this.createCoordinationWorkflowDefinition(
-      agents,
-      coordinationConfig
-    );
-    
+    const coordinationDefinition = await this.createCoordinationWorkflowDefinition(agents, coordinationConfig);
+
     // Use workflow-engine for execution
-    const compiledWorkflow = await this.universalBridge.compileWorkflowDefinition(
-      coordinationDefinition,
-      {
-        streaming: coordinationConfig.streaming,
-        memory: coordinationConfig.memory,
-        checkpoint: coordinationConfig.checkpoint
-      }
-    );
-    
+    const compiledWorkflow = await this.universalBridge.compileWorkflowDefinition(coordinationDefinition, {
+      streaming: coordinationConfig.streaming,
+      memory: coordinationConfig.memory,
+      checkpoint: coordinationConfig.checkpoint,
+    });
+
     return await compiledWorkflow.invoke(workflowState);
   }
 }
@@ -512,6 +458,7 @@ export class AgentWorkflowBridgeService {
 **Achievement**: Enhanced @Agent decorator with workflow-agent type support
 
 **New AgentType Support**:
+
 ```typescript
 export type AgentType = 'simple-agent' | 'workflow-agent';
 
@@ -546,7 +493,7 @@ export interface EnhancedAgentConfig extends AgentConfig {
     network: NetworkTopology;
     roles?: AgentRole[];
   };
-  
+
   // Workflow integration
   workflowCapabilities?: {
     canBeWorkflowStep: boolean;
@@ -563,15 +510,15 @@ export function Agent(config: EnhancedAgentConfig) {
       ...config,
       decoratorType: 'agent',
       workflowIntegration: config.workflowCapabilities?.canBeWorkflowStep ?? true,
-      className: constructor.name
+      className: constructor.name,
     };
-    
+
     Reflect.defineMetadata(ENHANCED_AGENT_METADATA_KEY, agentMetadata, constructor);
-    
+
     // Register with both agent registry and workflow-engine
     AgentRegistry.registerAgent(constructor, agentMetadata);
     WorkflowRegistry.registerAgentForWorkflowIntegration(constructor, agentMetadata);
-    
+
     return constructor;
   };
 }
@@ -582,8 +529,9 @@ export function Agent(config: EnhancedAgentConfig) {
 #### ✅ VALIDATED: All Systems Integration
 
 **Build Validation**: All builds successful including:
+
 - `npm run update:libs` ✅
-- `npx nx build dev-brand-api` ✅ 
+- `npx nx build dev-brand-api` ✅
 - All library builds ✅
 
 #### ✅ IMPLEMENTED: Complete Decorator Ecosystem
@@ -597,58 +545,51 @@ export function Agent(config: EnhancedAgentConfig) {
 export function MemoryContext(config: MemoryContextConfig = {}) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    
-    descriptor.value = async function(...args: any[]) {
+
+    descriptor.value = async function (...args: any[]) {
       const memoryAdapter = this.getMemoryAdapter?.();
-      
+
       if (memoryAdapter) {
         // Get memory context
-        const memoryContext = await memoryAdapter.getMemoryContext(
-          config.contextKey || this.executionId,
-          config
-        );
-        
+        const memoryContext = await memoryAdapter.getMemoryContext(config.contextKey || this.executionId, config);
+
         // Add memory to method arguments
         const enhancedArgs = [...args, { memory: memoryContext }];
         return await originalMethod.apply(this, enhancedArgs);
       }
-      
+
       return await originalMethod.apply(this, args);
     };
-    
+
     Reflect.defineMetadata(MEMORY_CONTEXT_METADATA_KEY, config, target, propertyKey);
     return descriptor;
   };
 }
 
-// Memory storage decorator  
+// Memory storage decorator
 export function StoreMemory(config: MemoryStorageConfig = {}) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    
-    descriptor.value = async function(...args: any[]) {
+
+    descriptor.value = async function (...args: any[]) {
       const result = await originalMethod.apply(this, args);
       const memoryAdapter = this.getMemoryAdapter?.();
-      
+
       if (memoryAdapter && config.store !== false) {
-        await memoryAdapter.store(
-          config.namespace || this.workflowName,
-          config.key || propertyKey,
-          {
-            result,
-            metadata: {
-              method: propertyKey,
-              timestamp: new Date(),
-              executionId: this.executionId,
-              includeInput: config.includeInput ? args : undefined
-            }
-          }
-        );
+        await memoryAdapter.store(config.namespace || this.workflowName, config.key || propertyKey, {
+          result,
+          metadata: {
+            method: propertyKey,
+            timestamp: new Date(),
+            executionId: this.executionId,
+            includeInput: config.includeInput ? args : undefined,
+          },
+        });
       }
-      
+
       return result;
     };
-    
+
     Reflect.defineMetadata(MEMORY_STORAGE_METADATA_KEY, config, target, propertyKey);
     return descriptor;
   };
@@ -668,7 +609,7 @@ export interface EnhancedApprovalConfig extends ApprovalConfig {
     consensusThreshold?: number;
     votingStrategy?: 'unanimous' | 'majority' | 'weighted';
   };
-  
+
   workflowIntegration?: {
     pauseWorkflow?: boolean;
     notifyAgents?: string[];
@@ -679,52 +620,42 @@ export interface EnhancedApprovalConfig extends ApprovalConfig {
 export function RequiresApproval(config: EnhancedApprovalConfig) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
-    
-    descriptor.value = async function(...args: any[]) {
+
+    descriptor.value = async function (...args: any[]) {
       const approvalService = this.getApprovalService?.();
       const workflowContext = this.getWorkflowContext?.();
-      
+
       if (approvalService && this.needsApproval(config, args)) {
-        
         // Multi-agent consensus if configured
         if (config.multiAgent) {
-          const agentApprovals = await this.collectAgentApprovals(
-            config.multiAgent,
-            { method: propertyKey, args, context: this }
-          );
-          
-          const consensus = this.evaluateConsensus(
-            agentApprovals,
-            config.multiAgent.votingStrategy || 'majority'
-          );
-          
+          const agentApprovals = await this.collectAgentApprovals(config.multiAgent, { method: propertyKey, args, context: this });
+
+          const consensus = this.evaluateConsensus(agentApprovals, config.multiAgent.votingStrategy || 'majority');
+
           if (!consensus.approved) {
             throw new WorkflowApprovalError('Multi-agent consensus not reached', consensus);
           }
         }
-        
+
         // Human approval
         const approval = await approvalService.requestApproval({
           method: propertyKey,
           input: args,
           context: this,
-          multiAgentConsensus: config.multiAgent ? 'approved' : undefined
+          multiAgentConsensus: config.multiAgent ? 'approved' : undefined,
         });
-        
+
         if (!approval.approved) {
           if (config.workflowIntegration?.escalationPath) {
-            return await this.handleEscalation(
-              config.workflowIntegration.escalationPath, 
-              args
-            );
+            return await this.handleEscalation(config.workflowIntegration.escalationPath, args);
           }
           throw new WorkflowApprovalError('Approval denied', approval);
         }
       }
-      
+
       return await originalMethod.apply(this, args);
     };
-    
+
     Reflect.defineMetadata(ENHANCED_APPROVAL_METADATA_KEY, config, target, propertyKey);
     return descriptor;
   };
@@ -775,7 +706,7 @@ export class SimpleAgent {
 // 🆕 Revolutionary workflow agents now available
 @Agent({
   id: 'workflow-agent',
-  name: 'Workflow Agent', 
+  name: 'Workflow Agent',
   type: 'workflow-agent', // 🆕 Enables internal workflow
   workflowConfig: {
     enableInternalStreaming: true,
@@ -785,22 +716,30 @@ export class SimpleAgent {
 })
 export class WorkflowAgent {
   @Entrypoint()
-  async initialize() { /* ... */ }
-  
+  async initialize() {
+    /* ... */
+  }
+
   @Task({ dependsOn: ['initialize'] })
   @StreamProgress()
   @MemoryContext()
-  async process() { /* ... */ }
-  
+  async process() {
+    /* ... */
+  }
+
   @Node({ type: 'condition' })
-  async decide() { /* ... */ }
-  
+  async decide() {
+    /* ... */
+  }
+
   @Edge('decide', 'finalize')
   edgeToFinalize() {}
-  
+
   @Task()
   @StoreMemory({ key: 'result' })
-  async finalize() { /* ... */ }
+  async finalize() {
+    /* ... */
+  }
 }
 ```
 

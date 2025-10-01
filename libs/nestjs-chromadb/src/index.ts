@@ -2,7 +2,7 @@
 export * from './lib/nestjs-chromadb.module';
 
 // Facade Services (new specialized services)
-export { ChromaDBService as ChromaDBFacadeService } from './lib/services/chromadb-facade.service';
+export { ChromaDBService as ChromaDBFacadeService } from './lib/services/chromadb.service';
 // Removed duplicate PerformanceConfig import - using only line 49
 export { ChromaDBPerformanceService } from './lib/services/facade/chromadb-performance.service';
 export type { EmbeddingProcessingOptions } from './lib/services/facade/chromadb-embedding-processor.service';

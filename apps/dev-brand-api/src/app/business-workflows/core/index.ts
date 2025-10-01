@@ -7,6 +7,17 @@
  * - Performance optimization decorators
  * - Memory and tools services
  */
+/**
+ * Common error patterns for quick access
+ */
+import {
+  GitHubIntegrationError,
+  LLMProviderError,
+  MemoryServiceError,
+  AgentExecutionError,
+  InputValidationError,
+  BusinessWorkflowErrorFactory,
+} from './errors/business-workflow.errors';
 
 // ============================================================================
 // ERROR HIERARCHY EXPORTS
@@ -141,9 +152,24 @@ export { PersonalBrandMemoryService } from './memory/personal-brand-memory.servi
 export { WebResearchTools } from './tools/web-research.tools';
 export { GitHubIntegrationTools } from './tools/github-integration.tools';
 
+import {
+  Cache,
+  CircuitBreakerDecorator,
+  Metrics,
+  Optimize,
+} from './performance/optimization.decorators';
 // ============================================================================
 // CONVENIENCE RE-EXPORTS
 // ============================================================================
+
+import {
+  Required,
+  IsGitHubUsername,
+  IsPlatform,
+  IsContentType,
+  IsWorkflowState,
+  Validate,
+} from './validation/workflow.validators';
 
 /**
  * Common validation patterns for quick access
@@ -188,9 +214,6 @@ export const CommonOptimizations = {
     }),
 } as const;
 
-/**
- * Common error patterns for quick access
- */
 export const CommonErrors = {
   GitHubIntegrationError,
   LLMProviderError,

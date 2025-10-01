@@ -21,7 +21,7 @@ import { ChromaDBCollectionService } from './services/core/chromadb-collection.s
 import { EmbeddingService } from './services/embedding.service';
 import { TextSplitterService } from './services/text-splitter.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
-import { setChromaDBConfig } from './utils/chromadb-config.accessor';
+import { setChromaDBConfig } from './utils/config/chromadb-config.accessor';
 import { validateChromaDBOptions } from './validation/validate-chromadb-options';
 
 @Global()

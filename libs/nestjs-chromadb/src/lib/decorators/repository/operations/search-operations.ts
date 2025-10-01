@@ -5,7 +5,7 @@
  * Following Single Responsibility Principle - handles only search operations
  */
 
-import type { ChromaDBService } from '../../../services/chromadb-facade.service';
+import type { ChromaDBService } from '../../../services/chromadb.service';
 import type { BaseDocument } from '../../../types/core.interface';
 import type {
   ChromaRepositoryConfig,

@@ -41,14 +41,20 @@ export class SimpleAgent {
 })
 export class WorkflowAgent {
   @Entrypoint()
-  async start(context: TaskExecutionContext) { /* ... */ }
-  
+  async start(context: TaskExecutionContext) {
+    /* ... */
+  }
+
   @Task({ dependsOn: ['start'] })
-  async process(context: TaskExecutionContext) { /* ... */ }
-  
+  async process(context: TaskExecutionContext) {
+    /* ... */
+  }
+
   @Node({ type: 'condition' })
-  async decide(context: TaskExecutionContext) { /* ... */ }
-  
+  async decide(context: TaskExecutionContext) {
+    /* ... */
+  }
+
   @Edge('decide', 'finalize', { condition: (state) => state.ready })
   routeToFinalize() {}
 }
@@ -128,12 +134,12 @@ async assessBrandStrength(context): Promise<{ route: string }> {
   return { route: brandScore > 0.7 ? 'optimize' : 'rebuild' };
 }
 
-@Edge('assessBrandStrength', 'optimizeBrand', { 
-  condition: (state) => state.metadata?.brandScore > 0.7 
+@Edge('assessBrandStrength', 'optimizeBrand', {
+  condition: (state) => state.metadata?.brandScore > 0.7
 })
 
-@Edge('assessBrandStrength', 'rebuildStrategy', { 
-  condition: (state) => state.metadata?.brandScore <= 0.7 
+@Edge('assessBrandStrength', 'rebuildStrategy', {
+  condition: (state) => state.metadata?.brandScore <= 0.7
 })
 ```
 
@@ -159,7 +165,7 @@ async assessBrandStrength(context): Promise<{ route: string }> {
 
 ```typescript
 ✓ Agent Registration and Detection (4 tests)
-✓ Agent Instance Resolution (3 tests)  
+✓ Agent Instance Resolution (3 tests)
 ✓ Simple Agent Execution (1 test)
 ✓ Workflow Agent Execution (4 tests)
 ✓ Registry Statistics and Management (3 tests)
