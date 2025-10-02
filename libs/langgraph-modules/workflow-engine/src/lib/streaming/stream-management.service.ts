@@ -114,17 +114,27 @@ export class StreamManagementService {
   }
 
   /**
+   * Get stream handle - delegates to adapter
+   */
+  getStream(executionId: string): any {
+    this.logger.debug(`Getting stream for ${executionId}`);
+    return this.streamingService.getStream(executionId);
+  }
+
+  /**
+   * Create stream - delegates to adapter
+   */
+  async createStream(executionId: string, options?: any): Promise<any> {
+    this.logger.debug(`Creating stream for ${executionId}`);
+    return this.streamingService.createStream(executionId, options);
+  }
+
+  /**
    * Close stream - delegates to adapter
    */
   closeStream(executionId: string): void {
     this.logger.debug(`Closing stream for ${executionId}`);
-    // Delegate to adapter if it has this capability
-    if (
-      'closeStream' in this.streamingService &&
-      typeof this.streamingService.closeStream === 'function'
-    ) {
-      this.streamingService.closeStream(executionId);
-    }
+    this.streamingService.closeStream(executionId);
   }
 
   /**

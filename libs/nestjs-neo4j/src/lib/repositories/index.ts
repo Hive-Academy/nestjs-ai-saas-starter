@@ -1,15 +1,8 @@
 /**
- * Neo4j Repository Framework
+ * Neo4j Specialized Repository Framework
  *
- * This module provides a comprehensive repository pattern implementation for Neo4j:
- *
- * Base Repository:
- * - Standard CRUD operations with type safety
- * - Pagination and sorting utilities
- * - Soft delete support
- * - Query builder helpers
- * - Error handling and logging
- * - Performance monitoring integration
+ * This module provides specialized repository implementations for advanced graph operations.
+ * For basic CRUD operations, use the @Repository decorator or entity CRUD decorators instead.
  *
  * Graph Repository:
  * - Graph traversals and path finding
@@ -26,6 +19,10 @@
  * - Type-safe relationship handling
  * - Source and target node management
  *
+ * For Basic CRUD Operations:
+ * - Use @FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity decorators
+ * - Or use @Repository decorator for auto-generated repositories
+ *
  * Features:
  * - Full TypeScript type safety
  * - Automatic query optimization
@@ -35,6 +32,39 @@
  * - Metrics collection
  */
 
-export * from './base-repository';
-export * from './graph-repository';
-export * from './relationship-repository';
+// BaseRepository removed - use @Repository decorator instead
+export { GraphRepository } from './graph-repository';
+
+// Re-export graph types from graph-repository
+export type {
+  GraphTraversalOptions,
+  GraphPattern,
+  NeighborResult,
+  PathResult,
+  CentralityMetric,
+  ConnectedComponent,
+  GraphStatistics,
+  CentralityResult,
+  CommunityDetectionOptions,
+  PathFindingOptions,
+  GraphQueryPattern,
+  SubgraphOptions,
+  SubgraphResult,
+  GraphCycle,
+} from './graph-repository';
+
+// Modern Graph Services (Post-Split Architecture)
+export { BaseGraphService } from './graph/base-graph.service';
+export { GraphTraversalService } from './graph/graph-traversal.service';
+export { GraphMetricsService } from './graph/graph-metrics.service';
+export { GraphPatternService } from './graph/graph-pattern.service';
+export {
+  RelationshipRepository,
+  type RelationshipQueryOptions,
+  type CreateRelationshipData,
+  type RelationshipResult,
+  type BatchRelationshipOperation,
+} from './relationship/relationship-repository';
+
+// Repository decorators
+export * from './repository.decorator';

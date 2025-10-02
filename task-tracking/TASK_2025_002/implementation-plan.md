@@ -1,536 +1,532 @@
-# 🏛️ COMPREHENSIVE ARCHITECTURAL BLUEPRINT - TASK_2025_002
+# Implementation Plan: TASK_2025_002
 
-## 📊 Research Integration Summary
+## Neo4j Library Modernization - Orchestrated Workflow
 
-**Research Coverage**: 100% of compilation issues analyzed with documented evidence
-**Evidence Sources**: Direct codebase analysis via MCP filesystem tools
-**Key Findings**:
+### Agent Orchestration Strategy
 
-- PersonalBrandStrategistAgent provides working reference implementation
-- Correct decorator imports identified from package analysis  
-- AgentState vs WorkflowState incompatibility resolved
-- Base class requirements clarified through DeclarativeWorkflowBase analysis
+This task will be executed through a coordinated multi-agent workflow:
 
-**Quantified Benefits**:
+## Phase 1: Architecture & Design (Agent: software-architect)
 
-- Zero compilation errors: Achieved through correct type alignment
-- Performance improvement: Proper workflow-agent pattern reduces complexity
-- Developer productivity: Clear transformation guide eliminates trial-and-error
+**Objective**: Design comprehensive entity/repository structure
 
-**Business Requirements**: 4/4 requirements fully addressed (100% completion rate)
+**Agent Prompt**:
 
-## 🏗️ Architecture Overview
+```
+Analyze the current Neo4j usage in dev-brand-api and design a modern architecture using @hive-academy/nestjs-neo4j features.
 
-**Architecture Style**: Decorator-Driven Workflow Agents - Selected based on working PersonalBrandStrategistAgent patterns
-**Design Patterns**: 5 patterns strategically applied using established LangGraph standards
-**Component Count**: 3 agents to transform with clear separation of concerns
-**Integration Points**: ChromaDB + Neo4j + LLM following full stack requirements
+Current files to analyze:
+- apps/dev-brand-api/src/app/adapters/memory/neo4j-graph.adapter.ts
+- apps/dev-brand-api/src/app/adapters/hitl/*.ts (6 files)
+- apps/dev-brand-api/src/app/business-workflows/core/memory/personal-brand-memory.service.ts
 
-**Quality Attributes Addressed** (Evidence-Backed):
+Design deliverables:
+1. Entity class definitions (11 entities)
+2. Repository class structure (8 repositories)
+3. Security decorator strategy
+4. Migration roadmap
 
-- Compilation Success: ⭐⭐⭐⭐⭐ (zero TypeScript errors via correct type usage)
-- Maintainability: ⭐⭐⭐⭐⭐ (established decorator patterns ensure consistency)
-- Performance: ⭐⭐⭐⭐ (workflow-agent type optimizes execution)
-- Testability: ⭐⭐⭐⭐⭐ (DeclarativeWorkflowBase provides testing hooks)
-- Integration: ⭐⭐⭐⭐⭐ (full stack ChromaDB + Neo4j + LLM)
-
-## 🔧 CRITICAL ISSUE ANALYSIS
-
-### Issue 1: Missing 'Workflow' Export (HIGH PRIORITY)
-
-**Evidence**: `@hive-academy/langgraph-functional-api` exports `FunctionalWorkflow`, not `Workflow`
-**Resolution**: Import `FunctionalWorkflow as Workflow` or use correct import name
-**Impact**: Immediate compilation fix
-
-### Issue 2: AgentState vs WorkflowState Constraint (CRITICAL)
-
-**Evidence**: `DeclarativeWorkflowBase<TState extends WorkflowState>` requires WorkflowState compatibility
-**Resolution**: Extend AgentState to implement WorkflowState interface
-**Impact**: Type safety compliance
-
-### Issue 3: Decorator Placement Issues (MEDIUM)
-
-**Evidence**: Decorators applied incorrectly in constructor and method signatures
-**Resolution**: Apply decorators to methods only, not constructor parameters
-**Impact**: Proper metadata attachment
-
-### Issue 4: State Access on Unknown Types (MEDIUM)
-
-**Evidence**: Properties accessed on `unknown` state types
-**Resolution**: Proper type casting and interface extensions
-**Impact**: Type safety and IntelliSense
-
-### Issue 5: Missing Base Class Requirements (HIGH)
-
-**Evidence**: DeclarativeWorkflowBase requires specific constructor dependencies
-**Resolution**: Include all required services in constructor injection
-**Impact**: Proper workflow execution
-
-## 📐 CORRECT ARCHITECTURE COMPONENTS
-
-### 1. Proper State Interface Design
-
-```typescript
-/**
- * Extended AgentState that satisfies WorkflowState constraints
- * This resolves the AgentState vs WorkflowState compatibility issue
- */
-export interface WorkflowAgentState extends AgentState {
-  // Required WorkflowState properties
-  executionId: string;
-  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
-  currentNode?: string;
-  completedNodes: string[];
-  confidence: number;
-  error?: WorkflowError;
-  timestamps: {
-    started: Date;
-    updated?: Date;
-    completed?: Date;
-  };
-  retryCount: number;
-  startedAt: Date;
-  completedAt?: Date;
-  
-  // Enhanced with business-specific properties
-  [key: string]: any;
-}
+Reference: libs/nestjs-neo4j/CLAUDE.md for available features
 ```
 
-### 2. Correct Decorator Imports
+**Deliverables**:
 
-```typescript
-// CORRECT imports from actual package analysis
-import { Injectable, Inject, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Agent } from '@hive-academy/langgraph-multi-agent';
-import type { AgentState } from '@hive-academy/langgraph-multi-agent';
-import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
-import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
-import { Neo4jService } from '@hive-academy/nestjs-neo4j';
+- [ ] Entity architecture document
+- [ ] Repository design patterns
+- [ ] Security strategy document
+- [ ] Phase-by-phase migration plan
 
-// FIXED: Use FunctionalWorkflow, not Workflow
-import {
-  Entrypoint,
-  Task,
-  Node,
-  Edge,
-  FunctionalWorkflow as Workflow, // Key fix!
-} from '@hive-academy/langgraph-functional-api';
+**Success Criteria**:
 
-import type {
-  TaskExecutionContext,
-  TaskExecutionResult,
-} from '@hive-academy/langgraph-functional-api';
+- All 11 entities defined with proper decorators
+- Repository inheritance hierarchy established
+- Security requirements mapped to decorators
+- Migration sequence optimized for minimal risk
 
-import {
-  DeclarativeWorkflowBase,
-  WorkflowGraphBuilderService,
-  SubgraphManagerService,
-  MetadataProcessorService,
-  WorkflowStreamService,
-} from '@hive-academy/langgraph-workflow-engine';
+---
 
-import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
+## Phase 2: Entity Implementation (Agent: backend-developer)
+
+**Objective**: Create all Neo4j entity classes with decorators
+
+**Agent Prompt**:
+
+```
+Implement 11 Neo4j entity classes based on the architecture from Phase 1.
+
+Entities to create in libs/nestjs-neo4j/src/entities/:
+1. approval-request.entity.ts - HITL approval requests
+2. approval-response.entity.ts - Approval responses
+3. developer.entity.ts - Developer profiles
+4. achievement.entity.ts - Code achievements
+5. technology.entity.ts - Technology nodes
+6. brand-strategy.entity.ts - Brand positioning
+7. strength.entity.ts - Developer strengths
+8. memory.entity.ts - Memory graph nodes
+9. confidence-pattern.entity.ts - Confidence evaluation
+10. feedback-entry.entity.ts - User feedback
+11. interruption-point.entity.ts - Workflow interruptions
+
+Use decorators:
+- @Neo4jEntity() for class definition
+- @Id(), @Neo4jProp(), @Neo4jRelationship()
+- @PropIndex(), @Unique(), @NotNull(), @NodeKey()
+- @CreatedAt(), @UpdatedAt()
+
+Export all entities from libs/nestjs-neo4j/src/index.ts
 ```
 
-### 3. Correct Base Class and Constructor Pattern
+**Deliverables**:
 
+- [ ] 11 entity files created
+- [ ] All decorators applied
+- [ ] Relationships defined
+- [ ] Constraints configured
+- [ ] Type exports updated
+
+**Success Criteria**:
+
+- Zero TypeScript errors
+- All entities follow @hive-academy/nestjs-neo4j patterns
+- Constraint decorators properly applied
+- Build passes: `npx nx build @hive-academy/nestjs-neo4j`
+
+---
+
+## Phase 3: Repository Implementation (Agent: backend-developer)
+
+**Objective**: Create modern repositories using @Repository decorator
+
+**Agent Prompt**:
+
+````
+Create 8 repository classes in apps/dev-brand-api/src/repositories/ using the @Repository pattern.
+
+Repositories to create:
+1. approval-request.repository.ts - Replace neo4j-hitl-storage.adapter.ts
+2. approval-chain.repository.ts - Replace neo4j-approval-chain-storage.adapter.ts
+3. confidence-pattern.repository.ts - Replace neo4j-confidence-storage.adapter.ts
+4. feedback.repository.ts - Replace neo4j-feedback-storage.adapter.ts
+5. interruption.repository.ts - Replace neo4j-interruption-storage.adapter.ts
+6. developer.repository.ts - For personal-brand-memory.service.ts
+7. achievement.repository.ts - For personal-brand-memory.service.ts
+8. memory-graph.repository.ts - Replace neo4j-graph.adapter.ts
+
+Pattern:
 ```typescript
-@Agent({
-  id: 'agent-id',
-  name: 'Agent Name',
-  type: 'workflow-agent', // CRITICAL: Use workflow-agent type
-  capabilities: ['capability1', 'capability2'],
-  tools: ['tool1', 'tool2'],
-  priority: 'high',
-  executionTime: 'fast',
-  workflowConfig: {
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: true,
-    internalTimeout: 120000,
-    enableErrorRecovery: true,
-    maxInternalRetries: 3,
-    enableStepProgress: true,
-    stateKey: 'agent-workflow-key',
-  },
-})
-@Workflow({
-  name: 'agent-workflow',
-  description: 'Agent workflow description',
-  streaming: true,
-  confidenceThreshold: 0.8,
-  metrics: true,
-})
+@Repository(() => EntityType)
 @Injectable()
-export class AgentClass extends DeclarativeWorkflowBase<WorkflowAgentState> {
-  constructor(
-    private readonly chromaService: ChromaDBService,
-    private readonly neo4jService: Neo4jService,
-    @Inject(EventEmitter2)
-    eventEmitter: EventEmitter2,
-    @Inject(WorkflowGraphBuilderService)
-    graphBuilder: WorkflowGraphBuilderService,
-    @Inject(SubgraphManagerService)
-    subgraphManager: SubgraphManagerService,
-    @Inject(MetadataProcessorService)
-    metadataProcessor: MetadataProcessorService,
-    @Optional()
-    @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService,
-    @Optional()
-    eventProcessor?: EventStreamProcessorService
-  ) {
-    super(
-      eventEmitter,
-      graphBuilder,
-      subgraphManager,
-      metadataProcessor,
-      streamService,
-      eventProcessor
-    );
+export class EntityRepository extends BaseRepositoryService<EntityType> {
+  constructor(@InjectNeogma() neogmaService: NeogmaService) {
+    super();
+  }
+
+  // Custom business methods using QueryBuilder
+  @CypherQuery({ cacheTTL: 60000 })
+  async customMethod() {
+    const qb = this.neogma.createQueryBuilder();
+    // ...
   }
 }
+````
+
+Requirements:
+
+- All CRUD methods auto-generated by @Repository
+- Custom business logic migrated from adapters
+- Use NeogmaQueryBuilderService for all queries
+- No manual Cypher strings
+
 ```
-
-### 4. Correct Decorator Usage Patterns
-
-```typescript
-/**
- * Entry point - applied to method, not constructor
- */
-@Entrypoint({ timeout: 15000 })
-@StreamProgress({ enabled: true, includeETA: true })
-async initializeWorkflow(context: TaskExecutionContext): Promise<TaskExecutionResult> {
-  const { state } = context;
-  const workflowState = state as WorkflowAgentState;
-  
-  return {
-    state: {
-      ...state,
-      executionId: `exec-${Date.now()}`,
-      status: 'active' as const,
-      currentNode: 'initialization',
-      completedNodes: [],
-      confidence: 0.8,
-      timestamps: {
-        started: new Date(),
-      },
-      retryCount: 0,
-      startedAt: new Date(),
-      metadata: {
-        ...state.metadata,
-        workflowStarted: true,
-      },
-    },
-  };
-}
-
-/**
- * Task methods with proper dependencies
- */
-@Task({ dependsOn: ['initializeWorkflow'] })
-@StreamProgress({ enabled: true })
-@StreamToken({ enabled: true, format: 'structured' })
-async processBusinessLogic(context: TaskExecutionContext): Promise<TaskExecutionResult> {
-  const { state } = context;
-  const workflowState = state as WorkflowAgentState;
-  
-  // REAL business logic implementation
-  const results = await this.performRealBusinessLogic(workflowState);
-  
-  return {
-    state: {
-      ...state,
-      currentNode: 'business-logic-complete',
-      completedNodes: [...workflowState.completedNodes, 'initializeWorkflow'],
-      confidence: results.confidence,
-      metadata: {
-        ...state.metadata,
-        businessResults: results,
-      },
-    },
-  };
-}
-
-/**
- * Decision nodes for workflow routing
- */
-@Node({ type: 'condition' })
-async makeDecision(context: TaskExecutionContext): Promise<{ route: string }> {
-  const { state } = context;
-  const workflowState = state as WorkflowAgentState;
-  
-  const shouldContinue = workflowState.confidence > 0.7;
-  return {
-    route: shouldContinue ? 'continue' : 'escalate',
-  };
-}
-
-/**
- * Edge definitions for workflow flow
- */
-@Edge('makeDecision', 'finalizeResults', { 
-  condition: (state: WorkflowAgentState) => state.confidence > 0.7 
-})
-routeToContinue() {}
-
-@Edge('makeDecision', 'escalateToHuman', { 
-  condition: (state: WorkflowAgentState) => state.confidence <= 0.7 
-})
-routeToEscalate() {}
-```
-
-## 📋 STEP-BY-STEP TRANSFORMATION GUIDE
-
-### Phase 1: Core Infrastructure Fixes (High Priority)
-
-#### Subtask 1.1: Fix Import Statements
-
-**Complexity**: LOW
-**Estimated Time**: 0.5 hours
-**Evidence Basis**: Package analysis shows FunctionalWorkflow export, not Workflow
-
-**Backend Developer Tasks**:
-
-1. **File**: `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\agents\customer-support.agent.ts`
-2. **Change**: Replace `Workflow` import with `FunctionalWorkflow as Workflow`
-3. **Change**: Verify all other imports match package exports
-4. **Testing**: Ensure compilation succeeds
 
 **Deliverables**:
+- [ ] 8 repository files created
+- [ ] @Repository decorators applied
+- [ ] Custom methods implemented
+- [ ] QueryBuilder used throughout
+- [ ] Unit tests for each repository
 
-```typescript
-// BEFORE (causing error)
-import { Workflow } from '@hive-academy/langgraph-functional-api';
+**Success Criteria**:
+- Zero manual Cypher strings
+- All queries use QueryBuilder
+- Type safety maintained
+- Tests passing with >80% coverage
 
-// AFTER (correct)
-import { FunctionalWorkflow as Workflow } from '@hive-academy/langgraph-functional-api';
+---
+
+## Phase 4: Adapter Migration (Agent: backend-developer)
+
+**Objective**: Replace all adapter files with repository calls
+
+**Agent Prompt**:
 ```
 
-#### Subtask 1.2: Create WorkflowAgentState Interface
+Migrate all 6 HITL adapter files to use the new repositories.
 
-**Complexity**: MEDIUM  
-**Estimated Time**: 1 hour
-**Evidence Basis**: DeclarativeWorkflowBase requires WorkflowState compatibility
+Files to migrate:
 
-**Backend Developer Tasks**:
+1. apps/dev-brand-api/src/app/adapters/hitl/neo4j-hitl-storage.adapter.ts
+2. apps/dev-brand-api/src/app/adapters/hitl/neo4j-approval-chain-storage.adapter.ts
+3. apps/dev-brand-api/src/app/adapters/hitl/neo4j-confidence-storage.adapter.ts
+4. apps/dev-brand-api/src/app/adapters/hitl/neo4j-feedback-storage.adapter.ts
+5. apps/dev-brand-api/src/app/adapters/hitl/neo4j-interruption-storage.adapter.ts
+6. apps/dev-brand-api/src/app/adapters/memory/neo4j-graph.adapter.ts
 
-1. **File**: `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\types\workflow-agent-state.interface.ts`
-2. **Interface**: Create WorkflowAgentState extending both AgentState and WorkflowState
-3. **Integration**: Import and use in all agent classes
-4. **Testing**: Verify type compatibility
+Migration pattern:
 
-**Deliverables**:
+- Replace neo4jService.run() calls with repository methods
+- Remove manual Cypher construction
+- Use repository's auto-generated methods
+- Keep adapter interface intact (IHitlStorageService, IGraphService)
+
+Example:
 
 ```typescript
-export interface WorkflowAgentState extends AgentState {
-  executionId: string;
-  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
-  currentNode?: string;
-  completedNodes: string[];
-  confidence: number;
-  // ... other WorkflowState properties
+// BEFORE
+async storeApprovalRequest(request: ApprovalStorageData): Promise<string> {
+  const cypher = `CREATE (a:ApprovalRequest {...}) RETURN a.id`;
+  const result = await this.neo4jService.run(cypher, params);
+  return result.records[0].id;
+}
+
+// AFTER
+async storeApprovalRequest(request: ApprovalStorageData): Promise<string> {
+  const approval = await this.approvalRequestRepo.create({
+    id: request.id,
+    executionId: request.executionId,
+    // ... mapped fields
+  });
+  return approval.id;
 }
 ```
 
-### Phase 2: Agent Class Transformation (Critical Priority)
+```
 
-#### Subtask 2.1: Transform CustomerSupportAgent
+**Deliverables**:
+- [ ] All 6 adapter files migrated
+- [ ] Repository injection configured
+- [ ] Interface contracts maintained
+- [ ] Integration tests passing
 
-**Complexity**: HIGH
-**Estimated Time**: 2 hours
-**Evidence Basis**: Existing implementation needs state interface and constructor fixes
+**Success Criteria**:
+- Zero neo4jService.run() calls remain
+- All adapters use repositories
+- No breaking changes to interfaces
+- Performance maintained or improved
 
-**Backend Developer Tasks**:
+---
 
-1. **File**: `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\agents\customer-support.agent.ts`
-2. **Base Class**: Extend `DeclarativeWorkflowBase<WorkflowAgentState>`
-3. **Constructor**: Include all required services from reference implementation
-4. **Methods**: Cast state to WorkflowAgentState in all task methods
-5. **Testing**: Verify compilation and basic workflow execution
+## Phase 5: Service Migration (Agent: backend-developer)
 
-**Acceptance Criteria**:
+**Objective**: Migrate personal-brand-memory.service.ts to use repositories
 
-- [ ] Zero TypeScript compilation errors
-- [ ] All decorator patterns correctly applied
-- [ ] Real business logic operational (ChromaDB + Neo4j)
-- [ ] Workflow execution functional
+**Agent Prompt**:
+```
 
-#### Subtask 2.2: Transform GitHubCodeAnalyzerAgent  
+Migrate the complex personal-brand-memory.service.ts (1,271 lines) to use modern repositories.
 
-**Complexity**: HIGH
-**Estimated Time**: 2 hours
-**Dependencies**: Subtask 2.1 completion
+Current usage:
 
-**Backend Developer Tasks**:
+- Manual Cypher in neo4j.run() calls
+- Complex graph queries
+- Technology relationship management
+- Achievement tracking
 
-1. **File**: `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\agents\github-code-analyzer.agent.ts`
-2. **Pattern**: Follow CustomerSupportAgent transformation pattern
-3. **Business Logic**: Maintain GitHub analysis functionality
-4. **Integration**: Ensure ChromaDB vector search operational
-5. **Testing**: Verify GitHub data processing works
+Migration approach:
 
-#### Subtask 2.3: Transform ContentCreatorAgent
+- Inject DeveloperRepository and AchievementRepository
+- Replace manual Cypher with repository methods
+- Use QueryBuilder for complex queries
+- Leverage GraphTraversalService for graph operations
 
-**Complexity**: HIGH  
-**Estimated Time**: 2 hours
-**Dependencies**: Subtask 2.1 completion
+Expected code reduction: 1,271 lines → ~400 lines
 
-**Backend Developer Tasks**:
+```
 
-1. **File**: `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\agents\content-creator.agent.ts`
-2. **Pattern**: Follow established transformation pattern
-3. **Business Logic**: Maintain content creation functionality
-4. **Integration**: Ensure LLM integration functional
-5. **Testing**: Verify content generation works
+**Deliverables**:
+- [ ] Service migrated to repositories
+- [ ] Complex queries converted to QueryBuilder
+- [ ] Graph operations use GraphTraversalService
+- [ ] Code reduced by ~60%
 
-### Phase 3: Validation and Testing (Medium Priority)
+**Success Criteria**:
+- Zero manual Cypher strings
+- GraphTraversalService integrated
+- Type safety throughout
+- All existing functionality preserved
 
-#### Subtask 3.1: Compilation Validation
+---
 
-**Complexity**: LOW
-**Estimated Time**: 0.5 hours
+## Phase 6: Security Enhancement (Agent: backend-developer)
 
-**Backend Developer Tasks**:
+**Objective**: Add security decorators to all repository methods
 
-1. **Command**: `npm run build:libs`
-2. **Verification**: Zero TypeScript errors
-3. **Documentation**: Document any remaining issues
-4. **Resolution**: Fix any compilation errors found
+**Agent Prompt**:
+```
 
-#### Subtask 3.2: Integration Testing
+Apply security decorators across all 8 repositories.
 
-**Complexity**: MEDIUM
-**Estimated Time**: 1.5 hours
+Decorators to apply:
 
-**Backend Developer Tasks**:
+1. @Safe({ validateInput: true, sanitizeOutput: true })
+2. @Authorize({ roles: ['admin', 'user'] })
+3. @ValidateInput({ schema: ... })
+4. @AuditLog({ level: 'info' })
+5. @RateLimit({ maxRequests: 100, window: 60000 })
 
-1. **Services**: Start ChromaDB, Neo4j, Redis services
-2. **Testing**: Execute each agent workflow
-3. **Verification**: Confirm real business logic execution
-4. **Documentation**: Record test results and performance
+Pattern:
 
-## 🤝 DEVELOPER HANDOFF PROTOCOL
+```typescript
+@Safe({ validateInput: true, sanitizeOutput: true })
+@Authorize({ roles: ['admin'] })
+@ValidateInput({ schema: ApprovalRequestSchema })
+@AuditLog({ level: 'info' })
+@RateLimit({ maxRequests: 100, window: 60000 })
+async updateApprovalStatus(id: string, status: string): Promise<void> {
+  // Implementation
+}
+```
 
-### Backend Developer Tasks (First Priority)
+Create validation schemas for all input types.
 
-#### Task B1: Fix Import and Type Issues
+```
 
-**Complexity**: MEDIUM
-**Estimated Time**: 2 hours
-**Dependencies**: None
+**Deliverables**:
+- [ ] Security decorators on all methods
+- [ ] Input validation schemas defined
+- [ ] Authorization rules configured
+- [ ] Audit logging verified
+- [ ] Rate limiting tested
 
-**Implementation Steps**:
+**Success Criteria**:
+- 100% method coverage with @Safe
+- Authorization on all write operations
+- Input validation on all public methods
+- Audit logs captured
+- Rate limiting functional
 
-1. Create WorkflowAgentState interface in `/types/workflow-agent-state.interface.ts`
-2. Fix import statement to use `FunctionalWorkflow as Workflow`
-3. Update CustomerSupportAgent to use correct base class and state type
-4. Verify compilation succeeds
+---
 
-**Acceptance Criteria**:
+## Phase 7: Testing & Validation (Agent: senior-tester)
 
-- [ ] Zero TypeScript compilation errors
-- [ ] All imports resolve correctly
-- [ ] State types properly aligned
+**Objective**: Comprehensive test suite for all new patterns
 
-**Progress Updates**:
+**Agent Prompt**:
+```
 
-- Update progress.md when starting
-- Checkpoint commit every 30 minutes
-- Update progress.md when completed
+Create comprehensive test suite for the Neo4j modernization.
 
-#### Task B2: Transform All Agents
+Test categories:
 
-**Complexity**: HIGH
-**Estimated Time**: 6 hours
-**Dependencies**: Task B1 completion
+1. Unit tests for all 8 repositories
+2. Integration tests with real Neo4j
+3. Security decorator tests
+4. Performance benchmarks
+5. Migration validation tests
 
-**Implementation Steps**:
+Test requirements:
 
-1. Transform CustomerSupportAgent following reference pattern
-2. Transform GitHubCodeAnalyzerAgent using same pattern
-3. Transform ContentCreatorAgent using same pattern
-4. Verify all agents compile and execute
+>
 
-**Acceptance Criteria**:
+- > 80% code coverage
+- All repository methods tested
+- Security decorator behavior verified
+- Performance meets targets (<100ms p95)
+- No regressions in functionality
 
-- [ ] All 3 agents compile successfully
-- [ ] Decorator patterns correctly implemented
-- [ ] Real business logic operational
-- [ ] Multi-agent coordination functional
+Use actual Neo4j for integration tests (Docker).
 
-**Progress Updates**:
+```
 
-- Update progress.md every agent completion
-- Checkpoint commit after each agent
-- Update progress.md when all completed
+**Deliverables**:
+- [ ] Unit test suite (>80% coverage)
+- [ ] Integration test suite
+- [ ] Security tests
+- [ ] Performance benchmarks
+- [ ] Migration validation suite
 
-## 🎯 SUCCESS METRICS & MONITORING
+**Success Criteria**:
+- All tests passing
+- Coverage >80%
+- Performance benchmarks met
+- No regressions detected
+- Security features verified
 
-**Architecture Quality Metrics**:
+---
 
-- Compilation Success: 100% (measured by build pipeline)
-- Type Safety: 100% strict TypeScript compliance
-- Pattern Consistency: 100% decorator pattern compliance
-- Integration: 100% full stack operational
+## Phase 8: Code Review & Documentation (Agent: code-reviewer)
 
-**Runtime Performance Targets** (Evidence-Backed):
+**Objective**: Final quality validation and documentation
 
-- Agent Initialization: <100ms per agent
-- Workflow Execution: <2000ms for typical workflow
-- Memory Usage: <50MB per agent instance
-- Error Rate: <0.1% under normal conditions
+**Agent Prompt**:
+```
 
-**Implementation Timeline**:
+Perform comprehensive code review of the Neo4j modernization.
 
-- Phase 1: 1.5 hours (infrastructure fixes)
-- Phase 2: 6 hours (agent transformations)  
-- Phase 3: 2 hours (validation and testing)
-- **Total**: 9.5 hours estimated
+Review checklist:
 
-**Quality Gates**: All tasks include:
+1. Code Quality
 
-- Specific acceptance criteria with measurable outcomes
-- Professional progress tracking requirements with timestamps
-- Evidence trail documentation with source references
-- Real business logic verification (no stubs or placeholders)
+   - Zero manual Cypher strings
+   - Zero 'any' types
+   - All queries use QueryBuilder
+   - Proper error handling
 
-## 📝 ARCHITECTURAL DECISION RECORDS
+2. Security
 
-### ADR-001: Use WorkflowAgentState Interface
+   - All inputs validated
+   - All operations audited
+   - Rate limiting on public endpoints
+   - Sensitive data encrypted
 
-**Status**: Accepted
-**Context**: AgentState doesn't satisfy WorkflowState constraints for DeclarativeWorkflowBase
-**Decision**: Create WorkflowAgentState interface extending both AgentState and WorkflowState
-**Evidence**: DeclarativeWorkflowBase<TState extends WorkflowState> requirement analysis
-**Consequences**:
+3. Performance
 
-- (+) Type compatibility resolved
-- (+) Full workflow engine features available
-- (-) Additional interface maintenance
+   - Query response <100ms (p95)
+   - Retry logic functional
+   - Circuit breaker active
+   - Cache hit rate >60%
 
-### ADR-002: Import FunctionalWorkflow as Workflow
+4. Maintainability
+   - Code reduced by ~60%
+   - Declarative patterns used
+   - Clear separation of concerns
+   - Comprehensive documentation
 
-**Status**: Accepted  
-**Context**: Package analysis shows no 'Workflow' export from functional-api
-**Decision**: Use FunctionalWorkflow export with alias for compatibility
-**Evidence**: Direct package export analysis via MCP tools
-**Consequences**:
+Generate migration report with metrics.
 
-- (+) Immediate compilation fix
-- (+) Maintains existing code readability
-- (-) Import alias required for clarity
+```
 
-### ADR-003: Follow PersonalBrandStrategistAgent Pattern
+**Deliverables**:
+- [ ] Code review report
+- [ ] Migration metrics report
+- [ ] Documentation updates
+- [ ] Best practices guide
+- [ ] Performance report
 
-**Status**: Accepted
-**Context**: Need working reference implementation for transformation
-**Decision**: Use PersonalBrandStrategistAgent as architectural template
-**Evidence**: Only fully functional workflow-agent in codebase
-**Consequences**:
+**Success Criteria**:
+- All quality gates passed (10/10)
+- Documentation complete
+- Migration metrics recorded
+- Best practices documented
+- Team signoff obtained
 
-- (+) Proven working pattern
-- (+) Consistent architecture across agents
-- (+) Reduced implementation risk
-- (-) Must adapt pattern to each agent's needs
+---
+
+## Execution Timeline
+
+| Phase | Agent | Duration | Dependencies |
+|-------|-------|----------|--------------|
+| 1. Architecture | software-architect | 8 hours | None |
+| 2. Entities | backend-developer | 16 hours | Phase 1 |
+| 3. Repositories | backend-developer | 24 hours | Phase 2 |
+| 4. Adapters | backend-developer | 16 hours | Phase 3 |
+| 5. Service Migration | backend-developer | 12 hours | Phase 3 |
+| 6. Security | backend-developer | 8 hours | Phase 3-5 |
+| 7. Testing | senior-tester | 12 hours | Phase 2-6 |
+| 8. Review | code-reviewer | 4 hours | Phase 7 |
+
+**Total**: 100 hours (~2.5 weeks for single developer)
+
+---
+
+## Quality Gates
+
+Each phase must pass before proceeding:
+
+### Phase 1 Gate
+- [ ] Architecture document approved
+- [ ] Entity design validated
+- [ ] Repository patterns defined
+- [ ] Migration plan reviewed
+
+### Phase 2 Gate
+- [ ] All entities compile
+- [ ] Neo4j library builds
+- [ ] Decorators properly applied
+- [ ] Exports configured
+
+### Phase 3 Gate
+- [ ] All repositories implement base interface
+- [ ] QueryBuilder used throughout
+- [ ] Unit tests passing
+- [ ] No manual Cypher
+
+### Phase 4 Gate
+- [ ] All adapters migrated
+- [ ] Interface contracts maintained
+- [ ] Integration tests passing
+- [ ] No regressions
+
+### Phase 5 Gate
+- [ ] Service migrated successfully
+- [ ] Code reduction achieved
+- [ ] Functionality preserved
+- [ ] Performance maintained
+
+### Phase 6 Gate
+- [ ] Security decorators applied
+- [ ] Validation schemas complete
+- [ ] Authorization functional
+- [ ] Audit logs working
+
+### Phase 7 Gate
+- [ ] >80% test coverage
+- [ ] All tests passing
+- [ ] Performance targets met
+- [ ] No regressions
+
+### Phase 8 Gate
+- [ ] Code review approved
+- [ ] Documentation complete
+- [ ] Metrics recorded
+- [ ] Team signoff
+
+---
+
+## Risk Mitigation
+
+### Technical Risks
+- **Risk**: Breaking changes during migration
+  - **Mitigation**: Parallel implementation, feature flags, gradual rollout
+
+- **Risk**: Performance regression
+  - **Mitigation**: Benchmarks at each phase, optimization sprints
+
+- **Risk**: Data migration issues
+  - **Mitigation**: Entity decorators support existing schema
+
+### Process Risks
+- **Risk**: Agent coordination failures
+  - **Mitigation**: Clear phase boundaries, quality gates, checkpoints
+
+- **Risk**: Scope creep
+  - **Mitigation**: Strict adherence to task description, change control
+
+---
+
+## Success Metrics
+
+### Code Quality
+- ✅ 100% TypeScript type safety (zero 'any')
+- ✅ 0 manual Cypher strings (100% QueryBuilder)
+- ✅ ~60% code reduction (4,900 → 1,960 lines)
+- ✅ All queries parameterized
+
+### Performance
+- ✅ <100ms query response (p95)
+- ✅ >60% cache hit rate
+- ✅ Circuit breaker functional
+- ✅ Retry logic working
+
+### Security
+- ✅ 100% input validation
+- ✅ 100% operation auditing
+- ✅ Rate limiting on public endpoints
+- ✅ Sensitive data encrypted
+
+### Maintainability
+- ✅ Declarative patterns throughout
+- ✅ Clear separation of concerns
+- ✅ Comprehensive documentation
+- ✅ >80% test coverage
+```

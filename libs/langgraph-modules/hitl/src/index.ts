@@ -80,3 +80,16 @@ export type {
   ApprovalPattern,
   ConfidenceFactor,
 } from './lib/services/confidence-evaluator.service';
+
+// Feedback Storage Types
+export {
+  IFeedbackStorageService,
+  FeedbackType,
+  InvalidFeedbackDataError,
+  FeedbackStorageError,
+} from './lib/interfaces/feedback-storage.interface';
+export type {
+  FeedbackEntry,
+  ProcessingResult,
+  FeedbackAnalytics,
+} from './lib/interfaces/feedback-storage.interface';

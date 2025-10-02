@@ -1,270 +1,94 @@
-import {
-  BaseRepository,
-  type RepositoryQueryOptions,
-  FindOptions,
-} from './base-repository';
-
 /**
- * Graph traversal options
- */
-export interface GraphTraversalOptions {
-  /** Maximum depth for traversal */
-  maxDepth?: number;
-  /** Minimum depth for traversal */
-  minDepth?: number;
-  /** Relationship types to follow */
-  relationshipTypes?: string[];
-  /** Direction of relationships to follow */
-  direction?: 'IN' | 'OUT' | 'BOTH';
-  /** Filter conditions for nodes */
-  nodeFilter?: Record<string, any>;
-  /** Filter conditions for relationships */
-  relationshipFilter?: Record<string, any>;
-  /** Include relationship data in results */
-  includeRelationships?: boolean;
-  /** Include path information */
-  includePaths?: boolean;
-}
-
-/**
- * Shortest path options
- */
-export interface ShortestPathOptions {
-  /** Maximum path length */
-  maxLength?: number;
-  /** Relationship types to consider */
-  relationshipTypes?: string[];
-  /** Direction of relationships */
-  direction?: 'IN' | 'OUT' | 'BOTH';
-  /** Weight property for weighted shortest path */
-  weightProperty?: string;
-}
-
-/**
- * Clustering options
- */
-export interface ClusteringOptions {
-  /** Algorithm to use */
-  algorithm?: 'louvain' | 'labelPropagation' | 'weaklyConnectedComponents';
-  /** Relationship types to consider */
-  relationshipTypes?: string[];
-  /** Weight property */
-  weightProperty?: string;
-  /** Maximum iterations */
-  maxIterations?: number;
-  /** Tolerance for convergence */
-  tolerance?: number;
-}
-
-/**
- * Graph pattern for pattern matching
- */
-export interface GraphPattern {
-  /** Nodes in the pattern */
-  nodes: Array<{
-    variable: string;
-    labels?: string[];
-    properties?: Record<string, any>;
-  }>;
-  /** Relationships in the pattern */
-  relationships: Array<{
-    type: string;
-    direction: 'IN' | 'OUT' | 'BOTH';
-    source: string;
-    target: string;
-    properties?: Record<string, any>;
-  }>;
-}
-
-/**
- * Enhanced repository for graph-specific operations
+ * @fileoverview Graph Repository Facade
  *
- * This class extends BaseRepository with graph database specific functionality:
- * - Graph traversals and path finding
- * - Relationship management
- * - Pattern matching
- * - Graph algorithms integration
- * - Centrality calculations
- * - Community detection
+ * This facade provides a unified interface over the split graph services
+ * for backward compatibility while delegating to the modern QueryBuilder-based services.
+ */
+
+import { Injectable, Logger } from '@nestjs/common';
+import { GraphTraversalService } from './graph/graph-traversal.service';
+import { GraphMetricsService } from './graph/graph-metrics.service';
+import { GraphPatternService } from './graph/graph-pattern.service';
+import type {
+  GraphTraversalOptions,
+  NeighborResult,
+  PathResult,
+  GraphPattern,
+} from './graph/base-graph.service';
+import type {
+  CentralityMetric,
+  ConnectedComponent,
+  GraphStatistics,
+  CentralityResult,
+  CommunityDetectionOptions,
+} from './graph/graph-metrics.service';
+import type { PathFindingOptions } from './graph/graph-traversal.service';
+import type {
+  GraphQueryPattern,
+  SubgraphOptions,
+  SubgraphResult,
+  GraphCycle,
+} from './graph/graph-pattern.service';
+import type { NeogmaEntity } from '../types/neogma-types';
+
+/**
+ * Graph Repository Facade (LEGACY COMPATIBILITY)
+ *
+ * This class provides a unified interface over the split graph services:
+ * - GraphTraversalService: Neighbor finding, distance calculations, and path finding
+ * - GraphMetricsService: Centrality calculations and graph analysis
+ * - GraphPatternService: Pattern matching and subgraph operations
+ *
+ * RECOMMENDED: Use GraphTraversalService, GraphMetricsService, and GraphPatternService directly
+ * for new development. This facade is maintained for backward compatibility.
+ *
+ * Migration Guide:
+ * - Traversal operations → GraphTraversalService
+ * - Metrics and centrality → GraphMetricsService
+ * - Pattern matching → GraphPatternService
+ * - All operations use modern QueryBuilder patterns for type safety
  *
  * @template T The entity type this repository manages
+ * @deprecated Use GraphTraversalService, GraphMetricsService, and GraphPatternService instead
  */
-export abstract class GraphRepository<T = any> extends BaseRepository<T> {
+@Injectable()
+export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {
+  protected readonly logger = new Logger(GraphRepository.name);
+
+  constructor(
+    private readonly traversalService: GraphTraversalService<T>,
+    private readonly metricsService: GraphMetricsService<T>,
+    private readonly patternService: GraphPatternService<T>,
+    protected readonly entityLabel = 'Entity'
+  ) {
+    this.logger.warn(
+      'GraphRepository is deprecated. Use GraphTraversalService, GraphMetricsService, and GraphPatternService directly.'
+    );
+  }
+
+  // =============================================================================
+  // CORE GRAPH OPERATIONS (Delegated to GraphTraversalService)
+  // =============================================================================
+
   /**
-   * Find all neighbors of a node
+   * Find neighbors of a node
    */
   async findNeighbors(
     nodeId: string,
-    options?: GraphTraversalOptions & RepositoryQueryOptions
+    options?: GraphTraversalOptions
   ): Promise<T[]> {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? ''
-        : `:${relationshipTypes.join('|')}`;
-
-    const direction = this.getRelationshipDirection(options?.direction);
-    const maxDepth = options?.maxDepth || 1;
-
-    const query = `
-      MATCH (source:${this.entityLabel} {id: $nodeId})
-      ${direction.replace('REL', `r${typeFilter}`)}
-      (neighbor:${this.entityLabel})
-      WHERE neighbor.id <> $nodeId
-      ${this.buildNodeFilter(options?.nodeFilter, 'neighbor')}
-      ${this.buildRelationshipFilter(options?.relationshipFilter, 'r')}
-      ${this.buildSoftDeleteFilter(options, 'neighbor')}
-      RETURN DISTINCT neighbor
-      LIMIT ${maxDepth * 100}
-    `;
-
-    const result = await this.executeQuery<T>(query, { nodeId }, options);
-    return result.map((record) => this.mapFromNeo4j(record));
+    return this.traversalService.findNeighbors(nodeId, options);
   }
 
   /**
-   * Find shortest path between two nodes
-   */
-  async findShortestPath(
-    fromId: string,
-    toId: string,
-    options?: ShortestPathOptions & RepositoryQueryOptions
-  ): Promise<{
-    path: Array<{ node: T; relationship?: any }>;
-    length: number;
-    weight?: number;
-  } | null> {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? ''
-        : `|${relationshipTypes.join('|')}`;
-
-    const maxLength = options?.maxLength || 10;
-    const weightClause = options?.weightProperty
-      ? `, {weightProperty: '${options.weightProperty}'}`
-      : '';
-
-    const query = `
-      MATCH (start:${this.entityLabel} {id: $fromId}), (end:${
-      this.entityLabel
-    } {id: $toId})
-      CALL gds.shortestPath.dijkstra.stream({
-        sourceNode: start,
-        targetNode: end,
-        relationshipTypes: [${relationshipTypes
-          .map((t) => `'${t}'`)
-          .join(', ')}],
-        maxDepth: ${maxLength}
-        ${weightClause}
-      })
-      YIELD index, sourceNode, targetNode, totalCost, nodeIds, costs, path
-      RETURN path, totalCost as weight, length(path) as length
-    `;
-
-    try {
-      const result = await this.executeQuery<{
-        path: any;
-        weight: number;
-        length: number;
-      }>(query, { fromId, toId }, options);
-
-      if (result.length === 0) {
-        return null;
-      }
-
-      const pathData = result[0];
-      // Transform path data to our format
-      const pathNodes = this.extractPathNodes(pathData.path);
-
-      return {
-        path: pathNodes,
-        length: pathData.length,
-        weight: pathData.weight,
-      };
-    } catch (error) {
-      // Fallback to basic shortest path if GDS is not available
-      return this.findShortestPathBasic(fromId, toId, options);
-    }
-  }
-
-  /**
-   * Find all paths between two nodes
-   */
-  async findAllPaths(
-    fromId: string,
-    toId: string,
-    options?: ShortestPathOptions & RepositoryQueryOptions
-  ): Promise<
-    Array<{
-      path: Array<{ node: T; relationship?: any }>;
-      length: number;
-    }>
-  > {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
-
-    const maxLength = options?.maxLength || 5;
-
-    const query = `
-      MATCH path = (start:${this.entityLabel} {id: $fromId})
-      -[*1..${maxLength}:${typeFilter}]-
-      (end:${this.entityLabel} {id: $toId})
-      WHERE start <> end
-      RETURN path, length(path) as pathLength
-      ORDER BY pathLength
-      LIMIT 100
-    `;
-
-    const result = await this.executeQuery<{
-      path: any;
-      pathLength: number;
-    }>(query, { fromId, toId }, options);
-
-    return result.map((record) => ({
-      path: this.extractPathNodes(record.path),
-      length: record.pathLength,
-    }));
-  }
-
-  /**
-   * Find nodes within a certain distance
+   * Find nodes within a specific distance
    */
   async findWithinDistance(
     nodeId: string,
     distance: number,
-    options?: GraphTraversalOptions & RepositoryQueryOptions
-  ): Promise<Array<{ node: T; distance: number }>> {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
-
-    const query = `
-      MATCH (source:${this.entityLabel} {id: $nodeId})
-      MATCH path = (source)-[*1..${distance}:${typeFilter}]-(target:${
-      this.entityLabel
-    })
-      WHERE source <> target
-      ${this.buildNodeFilter(options?.nodeFilter, 'target')}
-      ${this.buildSoftDeleteFilter(options, 'target')}
-      RETURN DISTINCT target, length(path) as distance
-      ORDER BY distance
-    `;
-
-    const result = await this.executeQuery<{
-      target: T;
-      distance: number;
-    }>(query, { nodeId }, options);
-
-    return result.map((record) => ({
-      node: this.mapFromNeo4j({ n: record.target }),
-      distance: record.distance,
-    }));
+    options?: GraphTraversalOptions
+  ): Promise<NeighborResult<T>[]> {
+    return this.traversalService.findWithinDistance(nodeId, distance, options);
   }
 
   /**
@@ -273,313 +97,266 @@ export abstract class GraphRepository<T = any> extends BaseRepository<T> {
   async findCommonNeighbors(
     nodeId1: string,
     nodeId2: string,
-    options?: GraphTraversalOptions & RepositoryQueryOptions
+    options?: GraphTraversalOptions
   ): Promise<T[]> {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
-
-    const query = `
-      MATCH (node1:${
-        this.entityLabel
-      } {id: $nodeId1})-[:${typeFilter}]-(common:${
-      this.entityLabel
-    })-[:${typeFilter}]-(node2:${this.entityLabel} {id: $nodeId2})
-      WHERE common.id <> $nodeId1 AND common.id <> $nodeId2
-      ${this.buildNodeFilter(options?.nodeFilter, 'common')}
-      ${this.buildSoftDeleteFilter(options, 'common')}
-      RETURN DISTINCT common
-    `;
-
-    const result = await this.executeQuery<T>(
-      query,
-      { nodeId1, nodeId2 },
-      options
-    );
-    return result.map((record) => this.mapFromNeo4j(record));
+    return this.traversalService.findCommonNeighbors(nodeId1, nodeId2, options);
   }
+
+  // =============================================================================
+  // PATH FINDING OPERATIONS (Delegated to GraphTraversalService)
+  // =============================================================================
+
+  /**
+   * Find shortest path between two nodes
+   */
+  async findShortestPath(
+    fromId: string,
+    toId: string,
+    options?: PathFindingOptions
+  ): Promise<PathResult<T> | null> {
+    return this.traversalService.findShortestPath(fromId, toId, options);
+  }
+
+  /**
+   * Find all paths between two nodes
+   */
+  async findAllPaths(
+    fromId: string,
+    toId: string,
+    options?: PathFindingOptions
+  ): Promise<PathResult<T>[]> {
+    return this.traversalService.findAllPaths(fromId, toId, options);
+  }
+
+  /**
+   * Find k-shortest paths between two nodes
+   */
+  async findKShortestPaths(
+    fromId: string,
+    toId: string,
+    k: number,
+    options?: PathFindingOptions
+  ): Promise<PathResult<T>[]> {
+    return this.traversalService.findKShortestPaths(fromId, toId, k, options);
+  }
+
+  // =============================================================================
+  // GRAPH METRICS (Delegated to GraphMetricsService)
+  // =============================================================================
 
   /**
    * Calculate degree centrality for a node
    */
   async calculateDegreeCentrality(
     nodeId: string,
-    options?: {
-      relationshipTypes?: string[];
-      direction?: 'IN' | 'OUT' | 'BOTH';
-    } & RepositoryQueryOptions
+    options?: GraphTraversalOptions
   ): Promise<number> {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? ''
-        : `:${relationshipTypes.join('|')}`;
-
-    const direction = this.getRelationshipDirection(options?.direction);
-
-    const query = `
-      MATCH (node:${this.entityLabel} {id: $nodeId})
-      ${direction.replace('REL', `r${typeFilter}`)}
-      (neighbor)
-      RETURN count(DISTINCT neighbor) as degree
-    `;
-
-    const result = await this.executeQuery<{ degree: number }>(
-      query,
-      { nodeId },
-      options
-    );
-    return result[0]?.degree || 0;
+    return this.metricsService.calculateDegreeCentrality(nodeId, options);
   }
 
   /**
-   * Find connected components
+   * Calculate centrality scores for all nodes
+   */
+  async calculateCentralityScores(
+    metric: CentralityMetric,
+    options?: GraphTraversalOptions
+  ): Promise<CentralityResult<T>[]> {
+    return this.metricsService.calculateCentralityScores(metric, options);
+  }
+
+  /**
+   * Find connected components in the graph
    */
   async findConnectedComponents(
-    options?: ClusteringOptions & RepositoryQueryOptions
-  ): Promise<Array<{ componentId: string; nodes: T[] }>> {
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
-
-    const query = `
-      MATCH (n:${this.entityLabel})
-      ${this.buildSoftDeleteFilter(options, 'n')}
-      CALL gds.wcc.stream({
-        nodeQuery: 'MATCH (n:${this.entityLabel}) RETURN id(n) as id',
-        relationshipQuery: 'MATCH (n:${
-          this.entityLabel
-        })-[r:${typeFilter}]-(m:${
-      this.entityLabel
-    }) RETURN id(n) as source, id(m) as target'
-      })
-      YIELD nodeId, componentId
-      MATCH (node:${this.entityLabel}) WHERE id(node) = nodeId
-      RETURN componentId, collect(node) as nodes
-    `;
-
-    try {
-      const result = await this.executeQuery<{
-        componentId: string;
-        nodes: T[];
-      }>(query, {}, options);
-
-      return result.map((record) => ({
-        componentId: record.componentId,
-        nodes: record.nodes.map((node) => this.mapFromNeo4j({ n: node })),
-      }));
-    } catch (error) {
-      // Fallback to basic connected components
-      return this.findConnectedComponentsBasic(options);
-    }
+    options?: GraphTraversalOptions
+  ): Promise<ConnectedComponent<T>[]> {
+    return this.metricsService.findConnectedComponents(options);
   }
 
   /**
-   * Pattern matching in the graph
+   * Detect communities using various algorithms
+   */
+  async detectCommunities(
+    options?: CommunityDetectionOptions
+  ): Promise<Array<{ communityId: string; nodes: T[]; modularity?: number }>> {
+    return this.metricsService.detectCommunities(options);
+  }
+
+  /**
+   * Calculate comprehensive graph statistics
+   */
+  async getGraphStatistics(
+    options?: GraphTraversalOptions
+  ): Promise<GraphStatistics> {
+    return this.metricsService.getGraphStatistics(options);
+  }
+
+  /**
+   * Find nodes with highest centrality scores
+   */
+  async findCentralNodes(
+    metric: CentralityMetric = 'degree',
+    limit = 10,
+    options?: GraphTraversalOptions
+  ): Promise<CentralityResult<T>[]> {
+    return this.metricsService.findCentralNodes(metric, limit, options);
+  }
+
+  /**
+   * Analyze node importance across multiple centrality metrics
+   */
+  async analyzeNodeImportance(
+    nodeId: string,
+    options?: GraphTraversalOptions
+  ): Promise<{ [K in CentralityMetric]: number }> {
+    return this.metricsService.analyzeNodeImportance(nodeId, options);
+  }
+
+  // =============================================================================
+  // PATTERN MATCHING (Delegated to GraphPatternService)
+  // =============================================================================
+
+  /**
+   * Match complex graph patterns
    */
   async matchPattern(
     pattern: GraphPattern,
-    options?: RepositoryQueryOptions
-  ): Promise<Array<Record<string, T>>> {
-    const { query, params } = this.buildPatternQuery(pattern);
-    const result = await this.executeQuery<Record<string, T>>(
-      query,
-      params,
+    options?: { limit?: number }
+  ): Promise<Array<{ [key: string]: T }>> {
+    return this.patternService.matchPattern(pattern, options);
+  }
+
+  /**
+   * Execute custom graph query pattern
+   */
+  async executeCustomPattern(
+    pattern: GraphQueryPattern,
+    params?: { [key: string]: unknown }
+  ): Promise<Array<{ [key: string]: unknown }>> {
+    return this.patternService.executeCustomPattern(pattern, params);
+  }
+
+  /**
+   * Get subgraph around a set of nodes
+   */
+  async getSubgraph(
+    nodeIds: string[],
+    options?: SubgraphOptions
+  ): Promise<SubgraphResult<T>> {
+    return this.patternService.getSubgraph(nodeIds, options);
+  }
+
+  /**
+   * Expand graph from a starting node
+   */
+  async expandGraph(
+    nodeId: string,
+    depth: number,
+    options?: SubgraphOptions
+  ): Promise<SubgraphResult<T>> {
+    return this.patternService.expandGraph(nodeId, depth, options);
+  }
+
+  /**
+   * Find cycles in the graph
+   */
+  async findCycles(
+    maxLength = 10,
+    options?: GraphTraversalOptions
+  ): Promise<GraphCycle<T>[]> {
+    return this.patternService.findCycles(maxLength, options);
+  }
+
+  /**
+   * Find nodes that match a specific structural pattern
+   */
+  async findStructuralPattern(
+    patternDescription: {
+      centerNodeLabel?: string;
+      requiredRelationships: Array<{
+        type: string;
+        direction: 'IN' | 'OUT' | 'BOTH';
+        targetLabel?: string;
+        minCount?: number;
+        maxCount?: number;
+      }>;
+    },
+    options?: GraphTraversalOptions
+  ): Promise<T[]> {
+    return this.patternService.findStructuralPattern(
+      patternDescription,
       options
     );
-
-    return result.map((record) => {
-      const mapped: Record<string, T> = {};
-      pattern.nodes.forEach((node) => {
-        if (record[node.variable]) {
-          mapped[node.variable] = this.mapFromNeo4j({
-            n: record[node.variable],
-          });
-        }
-      });
-      return mapped;
-    });
   }
 
   /**
-   * Build pattern query from graph pattern
+   * Find motifs (small recurring patterns) in the graph
    */
-  private buildPatternQuery(pattern: GraphPattern): {
-    query: string;
-    params: Record<string, any>;
-  } {
-    const nodeVariables = pattern.nodes.map((node) => node.variable);
-    const params: Record<string, any> = {};
+  async findMotifs(
+    motifSize = 3,
+    options?: GraphTraversalOptions
+  ): Promise<Array<{ nodes: T[]; pattern: string }>> {
+    return this.patternService.findMotifs(motifSize, options);
+  }
 
-    // Build node patterns
-    const nodePatterns = pattern.nodes.map((node) => {
-      const labels = node.labels
-        ? node.labels.map((l) => `:${l}`).join('')
-        : `:${this.entityLabel}`;
-      let pattern = `(${node.variable}${labels}`;
+  // =============================================================================
+  // LEGACY COMPATIBILITY METHODS
+  // =============================================================================
 
-      if (node.properties && Object.keys(node.properties).length > 0) {
-        const propConditions: string[] = [];
-        Object.entries(node.properties).forEach(([key, value]) => {
-          const paramName = `${node.variable}_${key}`;
-          propConditions.push(`${key}: $${paramName}`);
-          params[paramName] = value;
-        });
-        pattern += ` {${propConditions.join(', ')}}`;
-      }
-
-      pattern += ')';
-      return pattern;
-    });
-
-    // Build relationship patterns
-    const relationshipPatterns = pattern.relationships.map((rel) => {
-      const direction =
-        rel.direction === 'IN' ? '<-' : rel.direction === 'OUT' ? '->' : '-';
-      const relPattern =
-        rel.direction === 'BOTH'
-          ? `-[:${rel.type}]-`
-          : rel.direction === 'IN'
-          ? `<-[:${rel.type}]-`
-          : `-[:${rel.type}]->`;
-
-      return `${rel.source}${relPattern}${rel.target}`;
-    });
-
-    // Combine patterns
-    const matchClause = `MATCH ${relationshipPatterns.join(', ')}`;
-    const returnClause = `RETURN ${nodeVariables.join(', ')}`;
-
-    const query = `${matchClause} ${returnClause}`;
-
-    return { query, params };
+  /**
+   * Build relationship clause for traversal queries (legacy compatibility)
+   * @deprecated Use services directly
+   */
+  protected buildRelationshipClause(options?: GraphTraversalOptions): string {
+    return this.traversalService['buildRelationshipClause'](options);
   }
 
   /**
-   * Get relationship direction pattern for Cypher
+   * Build WHERE clause from filter conditions (legacy compatibility)
+   * @deprecated Use services directly
    */
-  private getRelationshipDirection(direction?: 'IN' | 'OUT' | 'BOTH'): string {
-    switch (direction) {
-      case 'IN':
-        return '<-[REL]-(';
-      case 'OUT':
-        return '-[REL]->(';
-      case 'BOTH':
-      default:
-        return '-[REL]-(';
-    }
-  }
-
-  /**
-   * Build node filter clause
-   */
-  private buildNodeFilter(
-    filter?: Record<string, any>,
+  protected buildWhereClause(
+    filter?: { [key: string]: unknown },
     nodeVariable = 'n'
   ): string {
-    if (!filter || Object.keys(filter).length === 0) {
-      return '';
-    }
-
-    const conditions = Object.entries(filter).map(
-      ([key, value]) => `${nodeVariable}.${key} = ${JSON.stringify(value)}`
-    );
-
-    return `AND ${conditions.join(' AND ')}`;
+    return this.traversalService['buildWhereClause'](filter, nodeVariable);
   }
 
   /**
-   * Build relationship filter clause
+   * Build MATCH clauses from graph pattern (legacy compatibility)
+   * @deprecated Use services directly
    */
-  private buildRelationshipFilter(
-    filter?: Record<string, any>,
-    relVariable = 'r'
-  ): string {
-    if (!filter || Object.keys(filter).length === 0) {
-      return '';
-    }
-
-    const conditions = Object.entries(filter).map(
-      ([key, value]) => `${relVariable}.${key} = ${JSON.stringify(value)}`
-    );
-
-    return `AND ${conditions.join(' AND ')}`;
+  protected buildPatternMatch(pattern: GraphPattern): string[] {
+    return this.patternService['buildPatternMatch'](pattern);
   }
 
   /**
-   * Build soft delete filter for specific node variable
+   * Build relationship pattern for QueryBuilder (legacy compatibility)
+   * @deprecated Use services directly
    */
-  protected override buildSoftDeleteFilter(
-    options?: RepositoryQueryOptions,
-    nodeVariable = 'n'
-  ): string {
-    if (options?.includeSoftDeleted) {
-      return '';
-    }
-    return `AND ${nodeVariable}.deletedAt IS NULL`;
-  }
-
-  /**
-   * Extract nodes from path object
-   */
-  private extractPathNodes(path: any): Array<{ node: T; relationship?: any }> {
-    // This would need to be implemented based on the actual path structure
-    // returned by Neo4j. For now, return empty array
-    return [];
-  }
-
-  /**
-   * Basic shortest path fallback
-   */
-  private async findShortestPathBasic(
-    fromId: string,
-    toId: string,
-    options?: ShortestPathOptions & RepositoryQueryOptions
-  ): Promise<{
-    path: Array<{ node: T; relationship?: any }>;
-    length: number;
-  } | null> {
-    const maxLength = options?.maxLength || 10;
-    const relationshipTypes = options?.relationshipTypes || ['*'];
-    const typeFilter =
-      relationshipTypes.length === 1 && relationshipTypes[0] === '*'
-        ? '*'
-        : relationshipTypes.join('|');
-
-    const query = `
-      MATCH path = shortestPath((start:${this.entityLabel} {id: $fromId})
-      -[*1..${maxLength}:${typeFilter}]-
-      (end:${this.entityLabel} {id: $toId}))
-      RETURN path, length(path) as pathLength
-    `;
-
-    const result = await this.executeQuery<{
-      path: any;
-      pathLength: number;
-    }>(query, { fromId, toId }, options);
-
-    if (result.length === 0) {
-      return null;
-    }
-
-    return {
-      path: this.extractPathNodes(result[0].path),
-      length: result[0].pathLength,
-    };
-  }
-
-  /**
-   * Basic connected components fallback
-   */
-  private async findConnectedComponentsBasic(
-    options?: ClusteringOptions & RepositoryQueryOptions
-  ): Promise<Array<{ componentId: string; nodes: T[] }>> {
-    // Basic implementation without GDS
-    // This would require a more complex algorithm to properly detect components
-    return [];
+  protected buildRelationshipPattern(options?: GraphTraversalOptions): string {
+    return this.traversalService['buildRelationshipPattern'](options);
   }
 }
+
+// Type re-exports for external consumption
+export type {
+  GraphTraversalOptions,
+  NeighborResult,
+  PathResult,
+  GraphPattern,
+} from './graph/base-graph.service';
+export type {
+  CentralityMetric,
+  ConnectedComponent,
+  GraphStatistics,
+  CentralityResult,
+  CommunityDetectionOptions,
+} from './graph/graph-metrics.service';
+export type { PathFindingOptions } from './graph/graph-traversal.service';
+export type {
+  GraphQueryPattern,
+  SubgraphOptions,
+  SubgraphResult,
+  GraphCycle,
+} from './graph/graph-pattern.service';

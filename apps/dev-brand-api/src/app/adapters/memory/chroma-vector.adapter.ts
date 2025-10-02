@@ -48,7 +48,7 @@ export class ChromaVectorAdapter extends IVectorService {
       await this.chromaDBService.addDocuments(collection, [
         {
           id,
-          document: data.document,
+          content: data.document,
           metadata: this.sanitizeMetadata(data.metadata || {}),
           embedding: data.embedding,
         },
@@ -95,7 +95,7 @@ export class ChromaVectorAdapter extends IVectorService {
     try {
       const documents = data.map((item) => ({
         id: item.id || this.generateId(),
-        document: item.document,
+        content: item.document,
         metadata: this.sanitizeMetadata(item.metadata || {}),
         embedding: item.embedding,
       }));
@@ -142,7 +142,7 @@ export class ChromaVectorAdapter extends IVectorService {
       // Use ChromaDBService's searchDocuments method
       const results = await this.chromaDBService.searchDocuments(
         collection,
-        query.queryText ? [query.queryText] : undefined,
+        query.queryText ? [query.queryText] : [],
         query.queryEmbedding ? [Array.from(query.queryEmbedding)] : undefined,
         {
           nResults: query.limit || 10,

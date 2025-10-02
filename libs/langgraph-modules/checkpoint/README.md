@@ -1,25 +1,100 @@
-# Checkpoint Module - User Manual
+# @hive-academy/langgraph-checkpoint
 
-## Overview
+> **Enterprise State Persistence & Recovery for LangGraph Workflows**
 
-The **@hive-academy/langgraph-checkpoint** module provides sophisticated state persistence and recovery for LangGraph workflows, enabling durable execution, time travel debugging, branch management, and enterprise-grade monitoring across multiple storage backends.
+Automagical checkpoint management with facade pattern orchestrating 8 specialized services. Provides production-grade state persistence, automatic fallbacks, and seamless ecosystem integration for building resilient AI applications.
 
-**Key Features:**
+## 🚀 Business Value
 
-- **Multi-Backend Storage** - Memory, Redis, PostgreSQL, SQLite support
-- **Time Travel & Debugging** - Navigate execution history and create branches
-- **Enterprise Monitoring** - Comprehensive metrics, health checks, performance insights
-- **Automated Cleanup** - Intelligent data lifecycle management with retention policies
-- **Dual Integration** - Custom enterprise savers + official LangGraph compatibility
-- **SOLID Architecture** - Clean separation with dependency injection
+- **🔄 Automatic Recovery**: Resume workflows from any point with zero configuration
+- **🛡️ Enterprise Reliability**: 8-service SOLID architecture with graceful degradation
+- **⚡ Zero-Config Start**: Automatic fallback to in-memory storage for instant development
+- **🔌 Universal Integration**: Auto-injected via DI into Multi-Agent, HITL, and all ecosystem modules
+- **📊 Production Monitoring**: Built-in health checks, metrics, and performance insights
+- **🧹 Smart Maintenance**: Automated cleanup with configurable retention policies
+- **🎯 Real Multi-Agent Checkpointing**: Verified integration with actual multi-agent coordination workflows
+- **🔗 Ecosystem-Wide State Management**: HITL approval persistence, Workflow-Engine execution tracking, Multi-Agent coordination
+- **📝 Namespace Isolation**: Module-specific checkpoint namespaces prevent conflicts across the ecosystem
 
-## Quick Start
+## 🎯 Perfect For
 
-### Installation & Setup
+- **AI Application Developers** building fault-tolerant workflows
+- **Enterprise Teams** requiring reliable state management
+- **Production Systems** needing comprehensive monitoring and recovery
+- **Development Teams** wanting zero-config checkpoint functionality
+
+## 🏗️ Automagical Architecture
+
+### **8-Service Facade Pattern**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              CheckpointManagerService (Facade)              │
+│                     Single API Interface                    │
+└─────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  🎯 Service Orchestration                   │
+│                                                             │
+│  📝 Registry      💾 Persistence    📊 Metrics             │
+│  🧹 Cleanup       💚 Health         🔄 Transform           │
+│  🔌 Integration   📱 Saver Registry                        │
+│                                                             │
+│           All Services Auto-Coordinate Seamlessly          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### **Evidence-Based Ecosystem Integration**
+
+**VERIFIED** checkpoint integration patterns across all modules:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              🎯 Your Application Modules                    │
+│  Multi-Agent | Workflow-Engine | HITL | Functional-API     │
+└─────────────────────────────────────────────────────────────┘
+            │ (all inject 'ICheckpointAdapter')
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│        CheckpointManagerAdapter (Central Provider)          │
+│          ICheckpointAdapter Implementation                   │
+└─────────────────────────────────────────────────────────────┘
+            │ (implements interface from)
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              @hive-academy/langgraph-core                   │
+│            ICheckpointAdapter Interface                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Real Integration Table (Source-Verified):**
+
+| Module              | Service                     | Usage Pattern                      | Namespace                     | Dependency |
+| ------------------- | --------------------------- | ---------------------------------- | ----------------------------- | ---------- |
+| **Multi-Agent**     | `WorkflowCheckpointService` | `@Optional()` graceful degradation | `agent-{agentId}`             | Optional   |
+| **Workflow-Engine** | `WorkflowCheckpointService` | `@Optional()` capability detection | `workflow-engine.execution.*` | Optional   |
+| **HITL**            | `HitlCheckpointService`     | `@Inject()` required for approvals | `hitl-approval`, `hitl-chain` | Required   |
+| **Functional-API**  | Basic wrapper               | NoOp fallback pattern              | Various                       | Fallback   |
+
+## 📦 Installation
 
 ```bash
 npm install @hive-academy/langgraph-checkpoint
 ```
+
+**Auto-installs with any LangGraph checkpoint saver:**
+
+```bash
+# Choose your preferred storage
+npm install @langchain/langgraph-checkpoint-sqlite
+npm install @langchain/langgraph-checkpoint-redis
+npm install @langchain/langgraph-checkpoint-postgres
+```
+
+## ⚡ Quick Start
+
+### **Zero-Config Development**
 
 ```typescript
 import { Module } from '@nestjs/common';
@@ -27,667 +102,526 @@ import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkp
 
 @Module({
   imports: [
+    LanggraphModulesCheckpointModule.forRoot(), // 🎯 That's it! Auto-fallback to memory
+  ],
+})
+export class AppModule {}
+
+// Logs: "⚠️ No checkpoint saver provided - falling back to in-memory storage"
+// ✅ Ready for development immediately!
+```
+
+### **Production-Ready Setup**
+
+```typescript
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
+
+@Module({
+  imports: [
     LanggraphModulesCheckpointModule.forRoot({
-      checkpoint: {
-        savers: [
-          {
-            type: 'redis',
-            name: 'primary',
-            default: true,
-            redis: {
-              url: 'redis://localhost:6379',
-              keyPrefix: 'checkpoints:',
-              ttl: 86400,
-            },
-          },
-        ],
-        cleanupInterval: 3600000, // 1 hour
-        maxAge: 2592000000, // 30 days
-        maxPerThread: 100,
+      // 🎯 Just provide any LangGraph saver
+      saver: SqliteSaver.fromConnString('production.db'),
+
+      // 🎯 Optional: Enterprise features auto-enabled
+      cleanup: { enabled: true, maxAge: 24 * 60 * 60 * 1000 },
+      health: { enabled: true, checkInterval: 30000 },
+      metrics: { enabled: true },
+    }),
+  ],
+})
+export class ProductionModule {}
+
+// Logs: "✅ Checkpoint saver registered: sqlite (provided by user)"
+// ✅ All 8 services auto-configured and monitoring started!
+```
+
+## 🎯 Usage Patterns
+
+### **Simple Workflow Checkpointing**
+
+```typescript
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+
+@Injectable()
+export class AIWorkflowService {
+  constructor(private readonly checkpoints: CheckpointManagerService) {}
+
+  async processWithCheckpoints(userQuery: string): Promise<any> {
+    const threadId = `ai-${Date.now()}`;
+
+    // 🎯 Save initial state
+    await this.checkpoints.saveCheckpoint(threadId, {
+      query: userQuery,
+      step: 'initialized',
+      timestamp: new Date(),
+    });
+
+    try {
+      // Process AI workflow...
+      const result = await this.processAI(userQuery);
+
+      // 🎯 Save completion state
+      await this.checkpoints.saveCheckpoint(threadId, {
+        query: userQuery,
+        result,
+        step: 'completed',
+        timestamp: new Date(),
+      });
+
+      return result;
+    } catch (error) {
+      // 🎯 Save error state for recovery
+      await this.checkpoints.saveCheckpoint(threadId, {
+        query: userQuery,
+        error: error.message,
+        step: 'failed',
+        timestamp: new Date(),
+      });
+      throw error;
+    }
+  }
+
+  async resumeWorkflow(threadId: string): Promise<any> {
+    // 🎯 Load last checkpoint
+    const checkpoint = await this.checkpoints.loadCheckpoint(threadId);
+
+    if (checkpoint?.channel_values.step === 'failed') {
+      // Resume from failure point
+      return this.retryFromCheckpoint(checkpoint);
+    }
+
+    return checkpoint?.channel_values;
+  }
+}
+```
+
+### **Automatic Core Integration**
+
+```typescript
+import { CheckpointManagerAdapter } from '@hive-academy/langgraph-checkpoint';
+import { createCheckpointIntegration } from '@hive-academy/langgraph-core';
+
+@Injectable()
+export class WorkflowEngineService {
+  constructor(private readonly checkpointManager: CheckpointManagerService) {}
+
+  createResilientWorkflow(definition: WorkflowDefinition) {
+    // 🎯 Auto-bridge to core interfaces
+    const adapter = new CheckpointManagerAdapter(this.checkpointManager);
+
+    // 🎯 Use with core integration helper
+    const integration = createCheckpointIntegration({
+      adapter,
+      config: {
+        enabled: true,
+        autoCheckpoint: { enabled: true, interval: 30000 },
       },
+    });
+
+    return {
+      ...definition,
+      checkpointing: integration,
+      resilient: true,
+    };
+  }
+}
+```
+
+### **Production Monitoring**
+
+```typescript
+import { CheckpointManagerService, CheckpointHealthService, CheckpointMetricsService } from '@hive-academy/langgraph-checkpoint';
+
+@Injectable()
+export class CheckpointMonitoringService {
+  constructor(private readonly checkpoints: CheckpointManagerService, private readonly health: CheckpointHealthService, private readonly metrics: CheckpointMetricsService) {}
+
+  async getProductionHealth(): Promise<any> {
+    // 🎯 Capability-aware monitoring
+    if (!this.checkpoints.isCoreServicesAvailable()) {
+      return { status: 'degraded', reason: 'Core services unavailable' };
+    }
+
+    const [healthSummary, systemReport, metrics] = await Promise.all([this.health?.getHealthSummary() || null, this.checkpoints.getSystemReport(), this.metrics?.getAggregatedMetrics() || null]);
+
+    return {
+      status: healthSummary?.overall.healthySavers > 0 ? 'healthy' : 'degraded',
+      totalSavers: healthSummary?.overall.totalSavers || 0,
+      healthySavers: healthSummary?.overall.healthySavers || 0,
+      metrics: {
+        totalCheckpoints: metrics?.totalOperations || 0,
+        averageResponseTime: metrics?.averageResponseTime || 0,
+        errorRate: metrics?.errorRate || 0,
+      },
+      monitoring: {
+        healthEnabled: this.checkpoints.isMonitoringAvailable(),
+        metricsEnabled: !!this.metrics,
+      },
+      recommendations: systemReport?.recommendations || [],
+    };
+  }
+
+  async performSystemValidation(): Promise<any> {
+    // 🎯 Comprehensive system validation with capability detection
+    return this.checkpoints.validateSystem();
+  }
+
+  async getEcosystemCheckpointStatus(): Promise<any> {
+    // 🎯 Monitor checkpoint usage across all ecosystem modules
+    const checkpoints = await this.checkpoints.listCheckpoints('', {
+      limit: 100,
+      sortBy: 'timestamp',
+      sortOrder: 'desc',
+    });
+
+    const moduleUsage = {
+      multiAgent: checkpoints.filter((cp) => cp.metadata?.source?.includes('agent')).length,
+      workflowEngine: checkpoints.filter((cp) => cp.metadata?.source?.includes('workflow-engine')).length,
+      hitl: checkpoints.filter((cp) => cp.metadata?.source?.includes('hitl')).length,
+      functionalApi: checkpoints.filter((cp) => cp.metadata?.source?.includes('functional')).length,
+    };
+
+    return {
+      totalCheckpoints: checkpoints.length,
+      moduleBreakdown: moduleUsage,
+      lastCheckpoint: checkpoints[0]?.metadata?.timestamp,
+    };
+  }
+}
+```
+
+## 🔗 Ecosystem Integration
+
+### **1. Workflow Engine Integration**
+
+```typescript
+// Auto-detected and used by workflow engines
+import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+
+// ✅ Engine automatically uses checkpoint service when available
+const engine = new WorkflowExecutionService(checkpointManager);
+```
+
+### **2. Memory Module Coordination**
+
+```typescript
+// Perfect coordination between state and context
+import { MemoryService } from '@hive-academy/langgraph-memory';
+import { CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+
+// ✅ Checkpoint stores workflow state, Memory stores conversation context
+await checkpointManager.saveCheckpoint(threadId, workflowState);
+await memoryService.storeContext(threadId, conversationHistory);
+```
+
+### **3. Streaming Integration**
+
+```typescript
+// Auto-checkpoint during streaming workflows
+import { TokenStreamingService } from '@hive-academy/langgraph-streaming';
+
+// ✅ Stream processor triggers automatic checkpoints
+streamingService.onMilestone((milestone) => {
+  checkpointManager.saveCheckpoint(threadId, milestone.state);
+});
+```
+
+### **4. Multi-Agent Coordination (Source-Verified)**
+
+```typescript
+// REAL INTEGRATION PATTERN: Multi-agent has specialized checkpoint wrapper
+import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
+
+// ✅ Verified integration from actual source code analysis
+@Module({
+  imports: [
+    LanggraphModulesCheckpointModule.forRootAsync({
+      useFactory: async () => ({
+        saver: SqliteSaver.fromConnString('./data/checkpoints.db'),
+        cleanup: { enabled: true },
+        health: { enabled: true },
+      }),
+    }),
+    MultiAgentModule.forRootAsync({
+      useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+        checkpointAdapter, // Auto-injected from checkpoint module
+      }),
+      inject: ['ICheckpointAdapter'], // Provided by checkpoint module
     }),
   ],
 })
 export class AppModule {}
-```
 
-## Core Services
-
-### CheckpointManagerService - Facade Interface
-
-**Primary service** orchestrating all checkpoint operations:
-
-```typescript
-// Core checkpoint operations
-saveCheckpoint(threadId: string, checkpoint: EnhancedCheckpoint, metadata?: EnhancedCheckpointMetadata): Promise<void>
-loadCheckpoint(threadId: string, checkpointId?: string): Promise<EnhancedCheckpoint | null>
-listCheckpoints(threadId: string, options?: CheckpointListOptions): Promise<CheckpointTuple[]>
-
-// Registry management
-getAvailableSavers(): string[]
-getDefaultSaverName(): string | undefined
-getSaverType(saverName: string): string | undefined
-
-// Monitoring and metrics
-getCheckpointStats(): Promise<CheckpointSystemStats>
-getMetrics(): CheckpointMetrics
-getPerformanceInsights(): PerformanceInsights
-
-// Cleanup operations
-cleanupCheckpoints(options?: CheckpointCleanupOptions): Promise<number>
-```
-
-### Complete Usage Example
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { CheckpointManagerService, EnhancedCheckpoint, EnhancedCheckpointMetadata } from '@hive-academy/langgraph-checkpoint';
-
+// ✅ Multi-agent has WorkflowCheckpointService that wraps ICheckpointAdapter
 @Injectable()
-export class WorkflowExecutionService {
-  constructor(private readonly checkpointManager: CheckpointManagerService) {}
+export class MultiAgentCoordinatorService {
+  constructor(
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {}
 
-  async executeWorkflowWithCheckpoints(workflowId: string, initialState: any): Promise<any> {
-    const threadId = `workflow-${workflowId}`;
+  async executeWorkflow(networkId: string, input: any): Promise<MultiAgentResult> {
+    const threadId = this.generateThreadId(networkId);
 
-    try {
-      // Save initial checkpoint
-      await this.checkpointManager.saveCheckpoint(
-        threadId,
-        {
-          id: `${threadId}-start`,
-          channel_values: initialState,
-          v: 1,
-          ts: new Date().toISOString(),
-        },
-        {
-          threadId,
-          workflowName: 'order-processing',
-          stepName: 'initialize',
-          nodeType: 'start',
-          executionDuration: 0,
-        }
-      );
-
-      // Execute workflow steps with checkpoints
-      let currentState = initialState;
-      const steps = ['validate', 'process', 'complete'];
-
-      for (const [index, step] of steps.entries()) {
-        const startTime = Date.now();
-
-        // Execute step
-        currentState = await this.executeStep(step, currentState);
-
-        const executionDuration = Date.now() - startTime;
-
-        // Save checkpoint after each step
-        await this.checkpointManager.saveCheckpoint(
-          threadId,
-          {
-            id: `${threadId}-${step}`,
-            channel_values: currentState,
-            v: index + 2,
-            ts: new Date().toISOString(),
-          },
-          {
-            threadId,
-            workflowName: 'order-processing',
-            stepName: step,
-            nodeType: 'task',
-            executionDuration,
-          }
-        );
-      }
-
-      return currentState;
-    } catch (error) {
-      // Save error checkpoint for debugging
-      await this.checkpointManager.saveCheckpoint(
-        threadId,
-        {
-          id: `${threadId}-error`,
-          channel_values: { error: error.message, lastValidState: currentState },
-          v: -1,
-          ts: new Date().toISOString(),
-        },
-        {
-          threadId,
-          workflowName: 'order-processing',
-          stepName: 'error',
-          nodeType: 'error',
-          error: error.message,
-        }
-      );
-
-      throw error;
-    }
-  }
-
-  async resumeWorkflow(threadId: string, fromCheckpoint?: string): Promise<any> {
-    // Load checkpoint state
-    const checkpoint = await this.checkpointManager.loadCheckpoint(threadId, fromCheckpoint);
-
-    if (!checkpoint) {
-      throw new Error(`No checkpoint found for thread ${threadId}`);
+    // Real checkpoint integration with graceful degradation
+    if (this.checkpointAdapter) {
+      await this.saveWorkflowCheckpoint(threadId, {
+        networkId,
+        phase: 'start',
+        messages: input.messages,
+      });
     }
 
-    // Resume workflow from checkpoint state
-    return this.continueWorkflowExecution(checkpoint.channel_values);
+    const config = {
+      configurable: { thread_id: threadId },
+      metadata: { checkpointEnabled: !!this.checkpointAdapter },
+    };
+
+    return await this.networkManager.executeWorkflow(networkId, input, config);
   }
 }
 ```
 
-## Configuration
+### **5. HITL Module Integration (Source-Verified)**
 
-### Basic Configuration
+```typescript
+// REAL INTEGRATION: HITL requires checkpoint for approval persistence
+import { HitlCheckpointService } from '@hive-academy/langgraph-hitl';
+
+@Injectable()
+export class HitlCheckpointService implements IHitlCheckpointService {
+  constructor(
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter: ICheckpointAdapter
+  ) {}
+
+  async saveApprovalState(request: HumanApprovalRequest, source: string, additionalData?: Record<string, unknown>): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return; // Graceful degradation when adapter unavailable
+    }
+
+    const threadId = this.generateApprovalThreadId(request.executionId, request.nodeId);
+
+    const metadata: BaseCheckpointMetadata = {
+      timestamp: new Date().toISOString(),
+      source: source as 'input' | 'loop' | 'update' | 'fork',
+      workflowState: request.workflowState,
+      confidence: request.confidence.current,
+      riskLevel: request.riskAssessment?.level,
+    };
+
+    await this.checkpointAdapter.saveCheckpoint(
+      threadId,
+      checkpointData,
+      metadata,
+      'hitl-approval' // HITL-specific namespace
+    );
+  }
+}
+```
+
+### **6. Workflow-Engine Integration (Source-Verified)**
+
+```typescript
+// REAL INTEGRATION: Workflow-engine can provide OR consume checkpoint adapter
+import { WorkflowCheckpointService } from '@hive-academy/langgraph-workflow-engine';
+
+@Injectable()
+export class WorkflowCheckpointService {
+  constructor(
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {}
+
+  async saveCheckpoint(executionId: string, data: WorkflowCheckpointData) {
+    if (!this.checkpointingEnabled || !this.checkpointAdapter) {
+      return; // Graceful degradation
+    }
+
+    const threadId = this.generateThreadId(executionId); // Uses NodeIdBuilder
+    await this.checkpointAdapter.saveCheckpoint(threadId, data, metadata);
+  }
+
+  private generateThreadId(executionId: string): string {
+    return NodeIdBuilder.create().domain('workflow-engine').phase('execution').activity('workflow').detail(executionId).build(); // workflow-engine.execution.workflow.{executionId}
+  }
+}
+```
+
+## 📊 Storage Options
+
+### **Supported Storage Backends**
+
+Any LangGraph checkpoint saver works automatically:
+
+| Storage Type   | Package                                    | Use Case                | Auto-Detection   |
+| -------------- | ------------------------------------------ | ----------------------- | ---------------- |
+| **Memory**     | `@langchain/langgraph-checkpoint`          | Development, Testing    | ✅ Auto-fallback |
+| **SQLite**     | `@langchain/langgraph-checkpoint-sqlite`   | Local, Single-node      | ✅ Auto-detected |
+| **PostgreSQL** | `@langchain/langgraph-checkpoint-postgres` | Production, Multi-node  | ✅ Auto-detected |
+| **Redis**      | `@langchain/langgraph-checkpoint-redis`    | High-performance, Cache | ✅ Auto-detected |
+
+### **Multi-Storage Setup**
+
+```typescript
+import { CheckpointSaverRegistry } from '@hive-academy/langgraph-checkpoint';
+
+// 🎯 Register multiple storage backends
+saverRegistry.registerSaver({
+  name: 'primary',
+  saver: new PostgresSaver(primaryDB),
+  default: true,
+  metadata: { type: 'postgres', description: 'Primary production DB' },
+});
+
+saverRegistry.registerSaver({
+  name: 'backup',
+  saver: new RedisSaver(backupRedis),
+  metadata: { type: 'redis', description: 'Backup cache storage' },
+});
+
+// ✅ Use specific storage for different workflows
+await checkpoints.saveCheckpoint(threadId, state, metadata, 'primary');
+```
+
+## 🛠️ Configuration
+
+### **Development (Zero Config)**
+
+```typescript
+LanggraphModulesCheckpointModule.forRoot(); // Just works!
+```
+
+### **Production (Full Config)**
 
 ```typescript
 LanggraphModulesCheckpointModule.forRoot({
-  checkpoint: {
-    savers: [
-      {
-        type: 'redis',
-        name: 'primary',
-        default: true,
-        redis: {
-          url: 'redis://localhost:6379',
-          keyPrefix: 'checkpoints:',
-          ttl: 86400,
-          compression: 'gzip',
-        },
-      },
-      {
-        type: 'postgres',
-        name: 'backup',
-        postgres: {
-          connectionString: 'postgresql://user:pass@localhost:5432/db',
-          tableName: 'workflow_checkpoints',
-          schema: 'langgraph',
-        },
-      },
-    ],
-    cleanupInterval: 3600000, // 1 hour
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    maxPerThread: 100,
-    health: {
-      checkInterval: 30000,
-      degradedThreshold: 1000,
-      unhealthyThreshold: 5000,
-    },
+  saver: SqliteSaver.fromConnString(connectionString),
+
+  cleanup: {
+    enabled: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxPerThread: 100, // Max 100 checkpoints per thread
+    interval: 60 * 60 * 1000, // Cleanup every hour
+    excludeThreads: ['system', 'admin'], // Exclude system threads
+  },
+
+  health: {
+    enabled: true,
+    checkInterval: 30 * 1000, // Health check every 30s
+    timeout: 5 * 1000, // 5s timeout
+    degradedThreshold: 1000, // >1s response = degraded
+    unhealthyThreshold: 5000, // >5s response = unhealthy
+  },
+
+  metrics: {
+    enabled: true,
+    collectInterval: 60 * 1000, // Collect metrics every minute
   },
 });
 ```
 
-### Async Configuration
+## 🏭 Production Features
+
+### **Enterprise Reliability**
+
+- **Automatic Fallbacks**: Graceful degradation when services unavailable
+- **Health Monitoring**: Continuous health checks with detailed diagnostics
+- **Performance Metrics**: Real-time performance tracking and insights
+- **Smart Cleanup**: Automated maintenance with configurable policies
+
+### **Monitoring & Observability**
+
+- **Health Dashboard**: Real-time system health and status
+- **Performance Insights**: Identify slow or error-prone storage
+- **Comprehensive Metrics**: Response times, error rates, throughput
+- **Alerting Ready**: Integration points for monitoring systems
+
+### **Operational Excellence**
+
+- **Zero-Downtime Updates**: Hot-swappable storage configurations
+- **Backup Strategies**: Multi-storage backend support
+- **Disaster Recovery**: Point-in-time recovery capabilities
+- **Audit Trails**: Complete checkpoint history and metadata
+
+## 🎯 Migration Path
+
+### **Development → Production**
 
 ```typescript
-LanggraphModulesCheckpointModule.forRootAsync({
-  imports: [ConfigModule],
-  useFactory: (configService: ConfigService) => ({
-    checkpoint: {
-      savers: [
-        {
-          type: 'redis',
-          name: 'primary',
-          default: true,
-          redis: {
-            url: configService.get('REDIS_URL'),
-            keyPrefix: configService.get('CHECKPOINT_PREFIX', 'checkpoints:'),
-            ttl: configService.get('CHECKPOINT_TTL', 86400),
-          },
-        },
-      ],
-      cleanupInterval: configService.get('CLEANUP_INTERVAL', 3600000),
-      maxAge: configService.get('MAX_CHECKPOINT_AGE', 30 * 24 * 60 * 60 * 1000),
-    },
-  }),
-  inject: [ConfigService],
+// 1. Start with zero config
+LanggraphModulesCheckpointModule.forRoot();
+
+// 2. Add real storage
+LanggraphModulesCheckpointModule.forRoot({
+  saver: SqliteSaver.fromConnString('dev.db'),
+});
+
+// 3. Enable production features
+LanggraphModulesCheckpointModule.forRoot({
+  saver: SqliteSaver.fromConnString(prodDB),
+  cleanup: { enabled: true },
+  health: { enabled: true },
+  metrics: { enabled: true },
+});
+
+// 4. Scale with multi-storage
+LanggraphModulesCheckpointModule.forRoot({
+  saver: SqliteSaver.fromConnString(primaryDB),
+  // + Register backup savers via CheckpointSaverRegistry
 });
 ```
 
-## Storage Backend Options
+## 📈 Performance
 
-### Redis Backend - High Performance
+### **Optimized for Scale**
 
-```typescript
-{
-  type: 'redis',
-  redis: {
-    url: 'redis://redis:6379',
-    keyPrefix: 'checkpoints:',
-    ttl: 86400,           // 24 hours
-    compression: 'gzip',  // Reduce memory usage
-    maxRetries: 3,
-    cluster: { enableReadyCheck: true }
-  }
-}
-```
+- **Efficient Storage**: Minimal overhead checkpoint serialization
+- **Smart Caching**: Intelligent caching strategies per storage type
+- **Batch Operations**: Bulk operations for high-throughput scenarios
+- **Connection Pooling**: Automatic connection management
 
-**Best for**: High-throughput workloads, distributed systems, sub-millisecond performance
+### **Performance Monitoring**
 
-### PostgreSQL Backend - ACID Compliance
+- **Real-time Metrics**: Response times, throughput, error rates
+- **Performance Insights**: Automatic recommendations for optimization
+- **Storage Analytics**: Per-storage backend performance comparison
+- **Bottleneck Detection**: Identify and resolve performance issues
 
-```typescript
-{
-  type: 'postgres',
-  postgres: {
-    connectionString: 'postgresql://user:pass@localhost:5432/db',
-    tableName: 'workflow_checkpoints',
-    schema: 'langgraph',
-    poolSize: 10,
-    compression: 'gzip',
-    partitioning: {
-      strategy: 'time',
-      interval: 'month'
-    }
-  }
-}
-```
-
-**Best for**: ACID transactions, complex queries, audit trails, strong consistency
-
-### SQLite Backend - Single Node
-
-```typescript
-{
-  type: 'sqlite',
-  sqlite: {
-    databasePath: './data/checkpoints.db',
-    busyTimeout: 5000,
-    journalMode: 'WAL',
-    synchronous: 'NORMAL'
-  }
-}
-```
-
-**Best for**: Single-node deployments, embedded systems, development
-
-### Memory Backend - Development
-
-```typescript
-{
-  type: 'memory',
-  memory: {
-    maxCheckpoints: 1000,
-    ttl: 3600000,           // 1 hour TTL
-    cleanupInterval: 300000  // 5 min cleanup
-  }
-}
-```
-
-**Best for**: Development, testing, ephemeral workflows
-
-## Advanced Features
-
-### Time Travel & Branch Management
-
-```typescript
-@Injectable()
-export class WorkflowTimeTravel {
-  constructor(private checkpointManager: CheckpointManagerService) {}
-
-  async createBranch(originalThreadId: string, checkpointId: string, branchName: string): Promise<string> {
-    const branchThreadId = `${originalThreadId}-branch-${branchName}`;
-
-    // Load checkpoint from original thread
-    const checkpoint = await this.checkpointManager.loadCheckpoint(originalThreadId, checkpointId);
-
-    if (!checkpoint) {
-      throw new Error('Checkpoint not found');
-    }
-
-    // Create new branch with modified metadata
-    await this.checkpointManager.saveCheckpoint(
-      branchThreadId,
-      {
-        ...checkpoint,
-        id: `${branchThreadId}-branch-start`,
-      },
-      {
-        threadId: branchThreadId,
-        branchName,
-        parentThreadId: originalThreadId,
-        parentCheckpointId: checkpointId,
-        branchCreatedAt: new Date().toISOString(),
-        branchDescription: `Branch created from ${checkpointId}`,
-      }
-    );
-
-    return branchThreadId;
-  }
-
-  async getExecutionHistory(threadId: string): Promise<CheckpointHistory[]> {
-    const checkpoints = await this.checkpointManager.listCheckpoints(threadId, {
-      sortOrder: 'asc',
-      sortBy: 'timestamp',
-    });
-
-    return checkpoints.map(([config, checkpoint, metadata]) => ({
-      checkpointId: checkpoint.id,
-      timestamp: metadata.timestamp,
-      stepName: metadata.stepName,
-      nodeType: metadata.nodeType,
-      executionDuration: metadata.executionDuration,
-      hasError: !!metadata.error,
-    }));
-  }
-
-  async rollbackToCheckpoint(threadId: string, checkpointId: string): Promise<void> {
-    const checkpoint = await this.checkpointManager.loadCheckpoint(threadId, checkpointId);
-
-    if (!checkpoint) {
-      throw new Error('Checkpoint not found for rollback');
-    }
-
-    // Create rollback checkpoint
-    await this.checkpointManager.saveCheckpoint(
-      threadId,
-      {
-        ...checkpoint,
-        id: `${threadId}-rollback-${Date.now()}`,
-        ts: new Date().toISOString(),
-      },
-      {
-        threadId,
-        stepName: 'rollback',
-        nodeType: 'system',
-        rollbackFromCheckpoint: checkpointId,
-        rollbackTimestamp: new Date().toISOString(),
-      }
-    );
-  }
-}
-```
-
-### Performance Monitoring
-
-```typescript
-@Injectable()
-export class CheckpointMonitoring {
-  constructor(private checkpointManager: CheckpointManagerService) {}
-
-  async getSystemHealth(): Promise<HealthReport> {
-    const stats = await this.checkpointManager.getCheckpointStats();
-    const metrics = this.checkpointManager.getMetrics();
-    const insights = this.checkpointManager.getPerformanceInsights();
-
-    return {
-      overall: {
-        healthySavers: stats.overall.healthySavers,
-        unhealthySavers: stats.overall.unhealthySavers,
-        status: stats.overall.healthySavers > 0 ? 'healthy' : 'unhealthy',
-      },
-      performance: {
-        averageSaveTime: metrics.averageSaveTime,
-        averageLoadTime: metrics.averageLoadTime,
-        errorRate: metrics.errorRate,
-        throughput: metrics.operationsPerSecond,
-      },
-      recommendations: [...stats.recommendations, ...insights.recommendations],
-    };
-  }
-
-  async optimizePerformance(): Promise<OptimizationReport> {
-    const insights = this.checkpointManager.getPerformanceInsights();
-
-    const actions: OptimizationAction[] = [];
-
-    // Identify slow savers
-    for (const saver of insights.slowestSavers) {
-      if (saver.averageTime > 1000) {
-        actions.push({
-          type: 'configure',
-          target: saver.name,
-          action: 'increase_timeout',
-          reason: `Saver ${saver.name} averaging ${saver.averageTime}ms`,
-        });
-      }
-    }
-
-    // Identify error-prone savers
-    for (const saver of insights.errorProneSavers) {
-      if (saver.errorRate > 0.05) {
-        actions.push({
-          type: 'investigate',
-          target: saver.name,
-          action: 'check_connection',
-          reason: `Saver ${saver.name} has ${(saver.errorRate * 100).toFixed(2)}% error rate`,
-        });
-      }
-    }
-
-    return { actions, insights };
-  }
-}
-```
-
-### Multi-Backend High Availability
-
-```typescript
-@Injectable()
-export class HighAvailabilityCheckpoints {
-  constructor(private checkpointManager: CheckpointManagerService) {}
-
-  async saveWithFailover(threadId: string, checkpoint: EnhancedCheckpoint, metadata?: EnhancedCheckpointMetadata): Promise<void> {
-    const availableSavers = this.checkpointManager.getAvailableSavers();
-
-    let lastError: Error | null = null;
-    let successfulSaves = 0;
-
-    for (const saverName of availableSavers) {
-      try {
-        await this.checkpointManager.saveCheckpoint(threadId, checkpoint, metadata);
-        successfulSaves++;
-
-        // If we have at least one successful save, consider it a success
-        if (successfulSaves >= 1) {
-          return;
-        }
-      } catch (error) {
-        lastError = error;
-        console.warn(`Checkpoint save failed on ${saverName}:`, error.message);
-      }
-    }
-
-    if (successfulSaves === 0) {
-      throw new Error(`All checkpoint savers failed. Last error: ${lastError?.message}`);
-    }
-  }
-
-  async loadWithFallback(threadId: string, checkpointId?: string): Promise<EnhancedCheckpoint | null> {
-    const availableSavers = this.checkpointManager.getAvailableSavers();
-
-    for (const saverName of availableSavers) {
-      try {
-        const checkpoint = await this.checkpointManager.loadCheckpoint(threadId, checkpointId);
-        if (checkpoint) {
-          return checkpoint;
-        }
-      } catch (error) {
-        console.warn(`Checkpoint load failed on ${saverName}:`, error.message);
-      }
-    }
-
-    return null;
-  }
-}
-```
-
-## Core Interfaces
-
-### Checkpoint Structure
-
-```typescript
-interface EnhancedCheckpoint<T = Record<string, unknown>> {
-  id: string;
-  channel_values: T; // Workflow state data
-  pending_sends?: unknown[];
-  v?: number; // Version
-  ts?: string; // Timestamp
-  metadata?: EnhancedCheckpointMetadata;
-  size?: number; // Storage size
-  compression?: 'none' | 'gzip' | 'lz4';
-  checksum?: string; // Integrity verification
-}
-
-interface EnhancedCheckpointMetadata {
-  threadId?: string;
-  timestamp?: string;
-  version?: string;
-  workflowName?: string;
-  stepName?: string;
-  nodeType?: 'task' | 'decision' | 'human-approval' | 'start' | 'end' | 'error';
-  executionDuration?: number;
-  error?: string;
-
-  // Branch management
-  branchName?: string;
-  parentThreadId?: string;
-  parentCheckpointId?: string;
-  branchCreatedAt?: string;
-  branchDescription?: string;
-
-  [key: string]: unknown;
-}
-```
-
-### Configuration Types
-
-```typescript
-interface CheckpointSaverConfig {
-  type: 'memory' | 'redis' | 'postgres' | 'sqlite';
-  name: string;
-  default?: boolean;
-  redis?: RedisConfig;
-  postgres?: PostgresConfig;
-  sqlite?: SqliteConfig;
-  memory?: MemoryConfig;
-}
-
-interface CheckpointModuleConfig {
-  savers: CheckpointSaverConfig[];
-  cleanupInterval?: number;
-  maxAge?: number;
-  maxPerThread?: number;
-  health?: HealthConfig;
-}
-```
-
-## Error Handling
-
-```typescript
-import { CheckpointStorageError, CheckpointRetrievalError, CheckpointConfigurationError } from '@hive-academy/langgraph-checkpoint';
-
-@Injectable()
-export class RobustCheckpointService {
-  constructor(private checkpointManager: CheckpointManagerService) {}
-
-  async safeCheckpointOperation<T>(operation: () => Promise<T>): Promise<T | null> {
-    try {
-      return await operation();
-    } catch (error) {
-      if (error instanceof CheckpointStorageError) {
-        this.logger.error('Checkpoint storage failed', error.message);
-        // Continue workflow without checkpointing
-        return null;
-      } else if (error instanceof CheckpointRetrievalError) {
-        this.logger.warn('Checkpoint retrieval failed', error.message);
-        // Start workflow from beginning
-        return null;
-      } else if (error instanceof CheckpointConfigurationError) {
-        this.logger.error('Checkpoint configuration invalid', error.message);
-        throw new BadRequestException('Checkpoint system misconfigured');
-      }
-      throw error;
-    }
-  }
-}
-```
-
-## Testing
-
-### Unit Testing
+## 🧪 Testing
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { LanggraphModulesCheckpointModule, CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 
-describe('CheckpointManagerService', () => {
-  let service: CheckpointManagerService;
-
+describe('Checkpoint Integration', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [
-        LanggraphModulesCheckpointModule.forRoot({
-          checkpoint: {
-            savers: [{ type: 'memory', name: 'test', default: true }],
-          },
-        }),
-      ],
+      imports: [LanggraphModulesCheckpointModule.forRoot()], // Auto-memory for tests
     }).compile();
-
-    service = module.get<CheckpointManagerService>(CheckpointManagerService);
   });
 
-  it('should save and load checkpoints', async () => {
-    const threadId = 'test-thread';
-    const checkpoint = {
-      id: 'test-checkpoint',
-      channel_values: { step: 1, data: 'test' },
-      v: 1,
-    };
-
-    await service.saveCheckpoint(threadId, checkpoint);
-    const loaded = await service.loadCheckpoint(threadId);
-
-    expect(loaded).toBeTruthy();
-    expect(loaded?.channel_values).toEqual(checkpoint.channel_values);
-  });
+  // Tests automatically use in-memory storage
+  // Perfect for unit testing without external dependencies
 });
 ```
 
-## Troubleshooting
+## 📚 Documentation
 
-### Common Issues
+- **[Complete Implementation Guide](./CLAUDE.md)** - Detailed technical documentation
+- **[Core Integration](../core/CLAUDE.md)** - Foundation interfaces
+- **[Workflow Engine](../workflow-engine/CLAUDE.md)** - Execution patterns
+- **[Memory Module](../memory/CLAUDE.md)** - Context management
+- **[Ecosystem Overview](../../CLAUDE.md)** - Full module ecosystem
 
-#### 1. Storage Backend Connection Failures
+## 🏷️ Version
 
-```typescript
-// Solution: Configure multiple backends for redundancy
-{
-  savers: [
-    { type: 'redis', name: 'primary', default: true },
-    { type: 'postgres', name: 'backup' },
-    { type: 'memory', name: 'fallback' },
-  ];
-}
-```
+**v0.0.1** - Enterprise checkpoint management with automagical configuration and comprehensive monitoring.
 
-#### 2. Performance Degradation
+---
 
-```typescript
-// Solution: Optimize storage configuration
-{
-  redis: {
-    compression: 'gzip',      // Reduce memory usage
-    ttl: 3600,               // Automatic cleanup
-    maxRetries: 3            // Handle temporary failures
-  }
-}
-```
-
-#### 3. Storage Space Growth
-
-```typescript
-// Solution: Implement aggressive cleanup
-async performMaintenance(): Promise<void> {
-  await this.checkpointManager.cleanupCheckpoints({
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    maxPerThread: 50,
-    preserveLatest: true
-  });
-}
-```
-
-This comprehensive checkpoint module provides production-ready state persistence with enterprise-grade monitoring, multi-backend support, and sophisticated debugging capabilities for reliable LangGraph workflow execution.
+**Built for Enterprise AI** | **Automagical Configuration** | **Production-Grade Reliability**

@@ -1,180 +1,282 @@
-# Requirements Document - TASK_2025_002
+# Task Description: TASK_2025_002
 
-## Introduction
+## Task Metadata
 
-This task addresses the critical need to completely upgrade all agents in dev-brand-api to use the new decorator patterns from our LangGraph ecosystem. Previous attempts resulted in compilation issues and incomplete implementations. This initiative will ensure all agents follow the proper architectural patterns with real business logic integration across the full stack (ChromaDB + Neo4j + LangGraph).
+- **ID**: TASK_2025_002
+- **Title**: Neo4j Library Modernization - dev-brand-api Migration
+- **Type**: Technical Debt Elimination / Modernization
+- **Priority**: High
+- **Created**: 2025-10-01
+- **Status**: 🔄 Active
 
-## Requirements
+## Overview
 
-### Requirement 1: Deep Package Analysis
+Systematically migrate all Neo4j usage in `dev-brand-api` from legacy manual Cypher patterns to modern `@hive-academy/nestjs-neo4j` library features including:
 
-**User Story:** As a technical architect working with the LangGraph ecosystem, I want comprehensive analysis of all decorator patterns available in our packages, so that I can implement agents with the correct architectural patterns.
+- Type-safe entities with decorators
+- Repository pattern with auto-generated CRUD
+- QueryBuilder for type-safe query construction
+- Security decorators for production-ready safety
+- Graph-specific services for advanced operations
 
-#### Acceptance Criteria
+## Current State Analysis
 
-1. WHEN analyzing @hive-academy/langgraph-functional-api THEN all @Entrypoint, @Task, @Node, @Edge decorators SHALL be documented with usage patterns
-2. WHEN analyzing @hive-academy/langgraph-multi-agent THEN @Agent decorator with workflow-agent type SHALL be fully understood with examples
-3. WHEN analyzing @hive-academy/langgraph-workflow-engine THEN integration patterns SHALL be documented for proper workflow execution
+### Legacy Usage Summary
 
-### Requirement 2: Agent Implementation Verification
+**7 files using raw Neo4jService.run() calls** (~4,900 lines total):
 
-**User Story:** As a developer maintaining agent code, I want to verify current agent implementations against the new architecture standards, so that I can identify what needs to be corrected or completed.
+| File                                    | Lines | Current Pattern       | Issues                     |
+| --------------------------------------- | ----- | --------------------- | -------------------------- |
+| neo4j-graph.adapter.ts                  | 968   | Manual Cypher strings | No type safety, no caching |
+| neo4j-hitl-storage.adapter.ts           | 500   | Manual Cypher strings | No validation, no retry    |
+| neo4j-approval-chain-storage.adapter.ts | 603   | Manual Cypher strings | No optimization            |
+| neo4j-confidence-storage.adapter.ts     | 789   | Manual Cypher strings | No circuit breaker         |
+| neo4j-feedback-storage.adapter.ts       | 530   | Manual read/write     | Limited safety             |
+| neo4j-interruption-storage.adapter.ts   | 237+  | Manual Cypher strings | No monitoring              |
+| personal-brand-memory.service.ts        | 1,271 | Manual Cypher strings | Complex, brittle           |
 
-#### Acceptance Criteria
+### Available Modern Features
 
-1. WHEN examining CustomerSupportAgent THEN current decorator usage SHALL be validated against required patterns
-2. WHEN examining GitHubCodeAnalyzerAgent THEN architecture compliance SHALL be assessed and gaps identified
-3. WHEN examining ContentCreatorAgent THEN implementation completeness SHALL be verified
-4. WHEN examining PersonalBrandStrategistAgent THEN working reference patterns SHALL be documented
+From `@hive-academy/nestjs-neo4j` (verified source analysis):
 
-### Requirement 3: Complete Decorator Implementation
+- ✅ **NeogmaService** - Type-safe OGM with model management
+- ✅ **NeogmaQueryBuilderService** - Fluent type-safe queries
+- ✅ **@Repository() decorator** - Auto-generated CRUD operations
+- ✅ **Security decorators** - @Safe, @Authorize, @ValidateInput, @AuditLog, @RateLimit
+- ✅ **Constraint system** - @PropIndex, @Unique, @NotNull, @NodeKey
+- ✅ **Entity decorators** - @Neo4jEntity, @Neo4jProp, @Neo4jRelationship
+- ✅ **Graph services** - GraphRepository, GraphTraversalService, GraphMetricsService
+- ✅ **Relationship services** - RelationshipCoreRepository, RelationshipBulkOperationsService
+- ✅ **@Transactional()** - Automatic transaction management
 
-**User Story:** As a system architect, I want all agents to use proper decorator patterns with real business logic, so that the agent system operates as a cohesive workflow-driven architecture.
+## Migration Strategy
 
-#### Acceptance Criteria
+### Phase 1: Entity Definitions (Week 1)
 
-1. WHEN implementing @Agent decorator THEN type: 'workflow-agent' SHALL be correctly configured for all agents
-2. WHEN implementing @Entrypoint decorators THEN proper entry points SHALL be defined with correct parameter types
-3. WHEN implementing @Task decorators THEN business logic tasks SHALL execute real operations (no stubs)
-4. WHEN implementing @Node and @Edge decorators THEN workflow orchestration SHALL function correctly
+**Effort**: 16 hours
 
-### Requirement 4: Full Stack Integration
+Create typed Neo4j entities using modern decorator system:
 
-**User Story:** As a technical lead, I want agents to demonstrate real business logic using our complete infrastructure stack, so that the implementation proves production readiness.
+**Entities to create**:
 
-#### Acceptance Criteria
+1. `ApprovalRequest` - HITL approval requests
+2. `ApprovalResponse` - Approval responses
+3. `Developer` - Developer profiles
+4. `Achievement` - Code achievements
+5. `Technology` - Technology nodes
+6. `BrandStrategy` - Brand positioning strategies
+7. `Strength` - Developer strengths
+8. `Memory` - Memory nodes for graph adapter
+9. `ConfidencePattern` - Confidence evaluation patterns
+10. `FeedbackEntry` - User feedback entries
+11. `InterruptionPoint` - Workflow interruptions
 
-1. WHEN agents execute THEN ChromaDB vector operations SHALL be performed with real data
-2. WHEN agents process information THEN Neo4j graph relationships SHALL be created and queried
-3. WHEN agents communicate THEN LLM integrations SHALL provide actual AI-powered responses
-4. WHEN workflows execute THEN multi-agent coordination SHALL demonstrate real collaboration
+**Deliverables**:
 
-## Non-Functional Requirements
+- [ ] Entity definition files in `libs/nestjs-neo4j/src/entities/`
+- [ ] Constraint decorators applied (@PropIndex, @Unique, @NotNull)
+- [ ] Relationship decorators configured (@Neo4jRelationship)
+- [ ] Type exports in main index.ts
 
-### Performance Requirements
+### Phase 2: Repository Migration (Week 1-2)
 
-- **Compilation Time**: All agents must compile within 30 seconds
-- **Runtime Performance**: Agent initialization < 100ms per agent
-- **Memory Usage**: Agent instances < 50MB each
+**Effort**: 24 hours
 
-### Security Requirements
+Replace manual Cypher with modern repositories:
 
-- **Authentication**: Agent tools must validate user context
-- **Authorization**: Workflow execution must respect user permissions
-- **Data Protection**: All agent communications must be encrypted
-- **Compliance**: Agent logging must meet audit requirements
+**Repositories to create**:
 
-### Scalability Requirements
+1. `ApprovalRequestRepository` - Replace neo4j-hitl-storage.adapter.ts
+2. `ApprovalChainRepository` - Replace neo4j-approval-chain-storage.adapter.ts
+3. `ConfidencePatternRepository` - Replace neo4j-confidence-storage.adapter.ts
+4. `FeedbackRepository` - Replace neo4j-feedback-storage.adapter.ts
+5. `InterruptionRepository` - Replace neo4j-interruption-storage.adapter.ts
+6. `DeveloperRepository` - For personal-brand-memory.service.ts
+7. `AchievementRepository` - For personal-brand-memory.service.ts
+8. `MemoryGraphRepository` - Replace neo4j-graph.adapter.ts
 
-- **Load Capacity**: Support 100 concurrent agent workflows
-- **Growth Planning**: Architecture must support 10x agent scaling
-- **Resource Scaling**: Auto-scale based on workflow queue depth
+**Deliverables**:
 
-### Reliability Requirements
+- [ ] Repository files in `apps/dev-brand-api/src/repositories/`
+- [ ] @Repository() decorators applied
+- [ ] Custom business methods implemented
+- [ ] Unit tests for each repository
 
-- **Uptime**: 99.9% agent availability
-- **Error Handling**: Graceful degradation for network failures
-- **Recovery Time**: Agent restart within 5 seconds of failure
+### Phase 3: QueryBuilder Integration (Week 2)
 
-## Stakeholder Analysis
+**Effort**: 16 hours
 
-### Primary Stakeholders
+Replace all manual Cypher strings with QueryBuilder:
 
-- **Development Team**: Needs clean, working agent implementations
-- **System Architects**: Requires proper architectural compliance
-- **End Users**: Expects functional AI-powered workflows
+**Files to migrate**:
 
-### Secondary Stakeholders
+- All adapter files (6 files)
+- personal-brand-memory.service.ts
 
-- **Operations Team**: Needs deployable, monitorable agent system
-- **Support Team**: Requires clear error handling and logging
-- **Compliance/Security**: Needs secure agent communication patterns
+**Pattern**:
 
-### Stakeholder Impact Matrix
+```typescript
+// BEFORE
+const cypher = `MATCH (n:Node) WHERE n.id = $id RETURN n`;
+const result = await this.neo4jService.run(cypher, { id });
 
-| Stakeholder | Impact Level | Involvement | Success Criteria |
-|-------------|--------------|-------------|------------------|
-| Dev Team | High | Implementation | Zero compilation errors |
-| Architects | High | Design Review | 100% pattern compliance |
-| End Users | Medium | Testing | Functional workflows |
-| Operations | Medium | Deployment | Clean service startup |
+// AFTER
+const qb = this.neogma.createQueryBuilder();
+const query = qb.match('(n:Node)').where('n.id = $id', { id }).return('n').build();
+const result = await this.neogma.run(query.cypher, query.params);
+```
 
-## Risk Analysis
+**Deliverables**:
 
-### Technical Risks
+- [ ] All Cypher strings converted to QueryBuilder
+- [ ] Parameter sanitization verified
+- [ ] Query validation tests
 
-- **Risk**: Decorator pattern incompatibilities
-- **Probability**: Medium
-- **Impact**: High
-- **Mitigation**: Thorough MCP package analysis before implementation
-- **Contingency**: Implement gradual migration per agent
+### Phase 4: Security Enhancement (Week 3)
 
-- **Risk**: Breaking existing functionality
-- **Probability**: High
-- **Impact**: Critical
-- **Mitigation**: Comprehensive testing and validation steps
-- **Contingency**: Git branch isolation and rollback capability
+**Effort**: 12 hours
 
-- **Risk**: Complex multi-agent coordination issues
-- **Probability**: Medium
-- **Impact**: High
-- **Mitigation**: Reference working PersonalBrandStrategistAgent patterns
-- **Contingency**: Implement agents individually before integration
+Add security decorators to all data access methods:
 
-### Business Risks
+**Decorators to apply**:
 
-- **Market Risk**: Delayed AI workflow capabilities affect user experience
-- **Resource Risk**: Team bandwidth limited for extensive refactoring
-- **Integration Risk**: Dependencies on multiple LangGraph packages
+- @Safe({ validateInput: true, sanitizeOutput: true })
+- @Authorize({ roles: [...] })
+- @ValidateInput({ schema: ... })
+- @AuditLog({ level: 'info' })
+- @RateLimit({ maxRequests: 100, window: 60000 })
 
-### Risk Matrix
+**Deliverables**:
 
-| Risk | Probability | Impact | Score | Mitigation Strategy |
-|------|-------------|--------|-------|-------------------|
-| Decorator Incompatibility | Medium | High | 6 | Deep MCP analysis + pattern validation |
-| Breaking Changes | High | Critical | 9 | Sequential implementation + testing |
-| Coordination Complexity | Medium | High | 6 | Reference architecture + gradual rollout |
+- [ ] Security decorators on all repository methods
+- [ ] Input validation schemas defined
+- [ ] Authorization rules configured
+- [ ] Audit logging verified
 
-## Quality Gates
+### Phase 5: Graph Operations (Week 3)
 
-Before delegation, verify:
+**Effort**: 8 hours
 
-- [ ] All LangGraph packages analyzed via MCP servers
-- [ ] Current agent implementations thoroughly assessed
-- [ ] Decorator patterns documented with examples
-- [ ] Risk mitigation strategies defined
-- [ ] Success metrics clearly established
-- [ ] TypeScript compilation validation plan
-- [ ] Real business logic implementation requirements
-- [ ] Full stack integration verification steps
-- [ ] Agent coordination testing approach
-- [ ] Documentation standards for future reference
+Leverage specialized graph services:
+
+**Services to integrate**:
+
+- GraphTraversalService for pathfinding
+- GraphMetricsService for analytics
+- GraphPatternService for subgraph operations
+
+**Deliverables**:
+
+- [ ] GraphRepository integrated in memory service
+- [ ] Graph algorithms implemented
+- [ ] Performance benchmarks
+
+### Phase 6: Configuration & Testing (Week 4)
+
+**Effort**: 12 hours
+
+**Enhanced config features**:
+
+- Auto-constraint creation
+- Retry logic with circuit breaker
+- Performance metrics
+- Cache optimization
+
+**Testing requirements**:
+
+- [ ] Unit tests for all repositories
+- [ ] Integration tests with Neo4j
+- [ ] Performance tests
+- [ ] Security tests
 
 ## Success Metrics
 
-- **Technical Metrics**:
-  - 100% TypeScript compilation success
-  - Zero runtime errors during agent initialization
-  - All decorator patterns correctly implemented
-  - Real business logic operational in all agents
+### Code Quality
 
-- **Business Metrics**:
-  - Functional AI workflows demonstrating value
-  - Multi-agent coordination working correctly
-  - Full stack integration (ChromaDB + Neo4j + LLM) operational
-  - Documentation enabling future agent development
+- [ ] Zero manual Cypher strings (100% QueryBuilder)
+- [ ] Zero `any` types in Neo4j interactions
+- [ ] 100% type safety with entities
+- [ ] All queries use parameterization
 
-## Dependencies and Constraints
+### Performance
 
-- **Dependencies**: Requires access to all LangGraph package sources via MCP
-- **Constraints**: Must maintain backward compatibility with existing workflows
-- **Timeline**: Implementation based on complexity assessment after analysis phase
-- **Resources**: Single developer with orchestrated agent support
+- [ ] Query response time < 100ms (p95)
+- [ ] Retry logic handles transient failures
+- [ ] Circuit breaker prevents cascade failures
+- [ ] Cache hit rate > 60%
 
-## Implementation Phases
+### Security
 
-1. **Analysis Phase** (Deep MCP package investigation)
-2. **Verification Phase** (Current implementation assessment)
-3. **Implementation Phase** (Decorator pattern transformation)
-4. **Validation Phase** (Compilation and functionality testing)
-5. **Documentation Phase** (Pattern documentation for future reference)
+- [ ] All inputs validated
+- [ ] All operations audited
+- [ ] Rate limiting on public endpoints
+- [ ] Sensitive data encrypted
+
+### Maintainability
+
+- [ ] Code reduced by ~60% (4,900 → ~1,960 lines)
+- [ ] Declarative patterns throughout
+- [ ] Clear separation of concerns
+- [ ] Comprehensive documentation
+
+## Dependencies
+
+### Blocked By
+
+- None (can start immediately)
+
+### Blocks
+
+- None (independent modernization)
+
+### Related Tasks
+
+- TASK_2025_001 (ChromaDB Type Safety) - Similar patterns, can share learnings
+
+## Risks & Mitigations
+
+### Risk 1: Breaking Changes
+
+**Mitigation**: Phased migration with parallel testing, feature flags for gradual rollout
+
+### Risk 2: Performance Regression
+
+**Mitigation**: Performance tests at each phase, benchmark against current implementation
+
+### Risk 3: Data Migration
+
+**Mitigation**: Entity decorators support existing schema, auto-constraint creation handles new constraints
+
+## Acceptance Criteria
+
+- [ ] All 7 files migrated to modern patterns
+- [ ] Zero manual Cypher strings remain
+- [ ] All entities defined with decorators
+- [ ] All repositories use @Repository pattern
+- [ ] Security decorators applied to all methods
+- [ ] QueryBuilder used for all queries
+- [ ] Unit tests passing (>80% coverage)
+- [ ] Integration tests passing
+- [ ] Performance benchmarks meet targets
+- [ ] Code review approved
+- [ ] Documentation updated
+
+## Estimated Effort
+
+- **Total**: 88 hours
+- **Timeline**: 4 weeks
+- **Team Size**: 1 developer (orchestrated with agents)
+
+## Agent Orchestration Plan
+
+1. **software-architect** - Design entity/repository structure
+2. **backend-developer** - Implement Phase 1-3 (entities, repositories, QueryBuilder)
+3. **senior-tester** - Create test suite for new patterns
+4. **code-reviewer** - Validate each phase completion
+5. **project-manager** - Coordinate phases, track progress
+
+## References
+
+- [Neo4j Library CLAUDE.md](../../libs/nestjs-neo4j/CLAUDE.md)
+- [Migration Analysis](./migration-analysis.md)
+- [Current Usage Report](./current-usage-report.md)

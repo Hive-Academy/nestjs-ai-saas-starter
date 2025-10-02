@@ -12,8 +12,3 @@ export interface SessionOptions {
   bookmarks?: string[];
   fetchSize?: number;
 }
-
-export interface TransactionOptions {
-  metadata?: Record<string, unknown>;
-  timeout?: number;
-}
