@@ -27,10 +27,7 @@ import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-mem
 import { LLMProviderError } from '../../core/errors/business-workflow.errors';
 import { Validate, Required } from '../../core/validation/workflow.validators';
 import { Optimize } from '../../core/performance/optimization.decorators';
-import type {
-  Achievement,
-  BrandStrategy,
-} from '../shared/agent.types';
+import type { Achievement, BrandStrategy } from '../shared/agent.types';
 import {
   buildLinkedInPrompt,
   buildDevToPrompt,
@@ -152,7 +149,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
           workflowStartTime: new Date(),
           currentStep: 'initialization',
           githubUsername,
-          achievementCount: achievements.length,
+          achievements,
           contentStartTime: new Date(),
           workflowInstanceId: `content-${githubUsername}-${Date.now()}`,
           targetPlatforms: ['linkedin', 'devto'],
@@ -178,11 +175,10 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     const githubUsername = state.metadata.githubUsername;
 
     try {
-      const [voice, strategy, devContext] = await Promise.all([
+      const [voice, strategy] = await Promise.all([
         this.memory.getBrandVoice(githubUsername),
         this.memory.getBrandStrategy?.(githubUsername) ||
           state.metadata.brandStrategy,
-        this.memory.getDevContext(githubUsername),
       ]);
 
       return {
@@ -193,7 +189,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
             currentStep: 'brand-context-gathered',
             brandVoice: voice,
             brandStrategy: strategy,
-            tone: voice.tone,
             positioning:
               (strategy as BrandStrategy)?.positioning ||
               'Technical Excellence',

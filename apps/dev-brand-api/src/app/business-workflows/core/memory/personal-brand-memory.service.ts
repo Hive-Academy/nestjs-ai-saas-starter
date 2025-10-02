@@ -114,23 +114,9 @@ interface DeveloperContext {
 @Injectable()
 @ChromaRepository<CodeAchievementDocument>({
   collection: 'dev-achievements',
-  documentField: 'document',
-  metadataFields: [
-    'userId',
-    'description',
-    'technologies',
-    'impact',
-    'date',
-    'repository',
-    'metrics',
-  ],
   autoEmbed: true,
   enableValidation: true,
   autoTimestamp: true,
-})
-@TenantAware({
-  field: 'userId',
-  separator: '_',
 })
 export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievementDocument> {
   @VectorQuery<CodeAchievementDocument>({
@@ -143,7 +129,7 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
     userId: string,
     options?: {
       limit?: number;
-      minImpact?: CodeAchievementDocument['impact'];
+      minImpact?: 'low' | 'medium' | 'high' | 'critical';
       technologies?: string[];
     }
   ): Promise<CodeAchievementDocument[]> {
@@ -173,7 +159,7 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
   async findSimilarAchievements(
     achievementDescription: string,
     userId: string,
-    options?: { limit?: number; minSimilarity?: number }
+    options?: { limit?: number }
   ): Promise<CodeAchievementDocument[]> {
     return await this.search(achievementDescription, {
       where: { userId },
@@ -191,7 +177,7 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
     const achievements = await this.findByUserId(userId, { limit: 20 });
 
     const innovationScores = achievements.map(
-      (a) => a.analysis.innovationScore
+      (a) => a.metadata.analysis.innovationScore
     );
     const averageInnovationScore =
       innovationScores.reduce((sum, score) => sum + score, 0) /
@@ -200,10 +186,10 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
     // Calculate trend over time
     const recentScores = achievements
       .slice(0, 5)
-      .map((a) => a.analysis.innovationScore);
+      .map((a) => a.metadata.analysis.innovationScore);
     const earlierScores = achievements
       .slice(-5)
-      .map((a) => a.analysis.innovationScore);
+      .map((a) => a.metadata.analysis.innovationScore);
     const recentAvg =
       recentScores.reduce((sum, score) => sum + score, 0) / recentScores.length;
     const earlierAvg =
@@ -216,13 +202,17 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
     else innovationTrend = 'stable';
 
     const topInnovativeAchievements = achievements
-      .sort((a, b) => b.analysis.innovationScore - a.analysis.innovationScore)
+      .sort(
+        (a, b) =>
+          b.metadata.analysis.innovationScore -
+          a.metadata.analysis.innovationScore
+      )
       .slice(0, 3);
 
     // Analyze technology patterns for recommendations
     const technologyFrequency = new Map<string, number>();
     achievements.forEach((achievement) => {
-      achievement.technologies.forEach((tech) => {
+      achievement.metadata.technologies.forEach((tech) => {
         technologyFrequency.set(tech, (technologyFrequency.get(tech) || 0) + 1);
       });
     });
@@ -247,22 +237,9 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
 @Injectable()
 @ChromaRepository<BrandStrategyDocument>({
   collection: 'brand-evolution',
-  documentField: 'document',
-  metadataFields: [
-    'userId',
-    'positioning',
-    'strengths',
-    'opportunities',
-    'recommendations',
-    'createdAt',
-  ],
   autoEmbed: true,
   enableValidation: true,
   autoTimestamp: true,
-})
-@TenantAware({
-  field: 'userId',
-  separator: '_',
 })
 export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyDocument> {
   @VectorQuery<BrandStrategyDocument>({
@@ -297,7 +274,7 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
     if (strategies.length < 2) {
       return {
         evolutionTrajectory: 'stable',
-        confidenceTrend: strategies[0]?.confidenceScore || 0.5,
+        confidenceTrend: strategies[0]?.metadata.confidenceScore || 0.5,
         strategicMilestones: strategies,
         nextEvolutionPrediction: {
           suggestedFocusAreas: ['Build initial brand foundation'],
@@ -308,7 +285,7 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
     }
 
     // Analyze confidence score progression
-    const confidenceScores = strategies.map((s) => s.confidenceScore);
+    const confidenceScores = strategies.map((s) => s.metadata.confidenceScore);
     const recentAvg =
       confidenceScores.slice(0, 3).reduce((sum, score) => sum + score, 0) /
       Math.min(3, confidenceScores.length);
@@ -324,8 +301,8 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
     // Identify strategic milestones (significant improvements)
     const strategicMilestones = strategies.filter(
       (strategy) =>
-        strategy.evolution.improvementScore > 0.2 ||
-        strategy.confidenceScore > 0.8
+        strategy.metadata.evolution.improvementScore > 0.2 ||
+        strategy.metadata.confidenceScore > 0.8
     );
 
     // Predict next evolution opportunities
@@ -343,7 +320,7 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
         suggestedFocusAreas,
         confidenceImprovement: Math.min(
           0.3,
-          1.0 - latestStrategy.confidenceScore
+          1.0 - latestStrategy.metadata.confidenceScore
         ),
         timelineEstimate:
           evolutionTrajectory === 'improving' ? '2 months' : '4 months',
@@ -358,22 +335,22 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
     const focusAreas: string[] = [];
 
     // Analyze confidence gaps
-    if (latestStrategy.confidenceScore < 0.7) {
+    if (latestStrategy.metadata.confidenceScore < 0.7) {
       focusAreas.push('Strengthen core brand messaging');
     }
 
     // Analyze market context gaps
-    if (latestStrategy.evolution.marketContext.length < 3) {
+    if (latestStrategy.metadata.evolution.marketContext.length < 3) {
       focusAreas.push('Expand market awareness and positioning');
     }
 
     // Analyze implementation progress
-    if (latestStrategy.metrics.implementationProgress < 0.6) {
+    if (latestStrategy.metadata.metrics.implementationProgress < 0.6) {
       focusAreas.push('Accelerate strategy implementation');
     }
 
     // Analyze competitive differentiation
-    if (latestStrategy.metrics.competitorDifferentiation < 0.7) {
+    if (latestStrategy.metadata.metrics.competitorDifferentiation < 0.7) {
       focusAreas.push('Develop unique value proposition');
     }
 
@@ -389,17 +366,8 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
 @Injectable()
 @ChromaRepository<ContentPerformanceDocument>({
   collection: 'content-metrics',
-  documentField: 'document',
-  metadataFields: [
-    'userId',
-    'createdAt',
-  ],
   autoEmbed: true,
   enableValidation: true,
-})
-@TenantAware({
-  field: 'userId',
-  separator: '_',
 })
 export class ContentPerformanceRepository extends BaseChromaRepository<ContentPerformanceDocument> {
   @VectorQuery<ContentPerformanceDocument>({
@@ -449,7 +417,7 @@ export class ContentPerformanceRepository extends BaseChromaRepository<ContentPe
   }
 
   @Profiled()
-  @Cached({ ttl: 1800000, key: 'content_insights_${userId}' })
+  @Cached({ ttl: 1800000 })
   async getContentOptimizationInsights(userId: string): Promise<{
     bestPerformingPlatforms: Array<{ platform: string; avgEngagement: number }>;
     optimalPostingTimes: Array<{ time: string; engagementBoost: number }>;
@@ -480,13 +448,14 @@ export class ContentPerformanceRepository extends BaseChromaRepository<ContentPe
       { total: number; totalEngagement: number }
     >();
     content.forEach((item) => {
-      const current = platformStats.get(item.platform) || {
+      const current = platformStats.get(item.metadata.platform) || {
         total: 0,
         totalEngagement: 0,
       };
-      platformStats.set(item.platform, {
+      platformStats.set(item.metadata.platform, {
         total: current.total + 1,
-        totalEngagement: current.totalEngagement + item.engagementScore,
+        totalEngagement:
+          current.totalEngagement + item.metadata.engagementScore,
       });
     });
 
@@ -503,14 +472,15 @@ export class ContentPerformanceRepository extends BaseChromaRepository<ContentPe
       { count: number; totalEngagement: number }
     >();
     content.forEach((item) => {
-      const postingTime = item.optimization.bestPostingTime;
+      const postingTime = item.metadata.optimization.bestPostingTime;
       const current = timeStats.get(postingTime) || {
         count: 0,
         totalEngagement: 0,
       };
       timeStats.set(postingTime, {
         count: current.count + 1,
-        totalEngagement: current.totalEngagement + item.engagementScore,
+        totalEngagement:
+          current.totalEngagement + item.metadata.engagementScore,
       });
     });
 
@@ -528,14 +498,15 @@ export class ContentPerformanceRepository extends BaseChromaRepository<ContentPe
       { count: number; totalEngagement: number }
     >();
     content.forEach((item) => {
-      item.analysis.topics.forEach((topic) => {
+      item.metadata.analysis.topics.forEach((topic) => {
         const current = topicStats.get(topic) || {
           count: 0,
           totalEngagement: 0,
         };
         topicStats.set(topic, {
           count: current.count + 1,
-          totalEngagement: current.totalEngagement + item.engagementScore,
+          totalEngagement:
+            current.totalEngagement + item.metadata.engagementScore,
         });
       });
     });
@@ -551,7 +522,7 @@ export class ContentPerformanceRepository extends BaseChromaRepository<ContentPe
     // Identify content gaps
     const contentGaps: string[] = [];
     const avgEngagement =
-      content.reduce((sum, item) => sum + item.engagementScore, 0) /
+      content.reduce((sum, item) => sum + item.metadata.engagementScore, 0) /
       content.length;
 
     if (avgEngagement < 0.5)
@@ -646,36 +617,38 @@ export class PersonalBrandMemoryService {
     );
 
     try {
+      // Enhanced achievement analysis
+      const analysisData = {
+        innovationScore:
+          achievement.analysis?.innovationScore ||
+          this.calculateInnovationScore(achievement),
+        collaborationLevel:
+          achievement.analysis?.collaborationLevel ||
+          this.determineCollaborationLevel(achievement),
+        technicalDepth:
+          achievement.analysis?.technicalDepth ||
+          this.assessTechnicalDepth(achievement),
+      };
+
+      const metricsData = {
+        linesChanged: achievement.metrics?.linesChanged || 0,
+        complexity: achievement.metrics?.complexity || 0,
+        testCoverage: achievement.metrics?.testCoverage || 0,
+        pullRequests: achievement.metrics?.pullRequests || 1,
+      };
+
       // Enhanced achievement document with AI-powered analysis
       const enhancedAchievement: Partial<CodeAchievementDocument> = {
         id: achievement.id,
-        document: `${
-          achievement.description
-        } | Technologies: ${achievement.technologies.join(', ')} | Impact: ${
-          achievement.impact
-        } | Innovation Score: ${achievement.analysis?.innovationScore || 0.7}`,
-        userId,
-        description: achievement.description,
-        technologies: achievement.technologies,
-        impact: achievement.impact,
-        date: achievement.date,
-        repository: achievement.repository,
-        metrics: {
-          linesChanged: achievement.metrics?.linesChanged || 0,
-          complexity: achievement.metrics?.complexity || 0,
-          testCoverage: achievement.metrics?.testCoverage || 0,
-          pullRequests: achievement.metrics?.pullRequests || 1,
-        },
-        analysis: {
-          innovationScore:
-            achievement.analysis?.innovationScore ||
-            this.calculateInnovationScore(achievement),
-          collaborationLevel:
-            achievement.analysis?.collaborationLevel ||
-            this.determineCollaborationLevel(achievement),
-          technicalDepth:
-            achievement.analysis?.technicalDepth ||
-            this.assessTechnicalDepth(achievement),
+        metadata: {
+          userId,
+          description: achievement.description,
+          technologies: achievement.technologies,
+          impact: achievement.impact,
+          date: achievement.date,
+          repository: achievement.repository,
+          metrics: metricsData,
+          analysis: analysisData,
         },
       };
 
@@ -694,9 +667,9 @@ export class PersonalBrandMemoryService {
           impact: achievement.impact,
           date: achievement.date,
           repository: achievement.repository,
-          innovationScore: enhancedAchievement.analysis?.innovationScore,
-          collaborationLevel: enhancedAchievement.analysis?.collaborationLevel,
-          technicalDepth: enhancedAchievement.analysis?.technicalDepth,
+          innovationScore: analysisData.innovationScore,
+          collaborationLevel: analysisData.collaborationLevel,
+          technicalDepth: analysisData.technicalDepth,
         }
       );
 
@@ -727,40 +700,42 @@ export class PersonalBrandMemoryService {
       });
       const previousStrategy = previousStrategies[0];
 
+      // Enhanced strategy metadata
+      const evolutionData = {
+        previousStrategyId: previousStrategy?.id,
+        changeTrigger:
+          strategy.evolution?.changeTrigger || 'New strategy development',
+        improvementScore: previousStrategy
+          ? strategy.confidenceScore -
+            (previousStrategy.metadata.confidenceScore || 0)
+          : 0.5,
+        marketContext: strategy.evolution?.marketContext || [
+          'Technology sector',
+          'Remote work trends',
+        ],
+      };
+
+      const metricsData = {
+        implementationProgress: strategy.metrics?.implementationProgress || 0.1,
+        marketResonance: strategy.metrics?.marketResonance || 0.6,
+        competitorDifferentiation:
+          strategy.metrics?.competitorDifferentiation || 0.5,
+      };
+
       // Enhanced strategy document with evolution tracking
       const enhancedStrategy: Partial<BrandStrategyDocument> = {
         id: strategy.id,
-        document: `Brand positioning: ${
-          strategy.positioning
-        } | Strengths: ${strategy.strengths.join(', ')} | Target: ${
-          strategy.targetAudience
-        } | Confidence: ${strategy.confidenceScore}`,
-        userId,
-        positioning: strategy.positioning,
-        strengths: strategy.strengths,
-        opportunities: strategy.opportunities,
-        recommendations: strategy.recommendations,
-        targetAudience: strategy.targetAudience,
-        confidenceScore: strategy.confidenceScore,
-        createdAt: strategy.createdAt,
-        evolution: {
-          previousStrategyId: previousStrategy?.id,
-          changeTrigger:
-            strategy.evolution?.changeTrigger || 'New strategy development',
-          improvementScore: previousStrategy
-            ? strategy.confidenceScore - previousStrategy.confidenceScore
-            : 0.5,
-          marketContext: strategy.evolution?.marketContext || [
-            'Technology sector',
-            'Remote work trends',
-          ],
-        },
-        metrics: {
-          implementationProgress:
-            strategy.metrics?.implementationProgress || 0.1,
-          marketResonance: strategy.metrics?.marketResonance || 0.6,
-          competitorDifferentiation:
-            strategy.metrics?.competitorDifferentiation || 0.5,
+        metadata: {
+          userId,
+          positioning: strategy.positioning,
+          strengths: strategy.strengths,
+          opportunities: strategy.opportunities,
+          recommendations: strategy.recommendations,
+          targetAudience: strategy.targetAudience,
+          confidenceScore: strategy.confidenceScore,
+          createdAt: strategy.createdAt,
+          evolution: evolutionData,
+          metrics: metricsData,
         },
       };
 
@@ -776,9 +751,8 @@ export class PersonalBrandMemoryService {
         strengths: strategy.strengths,
         createdAt: strategy.createdAt,
         metrics: {
-          implementationProgress:
-            enhancedStrategy.metrics?.implementationProgress,
-          marketResonance: enhancedStrategy.metrics?.marketResonance,
+          implementationProgress: metricsData.implementationProgress,
+          marketResonance: metricsData.marketResonance,
         },
       });
 
@@ -805,47 +779,51 @@ export class PersonalBrandMemoryService {
     );
 
     try {
+      // Enhanced content analysis
+      const analysisData = {
+        sentiment:
+          content.analysis?.sentiment || this.analyzeSentiment(content.content),
+        topics: content.analysis?.topics || this.extractTopics(content.content),
+        viralityFactor:
+          content.analysis?.viralityFactor ||
+          this.calculateViralityFactor(content.metrics),
+        audienceResonance:
+          content.analysis?.audienceResonance ||
+          this.calculateAudienceResonance(content.metrics),
+        technicalDepth:
+          content.analysis?.technicalDepth ||
+          this.assessContentTechnicalDepth(content.content),
+      };
+
+      const optimizationData = {
+        bestPostingTime:
+          content.optimization?.bestPostingTime ||
+          this.determineBestPostingTime(content.platform),
+        suggestedHashtags:
+          content.optimization?.suggestedHashtags ||
+          this.suggestHashtags(content.content),
+        audienceEngagement:
+          content.optimization?.audienceEngagement ||
+          this.assessAudienceEngagement(content.metrics),
+      };
+
       // Enhanced content document with AI-powered analysis
       const enhancedContent: Partial<ContentPerformanceDocument> = {
         id: content.id,
-        document: content.content,
-        userId,
-        platform: content.platform,
-        engagementScore: content.engagementScore,
-        metrics: {
-          views: content.metrics.views || 0,
-          likes: content.metrics.likes || 0,
-          comments: content.metrics.comments || 0,
-          shares: content.metrics.shares || 0,
-          clicks: content.metrics.clicks || 0,
-        },
-        createdAt: content.createdAt,
-        analysis: {
-          sentiment:
-            content.analysis?.sentiment ||
-            this.analyzeSentiment(content.content),
-          topics:
-            content.analysis?.topics || this.extractTopics(content.content),
-          viralityFactor:
-            content.analysis?.viralityFactor ||
-            this.calculateViralityFactor(content.metrics),
-          audienceResonance:
-            content.analysis?.audienceResonance ||
-            this.calculateAudienceResonance(content.metrics),
-          technicalDepth:
-            content.analysis?.technicalDepth ||
-            this.assessContentTechnicalDepth(content.content),
-        },
-        optimization: {
-          bestPostingTime:
-            content.optimization?.bestPostingTime ||
-            this.determineBestPostingTime(content.platform),
-          suggestedHashtags:
-            content.optimization?.suggestedHashtags ||
-            this.suggestHashtags(content.content),
-          audienceEngagement:
-            content.optimization?.audienceEngagement ||
-            this.assessAudienceEngagement(content.metrics),
+        metadata: {
+          userId,
+          platform: content.platform,
+          engagementScore: content.engagementScore,
+          metrics: {
+            views: content.metrics.views || 0,
+            likes: content.metrics.likes || 0,
+            comments: content.metrics.comments || 0,
+            shares: content.metrics.shares || 0,
+            clicks: content.metrics.clicks || 0,
+          },
+          createdAt: content.createdAt,
+          analysis: analysisData,
+          optimization: optimizationData,
         },
       };
 
@@ -871,7 +849,7 @@ export class PersonalBrandMemoryService {
    * Get comprehensive developer context with advanced analytics
    */
   @Profiled()
-  @Cached({ ttl: 1800000, key: 'enhanced_dev_context_${userId}' })
+  @Cached({ ttl: 1800000 })
   async getEnhancedDevContext(userId: string): Promise<DeveloperContext> {
     this.logger.log(`Retrieving enhanced developer context for user ${userId}`);
 
@@ -935,7 +913,9 @@ export class PersonalBrandMemoryService {
 
     try {
       // Retrieve latest brand strategy which contains voice information
-      const strategies = await this.brandRepo.findByUserId(userId, { limit: 1 });
+      const strategies = await this.brandRepo.findByUserId(userId, {
+        limit: 1,
+      });
       if (strategies && strategies.length > 0) {
         const strategy = strategies[0];
         // Extract brand voice from strategy or return default structure
@@ -943,12 +923,16 @@ export class PersonalBrandMemoryService {
           tone: 'professional',
           style: 'technical',
           personality: ['innovative', 'practical'],
-          keywords: []
+          keywords: [],
         };
       }
       return null;
     } catch (error) {
-      this.logger.error(`Failed to get brand voice: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Failed to get brand voice: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return null;
     }
   }
@@ -960,13 +944,19 @@ export class PersonalBrandMemoryService {
     this.logger.log(`Retrieving brand strategy for user ${userId}`);
 
     try {
-      const strategies = await this.brandRepo.findByUserId(userId, { limit: 1 });
+      const strategies = await this.brandRepo.findByUserId(userId, {
+        limit: 1,
+      });
       if (strategies && strategies.length > 0) {
         return strategies[0];
       }
       return null;
     } catch (error) {
-      this.logger.error(`Failed to get brand strategy: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Failed to get brand strategy: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return null;
     }
   }
@@ -979,17 +969,26 @@ export class PersonalBrandMemoryService {
 
     try {
       // Retrieve comprehensive developer data
-      const developerData = await this.developerRepo.getDeveloperWithTechnologies(userId);
-      const achievements = await this.achievementRepo.findByUserId(userId, { limit: 10 });
+      const developerData =
+        await this.developerRepo.getDeveloperWithTechnologies(userId);
+      const achievements = await this.achievementRepo.findByUserId(userId, {
+        limit: 10,
+      });
 
       return {
         role: 'Software Developer',
         expertise: developerData.technologies.map((tech: any) => tech.name),
         experience: `${achievements.length} achievements tracked`,
-        interests: developerData.technologies.map((tech: any) => tech.name).slice(0, 5)
+        interests: developerData.technologies
+          .map((tech: any) => tech.name)
+          .slice(0, 5),
       };
     } catch (error) {
-      this.logger.error(`Failed to get developer context: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Failed to get developer context: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return null;
     }
   }
@@ -1004,7 +1003,11 @@ export class PersonalBrandMemoryService {
       const evolutionData = await this.brandRepo.analyzeBrandEvolution(userId);
       return evolutionData;
     } catch (error) {
-      this.logger.error(`Failed to get brand evolution: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Failed to get brand evolution: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return null;
     }
   }
@@ -1182,9 +1185,9 @@ export class PersonalBrandMemoryService {
 
     const latestStrategy = strategies[0];
     return [
-      `Achieve ${latestStrategy.positioning}`,
-      `Target ${latestStrategy.targetAudience}`,
-      ...latestStrategy.opportunities.slice(0, 2),
+      `Achieve ${latestStrategy.metadata.positioning}`,
+      `Target ${latestStrategy.metadata.targetAudience}`,
+      ...latestStrategy.metadata.opportunities.slice(0, 2),
     ];
   }
 
@@ -1198,23 +1201,25 @@ export class PersonalBrandMemoryService {
   ): Promise<DeveloperContext['analytics']> {
     // Calculate influence metrics
     const totalViews = contentHistory.reduce(
-      (sum, content) => sum + content.metrics.views,
+      (sum, content) => sum + content.metadata.metrics.views,
       0
     );
     const totalEngagement = contentHistory.reduce(
       (sum, content) =>
         sum +
-        content.metrics.likes +
-        content.metrics.comments +
-        content.metrics.shares,
+        content.metadata.metrics.likes +
+        content.metadata.metrics.comments +
+        content.metadata.metrics.shares,
       0
     );
 
     const reach = Math.min(1.0, totalViews / 10000); // Normalize to 0-1 scale
     const engagement = totalEngagement / (totalViews || 1);
     const authority =
-      achievements.reduce((sum, ach) => sum + ach.analysis.innovationScore, 0) /
-      achievements.length;
+      achievements.reduce(
+        (sum, ach) => sum + ach.metadata.analysis.innovationScore,
+        0
+      ) / achievements.length;
 
     return {
       achievementTrend: innovationAnalysis.innovationTrend,
@@ -1245,11 +1250,15 @@ export class PersonalBrandMemoryService {
     const earlier = contentHistory.slice(Math.floor(contentHistory.length / 2));
 
     const recentAvg =
-      recent.reduce((sum, content) => sum + content.engagementScore, 0) /
-      recent.length;
+      recent.reduce(
+        (sum, content) => sum + content.metadata.engagementScore,
+        0
+      ) / recent.length;
     const earlierAvg =
-      earlier.reduce((sum, content) => sum + content.engagementScore, 0) /
-      earlier.length;
+      earlier.reduce(
+        (sum, content) => sum + content.metadata.engagementScore,
+        0
+      ) / earlier.length;
 
     if (recentAvg > earlierAvg + 0.1) return 'growing';
     if (recentAvg < earlierAvg - 0.1) return 'declining';

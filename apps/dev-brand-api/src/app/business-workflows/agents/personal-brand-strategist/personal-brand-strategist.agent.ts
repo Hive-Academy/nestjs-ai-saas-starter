@@ -24,12 +24,7 @@ import {
 import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
 import { AIMessage } from '@langchain/core/messages';
 import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
-import type {
-  Achievement,
-  BrandData,
-  BrandAnalysis,
-  GitHubData,
-} from '../shared/agent.types';
+import type { BrandData, BrandAnalysis } from '../shared/agent.types';
 import {
   buildBrandAnalysisPrompt,
   buildOptimizationPrompt,
