@@ -3,6 +3,7 @@ import type { ModuleMetadata, Type } from '@nestjs/common';
 import type {
   ICheckpointAdapter,
   AsyncModuleFactory,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -385,6 +386,12 @@ export interface TimeTravelConfig {
    * This enables time travel operations on workflow state
    */
   checkpointAdapter?: ICheckpointAdapter;
+
+  /**
+   * Memory adapter for dependency injection (optional)
+   * Enables intelligent memory integration for time-travel learning and optimization
+   */
+  memoryAdapter?: IMemoryAdapter;
 }
 
 /**

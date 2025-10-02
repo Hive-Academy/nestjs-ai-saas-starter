@@ -112,3 +112,17 @@ export type {
   IWebSocketBridgeService,
   TokenStreamOptions,
 } from './lib/interfaces/streaming.interface';
+
+// Memory adapter integration exports for consumer libraries
+export {
+  IMemoryAdapter,
+  isMemoryAdapter,
+} from './lib/interfaces/memory-adapter.interface';
+
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions,
+} from './lib/interfaces/memory-adapter.interface';

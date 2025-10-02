@@ -76,7 +76,7 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
  * }
  * ```
  */
-export function Workflow(options: WorkflowOptions = {}): ClassDecorator {
+export function FunctionalWorkflow(options: WorkflowOptions = {}): ClassDecorator {
   return (target: any) => {
     // Get module config with defaults for zero-config experience
     // Handle case where module hasn't been initialized yet during class loading
@@ -308,7 +308,7 @@ async function tryAutoRegisterWithTimeTravel(
     console.log(
       `Time-Travel auto-registration skipped for ${
         options.name || instance.constructor.name
-      }: ${error.message}`
+      }: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }

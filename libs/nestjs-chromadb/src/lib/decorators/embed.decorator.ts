@@ -4,10 +4,7 @@ import type {
   EmbeddableDocument,
   EmbeddingOperationOptions,
 } from '../interfaces/embedding-service.interface';
-import {
-  getChromaDBConfig,
-  getChromaDBConfigWithDefaults,
-} from '../utils/chromadb-config.accessor';
+// Removed unused import
 
 export const EMBED_METADATA_KEY = 'embed:metadata';
 

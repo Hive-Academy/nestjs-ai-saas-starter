@@ -10,6 +10,9 @@ export * from './lib/services/websocket-bridge.service';
 export * from './lib/services/event-stream-processor.service';
 export * from './lib/services/streaming-websocket.service';
 
+// Adapter for core interface compatibility
+export * from './lib/adapters/streaming-service.adapter';
+
 // User-controlled initialization pattern
 export * from './lib/interfaces/streaming-manager.interface';
 

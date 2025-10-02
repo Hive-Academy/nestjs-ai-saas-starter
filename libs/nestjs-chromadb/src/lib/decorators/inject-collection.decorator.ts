@@ -1,8 +1,5 @@
 import { Inject } from '@nestjs/common';
-import {
-  getChromaDBConfig,
-  getChromaDBConfigWithDefaults,
-} from '../utils/chromadb-config.accessor';
+// Removed unused import
 
 /**
  * Decorator to inject a specific ChromaDB collection

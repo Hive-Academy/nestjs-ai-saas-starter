@@ -1,94 +1,95 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { StateGraph, StateGraphArgs, END } from '@langchain/langgraph';
-import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
-import { ToolNode } from '@langchain/langgraph/prebuilt';
-
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { StateGraph, StateGraphArgs } from '@langchain/langgraph';
 import type {
   WorkflowState,
   WorkflowNode,
   WorkflowEdge,
   WorkflowDefinition,
-  Command,
 } from '../interfaces';
-import { WorkflowCommandType } from '../constants';
-import {
-  WorkflowStateAnnotation,
-  // createCustomStateAnnotation, // Currently unused
-} from '@hive-academy/langgraph-core';
+import type { IMemoryAdapter, ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from './metadata-processor.service';
+import { DecoratorTranslationService } from '../services/decorator-translation.service';
+import { GraphPatternsService } from './graph-patterns.service';
+import { GraphOptimizationService } from './graph-optimization.service';
+import { WorkflowExecutionService } from './workflow-execution.service';
+import type {
+  DecoratorDefinition,
+  DecoratorBridgeConfig,
+} from '../interfaces/decorator-bridge.interface';
 
 export interface GraphBuilderOptions {
-  /**
-   * Checkpoint saver for the workflow
-   */
-  checkpointer?: BaseCheckpointSaver;
-
-  /**
-   * Interrupt configuration
-   */
+  checkpointer?: ICheckpointAdapter;
   interrupt?: {
     before?: string[];
     after?: string[];
   };
-
-  /**
-   * Enable debugging
-   */
   debug?: boolean;
-
-  /**
-   * Custom state channels
-   */
   channels?: StateGraphArgs<any>['channels'];
-
-  /**
-   * Use custom state annotation
-   */
   stateAnnotation?: any;
+  bridgeConfig?: DecoratorBridgeConfig;
 }
 
-export type NodeHandler<TState = WorkflowState> = (state: TState) => Promise<Partial<TState> | Command<TState>>;
+export type NodeHandler<TState = WorkflowState> = (
+  state: TState
+) => Promise<Partial<TState>>;
 
-export type EdgeCondition<TState = WorkflowState> = (state: TState) => string | null;
+export type EdgeCondition<TState = WorkflowState> = (
+  state: TState
+) => string | null;
 
+/**
+ * Lean WorkflowGraphBuilderService that delegates to specialized services
+ * This is the refactored version that eliminates code duplication
+ */
 @Injectable()
 export class WorkflowGraphBuilderService {
   private readonly logger = new Logger(WorkflowGraphBuilderService.name);
   private readonly graphs = new Map<string, StateGraph<any>>();
 
-  constructor(private readonly metadataProcessor: MetadataProcessorService) {}
-
-  /**
-   * Helper to safely add a node to the graph without triggering TypeScript's excessive stack depth
-   */
-  private safeAddNode<TState>(
-    graph: StateGraph<TState>,
-    nodeId: string,
-    handler: (state: TState) => any
-  ): void {
-    // Use a type assertion function to avoid deep type comparison
-    const nodeAction = (() => handler) as any;
-    (graph as any).addNode(nodeId, nodeAction());
-  }
+  constructor(
+    private readonly metadataProcessor: MetadataProcessorService,
+    private readonly graphPatterns: GraphPatternsService,
+    private readonly graphOptimization: GraphOptimizationService,
+    private readonly workflowExecution: WorkflowExecutionService,
+    @Optional()
+    @Inject('DecoratorTranslationService')
+    private readonly decoratorTranslation?: DecoratorTranslationService,
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
+  ) {}
 
   /**
    * Build a workflow graph from a definition
    */
-  buildFromDefinition<TState extends WorkflowState = WorkflowState>(
+  async buildFromDefinition<TState extends WorkflowState = WorkflowState>(
     definition: WorkflowDefinition<TState>,
     options: GraphBuilderOptions = {}
-  ): StateGraph<TState> {
+  ): Promise<StateGraph<TState>> {
+    const startTime = performance.now();
     this.logger.debug(`Building workflow graph: ${definition.name}`);
+
+    // Apply optimization patterns if memory adapter is available
+    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(
+      definition,
+      options
+    );
 
     // Create state graph with appropriate annotation
     const stateAnnotation =
-      options.stateAnnotation || definition.channels || WorkflowStateAnnotation;
+      optimizedOptions.stateAnnotation ||
+      definition.channels ||
+      WorkflowStateAnnotation;
 
     const graph = new StateGraph<TState>(stateAnnotation);
 
+    // Analyze graph complexity for optimization
+    const graphComplexity = this.graphOptimization.analyzeGraphComplexity(definition);
+
     // Add nodes
     for (const node of definition.nodes) {
-      this.addNode(graph, node, options);
+      this.addNode(graph, node, optimizedOptions);
     }
 
     // Add edges
@@ -100,28 +101,40 @@ export class WorkflowGraphBuilderService {
     graph.setEntryPoint(definition.entryPoint as any);
 
     // Set interrupt points if configured
-    if (options.interrupt) {
-      this.configureInterrupts(graph, options.interrupt);
+    if (optimizedOptions.interrupt) {
+      this.configureInterrupts(graph, optimizedOptions.interrupt);
     }
 
-    this.logger.debug(`Workflow graph built successfully: ${definition.name}`);
+    const buildTime = performance.now() - startTime;
+
+    // Store optimization patterns for future learning
+    if (this.memoryAdapter) {
+      await this.graphOptimization.storeOptimizationPatterns(
+        definition,
+        graphComplexity,
+        buildTime,
+        optimizedOptions
+      );
+    }
+
+    this.logger.debug(
+      `Workflow graph built successfully: ${definition.name} (${buildTime.toFixed(2)}ms)`
+    );
+    
     return graph;
   }
 
   /**
    * Build a workflow graph from decorator metadata
    */
-  buildFromDecorators<TState extends WorkflowState = WorkflowState>(
+  async buildFromDecorators<TState extends WorkflowState = WorkflowState>(
     workflowClass: any,
     options: GraphBuilderOptions = {}
-  ): StateGraph<TState> {
-    this.logger.debug(
-      `Building workflow graph from decorators: ${workflowClass.name}`
-    );
+  ): Promise<StateGraph<TState>> {
+    this.logger.debug(`Building workflow graph from decorators: ${workflowClass.name}`);
 
     // Extract workflow definition from decorator metadata
-    const definition =
-      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+    const definition = this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
 
     // Validate the definition
     this.metadataProcessor.validateWorkflowDefinition(definition);
@@ -131,11 +144,92 @@ export class WorkflowGraphBuilderService {
     this.logger.debug(summary);
 
     // Build the graph using the existing buildFromDefinition method
-    return this.buildFromDefinition(definition, options);
+    return await this.buildFromDefinition(definition, options);
   }
 
   /**
-   * Create a new workflow graph with default configuration
+   * Build from functional-api decorator definition
+   */
+  async buildFromDecoratorDefinition<TState extends WorkflowState = WorkflowState>(
+    definition: DecoratorDefinition<TState>,
+    instance: object,
+    options: GraphBuilderOptions = {}
+  ): Promise<StateGraph<TState>> {
+    if (!this.decoratorTranslation) {
+      throw new Error(
+        'DecoratorTranslationService not available. Ensure workflow-engine module is properly configured.'
+      );
+    }
+
+    this.logger.debug(`Building graph from functional-api decorator definition`);
+    
+    // Translate the decorator definition to workflow-engine format
+    const translationResult = await this.decoratorTranslation.translateDecoratorDefinition(
+      definition,
+      instance,
+      options.bridgeConfig
+    );
+    
+    // Validate the translation
+    const validation = this.decoratorTranslation.validateTranslation(translationResult);
+    if (!validation.valid) {
+      this.logger.error('Translation validation failed:', validation.errors);
+      throw new Error(`Invalid decorator translation: ${validation.errors.join(', ')}`);
+    }
+    
+    // Optimize the translation
+    const optimizedTranslation = this.decoratorTranslation.optimizeTranslation(translationResult);
+    
+    // Create workflow definition from translation
+    const workflowDef = this.decoratorTranslation.createWorkflowDefinition(
+      optimizedTranslation,
+      this.getDefinitionName(definition),
+      `Workflow translated from ${optimizedTranslation.metadata.source} decorators`
+    );
+    
+    // Build the graph using the translated definition
+    return await this.buildFromDefinition<TState>(workflowDef, options);
+  }
+
+  /**
+   * Build with streaming configuration for multi-agent
+   */
+  async buildWithStreamingConfig<TState extends WorkflowState = WorkflowState>(
+    definition: WorkflowDefinition<TState>,
+    streamingOptions: {
+      tokenStreaming?: boolean;
+      progressStreaming?: boolean;
+      eventStreaming?: boolean;
+      multiAgentMode?: boolean;
+      streamCallback?: (event: any) => void;
+    },
+    options: GraphBuilderOptions = {}
+  ): Promise<StateGraph<TState>> {
+    this.logger.debug(`Building workflow graph with streaming config: ${definition.name}`);
+    
+    // Enhance options with streaming configuration
+    const enhancedOptions: GraphBuilderOptions = {
+      ...options,
+      // Note: streamingConfig is attached to the compiled graph, not to channels
+      // channels are for StateGraph configuration, not streaming options
+      channels: options.channels,
+    };
+    
+    // Build the graph with enhanced options
+    const graph = await this.buildFromDefinition(definition, enhancedOptions);
+    
+    // Attach streaming metadata to the graph for runtime use
+    (graph as any).__streamingMetadata = {
+      streamingEnabled: true,
+      streamingOptions,
+      multiAgentMode: streamingOptions.multiAgentMode || false,
+    };
+    
+    return graph;
+  }
+
+  /**
+   * Create a new workflow graph
    */
   createGraph<TState extends WorkflowState = WorkflowState>(
     name: string,
@@ -143,21 +237,20 @@ export class WorkflowGraphBuilderService {
   ): StateGraph<TState> {
     const stateAnnotation = options.stateAnnotation || WorkflowStateAnnotation;
     const graph = new StateGraph<TState>(stateAnnotation);
-
     this.graphs.set(name, graph);
     return graph;
   }
 
   /**
-   * Add a node to the graph with command support
+   * Add a node to the graph (delegates to WorkflowExecutionService)
    */
   addNode<TState extends WorkflowState = WorkflowState>(
     graph: StateGraph<TState>,
     node: WorkflowNode<TState>,
     options: GraphBuilderOptions = {}
   ): void {
-    const wrappedHandler = this.wrapNodeHandler(node, options);
-    this.safeAddNode(graph, node.id, wrappedHandler);
+    const wrappedHandler = this.workflowExecution.wrapNodeHandler(node, options);
+    this.workflowExecution.safeAddNode(graph, node.id, wrappedHandler);
   }
 
   /**
@@ -207,394 +300,18 @@ export class WorkflowGraphBuilderService {
   }
 
   /**
-   * Add a tool node with automatic routing
-   */
-  addToolNode<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    nodeId: string,
-    tools: any[],
-    returnTo?: string
-  ): void {
-    const toolNode = new ToolNode(tools);
-    this.safeAddNode(graph, nodeId, async (state: TState) => toolNode.invoke(state));
-
-    // Add routing back to the calling node
-    if (returnTo) {
-      graph.addEdge(nodeId as any, returnTo as any);
-    }
-  }
-
-  /**
-   * Add a subgraph as a node
-   */
-  addSubgraph<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    nodeId: string,
-    subgraph: StateGraph<any> | (() => StateGraph<any>),
-    transforms?: {
-      input?: (state: TState) => any;
-      output?: (state: any) => Partial<TState>;
-    }
-  ): void {
-    const subgraphHandler = async (state: TState) => {
-      const sg = typeof subgraph === 'function' ? subgraph() : subgraph;
-      const compiled = sg.compile();
-
-      // Transform input if needed
-      const input = transforms?.input ? transforms.input(state) : state;
-
-      // Execute subgraph
-      const result = await compiled.invoke(input);
-
-      // Transform output if needed
-      return transforms?.output ? transforms.output(result) : result;
-    };
-
-    this.safeAddNode(graph, nodeId, subgraphHandler);
-  }
-
-  /**
-   * Build a graph with human-in-the-loop support
-   */
-  buildWithHITL<TState extends WorkflowState = WorkflowState>(
-    name: string,
-    options: GraphBuilderOptions & {
-      approvalNode: NodeHandler<TState>;
-      approvalRouting: EdgeCondition<TState>;
-    }
-  ): StateGraph<TState> {
-    const graph = this.createGraph<TState>(name, options);
-
-    // Add human approval node
-    this.safeAddNode(graph, 'human_approval', options.approvalNode);
-
-    // Add conditional routing for approval
-    graph.addConditionalEdges(
-      'human_approval' as any,
-      options.approvalRouting as any,
-      {
-        approved: 'continue',
-        rejected: 'end',
-        retry: 'human_approval',
-      } as any
-    );
-
-    return graph;
-  }
-
-  /**
-   * Create a supervisor pattern graph
-   */
-  buildSupervisorGraph<TState extends WorkflowState = WorkflowState>(
-    name: string,
-    supervisor: NodeHandler<TState>,
-    workers: Record<string, NodeHandler<TState>>,
-    options: GraphBuilderOptions = {}
-  ): StateGraph<TState> {
-    const graph = this.createGraph<TState>(name, options);
-
-    // Add supervisor node
-    this.safeAddNode(graph, 'supervisor', supervisor);
-    graph.setEntryPoint('supervisor' as any);
-
-    // Add worker nodes
-    for (const [workerId, worker] of Object.entries(workers)) {
-      this.safeAddNode(graph, workerId, worker);
-      // Workers report back to supervisor
-      graph.addEdge(workerId as any, 'supervisor' as any);
-    }
-
-    // Supervisor routes to workers or ends
-    graph.addConditionalEdges(
-      'supervisor' as any,
-      ((state: TState) => {
-        // Check if a specific worker should be called
-        const {nextWorker} = (state as any);
-        if (nextWorker && workers[nextWorker]) {
-          return nextWorker;
-        }
-        // Otherwise end
-        return END;
-      }) as any,
-      {
-        ...Object.keys(workers).reduce<Record<string, string>>((acc, key) => {
-          acc[key] = key;
-          return acc;
-        }, {}),
-        [END]: END,
-      } as any
-    );
-
-    return graph;
-  }
-
-  /**
-   * Create a pipeline pattern graph
-   */
-  buildPipelineGraph<TState extends WorkflowState = WorkflowState>(
-    name: string,
-    stages: Array<{
-      id: string;
-      handler: NodeHandler<TState>;
-      condition?: EdgeCondition<TState>;
-    }>,
-    options: GraphBuilderOptions = {}
-  ): StateGraph<TState> {
-    const graph = this.createGraph<TState>(name, options);
-
-    for (let i = 0; i < stages.length; i++) {
-      const stage = stages[i];
-      const nextStage = stages[i + 1];
-
-      // Add stage node
-      this.safeAddNode(graph, stage.id, stage.handler);
-
-      // Add edge to next stage or end
-      if (stage.condition) {
-        // Conditional routing
-        graph.addConditionalEdges(
-          stage.id as any,
-          stage.condition as any,
-          {
-            continue: nextStage ? nextStage.id : END,
-            skip: stages[i + 2]?.id || END,
-            end: END,
-          } as any
-        );
-      } else if (nextStage) {
-        // Simple edge to next stage
-        graph.addEdge(stage.id as any, nextStage.id as any);
-      } else {
-        // Last stage goes to END
-        graph.addEdge(stage.id as any, END as any);
-      }
-    }
-
-    // Set entry point to first stage
-    if (stages.length > 0) {
-      graph.setEntryPoint(stages[0].id as any);
-    }
-
-    return graph;
-  }
-
-  /**
-   * Wrap a node handler to support command pattern
-   */
-  private wrapNodeHandler<TState extends WorkflowState = WorkflowState>(
-    node: WorkflowNode<TState>,
-    options: GraphBuilderOptions = {}
-  ): (state: TState) => Promise<any> {
-    return async (state: TState): Promise<any> => {
-      try {
-        // Add node tracking
-        const updatedState: Partial<TState> = {
-          currentNode: node.id,
-          completedNodes: [...(state.completedNodes || []), node.id],
-        } as unknown as Partial<TState>;
-
-        // Execute node handler
-        const result = await this.executeWithTimeout(
-          node.handler(state),
-          node.config?.timeout
-        );
-
-        // Handle command pattern
-        if (this.isCommand(result)) {
-          return this.processCommand(result as Command<TState>, state, node);
-        }
-
-        // Merge state updates
-        return {
-          ...updatedState,
-          ...result,
-        };
-      } catch (error) {
-        return this.handleNodeError(error, state, node);
-      }
-    };
-  }
-
-  /**
-   * Check if result is a command
-   */
-  private isCommand<TState>(result: any): boolean {
-    return (
-      result &&
-      typeof result === 'object' &&
-      'type' in result &&
-      Object.values(WorkflowCommandType).includes(result.type)
-    );
-  }
-
-  /**
-   * Process a command returned from a node
-   */
-  private processCommand<TState extends WorkflowState = WorkflowState>(
-    command: Command<TState>,
-    state: TState,
-    node: WorkflowNode<TState>
-  ): Partial<TState> {
-    this.logger.debug(`Processing command from node ${node.id}:`, command);
-
-    switch (command.type) {
-      case WorkflowCommandType.GOTO:
-        return {
-          ...command.update,
-          currentNode: command.goto,
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-          },
-        } as unknown as Partial<TState>;
-
-      case WorkflowCommandType.UPDATE:
-        return {
-          ...command.update,
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-          },
-        } as unknown as Partial<TState>;
-
-      case WorkflowCommandType.END:
-        return {
-          ...command.update,
-          status: 'completed',
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-          },
-        } as unknown as Partial<TState>;
-
-      case WorkflowCommandType.ERROR:
-        return {
-          ...command.update,
-          status: 'failed',
-          error: command.error,
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-          },
-        } as unknown as Partial<TState>;
-
-      case WorkflowCommandType.RETRY:
-        return {
-          ...command.update,
-          currentNode: command.retry?.node || node.id,
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-            retryCount: ((state.metadata as any)?.retryCount || 0) + 1,
-          },
-        } as unknown as Partial<TState>;
-
-      case WorkflowCommandType.SKIP:
-        return {
-          ...command.update,
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-            skipped: true,
-          },
-        } as unknown as Partial<TState>;
-
-      case WorkflowCommandType.STOP:
-        return {
-          ...command.update,
-          status: 'stopped',
-          metadata: {
-            ...state.metadata,
-            lastCommand: command,
-          },
-        } as unknown as Partial<TState>;
-
-      case undefined:
-      default:
-        return command?.update || {};
-    }
-  }
-
-  /**
-   * Handle node execution errors
-   */
-  private handleNodeError<TState extends WorkflowState = WorkflowState>(
-    error: any,
-    state: TState,
-    node: WorkflowNode<TState>
-  ): Partial<TState> {
-    this.logger.error(`Node ${node.id} failed:`, error);
-
-    const workflowError = {
-      id: `error-${Date.now()}`,
-      nodeId: node.id,
-      type: 'execution' as const,
-      message: error.message || 'Unknown error',
-      stackTrace: error.stack,
-      context: {
-        state: state.currentNode,
-        executionId: state.executionId,
-      },
-      isRecoverable: Boolean(node.config?.retry?.maxAttempts),
-      suggestedRecovery: 'Retry the node or check error details',
-      timestamp: new Date(),
-    };
-
-    // Check if we should retry
-    const retryCount = (state.metadata as any)?.retryCount || 0;
-    const maxRetries = node.config?.retry?.maxAttempts || 0;
-
-    if (retryCount < maxRetries) {
-      this.logger.debug(
-        `Retrying node ${node.id} (attempt ${retryCount + 1}/${maxRetries})`
-      );
-      return {
-        currentNode: node.id,
-        metadata: {
-          ...state.metadata,
-          retryCount: retryCount + 1,
-          lastError: workflowError,
-        },
-      } as unknown as Partial<TState>;
-    }
-
-    return {
-      status: 'failed',
-      error: workflowError,
-      metadata: {
-        ...state.metadata,
-        failedNode: node.id,
-      },
-    } as unknown as Partial<TState>;
-  }
-
-  /**
-   * Execute with timeout
-   */
-  private async executeWithTimeout<T>(
-    promise: Promise<T>,
-    timeout?: number
-  ): Promise<T> {
-    if (!timeout) {
-      return promise;
-    }
-
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => { reject(new Error('Execution timeout')); }, timeout)
-      ),
-    ]);
-  }
-
-  /**
    * Compile the graph with options
    */
-  compileGraph<TState extends WorkflowState = WorkflowState>(
+  async compileGraph<TState extends WorkflowState = WorkflowState>(
     graph: StateGraph<TState>,
     options: GraphBuilderOptions = {}
-  ): any {
-    const compileOptions: any = {};
+  ): Promise<any> {
+    const startTime = performance.now();
+
+    // Get optimized compile options from learning service
+    const optimizedCompileOptions = await this.graphOptimization.getOptimizedCompileOptions(options);
+
+    const compileOptions: any = { ...optimizedCompileOptions };
 
     if (options.checkpointer) {
       compileOptions.checkpointer = options.checkpointer;
@@ -608,7 +325,49 @@ export class WorkflowGraphBuilderService {
       compileOptions.interruptAfter = options.interrupt.after;
     }
 
-    return graph.compile(compileOptions);
+    const compiledGraph = graph.compile(compileOptions);
+    const compileTime = performance.now() - startTime;
+
+    this.logger.debug(`Graph compiled successfully (${compileTime.toFixed(2)}ms)`);
+    return compiledGraph;
+  }
+
+  /**
+   * Configure interrupt points for a graph (delegates to WorkflowExecutionService)
+   */
+  configureInterrupts<TState extends WorkflowState = WorkflowState>(
+    graph: StateGraph<TState>,
+    interrupt: { before?: string[]; after?: string[] }
+  ): void {
+    this.workflowExecution.configureInterrupts(graph, interrupt);
+  }
+
+  /**
+   * Delegate pattern creation to GraphPatternsService
+   */
+  
+  buildWithHITL<TState extends WorkflowState = WorkflowState>(
+    name: string,
+    options: any
+  ): StateGraph<TState> {
+    return this.graphPatterns.buildWithHITL(name, options);
+  }
+
+  buildSupervisorGraph<TState extends WorkflowState = WorkflowState>(
+    name: string,
+    supervisor: NodeHandler<TState>,
+    workers: Record<string, NodeHandler<TState>>,
+    options?: any
+  ): StateGraph<TState> {
+    return this.graphPatterns.buildSupervisorGraph(name, supervisor, workers, options);
+  }
+
+  buildPipelineGraph<TState extends WorkflowState = WorkflowState>(
+    name: string,
+    stages: any[],
+    options?: any
+  ): StateGraph<TState> {
+    return this.graphPatterns.buildPipelineGraph(name, stages, options);
   }
 
   /**
@@ -625,18 +384,17 @@ export class WorkflowGraphBuilderService {
     this.graphs.clear();
   }
 
-  /**
-   * Configure interrupt points
-   */
-  private configureInterrupts<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    interrupt: { before?: string[]; after?: string[] }
-  ): void {
-    // This will be handled during compilation with interruptBefore/interruptAfter options
-    // The actual implementation is done in the compileGraph method
-    this.logger.debug(
-      'Interrupt configuration will be applied during compilation',
-      interrupt
-    );
+  // Private helper methods
+
+  private getDefinitionName(definition: any): string {
+    if (typeof definition === 'object') {
+      if ('name' in definition) {
+        return definition.name;
+      }
+      if ('className' in definition) {
+        return definition.className;
+      }
+    }
+    return 'unknown_definition';
   }
 }

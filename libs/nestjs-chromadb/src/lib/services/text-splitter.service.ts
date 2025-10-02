@@ -5,10 +5,12 @@ import {
   TokenTextSplitter,
   CharacterTextSplitter,
   MarkdownTextSplitter,
-  RecursiveCharacterTextSplitterParams,
 } from '@langchain/textsplitters';
 import { Document } from '@langchain/core/documents';
-import { MetadataExtractorService, ExtractedMetadata } from './metadata-extractor.service';
+import {
+  MetadataExtractorService,
+  ExtractedMetadata,
+} from './metadata-extractor.service';
 
 export interface TextSplitterOptions {
   strategy?: 'recursive' | 'token' | 'character' | 'markdown' | 'semantic';
@@ -21,7 +23,7 @@ export interface TextSplitterOptions {
   encodingName?: string;
   allowedSpecial?: 'all' | Array<string>;
   disallowedSpecial?: 'all' | Array<string>;
-  // Enhanced metadata extraction options
+  //  metadata extraction options
   extractMetadata?: boolean;
   extractTopics?: boolean;
   extractKeywords?: boolean;
@@ -58,8 +60,14 @@ export class TextSplitterService {
     private readonly configService: ConfigService,
     @Optional() private readonly metadataExtractor?: MetadataExtractorService
   ) {
-    this.defaultChunkSize = this.configService.get('EMBEDDING_CHUNK_SIZE', 1000);
-    this.defaultChunkOverlap = this.configService.get('EMBEDDING_CHUNK_OVERLAP', 200);
+    this.defaultChunkSize = this.configService.get(
+      'EMBEDDING_CHUNK_SIZE',
+      1000
+    );
+    this.defaultChunkOverlap = this.configService.get(
+      'EMBEDDING_CHUNK_OVERLAP',
+      200
+    );
   }
 
   /**
@@ -67,7 +75,7 @@ export class TextSplitterService {
    */
   async splitText(
     text: string,
-    options: TextSplitterOptions = {},
+    options: TextSplitterOptions = {}
   ): Promise<string[]> {
     const {
       strategy = 'recursive',
@@ -85,7 +93,7 @@ export class TextSplitterService {
       new Document({ pageContent: text }),
     ]);
 
-    return docs.map(doc => doc.pageContent);
+    return docs.map((doc) => doc.pageContent);
   }
 
   /**
@@ -93,7 +101,7 @@ export class TextSplitterService {
    */
   async splitDocuments(
     documents: Array<{ id: string; content: string; metadata?: any }>,
-    options: TextSplitterOptions = {},
+    options: TextSplitterOptions = {}
   ): Promise<ChunkedDocument[]> {
     const {
       strategy = 'recursive',
@@ -120,50 +128,53 @@ export class TextSplitterService {
         // Split the document
         const chunks = await splitter.splitDocuments([langchainDoc]);
 
-        // Convert to our chunked document format with enhanced metadata
-        const chunkedDocs = await Promise.all(chunks.map(async (chunk, index) => {
-          const baseMetadata = {
-            ...chunk.metadata,
-            parentId: doc.id,
-            chunkIndex: index,
-            totalChunks: chunks.length,
-            startIndex: chunk.metadata['loc']?.lines?.from,
-            endIndex: chunk.metadata['loc']?.lines?.to,
-          };
+        // Convert to our chunked document format with  metadata
+        const chunkedDocs = await Promise.all(
+          chunks.map(async (chunk, index) => {
+            const baseMetadata = {
+              ...chunk.metadata,
+              parentId: doc.id,
+              chunkIndex: index,
+              totalChunks: chunks.length,
+              startIndex: chunk.metadata['loc']?.lines?.from,
+              endIndex: chunk.metadata['loc']?.lines?.to,
+            };
 
-          // Extract additional metadata if enabled and extractor is available
-          if (options.extractMetadata && this.metadataExtractor) {
-            const extractedMetadata = await this.metadataExtractor.extractMetadata(
-              chunk.pageContent,
-              {
-                contentType: doc.metadata?.contentType || strategy,
-                extractTopics: options.extractTopics,
-                extractKeywords: options.extractKeywords,
-                analyzeComplexity: options.analyzeComplexity,
-                calculateReadingTime: options.calculateReadingTime,
-                detectCrossReferences: options.detectCrossReferences,
-                extractCodeMetadata: options.extractCodeMetadata,
-              }
-            );
+            // Extract additional metadata if enabled and extractor is available
+            if (options.extractMetadata && this.metadataExtractor) {
+              const extractedMetadata =
+                await this.metadataExtractor.extractMetadata(
+                  chunk.pageContent,
+                  {
+                    contentType: doc.metadata?.contentType || strategy,
+                    extractTopics: options.extractTopics,
+                    extractKeywords: options.extractKeywords,
+                    analyzeComplexity: options.analyzeComplexity,
+                    calculateReadingTime: options.calculateReadingTime,
+                    detectCrossReferences: options.detectCrossReferences,
+                    extractCodeMetadata: options.extractCodeMetadata,
+                  }
+                );
+
+              return {
+                id: `${doc.id}-chunk-${index}`,
+                content: chunk.pageContent,
+                metadata: { ...baseMetadata, ...extractedMetadata },
+              };
+            }
 
             return {
               id: `${doc.id}-chunk-${index}`,
               content: chunk.pageContent,
-              metadata: { ...baseMetadata, ...extractedMetadata },
+              metadata: baseMetadata,
             };
-          }
-
-          return {
-            id: `${doc.id}-chunk-${index}`,
-            content: chunk.pageContent,
-            metadata: baseMetadata,
-          };
-        }));
+          })
+        );
 
         allChunks.push(...chunkedDocs);
 
         this.logger.debug(
-          `Split document ${doc.id} into ${chunks.length} chunks using ${strategy} strategy`,
+          `Split document ${doc.id} into ${chunks.length} chunks using ${strategy} strategy`
         );
       } catch (error) {
         this.logger.error(`Failed to split document ${doc.id}:`, error);
@@ -190,7 +201,7 @@ export class TextSplitterService {
   async smartSplit(
     content: string,
     metadata?: any,
-    options: TextSplitterOptions = {},
+    options: TextSplitterOptions = {}
   ): Promise<ChunkedDocument[]> {
     // Detect content type
     const contentType = this.detectContentType(content, metadata);
@@ -202,7 +213,7 @@ export class TextSplitterService {
     const chunkSize = this.getOptimalChunkSize(contentType, options.chunkSize);
 
     this.logger.debug(
-      `Using ${strategy} strategy with chunk size ${chunkSize} for ${contentType} content`,
+      `Using ${strategy} strategy with chunk size ${chunkSize} for ${contentType} content`
     );
 
     // Split using detected strategy with automatic metadata extraction
@@ -228,8 +239,12 @@ export class TextSplitterService {
    */
   private createSplitter(
     strategy: string,
-    options: TextSplitterOptions,
-  ): RecursiveCharacterTextSplitter | TokenTextSplitter | CharacterTextSplitter | MarkdownTextSplitter {
+    options: TextSplitterOptions
+  ):
+    | RecursiveCharacterTextSplitter
+    | TokenTextSplitter
+    | CharacterTextSplitter
+    | MarkdownTextSplitter {
     const {
       chunkSize = this.defaultChunkSize,
       chunkOverlap = this.defaultChunkOverlap,
@@ -244,7 +259,7 @@ export class TextSplitterService {
         return new TokenTextSplitter({
           chunkSize,
           chunkOverlap,
-          encodingName: options.encodingName as any || 'cl100k_base', // GPT-4 encoding
+          encodingName: (options.encodingName as any) || 'cl100k_base', // GPT-4 encoding
           allowedSpecial: options.allowedSpecial,
           disallowedSpecial: options.disallowedSpecial,
         });
@@ -327,7 +342,9 @@ export class TextSplitterService {
   /**
    * Get optimal strategy for content type
    */
-  private getStrategyForContentType(contentType: string): 'recursive' | 'token' | 'character' | 'markdown' | 'semantic' {
+  private getStrategyForContentType(
+    contentType: string
+  ): 'recursive' | 'token' | 'character' | 'markdown' | 'semantic' {
     switch (contentType) {
       case 'code':
         return 'recursive'; // Preserve code structure
@@ -345,7 +362,10 @@ export class TextSplitterService {
   /**
    * Get optimal chunk size for content type
    */
-  private getOptimalChunkSize(contentType: string, requestedSize?: number): number {
+  private getOptimalChunkSize(
+    contentType: string,
+    requestedSize?: number
+  ): number {
     if (requestedSize) {
       return requestedSize;
     }
@@ -382,7 +402,7 @@ export class TextSplitterService {
       /{[\s\S]*}/m, // Curly braces
     ];
 
-    return codePatterns.some(pattern => pattern.test(content));
+    return codePatterns.some((pattern) => pattern.test(content));
   }
 
   /**
@@ -398,7 +418,7 @@ export class TextSplitterService {
       /^\|.*\|/m, // Tables
     ];
 
-    return markdownPatterns.some(pattern => pattern.test(content));
+    return markdownPatterns.some((pattern) => pattern.test(content));
   }
 
   /**
@@ -424,7 +444,7 @@ export class TextSplitterService {
       /^\d{1,2}:\d{2}/m, // Timestamps
     ];
 
-    return conversationPatterns.some(pattern => pattern.test(content));
+    return conversationPatterns.some((pattern) => pattern.test(content));
   }
 
   /**
@@ -432,7 +452,7 @@ export class TextSplitterService {
    */
   async mergeSmallChunks(
     chunks: ChunkedDocument[],
-    minChunkSize = 100,
+    minChunkSize = 100
   ): Promise<ChunkedDocument[]> {
     const mergedChunks: ChunkedDocument[] = [];
     let currentMerged: ChunkedDocument | null = null;

@@ -6,8 +6,6 @@ import type {
   AlertRule,
   Alert,
   NotificationChannel,
-  MetricQuery,
-  MetricResult,
   AggregationType,
 } from '../interfaces/monitoring.interface';
 import { AlertingError } from '../interfaces/monitoring.interface';
@@ -309,15 +307,12 @@ export class AlertingService implements IAlertingService, OnModuleDestroy {
         condition.threshold
       );
 
-      this.logger.debug(
-        `Rule evaluation result for ${rule.name}: ${result}`,
-        {
-          metricValue,
-          operator: condition.operator,
-          threshold: condition.threshold,
-          result,
-        }
-      );
+      this.logger.debug(`Rule evaluation result for ${rule.name}: ${result}`, {
+        metricValue,
+        operator: condition.operator,
+        threshold: condition.threshold,
+        result,
+      });
 
       return result;
     } catch (error) {

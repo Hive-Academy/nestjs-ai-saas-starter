@@ -29,6 +29,7 @@ import type {
   StreamTokenDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
 import { StreamEventType } from '@hive-academy/langgraph-streaming';
+import { generateExecutionId } from '@hive-academy/langgraph-core';
 
 /**
  * Streaming workflow execution context
@@ -201,9 +202,6 @@ export abstract class StreamingWorkflowBase<
     input: Partial<TState>,
     config: any = {}
   ): Promise<TState> {
-    const { generateExecutionId } = await import(
-      '@hive-academy/langgraph-core'
-    );
     const executionId = config.executionId || generateExecutionId();
 
     try {

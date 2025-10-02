@@ -3,6 +3,7 @@ import type {
   ICheckpointAdapter,
   AsyncModuleFactory,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -11,11 +12,14 @@ import type {
 export type WorkflowProvider = new (...args: any[]) => any;
 
 /**
- * Configuration options for the Functional API module
+ * Configuration options for the Functional API module (PURE CONFIGURATION)
+ * NOTE: Registration is now handled by WorkflowEngineModule centrally
  */
 export interface FunctionalApiModuleOptions {
+
   /**
-   * Explicitly registered workflow providers (replaces discovery)
+   * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's workflow registration system
    */
   readonly workflows?: WorkflowProvider[];
 
@@ -77,6 +81,12 @@ export interface FunctionalApiModuleOptions {
    * If not provided, streaming will be disabled (uses NoOpStreamingService)
    */
   readonly streamingAdapter?: IStreamingService;
+
+  /**
+   * 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+   * If not provided, memory features will be disabled
+   */
+  readonly memoryAdapter?: IMemoryAdapter;
 }
 
 /**

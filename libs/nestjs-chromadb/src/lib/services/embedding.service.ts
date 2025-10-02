@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { EmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
+import type { EmbeddingConfig } from '../interfaces/config/module-options.interface';
 import type {
   EmbeddingServiceInterface,
   EmbeddingVector,
@@ -13,7 +13,10 @@ import {
   ChromaDBEmbeddingNotConfiguredError,
   ChromaDBConfigurationError,
 } from '../errors/chromadb.errors';
-import { ChromaDBErrorHandler, getErrorMessage } from '../utils/error.utils';
+import {
+  ChromaDBErrorHandler,
+  getErrorMessage,
+} from '../utils/errors/error.utils';
 
 /**
  * Embedding service that manages different embedding providers

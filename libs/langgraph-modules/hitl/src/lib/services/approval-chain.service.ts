@@ -1,5 +1,7 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { generateId } from '@hive-academy/langgraph-core';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { IApprovalChainStorageService } from '../interfaces/approval-chain-storage.interface';
 
 /**
  * Approval level in the chain
@@ -145,9 +147,14 @@ export interface ApprovalRequest {
   executionId: string;
 
   /**
-   * Current approval level
+   * Chain ID for this request
    */
-  currentLevel: ApprovalLevel;
+  chainId: string;
+
+  /**
+   * Current approval level (index into chain array)
+   */
+  currentLevel: number;
 
   /**
    * All levels in the chain
@@ -211,40 +218,91 @@ export interface ApprovalHistoryEntry {
 }
 
 /**
- * Service for managing approval chains
+ * Service for managing approval chains with persistent storage
  */
 @Injectable()
-export class ApprovalChainService {
+export class ApprovalChainService implements OnModuleInit {
   private readonly logger = new Logger(ApprovalChainService.name);
-  private readonly approvalRequests = new Map<string, ApprovalRequest>();
-  private readonly approvalChains = new Map<string, ApprovalLevel[]>();
+  
+  // Cache-only storage for performance (NOT primary storage)
+  private readonly requestCache = new Map<string, ApprovalRequest>();
+  private readonly chainCache = new Map<string, ApprovalLevel[]>();
 
   constructor(
-    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
-  ) {}
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    @Inject('IApprovalChainStorageService')
+    private readonly chainStorage: IApprovalChainStorageService
+  ) {
+    this.logger.log('🔗 Approval Chain Service initialized with adapter-first storage');
+  }
 
   /**
-   * Create an approval chain
+   * Module lifecycle - recover state from persistent storage
    */
-  createApprovalChain(chainId: string, levels: ApprovalLevel[]): void {
+  async onModuleInit(): Promise<void> {
+    this.logger.log('Approval Chain Service initializing with persistent storage');
+    await this.recoverActiveRequests();
+    this.logger.log('✅ Approval Chain Service initialized');
+  }
+
+  /**
+   * Recover all active approval requests and chains from storage
+   */
+  private async recoverActiveRequests(): Promise<void> {
+    try {
+      // Recover all active approval requests
+      const activeRequests = await this.chainStorage.getAllActiveRequests();
+      activeRequests.forEach(request => {
+        this.requestCache.set(request.id, request);
+      });
+
+      // Recover all approval chains
+      const allChains = await this.chainStorage.getAllApprovalChains();
+      Object.entries(allChains).forEach(([chainId, levels]) => {
+        this.chainCache.set(chainId, levels);
+      });
+
+      this.logger.log(`✅ Recovered ${activeRequests.length} requests and ${Object.keys(allChains).length} chains`);
+    } catch (error) {
+      this.logger.error('❌ CRITICAL: Failed to recover approval chains - service will fail fast', error);
+      throw new Error('Cannot initialize ApprovalChainService without persistent storage recovery');
+    }
+  }
+
+  /**
+   * Create an approval chain with persistent storage
+   */
+  async createApprovalChain(chainId: string, levels: ApprovalLevel[]): Promise<void> {
     // Sort levels by priority
     const sortedLevels = [...levels].sort((a, b) => a.priority - b.priority);
 
-    this.approvalChains.set(chainId, sortedLevels);
+    // ✅ CORRECT: Store in adapter first
+    await this.chainStorage.storeApprovalChain(chainId, sortedLevels);
+    
+    // ✅ CORRECT: Cache for performance
+    this.chainCache.set(chainId, sortedLevels);
+
     this.logger.log(
       `Created approval chain ${chainId} with ${sortedLevels.length} levels`
     );
   }
 
   /**
-   * Initiate an approval request
+   * Initiate an approval request with persistent storage
    */
   async initiateApproval(
     executionId: string,
     chainId: string,
     context: Record<string, unknown>
   ): Promise<ApprovalRequest> {
-    const chain = this.approvalChains.get(chainId);
+    // ✅ CORRECT: Load from cache first, then storage
+    let chain = this.chainCache.get(chainId);
+    if (!chain) {
+      chain = (await this.chainStorage.getApprovalChain(chainId)) || undefined;
+      if (chain) {
+        this.chainCache.set(chainId, chain); // Update cache
+      }
+    }
 
     if (!chain || chain.length === 0) {
       throw new Error(`Approval chain ${chainId} not found`);
@@ -257,14 +315,15 @@ export class ApprovalChainService {
       this.logger.log(
         `No approval levels required for execution ${executionId}`
       );
-      return this.createAutoApprovedRequest(executionId, chain, context);
+      return this.createAutoApprovedRequest(executionId, chainId, chain, context);
     }
 
-    const requestId = this.generateRequestId();
+    const requestId = generateId('approval');
     const request: ApprovalRequest = {
       id: requestId,
       executionId,
-      currentLevel: requiredLevels[0],
+      chainId,
+      currentLevel: 0, // Start at first level (index 0)
       chain: requiredLevels,
       context,
       history: [],
@@ -273,7 +332,11 @@ export class ApprovalChainService {
       updatedAt: new Date(),
     };
 
-    this.approvalRequests.set(requestId, request);
+    // ✅ CORRECT: Store in adapter first
+    await this.chainStorage.storeApprovalRequest(request);
+    
+    // ✅ CORRECT: Cache for performance
+    this.requestCache.set(requestId, request);
 
     // Emit event for first level
     await this.notifyApprovers(request, requiredLevels[0]);
@@ -286,7 +349,7 @@ export class ApprovalChainService {
   }
 
   /**
-   * Process an approval decision
+   * Process an approval decision with persistent storage
    */
   async processApproval(
     requestId: string,
@@ -294,7 +357,14 @@ export class ApprovalChainService {
     decision: 'approved' | 'rejected' | 'escalated',
     comments?: string
   ): Promise<ApprovalRequest> {
-    const request = this.approvalRequests.get(requestId);
+    // ✅ CORRECT: Load from cache first, then storage
+    let request = this.requestCache.get(requestId);
+    if (!request) {
+      request = (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
+      if (request) {
+        this.requestCache.set(requestId, request); // Update cache
+      }
+    }
 
     if (!request) {
       throw new Error(`Approval request ${requestId} not found`);
@@ -304,9 +374,14 @@ export class ApprovalChainService {
       throw new Error(`Approval request ${requestId} is not pending`);
     }
 
+    const currentLevel = request.chain[request.currentLevel];
+    if (!currentLevel) {
+      throw new Error(`Invalid approval level ${request.currentLevel} for request ${requestId}`);
+    }
+
     // Add to history
     const historyEntry: ApprovalHistoryEntry = {
-      levelId: request.currentLevel.id,
+      levelId: currentLevel.id,
       approver,
       decision,
       comments,
@@ -316,22 +391,21 @@ export class ApprovalChainService {
 
     // Check if level approval is complete
     const levelDecision = this.evaluateLevelDecision(
-      request.currentLevel,
-      request.history.filter((h) => h.levelId === request.currentLevel.id)
+      currentLevel,
+      request.history.filter((h) => h.levelId === currentLevel.id)
     );
 
     if (levelDecision === 'approved') {
       // Move to next level or complete
-      const currentIndex = request.chain.indexOf(request.currentLevel);
-
-      if (currentIndex < request.chain.length - 1) {
+      if (request.currentLevel < request.chain.length - 1) {
         // Move to next level
-        request.currentLevel = request.chain[currentIndex + 1];
+        request.currentLevel += 1;
         request.status = 'pending';
-        await this.notifyApprovers(request, request.currentLevel);
+        const nextLevel = request.chain[request.currentLevel];
+        await this.notifyApprovers(request, nextLevel);
 
         this.logger.log(
-          `Approval request ${requestId} escalated to level ${request.currentLevel.name}`
+          `Approval request ${requestId} escalated to level ${nextLevel.name}`
         );
       } else {
         // All levels approved
@@ -357,6 +431,11 @@ export class ApprovalChainService {
     }
 
     request.updatedAt = new Date();
+
+    // ✅ CORRECT: Update storage first, then cache
+    await this.chainStorage.updateApprovalRequest(request);
+    this.requestCache.set(requestId, request);
+
     return request;
   }
 
@@ -497,18 +576,25 @@ export class ApprovalChainService {
   }
 
   /**
-   * Handle approval timeout
+   * Handle approval timeout with adapter-first pattern
    */
   private async handleApprovalTimeout(
     requestId: string,
     level: ApprovalLevel
   ): Promise<void> {
-    const request = this.approvalRequests.get(requestId);
+    // ✅ CORRECT: Load from cache first, then storage
+    let request = this.requestCache.get(requestId);
+    if (!request) {
+      request = (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
+      if (request) {
+        this.requestCache.set(requestId, request); // Update cache
+      }
+    }
 
     if (
       !request ||
       request.status !== 'pending' ||
-      request.currentLevel.id !== level.id
+      request.chain[request.currentLevel]?.id !== level.id
     ) {
       return; // Request already processed or moved to different level
     }
@@ -522,6 +608,12 @@ export class ApprovalChainService {
       );
     } else {
       request.status = 'timeout';
+      request.updatedAt = new Date();
+      
+      // ✅ CORRECT: Update storage first, then cache
+      await this.chainStorage.updateApprovalRequest(request);
+      this.requestCache.set(requestId, request);
+      
       await this.eventEmitter.emit('approval.timeout', {
         requestId,
         executionId: request.executionId,
@@ -531,18 +623,20 @@ export class ApprovalChainService {
   }
 
   /**
-   * Create auto-approved request
+   * Create auto-approved request with persistent storage
    */
-  private createAutoApprovedRequest(
+  private async createAutoApprovedRequest(
     executionId: string,
+    chainId: string,
     chain: ApprovalLevel[],
     context: Record<string, unknown>
-  ): ApprovalRequest {
-    const requestId = this.generateRequestId();
-    return {
+  ): Promise<ApprovalRequest> {
+    const requestId = generateId('approval');
+    const request: ApprovalRequest = {
       id: requestId,
       executionId,
-      currentLevel: chain[0],
+      chainId,
+      currentLevel: 0, // Index-based
       chain,
       context,
       history: [
@@ -558,31 +652,36 @@ export class ApprovalChainService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    // ✅ CORRECT: Store in adapter first
+    await this.chainStorage.storeApprovalRequest(request);
+    
+    // ✅ CORRECT: Cache for performance
+    this.requestCache.set(requestId, request);
+
+    return request;
   }
 
   /**
-   * Get approval request
+   * Get approval request with adapter-first pattern
    */
-  getApprovalRequest(requestId: string): ApprovalRequest | undefined {
-    return this.approvalRequests.get(requestId);
+  async getApprovalRequest(requestId: string): Promise<ApprovalRequest | undefined> {
+    // ✅ CORRECT: Check cache first, then storage
+    let request = this.requestCache.get(requestId);
+    if (!request) {
+      request = (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
+      if (request) {
+        this.requestCache.set(requestId, request); // Update cache
+      }
+    }
+    return request;
   }
 
   /**
-   * Get pending approvals for approver
+   * Get pending approvals for approver with adapter-first pattern
    */
-  getPendingApprovalsForApprover(approverId: string): ApprovalRequest[] {
-    return Array.from(this.approvalRequests.values()).filter(
-      (request) =>
-        request.status === 'pending' &&
-        request.currentLevel.approvers.some((a) => a.id === approverId)
-    );
-  }
-
-  /**
-   * Generate request ID
-   */
-  private generateRequestId(): string {
-    const { generateId } = require('@hive-academy/langgraph-core');
-    return generateId('approval');
+  async getPendingApprovalsForApprover(approverId: string): Promise<ApprovalRequest[]> {
+    // ✅ CORRECT: Use storage adapter for comprehensive search
+    return await this.chainStorage.getPendingApprovalsForApprover(approverId);
   }
 }

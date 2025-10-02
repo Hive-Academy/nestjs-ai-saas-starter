@@ -4,6 +4,7 @@ import type { RunnableConfig } from '@langchain/core/runnables';
 import type {
   ICheckpointAdapter,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -34,6 +35,16 @@ export interface AgentState {
    * Task description passed between agents
    */
   task?: string;
+
+  /**
+   * Thread ID for memory context and checkpointing
+   */
+  threadId?: string;
+
+  /**
+   * User ID for memory context and personalization
+   */
+  userId?: string;
 
   /**
    * Agent metadata and context
@@ -690,23 +701,28 @@ export type WorkflowProvider = new (...args: any[]) => any;
 export type AgentProvider = new (...args: any[]) => any;
 
 /**
- * Multi-agent module configuration (2025 pattern with explicit registration)
+ * Multi-agent module configuration (2025 pattern - PURE CONFIGURATION ONLY)
+ * NOTE: Registration is now handled by WorkflowEngineModule centrally
  */
 export interface MultiAgentModuleOptions {
+
   /**
-   * Explicitly registered tool providers (replaces discovery)
+   * CENTRALIZED REGISTRATION: Agent providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's agent registration system
+   */
+  agents?: AgentProvider[];
+
+  /**
+   * CENTRALIZED REGISTRATION: Tool providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's tool registration system
    */
   tools?: ToolProvider[];
 
   /**
-   * Explicitly registered workflow providers (replaces discovery)
+   * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
+   * This array is populated by the workflow engine's workflow registration system
    */
   workflows?: WorkflowProvider[];
-
-  /**
-   * Explicitly registered agent providers (replaces discovery)
-   */
-  agents?: AgentProvider[];
 
   /**
    * Default LLM configuration with simple provider selection
@@ -768,15 +784,6 @@ export interface MultiAgentModuleOptions {
     cohere?: {
       version?: string;
     };
-
-    // Deprecated - for backward compatibility only
-    apiKey?: string;
-    baseURL?: string;
-    defaultHeaders?: Record<string, string>;
-    llmProvider?: 'openai' | 'anthropic' | 'openrouter';
-    openrouterBaseUrl?: string;
-    openrouterSiteUrl?: string;
-    openrouterAppName?: string;
   };
 
   /**
@@ -839,6 +846,11 @@ export interface MultiAgentModuleOptions {
    * If provided, enables real-time streaming features
    */
   streamingAdapter?: IStreamingService;
+  /**
+   * Optional memory adapter for dependency injection
+   * If provided, enables memory superpowers for agents
+   */
+  memoryAdapter?: IMemoryAdapter;
 }
 
 /**

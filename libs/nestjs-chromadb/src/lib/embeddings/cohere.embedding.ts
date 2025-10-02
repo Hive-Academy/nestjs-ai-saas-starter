@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import type { CohereEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
-import { getErrorMessage, getErrorStack } from '../utils/error.utils';
-import { HttpClient, InputValidator } from '../utils/http-client.utils';
+import type { CohereEmbeddingConfig } from '../interfaces/config/module-options.interface';
+import { getErrorMessage, getErrorStack } from '../utils/errors/error.utils';
+import { HttpClient, InputValidator } from '../utils/http/http-client.utils';
 
 /**
  * Constants for Cohere embedding provider
@@ -24,13 +24,6 @@ interface CohereEmbeddingResponse {
   };
 }
 
-/**
- * Cohere API error response interface
- */
-interface CohereErrorResponse {
-  message?: string;
-  code?: string;
-}
 
 /**
  * Cohere embedding provider

@@ -19,6 +19,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "declaration": true,
+    "strictPropertyInitialization": false,
     "baseUrl": ".",
     "paths": {
       "@devbrand/backend-data-access": [

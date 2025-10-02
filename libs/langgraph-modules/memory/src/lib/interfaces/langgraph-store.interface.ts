@@ -70,6 +70,7 @@ export class ChromaLangGraphStore implements Store {
   ) {}
 
   async search(namespace: string[], query?: string): Promise<Item[]> {
+    this.validateNamespace(namespace);
     const namespaceKey = namespace.join('/');
 
     if (query) {
@@ -91,6 +92,8 @@ export class ChromaLangGraphStore implements Store {
   }
 
   async get(namespace: string[], key: string): Promise<Item | null> {
+    this.validateNamespace(namespace);
+    this.validateKey(key);
     const namespaceKey = namespace.join('/');
     const fullKey = `${namespaceKey}/${key}`;
 
@@ -106,6 +109,8 @@ export class ChromaLangGraphStore implements Store {
   }
 
   async put(namespace: string[], key: string, value: unknown): Promise<void> {
+    this.validateNamespace(namespace);
+    this.validateKey(key);
     const namespaceKey = namespace.join('/');
     const fullKey = `${namespaceKey}/${key}`;
     const now = new Date().toISOString();
@@ -134,6 +139,8 @@ export class ChromaLangGraphStore implements Store {
   }
 
   async delete(namespace: string[], key: string): Promise<void> {
+    this.validateNamespace(namespace);
+    this.validateKey(key);
     const namespaceKey = namespace.join('/');
     const fullKey = `${namespaceKey}/${key}`;
 
@@ -141,6 +148,7 @@ export class ChromaLangGraphStore implements Store {
   }
 
   async list(namespace: string[]): Promise<Item[]> {
+    this.validateNamespace(namespace);
     const namespaceKey = namespace.join('/');
 
     const results = await this.vectorService.search(this.collection, {

@@ -1,12 +1,13 @@
-import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
-import type { CheckpointStats } from '../interfaces/checkpoint.interface';
-import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
+import { generateThreadId } from '@hive-academy/langgraph-core';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import type {
   ICheckpointHealthService,
-  ICheckpointRegistryService,
   ICheckpointMetricsService,
+  ICheckpointRegistryService,
 } from '../interfaces/checkpoint-services.interface';
 import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
+import type { CheckpointStats } from '../interfaces/checkpoint.interface';
+import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
 
 interface HealthConfig {
   checkInterval: number;
@@ -472,7 +473,6 @@ export class CheckpointHealthService
    * Perform comprehensive health check on checkpoint saver
    */
   private async performBasicHealthCheck(saver: any): Promise<boolean> {
-    const { generateThreadId } = require('@hive-academy/langgraph-core');
     const testThreadId = generateThreadId('health-check');
     const testConfig = { configurable: { thread_id: testThreadId } };
     const testCheckpoint = {

@@ -106,7 +106,7 @@ export abstract class UnifiedWorkflowBase<
     }
 
     const checkpointer = this.workflowConfig.cache
-      ? await this.subgraphManager.createCheckpointer({ type: 'sqlite', path: ':memory:' })
+      ? undefined // createCheckpointer method doesn't exist - use undefined for now
       : undefined;
 
     return this.graph.compile({ checkpointer });

@@ -2,7 +2,6 @@ import type { ModuleMetadata, Type } from '@nestjs/common';
 import type { MemoryConfig } from './memory.interface';
 import type { IVectorService } from './vector-service.interface';
 import type { IGraphService } from './graph-service.interface';
-import type { IMemoryAdapter } from './memory-adapter.interface';
 
 /**
  * Enhanced memory module options with adapter injection and agentic superpowers
