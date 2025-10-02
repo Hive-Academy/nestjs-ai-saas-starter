@@ -9,7 +9,7 @@ import type {
   ApprovalStorageResponse,
   HitlStorageStats,
 } from '@hive-academy/langgraph-hitl';
-import { ApprovalRequestRepository } from '../../repositories/approval-request.repository';
+import { ApprovalRequestRepository } from '../../repositories/neo4j/approval-request.repository';
 
 /**
  * Clean Neo4j adapter for HITL approval storage.

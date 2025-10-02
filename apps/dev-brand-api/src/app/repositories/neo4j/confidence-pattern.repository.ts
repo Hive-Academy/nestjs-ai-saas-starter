@@ -6,7 +6,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { ConfidencePattern } from '../entities/confidence-pattern.entity';
+import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
 import type {
   ApprovalPattern,
   ConfidenceFactor,

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MemoryGraphRepository } from '../../repositories/memory-graph.repository';
+import { MemoryGraphRepository } from '../../repositories/neo4j/memory-graph.repository';
 import {
   IGraphService,
   GraphNodeData,

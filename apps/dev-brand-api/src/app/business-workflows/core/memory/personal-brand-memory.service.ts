@@ -8,9 +8,10 @@ import {
   Cached,
   Profiled,
   Retry,
+  BaseChromaRepository,
 } from '@hive-academy/nestjs-chromadb';
-import { DeveloperRepository } from '../../../repositories/developer.repository';
-import { AchievementRepository as Neo4jAchievementRepository } from '../../../repositories/achievement.repository';
+import { DeveloperRepository } from '../../../repositories/neo4j/developer.repository';
+import { AchievementRepository as Neo4jAchievementRepository } from '../../../repositories/neo4j/achievement.repository';
 
 // Enhanced Type System for Personal Brand Memory
 type CodeAchievementDocument = BaseDocument<{
@@ -111,6 +112,7 @@ interface DeveloperContext {
 /**
  * Code Achievement Repository - Manages developer accomplishments and technical contributions
  */
+@Injectable()
 @ChromaRepository<CodeAchievementDocument>({
   collection: 'dev-achievements',
   idField: 'id',
@@ -136,8 +138,7 @@ interface DeveloperContext {
   enableAuditLog: true,
   strictValidation: true,
 })
-@Injectable()
-export class CodeAchievementRepository {
+export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievementDocument> {
   @VectorQuery<CodeAchievementDocument>({
     collection: 'dev-achievements',
     queryType: 'similarity',
@@ -254,6 +255,7 @@ export class CodeAchievementRepository {
 /**
  * Brand Strategy Repository - Manages brand positioning and evolution tracking
  */
+@Injectable()
 @ChromaRepository<BrandStrategyDocument>({
   collection: 'brand-evolution',
   idField: 'id',
@@ -280,8 +282,7 @@ export class CodeAchievementRepository {
   separator: '_',
   enableAuditLog: true,
 })
-@Injectable()
-export class BrandStrategyRepository {
+export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyDocument> {
   @VectorQuery<BrandStrategyDocument>({
     collection: 'brand-evolution',
     queryType: 'similarity',
@@ -405,6 +406,7 @@ export class BrandStrategyRepository {
 /**
  * Content Performance Repository - Manages social media and content analytics
  */
+@Injectable()
 @ChromaRepository<ContentPerformanceDocument>({
   collection: 'content-metrics',
   idField: 'id',
@@ -426,8 +428,7 @@ export class BrandStrategyRepository {
   field: 'userId',
   separator: '_',
 })
-@Injectable()
-export class ContentPerformanceRepository {
+export class ContentPerformanceRepository extends BaseChromaRepository<ContentPerformanceDocument> {
   @VectorQuery<ContentPerformanceDocument>({
     collection: 'content-metrics',
     queryType: 'similarity',

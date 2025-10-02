@@ -6,7 +6,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { FeedbackEntry as FeedbackEntityType } from '../entities/feedback-entry.entity';
+import { FeedbackEntry as FeedbackEntityType } from '../../entities/neo4j/feedback-entry.entity';
 import {
   InvalidFeedbackDataError,
   FeedbackStorageError,

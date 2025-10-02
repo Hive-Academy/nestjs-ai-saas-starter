@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectNeogma, NeogmaService, Safe } from '@hive-academy/nestjs-neo4j';
 import type { AgentState } from '@hive-academy/langgraph-memory';
-import { Memory } from '../../entities/memory.entity';
+import { Memory } from '../../entities/neo4j/memory.entity';
 import { GraphHelpersService } from './graph-helpers.service';
 
 /**

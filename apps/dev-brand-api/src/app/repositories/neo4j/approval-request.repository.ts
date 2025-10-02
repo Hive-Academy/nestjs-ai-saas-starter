@@ -6,7 +6,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { ApprovalRequest } from '../entities/approval-request.entity';
+import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import {
   HitlStorageError,
   InvalidApprovalDataError,

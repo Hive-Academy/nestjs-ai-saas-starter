@@ -17,7 +17,8 @@ import {
   Neo4jApprovalChainStorageAdapter,
 } from './adapters';
 
-
+// Repositories
+import { VectorMemoryRepository } from './repositories/chromadb/vector-memory.repository';
 
 // Remove non-existent entity and repository imports for now
 
@@ -244,6 +245,9 @@ import {
     // Memory Adapters
     ChromaVectorAdapter,
     Neo4jGraphAdapter,
+
+    // ChromaDB Repositories
+    VectorMemoryRepository,
   ],
 })
 export class AppModule {}

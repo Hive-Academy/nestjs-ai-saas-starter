@@ -4,7 +4,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { Memory } from '../entities/memory.entity';
+import { Memory } from '../../entities/neo4j';
 import type {
   TraversalSpec,
   GraphTraversalResult,
@@ -19,9 +19,9 @@ import type {
   GraphBatchResult,
   GraphFindCriteria,
 } from '@hive-academy/langgraph-memory';
-import { GraphTraversalService } from './services/graph-traversal.service';
-import { GraphAgentService } from './services/graph-agent.service';
-import { GraphCrudService } from './services/graph-crud.service';
+import { GraphTraversalService } from '../services/graph-traversal.service';
+import { GraphAgentService } from '../services/graph-agent.service';
+import { GraphCrudService } from '../services/graph-crud.service';
 
 /**
  * Memory Graph Repository (Refactored)

@@ -5,7 +5,7 @@ import {
   UserInterruptionResponse,
   InterruptionStatus,
 } from '@hive-academy/langgraph-hitl';
-import { InterruptionRepository } from '../../repositories/interruption.repository';
+import { InterruptionRepository } from '../../repositories/neo4j/interruption.repository';
 
 /**
  * Clean Neo4j adapter for user interruption storage.

@@ -13,9 +13,9 @@ import type {
 } from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer.agent';
-import { ContentCreatorAgent } from '../agents/content-creator.agent';
-import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist.agent';
+import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
+import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
+import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
 
 /**

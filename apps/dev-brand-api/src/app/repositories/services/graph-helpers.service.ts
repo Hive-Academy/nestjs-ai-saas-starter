@@ -4,7 +4,7 @@ import type {
   GraphRelationship,
   GraphPath,
 } from '@hive-academy/langgraph-memory';
-import { Memory } from '../../entities/memory.entity';
+import { Memory } from '../../entities/neo4j/memory.entity';
 
 /**
  * Graph Helpers Service

@@ -6,7 +6,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { Achievement } from '../entities/achievement.entity';
+import { Achievement } from '../../entities/neo4j/achievement.entity';
 
 /**
  * Achievement Repository

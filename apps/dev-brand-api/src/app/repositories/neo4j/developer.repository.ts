@@ -6,7 +6,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { Developer } from '../entities/developer.entity';
+import { Developer } from '../../entities/neo4j/developer.entity';
 
 /**
  * Developer Repository

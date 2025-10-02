@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { FeedbackRepository } from '../../repositories/feedback.repository';
+import { FeedbackRepository } from '../../repositories/neo4j/feedback.repository';
 import {
   IFeedbackStorageService,
   FeedbackType,

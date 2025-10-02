@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
-import { Where } from 'chromadb';
 import {
   IVectorService,
   VectorStoreData,
@@ -16,20 +14,38 @@ import {
   MemoryEntry,
 } from '@hive-academy/langgraph-memory';
 import { ChromaLangGraphStore } from '@hive-academy/langgraph-memory';
+import {
+  ChromaDBService,
+  BaseDocument,
+  ChromaSearchOptions,
+  Where,
+  GetDocumentsOptions,
+} from '@hive-academy/nestjs-chromadb';
+import type { VectorMemoryMetadata } from '../../entities/chromadb/vector-memory.entity';
 
 /**
  * Application-specific ChromaDB adapter for the Memory module.
  *
- * This adapter properly uses the existing ChromaDBService from
- * @hive-academy/nestjs-chromadb instead of creating its own connection.
- * This maintains proper separation of concerns and reuses existing
- * database management infrastructure.
+ * ARCHITECTURE: Multi-Collection Support
+ * --------------------------------------
+ * This adapter uses ChromaDBService directly (not repository pattern) because:
+ * - IVectorService requires multi-collection support (collection as method parameter)
+ * - ChromaRepository binds to a SINGLE collection via decorator
+ * - Repository methods don't support dynamic collection parameter
+ * - ChromaDBService provides native multi-collection operations
+ *
+ * Benefits of ChromaDBService:
+ * - Full multi-collection support
+ * - Auto-embedding generation
+ * - Performance monitoring
+ * - Caching and optimization
+ * - Type-safe operations
  */
 @Injectable()
 export class ChromaVectorAdapter extends IVectorService {
   private readonly logger = new Logger(ChromaVectorAdapter.name);
 
-  constructor(private readonly chromaDBService: ChromaDBService) {
+  constructor(private readonly chromaDB: ChromaDBService) {
     super();
     this.logger.debug('ChromaVectorAdapter initialized with ChromaDBService');
   }
@@ -37,25 +53,45 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Store a single document using ChromaDBService
    */
-  async store(collection: string, data: VectorStoreData): Promise<string> {
+  override async store(
+    collection: string,
+    data: VectorStoreData
+  ): Promise<string> {
     this.validateCollection(collection);
-    this.validateStoreData(data);
 
     try {
-      const id = data.id || this.generateId();
+      const defaultState: AgentState = {
+        messages: [],
+        threadId: 'unknown',
+        userId: 'system',
+        current: 'default',
+      };
 
-      // Use the ChromaDBService to add documents
-      await this.chromaDBService.addDocuments(collection, [
-        {
-          id,
-          content: data.document,
-          metadata: this.sanitizeMetadata(data.metadata || {}),
-          embedding: data.embedding,
-        },
-      ]);
+      const metadataOrState = data.metadata
+        ? (data.metadata as unknown as AgentState)
+        : defaultState;
 
-      this.logger.debug(`Stored document ${id} in collection ${collection}`);
-      return id;
+      const document: BaseDocument<VectorMemoryMetadata> = {
+        id: data.id || this.generateId(),
+        content: data.document,
+        embedding: data.embedding ? [...data.embedding] : undefined,
+        metadata: {
+          agentId: (data.metadata?.agentId as string) || 'default',
+          threadId: (data.metadata?.threadId as string) || 'unknown',
+          userId: (data.metadata?.userId as string) || 'system',
+          importance: this.calculateImportance(data.document, metadataOrState),
+          classification: this.classifyMemory(data.document, metadataOrState),
+          timestamp: new Date().toISOString(),
+          ...data.metadata,
+        } as VectorMemoryMetadata,
+      };
+
+      await this.chromaDB.addDocuments(collection, [document]);
+
+      this.logger.debug(
+        `Stored document ${document.id} in collection ${collection}`
+      );
+      return document.id;
     } catch (error) {
       this.logger.error(
         `Failed to store document in collection ${collection}`,
@@ -71,7 +107,7 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Store multiple documents in batch using ChromaDBService
    */
-  async storeBatch(
+  override async storeBatch(
     collection: string,
     data: readonly VectorStoreData[]
   ): Promise<readonly string[]> {
@@ -81,35 +117,50 @@ export class ChromaVectorAdapter extends IVectorService {
       return [];
     }
 
-    // Validate all data first
-    data.forEach((item, index) => {
-      try {
-        this.validateStoreData(item);
-      } catch (error) {
-        throw new InvalidInputError(
-          `Invalid data at index ${index}: ${(error as Error).message}`
-        );
-      }
-    });
-
     try {
-      const documents = data.map((item) => ({
-        id: item.id || this.generateId(),
-        content: item.document,
-        metadata: this.sanitizeMetadata(item.metadata || {}),
-        embedding: item.embedding,
-      }));
+      const defaultState: AgentState = {
+        messages: [],
+        threadId: 'unknown',
+        userId: 'system',
+        current: 'default',
+      };
 
-      // Use ChromaDBService for batch storage
-      await this.chromaDBService.addDocuments(collection, documents);
+      const documents: BaseDocument<VectorMemoryMetadata>[] = data.map(
+        (item) => {
+          const metadataOrState = item.metadata
+            ? (item.metadata as unknown as AgentState)
+            : defaultState;
 
-      const ids = documents.map((doc) => doc.id);
-
-      this.logger.debug(
-        `Batch stored ${ids.length} documents in collection ${collection}`
+          return {
+            id: item.id || this.generateId(),
+            content: item.document,
+            embedding: item.embedding ? [...item.embedding] : undefined,
+            metadata: {
+              agentId: (item.metadata?.agentId as string) || 'default',
+              threadId: (item.metadata?.threadId as string) || 'unknown',
+              userId: (item.metadata?.userId as string) || 'system',
+              importance: this.calculateImportance(
+                item.document,
+                metadataOrState
+              ),
+              classification: this.classifyMemory(
+                item.document,
+                metadataOrState
+              ),
+              timestamp: new Date().toISOString(),
+              ...item.metadata,
+            } as VectorMemoryMetadata,
+          };
+        }
       );
 
-      return ids;
+      await this.chromaDB.addDocuments(collection, documents);
+
+      this.logger.debug(
+        `Batch stored ${documents.length} documents in collection ${collection}`
+      );
+
+      return documents.map((doc) => doc.id);
     } catch (error) {
       this.logger.error(
         `Failed to batch store documents in collection ${collection}`,
@@ -126,7 +177,7 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Search for similar documents using ChromaDBService
    */
-  async search(
+  override async search(
     collection: string,
     query: VectorSearchQuery
   ): Promise<readonly VectorSearchResult[]> {
@@ -139,38 +190,45 @@ export class ChromaVectorAdapter extends IVectorService {
     }
 
     try {
-      // Use ChromaDBService's searchDocuments method
-      const results = await this.chromaDBService.searchDocuments(
+      const searchOptions: ChromaSearchOptions = {
+        nResults: query.limit || 10,
+        where: query.filter as Where,
+        includeMetadata: true,
+        includeDocuments: true,
+        includeDistances: true,
+      };
+
+      const queryEmbeddings = query.queryEmbedding
+        ? [[...query.queryEmbedding]]
+        : undefined;
+
+      const result = await this.chromaDB.searchDocuments(
         collection,
         query.queryText ? [query.queryText] : [],
-        query.queryEmbedding ? [Array.from(query.queryEmbedding)] : undefined,
-        {
-          nResults: query.limit || 10,
-          where: this.convertToWhereClause(query.filter),
-        }
+        queryEmbeddings,
+        searchOptions
       );
 
-      // Map ChromaDB results to our interface
       const searchResults: VectorSearchResult[] = [];
+      const ids = result.ids[0] || [];
+      const documents = result.documents?.[0] || [];
+      const metadatas = result.metadatas?.[0] || [];
+      const distances = result.distances?.[0] || [];
 
-      if (results.ids && results.ids.length > 0) {
-        for (let i = 0; i < results.ids[0].length; i++) {
-          const distance = results.distances?.[0]?.[i] || 1;
-          const relevanceScore = Math.max(0, 1 - distance);
-
-          // Filter by minimum score if specified
-          if (query.minScore && relevanceScore < query.minScore) {
-            continue;
-          }
-
-          searchResults.push({
-            id: results.ids[0][i],
-            document: results.documents?.[0]?.[i] || '',
-            metadata: results.metadatas?.[0]?.[i] || {},
-            distance,
-            relevanceScore,
-          });
+      for (let i = 0; i < ids.length; i++) {
+        const distance = distances[i] || 0;
+        // Apply minScore filter if provided (distance threshold)
+        if (query.minScore && distance > query.minScore) {
+          continue;
         }
+
+        searchResults.push({
+          id: ids[i],
+          document: (documents[i] as string) || '',
+          metadata: (metadatas[i] as Record<string, unknown>) || {},
+          distance: distance,
+          relevanceScore: 1 - distance, // Convert distance to similarity score
+        });
       }
 
       this.logger.debug(
@@ -193,12 +251,15 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Delete documents by IDs using ChromaDBService
    */
-  async delete(collection: string, ids: readonly string[]): Promise<void> {
+  override async delete(
+    collection: string,
+    ids: readonly string[]
+  ): Promise<void> {
     this.validateCollection(collection);
     this.validateIds(ids);
 
     try {
-      await this.chromaDBService.deleteDocuments(collection, [...ids]);
+      await this.chromaDB.deleteDocuments(collection, [...ids], undefined);
 
       this.logger.debug(
         `Deleted ${ids.length} documents from collection ${collection}`
@@ -219,7 +280,7 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Delete documents by filter criteria using ChromaDBService
    */
-  async deleteByFilter(
+  override async deleteByFilter(
     collection: string,
     filter: Record<string, unknown>
   ): Promise<number> {
@@ -230,23 +291,26 @@ export class ChromaVectorAdapter extends IVectorService {
     }
 
     try {
-      // First get matching documents
-      const matchingDocs = await this.chromaDBService.getDocuments(collection, {
-        where: this.convertToWhereClause(filter),
-      });
+      // Get count before deletion
+      const countBefore = await this.chromaDB.countDocuments(collection);
 
-      if (matchingDocs.ids.length === 0) {
-        return 0;
-      }
-
-      // Then delete them
-      await this.chromaDBService.deleteDocuments(collection, matchingDocs.ids);
-
-      this.logger.debug(
-        `Deleted ${matchingDocs.ids.length} documents by filter from collection ${collection}`
+      // Delete using filter
+      await this.chromaDB.deleteDocuments(
+        collection,
+        [],
+        filter as Where,
+        undefined
       );
 
-      return matchingDocs.ids.length;
+      // Get count after deletion
+      const countAfter = await this.chromaDB.countDocuments(collection);
+      const deletedCount = countBefore - countAfter;
+
+      this.logger.debug(
+        `Deleted ${deletedCount} documents by filter from collection ${collection}`
+      );
+
+      return deletedCount;
     } catch (error) {
       this.logger.error(
         `Failed to delete documents by filter from collection ${collection}`,
@@ -263,23 +327,18 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Get collection statistics using ChromaDBService
    */
-  async getStats(collection: string): Promise<VectorStats> {
+  override async getStats(collection: string): Promise<VectorStats> {
     this.validateCollection(collection);
 
     try {
-      // Use ChromaDBService to get collection info and count
-      const collection_obj = await this.chromaDBService.getCollection(
-        collection
-      );
-      const documentCount = await this.chromaDBService.countDocuments(
-        collection
-      );
+      const count = await this.chromaDB.countDocuments(collection);
+      const metadata = await this.chromaDB.getCollectionMetadata(collection);
 
       return {
-        documentCount,
+        documentCount: count,
         collectionSize: 0, // Not directly available from ChromaDB
         lastUpdated: new Date(),
-        dimensions: collection_obj.metadata?.dimensions as number | undefined,
+        dimensions: metadata?.dimensions as number | undefined,
       };
     } catch (error) {
       this.logger.error(
@@ -297,22 +356,23 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Get documents with optional filtering using ChromaDBService
    */
-  async getDocuments(
+  override async getDocuments(
     collection: string,
     options: VectorGetOptions = {}
   ): Promise<VectorGetResult> {
     this.validateCollection(collection);
 
     try {
-      const result = await this.chromaDBService.getDocuments(collection, {
+      const getOptions: GetDocumentsOptions = {
         ids: options.ids ? [...options.ids] : undefined,
-        where: this.convertToWhereClause(options.where),
+        where: options.where as Where,
         limit: options.limit,
         offset: options.offset,
-        includeDocuments: options.includeDocuments !== false,
-        includeMetadata: options.includeMetadata !== false,
-        includeEmbeddings: options.includeEmbeddings === true,
-      });
+        includeMetadata: options.includeMetadata,
+        includeDocuments: options.includeDocuments,
+      };
+
+      const result = await this.chromaDB.getDocuments(collection, getOptions);
 
       this.logger.debug(
         `Retrieved ${result.ids.length} documents from collection ${collection}`
@@ -321,10 +381,16 @@ export class ChromaVectorAdapter extends IVectorService {
       return {
         ids: result.ids,
         documents:
-          options.includeDocuments !== false ? result.documents : undefined,
+          options.includeDocuments !== false
+            ? (result.documents as (string | null)[])
+            : undefined,
         metadatas:
-          options.includeMetadata !== false ? result.metadatas : undefined,
-        embeddings: options.includeEmbeddings ? result.embeddings : undefined,
+          options.includeMetadata !== false
+            ? (result.metadatas as (Record<string, unknown> | null)[])
+            : undefined,
+        embeddings: options.includeEmbeddings
+          ? (result.embeddings as number[][])
+          : undefined,
       };
     } catch (error) {
       this.logger.error(
@@ -340,51 +406,21 @@ export class ChromaVectorAdapter extends IVectorService {
   }
 
   /**
-   * Convert generic filter to ChromaDB Where clause with type safety
+   * Validate collection name
    */
-  private convertToWhereClause(
-    filter?: Record<string, unknown>
-  ): Where | undefined {
-    if (!filter || Object.keys(filter).length === 0) {
-      return undefined;
+  protected override validateCollection(collection: string): void {
+    if (!collection || collection.trim().length === 0) {
+      throw new InvalidInputError('Collection name is required');
     }
-
-    // For now, return the filter as-is since ChromaDB's Where type
-    // accepts Record<string, unknown> structure. In production,
-    // you might want to add more sophisticated validation here.
-    return filter as Where;
   }
 
   /**
-   * Generate a unique ID for documents
+   * Validate document IDs
    */
-  private generateId(): string {
-    return `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Sanitize metadata to match ChromaMetadata constraints
-   */
-  private sanitizeMetadata(
-    metadata: Record<string, unknown>
-  ): Record<string, string | number | boolean | null> {
-    const sanitized: Record<string, string | number | boolean | null> = {};
-
-    for (const [key, value] of Object.entries(metadata)) {
-      if (
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean' ||
-        value === null
-      ) {
-        sanitized[key] = value;
-      } else if (value !== undefined) {
-        // Convert other types to string
-        sanitized[key] = String(value);
-      }
+  protected override validateIds(ids: readonly string[]): void {
+    if (ids.length === 0) {
+      throw new InvalidInputError('At least one ID must be provided');
     }
-
-    return sanitized;
   }
 
   /**
@@ -401,7 +437,7 @@ export class ChromaVectorAdapter extends IVectorService {
     return { error: String(error) };
   }
 
-  // NEW: Agent state-aware memory storage
+  // Agent state-aware memory storage (business logic)
   async storeAgentMemory(
     collection: string,
     agentId: string,
@@ -553,5 +589,12 @@ export class ChromaVectorAdapter extends IVectorService {
     };
 
     return patterns;
+  }
+
+  /**
+   * Generate a unique ID for documents
+   */
+  private generateId(): string {
+    return `mem-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }
 }

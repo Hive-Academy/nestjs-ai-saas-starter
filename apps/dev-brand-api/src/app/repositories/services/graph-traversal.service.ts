@@ -7,7 +7,7 @@ import type {
   GraphNode,
   GraphPath,
 } from '@hive-academy/langgraph-memory';
-import { Memory } from '../../entities/memory.entity';
+import { Memory } from '../../entities/neo4j/memory.entity';
 import { GraphHelpersService } from './graph-helpers.service';
 
 /**

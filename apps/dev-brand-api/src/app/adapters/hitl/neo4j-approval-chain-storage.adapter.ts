@@ -13,7 +13,7 @@ interface Approver {
   email?: string;
 }
 
-import { ApprovalChainRepository } from '../../repositories/approval-chain.repository';
+import { ApprovalChainRepository } from '../../repositories/neo4j/approval-chain.repository';
 
 /**
  * Clean Neo4j adapter for approval chain storage.

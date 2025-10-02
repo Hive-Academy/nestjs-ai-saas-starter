@@ -6,7 +6,7 @@ import {
   Safe,
   BaseRepositoryService,
 } from '@hive-academy/nestjs-neo4j';
-import { InterruptionPoint } from '../entities/interruption-point.entity';
+import { InterruptionPoint } from '../../entities/neo4j/interruption-point.entity';
 import type {
   UserInterruption,
   UserInterruptionResponse,

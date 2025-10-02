@@ -5,7 +5,7 @@ import {
   NeogmaService,
   CypherQuery,
 } from '@hive-academy/nestjs-neo4j';
-import { ApprovalRequest } from '../entities/approval-request.entity';
+import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import type { ApprovalLevel } from '@hive-academy/langgraph-hitl';
 
 interface ApprovalRequestType {

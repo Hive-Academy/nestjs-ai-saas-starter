@@ -10,7 +10,7 @@ import type {
   ApprovalPattern,
   ConfidenceFactor,
 } from '@hive-academy/langgraph-hitl';
-import { ConfidencePatternRepository } from '../../repositories/confidence-pattern.repository';
+import { ConfidencePatternRepository } from '../../repositories/neo4j/confidence-pattern.repository';
 
 /**
  * Clean Neo4j adapter for confidence storage.
