@@ -125,7 +125,7 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
         ...state,
         metadata: {
           ...state.metadata,
-          workflowStarted: true,
+          workflowStartTime: new Date(),
           currentStep: 'initialization',
           githubUsername,
           brandAnalysisId: `brand-${githubUsername}-${Date.now()}`,

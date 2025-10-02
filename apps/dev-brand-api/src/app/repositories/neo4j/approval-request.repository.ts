@@ -14,7 +14,6 @@ import {
 import type {
   ApprovalStorageData,
   ApprovalStorageResponse,
-  ApprovalStorageStatus,
   HitlStorageStats,
 } from '@hive-academy/langgraph-hitl';
 

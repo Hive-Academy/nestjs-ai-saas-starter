@@ -290,10 +290,10 @@ export class GitHubIntegrationError extends ExternalServiceError {
       statusCode,
       { username, ...context }
     );
-    this.errorCode = 'GITHUB_API_FAILED';
+    // Note: errorCode is set by parent ExternalServiceError constructor
   }
 
-  getRecoveryGuidance(): string {
+  override getRecoveryGuidance(): string {
     return 'Verify GitHub token validity and rate limits. Check user permissions and repository access.';
   }
 }
@@ -660,23 +660,3 @@ export class BusinessWorkflowErrorFactory {
     return JSON.stringify(error.toJSON(), null, 2);
   }
 }
-
-// Export commonly used error types
-export {
-  BusinessWorkflowError,
-  AgentInitializationError,
-  AgentExecutionError,
-  AgentTimeoutError,
-  WorkflowConfigurationError,
-  WorkflowStateError,
-  WorkflowTransitionError,
-  ExternalServiceError,
-  GitHubIntegrationError,
-  MemoryServiceError,
-  LLMProviderError,
-  InputValidationError,
-  StateValidationError,
-  MissingConfigurationError,
-  InvalidConfigurationError,
-  BusinessWorkflowErrorFactory,
-};

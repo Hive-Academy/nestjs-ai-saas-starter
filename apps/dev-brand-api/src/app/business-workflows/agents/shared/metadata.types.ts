@@ -47,7 +47,7 @@ export interface WorkflowAgentMetadata {
   /**
    * Workflow execution mode
    */
-  mode?: 'real' | 'demo' | 'test';
+  mode?: 'real' | 'demo' | 'test' | 'fallback';
 
   /**
    * Workflow start timestamp

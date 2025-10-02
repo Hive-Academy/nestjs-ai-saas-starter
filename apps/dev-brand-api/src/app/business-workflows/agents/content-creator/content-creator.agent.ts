@@ -29,7 +29,6 @@ import { Validate, Required } from '../../core/validation/workflow.validators';
 import { Optimize } from '../../core/performance/optimization.decorators';
 import type {
   Achievement,
-  BrandVoice,
   BrandStrategy,
 } from '../shared/agent.types';
 import {
@@ -150,7 +149,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
         ...state,
         metadata: {
           ...state.metadata,
-          workflowStarted: true,
+          workflowStartTime: new Date(),
           currentStep: 'initialization',
           githubUsername,
           achievementCount: achievements.length,
@@ -194,7 +193,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
             currentStep: 'brand-context-gathered',
             brandVoice: voice,
             brandStrategy: strategy,
-            devContext,
             tone: voice.tone,
             positioning:
               (strategy as BrandStrategy)?.positioning ||

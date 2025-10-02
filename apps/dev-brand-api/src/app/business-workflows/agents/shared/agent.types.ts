@@ -17,12 +17,15 @@ export interface BrandVoice {
 }
 
 export interface BrandStrategy {
-  positioning: string;
+  positioning?: string;
   strategyType?: 'optimization' | 'rebuild';
   score?: number;
   strengths?: string[];
   improvements?: string[];
   createdAt?: string;
+  userId?: string;
+  strategy?: string;
+  analysis?: BrandAnalysis;
 }
 
 export interface BrandData {
@@ -114,7 +117,7 @@ export interface GitHubPatterns {
   primaryLanguages: string[];
   workingHours: string;
   focusAreas: string[];
-  commitFrequency?: string;
+  commitFrequency?: string | number;
   collaborationLevel?: 'solo' | 'team' | 'community';
 }
 
@@ -127,14 +130,22 @@ export interface GitHubCommit {
   filesChanged: number;
   author?: string;
   repository?: string;
+  commit: {
+    author: { name: string; email: string; date: string };
+    message: string;
+  };
 }
 
 export interface GitHubRepository {
+  id: number;
   name: string;
+  full_name: string;
   description?: string;
   language?: string;
   stars: number;
+  stargazers_count: number;
   forks: number;
+  forks_count: number;
   isPrivate: boolean;
   lastUpdated: string;
   topics?: string[];

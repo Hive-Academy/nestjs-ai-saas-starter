@@ -158,7 +158,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
         ...state,
         metadata: {
           ...state.metadata,
-          workflowStarted: true,
+          workflowStartTime: new Date(),
           currentStep: 'initialization',
           githubUsername,
           timeframe,

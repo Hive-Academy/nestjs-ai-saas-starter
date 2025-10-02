@@ -30,8 +30,11 @@ export abstract class UnifiedWorkflowBase<
 > {
   protected readonly logger: Logger;
 
-  // Workflow configuration
-  protected abstract readonly workflowConfig: WorkflowExecutionConfig;
+  // Workflow configuration - populated from decorator in DeclarativeWorkflowBase.onModuleInit()
+  protected workflowConfig: WorkflowExecutionConfig = {
+    name: 'workflow',
+    description: 'Workflow description',
+  };
 
   // Graph definition
   protected graph?: StateGraph<TState>;

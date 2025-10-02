@@ -3,7 +3,6 @@ import {
   ChromaRepository,
   VectorQuery,
   TenantAware,
-  Performance,
   BaseDocument,
   Cached,
   Profiled,
@@ -115,7 +114,6 @@ interface DeveloperContext {
 @Injectable()
 @ChromaRepository<CodeAchievementDocument>({
   collection: 'dev-achievements',
-  idField: 'id',
   documentField: 'document',
   metadataFields: [
     'userId',
@@ -125,28 +123,22 @@ interface DeveloperContext {
     'date',
     'repository',
     'metrics',
-    'analysis',
   ],
   autoEmbed: true,
   enableValidation: true,
   autoTimestamp: true,
 })
 @TenantAware({
-  strategy: 'prefix',
   field: 'userId',
   separator: '_',
-  enableAuditLog: true,
-  strictValidation: true,
 })
 export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievementDocument> {
   @VectorQuery<CodeAchievementDocument>({
     collection: 'dev-achievements',
-    queryType: 'similarity',
-    caching: { ttl: 300000, strategy: 'query' },
     includeMetadata: true,
     includeDistances: true,
   })
-  @Profiled({ slowQueryThreshold: 100, includeParameters: false })
+  @Profiled()
   async findByUserId(
     userId: string,
     options?: {
@@ -155,44 +147,41 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
       technologies?: string[];
     }
   ): Promise<CodeAchievementDocument[]> {
-    const filter: any = { userId };
+    const where: any = { userId };
 
     if (options?.minImpact) {
       const impactOrder = ['low', 'medium', 'high', 'critical'];
       const minIndex = impactOrder.indexOf(options.minImpact);
-      filter.impact = { $in: impactOrder.slice(minIndex) };
+      where.impact = { $in: impactOrder.slice(minIndex) };
     }
 
     if (options?.technologies?.length) {
-      filter.technologies = { $in: options.technologies };
+      where.technologies = { $in: options.technologies };
     }
 
     return await this.findAll({
-      filter,
+      where,
       limit: options?.limit || 10,
-      sort: { date: -1, 'analysis.innovationScore': -1 },
     });
   }
 
   @VectorQuery<CodeAchievementDocument>({
     collection: 'dev-achievements',
-    queryType: 'semantic',
-    caching: { ttl: 600000, strategy: 'result' },
+    includeMetadata: true,
   })
-  @Cached({ ttl: 600000, keyStrategy: 'semantic_achievements' })
+  @Cached({ ttl: 600000 })
   async findSimilarAchievements(
     achievementDescription: string,
     userId: string,
     options?: { limit?: number; minSimilarity?: number }
   ): Promise<CodeAchievementDocument[]> {
     return await this.search(achievementDescription, {
-      filter: { userId },
+      where: { userId },
       limit: options?.limit || 5,
-      minScore: options?.minSimilarity || 0.7,
     });
   }
 
-  @Performance.Monitor('achievement-innovation-analysis')
+  @Profiled()
   async analyzeInnovationPatterns(userId: string): Promise<{
     innovationTrend: 'increasing' | 'stable' | 'decreasing';
     averageInnovationScore: number;
@@ -258,7 +247,6 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
 @Injectable()
 @ChromaRepository<BrandStrategyDocument>({
   collection: 'brand-evolution',
-  idField: 'id',
   documentField: 'document',
   metadataFields: [
     'userId',
@@ -266,41 +254,33 @@ export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievem
     'strengths',
     'opportunities',
     'recommendations',
-    'targetAudience',
-    'confidenceScore',
     'createdAt',
-    'evolution',
-    'metrics',
   ],
   autoEmbed: true,
   enableValidation: true,
   autoTimestamp: true,
 })
 @TenantAware({
-  strategy: 'prefix',
   field: 'userId',
   separator: '_',
-  enableAuditLog: true,
 })
 export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyDocument> {
   @VectorQuery<BrandStrategyDocument>({
     collection: 'brand-evolution',
-    queryType: 'similarity',
-    caching: { ttl: 600000, strategy: 'query' },
+    includeMetadata: true,
   })
-  @Cached({ ttl: 600000, keyStrategy: 'brand_evolution' })
+  @Cached({ ttl: 600000 })
   async findByUserId(
     userId: string,
     options?: { limit?: number }
   ): Promise<BrandStrategyDocument[]> {
     return await this.findAll({
-      filter: { userId },
+      where: { userId },
       limit: options?.limit || 5,
-      sort: { createdAt: -1, confidenceScore: -1 },
     });
   }
 
-  @Performance.Monitor('brand-evolution-analysis')
+  @Profiled()
   @Retry({ maxAttempts: 3, strategy: 'exponential' })
   async analyzeBrandEvolution(userId: string): Promise<{
     evolutionTrajectory: 'improving' | 'stable' | 'declining';
@@ -409,30 +389,22 @@ export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyD
 @Injectable()
 @ChromaRepository<ContentPerformanceDocument>({
   collection: 'content-metrics',
-  idField: 'id',
   documentField: 'document',
   metadataFields: [
     'userId',
-    'platform',
-    'engagementScore',
-    'metrics',
     'createdAt',
-    'analysis',
-    'optimization',
   ],
   autoEmbed: true,
   enableValidation: true,
 })
 @TenantAware({
-  strategy: 'prefix',
   field: 'userId',
   separator: '_',
 })
 export class ContentPerformanceRepository extends BaseChromaRepository<ContentPerformanceDocument> {
   @VectorQuery<ContentPerformanceDocument>({
     collection: 'content-metrics',
-    queryType: 'similarity',
-    caching: { ttl: 300000, strategy: 'query' },
+    includeMetadata: true,
   })
   async findByUserId(
     userId: string,
@@ -442,44 +414,41 @@ export class ContentPerformanceRepository extends BaseChromaRepository<ContentPe
       minEngagement?: number;
     }
   ): Promise<ContentPerformanceDocument[]> {
-    const filter: any = { userId };
+    const where: any = { userId };
 
     if (options?.platform) {
-      filter.platform = options.platform;
+      where.platform = options.platform;
     }
 
     if (options?.minEngagement) {
-      filter.engagementScore = { $gte: options.minEngagement };
+      where.engagementScore = { $gte: options.minEngagement };
     }
 
     return await this.findAll({
-      filter,
+      where,
       limit: options?.limit || 10,
-      sort: { createdAt: -1, engagementScore: -1 },
     });
   }
 
   @VectorQuery<ContentPerformanceDocument>({
     collection: 'content-metrics',
-    queryType: 'similarity',
-    caching: { ttl: 300000, strategy: 'result' },
+    includeMetadata: true,
   })
-  @Profiled({ slowQueryThreshold: 150 })
+  @Profiled()
   async findHighPerformingContent(
     userId: string,
     minEngagement = 0.7
   ): Promise<ContentPerformanceDocument[]> {
     return await this.findAll({
-      filter: {
+      where: {
         userId,
         engagementScore: { $gte: minEngagement },
       },
       limit: 10,
-      sort: { engagementScore: -1, 'metrics.views': -1 },
     });
   }
 
-  @Performance.Monitor('content-optimization-analysis')
+  @Profiled()
   @Cached({ ttl: 1800000, key: 'content_insights_${userId}' })
   async getContentOptimizationInsights(userId: string): Promise<{
     bestPerformingPlatforms: Array<{ platform: string; avgEngagement: number }>;
@@ -669,7 +638,7 @@ export class PersonalBrandMemoryService {
   /**
    * Store code achievement with enhanced analytics and automatic processing
    */
-  @Performance.Monitor('store-code-achievement')
+  @Profiled()
   @Retry({ maxAttempts: 3, strategy: 'exponential' })
   async storeCodeAchievement(userId: string, achievement: any): Promise<void> {
     this.logger.log(
@@ -747,7 +716,7 @@ export class PersonalBrandMemoryService {
   /**
    * Store brand strategy with evolution tracking and market analysis
    */
-  @Performance.Monitor('store-brand-strategy')
+  @Profiled()
   async storeBrandStrategy(userId: string, strategy: any): Promise<void> {
     this.logger.log(`Storing enhanced brand strategy for user ${userId}`);
 
@@ -829,7 +798,7 @@ export class PersonalBrandMemoryService {
   /**
    * Store content performance with advanced analytics and optimization insights
    */
-  @Performance.Monitor('store-content-performance')
+  @Profiled()
   async storeContentPerformance(userId: string, content: any): Promise<void> {
     this.logger.log(
       `Storing enhanced content performance for user ${userId} on ${content.platform}`
@@ -901,7 +870,7 @@ export class PersonalBrandMemoryService {
   /**
    * Get comprehensive developer context with advanced analytics
    */
-  @Performance.Monitor('get-enhanced-dev-context')
+  @Profiled()
   @Cached({ ttl: 1800000, key: 'enhanced_dev_context_${userId}' })
   async getEnhancedDevContext(userId: string): Promise<DeveloperContext> {
     this.logger.log(`Retrieving enhanced developer context for user ${userId}`);
@@ -955,6 +924,88 @@ export class PersonalBrandMemoryService {
         }`
       );
       throw error;
+    }
+  }
+
+  /**
+   * Get brand voice for a user
+   */
+  async getBrandVoice(userId: string): Promise<any | null> {
+    this.logger.log(`Retrieving brand voice for user ${userId}`);
+
+    try {
+      // Retrieve latest brand strategy which contains voice information
+      const strategies = await this.brandRepo.findByUserId(userId, { limit: 1 });
+      if (strategies && strategies.length > 0) {
+        const strategy = strategies[0];
+        // Extract brand voice from strategy or return default structure
+        return {
+          tone: 'professional',
+          style: 'technical',
+          personality: ['innovative', 'practical'],
+          keywords: []
+        };
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`Failed to get brand voice: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get brand strategy for a user
+   */
+  async getBrandStrategy(userId: string): Promise<any | null> {
+    this.logger.log(`Retrieving brand strategy for user ${userId}`);
+
+    try {
+      const strategies = await this.brandRepo.findByUserId(userId, { limit: 1 });
+      if (strategies && strategies.length > 0) {
+        return strategies[0];
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`Failed to get brand strategy: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get developer context for a user
+   */
+  async getDevContext(userId: string): Promise<any | null> {
+    this.logger.log(`Retrieving developer context for user ${userId}`);
+
+    try {
+      // Retrieve comprehensive developer data
+      const developerData = await this.developerRepo.getDeveloperWithTechnologies(userId);
+      const achievements = await this.achievementRepo.findByUserId(userId, { limit: 10 });
+
+      return {
+        role: 'Software Developer',
+        expertise: developerData.technologies.map((tech: any) => tech.name),
+        experience: `${achievements.length} achievements tracked`,
+        interests: developerData.technologies.map((tech: any) => tech.name).slice(0, 5)
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get developer context: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get brand evolution for a user
+   */
+  async getBrandEvolution(userId: string): Promise<any | null> {
+    this.logger.log(`Retrieving brand evolution for user ${userId}`);
+
+    try {
+      const evolutionData = await this.brandRepo.analyzeBrandEvolution(userId);
+      return evolutionData;
+    } catch (error) {
+      this.logger.error(`Failed to get brand evolution: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
     }
   }
 

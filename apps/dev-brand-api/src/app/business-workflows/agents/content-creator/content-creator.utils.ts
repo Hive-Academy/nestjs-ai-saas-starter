@@ -5,7 +5,7 @@
  * engagement prediction, and quality scoring.
  */
 
-import type { Achievement, ContentQualityScore } from '../shared/agent.types';
+import type { Achievement } from '../shared/agent.types';
 
 /**
  * Optimize LinkedIn content for engagement
