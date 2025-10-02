@@ -163,15 +163,33 @@ export type Neo4jUpdateData<T> = Partial<
  */
 
 /**
- * Type constraint for entities that can be used with Neo4j operations
+ * Base entity class for Neo4j entities
+ *
+ * Extend this class instead of defining your own entity structure to avoid
+ * TypeScript index signature issues.
+ *
+ * @example
+ * ```typescript
+ * @Neo4jEntity('User')
+ * export class User extends Neo4jBaseEntity {
+ *   @Neo4jProp() name!: string;
+ *   @Neo4jProp() email!: string;
+ *   // No need for [key: string]: any
+ * }
+ * ```
  */
-export interface Neo4jCompatibleEntity {
-  id?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+export abstract class Neo4jBaseEntity {
   version?: number;
-  [key: string]: Neo4jPrimitive | Neo4jProperties | undefined;
+
+  // Index signature handled here, inherited by all entities
+  [key: string]: any;
 }
+
+/**
+ * Type constraint for entities that can be used with Neo4j operations
+ * Now entities can either extend Neo4jBaseEntity OR have their own structure
+ */
+export type Neo4jCompatibleEntity = Neo4jBaseEntity;
 
 /**
  * Property validation constraints

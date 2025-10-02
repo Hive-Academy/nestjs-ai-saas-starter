@@ -1,12 +1,15 @@
 /**
- * @fileoverview Base Repository Interface - Abstract class for all repository implementations
+ * @fileoverview Base Repository Interface - Base class for all repository implementations
  *
  * This provides the contract that all repository classes must implement when using
  * the @ChromaRepository decorator. This fixes the decorator resolution issues.
  */
 
-import type { Where, WhereDocument } from 'chromadb';
-import type { BaseDocument } from '../../types/core.interface';
+import type {
+  BaseDocument,
+  Where,
+  WhereDocument,
+} from '../../types/core.interface';
 
 /**
  * Repository operation options for fine-grained control
@@ -61,14 +64,23 @@ export interface RepositoryOperationResult<
 }
 
 /**
- * Input type for document creation (omits auto-generated fields)
+ * Input type for document creation (omits auto-generated fields and methods)
+ * Only includes data properties from the document type
  */
-export type CreateDocumentInput<TDocument extends BaseDocument> = Omit<
-  TDocument,
-  'id'
-> & {
-  id?: string; // Optional ID for manual specification
-};
+export type CreateDocumentInput<TDocument extends BaseDocument> = {
+  content: string;
+  metadata: TDocument extends BaseDocument<infer TMetadata> ? TMetadata : never;
+  embedding?: readonly number[];
+  id?: string;
+} & Partial<Omit<TDocument, 'id' | 'content' | 'metadata' | 'embedding'>>;
+
+/**
+ * Input type for upsert operations (requires id field)
+ */
+export type UpsertDocumentInput<TDocument extends BaseDocument> =
+  CreateDocumentInput<TDocument> & {
+    id: string;
+  };
 
 /**
  * Search result with similarity score
@@ -85,177 +97,147 @@ export interface SearchResultWithScore<
 }
 
 /**
- * Abstract base class that all repository implementations must extend
+ * Base class that all repository implementations must extend
  *
  * This class defines the contract for repository operations and ensures
  * type safety throughout the decorator system.
+ *
+ * All methods throw errors by default and are implemented by the @ChromaRepository decorator at runtime.
  */
-export abstract class BaseChromaRepository<
+export class BaseChromaRepository<
   TDocument extends BaseDocument = BaseDocument
 > {
-  // =====================================================================
-  // CRUD OPERATIONS
-  // =====================================================================
-
-  /**
-   * Create a single document in the collection
-   */
-  abstract create(
+  create(
     document: CreateDocumentInput<TDocument>,
     options?: RepositoryOperationOptions
-  ): Promise<TDocument>;
+  ): Promise<TDocument> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Create multiple documents in the collection
-   */
-  abstract createMany(
+  createMany(
     documents: CreateDocumentInput<TDocument>[],
     options?: RepositoryOperationOptions
-  ): Promise<RepositoryOperationResult<TDocument>>;
+  ): Promise<RepositoryOperationResult<TDocument>> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Find a document by its ID
-   */
-  abstract findById(
+  findById(
     id: string,
     options?: RepositoryOperationOptions
-  ): Promise<TDocument | null>;
+  ): Promise<TDocument | null> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Find multiple documents by their IDs
-   */
-  abstract findByIds(
+  findByIds(
     ids: string[],
     options?: RepositoryOperationOptions
-  ): Promise<TDocument[]>;
+  ): Promise<TDocument[]> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Find all documents in the collection
-   */
-  abstract findAll(options?: RepositoryOperationOptions): Promise<TDocument[]>;
+  findAll(
+    options?: RepositoryOperationOptions & {
+      where?: Where;
+      whereDocument?: WhereDocument;
+      limit?: number;
+      orderBy?: Array<{ field: string; direction: 'asc' | 'desc' }>;
+    }
+  ): Promise<TDocument[]> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Update a document by ID
-   */
-  abstract update(
+  update(
     id: string,
     updates: Partial<TDocument>,
     options?: RepositoryOperationOptions
-  ): Promise<TDocument | null>;
+  ): Promise<TDocument | null> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Update multiple documents
-   */
-  abstract updateMany(
+  updateMany(
     updates: Array<{ id: string; data: Partial<TDocument> }>,
     options?: RepositoryOperationOptions
-  ): Promise<RepositoryOperationResult<TDocument>>;
+  ): Promise<RepositoryOperationResult<TDocument>> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Create or update a document (upsert operation)
-   */
-  abstract upsert(
-    document: TDocument,
+  upsert(
+    document: UpsertDocumentInput<TDocument>,
     options?: RepositoryOperationOptions
-  ): Promise<TDocument>;
+  ): Promise<TDocument> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Create or update multiple documents
-   */
-  abstract upsertMany(
-    documents: TDocument[],
+  upsertMany(
+    documents: UpsertDocumentInput<TDocument>[],
     options?: RepositoryOperationOptions
-  ): Promise<RepositoryOperationResult<TDocument>>;
+  ): Promise<RepositoryOperationResult<TDocument>> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Delete a document by ID
-   */
-  abstract delete(
-    id: string,
-    options?: RepositoryOperationOptions
-  ): Promise<boolean>;
+  delete(id: string, options?: RepositoryOperationOptions): Promise<boolean> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Delete multiple documents by IDs
-   */
-  abstract deleteMany(
+  deleteMany(
     ids: string[],
     options?: RepositoryOperationOptions
-  ): Promise<RepositoryOperationResult>;
+  ): Promise<RepositoryOperationResult> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Delete documents matching filter criteria
-   */
-  abstract deleteByFilter(
+  deleteByFilter(
     where?: Where,
     whereDocument?: WhereDocument,
     options?: RepositoryOperationOptions
-  ): Promise<RepositoryOperationResult>;
+  ): Promise<RepositoryOperationResult> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  // =====================================================================
-  // SEARCH OPERATIONS
-  // =====================================================================
-
-  /**
-   * Search documents using text query
-   */
-  abstract search(
+  search(
     query: string,
     options?: RepositorySearchOptions
-  ): Promise<TDocument[]>;
+  ): Promise<TDocument[]> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Search documents with similarity scores
-   */
-  abstract searchWithScores(
+  searchWithScores(
     query: string,
     options?: RepositorySearchOptions
-  ): Promise<SearchResultWithScore<TDocument>[]>;
+  ): Promise<SearchResultWithScore<TDocument>[]> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Search using embedding vectors directly
-   */
-  abstract searchSimilar(
+  searchSimilar(
     embedding: number[],
     options?: RepositorySearchOptions
-  ): Promise<TDocument[]>;
+  ): Promise<TDocument[]> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  // =====================================================================
-  // AGGREGATION OPERATIONS
-  // =====================================================================
+  count(where?: Where, whereDocument?: WhereDocument): Promise<number> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Count documents matching criteria
-   */
-  abstract count(where?: Where, whereDocument?: WhereDocument): Promise<number>;
+  exists(id: string): Promise<boolean> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Check if a document exists by ID
-   */
-  abstract exists(id: string): Promise<boolean>;
+  peek(limit?: number): Promise<TDocument[]> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  /**
-   * Peek at a sample of documents
-   */
-  abstract peek(limit?: number): Promise<TDocument[]>;
+  clear(): Promise<void> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 
-  // =====================================================================
-  // COLLECTION OPERATIONS
-  // =====================================================================
-
-  /**
-   * Clear all documents from the collection
-   */
-  abstract clear(): Promise<void>;
-
-  /**
-   * Get collection information and statistics
-   */
-  abstract getCollectionInfo(): Promise<{
+  getCollectionInfo(): Promise<{
     name: string;
     count: number;
     metadata?: Record<string, unknown>;
-  }>;
+  }> {
+    throw new Error('Method implemented by @ChromaRepository decorator');
+  }
 }
 
 /**

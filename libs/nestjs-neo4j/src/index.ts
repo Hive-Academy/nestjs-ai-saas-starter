@@ -54,6 +54,7 @@ export type {
 
 // Core Type Definitions
 export type * from './lib/types/neo4j-types';
+export { Neo4jBaseEntity } from './lib/types/neo4j-types';
 export type * from './lib/types/neogma-types';
 // BaseEntity deleted - use Neogma's NeogmaModel instead
 

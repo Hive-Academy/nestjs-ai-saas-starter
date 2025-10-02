@@ -1,3 +1,0 @@
-src/lib/decorators/repository/repository-decorator.ts(183,41): error TS2551: Property '_chromaService' does not exist on type 'RepositoryImplementation<TDocument>'. Did you mean 'chromaService'?
-src/lib/services/chromadb.service.ts(37,14): error TS2420: Class 'ChromaDBService' incorrectly implements interface 'ChromaDBServiceInterface'.
-  Type 'ChromaDBService' is missing the following properties from type 'ChromaDBServiceInterface': version, reset, getCollection

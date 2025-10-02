@@ -35,7 +35,6 @@ import { ChromaDBEmbeddingProcessorService } from './facade/chromadb-embedding-p
  */
 @Injectable()
 export class ChromaDBService implements ChromaDBServiceInterface {
-
   constructor(
     private readonly connectionService: ChromaDBConnectionService,
     private readonly operationsService: ChromaDBOperationsService,
@@ -70,6 +69,24 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     );
   }
 
+  async version(): Promise<string> {
+    return this.performanceService.executeWithMonitoring(
+      'version',
+      async () => {
+        const client = this.connectionService.getClient();
+        return client.version();
+      }
+    );
+  }
+
+  async reset(): Promise<boolean> {
+    return this.performanceService.executeWithMonitoring('reset', async () => {
+      const client = this.connectionService.getClient();
+      await client.reset();
+      return true;
+    });
+  }
+
   // =====================================================================
   // Collection Management Operations
   // =====================================================================
@@ -91,6 +108,16 @@ export class ChromaDBService implements ChromaDBServiceInterface {
         );
         return collection;
       }
+    );
+  }
+
+  async getCollection(
+    name: string,
+    embeddingFunction?: unknown
+  ): Promise<Collection> {
+    return this.performanceService.executeWithMonitoring(
+      'getCollection',
+      async () => this.operationsService.getCollection(name, embeddingFunction)
     );
   }
 
@@ -154,11 +181,11 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     options?: ChromaBulkOptions
   ): Promise<void> {
     // Convert BaseDocument to ChromaWireDocument format
-    const wireDocuments: ChromaWireDocument[] = documents.map(doc => ({
+    const wireDocuments: ChromaWireDocument[] = documents.map((doc) => ({
       id: doc.id,
       document: doc.content,
       metadata: doc.metadata,
-      embedding: doc.embedding ? [...doc.embedding] : undefined
+      embedding: doc.embedding ? [...doc.embedding] : undefined,
     }));
 
     // Process embeddings if needed
@@ -188,11 +215,11 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     options?: ChromaBulkOptions
   ): Promise<void> {
     // Convert BaseDocument to ChromaWireDocument format
-    const wireDocuments: ChromaWireDocument[] = documents.map(doc => ({
+    const wireDocuments: ChromaWireDocument[] = documents.map((doc) => ({
       id: doc.id,
       document: doc.content,
       metadata: doc.metadata,
-      embedding: doc.embedding ? [...doc.embedding] : undefined
+      embedding: doc.embedding ? [...doc.embedding] : undefined,
     }));
 
     // Process embeddings if needed
@@ -222,11 +249,11 @@ export class ChromaDBService implements ChromaDBServiceInterface {
     options?: ChromaBulkOptions
   ): Promise<void> {
     // Convert BaseDocument to ChromaWireDocument format
-    const wireDocuments: ChromaWireDocument[] = documents.map(doc => ({
+    const wireDocuments: ChromaWireDocument[] = documents.map((doc) => ({
       id: doc.id,
       document: doc.content,
       metadata: doc.metadata,
-      embedding: doc.embedding ? [...doc.embedding] : undefined
+      embedding: doc.embedding ? [...doc.embedding] : undefined,
     }));
 
     // Process embeddings if needed
@@ -366,7 +393,9 @@ export class ChromaDBService implements ChromaDBServiceInterface {
       ids: results.ids[0] || [],
       documents: results.documents?.[0] || [],
       metadatas: results.metadatas?.[0] || [],
-      distances: (results.distances?.[0] || []).filter((d): d is number => d !== null),
+      distances: (results.distances?.[0] || []).filter(
+        (d): d is number => d !== null
+      ),
     };
   }
 

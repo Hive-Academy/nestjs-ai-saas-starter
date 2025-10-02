@@ -44,13 +44,10 @@
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "D:\\projects\\nestjs-ai-saas-starter"
-    ]
+    "additionalDirectories": ["D:\\projects\\nestjs-ai-saas-starter"]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "browser",
     "sequential-thinking",
     "nx-mcp",
     "angular-cli",

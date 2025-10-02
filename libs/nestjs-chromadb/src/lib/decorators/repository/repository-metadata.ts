@@ -223,11 +223,9 @@ export interface ChromaRepository<
 /**
  * Type constraint for repository constructor parameters
  */
-export interface RepositoryConstructor<
+export type RepositoryConstructor<
   TDocument extends BaseDocument = BaseDocument
-> {
-  new (...args: any[]): ChromaRepository<TDocument>;
-}
+> = new (...args: any[]) => ChromaRepository<TDocument>;
 
 /**
  * Type-safe repository instance interface

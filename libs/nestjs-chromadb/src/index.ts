@@ -98,6 +98,9 @@ export type {
   CollectionDocumentMap,
   DocumentTypeForCollection,
   MetadataTypeForCollection,
+  EntityData,
+  Where,
+  WhereDocument,
   toChromaWireDocument,
   fromChromaWireDocument,
   toChromaWireDocuments,
@@ -106,6 +109,26 @@ export type {
 
 // Decorators - Core Ecosystem
 export * from './lib/decorators';
+
+// Entity & Repository Pattern (Neo4j-inspired)
+export { BaseChromaRepository } from './lib/decorators/repository/base-repository.interface';
+export { BaseChromaEntity } from './lib/entities/base-chroma.entity';
+export {
+  ChromaEntity,
+  ChromaProp,
+  ChromaId,
+  ChromaMetadata,
+  ChromaEmbedding,
+  CreatedAt,
+  UpdatedAt,
+  JsonProperty,
+  type ChromaEntityConfig,
+  type ChromaPropertyConfig,
+  type ChromaMetadataConfig,
+  type ChromaEmbeddingConfig,
+  type EntityMetadata,
+  type PropertyMetadata,
+} from './lib/decorators/entity/entity.decorator';
 
 // Legacy Decorators (backward compatibility)
 export * from './lib/decorators/inject-chromadb.decorator';
@@ -192,3 +215,5 @@ export {
   setChromaDBConfig,
   isChromaDBConfigured,
 } from './lib/utils/config/chromadb-config.accessor';
+
+export * from './lib/services/chromadb.service';

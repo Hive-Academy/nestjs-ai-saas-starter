@@ -6,7 +6,16 @@ The **@hive-academy/nestjs-chromadb** module provides **enterprise-grade ChromaD
 
 ## 🚀 **Enhanced Key Features**
 
+### **🏗️ Entity & Repository Pattern (NEW)**
+
+- **@ChromaEntity** - Declarative entity definitions with smart defaults
+- **@ChromaProp / @ChromaId / @ChromaMetadata** - Property decorators with validation
+- **@CreatedAt / @UpdatedAt** - Automatic timestamp management
+- **BaseChromaRepository<T>** - Compile-time type-safe CRUD operations (70% less code)
+- **Zero Boilerplate** - No `!` assertions needed, full TypeScript autocomplete
+
 ### **🎯 Declarative Decorator Ecosystem**
+
 - **@VectorQuery** - Zero-boilerplate vector search with auto-embedding
 - **@ChromaRepository** - Complete CRUD auto-generation with type safety
 - **@Cached** - Vector-aware intelligent caching with collection invalidation
@@ -14,6 +23,7 @@ The **@hive-academy/nestjs-chromadb** module provides **enterprise-grade ChromaD
 - **@Retry** - Resilient operations with circuit breaker patterns
 
 ### **🏢 Enterprise Multi-Tenancy**
+
 - **@TenantAware** - Automatic tenant isolation with flexible naming strategies
 - **@CrossTenant** - Secure cross-tenant administrative operations
 - **Security Policies** - GDPR, HIPAA, SOC2 compliance support
@@ -21,6 +31,7 @@ The **@hive-academy/nestjs-chromadb** module provides **enterprise-grade ChromaD
 - **Audit Logging** - Comprehensive operation tracking
 
 ### **⚡ Performance & Reliability**
+
 - **Vector-Optimized Caching** - Embedding-aware cache strategies
 - **Smart Query Optimization** - Collection-aware cache invalidation
 - **Circuit Breaker** - Automatic failure handling and recovery
@@ -28,12 +39,14 @@ The **@hive-academy/nestjs-chromadb** module provides **enterprise-grade ChromaD
 - **Health Monitoring** - Production-ready observability
 
 ### **🔒 Type Safety & Security**
+
 - **Zero `any` Types** - Comprehensive TypeScript safety with runtime validation
 - **Type Guards** - Runtime validation for all external data
 - **Secure Multi-Tenancy** - Data isolation and access control
 - **Embedding Security** - Provider-agnostic security policies
 
 ### **🛠️ Traditional Features (Enhanced)**
+
 - **Multi-Provider Embeddings** (OpenAI, HuggingFace, Cohere, Custom)
 - **Deterministic Chunking** with parent/child relationship tracking
 - **Strict Error Propagation** (embedding helpers throw; no silent skips)
@@ -76,6 +89,282 @@ import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 export class AppModule {}
 ```
 
+## 🏗️ **Entity & Repository Pattern (Recommended)**
+
+The module provides a comprehensive **Entity/Repository pattern** inspired by Neo4j's architecture, offering compile-time type safety and zero boilerplate code.
+
+### **Why Use This Pattern?**
+
+✅ **Compile-Time Type Safety** - Full TypeScript autocomplete and error detection  
+✅ **Zero Boilerplate** - No need for `!` assertion operators  
+✅ **Clean Code** - 70% less code compared to traditional patterns  
+✅ **Declarative Entities** - Define schema once, use everywhere  
+✅ **Familiar Pattern** - Consistent with Neo4j/TypeORM patterns
+
+### **Complete Example: Entity + Repository**
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { BaseChromaEntity, BaseChromaRepository, ChromaEntity, ChromaId, ChromaProp, ChromaMetadata, ChromaEmbedding, CreatedAt, UpdatedAt, ChromaRepository, BaseDocument } from '@hive-academy/nestjs-chromadb';
+
+// ============================================
+// Step 1: Define Entity with Decorators
+// ============================================
+
+interface UserMetadata {
+  name: string;
+  email: string;
+  department: string;
+  skills: string[];
+}
+
+@ChromaEntity({
+  collection: 'users',
+  description: 'User entity with profile information',
+  autoEmbed: true, // Auto-generate embeddings
+  embeddingFields: ['content'],
+  autoTimestamp: true, // Auto-manage createdAt/updatedAt
+  autoGenerateIds: true, // Auto-generate UUIDs
+  idStrategy: 'uuid',
+})
+export class UserEntity extends BaseChromaEntity<UserMetadata> {
+  @ChromaId()
+  id!: string;
+
+  @ChromaProp({
+    description: 'User profile description for semantic search',
+    validate: (content: string) => content.length > 0 && content.length < 5000,
+  })
+  content!: string;
+
+  @ChromaMetadata()
+  metadata!: UserMetadata;
+
+  @ChromaEmbedding()
+  embedding?: number[];
+
+  @CreatedAt()
+  createdAt!: string;
+
+  @UpdatedAt()
+  updatedAt!: string;
+}
+
+// ============================================
+// Step 2: Create Repository Extending Base
+// ============================================
+
+@Injectable()
+@ChromaRepository({
+  collection: 'users',
+  autoEmbed: true,
+  enableCaching: true,
+  enableValidation: true,
+})
+export class UserRepository extends BaseChromaRepository<UserEntity> {
+  constructor(private readonly chromaService: ChromaDBService) {
+    super();
+  }
+
+  // ✅ ALL CRUD methods available automatically:
+  // - create(data)
+  // - createMany(data[])
+  // - findById(id)
+  // - findByIds(ids[])
+  // - findAll(options)
+  // - update(id, data)
+  // - updateMany(updates[])
+  // - upsert(data)
+  // - upsertMany(data[])
+  // - delete(id)
+  // - deleteMany(ids[])
+  // - deleteByFilter(where)
+  // - search(query, options)
+  // - searchWithScores(query, options)
+  // - searchSimilar(embedding, options)
+  // - count(where)
+  // - exists(id)
+  // - peek(limit)
+  // - clear()
+  // - getCollectionInfo()
+
+  // Add custom business methods
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    const users = await this.findAll({ where: { email }, limit: 1 });
+    return users[0] || null;
+  }
+
+  async findByDepartment(department: string): Promise<UserEntity[]> {
+    return this.findAll({ where: { department } });
+  }
+
+  async searchBySkills(skills: string[]): Promise<UserEntity[]> {
+    return this.search(skills.join(' '), {
+      where: { skills: { $in: skills } },
+      limit: 20,
+    });
+  }
+}
+```
+
+### **Available Entity Decorators**
+
+#### **@ChromaEntity(config)** - Entity Definition
+
+Defines the entity schema and collection configuration.
+
+```typescript
+@ChromaEntity({
+  collection: 'users', // Collection name
+  description: 'User entities', // Optional description
+  autoEmbed: true, // Auto-generate embeddings
+  embeddingFields: ['content'], // Fields to embed
+  autoTimestamp: true, // Auto-manage timestamps
+  autoGenerateIds: true, // Auto-generate IDs
+  idStrategy: 'uuid', // ID generation strategy
+})
+export class UserEntity extends BaseChromaEntity<UserMetadata> {}
+```
+
+#### **@ChromaId()** - ID Property
+
+Marks the ID property (auto-generated if configured).
+
+```typescript
+@ChromaId()
+id!: string;
+```
+
+#### **@ChromaProp(config?)** - Content Property
+
+Marks the main content property for embeddings and search.
+
+```typescript
+@ChromaProp({
+  description: 'Main searchable content',
+  validate: (content: string) => content.length > 0,
+  transform: (content: string) => content.trim(),
+})
+content!: string;
+```
+
+#### **@ChromaMetadata()** - Metadata Property
+
+Marks the strongly-typed metadata object.
+
+```typescript
+@ChromaMetadata()
+metadata!: UserMetadata;
+```
+
+#### **@ChromaEmbedding()** - Embedding Vector
+
+Marks the embedding vector property.
+
+```typescript
+@ChromaEmbedding()
+embedding?: number[];
+```
+
+#### **@CreatedAt() / @UpdatedAt()** - Timestamps
+
+Auto-managed timestamp properties.
+
+```typescript
+@CreatedAt()
+createdAt!: string;
+
+@UpdatedAt()
+updatedAt!: string;
+```
+
+#### **@JsonProperty(config?)** - JSON Properties
+
+For additional JSON-serializable properties.
+
+```typescript
+@JsonProperty({
+  description: 'Additional user preferences',
+  defaultValue: {},
+})
+preferences!: Record<string, any>;
+```
+
+### **BaseChromaRepository Methods**
+
+When you extend `BaseChromaRepository<T>`, you get all these methods with full type safety:
+
+```typescript
+// Create Operations
+create(data: CreateDocumentInput<T>): Promise<T>
+createMany(data: CreateDocumentInput<T>[]): Promise<RepositoryOperationResult<T>>
+
+// Read Operations
+findById(id: string): Promise<T | null>
+findByIds(ids: string[]): Promise<T[]>
+findAll(options?: { where?, limit?, orderBy? }): Promise<T[]>
+count(where?, whereDocument?): Promise<number>
+exists(id: string): Promise<boolean>
+peek(limit?: number): Promise<T[]>
+getCollectionInfo(): Promise<{ name, count, metadata }>
+
+// Update Operations
+update(id: string, updates: Partial<T>): Promise<T | null>
+updateMany(updates: Array<{ id, data }>): Promise<RepositoryOperationResult<T>>
+upsert(data: UpsertDocumentInput<T>): Promise<T>
+upsertMany(data: UpsertDocumentInput<T>[]): Promise<RepositoryOperationResult<T>>
+
+// Delete Operations
+delete(id: string): Promise<boolean>
+deleteMany(ids: string[]): Promise<RepositoryOperationResult>
+deleteByFilter(where?, whereDocument?): Promise<RepositoryOperationResult>
+clear(): Promise<void>
+
+// Search Operations
+search(query: string, options?): Promise<T[]>
+searchWithScores(query: string, options?): Promise<Array<{ document: T, score: number }>>
+searchSimilar(embedding: number[], options?): Promise<T[]>
+```
+
+### **Migration from Old Pattern**
+
+**Before (❌ Old Pattern with Boilerplate):**
+
+```typescript
+@Injectable()
+@ChromaRepository<UserDocument>({ collection: 'users' })
+export class UserRepository implements ChromaRepository<UserDocument> {
+  constructor(private chromaService: ChromaDBService) {}
+
+  // ❌ Need 20+ lines of assertions
+  create!: ChromaRepository<UserDocument>['create'];
+  findById!: ChromaRepository<UserDocument>['findById'];
+  findAll!: ChromaRepository<UserDocument>['findAll'];
+  update!: ChromaRepository<UserDocument>['update'];
+  delete!: ChromaRepository<UserDocument>['delete'];
+  search!: ChromaRepository<UserDocument>['search'];
+  // ... 15 more lines ...
+}
+```
+
+**After (✅ New Pattern - Clean & Type-Safe):**
+
+```typescript
+@Injectable()
+@ChromaRepository({ collection: 'users' })
+export class UserRepository extends BaseChromaRepository<UserEntity> {
+  constructor(private readonly chromaService: ChromaDBService) {
+    super();
+  }
+
+  // ✅ All methods available - zero boilerplate!
+}
+```
+
+**Code Reduction:** ~70% less boilerplate  
+**Type Safety:** Compile-time + runtime  
+**Developer Experience:** Full autocomplete and error detection
+
 ## 🎯 **Declarative Development Patterns**
 
 ### **Zero-Config Repository Pattern**
@@ -86,21 +375,22 @@ Transform traditional service-based development into declarative repositories:
 import { Injectable } from '@nestjs/common';
 import { ChromaRepository, BaseDocument } from '@hive-academy/nestjs-chromadb';
 
-interface UserDocument extends BaseDocument<{
-  name: string;
-  email: string;
-  department: string;
-  skills: string[];
-}> {}
+interface UserDocument
+  extends BaseDocument<{
+    name: string;
+    email: string;
+    department: string;
+    skills: string[];
+  }> {}
 
 @Injectable()
 @ChromaRepository<UserDocument>({
   collection: 'users',
-  autoEmbed: true,           // Automatic embedding generation
-  enableCaching: true,       // Vector-aware caching
-  enableValidation: true,    // Runtime type validation
-  autoTimestamp: true,       // Automatic createdAt/updatedAt
-  autoGenerateIds: true,     // UUID generation
+  autoEmbed: true, // Automatic embedding generation
+  enableCaching: true, // Vector-aware caching
+  enableValidation: true, // Runtime type validation
+  autoTimestamp: true, // Automatic createdAt/updatedAt
+  autoGenerateIds: true, // UUID generation
 })
 export class UserRepository {
   constructor(private readonly chromaService: ChromaDBService) {}
@@ -118,9 +408,9 @@ export class UserRepository {
 
   async searchBySkills(skills: string[]): Promise<UserDocument[]> {
     const query = skills.join(' ');
-    return this.search(query, { 
+    return this.search(query, {
       where: { skills: { $in: skills } },
-      limit: 20 
+      limit: 20,
     });
   }
 }
@@ -141,22 +431,22 @@ export class KnowledgeService {
    */
   @VectorQuery<KnowledgeDocument>({
     collection: 'knowledge',
-    autoEmbed: true,           // Auto-generate embeddings from query
-    defaultLimit: 10,          // Default result limit
-    includeMetadata: true,     // Include document metadata
-    includeDistances: true,    // Include similarity scores
-    enableCaching: true,       // Enable intelligent caching
+    autoEmbed: true, // Auto-generate embeddings from query
+    defaultLimit: 10, // Default result limit
+    includeMetadata: true, // Include document metadata
+    includeDistances: true, // Include similarity scores
+    enableCaching: true, // Enable intelligent caching
   })
   @Cached({
-    ttl: 300000,              // 5 minutes cache
+    ttl: 300000, // 5 minutes cache
     keyStrategy: 'collection_aware',
-    collectionAware: true,     // Collection-specific cache invalidation
+    collectionAware: true, // Collection-specific cache invalidation
     invalidateOnMutation: true,
   })
   @Profiled({
-    slowQueryThreshold: 100,   // Log queries > 100ms
-    logLevel: 'slow',         // Only log slow queries
-    includeParameters: false,  // Don't log query parameters in production
+    slowQueryThreshold: 100, // Log queries > 100ms
+    logLevel: 'slow', // Only log slow queries
+    includeParameters: false, // Don't log query parameters in production
   })
   @Retry({
     maxAttempts: 3,
@@ -177,10 +467,10 @@ export class KnowledgeService {
     autoEmbed: true,
     defaultLimit: 15,
   })
-  @Cached({ 
-    ttl: 600000,              // 10 minutes for RAG context
+  @Cached({
+    ttl: 600000, // 10 minutes for RAG context
     refreshStrategy: 'background',
-    refreshThreshold: 0.8,    // Refresh when 80% of TTL reached
+    refreshThreshold: 0.8, // Refresh when 80% of TTL reached
   })
   async getRAGContext(query: string, maxTokens = 4000): Promise<string> {
     const results = await this.searchKnowledge({ query });
@@ -207,11 +497,11 @@ export class DocumentService {
    * Tenant extracted from JWT token, headers, or custom logic
    */
   @TenantAware({
-    namingStrategy: 'prefix',        // 'prefix' | 'suffix' | 'separate' | 'custom'
-    tenantExtraction: 'jwt',         // 'header' | 'query' | 'jwt' | 'context' | 'custom'
-    enableTenantCaching: true,       // Tenant-specific cache isolation
-    enableAuditLog: true,           // Comprehensive audit logging
-    strictValidation: true,          // Validate tenant exists and is active
+    namingStrategy: 'prefix', // 'prefix' | 'suffix' | 'separate' | 'custom'
+    tenantExtraction: 'jwt', // 'header' | 'query' | 'jwt' | 'context' | 'custom'
+    enableTenantCaching: true, // Tenant-specific cache isolation
+    enableAuditLog: true, // Comprehensive audit logging
+    strictValidation: true, // Validate tenant exists and is active
   })
   async searchDocuments(query: string): Promise<DocumentMetadata[]> {
     // No tenant logic needed - completely handled by decorator
@@ -226,8 +516,8 @@ export class DocumentService {
    */
   @CrossTenant({
     requiredPermissions: ['admin', 'cross-tenant-read'],
-    auditLevel: 'detailed',          // Enhanced audit logging for compliance
-    maxTenants: 50,                  // Safety limit for cross-tenant operations
+    auditLevel: 'detailed', // Enhanced audit logging for compliance
+    maxTenants: 50, // Safety limit for cross-tenant operations
   })
   async globalSearch(query: string): Promise<Array<{ tenantId: string; results: any[] }>> {
     // Search across all tenant collections with comprehensive audit logging
@@ -367,11 +657,7 @@ ChromaDBModule.forRoot({
     enableRegistry: true,
     enableResourceLimits: true,
     enableCrossTenantAdmin: true,
-    securityPolicies: [
-      TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE,
-      TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE,
-      TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION,
-    ],
+    securityPolicies: [TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE, TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE, TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION],
     lifecycleHooks: {
       onTenantCreate: async (tenant) => {
         console.log(`New tenant created: ${tenant.tenantId}`);
@@ -402,7 +688,7 @@ const performanceConfig = DecoratorPresets.performanceOptimized;
 
 // Custom preset with overrides
 const customConfig = applyDecoratorPreset('production', {
-  caching: { ttl: 1800000 },     // 30 minutes
+  caching: { ttl: 1800000 }, // 30 minutes
   profiling: { samplingRate: 0.1 }, // 10% sampling
   tenantAware: {
     namingStrategy: 'separate',
@@ -433,20 +719,20 @@ ChromaDBModule.forRootAsync({
           model: configService.get('EMBEDDING_MODEL', 'text-embedding-3-small'),
         },
       },
-      multiTenant: configService.get('ENABLE_MULTI_TENANT', false) ? {
-        isolation: {
-          namingStrategy: configService.get('TENANT_NAMING_STRATEGY', 'separate'),
-          tenantExtraction: configService.get('TENANT_EXTRACTION', 'jwt'),
-          strictValidation: true,
-          enableTenantCaching: true,
-          enableAuditLog: configService.get('ENABLE_AUDIT_LOG', true),
-        },
-        enableRegistry: true,
-        enableResourceLimits: true,
-        defaultResourceLimits: TENANT_CONSTANTS.RESOURCE_LIMITS[
-          configService.get('DEFAULT_TENANT_TIER', 'pro')
-        ],
-      } : undefined,
+      multiTenant: configService.get('ENABLE_MULTI_TENANT', false)
+        ? {
+            isolation: {
+              namingStrategy: configService.get('TENANT_NAMING_STRATEGY', 'separate'),
+              tenantExtraction: configService.get('TENANT_EXTRACTION', 'jwt'),
+              strictValidation: true,
+              enableTenantCaching: true,
+              enableAuditLog: configService.get('ENABLE_AUDIT_LOG', true),
+            },
+            enableRegistry: true,
+            enableResourceLimits: true,
+            defaultResourceLimits: TENANT_CONSTANTS.RESOURCE_LIMITS[configService.get('DEFAULT_TENANT_TIER', 'pro')],
+          }
+        : undefined,
       defaultCollection: 'documents',
       batchSize: configService.get('CHROMA_BATCH_SIZE', 100),
     };
@@ -791,11 +1077,7 @@ for (let i = 0; i < documents.length; i += chunkSize) {
 Monitor vector operations with comprehensive metrics:
 
 ```typescript
-import { 
-  getPerformanceStatistics, 
-  getCacheStatistics,
-  getRetryStatistics 
-} from '@hive-academy/nestjs-chromadb';
+import { getPerformanceStatistics, getCacheStatistics, getRetryStatistics } from '@hive-academy/nestjs-chromadb';
 
 // Performance monitoring
 const perfStats = await getPerformanceStatistics();
@@ -843,7 +1125,7 @@ export class HealthService {
 
   async getDetailedHealth() {
     const health = await this.chromaHealth.isHealthyDetailed('chromadb');
-    
+
     return {
       connection: health.connection,
       collections: health.collections,
@@ -918,6 +1200,7 @@ npx @hive-academy/nestjs-chromadb scan ./src --output=chromadb-usage-report.json
 ### **Step 2: Basic to Decorator Migration**
 
 **Before (Legacy Service Pattern):**
+
 ```typescript
 @Injectable()
 export class DocumentService {
@@ -942,6 +1225,7 @@ export class DocumentService {
 ```
 
 **After (Decorator Pattern):**
+
 ```typescript
 @Injectable()
 export class DocumentService {
@@ -969,6 +1253,7 @@ export class DocumentService {
 ### **Step 3: Repository Pattern Migration**
 
 **Before (Manual CRUD):**
+
 ```typescript
 @Injectable()
 export class UserService {
@@ -995,12 +1280,14 @@ export class UserService {
 ```
 
 **After (Repository Decorator):**
+
 ```typescript
-interface UserDocument extends BaseDocument<{
-  name: string;
-  email: string;
-  department: string;
-}> {}
+interface UserDocument
+  extends BaseDocument<{
+    name: string;
+    email: string;
+    department: string;
+  }> {}
 
 @Injectable()
 @ChromaRepository<UserDocument>({
@@ -1025,23 +1312,25 @@ export class UserRepository {
 ### **Step 4: Multi-Tenant Migration**
 
 **Before (Manual Tenant Handling):**
+
 ```typescript
 async searchUserDocuments(userId: string, query: string) {
   const collection = `user_${userId}_documents`;
-  
+
   // Manual tenant validation
   if (!await this.validateUserAccess(userId)) {
     throw new Error('Access denied');
   }
-  
+
   // Manual audit logging
   await this.logUserOperation(userId, 'search', query);
-  
+
   return this.chromaDB.searchDocuments(collection, [query]);
 }
 ```
 
 **After (Tenant Decorator):**
+
 ```typescript
 @TenantAware({
   namingStrategy: 'prefix',
@@ -1060,14 +1349,15 @@ async searchDocuments(query: string): Promise<Document[]> {
 ### **Step 5: Performance Enhancement Migration**
 
 **Before (Manual Caching and Retry):**
+
 ```typescript
 async searchWithCache(query: string) {
   const cacheKey = `search:${hash(query)}`;
-  
+
   // Manual cache check
   let result = await this.cache.get(cacheKey);
   if (result) return result;
-  
+
   // Manual retry logic
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -1083,6 +1373,7 @@ async searchWithCache(query: string) {
 ```
 
 **After (Performance Decorators):**
+
 ```typescript
 @VectorQuery({ collection: 'docs' })
 @Cached({ ttl: 300000, keyStrategy: 'collection_aware' })
@@ -1099,11 +1390,12 @@ async searchDocuments(params: VectorQueryParams): Promise<Document[]> {
 
 ```typescript
 // ✅ CORRECT: Use proper type definitions
-interface UserDocument extends BaseDocument<{
-  name: string;
-  email: string;
-  role: 'admin' | 'user';
-}> {}
+interface UserDocument
+  extends BaseDocument<{
+    name: string;
+    email: string;
+    role: 'admin' | 'user';
+  }> {}
 
 // ❌ AVOID: Using any types
 const userData: any = { name: 'John' };

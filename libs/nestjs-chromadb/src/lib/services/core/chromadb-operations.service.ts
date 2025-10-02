@@ -1,24 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import {
   Collection,
-  WhereDocument,
-  Where,
-  GetResult,
   CollectionMetadata,
+  GetResult,
+  Where,
+  WhereDocument,
 } from 'chromadb';
+import {
+  ChromaBulkOptions,
+  ChromaCollectionInfo,
+  ChromaDocument,
+  ChromaSearchResult,
+} from '../../interfaces/chromadb-service.interface';
+import { IChromaOperations } from '../../interfaces/core/database-abstractions.interface';
+import type {
+  BaseDocument,
+  ChromaSearchOptions,
+  GetDocumentsOptions,
+} from '../../types/core.interface';
 import { ChromaDBCollectionService } from './chromadb-collection.service';
 import { ChromaDBDocumentService } from './chromadb-document.service';
 import { ChromaDBRepositoryService } from './chromadb-repository.service';
-import { IChromaOperations } from '../../interfaces/core/database-abstractions.interface';
-import type { BaseDocument } from '../../types/core.interface';
-import {
-  ChromaDocument,
-  ChromaSearchResult,
-  ChromaCollectionInfo,
-  ChromaSearchOptions,
-  ChromaBulkOptions,
-  GetDocumentsOptions,
-} from '../../interfaces/chromadb-service.interface';
 
 /**
  * ChromaDB Operations Service - Facade Pattern
@@ -28,7 +30,6 @@ import {
  */
 @Injectable()
 export class ChromaDBOperationsService implements IChromaOperations {
-
   constructor(
     private readonly collectionService: ChromaDBCollectionService,
     private readonly documentService: ChromaDBDocumentService,

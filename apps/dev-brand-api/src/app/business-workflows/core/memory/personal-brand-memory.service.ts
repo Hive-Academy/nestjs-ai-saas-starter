@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Neo4jService } from '@hive-academy/nestjs-neo4j';
 import {
   ChromaRepository,
   VectorQuery,
@@ -10,6 +9,8 @@ import {
   Profiled,
   Retry,
 } from '@hive-academy/nestjs-chromadb';
+import { DeveloperRepository } from '../../../repositories/developer.repository';
+import { AchievementRepository as Neo4jAchievementRepository } from '../../../repositories/achievement.repository';
 
 // Enhanced Type System for Personal Brand Memory
 type CodeAchievementDocument = BaseDocument<{
@@ -657,10 +658,11 @@ export class PersonalBrandMemoryService {
   private readonly logger = new Logger(PersonalBrandMemoryService.name);
 
   constructor(
-    private readonly neo4j: Neo4jService,
     private readonly achievementRepo: CodeAchievementRepository,
     private readonly brandRepo: BrandStrategyRepository,
-    private readonly contentRepo: ContentPerformanceRepository
+    private readonly contentRepo: ContentPerformanceRepository,
+    private readonly developerRepo: DeveloperRepository,
+    private readonly neo4jAchievementRepo: Neo4jAchievementRepository
   ) {}
 
   /**
@@ -712,10 +714,20 @@ export class PersonalBrandMemoryService {
         enhancedAchievement as CodeAchievementDocument
       );
 
-      // Enhanced Neo4j relationships with additional context
-      await this.createEnhancedTechnologyRelationships(
+      // Enhanced Neo4j relationships with additional context (delegated to repository)
+      await this.neo4jAchievementRepo.createEnhancedAchievementWithDeveloper(
         userId,
-        enhancedAchievement
+        {
+          id: achievement.id,
+          description: achievement.description,
+          technologies: achievement.technologies,
+          impact: achievement.impact,
+          date: achievement.date,
+          repository: achievement.repository,
+          innovationScore: enhancedAchievement.analysis?.innovationScore,
+          collaborationLevel: enhancedAchievement.analysis?.collaborationLevel,
+          technicalDepth: enhancedAchievement.analysis?.technicalDepth,
+        }
       );
 
       this.logger.log(
@@ -785,8 +797,20 @@ export class PersonalBrandMemoryService {
       // Store using repository
       await this.brandRepo.create(enhancedStrategy as BrandStrategyDocument);
 
-      // Enhanced Neo4j strategy relationships
-      await this.createBrandStrategyRelationships(userId, enhancedStrategy);
+      // Enhanced Neo4j strategy relationships (delegated to repository)
+      await this.developerRepo.createBrandStrategyRelationships(userId, {
+        id: strategy.id,
+        positioning: strategy.positioning,
+        targetAudience: strategy.targetAudience,
+        confidenceScore: strategy.confidenceScore,
+        strengths: strategy.strengths,
+        createdAt: strategy.createdAt,
+        metrics: {
+          implementationProgress:
+            enhancedStrategy.metrics?.implementationProgress,
+          marketResonance: enhancedStrategy.metrics?.marketResonance,
+        },
+      });
 
       this.logger.log(
         `✅ Enhanced brand strategy stored successfully: ${strategy.id}`
@@ -899,23 +923,10 @@ export class PersonalBrandMemoryService {
         this.contentRepo.getContentOptimizationInsights(userId),
       ]);
 
-      // Enhanced Neo4j queries for technical expertise
-      const techResult = await this.neo4j.run(
-        `
-        MATCH (u:Developer {id: $userId})-[:EXPERIENCED_WITH]->(t:Technology)
-        RETURN t.name as technology,
-               COUNT{(u)-[:ACHIEVED]->(:Achievement)-[:USES_TECHNOLOGY]->(t)} as experience_level,
-               AVG(toFloat(a.impact)) as avg_impact
-        ORDER BY experience_level DESC, avg_impact DESC
-        LIMIT 15
-        `,
-        { userId }
-      );
-
-      const currentSkills =
-        techResult.records?.map((record) =>
-          (record as any).get('technology')
-        ) || [];
+      // Enhanced Neo4j queries for technical expertise (delegated to repository)
+      const developerData =
+        await this.developerRepo.getDeveloperWithTechnologies(userId);
+      const currentSkills = developerData.technologies.map((tech) => tech.name);
 
       // Calculate enhanced analytics
       const analytics = await this.calculateEnhancedAnalytics(
@@ -1110,84 +1121,9 @@ export class PersonalBrandMemoryService {
     return 'low';
   }
 
-  private async createEnhancedTechnologyRelationships(
-    userId: string,
-    achievement: any
-  ): Promise<void> {
-    await this.neo4j.run(
-      `
-      MERGE (u:Developer {id: $userId})
-      CREATE (a:Achievement {
-        id: $achievementId,
-        description: $description,
-        impact: $impact,
-        innovationScore: $innovationScore,
-        collaborationLevel: $collaborationLevel,
-        technicalDepth: $technicalDepth,
-        date: $date,
-        repository: $repository
-      })
-      CREATE (u)-[:ACHIEVED]->(a)
-
-      WITH u, a
-      UNWIND $technologies as tech
-      MERGE (t:Technology {name: tech})
-      CREATE (a)-[:USES_TECHNOLOGY {proficiency: $technicalDepth}]->(t)
-      MERGE (u)-[:EXPERIENCED_WITH {level: $collaborationLevel}]->(t)
-      `,
-      {
-        userId,
-        achievementId: achievement.id,
-        description: achievement.description,
-        impact: achievement.impact,
-        innovationScore: achievement.analysis?.innovationScore || 0.7,
-        collaborationLevel:
-          achievement.analysis?.collaborationLevel || 'individual',
-        technicalDepth: achievement.analysis?.technicalDepth || 'intermediate',
-        date: achievement.date,
-        repository: achievement.repository,
-        technologies: achievement.technologies,
-      }
-    );
-  }
-
-  private async createBrandStrategyRelationships(
-    userId: string,
-    strategy: any
-  ): Promise<void> {
-    await this.neo4j.run(
-      `
-      MERGE (u:Developer {id: $userId})
-      CREATE (s:BrandStrategy {
-        id: $strategyId,
-        positioning: $positioning,
-        targetAudience: $targetAudience,
-        confidenceScore: $confidenceScore,
-        implementationProgress: $implementationProgress,
-        marketResonance: $marketResonance,
-        createdAt: $createdAt
-      })
-      CREATE (u)-[:HAS_STRATEGY]->(s)
-
-      WITH u, s
-      UNWIND $strengths as strength
-      MERGE (st:Strength {name: strength})
-      CREATE (s)-[:LEVERAGES]->(st)
-      CREATE (u)-[:POSSESSES]->(st)
-      `,
-      {
-        userId,
-        strategyId: strategy.id,
-        positioning: strategy.positioning,
-        targetAudience: strategy.targetAudience,
-        confidenceScore: strategy.confidenceScore,
-        implementationProgress: strategy.metrics?.implementationProgress || 0.1,
-        marketResonance: strategy.metrics?.marketResonance || 0.6,
-        createdAt: strategy.createdAt,
-        strengths: strategy.strengths,
-      }
-    );
-  }
+  // Manual Neo4j methods removed - now delegated to repositories
+  // - createEnhancedTechnologyRelationships → neo4jAchievementRepo.createEnhancedAchievementWithDeveloper
+  // - createBrandStrategyRelationships → developerRepo.createBrandStrategyRelationships
 
   private extractCareerGoals(strategies: BrandStrategyDocument[]): string[] {
     if (strategies.length === 0) return [];

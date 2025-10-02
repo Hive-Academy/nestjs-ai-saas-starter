@@ -3,11 +3,8 @@
  * Clients needing only document operations (CRUD)
  */
 
-import type {
-  BaseDocument,
-  GetDocumentsOptions,
-  ChromaBulkOptions,
-} from '../../types/documents';
+import type { GetDocumentsOptions } from '../../types/core.interface';
+import type { BaseDocument, ChromaBulkOptions } from '../../types/documents';
 
 /**
  * ChromaDB document service interface - focused only on document CRUD operations
