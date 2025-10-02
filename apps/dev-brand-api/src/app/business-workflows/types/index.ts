@@ -76,6 +76,11 @@ export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
    * Replaces WorkflowAgentState['metadata'] with strongly-typed TMetadata
    */
   metadata: TMetadata;
+
+  /**
+   * Index signature for compatibility with FunctionalWorkflowState
+   */
+  [key: string]: unknown;
 }
 
 // Shared Business Types

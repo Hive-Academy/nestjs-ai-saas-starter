@@ -58,11 +58,6 @@ export interface WorkflowAgentMetadata {
    * Workflow end timestamp
    */
   workflowEndTime?: Date;
-
-  /**
-   * Extended properties for custom metadata
-   */
-  [key: string]: unknown;
 }
 
 // ============================================================================
@@ -120,15 +115,81 @@ export interface GitHubAnalyzerMetadata extends WorkflowAgentMetadata {
   analysisStartTime?: Date;
 
   /**
-   * Analysis completion timestamp
+   * Analysis end timestamp
+   */
+  analysisEndTime?: Date;
+
+  /**
+   * Analysis completion timestamp (alias)
    */
   analysisCompleteTime?: Date;
+
+  /**
+   * Workflow instance ID
+   */
+  workflowInstanceId?: string;
+
+  /**
+   * Number of repositories analyzed
+   */
+  repositoriesAnalyzed?: number;
+
+  /**
+   * Number of commits analyzed
+   */
+  commitsAnalyzed?: number;
+
+  /**
+   * Productivity score
+   */
+  productivityScore?: number;
+
+  /**
+   * Achievement count
+   */
+  achievementCount?: number;
+
+  /**
+   * Narrative generated flag
+   */
+  narrativeGenerated?: boolean;
+
+  /**
+   * Confidence score
+   */
+  confidenceScore?: number;
+
+  /**
+   * Tools used during analysis
+   */
+  toolsUsed?: string[];
+
+  /**
+   * Total processing time in milliseconds
+   */
+  totalProcessingTime?: number;
+
+  /**
+   * Technical expertise information
+   */
+  technicalExpertise?: {
+    breadth?: string;
+    complexity?: string;
+  };
 
   /**
    * Workflow step tracking
    */
   currentStep?:
     | 'initialization'
+    | 'github-activity-analyzed'
+    | 'achievements-extracted'
+    | 'achievement-extraction-error'
+    | 'insights-generated'
+    | 'insights-error'
+    | 'ai-synthesis-complete'
+    | 'ai-synthesis-fallback'
+    | 'completed'
     | 'repository-analysis'
     | 'achievement-extraction'
     | 'ai-synthesis'
@@ -267,14 +328,39 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
   platformContent?: PlatformContent;
 
   /**
-   * LinkedIn post content
+   * Raw LinkedIn content before optimization
    */
-  linkedinPost?: string;
+  rawLinkedinContent?: string;
 
   /**
-   * Dev.to article content
+   * Raw Dev.to content before optimization
    */
-  devtoArticle?: string;
+  rawDevtoContent?: string;
+
+  /**
+   * LinkedIn post content (optimized)
+   */
+  linkedinContent?: string;
+
+  /**
+   * Dev.to article content (optimized)
+   */
+  devtoContent?: string;
+
+  /**
+   * LinkedIn engagement score
+   */
+  linkedinEngagement?: number;
+
+  /**
+   * Dev.to engagement score
+   */
+  devtoEngagement?: number;
+
+  /**
+   * Content start timestamp
+   */
+  contentStartTime?: Date;
 
   /**
    * Content quality assessment
@@ -301,7 +387,12 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
    */
   currentStep?:
     | 'initialization'
+    | 'brand-context-gathered'
+    | 'brand-context-fallback'
     | 'content-generated'
+    | 'content-optimized'
+    | 'optimization-fallback'
+    | 'completed'
     | 'content-generation-failed'
     | 'quality-assessed'
     | 'quality-assessment-failed'
@@ -322,6 +413,21 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
   contentId?: string;
 
   /**
+   * Content generation flag
+   */
+  contentGenerated?: boolean;
+
+  /**
+   * Content optimized flag
+   */
+  contentOptimized?: boolean;
+
+  /**
+   * Content created flag
+   */
+  contentCreated?: boolean;
+
+  /**
    * Content creation completion flag
    */
   contentCreationCompleted?: boolean;
@@ -330,6 +436,26 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
    * Whether content needs refinement
    */
   needsRefinement?: boolean;
+
+  /**
+   * Content end time
+   */
+  contentEndTime?: Date;
+
+  /**
+   * Total processing time
+   */
+  totalProcessingTime?: number;
+
+  /**
+   * Final stage flag
+   */
+  finalStage?: boolean;
+
+  /**
+   * Target platforms
+   */
+  targetPlatforms?: string[];
 }
 
 // ============================================================================

@@ -1,7 +1,7 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import type { WorkflowAgentState } from '../../types';
+import type { TypedWorkflowAgentState } from '../../types';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import {
   Entrypoint,
@@ -13,6 +13,7 @@ import type {
   TaskExecutionContext,
   TaskExecutionResult,
 } from '@hive-academy/langgraph-functional-api';
+import type { BrandStrategistMetadata } from '../shared/metadata.types';
 import {
   DeclarativeWorkflowBase,
   WorkflowGraphBuilderService,
@@ -76,7 +77,9 @@ import {
   },
 })
 @Injectable()
-export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
+export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
+  TypedWorkflowAgentState<BrandStrategistMetadata>
+> {
   constructor(
     private readonly llm: LlmProviderService,
     private readonly memory: PersonalBrandMemoryService,
@@ -108,11 +111,14 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
   @Entrypoint({ timeout: 10000 })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeBrandAnalysis(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<BrandStrategistMetadata>>
+  > {
     const { state } = context;
-    const githubUsername =
-      (state.metadata?.githubUsername as string) || 'developer';
+    const githubUsername = state.metadata.githubUsername || 'developer';
 
     return {
       state: {
@@ -134,13 +140,16 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
   @Task({ dependsOn: ['initializeBrandAnalysis'] })
   @StreamProgress({ enabled: true })
   async gatherBrandData(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<BrandStrategistMetadata>>
+  > {
     const { state } = context;
-    const githubUsername =
-      (state.metadata?.githubUsername as string) || 'developer';
-    const achievements = (state.metadata?.achievements as Achievement[]) || [];
-    const githubData = state.metadata?.githubData as GitHubData | undefined;
+    const githubUsername = state.metadata.githubUsername || 'developer';
+    const achievements = state.metadata.achievements || [];
+    const githubData = state.metadata.githubData;
 
     try {
       // Gather data from memory service
@@ -203,14 +212,21 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
   @Task({ dependsOn: ['gatherBrandData'] })
   @StreamToken({ enabled: true, format: 'structured' })
   async analyzeBrandPositioning(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<BrandStrategistMetadata>>
+  > {
     const { state } = context;
-    const brandData = state.metadata?.brandData as BrandData;
-    const githubUsername =
-      (state.metadata?.githubUsername as string) || 'developer';
+    const brandData = state.metadata.brandData;
+    const githubUsername = state.metadata.githubUsername || 'developer';
 
     try {
+      if (!brandData) {
+        throw new Error('Brand data is required for positioning analysis');
+      }
+
       const analysisPrompt = buildBrandAnalysisPrompt(
         githubUsername,
         brandData
@@ -273,10 +289,12 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Node({ type: 'condition' })
   async assessBrandStrength(
-    context: TaskExecutionContext
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
   ): Promise<{ route: string }> {
     const { state } = context;
-    const brandScore = (state.metadata?.brandScore as number) || 0.5;
+    const brandScore = state.metadata.brandScore || 0.5;
 
     const route = brandScore > 0.7 ? 'optimize' : 'rebuild';
 
@@ -287,8 +305,10 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    * Functional edge - route to optimization path for strong brands
    */
   @Edge('assessBrandStrength', 'optimizeBrand')
-  shouldOptimizeBrand(state: WorkflowAgentState): boolean {
-    const brandScore = (state.metadata?.brandScore as number) || 0.5;
+  shouldOptimizeBrand(
+    state: TypedWorkflowAgentState<BrandStrategistMetadata>
+  ): boolean {
+    const brandScore = state.metadata.brandScore || 0.5;
     return brandScore > 0.7;
   }
 
@@ -296,8 +316,10 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    * Functional edge - route to rebuild path for weak brands
    */
   @Edge('assessBrandStrength', 'rebuildStrategy')
-  shouldRebuildBrand(state: WorkflowAgentState): boolean {
-    const brandScore = (state.metadata?.brandScore as number) || 0.5;
+  shouldRebuildBrand(
+    state: TypedWorkflowAgentState<BrandStrategistMetadata>
+  ): boolean {
+    const brandScore = state.metadata.brandScore || 0.5;
     return brandScore <= 0.7;
   }
 
@@ -306,12 +328,19 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({ dependsOn: ['assessBrandStrength'] })
   async optimizeBrand(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<BrandStrategistMetadata>>
+  > {
     const { state } = context;
-    const brandAnalysis = state.metadata?.brandAnalysis as BrandAnalysis;
-    const githubUsername =
-      (state.metadata?.githubUsername as string) || 'developer';
+    const brandAnalysis = state.metadata.brandAnalysis;
+    const githubUsername = state.metadata.githubUsername || 'developer';
+
+    if (!brandAnalysis) {
+      throw new Error('Brand analysis is required for optimization');
+    }
 
     const optimizationPrompt = buildOptimizationPrompt(
       githubUsername,
@@ -357,14 +386,23 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({ dependsOn: ['assessBrandStrength'] })
   async rebuildStrategy(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<BrandStrategistMetadata>>
+  > {
     const { state } = context;
-    const brandAnalysis = state.metadata?.brandAnalysis as BrandAnalysis;
-    const githubUsername =
-      (state.metadata?.githubUsername as string) || 'developer';
-    const brandData = state.metadata?.brandData as BrandData;
-    const brandScore = (state.metadata?.brandScore as number) || 0.5;
+    const brandAnalysis = state.metadata.brandAnalysis;
+    const githubUsername = state.metadata.githubUsername || 'developer';
+    const brandData = state.metadata.brandData;
+    const brandScore = state.metadata.brandScore || 0.5;
+
+    if (!brandData || !brandAnalysis) {
+      throw new Error(
+        'Brand data and analysis are required for rebuild strategy'
+      );
+    }
 
     const rebuildPrompt = buildRebuildPrompt(
       githubUsername,
@@ -415,27 +453,30 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({ dependsOn: ['optimizeBrand', 'rebuildStrategy'] })
   async generateFinalStrategy(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<BrandStrategistMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<BrandStrategistMetadata>>
+  > {
     const { state } = context;
-    const githubUsername =
-      (state.metadata?.githubUsername as string) || 'developer';
-    const strategyType = state.metadata?.strategyType as string;
-    const finalStrategy = state.metadata?.finalStrategy as string;
-    const brandData = state.metadata?.brandData as BrandData;
+    const githubUsername = state.metadata.githubUsername || 'developer';
+    const strategyType = state.metadata.strategyType;
+    const finalStrategy = state.metadata.finalStrategy;
+    const brandData = state.metadata.brandData;
 
     const consolidatedStrategy = {
       userId: githubUsername,
       strategyType,
-      brandScore: state.metadata?.brandScore,
+      brandScore: state.metadata.brandScore,
       strategy: finalStrategy,
-      analysis: state.metadata?.brandAnalysis,
-      memoryContext: brandData.devContext,
-      brandEvolution: brandData.brandEvolution,
-      brandVoice: brandData.brandVoice,
+      analysis: state.metadata.brandAnalysis,
+      memoryContext: brandData?.devContext,
+      brandEvolution: brandData?.brandEvolution,
+      brandVoice: brandData?.brandVoice,
       createdAt: new Date().toISOString(),
       workflowMetadata: {
-        stepsExecuted: context.previousSteps || [],
+        stepsExecuted: [],
         completedAt: new Date().toISOString(),
       },
     };

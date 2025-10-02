@@ -1,7 +1,7 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import type { WorkflowAgentState } from '../../types';
+import type { TypedWorkflowAgentState } from '../../types';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import {
   Entrypoint,
@@ -13,6 +13,7 @@ import type {
   TaskExecutionContext,
   TaskExecutionResult,
 } from '@hive-academy/langgraph-functional-api';
+import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
 import {
   DeclarativeWorkflowBase,
   WorkflowGraphBuilderService,
@@ -99,7 +100,9 @@ import {
   },
 })
 @Injectable()
-export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
+export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
+  TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+> {
   constructor(
     private readonly llmProvider: LlmProviderService,
     private readonly githubTools: GitHubIntegrationTools,
@@ -131,8 +134,12 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeGitHubAnalysis(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  > {
     const { state } = context;
     console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
 
@@ -141,15 +148,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
 
     const githubUsername =
       extractGitHubUsername(messageContent) ||
-      (typeof state.metadata?.githubUsername === 'string'
-        ? state.metadata.githubUsername
-        : null) ||
+      state.metadata.githubUsername ||
       'demo-user';
 
-    const timeframe =
-      typeof state.metadata?.timeframe === 'string'
-        ? state.metadata.timeframe
-        : 'month';
+    const timeframe = state.metadata.timeframe || 'month';
 
     return {
       state: {
@@ -182,11 +184,16 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
     metrics: { trackExecutionTime: true, trackErrorRate: true },
   })
   async analyzeGitHubActivity(
-    @Required() context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    @Required()
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  > {
     const { state } = context;
-    const githubUsername = state.metadata?.githubUsername as string;
-    const timeframe = state.metadata?.timeframe as string;
+    const githubUsername = state.metadata.githubUsername;
+    const timeframe = state.metadata.timeframe;
 
     try {
       console.log(`💻 Analyzing GitHub activity for ${githubUsername}...`);
@@ -237,10 +244,14 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   @Task({ dependsOn: ['analyzeGitHubActivity'] })
   @StreamProgress({ enabled: true })
   async extractAchievements(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  > {
     const { state } = context;
-    const githubData = state.metadata?.githubData as GitHubData;
+    const githubData = state.metadata.githubData;
 
     try {
       console.log('🎯 Extracting meaningful achievements...');
@@ -286,11 +297,15 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   @Task({ dependsOn: ['extractAchievements'] })
   @StreamProgress({ enabled: true })
   async generateDeveloperInsights(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  > {
     const { state } = context;
-    const githubUsername = state.metadata?.githubUsername as string;
-    const githubData = state.metadata?.githubData as GitHubData;
+    const githubUsername = state.metadata.githubUsername;
+    const githubData = state.metadata.githubData;
 
     try {
       console.log('🔍 Generating developer insights...');
@@ -340,14 +355,17 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   @StreamProgress({ enabled: true })
   @StreamToken({ enabled: true, format: 'structured' })
   async synthesizeWithAI(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  > {
     const { state } = context;
-    const githubUsername = state.metadata?.githubUsername as string;
-    const githubData = state.metadata?.githubData as GitHubData;
-    const achievements = (state.metadata?.achievements as Achievement[]) || [];
-    const developerInsights = state.metadata
-      ?.developerInsights as DeveloperInsights;
+    const githubUsername = state.metadata.githubUsername;
+    const githubData = state.metadata.githubData;
+    const achievements = state.metadata.achievements || [];
+    const developerInsights = state.metadata.developerInsights;
 
     try {
       console.log('🚀 Synthesizing analysis with AI...');
@@ -382,7 +400,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
       console.error('❌ AI synthesis failed:', error);
       const fallbackAnalysis = generateFallbackAnalysis(
         githubUsername,
-        state.metadata?.timeframe as string
+        state.metadata.timeframe
       );
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -406,16 +424,17 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    */
   @Node({ type: 'condition' })
   async assessAnalysisQuality(
-    context: TaskExecutionContext
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
   ): Promise<{ route: string }> {
     const { state } = context;
-    const githubData = state.metadata?.githubData as GitHubData | undefined;
-    const achievements = (state.metadata?.achievements as Achievement[]) || [];
+    const githubData = state.metadata.githubData;
+    const achievements = state.metadata.achievements || [];
     const hasRealData =
       githubData && githubData.summary && achievements.length > 0;
     const hasAIAnalysis =
-      state.metadata?.aiAnalysis &&
-      (state.metadata.aiAnalysis as string).length > 100;
+      state.metadata.aiAnalysis && state.metadata.aiAnalysis.length > 100;
 
     const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
 
@@ -430,15 +449,19 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
   @Task({ dependsOn: ['assessAnalysisQuality'] })
   @StreamProgress({ enabled: true })
   async finalizeAnalysis(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+    context: TaskExecutionContext<
+      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+    >
+  ): Promise<
+    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  > {
     const { state } = context;
-    const githubUsername = state.metadata?.githubUsername as string;
-    const timeframe = state.metadata?.timeframe as string;
-    const githubData = state.metadata?.githubData as GitHubData;
-    const achievements = (state.metadata?.achievements as Achievement[]) || [];
-    const aiAnalysis = (state.metadata?.aiAnalysis as string) || '';
-    const mode = (state.metadata?.mode as string) || 'real';
+    const githubUsername = state.metadata.githubUsername;
+    const timeframe = state.metadata.timeframe;
+    const githubData = state.metadata.githubData;
+    const achievements = state.metadata.achievements || [];
+    const aiAnalysis = state.metadata.aiAnalysis || '';
+    const mode = state.metadata.mode || 'real';
 
     console.log('✅ GitHub Code Analyzer: Analysis completed with AI insights');
 
@@ -466,8 +489,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
           analysisEndTime: new Date(),
           totalProcessingTime:
             Date.now() -
-            ((state.metadata?.analysisStartTime as Date)?.getTime() ||
-              Date.now()),
+            (state.metadata.analysisStartTime?.getTime() || Date.now()),
           toolsUsed: [
             'github-analyzer',
             'achievement-extractor',
@@ -486,14 +508,15 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    * Define workflow edges
    */
   @Edge('assessAnalysisQuality', 'finalizeAnalysis')
-  shouldProceedToFinalize(state: WorkflowAgentState): boolean {
-    const githubData = state.metadata?.githubData as GitHubData | undefined;
-    const achievements = (state.metadata?.achievements as Achievement[]) || [];
+  shouldProceedToFinalize(
+    state: TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+  ): boolean {
+    const githubData = state.metadata.githubData;
+    const achievements = state.metadata.achievements || [];
     const hasRealData =
       githubData && githubData.summary && achievements.length > 0;
     const hasAIAnalysis =
-      state.metadata?.aiAnalysis &&
-      (state.metadata.aiAnalysis as string).length > 100;
+      state.metadata.aiAnalysis && state.metadata.aiAnalysis.length > 100;
     const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
     return confidenceScore > 0.0; // Always proceed to finalize
   }

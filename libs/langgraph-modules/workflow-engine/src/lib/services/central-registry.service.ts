@@ -32,17 +32,17 @@ export class CentralRegistryService {
    */
   private initializeRegistry(): void {
     this.logger.log('Initializing centralized registry...');
-    
-    // Register configured agents
-    this.configuredAgents.forEach(agent => {
-      this.registerAgent(agent);
-    });
-    
-    // Register configured tools
+
+    // 🆕 ORDER: Register tools FIRST (before agents need them for validation)
     this.configuredTools.forEach(tool => {
       this.registerTool(tool);
     });
-    
+
+    // Register configured agents (with tool validation)
+    this.configuredAgents.forEach(agent => {
+      this.registerAgent(agent);
+    });
+
     // Register configured workflows
     this.configuredWorkflows.forEach(workflow => {
       this.registerWorkflow(workflow);
@@ -64,9 +64,54 @@ export class CentralRegistryService {
   }
 
   /**
+   * 🆕 VALIDATION: Validates that all tools requested by an agent are registered
+   * @throws Error if any requested tools are missing
+   */
+  private validateAgentTools(agent: AgentProvider): void {
+    // Extract agent class from provider
+    let agentClass: any;
+    if (typeof agent === 'function') {
+      agentClass = agent;
+    } else if (typeof agent === 'object' && agent !== null) {
+      const providerObj = agent as any;
+      agentClass = providerObj.useClass || providerObj;
+    } else {
+      return; // Cannot validate string providers
+    }
+
+    // Get agent configuration from decorator metadata
+    const agentConfig: any = Reflect.getMetadata('agent:config', agentClass);
+
+    if (!agentConfig || !agentConfig.tools || agentConfig.tools.length === 0) {
+      return; // No tools to validate
+    }
+
+    const missingTools: string[] = [];
+    const registeredToolIds = Array.from(this.tools.keys());
+
+    for (const toolName of agentConfig.tools) {
+      if (!this.tools.has(toolName)) {
+        missingTools.push(toolName);
+      }
+    }
+
+    if (missingTools.length > 0) {
+      const agentId = agentConfig.id || agentClass.name || 'unknown-agent';
+      throw new Error(
+        `❌ Agent "${agentId}" requests missing tools: ${missingTools.join(', ')}\n\n` +
+        `Available tools: ${registeredToolIds.length > 0 ? registeredToolIds.join(', ') : 'none'}\n\n` +
+        `💡 Hint: Ensure tools are decorated with @Tool and registered in WorkflowEngineModule.forRoot({ tools: [...] })`
+      );
+    }
+  }
+
+  /**
    * Register an agent provider
    */
   registerAgent(agent: AgentProvider): void {
+    // 🆕 VALIDATION: Check that all requested tools exist
+    this.validateAgentTools(agent);
+
     const agentId = this.getAgentId(agent);
     if (this.agents.has(agentId)) {
       this.logger.warn(`Agent ${agentId} already registered, overriding`);
