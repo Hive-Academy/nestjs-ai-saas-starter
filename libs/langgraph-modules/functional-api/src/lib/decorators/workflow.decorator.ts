@@ -44,6 +44,19 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
   interruptNodes?: string[];
   /** Tags for workflow categorization */
   tags?: string[];
+
+  /**
+   * Enable automatic Time-Travel registration
+   * When true, workflow automatically registers with Time-Travel service for debugging
+   */
+  timeTravel?:
+    | boolean
+    | {
+        enabled: boolean;
+        domain?: string;
+        entrypoint?: string;
+        metadata?: Record<string, unknown>;
+      };
 }
 
 /**
@@ -63,7 +76,7 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
  * }
  * ```
  */
-export function Workflow(options: WorkflowOptions = {}): ClassDecorator {
+export function FunctionalWorkflow(options: WorkflowOptions = {}): ClassDecorator {
   return (target: any) => {
     // Get module config with defaults for zero-config experience
     // Handle case where module hasn't been initialized yet during class loading
@@ -123,6 +136,17 @@ export function Workflow(options: WorkflowOptions = {}): ClassDecorator {
       // Apply pattern if provided
       if (mergedOptions.pattern && !instance.pattern) {
         instance.pattern = mergedOptions.pattern;
+      }
+
+      // 🚀 AUTO-REGISTRATION: Register with Time-Travel if enabled
+      if (mergedOptions.timeTravel) {
+        queueMicrotask(async () => {
+          await tryAutoRegisterWithTimeTravel(
+            instance,
+            mergedOptions,
+            '@hive-academy/langgraph-functional-api'
+          );
+        });
       }
 
       return instance;
@@ -225,3 +249,66 @@ export function getWorkflowMetadata(target: any): WorkflowOptions | undefined {
  * Check if a class is decorated with @Workflow
  */
 // isWorkflow function is now exported from @hive-academy/langgraph-core
+
+/**
+ * Global event emitter instance for workflow auto-registration
+ */
+let globalEventEmitter: any = null;
+
+/**
+ * 🎯 BREAKTHROUGH: Auto-registration function for functional-api workflows
+ * Automatically registers workflows with Time-Travel service using events
+ */
+async function tryAutoRegisterWithTimeTravel(
+  instance: any,
+  options: WorkflowOptions,
+  packageName: string
+): Promise<void> {
+  try {
+    // Use dynamic import for loose coupling
+    const { EventEmitter2 } = await import('@nestjs/event-emitter');
+
+    // Get or create global event emitter
+    if (!globalEventEmitter) {
+      globalEventEmitter = new EventEmitter2({
+        wildcard: true,
+        delimiter: '.',
+        newListener: false,
+        maxListeners: 20,
+      });
+    }
+
+    const timeTravelOptions =
+      typeof options.timeTravel === 'object'
+        ? options.timeTravel
+        : { enabled: true };
+
+    // Emit workflow auto-registration event
+    globalEventEmitter.emit('workflow.auto-register', {
+      name: options.name || instance.constructor.name,
+      instance: instance,
+      metadata: {
+        autoRegistered: true,
+        package: packageName,
+        domain: timeTravelOptions.domain || 'functional-api',
+        entrypoint: timeTravelOptions.entrypoint || 'execute',
+        originalOptions: options,
+        workflowName: options.name || instance.constructor.name,
+        ...timeTravelOptions.metadata,
+      },
+    });
+
+    console.log(
+      `🚀 Auto-registration event emitted for workflow: ${
+        options.name || instance.constructor.name
+      } (functional-api)`
+    );
+  } catch (error) {
+    // Graceful degradation - Time-Travel might not be available
+    console.log(
+      `Time-Travel auto-registration skipped for ${
+        options.name || instance.constructor.name
+      }: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}

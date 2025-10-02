@@ -1,14 +1,17 @@
-import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Module, DynamicModule, Provider } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TimeTravelService } from './services/time-travel.service';
 import { BranchManagerService } from './services/branch-manager.service';
+import { WorkflowReplayService } from './services/workflow-replay.service';
+import { ExecutionHistoryService } from './services/execution-history.service';
+import { WorkflowRegistryService } from './services/workflow-registry.service';
 import {
   TimeTravelConfig,
   TimeTravelModuleAsyncOptions,
 } from './interfaces/time-travel.interface';
-import { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 /**
  * Time travel module for workflow replay and debugging capabilities
+ * Now provides focused services with proper separation of concerns
  */
 @Module({})
 export class TimeTravelModule {
@@ -21,33 +24,55 @@ export class TimeTravelModule {
         provide: 'TIME_TRAVEL_CONFIG',
         useValue: config ?? {
           enableBranching: true,
-          enableAutoCheckpoint: false,
-          maxCheckpointsPerThread: 100,
           maxBranchesPerThread: 10,
         },
       },
-      // Note: ICheckpointAdapter should be provided by the app module via adapter pattern
-      // No local provider needed as it will be injected globally
+      {
+        provide: 'WORKFLOW_REGISTRY',
+        useValue: new Map<string, unknown>(),
+      },
+      // Provide checkpoint adapter from config to services (consistent with other modules)
+      {
+        provide: 'ICheckpointAdapter',
+        useFactory: (config: TimeTravelConfig) => {
+          if (!config.checkpointAdapter) {
+            throw new Error(
+              'TimeTravelModule: checkpointAdapter is required but not provided in configuration'
+            );
+          }
+          return config.checkpointAdapter;
+        },
+        inject: ['TIME_TRAVEL_CONFIG'],
+      },
+      // 🧠 MEMORY INTEGRATION: Provide memory adapter for 2025 cross-module memory
+      {
+        provide: 'IMemoryAdapter',
+        useFactory: (config: TimeTravelConfig) => {
+          // Optional memory adapter for time-travel memory integration
+          return config.memoryAdapter || null;
+        },
+        inject: ['TIME_TRAVEL_CONFIG'],
+      },
+      // Core focused services
+      WorkflowRegistryService,
+      ExecutionHistoryService,
+      BranchManagerService,
+      WorkflowReplayService,
+      // Facade service that coordinates the others
       TimeTravelService,
     ];
-
-    // Add optional services based on configuration
-    if (config?.enableBranching) {
-      providers.push(BranchManagerService);
-    }
-
-    const exports: Array<Type | Provider> = [TimeTravelService];
-
-    // Only export BranchManagerService if it's included in providers
-    if (config?.enableBranching) {
-      exports.push(BranchManagerService);
-    }
 
     return {
       module: TimeTravelModule,
       imports: [ConfigModule],
       providers,
-      exports,
+      exports: [
+        TimeTravelService,
+        BranchManagerService,
+        WorkflowReplayService,
+        ExecutionHistoryService,
+        WorkflowRegistryService,
+      ],
     };
   }
 
@@ -61,42 +86,52 @@ export class TimeTravelModule {
         useFactory: options.useFactory!,
         inject: options.inject ?? [],
       },
-      // Note: ICheckpointAdapter should be provided by the app module via adapter pattern
-      // No local provider needed as it will be injected globally
       {
-        provide: TimeTravelService,
-        useFactory: (
-          configService: ConfigService,
-          timeTravelConfig: TimeTravelConfig,
-          checkpointAdapter: ICheckpointAdapter
-        ) => {
-          // Merge config service values with provided config
-          const mergedConfig = {
-            ...configService.get<TimeTravelConfig>('timeTravel', {}),
-            ...timeTravelConfig,
-          };
-
-          // Store merged config back in ConfigService
-          configService.set('timeTravel', mergedConfig);
-
-          return new TimeTravelService(configService, checkpointAdapter);
-        },
-        inject: [ConfigService, 'TIME_TRAVEL_CONFIG', 'ICheckpointAdapter'],
+        provide: 'WORKFLOW_REGISTRY',
+        useValue: new Map<string, unknown>(),
       },
+      // Provide checkpoint adapter from config to services (consistent with other modules)
       {
-        provide: BranchManagerService,
-        useFactory: (timeTravelService: TimeTravelService) => {
-          return new BranchManagerService(timeTravelService);
+        provide: 'ICheckpointAdapter',
+        useFactory: async (config: TimeTravelConfig) => {
+          if (!config.checkpointAdapter) {
+            throw new Error(
+              'TimeTravelModule: checkpointAdapter is required but not provided in configuration'
+            );
+          }
+          return config.checkpointAdapter;
         },
-        inject: [TimeTravelService],
+        inject: ['TIME_TRAVEL_CONFIG'],
       },
+      // 🧠 MEMORY INTEGRATION: Provide memory adapter for 2025 cross-module memory
+      {
+        provide: 'IMemoryAdapter',
+        useFactory: async (config: TimeTravelConfig) => {
+          // Optional memory adapter for time-travel memory integration
+          return config.memoryAdapter || null;
+        },
+        inject: ['TIME_TRAVEL_CONFIG'],
+      },
+      // Core focused services - all required for facade to work
+      WorkflowRegistryService,
+      ExecutionHistoryService,
+      BranchManagerService,
+      WorkflowReplayService,
+      // Facade service that coordinates the others
+      TimeTravelService,
     ];
 
     return {
       module: TimeTravelModule,
       imports: [ConfigModule, ...(options.imports ?? [])],
       providers,
-      exports: providers, // Export all providers that were created
+      exports: [
+        TimeTravelService,
+        BranchManagerService,
+        WorkflowReplayService,
+        ExecutionHistoryService,
+        WorkflowRegistryService,
+      ],
     };
   }
 }

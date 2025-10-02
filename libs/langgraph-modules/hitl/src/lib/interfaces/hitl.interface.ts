@@ -29,6 +29,9 @@ export interface ConfidenceThreshold {
 import type { Type } from '@nestjs/common';
 import type { IHitlStorageService } from './hitl-storage.interface';
 import type { IUserInterruptionStorageService } from './user-interruption.interface';
+import type { IApprovalChainStorageService } from './approval-chain-storage.interface';
+import type { IFeedbackStorageService } from './feedback-storage.interface';
+import type { IConfidenceStorageService } from './confidence-storage.interface';
 
 export interface HitlModuleOptions {
   defaultTimeout?: number;
@@ -36,7 +39,10 @@ export interface HitlModuleOptions {
   enabled?: boolean;
   adapters?: {
     storage?: Type<IHitlStorageService> | IHitlStorageService;
-    interruptionStorage?: Type<IUserInterruptionStorageService> ;
+    interruptionStorage?: Type<IUserInterruptionStorageService>;
+    approvalChainStorage?: Type<IApprovalChainStorageService> | IApprovalChainStorageService;
+    feedbackStorage?: Type<IFeedbackStorageService> | IFeedbackStorageService;
+    confidenceStorage?: Type<IConfidenceStorageService> | IConfidenceStorageService;
   };
 }
 

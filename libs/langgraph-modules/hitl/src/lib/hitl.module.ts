@@ -11,6 +11,11 @@ import { HitlNotificationService } from './services/hitl-notification.service';
 import { HitlTimeoutService } from './services/hitl-timeout.service';
 import { HumanApprovalService } from './services/human-approval.service';
 import { UserInterruptionService } from './services/user-interruption.service';
+import { HitlMemoryLearningService } from './services/hitl-memory-learning.service';
+import { HitlCheckpointService } from './services/hitl-checkpoint.service';
+import { HitlValidationService } from './services/hitl-validation.service';
+import { HitlRecoveryService } from './services/hitl-recovery.service';
+import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Import interfaces only - adapters moved to application layer
@@ -75,6 +80,12 @@ export class HitlModule {
         FeedbackProcessorService,
         HitlNotificationService,
         HitlTimeoutService,
+        // New specialized HITL services
+        HitlMemoryLearningService,
+        HitlCheckpointService,
+        HitlValidationService,
+        HitlRecoveryService,
+        HitlApprovalRequestService,
         // Orchestrator service that depends on the above
         HumanApprovalService,
         // Legacy provider for backward compatibility
@@ -94,9 +105,13 @@ export class HitlModule {
         FeedbackProcessorService,
         HitlNotificationService,
         HitlTimeoutService,
+        // New specialized HITL services
+        HitlMemoryLearningService,
+        HitlCheckpointService,
+        HitlValidationService,
+        HitlRecoveryService,
+        HitlApprovalRequestService,
         HITL_CONFIG,
-        // Export adapter interface for external use
-        IHitlStorageService,
       ],
       // Make the configured HITL module global so its providers are available
       // to feature modules (e.g., BusinessWorkflowsModule) without re-importing
@@ -130,6 +145,12 @@ export class HitlModule {
         FeedbackProcessorService,
         HitlNotificationService,
         HitlTimeoutService,
+        // New specialized HITL services
+        HitlMemoryLearningService,
+        HitlCheckpointService,
+        HitlValidationService,
+        HitlRecoveryService,
+        HitlApprovalRequestService,
         HumanApprovalService,
       ],
       exports: [
@@ -143,9 +164,13 @@ export class HitlModule {
         FeedbackProcessorService,
         HitlNotificationService,
         HitlTimeoutService,
+        // New specialized HITL services
+        HitlMemoryLearningService,
+        HitlCheckpointService,
+        HitlValidationService,
+        HitlRecoveryService,
+        HitlApprovalRequestService,
         HITL_CONFIG,
-        // Export adapter interface for external use
-        IHitlStorageService,
       ],
       global: true,
     };
@@ -268,11 +293,100 @@ export class HitlModule {
         });
       }
     } else {
-      // No interruption storage adapter - will use in-memory only
-      console.warn(
-        'HITL Module: No interruption storage adapter provided. User interruption persistence will be disabled (in-memory only). ' +
-          'Provide options.adapters.interruptionStorage for production use.'
+      // ❌ CRITICAL: No interruption storage adapter - service will fail
+      console.error(
+        '❌ CRITICAL: No interruption storage adapter provided. UserInterruptionService requires persistent storage and will fail to start. ' +
+          'Production systems MUST provide options.adapters.interruptionStorage.'
       );
+      // 🛡️ FAIL FAST: Required dependency missing
+      throw new Error(
+        'UserInterruptionService requires IUserInterruptionStorageService - provide options.adapters.interruptionStorage'
+      );
+    }
+
+    // Approval chain storage adapter provider
+    const approvalChainStorageAdapter = options.adapters?.approvalChainStorage;
+    if (approvalChainStorageAdapter) {
+      // Custom approval chain storage adapter provided
+      if (typeof approvalChainStorageAdapter === 'function') {
+        // It's a class type
+        providers.push({
+          provide: 'IApprovalChainStorageService',
+          useClass: approvalChainStorageAdapter,
+        });
+      } else {
+        // It's an instance
+        providers.push({
+          provide: 'IApprovalChainStorageService',
+          useValue: approvalChainStorageAdapter,
+        });
+      }
+    } else {
+      // ❌ CRITICAL: No approval chain storage adapter - service will fail
+      console.error(
+        '❌ CRITICAL: No approval chain storage adapter provided. ApprovalChainService requires persistent storage and will fail to start. ' +
+          'Production systems MUST provide options.adapters.approvalChainStorage.'
+      );
+      // 🛡️ FAIL FAST: Required dependency missing
+      throw new Error(
+        'ApprovalChainService requires IApprovalChainStorageService - provide options.adapters.approvalChainStorage'
+      );
+    }
+
+    // Feedback storage adapter provider
+    const feedbackStorageAdapter = options.adapters?.feedbackStorage;
+    if (feedbackStorageAdapter) {
+      // Custom feedback storage adapter provided
+      if (typeof feedbackStorageAdapter === 'function') {
+        // It's a class type
+        providers.push({
+          provide: 'IFeedbackStorageService',
+          useClass: feedbackStorageAdapter,
+        });
+      } else {
+        // It's an instance
+        providers.push({
+          provide: 'IFeedbackStorageService',
+          useValue: feedbackStorageAdapter,
+        });
+      }
+    } else {
+      // ❌ CRITICAL: No feedback storage adapter - service will fail
+      console.error(
+        '❌ CRITICAL: No feedback storage adapter provided. FeedbackProcessorService requires persistent storage and will fail to start. ' +
+          'Human feedback is essential for AI learning and must never be lost. ' +
+          'Production systems MUST provide options.adapters.feedbackStorage.'
+      );
+      // 🛡️ FAIL FAST: Required dependency missing
+      throw new Error(
+        'FeedbackProcessorService requires IFeedbackStorageService - provide options.adapters.feedbackStorage'
+      );
+    }
+
+    // Confidence storage adapter provider (OPTIONAL)
+    const confidenceStorageAdapter = options.adapters?.confidenceStorage;
+    if (confidenceStorageAdapter) {
+      // Custom confidence storage adapter provided
+      if (typeof confidenceStorageAdapter === 'function') {
+        // It's a class type
+        providers.push({
+          provide: 'IConfidenceStorageService',
+          useClass: confidenceStorageAdapter,
+        });
+      } else {
+        // It's an instance
+        providers.push({
+          provide: 'IConfidenceStorageService',
+          useValue: confidenceStorageAdapter,
+        });
+      }
+    } else {
+      // ⚠️ OPTIONAL: No confidence storage adapter - confidence learning disabled
+      console.warn(
+        '⚠️  No confidence storage adapter provided. ConfidenceEvaluatorService will run in degraded mode without learning capabilities. ' +
+          'For production systems with machine learning requirements, provide options.adapters.confidenceStorage.'
+      );
+      // No provider added - service will run in cache-only mode
     }
 
     return providers;
@@ -286,11 +400,15 @@ export class HitlModule {
     options: HitlModuleAsyncOptions
   ): Provider[] {
     // For async configuration, applications must provide adapters through dependency injection
-    console.warn(
-      'HitlModule.forRootAsync(): Storage adapters must be provided through dependency injection. ' +
-        'Please ensure IHitlStorageService is provided in your application module.'
+    console.error(
+      '❌ CRITICAL: HitlModule.forRootAsync() requires adapter providers. ' +
+        'Please ensure IHitlStorageService and IUserInterruptionStorageService are provided in your application module. ' +
+        'UserInterruptionService will fail to start without persistent storage.'
     );
-    return [];
+    // 🛡️ FAIL FAST: Required dependencies missing in async mode
+    throw new Error(
+      'Async configuration requires external adapter providers - ensure both IHitlStorageService and IUserInterruptionStorageService are available'
+    );
   }
 
   /**
@@ -317,6 +435,111 @@ export class HitlModule {
           if (typeof (storageAdapter as any)[method] !== 'function') {
             throw new Error(
               `Custom storage adapter must implement IHitlStorageService.${method}() method`
+            );
+          }
+        }
+      }
+    }
+
+    if (options.adapters?.approvalChainStorage) {
+      const approvalChainStorageAdapter = options.adapters.approvalChainStorage;
+      if (typeof approvalChainStorageAdapter === 'function') {
+        // For class types, we can't validate at runtime easily
+        // NestJS will handle this during injection
+      } else {
+        // For instances, check if it has required methods
+        const requiredMethods = [
+          'storeApprovalChain',
+          'getApprovalChain',
+          'getAllApprovalChains',
+          'deleteApprovalChain',
+          'storeApprovalRequest',
+          'getApprovalRequest',
+          'getApprovalRequestsByExecution',
+          'updateApprovalRequestStatus',
+          'updateApprovalRequest',
+          'deleteApprovalRequest',
+          'getAllActiveRequests',
+          'getPendingApprovalsForApprover',
+          'cleanup',
+          'healthCheck',
+        ];
+        for (const method of requiredMethods) {
+          if (typeof (approvalChainStorageAdapter as any)[method] !== 'function') {
+            throw new Error(
+              `Custom approval chain storage adapter must implement IApprovalChainStorageService.${method}() method`
+            );
+          }
+        }
+      }
+    }
+
+    if (options.adapters?.feedbackStorage) {
+      const feedbackStorageAdapter = options.adapters.feedbackStorage;
+      if (typeof feedbackStorageAdapter === 'function') {
+        // For class types, we can't validate at runtime easily
+        // NestJS will handle this during injection
+      } else {
+        // For instances, check if it has required methods
+        const requiredMethods = [
+          'storeFeedback',
+          'getFeedback',
+          'getFeedbackByExecution',
+          'updateFeedbackStatus',
+          'deleteFeedback',
+          'getFeedbackByType',
+          'getFeedbackByProvider',
+          'getUnprocessedFeedback',
+          'getFeedbackStats',
+          'getAllActiveFeedback',
+          'getAllExecutionFeedback',
+          'cleanup',
+          'healthCheck',
+        ];
+        for (const method of requiredMethods) {
+          if (typeof (feedbackStorageAdapter as any)[method] !== 'function') {
+            throw new Error(
+              `Custom feedback storage adapter must implement IFeedbackStorageService.${method}() method`
+            );
+          }
+        }
+      }
+    }
+
+    if (options.adapters?.confidenceStorage) {
+      const confidenceStorageAdapter = options.adapters.confidenceStorage;
+      if (typeof confidenceStorageAdapter === 'function') {
+        // For class types, we can't validate at runtime easily
+        // NestJS will handle this during injection
+      } else {
+        // For instances, check if it has required methods
+        const requiredMethods = [
+          'storeApprovalPattern',
+          'getApprovalPattern',
+          'getAllApprovalPatterns',
+          'updateApprovalPattern',
+          'deleteApprovalPattern',
+          'storeConfidenceHistory',
+          'getConfidenceHistory',
+          'getAllConfidenceHistory',
+          'updateConfidenceFactors',
+          'getMLTrainingData',
+          'storeMLPrediction',
+          'getMLPredictions',
+          'storeConfidenceOutcome',
+          'storeFeatureVector',
+          'getConfidenceAnalytics',
+          'getPatternInsights',
+          'getAllActivePatterns',
+          'getAllActiveHistory',
+          'cleanup',
+          'isHealthy',
+          'getStorageStats',
+        ];
+        for (const method of requiredMethods) {
+          if (typeof (confidenceStorageAdapter as any)[method] !== 'function') {
+            throw new Error(
+              `Custom confidence storage adapter must implement IConfidenceStorageService.${method}() method`
             );
           }
         }

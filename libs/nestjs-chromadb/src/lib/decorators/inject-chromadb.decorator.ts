@@ -1,9 +1,6 @@
 import { Inject } from '@nestjs/common';
 import { CHROMADB_CLIENT } from '../constants';
-import {
-  getChromaDBConfig,
-  getChromaDBConfigWithDefaults,
-} from '../utils/chromadb-config.accessor';
+// Removed unused import
 
 /**
  * Decorator to inject ChromaDB service into a class property or constructor parameter

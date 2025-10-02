@@ -83,6 +83,15 @@ export abstract class ICheckpointAdapter {
   ): Promise<readonly BaseCheckpointTuple[]>;
 
   /**
+   * Delete a specific checkpoint by ID
+   */
+  abstract deleteCheckpoint(
+    threadId: string,
+    checkpointId: string,
+    saverName?: string
+  ): Promise<boolean>;
+
+  /**
    * Cleanup old checkpoints based on specified criteria
    */
   abstract cleanupCheckpoints(
@@ -177,6 +186,11 @@ export class NoOpCheckpointAdapter extends ICheckpointAdapter {
   async listCheckpoints(): Promise<readonly BaseCheckpointTuple[]> {
     // No-op: return empty array when checkpointing is disabled
     return [];
+  }
+
+  async deleteCheckpoint(): Promise<boolean> {
+    // No-op: return false when checkpointing is disabled
+    return false;
   }
 
   async cleanupCheckpoints(): Promise<number> {

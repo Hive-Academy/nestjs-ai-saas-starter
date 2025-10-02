@@ -88,6 +88,19 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
     );
   }
 
+  async deleteCheckpoint(
+    threadId: string,
+    checkpointId: string,
+    saverName?: string
+  ): Promise<boolean> {
+    // Use the CheckpointManagerService deleteCheckpoint method (will add it)
+    return this.checkpointManager.deleteCheckpoint(
+      threadId,
+      checkpointId,
+      saverName
+    );
+  }
+
   async cleanupCheckpoints(options: CheckpointCleanupOptions): Promise<number> {
     // Convert minimal cleanup options to enhanced options
     const enhancedOptions = this.toEnhancedCleanupOptions(options);

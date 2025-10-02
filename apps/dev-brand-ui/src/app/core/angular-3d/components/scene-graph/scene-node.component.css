@@ -1,0 +1,109 @@
+/* SceneNodeComponent Styles */
+
+.scene-node-container {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.debug-info {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 11px;
+  z-index: 1000;
+  min-width: 200px;
+}
+
+.debug-header {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #4ade80;
+}
+
+.debug-stats div {
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.debug-stats div:last-child {
+  margin-bottom: 0;
+}
+
+.performance-info {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(139, 69, 19, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 11px;
+  z-index: 1000;
+  min-width: 140px;
+}
+
+.performance-info div {
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.performance-info div:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .debug-info,
+  .performance-info {
+    font-size: 10px;
+    padding: 6px 8px;
+    min-width: unset;
+  }
+
+  .debug-header {
+    font-size: 11px;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .debug-info {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .performance-info {
+    background: rgba(69, 39, 19, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .debug-info,
+  .performance-info {
+    background: black;
+    color: white;
+    border: 2px solid white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .scene-node-container,
+  .debug-info,
+  .performance-info {
+    transition: none;
+  }
+}

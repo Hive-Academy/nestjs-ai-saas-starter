@@ -51,11 +51,8 @@ export class LlmProviderService {
       config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
     const maxTokens = config?.maxTokens || this.options.defaultLlm?.maxTokens;
 
-    // Simple provider selection - explicit from configuration
-    const provider =
-      this.options.defaultLlm?.provider ||
-      this.options.defaultLlm?.llmProvider || // backward compatibility
-      'openai'; // default
+    // Simple provider selection - explicit from configuration (NO backward compatibility)
+    const provider = this.options.defaultLlm?.provider || 'openai'; // default
 
     this.logger.debug(
       `Creating LLM instance: provider=${provider}, model=${model}`
@@ -95,7 +92,7 @@ export class LlmProviderService {
     maxTokens?: number
   ): ChatOpenAI {
     const apiKey =
-      this.options.defaultLlm?.openaiApiKey || this.options.defaultLlm?.apiKey; // backward compatibility
+      this.options.defaultLlm?.openaiApiKey || process.env.OPENAI_API_KEY; // fallback to env var
 
     if (!apiKey) {
       throw new Error(
@@ -333,7 +330,7 @@ export class LlmProviderService {
     const model = config?.model || this.options.defaultLlm?.model;
     const provider =
       this.options.defaultLlm?.provider ||
-      this.options.defaultLlm?.llmProvider ||
+      this.options.defaultLlm?.provider ||
       'openai';
 
     if (!model) {
@@ -375,7 +372,7 @@ export class LlmProviderService {
       default:
         hasApiKey = !!(
           this.options.defaultLlm?.openaiApiKey ||
-          this.options.defaultLlm?.apiKey
+          process.env.OPENAI_API_KEY
         );
         keyName = 'openaiApiKey';
         break;
@@ -441,7 +438,7 @@ export class LlmProviderService {
     try {
       const provider =
         this.options.defaultLlm?.provider ||
-        this.options.defaultLlm?.llmProvider ||
+        this.options.defaultLlm?.provider ||
         'openai';
       const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
 
@@ -492,7 +489,7 @@ export class LlmProviderService {
   } {
     const provider =
       this.options.defaultLlm?.provider ||
-      this.options.defaultLlm?.llmProvider ||
+      this.options.defaultLlm?.provider ||
       'openai';
     const modelName = model || this.options.defaultLlm?.model || 'gpt-4';
 

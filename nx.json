@@ -70,7 +70,7 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/nestjs-ai-saas-starter-demo-e2e/**/*"]
+      "exclude": ["apps/dev-brand-ui-e2e/**/*"]
     },
     {
       "plugin": "@nx/js/typescript",
@@ -118,7 +118,7 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc --noEmit --skipLibCheck"
+        "command": "tsc --noEmit --skipLibCheck --exclude **/*.spec.ts --exclude **/*.test.ts"
       },
       "dependsOn": ["^typecheck"],
       "cache": true

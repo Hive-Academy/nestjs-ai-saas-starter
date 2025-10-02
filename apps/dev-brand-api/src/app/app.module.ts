@@ -12,7 +12,14 @@ import {
   Neo4jGraphAdapter,
   Neo4jHitlStorageAdapter,
   Neo4jInterruptionStorageAdapter,
+  Neo4jConfidenceStorageAdapter,
+  Neo4jFeedbackStorageAdapter,
+  Neo4jApprovalChainStorageAdapter,
 } from './adapters';
+
+
+
+// Remove non-existent entity and repository imports for now
 
 // LangGraph modules with proper streaming integration
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
@@ -53,6 +60,7 @@ import { AppStreamingManager } from './services/app-streaming-manager.service';
 import {
   ICheckpointAdapter,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 @Module({
@@ -61,11 +69,23 @@ import {
       isGlobal: true,
     }),
 
-    // Core database modules
+    // Core database modules - Enhanced with decorator and performance support
     ChromaDBModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        getChromaDBConfig(configService),
+      useFactory: async (configService: ConfigService) => ({
+        ...getChromaDBConfig(configService),
+        // Enable new decorator-driven features
+        decorators: {
+          enabled: true,
+          autoGenerate: true,
+          typeValidation: true,
+        },
+        performance: {
+          caching: true,
+          monitoring: true,
+          circuitBreaker: true,
+        },
+      }),
       inject: [ConfigService],
     }),
 
@@ -76,12 +96,12 @@ import {
         getNeo4jConfig(configService),
     }),
 
-    // Memory module with adapters
+    // Memory module with enhanced adapters
     MemoryModule.forRoot({
       ...getMemoryConfig(),
       adapters: {
         vector: ChromaVectorAdapter,
-        graph: Neo4jGraphAdapter,
+        graph: Neo4jGraphAdapter, // Use enhanced adapter
       },
     }),
 
@@ -109,77 +129,94 @@ import {
       },
     }),
 
-    // HITL module WITH CHECKPOINT INTEGRATION - adapter injection
+    // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
     HitlModule.forRootAsync({
-      useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+      useFactory: async (
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
+      ) => ({
         ...getHitlConfig(),
         checkpointAdapter,
+        memoryAdapter,
         adapters: {
           storage: Neo4jHitlStorageAdapter,
           interruptionStorage: Neo4jInterruptionStorageAdapter,
+          confidenceStorage: Neo4jConfidenceStorageAdapter,
+          feedbackStorage: Neo4jFeedbackStorageAdapter,
+          approvalChainStorage: Neo4jApprovalChainStorageAdapter,
         },
       }),
-      inject: ['ICheckpointAdapter'],
+      inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // Workflow engine WITH STREAMING AND CHECKPOINT - adapter injection
+    // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
     WorkflowEngineModule.forRootAsync({
       useFactory: async (
         streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
       ): Promise<WorkflowEngineModuleOptions> => {
         return {
           ...getWorkflowEngineConfig(),
           streamingAdapter,
           checkpointAdapter,
+          memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter'],
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // Multi-agent module WITH STREAMING - adapter injection
+    // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
     MultiAgentModule.forRootAsync({
       useFactory: async (
         streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
       ) => {
         return {
           ...getMultiAgentConfig(),
           streamingAdapter,
           checkpointAdapter,
+          memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter'],
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // Functional API with checkpoint AND STREAMING - adapter injection
+    // Functional API with STREAMING, CHECKPOINT, AND MEMORY - adapter injection
     FunctionalApiModule.forRootAsync({
       useFactory: async (
         streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
       ): Promise<any> => {
         return {
           ...getFunctionalApiConfig(),
           streamingAdapter,
           checkpointAdapter,
+          memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter'], // Inject adapter via string token
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
 
-    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT - adapter injection
+    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT AND MEMORY - adapter injection
     ...(process.env.NODE_ENV !== 'production' ||
     process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
       ? [
           TimeTravelModule.forRootAsync({
-            useFactory: async (checkpointAdapter: ICheckpointAdapter) => ({
+            useFactory: async (
+              checkpointAdapter: ICheckpointAdapter,
+              memoryAdapter: IMemoryAdapter
+            ) => ({
               ...getTimeTravelConfig(),
               checkpointAdapter,
+              memoryAdapter,
             }),
-            inject: ['ICheckpointAdapter'],
+            inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
           }),
         ]
       : []),
@@ -194,6 +231,19 @@ import {
     BusinessWorkflowsModule,
   ],
   controllers: [HealthController],
-  providers: [AppStreamingManager],
+  providers: [
+    AppStreamingManager,
+
+    // HITL Adapters
+    Neo4jHitlStorageAdapter,
+    Neo4jInterruptionStorageAdapter,
+    Neo4jConfidenceStorageAdapter,
+    Neo4jFeedbackStorageAdapter,
+    Neo4jApprovalChainStorageAdapter,
+
+    // Memory Adapters
+    ChromaVectorAdapter,
+    Neo4jGraphAdapter,
+  ],
 })
 export class AppModule {}

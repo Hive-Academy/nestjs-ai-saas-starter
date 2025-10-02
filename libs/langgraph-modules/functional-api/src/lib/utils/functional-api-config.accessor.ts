@@ -29,9 +29,9 @@ export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
  * Used by decorators to inherit module configuration
  */
 export function getFunctionalApiConfigWithDefaults(): Required<
-  Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'>
+  Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'>
 > &
-  Pick<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'> {
+  Pick<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'> {
   const config = getFunctionalApiConfig();
 
   return {
@@ -46,5 +46,6 @@ export function getFunctionalApiConfigWithDefaults(): Required<
     globalMetadata: config.globalMetadata ?? {},
     checkpointAdapter: config.checkpointAdapter,
     streamingAdapter: config.streamingAdapter,
+    memoryAdapter: config.memoryAdapter,
   };
 }

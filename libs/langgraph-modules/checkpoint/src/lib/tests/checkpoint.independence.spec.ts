@@ -18,8 +18,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },
@@ -35,8 +35,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },
@@ -52,8 +52,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },
@@ -77,8 +77,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },
@@ -147,8 +147,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },
@@ -189,8 +189,8 @@ describe('Checkpoint Module Independence Tests', () => {
       const module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 50,
             },
@@ -245,8 +245,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },
@@ -267,8 +267,8 @@ describe('Checkpoint Module Independence Tests', () => {
       module = await Test.createTestingModule({
         imports: [
           LanggraphModulesCheckpointModule.forRoot({
-            checkpoint: {
-              cleanupInterval: 60000,
+            cleanup: {
+              interval: 60000,
               maxAge: 3600000,
               maxPerThread: 100,
             },

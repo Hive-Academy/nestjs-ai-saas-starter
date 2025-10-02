@@ -1,5 +1,4 @@
 // Module
-export * from './lib/core.module';
 
 // Constants (runtime exports)
 export * from './lib/constants';
@@ -74,6 +73,7 @@ export {
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
 export * from './lib/utils/node-id';
+export * from './lib/utils/id-generation.utils';
 
 // Checkpoint integration exports for consumer libraries
 export {
@@ -112,3 +112,17 @@ export type {
   IWebSocketBridgeService,
   TokenStreamOptions,
 } from './lib/interfaces/streaming.interface';
+
+// Memory adapter integration exports for consumer libraries
+export {
+  IMemoryAdapter,
+  isMemoryAdapter,
+} from './lib/interfaces/memory-adapter.interface';
+
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions,
+} from './lib/interfaces/memory-adapter.interface';

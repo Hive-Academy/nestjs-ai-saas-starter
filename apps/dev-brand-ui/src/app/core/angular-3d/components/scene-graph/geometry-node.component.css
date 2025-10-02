@@ -1,0 +1,124 @@
+/* GeometryNodeComponent Styles */
+
+.geometry-node-container {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.geometry-debug-info {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 50, 100, 0.85);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 11px;
+  z-index: 1000;
+  min-width: 180px;
+  backdrop-filter: blur(4px);
+}
+
+.debug-header {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #60a5fa;
+}
+
+.debug-stats div {
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.debug-stats div:last-child {
+  margin-bottom: 0;
+}
+
+.debug-stats span:first-child {
+  opacity: 0.8;
+}
+
+.debug-stats span:last-child {
+  font-weight: 500;
+}
+
+.animating {
+  color: #fbbf24 !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Geometry type specific styling */
+.geometry-node-container[data-geometry-type="box"] .debug-header::before {
+  content: "📦 ";
+}
+
+.geometry-node-container[data-geometry-type="sphere"] .debug-header::before {
+  content: "🌐 ";
+}
+
+.geometry-node-container[data-geometry-type="plane"] .debug-header::before {
+  content: "📄 ";
+}
+
+.geometry-node-container[data-geometry-type="cylinder"] .debug-header::before {
+  content: "🥫 ";
+}
+
+.geometry-node-container[data-geometry-type="cone"] .debug-header::before {
+  content: "🔺 ";
+}
+
+.geometry-node-container[data-geometry-type="torus"] .debug-header::before {
+  content: "🍩 ";
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .geometry-debug-info {
+    font-size: 10px;
+    padding: 6px 8px;
+    min-width: 150px;
+  }
+
+  .debug-header {
+    font-size: 11px;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .geometry-debug-info {
+    background: rgba(30, 60, 100, 0.9);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .geometry-debug-info {
+    background: black;
+    color: white;
+    border: 2px solid white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animating {
+    animation: none;
+  }
+
+  .geometry-node-container {
+    transition: none;
+  }
+}

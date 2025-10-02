@@ -58,6 +58,19 @@ export interface WorkflowDecoratorOptions {
    * Workflow metadata
    */
   metadata?: Record<string, unknown>;
+
+  /**
+   * Enable automatic Time-Travel registration
+   * When true, workflow automatically registers with Time-Travel service for debugging
+   */
+  timeTravel?:
+    | boolean
+    | {
+        enabled: boolean;
+        domain?: string;
+        entrypoint?: string;
+        metadata?: Record<string, unknown>;
+      };
 }
 
 /**
@@ -74,6 +87,7 @@ export interface WorkflowDecoratorOptions {
  *   name: 'Customer Support Automation',
  *   description: 'Automated customer support ticket processing',
  *   requiredAgents: ['support-agent', 'escalation-agent'],
+ *   timeTravel: true, // 🎯 Auto-registers with Time-Travel
  *   config: {
  *     timeout: 300000,
  *     checkpointing: true,
@@ -88,7 +102,7 @@ export interface WorkflowDecoratorOptions {
  * }
  * ```
  */
-export function Workflow(options: WorkflowDecoratorOptions): ClassDecorator {
+export function AgenticWorkflow(options: WorkflowDecoratorOptions): ClassDecorator {
   return function (target: any) {
     // Validate that the class has an execute method
     const prototype = target.prototype;
@@ -128,6 +142,44 @@ export function Workflow(options: WorkflowDecoratorOptions): ClassDecorator {
     // Store workflow metadata
     SetMetadata(WORKFLOW_METADATA_KEY, workflowDefinition)(target);
 
+    // 🎯 BREAKTHROUGH: Auto-registration enhancement
+    const originalConstructor = target;
+
+    // Create enhanced constructor with auto-registration
+    const newConstructor: any = function (...args: any[]) {
+      const instance = new originalConstructor(...args);
+
+      // 🚀 AUTO-REGISTRATION: Register with Time-Travel if enabled
+      if (options.timeTravel) {
+        queueMicrotask(async () => {
+          await tryAutoRegisterWithTimeTravel(instance, options);
+        });
+      }
+
+      return instance;
+    };
+
+    // Copy prototype and preserve constructor identity
+    newConstructor.prototype = originalConstructor.prototype;
+    Object.setPrototypeOf(newConstructor, originalConstructor);
+
+    // Preserve constructor name and metadata for NestJS
+    Object.defineProperty(newConstructor, 'name', {
+      value: originalConstructor.name,
+      configurable: true,
+    });
+
+    Object.defineProperty(newConstructor, 'length', {
+      value: originalConstructor.length,
+      configurable: true,
+    });
+
+    // Copy all metadata from original constructor (essential for NestJS DI)
+    Reflect.getMetadataKeys(originalConstructor).forEach((key) => {
+      const value = Reflect.getMetadata(key, originalConstructor);
+      Reflect.defineMetadata(key, value, newConstructor);
+    });
+
     // Add helper methods to the class prototype
     if (!prototype.getWorkflowDefinition) {
       prototype.getWorkflowDefinition = function (): WorkflowDefinition {
@@ -161,7 +213,7 @@ export function Workflow(options: WorkflowDecoratorOptions): ClassDecorator {
       };
     }
 
-    return target;
+    return newConstructor;
   };
 }
 
@@ -292,4 +344,64 @@ export function getWorkflowSteps(WorkflowClass: any): any[] {
  */
 export function isWorkflowClass(target: any): boolean {
   return Reflect.hasMetadata(WORKFLOW_METADATA_KEY, target);
+}
+
+/**
+ * Global event emitter instance for workflow auto-registration
+ */
+let globalEventEmitter: any = null;
+
+/**
+ * 🎯 BREAKTHROUGH: Auto-registration function
+ * Automatically registers workflows with Time-Travel service using events
+ */
+async function tryAutoRegisterWithTimeTravel(
+  instance: any,
+  options: WorkflowDecoratorOptions
+): Promise<void> {
+  try {
+    // Use dynamic import for loose coupling
+    const { EventEmitter2 } = await import('@nestjs/event-emitter');
+
+    // Get or create global event emitter
+    if (!globalEventEmitter) {
+      globalEventEmitter = new EventEmitter2({
+        wildcard: true,
+        delimiter: '.',
+        newListener: false,
+        maxListeners: 20,
+      });
+    }
+
+    const timeTravelOptions =
+      typeof options.timeTravel === 'object'
+        ? options.timeTravel
+        : { enabled: true };
+
+    // Emit workflow auto-registration event
+    globalEventEmitter.emit('workflow.auto-register', {
+      name: options.name || options.id,
+      instance: instance,
+      metadata: {
+        autoRegistered: true,
+        package: '@hive-academy/langgraph-multi-agent',
+        domain: timeTravelOptions.domain || 'multi-agent',
+        entrypoint: timeTravelOptions.entrypoint || 'execute',
+        originalOptions: options,
+        workflowId: options.id,
+        ...timeTravelOptions.metadata,
+      },
+    });
+
+    console.log(
+      `🚀 Auto-registration event emitted for workflow: ${options.name} (multi-agent)`
+    );
+  } catch (error) {
+    // Graceful degradation - Time-Travel might not be available
+    console.log(
+      `Time-Travel auto-registration skipped for ${options.name}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 }

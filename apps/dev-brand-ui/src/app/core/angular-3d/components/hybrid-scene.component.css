@@ -1,0 +1,276 @@
+   .hybrid-scene-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--scene-background, transparent);
+        contain: layout style paint;
+      }
+
+      .hybrid-scene-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        opacity: 0;
+        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1;
+      }
+
+      .hybrid-scene-canvas.initialized {
+        opacity: 1;
+      }
+
+      .hybrid-scene-canvas.performance-optimal {
+        filter: contrast(1.02) brightness(1.01);
+      }
+
+      .hybrid-scene-canvas.animation-enabled {
+        will-change: transform;
+      }
+
+      /* Enhanced Performance Overlay */
+      .performance-overlay {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        min-width: 200px;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        border-radius: 8px;
+        font-family: 'SF Mono', Consolas, monospace;
+        font-size: 11px;
+        z-index: 100;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .performance-overlay.detailed {
+        min-width: 240px;
+      }
+
+      .performance-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px 8px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .performance-header h4 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: #e1e5e9;
+      }
+
+      .toggle-detail {
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 10px;
+        line-height: 1;
+        transition: all 0.2s ease;
+      }
+
+      .toggle-detail:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .performance-stats {
+        padding: 8px 16px 12px 16px;
+      }
+
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        padding: 2px 0;
+      }
+
+      .stat.primary {
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .stat .label {
+        opacity: 0.8;
+        font-size: 11px;
+      }
+
+      .stat .value {
+        font-weight: bold;
+        font-size: 12px;
+        color: #4ade80;
+      }
+
+      .stat .value.warning {
+        color: #f87171;
+      }
+
+      .stat.status .value.status-optimal {
+        color: #4ade80;
+      }
+
+      .stat.status .value.status-good {
+        color: #fbbf24;
+      }
+
+      .stat.status .value.status-poor {
+        color: #f87171;
+      }
+
+      .detailed-stats {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      /* Enhanced Loading Overlay */
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        backdrop-filter: blur(4px);
+      }
+
+      .loading-content {
+        text-align: center;
+        max-width: 300px;
+      }
+
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(59, 130, 246, 0.1);
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 24px auto;
+      }
+
+      .loading-text {
+        font-size: 16px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 16px;
+      }
+
+      .loading-progress {
+        width: 100%;
+        height: 3px;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+      }
+
+      .hybrid-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        transition: all 0.3s ease;
+      }
+
+      /* Animation Debug Panel */
+      .animation-debug-panel {
+        position: absolute;
+        bottom: 16px;
+        left: 16px;
+        background: rgba(139, 69, 19, 0.9);
+        color: white;
+        padding: 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 11px;
+        z-index: 100;
+      }
+
+      .animation-debug-panel h5 {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+      }
+
+      .debug-stats div {
+        margin-bottom: 4px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .performance-overlay {
+          top: 12px;
+          right: 12px;
+          font-size: 10px;
+          min-width: 180px;
+        }
+
+        .performance-overlay.detailed {
+          min-width: 200px;
+        }
+
+        .loading-text {
+          font-size: 14px;
+        }
+      }
+
+      /* Dark theme support */
+      @media (prefers-color-scheme: dark) {
+        .loading-overlay {
+          background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.98) 100%);
+        }
+
+        .loading-text {
+          color: #e2e8f0;
+        }
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        .performance-overlay {
+          background: rgba(0, 0, 0, 0.95);
+          border: 2px solid white;
+        }
+      }
+
+      /* Reduced motion support */
+      @media (prefers-reduced-motion: reduce) {
+        .hybrid-scene-canvas,
+        .performance-overlay,
+        .hybrid-content {
+          transition: none;
+        }
+
+        .loading-spinner {
+          animation: none;
+        }
+      }

@@ -31,7 +31,6 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
-import { AppStreamingManager } from './app/services/app-streaming-manager.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

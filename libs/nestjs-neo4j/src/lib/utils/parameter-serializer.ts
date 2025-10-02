@@ -154,7 +154,7 @@ export function serializeNeo4jParams(
 /**
  * Check if a value is a primitive type that Neo4j can handle
  */
-function isPrimitive(value: any): boolean {
+function isPrimitive(value: unknown): boolean {
   return (
     typeof value === 'string' ||
     typeof value === 'number' ||
@@ -165,7 +165,7 @@ function isPrimitive(value: any): boolean {
 /**
  * Check if an object is complex (has nested objects or arrays)
  */
-function isComplexObject(obj: any): boolean {
+function isComplexObject(obj: unknown): boolean {
   if (obj === null || typeof obj !== 'object') {
     return false;
   }
@@ -184,14 +184,14 @@ function isComplexObject(obj: any): boolean {
 /**
  * Check if an array contains complex objects
  */
-function containsComplexObjects(arr: any[]): boolean {
+function containsComplexObjects(arr: unknown[]): boolean {
   return arr.some((item) => item !== null && typeof item === 'object');
 }
 
 /**
  * Create a safe object without circular references
  */
-function createSafeObject(obj: any, visited = new WeakSet()): any {
+function createSafeObject(obj: unknown, visited = new WeakSet()): unknown {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
