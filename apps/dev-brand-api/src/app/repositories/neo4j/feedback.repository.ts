@@ -10,14 +10,13 @@ import { FeedbackEntry as FeedbackEntityType } from '../../entities/neo4j/feedba
 import {
   InvalidFeedbackDataError,
   FeedbackStorageError,
+  FeedbackType,
 } from '@hive-academy/langgraph-hitl';
 import type {
   FeedbackEntry as HitlFeedbackEntry,
   ProcessingResult,
   FeedbackAnalytics,
 } from '@hive-academy/langgraph-hitl';
-
-type FeedbackType = 'positive' | 'negative' | 'neutral' | 'suggestion';
 
 /**
  * Feedback Repository
@@ -433,11 +432,15 @@ export class FeedbackRepository extends BaseRepositoryService<FeedbackEntityType
       const unprocessedCount =
         Number(countRecord?.get('unprocessedCount')) || 0;
 
-      // Process type distribution
-      const byType: Record<FeedbackType, number> = {} as Record<
-        FeedbackType,
-        number
-      >;
+      // Process type distribution - initialize with all FeedbackType values
+      const byType = {
+        [FeedbackType.APPROVAL]: 0,
+        [FeedbackType.REJECTION]: 0,
+        [FeedbackType.MODIFICATION]: 0,
+        [FeedbackType.CLARIFICATION]: 0,
+        [FeedbackType.RATING]: 0,
+        [FeedbackType.COMMENT]: 0,
+      };
       typeResult.records.forEach((record) => {
         const type = record.get('type') as FeedbackType;
         const count = Number(record.get('count')) || 0;

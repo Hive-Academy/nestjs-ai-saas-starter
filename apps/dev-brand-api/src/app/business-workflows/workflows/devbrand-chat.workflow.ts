@@ -9,6 +9,7 @@ import {
 import type {
   TaskExecutionContext,
   TaskExecutionResult,
+  FunctionalWorkflowState,
 } from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
@@ -38,7 +39,7 @@ import { WebResearchTools } from '../core/tools/web-research.tools';
  * - Web Search: Social media profile discovery
  */
 
-export interface ChatWorkflowState {
+export interface ChatWorkflowState extends FunctionalWorkflowState {
   // Chat context
   userId: string;
   conversationId: string;

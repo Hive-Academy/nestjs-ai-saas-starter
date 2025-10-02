@@ -8,20 +8,9 @@
 import { Injectable, Inject, Logger, OnModuleDestroy } from '@nestjs/common';
 import type { Neogma } from 'neogma';
 import { NEO4J_OPTIONS } from '../constants';
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
 import { InjectNeogma } from '../neogma/neogma.decorators';
 import { NeogmaMetricsService } from './neogma-metrics.service';
-
-// Inline interface due to build configuration issue
-interface Neo4jModuleOptions {
-  url: string;
-  username: string;
-  password: string;
-  database?: string;
-  config?: any;
-  healthCheck?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-}
 
 /**
  * Connection status information
@@ -186,7 +175,7 @@ export class NeogmaConnectionService implements OnModuleDestroy {
       : undefined;
 
     return {
-      url: this.options.url,
+      url: this.options.uri,
       database: this.options.database || 'neo4j',
       username: this.options.username,
       isConnected: this.lastHealthCheck?.connected ?? false,
@@ -267,7 +256,7 @@ export class NeogmaConnectionService implements OnModuleDestroy {
   getConfiguration(): Neo4jModuleOptions {
     // Return a safe copy without sensitive information
     return {
-      url: this.options.url,
+      uri: this.options.uri,
       username: this.options.username,
       password: '[REDACTED]',
       database: this.options.database,

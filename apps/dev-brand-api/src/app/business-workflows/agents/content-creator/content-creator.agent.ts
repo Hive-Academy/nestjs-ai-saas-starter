@@ -22,12 +22,13 @@ import {
   WorkflowStreamService,
 } from '@hive-academy/langgraph-workflow-engine';
 import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
+import { generateId } from '@hive-academy/langgraph-core';
 import { AIMessage } from '@langchain/core/messages';
 import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
 import { LLMProviderError } from '../../core/errors/business-workflow.errors';
 import { Validate, Required } from '../../core/validation/workflow.validators';
 import { Optimize } from '../../core/performance/optimization.decorators';
-import type { Achievement, BrandStrategy } from '../shared/agent.types';
+import type { BrandStrategy } from '../shared/agent.types';
 import {
   buildLinkedInPrompt,
   buildDevToPrompt,
@@ -151,7 +152,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
           githubUsername,
           achievements,
           contentStartTime: new Date(),
-          workflowInstanceId: `content-${githubUsername}-${Date.now()}`,
+          workflowInstanceId: generateId('content'),
           targetPlatforms: ['linkedin', 'devto'],
         },
       },

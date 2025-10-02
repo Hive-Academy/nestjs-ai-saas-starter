@@ -138,7 +138,10 @@ export {
 } from './lib/constraints';
 
 // Multi-Tenancy Support
-export { MultiTenantNeo4jModule } from './lib/multi-tenancy/multi-tenant.module';
+export {
+  MultiTenantNeo4jModule,
+  MultiTenantConfigurations,
+} from './lib/multi-tenancy/multi-tenant.module';
 export { MultiTenantNeo4jService } from './lib/multi-tenancy/multi-tenant-neo4j.service';
 export { TenantContextService } from './lib/multi-tenancy/tenant-context.service';
 export * from './lib/multi-tenancy/multi-tenant.decorators';

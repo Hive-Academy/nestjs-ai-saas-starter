@@ -27,11 +27,6 @@ import { GitHubIntegrationTools } from '../../core/tools/github-integration.tool
 import { GitHubIntegrationError } from '../../core/errors/business-workflow.errors';
 import { Validate, Required } from '../../core/validation/workflow.validators';
 import { Optimize } from '../../core/performance/optimization.decorators';
-import type {
-  Achievement,
-  GitHubData,
-  DeveloperInsights,
-} from '../shared/agent.types';
 import {
   buildDeveloperAnalysisPrompt,
   generateFallbackAnalysis,
@@ -367,6 +362,15 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
     const achievements = state.metadata.achievements || [];
     const developerInsights = state.metadata.developerInsights;
 
+    // Validate required data
+    if (!githubData) {
+      throw new Error('GitHub data is required for AI synthesis');
+    }
+
+    if (!developerInsights) {
+      throw new Error('Developer insights are required for AI synthesis');
+    }
+
     try {
       console.log('🚀 Synthesizing analysis with AI...');
       const analysisPrompt = buildDeveloperAnalysisPrompt(
@@ -461,7 +465,13 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
     const githubData = state.metadata.githubData;
     const achievements = state.metadata.achievements || [];
     const aiAnalysis = state.metadata.aiAnalysis || '';
-    const mode = state.metadata.mode || 'real';
+    let mode = state.metadata.mode || 'real';
+
+    // If in real mode but no GitHub data, force fallback mode
+    if (mode !== 'fallback' && !githubData) {
+      console.warn('⚠️ No GitHub data available, switching to fallback mode');
+      mode = 'fallback';
+    }
 
     console.log('✅ GitHub Code Analyzer: Analysis completed with AI insights');
 
@@ -472,7 +482,7 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
             githubUsername,
             timeframe,
             aiAnalysis,
-            githubData,
+            githubData!, // Non-null assertion: guaranteed by fallback mode check above
             achievements
           );
 

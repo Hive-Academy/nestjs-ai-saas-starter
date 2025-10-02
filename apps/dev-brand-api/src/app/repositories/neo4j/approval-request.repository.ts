@@ -307,9 +307,9 @@ export class ApprovalRequestRepository extends BaseRepositoryService<ApprovalReq
         const idParam = bindParam.add(id);
         const statusParam = bindParam.add(status);
         const decisionParam = bindParam.add(response.decision);
-        const approvedByParam = bindParam.add('system'); // response doesn't have approvedBy in interface
-        const messageParam = bindParam.add(response.responseMessage || null);
-        const timestampParam = bindParam.add(new Date().toISOString()); // response doesn't have timestamp in interface
+        const approvedByParam = bindParam.add(response.approvedBy);
+        const messageParam = bindParam.add(response.message || null);
+        const timestampParam = bindParam.add(response.timestamp.toISOString());
         const metadataParam = bindParam.add(response.metadata || null);
 
         queryBuilder
@@ -576,20 +576,10 @@ export class ApprovalRequestRepository extends BaseRepositoryService<ApprovalReq
 
       return {
         totalRequests,
-        pendingRequests: requestsByStatus.pending || 0,
-        approvedRequests: requestsByStatus.approved || 0,
-        rejectedRequests: requestsByStatus.rejected || 0,
-        expiredRequests: requestsByStatus.timeout || 0,
         requestsByStatus,
         averageResponseTime,
         timeoutRate,
         approvalRate,
-        completionRate:
-          totalRequests > 0
-            ? ((requestsByStatus.approved + requestsByStatus.rejected) /
-                totalRequests) *
-              100
-            : 0,
         lastUpdated: new Date(),
       };
     } catch (error) {
@@ -616,7 +606,6 @@ export class ApprovalRequestRepository extends BaseRepositoryService<ApprovalReq
     let response: ApprovalStorageResponse | undefined;
     if (responseNode) {
       response = {
-        id: responseNode.id,
         decision: responseNode.decision,
         approvedBy: responseNode.approvedBy,
         message: responseNode.message,

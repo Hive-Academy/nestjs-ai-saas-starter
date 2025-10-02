@@ -83,23 +83,7 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
    * Get feedback by type - delegates to repository
    */
   async getFeedbackByType(type: FeedbackType): Promise<FeedbackEntry[]> {
-    // Map FeedbackType enum to entity type
-    let entityType: 'positive' | 'negative' | 'neutral' | 'suggestion';
-    switch (type) {
-      case FeedbackType.APPROVAL:
-      case FeedbackType.RATING:
-        entityType = 'positive';
-        break;
-      case FeedbackType.REJECTION:
-        entityType = 'negative';
-        break;
-      case FeedbackType.MODIFICATION:
-        entityType = 'suggestion';
-        break;
-      default:
-        entityType = 'neutral';
-    }
-    return this.feedbackRepo.getFeedbackByType(entityType);
+    return this.feedbackRepo.getFeedbackByType(type);
   }
 
   /**

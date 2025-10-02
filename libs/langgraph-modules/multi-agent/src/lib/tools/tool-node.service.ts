@@ -1,4 +1,3 @@
-import { AgentType } from './agent-types';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { Injectable, Logger } from '@nestjs/common';
@@ -35,7 +34,7 @@ export class ToolNodeService {
     options?: {
       includeTags?: string[];
       excludeTags?: string[];
-      agentOverride?: AgentType | string;
+      agentOverride?: string;
     }
   ): ToolNode {
     // Get tools with enhanced resolution
@@ -341,7 +340,7 @@ export class ToolNodeService {
    * Create tool executor with autodiscovery for specific agent types
    */
   createAgentToolExecutor<TState extends WorkflowState = WorkflowState>(
-    agentType: AgentType,
+    agentType: string,
     options?: {
       includeTags?: string[];
       excludeTags?: string[];

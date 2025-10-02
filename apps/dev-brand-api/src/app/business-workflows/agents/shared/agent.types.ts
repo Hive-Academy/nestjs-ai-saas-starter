@@ -134,6 +134,10 @@ export interface GitHubCommit {
     author: { name: string; email: string; date: string };
     message: string;
   };
+  stats?: {
+    additions: number;
+    deletions: number;
+  };
 }
 
 export interface GitHubRepository {
@@ -147,7 +151,11 @@ export interface GitHubRepository {
   forks: number;
   forks_count: number;
   isPrivate: boolean;
+  private?: boolean; // GitHub API field
   lastUpdated: string;
+  created_at?: string; // GitHub API field
+  updated_at?: string; // GitHub API field
+  pushed_at?: string; // GitHub API field
   topics?: string[];
   size?: number;
 }

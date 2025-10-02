@@ -10,7 +10,9 @@ import type { ConfigService } from '@nestjs/config';
  * - Subdomain-based: Extracts tenant from subdomain
  * - JWT-based: Extracts tenant from JWT token
  */
-export const getMultiTenantNeo4jConfig = (configService: ConfigService) => {
+export const getMultiTenantNeo4jConfig = (
+  configService: ConfigService
+): ReturnType<typeof MultiTenantConfigurations.headerBased> => {
   const strategy = configService.get('MULTI_TENANT_STRATEGY', 'header');
 
   switch (strategy) {

@@ -13,6 +13,7 @@ import type {
 } from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { HumanMessage } from '@langchain/core/messages';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
@@ -82,12 +83,19 @@ export interface DevBrandWorkflowState extends FunctionalWorkflowState {
 @Injectable()
 export class DevBrandSupervisorWorkflow {
   constructor(
-    private readonly llmProvider: LlmProviderService,
+    private readonly llmProvider: LlmProviderService, // Reserved for future supervisor logic
     private readonly githubAnalyzer: GitHubCodeAnalyzerAgent,
     private readonly contentCreator: ContentCreatorAgent,
     private readonly brandStrategist: PersonalBrandStrategistAgent,
     private readonly brandMemory: PersonalBrandMemoryService
   ) {}
+
+  /**
+   * Get LLM provider service (reserved for future supervisor logic)
+   */
+  getLlmProvider(): LlmProviderService {
+    return this.llmProvider;
+  }
 
   /**
    * Entry point - Initialize the multi-agent personal branding workflow
@@ -124,14 +132,29 @@ export class DevBrandSupervisorWorkflow {
     const { state } = context;
     const workflowState = state as unknown as DevBrandWorkflowState;
 
+    // Validate required input
+    if (!workflowState.githubUsername) {
+      throw new Error('GitHub username is required for analysis');
+    }
+
     try {
       // Create agent state for GitHub analysis
       const agentState = {
+        executionId: workflowState.executionId || `exec-${Date.now()}`,
+        status: 'active' as const,
+        currentNode: 'github-analysis',
+        completedNodes: [],
+        confidence: workflowState.confidence || 0.8,
+        timestamps: {
+          started: new Date(),
+          updated: new Date(),
+        },
+        retryCount: 0,
+        startedAt: new Date(),
         messages: [
-          {
-            content: `Analyze GitHub activity for ${workflowState.githubUsername}`,
-            role: 'user',
-          },
+          new HumanMessage(
+            `Analyze GitHub activity for ${workflowState.githubUsername}`
+          ),
         ],
         metadata: {
           githubUsername: workflowState.githubUsername,
@@ -140,10 +163,7 @@ export class DevBrandSupervisorWorkflow {
       };
 
       // Execute GitHub analysis via agent (this will use real GitHub API)
-      // Note: Agents are workflow agents, so we call their execute method instead
-      const analysisResult =
-        (await (this.githubAnalyzer as any).execute?.(agentState)) ||
-        agentState;
+      const analysisResult = await this.githubAnalyzer.execute(agentState);
 
       // Extract code analysis from agent result
       const codeAnalysis = {
@@ -237,12 +257,26 @@ export class DevBrandSupervisorWorkflow {
     const { state } = context;
     const workflowState = state as unknown as DevBrandWorkflowState;
 
+    // Validate required input
+    if (!workflowState.githubUsername) {
+      throw new Error('GitHub username is required for brand strategy');
+    }
+
     try {
       // Create agent state for brand strategy
       const agentState = {
-        messages: [
-          { content: 'Develop personal brand strategy', role: 'user' },
-        ],
+        executionId: workflowState.executionId || `exec-${Date.now()}`,
+        status: 'active' as const,
+        currentNode: 'brand-strategy',
+        completedNodes: [],
+        confidence: workflowState.confidence || 0.8,
+        timestamps: {
+          started: new Date(),
+          updated: new Date(),
+        },
+        retryCount: 0,
+        startedAt: new Date(),
+        messages: [new HumanMessage('Develop personal brand strategy')],
         metadata: {
           githubUsername: workflowState.githubUsername,
           achievements: workflowState.codeAnalysis?.achievements,
@@ -251,9 +285,7 @@ export class DevBrandSupervisorWorkflow {
       };
 
       // Execute brand strategy via agent
-      const strategyResult =
-        (await (this.brandStrategist as any).execute?.(agentState)) ||
-        agentState;
+      await this.brandStrategist.execute(agentState);
 
       const brandStrategy = {
         positioning: 'Technical Excellence & Innovation',
@@ -299,10 +331,26 @@ export class DevBrandSupervisorWorkflow {
     const { state } = context;
     const workflowState = state as unknown as DevBrandWorkflowState;
 
+    // Validate required input
+    if (!workflowState.githubUsername) {
+      throw new Error('GitHub username is required for content generation');
+    }
+
     try {
       // Create agent state for content creation
       const agentState = {
-        messages: [{ content: 'Create personal brand content', role: 'user' }],
+        executionId: workflowState.executionId || `exec-${Date.now()}`,
+        status: 'active' as const,
+        currentNode: 'content-creation',
+        completedNodes: [],
+        confidence: workflowState.confidence || 0.8,
+        timestamps: {
+          started: new Date(),
+          updated: new Date(),
+        },
+        retryCount: 0,
+        startedAt: new Date(),
+        messages: [new HumanMessage('Create personal brand content')],
         metadata: {
           githubUsername: workflowState.githubUsername,
           achievements: workflowState.codeAnalysis?.achievements,
@@ -311,9 +359,7 @@ export class DevBrandSupervisorWorkflow {
       };
 
       // Execute content creation via agent
-      const contentResult =
-        (await (this.contentCreator as any).execute?.(agentState)) ||
-        agentState;
+      const contentResult = await this.contentCreator.execute(agentState);
 
       const generatedContent = {
         linkedin:

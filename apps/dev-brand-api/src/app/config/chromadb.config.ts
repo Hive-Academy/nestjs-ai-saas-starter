@@ -268,76 +268,100 @@ export const getChromaDBConfig = (
 
     // Decorator-driven development configuration
     decorators: {
-      enabled: configService.get('CHROMADB_DECORATORS_ENABLED', 'true') === 'true',
-      autoGenerate: configService.get('CHROMADB_DECORATORS_AUTO_GENERATE', 'true') === 'true',
-      typeValidation: configService.get('CHROMADB_DECORATORS_TYPE_VALIDATION', 'true') === 'true',
-      autoMetadata: configService.get('CHROMADB_DECORATORS_AUTO_METADATA', 'true') === 'true',
-      caching: {
-        enabled: configService.get('CHROMADB_DECORATORS_CACHING_ENABLED', 'true') === 'true',
-        defaultTtl: parseInt(configService.get('CHROMADB_DECORATORS_CACHE_TTL', '300000'), 10), // 5 minutes
-        strategy: configService.get('CHROMADB_DECORATORS_CACHE_STRATEGY', 'memory') as 'memory' | 'redis' | 'custom',
-        keyPrefix: configService.get('CHROMADB_DECORATORS_CACHE_PREFIX', 'chroma_'),
-      },
-      profiling: {
-        enabled: configService.get('CHROMADB_DECORATORS_PROFILING_ENABLED', 'true') === 'true',
-        slowQueryThreshold: parseInt(configService.get('CHROMADB_DECORATORS_SLOW_QUERY_THRESHOLD', '100'), 10),
-        samplingRate: parseFloat(configService.get('CHROMADB_DECORATORS_SAMPLING_RATE', '1.0')),
-        includeStackTrace: configService.get('CHROMADB_DECORATORS_INCLUDE_STACK_TRACE', 'false') === 'true',
-      },
-      retry: {
-        enabled: configService.get('CHROMADB_DECORATORS_RETRY_ENABLED', 'true') === 'true',
-        maxAttempts: parseInt(configService.get('CHROMADB_DECORATORS_MAX_ATTEMPTS', '3'), 10),
-        baseDelay: parseInt(configService.get('CHROMADB_DECORATORS_BASE_DELAY', '1000'), 10),
-        strategy: configService.get('CHROMADB_DECORATORS_RETRY_STRATEGY', 'exponential') as 'linear' | 'exponential',
-        retryableErrors: [
-          'ECONNRESET',
-          'ETIMEDOUT',
-          'ENOTFOUND',
-          'ECONNREFUSED',
-          /timeout/i,
-          /connection/i,
-          /network/i,
-          /circuit.*breaker/i,
-        ],
-      },
+      enabled:
+        configService.get('CHROMADB_DECORATORS_ENABLED', 'true') === 'true',
+      autoGenerate:
+        configService.get('CHROMADB_DECORATORS_AUTO_GENERATE', 'true') ===
+        'true',
+      typeValidation:
+        configService.get('CHROMADB_DECORATORS_TYPE_VALIDATION', 'true') ===
+        'true',
+      autoMetadata:
+        configService.get('CHROMADB_DECORATORS_AUTO_METADATA', 'true') ===
+        'true',
     },
 
     // Performance monitoring and optimization
     performance: {
-      caching: configService.get('CHROMADB_PERFORMANCE_CACHING', 'true') === 'true',
-      monitoring: configService.get('CHROMADB_PERFORMANCE_MONITORING', 'true') === 'true',
-      circuitBreaker: configService.get('CHROMADB_PERFORMANCE_CIRCUIT_BREAKER', 'true') === 'true',
+      caching:
+        configService.get('CHROMADB_PERFORMANCE_CACHING', 'true') === 'true',
+      monitoring:
+        configService.get('CHROMADB_PERFORMANCE_MONITORING', 'true') === 'true',
+      circuitBreaker:
+        configService.get('CHROMADB_PERFORMANCE_CIRCUIT_BREAKER', 'true') ===
+        'true',
       circuitBreakerOptions: {
-        failureThreshold: parseInt(configService.get('CHROMADB_CIRCUIT_BREAKER_FAILURE_THRESHOLD', '5'), 10),
-        resetTimeout: parseInt(configService.get('CHROMADB_CIRCUIT_BREAKER_RESET_TIMEOUT', '60000'), 10), // 1 minute
-        monitoringPeriod: parseInt(configService.get('CHROMADB_CIRCUIT_BREAKER_MONITORING_PERIOD', '10000'), 10), // 10 seconds
+        failureThreshold: parseInt(
+          configService.get('CHROMADB_CIRCUIT_BREAKER_FAILURE_THRESHOLD', '5'),
+          10
+        ),
+        resetTimeout: parseInt(
+          configService.get('CHROMADB_CIRCUIT_BREAKER_RESET_TIMEOUT', '60000'),
+          10
+        ), // 1 minute
+        monitoringPeriod: parseInt(
+          configService.get(
+            'CHROMADB_CIRCUIT_BREAKER_MONITORING_PERIOD',
+            '10000'
+          ),
+          10
+        ), // 10 seconds
       },
       metricsOptions: {
-        collectEmbeddingTime: configService.get('CHROMADB_METRICS_EMBEDDING_TIME', 'true') === 'true',
-        collectSearchTime: configService.get('CHROMADB_METRICS_SEARCH_TIME', 'true') === 'true',
-        collectBatchTime: configService.get('CHROMADB_METRICS_BATCH_TIME', 'true') === 'true',
+        collectEmbeddingTime:
+          configService.get('CHROMADB_METRICS_EMBEDDING_TIME', 'true') ===
+          'true',
+        collectSearchTime:
+          configService.get('CHROMADB_METRICS_SEARCH_TIME', 'true') === 'true',
+        collectBatchTime:
+          configService.get('CHROMADB_METRICS_BATCH_TIME', 'true') === 'true',
         histogramBuckets: [0.001, 0.01, 0.1, 0.5, 1, 2, 5, 10, 30, 60], // seconds
       },
     },
 
     // Multi-tenant support (disabled by default for backward compatibility)
     multiTenant: {
-      enabled: configService.get('CHROMADB_MULTI_TENANT_ENABLED', 'false') === 'true',
-      defaultStrategy: configService.get('CHROMADB_MULTI_TENANT_STRATEGY', 'prefix') as 'prefix' | 'suffix' | 'separate' | 'metadata',
+      enabled:
+        configService.get('CHROMADB_MULTI_TENANT_ENABLED', 'false') === 'true',
+      defaultStrategy: configService.get(
+        'CHROMADB_MULTI_TENANT_STRATEGY',
+        'prefix'
+      ) as 'prefix' | 'suffix' | 'separate' | 'metadata',
       separator: configService.get('CHROMADB_MULTI_TENANT_SEPARATOR', '_'),
-      security: configService.get('CHROMADB_MULTI_TENANT_SECURITY', 'strict') as 'strict' | 'loose' | 'custom',
+      security: configService.get(
+        'CHROMADB_MULTI_TENANT_SECURITY',
+        'strict'
+      ) as 'strict' | 'loose' | 'custom',
       defaults: {
         tenant: configService.get('CHROMADB_DEFAULT_TENANT', 'default'),
-        database: configService.get('CHROMADB_DEFAULT_DATABASE', 'default_database'),
-        collection: configService.get('CHROMADB_DEFAULT_COLLECTION', 'documents'),
+        database: configService.get(
+          'CHROMADB_DEFAULT_DATABASE',
+          'default_database'
+        ),
+        collection: configService.get(
+          'CHROMADB_DEFAULT_COLLECTION',
+          'documents'
+        ),
       },
       crossTenant: {
-        enabled: configService.get('CHROMADB_CROSS_TENANT_ENABLED', 'false') === 'true',
-        requireAuth: configService.get('CHROMADB_CROSS_TENANT_REQUIRE_AUTH', 'true') === 'true',
-        auditLog: configService.get('CHROMADB_CROSS_TENANT_AUDIT_LOG', 'true') === 'true',
+        enabled:
+          configService.get('CHROMADB_CROSS_TENANT_ENABLED', 'false') ===
+          'true',
+        requireAuth:
+          configService.get('CHROMADB_CROSS_TENANT_REQUIRE_AUTH', 'true') ===
+          'true',
+        auditLog:
+          configService.get('CHROMADB_CROSS_TENANT_AUDIT_LOG', 'true') ===
+          'true',
         rateLimiting: {
-          requests: parseInt(configService.get('CHROMADB_CROSS_TENANT_RATE_LIMIT', '100'), 10),
-          window: parseInt(configService.get('CHROMADB_CROSS_TENANT_RATE_WINDOW', '3600'), 10), // 1 hour
+          requests: parseInt(
+            configService.get('CHROMADB_CROSS_TENANT_RATE_LIMIT', '100'),
+            10
+          ),
+          window: parseInt(
+            configService.get('CHROMADB_CROSS_TENANT_RATE_WINDOW', '3600'),
+            10
+          ), // 1 hour
         },
       },
     },
@@ -407,7 +431,7 @@ export const getChromaDBConfig = (
  * - CHROMADB_DECORATORS_AUTO_GENERATE: Auto-generate repository methods (default: 'true')
  * - CHROMADB_DECORATORS_TYPE_VALIDATION: Enable runtime type validation (default: 'true')
  * - CHROMADB_DECORATORS_AUTO_METADATA: Enable automatic metadata generation (default: 'true')
- * 
+ *
  * Decorator Caching Configuration:
  * - CHROMADB_DECORATORS_CACHING_ENABLED: Enable decorator-level caching (default: 'true')
  * - CHROMADB_DECORATORS_CACHE_TTL: Cache TTL in ms (default: '300000' = 5 minutes)

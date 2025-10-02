@@ -58,7 +58,7 @@ class SimpleCache {
   set(key: string, value: any, ttl: number): void {
     // Evict oldest items if cache is full
     if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
+      const firstKey = this.cache.keys().next().value as string;
       this.cache.delete(firstKey);
     }
 
@@ -304,10 +304,14 @@ enum CircuitState {
 class CircuitBreakerImpl {
   private state = CircuitState.CLOSED;
   private failures = 0;
-  private lastFailureTime = 0;
+  private lastFailureTime = 0; // Reserved for metrics/debugging - intentionally tracked
   private nextAttemptTime = 0;
 
   constructor(private config: CircuitBreakerConfig) {}
+
+  getLastFailureTime(): number {
+    return this.lastFailureTime;
+  }
 
   async execute<T>(operation: () => Promise<T>): Promise<T> {
     if (this.state === CircuitState.OPEN) {

@@ -1,40 +1,12 @@
 import { DynamicModule, Module, Global, Provider, Type } from '@nestjs/common';
 import * as neo4j from 'neo4j-driver';
 import { NEO4J_OPTIONS, NEO4J_DRIVER, DEFAULT_NEO4J_CONFIG } from './constants';
-// Inline interfaces due to build configuration issue
-interface Neo4jModuleOptions {
-  url: string;
-  username: string;
-  password: string;
-  database?: string;
-  config?: {
-    logger?: (message: string) => void;
-    disableLosslessIntegers?: boolean;
-    encrypted?: boolean;
-    maxConnectionLifetime?: number;
-    maxConnectionPoolSize?: number;
-    connectionAcquisitionTimeout?: number;
-    disableDriverMetrics?: boolean;
-  };
-  healthCheck?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-}
-
-interface Neo4jModuleOptionsFactory {
-  createNeo4jOptions(): Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
-}
-
-interface Neo4jModuleAsyncOptions {
-  name?: string;
-  imports?: any[];
-  useExisting?: any;
-  useClass?: any;
-  useFactory?: (
-    ...args: any[]
-  ) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
-  inject?: any[];
-}
+import type {
+  Neo4jModuleOptions,
+  Neo4jModuleOptionsFactory,
+  Neo4jModuleAsyncOptions,
+} from './interfaces/neo4j-module-options.interface';
+import type { NeogmaModuleOptions } from './neogma/neogma.interfaces';
 import { NeogmaService } from './core/neogma.service';
 import { NeogmaMetricsService } from './services/neogma-metrics.service';
 import { NeogmaConnectionService } from './services/neogma-connection.service';
@@ -83,7 +55,7 @@ export class Neo4jModule {
         };
 
         return neo4j.driver(
-          options.url,
+          options.uri,
           neo4j.auth.basic(options.username, options.password),
           config
         );
@@ -92,12 +64,12 @@ export class Neo4jModule {
     };
 
     // Convert Neo4j options to Neogma format
-    const neogmaOptions = {
-      url: options.url,
+    const neogmaOptions: NeogmaModuleOptions = {
+      url: options.uri,
       username: options.username,
       password: options.password,
       database: options.database,
-      config: options.config,
+      config: options.config as NeogmaModuleOptions['config'],
     };
 
     const providers = [
@@ -164,7 +136,7 @@ export class Neo4jModule {
           };
 
           return neo4j.driver(
-            moduleOptions.url,
+            moduleOptions.uri,
             neo4j.auth.basic(moduleOptions.username, moduleOptions.password),
             config
           );
@@ -188,12 +160,12 @@ export class Neo4jModule {
 
     // Create Neogma module async import
     const neogmaModuleImport = NeogmaModule.forRootAsync({
-      useFactory: (moduleOptions: Neo4jModuleOptions) => ({
-        url: moduleOptions.url,
+      useFactory: (moduleOptions: Neo4jModuleOptions): NeogmaModuleOptions => ({
+        url: moduleOptions.uri,
         username: moduleOptions.username,
         password: moduleOptions.password,
         database: moduleOptions.database,
-        config: moduleOptions.config,
+        config: moduleOptions.config as NeogmaModuleOptions['config'],
       }),
       inject: [NEO4J_OPTIONS],
     });
@@ -333,12 +305,12 @@ function validateNeo4jConfig(config: Neo4jModuleOptions): void {
 
   try {
     // 1. REQUIRED FIELDS VALIDATION
-    if (!config.url || typeof config.url !== 'string') {
-      errors.push('Neo4j URL is required and must be a string');
+    if (!config.uri || typeof config.uri !== 'string') {
+      errors.push('Neo4j URI is required and must be a string');
       throw new Neo4jConfigurationError(
-        'Neo4j URL is required and must be a string',
-        'url',
-        config.url,
+        'Neo4j URI is required and must be a string',
+        'uri',
+        config.uri,
         'Use format: bolt://localhost:7687 or neo4j://localhost:7687'
       );
     }
@@ -364,12 +336,12 @@ function validateNeo4jConfig(config: Neo4jModuleOptions): void {
     }
 
     // 2. URL FORMAT VALIDATION
-    if (!isValidNeo4jUrl(config.url)) {
-      errors.push('Invalid Neo4j URL format');
+    if (!isValidNeo4jUrl(config.uri)) {
+      errors.push('Invalid Neo4j URI format');
       throw new Neo4jConfigurationError(
-        'Invalid Neo4j URL format',
-        'url',
-        config.url,
+        'Invalid Neo4j URI format',
+        'uri',
+        config.uri,
         'Use bolt://, neo4j://, or neo4j+s:// protocol with valid hostname and port'
       );
     }
@@ -584,28 +556,6 @@ function validateDriverConfig(config: Neo4jModuleOptions['config']): void {
       'config.encrypted',
       config.encrypted,
       'Use true or false'
-    );
-  }
-
-  if (
-    config.disableDriverMetrics !== undefined &&
-    typeof config.disableDriverMetrics !== 'boolean'
-  ) {
-    throw new Neo4jConfigurationError(
-      'disableDriverMetrics must be a boolean value',
-      'config.disableDriverMetrics',
-      config.disableDriverMetrics,
-      'Use true or false'
-    );
-  }
-
-  // Validate logger function
-  if (config.logger !== undefined && typeof config.logger !== 'function') {
-    throw new Neo4jConfigurationError(
-      'Logger must be a function',
-      'config.logger',
-      typeof config.logger,
-      'Provide a function that accepts a string parameter'
     );
   }
 }

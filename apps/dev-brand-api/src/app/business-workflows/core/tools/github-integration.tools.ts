@@ -1,41 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { Tool } from '@hive-academy/langgraph-multi-agent';
-
-// GitHub API types
-interface GitHubCommit {
-  sha: string;
-  commit: {
-    message: string;
-    author: {
-      name: string;
-      email: string;
-      date: string;
-    };
-  };
-  author: {
-    login: string;
-    avatar_url: string;
-  } | null;
-  stats?: {
-    additions: number;
-    deletions: number;
-  };
-}
-
-interface GitHubRepository {
-  id: number;
-  name: string;
-  full_name: string;
-  description: string;
-  language: string;
-  stargazers_count: number;
-  forks_count: number;
-  created_at: string;
-  updated_at: string;
-  pushed_at: string;
-  private?: boolean; // add optional flag actually returned by GitHub API when authorized
-}
+import type {
+  GitHubCommit,
+  GitHubRepository,
+} from '../../agents/shared/agent.types';
 
 interface CodeAchievement {
   id: string;
@@ -189,9 +158,7 @@ export class GitHubIntegrationTools {
     name: 'achievement-extractor',
     description: 'Extracts meaningful achievements from code analysis',
     schema: z.object({
-      commits: z
-        .array(z.any())
-        .describe('Array of commit objects to analyze'),
+      commits: z.array(z.any()).describe('Array of commit objects to analyze'),
       repositories: z
         .array(z.any())
         .describe('Repositories associated with the commits'),
@@ -486,7 +453,7 @@ export class GitHubIntegrationTools {
       ...new Set(
         repositories
           .map((repo) => repo.language)
-          .filter((lang) => lang !== null)
+          .filter((lang): lang is string => lang !== null)
       ),
     ];
   }

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ChromaRepository,
   VectorQuery,
-  TenantAware,
   BaseDocument,
   Cached,
   Profiled,
@@ -917,7 +916,6 @@ export class PersonalBrandMemoryService {
         limit: 1,
       });
       if (strategies && strategies.length > 0) {
-        const strategy = strategies[0];
         // Extract brand voice from strategy or return default structure
         return {
           tone: 'professional',
@@ -1005,6 +1003,50 @@ export class PersonalBrandMemoryService {
     } catch (error) {
       this.logger.error(
         `Failed to get brand evolution: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Get personalized content strategy based on user query
+   */
+  async getPersonalizedContentStrategy(
+    userId: string,
+    query: string
+  ): Promise<any> {
+    this.logger.log(
+      `Retrieving personalized content strategy for user ${userId} based on query: ${query}`
+    );
+
+    try {
+      // Get brand strategy and content insights in parallel
+      const [brandStrategy, contentInsights] = await Promise.all([
+        this.getBrandStrategy(userId),
+        this.contentRepo.getContentOptimizationInsights(userId),
+      ]);
+
+      // Semantic search in brand strategies based on query
+      const relatedStrategies = await this.brandRepo.search(query, {
+        where: { userId },
+        limit: 3,
+      });
+
+      return {
+        brandStrategy,
+        contentInsights,
+        relatedStrategies,
+        recommendations: this.generatePersonalizedRecommendations(
+          brandStrategy,
+          contentInsights,
+          query
+        ),
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get personalized content strategy: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
@@ -1263,5 +1305,38 @@ export class PersonalBrandMemoryService {
     if (recentAvg > earlierAvg + 0.1) return 'growing';
     if (recentAvg < earlierAvg - 0.1) return 'declining';
     return 'stable';
+  }
+
+  private generatePersonalizedRecommendations(
+    brandStrategy: any,
+    contentInsights: any,
+    query: string
+  ): string[] {
+    const recommendations: string[] = [];
+
+    // Add brand strategy recommendations
+    if (brandStrategy?.metadata?.recommendations) {
+      recommendations.push(
+        ...brandStrategy.metadata.recommendations.slice(0, 2)
+      );
+    }
+
+    // Add content optimization recommendations
+    if (contentInsights?.recommendations) {
+      recommendations.push(
+        ...contentInsights.recommendations.map((r: any) => r.action).slice(0, 2)
+      );
+    }
+
+    // If no specific recommendations, provide generic guidance
+    if (recommendations.length === 0) {
+      recommendations.push(
+        'Build consistent content posting schedule',
+        'Engage with your target audience regularly',
+        'Analyze and optimize content performance'
+      );
+    }
+
+    return recommendations;
   }
 }

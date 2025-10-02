@@ -303,6 +303,11 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
   githubUsername: string;
 
   /**
+   * Unique workflow instance identifier
+   */
+  workflowInstanceId?: string;
+
+  /**
    * Achievements to feature in content
    */
   achievements?: Achievement[];
@@ -316,6 +321,11 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
    * Brand voice for content tone
    */
   brandVoice?: BrandVoice;
+
+  /**
+   * Brand positioning statement
+   */
+  positioning?: string;
 
   /**
    * GitHub data for technical context
