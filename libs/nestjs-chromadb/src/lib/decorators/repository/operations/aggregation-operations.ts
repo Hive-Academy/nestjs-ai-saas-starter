@@ -25,7 +25,7 @@ export class AggregationOperations<
     private readonly config: ChromaRepositoryConfig,
     private readonly chromaService: any // ChromaDBService interface
   ) {
-    this.helpers = new RepositoryHelpers(config, chromaService);
+    this.helpers = new RepositoryHelpers(config);
   }
 
   // =====================================================================

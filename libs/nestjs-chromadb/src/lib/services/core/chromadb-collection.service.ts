@@ -8,7 +8,6 @@ import {
 import { ChromaDBConnectionService } from './chromadb-connection.service';
 import { ChromaCollectionInfo } from '../../interfaces/chromadb-service.interface';
 import {
-  ChromaDBError,
   ChromaDBCollectionNotFoundError,
 } from '../../errors/chromadb.errors';
 

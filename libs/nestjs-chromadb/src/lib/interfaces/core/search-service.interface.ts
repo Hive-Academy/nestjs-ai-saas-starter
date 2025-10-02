@@ -3,10 +3,8 @@
  * Clients needing only search and similarity operations
  */
 
-import type {
-  ChromaSearchOptions,
-  ChromaSearchResult,
-} from '../../types/documents';
+import type { ChromaSearchOptions } from '../../decorators';
+import type { ChromaSearchResult } from '../../types/documents';
 
 /**
  * ChromaDB search service interface - focused only on search operations

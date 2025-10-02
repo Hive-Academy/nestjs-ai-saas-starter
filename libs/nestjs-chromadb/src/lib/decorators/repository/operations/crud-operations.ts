@@ -30,7 +30,7 @@ export class CrudOperations<TDocument extends BaseDocument = BaseDocument> {
     private readonly config: ChromaRepositoryConfig,
     private readonly chromaService: any // ChromaDBService interface
   ) {
-    this.helpers = new RepositoryHelpers(config, chromaService);
+    this.helpers = new RepositoryHelpers(config);
   }
 
   // =====================================================================
@@ -316,14 +316,16 @@ export class CrudOperations<TDocument extends BaseDocument = BaseDocument> {
   }
 
   async upsert(
-    document: TDocument,
+    document: Omit<TDocument, 'toChroma' | 'getCollectionName'> & {
+      id: string;
+    },
     options?: RepositoryOperationOptions
   ): Promise<TDocument> {
     try {
       repositoryValidator.validateOptions(options);
 
       const enrichedDocument = this.helpers.enrichDocument(
-        document,
+        document as any,
         options,
         document.id
       );
@@ -353,7 +355,9 @@ export class CrudOperations<TDocument extends BaseDocument = BaseDocument> {
   }
 
   async upsertMany(
-    documents: TDocument[],
+    documents: Array<
+      Omit<TDocument, 'toChroma' | 'getCollectionName'> & { id: string }
+    >,
     options?: RepositoryOperationOptions
   ): Promise<RepositoryOperationResult<TDocument>> {
     const startTime = Date.now();
@@ -362,7 +366,7 @@ export class CrudOperations<TDocument extends BaseDocument = BaseDocument> {
       repositoryValidator.validateOptions(options);
 
       const enrichedDocuments = documents.map((doc) =>
-        this.helpers.enrichDocument(doc, options, doc.id)
+        this.helpers.enrichDocument(doc as any, options, doc.id)
       );
 
       if (this.config.enableValidation && !options?.skipValidation) {

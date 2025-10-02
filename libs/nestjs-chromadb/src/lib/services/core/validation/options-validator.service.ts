@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type {
   ValidationResult,
   MutableValidationResult,
@@ -14,7 +14,6 @@ import type {
  */
 @Injectable()
 export class OptionsValidatorService {
-  private readonly logger = new Logger(OptionsValidatorService.name);
 
   /**
    * Validate collection name

@@ -14,11 +14,9 @@ export type {
   ChromaDBSearchServiceInterface,
   BaseDocument,
   ChromaWireDocument,
-  ChromaSearchOptions,
   ChromaSearchResult,
   ChromaBulkOptions,
   ChromaCollectionInfo,
-  GetDocumentsOptions,
 } from './core';
 
 // Legacy alias for backward compatibility

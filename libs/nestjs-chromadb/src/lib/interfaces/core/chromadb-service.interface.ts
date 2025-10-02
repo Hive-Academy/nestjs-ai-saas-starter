@@ -12,11 +12,9 @@ import type { ChromaDBSearchServiceInterface } from './search-service.interface'
 export type {
   BaseDocument,
   ChromaWireDocument,
-  ChromaSearchOptions,
   ChromaSearchResult,
   ChromaBulkOptions,
   ChromaCollectionInfo,
-  GetDocumentsOptions,
 } from '../../types/documents';
 
 /**

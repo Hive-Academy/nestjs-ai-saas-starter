@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable } from '@nestjs/common';
 
 export type ContentCategory = 'code' | 'documentation' | 'configuration' | 'workflow' | 'task' | 'test' | 'data' | 'general';
 export type ComplexityLevel = 'simple' | 'moderate' | 'complex';
@@ -39,10 +38,7 @@ export interface ExtractedMetadata {
  */
 @Injectable()
 export class MetadataExtractorService {
-  private readonly logger = new Logger(MetadataExtractorService.name);
   private readonly WORDS_PER_MINUTE = 200;
-
-  constructor(private readonly configService: ConfigService) {}
 
   /**
    * Extract all metadata from content

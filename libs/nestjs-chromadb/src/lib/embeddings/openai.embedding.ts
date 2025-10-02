@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
 import type { OpenAIEmbeddingConfig } from '../interfaces/config/module-options.interface';
 import { getErrorMessage, getErrorStack } from '../utils/errors/error.utils';
-import { HttpClient, InputValidator } from '../utils/http-client.utils';
+import { HttpClient, InputValidator } from '../utils/http/http-client.utils';
 
 /**
  * Constants for OpenAI embedding provider
@@ -29,16 +29,6 @@ interface OpenAIEmbeddingResponse {
   };
 }
 
-/**
- * OpenAI API error response interface
- */
-interface OpenAIErrorResponse {
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-  };
-}
 
 /**
  * OpenAI embedding provider

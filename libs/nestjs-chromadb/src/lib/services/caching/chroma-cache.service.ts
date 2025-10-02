@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import {
+import type {
   ICacheOperations,
   ICacheStatistics,
   ICacheCleanup,
@@ -39,7 +39,7 @@ export class ChromaCacheService
   private readonly cache = new Map<string, CacheEntry>();
   private readonly config: Required<CacheConfig>;
   private readonly stats: MutableCacheStats = { hits: 0, misses: 0 };
-  private cleanupTimer?: NodeJS.Timer;
+  private cleanupTimer?: NodeJS.Timeout;
 
   // Specialized services implementing ISP
   private readonly cacheOps: CacheOperationsService;

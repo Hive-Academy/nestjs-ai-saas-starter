@@ -9,7 +9,6 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import type {
   ChromaWireDocument,
   ChromaBulkOptions,
-  ChromaSearchOptions,
 } from '../../types/core.interface';
 import { EmbeddingService } from '../embedding.service';
 
@@ -161,7 +160,8 @@ export class ChromaDBEmbeddingProcessorService {
 
     if (texts.length <= batchSize && !useParallel) {
       // Single batch processing
-      return this.embeddingService.embed(texts);
+      const embeddings = await this.embeddingService.embed(texts);
+      return embeddings.map((embedding: readonly number[]) => [...embedding]); // Convert readonly to mutable
     }
 
     // Multi-batch processing

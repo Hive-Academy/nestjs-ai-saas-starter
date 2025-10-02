@@ -5,7 +5,10 @@
  * Uses proper layering: Application types (BaseDocument) + Wire types (ChromaDB native)
  */
 
-import type { Metadata, QueryResult } from 'chromadb';
+import type { Metadata, QueryResult, Where, WhereDocument } from 'chromadb';
+
+// Re-export ChromaDB's Where types directly to ensure compatibility
+export type { Where, WhereDocument } from 'chromadb';
 
 // ========================================
 // Core Document Types (Application Layer)
@@ -14,15 +17,16 @@ import type { Metadata, QueryResult } from 'chromadb';
 /**
  * Base document interface - PRIMARY document type for all application code
  * This is the main interface consumers should use and extend
+ *
+ * @template TMetadata - Strongly-typed metadata object (must extend Record<string, any>)
  */
-export interface BaseDocument<TMetadata = Record<string, any>> {
+export interface BaseDocument<
+  TMetadata extends Record<string, any> = Record<string, any>
+> {
   readonly id: string;
   readonly content: string;
   readonly metadata: TMetadata;
   readonly embedding?: readonly number[];
-  readonly createdAt?: string;
-  readonly updatedAt?: string;
-  readonly version?: number;
 }
 
 /**
@@ -45,8 +49,8 @@ export interface ChromaWireDocument {
  */
 export interface ChromaSearchOptions {
   readonly nResults?: number;
-  readonly where?: Record<string, any>;
-  readonly whereDocument?: Record<string, any>;
+  readonly where?: Where;
+  readonly whereDocument?: WhereDocument;
   readonly includeMetadata?: boolean;
   readonly includeDocuments?: boolean;
   readonly includeDistances?: boolean;
@@ -64,10 +68,10 @@ export type ChromaSearchResult<TMetadata extends Metadata = Metadata> =
  */
 export interface GetDocumentsOptions {
   readonly ids?: string[];
-  readonly where?: Record<string, any>;
+  readonly where?: Where;
   readonly limit?: number;
   readonly offset?: number;
-  readonly whereDocument?: Record<string, any>;
+  readonly whereDocument?: WhereDocument;
   readonly include?: ReadonlyArray<
     'metadatas' | 'documents' | 'distances' | 'embeddings'
   >;
@@ -241,7 +245,9 @@ export function toChromaWireDocument<T extends BaseDocument>(
  * Convert ChromaWireDocument to BaseDocument for application use
  * Uses safe conversion functions to handle readonly/mutable type differences
  */
-export function fromChromaWireDocument<TMetadata = Record<string, any>>(
+export function fromChromaWireDocument<
+  TMetadata extends Record<string, any> = Record<string, any>
+>(
   wireDoc: ChromaWireDocument,
   additionalFields?: Partial<BaseDocument<TMetadata>>
 ): BaseDocument<TMetadata> {
@@ -266,9 +272,9 @@ export function toChromaWireDocuments<T extends BaseDocument>(
 /**
  * Convert array of ChromaWireDocuments to BaseDocuments
  */
-export function fromChromaWireDocuments<TMetadata = Record<string, any>>(
-  wireDocs: readonly ChromaWireDocument[]
-): BaseDocument<TMetadata>[] {
+export function fromChromaWireDocuments<
+  TMetadata extends Record<string, any> = Record<string, any>
+>(wireDocs: readonly ChromaWireDocument[]): BaseDocument<TMetadata>[] {
   return wireDocs.map((doc) => fromChromaWireDocument<TMetadata>(doc));
 }
 
@@ -387,3 +393,20 @@ export type MetadataTypeForCollection<
   TMap extends CollectionDocumentMap,
   TCollection extends keyof TMap
 > = TMap[TCollection] extends BaseDocument<infer TMeta> ? TMeta : never;
+
+/**
+ * Helper type to extract only data properties from an entity (excluding methods)
+ * This is useful for repository create operations where you provide data but not methods
+ */
+export type EntityData<T extends BaseDocument> = Pick<
+  T,
+  Extract<
+    | 'content'
+    | 'metadata'
+    | 'embedding'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'version',
+    keyof T
+  >
+>;

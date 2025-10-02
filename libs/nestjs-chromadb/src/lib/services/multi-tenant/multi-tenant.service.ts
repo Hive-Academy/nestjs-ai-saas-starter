@@ -5,7 +5,6 @@
 import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import { ChromaDBService } from '../chromadb.service';
 import {
-  TenantContextService,
   TenantContext,
   TenantIsolationConfig,
 } from './tenant-context.service';
@@ -18,7 +17,6 @@ import {
   TenantRegistration,
   TenantResourceLimits,
 } from './tenant-validation.service';
-import { ValidationResult } from '../../types/core.interface';
 import {
   logUnknownError,
   handleUnknownError,
@@ -110,7 +108,7 @@ export class MultiTenantService implements OnModuleInit {
 
   constructor(
     private readonly chromaService: ChromaDBService,
-    private readonly tenantContextService: TenantContextService,
+    // private readonly _tenantContextService: TenantContextService, // TODO: Implement tenant context service
     private readonly tenantIsolationService: TenantIsolationService,
     private readonly tenantValidationService: TenantValidationService,
     @Inject('MULTI_TENANT_CONFIG') private readonly config: MultiTenantConfig
@@ -379,10 +377,11 @@ export class MultiTenantService implements OnModuleInit {
 
     try {
       // Get all collections for the tenant
-      const allCollections = await this.chromaService.listCollections();
+      const allCollectionObjects = await this.chromaService.listCollections();
+      const allCollectionNames = allCollectionObjects.map(col => col.name);
       const tenantCollections =
         this.tenantIsolationService.filterCollectionsByTenant(
-          allCollections,
+          allCollectionNames,
           tenantId,
           this.config.isolation
         );
@@ -450,9 +449,10 @@ export class MultiTenantService implements OnModuleInit {
     lastActivity?: Date;
   }> {
     try {
-      const allCollections = await this.chromaService.listCollections();
+      const allCollectionObjects = await this.chromaService.listCollections();
+      const allCollectionNames = allCollectionObjects.map(col => col.name);
       const stats = this.tenantIsolationService.getCollectionStatsForTenant(
-        allCollections,
+        allCollectionNames,
         tenantId,
         this.config.isolation
       );

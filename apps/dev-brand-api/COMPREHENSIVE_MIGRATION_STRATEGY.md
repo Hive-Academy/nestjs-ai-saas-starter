@@ -1,16 +1,17 @@
-# DevBrand API - ChromaDB Migration Strategy
+# DevBrand API - ChromaDB Migration Strategy (Updated)
 
 ## Executive Summary
 
-Based on comprehensive analysis of the dev-brand-api application, this document outlines the migration strategy to upgrade all ChromaDB usage to leverage the latest decorator-driven, type-safe patterns from `@hive-academy/nestjs-chromadb`.
+Based on comprehensive analysis of the dev-brand-api application, this document outlines the migration strategy to upgrade all ChromaDB usage to leverage the **latest Entity & Repository pattern** from `@hive-academy/nestjs-chromadb`.
 
 **Key Benefits of Migration:**
 
-- 🎯 **90% Less Boilerplate**: Auto-generated CRUD operations
-- 🔒 **Enhanced Type Safety**: Zero `any` types with runtime validation
+- 🎯 **70% Less Boilerplate**: Entity definitions + BaseChromaRepository auto-generates all CRUD
+- 🔒 **Enhanced Type Safety**: Compile-time + runtime with zero `any` types
 - ⚡ **Performance**: Built-in caching, monitoring, and circuit breaker patterns
-- 🏢 **Multi-Tenancy**: Enterprise-grade tenant isolation
+- 🏢 **Multi-Tenancy**: Enterprise-grade tenant isolation with decorators
 - 📊 **Observability**: Real-time performance monitoring and metrics
+- ✨ **Clean Code**: No `!` assertions, override modifiers, or type casting needed
 
 ## Current Usage Analysis
 
@@ -77,14 +78,10 @@ export const getChromaDBConfig = (configService: ConfigService) => ({
 });
 ```
 
-**After (Enhanced Configuration)**:
+**After (Enhanced Configuration with Presets)**:
 
 ```typescript
-import { 
-  DecoratorPresets, 
-  TENANT_CONSTANTS,
-  ChromaDBModuleOptions 
-} from '@hive-academy/nestjs-chromadb';
+import { ChromaDBModuleOptions, DecoratorPresets, TENANT_CONSTANTS } from '@hive-academy/nestjs-chromadb';
 
 export const getChromaDBConfig = (configService: ConfigService): ChromaDBModuleOptions => ({
   connection: {
@@ -100,11 +97,11 @@ export const getChromaDBConfig = (configService: ConfigService): ChromaDBModuleO
       model: configService.get('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
     },
   },
-  
-  // Enhanced Decorator Configuration
+
+  // Use production-optimized decorator preset
   decorators: DecoratorPresets.production,
-  
-  // Performance & Reliability
+
+  // Performance & Reliability (built into decorators)
   performance: {
     caching: {
       enabled: true,
@@ -123,16 +120,18 @@ export const getChromaDBConfig = (configService: ConfigService): ChromaDBModuleO
       timeout: 30000,
     },
   },
-  
+
   // Multi-Tenancy (if needed)
-  multiTenant: {
-    enabled: configService.get('ENABLE_MULTI_TENANT', false),
-    isolation: TENANT_CONSTANTS.ISOLATION_CONFIGS.STANDARD,
-    enableRegistry: true,
-    enableResourceLimits: true,
-    defaultResourceLimits: TENANT_CONSTANTS.RESOURCE_LIMITS.pro,
-  },
-  
+  multiTenant: configService.get('ENABLE_MULTI_TENANT', false)
+    ? {
+        enabled: true,
+        isolation: TENANT_CONSTANTS.ISOLATION_CONFIGS.STANDARD,
+        enableRegistry: true,
+        enableResourceLimits: true,
+        defaultResourceLimits: TENANT_CONSTANTS.RESOURCE_LIMITS.pro,
+      }
+    : undefined,
+
   // Health & Diagnostics
   enableHealthCheck: true,
   healthCheckTimeout: 5000,
@@ -141,7 +140,7 @@ export const getChromaDBConfig = (configService: ConfigService): ChromaDBModuleO
 
 ### Phase 2: Vector Adapter Migration (Week 2)
 
-#### Transform Traditional Adapter to Repository Pattern
+#### Transform Traditional Service to Entity & Repository Pattern
 
 **Before (Manual Service Integration)**:
 
@@ -156,15 +155,17 @@ export class ChromaVectorAdapter extends IVectorService {
     // Manual validation, error handling, metadata sanitization
     this.validateCollection(collection);
     this.validateStoreData(data);
-    
+
     try {
       const id = data.id || this.generateId();
-      await this.chromaDBService.addDocuments(collection, [{
-        id,
-        document: data.document,
-        metadata: this.sanitizeMetadata(data.metadata || {}),
-        embedding: data.embedding,
-      }]);
+      await this.chromaDBService.addDocuments(collection, [
+        {
+          id,
+          document: data.document,
+          metadata: this.sanitizeMetadata(data.metadata || {}),
+          embedding: data.embedding,
+        },
+      ]);
       return id;
     } catch (error) {
       throw new VectorOperationError('Failed to store document', 'store');
@@ -173,80 +174,149 @@ export class ChromaVectorAdapter extends IVectorService {
 }
 ```
 
-**After (Decorator-Driven Repository)**:
+**After (Entity & Repository Pattern)**:
 
 ```typescript
-import { 
-  ChromaRepository, 
-  VectorQuery, 
-  TenantAware, 
-  Cached, 
-  Profiled, 
-  Retry,
-  BaseDocument 
-} from '@hive-academy/nestjs-chromadb';
+import { Injectable, BaseChromaEntity, BaseChromaRepository, ChromaEntity, ChromaId, ChromaProp, ChromaMetadata, ChromaEmbedding, ChromaRepository, CreatedAt, UpdatedAt, BaseDocument } from '@hive-academy/nestjs-chromadb';
 
-interface VectorDocument extends BaseDocument<{
+// ============================================
+// Step 1: Define Vector Memory Entity
+// ============================================
+
+interface VectorMemoryMetadata {
   agentId: string;
   sessionId: string;
   memoryType: 'episodic' | 'semantic' | 'procedural';
   importance: number;
-  timestamp: string;
   source: string;
-}> {}
+  context?: Record<string, any>;
+}
+
+@ChromaEntity({
+  collection: 'agent-memories',
+  description: 'Agent memory storage with semantic search',
+  autoEmbed: true,
+  embeddingFields: ['content'],
+  autoTimestamp: true,
+  autoGenerateIds: true,
+  idStrategy: 'uuid',
+})
+export class VectorMemoryEntity extends BaseChromaEntity<VectorMemoryMetadata> {
+  @ChromaId()
+  id!: string;
+
+  @ChromaProp({
+    description: 'Memory content for semantic search',
+    validate: (content: string) => content.length > 0 && content.length < 10000,
+  })
+  content!: string;
+
+  @ChromaMetadata()
+  metadata!: VectorMemoryMetadata;
+
+  @ChromaEmbedding()
+  embedding?: readonly number[];
+
+  @CreatedAt()
+  createdAt!: string;
+
+  @UpdatedAt()
+  updatedAt!: string;
+}
+
+// ============================================
+// Step 2: Create Repository with Auto-Generated CRUD
+// ============================================
 
 @Injectable()
-@ChromaRepository<VectorDocument>({
+@ChromaRepository({
   collection: 'agent-memories',
-  idField: 'id',
-  documentField: 'document',
-  metadataFields: ['agentId', 'sessionId', 'memoryType', 'importance', 'timestamp', 'source'],
-  embeddingField: 'embedding',
   autoEmbed: true,
+  enableCaching: true,
   enableValidation: true,
-  autoTimestamp: true,
 })
-@TenantAware({
-  strategy: 'prefix',
-  field: 'agentId',
-  separator: '_',
-  enableAuditLog: true,
-})
-export class ChromaVectorAdapter extends IVectorService {
-  // Auto-generated: create, findById, update, delete, search, etc.
+export class VectorMemoryRepository extends BaseChromaRepository<VectorMemoryEntity> {
+  constructor(private readonly chromaService: ChromaDBService) {
+    super();
+  }
 
-  @VectorQuery<VectorDocument>({
-    collection: 'agent-memories',
-    autoEmbed: true,
-    defaultLimit: 10,
-    includeMetadata: true,
-    includeDistances: true,
-  })
-  @Cached({ ttl: 300000, keyStrategy: 'collection_aware' })
-  @Profiled({ slowQueryThreshold: 100 })
-  @Retry({ maxAttempts: 3, strategy: 'exponential' })
-  async store(collection: string, data: VectorStoreData): Promise<string> {
-    // All validation, error handling, and metadata processing handled by decorators
-    return await this.create({
-      id: data.id || this.generateId(),
-      document: data.document,
-      agentId: data.agentId || 'default',
-      sessionId: data.sessionId || 'unknown',
-      memoryType: data.memoryType || 'semantic',
-      importance: data.importance || 0.5,
-      timestamp: new Date().toISOString(),
-      source: data.source || 'vector-adapter',
+  // ✅ All CRUD methods available automatically:
+  // create, createMany, findById, findByIds, findAll, update, updateMany,
+  // upsert, upsertMany, delete, deleteMany, deleteByFilter,
+  // search, searchWithScores, searchSimilar, count, exists, peek, clear
+
+  // Custom business methods using base methods
+  async findByAgent(agentId: string, options?: { limit?: number }): Promise<VectorMemoryEntity[]> {
+    return this.findAll({
+      where: { agentId },
+      limit: options?.limit || 50,
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  @VectorQuery<VectorDocument>({
-    collection: 'agent-memories',
-    queryType: 'similarity',
-    caching: { ttl: 600, strategy: 'result' },
-  })
+  async findBySession(sessionId: string): Promise<VectorMemoryEntity[]> {
+    return this.findAll({ where: { sessionId } });
+  }
+
+  async searchMemories(query: string, agentId: string, limit = 10): Promise<VectorMemoryEntity[]> {
+    return this.search(query, {
+      where: { agentId },
+      limit,
+    });
+  }
+
+  async getImportantMemories(agentId: string, minImportance = 0.7): Promise<VectorMemoryEntity[]> {
+    return this.findAll({
+      where: {
+        agentId,
+        importance: { $gte: minImportance },
+      },
+      orderBy: { importance: 'desc' },
+    });
+  }
+}
+
+// ============================================
+// Step 3: Update Vector Adapter to Use Repository
+// ============================================
+
+@Injectable()
+export class ChromaVectorAdapter extends IVectorService {
+  constructor(private readonly memoryRepo: VectorMemoryRepository) {
+    super();
+  }
+
+  async store(collection: string, data: VectorStoreData): Promise<string> {
+    // All validation, error handling handled by repository
+    const memory = await this.memoryRepo.create({
+      content: data.document,
+      metadata: {
+        agentId: data.agentId || 'default',
+        sessionId: data.sessionId || 'unknown',
+        memoryType: data.memoryType || 'semantic',
+        importance: data.importance || 0.5,
+        source: data.source || 'vector-adapter',
+        context: data.context,
+      },
+    });
+
+    return memory.id;
+  }
+
+  async search(query: string, options: SearchOptions): Promise<VectorSearchResult[]> {
+    const memories = await this.memoryRepo.searchMemories(query, options.agentId, options.limit || 10);
+
+    return memories.map((m) => ({
+      id: m.id,
+      content: m.content,
+      metadata: m.metadata,
+      score: m.score, // From search results
+    }));
+  }
+
   async multiFacetedSearch(query: string, facets: SearchFacets): Promise<VectorSearchResult[]> {
-    return await this.search(query, {
-      filter: {
+    return this.memoryRepo.search(query, {
+      where: {
         agentId: facets.agentId,
         memoryType: facets.memoryType,
         importance: { $gte: facets.minImportance || 0.3 },
@@ -255,67 +325,69 @@ export class ChromaVectorAdapter extends IVectorService {
     });
   }
 
-  // LangGraph Store Interface - Enhanced with decorators
-  @Performance.Monitor('langstore-operations')
-  @Performance.Cache({ ttl: 1800, key: 'langstore_${agentId}_${key}' })
+  // LangGraph Store Interface - Enhanced with repository
   async aput(agentId: string, key: string, value: any): Promise<void> {
-    await this.create({
+    await this.memoryRepo.upsert({
       id: `${agentId}-${key}`,
-      document: JSON.stringify(value),
-      agentId,
-      sessionId: 'langstore',
-      memoryType: 'procedural',
-      importance: 0.8,
-      timestamp: new Date().toISOString(),
-      source: 'langstore',
+      content: JSON.stringify(value),
+      metadata: {
+        agentId,
+        sessionId: 'langstore',
+        memoryType: 'procedural',
+        importance: 0.8,
+        source: 'langstore',
+      },
     });
+  }
+
+  async aget(agentId: string, key: string): Promise<any> {
+    const memory = await this.memoryRepo.findById(`${agentId}-${key}`);
+    return memory ? JSON.parse(memory.content) : null;
   }
 }
 ```
 
 ### Phase 3: Personal Brand Memory Service Transformation (Week 3)
 
-#### Upgrade from Manual Operations to Declarative Pattern
+#### Upgrade from Manual Operations to Entity & Repository Pattern
 
 **Before (Complex Manual Implementation)**:
 
 ```typescript
 @Injectable()
 export class PersonalBrandMemoryService {
-  constructor(
-    private readonly chromaDB: ChromaDBService,
-    private readonly neo4j: Neo4jService
-  ) {}
+  constructor(private readonly chromaDB: ChromaDBService, private readonly neo4j: Neo4jService) {}
 
   async storeCodeAchievement(userId: string, achievement: CodeAchievement): Promise<void> {
     // Manual ChromaDB operations with error handling
-    await this.chromaDB.addDocuments('dev-achievements', [{
-      id: achievement.id,
-      document: `${achievement.description} | Technologies: ${achievement.technologies.join(', ')}`,
-      metadata: {
-        userId, type: 'achievement',
-        technologies: achievement.technologies.join(', '),
-        // ... manual metadata processing
+    await this.chromaDB.addDocuments('dev-achievements', [
+      {
+        id: achievement.id,
+        document: `${achievement.description} | Technologies: ${achievement.technologies.join(', ')}`,
+        metadata: {
+          userId,
+          type: 'achievement',
+          technologies: achievement.technologies.join(', '),
+          // ... manual metadata processing
+        },
       },
-    }]);
+    ]);
     // ... Neo4j operations
   }
 }
 ```
 
-**After (Declarative Multi-Repository Pattern)**:
+**After (Entity & Repository Pattern with Multiple Entities)**:
 
 ```typescript
-import { 
-  ChromaRepository, 
-  VectorQuery, 
-  TenantAware, 
-  Performance,
-  BaseDocument 
-} from '@hive-academy/nestjs-chromadb';
+import { Injectable, BaseChromaEntity, BaseChromaRepository, ChromaEntity, ChromaId, ChromaProp, ChromaMetadata, ChromaRepository, CreatedAt, BaseDocument } from '@hive-academy/nestjs-chromadb';
 
-// Enhanced Type System
-interface CodeAchievementDocument extends BaseDocument<{
+// ============================================
+// Step 1: Define Specialized Entities
+// ============================================
+
+// Code Achievement Entity
+interface CodeAchievementMetadata {
   userId: string;
   description: string;
   technologies: string[];
@@ -327,9 +399,31 @@ interface CodeAchievementDocument extends BaseDocument<{
     complexity: number;
     testCoverage: number;
   };
-}> {}
+}
 
-interface BrandStrategyDocument extends BaseDocument<{
+@ChromaEntity({
+  collection: 'dev-achievements',
+  description: 'Developer code achievements and milestones',
+  autoEmbed: true,
+  embeddingFields: ['content'],
+  autoTimestamp: true,
+})
+export class CodeAchievementEntity extends BaseChromaEntity<CodeAchievementMetadata> {
+  @ChromaId()
+  id!: string;
+
+  @ChromaProp()
+  content!: string;
+
+  @ChromaMetadata()
+  metadata!: CodeAchievementMetadata;
+
+  @CreatedAt()
+  createdAt!: string;
+}
+
+// Brand Strategy Entity
+interface BrandStrategyMetadata {
   userId: string;
   positioning: string;
   strengths: string[];
@@ -337,15 +431,35 @@ interface BrandStrategyDocument extends BaseDocument<{
   recommendations: string[];
   targetAudience: string;
   confidenceScore: number;
-  createdAt: string;
   evolution: {
     previousStrategy?: string;
     changeTrigger: string;
     improvementScore: number;
   };
-}> {}
+}
 
-interface ContentPerformanceDocument extends BaseDocument<{
+@ChromaEntity({
+  collection: 'brand-evolution',
+  description: 'Personal brand strategy evolution tracking',
+  autoEmbed: true,
+  autoTimestamp: true,
+})
+export class BrandStrategyEntity extends BaseChromaEntity<BrandStrategyMetadata> {
+  @ChromaId()
+  id!: string;
+
+  @ChromaProp()
+  content!: string;
+
+  @ChromaMetadata()
+  metadata!: BrandStrategyMetadata;
+
+  @CreatedAt()
+  createdAt!: string;
+}
+
+// Content Performance Entity
+interface ContentPerformanceMetadata {
   userId: string;
   platform: 'linkedin' | 'devto' | 'twitter' | 'medium';
   engagementScore: number;
@@ -355,58 +469,268 @@ interface ContentPerformanceDocument extends BaseDocument<{
     comments: number;
     shares: number;
   };
-  createdAt: string;
   analysis: {
     sentiment: 'positive' | 'neutral' | 'negative';
     topics: string[];
     viralityFactor: number;
   };
-}> {}
+}
+
+@ChromaEntity({
+  collection: 'content-metrics',
+  description: 'Content performance analytics and insights',
+  autoEmbed: true,
+  autoTimestamp: true,
+})
+export class ContentPerformanceEntity extends BaseChromaEntity<ContentPerformanceMetadata> {
+  @ChromaId()
+  id!: string;
+
+  @ChromaProp()
+  content!: string;
+
+  @ChromaMetadata()
+  metadata!: ContentPerformanceMetadata;
+
+  @CreatedAt()
+  createdAt!: string;
+}
+
+// ============================================
+// Step 2: Create Specialized Repositories
+// ============================================
+
+@Injectable()
+@ChromaRepository({
+  collection: 'dev-achievements',
+  autoEmbed: true,
+  enableCaching: true,
+})
+export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievementEntity> {
+  constructor(private readonly chromaService: ChromaDBService) {
+    super();
+  }
+
+  async findByUserId(userId: string, options?: { limit?: number }): Promise<CodeAchievementEntity[]> {
+    return this.findAll({
+      where: { userId },
+      limit: options?.limit || 10,
+      orderBy: { date: 'desc' },
+    });
+  }
+
+  async findByTechnology(userId: string, tech: string): Promise<CodeAchievementEntity[]> {
+    return this.findAll({
+      where: { userId, technologies: { $contains: tech } },
+    });
+  }
+
+  async findSimilarAchievements(achievement: string, userId: string): Promise<CodeAchievementEntity[]> {
+    return this.search(achievement, {
+      where: { userId },
+      limit: 5,
+    });
+  }
+
+  async getHighImpactAchievements(userId: string): Promise<CodeAchievementEntity[]> {
+    return this.findAll({
+      where: { userId, impact: { $in: ['high', 'critical'] } },
+      orderBy: { date: 'desc' },
+    });
+  }
+}
+
+@Injectable()
+@ChromaRepository({
+  collection: 'brand-evolution',
+  autoEmbed: true,
+  enableCaching: true,
+})
+export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyEntity> {
+  constructor(private readonly chromaService: ChromaDBService) {
+    super();
+  }
+
+  async findByUserId(userId: string, options?: { limit?: number }): Promise<BrandStrategyEntity[]> {
+    return this.findAll({
+      where: { userId },
+      limit: options?.limit || 5,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getLatestStrategy(userId: string): Promise<BrandStrategyEntity | null> {
+    const strategies = await this.findByUserId(userId, { limit: 1 });
+    return strategies[0] || null;
+  }
+
+  async analyzeBrandEvolution(userId: string): Promise<{
+    strategies: BrandStrategyEntity[];
+    evolutionScore: number;
+    keyChanges: string[];
+  }> {
+    const strategies = await this.findByUserId(userId);
+
+    return {
+      strategies,
+      evolutionScore: this.calculateEvolutionScore(strategies),
+      keyChanges: this.extractKeyChanges(strategies),
+    };
+  }
+
+  private calculateEvolutionScore(strategies: BrandStrategyEntity[]): number {
+    if (strategies.length < 2) return 0;
+    return strategies.reduce((sum, s) => sum + s.metadata.confidenceScore, 0) / strategies.length;
+  }
+
+  private extractKeyChanges(strategies: BrandStrategyEntity[]): string[] {
+    return strategies.filter((s) => s.metadata.evolution?.changeTrigger).map((s) => s.metadata.evolution.changeTrigger);
+  }
+}
+
+@Injectable()
+@ChromaRepository({
+  collection: 'content-metrics',
+  autoEmbed: true,
+  enableCaching: true,
+})
+export class ContentPerformanceRepository extends BaseChromaRepository<ContentPerformanceEntity> {
+  constructor(private readonly chromaService: ChromaDBService) {
+    super();
+  }
+
+  async findByUserId(userId: string, options?: { limit?: number }): Promise<ContentPerformanceEntity[]> {
+    return this.findAll({
+      where: { userId },
+      limit: options?.limit || 10,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findHighPerformingContent(userId: string, minEngagement = 0.7): Promise<ContentPerformanceEntity[]> {
+    return this.findAll({
+      where: {
+        userId,
+        engagementScore: { $gte: minEngagement },
+      },
+      orderBy: { engagementScore: 'desc' },
+    });
+  }
+
+  async getContentByPlatform(userId: string, platform: string): Promise<ContentPerformanceEntity[]> {
+    return this.findAll({ where: { userId, platform } });
+  }
+
+  async getContentOptimizationInsights(userId: string): Promise<{
+    topPerformers: ContentPerformanceEntity[];
+    avgEngagement: number;
+    topTopics: string[];
+    platformAnalysis: Record<string, number>;
+  }> {
+    const content = await this.findByUserId(userId, { limit: 50 });
+
+    return {
+      topPerformers: content.slice(0, 10).sort((a, b) => b.metadata.engagementScore - a.metadata.engagementScore),
+      avgEngagement: content.reduce((sum, c) => sum + c.metadata.engagementScore, 0) / content.length,
+      topTopics: this.extractTopTopics(content),
+      platformAnalysis: this.analyzePlatformPerformance(content),
+    };
+  }
+
+  private extractTopTopics(content: ContentPerformanceEntity[]): string[] {
+    const topicCounts = new Map<string, number>();
+    content.forEach((c) => {
+      c.metadata.analysis.topics.forEach((topic) => {
+        topicCounts.set(topic, (topicCounts.get(topic) || 0) + 1);
+      });
+    });
+    return Array.from(topicCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([topic]) => topic);
+  }
+
+  private analyzePlatformPerformance(content: ContentPerformanceEntity[]): Record<string, number> {
+    const platformScores: Record<string, number[]> = {};
+    content.forEach((c) => {
+      if (!platformScores[c.metadata.platform]) {
+        platformScores[c.metadata.platform] = [];
+      }
+      platformScores[c.metadata.platform].push(c.metadata.engagementScore);
+    });
+
+    return Object.entries(platformScores).reduce((acc, [platform, scores]) => {
+      acc[platform] = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+}
+
+// ============================================
+// Step 3: Update Main Service to Use Repositories
+// ============================================
 
 @Injectable()
 export class PersonalBrandMemoryService {
-  constructor(
-    private readonly neo4j: Neo4jService,
-    // Inject specialized repositories
-    private readonly achievementRepo: CodeAchievementRepository,
-    private readonly brandRepo: BrandStrategyRepository,
-    private readonly contentRepo: ContentPerformanceRepository
-  ) {}
+  constructor(private readonly neo4j: Neo4jService, private readonly achievementRepo: CodeAchievementRepository, private readonly brandRepo: BrandStrategyRepository, private readonly contentRepo: ContentPerformanceRepository) {}
 
-  // Enhanced store methods with auto-validation and monitoring
   async storeCodeAchievement(userId: string, achievement: CodeAchievement): Promise<void> {
     // Store in ChromaDB using repository (automatic validation, embedding, caching)
     await this.achievementRepo.create({
-      id: achievement.id,
-      document: `${achievement.description} | Technologies: ${achievement.technologies.join(', ')} | Impact: ${achievement.impact}`,
-      userId,
-      description: achievement.description,
-      technologies: achievement.technologies,
-      impact: achievement.impact,
-      date: achievement.date,
-      repository: achievement.repository,
-      metrics: {
-        linesChanged: achievement.linesChanged || 0,
-        complexity: achievement.complexity || 0,
-        testCoverage: achievement.testCoverage || 0,
+      content: `${achievement.description} | Technologies: ${achievement.technologies.join(', ')} | Impact: ${achievement.impact}`,
+      metadata: {
+        userId,
+        description: achievement.description,
+        technologies: achievement.technologies,
+        impact: achievement.impact,
+        date: achievement.date,
+        repository: achievement.repository,
+        metrics: {
+          linesChanged: achievement.linesChanged || 0,
+          complexity: achievement.complexity || 0,
+          testCoverage: achievement.testCoverage || 0,
+        },
       },
     });
 
-    // Neo4j operations remain the same but enhanced with monitoring
+    // Neo4j operations remain the same
     await this.createTechnologyRelationships(userId, achievement);
   }
 
-  @Performance.Monitor('brand-context-retrieval')
-  @Performance.Cache({ ttl: 1800, key: 'dev_context_${userId}' })
+  async storeBrandStrategy(userId: string, strategy: BrandStrategy): Promise<void> {
+    await this.brandRepo.create({
+      content: `${strategy.positioning} | Strengths: ${strategy.strengths.join(', ')} | Target: ${strategy.targetAudience}`,
+      metadata: {
+        userId,
+        positioning: strategy.positioning,
+        strengths: strategy.strengths,
+        opportunities: strategy.opportunities,
+        recommendations: strategy.recommendations,
+        targetAudience: strategy.targetAudience,
+        confidenceScore: strategy.confidenceScore,
+        evolution: strategy.evolution,
+      },
+    });
+  }
+
+  async storeContentPerformance(userId: string, content: ContentPerformance): Promise<void> {
+    await this.contentRepo.create({
+      content: content.content,
+      metadata: {
+        userId,
+        platform: content.platform,
+        engagementScore: content.engagementScore,
+        metrics: content.metrics,
+        analysis: content.analysis,
+      },
+    });
+  }
+
   async getDevContext(userId: string): Promise<DeveloperContext> {
     // Parallel repository queries with automatic caching and monitoring
-    const [achievements, strategies, content] = await Promise.all([
-      this.achievementRepo.findByUserId(userId, { limit: 10 }),
-      this.brandRepo.findByUserId(userId, { limit: 5 }),
-      this.contentRepo.findByUserId(userId, { limit: 10 }),
-    ]);
+    const [achievements, strategies, content] = await Promise.all([this.achievementRepo.findByUserId(userId, { limit: 10 }), this.brandRepo.findByUserId(userId, { limit: 5 }), this.contentRepo.findByUserId(userId, { limit: 10 })]);
 
-    // Enhanced Neo4j query with monitoring
+    // Enhanced Neo4j query
     const techResult = await this.getTechnologyExpertise(userId);
 
     return {
@@ -415,93 +739,73 @@ export class PersonalBrandMemoryService {
       recentAchievements: achievements,
       brandEvolution: strategies,
       contentHistory: content,
-      // Enhanced analytics
       analytics: {
         achievementTrend: this.calculateAchievementTrend(achievements),
-        brandEvolutionScore: this.calculateBrandEvolution(strategies),
-        contentEngagementTrend: this.calculateEngagementTrend(content),
+        brandEvolutionScore: await this.brandRepo.analyzeBrandEvolution(userId),
+        contentInsights: await this.contentRepo.getContentOptimizationInsights(userId),
       },
     };
   }
-}
 
-// Specialized Repository Classes
-@ChromaRepository<CodeAchievementDocument>({
-  collection: 'dev-achievements',
-  autoEmbed: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-@TenantAware({ strategy: 'prefix', field: 'userId', separator: '_' })
-@Injectable()
-export class CodeAchievementRepository {
-  @VectorQuery({ queryType: 'similarity', caching: { ttl: 300 } })
-  async findByUserId(userId: string, options?: { limit?: number }): Promise<CodeAchievementDocument[]> {
-    return await this.findAll({ 
-      filter: { userId }, 
-      limit: options?.limit || 10,
-      sort: { date: -1 },
+  async getPersonalizedContentStrategy(userId: string, query: string): Promise<ContentStrategy> {
+    // Use semantic search across all repositories
+    const [similarAchievements, relevantStrategies, performingContent] = await Promise.all([this.achievementRepo.search(query, { where: { userId }, limit: 5 }), this.brandRepo.search(query, { where: { userId }, limit: 3 }), this.contentRepo.search(query, { where: { userId }, limit: 5 })]);
+
+    return this.synthesizeStrategy({
+      achievements: similarAchievements,
+      strategies: relevantStrategies,
+      content: performingContent,
+      query,
     });
   }
 
-  @VectorQuery({ queryType: 'semantic', caching: { ttl: 600 } })
-  async findSimilarAchievements(achievement: string, userId: string): Promise<CodeAchievementDocument[]> {
-    return await this.search(achievement, {
-      filter: { userId },
-      limit: 5,
-      minScore: 0.7,
-    });
-  }
-}
-
-@ChromaRepository<BrandStrategyDocument>({
-  collection: 'brand-evolution',
-  autoEmbed: true,
-  enableValidation: true,
-})
-@TenantAware({ strategy: 'prefix', field: 'userId', separator: '_' })
-@Injectable()
-export class BrandStrategyRepository {
-  @VectorQuery({ queryType: 'similarity', caching: { ttl: 600 } })
-  async findByUserId(userId: string, options?: { limit?: number }): Promise<BrandStrategyDocument[]> {
-    return await this.findAll({ 
-      filter: { userId }, 
-      limit: options?.limit || 5,
-      sort: { createdAt: -1 },
-    });
+  private calculateAchievementTrend(achievements: CodeAchievementEntity[]): TrendAnalysis {
+    // Implementation
+    return {
+      direction: 'up',
+      velocity: 0.8,
+      recentMilestones: achievements.slice(0, 5),
+    };
   }
 
-  @Performance.Monitor('brand-evolution-analysis')
-  async analyzeBrandEvolution(userId: string): Promise<BrandEvolutionAnalysis> {
-    const strategies = await this.findByUserId(userId);
-    return this.calculateEvolutionMetrics(strategies);
-  }
-}
-
-@ChromaRepository<ContentPerformanceDocument>({
-  collection: 'content-metrics',
-  autoEmbed: true,
-  enableValidation: true,
-})
-@TenantAware({ strategy: 'prefix', field: 'userId', separator: '_' })
-@Injectable()
-export class ContentPerformanceRepository {
-  @VectorQuery({ queryType: 'similarity', caching: { ttl: 300 } })
-  async findHighPerformingContent(userId: string, minEngagement = 0.7): Promise<ContentPerformanceDocument[]> {
-    return await this.findAll({
-      filter: { 
-        userId, 
-        engagementScore: { $gte: minEngagement },
-      },
-      limit: 10,
-      sort: { engagementScore: -1 },
-    });
+  private async getTechnologyExpertise(userId: string): Promise<any> {
+    return this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[:SKILLED_IN]->(t:Technology)
+       RETURN t.name as technology, t.level as level
+       ORDER BY t.level DESC`,
+      { userId }
+    );
   }
 
-  @Performance.Monitor('content-optimization-analysis')
-  async getContentOptimizationInsights(userId: string): Promise<ContentInsights> {
-    const content = await this.findByUserId(userId, { limit: 50 });
-    return this.analyzeContentPatterns(content);
+  private extractSkills(techResult: any): string[] {
+    return techResult.records.map((r: any) => r.get('technology'));
+  }
+
+  private createTechnologyRelationships(userId: string, achievement: CodeAchievement): Promise<void> {
+    // Neo4j relationship creation
+    return this.neo4j.run(
+      `MATCH (u:User {id: $userId})
+       UNWIND $technologies as tech
+       MERGE (t:Technology {name: tech})
+       MERGE (u)-[r:USED_IN_ACHIEVEMENT]->(t)
+       SET r.achievementId = $achievementId, r.date = $date`,
+      {
+        userId,
+        technologies: achievement.technologies,
+        achievementId: achievement.id,
+        date: achievement.date,
+      }
+    );
+  }
+
+  private synthesizeStrategy(data: any): ContentStrategy {
+    // AI-powered strategy synthesis
+    return {
+      recommendations: [],
+      focusAreas: [],
+      contentIdeas: [],
+      targetPlatforms: [],
+    };
   }
 }
 ```
@@ -527,21 +831,18 @@ async retrieveContext(context: TaskExecutionContext): Promise<TaskExecutionResul
 ```typescript
 @Task({ dependsOn: ['parseUserMessage'] })
 @StreamProgress({ enabled: true })
-@Performance.Monitor('workflow-context-retrieval')
 async retrieveContext(context: TaskExecutionContext): Promise<TaskExecutionResult> {
   const { state } = context;
   const chatState = state as ChatWorkflowState;
 
   try {
-    // Enhanced parallel retrieval with automatic caching and monitoring
+    // Enhanced parallel retrieval with automatic caching from repositories
     const [contextStrategy, devContext, brandVoice] = await Promise.all([
-      // Repository-based retrieval with built-in caching
       this.brandMemory.getPersonalizedContentStrategy(chatState.userId, chatState.userMessage),
       this.brandMemory.getDevContext(chatState.userId),
-      this.brandMemory.getBrandVoice(chatState.userId),
+      this.brandMemory.getLatestBrandStrategy(chatState.userId),
     ]);
 
-    // Enhanced context with analytics and insights
     return {
       state: {
         ...chatState,
@@ -551,12 +852,11 @@ async retrieveContext(context: TaskExecutionContext): Promise<TaskExecutionResul
           voice: brandVoice,
           recentTrends: devContext.analytics?.achievementTrend,
           contentStrategy: contextStrategy,
-          engagementPatterns: devContext.analytics?.contentEngagementTrend,
+          engagementPatterns: devContext.analytics?.contentInsights,
         },
       },
     };
   } catch (error) {
-    // Enhanced error handling with monitoring
     console.error('Context retrieval failed:', error);
     return {
       state: {
@@ -571,21 +871,18 @@ async retrieveContext(context: TaskExecutionContext): Promise<TaskExecutionResul
 
 @Task({ dependsOn: ['routeByIntent'] })
 @StreamProgress({ enabled: true })
-@Performance.Monitor('workflow-strategy-advice')
 async executeStrategyAdvice(context: TaskExecutionContext): Promise<TaskExecutionResult> {
-  // Enhanced strategy advice with repository-driven insights
   const { state } = context;
   const chatState = state as ChatWorkflowState;
 
   try {
-    // Use enhanced repository methods for deeper analysis
+    // Use repository methods for deeper analysis
     const [brandEvolution, contentInsights, achievementTrends] = await Promise.all([
       this.brandMemory.brandRepo.analyzeBrandEvolution(chatState.userId),
       this.brandMemory.contentRepo.getContentOptimizationInsights(chatState.userId),
       this.brandMemory.achievementRepo.findSimilarAchievements(chatState.userMessage, chatState.userId),
     ]);
 
-    // Generate comprehensive strategy with AI insights
     const strategyAdvice = await this.generateEnhancedStrategy({
       userMessage: chatState.userMessage,
       brandEvolution,
@@ -631,28 +928,20 @@ private async databaseConnectionsCheck(): Promise<HealthIndicatorResult> {
 **After (Comprehensive Health with Performance Metrics)**:
 
 ```typescript
-import { ChromaDBHealthIndicator } from '@hive-academy/nestjs-chromadb';
+import { ChromaDBHealthIndicator, getPerformanceStatistics, getCacheStatistics, getRetryStatistics } from '@hive-academy/nestjs-chromadb';
 
 @Controller('health')
 export class HealthController {
-  constructor(
-    private readonly healthCheckService: HealthCheckService,
-    private readonly chromaHealth: ChromaDBHealthIndicator
-  ) {}
+  constructor(private readonly healthCheckService: HealthCheckService, private readonly chromaHealth: ChromaDBHealthIndicator) {}
 
   @Get('detailed')
   async detailedCheck() {
-    return this.healthCheckService.check([
-      () => this.basicSystemCheck(),
-      () => this.chromaDBDetailedCheck(),
-      () => this.repositoryHealthCheck(),
-      () => this.performanceMetricsCheck(),
-    ]);
+    return this.healthCheckService.check([() => this.basicSystemCheck(), () => this.chromaDBDetailedCheck(), () => this.repositoryHealthCheck(), () => this.performanceMetricsCheck()]);
   }
 
   private async chromaDBDetailedCheck(): Promise<HealthIndicatorResult> {
     const detailed = await this.chromaHealth.isHealthyDetailed('chromadb');
-    
+
     return {
       chromadb: {
         status: detailed.connection ? 'up' : 'down',
@@ -660,6 +949,7 @@ export class HealthController {
         collections: detailed.collections,
         embedding: detailed.embedding,
         cache: detailed.cache,
+        multiTenant: detailed.multiTenant,
         performance: {
           avgResponseTime: detailed.performance?.avgResponseTime,
           operationsPerSecond: detailed.performance?.operationsPerSecond,
@@ -670,22 +960,45 @@ export class HealthController {
           achievements: await this.checkRepositoryHealth('dev-achievements'),
           brandStrategies: await this.checkRepositoryHealth('brand-evolution'),
           contentMetrics: await this.checkRepositoryHealth('content-metrics'),
+          agentMemories: await this.checkRepositoryHealth('agent-memories'),
         },
       },
     };
   }
 
   private async performanceMetricsCheck(): Promise<HealthIndicatorResult> {
-    const metrics = await this.getPerformanceStatistics();
-    
+    const [perfStats, cacheStats, retryStats] = await Promise.all([getPerformanceStatistics(), getCacheStatistics(), getRetryStatistics()]);
+
+    const isHealthy = perfStats.errorRate < 0.05 && perfStats.avgExecutionTime < 100 && cacheStats.hitRate > 0.8;
+
     return {
       performance: {
-        status: metrics.errorRate < 0.05 && metrics.avgExecutionTime < 100 ? 'up' : 'degraded',
+        status: isHealthy ? 'up' : 'degraded',
         metrics: {
-          avgExecutionTime: `${metrics.avgExecutionTime}ms`,
-          operationsPerSecond: metrics.operationsPerSecond,
-          errorRate: `${(metrics.errorRate * 100).toFixed(2)}%`,
-          cacheHitRate: `${(metrics.cacheHitRate * 100).toFixed(2)}%`,
+          execution: {
+            avgTime: `${perfStats.avgExecutionTime}ms`,
+            operationsPerSecond: perfStats.operationsPerSecond,
+            slowQueries: perfStats.slowQueries.length,
+            percentiles: {
+              p50: `${perfStats.percentiles.p50}ms`,
+              p95: `${perfStats.percentiles.p95}ms`,
+              p99: `${perfStats.percentiles.p99}ms`,
+            },
+          },
+          caching: {
+            hitRate: `${(cacheStats.hitRate * 100).toFixed(2)}%`,
+            missRate: `${(cacheStats.missRate * 100).toFixed(2)}%`,
+            evictionRate: `${(cacheStats.evictionRate * 100).toFixed(2)}%`,
+            avgResponseTime: `${cacheStats.avgResponseTime}ms`,
+            totalOperations: cacheStats.totalOperations,
+          },
+          reliability: {
+            errorRate: `${(perfStats.errorRate * 100).toFixed(2)}%`,
+            totalRetries: retryStats.totalRetries,
+            successfulRetries: retryStats.successfulRetries,
+            circuitBreakerTrips: retryStats.circuitBreakerTrips,
+            avgRetryDelay: `${retryStats.avgRetryDelay}ms`,
+          },
         },
         thresholds: {
           maxResponseTime: '100ms',
@@ -699,12 +1012,12 @@ export class HealthController {
   private async checkRepositoryHealth(collectionName: string): Promise<any> {
     try {
       const count = await this.chromaHealth.getCollectionCount(collectionName);
-      const lastActivity = await this.chromaHealth.getLastActivity(collectionName);
-      
+      const exists = await this.chromaHealth.collectionExists(collectionName);
+
       return {
         status: 'up',
+        exists,
         documentCount: count,
-        lastActivity,
         operational: true,
       };
     } catch (error) {
@@ -722,30 +1035,30 @@ export class HealthController {
 
 ### Week 1: Foundation & Configuration
 
-- [ ] Update ChromaDBModule configuration with enhanced decorators
+- [ ] Update ChromaDBModule configuration with DecoratorPresets
 - [ ] Add performance, caching, and monitoring configurations
 - [ ] Test basic decorator functionality
 - [ ] Update environment variables and validation
 
-### Week 2: Core Repository Migration
+### Week 2: Entity & Repository Migration
 
+- [ ] Define all entities with @ChromaEntity decorator
+- [ ] Create repository classes extending BaseChromaRepository
 - [ ] Migrate ChromaVectorAdapter to repository pattern
-- [ ] Implement specialized repositories for PersonalBrandMemoryService
-- [ ] Add comprehensive type definitions
 - [ ] Test repository functionality and performance
 
 ### Week 3: Business Logic Enhancement
 
 - [ ] Transform PersonalBrandMemoryService to use repositories
-- [ ] Add performance monitoring and caching decorators
-- [ ] Implement enhanced analytics and insights
+- [ ] Implement all specialized repositories (achievements, brand, content)
+- [ ] Add comprehensive analytics and insights methods
 - [ ] Update workflow integrations
 
 ### Week 4: Workflow & Integration
 
-- [ ] Update LangGraph workflows to use enhanced repositories
+- [ ] Update LangGraph workflows to use repository methods
 - [ ] Implement streaming optimizations
-- [ ] Add comprehensive error handling and monitoring
+- [ ] Add comprehensive error handling
 - [ ] Performance testing and optimization
 
 ### Week 5: Monitoring & Production Readiness
@@ -766,10 +1079,10 @@ export class HealthController {
 
 ### Code Quality Improvements
 
-- **Type Safety**: Eliminate all `any` types in ChromaDB interactions
-- **Code Reduction**: Achieve 90% reduction in boilerplate code
+- **Type Safety**: Zero `any` types in ChromaDB interactions
+- **Code Reduction**: 70% reduction in boilerplate code
 - **Test Coverage**: Maintain >95% test coverage
-- **Documentation**: Comprehensive migration examples and best practices
+- **Build Time**: 0 TypeScript errors with strict mode
 
 ### Operational Improvements
 
@@ -778,28 +1091,39 @@ export class HealthController {
 - **Observability**: Detailed metrics and logging for operations
 - **Multi-tenancy**: Secure tenant isolation and resource management
 
+## Migration Validation Checklist
+
+Before marking migration complete, verify:
+
+- [ ] All entities defined with @ChromaEntity decorator
+- [ ] All repositories extend BaseChromaRepository
+- [ ] No `!` assertion operators in production code
+- [ ] No override modifiers on entity properties
+- [ ] No `as any` type casts for Where clauses
+- [ ] All CRUD operations use BaseChromaRepository methods
+- [ ] Health monitoring uses latest ChromaDBHealthIndicator API
+- [ ] Performance metrics integrated (getPerformanceStatistics, etc.)
+- [ ] All tests passing with strict TypeScript mode
+- [ ] Production build succeeds with zero errors
+
 ## Risk Mitigation
 
 ### Rollback Strategy
 
-1. **Configuration Rollback**: Disable decorators to fall back to manual patterns
-2. **Gradual Migration**: Migrate one component at a time with feature flags
-3. **Testing Strategy**: Comprehensive integration testing before production deployment
-4. **Monitoring**: Real-time monitoring during migration to detect issues early
+1. **Feature Flags**: Enable new pattern per collection
+2. **Gradual Migration**: One service at a time
+3. **Testing Strategy**: Comprehensive integration testing
+4. **Monitoring**: Real-time error tracking during migration
 
 ### Compatibility Considerations
 
-- Maintain backward compatibility during migration period
-- Ensure all existing API contracts remain unchanged
-- Provide migration scripts for data format changes
-- Document all breaking changes and migration steps
+- Maintain service interfaces during migration
+- Run old and new patterns in parallel during transition
+- Comprehensive integration testing before production
+- Document all breaking changes
 
-## Next Steps
+---
 
-1. **Approval**: Review and approve migration strategy
-2. **Environment Setup**: Prepare development and testing environments
-3. **Team Training**: Conduct training on new decorator patterns
-4. **Implementation**: Begin with Week 1 foundation work
-5. **Monitoring**: Establish baseline metrics before migration begins
-
-This comprehensive migration strategy will transform the DevBrand API from traditional ChromaDB usage to a modern, declarative, high-performance implementation while maintaining all existing functionality and improving overall system reliability and maintainability.
+**Migration Status**: Ready for Implementation  
+**Last Updated**: 2025-10-01  
+**Next Review**: After Phase 1 Completion

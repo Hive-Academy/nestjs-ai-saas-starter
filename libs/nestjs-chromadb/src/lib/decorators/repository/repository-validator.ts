@@ -21,8 +21,6 @@ import type {
  * Document validation service for repository operations
  */
 export class RepositoryValidator {
-  private readonly logger = new Logger(RepositoryValidator.name);
-
   /**
    * Validate a single document before operation
    */
@@ -48,27 +46,30 @@ export class RepositoryValidator {
     }
 
     // Additional validations based on config
-    if (
-      config.autoTimestamp &&
-      document.createdAt &&
-      !this.isValidDate(document.createdAt)
-    ) {
-      throw new Error('Invalid createdAt timestamp format');
+    // Check timestamp fields if they exist on the document
+    if (config.autoTimestamp && 'createdAt' in document) {
+      const createdAt = (document as any).createdAt;
+      if (createdAt && !this.isValidDate(createdAt)) {
+        throw new Error('Invalid createdAt timestamp format');
+      }
     }
 
-    if (
-      config.autoTimestamp &&
-      document.updatedAt &&
-      !this.isValidDate(document.updatedAt)
-    ) {
-      throw new Error('Invalid updatedAt timestamp format');
+    if (config.autoTimestamp && 'updatedAt' in document) {
+      const updatedAt = (document as any).updatedAt;
+      if (updatedAt && !this.isValidDate(updatedAt)) {
+        throw new Error('Invalid updatedAt timestamp format');
+      }
     }
 
-    if (
-      document.version !== undefined &&
-      (!Number.isInteger(document.version) || document.version < 1)
-    ) {
-      throw new Error('Document version must be a positive integer');
+    // Check version field if it exists on the document
+    if ('version' in document) {
+      const version = (document as any).version;
+      if (
+        version !== undefined &&
+        (!Number.isInteger(version) || version < 1)
+      ) {
+        throw new Error('Document version must be a positive integer');
+      }
     }
 
     if (document.embedding && !Array.isArray(document.embedding)) {
