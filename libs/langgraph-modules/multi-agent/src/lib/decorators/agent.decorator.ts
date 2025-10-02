@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { WORKFLOW_METADATA_KEY } from '@hive-academy/langgraph-core';
 
 /**
  * Agent type enumeration for enhanced agent architecture
@@ -267,7 +268,7 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
       };
 
       // Apply workflow metadata (equivalent to @Workflow decorator)
-      SetMetadata('workflow:config', workflowConfig)(target);
+      SetMetadata(WORKFLOW_METADATA_KEY, workflowConfig)(target);
       SetMetadata('workflow:marker', true)(target);
 
       // Store internal workflow configuration for agent runtime
