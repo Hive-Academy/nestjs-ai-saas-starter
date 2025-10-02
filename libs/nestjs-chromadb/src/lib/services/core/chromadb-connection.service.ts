@@ -53,7 +53,7 @@ export class ChromaDBConnectionService
 
   constructor(
     @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
-    private readonly config: ConnectionConfig
+    @Inject('ConnectionConfig') private readonly config: ConnectionConfig
   ) {}
 
   /**

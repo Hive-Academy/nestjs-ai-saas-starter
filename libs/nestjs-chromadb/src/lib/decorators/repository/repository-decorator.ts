@@ -97,8 +97,16 @@ export function ChromaRepository<TDocument extends BaseDocument = BaseDocument>(
 
       private initializeRepository(args: any[]): void {
         try {
-          // Find ChromaDBService in constructor arguments
+          // Find ChromaDBService in constructor arguments (optional)
           const chromaService = this.findChromaService(args);
+
+          if (!chromaService) {
+            this.logger.warn(
+              `ChromaDBService not injected in ${constructor.name}. ` +
+                'Repository methods will not be available until service is provided.'
+            );
+            return;
+          }
 
           // Create repository implementation instance
           this.repositoryImpl = new RepositoryImplementation<TDocument>(
@@ -117,7 +125,7 @@ export function ChromaRepository<TDocument extends BaseDocument = BaseDocument>(
         }
       }
 
-      private findChromaService(args: any[]): ChromaDBService {
+      private findChromaService(args: any[]): ChromaDBService | null {
         // Look for ChromaDBService in constructor arguments
         for (const arg of args) {
           if (isChromaDBService(arg)) {
@@ -125,10 +133,8 @@ export function ChromaRepository<TDocument extends BaseDocument = BaseDocument>(
           }
         }
 
-        throw new Error(
-          `ChromaDBService not found in constructor arguments for ${constructor.name}. ` +
-            'Please inject ChromaDBService as one of the constructor parameters.'
-        );
+        // Return null if not found (will be handled gracefully)
+        return null;
       }
 
       private bindRepositoryMethods(): void {
@@ -180,7 +186,9 @@ export function ChromaRepository<TDocument extends BaseDocument = BaseDocument>(
         return this.getRepositoryImpl()['chromaService'];
       }
 
-      protected chromaService: ChromaDBService = this.getChromaService();
+      protected get chromaService(): ChromaDBService {
+        return this.getChromaService();
+      }
     }
 
     return RepositoryEnhanced as T;

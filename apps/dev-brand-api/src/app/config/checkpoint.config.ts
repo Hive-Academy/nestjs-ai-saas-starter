@@ -1,5 +1,7 @@
 // Import the specific checkpoint saver for this demo application
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
+import * as fs from 'fs';
+import * as path from 'path';
 
 import type { CheckpointModuleOptions } from '@hive-academy/langgraph-checkpoint';
 
@@ -12,6 +14,13 @@ import type { CheckpointModuleOptions } from '@hive-academy/langgraph-checkpoint
 export async function getCheckpointConfig(): Promise<CheckpointModuleOptions> {
   // Configure SQLite checkpoint saver for demo
   const dbPath = process.env.CHECKPOINT_SQLITE_PATH || './data/checkpoints.db';
+
+  // Ensure the directory exists
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
   const saver = SqliteSaver.fromConnString(dbPath);
 
   return {

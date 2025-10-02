@@ -38,6 +38,8 @@ import { VectorMemoryEntity } from '../../entities/chromadb/vector-memory.entity
   autoTimestamp: true,
 })
 export class VectorMemoryRepository extends BaseChromaRepository<VectorMemoryEntity> {
+  // No constructor needed - ChromaDBService is injected automatically by BaseChromaRepository
+
   /**
    * Find all memories for a specific agent
    */

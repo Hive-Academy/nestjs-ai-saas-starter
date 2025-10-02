@@ -26,7 +26,11 @@ import {
   ICheckpointAdapter,
   IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
-import type { AgentProvider, ToolProvider, WorkflowProvider } from '@hive-academy/langgraph-multi-agent';
+import type {
+  AgentProvider,
+  ToolProvider,
+  WorkflowProvider,
+} from '@hive-academy/langgraph-multi-agent';
 // Removed WorkflowClass import - not available after cleanup
 
 export interface WorkflowEngineModuleOptions {
@@ -46,7 +50,7 @@ export interface WorkflowEngineModuleOptions {
     logLevel?: string;
     traceExecution?: boolean;
   };
-  
+
   // CENTRALIZED REGISTRATION: Only WorkflowEngineModule accepts these
   agents?: AgentProvider[];
   tools?: ToolProvider[];
@@ -88,7 +92,7 @@ export class WorkflowEngineModule {
         CompilationCacheService,
         MetadataProcessorService,
         SubgraphManagerService,
-        
+
         // Split streaming services
         StreamManagementService,
         TokenProcessingService,
@@ -99,7 +103,7 @@ export class WorkflowEngineModule {
           provide: WorkflowStreamService,
           useExisting: WorkflowStreamOrchestratorService,
         },
-        
+
         WorkflowCheckpointService,
         WorkflowExecutionService,
 
@@ -109,7 +113,7 @@ export class WorkflowEngineModule {
         // EnhancedNodeProcessorService removed
         EnhancedDecoratorOrchestratorService,
         // Backward compatibility removed
-        
+
         // New services for decorator support and optimization
         DecoratorTranslationService,
         MultiAgentTranslationService,
@@ -119,17 +123,20 @@ export class WorkflowEngineModule {
         // CENTRALIZED REGISTRATION: Provider arrays for central registry
         {
           provide: 'WORKFLOW_ENGINE_AGENTS',
-          useFactory: (options: WorkflowEngineModuleOptions) => options.agents || [],
+          useFactory: (options: WorkflowEngineModuleOptions) =>
+            options.agents || [],
           inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
         },
         {
           provide: 'WORKFLOW_ENGINE_TOOLS',
-          useFactory: (options: WorkflowEngineModuleOptions) => options.tools || [],
+          useFactory: (options: WorkflowEngineModuleOptions) =>
+            options.tools || [],
           inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
         },
         {
           provide: 'WORKFLOW_ENGINE_WORKFLOWS',
-          useFactory: (options: WorkflowEngineModuleOptions) => options.workflows || [],
+          useFactory: (options: WorkflowEngineModuleOptions) =>
+            options.workflows || [],
           inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
         },
         // Central registry service for all registration
@@ -146,12 +153,8 @@ export class WorkflowEngineModule {
           provide: 'MultiAgentTranslationService',
           useClass: MultiAgentTranslationService,
         },
-        {
-          provide: 'ICheckpointAdapter',
-          useFactory: (options: WorkflowEngineModuleOptions) => 
-            options.checkpointAdapter || null,
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
+        // Don't re-provide ICheckpointAdapter - it's injected from CheckpointModule
+        // Services will inject it directly via @Inject('ICheckpointAdapter')
 
         // Note: IStreamingService is provided by StreamingModule via adapter pattern
       ],
@@ -212,7 +215,7 @@ export class WorkflowEngineModule {
         CompilationCacheService,
         MetadataProcessorService,
         SubgraphManagerService,
-        
+
         // Split streaming services
         StreamManagementService,
         TokenProcessingService,
@@ -223,7 +226,7 @@ export class WorkflowEngineModule {
           provide: WorkflowStreamService,
           useExisting: WorkflowStreamOrchestratorService,
         },
-        
+
         WorkflowCheckpointService,
         WorkflowExecutionService,
 
@@ -233,7 +236,7 @@ export class WorkflowEngineModule {
         // EnhancedNodeProcessorService removed
         EnhancedDecoratorOrchestratorService,
         // Backward compatibility removed
-        
+
         // New services for decorator support and optimization
         DecoratorTranslationService,
         MultiAgentTranslationService,
@@ -243,17 +246,20 @@ export class WorkflowEngineModule {
         // CENTRALIZED REGISTRATION: Provider arrays for central registry
         {
           provide: 'WORKFLOW_ENGINE_AGENTS',
-          useFactory: (options: WorkflowEngineModuleOptions) => options.agents || [],
+          useFactory: (options: WorkflowEngineModuleOptions) =>
+            options.agents || [],
           inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
         },
         {
           provide: 'WORKFLOW_ENGINE_TOOLS',
-          useFactory: (options: WorkflowEngineModuleOptions) => options.tools || [],
+          useFactory: (options: WorkflowEngineModuleOptions) =>
+            options.tools || [],
           inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
         },
         {
           provide: 'WORKFLOW_ENGINE_WORKFLOWS',
-          useFactory: (options: WorkflowEngineModuleOptions) => options.workflows || [],
+          useFactory: (options: WorkflowEngineModuleOptions) =>
+            options.workflows || [],
           inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
         },
         // Central registry service for all registration
@@ -270,12 +276,8 @@ export class WorkflowEngineModule {
           provide: 'MultiAgentTranslationService',
           useClass: MultiAgentTranslationService,
         },
-        {
-          provide: 'ICheckpointAdapter',
-          useFactory: (options: WorkflowEngineModuleOptions) => 
-            options.checkpointAdapter || null,
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
+        // Don't re-provide ICheckpointAdapter - it's injected from CheckpointModule
+        // Services will inject it directly via @Inject('ICheckpointAdapter')
 
         // Note: IStreamingService is provided by StreamingModule via adapter pattern
       ],

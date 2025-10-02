@@ -9,12 +9,12 @@ import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 // Adapters - Keep these as they're essential
 import {
   ChromaVectorAdapter,
+  Neo4jApprovalChainStorageAdapter,
+  Neo4jConfidenceStorageAdapter,
+  Neo4jFeedbackStorageAdapter,
   Neo4jGraphAdapter,
   Neo4jHitlStorageAdapter,
   Neo4jInterruptionStorageAdapter,
-  Neo4jConfidenceStorageAdapter,
-  Neo4jFeedbackStorageAdapter,
-  Neo4jApprovalChainStorageAdapter,
 } from './adapters';
 
 // Repositories
@@ -60,8 +60,8 @@ import { AppStreamingManager } from './services/app-streaming-manager.service';
 // Core interface for adapter pattern
 import {
   ICheckpointAdapter,
-  IStreamingService,
   IMemoryAdapter,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 
 @Module({
@@ -134,20 +134,33 @@ import {
     HitlModule.forRootAsync({
       useFactory: async (
         checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
+        memoryAdapter: IMemoryAdapter,
+        hitlStorage: Neo4jHitlStorageAdapter,
+        interruptionStorage: Neo4jInterruptionStorageAdapter,
+        confidenceStorage: Neo4jConfidenceStorageAdapter,
+        feedbackStorage: Neo4jFeedbackStorageAdapter,
+        approvalChainStorage: Neo4jApprovalChainStorageAdapter
       ) => ({
         ...getHitlConfig(),
         checkpointAdapter,
         memoryAdapter,
         adapters: {
-          storage: Neo4jHitlStorageAdapter,
-          interruptionStorage: Neo4jInterruptionStorageAdapter,
-          confidenceStorage: Neo4jConfidenceStorageAdapter,
-          feedbackStorage: Neo4jFeedbackStorageAdapter,
-          approvalChainStorage: Neo4jApprovalChainStorageAdapter,
+          storage: hitlStorage,
+          interruptionStorage: interruptionStorage,
+          confidenceStorage: confidenceStorage,
+          feedbackStorage: feedbackStorage,
+          approvalChainStorage: approvalChainStorage,
         },
       }),
-      inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
+      inject: [
+        'ICheckpointAdapter',
+        'IMemoryAdapter',
+        Neo4jHitlStorageAdapter,
+        Neo4jInterruptionStorageAdapter,
+        Neo4jConfidenceStorageAdapter,
+        Neo4jFeedbackStorageAdapter,
+        Neo4jApprovalChainStorageAdapter,
+      ],
     }),
 
     // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
