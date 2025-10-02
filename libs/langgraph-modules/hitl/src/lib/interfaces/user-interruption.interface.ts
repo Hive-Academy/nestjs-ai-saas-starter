@@ -131,6 +131,11 @@ export abstract class IUserInterruptionStorageService {
    * Clean up expired interruptions
    */
   abstract cleanupExpiredInterruptions(): Promise<number>;
+
+  /**
+   * Get all active interruptions across all executions (for recovery)
+   */
+  abstract getAllActiveInterruptions(): Promise<readonly UserInterruption[]>;
 }
 
 /**

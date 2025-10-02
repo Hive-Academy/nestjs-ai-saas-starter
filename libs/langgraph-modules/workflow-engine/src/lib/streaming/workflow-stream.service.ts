@@ -30,6 +30,10 @@ import type {
   ICheckpointAdapter,
 } from '@hive-academy/langgraph-core';
 import {
+  WorkflowCheckpointMetadata,
+  WorkflowPerformanceMetadata,
+} from '../interfaces/workflow-metadata.interface';
+import {
   WorkflowStateAnnotation,
   TokenStreamOptions,
 } from '@hive-academy/langgraph-core';
@@ -720,18 +724,19 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Create a stream update with metadata
+   * Create a stream update with type-safe metadata
    */
-  private createUpdate(
+  private createUpdate<TData = unknown, TStreamData = Record<string, unknown>>(
     type: StreamEventType,
-    data: any,
+    data: TData,
     executionId: string,
-    additionalMetadata?: Partial<StreamMetadata>
+    additionalMetadata?: Partial<StreamMetadata> & { streamData?: TStreamData }
   ): StreamUpdate {
     const sequenceNumber = this.getNextSequence(executionId);
+    const timestamp = new Date();
 
     const metadata: StreamMetadata = {
-      timestamp: new Date(),
+      timestamp,
       sequenceNumber,
       executionId,
       ...additionalMetadata,
@@ -1045,12 +1050,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Save initial checkpoint for workflow execution
+   * Save initial checkpoint for workflow execution with type safety
    */
-  private async saveInitialCheckpoint(
+  private async saveInitialCheckpoint<TMetadata = WorkflowPerformanceMetadata>(
     executionId: string,
-    input: any,
-    config: any
+    input: unknown,
+    config: unknown,
+    customMetadata?: TMetadata
   ): Promise<void> {
     if (!this.checkpointAdapter) {
       return;
@@ -1058,28 +1064,39 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const threadId = this.generateWorkflowThreadId(executionId);
+      const timestamp = new Date().toISOString();
       const checkpointData = {
-        id: `${threadId}_initial`,
-        thread_id: threadId,
-        checkpoint: {
-          version: 1,
-          data: {
-            input,
-            config,
-            status: 'started',
-            executionId,
-            timestamp: new Date().toISOString(),
-          },
-        },
-        metadata: {
-          source: 'workflow-engine',
-          type: 'initial',
-          executionId,
-          created_at: new Date().toISOString(),
-        },
+        executionId,
+        timestamp,
+        type: 'initial',
+        input,
+        config,
+        status: 'started',
       };
 
-      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      const metadata: WorkflowCheckpointMetadata<TMetadata> = {
+        timestamp,
+        source: 'input',
+        step: 0,
+        parents: {},
+        executionId,
+        type: 'initial',
+        created_at: timestamp,
+        payload: customMetadata,
+      };
+
+      // Extract base metadata for LangGraph compatibility
+      const { payload, ...baseMetadata } = metadata;
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        {
+          id: `${threadId}_initial`,
+          thread_id: threadId,
+          checkpoint: { version: 1, data: checkpointData },
+          metadata,
+        },
+        baseMetadata
+      );
       this.logger.debug(
         `Saved initial checkpoint for execution ${executionId} with thread ID ${threadId}`
       );
@@ -1093,12 +1110,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Save final checkpoint for workflow execution
+   * Save final checkpoint for workflow execution with type safety
    */
-  private async saveFinalCheckpoint(
+  private async saveFinalCheckpoint<TMetadata = WorkflowPerformanceMetadata>(
     executionId: string,
-    finalState: any,
-    config: any
+    finalState: unknown,
+    config: unknown,
+    customMetadata?: TMetadata
   ): Promise<void> {
     if (!this.checkpointAdapter) {
       return;
@@ -1106,28 +1124,39 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const threadId = this.generateWorkflowThreadId(executionId);
+      const timestamp = new Date().toISOString();
       const checkpointData = {
-        id: `${threadId}_final`,
-        thread_id: threadId,
-        checkpoint: {
-          version: 1,
-          data: {
-            finalState,
-            config,
-            status: 'completed',
-            executionId,
-            timestamp: new Date().toISOString(),
-          },
-        },
-        metadata: {
-          source: 'workflow-engine',
-          type: 'final',
-          executionId,
-          created_at: new Date().toISOString(),
-        },
+        executionId,
+        timestamp,
+        type: 'final',
+        state: finalState,
+        config,
+        status: 'completed',
       };
 
-      await this.checkpointAdapter.putCheckpoint(checkpointData);
+      const metadata: WorkflowCheckpointMetadata<TMetadata> = {
+        timestamp,
+        source: 'update',
+        step: 1,
+        parents: {},
+        executionId,
+        type: 'final',
+        created_at: timestamp,
+        payload: customMetadata,
+      };
+
+      // Extract base metadata for LangGraph compatibility
+      const { payload, ...baseMetadata } = metadata;
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        {
+          id: `${threadId}_final`,
+          thread_id: threadId,
+          checkpoint: { version: 1, data: checkpointData },
+          metadata,
+        },
+        baseMetadata
+      );
       this.logger.debug(
         `Saved final checkpoint for execution ${executionId} with thread ID ${threadId}`
       );

@@ -16,6 +16,7 @@ import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interfac
 import { AgentRegistryService } from './agent-registry.service';
 import { GraphBuilderService } from './graph-builder.service';
 import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
+import { generateExecutionId } from '@hive-academy/langgraph-core';
 
 /**
  * High-level service for managing agent networks and workflow execution
@@ -165,7 +166,7 @@ export class NetworkManagerService {
           networkId,
           networkType: networkConfig.type,
           startTime,
-          executionId: this.generateExecutionId(),
+          executionId: generateExecutionId(),
         },
       };
 
@@ -274,7 +275,7 @@ export class NetworkManagerService {
         networkId,
         networkType: networkConfig.type,
         startTime,
-        executionId: this.generateExecutionId(),
+        executionId: generateExecutionId(),
       },
     };
 
@@ -592,12 +593,5 @@ export class NetworkManagerService {
    */
   private getCheckpointThreadPrefix(): string {
     return this.options?.checkpointing?.defaultThreadPrefix || 'multi-agent';
-  }
-
-  /**
-   * Generate unique execution ID
-   */
-  private generateExecutionId(): string {
-    return `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

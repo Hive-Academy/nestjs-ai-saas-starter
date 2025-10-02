@@ -102,7 +102,7 @@ export interface WorkflowDecoratorOptions {
  * }
  * ```
  */
-export function Workflow(options: WorkflowDecoratorOptions): ClassDecorator {
+export function AgenticWorkflow(options: WorkflowDecoratorOptions): ClassDecorator {
   return function (target: any) {
     // Validate that the class has an execute method
     const prototype = target.prototype;
@@ -399,7 +399,9 @@ async function tryAutoRegisterWithTimeTravel(
   } catch (error) {
     // Graceful degradation - Time-Travel might not be available
     console.log(
-      `Time-Travel auto-registration skipped for ${options.name}: ${error.message}`
+      `Time-Travel auto-registration skipped for ${options.name}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     );
   }
 }

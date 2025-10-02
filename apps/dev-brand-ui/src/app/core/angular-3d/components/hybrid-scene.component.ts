@@ -1,549 +1,760 @@
+/**
+ * HybridSceneComponent - Phase 2 Unified Modern Implementation
+ *
+ * Consolidates the best of v1 and v2 implementations into a single, modern Angular Three component.
+ * Follows Angular 20.1.6 best practices with signals, inject() function, and reactive patterns.
+ *
+ * Key Features:
+ * - Pure Angular Three integration with NgtCanvas
+ * - Signal-based reactive configuration
+ * - Complete API compatibility with v1 methods
+ * - Automatic resource management
+ * - Performance monitoring integration
+ * - GSAP animation support
+ * - Modern TypeScript strict mode compliance
+ */
+
 import {
   Component,
-  ViewChild,
-  ElementRef,
-  AfterViewInit,
-  OnDestroy,
   input,
   output,
   signal,
   computed,
   inject,
+  effect,
   ChangeDetectionStrategy,
+  OnInit,
+  OnDestroy,
+  ElementRef,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { fromEvent, debounceTime } from 'rxjs';
 import * as THREE from 'three';
+import { NgtCanvas, injectStore } from 'angular-three';
 
 import { AngularThreeFoundationService } from '../services/angular-three-foundation.service';
 import { HybridUIService } from '../services/hybrid-ui.service';
+import { AnimationService } from '../services/animation.service';
+import { Angular3DStateStore } from '../services/angular-3d-state.store';
+import { HybridThreeSceneComponent } from './hybrid-three-scene.component';
 import type { HybridUIServiceConfig } from '../interfaces';
 
+// Modern interface definitions with strict typing
+interface HybridSceneConfig extends HybridUIServiceConfig {
+  readonly shadows: boolean;
+  readonly antialias: boolean;
+  readonly alpha: boolean;
+  readonly powerPreference: 'default' | 'high-performance' | 'low-power';
+  readonly enableAnimation: boolean;
+  readonly performanceTarget: 'mobile' | 'desktop' | 'high-end';
+}
+
+interface PerformanceMetrics {
+  readonly fps: number;
+  readonly memoryUsage: number;
+  readonly renderTime: number;
+  readonly isOptimal: boolean;
+  readonly activeAnimations: number;
+}
+
+/**
+ * Unified Modern HybridSceneComponent - Phase 2 Enhanced
+ *
+ * The single, authoritative scene component that replaces both v1 and v2.
+ * Uses Angular Three best practices with complete backward compatibility.
+ */
 @Component({
   selector: 'app-hybrid-scene',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NgtCanvas],
   template: `
     <div class="hybrid-scene-container" #container>
-      <canvas
-        #canvas
+      <!-- Phase 2: Pure Angular Three Canvas Integration -->
+      <ngt-canvas
+        [sceneGraph]="sceneComponent"
+        [gl]="glConfig()"
+        [shadows]="shadowConfig()"
+        [performance]="performanceConfig()"
+        [dpr]="dprConfig()"
+        [frameloop]="frameloopConfig()"
+        (created)="onCanvasCreated($event)"
         class="hybrid-scene-canvas"
         [class.initialized]="initialized()"
         [class.performance-optimal]="performanceOptimal()"
-      ></canvas>
+        [class.animation-enabled]="animationEnabled()"
+      >
+        <!-- Angular Three handles all 3D rendering -->
+      </ngt-canvas>
 
-      <!-- Performance overlay -->
+      <!-- Enhanced Performance Overlay - Phase 2 -->
       @if (showPerformanceOverlay()) {
-      <div class="performance-overlay">
+      <div class="performance-overlay" [class.detailed]="detailedMetrics()">
+        <div class="performance-header">
+          <h4>Performance Monitor</h4>
+          <button
+            class="toggle-detail"
+            (click)="toggleDetailedMetrics()"
+            [attr.aria-label]="detailedMetrics() ? 'Show less details' : 'Show more details'">
+            {{ detailedMetrics() ? '−' : '+' }}
+          </button>
+        </div>
+
         <div class="performance-stats">
-          <div class="stat">
+          <!-- Core metrics -->
+          <div class="stat primary">
             <span class="label">FPS:</span>
-            <span class="value" [class.warning]="fps() < 30">{{ fps() }}</span>
+            <span class="value" [class.warning]="performanceMetrics().fps < 30">
+              {{ performanceMetrics().fps }}
+            </span>
           </div>
-          <div class="stat">
-            <span class="label">Elements:</span>
-            <span class="value">{{ hybridService.elementCount() }}</span>
-          </div>
-          <div class="stat">
-            <span class="label">Visible:</span>
-            <span class="value">{{ hybridService.visibleElementCount() }}</span>
-          </div>
-          <div class="stat">
+
+          <div class="stat primary">
             <span class="label">Memory:</span>
             <span class="value">{{ memoryUsageMB() }}MB</span>
+          </div>
+
+          <!-- Detailed metrics when expanded -->
+          @if (detailedMetrics()) {
+          <div class="detailed-stats">
+            <div class="stat">
+              <span class="label">Render Time:</span>
+              <span class="value">{{ performanceMetrics().renderTime.toFixed(2) }}ms</span>
+            </div>
+
+            <div class="stat">
+              <span class="label">Elements:</span>
+              <span class="value">{{ hybridService.elementCount() }}</span>
+            </div>
+
+            <div class="stat">
+              <span class="label">Visible:</span>
+              <span class="value">{{ hybridService.visibleElementCount() }}</span>
+            </div>
+
+            <div class="stat">
+              <span class="label">Animations:</span>
+              <span class="value">{{ performanceMetrics().activeAnimations }}</span>
+            </div>
+
+            <div class="stat status">
+              <span class="label">Status:</span>
+              <span class="value" [class]="'status-' + performanceStatus()">
+                {{ performanceStatus() }}
+              </span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Loading Overlay with Progress -->
+      @if (!initialized()) {
+      <div class="loading-overlay">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">{{ loadingMessage() }}</div>
+          <div class="loading-progress">
+            <div class="progress-bar" [style.width.%]="loadingProgress()"></div>
           </div>
         </div>
       </div>
       }
 
-      <!-- Loading overlay -->
-      @if (!initialized()) {
-      <div class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Initializing 3D Scene...</div>
-      </div>
-      }
-
-      <!-- Content projection for DOM elements to be converted to 3D -->
-      <div class="hybrid-content" [style.opacity]="contentVisible() ? 1 : 0">
+      <!-- Content projection for DOM elements -->
+      <div
+        class="hybrid-content"
+        [style.opacity]="contentVisible() ? 1 : 0"
+        [style.pointer-events]="contentInteractive() ? 'auto' : 'none'"
+        #contentContainer>
         <ng-content></ng-content>
       </div>
+
+      <!-- Animation Debug Panel (Development only) -->
+      @if (showAnimationDebug() && !isProduction()) {
+      <div class="animation-debug-panel">
+        <h5>Animation Debug</h5>
+        <div class="debug-stats">
+          <div>Active Timelines: {{ animationService.activeAnimationCount() }}</div>
+          <div>Performance: {{ animationService.animationPerformanceStatus().status }}</div>
+        </div>
+      </div>
+      }
     </div>
   `,
-  styles: [
-    `
-      .hybrid-scene-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: var(--scene-background, transparent);
-      }
-
-      .hybrid-scene-canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: block;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: 1;
-      }
-
-      .hybrid-scene-canvas.initialized {
-        opacity: 1;
-      }
-
-      .hybrid-scene-canvas.performance-optimal {
-        filter: none;
-      }
-
-      .performance-overlay {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 12px;
-        z-index: 100;
-        backdrop-filter: blur(4px);
-      }
-
-      .performance-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .stat {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .stat .label {
-        opacity: 0.8;
-      }
-
-      .stat .value {
-        font-weight: bold;
-      }
-
-      .stat .value.warning {
-        color: #ff6b6b;
-      }
-
-      .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 50;
-      }
-
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #007bff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      .loading-text {
-        margin-top: 16px;
-        font-size: 14px;
-        color: #666;
-      }
-
-      .hybrid-content {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: auto;
-        z-index: 10;
-        transition: opacity 0.3s ease;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Dark theme support */
-      @media (prefers-color-scheme: dark) {
-        .loading-overlay {
-          background: rgba(30, 30, 30, 0.9);
-        }
-
-        .loading-text {
-          color: #ccc;
-        }
-      }
-
-      /* Mobile optimizations */
-      @media (max-width: 768px) {
-        .performance-overlay {
-          font-size: 10px;
-          padding: 6px 8px;
-          top: 5px;
-          right: 5px;
-        }
-      }
-    `,
-  ],
+  styleUrls: ['./hybrid-scene.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HybridSceneComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('canvas', { static: true }) canvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('container', { static: true })
-  container!: ElementRef<HTMLDivElement>;
+export class HybridSceneComponent implements OnInit, OnDestroy {
+  // ViewChild references for advanced DOM integration
+  private readonly container = viewChild<ElementRef<HTMLDivElement>>('container');
 
-  // Inputs
-  readonly config = input<Partial<HybridUIServiceConfig>>({});
+  // Input signals with comprehensive configuration options
+  readonly sceneId = input<string>();
+  readonly config = input<Partial<HybridSceneConfig>>({});
   readonly enablePerformanceOverlay = input(false);
   readonly autoResize = input(true);
   readonly contentVisible = input(true);
+  readonly contentInteractive = input(true);
   readonly backgroundColor = input<string>('transparent');
-  readonly cameraPosition = input<[number, number, number]>([0, 0, 5]);
-  readonly cameraTarget = input<[number, number, number]>([0, 0, 0]);
+  readonly cameraPosition = input<readonly [number, number, number]>([0, 0, 5] as const);
+  readonly cameraTarget = input<readonly [number, number, number]>([0, 0, 0] as const);
+  readonly enableShadows = input(true);
+  readonly antialias = input(true);
+  readonly alpha = input(true);
+  readonly powerPreference = input<'default' | 'high-performance' | 'low-power'>('high-performance');
+  readonly enableAnimation = input(true);
+  readonly performanceTarget = input<'mobile' | 'desktop' | 'high-end'>('desktop');
+  readonly showAnimationDebug = input(false);
 
-  // Outputs
-  readonly sceneInitialized = output<void>();
-  readonly performanceUpdate = output<any>();
-  readonly elementAdded = output<string>();
-  readonly elementRemoved = output<string>();
+  // Output events for component integration
+  readonly sceneInitialized = output<THREE.Scene>();
+  readonly performanceUpdate = output<PerformanceMetrics>();
+  readonly elementAdded = output<{ elementId: string; object: THREE.Object3D }>();
+  readonly elementRemoved = output<{ elementId: string; object: THREE.Object3D }>();
+  readonly animationEvent = output<{ type: string; data: any }>();
 
-  // Services
-  private readonly angularThreeFoundation = inject(
-    AngularThreeFoundationService
-  );
+  // Dependency injection with modern Angular patterns
+  private readonly angularThreeFoundation = inject(AngularThreeFoundationService);
   readonly hybridService = inject(HybridUIService);
+  readonly animationService = inject(AnimationService);
+  readonly stateStore = inject(Angular3DStateStore);
+  private readonly ngtStore = injectStore({ optional: true });
 
-  // Component state
-  private readonly isInitialized = signal(false);
-  private readonly currentPerformance = signal({
+  // Internal state management with signals
+  private readonly _initialized = signal(false);
+  private readonly _loadingProgress = signal(0);
+  private readonly _loadingMessage = signal('Initializing 3D Scene...');
+  private readonly _detailedMetrics = signal(false);
+  private readonly _performanceMetrics = signal<PerformanceMetrics>({
     fps: 60,
     memoryUsage: 0,
+    renderTime: 0,
     isOptimal: true,
+    activeAnimations: 0,
   });
 
-  private renderer: THREE.WebGLRenderer | null = null;
-  private scene: THREE.Scene | null = null;
-  private camera: THREE.PerspectiveCamera | null = null;
-  private animationId: number | null = null;
-  private resizeObserver: ResizeObserver | null = null;
+  // Angular Three scene component integration
+  readonly sceneComponent = HybridThreeSceneComponent;
 
-  // Computed properties
-  readonly initialized = computed(() => this.isInitialized());
-  readonly showPerformanceOverlay = computed(() =>
-    this.enablePerformanceOverlay()
-  );
-  readonly performanceOptimal = computed(
-    () => this.currentPerformance().isOptimal
-  );
-  readonly fps = computed(() => Math.round(this.currentPerformance().fps));
-  readonly memoryUsageMB = computed(() =>
-    Math.round(this.currentPerformance().memoryUsage / (1024 * 1024))
-  );
+  // Computed properties for reactive configuration
+  readonly initialized = computed(() => this._initialized());
+  readonly loadingProgress = computed(() => this._loadingProgress());
+  readonly loadingMessage = computed(() => this._loadingMessage());
+  readonly detailedMetrics = computed(() => this._detailedMetrics());
+  readonly performanceMetrics = computed(() => this._performanceMetrics());
 
-  async ngAfterViewInit(): Promise<void> {
-    await this.initializeScene();
-    this.setupEventListeners();
-    this.startRenderLoop();
+  readonly showPerformanceOverlay = computed(() => this.enablePerformanceOverlay());
+  readonly performanceOptimal = computed(() => this.performanceMetrics().isOptimal);
+  readonly animationEnabled = computed(() => this.enableAnimation());
+  readonly memoryUsageMB = computed(() => Math.round(this.performanceMetrics().memoryUsage / (1024 * 1024)));
+
+  readonly performanceStatus = computed(() => {
+    const metrics = this.performanceMetrics();
+    if (metrics.fps >= 55 && metrics.renderTime < 16) return 'optimal';
+    if (metrics.fps >= 30 && metrics.renderTime < 25) return 'good';
+    return 'poor';
+  });
+
+  // Angular Three configuration computed properties
+  readonly glConfig = computed(() => {
+    const target = this.performanceTarget();
+    const baseConfig = {
+      antialias: this.antialias(),
+      alpha: this.alpha(),
+      powerPreference: this.powerPreference(),
+      precision: 'highp' as const,
+    };
+
+    // Adjust based on performance target
+    switch (target) {
+      case 'mobile':
+        return { ...baseConfig, antialias: false, precision: 'mediump' as const };
+      case 'high-end':
+        return { ...baseConfig, logarithmicDepthBuffer: true };
+      default:
+        return baseConfig;
+    }
+  });
+
+  readonly shadowConfig = computed(() => {
+    if (!this.enableShadows()) return false;
+    const target = this.performanceTarget();
+    return target === 'high-end' ? 'soft' : 'basic';
+  });
+
+  readonly performanceConfig = computed(() => {
+    const target = this.performanceTarget();
+    const configs = {
+      mobile: { min: 0.2, max: 1, debounce: 300 },
+      desktop: { min: 0.5, max: 1, debounce: 200 },
+      'high-end': { min: 0.8, max: 1, debounce: 100 }
+    };
+    return configs[target];
+  });
+
+  readonly dprConfig = computed(() => {
+    const target = this.performanceTarget();
+    switch (target) {
+      case 'mobile': return [1, 1.5] as [number, number];
+      case 'high-end': return [1, 3] as [number, number];
+      default: return [1, 2] as [number, number];
+    }
+  });
+
+  readonly frameloopConfig = computed(() => 'always' as const);
+
+  // Private state
+  private performanceMonitorId?: number;
+  private resizeObserver?: ResizeObserver;
+
+  async ngOnInit(): Promise<void> {
+    this._loadingMessage.set('Loading Angular Three...');
+    this._loadingProgress.set(25);
+
+    // Apply hybrid service configuration
+    const serviceConfig = this.config();
+    if (serviceConfig && Object.keys(serviceConfig).length > 0) {
+      await this.hybridService.updateConfig(serviceConfig);
+      this._loadingProgress.set(50);
+    }
+
+    // Setup reactive effects
+    this.setupReactiveEffects();
+
+    // Initialize state store integration
+    this.initializeStateStore();
+    this._loadingProgress.set(75);
   }
 
   ngOnDestroy(): void {
     this.cleanup();
   }
 
-  private async initializeScene(): Promise<void> {
-    try {
-      // Initialize Angular Three foundation
-      await this.angularThreeFoundation.initialize();
-
-      // Setup renderer
-      this.renderer = this.angularThreeFoundation.setupRenderer(
-        this.canvas.nativeElement
-      );
-
-      // Get scene and camera from foundation
-      this.scene = this.angularThreeFoundation.scene();
-      this.camera =
-        this.angularThreeFoundation.camera() as THREE.PerspectiveCamera;
-
-      if (!this.scene || !this.camera) {
-        throw new Error('Failed to initialize scene or camera');
-      }
-
-      // Configure camera
-      const cameraPos = this.cameraPosition();
-      const cameraTarget = this.cameraTarget();
-
-      this.camera.position.set(...cameraPos);
-      this.camera.lookAt(new THREE.Vector3(...cameraTarget));
-
-      // Configure scene
-      if (this.backgroundColor() !== 'transparent') {
-        this.scene.background = new THREE.Color(this.backgroundColor());
-      }
-
-      // Add default lighting
-      this.setupDefaultLighting();
-
-      // Update hybrid service configuration
-      const serviceConfig = this.config();
-      if (serviceConfig && Object.keys(serviceConfig).length > 0) {
-        this.hybridService.updateConfig(serviceConfig);
-      }
-
-      this.isInitialized.set(true);
-      this.sceneInitialized.emit();
-    } catch (error) {
-      console.error('Failed to initialize hybrid scene:', error);
-      throw error;
-    }
-  }
-
-  private setupDefaultLighting(): void {
-    if (!this.scene) return;
-
-    // Ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-    this.scene.add(ambientLight);
-
-    // Directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
-    directionalLight.castShadow = true;
-
-    // Configure shadow camera
-    directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -10;
-    directionalLight.shadow.camera.right = 10;
-    directionalLight.shadow.camera.top = 10;
-    directionalLight.shadow.camera.bottom = -10;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-
-    this.scene.add(directionalLight);
-
-    // Point light for additional illumination
-    const pointLight = new THREE.PointLight(0xffffff, 0.3, 30);
-    pointLight.position.set(-5, 5, 5);
-    this.scene.add(pointLight);
-  }
-
-  private setupEventListeners(): void {
-    if (!this.autoResize()) return;
-
-    // Handle container resize
-    this.resizeObserver = new ResizeObserver(() => {
-      this.handleResize();
-    });
-
-    this.resizeObserver.observe(this.container.nativeElement);
-
-    // Window resize fallback
-    fromEvent(window, 'resize')
-      .pipe(debounceTime(100), takeUntilDestroyed())
-      .subscribe(() => {
-        this.handleResize();
-      });
-  }
-
-  private handleResize(): void {
-    if (!this.renderer || !this.camera) return;
-
-    const container = this.container.nativeElement;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-
-    // Update renderer size
-    this.renderer.setSize(width, height);
-
-    // Update camera aspect ratio
-    this.angularThreeFoundation.updateCameraAspect(width, height);
-  }
-
-  private startRenderLoop(): void {
-    if (!this.renderer || !this.scene || !this.camera) return;
-
-    let lastTime = performance.now();
-    let frameCount = 0;
-    let totalFrameTime = 0;
-
-    const render = (currentTime: number) => {
-      const deltaTime = currentTime - lastTime;
-      lastTime = currentTime;
-
-      // Update performance metrics
-      frameCount++;
-      totalFrameTime += deltaTime;
-
-      if (frameCount >= 60) {
-        const avgFrameTime = totalFrameTime / frameCount;
-        const fps = 1000 / avgFrameTime;
-
-        this.currentPerformance.set({
-          fps,
-          memoryUsage: this.hybridService.performance().memoryUsage,
-          isOptimal: fps >= 30 && avgFrameTime < 33,
-        });
-
-        this.performanceUpdate.emit(this.currentPerformance());
-
-        frameCount = 0;
-        totalFrameTime = 0;
-      }
-
-      // Render the scene
-      this.renderer!.render(this.scene!, this.camera!);
-
-      // Continue the loop
-      this.animationId = requestAnimationFrame(render);
-    };
-
-    this.animationId = requestAnimationFrame(render);
-  }
+  // Public API methods for backward compatibility with v1
 
   /**
-   * Get the current scene instance
+   * Get the current Three.js scene instance
    */
   getScene(): THREE.Scene | null {
-    return this.scene;
+    return this.angularThreeFoundation.scene();
   }
 
   /**
-   * Get the current camera instance
+   * Get the current Three.js camera instance
    */
   getCamera(): THREE.Camera | null {
-    return this.camera;
+    return this.angularThreeFoundation.camera();
   }
 
   /**
-   * Get the current renderer instance
+   * Get the current Three.js renderer instance
    */
   getRenderer(): THREE.WebGLRenderer | null {
-    return this.renderer;
+    return this.angularThreeFoundation.getRenderer();
   }
 
   /**
-   * Update camera position
+   * Add object to the scene with automatic tracking
    */
-  updateCameraPosition(position: [number, number, number]): void {
-    if (this.camera) {
-      this.camera.position.set(...position);
+  addToScene(object: THREE.Object3D, elementId?: string): void {
+    const scene = this.getScene();
+    if (scene) {
+      scene.add(object);
+      const id = elementId || `object-${Date.now()}`;
+      this.elementAdded.emit({ elementId: id, object });
     }
   }
 
   /**
-   * Update camera target
+   * Remove object from the scene with automatic cleanup
    */
-  updateCameraTarget(target: [number, number, number]): void {
-    if (this.camera) {
-      this.camera.lookAt(new THREE.Vector3(...target));
+  removeFromScene(object: THREE.Object3D, elementId?: string): void {
+    const scene = this.getScene();
+    if (scene) {
+      scene.remove(object);
+      const id = elementId || `object-${Date.now()}`;
+      this.elementRemoved.emit({ elementId: id, object });
     }
   }
 
   /**
-   * Add object to scene
+   * Update camera position with smooth animation option
    */
-  addToScene(object: THREE.Object3D): void {
-    if (this.scene) {
-      this.scene.add(object);
+  updateCameraPosition(
+    position: readonly [number, number, number],
+    animate = false,
+    duration = 1000
+  ): void {
+    const camera = this.getCamera();
+    if (!camera) return;
+
+    if (animate && this.enableAnimation()) {
+      // Use GSAP for smooth camera movement
+      const timelineId = this.animationService.createTimeline({
+        name: 'Camera Position Animation',
+        animations: [{
+          type: 'slide',
+          duration,
+          ease: 'power2.inOut'
+        }],
+        targets: [{
+          elementId: 'camera',
+          object3D: camera,
+          position
+        }]
+      });
+      this.animationService.playTimeline(timelineId);
+    } else {
+      camera.position.set(position[0], position[1], position[2]);
     }
   }
 
   /**
-   * Remove object from scene
+   * Update camera target with smooth animation option
    */
-  removeFromScene(object: THREE.Object3D): void {
-    if (this.scene) {
-      this.scene.remove(object);
+  updateCameraTarget(
+    target: readonly [number, number, number],
+    animate = false,
+    duration = 1000
+  ): void {
+    const camera = this.getCamera();
+    if (!camera) return;
+
+    const targetVector = new THREE.Vector3(...target);
+
+    if (animate && this.enableAnimation()) {
+      // Create smooth look-at animation
+      const currentTarget = new THREE.Vector3();
+      camera.getWorldDirection(currentTarget);
+      currentTarget.multiplyScalar(-1).add(camera.position);
+
+      const timelineId = this.animationService.createTimeline({
+        name: 'Camera Target Animation',
+        animations: [{
+          type: 'slide',
+          duration,
+          ease: 'power2.inOut'
+        }],
+        targets: [{
+          elementId: 'camera-target',
+          position: target
+        }]
+      });
+      this.animationService.playTimeline(timelineId);
+    } else {
+      camera.lookAt(targetVector);
     }
   }
 
   /**
-   * Take screenshot of the scene
+   * Take a high-quality screenshot of the scene
    */
-  takeScreenshot(
-    format: 'png' | 'jpeg' = 'png',
-    quality = 0.92
-  ): string | null {
-    if (!this.renderer) return null;
+  takeScreenshot(format: 'png' | 'jpeg' = 'png', quality = 0.92): string | null {
+    const renderer = this.getRenderer();
+    if (!renderer?.domElement) return null;
 
-    return this.renderer.domElement.toDataURL(
+    // Force a render before screenshot
+    const scene = this.getScene();
+    const camera = this.getCamera();
+    if (scene && camera) {
+      renderer.render(scene, camera);
+    }
+
+    return renderer.domElement.toDataURL(
       format === 'png' ? 'image/png' : 'image/jpeg',
       quality
     );
   }
 
   /**
-   * Toggle performance overlay
+   * Reset camera to default position and target
    */
-  togglePerformanceOverlay(): void {
-    // Note: This would need to be implemented with a signal if we want reactivity
-    // For now, this is a placeholder for the API
-  }
-
-  /**
-   * Reset camera to default position
-   */
-  resetCamera(): void {
+  resetCamera(animate = true): void {
     const defaultPos = this.cameraPosition();
     const defaultTarget = this.cameraTarget();
 
-    this.updateCameraPosition(defaultPos);
-    this.updateCameraTarget(defaultTarget);
+    if (animate) {
+      this.updateCameraPosition(defaultPos, true, 1500);
+      setTimeout(() => {
+        this.updateCameraTarget(defaultTarget, true, 1000);
+      }, 200);
+    } else {
+      this.updateCameraPosition(defaultPos);
+      this.updateCameraTarget(defaultTarget);
+    }
   }
 
   /**
-   * Get performance metrics
+   * Toggle performance overlay visibility
    */
-  getPerformanceMetrics() {
+  togglePerformanceOverlay(): void {
+    // This would require a signal update in parent component
+    console.log('Performance overlay toggle requested');
+  }
+
+  /**
+   * Toggle detailed metrics view
+   */
+  toggleDetailedMetrics(): void {
+    this._detailedMetrics.update(current => !current);
+  }
+
+  /**
+   * Get comprehensive performance metrics
+   */
+  getPerformanceMetrics(): PerformanceMetrics & {
+    hybridService: any;
+    angularThree: any;
+    animation: any;
+  } {
     return {
-      ...this.currentPerformance(),
+      ...this.performanceMetrics(),
       hybridService: this.hybridService.performance(),
+      angularThree: {
+        scene: !!this.getScene(),
+        camera: !!this.getCamera(),
+        renderer: !!this.getRenderer(),
+        store: !!this.ngtStore,
+      },
+      animation: {
+        active: this.animationService.activeAnimationCount(),
+        performance: this.animationService.animationPerformanceStatus(),
+      },
     };
   }
 
+  /**
+   * Check if running in production mode
+   */
+  protected isProduction(): boolean {
+    return !this.showAnimationDebug(); // Simplified for demo
+  }
+
+  // Event handlers
+
+  /**
+   * Handle Angular Three canvas creation
+   */
+  async onCanvasCreated(event: any): Promise<void> {
+    try {
+      console.log('Angular Three canvas created:', event);
+      this._loadingMessage.set('Initializing foundation services...');
+      this._loadingProgress.set(90);
+
+      // Pass the store to foundation service before initializing
+      if (this.ngtStore) {
+        this.angularThreeFoundation.setStore(this.ngtStore);
+      }
+
+      // Initialize foundation service
+      const initialized = await this.angularThreeFoundation.initialize();
+
+      if (initialized) {
+        this.setupPerformanceMonitoring();
+        this.setupEventListeners();
+
+        this._loadingProgress.set(100);
+        this._initialized.set(true);
+
+        const scene = this.getScene();
+        if (scene) {
+          this.sceneInitialized.emit(scene);
+        }
+
+        console.log('Unified Hybrid Scene initialized successfully');
+      } else {
+        throw new Error('Failed to initialize Angular Three foundation');
+      }
+    } catch (error) {
+      console.error('Failed to initialize unified hybrid scene:', error);
+      this._loadingMessage.set('Initialization failed');
+    }
+  }
+
+  // Private methods
+
+  private setupReactiveEffects(): void {
+    // React to configuration changes
+    effect(() => {
+      const config = this.config();
+      if (config && this.initialized()) {
+        this.hybridService.updateConfig(config);
+      }
+    });
+
+    // React to animation state changes
+    effect(() => {
+      if (this.animationService.isAnimating()) {
+        this.animationEvent.emit({
+          type: 'animation-state-changed',
+          data: { isAnimating: true }
+        });
+      }
+    });
+
+    // Monitor performance metrics
+    effect(() => {
+      const metrics = this.performanceMetrics();
+      this.performanceUpdate.emit(metrics);
+    });
+  }
+
+  private initializeStateStore(): void {
+    // Create scene in state store
+    const sceneId = this.sceneId() || 'default-scene';
+    this.stateStore.createScene(sceneId, `Scene ${sceneId}`, {
+      backgroundColor: parseInt(this.backgroundColor()?.replace('#', '0x') || '0x000000', 16) || 0x000000,
+      isActive: true,
+    });
+
+    // Set as active scene
+    this.stateStore.setActiveScene(sceneId);
+
+    // Sync performance metrics with state store
+    effect(() => {
+      const metrics = this.performanceMetrics();
+      this.stateStore.updatePerformance({
+        fps: metrics.fps,
+        frameTime: metrics.renderTime,
+        memoryUsage: metrics.memoryUsage,
+      });
+    });
+
+    // Sync camera state with state store
+    effect(() => {
+      if (this.ngtStore) {
+        const camera = this.ngtStore.get('camera');
+        if (camera instanceof THREE.PerspectiveCamera) {
+          this.stateStore.updateCamera({
+            type: 'perspective',
+            position: [camera.position.x, camera.position.y, camera.position.z],
+            fov: camera.fov,
+            near: camera.near,
+            far: camera.far,
+            zoom: camera.zoom,
+          });
+        }
+      }
+    });
+
+    // React to state store changes
+    effect(() => {
+      const activeScene = this.stateStore.activeScene();
+      if (activeScene && this.initialized()) {
+        // Update background color from state
+        const currentBgColor = this.backgroundColor();
+        if (currentBgColor !== String(activeScene.backgroundColor)) {
+          // This would trigger a scene background update
+          this.animationEvent.emit({
+            type: 'background-changed',
+            data: { backgroundColor: activeScene.backgroundColor }
+          });
+        }
+      }
+    });
+  }
+
+  private setupEventListeners(): void {
+    if (!this.autoResize()) return;
+
+    const containerElement = this.container()?.nativeElement;
+    if (!containerElement) return;
+
+    // Setup resize observer
+    this.resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        this.handleResize(entry.contentRect.width, entry.contentRect.height);
+      }
+    });
+
+    this.resizeObserver.observe(containerElement);
+
+    // Window resize fallback
+    fromEvent(window, 'resize')
+      .pipe(debounceTime(150), takeUntilDestroyed())
+      .subscribe(() => {
+        const rect = containerElement.getBoundingClientRect();
+        this.handleResize(rect.width, rect.height);
+      });
+  }
+
+  private handleResize(width: number, height: number): void {
+    const renderer = this.getRenderer();
+    const camera = this.getCamera();
+
+    if (renderer) {
+      renderer.setSize(width, height);
+    }
+
+    if (camera && 'aspect' in camera) {
+      const perspCamera = camera as THREE.PerspectiveCamera;
+      perspCamera.aspect = width / height;
+      perspCamera.updateProjectionMatrix();
+    }
+
+    this.angularThreeFoundation.updateCameraAspect(width, height);
+  }
+
+  private setupPerformanceMonitoring(): void {
+    let frameCount = 0;
+    let totalFrameTime = 0;
+    let lastTime = performance.now();
+
+    const monitor = () => {
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+
+      frameCount++;
+      totalFrameTime += deltaTime;
+
+      // Update metrics every 60 frames
+      if (frameCount >= 60) {
+        const avgFrameTime = totalFrameTime / frameCount;
+        const fps = Math.round(1000 / avgFrameTime);
+        const memoryUsage = this.getMemoryUsage();
+        const activeAnimations = this.animationService.activeAnimationCount();
+
+        this._performanceMetrics.set({
+          fps,
+          memoryUsage,
+          renderTime: avgFrameTime,
+          isOptimal: fps >= 30 && avgFrameTime < 33,
+          activeAnimations,
+        });
+
+        frameCount = 0;
+        totalFrameTime = 0;
+      }
+
+      this.performanceMonitorId = requestAnimationFrame(monitor);
+    };
+
+    this.performanceMonitorId = requestAnimationFrame(monitor);
+  }
+
+  private getMemoryUsage(): number {
+    if ('memory' in performance) {
+      return (performance as any).memory.usedJSHeapSize;
+    }
+    return 0;
+  }
+
   private cleanup(): void {
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    if (this.performanceMonitorId) {
+      cancelAnimationFrame(this.performanceMonitorId);
+      this.performanceMonitorId = undefined;
     }
 
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
-      this.resizeObserver = null;
+      this.resizeObserver = undefined;
     }
 
-    if (this.renderer) {
-      this.renderer.dispose();
-      this.renderer = null;
-    }
-
-    this.scene = null;
-    this.camera = null;
+    // Angular Three handles its own cleanup
+    this.angularThreeFoundation.cleanup();
   }
 }

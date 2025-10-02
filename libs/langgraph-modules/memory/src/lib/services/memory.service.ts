@@ -309,22 +309,29 @@ export class MemoryService implements MemoryServiceInterface {
       ]);
 
       // Calculate real statistics
-      const totalMemories = 
-        (vectorStats.status === 'fulfilled' ? vectorStats.value.totalMemories : 0) +
-        (graphStats.status === 'fulfilled' ? graphStats.value.totalMemories : 0);
+      const totalMemories =
+        (vectorStats.status === 'fulfilled'
+          ? vectorStats.value.totalMemories
+          : 0) +
+        (graphStats.status === 'fulfilled'
+          ? graphStats.value.totalMemories
+          : 0);
 
-      const activeThreads = 
+      const activeThreads =
         graphStats.status === 'fulfilled' ? graphStats.value.totalThreads : 0;
 
       // Calculate average memory size from vector storage if available
-      const averageMemorySize = vectorStats.status === 'fulfilled' && vectorStats.value.averageSize > 0
-        ? vectorStats.value.averageSize
-        : 150; // Fallback estimate
+      const averageMemorySize =
+        vectorStats.status === 'fulfilled' && vectorStats.value.averageSize > 0
+          ? vectorStats.value.averageSize
+          : 150; // Fallback estimate
 
       // Calculate total storage used
-      const totalStorageUsed = vectorStats.status === 'fulfilled' && vectorStats.value.totalStorageUsed > 0
-        ? vectorStats.value.totalStorageUsed
-        : totalMemories * averageMemorySize;
+      const totalStorageUsed =
+        vectorStats.status === 'fulfilled' &&
+        vectorStats.value.totalStorageUsed > 0
+          ? vectorStats.value.totalStorageUsed
+          : totalMemories * averageMemorySize;
 
       // Get operation metrics from storage service
       const operationMetrics = await this.storageService.getOperationMetrics();
@@ -342,7 +349,7 @@ export class MemoryService implements MemoryServiceInterface {
       };
     } catch (error) {
       this.logger.error('Failed to get memory stats', error);
-      
+
       // Fallback statistics for demo reliability
       return {
         totalMemories: 0,
@@ -365,12 +372,12 @@ export class MemoryService implements MemoryServiceInterface {
   async cleanup(): Promise<number> {
     try {
       this.logger.debug('Starting memory cleanup process');
-      
+
       // Get retention policy from config (defaults for demo)
       const maxAge = 90 * 24 * 60 * 60 * 1000; // 90 days default
       const maxPerThread = 100; // 100 memories per thread default
       const importanceThreshold = 0.3; // Default importance threshold
-      
+
       const cutoffDate = new Date(Date.now() - maxAge);
       let totalDeleted = 0;
 
@@ -382,11 +389,11 @@ export class MemoryService implements MemoryServiceInterface {
       });
 
       const memoriesToDelete: string[] = [];
-      
+
       for (const memory of oldMemories) {
         const importance = memory.metadata.importance || 0;
         const isPersistent = memory.metadata.persistent || false;
-        
+
         // Only delete non-persistent, low-importance old memories
         if (!isPersistent && importance < importanceThreshold) {
           memoriesToDelete.push(memory.id);
@@ -396,7 +403,9 @@ export class MemoryService implements MemoryServiceInterface {
       if (memoriesToDelete.length > 0) {
         await this.storageService.deleteByIds(memoriesToDelete);
         totalDeleted += memoriesToDelete.length;
-        this.logger.debug(`Deleted ${memoriesToDelete.length} old low-importance memories`);
+        this.logger.debug(
+          `Deleted ${memoriesToDelete.length} old low-importance memories`
+        );
       }
 
       // Phase 2: Enforce per-thread limits
@@ -418,21 +427,30 @@ export class MemoryService implements MemoryServiceInterface {
       // Clean up threads that exceed the limit
       for (const [threadId, memories] of memoryByThread) {
         if (memories.length > maxPerThread) {
-          threadCleanupPromises.push(this.cleanupThread(threadId, maxPerThread));
+          threadCleanupPromises.push(
+            this.cleanupThread(threadId, maxPerThread)
+          );
         }
       }
 
-      const threadCleanupResults = await Promise.allSettled(threadCleanupPromises);
+      const threadCleanupResults = await Promise.allSettled(
+        threadCleanupPromises
+      );
       const threadDeletedCount = threadCleanupResults
-        .filter(result => result.status === 'fulfilled')
-        .reduce((sum, result) => sum + (result.value), 0);
-      
+        .filter((result) => result.status === 'fulfilled')
+        .reduce((sum, result) => sum + result.value, 0);
+
       totalDeleted += threadDeletedCount;
 
-      this.logger.log(`Memory cleanup completed: deleted ${totalDeleted} memories`);
+      this.logger.log(
+        `Memory cleanup completed: deleted ${totalDeleted} memories`
+      );
       return totalDeleted;
     } catch (error) {
-      this.logger.error('Memory cleanup failed:', error instanceof Error ? error.message : String(error));
+      this.logger.error(
+        'Memory cleanup failed:',
+        error instanceof Error ? error.message : String(error)
+      );
       // Don't throw - cleanup failures shouldn't break the application
       return 0;
     }
@@ -441,10 +459,13 @@ export class MemoryService implements MemoryServiceInterface {
   /**
    * Clean up excess memories in a specific thread
    */
-  private async cleanupThread(threadId: string, maxPerThread: number): Promise<number> {
+  private async cleanupThread(
+    threadId: string,
+    maxPerThread: number
+  ): Promise<number> {
     try {
       const memories = await this.retrieve(threadId, maxPerThread + 50); // Get extra to analyze
-      
+
       if (memories.length <= maxPerThread) {
         return 0; // No cleanup needed
       }
@@ -453,12 +474,12 @@ export class MemoryService implements MemoryServiceInterface {
       const sortedMemories = [...memories].sort((a, b) => {
         const importanceA = a.metadata.importance || 0;
         const importanceB = b.metadata.importance || 0;
-        
+
         // First sort by importance (higher is better)
         if (importanceA !== importanceB) {
           return importanceB - importanceA;
         }
-        
+
         // Then by recency (newer is better)
         return b.createdAt.getTime() - a.createdAt.getTime();
       });
@@ -468,18 +489,25 @@ export class MemoryService implements MemoryServiceInterface {
 
       // Don't delete persistent memories
       const deletableMemories = memoriesToDelete.filter(
-        memory => !memory.metadata.persistent
+        (memory) => !memory.metadata.persistent
       );
 
       if (deletableMemories.length > 0) {
-        await this.storageService.deleteByIds(deletableMemories.map(m => m.id));
-        this.logger.debug(`Cleaned up ${deletableMemories.length} excess memories from thread ${threadId}`);
+        await this.storageService.deleteByIds(
+          deletableMemories.map((m) => m.id)
+        );
+        this.logger.debug(
+          `Cleaned up ${deletableMemories.length} excess memories from thread ${threadId}`
+        );
         return deletableMemories.length;
       }
 
       return 0;
     } catch (error) {
-      this.logger.error(`Failed to cleanup thread ${threadId}:`, error instanceof Error ? error.message : String(error));
+      this.logger.error(
+        `Failed to cleanup thread ${threadId}:`,
+        error instanceof Error ? error.message : String(error)
+      );
       return 0;
     }
   }
@@ -606,5 +634,290 @@ export class MemoryService implements MemoryServiceInterface {
       .join(' | ');
 
     return `${messageCount} messages: ${content}`.slice(0, maxLength);
+  }
+
+  // ============================================================================
+  // AGENT MEMORY SERVICE INTERFACE IMPLEMENTATION
+  // These methods implement the IAgentMemoryService interface for 2025 patterns
+  // ============================================================================
+
+  /**
+   * Get memory context for agent execution - 2025 LangGraph pattern
+   * Retrieves relevant memories from thread, user, and agent scopes
+   *
+   * This follows the latest 2025 LangGraph Store pattern with namespace-based
+   * hierarchical memory organization
+   */
+  async getAgentContext(state: any): Promise<any> {
+    try {
+      const threadId = state.threadId || 'default';
+      const userId = state.userId || state.metadata?.userId;
+      const agentId = state.current || state.metadata?.agentId;
+      const lastMessage = state.messages?.[state.messages.length - 1];
+      const query = lastMessage?.content?.toString() || '';
+
+      // Phase 1: Get thread-scoped memories (short-term memory)
+      const threadMemories = await this.search({
+        threadId,
+        limit: 5,
+        minRelevance: 0.6,
+      });
+
+      // Phase 2: Get user-scoped memories (cross-thread patterns)
+      const userMemories = userId
+        ? await this.search({
+            userId,
+            query,
+            limit: 3,
+            minRelevance: 0.7,
+            type: 'preference',
+          })
+        : [];
+
+      // Phase 3: Get agent-specific memories (episodic memory)
+      const agentMemories = agentId
+        ? await this.search({
+            query,
+            limit: 2,
+            type: 'fact',
+            // TODO: check the correct parameter to send
+            // metadata: { agentId },
+          })
+        : [];
+
+      // Phase 4: Get user behavioral patterns
+      const userPatterns = userId
+        ? await this.getUserPatterns(userId)
+        : {
+            userId: 'unknown',
+            commonTopics: [],
+            interactionFrequency: {},
+            preferredMemoryTypes: [],
+            averageSessionLength: 0,
+            totalSessions: 0,
+          };
+
+      // Phase 5: Calculate relevance and confidence scores
+      const totalMemories =
+        threadMemories.length + userMemories.length + agentMemories.length;
+      const relevanceScore =
+        totalMemories > 0 ? Math.min(0.95, 0.5 + totalMemories * 0.1) : 0.1;
+
+      const context = {
+        threadMemories: threadMemories.slice(0, 5), // Latest 5 thread memories
+        userMemories: userMemories.slice(0, 3), // Most relevant 3 user memories
+        agentMemories: agentMemories.slice(0, 2), // Most relevant 2 agent memories
+        userPatterns,
+        relevanceScore,
+        contextWindow: totalMemories,
+      };
+
+      this.logger.debug(`Agent context retrieved for ${agentId || 'unknown'}`, {
+        threadMemories: threadMemories.length,
+        userMemories: userMemories.length,
+        agentMemories: agentMemories.length,
+        relevanceScore,
+      });
+
+      return context;
+    } catch (error) {
+      this.logger.error(
+        'Failed to get agent context:',
+        error instanceof Error ? error.message : String(error)
+      );
+
+      // Return minimal context on failure - graceful degradation
+      return {
+        threadMemories: [],
+        userMemories: [],
+        agentMemories: [],
+        userPatterns: {
+          userId: state.userId || 'unknown',
+          commonTopics: [],
+          interactionFrequency: {},
+          preferredMemoryTypes: [],
+          averageSessionLength: 0,
+          totalSessions: 0,
+        },
+        relevanceScore: 0.1,
+        contextWindow: 0,
+      };
+    }
+  }
+
+  /**
+   * Store agent execution result - 2025 LangGraph learning pattern
+   * Preserves agent decision patterns and execution context for learning
+   *
+   * This follows the episodic memory pattern where agents learn from their
+   * execution history to improve future decisions
+   */
+  async storeAgentExecution(
+    state: any,
+    result: any,
+    agentId: string
+  ): Promise<void> {
+    try {
+      const threadId = state.threadId || 'default';
+      const userId = state.userId || state.metadata?.userId;
+      const executionId = `${agentId}_${Date.now()}`;
+
+      // Extract input and output for episodic memory
+      const inputMessage = state.messages?.[state.messages.length - 1];
+      const outputMessage = result.messages?.[result.messages.length - 1];
+
+      const executionMemory = {
+        executionId,
+        agentId,
+        input: inputMessage?.content?.toString() || '',
+        output: outputMessage?.content?.toString() || '',
+        success: !result.metadata?.error,
+        confidence: state.confidence || 0.5,
+        timestamp: new Date().toISOString(),
+        state: {
+          previousNode: state.previousNode,
+          currentNode: state.currentNode,
+          nextNode: result.nextNode || result.next,
+        },
+        metadata: {
+          executionTime: result.metadata?.nodeExecutionTime,
+          error: result.metadata?.error,
+          retryCount: state.retryCount || 0,
+        },
+      };
+
+      // Store as episodic memory for agent learning
+      await this.store(threadId, JSON.stringify(executionMemory), {
+        type: 'fact', // Agent executions are facts for future reference
+        source: 'agent_execution',
+        agentId,
+        userId,
+        importance: result.metadata?.error ? 0.9 : 0.7, // Errors are more important
+        persistent: false, // Allow cleanup of old executions
+        tags: JSON.stringify([
+          'agent_execution',
+          agentId,
+          result.metadata?.error ? 'error' : 'success',
+        ]),
+      });
+
+      this.logger.debug(`Agent execution stored for ${agentId}`, {
+        executionId,
+        success: !result.metadata?.error,
+        threadId,
+      });
+    } catch (error) {
+      this.logger.error(
+        'Failed to store agent execution:',
+        error instanceof Error ? error.message : String(error)
+      );
+      // Don't throw - execution storage failures shouldn't break agent workflow
+    }
+  }
+
+  /**
+   * Store conversation turn (human + AI messages) - 2025 conversational memory pattern
+   * Maintains conversational context for future reference and learning
+   *
+   * This follows the dual message storage pattern from LangChain 2025 where
+   * human and AI messages are stored as paired conversation turns
+   */
+  async storeConversationTurn(
+    threadId: string,
+    humanMessage: any,
+    aiMessage: any,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const turnId = `turn_${threadId}_${Date.now()}`;
+      const userId = metadata?.userId as string;
+
+      // Store human message
+      await this.store(
+        threadId,
+        typeof humanMessage === 'string'
+          ? humanMessage
+          : humanMessage.content?.toString() || '',
+        {
+          type: 'conversation',
+          source: 'human',
+          turnId,
+          userId,
+          importance: 0.6,
+          persistent: false,
+          tags: JSON.stringify(['conversation', 'human', 'turn']),
+          ...metadata,
+        }
+      );
+
+      // Store AI message
+      await this.store(
+        threadId,
+        typeof aiMessage === 'string'
+          ? aiMessage
+          : aiMessage.content?.toString() || '',
+        {
+          type: 'conversation',
+          source: 'assistant',
+          turnId,
+          userId,
+          importance: 0.6,
+          persistent: false,
+          tags: JSON.stringify(['conversation', 'assistant', 'turn']),
+          ...metadata,
+        }
+      );
+
+      this.logger.debug(`Conversation turn stored`, { threadId, turnId });
+    } catch (error) {
+      this.logger.error(
+        'Failed to store conversation turn:',
+        error instanceof Error ? error.message : String(error)
+      );
+      // Don't throw - conversation storage failures shouldn't break conversation flow
+    }
+  }
+
+  /**
+   * Enhance agent state with memory context - 2025 automagical pattern
+   * Automatically injects relevant memory context into agent state
+   *
+   * This is the core method that makes memory "automagical" by enhancing
+   * agent state with relevant context without requiring explicit memory calls
+   */
+  async enhanceStateWithMemory(state: any): Promise<any> {
+    try {
+      const memoryContext = await this.getAgentContext(state);
+
+      return {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          memoryContext: {
+            threadMemories: memoryContext.threadMemories.slice(0, 5),
+            userMemories: memoryContext.userMemories.slice(0, 3),
+            relevanceScore: memoryContext.relevanceScore,
+            patterns: memoryContext.userPatterns,
+          },
+          memoryEnhanced: true,
+          memoryTimestamp: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to enhance state with memory:',
+        error instanceof Error ? error.message : String(error)
+      );
+
+      // Return original state on failure - graceful degradation
+      return {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          memoryEnhanced: false,
+          memoryError: error instanceof Error ? error.message : String(error),
+        },
+      };
+    }
   }
 }

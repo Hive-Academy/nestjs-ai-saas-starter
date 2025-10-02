@@ -36,9 +36,12 @@ export interface EdgeMetadata extends EdgeOptions {
 }
 
 /**
- * Decorator to define edges between nodes
+ * 🆕 ENHANCED: Decorator to define edges between nodes
  * 
- * @example
+ * Now supports functional condition methods that return boolean values,
+ * eliminating the need for empty method boilerplate.
+ * 
+ * @example Traditional approach (still supported)
  * ```typescript
  * @Workflow({ name: 'my-workflow' })
  * export class MyWorkflow extends DeclarativeWorkflowBase {
@@ -47,17 +50,35 @@ export interface EdgeMetadata extends EdgeOptions {
  *   @Edge('analyze', 'process')
  *   connectAnalyzeToProcess() {}
  *   
- *   // Conditional edge with confidence threshold
+ *   // Conditional edge with condition property
  *   @Edge('analyze', 'process', { 
  *     minConfidence: 0.8,
  *     condition: (state) => state.analysis.quality === 'good' 
  *   })
  *   conditionalAnalyzeToProcess() {}
+ * }
+ * ```
+ * 
+ * @example 🆕 ENHANCED: Functional approach (new)
+ * ```typescript
+ * @Workflow({ name: 'my-workflow' })
+ * export class MyWorkflow extends DeclarativeWorkflowBase {
  *   
- *   // Multiple edges from same method
- *   @Edge('start', 'analyze')
- *   @Edge('retry', 'analyze')
- *   routeToAnalyze() {}
+ *   // Simple edge (unchanged)
+ *   @Edge('analyze', 'process')
+ *   connectAnalyzeToProcess() {}
+ *   
+ *   // 🆕 Functional condition method
+ *   @Edge('analyze', 'process')
+ *   shouldProcessAnalysis(state: WorkflowState): boolean {
+ *     return state.analysis.quality === 'good' && state.confidence > 0.8;
+ *   }
+ *   
+ *   // 🆕 Complex functional condition
+ *   @Edge('assessment', 'optimization')
+ *   isOptimizationPath(state: WorkflowState): boolean {
+ *     return (state.metadata?.brandScore as number) > 0.7;
+ *   }
  * }
  * ```
  */
@@ -91,11 +112,52 @@ export function Edge(
     // Also store on the method itself for direct access
     Reflect.defineMetadata('edge:metadata', edgeMetadata, target, propertyKey);
     
-    // Replace method with edge configuration (method body is not used for simple edges)
+    // 🆕 ENHANCEMENT: Enhanced method handling for functional conditions
     if (descriptor && typeof to === 'string') {
-      descriptor.value = function(this: any) {
-        return edgeMetadata;
-      };
+      const originalMethod = descriptor.value;
+      
+      // Check if method has functional implementation (accepts parameters and likely returns boolean)
+      const methodSource = originalMethod?.toString() || '';
+      const hasParameters = originalMethod?.length > 0;
+      const likelyFunctional = hasParameters || 
+        (methodSource.includes('return') && !methodSource.includes('return edgeMetadata')) ||
+        (methodSource.includes('=>') && !methodSource.includes('{}'));
+      
+      if (likelyFunctional && originalMethod) {
+        // 🆕 Functional approach: use method return value as condition
+        descriptor.value = function(this: any, state?: any) {
+          if (state !== undefined) {
+            // Called as condition function - execute functional logic
+            try {
+              const result = originalMethod.call(this, state);
+              // Support both boolean returns and truthy/falsy evaluation
+              return Boolean(result);
+            } catch (error) {
+              console.warn(`Edge condition method ${String(propertyKey)} failed:`, error);
+              return false;
+            }
+          } else {
+            // Called as metadata getter (backward compatibility)
+            return edgeMetadata;
+          }
+        };
+        
+        // Update edge metadata to use functional condition
+        edgeMetadata.condition = (state: any) => {
+          try {
+            const result = originalMethod.call(target, state);
+            return Boolean(result);
+          } catch (error) {
+            console.warn(`Edge condition ${String(propertyKey)} failed:`, error);
+            return false;
+          }
+        };
+      } else {
+        // Traditional approach: empty method returns metadata
+        descriptor.value = function(this: any) {
+          return edgeMetadata;
+        };
+      }
     }
     
     return descriptor;

@@ -1,14 +1,5 @@
 import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agent';
 
-// Post-migration tool & agent imports (showcase module fully deprecated)
-import { DocumentProcessingTools } from '../business-workflows/core/tools/document-processing.tools';
-import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
-import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist.agent';
-import { ContentCreatorAgent } from '../business-workflows/agents/content-creator.agent';
-import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer.agent';
-import { CustomerSupportAgent } from '../business-workflows/agents/customer-support.agent';
-import { EnhancedSupportWorkflow } from '../business-workflows/workflows/enhanced-support.workflow';
-
 /**
  * Multi-Agent Module Configuration for dev-brand-api
  * Simple and consistent LLM provider configuration
@@ -63,20 +54,6 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
   };
 
   return {
-    // Explicit tool registration (replaces discovery-based registration)
-    tools: [DocumentProcessingTools, WebResearchTools],
-
-    // Explicit agent registration (replaces discovery-based registration)
-    agents: [
-      PersonalBrandStrategistAgent,
-      ContentCreatorAgent,
-      GitHubCodeAnalyzerAgent,
-      CustomerSupportAgent,
-    ],
-
-    // Workflow registration - Multi-agent orchestration workflows only
-    workflows: [EnhancedSupportWorkflow],
-
     // Simple and consistent LLM configuration
     defaultLlm: {
       // Explicit provider selection - no detection logic
@@ -129,12 +106,6 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
       cohere: {
         version: process.env.COHERE_VERSION,
       },
-
-      // Backward compatibility - deprecated
-      apiKey: process.env.OPENAI_API_KEY,
-      llmProvider: (['openai', 'anthropic', 'openrouter'].includes(provider)
-        ? provider
-        : 'openai') as 'openai' | 'anthropic' | 'openrouter',
     },
 
     // Message history limits

@@ -28,7 +28,7 @@ export class FunctionalApiModuleInitializer implements OnModuleInit {
         await this.workflowRegistrationService.registerWorkflows(
           this.options.workflows
         );
-        const stats = this.workflowRegistrationService.getRegistrationStats();
+        const stats = await this.workflowRegistrationService.getRegistrationStats();
         this.logger.log(
           `Registered ${stats.totalWorkflows} workflows with ${stats.totalTasks} total tasks`
         );

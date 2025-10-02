@@ -11,7 +11,11 @@ import {
   VectorGetResult,
   VectorOperationError,
   InvalidInputError,
+  AgentState,
+  AgentMemoryContext,
+  MemoryEntry,
 } from '@hive-academy/langgraph-memory';
+import { ChromaLangGraphStore } from '@hive-academy/langgraph-memory';
 
 /**
  * Application-specific ChromaDB adapter for the Memory module.
@@ -44,7 +48,7 @@ export class ChromaVectorAdapter extends IVectorService {
       await this.chromaDBService.addDocuments(collection, [
         {
           id,
-          document: data.document,
+          content: data.document,
           metadata: this.sanitizeMetadata(data.metadata || {}),
           embedding: data.embedding,
         },
@@ -91,7 +95,7 @@ export class ChromaVectorAdapter extends IVectorService {
     try {
       const documents = data.map((item) => ({
         id: item.id || this.generateId(),
-        document: item.document,
+        content: item.document,
         metadata: this.sanitizeMetadata(item.metadata || {}),
         embedding: item.embedding,
       }));
@@ -138,7 +142,7 @@ export class ChromaVectorAdapter extends IVectorService {
       // Use ChromaDBService's searchDocuments method
       const results = await this.chromaDBService.searchDocuments(
         collection,
-        query.queryText ? [query.queryText] : undefined,
+        query.queryText ? [query.queryText] : [],
         query.queryEmbedding ? [Array.from(query.queryEmbedding)] : undefined,
         {
           nResults: query.limit || 10,
@@ -264,9 +268,13 @@ export class ChromaVectorAdapter extends IVectorService {
 
     try {
       // Use ChromaDBService to get collection info and count
-      const collection_obj = await this.chromaDBService.getCollection(collection);
-      const documentCount = await this.chromaDBService.countDocuments(collection);
-      
+      const collection_obj = await this.chromaDBService.getCollection(
+        collection
+      );
+      const documentCount = await this.chromaDBService.countDocuments(
+        collection
+      );
+
       return {
         documentCount,
         collectionSize: 0, // Not directly available from ChromaDB
@@ -334,7 +342,9 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Convert generic filter to ChromaDB Where clause with type safety
    */
-  private convertToWhereClause(filter?: Record<string, unknown>): Where | undefined {
+  private convertToWhereClause(
+    filter?: Record<string, unknown>
+  ): Where | undefined {
     if (!filter || Object.keys(filter).length === 0) {
       return undefined;
     }
@@ -389,5 +399,159 @@ export class ChromaVectorAdapter extends IVectorService {
       };
     }
     return { error: String(error) };
+  }
+
+  // NEW: Agent state-aware memory storage
+  async storeAgentMemory(
+    collection: string,
+    agentId: string,
+    state: AgentState,
+    memory: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
+    const importance = this.calculateImportance(memory, state);
+    const classification = this.classifyMemory(memory, state);
+
+    const agentMetadata = {
+      agentId,
+      threadId: state.threadId,
+      userId: state.userId,
+      importance,
+      classification,
+      timestamp: new Date().toISOString(),
+      ...metadata,
+    };
+
+    return await this.store(collection, {
+      document: memory,
+      metadata: agentMetadata,
+    });
+  }
+
+  // NEW: Multi-faceted agent memory search
+  async searchAgentMemories(
+    collection: string,
+    query: string,
+    state: AgentState,
+    limit = 10
+  ): Promise<AgentMemoryContext> {
+    // Parallel queries for performance
+    const [threadResults, userResults, agentResults] = await Promise.all([
+      this.search(collection, {
+        queryText: query,
+        filter: { threadId: state.threadId },
+        limit: Math.floor(limit / 3),
+      }),
+      this.search(collection, {
+        queryText: query,
+        filter: { userId: state.userId },
+        limit: Math.floor(limit / 3),
+      }),
+      state.current
+        ? this.search(collection, {
+            queryText: query,
+            filter: { agentId: state.current },
+            limit: Math.floor(limit / 3),
+          })
+        : [],
+    ]);
+
+    const threadMemories = this.transformToMemoryEntries(threadResults);
+    const userMemories = this.transformToMemoryEntries(userResults);
+    const agentMemories = this.transformToMemoryEntries(agentResults);
+
+    return {
+      threadMemories,
+      userMemories,
+      agentMemories,
+      userPatterns: await this.extractUserPatterns(userMemories),
+      relevanceScore: this.calculateRelevanceScore(
+        threadResults,
+        userResults,
+        agentResults
+      ),
+      contextWindow: limit,
+    };
+  }
+
+  // NEW: LangGraph Store interface provider
+  getLangGraphStore(collection = 'langgraph_store'): ChromaLangGraphStore {
+    return new ChromaLangGraphStore(this, collection);
+  }
+
+  // Private helper methods
+  private classifyMemory(memory: string, state: AgentState): string {
+    if (memory.includes('error') || memory.includes('failed')) return 'error';
+    if (memory.includes('success') || memory.includes('completed'))
+      return 'success';
+    if (state.messages && state.messages.length > 0) return 'conversation';
+    return 'general';
+  }
+
+  private calculateImportance(memory: string, state: AgentState): number {
+    let score = 0.5; // Base importance
+
+    // Boost for errors/successes
+    if (memory.includes('error')) score += 0.3;
+    if (memory.includes('success')) score += 0.2;
+
+    // Boost for longer memories (more content)
+    if (memory.length > 200) score += 0.1;
+
+    // Boost for recent interactions
+    if (state.messages && state.messages.length > 0) score += 0.1;
+
+    return Math.min(score, 1.0);
+  }
+
+  private calculateRelevanceScore(
+    threadResults: readonly VectorSearchResult[],
+    userResults: readonly VectorSearchResult[],
+    agentResults: readonly VectorSearchResult[]
+  ): number {
+    const threadScore = threadResults.length > 0 ? 0.4 : 0;
+    const userScore = userResults.length > 0 ? 0.3 : 0;
+    const agentScore = agentResults.length > 0 ? 0.3 : 0;
+
+    return threadScore + userScore + agentScore;
+  }
+
+  private transformToMemoryEntries(
+    results: readonly VectorSearchResult[]
+  ): MemoryEntry[] {
+    return results.map((result) => ({
+      id: result.id,
+      threadId: (result.metadata?.threadId as string) || 'unknown',
+      content: result.document,
+      metadata: {
+        type: (result.metadata?.type as any) || 'conversation',
+        source: result.metadata?.source as string,
+        tags: result.metadata?.tags as string,
+        importance: (result.metadata?.importance as number) || 0.5,
+        persistent: result.metadata?.persistent as boolean,
+        userId: result.metadata?.userId as string,
+        timestamp: result.metadata?.timestamp as string,
+        ...result.metadata,
+      },
+      createdAt: new Date((result.metadata?.timestamp as string) || Date.now()),
+      lastAccessedAt: new Date(),
+      accessCount: (result.metadata?.accessCount as number) || 1,
+      relevanceScore: result.relevanceScore,
+    }));
+  }
+
+  private async extractUserPatterns(userMemories: MemoryEntry[]): Promise<any> {
+    // Analyze user memories for patterns
+    const patterns = {
+      commonTopics: [],
+      interactionFrequency: userMemories.length,
+      averageImportance:
+        userMemories.reduce(
+          (sum, m) => sum + ((m.metadata.importance as number) || 0.5),
+          0
+        ) / userMemories.length || 0,
+    };
+
+    return patterns;
   }
 }

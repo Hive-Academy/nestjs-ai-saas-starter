@@ -25,6 +25,7 @@ export enum EscalationStrategy {
   DIRECT = 'direct', // Direct to specific approver
   BROADCAST = 'broadcast', // Send to all in level
   ADAPTIVE = 'adaptive', // AI-driven selection
+  IMMEDIATE = 'immediate', // Immediate escalation
 }
 
 /**

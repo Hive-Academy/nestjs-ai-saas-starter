@@ -37,13 +37,13 @@ This workspace now contains **14 focused libraries** (core contracts, workflow e
 
 ## 🧱 Platform Pillars
 
-| Pillar | What It Delivers | Primary Libraries | Differentiator |
-| ------ | ---------------- | ----------------- | -------------- |
-| Orchestration | Graph-based agent execution w/ decorators | `workflow-engine`, `functional-api`, `core` | Unified declarative + functional styles |
-| Streaming UX | Token/event/progress WebSocket streaming | `streaming`, `workflow-engine` | Method-level decorators → DI adapter |
-| Durability & Replay | Resume after failure + deterministic timeline | `checkpoint`, `time-travel` | Replay re-emits original token cadence |
-| Memory Fusion | Semantic + graph enriched context | `memory`, `nestjs-chromadb`, `nestjs-neo4j` | Cascade retrieval (vector → graph expansion) |
-| Human Safety | Approval / intervention gates | `hitl`, `workflow-engine` | Removable with zero code churn (no-op fallback) |
+| Pillar              | What It Delivers                              | Primary Libraries                           | Differentiator                                  |
+| ------------------- | --------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| Orchestration       | Graph-based agent execution w/ decorators     | `workflow-engine`, `functional-api`, `core` | Unified declarative + functional styles         |
+| Streaming UX        | Token/event/progress WebSocket streaming      | `streaming`, `workflow-engine`              | Method-level decorators → DI adapter            |
+| Durability & Replay | Resume after failure + deterministic timeline | `checkpoint`, `time-travel`                 | Replay re-emits original token cadence          |
+| Memory Fusion       | Semantic + graph enriched context             | `memory`, `nestjs-chromadb`, `nestjs-neo4j` | Cascade retrieval (vector → graph expansion)    |
+| Human Safety        | Approval / intervention gates                 | `hitl`, `workflow-engine`                   | Removable with zero code churn (no-op fallback) |
 
 > For architectural narrative + diagrams: `docs/hackathon/05-architecture-overview-draft.md`
 
@@ -51,23 +51,23 @@ This workspace now contains **14 focused libraries** (core contracts, workflow e
 
 Sequence (each mapped to a pillar): orchestrate run → live token stream → forced restart (resume) → approval gate → memory fusion diff → replay flash. Script: `docs/hackathon/06-demo-script.md`.
 
-| Step | Visual | Pillar | Criterion (Hackathon) |
-| ---- | ------ | ------ | --------------------- |
-| 1. Orchestrate | Terminal executionId | Orchestration | Implementation discipline |
-| 2. Streaming tokens | UI token pane | Streaming UX | Innovation / UX |
-| 3. Restart resume | Kill + resume | Durability | Reliability |
-| 4. Approval gate | Modal pause | Human Safety | Control / Trust |
-| 5. Memory fusion | Baseline vs enriched answer | Memory Fusion | Depth / Differentiation |
-| 6. Replay flash | Timeline playback | Durability & Replay | Debuggability |
+| Step                | Visual                      | Pillar              | Criterion (Hackathon)     |
+| ------------------- | --------------------------- | ------------------- | ------------------------- |
+| 1. Orchestrate      | Terminal executionId        | Orchestration       | Implementation discipline |
+| 2. Streaming tokens | UI token pane               | Streaming UX        | Innovation / UX           |
+| 3. Restart resume   | Kill + resume               | Durability          | Reliability               |
+| 4. Approval gate    | Modal pause                 | Human Safety        | Control / Trust           |
+| 5. Memory fusion    | Baseline vs enriched answer | Memory Fusion       | Depth / Differentiation   |
+| 6. Replay flash     | Timeline playback           | Durability & Replay | Debuggability             |
 
 ## 💼 Business Outcomes
 
-| Outcome | Supported By | Story Hook |
-| ------- | ------------ | ---------- |
-| Assisted Support Resolution | streaming + workflow-engine + checkpoint | Faster perceived response, safe restart |
-| Code Review Summaries | memory + chroma + neo4j + multi-agent | Multi-agent roles w/ enriched context |
-| Knowledge Exploration | memory fusion + time-travel | Replay explorations, refine prompts |
-| Risk / Policy Enforcement | hitl + checkpoint | Approval gates + immutable state snapshots |
+| Outcome                     | Supported By                             | Story Hook                                 |
+| --------------------------- | ---------------------------------------- | ------------------------------------------ |
+| Assisted Support Resolution | streaming + workflow-engine + checkpoint | Faster perceived response, safe restart    |
+| Code Review Summaries       | memory + chroma + neo4j + multi-agent    | Multi-agent roles w/ enriched context      |
+| Knowledge Exploration       | memory fusion + time-travel              | Replay explorations, refine prompts        |
+| Risk / Policy Enforcement   | hitl + checkpoint                        | Approval gates + immutable state snapshots |
 
 ## 🏗️ Architecture
 
@@ -438,6 +438,7 @@ npm run version:libs     # Version libraries only
 - **[Git Hooks Guide](docs/GIT-HOOKS-SETUP.md)**: Git hooks and code quality
 - **[Publishing Guide](PUBLISHING.md)**: Library publishing process
 - **[Changelog](CHANGELOG.md)**: Version history and changes
+- **[Neo4j Examples Guide](libs/nestjs-neo4j/EXAMPLES_GUIDE.md)**: Comprehensive recipe-based usage of the Neo4j integration
 
 ### Generate Documentation
 
@@ -557,7 +558,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🧬 AI-Assisted Build (Kiro)
 
-This codebase was iteratively shaped using internal orchestrated AI agents (Kiro workflow). Governance rules live in `CLAUDE.md` (mandatory `/orchestrate` command, type reuse, DI adapter discipline). We treat AI as a *co-engineer*—artifact trails: `docs/hackathon/01-inventory.md`, `04-value-prop-per-library.md`, `05-architecture-overview-draft.md`, `06-demo-script.md`.
+This codebase was iteratively shaped using internal orchestrated AI agents (Kiro workflow). Governance rules live in `CLAUDE.md` (mandatory `/orchestrate` command, type reuse, DI adapter discipline). We treat AI as a _co-engineer_—artifact trails: `docs/hackathon/01-inventory.md`, `04-value-prop-per-library.md`, `05-architecture-overview-draft.md`, `06-demo-script.md`.
 
 Benefits:
 
@@ -567,31 +568,31 @@ Benefits:
 
 ## ✅ Quality Signals
 
-| Signal | Status | Notes |
-| ------ | ------ | ----- |
-| Build (CI) | ![CI](https://img.shields.io/badge/CI-passing-brightgreen?style=flat) | GitHub Actions (`ci.yml`) |
-| Lint / Typecheck | (badge planned) | ESLint strict + TS strict mode |
-| Test Coverage | (badge planned) | Target ≥ 80% (see upcoming summary) |
-| Packages Published | chromadb · neo4j · langgraph | More modules maturing |
-| Streaming Adapter | Implemented | DI no-op fallback pattern |
-| Checkpoint Replay | Implemented | Deterministic resume path |
-| Memory Fusion | In progress (pattern defined) | Cascade retrieval design |
-| HITL Gating | Implemented | Declarative decorator |
-| Replay (Time Travel) | PoC planned | Timeline emission spec drafted |
+| Signal               | Status                                                                | Notes                               |
+| -------------------- | --------------------------------------------------------------------- | ----------------------------------- |
+| Build (CI)           | ![CI](https://img.shields.io/badge/CI-passing-brightgreen?style=flat) | GitHub Actions (`ci.yml`)           |
+| Lint / Typecheck     | (badge planned)                                                       | ESLint strict + TS strict mode      |
+| Test Coverage        | (badge planned)                                                       | Target ≥ 80% (see upcoming summary) |
+| Packages Published   | chromadb · neo4j · langgraph                                          | More modules maturing               |
+| Streaming Adapter    | Implemented                                                           | DI no-op fallback pattern           |
+| Checkpoint Replay    | Implemented                                                           | Deterministic resume path           |
+| Memory Fusion        | In progress (pattern defined)                                         | Cascade retrieval design            |
+| HITL Gating          | Implemented                                                           | Declarative decorator               |
+| Replay (Time Travel) | PoC planned                                                           | Timeline emission spec drafted      |
 
 > After polishing, badges (coverage, lint, types) will replace placeholders.
 
 ## 🔗 Quick Cross-Refs
 
-| Need | Doc |
-| ---- | --- |
-| Library Value Matrix | `docs/hackathon/04-value-prop-per-library.md` |
+| Need                   | Doc                                                |
+| ---------------------- | -------------------------------------------------- |
+| Library Value Matrix   | `docs/hackathon/04-value-prop-per-library.md`      |
 | Architecture Narrative | `docs/hackathon/05-architecture-overview-draft.md` |
-| Demo Script | `docs/hackathon/06-demo-script.md` |
-| Streaming Blueprint | `STREAMING_INTEGRATION_BLUEPRINT.md` |
-| Operating Constraints | `CLAUDE.md` |
-| Library Index | `docs/hackathon/07-library-index.md` |
-| Architecture Diagrams | `docs/hackathon/08-architecture-diagrams.md` |
+| Demo Script            | `docs/hackathon/06-demo-script.md`                 |
+| Streaming Blueprint    | `STREAMING_INTEGRATION_BLUEPRINT.md`               |
+| Operating Constraints  | `CLAUDE.md`                                        |
+| Library Index          | `docs/hackathon/07-library-index.md`               |
+| Architecture Diagrams  | `docs/hackathon/08-architecture-diagrams.md`       |
 
 - **📖 Documentation**: [Full documentation site](https://hive-academy.github.io/nestjs-ai-saas-starter)
 - **🐛 Issues**: [GitHub Issues](https://github.com/hive-academy/nestjs-ai-saas-starter/issues)

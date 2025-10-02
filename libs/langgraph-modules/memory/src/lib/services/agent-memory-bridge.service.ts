@@ -1,13 +1,17 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import { NodeIdBuilder } from '@hive-academy/shared';
-import type { ICheckpointAdapter } from '@hive-academy/langgraph-checkpoint';
+import { NodeIdBuilder } from '@hive-academy/langgraph-core';
+import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 import type {
-  AgentMemoryContext,
   AgentMemory,
+  AgentMemoryContext,
   AgentMemoryStats,
   IAgentMemoryBridge,
+  UserMemoryPatterns,
 } from '../interfaces/agent-memory.interface';
-import type { MemoryEntry } from '../interfaces/memory.interface';
+import type {
+  MemoryEntry,
+  UserMemoryPatterns as ReadonlyUserMemoryPatterns,
+} from '../interfaces/memory.interface';
 import { MemoryService } from './memory.service';
 import { wrapMemoryError } from '../errors/memory.errors';
 
@@ -61,7 +65,7 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
       );
 
       // Include agent-specific memories (memories created by this agent)
-      const agentMemories = await this.searchAgentMemories(
+      const agentSpecificMemories = await this.searchAgentMemories(
         agentId,
         query || '',
         {
@@ -75,7 +79,7 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
       // Combine all relevant memories
       const allMemories = [
         ...searchResults.relevantMemories,
-        ...agentMemories.filter(
+        ...agentSpecificMemories.filter(
           // Avoid duplicates
           (agentMem) =>
             !searchResults.relevantMemories.some(
@@ -83,6 +87,18 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
             )
         ),
       ];
+
+      // Categorize memories by type
+      const threadMemories = allMemories.filter(
+        (m) => m.metadata?.threadId === threadId
+      );
+      const userMemories = allMemories.filter(
+        (m) =>
+          m.metadata?.userId === agentId && m.metadata?.threadId !== threadId
+      );
+      const agentMemoriesFiltered = allMemories.filter(
+        (m) => m.metadata?.agentId === agentId
+      );
 
       // Calculate combined confidence
       const confidence = searchResults.confidence;
@@ -94,20 +110,22 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
       });
 
       const context: AgentMemoryContext = {
-        threadId,
-        agentId,
-        relevantMemories: allMemories,
-        userPatterns: searchResults.userPatterns
-          ? {
-              commonTopics: searchResults.userPatterns.commonTopics,
-              interactionFrequency:
-                searchResults.userPatterns.interactionFrequency,
-              preferredMemoryTypes:
-                searchResults.userPatterns.preferredMemoryTypes,
-            }
-          : undefined,
-        confidence,
-        lastUpdated: new Date(),
+        threadMemories: threadMemories,
+        userMemories: userMemories,
+        agentMemories: agentMemoriesFiltered,
+        userPatterns: this.convertToMutableUserPatterns(
+          searchResults.userPatterns
+        ) || {
+          userId: agentId || 'unknown',
+          commonTopics: [],
+          interactionFrequency: {},
+          preferredMemoryTypes: [],
+          averageSessionLength: 0,
+          totalSessions: 0,
+          lastInteraction: undefined,
+        },
+        relevanceScore: confidence,
+        contextWindow: allMemories.length,
       };
 
       this.logger.debug(
@@ -124,11 +142,20 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
 
       // Return empty context on failure (graceful degradation)
       return {
-        threadId,
-        agentId,
-        relevantMemories: [],
-        confidence: 0,
-        lastUpdated: new Date(),
+        threadMemories: [],
+        userMemories: [],
+        agentMemories: [],
+        userPatterns: {
+          userId: agentId || 'unknown',
+          commonTopics: [],
+          interactionFrequency: {},
+          preferredMemoryTypes: [],
+          averageSessionLength: 0,
+          totalSessions: 0,
+          lastInteraction: undefined,
+        } as UserMemoryPatterns,
+        relevanceScore: 0,
+        contextWindow: 0,
       };
     }
   }
@@ -150,9 +177,10 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
 
       // Create canonical thread ID for agent memory
       const agentThreadId = NodeIdBuilder.create()
-        .addScope('agent.memory')
-        .addScope(agentId)
-        .addIdentifier(memory.threadId)
+        .domain('agent')
+        .phase('memory')
+        .activity(agentId)
+        .detail(memory.threadId)
         .build();
 
       // Enhance metadata with agent information
@@ -207,9 +235,10 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
 
       for (const memory of memories) {
         const agentThreadId = NodeIdBuilder.create()
-          .addScope('agent.memory')
-          .addScope(agentId)
-          .addIdentifier(memory.threadId)
+          .domain('agent')
+          .phase('memory')
+          .activity(agentId)
+          .detail(memory.threadId)
           .build();
 
         if (!memoriesByThread.has(agentThreadId)) {
@@ -355,7 +384,10 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
         threadId,
         checkpoint.channel_values,
         {
-          ...checkpoint.metadata,
+          timestamp: new Date().toISOString(),
+          source: 'update' as const,
+          step: 0,
+          parents: {},
           memorySync: syncMetadata,
         }
       );
@@ -384,6 +416,7 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
 
     if (!stats) {
       return {
+        agentId,
         memoriesAccessed: 0,
         memoriesCreated: 0,
         averageSearchTime: 0,
@@ -406,9 +439,10 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
 
       // Create agent thread ID
       const agentThreadId = NodeIdBuilder.create()
-        .addScope('agent.memory')
-        .addScope(agentId)
-        .addIdentifier(threadId)
+        .domain('agent')
+        .phase('memory')
+        .activity(agentId)
+        .detail(threadId)
         .build();
 
       // Get agent memories for this thread
@@ -455,6 +489,7 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
     }
   ): void {
     const currentStats = this.agentStats.get(agentId) || {
+      agentId,
       memoriesAccessed: 0,
       memoriesCreated: 0,
       averageSearchTime: 0,
@@ -463,6 +498,7 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
     };
 
     const newStats: AgentMemoryStats = {
+      agentId,
       memoriesAccessed:
         currentStats.memoriesAccessed + (updates.memoriesAccessed || 0),
       memoriesCreated:
@@ -493,5 +529,26 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
     // For now, we log the association
     // In a full implementation, this could update memory metadata
     // or create a separate relationship table/collection
+  }
+
+  /**
+   * Convert readonly UserMemoryPatterns to mutable version
+   */
+  private convertToMutableUserPatterns(
+    readonlyPatterns: ReadonlyUserMemoryPatterns | null
+  ): UserMemoryPatterns | null {
+    if (!readonlyPatterns) {
+      return null;
+    }
+
+    return {
+      userId: readonlyPatterns.userId,
+      commonTopics: [...readonlyPatterns.commonTopics],
+      interactionFrequency: { ...readonlyPatterns.interactionFrequency },
+      preferredMemoryTypes: [...readonlyPatterns.preferredMemoryTypes],
+      averageSessionLength: readonlyPatterns.averageSessionLength,
+      totalSessions: readonlyPatterns.totalSessions,
+      lastInteraction: undefined, // agent-memory interface doesn't have this field
+    };
   }
 }

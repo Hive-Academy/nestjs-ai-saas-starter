@@ -31,6 +31,11 @@ export abstract class IStreamingService {
   ): void;
   abstract emitProgress(eventType: string, data: any): Promise<void>;
 
+  // Stream management
+  abstract getStream(executionId: string): any;
+  abstract createStream(executionId: string, options?: any): Promise<any>;
+  abstract closeStream(executionId: string): void;
+
   // WebSocket integration
   abstract broadcastToExecution(executionId: string, data: any): Promise<void>;
   abstract sendToClient(clientId: string, data: any): Promise<void>;
@@ -101,6 +106,20 @@ export class NoOpStreamingService implements IStreamingService {
   }
 
   async emitProgress(): Promise<void> {
+    // no-op
+  }
+
+  getStream(): any {
+    // no-op - return null stream
+    return null;
+  }
+
+  async createStream(): Promise<any> {
+    // no-op - return null stream
+    return null;
+  }
+
+  closeStream(): void {
     // no-op
   }
 

@@ -104,7 +104,7 @@ export class HybridUIService {
     this.intersectionObserver.set(intersectionObserver);
 
     // Resize Observer for responsive updates
-    let resizeTimeout: number | null = null;
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     const resizeObserver = new ResizeObserver((entries) => {
       if (resizeTimeout) {
         clearTimeout(resizeTimeout);
@@ -172,7 +172,10 @@ export class HybridUIService {
     const id = this.generateElementId();
 
     // Create Angular Three group
-    const ngtGroup = this.angularThreeFoundation.createHybridGroup(id);
+    const ngtGroup = this.angularThreeFoundation.createHybridGroup({
+      name: id,
+      userData: { type: 'hybrid-element', createdAt: Date.now() }
+    });
 
     // Apply Angular Three configuration
     if (config.angularThree) {
@@ -527,7 +530,7 @@ export class HybridUIService {
   private findElementByDom(
     domElement: HTMLElement
   ): HybridElementExtended | null {
-    for (const element of this.elements.values()) {
+    for (const element of Array.from(this.elements.values())) {
       if (element.domElement === domElement) {
         return element;
       }

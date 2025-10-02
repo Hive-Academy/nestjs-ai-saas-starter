@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { AIMessage } from '@langchain/core/messages';
 // BaseLanguageModelInterface import removed as it's not used
 import type { RunnableConfig } from '@langchain/core/runnables';
+import type { IMemoryAdapter } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentState,
@@ -24,8 +25,86 @@ export class NodeFactoryService {
 
   constructor(
     private readonly llmProvider: LlmProviderService,
-    private readonly toolNodeService: ToolNodeService
+    private readonly toolNodeService: ToolNodeService,
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
   ) {}
+
+  /**
+   * Automagical memory enhancement for agent execution
+   * Adds memory context before execution and stores results after
+   */
+  private async enhanceAgentWithMemory(
+    agent: AgentDefinition,
+    state: AgentState,
+    agentExecution: () => Promise<Partial<AgentState>>
+  ): Promise<Partial<AgentState>> {
+    try {
+      // 1. Enhance state with memory context BEFORE agent execution
+      let enhancedState = state;
+      if (this.memoryAdapter) {
+        try {
+          const memoryContext = await this.memoryAdapter.getAgentContext(state);
+          enhancedState = {
+            ...state,
+            metadata: {
+              ...state.metadata,
+              memoryContext: {
+                threadMemories: memoryContext.threadMemories.slice(0, 5), // Last 5 thread memories
+                userMemories: memoryContext.userMemories.slice(0, 3), // Last 3 user memories
+                relevanceScore: memoryContext.relevanceScore,
+                patterns: memoryContext.userPatterns,
+              },
+            },
+          };
+          this.logger.debug(`Enhanced agent ${agent.id} with memory context`, {
+            threadMemories: memoryContext.threadMemories.length,
+            userMemories: memoryContext.userMemories.length,
+            relevanceScore: memoryContext.relevanceScore,
+          });
+        } catch (memoryError) {
+          this.logger.warn(
+            `Failed to enhance ${agent.id} with memory context:`,
+            memoryError
+          );
+          // Continue without memory enhancement
+        }
+      }
+
+      // 2. Execute agent with enhanced state
+      const result = await agentExecution();
+
+      // 3. Store agent execution result in memory AFTER execution
+      if (this.memoryAdapter && result) {
+        try {
+          await this.memoryAdapter.storeAgentExecution(
+            enhancedState,
+            result,
+            agent.id
+          );
+          this.logger.debug(
+            `Stored execution result for agent ${agent.id} in memory`
+          );
+        } catch (memoryError) {
+          this.logger.warn(
+            `Failed to store ${agent.id} execution in memory:`,
+            memoryError
+          );
+          // Continue without memory storage
+        }
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Memory-enhanced execution failed for agent ${agent.id}:`,
+        error
+      );
+      // Fallback to original execution without memory
+      return await agentExecution();
+    }
+  }
 
   /**
    * Create supervisor node following 2025 LangGraph patterns
@@ -137,7 +216,12 @@ export class NodeFactoryService {
           messageCount: filteredState.messages.length,
         });
 
-        const result = await agent.nodeFunction(filteredState);
+        // Execute agent with automagical memory enhancement
+        const result = await this.enhanceAgentWithMemory(
+          agent,
+          filteredState,
+          () => agent.nodeFunction(filteredState)
+        );
 
         return {
           ...result,
@@ -192,8 +276,10 @@ export class NodeFactoryService {
           handoffToolsCount: agent.handoffTools?.length || 0,
         });
 
-        // Execute agent logic
-        const result = await agent.nodeFunction(state);
+        // Execute agent logic with automagical memory enhancement
+        const result = await this.enhanceAgentWithMemory(agent, state, () =>
+          agent.nodeFunction(state)
+        );
 
         // Handle handoff tools if configured
         if (config.enableDynamicHandoffs && agent.handoffTools) {
@@ -463,8 +549,12 @@ export class NodeFactoryService {
       try {
         this.logger.debug(`Executing tool-enhanced agent: ${agent.id}`);
 
-        // Execute agent's core logic first
-        const agentResult = await agent.nodeFunction(state, config);
+        // Execute agent's core logic first with automagical memory enhancement
+        const agentResult = await this.enhanceAgentWithMemory(
+          agent,
+          state,
+          () => agent.nodeFunction(state, config)
+        );
 
         // Execute parallel tools with weighted coordination
         const toolResults = await parallelToolExecutor(agentResult as any);

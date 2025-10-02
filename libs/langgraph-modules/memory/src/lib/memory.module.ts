@@ -9,6 +9,7 @@ import { MemoryGraphService } from './services/memory-graph.service';
 // Import interfaces only - adapters moved to application layer
 import { IVectorService } from './interfaces/vector-service.interface';
 import { IGraphService } from './interfaces/graph-service.interface';
+import { MemoryManagerAdapter } from './interfaces/memory-adapter.interface';
 
 import type {
   MemoryModuleOptions,
@@ -36,9 +37,10 @@ export class MemoryModule {
   /**
    * Configure module with synchronous options
    * Supports both legacy configuration (backward compatible) and new adapter injection
+   * NEW: Provides global IMemoryAdapter when adapters are available
    */
   static forRoot(options: MemoryModuleOptions = {}): DynamicModule {
-    const config = { ...DEFAULT_MEMORY_CONFIG, ...options };
+    const mergedOptions = this.mergeWithDefaults(options);
 
     // Validate adapter configuration if provided
     this.validateAdapters(options);
@@ -49,35 +51,60 @@ export class MemoryModule {
     // Create adapter providers
     const adapterProviders = this.createAdapterProviders(options);
 
+    const providers: Provider[] = [
+      // Configuration provider
+      {
+        provide: MEMORY_CONFIG,
+        useValue: mergedOptions,
+      },
+      // Adapter providers (conditional)
+      ...adapterProviders,
+      // Core services (updated to use adapters)
+      MemoryStorageService,
+      MemoryGraphService,
+      MemoryService,
+    ];
+
+    // NEW: Provide IMemoryAdapter globally if adapters are available
+    const exports = [
+      MemoryService,
+      MemoryStorageService,
+      MemoryGraphService,
+      MEMORY_CONFIG,
+      // Export adapter interfaces for external use
+      IVectorService,
+      IGraphService,
+    ];
+
+    if (options.adapters?.vector) {
+      providers.push({
+        provide: 'IMemoryAdapter',
+        useFactory: (
+          memoryService: MemoryService,
+          vectorAdapter: any,
+          graphAdapter?: any
+        ) =>
+          new MemoryManagerAdapter(memoryService, vectorAdapter, graphAdapter),
+        inject: [
+          MemoryService,
+          IVectorService,
+          ...(options.adapters.graph ? [IGraphService] : []),
+        ],
+      });
+
+      // Export memory adapter globally
+      exports.push('IMemoryAdapter');
+    }
+
     return {
       module: MemoryModule,
       imports: [
         ConfigModule,
         // NOTE: No database module imports - pure adapter pattern
       ],
-      providers: [
-        // Configuration provider
-        {
-          provide: MEMORY_CONFIG,
-          useValue: config,
-        },
-        // Adapter providers (conditional)
-        ...adapterProviders,
-        // Core services (updated to use adapters)
-        MemoryStorageService,
-        MemoryGraphService,
-        MemoryService,
-      ],
-      exports: [
-        MemoryService,
-        MemoryStorageService,
-        MemoryGraphService,
-        MEMORY_CONFIG,
-        // Export adapter interfaces for external use
-        IVectorService,
-        IGraphService,
-      ],
-      global: false,
+      providers,
+      exports,
+      global: true, // ← CRITICAL: Make memory global like checkpoint
     };
   }
 
@@ -114,8 +141,10 @@ export class MemoryModule {
         // Export adapter interfaces for external use
         IVectorService,
         IGraphService,
+        // NEW: Export memory adapter when available
+        ...(options.adapters?.vector ? ['IMemoryAdapter'] : []),
       ],
-      global: false,
+      global: true, // ← Make memory global like checkpoint
     };
   }
 
@@ -185,6 +214,63 @@ export class MemoryModule {
   }
 
   /**
+   * Merge options with enhanced defaults including agentic configuration
+   */
+  private static mergeWithDefaults(
+    options: MemoryModuleOptions
+  ): MemoryModuleOptions {
+    return {
+      collection: 'agentic_memory',
+      enableAutoSummarization: true,
+
+      // NEW: Agentic superpowers config
+      agentic: {
+        enabled: true,
+        ragMode: 'enhanced',
+        contextWindow: 10,
+        learnFromConversations: true,
+        personalizeResponses: true,
+        crossThreadMemory: true,
+      },
+
+      // NEW: RAG configuration
+      rag: {
+        semanticSearch: {
+          enabled: true,
+          similarity: 0.7,
+          maxResults: 5,
+        },
+        graphTraversal: {
+          enabled: true,
+          depth: 2,
+          strength: 0.5,
+        },
+        hybridSearch: {
+          vectorWeight: 0.7,
+          graphWeight: 0.3,
+        },
+      },
+
+      // NEW: Agent memory patterns
+      agentMemory: {
+        storeExecutions: true,
+        storeFailures: true,
+        contextualLearning: true,
+        memoryTypes: ['conversation', 'preference', 'fact', 'pattern'],
+      },
+
+      // NEW: LangGraph Store compliance
+      store: {
+        enabled: true,
+        namespaceStrategy: 'user',
+        crossThreadSharing: true,
+      },
+
+      ...options,
+    };
+  }
+
+  /**
    * Create adapter providers based on options
    * Handles both default adapters and custom adapter injection
    */
@@ -217,7 +303,7 @@ export class MemoryModule {
       );
     }
 
-    // Graph service adapter provider
+    // Graph service adapter provider (optional)
     const graphAdapter = options.adapters?.graph;
     if (graphAdapter) {
       // Custom adapter provided
@@ -234,12 +320,8 @@ export class MemoryModule {
           useValue: graphAdapter,
         });
       }
-    } else {
-      // No default adapter - applications must provide their own adapters
-      throw new Error(
-        'MemoryModule requires a graph adapter. Please provide options.adapters.graph or import adapters in your application module.'
-      );
     }
+    // NOTE: Graph adapter is now optional - graceful degradation
 
     return providers;
   }

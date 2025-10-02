@@ -11,6 +11,7 @@ import {
   CheckpointNotFoundError,
   HistoryOptionsSchema,
 } from '../interfaces/time-travel.interface';
+// Removed unused imports
 
 /**
  * Service responsible for execution history tracking and analysis
@@ -236,14 +237,14 @@ export class ExecutionHistoryService {
     changes: Array<{
       checkpointId: string;
       timestamp: Date;
-      value: any;
+      value: unknown;
       valueType: string;
     }>;
     summary: {
       totalChanges: number;
       uniqueValues: number;
-      firstValue: any;
-      lastValue: any;
+      firstValue: unknown;
+      lastValue: unknown;
     };
   }> {
     const history = await this.getExecutionHistory(threadId);
@@ -278,7 +279,7 @@ export class ExecutionHistoryService {
       nodeType?: ExecutionHistoryNode['nodeType'];
       hasError?: boolean;
       workflowName?: string;
-      stateContains?: Record<string, any>;
+      stateContains?: Record<string, unknown>;
       timeRange?: { from: Date; to: Date };
     }
   ): Promise<ExecutionHistoryNode | null> {
@@ -523,7 +524,9 @@ export class ExecutionHistoryService {
   /**
    * Get nested value from object using dot notation
    */
-  private getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  private getNestedValue(obj: unknown, path: string): unknown {
+    return path
+      .split('.')
+      .reduce((current: any, key: string) => current?.[key], obj);
   }
 }

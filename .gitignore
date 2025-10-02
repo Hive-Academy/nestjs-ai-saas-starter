@@ -4,7 +4,7 @@
 dist
 tmp
 out-tsc
-
+.git
 # dependencies
 node_modules
 
@@ -50,3 +50,5 @@ test-output
 /.env.**
 /typescript-validation-report.json
 tsconfig.lib.tsbuildinfo
+/.roo
+/.roomodes

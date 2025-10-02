@@ -3,6 +3,7 @@ import { DEFAULT_MULTI_AGENT_OPTIONS } from '../constants/multi-agent.constants'
 import type {
   ICheckpointAdapter,
   IStreamingService,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -33,10 +34,11 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
  */
 export function getMultiAgentConfigWithDefaults(): Omit<
   Required<MultiAgentModuleOptions>,
-  'checkpointAdapter' | 'streamingAdapter'
+  'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
 > & {
   checkpointAdapter?: ICheckpointAdapter;
   streamingAdapter?: IStreamingService;
+  memoryAdapter?: IMemoryAdapter;
 } {
   const config = getMultiAgentConfig();
 
@@ -70,5 +72,6 @@ export function getMultiAgentConfigWithDefaults(): Omit<
     workflows: config.workflows || [],
     checkpointAdapter: config.checkpointAdapter,
     streamingAdapter: config.streamingAdapter,
+    memoryAdapter: config.memoryAdapter,
   };
 }

@@ -2,11 +2,8 @@ import { Test } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkflowStreamService } from './workflow-stream.service';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import {
-  type IStreamingService,
-  NoOpStreamingService,
-  StreamEventType,
-} from '@hive-academy/langgraph-core';
+import { type IStreamingService, NoOpStreamingService } from '@hive-academy/langgraph-core';
+import { StreamEventType } from '@hive-academy/langgraph-streaming';
 
 describe('WorkflowStreamService Integration', () => {
   let service: WorkflowStreamService;

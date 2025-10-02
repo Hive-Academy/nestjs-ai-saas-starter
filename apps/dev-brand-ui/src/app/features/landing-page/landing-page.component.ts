@@ -12,16 +12,17 @@ import {
 import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
 import { DemoTheaterComponent } from './sections/demo-theater.component';
 import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
-import { HeroSectionComponent } from './sections/hero-section.component';
+
 import { PlatformPillarsComponent } from './sections/platform-pillars.component';
 import { LoadingStateService } from './services/loading-state.service';
+import { HeroAngularThreeComponent } from './components/hero-angular-three/hero-angular-three.component';
 
 @Component({
   selector: 'brand-landing-page',
   standalone: true,
   imports: [
     CommonModule,
-    HeroSectionComponent,
+    HeroAngularThreeComponent,
     PlatformPillarsComponent,
     DemoTheaterComponent,
     EcosystemExplorerComponent,
@@ -145,7 +146,11 @@ import { LoadingStateService } from './services/loading-state.service';
     <main class="w-full">
       <!-- Hero Section -->
       <div id="hero" class="section-container">
-        <brand-hero-section></brand-hero-section>
+        <app-hero-angular-three
+          (getStarted)="onGetStarted()"
+          (watchDemo)="onWatchDemo()"
+          (featureSelected)="onFeatureSelected($event)">
+        </app-hero-angular-three>
       </div>
 
       <!-- Platform Pillars Section -->
@@ -396,5 +401,35 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // Hero component event handlers
+  onGetStarted(): void {
+    // Navigate to the next section or show a getting started modal
+    this.scrollToSection('platform-pillars');
+  }
+
+  onWatchDemo(): void {
+    // Scroll to the demo section
+    this.scrollToSection('demo-theater');
+  }
+
+  onFeatureSelected(featureId: string): void {
+    // Handle feature selection - could trigger animations or navigation
+    console.log('Feature selected:', featureId);
+    // You could implement feature-specific navigation here
+    switch (featureId) {
+      case 'ai-automation':
+        this.scrollToSection('platform-pillars');
+        break;
+      case 'data-analytics':
+        this.scrollToSection('ecosystem-explorer');
+        break;
+      case 'cloud-integration':
+        this.scrollToSection('architecture-diagram');
+        break;
+      default:
+        this.scrollToSection('demo-theater');
+    }
   }
 }

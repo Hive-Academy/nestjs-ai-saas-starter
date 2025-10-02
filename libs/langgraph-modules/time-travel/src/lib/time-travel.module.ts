@@ -44,6 +44,15 @@ export class TimeTravelModule {
         },
         inject: ['TIME_TRAVEL_CONFIG'],
       },
+      // 🧠 MEMORY INTEGRATION: Provide memory adapter for 2025 cross-module memory
+      {
+        provide: 'IMemoryAdapter',
+        useFactory: (config: TimeTravelConfig) => {
+          // Optional memory adapter for time-travel memory integration
+          return config.memoryAdapter || null;
+        },
+        inject: ['TIME_TRAVEL_CONFIG'],
+      },
       // Core focused services
       WorkflowRegistryService,
       ExecutionHistoryService,
@@ -91,6 +100,15 @@ export class TimeTravelModule {
             );
           }
           return config.checkpointAdapter;
+        },
+        inject: ['TIME_TRAVEL_CONFIG'],
+      },
+      // 🧠 MEMORY INTEGRATION: Provide memory adapter for 2025 cross-module memory
+      {
+        provide: 'IMemoryAdapter',
+        useFactory: async (config: TimeTravelConfig) => {
+          // Optional memory adapter for time-travel memory integration
+          return config.memoryAdapter || null;
         },
         inject: ['TIME_TRAVEL_CONFIG'],
       },

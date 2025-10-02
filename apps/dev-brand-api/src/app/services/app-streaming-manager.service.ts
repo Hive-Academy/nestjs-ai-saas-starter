@@ -3,15 +3,14 @@ import {
   TokenStreamingService,
   WebSocketBridgeService,
   StreamingWebSocketService,
-  IInitializableService,
 } from '@hive-academy/langgraph-streaming';
 
 /**
  * Application-specific StreamingManager
- * 
+ *
  * This service controls when and how streaming services are initialized.
  * Called manually by the app after all modules are ready.
- * 
+ *
  * Benefits:
  * - No blocking onApplicationBootstrap hooks
  * - Full control over initialization timing
@@ -34,7 +33,7 @@ export class AppStreamingManager {
   constructor(
     private readonly tokenStreaming: TokenStreamingService,
     private readonly webSocketBridge: WebSocketBridgeService,
-    @Optional() private readonly webSocketService?: StreamingWebSocketService, // Optional - only if WebSocket is enabled
+    @Optional() private readonly webSocketService?: StreamingWebSocketService // Optional - only if WebSocket is enabled
   ) {}
 
   /**
@@ -66,7 +65,9 @@ export class AppStreamingManager {
         this.logger.log('🔌 Starting StreamingWebSocketService...');
         await this.webSocketService.start();
       } else {
-        this.logger.log('⚠️  WebSocket service disabled - no external connections');
+        this.logger.log(
+          '⚠️  WebSocket service disabled - no external connections'
+        );
       }
 
       // Mark as active after successful initialization
@@ -75,11 +76,10 @@ export class AppStreamingManager {
 
       this.logger.log('✅ All streaming services initialized successfully!');
       this.logger.log(`📊 Streaming stats: ${JSON.stringify(this.stats)}`);
-
     } catch (error) {
       this.updateStats({ errors: this.stats.errors + 1 });
       this.logger.error('❌ Failed to initialize streaming services:', error);
-      
+
       // Cleanup on failure
       await this.cleanup();
       throw error;
@@ -103,7 +103,6 @@ export class AppStreamingManager {
       this.startTime = undefined;
 
       this.logger.log('✅ All streaming services stopped gracefully');
-
     } catch (error) {
       this.updateStats({ errors: this.stats.errors + 1 });
       this.logger.error('❌ Error stopping streaming services:', error);
@@ -120,10 +119,10 @@ export class AppStreamingManager {
       this.logger.log('🛑 Stopping StreamingWebSocketService...');
       await this.webSocketService.stop();
     }
-    
+
     this.logger.log('🛑 Stopping WebSocketBridgeService...');
     await this.webSocketBridge.stop();
-    
+
     this.logger.log('🛑 Stopping TokenStreamingService...');
     await this.tokenStreaming.stop();
   }
@@ -152,7 +151,9 @@ export class AppStreamingManager {
     } catch (error) {
       return {
         healthy: false,
-        details: { error: error.message },
+        details: {
+          error: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }

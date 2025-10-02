@@ -1,23 +1,97 @@
 import type { MemoryEntry, MemoryMetadata } from './memory.interface';
 
 /**
- * Memory context provided to agents during execution
+ * Agent state structure for memory integration
+ * Compatible with LangGraph AgentState pattern
+ */
+export interface AgentState {
+  messages: any[]; // BaseMessage[] - using any to avoid LangChain dependency
+  next?: string;
+  current?: string;
+  scratchpad?: string;
+  task?: string;
+  threadId?: string;
+  userId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Memory context for agent execution
+ * Provides comprehensive memory information from multiple scopes
  */
 export interface AgentMemoryContext {
-  readonly threadId: string;
-  readonly agentId: string;
-  readonly relevantMemories: readonly MemoryEntry[];
-  readonly userPatterns?: {
-    readonly commonTopics: readonly string[];
-    readonly interactionFrequency: Record<string, number>;
-    readonly preferredMemoryTypes: readonly string[];
-  };
-  readonly confidence: number;
-  readonly lastUpdated: Date;
+  // Conversation memories from current thread
+  threadMemories: MemoryEntry[];
+
+  // Cross-thread user memories
+  userMemories: MemoryEntry[];
+
+  // Agent-specific memories
+  agentMemories: MemoryEntry[];
+
+  // User behavioral patterns
+  userPatterns: UserMemoryPatterns;
+
+  // Confidence and relevance scores
+  relevanceScore: number;
+  contextWindow: number;
+}
+
+/**
+ * User memory patterns extracted from historical interactions
+ */
+export interface UserMemoryPatterns {
+  userId: string;
+  commonTopics: string[];
+  interactionFrequency: Record<string, number>;
+  preferredMemoryTypes: string[];
+  averageSessionLength: number;
+  totalSessions: number;
+  lastInteraction?: Date;
+}
+
+/**
+ * Memory operations for agent workflows
+ * Core interface for agent-memory integration
+ */
+export interface IAgentMemoryService {
+  /**
+   * Get memory context for agent execution
+   * Retrieves relevant memories from thread, user, and agent scopes
+   */
+  getAgentContext(state: AgentState): Promise<AgentMemoryContext>;
+
+  /**
+   * Store agent execution result in memory
+   * Preserves agent decision patterns and context
+   */
+  storeAgentExecution(
+    state: AgentState,
+    result: Partial<AgentState>,
+    agentId: string
+  ): Promise<void>;
+
+  /**
+   * Update agent state with memory context
+   * Non-breaking enhancement via metadata field
+   */
+  enhanceStateWithMemory(state: AgentState): Promise<AgentState>;
+
+  /**
+   * Store conversation turn (human + AI message pair)
+   * Maintains conversational context for future reference
+   */
+  storeConversationTurn(
+    threadId: string,
+    humanMessage: any, // BaseMessage
+    aiMessage: any, // BaseMessage
+    metadata?: Record<string, unknown>
+  ): Promise<void>;
 }
 
 /**
  * Memory entry specifically created by agents
+ * Extended from base MemoryEntry with agent context
  */
 export interface AgentMemory {
   readonly content: string;
@@ -27,6 +101,8 @@ export interface AgentMemory {
     readonly agentGenerated: true;
     readonly nodeId?: string;
     readonly executionId?: string;
+    readonly importance?: number;
+    readonly memoryType?: 'execution' | 'decision' | 'context' | 'error';
   };
   readonly userId?: string;
 }
@@ -41,6 +117,9 @@ export interface AgentMemoryConfig {
   readonly searchLimit: number;
   readonly namespace?: string;
   readonly minRelevance?: number;
+  readonly contextWindow?: number;
+  readonly personalizeResponses?: boolean;
+  readonly learnFromInteractions?: boolean;
 }
 
 /**
@@ -52,10 +131,13 @@ export interface AgentMemoryStats {
   readonly averageSearchTime: number;
   readonly contextHitRate: number;
   readonly lastAccess: Date;
+  readonly agentId: string;
+  readonly threadId?: string;
 }
 
 /**
  * Bridge service interface for agent-memory integration
+ * Maintains backward compatibility while adding new functionality
  */
 export interface IAgentMemoryBridge {
   /**

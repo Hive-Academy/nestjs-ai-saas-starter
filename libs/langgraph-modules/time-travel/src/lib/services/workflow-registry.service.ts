@@ -7,13 +7,15 @@ import { normalizeNodeId } from '@hive-academy/langgraph-core';
  */
 interface WorkflowAutoRegistrationEvent {
   name: string;
-  instance: any;
+  instance: {
+    [key: string]: (...args: unknown[]) => unknown;
+  };
   metadata: {
     autoRegistered: boolean;
     package: string;
     domain: string;
     entrypoint: string;
-    originalOptions: any;
+    originalOptions: Record<string, unknown>;
     [key: string]: unknown;
   };
 }
@@ -79,7 +81,9 @@ export class WorkflowRegistryService {
    */
   async registerWorkflow(registration: {
     name: string;
-    instance: any;
+    instance: {
+      [key: string]: (...args: unknown[]) => unknown;
+    };
     metadata: WorkflowMetadata;
   }): Promise<void> {
     // Normalize workflow name using Node ID standard
@@ -108,7 +112,9 @@ export class WorkflowRegistryService {
    */
   async registerWorkflowManually(
     name: string,
-    instance: any,
+    instance: {
+      [key: string]: (...args: unknown[]) => unknown;
+    },
     metadata: Partial<WorkflowMetadata> = {}
   ): Promise<void> {
     await this.registerWorkflow({
@@ -141,10 +147,16 @@ export class WorkflowRegistryService {
   /**
    * Get workflow instance by name
    */
-  getWorkflow(name: string): any | null {
+  getWorkflow(name: string): {
+    [key: string]: (...args: unknown[]) => unknown;
+  } | null {
     const normalizedName = normalizeNodeId(name);
     const registration = this.workflowRegistry.get(normalizedName);
-    return registration ? (registration as any).instance : null;
+    const typedRegistration = registration as {
+      instance: { [key: string]: (...args: unknown[]) => unknown };
+      metadata: WorkflowMetadata;
+    };
+    return typedRegistration ? typedRegistration.instance : null;
   }
 
   /**
@@ -153,7 +165,11 @@ export class WorkflowRegistryService {
   getWorkflowMetadata(name: string): WorkflowMetadata | null {
     const normalizedName = normalizeNodeId(name);
     const registration = this.workflowRegistry.get(normalizedName);
-    return registration ? (registration as any).metadata : null;
+    const typedRegistration = registration as {
+      instance: { [key: string]: (...args: unknown[]) => unknown };
+      metadata: WorkflowMetadata;
+    };
+    return typedRegistration ? typedRegistration.metadata : null;
   }
 
   /**
@@ -161,11 +177,20 @@ export class WorkflowRegistryService {
    */
   getWorkflowRegistration(name: string): {
     name: string;
-    instance: any;
+    instance: {
+      [key: string]: (...args: unknown[]) => unknown;
+    };
     metadata: WorkflowMetadata;
   } | null {
     const normalizedName = normalizeNodeId(name);
-    return (this.workflowRegistry.get(normalizedName) as any) || null;
+    const registration = this.workflowRegistry.get(normalizedName);
+    return (
+      (registration as {
+        name: string;
+        instance: { [key: string]: (...args: unknown[]) => unknown };
+        metadata: WorkflowMetadata;
+      }) || null
+    );
   }
 
   /**
@@ -180,10 +205,16 @@ export class WorkflowRegistryService {
    */
   getAllWorkflows(): Array<{
     name: string;
-    instance: any;
+    instance: {
+      [key: string]: (...args: unknown[]) => unknown;
+    };
     metadata: WorkflowMetadata;
   }> {
-    return Array.from(this.workflowRegistry.values()) as any[];
+    return Array.from(this.workflowRegistry.values()) as {
+      name: string;
+      instance: { [key: string]: (...args: unknown[]) => unknown };
+      metadata: WorkflowMetadata;
+    }[];
   }
 
   /**
@@ -246,7 +277,9 @@ export class WorkflowRegistryService {
     hasFeature?: 'streaming' | 'hitl' | 'multiAgent';
   }): Array<{
     name: string;
-    instance: any;
+    instance: {
+      [key: string]: (...args: unknown[]) => unknown;
+    };
     metadata: WorkflowMetadata;
   }> {
     const workflows = this.getAllWorkflows();

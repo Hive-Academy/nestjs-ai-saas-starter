@@ -4,6 +4,10 @@ import {
   FunctionalApiModuleAsyncOptions,
   FunctionalApiOptionsFactory,
 } from './interfaces/module-options.interface';
+import {
+  NoOpCheckpointAdapter,
+  NoOpStreamingService,
+} from '@hive-academy/langgraph-core';
 import { FunctionalWorkflowService } from './services/functional-workflow.service';
 import { WorkflowRegistrationService } from './services/workflow-registration.service';
 import { GraphGeneratorService } from './services/graph-generator.service';
@@ -37,8 +41,30 @@ export class FunctionalApiModule {
       imports: [],
       providers: [
         optionsProvider,
-        // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
-        // No local providers needed as they will be injected globally
+        // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+        {
+          provide: 'IMemoryAdapter',
+          useFactory: (options: FunctionalApiModuleOptions) => {
+            // Optional memory adapter for functional-api memory integration
+            return options.memoryAdapter || null;
+          },
+          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
+        },
+        // Provide default NoOp implementations for missing adapters
+        {
+          provide: 'ICheckpointAdapter',
+          useFactory: (options: FunctionalApiModuleOptions) => {
+            return options.checkpointAdapter || new NoOpCheckpointAdapter();
+          },
+          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
+        },
+        {
+          provide: 'IStreamingService',
+          useFactory: (options: FunctionalApiModuleOptions) => {
+            return options.streamingAdapter || new NoOpStreamingService();
+          },
+          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
+        },
         WorkflowValidator,
         WorkflowRegistrationService,
         GraphGeneratorService,
@@ -66,8 +92,30 @@ export class FunctionalApiModule {
       imports: [...(options.imports || [])],
       providers: [
         ...asyncProviders,
-        // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
-        // No local providers needed as they will be injected globally
+        // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+        {
+          provide: 'IMemoryAdapter',
+          useFactory: (options: FunctionalApiModuleOptions) => {
+            // Optional memory adapter for functional-api memory integration
+            return options.memoryAdapter || null;
+          },
+          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
+        },
+        // Provide default NoOp implementations for missing adapters
+        {
+          provide: 'ICheckpointAdapter',
+          useFactory: (options: FunctionalApiModuleOptions) => {
+            return options.checkpointAdapter || new NoOpCheckpointAdapter();
+          },
+          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
+        },
+        {
+          provide: 'IStreamingService',
+          useFactory: (options: FunctionalApiModuleOptions) => {
+            return options.streamingAdapter || new NoOpStreamingService();
+          },
+          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
+        },
         WorkflowValidator,
         WorkflowRegistrationService,
         GraphGeneratorService,
@@ -164,10 +212,17 @@ export class FunctionalApiModule {
   private static normalizeOptions(
     options: FunctionalApiModuleOptions
   ): Required<
-    Omit<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'>
+    Omit<
+      FunctionalApiModuleOptions,
+      'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
+    >
   > &
-    Pick<FunctionalApiModuleOptions, 'checkpointAdapter' | 'streamingAdapter'> {
+    Pick<
+      FunctionalApiModuleOptions,
+      'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
+    > {
     return {
+      // NOTE: No workflow registration - handled by WorkflowEngineModule
       workflows: options.workflows ?? [],
       defaultTimeout: options.defaultTimeout ?? 30000,
       defaultRetryCount: options.defaultRetryCount ?? 3,
@@ -179,6 +234,7 @@ export class FunctionalApiModule {
       globalMetadata: options.globalMetadata ?? {},
       checkpointAdapter: options.checkpointAdapter,
       streamingAdapter: options.streamingAdapter,
+      memoryAdapter: options.memoryAdapter,
     };
   }
 }

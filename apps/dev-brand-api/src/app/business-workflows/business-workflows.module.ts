@@ -1,132 +1,97 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 
-// Customer Support System Components
-import { CustomerSupportAgent } from './agents/customer-support.agent';
+// DevBrand Chat Studio MVP Components (Post-Legacy Cleanup)
 import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer.agent';
 import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist.agent';
 import { ContentCreatorAgent } from './agents/content-creator.agent';
-import { CustomerSupportWorkflow } from './workflows/customer-support.workflow';
-import { EnhancedSupportWorkflow } from './workflows/enhanced-support.workflow';
-import { CustomerSupportController } from './controllers/customer-support.controller';
-import { BusinessMetricsService } from './services/business-metrics.service';
-import { KnowledgeBaseService } from './services/knowledge-base.service';
-import { CustomerSupportWorkflowService } from './services/customer-support-workflow.service';
-import { TicketManagementService } from './services/ticket-management.service';
-import { UserInterruptionManagementService } from './services/user-interruption-management.service';
-import { MetricsAnalyticsService } from './services/metrics-analytics.service';
-import { KnowledgeBaseManagementService } from './services/knowledge-base-management.service';
-import { AgentRegistryService } from './core/agent-registry.service';
-import { GithubActivityIntegrationService } from './core/integrations/github-activity.integration';
-import { ContentAnalysisService } from './core/analysis/content-analysis.service';
+import { DevBrandSupervisorWorkflow } from './workflows/devbrand-supervisor.workflow';
+import { DevBrandChatWorkflow } from './workflows/devbrand-chat.workflow';
 import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
-import { DocumentProcessingTools } from './core/tools/document-processing.tools';
 import { WebResearchTools } from './core/tools/web-research.tools';
 import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
-// Showcase module fully removed; above imports are consolidated production equivalents
 
 /**
- * Business Workflows Module
- * Uses services configured in the main app module
- * No duplicate configuration - follows proper NestJS module patterns
+ * DevBrand Chat Studio MVP Module - Post-Legacy Cleanup
+ * 
+ * Streamlined module focused on DevBrand Chat Studio MVP requirements:
+ * - 3 core agents (GitHub Analysis, Brand Strategy, Content Creation)
+ * - 2 functional-api workflows (Supervisor, Chat)
+ * - Real business logic with ChromaDB + Neo4j + LLM integration
+ * - Web research tool for social media profile discovery
  */
 @Module({
   imports: [
-    // Only import ConfigModule for configuration access
-    ConfigModule,
-  // HITL providers are now global via HitlModule.forRoot in AppModule; no local import needed
+    ConfigModule, // For environment configuration
+    WorkflowEngineModule, // Required for DeclarativeWorkflowBase services
+    MultiAgentModule, // Required for Agent decorator services
   ],
   providers: [
-    // Core AI Agents
-    CustomerSupportAgent,
+    // MVP Core Agents - Using new decorator architecture
     GitHubCodeAnalyzerAgent,
-    PersonalBrandStrategistAgent,
+    PersonalBrandStrategistAgent, // Reference implementation with workflow-agent type
     ContentCreatorAgent,
 
-    // Workflow Orchestrators
-    CustomerSupportWorkflow,
-    EnhancedSupportWorkflow,
+    // MVP Functional-API Workflows
+    DevBrandSupervisorWorkflow, // Multi-agent coordination
+    DevBrandChatWorkflow, // Chat interface workflow
 
-    // Business Services
-    BusinessMetricsService,
-    KnowledgeBaseService,
-    CustomerSupportWorkflowService,
+    // Core Business Services
+    PersonalBrandMemoryService, // ChromaDB + Neo4j integration
 
-    // Controller Delegate Services - Added for SRP compliance
-    TicketManagementService,
-    UserInterruptionManagementService,
-    MetricsAnalyticsService,
-    KnowledgeBaseManagementService,
-    AgentRegistryService,
-    // Migrated services/tools formerly under showcase
-    GithubActivityIntegrationService,
-    ContentAnalysisService,
-    PersonalBrandMemoryService,
-    DocumentProcessingTools,
-    WebResearchTools,
-  // Missing provider causing DI failure for GitHubCodeAnalyzerAgent
-  GitHubIntegrationTools,
+    // MVP Tools - Kept per user request
+    WebResearchTools, // Social media profile searching
+    GitHubIntegrationTools, // GitHub API integration
 
-    // Configuration providers using proper config pattern
+    // DevBrand Configuration
     {
-      provide: 'CUSTOMER_SUPPORT_CONFIG',
+      provide: 'DEVBRAND_CONFIG',
       useFactory: (configService: ConfigService) => ({
-        maxSimilarTickets: configService.get(
-          'CUSTOMER_SUPPORT_MAX_SIMILAR_TICKETS',
-          5
-        ),
-        sentimentThreshold: configService.get(
-          'CUSTOMER_SUPPORT_SENTIMENT_THRESHOLD',
-          -0.3
-        ),
-        escalationThreshold: configService.get(
-          'CUSTOMER_SUPPORT_ESCALATION_THRESHOLD',
-          0.8
-        ),
-        approvalRequired: {
-          enterpriseCustomers: configService.get(
-            'CUSTOMER_SUPPORT_APPROVAL_ENTERPRISE',
-            true
-          ),
-          highValueTickets: configService.get(
-            'CUSTOMER_SUPPORT_APPROVAL_HIGH_VALUE',
-            true
-          ),
-          sentimentThreshold: configService.get(
-            'CUSTOMER_SUPPORT_APPROVAL_SENTIMENT_THRESHOLD',
-            -0.5
-          ),
+        platforms: {
+          linkedin: {
+            enabled: configService.get('DEVBRAND_LINKEDIN_ENABLED', true),
+            contentTypes: ['technical-insights', 'career-updates', 'thought-leadership'],
+          },
+          devto: {
+            enabled: configService.get('DEVBRAND_DEVTO_ENABLED', true),
+            contentTypes: ['tutorials', 'case-studies', 'technology-reviews'],
+          },
         },
-        llmConfig: {
+        github: {
+          analysisDepth: configService.get('DEVBRAND_GITHUB_ANALYSIS_DEPTH', 'detailed'),
+          timeframe: configService.get('DEVBRAND_GITHUB_TIMEFRAME', 'month'),
+          includePrivate: configService.get('DEVBRAND_GITHUB_INCLUDE_PRIVATE', false),
+        },
+        memory: {
+          namespace: 'devbrand-chat-studio',
+          retentionDays: configService.get('DEVBRAND_MEMORY_RETENTION_DAYS', 90),
+          vectorCollection: 'personal_brand_knowledge',
+        },
+        llm: {
           model: configService.get('LLM_MODEL', 'gpt-4'),
           temperature: configService.get('LLM_TEMPERATURE', 0.7),
           maxTokens: configService.get('LLM_MAX_TOKENS', 1000),
           streaming: configService.get('LLM_STREAMING', true),
-        },
-        vectorSearch: {
-          collection: 'support_knowledge_base',
-          similarityThreshold: configService.get(
-            'VECTOR_SIMILARITY_THRESHOLD',
-            0.7
-          ),
-          maxResults: configService.get('VECTOR_MAX_RESULTS', 5),
         },
       }),
       inject: [ConfigService],
     },
   ],
   controllers: [
-    // REST API Controllers - RE-ENABLED AFTER DI METADATA FIX
-    CustomerSupportController,
+    // No controllers in MVP - workflows are triggered via LangGraph
   ],
   exports: [
-    // Export key services for use in other modules
-    CustomerSupportAgent, // RE-ENABLED AFTER DI METADATA FIX
-    CustomerSupportWorkflow, // Functional-API pattern
-    EnhancedSupportWorkflow, // Multi-agent orchestration pattern
-    BusinessMetricsService,
-    KnowledgeBaseService,
-    CustomerSupportWorkflowService,
+    // Export MVP components for other modules
+    GitHubCodeAnalyzerAgent,
+    PersonalBrandStrategistAgent,
+    ContentCreatorAgent,
+    DevBrandSupervisorWorkflow,
+    DevBrandChatWorkflow,
+    PersonalBrandMemoryService,
+    WebResearchTools,
+    GitHubIntegrationTools,
   ],
 })
 export class BusinessWorkflowsModule {
