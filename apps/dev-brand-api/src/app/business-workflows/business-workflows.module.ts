@@ -4,9 +4,9 @@ import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 
 // DevBrand Chat Studio MVP Components (Post-Legacy Cleanup)
-import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer.agent';
-import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist.agent';
-import { ContentCreatorAgent } from './agents/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer/github-code-analyzer.agent';
+import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from './agents/content-creator/content-creator.agent';
 import { DevBrandSupervisorWorkflow } from './workflows/devbrand-supervisor.workflow';
 import { DevBrandChatWorkflow } from './workflows/devbrand-chat.workflow';
 import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
