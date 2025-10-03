@@ -20,7 +20,9 @@ export class MemoryGraphService {
   private readonly logger = new Logger(MemoryGraphService.name);
 
   constructor(
+    @Inject('IGraphService')
     private readonly graphService: IGraphService,
+    @Inject('IVectorService')
     private readonly vectorService: IVectorService,
     @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {
@@ -100,7 +102,10 @@ export class MemoryGraphService {
       const memoryData = memories.map((memory) => ({
         threadId: memory.threadId,
         memoryId: memory.id,
-        content: memory.content.substring(0, this.config.limits?.memoryContentLimit || 1000), // Configurable content length limit
+        content: memory.content.substring(
+          0,
+          this.config.limits?.memoryContentLimit || 1000
+        ), // Configurable content length limit
         type: memory.metadata.type,
         importance: memory.metadata.importance || 0.5,
         createdAt: memory.createdAt.toISOString(),
@@ -150,33 +155,51 @@ export class MemoryGraphService {
     }
 
     const strategy = this.config.semanticRelationships.strategy || 'hybrid';
-    const maxRelationships = this.config.semanticRelationships.maxRelationshipsPerMemory || 5;
+    const maxRelationships =
+      this.config.semanticRelationships.maxRelationshipsPerMemory || 5;
 
     try {
       let totalRelationships = 0;
 
       switch (strategy) {
         case 'vector_similarity':
-          totalRelationships = await this.buildVectorBasedRelationships(maxRelationships);
+          totalRelationships = await this.buildVectorBasedRelationships(
+            maxRelationships
+          );
           break;
         case 'word_matching':
-          totalRelationships = await this.buildWordMatchingRelationships(maxRelationships);
+          totalRelationships = await this.buildWordMatchingRelationships(
+            maxRelationships
+          );
           break;
         case 'hybrid':
         default:
           // Try vector similarity first, fallback to word matching
           try {
-            totalRelationships = await this.buildVectorBasedRelationships(maxRelationships);
-            this.logger.debug(`Built ${totalRelationships} relationships using vector similarity`);
+            totalRelationships = await this.buildVectorBasedRelationships(
+              maxRelationships
+            );
+            this.logger.debug(
+              `Built ${totalRelationships} relationships using vector similarity`
+            );
           } catch (vectorError) {
-            this.logger.warn('Vector similarity failed, falling back to word matching', vectorError);
-            totalRelationships = await this.buildWordMatchingRelationships(maxRelationships);
-            this.logger.debug(`Built ${totalRelationships} relationships using word matching fallback`);
+            this.logger.warn(
+              'Vector similarity failed, falling back to word matching',
+              vectorError
+            );
+            totalRelationships = await this.buildWordMatchingRelationships(
+              maxRelationships
+            );
+            this.logger.debug(
+              `Built ${totalRelationships} relationships using word matching fallback`
+            );
           }
           break;
       }
 
-      this.logger.debug(`Built ${totalRelationships} semantic relationships using ${strategy} strategy`);
+      this.logger.debug(
+        `Built ${totalRelationships} semantic relationships using ${strategy} strategy`
+      );
     } catch (error) {
       this.logger.warn(`Failed to build semantic relationships`, error);
     }
@@ -185,7 +208,9 @@ export class MemoryGraphService {
   /**
    * Build relationships using vector similarity (requires vector service)
    */
-  private async buildVectorBasedRelationships(maxRelationships: number): Promise<number> {
+  private async buildVectorBasedRelationships(
+    maxRelationships: number
+  ): Promise<number> {
     try {
       // Get all memories from graph to compare
       const allMemoriesQuery = `
@@ -193,15 +218,18 @@ export class MemoryGraphService {
         RETURN m.id as id, m.content as content
         LIMIT ${this.config.limits?.countAccuracyLimit || 1000}
       `;
-      
-      const memoriesResult = await this.graphService.executeCypher(allMemoriesQuery);
-      const memories = memoriesResult.records.map(record => ({
+
+      const memoriesResult = await this.graphService.executeCypher(
+        allMemoriesQuery
+      );
+      const memories = memoriesResult.records.map((record) => ({
         id: record.id as string,
         content: record.content as string,
       }));
 
       let totalCreated = 0;
-      const similarityThreshold = this.config.semanticRelationships?.similarityThreshold || 0.7;
+      const similarityThreshold =
+        this.config.semanticRelationships?.similarityThreshold || 0.7;
       const collection = this.config.collection || 'memory_store';
 
       // For each memory, find similar memories using vector search
@@ -213,11 +241,15 @@ export class MemoryGraphService {
             limit: maxRelationships * 2, // Get more to filter out self and apply threshold
           });
 
-          const relationships: Array<{ targetId: string; strength: number }> = [];
+          const relationships: Array<{ targetId: string; strength: number }> =
+            [];
 
           for (const similar of similarMemories) {
             // Skip self-references and apply similarity threshold
-            if (similar.id !== memory.id && (similar.relevanceScore || 0) >= similarityThreshold) {
+            if (
+              similar.id !== memory.id &&
+              (similar.relevanceScore || 0) >= similarityThreshold
+            ) {
               relationships.push({
                 targetId: similar.id,
                 strength: similar.relevanceScore || 0,
@@ -242,30 +274,43 @@ export class MemoryGraphService {
               RETURN count(*) as created
             `;
 
-            const result = await this.graphService.executeCypher(relationshipCypher, {
-              sourceId: memory.id,
-              targetId: rel.targetId,
-              strength: rel.strength,
-            });
+            const result = await this.graphService.executeCypher(
+              relationshipCypher,
+              {
+                sourceId: memory.id,
+                targetId: rel.targetId,
+                strength: rel.strength,
+              }
+            );
 
             totalCreated += (result.records[0]?.created as number) || 0;
           }
         } catch (memoryError) {
-          this.logger.debug(`Failed to process memory ${memory.id}`, memoryError);
+          this.logger.debug(
+            `Failed to process memory ${memory.id}`,
+            memoryError
+          );
         }
       }
 
       return totalCreated;
     } catch (error) {
-      throw new Error(`Vector-based relationship building failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Vector-based relationship building failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
   /**
    * Build relationships using word matching (APOC-independent)
    */
-  private async buildWordMatchingRelationships(maxRelationships: number): Promise<number> {
-    const minCommonWords = this.config.semanticRelationships?.minCommonWords || 2;
+  private async buildWordMatchingRelationships(
+    maxRelationships: number
+  ): Promise<number> {
+    const minCommonWords =
+      this.config.semanticRelationships?.minCommonWords || 2;
     const requireApoc = this.config.semanticRelationships?.requireApoc ?? false;
 
     try {
@@ -323,8 +368,14 @@ export class MemoryGraphService {
       const recordValue = result.records[0]?.relationshipsCreated;
       return typeof recordValue === 'number' ? recordValue : 0;
     } catch (error) {
-      if (error instanceof Error && error.message?.includes('apoc') && !requireApoc) {
-        throw new Error('APOC procedures not available and requireApoc is false');
+      if (
+        error instanceof Error &&
+        error.message?.includes('apoc') &&
+        !requireApoc
+      ) {
+        throw new Error(
+          'APOC procedures not available and requireApoc is false'
+        );
       }
       throw error;
     }

@@ -45,9 +45,7 @@
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": [
-      "D:\\projects\\nestjs-ai-saas-starter"
-    ]
+    "additionalDirectories": ["D:\\projects\\nestjs-ai-saas-starter"]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
@@ -55,5 +53,6 @@
     "nx-mcp",
     "angular-cli",
     "fetch"
-  ]
+  ],
+  "outputStyle": "default"
 }

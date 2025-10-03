@@ -71,9 +71,8 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       MEMORY_CONFIG,
-      // Export adapter interfaces for external use
-      IVectorService,
-      IGraphService,
+      // NOTE: IVectorService and IGraphService are NOT exported here
+      // They are provided by the application module via adapter injection
     ];
 
     if (options.adapters?.vector) {
@@ -113,38 +112,49 @@ export class MemoryModule {
    * NOTE: Updated to follow adapter pattern - no direct database imports
    */
   static forRootAsync(options: MemoryModuleAsyncOptions): DynamicModule {
-    // Apply same adapter pattern as forRoot
-    const adapterProviders = this.createAdapterProvidersAsync(options);
+    const providers: Provider[] = [
+      // Async configuration provider (creates MEMORY_CONFIG with adapters from useFactory)
+      ...this.createAsyncProviders(options),
+      // Core services
+      MemoryStorageService,
+      MemoryGraphService,
+      MemoryService,
+    ];
+
+    const exports: any[] = [
+      MemoryService,
+      MemoryStorageService,
+      MemoryGraphService,
+      MEMORY_CONFIG,
+    ];
+
+    // Create IMemoryAdapter provider - adapters come from MEMORY_CONFIG (provided by app.module.ts)
+    providers.push({
+      provide: 'IMemoryAdapter',
+      useFactory: (
+        memoryService: MemoryService,
+        config: MemoryModuleOptions
+      ) => {
+        if (config.adapters?.vector) {
+          return new MemoryManagerAdapter(
+            memoryService,
+            config.adapters.vector,
+            config.adapters.graph
+          );
+        }
+        return null;
+      },
+      inject: [MemoryService, MEMORY_CONFIG],
+    });
+
+    exports.push('IMemoryAdapter');
 
     return {
       module: MemoryModule,
-      imports: [
-        ConfigModule,
-        // NOTE: No database module imports - adapters handle their own connections
-        ...(options.imports || []),
-      ],
-      providers: [
-        // Async configuration provider
-        ...this.createAsyncProviders(options),
-        // Adapter providers (self-contained)
-        ...adapterProviders,
-        // Core services
-        MemoryStorageService,
-        MemoryGraphService,
-        MemoryService,
-      ],
-      exports: [
-        MemoryService,
-        MemoryStorageService,
-        MemoryGraphService,
-        MEMORY_CONFIG,
-        // Export adapter interfaces for external use
-        IVectorService,
-        IGraphService,
-        // NEW: Export memory adapter when available
-        ...(options.adapters?.vector ? ['IMemoryAdapter'] : []),
-      ],
-      global: true, // ← Make memory global like checkpoint
+      imports: [ConfigModule, ...(options.imports || [])],
+      providers,
+      exports,
+      global: true,
     };
   }
 
@@ -328,17 +338,15 @@ export class MemoryModule {
 
   /**
    * Create adapter providers for async configuration
-   * Applications must provide adapters - no defaults available
+   * For async configuration, adapters are provided through the useFactory inject mechanism
+   * This method returns empty array since adapters come from factory dependencies
    */
   private static createAdapterProvidersAsync(
     options: MemoryModuleAsyncOptions
   ): Provider[] {
-    // For async configuration, applications must provide adapters through dependency injection
-    // or extend MemoryModuleAsyncOptions to support adapter configuration
-    throw new Error(
-      'MemoryModule.forRootAsync() requires adapters to be provided through dependency injection. ' +
-        'Please ensure IVectorService and IGraphService are provided in your application module.'
-    );
+    // For async configuration, adapters are provided via useFactory inject[]
+    // No additional providers needed here
+    return [];
   }
 
   /**

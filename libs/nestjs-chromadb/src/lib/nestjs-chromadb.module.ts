@@ -15,36 +15,36 @@ import {
   ChromaDBOptionsFactory,
   CollectionConfig,
 } from './interfaces/config';
+import { CacheCleanupService } from './services/caching/cache-cleanup.service';
+import { CacheOperationsService } from './services/caching/cache-operations.service';
+import { CacheStatisticsService } from './services/caching/cache-statistics.service';
+import { CacheStore } from './services/caching/cache-store.service';
+import {
+  CacheKeyGeneratorService,
+  SizeEstimatorService,
+  TtlCalculatorService,
+} from './services/caching/cache-utilities.service';
+import { ChromaCacheService } from './services/caching/chroma-cache.service';
+import { VectorCacheService } from './services/caching/vector-cache.service';
 import { ChromaAdminService } from './services/chroma-admin.service';
+import { ChromaMetricsService } from './services/chroma-metrics.service';
 import { ChromaDBService } from './services/chromadb.service';
 import { ChromaDBCollectionService } from './services/core/chromadb-collection.service';
 import { ChromaDBConnectionService } from './services/core/chromadb-connection.service';
-import { ChromaDBOperationsService } from './services/core/chromadb-operations.service';
 import { ChromaDBDocumentService } from './services/core/chromadb-document.service';
+import { ChromaDBOperationsService } from './services/core/chromadb-operations.service';
 import { ChromaDBRepositoryService } from './services/core/chromadb-repository.service';
 import { ChromaDBValidationService } from './services/core/chromadb-validation.service';
+import { DocumentSanitizerService } from './services/core/validation/document-sanitizer.service';
 import { DocumentValidatorService } from './services/core/validation/document-validator.service';
 import { OptionsValidatorService } from './services/core/validation/options-validator.service';
-import { DocumentSanitizerService } from './services/core/validation/document-sanitizer.service';
-import { ChromaDBPerformanceService } from './services/facade/chromadb-performance.service';
-import { ChromaDBEmbeddingProcessorService } from './services/facade/chromadb-embedding-processor.service';
 import { EmbeddingService } from './services/embedding.service';
-import { TextSplitterService } from './services/text-splitter.service';
+import { ChromaDBEmbeddingProcessorService } from './services/facade/chromadb-embedding-processor.service';
+import { ChromaDBPerformanceService } from './services/facade/chromadb-performance.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
-import { ChromaMetricsService } from './services/chroma-metrics.service';
-import { ChromaCacheService } from './services/caching/chroma-cache.service';
-import { VectorCacheService } from './services/caching/vector-cache.service';
-import { CacheOperationsService } from './services/caching/cache-operations.service';
-import { CacheStatisticsService } from './services/caching/cache-statistics.service';
-import { CacheCleanupService } from './services/caching/cache-cleanup.service';
-import {
-  CacheKeyGeneratorService,
-  TtlCalculatorService,
-  SizeEstimatorService,
-} from './services/caching/cache-utilities.service';
-import { CacheConfig } from './services/caching/cache-interfaces';
-import { TypeConversionUtils } from './utils/data/type-conversion.utils';
+import { TextSplitterService } from './services/text-splitter.service';
 import { setChromaDBConfig } from './utils/config/chromadb-config.accessor';
+import { TypeConversionUtils } from './utils/data/type-conversion.utils';
 import { validateChromaDBOptions } from './validation/validate-chromadb-options';
 
 @Global()
@@ -129,41 +129,19 @@ export class ChromaDBModule {
       TextSplitterService,
       TypeConversionUtils,
       ChromaMetricsService,
-      {
-        provide: ChromaCacheService,
-        useFactory: () => new ChromaCacheService({}),
-      },
-      // Cache utility services must be defined before VectorCacheService
-      CacheOperationsService,
-      CacheStatisticsService,
-      CacheCleanupService,
+      ChromaCacheService,
+      // Cache utility services and infrastructure
       CacheKeyGeneratorService,
       TtlCalculatorService,
       SizeEstimatorService,
-      // Now VectorCacheService can use the above services
-      {
-        provide: VectorCacheService,
-        useFactory: (
-          cacheOps: CacheOperationsService,
-          keyGen: CacheKeyGeneratorService,
-          ttlCalc: TtlCalculatorService
-        ) => {
-          const config: Required<CacheConfig> = {
-            maxSize: 1000,
-            maxSizeBytes: 100 * 1024 * 1024, // 100MB
-            defaultTtl: 300000, // 5 minutes
-            cleanupInterval: 60000, // 1 minute
-            enableLRU: true,
-            enableStatistics: true,
-          };
-          return new VectorCacheService(cacheOps, keyGen, ttlCalc, config);
-        },
-        inject: [
-          CacheOperationsService,
-          CacheKeyGeneratorService,
-          TtlCalculatorService,
-        ],
-      },
+      // Central cache store - owns the Map, config, and stats
+      CacheStore,
+      // Cache services - now just simple registrations
+      CacheOperationsService,
+      CacheStatisticsService,
+      CacheCleanupService,
+      // VectorCacheService - simple registration
+      VectorCacheService,
       ChromaDBConnectionService,
       ChromaDBDocumentService,
       ChromaDBRepositoryService,
@@ -172,7 +150,16 @@ export class ChromaDBModule {
       OptionsValidatorService,
       DocumentSanitizerService,
       ChromaDBValidationService,
-      ChromaDBPerformanceService,
+      {
+        provide: ChromaDBPerformanceService,
+        useFactory: (
+          metrics?: ChromaMetricsService,
+          cache?: ChromaCacheService
+        ) => {
+          return new ChromaDBPerformanceService(metrics, cache, {});
+        },
+        inject: [ChromaMetricsService, ChromaCacheService],
+      },
       ChromaDBEmbeddingProcessorService,
       ChromaDBService,
     ];
@@ -260,41 +247,19 @@ export class ChromaDBModule {
       TextSplitterService,
       TypeConversionUtils,
       ChromaMetricsService,
-      {
-        provide: ChromaCacheService,
-        useFactory: () => new ChromaCacheService({}),
-      },
-      // Cache utility services must be defined before VectorCacheService
-      CacheOperationsService,
-      CacheStatisticsService,
-      CacheCleanupService,
+      ChromaCacheService,
+      // Cache utility services and infrastructure
       CacheKeyGeneratorService,
       TtlCalculatorService,
       SizeEstimatorService,
-      // Now VectorCacheService can use the above services
-      {
-        provide: VectorCacheService,
-        useFactory: (
-          cacheOps: CacheOperationsService,
-          keyGen: CacheKeyGeneratorService,
-          ttlCalc: TtlCalculatorService
-        ) => {
-          const config: Required<CacheConfig> = {
-            maxSize: 1000,
-            maxSizeBytes: 100 * 1024 * 1024, // 100MB
-            defaultTtl: 300000, // 5 minutes
-            cleanupInterval: 60000, // 1 minute
-            enableLRU: true,
-            enableStatistics: true,
-          };
-          return new VectorCacheService(cacheOps, keyGen, ttlCalc, config);
-        },
-        inject: [
-          CacheOperationsService,
-          CacheKeyGeneratorService,
-          TtlCalculatorService,
-        ],
-      },
+      // Central cache store - owns the Map, config, and stats
+      CacheStore,
+      // Cache services - now just simple registrations
+      CacheOperationsService,
+      CacheStatisticsService,
+      CacheCleanupService,
+      // VectorCacheService - simple registration
+      VectorCacheService,
       ChromaDBConnectionService,
       ChromaDBDocumentService,
       ChromaDBRepositoryService,
@@ -303,7 +268,16 @@ export class ChromaDBModule {
       OptionsValidatorService,
       DocumentSanitizerService,
       ChromaDBValidationService,
-      ChromaDBPerformanceService,
+      {
+        provide: ChromaDBPerformanceService,
+        useFactory: (
+          metrics?: ChromaMetricsService,
+          cache?: ChromaCacheService
+        ) => {
+          return new ChromaDBPerformanceService(metrics, cache, {});
+        },
+        inject: [ChromaMetricsService, ChromaCacheService],
+      },
       ChromaDBEmbeddingProcessorService,
       ChromaDBService,
     ];

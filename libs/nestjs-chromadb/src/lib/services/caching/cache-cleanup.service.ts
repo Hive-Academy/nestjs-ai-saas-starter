@@ -4,6 +4,7 @@ import {
   CacheKeyGeneratorService,
   TtlCalculatorService,
 } from './cache-utilities.service';
+import { CacheStore } from './cache-store.service';
 
 /**
  * Cache cleanup and eviction service - handles cache maintenance operations
@@ -12,13 +13,17 @@ import {
 @Injectable()
 export class CacheCleanupService implements ICacheCleanup {
   private readonly logger = new Logger(CacheCleanupService.name);
+  private readonly cache: Map<string, CacheEntry>;
+  private readonly config: Required<CacheConfig>;
 
   constructor(
-    private readonly cache: Map<string, CacheEntry>,
-    private readonly config: Required<CacheConfig>,
+    private readonly cacheStore: CacheStore,
     private readonly keyGenerator: CacheKeyGeneratorService,
     private readonly ttlCalculator: TtlCalculatorService
-  ) {}
+  ) {
+    this.cache = this.cacheStore.getCache();
+    this.config = this.cacheStore.getConfig();
+  }
 
   /**
    * Delete entries matching a pattern

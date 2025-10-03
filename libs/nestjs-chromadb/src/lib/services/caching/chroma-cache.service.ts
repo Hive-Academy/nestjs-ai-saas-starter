@@ -15,6 +15,7 @@ import { CacheOperationsService } from './cache-operations.service';
 import { CacheStatisticsService } from './cache-statistics.service';
 import { CacheCleanupService } from './cache-cleanup.service';
 import { VectorCacheService } from './vector-cache.service';
+import { CacheStore } from './cache-store.service';
 import {
   CacheKeyGeneratorService,
   TtlCalculatorService,
@@ -36,64 +37,22 @@ export class ChromaCacheService
     OnModuleDestroy
 {
   private readonly logger = new Logger(ChromaCacheService.name);
-  private readonly cache = new Map<string, CacheEntry>();
+  private readonly cache: Map<string, CacheEntry>;
   private readonly config: Required<CacheConfig>;
-  private readonly stats: MutableCacheStats = { hits: 0, misses: 0 };
+  private readonly stats: MutableCacheStats;
   private cleanupTimer?: NodeJS.Timeout;
 
-  // Specialized services implementing ISP
-  private readonly cacheOps: CacheOperationsService;
-  private readonly cacheStats: CacheStatisticsService;
-  private readonly cacheCleanup: CacheCleanupService;
-  private readonly vectorCache: VectorCacheService;
-
-  // Utility services
-  private readonly keyGenerator: CacheKeyGeneratorService;
-  private readonly ttlCalculator: TtlCalculatorService;
-  private readonly sizeEstimator: SizeEstimatorService;
-
-  constructor(config: CacheConfig = {}) {
-    this.config = {
-      maxSize: 1000,
-      maxSizeBytes: 100 * 1024 * 1024, // 100MB
-      defaultTtl: 300000, // 5 minutes
-      cleanupInterval: 60000, // 1 minute
-      enableLRU: true,
-      enableStatistics: true,
-      ...config,
-    };
-
-    // Initialize utility services
-    this.keyGenerator = new CacheKeyGeneratorService();
-    this.ttlCalculator = new TtlCalculatorService();
-    this.sizeEstimator = new SizeEstimatorService();
-
-    // Initialize specialized services with shared state
-    // All services share the same cache Map and stats object for coordination
-    this.cacheOps = new CacheOperationsService(
-      this.cache,
-      this.config,
-      this.stats,
-      this.ttlCalculator,
-      this.sizeEstimator
-    );
-    this.cacheStats = new CacheStatisticsService(
-      this.cache,
-      this.config,
-      this.stats
-    );
-    this.cacheCleanup = new CacheCleanupService(
-      this.cache,
-      this.config,
-      this.keyGenerator,
-      this.ttlCalculator
-    );
-    this.vectorCache = new VectorCacheService(
-      this.cacheOps,
-      this.keyGenerator,
-      this.ttlCalculator,
-      this.config
-    );
+  constructor(
+    private readonly cacheStore: CacheStore,
+    private readonly cacheOps: CacheOperationsService,
+    private readonly cacheStats: CacheStatisticsService,
+    private readonly cacheCleanup: CacheCleanupService,
+    private readonly vectorCache: VectorCacheService
+  ) {
+    // Get shared infrastructure from CacheStore
+    this.cache = this.cacheStore.getCache();
+    this.config = this.cacheStore.getConfig();
+    this.stats = this.cacheStore.getStats();
 
     this.startCleanupTimer();
     this.logger.log('ChromaCacheService initialized with segregated services');

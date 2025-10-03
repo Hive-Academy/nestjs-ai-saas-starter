@@ -127,6 +127,9 @@ export function ChromaRepository<TDocument extends BaseDocument = BaseDocument>(
 
       private findChromaService(args: any[]): ChromaDBService | null {
         // Look for ChromaDBService in constructor arguments
+        this.logger.debug(
+          `Searching for ChromaDBService in constructor arguments: ${args}`
+        );
         for (const arg of args) {
           if (isChromaDBService(arg)) {
             return arg;

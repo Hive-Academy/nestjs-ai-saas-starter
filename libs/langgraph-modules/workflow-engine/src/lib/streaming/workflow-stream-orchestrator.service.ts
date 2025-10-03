@@ -32,10 +32,10 @@ import { StreamEventProcessorService } from './stream-event-processor.service';
 
 /**
  * Orchestrator service that coordinates all workflow streaming capabilities
- * 
+ *
  * This service maintains backward compatibility by providing the same public API
  * as the original WorkflowStreamService while delegating work to focused services.
- * 
+ *
  * Responsibilities:
  * - Public API orchestration
  * - Service coordination
@@ -44,7 +44,9 @@ import { StreamEventProcessorService } from './stream-event-processor.service';
  * - Backward compatibility maintenance
  */
 @Injectable()
-export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModuleDestroy {
+export class WorkflowStreamOrchestratorService
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(WorkflowStreamOrchestratorService.name);
   private readonly checkpointingEnabled: boolean;
 
@@ -53,8 +55,11 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
     private readonly streamManagement: StreamManagementService,
     private readonly tokenProcessor: TokenProcessingService,
     private readonly eventProcessor: StreamEventProcessorService,
+    @Inject('IStreamingService')
     private readonly streamingService: IStreamingService,
-    @Optional() private readonly checkpointAdapter?: ICheckpointAdapter
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
   ) {
     this.checkpointingEnabled = !!this.checkpointAdapter;
   }
@@ -71,10 +76,12 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
 
   /**
    * Stream workflow execution with comprehensive streaming capabilities
-   * 
+   *
    * Main entry point maintaining backward compatibility
    */
-  async *streamExecution<TState extends Record<string, any> = Record<string, any>>(
+  async *streamExecution<
+    TState extends Record<string, any> = Record<string, any>
+  >(
     graph: StateGraph<TState>,
     input: TState,
     options: {
@@ -84,17 +91,23 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       includeMetadata?: boolean;
     }
   ): AsyncGenerator<StreamUpdate> {
-    const { executionId, streamConfig, includeDebugInfo, includeMetadata } = options;
-    
-    this.logger.debug(`Starting orchestrated stream execution for ${executionId}`);
-    
+    const { executionId, streamConfig, includeDebugInfo, includeMetadata } =
+      options;
+
+    this.logger.debug(
+      `Starting orchestrated stream execution for ${executionId}`
+    );
+
     try {
       // Get stream (createStream method doesn't exist)
       const stream = this.streamManagement.getStream(executionId);
-      
+
       // Save initial checkpoint if enabled
       if (this.checkpointingEnabled && includeMetadata) {
-        const initialCheckpoint = await this.saveInitialCheckpoint(executionId, input);
+        const initialCheckpoint = await this.saveInitialCheckpoint(
+          executionId,
+          input
+        );
         yield this.eventProcessor.createCheckpointEvent(
           executionId,
           'workflow',
@@ -120,9 +133,8 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
           },
         };
       };
-      
+
       for await (const update of mockGenerator()) {
-        
         // Emit through our stream
         stream.next(update);
         yield update;
@@ -152,7 +164,10 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
 
       // Save final checkpoint if enabled
       if (this.checkpointingEnabled && includeMetadata) {
-        const finalCheckpoint = await this.saveFinalCheckpoint(executionId, input);
+        const finalCheckpoint = await this.saveFinalCheckpoint(
+          executionId,
+          input
+        );
         yield this.eventProcessor.createCheckpointEvent(
           executionId,
           'workflow',
@@ -161,11 +176,15 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
         );
       }
 
-      this.logger.debug(`Orchestrated stream execution completed for ${executionId}`);
-
+      this.logger.debug(
+        `Orchestrated stream execution completed for ${executionId}`
+      );
     } catch (error) {
-      this.logger.error(`Orchestrated stream execution failed for ${executionId}:`, error);
-      
+      this.logger.error(
+        `Orchestrated stream execution failed for ${executionId}:`,
+        error
+      );
+
       yield {
         type: StreamEventType.ERROR,
         data: {
@@ -197,13 +216,22 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       tokenStreamOptions?: TokenStreamOptions;
     }
   ): AsyncGenerator<StreamUpdate> {
-    const { executionId, nodeId = 'message_processor', tokenStreamOptions } = options;
-    
-    this.logger.debug(`Streaming tokens for ${messages.length} messages in ${executionId}`);
-    
+    const {
+      executionId,
+      nodeId = 'message_processor',
+      tokenStreamOptions,
+    } = options;
+
+    this.logger.debug(
+      `Streaming tokens for ${messages.length} messages in ${executionId}`
+    );
+
     try {
       // Get token stream configuration
-      const tokenConfig = this.streamManagement.getTokenStreamConfig(executionId, nodeId) || {
+      const tokenConfig = this.streamManagement.getTokenStreamConfig(
+        executionId,
+        nodeId
+      ) || {
         methodName: 'streamTokens',
         enabled: true,
         bufferSize: tokenStreamOptions?.bufferSize || 50,
@@ -211,11 +239,18 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       };
 
       // Delegate to token processor
-      yield* this.tokenProcessor.streamMessageTokens(executionId, nodeId, messages, tokenConfig);
-
+      yield* this.tokenProcessor.streamMessageTokens(
+        executionId,
+        nodeId,
+        messages,
+        tokenConfig
+      );
     } catch (error) {
-      this.logger.error(`Message token streaming failed for ${executionId}:`, error);
-      
+      this.logger.error(
+        `Message token streaming failed for ${executionId}:`,
+        error
+      );
+
       yield {
         type: StreamEventType.ERROR,
         data: {
@@ -243,13 +278,22 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       tokenStreamOptions?: TokenStreamOptions;
     }
   ): AsyncGenerator<StreamUpdate> {
-    const { executionId, nodeId = 'token_processor', tokenStreamOptions } = options;
-    
-    this.logger.debug(`Streaming tokens for content in ${executionId}:${nodeId}`);
-    
+    const {
+      executionId,
+      nodeId = 'token_processor',
+      tokenStreamOptions,
+    } = options;
+
+    this.logger.debug(
+      `Streaming tokens for content in ${executionId}:${nodeId}`
+    );
+
     try {
       // Get token stream configuration
-      const tokenConfig = this.streamManagement.getTokenStreamConfig(executionId, nodeId) || {
+      const tokenConfig = this.streamManagement.getTokenStreamConfig(
+        executionId,
+        nodeId
+      ) || {
         methodName: 'streamTokens',
         enabled: true,
         bufferSize: tokenStreamOptions?.bufferSize || 50,
@@ -257,11 +301,15 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       };
 
       // Delegate to token processor
-      yield* this.tokenProcessor.streamTokens(executionId, nodeId, content, tokenConfig);
-
+      yield* this.tokenProcessor.streamTokens(
+        executionId,
+        nodeId,
+        content,
+        tokenConfig
+      );
     } catch (error) {
       this.logger.error(`Token streaming failed for ${executionId}:`, error);
-      
+
       yield {
         type: StreamEventType.ERROR,
         data: {
@@ -283,7 +331,7 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
    */
   getStreamObservable(executionId: string): Observable<StreamUpdate> {
     const stream = this.streamManagement.getStream(executionId);
-    
+
     if (!stream) {
       throw new Error(`No stream found for execution ${executionId}`);
     }
@@ -299,7 +347,7 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
     eventTypes: StreamEventType[]
   ): Observable<StreamUpdate> {
     return this.getStreamObservable(executionId).pipe(
-      filter(update => eventTypes.includes(update.type))
+      filter((update) => eventTypes.includes(update.type))
     );
   }
 
@@ -308,15 +356,19 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
    */
   getTokenStreamObservable(executionId: string): Observable<TokenData[]> {
     return this.getStreamObservable(executionId).pipe(
-      filter(update => update.type === StreamEventType.TOKEN),
-      map(update => update.data.tokens || [update.data])
+      filter((update) => update.type === StreamEventType.TOKEN),
+      map((update) => update.data.tokens || [update.data])
     );
   }
 
   /**
    * Update streaming configuration (backward compatibility)
    */
-  updateStreamingConfig(data: { executionId: string; nodeId: string; config: any }): void {
+  updateStreamingConfig(data: {
+    executionId: string;
+    nodeId: string;
+    config: any;
+  }): void {
     this.streamManagement.updateStreamingConfig(data);
     this.eventEmitter.emit('streaming.config.update', data);
   }
@@ -331,7 +383,7 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
   } {
     const streamHealth = this.streamManagement.getStreamHealthStatus();
     const tokenHealth = this.tokenProcessor.getBufferStatus();
-    
+
     const services = {
       streamManagement: this.streamManagement ? 'available' : 'unavailable',
       tokenProcessor: this.tokenProcessor ? 'available' : 'unavailable',
@@ -340,8 +392,10 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       checkpointAdapter: this.checkpointAdapter ? 'available' : 'unavailable',
     } as Record<string, 'available' | 'unavailable'>;
 
-    const allServicesHealthy = Object.values(services).every(status => status === 'available');
-    
+    const allServicesHealthy = Object.values(services).every(
+      (status) => status === 'available'
+    );
+
     let status: 'healthy' | 'degraded' | 'unhealthy';
     if (allServicesHealthy && streamHealth.status === 'healthy') {
       status = 'healthy';
@@ -365,26 +419,33 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
   /**
    * Force cleanup of resources
    */
-  async forceCleanup(): Promise<{ streamsCleanedUp: number; buffersCleanedUp: number }> {
-    
+  async forceCleanup(): Promise<{
+    streamsCleanedUp: number;
+    buffersCleanedUp: number;
+  }> {
     // Force cleanup stale streams
     const streamsCleanedUp = this.streamManagement.cleanupStaleStreams();
-    
+
     // Force flush all token buffers
     const buffersCleanedUp = await this.tokenProcessor.forceFlushAllBuffers();
-    
-    this.logger.log(`Force cleanup completed: ${streamsCleanedUp} streams, ${buffersCleanedUp} buffers`);
-    
+
+    this.logger.log(
+      `Force cleanup completed: ${streamsCleanedUp} streams, ${buffersCleanedUp} buffers`
+    );
+
     return { streamsCleanedUp, buffersCleanedUp };
   }
 
   /**
    * Setup streaming configurations based on stream config
    */
-  private setupStreamingConfigurations(executionId: string, streamConfig: StreamMetadata): void {
+  private setupStreamingConfigurations(
+    executionId: string,
+    streamConfig: StreamMetadata
+  ): void {
     // This would typically extract decorator metadata and setup appropriate configurations
     // For now, we'll setup basic configurations
-    
+
     if (streamConfig.enableTokenStreaming) {
       this.streamManagement.setTokenStreamConfig(executionId, 'default', {
         methodName: 'tokenStream',
@@ -416,15 +477,20 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
   /**
    * Check if token streaming should be enabled for update
    */
-  private shouldStreamTokens(update: StreamUpdate, streamConfig?: StreamMetadata): boolean {
+  private shouldStreamTokens(
+    update: StreamUpdate,
+    streamConfig?: StreamMetadata
+  ): boolean {
     if (!streamConfig?.enableTokenStreaming) {
       return false;
     }
 
     // Check if update contains content that should be tokenized
-    return update.type === StreamEventType.NODE_START &&
-           update.data?.nodeData?.content &&
-           typeof update.data.nodeData.content === 'string';
+    return (
+      update.type === StreamEventType.NODE_START &&
+      update.data?.nodeData?.content &&
+      typeof update.data.nodeData.content === 'string'
+    );
   }
 
   /**
@@ -439,13 +505,21 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       const content = update.data?.nodeData?.content;
       if (content && typeof content === 'string') {
         const nodeId = update.metadata?.nodeId || 'unknown';
-        const tokenConfig = this.streamManagement.getTokenStreamConfig(executionId, nodeId) || {
+        const tokenConfig = this.streamManagement.getTokenStreamConfig(
+          executionId,
+          nodeId
+        ) || {
           methodName: 'streamTokens',
           enabled: true,
           bufferSize: 50,
           flushInterval: 100,
         };
-        yield* this.tokenProcessor.streamTokens(executionId, nodeId, content, tokenConfig);
+        yield* this.tokenProcessor.streamTokens(
+          executionId,
+          nodeId,
+          content,
+          tokenConfig
+        );
       }
     } catch (error) {
       this.logger.warn(`Token streaming failed for update:`, error);
@@ -462,7 +536,9 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
         nodeId: update.metadata?.nodeId || 'unknown',
         dataKeys: Object.keys(update.data || {}),
         timestamp: update.metadata?.timestamp || new Date(),
-        sequence: this.streamManagement.getNextSequence(update.metadata?.executionId || 'unknown'),
+        sequence: this.streamManagement.getNextSequence(
+          update.metadata?.executionId || 'unknown'
+        ),
       };
     } catch (error) {
       return null;
@@ -544,5 +620,4 @@ export class WorkflowStreamOrchestratorService implements OnModuleInit, OnModule
       payload: metadata,
     };
   }
-
 }

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { IStreamingService } from '@hive-academy/langgraph-core';
 import type {
   StreamTokenDecoratorMetadata,
@@ -21,7 +21,10 @@ import type {
 export class StreamManagementService {
   private readonly logger = new Logger(StreamManagementService.name);
 
-  constructor(private readonly streamingService: IStreamingService) {}
+  constructor(
+    @Inject('IStreamingService')
+    private readonly streamingService: IStreamingService
+  ) {}
 
   /**
    * Initialize token stream - delegates to adapter

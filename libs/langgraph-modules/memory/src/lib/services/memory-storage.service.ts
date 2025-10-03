@@ -24,6 +24,7 @@ export class MemoryStorageService {
   private readonly logger = new Logger(MemoryStorageService.name);
 
   constructor(
+    @Inject('IVectorService')
     private readonly vectorService: IVectorService,
     @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {}
@@ -337,7 +338,7 @@ export class MemoryStorageService {
       let averageSize = 150; // Default fallback
       if (sampleResults.documents && sampleResults.documents.length > 0) {
         const totalSize = sampleResults.documents
-          .filter(doc => doc !== null)
+          .filter((doc) => doc !== null)
           .reduce((sum, doc) => sum + (doc?.length || 0), 0);
         averageSize = Math.round(totalSize / sampleResults.documents.length);
       }
@@ -345,7 +346,8 @@ export class MemoryStorageService {
       return {
         totalMemories: stats.documentCount || 0,
         averageSize,
-        totalStorageUsed: stats.collectionSize || (stats.documentCount * averageSize),
+        totalStorageUsed:
+          stats.collectionSize || stats.documentCount * averageSize,
       };
     } catch (error) {
       this.logger.error('Failed to get vector stats', error);
@@ -376,9 +378,14 @@ export class MemoryStorageService {
       // Estimate operations based on document count
       const documentCount = stats.documentCount || 0;
       const estimatedSearchCount = Math.floor(documentCount * 0.1); // 10% search ratio
-      const largeCollectionThreshold = this.config.limits?.countAccuracyLimit || 1000;
-      const averageSearchTime = documentCount > largeCollectionThreshold ? 75 : 45; // Slower with more docs
-      const cacheHitRate = documentCount > (this.config.limits?.batchOperationLimit || 100) ? 0.85 : 0.95; // Better cache for smaller collections
+      const largeCollectionThreshold =
+        this.config.limits?.countAccuracyLimit || 1000;
+      const averageSearchTime =
+        documentCount > largeCollectionThreshold ? 75 : 45; // Slower with more docs
+      const cacheHitRate =
+        documentCount > (this.config.limits?.batchOperationLimit || 100)
+          ? 0.85
+          : 0.95; // Better cache for smaller collections
 
       return {
         searchCount: estimatedSearchCount,

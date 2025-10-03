@@ -98,9 +98,9 @@ export interface MemoryModuleAsyncOptions
   useExisting?: Type<MemoryOptionsFactory>;
   useClass?: Type<MemoryOptionsFactory>;
   useFactory?: (
-    ...args: unknown[]
+    ...args: any[]
   ) => Promise<MemoryModuleOptions> | MemoryModuleOptions;
-  inject?: unknown[];
+  inject?: any[];
 
   /**
    * Optional adapter injection for async configuration

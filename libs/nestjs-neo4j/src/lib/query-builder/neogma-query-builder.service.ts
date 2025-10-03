@@ -33,14 +33,22 @@ export interface QueryBuilderConfig {
 @Injectable()
 export class NeogmaQueryBuilderService {
   private readonly logger = new Logger(NeogmaQueryBuilderService.name);
-  private readonly config: Required<QueryBuilderConfig>;
+  private readonly config: Required<QueryBuilderConfig> = {
+    enableLogging: false,
+    defaultLimit: 100,
+    maxLimit: 1000,
+  };
 
-  constructor(config?: QueryBuilderConfig) {
-    this.config = {
-      enableLogging: config?.enableLogging ?? false,
-      defaultLimit: config?.defaultLimit ?? 100,
-      maxLimit: config?.maxLimit ?? 1000,
-    };
+  constructor() {
+    // Config is now internal with sensible defaults
+    // Can be modified via updateConfig() if needed
+  }
+
+  /**
+   * Update query builder configuration (optional)
+   */
+  updateConfig(updates: Partial<QueryBuilderConfig>): void {
+    Object.assign(this.config, updates);
   }
 
   /**

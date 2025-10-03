@@ -8,7 +8,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { Neogma } from 'neogma';
 import { QueryBuilder } from 'neogma';
-import { NEOGMA_TOKEN } from '../constants/neogma.constants';
+import { NEOGMA_TOKEN } from '../neogma/neogma.constants';
 import {
   type NeogmaEntity,
   type TypedNeogmaModel,

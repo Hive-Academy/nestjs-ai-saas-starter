@@ -19,6 +19,9 @@ import { MultiAgentTranslationService } from './services/multi-agent-translation
 import { GraphPatternsService } from './core/graph-patterns.service';
 import { GraphOptimizationService } from './core/graph-optimization.service';
 import { AgentWorkflowBridgeService } from './services/agent-workflow-bridge.service';
+import { AgentRegistrationService } from './services/agent-registration.service';
+import { AgentResolutionService } from './services/agent-resolution.service';
+import { AgentCoordinationService } from './services/agent-coordination.service';
 import { CentralRegistryService } from './services/central-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
@@ -119,6 +122,10 @@ export class WorkflowEngineModule {
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
+        // Agent services
+        AgentRegistrationService,
+        AgentResolutionService,
+        AgentCoordinationService,
         AgentWorkflowBridgeService,
         // CENTRALIZED REGISTRATION: Provider arrays for central registry
         {
@@ -179,6 +186,10 @@ export class WorkflowEngineModule {
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
+        // Agent services
+        AgentRegistrationService,
+        AgentResolutionService,
+        AgentCoordinationService,
         AgentWorkflowBridgeService,
         CentralRegistryService,
       ],
@@ -242,6 +253,10 @@ export class WorkflowEngineModule {
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
+        // Agent services
+        AgentRegistrationService,
+        AgentResolutionService,
+        AgentCoordinationService,
         AgentWorkflowBridgeService,
         // CENTRALIZED REGISTRATION: Provider arrays for central registry
         {
@@ -302,6 +317,10 @@ export class WorkflowEngineModule {
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
+        // Agent services
+        AgentRegistrationService,
+        AgentResolutionService,
+        AgentCoordinationService,
         AgentWorkflowBridgeService,
         CentralRegistryService,
       ],
