@@ -219,6 +219,61 @@ export {
 } from './lib/services/neo4j-crud.service';
 
 // =============================================================================
+// TYPEORM-STYLE REPOSITORY PATTERN (v2.0.0+)
+// =============================================================================
+
+/**
+ * TypeORM-Style Auto-Generated Repositories
+ *
+ * These exports enable zero-boilerplate repository injection following
+ * the same pattern as TypeORM/Mongoose:
+ *
+ * @example
+ * ```typescript
+ * // Simple CRUD (auto-generated repository)
+ * @Module({
+ *   imports: [Neo4jModule.forFeature([User, Post])]
+ * })
+ * export class UserModule {}
+ *
+ * @Injectable()
+ * export class UserService {
+ *   constructor(
+ *     @InjectRepository(User)
+ *     private userRepo: Neo4jRepository<User>
+ *   ) {}
+ *
+ *   async getUser(id: string) {
+ *     return this.userRepo.findById(id);  // Works immediately
+ *   }
+ * }
+ *
+ * // Custom repository (extends base class)
+ * @Injectable()
+ * export class UserRepository extends Neo4jRepository<User> {
+ *   constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+ *     super(User, 'User', neogma, crud);
+ *   }
+ *
+ *   async findByEmail(email: string) {
+ *     const qb = this.createQueryBuilder();
+ *     // ... custom query
+ *   }
+ * }
+ * ```
+ */
+
+// Base Repository Class
+export { Neo4jRepository as Neo4jRepositoryBase } from './lib/repositories/neo4j-repository';
+
+// Injection Decorators
+export {
+  InjectRepository,
+  getRepositoryToken,
+  getEntityLabel,
+} from './lib/decorators/inject-repository.decorator';
+
+// =============================================================================
 // EXAMPLES AND DOCUMENTATION
 // =============================================================================
 

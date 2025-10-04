@@ -14,6 +14,7 @@ import type { NeogmaModuleOptions } from './neogma/neogma.interfaces';
 import { NeogmaService } from './services/neogma.service';
 import { NeogmaMetricsService } from './services/neogma-metrics.service';
 import { NeogmaConnectionService } from './services/neogma-connection.service';
+import { Neo4jCrudService } from './services/neo4j-crud.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';
 import { NeogmaModule } from './neogma/neogma.module';
 
@@ -83,6 +84,8 @@ export class Neo4jModule {
       NeogmaService,
       NeogmaMetricsService,
       NeogmaConnectionService,
+      // CRUD Service (GLOBAL - for TypeORM-style repositories)
+      Neo4jCrudService,
       // Modern QueryBuilder Services
       NeogmaQueryBuilderService,
       NeogmaQueryRunnerService,
@@ -109,6 +112,8 @@ export class Neo4jModule {
         NeogmaService,
         NeogmaMetricsService,
         NeogmaConnectionService,
+        // CRUD Service (GLOBAL - for TypeORM-style repositories)
+        Neo4jCrudService,
         // Modern QueryBuilder Services
         NeogmaQueryBuilderService,
         NeogmaQueryRunnerService,
@@ -151,6 +156,8 @@ export class Neo4jModule {
       NeogmaService,
       NeogmaMetricsService,
       NeogmaConnectionService,
+      // CRUD Service (GLOBAL - for TypeORM-style repositories)
+      Neo4jCrudService,
       // Modern QueryBuilder Services
       NeogmaQueryBuilderService,
       NeogmaQueryRunnerService,
@@ -183,6 +190,8 @@ export class Neo4jModule {
         NeogmaService,
         NeogmaMetricsService,
         NeogmaConnectionService,
+        // CRUD Service (GLOBAL - for TypeORM-style repositories)
+        Neo4jCrudService,
         // Modern QueryBuilder Services
         NeogmaQueryBuilderService,
         NeogmaQueryRunnerService,
@@ -200,9 +209,104 @@ export class Neo4jModule {
   }
 
   /**
-   * Register specific database sessions
+   * Register repositories for specified entities (TypeORM-style pattern)
+   *
+   * This method auto-generates repositories for entities, eliminating the need for
+   * manual repository boilerplate. It follows the same pattern as TypeORM/Mongoose.
+   *
+   * Features:
+   * - Auto-generates Neo4jRepository<T> for each entity
+   * - Uses factory pattern with NeogmaService + Neo4jCrudService injection
+   * - Supports custom repository override via provider pattern
+   * - Full type safety with TypeScript generics
+   *
+   * @param entities - Array of entity classes decorated with @Neo4jEntity
+   * @returns DynamicModule with auto-generated repository providers
+   *
+   * @example
+   * ```typescript
+   * // Simple CRUD (auto-generated repository)
+   * @Module({
+   *   imports: [
+   *     Neo4jModule.forRoot({ ... }),
+   *     Neo4jModule.forFeature([User, Post, Comment])
+   *   ]
+   * })
+   * export class UserModule {}
+   *
+   * @Injectable()
+   * export class UserService {
+   *   constructor(
+   *     @InjectRepository(User)
+   *     private userRepo: Neo4jRepository<User>
+   *   ) {}
+   *
+   *   async getUser(id: string) {
+   *     return this.userRepo.findById(id);  // Auto-generated method
+   *   }
+   * }
+   *
+   * // Custom repository (override auto-generated)
+   * @Injectable()
+   * export class UserRepository extends Neo4jRepository<User> {
+   *   constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+   *     super(User, 'User', neogma, crud);
+   *   }
+   *
+   *   async findByEmail(email: string) {
+   *     // Custom method
+   *   }
+   * }
+   *
+   * @Module({
+   *   imports: [Neo4jModule.forFeature([User])],
+   *   providers: [
+   *     {
+   *       provide: getRepositoryToken(User),
+   *       useClass: UserRepository  // Override with custom repository
+   *     }
+   *   ]
+   * })
+   * export class UserModule {}
+   * ```
    */
-  public static forFeature(databases: string[]): DynamicModule {
+  public static forFeature(entities: Type<unknown>[]): DynamicModule {
+    const providers: Provider[] = entities.map((entity) => {
+      // Dynamically import at runtime to avoid circular dependencies
+      const {
+        getRepositoryToken,
+        getEntityLabel,
+      } = require('./decorators/inject-repository.decorator');
+      const { Neo4jRepository } = require('./repositories/neo4j-repository');
+
+      const label = getEntityLabel(entity);
+      const repositoryToken = getRepositoryToken(entity);
+
+      return {
+        provide: repositoryToken,
+        useFactory: (neogma: NeogmaService, crud: Neo4jCrudService) => {
+          return new Neo4jRepository(entity, label, neogma, crud);
+        },
+        inject: [NeogmaService, Neo4jCrudService],
+      };
+    });
+
+    return {
+      module: Neo4jModule,
+      providers,
+      exports: providers,
+    };
+  }
+
+  /**
+   * Register specific database sessions (DEPRECATED - use forFeature(entities) instead)
+   *
+   * This method is deprecated in favor of the TypeORM-style forFeature(entities) pattern.
+   * It will be removed in v3.0.0.
+   *
+   * @deprecated Use forFeature(entities: Type<any>[]) for repository auto-generation
+   */
+  public static forFeatureDatabases(databases: string[]): DynamicModule {
     const providers = databases.map((database) => ({
       provide: `NEO4J_SESSION_${database}`,
       useFactory: (driver: neo4j.Driver) => {
