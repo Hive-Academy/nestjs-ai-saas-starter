@@ -1,66 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import {
   Neo4jRepository,
-  InjectNeogma,
   NeogmaService,
   Safe,
-  Neo4jCrudService,
-  type FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { Achievement } from '../../entities/neo4j/achievement.entity';
 
 /**
- * Achievement Repository (Composition Pattern)
+ * Achievement Repository
  *
  * For: personal-brand-memory.service.ts (1,271 lines)
  *
+ * Extends Neo4jRepository<Achievement> for automatic CRUD operations.
  * Provides type-safe operations for achievement tracking including
- * innovation analysis, technology usage patterns, and personal brand insights
- * using modern composition pattern (NO inheritance).
+ * innovation analysis, technology usage patterns, and personal brand insights.
+ *
+ * CRUD methods (inherited from Neo4jRepository<Achievement>):
+ * - findById, findAll, create, update, delete, count, exists
  */
-@Neo4jRepository(() => Achievement)
 @Injectable()
-export class AchievementRepository {
-  private readonly label = 'Achievement';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // ============================================================================
-  // CRUD OPERATIONS (Delegated to Neo4jCrudService)
-  // ============================================================================
-
-  async findById(id: string): Promise<Achievement | null> {
-    return this.crud.findById<Achievement>(this.label, id);
-  }
-
-  async findAll(options?: FindOptions<Achievement>): Promise<Achievement[]> {
-    return this.crud.findAll<Achievement>(this.label, options);
-  }
-
-  async create(data: Partial<Achievement>): Promise<Achievement> {
-    return this.crud.create<Achievement>(this.label, data);
-  }
-
-  async update(
-    id: string,
-    updates: Partial<Achievement>
-  ): Promise<Achievement | null> {
-    return this.crud.update<Achievement>(this.label, id, updates);
-  }
-
-  async delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  async count(where?: Partial<Achievement>): Promise<number> {
-    return this.crud.count<Achievement>(this.label, where);
-  }
-
-  async exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
+export class AchievementRepository extends Neo4jRepository<Achievement> {
+  constructor(neogma: NeogmaService) {
+    super(Achievement, neogma);
   }
 
   // ============================================================================

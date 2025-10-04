@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
   Neo4jRepository,
-  Neo4jCrudService,
-  InjectNeogma,
   NeogmaService,
   Safe,
-  FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { FeedbackEntry as FeedbackEntityType } from '../../entities/neo4j/feedback-entry.entity';
 import {
@@ -24,67 +21,17 @@ import type {
  *
  * Replaces: neo4j-feedback-storage.adapter.ts (530 lines)
  *
- * Uses composition pattern with Neo4jCrudService for CRUD operations.
+ * Extends Neo4jRepository<FeedbackEntityType> for automatic CRUD operations.
  * Provides type-safe operations for feedback storage and analytics including
  * AI learning insights, provider analytics, and feedback processing.
  *
- * CRUD methods (delegated to Neo4jCrudService):
- * - findById(id: string): Promise<FeedbackEntityType | null>
- * - findAll(options?: FindOptions<FeedbackEntityType>): Promise<FeedbackEntityType[]>
- * - create(data: Partial<FeedbackEntityType>): Promise<FeedbackEntityType>
- * - update(id: string, updates: Partial<FeedbackEntityType>): Promise<FeedbackEntityType | null>
- * - delete(id: string): Promise<boolean>
- * - count(where?: Partial<FeedbackEntityType>): Promise<number>
- * - exists(id: string): Promise<boolean>
+ * CRUD methods (inherited from Neo4jRepository<FeedbackEntityType>):
+ * - findById, findAll, create, update, delete, count, exists
  */
-@Neo4jRepository(() => FeedbackEntityType)
 @Injectable()
-export class FeedbackRepository {
-  private readonly label = 'FeedbackEntry';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // ============================================================================
-  // CRUD METHODS (delegated to Neo4jCrudService)
-  // ============================================================================
-
-  findById(id: string): Promise<FeedbackEntityType | null> {
-    return this.crud.findById<FeedbackEntityType>(this.label, id);
-  }
-
-  findAll(
-    options?: FindOptions<FeedbackEntityType>
-  ): Promise<FeedbackEntityType[]> {
-    return this.crud.findAll<FeedbackEntityType>(this.label, options);
-  }
-
-  create(data: Partial<FeedbackEntityType>): Promise<FeedbackEntityType> {
-    return this.crud.create<FeedbackEntityType>(
-      this.label,
-      data as Omit<FeedbackEntityType, 'id' | 'createdAt' | 'updatedAt'>
-    );
-  }
-
-  update(
-    id: string,
-    data: Partial<FeedbackEntityType>
-  ): Promise<FeedbackEntityType | null> {
-    return this.crud.update<FeedbackEntityType>(this.label, id, data);
-  }
-
-  delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<FeedbackEntityType>): Promise<number> {
-    return this.crud.count<FeedbackEntityType>(this.label, where);
-  }
-
-  exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
+export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
+  constructor(neogma: NeogmaService) {
+    super(FeedbackEntityType, neogma);
   }
 
   // ============================================================================

@@ -1,66 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import {
   Neo4jRepository,
-  InjectNeogma,
   NeogmaService,
   Safe,
-  Neo4jCrudService,
-  type FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { Developer } from '../../entities/neo4j/developer.entity';
 
 /**
- * Developer Repository (Composition Pattern)
+ * Developer Repository
  *
  * For: personal-brand-memory.service.ts (1,271 lines)
  *
+ * Extends Neo4jRepository<Developer> for automatic CRUD operations.
  * Provides type-safe operations for developer profile management including
- * analytics tracking, skill development, and personal brand insights
- * using modern composition pattern (NO inheritance).
+ * analytics tracking, skill development, and personal brand insights.
+ *
+ * CRUD methods (inherited from Neo4jRepository<Developer>):
+ * - findById, findAll, create, update, delete, count, exists
  */
-@Neo4jRepository(() => Developer)
 @Injectable()
-export class DeveloperRepository {
-  private readonly label = 'Developer';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // ============================================================================
-  // CRUD OPERATIONS (Delegated to Neo4jCrudService)
-  // ============================================================================
-
-  async findById(id: string): Promise<Developer | null> {
-    return this.crud.findById<Developer>(this.label, id);
-  }
-
-  async findAll(options?: FindOptions<Developer>): Promise<Developer[]> {
-    return this.crud.findAll<Developer>(this.label, options);
-  }
-
-  async create(data: Partial<Developer>): Promise<Developer> {
-    return this.crud.create<Developer>(this.label, data);
-  }
-
-  async update(
-    id: string,
-    updates: Partial<Developer>
-  ): Promise<Developer | null> {
-    return this.crud.update<Developer>(this.label, id, updates);
-  }
-
-  async delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  async count(where?: Partial<Developer>): Promise<number> {
-    return this.crud.count<Developer>(this.label, where);
-  }
-
-  async exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
+export class DeveloperRepository extends Neo4jRepository<Developer> {
+  constructor(neogma: NeogmaService) {
+    super(Developer, neogma);
   }
 
   // ============================================================================

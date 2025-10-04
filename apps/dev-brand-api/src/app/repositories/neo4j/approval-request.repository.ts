@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
   Neo4jRepository,
-  Neo4jCrudService,
-  InjectNeogma,
   NeogmaService,
   Safe,
-  FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import {
@@ -19,22 +16,15 @@ import type {
 } from '@hive-academy/langgraph-hitl';
 
 /**
- * ApprovalRequest Repository
+ * ApprovalRequest Repository (TypeORM-Style)
  *
  * Replaces: neo4j-hitl-storage.adapter.ts (500 lines)
  *
- * Uses composition pattern with Neo4jCrudService for CRUD operations.
- * Provides type-safe CRUD operations and custom business methods
- * for HITL approval request management.
+ * Extends Neo4jRepository<ApprovalRequest> for automatic CRUD operations.
+ * Inherits 9 CRUD methods automatically (no manual delegation needed).
  *
- * CRUD methods (delegated to Neo4jCrudService):
- * - findById(id: string): Promise<ApprovalRequest | null>
- * - findAll(options?: FindOptions): Promise<ApprovalRequest[]>
- * - create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
- * - update(id: string, updates: Partial<ApprovalRequest>): Promise<ApprovalRequest | null>
- * - delete(id: string): Promise<boolean>
- * - count(where?: Partial<ApprovalRequest>): Promise<number>
- * - exists(id: string): Promise<boolean>
+ * Inherited CRUD methods (from Neo4jRepository base class):
+ * - findById, findAll, findOne, create, update, delete, count, exists, save
  *
  * Custom methods for approval workflow:
  * - storeApprovalRequest(): Store new approval request
@@ -46,53 +36,10 @@ import type {
  * - deleteExpiredApprovals(): Clean up expired approvals
  * - getStorageStats(): Get storage statistics
  */
-@Neo4jRepository(() => ApprovalRequest)
 @Injectable()
-export class ApprovalRequestRepository {
-  private readonly label = 'ApprovalRequest';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // ============================================================================
-  // CRUD METHODS (delegated to Neo4jCrudService)
-  // ============================================================================
-
-  findById(id: string): Promise<ApprovalRequest | null> {
-    return this.crud.findById<ApprovalRequest>(this.label, id);
-  }
-
-  findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]> {
-    return this.crud.findAll<ApprovalRequest>(this.label, options);
-  }
-
-  create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest> {
-    return this.crud.create<ApprovalRequest>(
-      this.label,
-      data as Omit<ApprovalRequest, 'id' | 'createdAt' | 'updatedAt'>
-    );
-  }
-
-  update(
-    id: string,
-    data: Partial<ApprovalRequest>
-  ): Promise<ApprovalRequest | null> {
-    return this.crud.update<ApprovalRequest>(this.label, id, data);
-  }
-
-  delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<ApprovalRequest>): Promise<number> {
-    return this.crud.count<ApprovalRequest>(this.label, where);
-  }
-
-  exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
-  }
+export class ApprovalRequestRepository extends Neo4jRepository<ApprovalRequest> {
+  // ✅ Inherits ALL CRUD methods from Neo4jRepository base class (9 methods)
+  // ✅ No manual delegation needed - ZERO boilerplate!
 
   // ============================================================================
   // CUSTOM BUSINESS METHODS (migrated from legacy adapter)

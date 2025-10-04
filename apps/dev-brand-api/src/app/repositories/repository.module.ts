@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-import { Neo4jModule, Neo4jCrudService } from '@hive-academy/nestjs-neo4j';
+import { Neo4jModule, getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 
 // Memory Repositories
 import { MemoryGraphRepository } from './neo4j/memory-graph.repository';
@@ -17,6 +17,15 @@ import { FeedbackRepository } from './neo4j/feedback.repository';
 import { DeveloperRepository } from './neo4j/developer.repository';
 import { AchievementRepository } from './neo4j/achievement.repository';
 
+// Neo4j Entities (for forFeature registration)
+import { Memory } from '../entities/neo4j/memory.entity';
+import { ApprovalRequest } from '../entities/neo4j/approval-request.entity';
+import { InterruptionPoint } from '../entities/neo4j/interruption.entity';
+import { ConfidencePattern } from '../entities/neo4j/confidence-pattern.entity';
+import { FeedbackEntry } from '../entities/neo4j/feedback.entity';
+import { Developer } from '../entities/neo4j/developer.entity';
+import { Achievement } from '../entities/neo4j/achievement.entity';
+
 // Graph Services
 import { GraphTraversalService } from './services/graph-traversal.service';
 import { GraphAgentService } from './services/graph-agent.service';
@@ -24,17 +33,29 @@ import { GraphCrudService } from './services/graph-crud.service';
 import { GraphHelpersService } from './services/graph-helpers.service';
 
 /**
- * Repository Module - Exports all repository services
+ * Repository Module - TypeORM-Style Pattern
  *
- * CRITICAL: Must import ChromaDBModule for @ChromaRepository decorator to work
  * ARCHITECTURE:
- * - Provides Memory repositories and their dependencies
- * - HITL repositories must be explicitly exported for AdaptersModule injection
- * - Exports repositories for use in adapters
- * - Imported by AdaptersModule
+ * - Uses Neo4jModule.forFeature() to auto-generate repositories
+ * - Custom repositories override defaults via provider pattern
+ * - Exports via getRepositoryToken() for type-safe injection
+ * - ChromaDB repositories remain unchanged
  */
 @Module({
-  imports: [ChromaDBModule, Neo4jModule],
+  imports: [
+    ChromaDBModule,
+    Neo4jModule,
+    // ✅ Auto-generate Neo4j repositories for all entities
+    Neo4jModule.forFeature([
+      Memory,
+      ApprovalRequest,
+      InterruptionPoint,
+      ConfidencePattern,
+      FeedbackEntry,
+      Developer,
+      Achievement,
+    ]),
+  ],
   providers: [
     // Graph services (dependencies of MemoryGraphRepository)
     GraphTraversalService,
@@ -42,36 +63,55 @@ import { GraphHelpersService } from './services/graph-helpers.service';
     GraphCrudService,
     GraphHelpersService,
 
-    // Memory Repositories (manually registered)
-    MemoryGraphRepository,
+    // ChromaDB Repository (unchanged)
     VectorMemoryRepository,
 
-    // HITL Repositories (explicitly provided for AdaptersModule injection)
-    ApprovalRequestRepository,
-    ApprovalChainRepository,
-    InterruptionRepository,
-    ConfidencePatternRepository,
-    FeedbackRepository,
-
-    // Business Domain Repositories
-    DeveloperRepository,
-    AchievementRepository,
+    // ✅ Custom Neo4j Repositories (override auto-generated defaults)
+    {
+      provide: getRepositoryToken(Memory),
+      useClass: MemoryGraphRepository,
+    },
+    {
+      provide: getRepositoryToken(ApprovalRequest),
+      useClass: ApprovalRequestRepository,
+    },
+    {
+      provide: getRepositoryToken(ApprovalRequest),
+      useClass: ApprovalChainRepository,
+    },
+    {
+      provide: getRepositoryToken(InterruptionPoint),
+      useClass: InterruptionRepository,
+    },
+    {
+      provide: getRepositoryToken(ConfidencePattern),
+      useClass: ConfidencePatternRepository,
+    },
+    {
+      provide: getRepositoryToken(FeedbackEntry),
+      useClass: FeedbackRepository,
+    },
+    {
+      provide: getRepositoryToken(Developer),
+      useClass: DeveloperRepository,
+    },
+    {
+      provide: getRepositoryToken(Achievement),
+      useClass: AchievementRepository,
+    },
   ],
   exports: [
-    // Memory Repositories
-    MemoryGraphRepository,
+    // ChromaDB Repository
     VectorMemoryRepository,
 
-    // HITL Repositories (explicitly exported for AdaptersModule injection)
-    ApprovalRequestRepository,
-    ApprovalChainRepository,
-    InterruptionRepository,
-    ConfidencePatternRepository,
-    FeedbackRepository,
-
-    // Business Domain Repositories
-    DeveloperRepository,
-    AchievementRepository,
+    // ✅ Neo4j Repositories (exported via injection tokens)
+    getRepositoryToken(Memory),
+    getRepositoryToken(ApprovalRequest),
+    getRepositoryToken(InterruptionPoint),
+    getRepositoryToken(ConfidencePattern),
+    getRepositoryToken(FeedbackEntry),
+    getRepositoryToken(Developer),
+    getRepositoryToken(Achievement),
   ],
 })
 export class RepositoryModule {}

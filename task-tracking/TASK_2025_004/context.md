@@ -22,19 +22,18 @@ Refactor Neo4j library to TypeORM-style pattern with auto-generated repositories
 
 ## Important Notes
 
-- CRITICAL: Must fix existing TypeScript errors in Neo4j library before refactoring
-- Neo4j library currently has 100+ TypeScript compilation errors in example files
-- HITL module has 2 TypeScript errors related to interface mismatches
+- **USER FEEDBACK**: Skip Phase 0 (fixing old pattern errors) - implement NEW pattern first, then examples will use new pattern
+- TypeScript errors in examples use OLD manual pattern - will be replaced with NEW auto-generated pattern
 - No backward compatibility - direct replacement approach only
 - Zero tolerance for stubs or placeholder implementations
 - 8 application repositories to migrate (~392 lines of boilerplate to remove)
-- 6 example files to update
+- 6 example files to update with NEW pattern (will fix errors naturally)
 
-## Dependencies
+## Implementation Strategy (Corrected)
 
-- Requires TypeScript error fixes in:
-    - libs/nestjs-neo4j/src/examples/*.ts (100+ errors)
-    - libs/langgraph-modules/hitl/src/lib/services/human-approval.service.ts (2 errors)
+1. **Phase 1 FIRST**: Implement new TypeORM-style pattern (Neo4jRepository<T>, @InjectRepository, forFeature)
+2. **Phase 4**: Update examples to use NEW pattern (this fixes all TypeScript errors naturally)
+3. **No need to fix old pattern** - we're replacing it completely
 
 ## Expected Outcomes
 

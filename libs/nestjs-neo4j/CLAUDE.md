@@ -931,3 +931,227 @@ export class EntityRepository extends BaseRepositoryService<EntityType> {
   // Add custom business methods here
 }
 ```
+
+## Repository Pattern (TypeORM-Style) - NEW
+
+### Auto-Generated Repositories (Zero Boilerplate)
+
+For simple CRUD operations, use auto-generated repositories with **ZERO manual code**:
+
+```typescript
+// 1. Entity definition (already exists - no changes)
+@Neo4jEntity('User')
+export class User extends Neo4jBaseEntity {
+  @Id() id: string;
+  @Neo4jProp() @NotNull() email: string;
+  @Neo4jProp() name: string;
+}
+
+// 2. Register entities in module (TypeORM-style)
+@Module({
+  imports: [
+    Neo4jModule.forFeature([User, Post, Comment])  // Auto-generates repositories!
+  ],
+  providers: [UserService]
+})
+export class UserModule {}
+
+// 3. Inject and use repository (WORKS IMMEDIATELY)
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)  // Auto-injection!
+    private userRepo: Neo4jRepository<User>  // Fully functional
+  ) {}
+
+  async getUser(id: string) {
+    // Works immediately - NO manual code needed
+    return this.userRepo.findById(id);
+  }
+
+  async getAllUsers() {
+    return this.userRepo.findAll();
+  }
+
+  async createUser(data: Partial<User>) {
+    return this.userRepo.create(data);
+  }
+
+  async searchUsers(criteria: Partial<User>) {
+    return this.userRepo.findAll({ where: criteria });
+  }
+}
+```
+
+**Benefits**:
+- Zero boilerplate code
+- TypeORM/Mongoose ecosystem consistency
+- Full TypeScript type safety
+- All CRUD methods work immediately (findById, findAll, create, update, delete, count, exists, save)
+
+### Custom Repositories (Extend Base)
+
+For custom business logic, extend the base repository:
+
+```typescript
+// 1. Define custom repository (extends base)
+@Injectable()
+export class ApprovalRequestRepository extends Neo4jRepository<ApprovalRequest> {
+  // Inherits ALL CRUD methods from base (9 methods)
+  // Add ONLY custom business logic
+
+  async storeApprovalRequest(request: ApprovalStorageData): Promise<string> {
+    const qb = this.createQueryBuilder();  // Helper from base
+    const bindParam = qb.getBindParam();
+
+    const idParam = bindParam.add(request.id);
+    const statusParam = bindParam.add(request.status);
+
+    qb.create(`(a:ApprovalRequest {
+      id: $${idParam},
+      status: $${statusParam},
+      createdAt: datetime()
+    })`).return('a.id as id');
+
+    const result = await this.executeQuery(qb.getStatement(), bindParam.get());
+    return result.records[0].get('id');
+  }
+
+  async getPendingApprovals(): Promise<ApprovalRequest[]> {
+    const qb = this.createQueryBuilder();
+    const bindParam = qb.getBindParam();
+
+    const statusParam = bindParam.add('pending');
+
+    qb.match('(a:ApprovalRequest)')
+      .where(`a.status = $${statusParam}`)
+      .return('a')
+      .orderBy('a.requestedAt ASC');
+
+    const result = await this.executeQuery(qb.getStatement(), bindParam.get());
+    return result.records.map(r => r.get('a').properties);
+  }
+}
+
+// 2. Register custom repository (replaces default)
+@Module({
+  imports: [Neo4jModule.forFeature([ApprovalRequest])],
+  providers: [
+    {
+      provide: getRepositoryToken(ApprovalRequest),  // Replace default
+      useClass: ApprovalRequestRepository
+    },
+    HitlService
+  ],
+  exports: [getRepositoryToken(ApprovalRequest)]
+})
+export class HitlModule {}
+
+// 3. Inject custom repository (same injection pattern)
+@Injectable()
+export class HitlService {
+  constructor(
+    @InjectRepository(ApprovalRequest)  // Injects custom repository
+    private approvalRepo: ApprovalRequestRepository
+  ) {}
+
+  async getPending() {
+    return this.approvalRepo.getPendingApprovals();  // Custom method
+  }
+
+  async findById(id: string) {
+    return this.approvalRepo.findById(id);  // Inherited CRUD method
+  }
+}
+```
+
+**Benefits**:
+- No manual CRUD delegation (49 lines saved per repository)
+- Focus only on custom business logic
+- All helper methods available (createQueryBuilder, executeQuery, findRelated, etc.)
+- Full type safety with generics
+
+### Available Methods
+
+**Neo4jRepository<T> provides these methods automatically**:
+
+**CRUD Operations** (9 methods):
+- `findById(id: string): Promise<T | null>`
+- `findAll(options?: FindOptions<T>): Promise<T[]>`
+- `findOne(options: FindOptions<T>): Promise<T | null>`
+- `create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>`
+- `update(id: string, data: Partial<T>): Promise<T | null>`
+- `delete(id: string, detach?: boolean): Promise<boolean>`
+- `count(where?: Partial<T>): Promise<number>`
+- `exists(id: string): Promise<boolean>`
+- `save(data: Partial<T>): Promise<T>`
+
+**Helper Methods** (for custom repositories - 7 methods):
+- `createQueryBuilder(): QueryBuilder`
+- `executeQuery<R>(cypher: string, params?: Record<string, any>): Promise<R>`
+- `createRelationship(fromId: string, toId: string, type: string, properties?: Record<string, unknown>): Promise<void>`
+- `findRelated<R>(id: string, relationshipType: string, direction?: 'OUT' | 'IN' | 'BOTH'): Promise<R[]>`
+- `getLabel(): string`
+- `getEntity(): Type<T>`
+- `getNeogmaService(): NeogmaService`
+
+### Migration from Old Pattern
+
+**Before (Old Manual Pattern)**:
+```typescript
+@Neo4jRepository(() => User)
+@Injectable()
+export class UserRepository {
+  private readonly label = 'User';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
+
+  // 49 lines of manual CRUD delegation
+  findById(id: string) { return this.crud.findById<User>(this.label, id); }
+  findAll(options?) { return this.crud.findAll<User>(this.label, options); }
+  create(data) { return this.crud.create<User>(this.label, data); }
+  update(id, data) { return this.crud.update<User>(this.label, id, data); }
+  delete(id) { return this.crud.delete(this.label, id); }
+  count(where?) { return this.crud.count<User>(this.label, where); }
+  exists(id) { return this.crud.exists(this.label, id); }
+}
+```
+
+**After (TypeORM-Style - Zero Boilerplate)**:
+```typescript
+// NO repository class needed for simple CRUD!
+
+@Module({
+  imports: [Neo4jModule.forFeature([User])]  // Auto-generates repository
+})
+export class UserModule {}
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private userRepo: Neo4jRepository<User>
+  ) {}
+
+  async getUser(id: string) {
+    return this.userRepo.findById(id);  // Works immediately
+  }
+}
+```
+
+**For custom repositories, extend base**:
+```typescript
+@Injectable()
+export class UserRepository extends Neo4jRepository<User> {
+  // Inherits ALL CRUD methods automatically
+
+  // Add ONLY custom business logic
+  async findByEmail(email: string): Promise<User | null> {
+    const qb = this.createQueryBuilder();
+    // ... custom query
+  }
+}
+```
