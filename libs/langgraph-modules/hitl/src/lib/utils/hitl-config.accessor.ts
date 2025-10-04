@@ -26,7 +26,7 @@ export function getHitlConfig(): HitlModuleOptions {
  * Get HITL config with safe defaults
  * Used by decorators to inherit module configuration
  */
-export function getHitlConfigWithDefaults(): Required<HitlModuleOptions> {
+export function getHitlConfigWithDefaults(): Partial<HitlModuleOptions> {
   const config = getHitlConfig();
 
   return {

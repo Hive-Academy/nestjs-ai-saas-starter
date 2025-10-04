@@ -337,19 +337,6 @@ export class MemoryModule {
   }
 
   /**
-   * Create adapter providers for async configuration
-   * For async configuration, adapters are provided through the useFactory inject mechanism
-   * This method returns empty array since adapters come from factory dependencies
-   */
-  private static createAdapterProvidersAsync(
-    options: MemoryModuleAsyncOptions
-  ): Provider[] {
-    // For async configuration, adapters are provided via useFactory inject[]
-    // No additional providers needed here
-    return [];
-  }
-
-  /**
    * Validate adapter configuration
    * Ensures provided adapters implement the required interfaces
    */

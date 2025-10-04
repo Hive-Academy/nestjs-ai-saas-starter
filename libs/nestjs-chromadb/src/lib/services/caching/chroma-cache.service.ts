@@ -9,18 +9,13 @@ import type {
   VectorStatistics,
   HealthStatus,
   CacheEntry,
-  MutableCacheStats,
 } from './cache-interfaces';
 import { CacheOperationsService } from './cache-operations.service';
 import { CacheStatisticsService } from './cache-statistics.service';
 import { CacheCleanupService } from './cache-cleanup.service';
 import { VectorCacheService } from './vector-cache.service';
 import { CacheStore } from './cache-store.service';
-import {
-  CacheKeyGeneratorService,
-  TtlCalculatorService,
-  SizeEstimatorService,
-} from './cache-utilities.service';
+import { SizeEstimatorService } from './cache-utilities.service';
 
 /**
  * Main ChromaDB Cache Service - Facade coordinating all cache operations
@@ -39,7 +34,6 @@ export class ChromaCacheService
   private readonly logger = new Logger(ChromaCacheService.name);
   private readonly cache: Map<string, CacheEntry>;
   private readonly config: Required<CacheConfig>;
-  private readonly stats: MutableCacheStats;
   private cleanupTimer?: NodeJS.Timeout;
 
   constructor(
@@ -47,12 +41,12 @@ export class ChromaCacheService
     private readonly cacheOps: CacheOperationsService,
     private readonly cacheStats: CacheStatisticsService,
     private readonly cacheCleanup: CacheCleanupService,
-    private readonly vectorCache: VectorCacheService
+    private readonly vectorCache: VectorCacheService,
+    private readonly sizeEstimator: SizeEstimatorService
   ) {
     // Get shared infrastructure from CacheStore
     this.cache = this.cacheStore.getCache();
     this.config = this.cacheStore.getConfig();
-    this.stats = this.cacheStore.getStats();
 
     this.startCleanupTimer();
     this.logger.log('ChromaCacheService initialized with segregated services');

@@ -33,9 +33,9 @@
     "ci:validate": "node scripts/typescript-fixes/ci-validation.js",
     "security:audit": "node scripts/security-audit.js",
     "security:mitigate": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install --registry=https://registry.npmjs.org/",
-    "typecheck:all": "nx run-many -t typecheck --parallel=false",
-    "typecheck:libs": "nx run-many -t typecheck --projects=tag:type:library --parallel=false",
-    "typecheck:affected": "nx affected -t typecheck --parallel=false"
+    "typecheck:all": "nx run-many -t typecheck ",
+    "typecheck:libs": "nx run-many -t typecheck --projects=tag:type:library",
+    "typecheck:affected": "nx affected -t typecheck"
   },
   "private": true,
   "dependencies": {
