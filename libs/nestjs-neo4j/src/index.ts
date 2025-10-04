@@ -8,7 +8,7 @@ export { Neo4jModule } from './lib/neo4j.module';
 // ==================== MODERN SERVICES (PRIMARY) ====================
 // Use these services for all new development
 
-export { NeogmaService } from './lib/core/neogma.service';
+export { NeogmaService } from './lib/services/neogma.service';
 export { NeogmaMetricsService } from './lib/services/neogma-metrics.service';
 export { NeogmaConnectionService } from './lib/services/neogma-connection.service';
 
@@ -202,7 +202,7 @@ export * from './lib/utils/parameter-serializer';
 // Query Builder types are now exported above in the main Neogma integration section
 
 // Constants
-export * from './lib/constants';
+export * from './lib/constants/constants';
 
 // Config Utilities
 export {
@@ -212,16 +212,11 @@ export {
   isNeo4jConfigured,
 } from './lib/utils/neo4j-config.accessor';
 
-// Entity CRUD operations are now internal to @Repository decorator
-// Use @Repository or @Neo4jRepository decorator for CRUD operations
-// The FindOptions type is still exported for repository method signatures
-export { type FindOptions } from './lib/repositories/crud-operations';
-
-// Base Repository Interface for TypeScript support
+// Neo4j CRUD Service (Composition Pattern for Repositories)
 export {
-  type IBaseRepository,
-  BaseRepositoryService,
-} from './lib/repositories/base-repository.interface';
+  Neo4jCrudService,
+  type FindOptions,
+} from './lib/services/neo4j-crud.service';
 
 // =============================================================================
 // EXAMPLES AND DOCUMENTATION

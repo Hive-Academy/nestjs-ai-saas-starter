@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepository,
   Safe,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  InjectNeogma,
+  NeogmaService,
+  type FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { Memory } from '../../entities/neo4j';
 import type {
@@ -24,44 +27,69 @@ import { GraphAgentService } from '../services/graph-agent.service';
 import { GraphCrudService } from '../services/graph-crud.service';
 
 /**
- * Memory Graph Repository (Refactored)
+ * Memory Graph Repository (Refactored - Composition Pattern)
  *
  * Main repository facade that delegates to specialized service classes.
  * Provides type-safe operations for graph-based memory management.
  *
  * Architecture:
+ * - Neo4jCrudService: Basic CRUD operations via composition
  * - GraphTraversalService: Graph traversal, relationship queries, statistics
  * - GraphAgentService: Agent-aware operations, conversation flows, patterns
  * - GraphCrudService: Generic CRUD operations, batch processing
  *
  * Reduced from 1,312 lines to ~200 lines through composition pattern.
+ * Using NEW composition pattern (no inheritance).
  */
-@Repository(() => Memory)
+@Neo4jRepository(() => Memory)
 @Injectable()
-export class MemoryGraphRepository extends BaseRepositoryService<Memory> {
+export class MemoryGraphRepository {
+  private readonly label = 'Memory';
   private readonly logger = new Logger(MemoryGraphRepository.name);
 
   constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService,
     private readonly traversalService: GraphTraversalService,
     private readonly agentService: GraphAgentService,
     private readonly crudService: GraphCrudService
   ) {
-    super();
     this.logger.debug(
-      'MemoryGraphRepository initialized with service composition'
+      'MemoryGraphRepository initialized with composition pattern'
     );
   }
 
   // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
+  // CRUD OPERATIONS (Delegated to Neo4jCrudService)
   // ============================================================================
-  // - findById(id: string): Promise<Memory | null>
-  // - findAll(options?: FindOptions<Memory>): Promise<Memory[]>
-  // - create(data: Partial<Memory>): Promise<Memory>
-  // - update(id: string, updates: Partial<Memory>): Promise<Memory | null>
-  // - delete(id: string): Promise<boolean>
-  // - count(where?: Partial<Memory>): Promise<number>
-  // - exists(id: string): Promise<boolean>
+
+  async findById(id: string): Promise<Memory | null> {
+    return this.crud.findById<Memory>(this.label, id);
+  }
+
+  async findAll(options?: FindOptions<Memory>): Promise<Memory[]> {
+    return this.crud.findAll<Memory>(this.label, options);
+  }
+
+  async create(data: Partial<Memory>): Promise<Memory> {
+    return this.crud.create<Memory>(this.label, data);
+  }
+
+  async update(id: string, updates: Partial<Memory>): Promise<Memory | null> {
+    return this.crud.update<Memory>(this.label, id, updates);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  async count(where?: Partial<Memory>): Promise<number> {
+    return this.crud.count<Memory>(this.label, where);
+  }
+
+  async exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
+  }
 
   // ============================================================================
   // GRAPH TRAVERSAL OPERATIONS (Delegated to GraphTraversalService)

@@ -1,13 +1,17 @@
 import { DynamicModule, Module, Global, Provider, Type } from '@nestjs/common';
 import * as neo4j from 'neo4j-driver';
-import { NEO4J_OPTIONS, NEO4J_DRIVER, DEFAULT_NEO4J_CONFIG } from './constants';
+import {
+  NEO4J_OPTIONS,
+  NEO4J_DRIVER,
+  DEFAULT_NEO4J_CONFIG,
+} from './constants/constants';
 import type {
   Neo4jModuleOptions,
   Neo4jModuleOptionsFactory,
   Neo4jModuleAsyncOptions,
 } from './interfaces/neo4j-module-options.interface';
 import type { NeogmaModuleOptions } from './neogma/neogma.interfaces';
-import { NeogmaService } from './core/neogma.service';
+import { NeogmaService } from './services/neogma.service';
 import { NeogmaMetricsService } from './services/neogma-metrics.service';
 import { NeogmaConnectionService } from './services/neogma-connection.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';

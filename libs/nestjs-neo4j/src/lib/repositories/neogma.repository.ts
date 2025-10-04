@@ -14,7 +14,7 @@ import type {
   FindOptions,
 } from '../types/neogma-types';
 import { NeogmaNotFoundError } from '../types/neogma-types';
-import { NeogmaService } from '../core/neogma.service';
+import { NeogmaService } from '../services/neogma.service';
 
 /**
  * Base repository implementation using pure Neogma patterns

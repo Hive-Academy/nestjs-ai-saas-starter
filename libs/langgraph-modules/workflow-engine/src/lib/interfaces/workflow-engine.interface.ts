@@ -178,10 +178,16 @@ export const WORKFLOW_EDGES_KEY = 'workflow:edges';
 export const WORKFLOW_TOOLS_KEY = 'workflow:tools';
 export const LANGGRAPH_MODULE_OPTIONS = 'LANGGRAPH_MODULE_OPTIONS';
 
-// Placeholder functions - these will be replaced by actual imports at runtime
-export const WorkflowStateAnnotation = {} as any;
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-export const createCustomStateAnnotation = (() => {}) as any;
-export const isWorkflow = (() => false) as any;
+// Import actual implementations from core module
+import {
+  WorkflowStateAnnotation as CoreWorkflowStateAnnotation,
+  createCustomStateAnnotation as coreCreateCustomStateAnnotation,
+  isWorkflow as coreIsWorkflow,
+} from '@hive-academy/langgraph-core';
+
+// Re-export with original names for backward compatibility
+export const WorkflowStateAnnotation = CoreWorkflowStateAnnotation;
+export const createCustomStateAnnotation = coreCreateCustomStateAnnotation;
+export const isWorkflow = coreIsWorkflow;
 
 // Workflow engine specific interfaces can be added here as needed

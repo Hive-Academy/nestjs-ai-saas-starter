@@ -29,7 +29,7 @@ import {
   NotNull,
   Unique,
   PropIndex,
-  Repository,
+  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
   Safe,
@@ -38,7 +38,8 @@ import {
   Transactional,
   CypherQuery,
   NeogmaMetricsService,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  FindOptions,
 } from '../index';
 
 // ============================================================================
@@ -350,8 +351,8 @@ export interface SecurityAlert {
 @Repository(() => UserProfile)
 @Injectable()
 export class SecureUserRepository extends BaseRepositoryService<UserProfile> {
-  constructor() {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
   }
 
   /**

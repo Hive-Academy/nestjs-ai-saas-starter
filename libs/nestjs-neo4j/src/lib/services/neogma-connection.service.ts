@@ -7,7 +7,7 @@
 
 import { Injectable, Inject, Logger, OnModuleDestroy } from '@nestjs/common';
 import type { Neogma } from 'neogma';
-import { NEO4J_OPTIONS } from '../constants';
+import { NEO4J_OPTIONS } from '../constants/constants';
 import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
 import { InjectNeogma } from '../neogma/neogma.decorators';
 import { NeogmaMetricsService } from './neogma-metrics.service';

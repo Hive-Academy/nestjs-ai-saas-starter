@@ -1,5 +1,9 @@
 import { Inject } from '@nestjs/common';
-import { NEO4J_DRIVER, NEO4J_SESSION, NEO4J_CONNECTION } from '../constants';
+import {
+  NEO4J_DRIVER,
+  NEO4J_SESSION,
+  NEO4J_CONNECTION,
+} from '../constants/constants';
 import { getNeo4jConfig } from '../utils/neo4j-config.accessor';
 
 export const InjectNeo4j = (): ParameterDecorator => Inject(NEO4J_DRIVER);

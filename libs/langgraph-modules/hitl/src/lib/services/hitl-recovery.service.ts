@@ -1,18 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { HumanApprovalRequest, ApprovalWorkflowState } from './approval-workflow.types';
+import {
+  HumanApprovalRequest,
+  ApprovalWorkflowState,
+} from './approval-workflow.types';
 import { IHitlRecoveryService } from '../interfaces/hitl-services.interface';
-
-// Storage interface for HITL operations
-interface IHitlStorageService {
-  save(request: HumanApprovalRequest): Promise<void>;
-  get(requestId: string): Promise<HumanApprovalRequest | null>;
-  getByExecutionId(executionId: string): Promise<HumanApprovalRequest[]>;
-  getAllPending(): Promise<HumanApprovalRequest[]>;
-  update(request: HumanApprovalRequest): Promise<void>;
-  delete(requestId: string): Promise<void>;
-  backup(): Promise<{ backupId: string; count: number }>;
-  restore(backupId: string): Promise<{ restored: number; failed: number }>;
-}
+import { IHitlStorageService } from '../interfaces/hitl-storage.interface';
 
 /**
  * Service for handling HITL recovery operations
@@ -25,10 +17,12 @@ export class HitlRecoveryService implements IHitlRecoveryService {
   private lastRecoveryTime?: Date;
 
   constructor(
-    @Inject('IHitlStorageService')
+    @Inject(IHitlStorageService)
     private readonly hitlStorage: IHitlStorageService
   ) {
-    this.logger.log('🔧 HITL Recovery Service initialized with persistent storage');
+    this.logger.log(
+      '🔧 HITL Recovery Service initialized with persistent storage'
+    );
   }
 
   /**
@@ -36,10 +30,12 @@ export class HitlRecoveryService implements IHitlRecoveryService {
    */
   async recoverPendingApprovals(): Promise<void> {
     try {
-      this.logger.log('🔄 Starting recovery of pending approvals from persistent storage');
-      
+      this.logger.log(
+        '🔄 Starting recovery of pending approvals from persistent storage'
+      );
+
       const pendingApprovals = await this.hitlStorage.getAllPending();
-      
+
       if (pendingApprovals.length === 0) {
         this.logger.log('✅ No pending approvals found to recover');
         return;
@@ -56,18 +52,25 @@ export class HitlRecoveryService implements IHitlRecoveryService {
             // Add to recovery cache
             this.recoveryCache.set(approval.id, approval);
             recoveredCount++;
-            
+
             this.logger.debug(`✅ Recovered approval request: ${approval.id}`);
           } else {
             failedCount++;
-            errors.push(`Invalid approval request for recovery: ${approval.id}`);
-            this.logger.warn(`⚠️ Skipped invalid approval request: ${approval.id}`);
+            errors.push(
+              `Invalid approval request for recovery: ${approval.id}`
+            );
+            this.logger.warn(
+              `⚠️ Skipped invalid approval request: ${approval.id}`
+            );
           }
         } catch (error) {
           failedCount++;
-          const errorMsg = error instanceof Error ? error.message : String(error);
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
           errors.push(`Failed to recover ${approval.id}: ${errorMsg}`);
-          this.logger.error(`❌ Failed to recover approval ${approval.id}: ${errorMsg}`);
+          this.logger.error(
+            `❌ Failed to recover approval ${approval.id}: ${errorMsg}`
+          );
         }
       }
 
@@ -98,7 +101,7 @@ export class HitlRecoveryService implements IHitlRecoveryService {
 
       // Save to persistent storage
       await this.hitlStorage.update(request);
-      
+
       // Update recovery cache
       this.recoveryCache.set(request.id, request);
 
@@ -124,13 +127,15 @@ export class HitlRecoveryService implements IHitlRecoveryService {
   }> {
     try {
       this.logger.log('🔄 Starting service state recovery');
-      
+
       let approvalsToRecover: HumanApprovalRequest[] = [];
-      
+
       if (executionIds && executionIds.length > 0) {
         // Recover specific executions
         for (const executionId of executionIds) {
-          const execApprovals = await this.hitlStorage.getByExecutionId(executionId);
+          const execApprovals = await this.hitlStorage.getByExecutionId(
+            executionId
+          );
           approvalsToRecover.push(...execApprovals);
         }
       } else {
@@ -154,7 +159,8 @@ export class HitlRecoveryService implements IHitlRecoveryService {
           }
         } catch (error) {
           failed++;
-          const errorMsg = error instanceof Error ? error.message : String(error);
+          const errorMsg =
+            error instanceof Error ? error.message : String(error);
           errors.push(`Recovery error for ${approval.id}: ${errorMsg}`);
         }
       }
@@ -187,7 +193,7 @@ export class HitlRecoveryService implements IHitlRecoveryService {
   }> {
     try {
       this.logger.log('💾 Starting service state backup');
-      
+
       const result = await this.hitlStorage.backup();
       const timestamp = new Date();
 
@@ -216,13 +222,15 @@ export class HitlRecoveryService implements IHitlRecoveryService {
     errors: string[];
   }> {
     try {
-      this.logger.log(`🔄 Starting service state restore from backup ${backupId}`);
-      
+      this.logger.log(
+        `🔄 Starting service state restore from backup ${backupId}`
+      );
+
       const result = await this.hitlStorage.restore(backupId);
-      
+
       // Clear current recovery cache and rebuild from restored data
       this.recoveryCache.clear();
-      
+
       // Reload pending approvals into cache
       await this.recoverPendingApprovals();
 
@@ -257,7 +265,7 @@ export class HitlRecoveryService implements IHitlRecoveryService {
   }> {
     try {
       const issues: string[] = [];
-      
+
       // Check storage connectivity
       try {
         await this.hitlStorage.getAllPending();
@@ -267,22 +275,25 @@ export class HitlRecoveryService implements IHitlRecoveryService {
 
       // Check recovery cache consistency
       const pendingRecoveries = this.recoveryCache.size;
-      
+
       // Check if recovery is recent enough
       const now = new Date();
       const maxRecoveryAge = 24 * 60 * 60 * 1000; // 24 hours
-      
+
       if (!this.lastRecoveryTime) {
         issues.push('No recovery has been performed yet');
-      } else if (now.getTime() - this.lastRecoveryTime.getTime() > maxRecoveryAge) {
+      } else if (
+        now.getTime() - this.lastRecoveryTime.getTime() >
+        maxRecoveryAge
+      ) {
         issues.push('Last recovery is older than 24 hours');
       }
 
       // Check for stale entries in recovery cache
       const staleEntries = Array.from(this.recoveryCache.values()).filter(
-        approval => this.isStaleApproval(approval)
+        (approval) => this.isStaleApproval(approval)
       );
-      
+
       if (staleEntries.length > 0) {
         issues.push(`${staleEntries.length} stale entries in recovery cache`);
       }
@@ -361,14 +372,16 @@ export class HitlRecoveryService implements IHitlRecoveryService {
       const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
       const now = Date.now();
       const requestTime = approval.timestamps.requested.getTime();
-      
+
       if (now - requestTime > maxAge) {
         return false;
       }
 
       return true;
     } catch (error) {
-      this.logger.warn(`Validation error for approval ${approval.id}: ${error}`);
+      this.logger.warn(
+        `Validation error for approval ${approval.id}: ${error}`
+      );
       return false;
     }
   }
@@ -378,14 +391,14 @@ export class HitlRecoveryService implements IHitlRecoveryService {
       const now = Date.now();
       const requestTime = approval.timestamps.requested.getTime();
       const maxStaleAge = 24 * 60 * 60 * 1000; // 24 hours
-      
+
       // Consider stale if older than threshold and still pending/in-progress
       const isOld = now - requestTime > maxStaleAge;
       const isPending = [
         ApprovalWorkflowState.PENDING,
         ApprovalWorkflowState.IN_PROGRESS,
       ].includes(approval.workflowState);
-      
+
       return isOld && isPending;
     } catch (error) {
       return false;

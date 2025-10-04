@@ -1,5 +1,6 @@
 import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { ApprovalChainService } from './services/approval-chain.service';
 import { ApprovalProcessingService } from './services/approval-processing.service';
@@ -60,7 +61,7 @@ export class HitlModule {
 
     return {
       module: HitlModule,
-      imports: [ConfigModule],
+      imports: [ConfigModule, EventEmitterModule.forRoot()],
       providers: [
         // Configuration provider
         {
@@ -129,7 +130,11 @@ export class HitlModule {
 
     return {
       module: HitlModule,
-      imports: [ConfigModule, ...(options.imports || [])],
+      imports: [
+        ConfigModule,
+        EventEmitterModule.forRoot(),
+        ...(options.imports || []),
+      ],
       providers: [
         // Async configuration provider
         ...this.createAsyncProviders(options),

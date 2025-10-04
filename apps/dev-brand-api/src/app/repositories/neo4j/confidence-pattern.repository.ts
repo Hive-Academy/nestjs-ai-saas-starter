@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepository,
+  Neo4jCrudService,
   InjectNeogma,
   NeogmaService,
   Safe,
-  BaseRepositoryService,
+  FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
 import type {
@@ -23,27 +24,68 @@ import type {
  *
  * Replaces: neo4j-confidence-storage.adapter.ts (789 lines)
  *
+ * Uses composition pattern with Neo4jCrudService for CRUD operations.
  * Provides type-safe operations for confidence pattern analysis including
- * ML training data management, pattern insights, and approval analytics
- * using modern @Repository pattern.
+ * ML training data management, pattern insights, and approval analytics.
+ *
+ * CRUD methods (delegated to Neo4jCrudService):
+ * - findById(id: string): Promise<ConfidencePattern | null>
+ * - findAll(options?: FindOptions<ConfidencePattern>): Promise<ConfidencePattern[]>
+ * - create(data: Partial<ConfidencePattern>): Promise<ConfidencePattern>
+ * - update(id: string, updates: Partial<ConfidencePattern>): Promise<ConfidencePattern | null>
+ * - delete(id: string): Promise<boolean>
+ * - count(where?: Partial<ConfidencePattern>): Promise<number>
+ * - exists(id: string): Promise<boolean>
  */
-@Repository(() => ConfidencePattern)
+@Neo4jRepository(() => ConfidencePattern)
 @Injectable()
-export class ConfidencePatternRepository extends BaseRepositoryService<ConfidencePattern> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
-  }
+export class ConfidencePatternRepository {
+  private readonly label = 'ApprovalPattern';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
+  // CRUD METHODS (delegated to Neo4jCrudService)
   // ============================================================================
-  // - findById(id: string): Promise<ConfidencePattern | null>
-  // - findAll(options?: FindOptions<ConfidencePattern>): Promise<ConfidencePattern[]>
-  // - create(data: Partial<ConfidencePattern>): Promise<ConfidencePattern>
-  // - update(id: string, updates: Partial<ConfidencePattern>): Promise<ConfidencePattern | null>
-  // - delete(id: string): Promise<boolean>
-  // - count(where?: Partial<ConfidencePattern>): Promise<number>
-  // - exists(id: string): Promise<boolean>
+
+  findById(id: string): Promise<ConfidencePattern | null> {
+    return this.crud.findById<ConfidencePattern>(this.label, id);
+  }
+
+  findAll(
+    options?: FindOptions<ConfidencePattern>
+  ): Promise<ConfidencePattern[]> {
+    return this.crud.findAll<ConfidencePattern>(this.label, options);
+  }
+
+  create(data: Partial<ConfidencePattern>): Promise<ConfidencePattern> {
+    return this.crud.create<ConfidencePattern>(
+      this.label,
+      data as Omit<ConfidencePattern, 'id' | 'createdAt' | 'updatedAt'>
+    );
+  }
+
+  update(
+    id: string,
+    data: Partial<ConfidencePattern>
+  ): Promise<ConfidencePattern | null> {
+    return this.crud.update<ConfidencePattern>(this.label, id, data);
+  }
+
+  delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  count(where?: Partial<ConfidencePattern>): Promise<number> {
+    return this.crud.count<ConfidencePattern>(this.label, where);
+  }
+
+  exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
+  }
 
   // ============================================================================
   // APPROVAL PATTERN MANAGEMENT

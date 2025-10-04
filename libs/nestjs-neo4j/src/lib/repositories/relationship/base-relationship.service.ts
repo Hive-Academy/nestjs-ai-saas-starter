@@ -6,7 +6,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { NeogmaService } from '../../core/neogma.service';
+import { NeogmaService } from '../../services/neogma.service';
 import { NeogmaQueryBuilderService } from '../../query-builder/neogma-query-builder.service';
 import { NeogmaQueryRunnerService } from '../../query-builder/neogma-query-runner.service';
 import type { Neo4jQueryParams } from '../../types/neo4j-types';

@@ -49,7 +49,6 @@ import type { NeogmaEntity } from '../types/neogma-types';
  * - All operations use modern QueryBuilder patterns for type safety
  *
  * @template T The entity type this repository manages
- * @deprecated Use GraphTraversalService, GraphMetricsService, and GraphPatternService instead
  */
 @Injectable()
 export class GraphRepository<T extends NeogmaEntity = NeogmaEntity> {

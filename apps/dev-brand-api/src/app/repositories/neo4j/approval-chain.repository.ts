@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepository,
+  Neo4jCrudService,
   InjectNeogma,
   NeogmaService,
-  CypherQuery,
+  FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import type { ApprovalLevel } from '@hive-academy/langgraph-hitl';
@@ -32,13 +33,13 @@ interface ApprovalRequestType {
  *
  * Replaces: neo4j-approval-chain-storage.adapter.ts (603 lines)
  *
- * Provides type-safe operations for approval chain management including
- * hierarchical approval levels and request routing using modern @Repository pattern.
+ * Uses composition pattern with Neo4jCrudService for CRUD operations.
+ * Provides type-safe operations for approval chain management.
  *
  * Note: This repository manages both ApprovalChain nodes and their relationships
  * to ApprovalRequest entities via the chainId property.
  *
- * The @Repository decorator auto-generates these methods:
+ * CRUD methods (delegated to Neo4jCrudService):
  * - findById(id: string): Promise<ApprovalRequest | null>
  * - findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]>
  * - create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
@@ -47,10 +48,53 @@ interface ApprovalRequestType {
  * - count(where?: Partial<ApprovalRequest>): Promise<number>
  * - exists(id: string): Promise<boolean>
  */
-@Repository(() => ApprovalRequest) // Using ApprovalRequest entity as base since no dedicated ApprovalChain entity exists
+@Neo4jRepository(() => ApprovalRequest)
 @Injectable()
 export class ApprovalChainRepository {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {}
+  private readonly label = 'ApprovalRequest';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
+
+  // ============================================================================
+  // CRUD METHODS (delegated to Neo4jCrudService)
+  // ============================================================================
+
+  findById(id: string): Promise<ApprovalRequest | null> {
+    return this.crud.findById<ApprovalRequest>(this.label, id);
+  }
+
+  findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]> {
+    return this.crud.findAll<ApprovalRequest>(this.label, options);
+  }
+
+  create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest> {
+    return this.crud.create<ApprovalRequest>(
+      this.label,
+      data as Omit<ApprovalRequest, 'id' | 'createdAt' | 'updatedAt'>
+    );
+  }
+
+  update(
+    id: string,
+    data: Partial<ApprovalRequest>
+  ): Promise<ApprovalRequest | null> {
+    return this.crud.update<ApprovalRequest>(this.label, id, data);
+  }
+
+  delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  count(where?: Partial<ApprovalRequest>): Promise<number> {
+    return this.crud.count<ApprovalRequest>(this.label, where);
+  }
+
+  exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
+  }
 
   // ============================================================================
   // APPROVAL CHAIN MANAGEMENT

@@ -14,7 +14,7 @@ import {
 /**
  * User Interruption Service
  * Handles dynamic user interruptions during workflow execution
- * 
+ *
  * PRODUCTION PATTERN: Uses adapter-first storage with performance caching
  * - All persistence operations go through storage adapter FIRST
  * - Map used ONLY for performance caching (not primary storage)
@@ -32,7 +32,7 @@ export class UserInterruptionService implements OnModuleInit {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     // ✅ CORRECT: Required dependency injection for adapter-first pattern
-    @Inject('IUserInterruptionStorageService')
+    @Inject(IUserInterruptionStorageService)
     private readonly interruptionStorage: IUserInterruptionStorageService,
     private readonly notifications?: HitlNotificationService
   ) {}
@@ -50,18 +50,19 @@ export class UserInterruptionService implements OnModuleInit {
   private async recoverActiveInterruptions(): Promise<void> {
     try {
       // ✅ CORRECT: Load all active interruptions from primary storage
-      const allActiveInterruptions = await this.interruptionStorage.getAllActiveInterruptions();
-      
+      const allActiveInterruptions =
+        await this.interruptionStorage.getAllActiveInterruptions();
+
       // ✅ CORRECT: Rebuild cache from persistent storage
-      allActiveInterruptions.forEach(interruption => {
+      allActiveInterruptions.forEach((interruption) => {
         this.interruptionCache.set(interruption.id, interruption);
-        
+
         // ✅ CORRECT: Restore timeout handlers for pending interruptions
         if (interruption.status === InterruptionStatus.PENDING) {
           this.setupInterruptionTimeout(interruption.id);
         }
       });
-      
+
       this.logger.log(
         `✅ Successfully recovered ${allActiveInterruptions.length} active interruptions from persistent storage`
       );
@@ -113,7 +114,9 @@ export class UserInterruptionService implements OnModuleInit {
         error
       );
       // ✅ CORRECT: Fail fast when primary storage unavailable
-      throw new Error(`Cannot store interruption: primary storage failed - ${errorMsg}`);
+      throw new Error(
+        `Cannot store interruption: primary storage failed - ${errorMsg}`
+      );
     }
 
     // Set up timeout
@@ -161,11 +164,14 @@ export class UserInterruptionService implements OnModuleInit {
   }> {
     // ✅ CORRECT: Try cache first for performance, fallback to storage
     let interruption = this.interruptionCache.get(response.interruptionId);
-    
+
     if (!interruption) {
       // ✅ CORRECT: Fallback to primary storage if not in cache
       try {
-        const storedInterruption = await this.interruptionStorage.getInterruption(response.interruptionId);
+        const storedInterruption =
+          await this.interruptionStorage.getInterruption(
+            response.interruptionId
+          );
         if (storedInterruption) {
           interruption = storedInterruption;
           // ✅ CORRECT: Update cache from storage
@@ -173,7 +179,9 @@ export class UserInterruptionService implements OnModuleInit {
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to retrieve interruption from storage: ${errorMsg}`);
+        this.logger.error(
+          `Failed to retrieve interruption from storage: ${errorMsg}`
+        );
         return { success: false, shouldContinue: false, error: errorMsg };
       }
     }
@@ -201,7 +209,7 @@ export class UserInterruptionService implements OnModuleInit {
           InterruptionStatus.RESPONDED,
           response
         );
-        
+
         // ✅ CORRECT: Update cache after successful storage update
         interruption.status = InterruptionStatus.RESPONDED;
         interruption.response = response;
@@ -209,7 +217,9 @@ export class UserInterruptionService implements OnModuleInit {
         this.interruptionCache.set(response.interruptionId, interruption);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`❌ CRITICAL: Failed to update interruption in primary storage: ${errorMsg}`);
+        this.logger.error(
+          `❌ CRITICAL: Failed to update interruption in primary storage: ${errorMsg}`
+        );
         return { success: false, shouldContinue: false, error: errorMsg };
       }
 
@@ -277,13 +287,14 @@ export class UserInterruptionService implements OnModuleInit {
   ): Promise<readonly UserInterruption[]> {
     // ✅ CORRECT: Load from primary storage first (source of truth)
     try {
-      const storedInterruptions = await this.interruptionStorage.getActiveInterruptions(executionId);
-      
+      const storedInterruptions =
+        await this.interruptionStorage.getActiveInterruptions(executionId);
+
       // ✅ CORRECT: Update cache from storage (performance optimization)
-      storedInterruptions.forEach(interruption => {
+      storedInterruptions.forEach((interruption) => {
         this.interruptionCache.set(interruption.id, interruption);
       });
-      
+
       // ✅ CORRECT: Return from storage (primary source of truth)
       return storedInterruptions;
     } catch (error) {
@@ -291,16 +302,20 @@ export class UserInterruptionService implements OnModuleInit {
       this.logger.error(
         `❌ CRITICAL: Failed to get interruptions from primary storage: ${errorMsg}. Falling back to cache.`
       );
-      
+
       // ✅ FALLBACK: Use cache only when primary storage fails
-      const cachedInterruptions = Array.from(this.interruptionCache.values()).filter(
-        (i) => i.executionId === executionId && i.status === InterruptionStatus.PENDING
+      const cachedInterruptions = Array.from(
+        this.interruptionCache.values()
+      ).filter(
+        (i) =>
+          i.executionId === executionId &&
+          i.status === InterruptionStatus.PENDING
       );
-      
+
       this.logger.warn(
         `Using cached interruptions as fallback: ${cachedInterruptions.length} found`
       );
-      
+
       return cachedInterruptions;
     }
   }
@@ -311,18 +326,21 @@ export class UserInterruptionService implements OnModuleInit {
   async cancelUserInterruption(interruptionId: string): Promise<boolean> {
     // ✅ CORRECT: Try cache first for performance
     let interruption = this.interruptionCache.get(interruptionId);
-    
+
     if (!interruption) {
       // ✅ CORRECT: Fallback to primary storage
       try {
-        const storedInterruption = await this.interruptionStorage.getInterruption(interruptionId);
+        const storedInterruption =
+          await this.interruptionStorage.getInterruption(interruptionId);
         if (storedInterruption) {
           interruption = storedInterruption;
           this.interruptionCache.set(interruptionId, interruption);
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to retrieve interruption from storage: ${errorMsg}`);
+        this.logger.error(
+          `Failed to retrieve interruption from storage: ${errorMsg}`
+        );
         return false;
       }
     }
@@ -344,7 +362,7 @@ export class UserInterruptionService implements OnModuleInit {
         interruptionId,
         InterruptionStatus.CANCELLED
       );
-      
+
       // ✅ CORRECT: Update cache after successful storage update
       interruption.status = InterruptionStatus.CANCELLED;
       this.interruptionCache.set(interruptionId, interruption);
@@ -471,18 +489,21 @@ export class UserInterruptionService implements OnModuleInit {
   ): Promise<void> {
     // ✅ CORRECT: Try cache first for performance
     let interruption = this.interruptionCache.get(interruptionId);
-    
+
     if (!interruption) {
       // ✅ CORRECT: Fallback to primary storage
       try {
-        const storedInterruption = await this.interruptionStorage.getInterruption(interruptionId);
+        const storedInterruption =
+          await this.interruptionStorage.getInterruption(interruptionId);
         if (storedInterruption) {
           interruption = storedInterruption;
           this.interruptionCache.set(interruptionId, interruption);
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to retrieve interruption from storage during timeout: ${errorMsg}`);
+        this.logger.error(
+          `Failed to retrieve interruption from storage during timeout: ${errorMsg}`
+        );
         return;
       }
     }
@@ -496,7 +517,7 @@ export class UserInterruptionService implements OnModuleInit {
         interruptionId,
         InterruptionStatus.TIMEOUT
       );
-      
+
       // ✅ CORRECT: Update cache after successful storage update
       interruption.status = InterruptionStatus.TIMEOUT;
       interruption.timestamps.timeout = new Date();

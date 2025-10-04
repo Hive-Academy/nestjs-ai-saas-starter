@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
+import { Neo4jModule, Neo4jCrudService } from '@hive-academy/nestjs-neo4j';
 
 // Memory Repositories
 import { MemoryGraphRepository } from './neo4j/memory-graph.repository';

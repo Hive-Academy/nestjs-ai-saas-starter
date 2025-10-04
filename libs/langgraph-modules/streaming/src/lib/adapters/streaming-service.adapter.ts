@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IStreamingService } from '@hive-academy/langgraph-core';
+import { IStreamingService, parseNodeId } from '@hive-academy/langgraph-core';
 import { TokenStreamingService } from '../services/token-streaming.service';
 import { EventStreamProcessorService } from '../services/event-stream-processor.service';
 import { WebSocketBridgeService } from '../services/websocket-bridge.service';
@@ -14,11 +14,55 @@ import { StreamEventType } from '../constants';
  */
 @Injectable()
 export class StreamingServiceAdapter implements IStreamingService {
+  // Hierarchical sequence counters scoped per execution + node ID
+  private readonly sequenceCounters = new Map<string, number>();
+
   constructor(
     private readonly tokenStreamingService: TokenStreamingService,
     private readonly eventStreamProcessor: EventStreamProcessorService,
     private readonly webSocketBridge: WebSocketBridgeService
   ) {}
+
+  /**
+   * Get and increment sequence number for a specific execution + node
+   * Uses hierarchical counter key: `${executionId}:${nodeId}`
+   */
+  private getNodeSequence(executionId: string, nodeId: string): number {
+    const counterKey = `${executionId}:${nodeId}`;
+
+    if (!this.sequenceCounters.has(counterKey)) {
+      this.sequenceCounters.set(counterKey, 0);
+    }
+
+    const currentSequence = this.sequenceCounters.get(counterKey)!;
+    this.sequenceCounters.set(counterKey, currentSequence + 1);
+
+    return currentSequence;
+  }
+
+  /**
+   * Parse node ID components for metadata enrichment
+   * Returns domain/phase/activity/detail if node ID is canonical, undefined otherwise
+   */
+  private parseNodeIdComponents(nodeId: string): {
+    domain?: string;
+    phase?: string;
+    activity?: string;
+    detail?: string;
+  } {
+    try {
+      const parts = parseNodeId(nodeId);
+      return {
+        domain: parts.domain,
+        phase: parts.phase,
+        activity: parts.activity,
+        detail: parts.detail,
+      };
+    } catch {
+      // Non-canonical node ID - return empty object
+      return {};
+    }
+  }
 
   // Token streaming methods - delegate to TokenStreamingService
   async initializeTokenStream(options: {
@@ -65,6 +109,9 @@ export class StreamingServiceAdapter implements IStreamingService {
 
   // Event streaming methods - delegate to EventStreamProcessorService and WebSocketBridge
   streamEvent(executionId: string, nodeId: string, event: any): void {
+    // Parse node ID to extract hierarchical components
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const streamUpdate: StreamUpdate = {
       type: StreamEventType.EVENTS,
       data: event,
@@ -72,7 +119,9 @@ export class StreamingServiceAdapter implements IStreamingService {
         executionId,
         nodeId,
         timestamp: new Date(),
-        sequenceNumber: Date.now(),
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
+        // Include node ID structure for metrics/observability
+        ...nodeIdParts,
       },
     };
 
@@ -82,13 +131,22 @@ export class StreamingServiceAdapter implements IStreamingService {
   }
 
   async emitEvent(eventType: string, data: any): Promise<void> {
+    const executionId = data.executionId || 'global';
+    const nodeId = data.nodeId || eventType; // Use eventType as fallback node ID
+
+    // Parse node ID to extract hierarchical components
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const streamUpdate: StreamUpdate = {
       type: StreamEventType.EVENTS,
       data: { eventType, ...data },
       metadata: {
-        executionId: data.executionId || 'global',
+        executionId,
+        nodeId,
         timestamp: new Date(),
-        sequenceNumber: Date.now(),
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
+        // Include node ID structure for metrics/observability
+        ...nodeIdParts,
       },
     };
 
@@ -101,6 +159,9 @@ export class StreamingServiceAdapter implements IStreamingService {
 
   // Progress streaming methods - delegate to WebSocketBridge
   streamProgress(executionId: string, nodeId: string, progress: any): void {
+    // Parse node ID to extract hierarchical components
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const streamUpdate: StreamUpdate = {
       type: StreamEventType.PROGRESS,
       data: progress,
@@ -108,7 +169,9 @@ export class StreamingServiceAdapter implements IStreamingService {
         executionId,
         nodeId,
         timestamp: new Date(),
-        sequenceNumber: Date.now(),
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
+        // Include node ID structure for metrics/observability
+        ...nodeIdParts,
       },
     };
 
@@ -116,13 +179,22 @@ export class StreamingServiceAdapter implements IStreamingService {
   }
 
   async emitProgress(eventType: string, data: any): Promise<void> {
+    const executionId = data.executionId || 'global';
+    const nodeId = data.nodeId || eventType; // Use eventType as fallback node ID
+
+    // Parse node ID to extract hierarchical components
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const streamUpdate: StreamUpdate = {
       type: StreamEventType.PROGRESS,
       data: { eventType, ...data },
       metadata: {
-        executionId: data.executionId || 'global',
+        executionId,
+        nodeId,
         timestamp: new Date(),
-        sequenceNumber: Date.now(),
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
+        // Include node ID structure for metrics/observability
+        ...nodeIdParts,
       },
     };
 
@@ -133,13 +205,22 @@ export class StreamingServiceAdapter implements IStreamingService {
 
   // WebSocket integration methods - delegate to WebSocketBridgeService
   async broadcastToExecution(executionId: string, data: any): Promise<void> {
+    // Use 'broadcast' as default node ID for general execution broadcasts
+    const nodeId = data.nodeId || 'broadcast';
+
+    // Parse node ID to extract hierarchical components
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const streamUpdate: StreamUpdate = {
       type: StreamEventType.VALUES,
       data,
       metadata: {
         executionId,
+        nodeId,
         timestamp: new Date(),
-        sequenceNumber: Date.now(),
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
+        // Include node ID structure for metrics/observability
+        ...nodeIdParts,
       },
     };
 
@@ -147,13 +228,22 @@ export class StreamingServiceAdapter implements IStreamingService {
   }
 
   async sendToClient(clientId: string, data: any): Promise<void> {
+    const executionId = `client-${clientId}`;
+    const nodeId = data.nodeId || 'direct-message';
+
+    // Parse node ID to extract hierarchical components
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const streamUpdate: StreamUpdate = {
       type: StreamEventType.VALUES,
       data,
       metadata: {
-        executionId: 'direct-client',
+        executionId,
+        nodeId,
         timestamp: new Date(),
-        sequenceNumber: Date.now(),
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
+        // Include node ID structure for metrics/observability
+        ...nodeIdParts,
       },
     };
 
@@ -172,9 +262,9 @@ export class StreamingServiceAdapter implements IStreamingService {
             // Basic stream subscription
             // eslint-disable-next-line @typescript-eslint/no-empty-function
             return { unsubscribe: () => {} };
-          }
+          },
         };
-      }
+      },
     };
   }
 
@@ -186,5 +276,14 @@ export class StreamingServiceAdapter implements IStreamingService {
   closeStream(executionId: string): void {
     // Close token stream if it exists
     this.tokenStreamingService.closeTokenStream(executionId, 'all');
+
+    // Clean up sequence counters for this execution
+    const keysToDelete: string[] = [];
+    for (const key of this.sequenceCounters.keys()) {
+      if (key.startsWith(`${executionId}:`)) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach((key) => this.sequenceCounters.delete(key));
   }
 }

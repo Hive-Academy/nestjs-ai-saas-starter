@@ -35,7 +35,7 @@ import {
   CreatedAt,
   UpdatedAt,
   NotNull,
-  Repository,
+  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
   Safe,
@@ -43,7 +43,8 @@ import {
   CypherQuery,
   Transactional,
   PropIndex,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  FindOptions,
 } from '../index';
 
 // ============================================================================
@@ -286,8 +287,8 @@ export interface FunnelAnalysis {
 @Repository(() => Event)
 @Injectable()
 export class EventRepository extends BaseRepositoryService<Event> {
-  constructor(@InjectNeogma() private readonly neogmaService: NeogmaService) {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
   }
 
   /**

@@ -1,39 +1,67 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
   Safe,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  type FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { Achievement } from '../../entities/neo4j/achievement.entity';
 
 /**
- * Achievement Repository
+ * Achievement Repository (Composition Pattern)
  *
  * For: personal-brand-memory.service.ts (1,271 lines)
  *
  * Provides type-safe operations for achievement tracking including
  * innovation analysis, technology usage patterns, and personal brand insights
- * using modern @Repository pattern.
+ * using modern composition pattern (NO inheritance).
  */
-@Repository(() => Achievement)
+@Neo4jRepository(() => Achievement)
 @Injectable()
-export class AchievementRepository extends BaseRepositoryService<Achievement> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
-  }
+export class AchievementRepository {
+  private readonly label = 'Achievement';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
+  // CRUD OPERATIONS (Delegated to Neo4jCrudService)
   // ============================================================================
-  // - findById(id: string): Promise<Achievement | null>
-  // - findAll(options?: FindOptions<Achievement>): Promise<Achievement[]>
-  // - create(data: Partial<Achievement>): Promise<Achievement>
-  // - update(id: string, updates: Partial<Achievement>): Promise<Achievement | null>
-  // - delete(id: string): Promise<boolean>
-  // - count(where?: Partial<Achievement>): Promise<number>
-  // - exists(id: string): Promise<boolean>
+
+  async findById(id: string): Promise<Achievement | null> {
+    return this.crud.findById<Achievement>(this.label, id);
+  }
+
+  async findAll(options?: FindOptions<Achievement>): Promise<Achievement[]> {
+    return this.crud.findAll<Achievement>(this.label, options);
+  }
+
+  async create(data: Partial<Achievement>): Promise<Achievement> {
+    return this.crud.create<Achievement>(this.label, data);
+  }
+
+  async update(
+    id: string,
+    updates: Partial<Achievement>
+  ): Promise<Achievement | null> {
+    return this.crud.update<Achievement>(this.label, id, updates);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  async count(where?: Partial<Achievement>): Promise<number> {
+    return this.crud.count<Achievement>(this.label, where);
+  }
+
+  async exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
+  }
 
   // ============================================================================
   // ACHIEVEMENT MANAGEMENT

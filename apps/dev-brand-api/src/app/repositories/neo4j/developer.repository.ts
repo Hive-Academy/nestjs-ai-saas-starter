@@ -1,39 +1,67 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
   Safe,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  type FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { Developer } from '../../entities/neo4j/developer.entity';
 
 /**
- * Developer Repository
+ * Developer Repository (Composition Pattern)
  *
  * For: personal-brand-memory.service.ts (1,271 lines)
  *
  * Provides type-safe operations for developer profile management including
  * analytics tracking, skill development, and personal brand insights
- * using modern @Repository pattern.
+ * using modern composition pattern (NO inheritance).
  */
-@Repository(() => Developer)
+@Neo4jRepository(() => Developer)
 @Injectable()
-export class DeveloperRepository extends BaseRepositoryService<Developer> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
-  }
+export class DeveloperRepository {
+  private readonly label = 'Developer';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
+  // CRUD OPERATIONS (Delegated to Neo4jCrudService)
   // ============================================================================
-  // - findById(id: string): Promise<Developer | null>
-  // - findAll(options?: FindOptions<Developer>): Promise<Developer[]>
-  // - create(data: Partial<Developer>): Promise<Developer>
-  // - update(id: string, updates: Partial<Developer>): Promise<Developer | null>
-  // - delete(id: string): Promise<boolean>
-  // - count(where?: Partial<Developer>): Promise<number>
-  // - exists(id: string): Promise<boolean>
+
+  async findById(id: string): Promise<Developer | null> {
+    return this.crud.findById<Developer>(this.label, id);
+  }
+
+  async findAll(options?: FindOptions<Developer>): Promise<Developer[]> {
+    return this.crud.findAll<Developer>(this.label, options);
+  }
+
+  async create(data: Partial<Developer>): Promise<Developer> {
+    return this.crud.create<Developer>(this.label, data);
+  }
+
+  async update(
+    id: string,
+    updates: Partial<Developer>
+  ): Promise<Developer | null> {
+    return this.crud.update<Developer>(this.label, id, updates);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  async count(where?: Partial<Developer>): Promise<number> {
+    return this.crud.count<Developer>(this.label, where);
+  }
+
+  async exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
+  }
 
   // ============================================================================
   // DEVELOPER PROFILE MANAGEMENT

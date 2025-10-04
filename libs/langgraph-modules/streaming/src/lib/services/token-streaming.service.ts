@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Inject } from '@nestjs/common';
 import { getStreamingConfigWithDefaults } from '../utils/streaming-config.accessor';
@@ -52,7 +48,7 @@ interface TokenStreamConfig extends StreamTokenDecoratorMetadata {
 /**
  * Service for token-level streaming implementation
  * Handles buffering, throttling, and advanced token processing
- * 
+ *
  * REFACTORED: Now implements IInitializableService for manual start/stop control
  */
 @Injectable()
@@ -65,7 +61,7 @@ export class TokenStreamingService implements IInitializableService {
 
   // Token stream configurations per execution:node
   private readonly tokenStreams = new Map<string, TokenStreamConfig>();
-  
+
   // Initialization tracking
   private readonly initialized = new Set<string>();
 
@@ -193,7 +189,7 @@ export class TokenStreamingService implements IInitializableService {
 
     // Store configuration
     this.tokenStreams.set(streamKey, streamConfig);
-    
+
     // Mark as initialized
     this.initialized.add(streamKey);
 
@@ -235,7 +231,7 @@ export class TokenStreamingService implements IInitializableService {
     metadata: Record<string, unknown> = {}
   ): void {
     const streamKey = `${executionId}:${nodeId}`;
-    
+
     // Auto-initialize stream if not already initialized
     if (!this.initialized.has(streamKey)) {
       this.lazyInit(executionId, nodeId).catch((err) => {
@@ -244,7 +240,7 @@ export class TokenStreamingService implements IInitializableService {
         );
       });
     }
-    
+
     const streamConfig = this.tokenStreams.get(streamKey);
 
     if (!streamConfig) {
@@ -763,7 +759,7 @@ export class TokenStreamingService implements IInitializableService {
   }
 
   /**
-   * Process string tokens
+   * Process string tokens - FIXED: Now emits tokens to subscribers
    */
   private async processStringTokens(
     content: string,
@@ -772,19 +768,48 @@ export class TokenStreamingService implements IInitializableService {
     // Simple tokenization - split by whitespace
     const tokens = content.split(/\s+/).filter((token) => token.length > 0);
 
-    // This would need execution context from the decorator
-    // For now, log that tokens were processed
-    this.logger.debug(`Processed ${tokens.length} tokens from string content`);
+    // Extract execution context from config
+    const executionId = config.executionId || 'unknown';
+    const nodeId = config.nodeId || config.methodName;
+
+    try {
+      // Emit each token to the stream with proper context
+      for (let i = 0; i < tokens.length; i++) {
+        this.streamToken(executionId, nodeId, tokens[i], {
+          tokenIndex: i,
+          totalTokens: tokens.length,
+          format: config.format || 'text',
+        });
+      }
+
+      this.logger.debug(
+        `Processed ${tokens.length} tokens from string content for ${executionId}:${nodeId}`
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error processing string tokens for ${executionId}:${nodeId}:`,
+        error
+      );
+
+      // Handle error based on strategy
+      if (config.errorStrategy === 'throw') {
+        throw error;
+      }
+    }
   }
 
   /**
    * Process async iterable tokens - Fixed to actually yield and process items
+   * ENHANCED: Configurable delay and error handling
    */
   private async processAsyncIterableTokens(
     iterable: AsyncIterable<any>,
     config: StreamTokenDecoratorMetadata
   ): Promise<void> {
     let tokenCount = 0;
+
+    // Use configured delay or default to 25ms
+    const delay = config.streamingDelay ?? 25;
 
     try {
       // Actually process each item from the async iterable
@@ -798,13 +823,24 @@ export class TokenStreamingService implements IInitializableService {
         // Process the token with real streaming
         await this.processToken(token);
 
-        // Add small delay for streaming effect
-        await new Promise((resolve) => setTimeout(resolve, 25));
+        // Add configurable delay for streaming effect
+        if (delay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
       }
 
-      this.logger.debug(`Processed ${tokenCount} tokens from async iterable`);
+      this.logger.debug(
+        `Processed ${tokenCount} tokens from async iterable with ${delay}ms delay`
+      );
     } catch (error) {
       this.logger.error('Error processing async iterable tokens:', error);
+
+      // Handle error based on strategy
+      if (config.errorStrategy === 'continue') {
+        this.logger.warn('Continuing despite error (errorStrategy: continue)');
+        return;
+      }
+
       throw error;
     }
   }
@@ -866,7 +902,9 @@ export class TokenStreamingService implements IInitializableService {
     const { totalTokensProcessed } = this;
 
     // Calculate average tokens per second
-    const elapsedSeconds = this.serviceStartTime ? (Date.now() - this.serviceStartTime.getTime()) / 1000 : 1;
+    const elapsedSeconds = this.serviceStartTime
+      ? (Date.now() - this.serviceStartTime.getTime()) / 1000
+      : 1;
     const averageTokensPerSecond =
       elapsedSeconds > 0 ? totalTokensProcessed / elapsedSeconds : 0;
 

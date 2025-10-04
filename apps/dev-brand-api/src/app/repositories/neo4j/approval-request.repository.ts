@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepository,
+  Neo4jCrudService,
   InjectNeogma,
   NeogmaService,
   Safe,
-  BaseRepositoryService,
+  FindOptions,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import {
@@ -22,35 +23,76 @@ import type {
  *
  * Replaces: neo4j-hitl-storage.adapter.ts (500 lines)
  *
+ * Uses composition pattern with Neo4jCrudService for CRUD operations.
  * Provides type-safe CRUD operations and custom business methods
- * for HITL approval request management using modern @Repository pattern.
+ * for HITL approval request management.
  *
- * The @Repository decorator auto-generates these methods:
+ * CRUD methods (delegated to Neo4jCrudService):
  * - findById(id: string): Promise<ApprovalRequest | null>
- * - findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]>
+ * - findAll(options?: FindOptions): Promise<ApprovalRequest[]>
  * - create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
  * - update(id: string, updates: Partial<ApprovalRequest>): Promise<ApprovalRequest | null>
  * - delete(id: string): Promise<boolean>
  * - count(where?: Partial<ApprovalRequest>): Promise<number>
  * - exists(id: string): Promise<boolean>
+ *
+ * Custom methods for approval workflow:
+ * - storeApprovalRequest(): Store new approval request
+ * - getApprovalRequest(): Get approval with optional response
+ * - getPendingApprovals(): Get all pending approvals
+ * - getApprovalsByExecution(): Get approvals for specific execution
+ * - updateApprovalStatus(): Update approval status and response
+ * - deleteApprovalRequest(): Delete approval request
+ * - deleteExpiredApprovals(): Clean up expired approvals
+ * - getStorageStats(): Get storage statistics
  */
-@Repository(() => ApprovalRequest)
+@Neo4jRepository(() => ApprovalRequest)
 @Injectable()
-export class ApprovalRequestRepository extends BaseRepositoryService<ApprovalRequest> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
-  }
+export class ApprovalRequestRepository {
+  private readonly label = 'ApprovalRequest';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
+  // CRUD METHODS (delegated to Neo4jCrudService)
   // ============================================================================
-  // - create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
-  // - findById(id: string): Promise<ApprovalRequest | null>
-  // - findAll(filter?: any): Promise<ApprovalRequest[]>
-  // - update(id: string, data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
-  // - delete(id: string): Promise<boolean>
-  // - count(filter?: any): Promise<number>
-  // - exists(id: string): Promise<boolean>
+
+  findById(id: string): Promise<ApprovalRequest | null> {
+    return this.crud.findById<ApprovalRequest>(this.label, id);
+  }
+
+  findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]> {
+    return this.crud.findAll<ApprovalRequest>(this.label, options);
+  }
+
+  create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest> {
+    return this.crud.create<ApprovalRequest>(
+      this.label,
+      data as Omit<ApprovalRequest, 'id' | 'createdAt' | 'updatedAt'>
+    );
+  }
+
+  update(
+    id: string,
+    data: Partial<ApprovalRequest>
+  ): Promise<ApprovalRequest | null> {
+    return this.crud.update<ApprovalRequest>(this.label, id, data);
+  }
+
+  delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  count(where?: Partial<ApprovalRequest>): Promise<number> {
+    return this.crud.count<ApprovalRequest>(this.label, where);
+  }
+
+  exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
+  }
 
   // ============================================================================
   // CUSTOM BUSINESS METHODS (migrated from legacy adapter)

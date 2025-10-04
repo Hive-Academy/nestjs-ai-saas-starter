@@ -14,7 +14,8 @@ import type { Neo4jRecord } from '../index';
 import {
   AuditLog,
   Authorize,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  FindOptions,
   CreatedAt,
   Id,
   InjectNeogma,
@@ -24,7 +25,7 @@ import {
   NeogmaService,
   NotNull,
   PropIndex,
-  Repository,
+  Neo4jRepository,
   RequireTenantFeatures,
   Safe,
   TenantContextService,
@@ -252,8 +253,8 @@ export interface TenantHealthMetrics {
 @Repository(() => Order)
 @Injectable()
 export class OrderRepository extends BaseRepositoryService<Order> {
-  constructor() {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
     // The @Repository decorator auto-injects NeogmaService and creates CRUD methods
   }
 
@@ -299,8 +300,8 @@ export class OrderRepository extends BaseRepositoryService<Order> {
 @Repository(() => Customer)
 @Injectable()
 export class CustomerRepository extends BaseRepositoryService<Customer> {
-  constructor() {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
   }
 
   /**
@@ -343,8 +344,8 @@ export class CustomerRepository extends BaseRepositoryService<Customer> {
 @Repository(() => Product)
 @Injectable()
 export class ProductRepository extends BaseRepositoryService<Product> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
   }
 
   /**
@@ -363,7 +364,7 @@ export class ProductRepository extends BaseRepositoryService<Product> {
    */
   // Tenant scoping: Implement via middleware or query filters
   async findLowStock(threshold = 10): Promise<Product[]> {
-    const queryBuilder = this.neogma.createQueryBuilder();
+    const queryBuilder = this.neogmaService.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     const thresholdParam = bindParam.add(threshold);
@@ -379,9 +380,9 @@ export class ProductRepository extends BaseRepositoryService<Product> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogma.run(cypher, params);
+    const result = await this.neogmaService.run(cypher, params);
     return result.records.map(
-      (record) => record.get('p').properties as Product
+      (record: Neo4jRecord) => record.get('p').properties as Product
     );
   }
 }
@@ -397,7 +398,7 @@ export class ECommerceService {
     private readonly customerRepo: CustomerRepository,
     private readonly productRepo: ProductRepository,
     private readonly multiTenantService: MultiTenantNeo4jService,
-    @InjectNeogma() private readonly neogma: NeogmaService
+    @InjectNeogma() private readonly neogmaService: NeogmaService
   ) {
     // No model registration needed - @Repository decorator handles it
   }
@@ -499,7 +500,7 @@ export class ECommerceService {
   @Authorize({ roles: ['admin', 'manager'] })
   async getOrderAnalytics(): Promise<OrderAnalytics> {
     // Get basic order statistics
-    const basicStatsBuilder = this.neogma.createQueryBuilder();
+    const basicStatsBuilder = this.neogmaService.createQueryBuilder();
     const basicBindParam = basicStatsBuilder.getBindParam();
 
     basicStatsBuilder.match('(o:Order)').return(`
@@ -519,7 +520,7 @@ export class ECommerceService {
     const basicStats = basicStatsResult.records[0];
 
     // Get orders by status
-    const statusBuilder = this.neogma.createQueryBuilder();
+    const statusBuilder = this.neogmaService.createQueryBuilder();
     const statusBindParam = statusBuilder.getBindParam();
 
     statusBuilder
@@ -536,7 +537,7 @@ export class ECommerceService {
     });
 
     // Get top customers
-    const topCustomersBuilder = this.neogma.createQueryBuilder();
+    const topCustomersBuilder = this.neogmaService.createQueryBuilder();
     const topCustomersBindParam = topCustomersBuilder.getBindParam();
 
     topCustomersBuilder
@@ -567,7 +568,7 @@ export class ECommerceService {
     await session.close();
 
     // Get revenue by month (last 12 months)
-    const revenueBuilder = this.neogma.createQueryBuilder();
+    const revenueBuilder = this.neogmaService.createQueryBuilder();
     const revenueBindParam = revenueBuilder.getBindParam();
 
     const startDateParam = revenueBindParam.add(

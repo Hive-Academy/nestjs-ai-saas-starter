@@ -1,10 +1,7 @@
-import {
-  Injectable,
-  Logger,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Subject, Subscription, filter, merge } from 'rxjs';
+import { parseNodeId } from '@hive-academy/langgraph-core';
 import {
   StreamUpdate,
   StreamEventType,
@@ -40,7 +37,7 @@ interface StreamingRoom {
 /**
  * Service for bridging workflow streams to WebSocket connections
  * Enhanced with room-based streaming, token integration, and real-time coordination
- * 
+ *
  * REFACTORED: Now implements IInitializableService for manual start/stop control
  */
 @Injectable()
@@ -52,7 +49,10 @@ export class WebSocketBridgeService implements IInitializableService {
   private readonly activeSubscriptions = new Set<Subscription>();
   private cleanupInterval?: NodeJS.Timeout;
   private gatewayInstance?: any; // StreamingWebSocketGateway instance
-  
+
+  // Hierarchical sequence counters scoped per execution + node ID
+  private readonly sequenceCounters = new Map<string, number>();
+
   // Service state
   public isStarted = false;
 
@@ -61,6 +61,47 @@ export class WebSocketBridgeService implements IInitializableService {
     @Optional()
     private readonly tokenStreamingService?: TokenStreamingService // Direct injection - optional for flexibility
   ) {}
+
+  /**
+   * Get and increment sequence number for a specific execution + node
+   * Uses hierarchical counter key: `${executionId}:${nodeId}`
+   */
+  private getNodeSequence(executionId: string, nodeId: string): number {
+    const counterKey = `${executionId}:${nodeId}`;
+
+    if (!this.sequenceCounters.has(counterKey)) {
+      this.sequenceCounters.set(counterKey, 0);
+    }
+
+    const currentSequence = this.sequenceCounters.get(counterKey)!;
+    this.sequenceCounters.set(counterKey, currentSequence + 1);
+
+    return currentSequence;
+  }
+
+  /**
+   * Parse node ID components for metadata enrichment
+   * Returns domain/phase/activity/detail if node ID is canonical, undefined otherwise
+   */
+  private parseNodeIdComponents(nodeId: string): {
+    domain?: string;
+    phase?: string;
+    activity?: string;
+    detail?: string;
+  } {
+    try {
+      const parts = parseNodeId(nodeId);
+      return {
+        domain: parts.domain,
+        phase: parts.phase,
+        activity: parts.activity,
+        detail: parts.detail,
+      };
+    } catch {
+      // Non-canonical node ID - return empty object
+      return {};
+    }
+  }
 
   /**
    * REFACTORED: Remove legacy OnModuleInit pattern
@@ -419,13 +460,18 @@ export class WebSocketBridgeService implements IInitializableService {
       return;
     }
 
+    const nodeId = data.nodeId || 'stream-processed';
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const update: StreamUpdate = {
       type: StreamEventType.EVENTS,
       data: data.data,
       metadata: {
         timestamp: data.timestamp || new Date(),
-        sequenceNumber: 0,
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
         executionId,
+        nodeId,
+        ...nodeIdParts,
       },
     };
 
@@ -438,14 +484,18 @@ export class WebSocketBridgeService implements IInitializableService {
   @OnEvent('client.progress')
   handleClientProgress(data: any): void {
     const { executionId, progress, message } = data;
+    const nodeId = data.nodeId || 'client-progress';
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
 
     const update: StreamUpdate = {
       type: StreamEventType.PROGRESS,
       data: { progress, message },
       metadata: {
         timestamp: new Date(),
-        sequenceNumber: 0,
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
         executionId,
+        nodeId,
+        ...nodeIdParts,
       },
     };
 
@@ -458,14 +508,18 @@ export class WebSocketBridgeService implements IInitializableService {
   @OnEvent('client.milestone')
   handleClientMilestone(data: any): void {
     const { executionId, milestone, timestamp } = data;
+    const nodeId = data.nodeId || 'client-milestone';
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
 
     const update: StreamUpdate = {
       type: StreamEventType.MILESTONE,
       data: { milestone },
       metadata: {
         timestamp: timestamp || new Date(),
-        sequenceNumber: 0,
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
         executionId,
+        nodeId,
+        ...nodeIdParts,
       },
     };
 
@@ -478,6 +532,8 @@ export class WebSocketBridgeService implements IInitializableService {
   @OnEvent('tokens.aggregated')
   handleAggregatedTokens(data: any): void {
     const { executionId, tokens, totalCount } = data;
+    const nodeId = data.nodeId || 'tokens-aggregated';
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
 
     const update: StreamUpdate = {
       type: StreamEventType.TOKEN,
@@ -488,8 +544,10 @@ export class WebSocketBridgeService implements IInitializableService {
       },
       metadata: {
         timestamp: new Date(),
-        sequenceNumber: 0,
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
         executionId,
+        nodeId,
+        ...nodeIdParts,
       },
     };
 
@@ -503,6 +561,8 @@ export class WebSocketBridgeService implements IInitializableService {
   handleTokenBatchProcessed(data: any): void {
     const { streamKey, tokenCount, timestamp } = data;
     const [executionId] = streamKey.split(':');
+    const nodeId = data.nodeId || 'token-batch';
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
 
     const update: StreamUpdate = {
       type: StreamEventType.EVENTS,
@@ -513,8 +573,10 @@ export class WebSocketBridgeService implements IInitializableService {
       },
       metadata: {
         timestamp: timestamp || new Date(),
-        sequenceNumber: 0,
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
         executionId,
+        nodeId,
+        ...nodeIdParts,
       },
     };
 
@@ -534,14 +596,19 @@ export class WebSocketBridgeService implements IInitializableService {
       return;
     }
 
+    const nodeId = data.nodeId || 'workflow-stream';
+    const nodeIdParts = this.parseNodeIdComponents(nodeId);
+
     const update: StreamUpdate = {
       type: StreamEventType.EVENTS,
       data,
       metadata: {
         timestamp: new Date(),
-        sequenceNumber: 0,
+        sequenceNumber: this.getNodeSequence(executionId, nodeId), // ✅ Per-node counter
         executionId,
+        nodeId,
         event,
+        ...nodeIdParts,
       },
     };
 
@@ -650,7 +717,9 @@ export class WebSocketBridgeService implements IInitializableService {
    */
   private setupTokenStreamIntegration(): void {
     if (!this.tokenStreamingService) {
-      this.logger.debug('Token streaming service not available - skipping integration');
+      this.logger.debug(
+        'Token streaming service not available - skipping integration'
+      );
       return;
     }
 
@@ -659,15 +728,17 @@ export class WebSocketBridgeService implements IInitializableService {
       if (svc && typeof svc.getGlobalTokenStream === 'function') {
         // Add timeout to prevent hanging on subscription
         const setupTimeout = setTimeout(() => {
-          this.logger.warn('Token stream integration setup timeout - proceeding without token streaming');
+          this.logger.warn(
+            'Token stream integration setup timeout - proceeding without token streaming'
+          );
         }, 5000);
 
         try {
           this.logger.debug('Getting global token stream...');
           const tokenStream = svc.getGlobalTokenStream();
-          
+
           this.logger.debug('Token stream obtained, subscribing...');
-          
+
           // Make subscription completely asynchronous and non-blocking
           setImmediate(() => {
             try {
@@ -687,30 +758,40 @@ export class WebSocketBridgeService implements IInitializableService {
 
               this.activeSubscriptions.add(tokenSubscription);
               this.logger.debug('Token stream integration setup completed');
-              
+
               // Ensure workflow stream integration runs after token stream setup
               setImmediate(() => {
-                this.logger.debug('Workflow stream integration setup completed');
+                this.logger.debug(
+                  'Workflow stream integration setup completed'
+                );
               });
             } catch (asyncSubscriptionError) {
-              this.logger.warn('Failed to subscribe to token stream asynchronously:', asyncSubscriptionError);
+              this.logger.warn(
+                'Failed to subscribe to token stream asynchronously:',
+                asyncSubscriptionError
+              );
             }
           });
-          
+
           // Clear timeout immediately since we got the stream
           clearTimeout(setupTimeout);
-          
         } catch (subscriptionError) {
           clearTimeout(setupTimeout);
           this.logger.warn('Failed to get token stream:', subscriptionError);
-          this.logger.debug('WebSocket bridge will continue without token streaming');
+          this.logger.debug(
+            'WebSocket bridge will continue without token streaming'
+          );
         }
       } else {
-        this.logger.debug('Token streaming service does not have getGlobalTokenStream method');
+        this.logger.debug(
+          'Token streaming service does not have getGlobalTokenStream method'
+        );
       }
     } catch (error) {
       this.logger.error('Error during token stream integration setup:', error);
-      this.logger.debug('WebSocket bridge will continue without token streaming');
+      this.logger.debug(
+        'WebSocket bridge will continue without token streaming'
+      );
     }
   }
 
@@ -876,6 +957,9 @@ export class WebSocketBridgeService implements IInitializableService {
     this.clients.clear();
     this.executionToClients.clear();
     this.rooms.clear();
+
+    // Clear sequence counters
+    this.sequenceCounters.clear();
 
     this.logger.log('WebSocketBridgeService cleanup completed');
   }

@@ -7,9 +7,9 @@
 import { EnvLoader } from './app/config/env-loader.util';
 
 // Initialize environment loading with only encapsulated .env files
-// When running from apps/dev-brand-api, we need to go up 2 levels to find the project root
 import { join } from 'path';
-const projectRoot = join(process.cwd(), '../..');
+// Use process.cwd() directly - when running via nx or node, we're already in project root
+const projectRoot = process.cwd();
 const envResult = EnvLoader.load({
   rootDir: projectRoot,
   envFiles: [

@@ -18,7 +18,7 @@ import {
   UpdatedAt,
   PropIndex,
   NotNull,
-  Repository,
+  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
   Safe,
@@ -26,7 +26,8 @@ import {
   AuditLog,
   RelationshipRepository,
   GraphRepository,
-  BaseRepositoryService,
+  Neo4jCrudService,
+  FindOptions,
 } from '../index';
 
 // ============================================================================
@@ -172,8 +173,8 @@ export type SocialRelationship =
 @Repository(() => Person)
 @Injectable()
 export class PersonRepository extends BaseRepositoryService<Person> {
-  constructor() {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
   }
 
   /**
@@ -206,8 +207,8 @@ export class PersonRepository extends BaseRepositoryService<Person> {
 @Repository(() => Company)
 @Injectable()
 export class CompanyRepository extends BaseRepositoryService<Company> {
-  constructor() {
-    super();
+  constructor(neogmaService: NeogmaService) {
+    super(neogmaService);
   }
 
   /**

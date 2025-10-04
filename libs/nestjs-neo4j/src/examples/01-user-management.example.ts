@@ -19,16 +19,17 @@ import {
   NodeKey,
   Unique,
   NotNull,
-  Repository,
+  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
+  Neo4jCrudService,
+  FindOptions,
   Safe,
   Authorize,
   ValidateInput,
   AuditLog,
   Transactional,
   PropIndex,
-  BaseRepositoryService,
 } from '../index';
 
 // ============================================================================
@@ -124,9 +125,9 @@ export interface UserAnalytics {
 // ============================================================================
 
 /**
- * UserRepository - demonstrates @Repository decorator usage
+ * UserRepository - demonstrates composition pattern with Neo4jCrudService
  *
- * The @Repository decorator auto-generates these methods:
+ * CRUD methods delegated to Neo4jCrudService:
  * - findById(id: string): Promise<User | null>
  * - findAll(options?: FindOptions<User>): Promise<User[]>
  * - create(data: Partial<User>): Promise<User>
@@ -135,13 +136,48 @@ export interface UserAnalytics {
  * - count(where?: Partial<User>): Promise<number>
  * - exists(id: string): Promise<boolean>
  *
- * No need to extend BaseRepositoryService - the decorator handles everything!
+ * Uses composition pattern - inject Neo4jCrudService for CRUD, NeogmaService for custom queries
  */
-@Repository(() => User)
+@Neo4jRepository(() => User)
 @Injectable()
-export class UserRepository extends BaseRepositoryService<User> {
-  constructor() {
-    super();
+export class UserRepository {
+  private readonly label = 'User';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
+
+  // Delegate CRUD operations to Neo4jCrudService
+  findById(id: string) {
+    return this.crud.findById<User>(this.label, id);
+  }
+
+  findAll(options?: FindOptions<User>) {
+    return this.crud.findAll<User>(this.label, options);
+  }
+
+  create(data: Partial<User>) {
+    return this.crud.create<User>(
+      this.label,
+      data as Omit<User, 'id' | 'createdAt' | 'updatedAt'>
+    );
+  }
+
+  update(id: string, updates: Partial<User>) {
+    return this.crud.update<User>(this.label, id, updates);
+  }
+
+  delete(id: string) {
+    return this.crud.delete(this.label, id);
+  }
+
+  count(where?: Partial<User>) {
+    return this.crud.count<User>(this.label, where);
+  }
+
+  exists(id: string) {
+    return this.crud.exists(this.label, id);
   }
 
   /**

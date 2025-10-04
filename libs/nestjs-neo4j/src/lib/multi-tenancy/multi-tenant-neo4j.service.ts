@@ -16,7 +16,7 @@
 import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { Driver, Session, Transaction, QueryResult } from 'neo4j-driver';
 import { TenantContextService } from './tenant-context.service';
-import { NeogmaService } from '../core/neogma.service';
+import { NeogmaService } from '../services/neogma.service';
 import { Neo4jRecordShape } from '../types/neo4j-types';
 
 /**

@@ -144,7 +144,16 @@ export function StreamToken(options: StreamTokenOptions = {}): MethodDecorator {
 
       // Handle token streaming results
       if (this.streamingService && tokenMetadata.enabled && result) {
-        await this.streamingService.processTokenResult(result, tokenMetadata);
+        // Pass executionId and nodeId from context to config
+        const enrichedConfig = {
+          ...tokenMetadata,
+          executionId: (args[0] as any)?.executionId,
+          nodeId:
+            (args[0] as any)?.currentNode ||
+            tokenMetadata.nodeId ||
+            tokenMetadata.methodName,
+        };
+        await this.streamingService.processTokenResult(result, enrichedConfig);
       }
 
       return result;

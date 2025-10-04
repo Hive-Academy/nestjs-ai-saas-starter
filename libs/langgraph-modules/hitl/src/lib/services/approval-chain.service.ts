@@ -223,24 +223,28 @@ export interface ApprovalHistoryEntry {
 @Injectable()
 export class ApprovalChainService implements OnModuleInit {
   private readonly logger = new Logger(ApprovalChainService.name);
-  
+
   // Cache-only storage for performance (NOT primary storage)
   private readonly requestCache = new Map<string, ApprovalRequest>();
   private readonly chainCache = new Map<string, ApprovalLevel[]>();
 
   constructor(
-    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    private readonly eventEmitter: EventEmitter2,
     @Inject('IApprovalChainStorageService')
     private readonly chainStorage: IApprovalChainStorageService
   ) {
-    this.logger.log('🔗 Approval Chain Service initialized with adapter-first storage');
+    this.logger.log(
+      '🔗 Approval Chain Service initialized with adapter-first storage'
+    );
   }
 
   /**
    * Module lifecycle - recover state from persistent storage
    */
   async onModuleInit(): Promise<void> {
-    this.logger.log('Approval Chain Service initializing with persistent storage');
+    this.logger.log(
+      'Approval Chain Service initializing with persistent storage'
+    );
     await this.recoverActiveRequests();
     this.logger.log('✅ Approval Chain Service initialized');
   }
@@ -252,7 +256,7 @@ export class ApprovalChainService implements OnModuleInit {
     try {
       // Recover all active approval requests
       const activeRequests = await this.chainStorage.getAllActiveRequests();
-      activeRequests.forEach(request => {
+      activeRequests.forEach((request) => {
         this.requestCache.set(request.id, request);
       });
 
@@ -262,23 +266,35 @@ export class ApprovalChainService implements OnModuleInit {
         this.chainCache.set(chainId, levels);
       });
 
-      this.logger.log(`✅ Recovered ${activeRequests.length} requests and ${Object.keys(allChains).length} chains`);
+      this.logger.log(
+        `✅ Recovered ${activeRequests.length} requests and ${
+          Object.keys(allChains).length
+        } chains`
+      );
     } catch (error) {
-      this.logger.error('❌ CRITICAL: Failed to recover approval chains - service will fail fast', error);
-      throw new Error('Cannot initialize ApprovalChainService without persistent storage recovery');
+      this.logger.error(
+        '❌ CRITICAL: Failed to recover approval chains - service will fail fast',
+        error
+      );
+      throw new Error(
+        'Cannot initialize ApprovalChainService without persistent storage recovery'
+      );
     }
   }
 
   /**
    * Create an approval chain with persistent storage
    */
-  async createApprovalChain(chainId: string, levels: ApprovalLevel[]): Promise<void> {
+  async createApprovalChain(
+    chainId: string,
+    levels: ApprovalLevel[]
+  ): Promise<void> {
     // Sort levels by priority
     const sortedLevels = [...levels].sort((a, b) => a.priority - b.priority);
 
     // ✅ CORRECT: Store in adapter first
     await this.chainStorage.storeApprovalChain(chainId, sortedLevels);
-    
+
     // ✅ CORRECT: Cache for performance
     this.chainCache.set(chainId, sortedLevels);
 
@@ -315,7 +331,12 @@ export class ApprovalChainService implements OnModuleInit {
       this.logger.log(
         `No approval levels required for execution ${executionId}`
       );
-      return this.createAutoApprovedRequest(executionId, chainId, chain, context);
+      return this.createAutoApprovedRequest(
+        executionId,
+        chainId,
+        chain,
+        context
+      );
     }
 
     const requestId = generateId('approval');
@@ -334,7 +355,7 @@ export class ApprovalChainService implements OnModuleInit {
 
     // ✅ CORRECT: Store in adapter first
     await this.chainStorage.storeApprovalRequest(request);
-    
+
     // ✅ CORRECT: Cache for performance
     this.requestCache.set(requestId, request);
 
@@ -360,7 +381,8 @@ export class ApprovalChainService implements OnModuleInit {
     // ✅ CORRECT: Load from cache first, then storage
     let request = this.requestCache.get(requestId);
     if (!request) {
-      request = (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
+      request =
+        (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
       if (request) {
         this.requestCache.set(requestId, request); // Update cache
       }
@@ -376,7 +398,9 @@ export class ApprovalChainService implements OnModuleInit {
 
     const currentLevel = request.chain[request.currentLevel];
     if (!currentLevel) {
-      throw new Error(`Invalid approval level ${request.currentLevel} for request ${requestId}`);
+      throw new Error(
+        `Invalid approval level ${request.currentLevel} for request ${requestId}`
+      );
     }
 
     // Add to history
@@ -585,7 +609,8 @@ export class ApprovalChainService implements OnModuleInit {
     // ✅ CORRECT: Load from cache first, then storage
     let request = this.requestCache.get(requestId);
     if (!request) {
-      request = (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
+      request =
+        (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
       if (request) {
         this.requestCache.set(requestId, request); // Update cache
       }
@@ -609,11 +634,11 @@ export class ApprovalChainService implements OnModuleInit {
     } else {
       request.status = 'timeout';
       request.updatedAt = new Date();
-      
+
       // ✅ CORRECT: Update storage first, then cache
       await this.chainStorage.updateApprovalRequest(request);
       this.requestCache.set(requestId, request);
-      
+
       await this.eventEmitter.emit('approval.timeout', {
         requestId,
         executionId: request.executionId,
@@ -655,7 +680,7 @@ export class ApprovalChainService implements OnModuleInit {
 
     // ✅ CORRECT: Store in adapter first
     await this.chainStorage.storeApprovalRequest(request);
-    
+
     // ✅ CORRECT: Cache for performance
     this.requestCache.set(requestId, request);
 
@@ -665,11 +690,14 @@ export class ApprovalChainService implements OnModuleInit {
   /**
    * Get approval request with adapter-first pattern
    */
-  async getApprovalRequest(requestId: string): Promise<ApprovalRequest | undefined> {
+  async getApprovalRequest(
+    requestId: string
+  ): Promise<ApprovalRequest | undefined> {
     // ✅ CORRECT: Check cache first, then storage
     let request = this.requestCache.get(requestId);
     if (!request) {
-      request = (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
+      request =
+        (await this.chainStorage.getApprovalRequest(requestId)) || undefined;
       if (request) {
         this.requestCache.set(requestId, request); // Update cache
       }
@@ -680,7 +708,9 @@ export class ApprovalChainService implements OnModuleInit {
   /**
    * Get pending approvals for approver with adapter-first pattern
    */
-  async getPendingApprovalsForApprover(approverId: string): Promise<ApprovalRequest[]> {
+  async getPendingApprovalsForApprover(
+    approverId: string
+  ): Promise<ApprovalRequest[]> {
     // ✅ CORRECT: Use storage adapter for comprehensive search
     return await this.chainStorage.getPendingApprovalsForApprover(approverId);
   }

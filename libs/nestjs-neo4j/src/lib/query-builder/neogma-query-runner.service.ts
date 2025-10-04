@@ -9,7 +9,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { QueryRunner, QueryBuilder, type Runnable, type Neogma } from 'neogma';
 import type { QueryResult as Neo4jQueryResult } from 'neo4j-driver';
 import type { QueryResult } from '../types/neogma-types';
-import { NeogmaService } from '../core/neogma.service';
+import { NeogmaService } from '../services/neogma.service';
 import { NEOGMA_TOKEN } from '../neogma/neogma.constants';
 
 /**
