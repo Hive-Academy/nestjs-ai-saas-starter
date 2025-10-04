@@ -18,7 +18,6 @@ import {
   UpdatedAt,
   PropIndex,
   NotNull,
-  Neo4jRepository,
   InjectNeogma,
   NeogmaService,
   Safe,
@@ -165,33 +164,65 @@ export type SocialRelationship =
 // ============================================================================
 
 /**
- * PersonRepository - demonstrates @Repository decorator usage
+ * PersonRepository - demonstrates current composition pattern
  *
- * The @Repository decorator auto-generates CRUD methods:
+ * Uses Neo4jCrudService for CRUD operations via delegation:
  * - findById, findAll, create, update, delete, count, exists
  */
-@Repository(() => Person)
 @Injectable()
-export class PersonRepository extends BaseRepositoryService<Person> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
+export class PersonRepository {
+  private readonly label = 'Person';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
+
+  // CRUD methods (delegated to Neo4jCrudService)
+  findById(id: string): Promise<Person | null> {
+    return this.crud.findById<Person>(this.label, id);
+  }
+
+  findAll(options?: FindOptions<Person>): Promise<Person[]> {
+    return this.crud.findAll<Person>(this.label, options);
+  }
+
+  create(
+    data: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<Person> {
+    return this.crud.create<Person>(this.label, data);
+  }
+
+  update(id: string, data: Partial<Person>): Promise<Person | null> {
+    return this.crud.update<Person>(this.label, id, data);
+  }
+
+  delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  count(where?: Partial<Person>): Promise<number> {
+    return this.crud.count<Person>(this.label, where);
+  }
+
+  exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
   }
 
   /**
    * Find people by profession with relationship counts
-   * Uses auto-generated findAll() method
+   * Custom business logic method
    */
   @Safe()
   async findByProfession(profession: string): Promise<Person[]> {
     return this.findAll({
       where: { profession },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
     });
   }
 
   /**
    * Find people in same location
-   * Uses auto-generated findAll() method
+   * Custom business logic method
    */
   async findInLocation(location: string, limit = 50): Promise<Person[]> {
     return this.findAll({
@@ -202,23 +233,55 @@ export class PersonRepository extends BaseRepositoryService<Person> {
 }
 
 /**
- * CompanyRepository - uses @Repository decorator
+ * CompanyRepository - demonstrates current composition pattern
  */
-@Repository(() => Company)
 @Injectable()
-export class CompanyRepository extends BaseRepositoryService<Company> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
+export class CompanyRepository {
+  private readonly label = 'Company';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
+
+  // CRUD methods (delegated to Neo4jCrudService)
+  findById(id: string): Promise<Company | null> {
+    return this.crud.findById<Company>(this.label, id);
+  }
+
+  findAll(options?: FindOptions<Company>): Promise<Company[]> {
+    return this.crud.findAll<Company>(this.label, options);
+  }
+
+  create(
+    data: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<Company> {
+    return this.crud.create<Company>(this.label, data);
+  }
+
+  update(id: string, data: Partial<Company>): Promise<Company | null> {
+    return this.crud.update<Company>(this.label, id, data);
+  }
+
+  delete(id: string): Promise<boolean> {
+    return this.crud.delete(this.label, id);
+  }
+
+  count(where?: Partial<Company>): Promise<number> {
+    return this.crud.count<Company>(this.label, where);
+  }
+
+  exists(id: string): Promise<boolean> {
+    return this.crud.exists(this.label, id);
   }
 
   /**
    * Find companies by industry
-   * Uses auto-generated findAll() method
+   * Custom business logic method
    */
   async findByIndustry(industry: string): Promise<Company[]> {
     return this.findAll({
       where: { industry },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
     });
   }
 }
