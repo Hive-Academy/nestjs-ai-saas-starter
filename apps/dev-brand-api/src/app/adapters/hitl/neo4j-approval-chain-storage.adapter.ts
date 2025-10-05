@@ -194,7 +194,7 @@ export class Neo4jApprovalChainStorageAdapter
    */
   async updateApprovalRequestStatus(
     requestId: string,
-    status: string,
+    status: 'pending' | 'approved' | 'rejected' | 'expired' | undefined,
     metadata?: Record<string, unknown>
   ): Promise<void> {
     if (!requestId?.trim()) {
