@@ -9,11 +9,10 @@ import {
   Authorize,
   ValidateInput,
   AuditLog,
-  RateLimit,
   GraphMetricsService,
   GraphPatternService,
-  GraphTraversalService,
   RelationshipBulkOperationsService,
+  RateLimit,
 } from '@hive-academy/nestjs-neo4j';
 import { Developer } from '../../entities/neo4j/developer.entity';
 
@@ -59,7 +58,6 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
     crud: Neo4jCrudService,
     private readonly graphMetrics: GraphMetricsService,
     private readonly graphPattern: GraphPatternService,
-    private readonly graphTraversal: GraphTraversalService,
     @Inject('EXPERIENCED_WITH_BULK_SERVICE')
     private readonly experiencedWithBulk: RelationshipBulkOperationsService
   ) {

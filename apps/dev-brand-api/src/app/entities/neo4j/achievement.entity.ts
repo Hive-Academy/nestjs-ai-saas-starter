@@ -8,8 +8,6 @@ import {
   Neo4jRelationship,
   NotNull,
   PropIndex,
-  RangeIndex,
-  TextIndex,
   Unique,
   Validate,
 } from '@hive-academy/nestjs-neo4j';
@@ -38,7 +36,7 @@ export class Achievement extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @NotNull()
-  @TextIndex()
+  @PropIndex()
   description!: string;
 
   @Neo4jProp()
@@ -49,23 +47,35 @@ export class Achievement extends Neo4jBaseEntity {
   @NotNull()
   @PropIndex()
   @Validate({
-    enum: ['low', 'medium', 'high', 'critical'],
-    message: 'Impact must be one of: low, medium, high, critical',
+    validation: {
+      custom: {
+        validator(value, entity) {
+          const validImpacts = ['low', 'medium', 'high', 'critical'];
+          return validImpacts.includes(value);
+        },
+        message: 'Impact must be one of: low, medium, high, critical',
+      },
+    },
   })
   impact!: 'low' | 'medium' | 'high' | 'critical';
 
   @Neo4jProp()
   @NotNull()
-  @PropIndex()
-  @RangeIndex()
+  @PropIndex({ type: 'RANGE' })
   @Validate({
-    custom: (value: Date) => value <= new Date(),
-    message: 'Achievement date cannot be in the future',
+    validation: {
+      custom: {
+        validator(value: Date) {
+          return value <= new Date();
+        },
+        message: 'Achievement date cannot be in the future',
+      },
+    },
   })
   date!: Date;
 
   @Neo4jProp()
-  @TextIndex()
+  @PropIndex()
   repository!: string;
 
   @Neo4jProp()
@@ -80,19 +90,27 @@ export class Achievement extends Neo4jBaseEntity {
   @Neo4jProp()
   @JsonProperty()
   @Validate({
-    custom: (value: any) => {
-      if (!value) return false;
-      const validCollabLevels = ['individual', 'team', 'cross-team'];
-      const validTechDepths = ['basic', 'intermediate', 'advanced', 'expert'];
-      return (
-        value.innovationScore >= 0 &&
-        value.innovationScore <= 1 &&
-        validCollabLevels.includes(value.collaborationLevel) &&
-        validTechDepths.includes(value.technicalDepth)
-      );
+    validation: {
+      custom: {
+        validator(value, entity) {
+          const validCollabLevels = ['individual', 'team', 'cross-team'];
+          const validTechDepths = [
+            'basic',
+            'intermediate',
+            'advanced',
+            'expert',
+          ];
+          return (
+            value.innovationScore >= 0 &&
+            value.innovationScore <= 1 &&
+            validCollabLevels.includes(value.collaborationLevel) &&
+            validTechDepths.includes(value.technicalDepth)
+          );
+        },
+        message:
+          'Invalid analysis: innovationScore must be 0-1, valid collaboration and technical depth required',
+      },
     },
-    message:
-      'Invalid analysis: innovationScore must be 0-1, valid collaboration and technical depth required',
   })
   analysis!: {
     innovationScore: number;

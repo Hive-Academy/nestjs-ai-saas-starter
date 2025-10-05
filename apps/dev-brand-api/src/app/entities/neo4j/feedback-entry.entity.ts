@@ -8,8 +8,6 @@ import {
   Neo4jRelationship,
   NotNull,
   PropIndex,
-  RangeIndex,
-  TextIndex,
   Unique,
   UpdatedAt,
   Validate,
@@ -41,14 +39,21 @@ export class FeedbackEntry extends Neo4jBaseEntity {
   @NotNull()
   @PropIndex()
   @Validate({
-    enum: ['positive', 'negative', 'neutral', 'suggestion'],
-    message: 'Type must be one of: positive, negative, neutral, suggestion',
+    validation: {
+      custom: {
+        validator(value, entity) {
+          const validTypes = ['positive', 'negative', 'neutral', 'suggestion'];
+          return validTypes.includes(value);
+        },
+        message: 'Type must be one of: positive, negative, neutral, suggestion',
+      },
+    },
   })
   type!: 'positive' | 'negative' | 'neutral' | 'suggestion';
 
   @Neo4jProp()
   @NotNull()
-  @TextIndex()
+  @PropIndex({ type: 'TEXT' })
   content!: string;
 
   @Neo4jProp()
@@ -73,11 +78,14 @@ export class FeedbackEntry extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
-  @RangeIndex()
   @Validate({
-    min: -1,
-    max: 1,
-    message: 'Sentiment score must be between -1 and 1',
+    validation: {
+      length: {
+        min: -1,
+        max: 1,
+      },
+    },
+    errorMessage: 'Sentiment must be between -1 and 1',
   })
   sentiment?: number;
 
@@ -86,7 +94,7 @@ export class FeedbackEntry extends Neo4jBaseEntity {
   tags?: string[];
 
   @CreatedAt()
-  @RangeIndex()
+  @PropIndex({ type: 'RANGE' })
   timestamp!: Date;
 
   @UpdatedAt()

@@ -10,8 +10,6 @@ import {
   ValidateInput,
   AuditLog,
   RateLimit,
-  GraphMetricsService,
-  GraphTraversalService,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import {
@@ -49,12 +47,7 @@ import type {
 export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalRequest> {
   private readonly logger = new Logger(ApprovalRequestRepository.name);
 
-  constructor(
-    neogma: NeogmaService,
-    crud: Neo4jCrudService,
-    private readonly graphMetrics: GraphMetricsService,
-    private readonly graphTraversal: GraphTraversalService
-  ) {
+  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
     super(ApprovalRequest, 'ApprovalRequest', neogma, crud);
   }
 
@@ -180,9 +173,8 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
    * Optimized: Uses executeQuery helper (was 43 lines, now 13 lines)
    */
   @CypherQuery({
-    cacheTTL: 60000, // 1 minute (dashboard query, needs frequent updates)
-    retries: 3,
-    timeout: 5000,
+    cache: '1m', // 1 minute (dashboard query, needs frequent updates)
+    retry: 3,
   })
   @Safe()
   async getPendingApprovals(): Promise<readonly ApprovalStorageData[]> {

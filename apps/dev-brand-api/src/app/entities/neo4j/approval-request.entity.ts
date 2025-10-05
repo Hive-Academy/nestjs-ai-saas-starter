@@ -9,8 +9,6 @@ import {
   NodeKey,
   NotNull,
   PropIndex,
-  RangeIndex,
-  TextIndex,
   Unique,
   UpdatedAt,
   Validate,
@@ -28,6 +26,7 @@ import {
 @Neo4jEntity('ApprovalRequest', {
   description: 'HITL approval requests with workflow context',
 })
+@NodeKey(['executionId', 'nodeId'])
 export class ApprovalRequest extends Neo4jBaseEntity {
   @Id()
   @Unique()
@@ -35,7 +34,6 @@ export class ApprovalRequest extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @NotNull()
-  @NodeKey()
   @PropIndex()
   executionId!: string;
 
@@ -46,7 +44,7 @@ export class ApprovalRequest extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @NotNull()
-  @TextIndex()
+  @PropIndex()
   message!: string;
 
   @Neo4jProp()
@@ -57,13 +55,20 @@ export class ApprovalRequest extends Neo4jBaseEntity {
   @NotNull()
   @PropIndex()
   @Validate({
-    enum: ['pending', 'approved', 'rejected', 'expired'],
-    message: 'Status must be one of: pending, approved, rejected, expired',
+    validation: {
+      custom: {
+        validator: (value, entity) => {
+          const validStatuses = ['pending', 'approved', 'rejected', 'expired'];
+          return validStatuses.includes(value);
+        },
+        message: 'Status must be one of: pending, approved, rejected, expired',
+      },
+    },
   })
   status!: 'pending' | 'approved' | 'rejected' | 'expired';
 
+  @PropIndex({ type: 'RANGE' })
   @CreatedAt()
-  @RangeIndex()
   requestedAt!: Date;
 
   @Neo4jProp()
@@ -71,19 +76,29 @@ export class ApprovalRequest extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
-  @RangeIndex()
   @Validate({
-    min: 0,
-    max: 1,
-    message: 'Confidence score must be between 0 and 1',
+    validation: {
+      length: {
+        min: 0,
+        max: 1,
+      },
+    },
+    errorMessage: 'Confidence score must be between 0 and 1',
   })
   confidence!: number;
 
   @Neo4jProp()
   @PropIndex()
   @Validate({
-    enum: ['low', 'medium', 'high', 'critical'],
-    message: 'Risk level must be one of: low, medium, high, critical',
+    validation: {
+      custom: {
+        validator(value, entity) {
+          const validLevels = ['low', 'medium', 'high', 'critical'];
+          return validLevels.includes(value);
+        },
+        message: 'Risk level must be one of: low, medium, high, critical',
+      },
+    },
   })
   riskLevel!: 'low' | 'medium' | 'high' | 'critical';
 

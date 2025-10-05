@@ -27,6 +27,7 @@ import {
   Safe,
   Transactional,
   UpdatedAt,
+  GraphMetricsService,
 } from '../index';
 
 // ============================================================================
@@ -481,7 +482,7 @@ export class DocumentRepository extends Neo4jRepositoryBase<Document> {
 @Injectable()
 export class KnowledgeGraphAnalyticsService {
   constructor(
-    private readonly graphRepo: graphbui<Document>,
+    private readonly graphMetrics: GraphMetricsService,
     @InjectNeogma() private readonly neogmaService: NeogmaService
   ) {
     // No model registration needed - @Repository decorator handles it
@@ -632,24 +633,28 @@ export class KnowledgeGraphAnalyticsService {
   }
 
   /**
-   * Advanced graph insights using centrality algorithms
+   * Advanced graph insights using centrality algorithms with GraphMetricsService
    */
   @Safe({ strict: true })
   @Authorize({ roles: ['admin', 'analyst'] })
   async getGraphInsights(): Promise<GraphInsights> {
     // Get central nodes using different centrality measures
-    const centralDocuments = await this.graphRepo.findCentralNodes(
-      'betweenness'
+    const centralDocuments = await this.graphMetrics.findCentralNodes(
+      'betweenness',
+      10
     );
-    const centralAuthors = await this.graphRepo.findCentralNodes('degree');
+    const centralAuthors = await this.graphMetrics.findCentralNodes(
+      'degree',
+      10
+    );
 
     // Detect communities
-    const communities = await this.graphRepo.detectCommunities({
+    const communities = await this.graphMetrics.detectCommunities({
       algorithm: 'louvain',
     });
 
     // Calculate graph statistics
-    const graphStats = await this.graphRepo.getGraphStatistics();
+    const graphStats = await this.graphMetrics.getGraphStatistics();
 
     return {
       communityStructure: communities.map((community: any) => ({

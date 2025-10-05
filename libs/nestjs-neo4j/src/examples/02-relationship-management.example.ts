@@ -24,6 +24,10 @@ import {
   Safe,
   Authorize,
   AuditLog,
+  RelationshipCoreRepository,
+  GraphTraversalService,
+  GraphMetricsService,
+  CentralityResult,
 } from '../index';
 
 // ============================================================================
@@ -240,17 +244,17 @@ export class CompanyRepository extends Neo4jRepositoryBase<Company> {
 // 4. RELATIONSHIP SERVICE WITH GRAPH OPERATIONS
 // ============================================================================
 
-// Properly typed relationship repository for friendships
+// Properly typed relationship repository for friendships using new specialized services
 @Injectable()
-export class FriendshipRelationshipRepository extends RelationshipRepository<
+export class FriendshipRelationshipRepository extends RelationshipCoreRepository<
   FriendshipRelationship,
   Person,
   Person
 > {}
 
-// Properly typed relationship repository for employment
+// Properly typed relationship repository for employment using new specialized services
 @Injectable()
-export class WorksAtRelationshipRepository extends RelationshipRepository<
+export class WorksAtRelationshipRepository extends RelationshipCoreRepository<
   WorksAtRelationship,
   Person,
   Company
@@ -261,7 +265,8 @@ export class SocialNetworkService {
   constructor(
     private readonly friendshipRepo: FriendshipRelationshipRepository,
     private readonly worksAtRepo: WorksAtRelationshipRepository,
-    private readonly graphRepo: GraphRepository<Person>,
+    private readonly graphTraversal: GraphTraversalService,
+    private readonly graphMetrics: GraphMetricsService<Person>,
     @InjectNeogma() private readonly neogma: NeogmaService
   ) {}
 
@@ -358,11 +363,11 @@ export class SocialNetworkService {
   }
 
   /**
-   * Find shortest path between two people
+   * Find shortest path between two people using GraphTraversalService
    */
   @Safe()
   async findConnectionPath(person1Id: string, person2Id: string): Promise<any> {
-    return this.graphRepo.findShortestPath(person1Id, person2Id, {
+    return this.graphTraversal.findShortestPath(person1Id, person2Id, {
       relationshipTypes: ['FRIEND', 'COLLEAGUE'],
       maxDepth: 6,
       direction: 'BOTH',
@@ -505,12 +510,13 @@ export class SocialNetworkService {
   }
 
   /**
-   * Find influential people in network (high centrality)
+   * Find influential people in network (high centrality) using GraphMetricsService
    * Returns CentralityResult with node and score properties
    */
   @Safe()
   async findInfluencers(): Promise<Array<{ person: Person; score: number }>> {
-    const results = await this.graphRepo.findCentralNodes('betweenness', 10);
+    const results: CentralityResult<Person>[] =
+      await this.graphMetrics.findCentralNodes('betweenness', 10);
     return results.map((result) => ({
       person: result.node,
       score: result.score,
@@ -518,12 +524,12 @@ export class SocialNetworkService {
   }
 
   /**
-   * Detect communities in the social network
+   * Detect communities in the social network using GraphMetricsService
    */
   @Safe()
   @Authorize({ roles: ['admin', 'analyst'] })
   async detectCommunities(): Promise<any> {
-    return this.graphRepo.detectCommunities({
+    return this.graphMetrics.detectCommunities({
       algorithm: 'louvain',
     });
   }

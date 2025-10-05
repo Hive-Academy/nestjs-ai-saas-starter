@@ -7,8 +7,6 @@ import {
   Authorize,
   ValidateInput,
   AuditLog,
-  RateLimit,
-  GraphMetricsService,
   GraphPatternService,
 } from '@hive-academy/nestjs-neo4j';
 import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
@@ -44,7 +42,6 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
   constructor(
     neogma: NeogmaService,
     crud: Neo4jCrudService,
-    private readonly graphMetrics: GraphMetricsService,
     private readonly graphPattern: GraphPatternService<ConfidencePattern>
   ) {
     super(ConfidencePattern, 'ConfidencePattern', neogma, crud);
@@ -702,8 +699,8 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
         limit: 10,
       });
 
-      const mostEffectivePatterns: ApprovalPattern[] =
-        patternResult.records.map((record) => ({
+      const mostEffectivePatterns: ApprovalPattern[] = patternResult.map(
+        (record: any) => ({
           nodeId: record.nodeId,
           approvalRate: record.approvalRate,
           averageConfidence: record.averageConfidence,
@@ -712,7 +709,8 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
           successfulExecutions: record.successfulExecutions || 0,
           failedExecutions: record.failedExecutions || 0,
           lastUpdated: new Date(record.lastUpdated),
-        }));
+        })
+      );
 
       return {
         mostEffectivePatterns,

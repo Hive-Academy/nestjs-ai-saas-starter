@@ -7,7 +7,6 @@
 import { EnvLoader } from './app/config/env-loader.util';
 
 // Initialize environment loading with only encapsulated .env files
-import { join } from 'path';
 // Use process.cwd() directly - when running via nx or node, we're already in project root
 const projectRoot = process.cwd();
 const envResult = EnvLoader.load({

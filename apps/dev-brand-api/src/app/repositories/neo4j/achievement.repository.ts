@@ -1,7 +1,6 @@
 import {
   AuditLog,
   CypherQuery,
-  GraphMetricsService,
   GraphPatternService,
   Neo4jCrudService,
   Neo4jRepositoryBase,
@@ -53,7 +52,6 @@ export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
   constructor(
     neogma: NeogmaService,
     crud: Neo4jCrudService,
-    private readonly graphMetrics: GraphMetricsService<Achievement>,
     private readonly graphPattern: GraphPatternService<Achievement>,
     @Inject('USES_TECHNOLOGY_BULK_SERVICE')
     private readonly techBulk: RelationshipBulkOperationsService
