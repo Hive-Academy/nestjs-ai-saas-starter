@@ -1,15 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import {
-  Neo4jRepository,
-  NeogmaService,
-  Safe,
-} from '@hive-academy/nestjs-neo4j';
-import { InterruptionPoint } from '../../entities/neo4j/interruption-point.entity';
+// ✅ Verified TASK_2025_004: All methods are unique business logic (no CRUD duplication)
+// This repository has NO methods to delete - all functionality is custom workflow interruption logic
+
 import type {
   UserInterruption,
   UserInterruptionResponse,
 } from '@hive-academy/langgraph-hitl';
 import { InterruptionStatus } from '@hive-academy/langgraph-hitl';
+import {
+  AuditLog,
+  Neo4jCrudService,
+  Neo4jRepositoryBase,
+  NeogmaService,
+  Safe,
+  ValidateInput,
+} from '@hive-academy/nestjs-neo4j';
+import { Injectable } from '@nestjs/common';
+import { InterruptionPoint } from '../../entities/neo4j/interruption-point.entity';
 
 /**
  * Interruption Repository
@@ -24,9 +30,9 @@ import { InterruptionStatus } from '@hive-academy/langgraph-hitl';
  * - findById, findAll, create, update, delete, count, exists
  */
 @Injectable()
-export class InterruptionRepository extends Neo4jRepository<InterruptionPoint> {
-  constructor(neogma: NeogmaService) {
-    super(InterruptionPoint, neogma);
+export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoint> {
+  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+    super(InterruptionPoint, 'InterruptionPoint', neogma, crud);
   }
 
   // ============================================================================
@@ -37,6 +43,8 @@ export class InterruptionRepository extends Neo4jRepository<InterruptionPoint> {
    * Store interruption request in Neo4j
    * Migrated from: storeInterruption in neo4j-interruption-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async storeInterruption(interruption: UserInterruption): Promise<string> {
     try {
@@ -190,6 +198,8 @@ export class InterruptionRepository extends Neo4jRepository<InterruptionPoint> {
    * Update interruption status
    * Migrated from: updateInterruptionStatus in neo4j-interruption-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async updateInterruptionStatus(
     id: string,

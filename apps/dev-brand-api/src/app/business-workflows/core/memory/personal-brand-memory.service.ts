@@ -1,93 +1,37 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  ChromaRepository,
-  VectorQuery,
-  BaseDocument,
+  InjectRepository,
+  ChromaDBRepository,
   Cached,
   Profiled,
   Retry,
-  BaseChromaRepository,
 } from '@hive-academy/nestjs-chromadb';
 import { DeveloperRepository } from '../../../repositories/neo4j/developer.repository';
 import { AchievementRepository as Neo4jAchievementRepository } from '../../../repositories/neo4j/achievement.repository';
 
-// Enhanced Type System for Personal Brand Memory
-type CodeAchievementDocument = BaseDocument<{
-  userId: string;
-  description: string;
-  technologies: string[];
-  impact: 'low' | 'medium' | 'high' | 'critical';
-  date: string;
-  repository: string;
-  metrics: {
-    linesChanged: number;
-    complexity: number;
-    testCoverage: number;
-    pullRequests: number;
-  };
-  analysis: {
-    innovationScore: number;
-    collaborationLevel: 'individual' | 'team' | 'cross-team';
-    technicalDepth: 'basic' | 'intermediate' | 'advanced' | 'expert';
-  };
-}>;
+// Import entities
+import { CodeAchievementEntity } from '../../../entities/chromadb/code-achievement.entity';
+import { BrandStrategyEntity } from '../../../entities/chromadb/brand-strategy.entity';
+import { ContentPerformanceEntity } from '../../../entities/chromadb/content-performance.entity';
 
-type BrandStrategyDocument = BaseDocument<{
-  userId: string;
-  positioning: string;
-  strengths: string[];
-  opportunities: string[];
-  recommendations: string[];
-  targetAudience: string;
-  confidenceScore: number;
-  createdAt: string;
-  evolution: {
-    previousStrategyId?: string;
-    changeTrigger: string;
-    improvementScore: number;
-    marketContext: string[];
-  };
-  metrics: {
-    implementationProgress: number;
-    marketResonance: number;
-    competitorDifferentiation: number;
-  };
-}>;
+// Import custom repositories (analytics only)
+import { CodeAchievementRepository } from '../../../repositories/chromadb/code-achievement.repository';
+import { BrandStrategyRepository } from '../../../repositories/chromadb/brand-strategy.repository';
+import { ContentPerformanceRepository } from '../../../repositories/chromadb/content-performance.repository';
 
-type ContentPerformanceDocument = BaseDocument<{
-  userId: string;
-  platform: 'linkedin' | 'devto' | 'twitter' | 'medium' | 'github' | 'blog';
-  engagementScore: number;
-  metrics: {
-    views: number;
-    likes: number;
-    comments: number;
-    shares: number;
-    clicks?: number;
-  };
-  createdAt: string;
-  analysis: {
-    sentiment: 'positive' | 'neutral' | 'negative';
-    topics: string[];
-    viralityFactor: number;
-    audienceResonance: number;
-    technicalDepth: number;
-  };
-  optimization: {
-    bestPostingTime: string;
-    suggestedHashtags: string[];
-    audienceEngagement: 'high' | 'medium' | 'low';
-  };
-}>;
+// Import metadata types from entities
+import type { CodeAchievementMetadata } from '../../../entities/chromadb/code-achievement.entity';
+import type { BrandStrategyMetadata } from '../../../entities/chromadb/brand-strategy.entity';
+import type { ContentPerformanceMetadata } from '../../../entities/chromadb/content-performance.entity';
 
 // Enhanced Developer Context with Analytics
 interface DeveloperContext {
   userId: string;
   currentSkills: string[];
   careerGoals: string[];
-  recentAchievements: CodeAchievementDocument[];
-  brandEvolution: BrandStrategyDocument[];
-  contentHistory: ContentPerformanceDocument[];
+  recentAchievements: CodeAchievementEntity[];
+  brandEvolution: BrandStrategyEntity[];
+  contentHistory: ContentPerformanceEntity[];
   analytics: {
     achievementTrend: 'improving' | 'stable' | 'declining';
     brandEvolutionScore: number;
@@ -105,488 +49,6 @@ interface DeveloperContext {
   };
 }
 
-// Specialized Repository Classes
-
-/**
- * Code Achievement Repository - Manages developer accomplishments and technical contributions
- */
-@Injectable()
-@ChromaRepository<CodeAchievementDocument>({
-  collection: 'dev-achievements',
-  autoEmbed: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-export class CodeAchievementRepository extends BaseChromaRepository<CodeAchievementDocument> {
-  @VectorQuery<CodeAchievementDocument>({
-    collection: 'dev-achievements',
-    includeMetadata: true,
-    includeDistances: true,
-  })
-  @Profiled()
-  async findByUserId(
-    userId: string,
-    options?: {
-      limit?: number;
-      minImpact?: 'low' | 'medium' | 'high' | 'critical';
-      technologies?: string[];
-    }
-  ): Promise<CodeAchievementDocument[]> {
-    const where: any = { userId };
-
-    if (options?.minImpact) {
-      const impactOrder = ['low', 'medium', 'high', 'critical'];
-      const minIndex = impactOrder.indexOf(options.minImpact);
-      where.impact = { $in: impactOrder.slice(minIndex) };
-    }
-
-    if (options?.technologies?.length) {
-      where.technologies = { $in: options.technologies };
-    }
-
-    return await this.findAll({
-      where,
-      limit: options?.limit || 10,
-    });
-  }
-
-  @VectorQuery<CodeAchievementDocument>({
-    collection: 'dev-achievements',
-    includeMetadata: true,
-  })
-  @Cached({ ttl: 600000 })
-  async findSimilarAchievements(
-    achievementDescription: string,
-    userId: string,
-    options?: { limit?: number }
-  ): Promise<CodeAchievementDocument[]> {
-    return await this.search(achievementDescription, {
-      where: { userId },
-      limit: options?.limit || 5,
-    });
-  }
-
-  @Profiled()
-  async analyzeInnovationPatterns(userId: string): Promise<{
-    innovationTrend: 'increasing' | 'stable' | 'decreasing';
-    averageInnovationScore: number;
-    topInnovativeAchievements: CodeAchievementDocument[];
-    recommendedFocusAreas: string[];
-  }> {
-    const achievements = await this.findByUserId(userId, { limit: 20 });
-
-    const innovationScores = achievements.map(
-      (a) => a.metadata.analysis.innovationScore
-    );
-    const averageInnovationScore =
-      innovationScores.reduce((sum, score) => sum + score, 0) /
-      innovationScores.length;
-
-    // Calculate trend over time
-    const recentScores = achievements
-      .slice(0, 5)
-      .map((a) => a.metadata.analysis.innovationScore);
-    const earlierScores = achievements
-      .slice(-5)
-      .map((a) => a.metadata.analysis.innovationScore);
-    const recentAvg =
-      recentScores.reduce((sum, score) => sum + score, 0) / recentScores.length;
-    const earlierAvg =
-      earlierScores.reduce((sum, score) => sum + score, 0) /
-      earlierScores.length;
-
-    let innovationTrend: 'increasing' | 'stable' | 'decreasing';
-    if (recentAvg > earlierAvg + 0.1) innovationTrend = 'increasing';
-    else if (recentAvg < earlierAvg - 0.1) innovationTrend = 'decreasing';
-    else innovationTrend = 'stable';
-
-    const topInnovativeAchievements = achievements
-      .sort(
-        (a, b) =>
-          b.metadata.analysis.innovationScore -
-          a.metadata.analysis.innovationScore
-      )
-      .slice(0, 3);
-
-    // Analyze technology patterns for recommendations
-    const technologyFrequency = new Map<string, number>();
-    achievements.forEach((achievement) => {
-      achievement.metadata.technologies.forEach((tech) => {
-        technologyFrequency.set(tech, (technologyFrequency.get(tech) || 0) + 1);
-      });
-    });
-
-    const recommendedFocusAreas = Array.from(technologyFrequency.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([tech]) => tech);
-
-    return {
-      innovationTrend,
-      averageInnovationScore,
-      topInnovativeAchievements,
-      recommendedFocusAreas,
-    };
-  }
-}
-
-/**
- * Brand Strategy Repository - Manages brand positioning and evolution tracking
- */
-@Injectable()
-@ChromaRepository<BrandStrategyDocument>({
-  collection: 'brand-evolution',
-  autoEmbed: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-export class BrandStrategyRepository extends BaseChromaRepository<BrandStrategyDocument> {
-  @VectorQuery<BrandStrategyDocument>({
-    collection: 'brand-evolution',
-    includeMetadata: true,
-  })
-  @Cached({ ttl: 600000 })
-  async findByUserId(
-    userId: string,
-    options?: { limit?: number }
-  ): Promise<BrandStrategyDocument[]> {
-    return await this.findAll({
-      where: { userId },
-      limit: options?.limit || 5,
-    });
-  }
-
-  @Profiled()
-  @Retry({ maxAttempts: 3, strategy: 'exponential' })
-  async analyzeBrandEvolution(userId: string): Promise<{
-    evolutionTrajectory: 'improving' | 'stable' | 'declining';
-    confidenceTrend: number;
-    strategicMilestones: BrandStrategyDocument[];
-    nextEvolutionPrediction: {
-      suggestedFocusAreas: string[];
-      confidenceImprovement: number;
-      timelineEstimate: string;
-    };
-  }> {
-    const strategies = await this.findByUserId(userId, { limit: 10 });
-
-    if (strategies.length < 2) {
-      return {
-        evolutionTrajectory: 'stable',
-        confidenceTrend: strategies[0]?.metadata.confidenceScore || 0.5,
-        strategicMilestones: strategies,
-        nextEvolutionPrediction: {
-          suggestedFocusAreas: ['Build initial brand foundation'],
-          confidenceImprovement: 0.2,
-          timelineEstimate: '3 months',
-        },
-      };
-    }
-
-    // Analyze confidence score progression
-    const confidenceScores = strategies.map((s) => s.metadata.confidenceScore);
-    const recentAvg =
-      confidenceScores.slice(0, 3).reduce((sum, score) => sum + score, 0) /
-      Math.min(3, confidenceScores.length);
-    const earlierAvg =
-      confidenceScores.slice(-3).reduce((sum, score) => sum + score, 0) /
-      Math.min(3, confidenceScores.length);
-
-    let evolutionTrajectory: 'improving' | 'stable' | 'declining';
-    if (recentAvg > earlierAvg + 0.1) evolutionTrajectory = 'improving';
-    else if (recentAvg < earlierAvg - 0.1) evolutionTrajectory = 'declining';
-    else evolutionTrajectory = 'stable';
-
-    // Identify strategic milestones (significant improvements)
-    const strategicMilestones = strategies.filter(
-      (strategy) =>
-        strategy.metadata.evolution.improvementScore > 0.2 ||
-        strategy.metadata.confidenceScore > 0.8
-    );
-
-    // Predict next evolution opportunities
-    const latestStrategy = strategies[0];
-    const suggestedFocusAreas = this.identifyGrowthOpportunities(
-      latestStrategy,
-      strategies
-    );
-
-    return {
-      evolutionTrajectory,
-      confidenceTrend: recentAvg - earlierAvg,
-      strategicMilestones,
-      nextEvolutionPrediction: {
-        suggestedFocusAreas,
-        confidenceImprovement: Math.min(
-          0.3,
-          1.0 - latestStrategy.metadata.confidenceScore
-        ),
-        timelineEstimate:
-          evolutionTrajectory === 'improving' ? '2 months' : '4 months',
-      },
-    };
-  }
-
-  private identifyGrowthOpportunities(
-    latestStrategy: BrandStrategyDocument,
-    allStrategies: BrandStrategyDocument[]
-  ): string[] {
-    const focusAreas: string[] = [];
-
-    // Analyze confidence gaps
-    if (latestStrategy.metadata.confidenceScore < 0.7) {
-      focusAreas.push('Strengthen core brand messaging');
-    }
-
-    // Analyze market context gaps
-    if (latestStrategy.metadata.evolution.marketContext.length < 3) {
-      focusAreas.push('Expand market awareness and positioning');
-    }
-
-    // Analyze implementation progress
-    if (latestStrategy.metadata.metrics.implementationProgress < 0.6) {
-      focusAreas.push('Accelerate strategy implementation');
-    }
-
-    // Analyze competitive differentiation
-    if (latestStrategy.metadata.metrics.competitorDifferentiation < 0.7) {
-      focusAreas.push('Develop unique value proposition');
-    }
-
-    return focusAreas.length > 0
-      ? focusAreas
-      : ['Continue current strategy refinement'];
-  }
-}
-
-/**
- * Content Performance Repository - Manages social media and content analytics
- */
-@Injectable()
-@ChromaRepository<ContentPerformanceDocument>({
-  collection: 'content-metrics',
-  autoEmbed: true,
-  enableValidation: true,
-})
-export class ContentPerformanceRepository extends BaseChromaRepository<ContentPerformanceDocument> {
-  @VectorQuery<ContentPerformanceDocument>({
-    collection: 'content-metrics',
-    includeMetadata: true,
-  })
-  async findByUserId(
-    userId: string,
-    options?: {
-      limit?: number;
-      platform?: string;
-      minEngagement?: number;
-    }
-  ): Promise<ContentPerformanceDocument[]> {
-    const where: any = { userId };
-
-    if (options?.platform) {
-      where.platform = options.platform;
-    }
-
-    if (options?.minEngagement) {
-      where.engagementScore = { $gte: options.minEngagement };
-    }
-
-    return await this.findAll({
-      where,
-      limit: options?.limit || 10,
-    });
-  }
-
-  @VectorQuery<ContentPerformanceDocument>({
-    collection: 'content-metrics',
-    includeMetadata: true,
-  })
-  @Profiled()
-  async findHighPerformingContent(
-    userId: string,
-    minEngagement = 0.7
-  ): Promise<ContentPerformanceDocument[]> {
-    return await this.findAll({
-      where: {
-        userId,
-        engagementScore: { $gte: minEngagement },
-      },
-      limit: 10,
-    });
-  }
-
-  @Profiled()
-  @Cached({ ttl: 1800000 })
-  async getContentOptimizationInsights(userId: string): Promise<{
-    bestPerformingPlatforms: Array<{ platform: string; avgEngagement: number }>;
-    optimalPostingTimes: Array<{ time: string; engagementBoost: number }>;
-    topPerformingTopics: Array<{ topic: string; averageEngagement: number }>;
-    contentGaps: string[];
-    recommendations: Array<{ action: string; expectedImprovement: number }>;
-  }> {
-    const content = await this.findByUserId(userId, { limit: 50 });
-
-    if (content.length === 0) {
-      return {
-        bestPerformingPlatforms: [],
-        optimalPostingTimes: [],
-        topPerformingTopics: [],
-        contentGaps: ['No content history available'],
-        recommendations: [
-          {
-            action: 'Start creating and tracking content performance',
-            expectedImprovement: 0.5,
-          },
-        ],
-      };
-    }
-
-    // Analyze platform performance
-    const platformStats = new Map<
-      string,
-      { total: number; totalEngagement: number }
-    >();
-    content.forEach((item) => {
-      const current = platformStats.get(item.metadata.platform) || {
-        total: 0,
-        totalEngagement: 0,
-      };
-      platformStats.set(item.metadata.platform, {
-        total: current.total + 1,
-        totalEngagement:
-          current.totalEngagement + item.metadata.engagementScore,
-      });
-    });
-
-    const bestPerformingPlatforms = Array.from(platformStats.entries())
-      .map(([platform, stats]) => ({
-        platform,
-        avgEngagement: stats.totalEngagement / stats.total,
-      }))
-      .sort((a, b) => b.avgEngagement - a.avgEngagement);
-
-    // Analyze posting times
-    const timeStats = new Map<
-      string,
-      { count: number; totalEngagement: number }
-    >();
-    content.forEach((item) => {
-      const postingTime = item.metadata.optimization.bestPostingTime;
-      const current = timeStats.get(postingTime) || {
-        count: 0,
-        totalEngagement: 0,
-      };
-      timeStats.set(postingTime, {
-        count: current.count + 1,
-        totalEngagement:
-          current.totalEngagement + item.metadata.engagementScore,
-      });
-    });
-
-    const optimalPostingTimes = Array.from(timeStats.entries())
-      .map(([time, stats]) => ({
-        time,
-        engagementBoost: stats.totalEngagement / stats.count,
-      }))
-      .sort((a, b) => b.engagementBoost - a.engagementBoost)
-      .slice(0, 3);
-
-    // Analyze topics
-    const topicStats = new Map<
-      string,
-      { count: number; totalEngagement: number }
-    >();
-    content.forEach((item) => {
-      item.metadata.analysis.topics.forEach((topic) => {
-        const current = topicStats.get(topic) || {
-          count: 0,
-          totalEngagement: 0,
-        };
-        topicStats.set(topic, {
-          count: current.count + 1,
-          totalEngagement:
-            current.totalEngagement + item.metadata.engagementScore,
-        });
-      });
-    });
-
-    const topPerformingTopics = Array.from(topicStats.entries())
-      .map(([topic, stats]) => ({
-        topic,
-        averageEngagement: stats.totalEngagement / stats.count,
-      }))
-      .sort((a, b) => b.averageEngagement - a.averageEngagement)
-      .slice(0, 5);
-
-    // Identify content gaps
-    const contentGaps: string[] = [];
-    const avgEngagement =
-      content.reduce((sum, item) => sum + item.metadata.engagementScore, 0) /
-      content.length;
-
-    if (avgEngagement < 0.5)
-      contentGaps.push('Overall engagement below average');
-    if (bestPerformingPlatforms.length < 2)
-      contentGaps.push('Limited platform diversification');
-    if (topPerformingTopics.length < 3)
-      contentGaps.push('Narrow topic coverage');
-
-    // Generate recommendations
-    const recommendations = this.generateContentRecommendations(
-      bestPerformingPlatforms,
-      topPerformingTopics,
-      avgEngagement
-    );
-
-    return {
-      bestPerformingPlatforms,
-      optimalPostingTimes,
-      topPerformingTopics,
-      contentGaps,
-      recommendations,
-    };
-  }
-
-  private generateContentRecommendations(
-    platforms: Array<{ platform: string; avgEngagement: number }>,
-    topics: Array<{ topic: string; averageEngagement: number }>,
-    avgEngagement: number
-  ): Array<{ action: string; expectedImprovement: number }> {
-    const recommendations: Array<{
-      action: string;
-      expectedImprovement: number;
-    }> = [];
-
-    if (platforms.length > 0) {
-      const topPlatform = platforms[0];
-      if (topPlatform.avgEngagement > avgEngagement + 0.2) {
-        recommendations.push({
-          action: `Focus more content on ${topPlatform.platform} - your best performing platform`,
-          expectedImprovement: 0.3,
-        });
-      }
-    }
-
-    if (topics.length > 0) {
-      const topTopic = topics[0];
-      recommendations.push({
-        action: `Create more content about ${topTopic.topic} - your top engaging topic`,
-        expectedImprovement: 0.25,
-      });
-    }
-
-    if (avgEngagement < 0.5) {
-      recommendations.push({
-        action:
-          'Improve content quality and relevance to increase overall engagement',
-        expectedImprovement: 0.4,
-      });
-    }
-
-    return recommendations;
-  }
-}
-
 /**
  * Enhanced Personal Brand Memory Service
  *
@@ -598,9 +60,22 @@ export class PersonalBrandMemoryService {
   private readonly logger = new Logger(PersonalBrandMemoryService.name);
 
   constructor(
-    private readonly achievementRepo: CodeAchievementRepository,
-    private readonly brandRepo: BrandStrategyRepository,
-    private readonly contentRepo: ContentPerformanceRepository,
+    // Auto-generated repositories for simple queries (via @InjectRepository)
+    @InjectRepository(CodeAchievementEntity)
+    private readonly achievementRepo: ChromaDBRepository<CodeAchievementEntity>,
+
+    @InjectRepository(BrandStrategyEntity)
+    private readonly brandRepo: ChromaDBRepository<BrandStrategyEntity>,
+
+    @InjectRepository(ContentPerformanceEntity)
+    private readonly contentRepo: ChromaDBRepository<ContentPerformanceEntity>,
+
+    // Custom repositories for analytics (via direct injection)
+    private readonly achievementAnalytics: CodeAchievementRepository,
+    private readonly brandAnalytics: BrandStrategyRepository,
+    private readonly contentAnalytics: ContentPerformanceRepository,
+
+    // Neo4j repositories
     private readonly developerRepo: DeveloperRepository,
     private readonly neo4jAchievementRepo: Neo4jAchievementRepository
   ) {}
@@ -609,7 +84,11 @@ export class PersonalBrandMemoryService {
    * Store code achievement with enhanced analytics and automatic processing
    */
   @Profiled()
-  @Retry({ maxAttempts: 3, strategy: 'exponential' })
+  @Retry({
+    maxAttempts: 3,
+    strategy: 'exponential',
+    circuitBreaker: { enabled: true, failureThreshold: 5, resetTimeout: 60000 },
+  })
   async storeCodeAchievement(userId: string, achievement: any): Promise<void> {
     this.logger.log(
       `Storing enhanced achievement for user ${userId}: ${achievement.description}`
@@ -636,9 +115,10 @@ export class PersonalBrandMemoryService {
         pullRequests: achievement.metrics?.pullRequests || 1,
       };
 
-      // Enhanced achievement document with AI-powered analysis
-      const enhancedAchievement: Partial<CodeAchievementDocument> = {
+      // Use auto-generated repo for simple create
+      await this.achievementRepo.create({
         id: achievement.id,
+        content: achievement.description, // Map to content field
         metadata: {
           userId,
           description: achievement.description,
@@ -648,13 +128,8 @@ export class PersonalBrandMemoryService {
           repository: achievement.repository,
           metrics: metricsData,
           analysis: analysisData,
-        },
-      };
-
-      // Store using repository with automatic validation, embedding, and caching
-      await this.achievementRepo.create(
-        enhancedAchievement as CodeAchievementDocument
-      );
+        } as CodeAchievementMetadata,
+      });
 
       // Enhanced Neo4j relationships with additional context (delegated to repository)
       await this.neo4jAchievementRepo.createEnhancedAchievementWithDeveloper(
@@ -689,12 +164,14 @@ export class PersonalBrandMemoryService {
    * Store brand strategy with evolution tracking and market analysis
    */
   @Profiled()
+  @Retry({ maxAttempts: 3, strategy: 'exponential' })
   async storeBrandStrategy(userId: string, strategy: any): Promise<void> {
     this.logger.log(`Storing enhanced brand strategy for user ${userId}`);
 
     try {
-      // Get previous strategy for evolution analysis
-      const previousStrategies = await this.brandRepo.findByUserId(userId, {
+      // Get previous strategy using auto-generated repo
+      const previousStrategies = await this.brandRepo.findAll({
+        where: { userId } as any,
         limit: 1,
       });
       const previousStrategy = previousStrategies[0];
@@ -721,9 +198,10 @@ export class PersonalBrandMemoryService {
           strategy.metrics?.competitorDifferentiation || 0.5,
       };
 
-      // Enhanced strategy document with evolution tracking
-      const enhancedStrategy: Partial<BrandStrategyDocument> = {
+      // Use auto-generated repo for simple create
+      await this.brandRepo.create({
         id: strategy.id,
+        content: strategy.positioning, // Map to content field
         metadata: {
           userId,
           positioning: strategy.positioning,
@@ -735,11 +213,8 @@ export class PersonalBrandMemoryService {
           createdAt: strategy.createdAt,
           evolution: evolutionData,
           metrics: metricsData,
-        },
-      };
-
-      // Store using repository
-      await this.brandRepo.create(enhancedStrategy as BrandStrategyDocument);
+        } as BrandStrategyMetadata,
+      });
 
       // Enhanced Neo4j strategy relationships (delegated to repository)
       await this.developerRepo.createBrandStrategyRelationships(userId, {
@@ -772,6 +247,7 @@ export class PersonalBrandMemoryService {
    * Store content performance with advanced analytics and optimization insights
    */
   @Profiled()
+  @Retry({ maxAttempts: 3, strategy: 'exponential' })
   async storeContentPerformance(userId: string, content: any): Promise<void> {
     this.logger.log(
       `Storing enhanced content performance for user ${userId} on ${content.platform}`
@@ -806,9 +282,10 @@ export class PersonalBrandMemoryService {
           this.assessAudienceEngagement(content.metrics),
       };
 
-      // Enhanced content document with AI-powered analysis
-      const enhancedContent: Partial<ContentPerformanceDocument> = {
+      // Use auto-generated repo for simple create
+      await this.contentRepo.create({
         id: content.id,
+        content: content.content || content.description, // Map to content field
         metadata: {
           userId,
           platform: content.platform,
@@ -823,13 +300,8 @@ export class PersonalBrandMemoryService {
           createdAt: content.createdAt,
           analysis: analysisData,
           optimization: optimizationData,
-        },
-      };
-
-      // Store using repository
-      await this.contentRepo.create(
-        enhancedContent as ContentPerformanceDocument
-      );
+        } as ContentPerformanceMetadata,
+      });
 
       this.logger.log(
         `✅ Enhanced content performance stored successfully: ${content.id}`
@@ -848,26 +320,26 @@ export class PersonalBrandMemoryService {
    * Get comprehensive developer context with advanced analytics
    */
   @Profiled()
-  @Cached({ ttl: 1800000 })
+  @Cached({ ttl: 300000, keyStrategy: 'collection_aware' })
   async getEnhancedDevContext(userId: string): Promise<DeveloperContext> {
     this.logger.log(`Retrieving enhanced developer context for user ${userId}`);
 
     try {
-      // Parallel retrieval using repositories with built-in caching
+      // Parallel retrieval using both auto-generated and custom repos
       const [
-        achievements,
-        brandStrategies,
-        contentHistory,
-        innovationAnalysis,
-        brandEvolutionAnalysis,
-        contentInsights,
+        achievements, // Auto-generated repo
+        brandStrategies, // Auto-generated repo
+        contentHistory, // Auto-generated repo
+        innovationAnalysis, // Custom analytics repo
+        brandEvolutionAnalysis, // Custom analytics repo
+        contentInsights, // Custom analytics repo
       ] = await Promise.all([
-        this.achievementRepo.findByUserId(userId, { limit: 10 }),
-        this.brandRepo.findByUserId(userId, { limit: 5 }),
-        this.contentRepo.findByUserId(userId, { limit: 10 }),
-        this.achievementRepo.analyzeInnovationPatterns(userId),
-        this.brandRepo.analyzeBrandEvolution(userId),
-        this.contentRepo.getContentOptimizationInsights(userId),
+        this.achievementRepo.findAll({ where: { userId } as any, limit: 10 }),
+        this.brandRepo.findAll({ where: { userId } as any, limit: 5 }),
+        this.contentRepo.findAll({ where: { userId } as any, limit: 10 }),
+        this.achievementAnalytics.analyzeInnovationPatterns(userId),
+        this.brandAnalytics.analyzeBrandEvolution(userId),
+        this.contentAnalytics.getContentOptimizationInsights(userId),
       ]);
 
       // Enhanced Neo4j queries for technical expertise (delegated to repository)
@@ -907,12 +379,14 @@ export class PersonalBrandMemoryService {
   /**
    * Get brand voice for a user
    */
+  @Cached({ ttl: 600000 })
   async getBrandVoice(userId: string): Promise<any | null> {
     this.logger.log(`Retrieving brand voice for user ${userId}`);
 
     try {
       // Retrieve latest brand strategy which contains voice information
-      const strategies = await this.brandRepo.findByUserId(userId, {
+      const strategies = await this.brandRepo.findAll({
+        where: { userId } as any,
         limit: 1,
       });
       if (strategies && strategies.length > 0) {
@@ -938,11 +412,13 @@ export class PersonalBrandMemoryService {
   /**
    * Get brand strategy for a user
    */
+  @Cached({ ttl: 600000 })
   async getBrandStrategy(userId: string): Promise<any | null> {
     this.logger.log(`Retrieving brand strategy for user ${userId}`);
 
     try {
-      const strategies = await this.brandRepo.findByUserId(userId, {
+      const strategies = await this.brandRepo.findAll({
+        where: { userId } as any,
         limit: 1,
       });
       if (strategies && strategies.length > 0) {
@@ -962,6 +438,7 @@ export class PersonalBrandMemoryService {
   /**
    * Get developer context for a user
    */
+  @Cached({ ttl: 300000 })
   async getDevContext(userId: string): Promise<any | null> {
     this.logger.log(`Retrieving developer context for user ${userId}`);
 
@@ -969,7 +446,8 @@ export class PersonalBrandMemoryService {
       // Retrieve comprehensive developer data
       const developerData =
         await this.developerRepo.getDeveloperWithTechnologies(userId);
-      const achievements = await this.achievementRepo.findByUserId(userId, {
+      const achievements = await this.achievementRepo.findAll({
+        where: { userId } as any,
         limit: 10,
       });
 
@@ -994,11 +472,14 @@ export class PersonalBrandMemoryService {
   /**
    * Get brand evolution for a user
    */
+  @Cached({ ttl: 600000 })
   async getBrandEvolution(userId: string): Promise<any | null> {
     this.logger.log(`Retrieving brand evolution for user ${userId}`);
 
     try {
-      const evolutionData = await this.brandRepo.analyzeBrandEvolution(userId);
+      const evolutionData = await this.brandAnalytics.analyzeBrandEvolution(
+        userId
+      );
       return evolutionData;
     } catch (error) {
       this.logger.error(
@@ -1013,6 +494,7 @@ export class PersonalBrandMemoryService {
   /**
    * Get personalized content strategy based on user query
    */
+  @Cached({ ttl: 300000, keyStrategy: 'collection_aware' })
   async getPersonalizedContentStrategy(
     userId: string,
     query: string
@@ -1025,12 +507,12 @@ export class PersonalBrandMemoryService {
       // Get brand strategy and content insights in parallel
       const [brandStrategy, contentInsights] = await Promise.all([
         this.getBrandStrategy(userId),
-        this.contentRepo.getContentOptimizationInsights(userId),
+        this.contentAnalytics.getContentOptimizationInsights(userId),
       ]);
 
-      // Semantic search in brand strategies based on query
+      // Semantic search using auto-generated repo
       const relatedStrategies = await this.brandRepo.search(query, {
-        where: { userId },
+        where: { userId } as any,
         limit: 3,
       });
 
@@ -1222,7 +704,7 @@ export class PersonalBrandMemoryService {
   // - createEnhancedTechnologyRelationships → neo4jAchievementRepo.createEnhancedAchievementWithDeveloper
   // - createBrandStrategyRelationships → developerRepo.createBrandStrategyRelationships
 
-  private extractCareerGoals(strategies: BrandStrategyDocument[]): string[] {
+  private extractCareerGoals(strategies: BrandStrategyEntity[]): string[] {
     if (strategies.length === 0) return [];
 
     const latestStrategy = strategies[0];
@@ -1234,9 +716,9 @@ export class PersonalBrandMemoryService {
   }
 
   private async calculateEnhancedAnalytics(
-    achievements: CodeAchievementDocument[],
-    brandStrategies: BrandStrategyDocument[],
-    contentHistory: ContentPerformanceDocument[],
+    achievements: CodeAchievementEntity[],
+    brandStrategies: BrandStrategyEntity[],
+    contentHistory: ContentPerformanceEntity[],
     innovationAnalysis: any,
     brandEvolutionAnalysis: any,
     contentInsights: any
@@ -1281,7 +763,7 @@ export class PersonalBrandMemoryService {
   }
 
   private calculateContentTrend(
-    contentHistory: ContentPerformanceDocument[]
+    contentHistory: ContentPerformanceEntity[]
   ): 'growing' | 'stable' | 'declining' {
     if (contentHistory.length < 4) return 'stable';
 

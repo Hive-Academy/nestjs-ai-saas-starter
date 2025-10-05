@@ -50,7 +50,6 @@ export function getErrorStack(error: unknown): string | undefined {
 
 /**
  * Create a standardized error object
- * @deprecated Use specific ChromaDB error classes instead
  */
 export function createStandardError(
   message: string,

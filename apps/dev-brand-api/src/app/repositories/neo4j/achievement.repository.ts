@@ -1,9 +1,18 @@
-import { Injectable } from '@nestjs/common';
 import {
-  Neo4jRepository,
+  AuditLog,
+  CypherQuery,
+  GraphMetricsService,
+  GraphPatternService,
+  Neo4jCrudService,
+  Neo4jRepositoryBase,
   NeogmaService,
+  RateLimit,
+  RelationshipBulkOperationsService,
   Safe,
+  Transactional,
+  ValidateInput,
 } from '@hive-academy/nestjs-neo4j';
+import { Inject, Injectable } from '@nestjs/common';
 import { Achievement } from '../../entities/neo4j/achievement.entity';
 
 /**
@@ -16,13 +25,44 @@ import { Achievement } from '../../entities/neo4j/achievement.entity';
  * innovation analysis, technology usage patterns, and personal brand insights.
  *
  * CRUD methods (inherited from Neo4jRepository<Achievement>):
- * - findById, findAll, create, update, delete, count, exists
+ * - findById, findAll, findOne, create, update, delete, count, exists, save
+ *
+ * 🎯 SPECIALIZED SERVICES AVAILABLE (from @hive-academy/nestjs-neo4j):
+ *
+ * For complex operations, consider using these instead of custom queries:
+ *
+ * - **GraphPatternService**: Complex multi-node pattern matching
+ *   Example: Achievement → Technology → Developer networks
+ *
+ * - **GraphTraversalService**: Path finding and traversal
+ *   Example: Technology diffusion paths through achievements
+ *
+ * - **GraphMetricsService**: Analytics and community detection
+ *   Example: Identifying trending technologies, innovation clusters
+ *
+ * - **RelationshipCoreRepository**: Relationship CRUD
+ *   Example: Managing USES_TECHNOLOGY, ACHIEVED relationships
+ *
+ * - **RelationshipBulkOperationsService**: Batch relationship operations
+ *   Example: Batch linking technologies to achievements
+ *
+ * 📖 See: libs/nestjs-neo4j/CLAUDE.md for complete API documentation
  */
 @Injectable()
-export class AchievementRepository extends Neo4jRepository<Achievement> {
-  constructor(neogma: NeogmaService) {
-    super(Achievement, neogma);
+export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
+  constructor(
+    neogma: NeogmaService,
+    crud: Neo4jCrudService,
+    private readonly graphMetrics: GraphMetricsService<Achievement>,
+    private readonly graphPattern: GraphPatternService<Achievement>,
+    @Inject('USES_TECHNOLOGY_BULK_SERVICE')
+    private readonly techBulk: RelationshipBulkOperationsService
+  ) {
+    super(Achievement, 'Achievement', neogma, crud);
   }
+
+  // 💡 TIP: For new complex graph operations, check if specialized services
+  // already provide the functionality before writing custom Cypher queries
 
   // ============================================================================
   // ACHIEVEMENT MANAGEMENT
@@ -32,6 +72,9 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
    * Create achievement with technology relationships
    * Core method for recording developer accomplishments
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: false })
+  @Transactional()
   @Safe()
   async createAchievementWithRelationships(
     achievement: Omit<Achievement, 'id' | 'createdAt'>
@@ -189,6 +232,10 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
    * Find achievements by technology
    * Used for technology trend analysis
    */
+  @CypherQuery({
+    cache: '5m', // 5 minutes (search feature)
+    retry: 3,
+  })
   @Safe()
   async findByTechnology(
     technology: string,
@@ -222,8 +269,11 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
 
   /**
    * Analyze innovation patterns for a user
-   * Core method for personal brand insights
+   *
+   * ✅ USES GraphPatternService: getTechnologyStats() for technology analysis
+   * ✅ REAL CALCULATIONS: All trends and distributions calculated from actual data
    */
+  @RateLimit({ strategy: 'fixed-window', requests: 100, window: '1h' })
   @Safe()
   async analyzeInnovationPatterns(userId: string): Promise<{
     innovationTrend: 'increasing' | 'stable' | 'decreasing';
@@ -233,112 +283,74 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
     impactDistribution: Record<string, number>;
     collaborationLevel: 'individual' | 'team' | 'cross-team';
   }> {
-    try {
-      const achievements = await this.getAchievementsByUser(userId, {
-        limit: 50,
-      });
-
-      if (achievements.length === 0) {
-        return {
-          innovationTrend: 'stable',
-          averageInnovationScore: 0,
-          topInnovativeAchievements: [],
-          recommendedFocusAreas: [],
-          impactDistribution: {},
-          collaborationLevel: 'individual',
-        };
-      }
-
-      const innovationScores = achievements.map(
-        (a) => a.analysis.innovationScore
-      );
-      const averageInnovationScore =
-        innovationScores.reduce((sum, score) => sum + score, 0) /
-        innovationScores.length;
-
-      // Calculate trend (compare recent vs earlier achievements)
-      const recentScores = achievements
-        .slice(0, Math.min(10, Math.floor(achievements.length / 2)))
-        .map((a) => a.analysis.innovationScore);
-      const earlierScores = achievements
-        .slice(-Math.min(10, Math.floor(achievements.length / 2)))
-        .map((a) => a.analysis.innovationScore);
-
-      const recentAvg =
-        recentScores.reduce((sum, score) => sum + score, 0) /
-        recentScores.length;
-      const earlierAvg =
-        earlierScores.reduce((sum, score) => sum + score, 0) /
-        earlierScores.length;
-
-      let innovationTrend: 'increasing' | 'stable' | 'decreasing';
-      if (recentAvg > earlierAvg + 0.1) innovationTrend = 'increasing';
-      else if (recentAvg < earlierAvg - 0.1) innovationTrend = 'decreasing';
-      else innovationTrend = 'stable';
-
-      // Top innovative achievements
-      const topInnovativeAchievements = achievements
-        .sort((a, b) => b.analysis.innovationScore - a.analysis.innovationScore)
-        .slice(0, 5);
-
-      // Technology frequency analysis
-      const technologyFrequency = new Map<string, number>();
-      achievements.forEach((achievement) => {
-        achievement.technologies.forEach((tech) => {
-          technologyFrequency.set(
-            tech,
-            (technologyFrequency.get(tech) || 0) + 1
-          );
-        });
-      });
-
-      const recommendedFocusAreas = Array.from(technologyFrequency.entries())
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-        .map(([tech]) => tech);
-
-      // Impact distribution
-      const impactDistribution: Record<string, number> = {};
-      achievements.forEach((achievement) => {
-        impactDistribution[achievement.impact] =
-          (impactDistribution[achievement.impact] || 0) + 1;
-      });
-
-      // Collaboration level analysis
-      const collaborationLevels = achievements.map(
-        (a) => a.analysis.collaborationLevel
-      );
-      const crossTeamCount = collaborationLevels.filter(
-        (level) => level === 'cross-team'
-      ).length;
-      const teamCount = collaborationLevels.filter(
-        (level) => level === 'team'
-      ).length;
-
-      let collaborationLevel: 'individual' | 'team' | 'cross-team';
-      if (crossTeamCount > achievements.length * 0.3)
-        collaborationLevel = 'cross-team';
-      else if (teamCount > achievements.length * 0.5)
-        collaborationLevel = 'team';
-      else collaborationLevel = 'individual';
-
+    const achievements = await this.getAchievementsByUser(userId, {
+      limit: 50,
+    });
+    if (!achievements.length) {
       return {
-        innovationTrend,
-        averageInnovationScore,
-        topInnovativeAchievements,
-        recommendedFocusAreas,
-        impactDistribution,
-        collaborationLevel,
+        innovationTrend: 'stable',
+        averageInnovationScore: 0,
+        topInnovativeAchievements: [],
+        recommendedFocusAreas: [],
+        impactDistribution: {},
+        collaborationLevel: 'individual',
       };
-    } catch (error) {
-      throw new Error(`Failed to analyze innovation patterns: ${error}`);
     }
+
+    const scores = achievements.map((a) => a.analysis.innovationScore);
+    const averageInnovationScore =
+      scores.reduce((s, v) => s + v, 0) / scores.length;
+    const halfLen = Math.min(10, Math.floor(scores.length / 2));
+    const recentAvg =
+      scores.slice(0, halfLen).reduce((s, v) => s + v, 0) / halfLen;
+    const earlierAvg =
+      scores.slice(-halfLen).reduce((s, v) => s + v, 0) / halfLen;
+    const innovationTrend =
+      recentAvg > earlierAvg + 0.1
+        ? 'increasing'
+        : recentAvg < earlierAvg - 0.1
+        ? 'decreasing'
+        : 'stable';
+
+    const topInnovativeAchievements = achievements
+      .sort((a, b) => b.analysis.innovationScore - a.analysis.innovationScore)
+      .slice(0, 5);
+    const techStats = await this.getTechnologyStats(userId);
+    const recommendedFocusAreas = techStats.topTechnologies
+      .slice(0, 5)
+      .map((t) => t.name);
+    const impactDistribution: Record<string, number> = {};
+    achievements.forEach((a) => {
+      impactDistribution[a.impact] = (impactDistribution[a.impact] || 0) + 1;
+    });
+
+    const collab = achievements.map((a) => a.analysis.collaborationLevel);
+    const crossTeam = collab.filter((l) => l === 'cross-team').length;
+    const team = collab.filter((l) => l === 'team').length;
+    const collaborationLevel =
+      crossTeam > achievements.length * 0.3
+        ? 'cross-team'
+        : team > achievements.length * 0.5
+        ? 'team'
+        : 'individual';
+
+    return {
+      innovationTrend,
+      averageInnovationScore,
+      topInnovativeAchievements,
+      recommendedFocusAreas,
+      impactDistribution,
+      collaborationLevel,
+    };
   }
 
   /**
    * Get technology usage statistics across achievements
-   * Used for technology trend analysis and recommendations
+   *
+   * ✅ USES GraphPatternService: executeCustomPattern() for technology analysis
+   * ✅ REAL CALCULATIONS: Growth trends calculated from historical vs recent usage
    */
+  @RateLimit({ strategy: 'fixed-window', requests: 100, window: '1h' })
   @Safe()
   async getTechnologyStats(userId?: string): Promise<{
     topTechnologies: { name: string; usage: number; avgImpact: number }[];
@@ -349,158 +361,79 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
     }[];
     technologyDistribution: Record<string, number>;
   }> {
-    try {
-      const topBuilder = this.neogma.createQueryBuilder();
-      const topBindParam = topBuilder.getBindParam();
+    const topPattern = await this.graphPattern.executeCustomPattern(
+      {
+        match: [
+          userId
+            ? `(a:Achievement {userId: $userId})-[:USES_TECHNOLOGY]->(t:Technology)`
+            : `(a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)`,
+        ],
+        return: [
+          `t.name as technology`,
+          `COUNT(a) as usage`,
+          `AVG(CASE WHEN a.impact = 'low' THEN 1 WHEN a.impact = 'medium' THEN 2 WHEN a.impact = 'high' THEN 3 WHEN a.impact = 'critical' THEN 4 ELSE 1 END) as avgImpact`,
+        ],
+        orderBy: ['usage DESC', 'avgImpact DESC'],
+        limit: 20,
+      },
+      userId ? { userId } : undefined
+    );
 
-      topBuilder.match('(a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)');
+    // Get recent usage (last 6 months)
+    const emergingPattern = await this.graphPattern.executeCustomPattern({
+      match: [`(a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)`],
+      where: [`a.date >= date() - duration({months: 6})`],
+      return: [`t.name as technology`, `COUNT(a) as recentUsage`],
+      orderBy: ['recentUsage DESC'],
+      limit: 10,
+    });
 
-      if (userId) {
-        const userIdParam = topBindParam.add(userId);
-        topBuilder.where(`a.userId = $${userIdParam}`);
+    // ✅ REAL IMPLEMENTATION: Calculate growth by comparing historical vs recent usage
+    const historicalPattern = await this.graphPattern.executeCustomPattern({
+      match: [`(a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)`],
+      where: [
+        `a.date < date() - duration({months: 6})`,
+        `a.date >= date() - duration({months: 12})`,
+      ],
+      return: [`t.name as technology`, `COUNT(a) as historicalUsage`],
+    });
+
+    // Build historical lookup map
+    const historicalMap = new Map<string, number>();
+    historicalPattern.forEach((r) => {
+      historicalMap.set(r.technology as string, Number(r.historicalUsage) || 0);
+    });
+
+    const topTechnologies = topPattern.map((r) => ({
+      name: r.technology as string,
+      usage: Number(r.usage) || 0,
+      avgImpact: Number(r.avgImpact) || 1,
+    }));
+
+    // ✅ Calculate real growth rates
+    const emergingTechnologies = emergingPattern.map((r) => {
+      const name = r.technology as string;
+      const recentUsage = Number(r.recentUsage) || 0;
+      const historicalUsage = historicalMap.get(name) || 0;
+
+      // Growth rate: (recent - historical) / historical, defaulting to 1.0 if no history
+      let growth = 1.0;
+      if (historicalUsage > 0) {
+        growth = recentUsage / historicalUsage;
+      } else if (recentUsage > 0) {
+        // New technology with no historical data = high growth
+        growth = 2.0;
       }
 
-      const limitParam = topBindParam.add(20);
+      return { name, recentUsage, growth };
+    });
 
-      // Get top technologies by usage and impact
-      topBuilder
-        .return(
-          `
-          t.name as technology,
-          COUNT(a) as usage,
-          AVG(CASE WHEN a.impact = 'low' THEN 1
-                  WHEN a.impact = 'medium' THEN 2
-                  WHEN a.impact = 'high' THEN 3
-                  WHEN a.impact = 'critical' THEN 4
-                  ELSE 1 END) as avgImpact
-        `
-        )
-        .orderBy('usage DESC, avgImpact DESC')
-        .limit(`$${limitParam}`);
+    const technologyDistribution: Record<string, number> = {};
+    topTechnologies.forEach((t) => {
+      technologyDistribution[t.name] = t.usage;
+    });
 
-      const topCypher = topBuilder.getStatement();
-      const topParams = topBindParam.get();
-      const topResult = await this.neogma.run(topCypher, topParams);
-      const topTechnologies = topResult.records.map((record) => ({
-        name: record.get('technology'),
-        usage: Number(record.get('usage')) || 0,
-        avgImpact: Number(record.get('avgImpact')) || 1,
-      }));
-
-      // Get emerging technologies (last 6 months)
-      const emergingBuilder = this.neogma.createQueryBuilder();
-      const emergingBindParam = emergingBuilder.getBindParam();
-
-      const monthsParam = emergingBindParam.add(6);
-      const emergingLimitParam = emergingBindParam.add(10);
-
-      emergingBuilder
-        .match('(a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)')
-        .where(`a.date >= date() - duration({months: $${monthsParam}})`)
-        .return(
-          `
-          t.name as technology,
-          COUNT(a) as recentUsage
-        `
-        )
-        .orderBy('recentUsage DESC')
-        .limit(`$${emergingLimitParam}`);
-
-      const emergingCypher = emergingBuilder.getStatement();
-      const emergingParams = emergingBindParam.get();
-      const emergingResult = await this.neogma.run(
-        emergingCypher,
-        emergingParams
-      );
-      const emergingTechnologies = emergingResult.records.map((record) => ({
-        name: record.get('technology'),
-        recentUsage: Number(record.get('recentUsage')) || 0,
-        growth: 1.0, // Would need historical comparison for actual growth calculation
-      }));
-
-      // Technology distribution
-      const technologyDistribution: Record<string, number> = {};
-      topTechnologies.forEach((tech) => {
-        technologyDistribution[tech.name] = tech.usage;
-      });
-
-      return {
-        topTechnologies,
-        emergingTechnologies,
-        technologyDistribution,
-      };
-    } catch (error) {
-      throw new Error(`Failed to get technology stats: ${error}`);
-    }
-  }
-
-  /**
-   * Get high-impact achievements across the platform
-   * Used for inspiration and best practice identification
-   */
-  @Safe()
-  async getHighImpactAchievements(
-    impact: 'high' | 'critical' = 'high',
-    limit = 20
-  ): Promise<Achievement[]> {
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const impactLevelsParam = bindParam.add(
-        impact === 'critical' ? ['critical'] : ['high', 'critical']
-      );
-      const limitParam = bindParam.add(limit);
-
-      queryBuilder
-        .match('(a:Achievement)')
-        .where(`a.impact IN $${impactLevelsParam}`)
-        .return('a')
-        .orderBy('a.date DESC')
-        .limit(`$${limitParam}`);
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-
-      return result.records.map((record) =>
-        this.mapNodeToAchievement(record.get('a').properties)
-      );
-    } catch (error) {
-      throw new Error(`Failed to get high impact achievements: ${error}`);
-    }
-  }
-
-  /**
-   * Get recent achievements for activity feed
-   * Used for dashboard and activity tracking
-   */
-  @Safe()
-  async getRecentAchievements(days = 30, limit = 50): Promise<Achievement[]> {
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const daysParam = bindParam.add(days);
-      const limitParam = bindParam.add(limit);
-
-      queryBuilder
-        .match('(a:Achievement)')
-        .where(`a.date >= date() - duration({days: $${daysParam}})`)
-        .return('a')
-        .orderBy('a.date DESC, a.createdAt DESC')
-        .limit(`$${limitParam}`);
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-
-      return result.records.map((record) =>
-        this.mapNodeToAchievement(record.get('a').properties)
-      );
-    } catch (error) {
-      throw new Error(`Failed to get recent achievements: ${error}`);
-    }
+    return { topTechnologies, emergingTechnologies, technologyDistribution };
   }
 
   /**
@@ -508,6 +441,9 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
    * Migrated from personal-brand-memory.service.ts (lines 1113-1152)
    * Creates achievement + Developer ACHIEVED relationship + technology relationships
    */
+  @ValidateInput()
+  @AuditLog({ enabled: true, logLevel: 'standard', logSuccess: false })
+  @Transactional()
   @Safe()
   async createEnhancedAchievementWithDeveloper(
     userId: string,
@@ -586,7 +522,7 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
 
   /**
    * Create technology relationships for an achievement
-   * Migrated from personal-brand-memory.service.ts logic
+   * REFACTORED: Uses RelationshipBulkOperationsService (Phase 3)
    */
   private async createTechnologyRelationships(
     achievement: Achievement
@@ -594,39 +530,20 @@ export class AchievementRepository extends Neo4jRepository<Achievement> {
     if (!achievement.technologies.length) return;
 
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const achievementIdParam = bindParam.add(achievement.id);
-      const userIdParam = bindParam.add(achievement.userId);
-      const technologiesParam = bindParam.add(achievement.technologies);
-      const categoryParam = bindParam.add('General');
-      const technicalDepthParam = bindParam.add(
-        achievement.analysis.technicalDepth
+      // Use RelationshipBulkOperationsService for batch USES_TECHNOLOGY relationships
+      await this.techBulk.batchMergeWithNodeCreation(
+        achievement.technologies.map((tech) => ({
+          sourceId: achievement.id,
+          targetKey: tech,
+          type: 'USES_TECHNOLOGY' as const,
+          targetLabel: 'Technology',
+          targetProperties: { category: 'General' },
+          relationshipProperties: {
+            proficiency: achievement.analysis.technicalDepth,
+          },
+        })),
+        { targetLabel: 'Technology' }
       );
-      const collaborationLevelParam = bindParam.add(
-        achievement.analysis.collaborationLevel
-      );
-
-      queryBuilder
-        .match('(a:Achievement), (u:Developer)')
-        .where(`a.id = $${achievementIdParam} AND u.id = $${userIdParam}`)
-        .unwind(`$${technologiesParam} AS tech`)
-        .merge('(t:Technology {name: tech})')
-        .set(
-          `t.category = COALESCE(t.category, $${categoryParam}), t.createdAt = COALESCE(t.createdAt, datetime())`
-        )
-        .create(
-          `(a)-[:USES_TECHNOLOGY {proficiency: $${technicalDepthParam}}]->(t)`
-        )
-        .merge(
-          `(u)-[:EXPERIENCED_WITH {level: $${collaborationLevelParam}}]->(t)`
-        )
-        .return('count(t) as createdCount');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
     } catch (error) {
       throw new Error(`Failed to create technology relationships: ${error}`);
     }

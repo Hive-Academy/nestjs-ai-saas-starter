@@ -1,20 +1,28 @@
-import { Injectable } from '@nestjs/common';
-import {
-  Neo4jRepository,
-  NeogmaService,
-  Safe,
-} from '@hive-academy/nestjs-neo4j';
-import { FeedbackEntry as FeedbackEntityType } from '../../entities/neo4j/feedback-entry.entity';
-import {
-  InvalidFeedbackDataError,
-  FeedbackStorageError,
-  FeedbackType,
-} from '@hive-academy/langgraph-hitl';
 import type {
+  FeedbackAnalytics,
   FeedbackEntry as HitlFeedbackEntry,
   ProcessingResult,
-  FeedbackAnalytics,
 } from '@hive-academy/langgraph-hitl';
+import {
+  FeedbackStorageError,
+  FeedbackType,
+  InvalidFeedbackDataError,
+} from '@hive-academy/langgraph-hitl';
+import {
+  AuditLog,
+  Authorize,
+  CypherQuery,
+  GraphMetricsService,
+  GraphPatternService,
+  Neo4jCrudService,
+  Neo4jRepositoryBase,
+  NeogmaService,
+  RateLimit,
+  Safe,
+  ValidateInput,
+} from '@hive-academy/nestjs-neo4j';
+import { Injectable } from '@nestjs/common';
+import { FeedbackEntry as FeedbackEntityType } from '../../entities/neo4j/feedback-entry.entity';
 
 /**
  * Feedback Repository
@@ -27,11 +35,20 @@ import type {
  *
  * CRUD methods (inherited from Neo4jRepository<FeedbackEntityType>):
  * - findById, findAll, create, update, delete, count, exists
+ *
+ * Enhanced with specialized graph services for optimized analytics:
+ * - GraphMetricsService: Graph-wide analytics and statistics
+ * - GraphPatternService: Complex pattern matching and aggregation
  */
 @Injectable()
-export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
-  constructor(neogma: NeogmaService) {
-    super(FeedbackEntityType, neogma);
+export class FeedbackRepository extends Neo4jRepositoryBase<FeedbackEntityType> {
+  constructor(
+    neogma: NeogmaService,
+    crud: Neo4jCrudService,
+    private readonly graphMetrics: GraphMetricsService,
+    private readonly graphPattern: GraphPatternService
+  ) {
+    super(FeedbackEntityType, 'FeedbackEntry', neogma, crud);
   }
 
   // ============================================================================
@@ -42,6 +59,8 @@ export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
    * Store feedback entry for persistence
    * Migrated from: storeFeedback in neo4j-feedback-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async storeFeedback(feedback: HitlFeedbackEntry): Promise<void> {
     this.validateFeedbackData(feedback);
@@ -232,6 +251,8 @@ export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
    * Delete feedback entry by ID
    * Migrated from: deleteFeedback in neo4j-feedback-storage.adapter.ts
    */
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
   @Safe()
   async deleteFeedback(feedbackId: string): Promise<boolean> {
     try {
@@ -345,6 +366,10 @@ export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
    * Get all unprocessed feedback for AI learning pipeline
    * Migrated from: getUnprocessedFeedback in neo4j-feedback-storage.adapter.ts
    */
+  @CypherQuery({
+    cache: '2m', // 2 minutes (background job)
+    retry: 3,
+  })
   @Safe()
   async getUnprocessedFeedback(): Promise<HitlFeedbackEntry[]> {
     try {
@@ -381,45 +406,51 @@ export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
   /**
    * Get comprehensive feedback analytics for AI improvement
    * Migrated from: getFeedbackStats in neo4j-feedback-storage.adapter.ts
+   *
+   * Optimized: Single unified query instead of 3 parallel queries
+   * - Reduced database round-trips: 3 → 1
+   * - Uses collect() and aggregation functions for efficient data gathering
    */
+  @RateLimit({ strategy: 'fixed-window', requests: 100, window: '1h' })
   @Safe()
   async getFeedbackStats(): Promise<FeedbackAnalytics> {
     try {
-      // Get basic counts
-      const countQb = this.neogma.createQueryBuilder();
-      countQb.match('(f:FeedbackEntry)').return(`
-          count(f) as totalFeedback,
-          count(CASE WHEN f.processed = true THEN 1 END) as processedCount,
-          count(CASE WHEN f.processed = false THEN 1 END) as unprocessedCount
-        `);
+      // Single unified query to get all statistics at once
+      const result = await this.executeQuery(
+        `MATCH (f:FeedbackEntry)
+         WITH f,
+              count(f) as totalFeedback,
+              sum(CASE WHEN f.processed = true THEN 1 ELSE 0 END) as processedCount,
+              sum(CASE WHEN f.processed = false THEN 1 ELSE 0 END) as unprocessedCount
+         WITH totalFeedback, processedCount, unprocessedCount,
+              collect({type: f.type, processed: f.processed, providerId: f.providerId}) as feedbackData
+         UNWIND feedbackData as feedback
+         WITH totalFeedback, processedCount, unprocessedCount,
+              feedback.type as type,
+              feedback.providerId as providerId,
+              count(*) as count
+         RETURN totalFeedback,
+                processedCount,
+                unprocessedCount,
+                collect({type: type, count: count}) as typeDistribution,
+                collect({providerId: providerId, count: count}) as providerDistribution`,
+        {}
+      );
 
-      // Get type distribution
-      const typeQb = this.neogma.createQueryBuilder();
-      typeQb
-        .match('(f:FeedbackEntry)')
-        .return('f.type as type, count(*) as count');
-
-      // Get provider distribution
-      const providerQb = this.neogma.createQueryBuilder();
-      providerQb
-        .match('(f:FeedbackEntry)')
-        .return('f.providerId as providerId, count(*) as count');
-
-      const [countResult, typeResult, providerResult] = await Promise.all([
-        this.neogma.run(countQb.getStatement(), countQb.getBindParam().get()),
-        this.neogma.run(typeQb.getStatement(), typeQb.getBindParam().get()),
-        this.neogma.run(
-          providerQb.getStatement(),
-          providerQb.getBindParam().get()
-        ),
-      ]);
-
-      // Process count data
-      const countRecord = countResult.records[0];
-      const totalFeedback = Number(countRecord?.get('totalFeedback')) || 0;
-      const processedCount = Number(countRecord?.get('processedCount')) || 0;
+      // Extract aggregated data from single query result
+      const record = result.records[0];
+      const totalFeedback =
+        typeof record.get('totalFeedback') === 'object'
+          ? (record.get('totalFeedback') as any).low || 0
+          : Number(record.get('totalFeedback')) || 0;
+      const processedCount =
+        typeof record.get('processedCount') === 'object'
+          ? (record.get('processedCount') as any).low || 0
+          : Number(record.get('processedCount')) || 0;
       const unprocessedCount =
-        Number(countRecord?.get('unprocessedCount')) || 0;
+        typeof record.get('unprocessedCount') === 'object'
+          ? (record.get('unprocessedCount') as any).low || 0
+          : Number(record.get('unprocessedCount')) || 0;
 
       // Process type distribution - initialize with all FeedbackType values
       const byType = {
@@ -430,17 +461,28 @@ export class FeedbackRepository extends Neo4jRepository<FeedbackEntityType> {
         [FeedbackType.RATING]: 0,
         [FeedbackType.COMMENT]: 0,
       };
-      typeResult.records.forEach((record) => {
-        const type = record.get('type') as FeedbackType;
-        const count = Number(record.get('count')) || 0;
-        byType[type] = count;
+
+      const typeDistribution = record.get('typeDistribution') || [];
+      typeDistribution.forEach((item: any) => {
+        const type = item.type as FeedbackType;
+        const count =
+          typeof item.count === 'object'
+            ? (item.count as any).low || 0
+            : Number(item.count) || 0;
+        if (type && Object.prototype.hasOwnProperty.call(byType, type)) {
+          byType[type] = count;
+        }
       });
 
       // Process provider distribution
       const byProvider: Record<string, number> = {};
-      providerResult.records.forEach((record) => {
-        const providerId = record.get('providerId');
-        const count = Number(record.get('count')) || 0;
+      const providerDistribution = record.get('providerDistribution') || [];
+      providerDistribution.forEach((item: any) => {
+        const providerId = item.providerId;
+        const count =
+          typeof item.count === 'object'
+            ? (item.count as any).low || 0
+            : Number(item.count) || 0;
         if (providerId) {
           byProvider[providerId] = count;
         }

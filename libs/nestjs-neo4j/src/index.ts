@@ -87,10 +87,6 @@ export {
   type CypherQueryConfig,
 } from './lib/decorators/cypher-query.decorator';
 export {
-  Repository,
-  Neo4jRepository,
-} from './lib/repositories/repository.decorator';
-export {
   Neo4jEntity,
   Neo4jProp,
   Neo4jRelationship,
@@ -146,8 +142,10 @@ export { MultiTenantNeo4jService } from './lib/multi-tenancy/multi-tenant-neo4j.
 export { TenantContextService } from './lib/multi-tenancy/tenant-context.service';
 export * from './lib/multi-tenancy/multi-tenant.decorators';
 
-// Repository Framework (Specialized repositories only)
-export { GraphRepository } from './lib/repositories/graph-repository';
+// ❌ REMOVED: GraphRepository - Use specialized services instead:
+// - GraphTraversalService for path finding and traversal
+// - GraphMetricsService for centrality and statistics
+// - GraphPatternService for complex pattern matching
 
 // Modern Graph Services (Specialized graph operations)
 export { BaseGraphService } from './lib/repositories/graph/base-graph.service';
@@ -188,13 +186,14 @@ export {
   type CreateRelationshipData,
   type RelationshipResult,
   type BatchRelationshipOperation,
+  type BatchRelationshipMergeOperation,
+  type BatchRelationshipNodeMergeOperation,
   type RepositoryQueryOptions,
 } from './lib/repositories/relationship/base-relationship.service';
 export { RelationshipCoreRepository } from './lib/repositories/relationship/relationship-core.repository';
 export { RelationshipBulkOperationsService } from './lib/repositories/relationship/relationship-bulk.service';
 
-// Legacy Relationship Repository (DEPRECATED - use RelationshipCoreRepository instead)
-export { RelationshipRepository } from './lib/repositories/relationship/relationship-repository';
+// ❌ REMOVED: RelationshipRepository - Use RelationshipCoreRepository instead
 
 // Utils
 export * from './lib/utils/parameter-serializer';

@@ -8,8 +8,11 @@ import {
   Neo4jRelationship,
   NotNull,
   PropIndex,
+  RangeIndex,
+  TextIndex,
   Unique,
   UpdatedAt,
+  Validate,
 } from '@hive-academy/nestjs-neo4j';
 
 /**
@@ -37,11 +40,15 @@ export class FeedbackEntry extends Neo4jBaseEntity {
   @Neo4jProp()
   @NotNull()
   @PropIndex()
+  @Validate({
+    enum: ['positive', 'negative', 'neutral', 'suggestion'],
+    message: 'Type must be one of: positive, negative, neutral, suggestion',
+  })
   type!: 'positive' | 'negative' | 'neutral' | 'suggestion';
 
   @Neo4jProp()
   @NotNull()
-  @PropIndex({ type: 'TEXT' })
+  @TextIndex()
   content!: string;
 
   @Neo4jProp()
@@ -66,6 +73,12 @@ export class FeedbackEntry extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
+  @RangeIndex()
+  @Validate({
+    min: -1,
+    max: 1,
+    message: 'Sentiment score must be between -1 and 1',
+  })
   sentiment?: number;
 
   @Neo4jProp()
@@ -73,6 +86,7 @@ export class FeedbackEntry extends Neo4jBaseEntity {
   tags?: string[];
 
   @CreatedAt()
+  @RangeIndex()
   timestamp!: Date;
 
   @UpdatedAt()

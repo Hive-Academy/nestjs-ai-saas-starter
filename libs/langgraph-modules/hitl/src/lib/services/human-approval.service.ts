@@ -394,7 +394,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     let responseCount = 0;
 
     for (const request of allApprovals) {
-      byState[request.workflowState]++;
+      byState[request.workflowState as ApprovalWorkflowState]++;
 
       if (request.timestamps.responded) {
         totalResponseTime +=

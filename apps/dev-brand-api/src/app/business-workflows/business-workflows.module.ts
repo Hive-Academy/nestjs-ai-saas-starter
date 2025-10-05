@@ -10,14 +10,8 @@ import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist
 import { ContentCreatorAgent } from './agents/content-creator/content-creator.agent';
 import { DevBrandSupervisorWorkflow } from './workflows/devbrand-supervisor.workflow';
 import { DevBrandChatWorkflow } from './workflows/devbrand-chat.workflow';
-import {
-  PersonalBrandMemoryService,
-  CodeAchievementRepository,
-  BrandStrategyRepository,
-  ContentPerformanceRepository,
-} from './core/memory/personal-brand-memory.service';
-import { DeveloperRepository } from '../repositories/neo4j/developer.repository';
-import { AchievementRepository as Neo4jAchievementRepository } from '../repositories/neo4j/achievement.repository';
+import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
+import { RepositoryModule } from '../repositories/repository.module';
 import { WebResearchTools } from './core/tools/web-research.tools';
 import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
 
@@ -35,6 +29,7 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
     ConfigModule, // For environment configuration
     WorkflowEngineModule, // Required for DeclarativeWorkflowBase services
     MultiAgentModule, // Required for Agent decorator services
+    RepositoryModule, // Provides all repositories (ChromaDB + Neo4j)
   ],
   providers: [
     // Neo4j CRUD Service (Composition Pattern for Repositories)
@@ -50,16 +45,7 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
     DevBrandChatWorkflow, // Chat interface workflow
 
     // Core Business Services
-    PersonalBrandMemoryService, // ChromaDB + Neo4j integration
-
-    // ChromaDB Repositories - Required for PersonalBrandMemoryService
-    CodeAchievementRepository,
-    BrandStrategyRepository,
-    ContentPerformanceRepository,
-
-    // Neo4j Repositories - Required for PersonalBrandMemoryService
-    DeveloperRepository,
-    Neo4jAchievementRepository,
+    PersonalBrandMemoryService, // ChromaDB + Neo4j integration (repositories injected from RepositoryModule)
 
     // MVP Tools - Kept per user request
     WebResearchTools, // Social media profile searching

@@ -22,15 +22,15 @@
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
-  BaseChromaRepository,
+  ChromaDBRepository,
   BaseChromaEntity,
   ChromaDBModule,
+  ChromaDBService,
   ChromaEmbedding,
   ChromaEntity,
   ChromaId,
   ChromaMetadata,
   ChromaProp,
-  ChromaRepository,
   CreatedAt,
   UpdatedAt,
   CreateDocumentInput,
@@ -119,8 +119,16 @@ export class TestProductEntity extends BaseChromaEntity<TestProductMetadata> {
 /**
  * Test repository for demonstrating testing patterns
  */
-@ChromaRepository({ collection: 'test_products' })
-export class TestProductRepository extends BaseChromaRepository<TestProductEntity> {
+@Injectable()
+export class TestProductRepository extends ChromaDBRepository<TestProductEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(TestProductEntity, 'test_products', chromaDB);
+  }
+
   /**
    * Find products by category with custom business logic
    */

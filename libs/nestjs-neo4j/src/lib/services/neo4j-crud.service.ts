@@ -14,35 +14,44 @@ export interface FindOptions<T = NeogmaEntity> {
 }
 
 /**
- * Neo4jCrudService - Composition Helper for Repository Pattern
+ * Neo4jCrudService - Internal CRUD Helper for Neo4jRepositoryBase
  *
- * Provides reusable CRUD operations via dependency injection and composition.
- * Replaces inheritance-based BaseRepositoryService with clean composition pattern.
+ * Provides reusable CRUD operations used by Neo4jRepositoryBase.
+ * This service is automatically injected and used internally by the base repository class.
  *
- * This service is injected into repositories and delegated to for common operations,
- * allowing repositories to focus on custom business logic while reusing CRUD functionality.
+ * **Note**: You should NOT use this service directly in your code. Instead:
+ * - For simple CRUD: Use auto-generated repositories via Neo4jModule.forFeature()
+ * - For custom logic: Extend Neo4jRepositoryBase<T> and add custom methods
  *
- * @example
+ * @example TypeORM-Style Repository (RECOMMENDED)
  * ```typescript
- * @Neo4jRepository(() => User)
- * @Injectable()
- * export class UserRepository {
- *   private readonly label = 'User';
+ * // 1. Auto-generated repository (zero code needed)
+ * @Module({
+ *   imports: [Neo4jModule.forFeature([User])]
+ * })
+ * export class UserModule {}
  *
+ * // 2. Inject and use immediately
+ * @Injectable()
+ * export class UserService {
  *   constructor(
- *     private readonly crud: Neo4jCrudService,
- *     @InjectNeogma() private readonly neogma: NeogmaService
+ *     @InjectRepository(User)
+ *     private userRepo: Neo4jRepositoryBase<User>
  *   ) {}
  *
- *   // Delegate CRUD to helper
- *   findById(id: string) {
- *     return this.crud.findById<User>(this.label, id);
+ *   async getUser(id: string) {
+ *     return this.userRepo.findById(id); // Works immediately!
  *   }
+ * }
  *
- *   // Custom business logic using neogma directly
+ * // 3. Custom repository (if needed)
+ * @Injectable()
+ * export class UserRepository extends Neo4jRepositoryBase<User> {
+ *   // Inherits all CRUD methods
+ *
+ *   // Add custom business logic
  *   async findByEmail(email: string) {
- *     const qb = this.neogma.createQueryBuilder();
- *     // ... custom query
+ *     return this.findAll({ where: { email } });
  *   }
  * }
  * ```

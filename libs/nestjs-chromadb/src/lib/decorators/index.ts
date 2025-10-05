@@ -22,34 +22,9 @@ export type {
   TypedVectorSearchResult,
 } from './core/vector-query.decorator';
 
-// NEW: Fixed Repository Implementation (replaces broken core version)
-export {
-  ChromaRepository,
-  createRepository,
-  isChromaRepository,
-  isChromaDBService,
-  BaseChromaRepository,
-  isBaseChromaRepository,
-  repositoryValidator,
-  repositoryErrorHandler,
-  repositoryTypeSafety,
-} from './repository';
-
-export type {
-  ChromaRepositoryConfig,
-  RepositoryOperationOptions,
-  RepositorySearchOptions,
-  RepositoryOperationResult,
-  RepositorySearchResultWithScore,
-  ChromaRepositoryInterface,
-  RepositoryConstructor,
-  RepositoryInstance,
-  RepositoryFactory,
-  ExtractDocumentType,
-  ExtractMetadataType,
-  CreateDocumentInput,
-  SearchResultWithScore,
-} from './repository';
+// TypeORM-Style Repository Pattern
+// NOTE: Types now exported from main index (../repositories/repository-types.ts)
+// Import these from @hive-academy/nestjs-chromadb directly, not from decorators
 
 // Re-export commonly needed types from other modules
 export type { BaseDocument } from '../types/core.interface';

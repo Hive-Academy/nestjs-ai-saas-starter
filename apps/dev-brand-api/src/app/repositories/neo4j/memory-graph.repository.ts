@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  Neo4jRepository,
+  Neo4jRepositoryBase,
   Safe,
+  Authorize,
+  ValidateInput,
+  AuditLog,
+  RateLimit,
   NeogmaService,
+  Neo4jCrudService,
 } from '@hive-academy/nestjs-neo4j';
 import { Memory } from '../../entities/neo4j';
 import type {
@@ -41,16 +46,17 @@ import { GraphCrudService } from '../services/graph-crud.service';
  * - findById, findAll, create, update, delete, count, exists
  */
 @Injectable()
-export class MemoryGraphRepository extends Neo4jRepository<Memory> {
+export class MemoryGraphRepository extends Neo4jRepositoryBase<Memory> {
   private readonly logger = new Logger(MemoryGraphRepository.name);
 
   constructor(
     neogma: NeogmaService,
+    crud: Neo4jCrudService,
     private readonly traversalService: GraphTraversalService,
     private readonly agentService: GraphAgentService,
     private readonly crudService: GraphCrudService
   ) {
-    super(Memory, neogma);
+    super(Memory, 'Memory', neogma, crud);
     this.logger.debug(
       'MemoryGraphRepository initialized with composition pattern'
     );
@@ -60,6 +66,7 @@ export class MemoryGraphRepository extends Neo4jRepository<Memory> {
   // GRAPH TRAVERSAL OPERATIONS (Delegated to GraphTraversalService)
   // ============================================================================
 
+  @RateLimit({ strategy: 'fixed-window', requests: 100, window: '1h' }) // Rate limit to prevent abuse
   @Safe()
   async traverse(
     startMemoryId: string,
@@ -69,7 +76,7 @@ export class MemoryGraphRepository extends Neo4jRepository<Memory> {
   }
 
   @Safe()
-  async findRelated(
+  async findRelatedMemories(
     memoryId: string,
     relationshipTypes?: string[],
     maxDepth = 2,
@@ -96,6 +103,8 @@ export class MemoryGraphRepository extends Neo4jRepository<Memory> {
   // AGENT-AWARE MEMORY OPERATIONS (Delegated to GraphAgentService)
   // ============================================================================
 
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async createAgentMemoryRelationship(
     fromMemoryId: string,
@@ -208,6 +217,8 @@ export class MemoryGraphRepository extends Neo4jRepository<Memory> {
     return this.crudService.findGraphNodes(criteria);
   }
 
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
   @Safe()
   async deleteGraphNodes(nodeIds: readonly string[]): Promise<number> {
     return this.crudService.deleteGraphNodes([...nodeIds]);

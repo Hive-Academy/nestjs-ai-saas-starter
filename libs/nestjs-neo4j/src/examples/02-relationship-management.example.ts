@@ -18,15 +18,12 @@ import {
   UpdatedAt,
   PropIndex,
   NotNull,
+  Neo4jRepositoryBase,
   InjectNeogma,
   NeogmaService,
   Safe,
   Authorize,
   AuditLog,
-  RelationshipRepository,
-  GraphRepository,
-  Neo4jCrudService,
-  FindOptions,
 } from '../index';
 
 // ============================================================================
@@ -164,54 +161,32 @@ export type SocialRelationship =
 // ============================================================================
 
 /**
- * PersonRepository - demonstrates current composition pattern
+ * PersonRepository - demonstrates TypeORM-style inheritance pattern
  *
- * Uses Neo4jCrudService for CRUD operations via delegation:
- * - findById, findAll, create, update, delete, count, exists
+ * Inherited CRUD methods from Neo4jRepositoryBase<Person>:
+ * - findById(id: string): Promise<Person | null>
+ * - findAll(options?: FindOptions<Person>): Promise<Person[]>
+ * - findOne(options: FindOptions<Person>): Promise<Person | null>
+ * - create(data: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>): Promise<Person>
+ * - update(id: string, updates: Partial<Person>): Promise<Person | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Person>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Person>): Promise<Person>
+ *
+ * Plus helper methods for custom logic:
+ * - createQueryBuilder(): QueryBuilder
+ * - executeQuery<R>(cypher, params): Promise<R>
+ * - findRelated<R>(id, relationshipType, direction): Promise<R[]>
+ * - And more...
  */
 @Injectable()
-export class PersonRepository {
-  private readonly label = 'Person';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // CRUD methods (delegated to Neo4jCrudService)
-  findById(id: string): Promise<Person | null> {
-    return this.crud.findById<Person>(this.label, id);
-  }
-
-  findAll(options?: FindOptions<Person>): Promise<Person[]> {
-    return this.crud.findAll<Person>(this.label, options);
-  }
-
-  create(
-    data: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<Person> {
-    return this.crud.create<Person>(this.label, data);
-  }
-
-  update(id: string, data: Partial<Person>): Promise<Person | null> {
-    return this.crud.update<Person>(this.label, id, data);
-  }
-
-  delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<Person>): Promise<number> {
-    return this.crud.count<Person>(this.label, where);
-  }
-
-  exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
-  }
+export class PersonRepository extends Neo4jRepositoryBase<Person> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find people by profession with relationship counts
-   * Custom business logic method
+   * Uses inherited findAll() method
    */
   @Safe()
   async findByProfession(profession: string): Promise<Person[]> {
@@ -222,7 +197,7 @@ export class PersonRepository {
 
   /**
    * Find people in same location
-   * Custom business logic method
+   * Uses inherited findAll() method
    */
   async findInLocation(location: string, limit = 50): Promise<Person[]> {
     return this.findAll({
@@ -233,51 +208,26 @@ export class PersonRepository {
 }
 
 /**
- * CompanyRepository - demonstrates current composition pattern
+ * CompanyRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Company>:
+ * - findById(id: string): Promise<Company | null>
+ * - findAll(options?: FindOptions<Company>): Promise<Company[]>
+ * - findOne(options: FindOptions<Company>): Promise<Company | null>
+ * - create(data: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>): Promise<Company>
+ * - update(id: string, updates: Partial<Company>): Promise<Company | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Company>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Company>): Promise<Company>
  */
 @Injectable()
-export class CompanyRepository {
-  private readonly label = 'Company';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // CRUD methods (delegated to Neo4jCrudService)
-  findById(id: string): Promise<Company | null> {
-    return this.crud.findById<Company>(this.label, id);
-  }
-
-  findAll(options?: FindOptions<Company>): Promise<Company[]> {
-    return this.crud.findAll<Company>(this.label, options);
-  }
-
-  create(
-    data: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>
-  ): Promise<Company> {
-    return this.crud.create<Company>(this.label, data);
-  }
-
-  update(id: string, data: Partial<Company>): Promise<Company | null> {
-    return this.crud.update<Company>(this.label, id, data);
-  }
-
-  delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<Company>): Promise<number> {
-    return this.crud.count<Company>(this.label, where);
-  }
-
-  exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
-  }
+export class CompanyRepository extends Neo4jRepositoryBase<Company> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find companies by industry
-   * Custom business logic method
+   * Uses inherited findAll() method
    */
   async findByIndustry(industry: string): Promise<Company[]> {
     return this.findAll({

@@ -9,10 +9,6 @@ export type { EmbeddingProcessingOptions } from './lib/services/facade/chromadb-
 export { ChromaDBEmbeddingProcessorService } from './lib/services/facade/chromadb-embedding-processor.service';
 
 // Repository Operations (new split components)
-export { CrudOperations } from './lib/decorators/repository/operations/crud-operations';
-export { SearchOperations } from './lib/decorators/repository/operations/search-operations';
-export { AggregationOperations } from './lib/decorators/repository/operations/aggregation-operations';
-export { RepositoryHelpers } from './lib/decorators/repository/operations/repository-helpers';
 export * from './lib/services/core/collection.service';
 export * from './lib/services/embedding.service';
 export * from './lib/services/chroma-admin.service';
@@ -110,8 +106,25 @@ export type {
 // Decorators - Core Ecosystem
 export * from './lib/decorators';
 
+// TypeORM-Style Repository Pattern (NEW - TASK_2025_005)
+export { ChromaDBRepository } from './lib/repositories/chromadb-repository';
+export {
+  InjectRepository,
+  getRepositoryToken,
+  getCollectionName,
+} from './lib/decorators/inject-repository.decorator';
+export type {
+  RepositoryOperationOptions,
+  RepositorySearchOptions,
+  RepositoryOperationResult,
+  CreateDocumentInput,
+  UpsertDocumentInput,
+  SearchResultWithScore,
+  RepositoryConstructor,
+} from './lib/repositories/repository-types';
+export { isBaseChromaRepository } from './lib/repositories/repository-types';
+
 // Entity & Repository Pattern (Neo4j-inspired)
-export { BaseChromaRepository } from './lib/decorators/repository/base-repository.interface';
 export { BaseChromaEntity } from './lib/entities/base-chroma.entity';
 export {
   ChromaEntity,

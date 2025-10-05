@@ -104,13 +104,11 @@ export interface ChromaDBPerformanceOptions {
 
   /**
    * Maximum number of connection retries (default: 3)
-   * @deprecated Use connection.http.maxRetries instead
    */
   maxRetries?: number;
 
   /**
    * Delay between retries in milliseconds (default: 1000)
-   * @deprecated Use connection.http.retryDelay instead
    */
   retryDelay?: number;
 

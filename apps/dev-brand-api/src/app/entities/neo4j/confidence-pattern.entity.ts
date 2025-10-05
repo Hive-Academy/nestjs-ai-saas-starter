@@ -8,8 +8,10 @@ import {
   Neo4jRelationship,
   NotNull,
   PropIndex,
+  RangeIndex,
   Unique,
   UpdatedAt,
+  Validate,
 } from '@hive-academy/nestjs-neo4j';
 
 /**
@@ -36,10 +38,22 @@ export class ConfidencePattern extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
+  @RangeIndex()
+  @Validate({
+    min: 0,
+    max: 1,
+    message: 'Approval rate must be between 0 and 1',
+  })
   approvalRate!: number;
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
+  @RangeIndex()
+  @Validate({
+    min: 0,
+    max: 1,
+    message: 'Average confidence must be between 0 and 1',
+  })
   averageConfidence!: number;
 
   @Neo4jProp()
@@ -62,6 +76,22 @@ export class ConfidencePattern extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @JsonProperty()
+  @Validate({
+    custom: (value: any) => {
+      if (!value) return false;
+      return (
+        value.accuracy >= 0 &&
+        value.accuracy <= 1 &&
+        value.precision >= 0 &&
+        value.precision <= 1 &&
+        value.recall >= 0 &&
+        value.recall <= 1 &&
+        value.f1Score >= 0 &&
+        value.f1Score <= 1
+      );
+    },
+    message: 'Training metrics must all be between 0 and 1',
+  })
   trainingMetrics!: {
     accuracy: number;
     precision: number;

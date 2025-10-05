@@ -60,7 +60,7 @@ export abstract class IHitlStorageService {
   /**
    * Save approval request (alias for storeApprovalRequest)
    */
-  abstract save(request: any): Promise<string>;
+  abstract save(request: any): Promise<void>;
 
   /**
    * Get approval request (alias for getApprovalRequest)

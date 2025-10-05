@@ -6,9 +6,12 @@ import {
   Neo4jEntity,
   Neo4jProp,
   Neo4jRelationship,
+  NodeKey,
   PropIndex,
+  RangeIndex,
   Unique,
   UpdatedAt,
+  Validate,
 } from '@hive-academy/nestjs-neo4j';
 
 /**
@@ -26,6 +29,7 @@ import {
 export class Memory extends Neo4jBaseEntity {
   @Id()
   @Unique()
+  @NodeKey()
   id!: string;
 
   @Neo4jProp()
@@ -38,14 +42,31 @@ export class Memory extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex()
+  @Validate({
+    enum: ['episodic', 'semantic', 'procedural', 'working'],
+    message:
+      'Memory type must be one of: episodic, semantic, procedural, working',
+  })
   memoryType!: 'episodic' | 'semantic' | 'procedural' | 'working';
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
+  @RangeIndex()
+  @Validate({
+    min: 0,
+    max: 1,
+    message: 'Importance score must be between 0 and 1',
+  })
   importance!: number;
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
+  @RangeIndex()
+  @Validate({
+    min: 0,
+    max: 1,
+    message: 'Confidence score must be between 0 and 1',
+  })
   confidence!: number;
 
   @Neo4jProp()

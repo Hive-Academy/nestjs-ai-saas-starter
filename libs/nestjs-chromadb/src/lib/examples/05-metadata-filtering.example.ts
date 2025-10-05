@@ -20,14 +20,13 @@
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
+  ChromaDBRepository,
   BaseChromaEntity,
-  BaseChromaRepository,
   ChromaDBModule,
   ChromaDBService,
   ChromaEntity,
   ChromaId,
   ChromaProp,
-  ChromaRepository,
   CreatedAt,
   CreateDocumentInput,
   JsonProperty,
@@ -200,16 +199,16 @@ export class FilterUserEntity extends BaseChromaEntity<FilterUserMetadata> {
 
 /**
  * Product repository with comprehensive filtering capabilities
+ * Extends ChromaDBRepository<T> with TypeORM-style pattern
  */
 @Injectable()
-@ChromaRepository<FilterProductEntity>({
-  collection: 'products_filter_demo',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class FilterProductRepository extends BaseChromaRepository<FilterProductEntity> {
-  constructor(chromaService: ChromaDBService) {
-    super();
+export class FilterProductRepository extends ChromaDBRepository<FilterProductEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(FilterProductEntity, 'products_filter_demo', chromaDB);
   }
 
   /**
@@ -475,16 +474,16 @@ export class FilterProductRepository extends BaseChromaRepository<FilterProductE
 
 /**
  * User repository with profile-based filtering
+ * Extends ChromaDBRepository<T> with TypeORM-style pattern
  */
 @Injectable()
-@ChromaRepository<FilterUserEntity>({
-  collection: 'users_filter_demo',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class FilterUserRepository extends BaseChromaRepository<FilterUserEntity> {
-  constructor(chromaService: ChromaDBService) {
-    super();
+export class FilterUserRepository extends ChromaDBRepository<FilterUserEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(FilterUserEntity, 'users_filter_demo', chromaDB);
   }
 
   /**

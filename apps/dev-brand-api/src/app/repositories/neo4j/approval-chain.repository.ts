@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Neo4jRepository,
+  Neo4jRepositoryBase,
   NeogmaService,
+  Neo4jCrudService,
+  Safe,
   CypherQuery,
+  Authorize,
+  ValidateInput,
+  AuditLog,
+  RateLimit,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import type { ApprovalLevel } from '@hive-academy/langgraph-hitl';
@@ -41,9 +47,9 @@ interface ApprovalRequestType {
  * - findById, findAll, create, update, delete, count, exists
  */
 @Injectable()
-export class ApprovalChainRepository extends Neo4jRepository<ApprovalRequest> {
-  constructor(neogma: NeogmaService) {
-    super(ApprovalRequest, neogma);
+export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest> {
+  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+    super(ApprovalRequest, 'ApprovalRequest', neogma, crud);
   }
 
   // ============================================================================
@@ -54,6 +60,10 @@ export class ApprovalChainRepository extends Neo4jRepository<ApprovalRequest> {
    * Store an approval chain configuration
    * Migrated from: storeApprovalChain in neo4j-approval-chain-storage.adapter.ts
    */
+  @Authorize({ roles: ['admin'] })
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
   async storeApprovalChain(
     chainId: string,
     levels: ApprovalLevel[]
@@ -244,6 +254,9 @@ export class ApprovalChainRepository extends Neo4jRepository<ApprovalRequest> {
    * Delete an approval chain
    * Migrated from: deleteApprovalChain in neo4j-approval-chain-storage.adapter.ts
    */
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
+  @Safe()
   async deleteApprovalChain(chainId: string): Promise<boolean> {
     if (!chainId?.trim()) {
       throw new Error('Chain ID is required');
@@ -288,6 +301,9 @@ export class ApprovalChainRepository extends Neo4jRepository<ApprovalRequest> {
    * Store an approval request
    * Migrated from: storeApprovalRequest in neo4j-approval-chain-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
   async storeApprovalRequest(request: ApprovalRequestType): Promise<void> {
     if (!request.id?.trim()) {
       throw new Error('Request ID is required');
@@ -472,6 +488,9 @@ export class ApprovalChainRepository extends Neo4jRepository<ApprovalRequest> {
    * Update approval request status and metadata
    * Migrated from: updateApprovalRequestStatus in neo4j-approval-chain-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
   async updateApprovalRequestStatus(
     requestId: string,
     status: string,

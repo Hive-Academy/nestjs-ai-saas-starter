@@ -21,13 +21,13 @@
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 
 import {
-  BaseChromaRepository,
   BaseDocument,
   ChromaDBModule,
+  ChromaDBRepository,
+  ChromaDBService,
   ChromaEntity,
   ChromaId,
   ChromaProp,
-  ChromaRepository,
   CreatedAt,
   UpdatedAt,
 } from '../../index';
@@ -166,16 +166,19 @@ export class AnalyticsEventEntity
 /**
  * Blog post repository with advanced content management features
  */
+/**
+ * Custom BlogPost repository with business logic
+ * Extends ChromaDBRepository<T> with domain-specific methods
+ * Uses TypeORM-style pattern with explicit constructor
+ */
 @Injectable()
-@ChromaRepository<BlogPostEntity>({
-  collection: 'blog_posts',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-})
-export class BlogPostRepository extends BaseChromaRepository<BlogPostEntity> {
-  constructor() {
-    super();
+export class BlogPostRepository extends ChromaDBRepository<BlogPostEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(BlogPostEntity, 'blog_posts', chromaDB);
   }
 
   // ============================================================================
@@ -693,15 +696,19 @@ export class BlogPostRepository extends BaseChromaRepository<BlogPostEntity> {
 /**
  * Analytics repository with aggregation and reporting capabilities
  */
+/**
+ * Custom Analytics repository for event tracking
+ * Extends ChromaDBRepository<T> with analytics-specific methods
+ * Uses TypeORM-style pattern with explicit constructor
+ */
 @Injectable()
-@ChromaRepository<AnalyticsEventEntity>({
-  collection: 'analytics_events',
-  autoEmbed: true,
-  enableCaching: false, // Analytics data should be fresh
-})
-export class AnalyticsRepository extends BaseChromaRepository<AnalyticsEventEntity> {
-  constructor() {
-    super();
+export class AnalyticsRepository extends ChromaDBRepository<AnalyticsEventEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(AnalyticsEventEntity, 'analytics_events', chromaDB);
   }
 
   /**
