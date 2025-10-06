@@ -1,4 +1,5 @@
 import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
+import { ModelFactory } from 'neogma';
 import { NEO4J_OPTIONS } from './constants/constants';
 import type {
   Neo4jModuleAsyncOptions,
@@ -14,7 +15,10 @@ import { NeogmaService } from './services/neogma.service';
 import { setNeo4jConfig } from './utils/neo4j-config.accessor';
 
 // Modern QueryBuilder Services
-import { NeogmaModelFactoryService } from './query-builder/neogma-model-factory.service';
+import {
+  NeogmaModelFactoryService,
+  TypedNeogmaModel,
+} from './query-builder/neogma-model-factory.service';
 import { NeogmaQueryBuilderService } from './query-builder/neogma-query-builder.service';
 import { NeogmaQueryRunnerService } from './query-builder/neogma-query-runner.service';
 
@@ -195,7 +199,8 @@ export class Neo4jModule {
    * ```
    */
   public static forFeature(entities: Type<any>[]): DynamicModule {
-    const providers: Provider[] = entities.map((entity) => {
+    // Create repository providers
+    const repositoryProviders: Provider[] = entities.map((entity) => {
       const label = getEntityLabel(entity);
       const repositoryToken = getRepositoryToken(entity);
 
@@ -208,10 +213,52 @@ export class Neo4jModule {
       };
     });
 
+    // Create model initializer provider that creates and registers Neogma models
+    const modelInitializer: Provider = {
+      provide: `NEO4J_MODEL_INITIALIZER_${entities
+        .map((e) => e.name)
+        .join('_')}`,
+      useFactory: (neogma: NeogmaService) => {
+        // Initialize models for all entities
+        entities.forEach((entity) => {
+          const modelConfig = Reflect.getMetadata(
+            'NEOGMA_MODEL_CONFIG',
+            entity
+          );
+
+          if (modelConfig) {
+            // Create raw Neogma model directly using ModelFactory
+            const rawModel = ModelFactory(
+              modelConfig,
+              neogma.getNeogmaInstance()
+            );
+
+            // Create TypedNeogmaModel wrapper (simplified schema from label)
+            const modelSchema = {
+              label: modelConfig.label,
+              properties: modelConfig.schema,
+            };
+
+            const typedModel = new TypedNeogmaModel(
+              rawModel,
+              modelSchema as any,
+              undefined // no hooks
+            );
+
+            // Register with NeogmaService (type assertion needed due to Neogma interface mismatch)
+            neogma.registerModel(modelConfig.label, typedModel as any);
+          }
+        });
+
+        return true; // Initialization complete
+      },
+      inject: [NeogmaService],
+    };
+
     return {
       module: Neo4jModule,
-      providers,
-      exports: providers,
+      providers: [...repositoryProviders, modelInitializer],
+      exports: repositoryProviders,
     };
   }
 

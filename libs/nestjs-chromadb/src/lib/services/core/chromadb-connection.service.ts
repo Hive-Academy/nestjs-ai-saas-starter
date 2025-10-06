@@ -212,12 +212,34 @@ export class ChromaDBConnectionService
 
   /**
    * Test connection with timeout
+   * Uses v2 API endpoint (v1 is deprecated in ChromaDB 0.5+)
    */
   private async performConnectionTest(): Promise<void> {
     try {
-      // Simple heartbeat operation
+      // Use v2 API heartbeat endpoint directly
+      // Handle hosts that already include protocol (e.g., "http://localhost")
+      let baseUrl: string;
+      if (
+        this.config.host.startsWith('http://') ||
+        this.config.host.startsWith('https://')
+      ) {
+        baseUrl = `${this.config.host}:${this.config.port}`;
+      } else {
+        const protocol = this.config.ssl ? 'https' : 'http';
+        baseUrl = `${protocol}://${this.config.host}:${this.config.port}`;
+      }
+
+      const heartbeatUrl = `${baseUrl}/api/v2/heartbeat`;
+
       await this.withTimeout(
-        this.client.heartbeat(),
+        fetch(heartbeatUrl).then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              `Heartbeat failed with status ${response.status}: ${response.statusText}`
+            );
+          }
+          return response.json();
+        }),
         this.config.timeout || 10000
       );
     } catch (error) {

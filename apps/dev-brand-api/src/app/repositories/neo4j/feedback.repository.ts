@@ -6,7 +6,6 @@ import {
   ValidateInput,
   AuditLog,
   RateLimit,
-  CypherQuery,
   NeogmaService,
   Neo4jCrudService,
 } from '@hive-academy/nestjs-neo4j';
@@ -238,7 +237,6 @@ export class FeedbackRepository extends Neo4jRepositoryBase<FeedbackEntry> {
    * Get all unprocessed feedback for AI learning pipeline
    * Uses: Base class findAll() with where clause
    */
-  @CypherQuery({ cache: '2m', retry: 3 })
   @Safe()
   async getUnprocessedFeedback(): Promise<HitlFeedbackEntry[]> {
     try {

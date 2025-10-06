@@ -5,7 +5,6 @@ import {
   Neo4jCrudService,
   Safe,
   Transactional,
-  CypherQuery,
   Authorize,
   ValidateInput,
   AuditLog,
@@ -172,10 +171,6 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
    * Get all pending approval requests that haven't expired
    * Optimized: Uses executeQuery helper (was 43 lines, now 13 lines)
    */
-  @CypherQuery({
-    cache: '1m', // 1 minute (dashboard query, needs frequent updates)
-    retry: 3,
-  })
   @Safe()
   async getPendingApprovals(): Promise<readonly ApprovalStorageData[]> {
     const result = await this.executeQuery(

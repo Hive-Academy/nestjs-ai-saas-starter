@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { Tool } from '@hive-academy/langgraph-multi-agent';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
@@ -8,6 +8,8 @@ import type {
   GitHubCommit,
   GitHubRepository,
 } from '../../agents/shared/agent.types';
+import { getRepositoryToken } from '@hive-academy/nestjs-chromadb';
+import { BrandStrategyEntity } from '../../../entities/chromadb/brand-strategy.entity';
 
 interface CodeAchievement {
   id: string;
@@ -101,6 +103,7 @@ export class GitHubIntegrationTools {
   constructor(
     private readonly llm: LlmProviderService,
     private readonly memory: PersonalBrandMemoryService,
+    @Inject(getRepositoryToken(BrandStrategyEntity))
     private readonly brandStrategyRepo: BrandStrategyRepository
   ) {}
 

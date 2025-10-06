@@ -295,10 +295,13 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Create a Neogma QueryBuilder instance
+   * Create a Neogma QueryBuilder instance with proper BindParam initialization
    */
   createQueryBuilder(): QueryBuilder {
-    return new QueryBuilder();
+    // IMPORTANT: Don't pass a BindParam - let QueryBuilder create its own
+    // This ensures proper parameter binding
+    const queryBuilder = new QueryBuilder();
+    return queryBuilder;
   }
 
   // ==================== CONNECTION MANAGEMENT ====================

@@ -1,6 +1,5 @@
 import {
   AuditLog,
-  CypherQuery,
   GraphPatternService,
   Neo4jCrudService,
   Neo4jRepositoryBase,
@@ -230,10 +229,6 @@ export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
    * Find achievements by technology
    * Used for technology trend analysis
    */
-  @CypherQuery({
-    cache: '5m', // 5 minutes (search feature)
-    retry: 3,
-  })
   @Safe()
   async findByTechnology(
     technology: string,

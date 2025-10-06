@@ -4,7 +4,6 @@ import {
   NeogmaService,
   Neo4jCrudService,
   Safe,
-  CypherQuery,
   Authorize,
   ValidateInput,
   AuditLog,
@@ -149,7 +148,6 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
    * Retrieve an approval chain configuration
    * Migrated from: getApprovalChain in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getApprovalChain(chainId: string): Promise<ApprovalLevel[] | null> {
     if (!chainId?.trim()) {
       throw new Error('Chain ID is required');
@@ -157,18 +155,14 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
 
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const chainIdParam = bindParam.add(chainId);
 
       qb.match('(chain:ApprovalChain)-[:HAS_LEVEL]->(level:ApprovalLevel)')
-        .where(`chain.id = $${chainIdParam}`)
+        .where('chain.id = $chainId') // ✅ Named parameter
         .return('level')
         .orderBy('level.priority ASC');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, { chainId });
 
       if (result.records.length === 0) {
         return null;
@@ -206,7 +200,6 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
    * Get all approval chains
    * Migrated from: getAllApprovalChains in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getAllApprovalChains(): Promise<Record<string, ApprovalLevel[]>> {
     try {
       const qb = this.neogma.createQueryBuilder();
@@ -345,7 +338,6 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
    * Get approval requests for a specific execution
    * Delegates to ApprovalRequestRepository
    */
-  @CypherQuery()
   async getApprovalRequestsByExecution(
     executionId: string
   ): Promise<ApprovalRequestType[]> {
@@ -372,26 +364,19 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
    * Get all active approval requests (pending, escalated)
    * Migrated from: getAllActiveRequests in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getAllActiveRequests(): Promise<ApprovalRequestType[]> {
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const statusListParam = bindParam.add([
-        'pending',
-        'escalated',
-        'in_progress',
-      ]);
 
       qb.match('(req:ApprovalRequest)')
-        .where(`req.status IN $${statusListParam}`)
+        .where('req.status IN $statusList') // ✅ Named parameter
         .return('req')
         .orderBy('req.requestedAt ASC');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, {
+        statusList: ['pending', 'escalated', 'in_progress'],
+      });
 
       return result.records.map((record) => {
         const reqProps = record.get('req').properties;
@@ -410,7 +395,6 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
    * Get pending approvals for a specific approver
    * Migrated from: getPendingApprovalsForApprover in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getPendingApprovalsForApprover(
     approverId: string
   ): Promise<ApprovalRequestType[]> {
@@ -420,23 +404,21 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
 
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const statusListParam = bindParam.add(['pending', 'in_progress']);
-      const approverIdParam = bindParam.add(approverId);
 
       // This is a complex query that joins with chain levels to find requests assigned to the approver
       qb.match('(req:ApprovalRequest)')
-        .where(`req.status IN $${statusListParam}`)
+        .where('req.status IN $statusList') // ✅ Named parameter
         .match('(chain:ApprovalChain)-[:HAS_LEVEL]->(level:ApprovalLevel)')
         .where('chain.id = req.chainId AND level.priority = req.level')
-        .where(`level.approvers CONTAINS $${approverIdParam}`)
+        .where('level.approvers CONTAINS $approverId') // ✅ Named parameter
         .return('req')
         .orderBy('req.requestedAt ASC');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, {
+        statusList: ['pending', 'in_progress'],
+        approverId,
+      });
 
       return result.records.map((record) => {
         const reqProps = record.get('req').properties;

@@ -309,21 +309,18 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   @Safe()
   async getAllActiveInterruptions(): Promise<readonly UserInterruption[]> {
     try {
+      // ✅ CORRECT QueryBuilder pattern with raw() for OPTIONAL MATCH
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const statusParam = bindParam.add('pending');
 
       queryBuilder
         .match('(i:UserInterruption)')
-        .where(`i.status = $${statusParam}`)
-        .match('(i)-[:HAS_RESPONSE]->(r:InterruptionResponse)')
+        .where('i.status = $status') // Named parameter
+        .raw('OPTIONAL MATCH (i)-[:HAS_RESPONSE]->(r:InterruptionResponse)') // Use raw() for OPTIONAL MATCH
         .return('i, r')
         .orderBy('i.createdAt ASC');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, { status: 'pending' });
 
       const interruptions: UserInterruption[] = [];
 

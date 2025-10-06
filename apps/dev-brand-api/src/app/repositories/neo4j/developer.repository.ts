@@ -5,7 +5,6 @@ import {
   Neo4jCrudService,
   Safe,
   Transactional,
-  CypherQuery,
   Authorize,
   ValidateInput,
   AuditLog,
@@ -75,10 +74,6 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
    * Find developer by email address (unique identifier)
    * Commonly used method from personal-brand-memory.service.ts
    */
-  @CypherQuery({
-    cache: '10m', // 10 minutes
-    retry: 3,
-  })
   @Safe()
   async findByEmail(email: string): Promise<Developer | null> {
     if (!email?.trim()) {
@@ -540,10 +535,6 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
    * Get active developers with recent activity
    * Used for team management and engagement tracking
    */
-  @CypherQuery({
-    cache: '5m', // 5 minutes (dashboard query)
-    retry: 3,
-  })
   @Safe()
   async getActiveDevelopers(daysActive = 30): Promise<Developer[]> {
     try {
