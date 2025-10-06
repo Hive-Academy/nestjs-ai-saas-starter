@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import type {
   IConfidenceStorageService,
   MLTrainingSet,
@@ -11,6 +12,7 @@ import type {
   ConfidenceFactor,
 } from '@hive-academy/langgraph-hitl';
 import { ConfidencePatternRepository } from '../../repositories/neo4j/confidence-pattern.repository';
+import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
 
 /**
  * Clean Neo4j adapter for confidence storage.
@@ -25,6 +27,7 @@ export class Neo4jConfidenceStorageAdapter
   private readonly logger = new Logger(Neo4jConfidenceStorageAdapter.name);
 
   constructor(
+    @Inject(getRepositoryToken(ConfidencePattern))
     private readonly confidencePatternRepo: ConfidencePatternRepository
   ) {
     this.logger.log(

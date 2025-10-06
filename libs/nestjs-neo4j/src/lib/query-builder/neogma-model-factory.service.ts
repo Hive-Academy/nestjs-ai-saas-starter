@@ -7,7 +7,7 @@
 
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Neogma, ModelFactory, type Neo4jSupportedProperties } from 'neogma';
-import { NEOGMA_TOKEN } from '../neogma/neogma.constants';
+import { NEOGMA_TOKEN } from '../constants/neogma.constants';
 
 /**
  * Model schema definition

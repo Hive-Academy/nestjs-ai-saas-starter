@@ -27,7 +27,7 @@ export { NeogmaModelFactoryService } from './lib/query-builder/neogma-model-fact
 
 export { InjectNeogma } from './lib/neogma/neogma.decorators';
 export type * from './lib/neogma/neogma.interfaces';
-export * from './lib/neogma/neogma.constants';
+export * from './lib/constants/neogma.constants';
 
 // Interfaces - Re-enabled to restore type safety
 export type {
@@ -67,19 +67,7 @@ export {
 } from './lib/decorators/safe.decorator';
 
 // Core Decorators
-export {
-  InjectNeo4j,
-  InjectNeo4jSession,
-  InjectNeo4jDriver,
-  InjectNeo4jConnection,
-} from './lib/decorators/inject-neo4j.decorator';
 export { Transactional } from './lib/decorators/transactional.decorator';
-
-// Legacy Decorators (DEPRECATED - use @Safe() instead)
-export {
-  Neo4jSafe,
-  type Neo4jSafeOptions,
-} from './lib/decorators/safe.decorator';
 
 // Decorator Framework
 export {

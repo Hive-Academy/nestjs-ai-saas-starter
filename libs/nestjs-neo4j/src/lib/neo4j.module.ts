@@ -1,10 +1,5 @@
 import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
-import * as neo4j from 'neo4j-driver';
-import {
-  DEFAULT_NEO4J_CONFIG,
-  NEO4J_DRIVER,
-  NEO4J_OPTIONS,
-} from './constants/constants';
+import { NEO4J_OPTIONS } from './constants/constants';
 import type {
   Neo4jModuleAsyncOptions,
   Neo4jModuleOptions,
@@ -23,19 +18,61 @@ import { NeogmaModelFactoryService } from './query-builder/neogma-model-factory.
 import { NeogmaQueryBuilderService } from './query-builder/neogma-query-builder.service';
 import { NeogmaQueryRunnerService } from './query-builder/neogma-query-runner.service';
 
-// Modern Relationship Services (BaseRelationshipService is abstract and not registered)
-import { RelationshipBulkOperationsService } from './repositories/relationship/relationship-bulk.service';
-import { RelationshipCoreRepository } from './repositories/relationship/relationship-core.repository';
-// ❌ REMOVED: RelationshipRepository - deprecated in favor of RelationshipCoreRepository
-
 // Modern Graph Services (BaseGraphService is abstract and not registered)
+import {
+  getEntityLabel,
+  getRepositoryToken,
+} from './decorators/inject-repository.decorator';
 import { GraphMetricsService } from './repositories/graph/graph-metrics.service';
 import { GraphPatternService } from './repositories/graph/graph-pattern.service';
 import { GraphTraversalService } from './repositories/graph/graph-traversal.service';
+import { Neo4jRepository } from './repositories/neo4j-repository';
 
 @Global()
 @Module({})
 export class Neo4jModule {
+  /**
+   * Shared service providers used by both forRoot and forRootAsync
+   */
+  private static readonly SERVICE_PROVIDERS = [
+    // Primary Neogma services (CONSOLIDATED)
+    NeogmaService,
+    NeogmaMetricsService,
+    NeogmaConnectionService,
+    // CRUD Service (GLOBAL - for TypeORM-style repositories)
+    Neo4jCrudService,
+    // Modern QueryBuilder Services
+    NeogmaQueryBuilderService,
+    NeogmaQueryRunnerService,
+    NeogmaModelFactoryService,
+    // Modern Graph Services
+    GraphTraversalService,
+    GraphMetricsService,
+    GraphPatternService,
+  ];
+
+  /**
+   * Shared exports used by both forRoot and forRootAsync
+   */
+  private static readonly SERVICE_EXPORTS = [
+    // Primary Neogma services (CONSOLIDATED)
+    NeogmaService,
+    NeogmaMetricsService,
+    NeogmaConnectionService,
+    // CRUD Service (GLOBAL - for TypeORM-style repositories)
+    Neo4jCrudService,
+    // Modern QueryBuilder Services
+    NeogmaQueryBuilderService,
+    NeogmaQueryRunnerService,
+    NeogmaModelFactoryService,
+    // Modern Graph Services
+    GraphTraversalService,
+    GraphMetricsService,
+    GraphPatternService,
+    // Core tokens
+    NEO4J_OPTIONS,
+  ];
+
   /**
    * Register Neo4j module synchronously with Neogma integration
    */
@@ -51,23 +88,6 @@ export class Neo4jModule {
       useValue: options,
     };
 
-    const driverProvider: Provider = {
-      provide: NEO4J_DRIVER,
-      useFactory: () => {
-        const config = {
-          ...DEFAULT_NEO4J_CONFIG,
-          ...options.config,
-        };
-
-        return neo4j.driver(
-          options.uri,
-          neo4j.auth.basic(options.username, options.password),
-          config
-        );
-      },
-      inject: [],
-    };
-
     // Convert Neo4j options to Neogma format
     const neogmaOptions: NeogmaModuleOptions = {
       url: options.uri,
@@ -77,56 +97,11 @@ export class Neo4jModule {
       config: options.config as NeogmaModuleOptions['config'],
     };
 
-    const providers = [
-      optionsProvider,
-      driverProvider,
-      // Primary Neogma services (CONSOLIDATED)
-      NeogmaService,
-      NeogmaMetricsService,
-      NeogmaConnectionService,
-      // CRUD Service (GLOBAL - for TypeORM-style repositories)
-      Neo4jCrudService,
-      // Modern QueryBuilder Services
-      NeogmaQueryBuilderService,
-      NeogmaQueryRunnerService,
-      NeogmaModelFactoryService,
-      // Modern Relationship Services
-      RelationshipCoreRepository,
-      RelationshipBulkOperationsService,
-      // Modern Graph Services
-      GraphTraversalService,
-      GraphMetricsService,
-      GraphPatternService,
-    ];
-
     return {
       module: Neo4jModule,
       imports: [NeogmaModule.forRoot(neogmaOptions)],
-      providers,
-      exports: [
-        // Primary Neogma services (CONSOLIDATED)
-        NeogmaService,
-        NeogmaMetricsService,
-        NeogmaConnectionService,
-        // CRUD Service (GLOBAL - for TypeORM-style repositories)
-        Neo4jCrudService,
-        // Modern QueryBuilder Services
-        NeogmaQueryBuilderService,
-        NeogmaQueryRunnerService,
-        NeogmaModelFactoryService,
-        // Modern Relationship Services
-        RelationshipCoreRepository,
-        RelationshipBulkOperationsService,
-
-        // Modern Graph Services (ADDED - these were missing!)
-        GraphTraversalService,
-        GraphMetricsService,
-        GraphPatternService,
-
-        // Core tokens
-        NEO4J_DRIVER,
-        NEO4J_OPTIONS,
-      ],
+      providers: [optionsProvider, ...this.SERVICE_PROVIDERS],
+      exports: this.SERVICE_EXPORTS,
     };
   }
 
@@ -134,39 +109,6 @@ export class Neo4jModule {
    * Register Neo4j module asynchronously
    */
   public static forRootAsync(options: Neo4jModuleAsyncOptions): DynamicModule {
-    const providers = [
-      ...this.createAsyncProviders(options),
-      {
-        provide: NEO4J_DRIVER,
-        useFactory: (moduleOptions: Neo4jModuleOptions) => {
-          const config = {
-            ...DEFAULT_NEO4J_CONFIG,
-            ...moduleOptions.config,
-          };
-
-          return neo4j.driver(
-            moduleOptions.uri,
-            neo4j.auth.basic(moduleOptions.username, moduleOptions.password),
-            config
-          );
-        },
-        inject: [NEO4J_OPTIONS],
-      },
-      // Primary Neogma services
-      NeogmaService,
-      NeogmaMetricsService,
-      NeogmaConnectionService,
-      // CRUD Service (GLOBAL - for TypeORM-style repositories)
-      Neo4jCrudService,
-      // Modern QueryBuilder Services
-      NeogmaQueryBuilderService,
-      NeogmaQueryRunnerService,
-      NeogmaModelFactoryService,
-      // Modern Relationship Services
-      RelationshipCoreRepository,
-      RelationshipBulkOperationsService,
-    ];
-
     // Create Neogma module async import
     const neogmaModuleImport = NeogmaModule.forRootAsync({
       useFactory: (moduleOptions: Neo4jModuleOptions): NeogmaModuleOptions => ({
@@ -182,31 +124,11 @@ export class Neo4jModule {
     return {
       module: Neo4jModule,
       imports: [neogmaModuleImport, ...(options.imports ?? [])],
-      providers,
-      exports: [
-        // Primary Neogma services (CONSOLIDATED)
-        NeogmaService,
-        NeogmaMetricsService,
-        NeogmaConnectionService,
-        // CRUD Service (GLOBAL - for TypeORM-style repositories)
-        Neo4jCrudService,
-        // Modern QueryBuilder Services
-        NeogmaQueryBuilderService,
-        NeogmaQueryRunnerService,
-        NeogmaModelFactoryService,
-        // Modern Relationship Services
-        RelationshipCoreRepository,
-        RelationshipBulkOperationsService,
-
-        // Modern Graph Services (ADDED - these were missing!)
-        GraphTraversalService,
-        GraphMetricsService,
-        GraphPatternService,
-
-        // Core tokens
-        NEO4J_DRIVER,
-        NEO4J_OPTIONS,
+      providers: [
+        ...this.createAsyncProviders(options),
+        ...this.SERVICE_PROVIDERS,
       ],
+      exports: this.SERVICE_EXPORTS,
     };
   }
 
@@ -272,15 +194,8 @@ export class Neo4jModule {
    * export class UserModule {}
    * ```
    */
-  public static forFeature(entities: Type<unknown>[]): DynamicModule {
+  public static forFeature(entities: Type<any>[]): DynamicModule {
     const providers: Provider[] = entities.map((entity) => {
-      // Dynamically import at runtime to avoid circular dependencies
-      const {
-        getRepositoryToken,
-        getEntityLabel,
-      } = require('./decorators/inject-repository.decorator');
-      const { Neo4jRepository } = require('./repositories/neo4j-repository');
-
       const label = getEntityLabel(entity);
       const repositoryToken = getRepositoryToken(entity);
 
@@ -292,30 +207,6 @@ export class Neo4jModule {
         inject: [NeogmaService, Neo4jCrudService],
       };
     });
-
-    return {
-      module: Neo4jModule,
-      providers,
-      exports: providers,
-    };
-  }
-
-  /**
-   * Register specific database sessions (DEPRECATED - use forFeature(entities) instead)
-   *
-   * This method is deprecated in favor of the TypeORM-style forFeature(entities) pattern.
-   * It will be removed in v3.0.0.
-   *
-   * @deprecated Use forFeature(entities: Type<any>[]) for repository auto-generation
-   */
-  public static forFeatureDatabases(databases: string[]): DynamicModule {
-    const providers = databases.map((database) => ({
-      provide: `NEO4J_SESSION_${database}`,
-      useFactory: (driver: neo4j.Driver) => {
-        return driver.session({ database });
-      },
-      inject: [NEO4J_DRIVER],
-    }));
 
     return {
       module: Neo4jModule,

@@ -4,12 +4,15 @@
 
 import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 import { Neogma } from 'neogma';
-import { NEOGMA_TOKEN, NEOGMA_OPTIONS_TOKEN } from './neogma.constants';
 import type {
   NeogmaModuleOptions,
   NeogmaModuleAsyncOptions,
   NeogmaOptionsFactory,
 } from './neogma.interfaces';
+import {
+  NEOGMA_OPTIONS_TOKEN,
+  NEOGMA_TOKEN,
+} from '../constants/neogma.constants';
 
 @Global()
 @Module({})

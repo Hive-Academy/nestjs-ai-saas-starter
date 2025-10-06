@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import {
   IHitlStorageService,
   InvalidApprovalDataError,
@@ -10,6 +11,7 @@ import type {
   HitlStorageStats,
 } from '@hive-academy/langgraph-hitl';
 import { ApprovalRequestRepository } from '../../repositories/neo4j/approval-request.repository';
+import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 
 /**
  * Clean Neo4j adapter for HITL approval storage.
@@ -23,7 +25,10 @@ import { ApprovalRequestRepository } from '../../repositories/neo4j/approval-req
 export class Neo4jHitlStorageAdapter extends IHitlStorageService {
   private readonly logger = new Logger(Neo4jHitlStorageAdapter.name);
 
-  constructor(private readonly approvalRequestRepo: ApprovalRequestRepository) {
+  constructor(
+    @Inject(getRepositoryToken(ApprovalRequest))
+    private readonly approvalRequestRepo: ApprovalRequestRepository
+  ) {
     super();
     this.logger.debug(
       'Neo4jHitlStorageAdapter initialized with ApprovalRequestRepository'

@@ -12,6 +12,7 @@ import {
   GraphTraversalOptions,
 } from './base-graph.service';
 import type { NeogmaEntity } from '../../types/neogma-types';
+import { NeogmaService } from '../../services/neogma.service';
 
 /**
  * Graph query pattern for flexible matching
@@ -77,6 +78,10 @@ export class GraphPatternService<
   T extends NeogmaEntity = NeogmaEntity
 > extends BaseGraphService<T> {
   protected readonly GraphPatternLogger = new Logger(GraphPatternService.name);
+
+  constructor(protected override readonly neogmaService: NeogmaService) {
+    super(neogmaService, 'Entity');
+  }
 
   // ==================== PATTERN MATCHING OPERATIONS ====================
 

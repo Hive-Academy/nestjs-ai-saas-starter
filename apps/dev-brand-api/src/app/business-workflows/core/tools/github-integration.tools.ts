@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { Tool } from '@hive-academy/langgraph-multi-agent';
+import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { PersonalBrandMemoryService } from '../memory/personal-brand-memory.service';
+import { BrandStrategyRepository } from '../../../repositories/chromadb/brand-strategy.repository';
 import type {
   GitHubCommit,
   GitHubRepository,
@@ -50,6 +53,35 @@ interface GitHubAnalysisResponse {
   };
 }
 
+interface AISynthesisResponse {
+  success: true;
+  synthesisGoal:
+    | 'career-summary'
+    | 'skill-overview'
+    | 'achievement-narrative'
+    | 'comprehensive-profile';
+  outputFormat: 'structured' | 'narrative' | 'bullet-points' | 'json';
+  content: string | object;
+  metadata: {
+    dataSourcesUsed: string[];
+    synthesisTimestamp: string;
+    confidenceScore: number;
+    brandVoiceAlignment: number;
+  };
+  insights?: {
+    keyStrengths: string[];
+    growthAreas: string[];
+    brandingOpportunities: string[];
+  };
+}
+
+interface ErrorResponse {
+  success: false;
+  error: string;
+  errorType: string;
+  timestamp: string;
+}
+
 /**
  * 💻 GITHUB INTEGRATION TOOLS - CODE ANALYSIS & ACHIEVEMENT EXTRACTION
  *
@@ -65,6 +97,12 @@ export class GitHubIntegrationTools {
   private readonly logger = new Logger(GitHubIntegrationTools.name);
   private readonly githubToken = process.env.GITHUB_TOKEN;
   private readonly githubApiBase = 'https://api.github.com';
+
+  constructor(
+    private readonly llm: LlmProviderService,
+    private readonly memory: PersonalBrandMemoryService,
+    private readonly brandStrategyRepo: BrandStrategyRepository
+  ) {}
 
   @Tool({
     name: 'github-analyzer',
@@ -336,6 +374,166 @@ export class GitHubIntegrationTools {
         repositories
       ),
     };
+  }
+
+  @Tool({
+    name: 'ai-synthesis',
+    description:
+      'Synthesize insights from multiple data sources using AI to create coherent narratives',
+    schema: z.object({
+      analysisData: z.object({
+        githubData: z.any(),
+        achievements: z.array(z.any()),
+        insights: z.any(),
+      }),
+      synthesisGoal: z.enum([
+        'career-summary',
+        'skill-overview',
+        'achievement-narrative',
+        'comprehensive-profile',
+      ]),
+      outputFormat: z
+        .enum(['structured', 'narrative', 'bullet-points', 'json'])
+        .optional(),
+    }),
+  })
+  async synthesizeInsights({
+    analysisData,
+    synthesisGoal,
+    outputFormat = 'narrative',
+  }: {
+    analysisData: {
+      githubData: any;
+      achievements: any[];
+      insights: any;
+    };
+    synthesisGoal:
+      | 'career-summary'
+      | 'skill-overview'
+      | 'achievement-narrative'
+      | 'comprehensive-profile';
+    outputFormat?: 'structured' | 'narrative' | 'bullet-points' | 'json';
+  }): Promise<AISynthesisResponse | ErrorResponse> {
+    this.logger.log(
+      `🤖 Synthesizing ${synthesisGoal} in ${outputFormat} format using AI`
+    );
+
+    try {
+      // Extract username from data for memory/chroma queries
+      const username =
+        analysisData.githubData?.username ||
+        analysisData.insights?.developerId ||
+        'unknown';
+
+      // Gather additional context from memory and ChromaDB
+      const dataSourcesUsed: string[] = [
+        'github-data',
+        'achievements',
+        'insights',
+      ];
+
+      // Get brand voice for consistent tone
+      let brandVoice: any = null;
+      try {
+        brandVoice = await this.memory.getBrandVoice(username);
+        dataSourcesUsed.push('brand-voice');
+      } catch (error) {
+        this.logger.warn(`Could not fetch brand voice for ${username}`);
+      }
+
+      // Query ChromaDB for similar profiles/strategies
+      let similarProfiles: any[] = [];
+      try {
+        const strategies = await this.brandStrategyRepo.findAll({ limit: 3 });
+        similarProfiles = strategies.map((s) => ({
+          positioning: s.metadata?.positioning,
+          confidenceScore: s.metadata?.confidenceScore,
+        }));
+        if (similarProfiles.length > 0) {
+          dataSourcesUsed.push('similar-profiles-chromadb');
+        }
+      } catch (error) {
+        this.logger.warn('Could not query ChromaDB for similar profiles');
+      }
+
+      // Build synthesis prompt based on goal
+      const synthesisPrompt = this.buildSynthesisPrompt({
+        synthesisGoal,
+        outputFormat,
+        analysisData,
+        brandVoice,
+        similarProfiles,
+      });
+
+      // Use LLM to synthesize insights
+      const model = await this.llm.getLLM({
+        temperature: 0.7, // Higher temperature for creative synthesis
+        maxTokens: 2000,
+      });
+
+      const response = await model.invoke([
+        { role: 'user', content: synthesisPrompt },
+      ]);
+
+      let synthesizedContent: string | object;
+      const responseContent = response.content.toString();
+
+      // Parse based on output format
+      if (outputFormat === 'json') {
+        try {
+          synthesizedContent = JSON.parse(responseContent);
+        } catch {
+          // Fallback if JSON parsing fails
+          synthesizedContent = { content: responseContent };
+        }
+      } else {
+        synthesizedContent = responseContent;
+      }
+
+      // Calculate brand voice alignment score
+      const brandVoiceAlignment = this.calculateBrandVoiceAlignment(
+        responseContent,
+        brandVoice
+      );
+
+      // Extract key insights from the synthesis
+      const extractedInsights = await this.extractKeyInsights(
+        synthesizedContent,
+        analysisData
+      );
+
+      return {
+        success: true,
+        synthesisGoal,
+        outputFormat,
+        content: synthesizedContent,
+        metadata: {
+          dataSourcesUsed,
+          synthesisTimestamp: new Date().toISOString(),
+          confidenceScore: this.calculateConfidenceScore(
+            analysisData,
+            similarProfiles
+          ),
+          brandVoiceAlignment,
+        },
+        insights: extractedInsights,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `❌ AI synthesis failed: ${error.message}`,
+        error.stack
+      );
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unknown error during AI synthesis',
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 
   // Private helper methods
@@ -627,5 +825,263 @@ export class GitHubIntegrationTools {
         productivityScore: 0,
       },
     };
+  }
+
+  /**
+   * Build synthesis prompt based on goal and data
+   */
+  private buildSynthesisPrompt({
+    synthesisGoal,
+    outputFormat,
+    analysisData,
+    brandVoice,
+    similarProfiles,
+  }: {
+    synthesisGoal: string;
+    outputFormat: string;
+    analysisData: any;
+    brandVoice: any;
+    similarProfiles: any[];
+  }): string {
+    const baseContext = `
+GitHub Data Summary:
+- Repositories: ${analysisData.githubData?.summary?.totalRepositories || 0}
+- Commits: ${analysisData.githubData?.summary?.totalCommits || 0}
+- Lines of Code: ${analysisData.githubData?.summary?.linesOfCode || 0}
+- Primary Languages: ${
+      analysisData.githubData?.patterns?.primaryLanguages?.join(', ') || 'N/A'
+    }
+- Working Hours: ${analysisData.githubData?.patterns?.workingHours || 'N/A'}
+- Focus Areas: ${
+      analysisData.githubData?.patterns?.focusAreas?.join(', ') || 'N/A'
+    }
+
+Achievements:
+${
+  analysisData.achievements
+    ?.map(
+      (a: any, i: number) =>
+        `${i + 1}. ${a.description || a.title || 'Achievement'} (Impact: ${
+          a.impact
+        })`
+    )
+    .join('\n') || 'No achievements data'
+}
+
+Technical Expertise:
+${
+  analysisData.insights?.technicalExpertise
+    ? JSON.stringify(analysisData.insights.technicalExpertise, null, 2)
+    : 'No expertise data'
+}
+
+${
+  brandVoice
+    ? `Brand Voice Guidelines:\n- Tone: ${brandVoice.tone}\n- Style: ${
+        brandVoice.style
+      }\n- Personality: ${brandVoice.personality?.join(', ') || 'N/A'}`
+    : ''
+}
+
+${
+  similarProfiles.length > 0
+    ? `Similar Successful Profiles:\n${similarProfiles
+        .map(
+          (p: any, i: number) =>
+            `${i + 1}. Positioning: ${p.positioning}, Confidence: ${
+              p.confidenceScore
+            }`
+        )
+        .join('\n')}`
+    : ''
+}
+`;
+
+    const goalInstructions = {
+      'career-summary':
+        "Create a compelling career summary that highlights the developer's journey, key achievements, and professional growth trajectory.",
+      'skill-overview':
+        'Generate a comprehensive overview of technical skills, expertise levels, and technology stack proficiency.',
+      'achievement-narrative':
+        'Craft an engaging narrative that showcases major achievements, their impact, and the story behind them.',
+      'comprehensive-profile':
+        'Build a complete professional profile combining career summary, skills, achievements, and unique value proposition.',
+    };
+
+    const formatInstructions = {
+      structured:
+        'Provide the synthesis in a well-organized structure with clear sections and hierarchies.',
+      narrative:
+        'Write a flowing, engaging narrative that tells a cohesive story.',
+      'bullet-points':
+        'Present the synthesis as concise, impactful bullet points.',
+      json: 'Return the synthesis as a valid JSON object with appropriate fields and structure.',
+    };
+
+    return `
+${baseContext}
+
+Task: ${goalInstructions[synthesisGoal as keyof typeof goalInstructions]}
+
+Output Format: ${
+      formatInstructions[outputFormat as keyof typeof formatInstructions]
+    }
+
+${
+  brandVoice
+    ? 'Maintain consistency with the provided brand voice guidelines.'
+    : ''
+}
+
+Please synthesize the above data into a coherent, professional output that:
+1. Highlights key strengths and unique value propositions
+2. Demonstrates technical expertise and impact
+3. Tells a compelling professional story
+4. Identifies growth opportunities and next steps
+${
+  outputFormat === 'json'
+    ? '\n5. Returns valid JSON with fields: summary, keyStrengths, achievements, technicalSkills, growthAreas, nextSteps'
+    : ''
+}
+`;
+  }
+
+  /**
+   * Calculate brand voice alignment score
+   */
+  private calculateBrandVoiceAlignment(
+    content: string,
+    brandVoice: any
+  ): number {
+    if (!brandVoice) return 0.5; // Neutral if no brand voice
+
+    let score = 0.5;
+    const contentLower = content.toLowerCase();
+
+    // Check tone alignment
+    if (
+      brandVoice.tone &&
+      contentLower.includes(brandVoice.tone.toLowerCase())
+    ) {
+      score += 0.2;
+    }
+
+    // Check style alignment
+    if (
+      brandVoice.style &&
+      contentLower.includes(brandVoice.style.toLowerCase())
+    ) {
+      score += 0.15;
+    }
+
+    // Check keyword presence
+    if (brandVoice.keywords && Array.isArray(brandVoice.keywords)) {
+      const keywordMatches = brandVoice.keywords.filter((keyword: string) =>
+        contentLower.includes(keyword.toLowerCase())
+      );
+      score += (keywordMatches.length / brandVoice.keywords.length) * 0.15;
+    }
+
+    return Math.min(1.0, score);
+  }
+
+  /**
+   * Calculate confidence score based on data quality
+   */
+  private calculateConfidenceScore(
+    analysisData: any,
+    similarProfiles: any[]
+  ): number {
+    let score = 0.3; // Base score
+
+    // GitHub data quality
+    if (analysisData.githubData?.summary?.totalCommits > 0) score += 0.2;
+    if (analysisData.githubData?.patterns?.primaryLanguages?.length > 0)
+      score += 0.15;
+
+    // Achievements quality
+    if (analysisData.achievements?.length > 0) score += 0.15;
+    if (
+      analysisData.achievements?.some(
+        (a: any) => a.impact === 'high' || a.impact === 'critical'
+      )
+    ) {
+      score += 0.1;
+    }
+
+    // Insights quality
+    if (analysisData.insights?.technicalExpertise) score += 0.1;
+
+    // Similar profiles boost confidence
+    if (similarProfiles.length > 0) score += 0.1;
+
+    return Math.min(1.0, score);
+  }
+
+  /**
+   * Extract key insights from synthesized content
+   */
+  private async extractKeyInsights(
+    synthesizedContent: string | object,
+    analysisData: any
+  ): Promise<{
+    keyStrengths: string[];
+    growthAreas: string[];
+    brandingOpportunities: string[];
+  }> {
+    const keyStrengths: string[] = [];
+    const growthAreas: string[] = [];
+    const brandingOpportunities: string[] = [];
+
+    // Extract from analysis data
+    if (analysisData.githubData?.patterns?.primaryLanguages?.length > 0) {
+      keyStrengths.push(
+        `Expert in ${analysisData.githubData.patterns.primaryLanguages[0]}`
+      );
+    }
+
+    if (analysisData.achievements?.length > 0) {
+      const highImpact = analysisData.achievements.filter(
+        (a: any) => a.impact === 'high' || a.impact === 'critical'
+      );
+      if (highImpact.length > 0) {
+        keyStrengths.push(
+          `${highImpact.length} high-impact achievement${
+            highImpact.length > 1 ? 's' : ''
+          }`
+        );
+      }
+    }
+
+    if (analysisData.insights?.recommendations?.length > 0) {
+      growthAreas.push(...analysisData.insights.recommendations.slice(0, 3));
+    }
+
+    if (analysisData.insights?.brandingOpportunities?.length > 0) {
+      brandingOpportunities.push(
+        ...analysisData.insights.brandingOpportunities.slice(0, 3)
+      );
+    }
+
+    // Fallback if no insights extracted
+    if (keyStrengths.length === 0) {
+      keyStrengths.push('Active developer', 'Growing technical expertise');
+    }
+
+    if (growthAreas.length === 0) {
+      growthAreas.push(
+        'Expand technology stack',
+        'Increase community visibility'
+      );
+    }
+
+    if (brandingOpportunities.length === 0) {
+      brandingOpportunities.push(
+        'Showcase technical projects',
+        'Build online presence'
+      );
+    }
+
+    return { keyStrengths, growthAreas, brandingOpportunities };
   }
 }

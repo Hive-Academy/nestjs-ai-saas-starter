@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   InjectRepository,
   ChromaDBRepository,
   Cached,
   Profiled,
   Retry,
+  getRepositoryToken as getChromaRepositoryToken,
 } from '@hive-academy/nestjs-chromadb';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import { DeveloperRepository } from '../../../repositories/neo4j/developer.repository';
 import { AchievementRepository as Neo4jAchievementRepository } from '../../../repositories/neo4j/achievement.repository';
 
@@ -13,6 +15,8 @@ import { AchievementRepository as Neo4jAchievementRepository } from '../../../re
 import { CodeAchievementEntity } from '../../../entities/chromadb/code-achievement.entity';
 import { BrandStrategyEntity } from '../../../entities/chromadb/brand-strategy.entity';
 import { ContentPerformanceEntity } from '../../../entities/chromadb/content-performance.entity';
+import { Developer } from '../../../entities/neo4j/developer.entity';
+import { Achievement } from '../../../entities/neo4j/achievement.entity';
 
 // Import custom repositories (analytics only)
 import { CodeAchievementRepository } from '../../../repositories/chromadb/code-achievement.repository';
@@ -70,13 +74,21 @@ export class PersonalBrandMemoryService {
     @InjectRepository(ContentPerformanceEntity)
     private readonly contentRepo: ChromaDBRepository<ContentPerformanceEntity>,
 
-    // Custom repositories for analytics (via direct injection)
+    // Custom repositories for analytics (via proper DI tokens)
+    @Inject(getChromaRepositoryToken(CodeAchievementEntity))
     private readonly achievementAnalytics: CodeAchievementRepository,
+
+    @Inject(getChromaRepositoryToken(BrandStrategyEntity))
     private readonly brandAnalytics: BrandStrategyRepository,
+
+    @Inject(getChromaRepositoryToken(ContentPerformanceEntity))
     private readonly contentAnalytics: ContentPerformanceRepository,
 
-    // Neo4j repositories
+    // Neo4j repositories (via proper DI tokens)
+    @Inject(getRepositoryToken(Developer))
     private readonly developerRepo: DeveloperRepository,
+
+    @Inject(getRepositoryToken(Achievement))
     private readonly neo4jAchievementRepo: Neo4jAchievementRepository
   ) {}
 

@@ -5,11 +5,11 @@
  * for all graph-related operations using QueryBuilder patterns.
  */
 
-import { Injectable, Logger, Inject } from '@nestjs/common';
-import { NEOGMA_TOKEN } from '../../constants/neogma.constants';
+import { Injectable, Logger } from '@nestjs/common';
 import { type Neogma, QueryBuilder } from 'neogma';
 import type { NeogmaEntity } from '../../types/neogma-types';
 import type { Neo4jQueryParams } from '../../types/neo4j-types';
+import { NeogmaService } from '../../services/neogma.service';
 
 /**
  * Options for graph traversal operations
@@ -91,11 +91,15 @@ export interface GraphQueryOptions {
 @Injectable()
 export abstract class BaseGraphService<T extends NeogmaEntity = NeogmaEntity> {
   protected readonly logger = new Logger(BaseGraphService.name);
+  protected readonly neogma: Neogma;
 
   constructor(
-    @Inject(NEOGMA_TOKEN) protected readonly neogma: Neogma,
+    protected readonly neogmaService: NeogmaService,
     protected readonly entityLabel = 'Entity'
-  ) {}
+  ) {
+    // Access the underlying Neogma instance from NeogmaService
+    this.neogma = this.neogmaService.getNeogmaInstance();
+  }
 
   /**
    * Create a QueryBuilder instance for type-safe queries

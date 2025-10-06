@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   Neo4jRepositoryBase,
   NeogmaService,
@@ -8,8 +8,11 @@ import {
   Authorize,
   ValidateInput,
   AuditLog,
+  getRepositoryToken,
 } from '@hive-academy/nestjs-neo4j';
+import { ApprovalChain } from '../../entities/neo4j/approval-chain.entity';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
+import { ApprovalRequestRepository } from './approval-request.repository';
 import type { ApprovalLevel } from '@hive-academy/langgraph-hitl';
 
 interface ApprovalRequestType {
@@ -32,23 +35,29 @@ interface ApprovalRequestType {
 }
 
 /**
- * ApprovalChain Repository
+ * ApprovalChain Repository - Composition Pattern
  *
  * Replaces: neo4j-approval-chain-storage.adapter.ts (603 lines)
  *
- * Extends Neo4jRepository<ApprovalRequest> for automatic CRUD operations.
- * Provides type-safe operations for approval chain management.
+ * Extends Neo4jRepository<ApprovalChain> for chain operations.
+ * Composes ApprovalRequestRepository for request operations.
  *
- * Note: This repository manages both ApprovalChain nodes and their relationships
- * to ApprovalRequest entities via the chainId property.
+ * This follows proper separation of concerns:
+ * - Manages ApprovalChain entity directly
+ * - Delegates ApprovalRequest operations to ApprovalRequestRepository
  *
- * CRUD methods (inherited from Neo4jRepository<ApprovalRequest>):
- * - findById, findAll, create, update, delete, count, exists
+ * CRUD methods (inherited from Neo4jRepository<ApprovalChain>):
+ * - findById, findAll, create, update, delete, count, exists (for chains)
  */
 @Injectable()
-export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest> {
-  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
-    super(ApprovalRequest, 'ApprovalRequest', neogma, crud);
+export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> {
+  constructor(
+    neogma: NeogmaService,
+    crud: Neo4jCrudService,
+    @Inject(getRepositoryToken(ApprovalRequest))
+    private readonly approvalRequestRepo: ApprovalRequestRepository
+  ) {
+    super(ApprovalChain, 'ApprovalChain', neogma, crud);
   }
 
   // ============================================================================
@@ -299,13 +308,10 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest
   /**
    * Store an approval request
    * Migrated from: storeApprovalRequest in neo4j-approval-chain-storage.adapter.ts
+   * Delegates to ApprovalRequestRepository
    */
   @ValidateInput()
   @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
-  /**
-   * Store approval request
-   * Uses: Base class create() method
-   */
   @Safe()
   async storeApprovalRequest(request: ApprovalRequestType): Promise<void> {
     if (!request.id?.trim()) {
@@ -313,15 +319,16 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest
     }
 
     try {
-      await this.create({
+      // Delegate to ApprovalRequestRepository
+      await this.approvalRequestRepo.storeApprovalRequest({
         id: request.id,
-        executionId: request.executionId,
-        nodeId: request.nodeId,
+        executionId: request.executionId || '',
+        nodeId: request.nodeId || '',
         chainId: request.chainId,
-        level: request.level || 0,
-        status: request.status || 'pending',
+        // riskLevel: request.level || 0,
+        status: (request.status as any) || 'pending',
         message: request.message || '',
-        metadata: request.metadata || {},
+        metadata: (request.metadata || {}) as any,
         requestedAt: request.requestedAt || new Date(),
         expiresAt: request.expiresAt,
       });
@@ -336,7 +343,7 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest
 
   /**
    * Get approval requests for a specific execution
-   * Uses: Base class findAll() with where clause
+   * Delegates to ApprovalRequestRepository
    */
   @CypherQuery()
   async getApprovalRequestsByExecution(
@@ -347,12 +354,11 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest
     }
 
     try {
-      const requests = await this.findAll({
-        where: { executionId },
-        orderBy: [{ requestedAt: 'ASC' }],
-      });
-
-      return requests.map((req) => this.mapNodeToApprovalRequest(req));
+      // Delegate to ApprovalRequestRepository
+      const requests = await this.approvalRequestRepo.getApprovalsByExecution(
+        executionId
+      );
+      return requests.map((req) => this.mapNodeToApprovalRequest(req as any));
     } catch (error) {
       throw new Error(
         `Failed to get approval requests for execution: ${
@@ -447,7 +453,7 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest
 
   /**
    * Update approval request status and metadata
-   * Uses: Base class update() method
+   * Delegates to ApprovalRequestRepository
    */
   @ValidateInput()
   @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
@@ -462,12 +468,12 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalRequest
     }
 
     try {
-      const updateData: Partial<ApprovalRequest> = { status };
-      if (metadata) {
-        updateData.metadata = metadata;
-      }
-
-      await this.update(requestId, updateData);
+      // Delegate to ApprovalRequestRepository
+      await this.approvalRequestRepo.updateApprovalStatus(
+        requestId,
+        status as any,
+        metadata ? ({ response: metadata } as any) : undefined
+      );
     } catch (error) {
       throw new Error(
         `Failed to update approval request status: ${

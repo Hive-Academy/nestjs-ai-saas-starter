@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import { MemoryGraphRepository } from '../../repositories/neo4j/memory-graph.repository';
+import { Memory } from '../../entities/neo4j/memory.entity';
 import {
   IGraphService,
   GraphNodeData,
@@ -29,7 +31,10 @@ import {
 export class Neo4jGraphAdapter extends IGraphService {
   private readonly logger = new Logger(Neo4jGraphAdapter.name);
 
-  constructor(private readonly memoryGraphRepo: MemoryGraphRepository) {
+  constructor(
+    @Inject(getRepositoryToken(Memory))
+    private readonly memoryGraphRepo: MemoryGraphRepository
+  ) {
     super();
     this.logger.debug(
       'Neo4jGraphAdapter initialized with MemoryGraphRepository'

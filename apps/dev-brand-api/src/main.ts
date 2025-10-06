@@ -5,10 +5,11 @@
 
 // Load encapsulated environment configurations before any other imports
 import { EnvLoader } from './app/config/env-loader.util';
+import { join } from 'path';
 
 // Initialize environment loading with only encapsulated .env files
-// Use process.cwd() directly - when running via nx or node, we're already in project root
-const projectRoot = process.cwd();
+// Resolve project root: from apps/dev-brand-api -> ../../ (project root)
+const projectRoot = join(__dirname, '../../..');
 const envResult = EnvLoader.load({
   rootDir: projectRoot,
   envFiles: [
@@ -22,6 +23,7 @@ const envResult = EnvLoader.load({
 });
 
 console.log('🔧 Encapsulated environment loaded:', {
+  projectRoot,
   loadedFiles: envResult.loadedFiles,
   errors: envResult.errors,
 });

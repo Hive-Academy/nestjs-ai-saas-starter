@@ -29,6 +29,7 @@ import { CodeAchievementRepository } from './chromadb/code-achievement.repositor
 import { ContentPerformanceRepository } from './chromadb/content-performance.repository';
 
 // HITL Repositories (needed by AdaptersModule)
+import { ApprovalChainRepository } from './neo4j/approval-chain.repository';
 import { ApprovalRequestRepository } from './neo4j/approval-request.repository';
 import { ConfidencePatternRepository } from './neo4j/confidence-pattern.repository';
 import { FeedbackRepository } from './neo4j/feedback.repository';
@@ -40,6 +41,7 @@ import { DeveloperRepository } from './neo4j/developer.repository';
 
 // Neo4j Entities (for forFeature registration)
 import { Achievement } from '../entities/neo4j/achievement.entity';
+import { ApprovalChain } from '../entities/neo4j/approval-chain.entity';
 import { ApprovalRequest } from '../entities/neo4j/approval-request.entity';
 import { ConfidencePattern } from '../entities/neo4j/confidence-pattern.entity';
 import { Developer } from '../entities/neo4j/developer.entity';
@@ -70,6 +72,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     // ✅ Auto-generate Neo4j repositories for all entities
     Neo4jModule.forFeature([
       Memory,
+      ApprovalChain,
       ApprovalRequest,
       InterruptionPoint,
       ConfidencePattern,
@@ -123,7 +126,11 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
       provide: getRepositoryToken(ApprovalRequest),
       useClass: ApprovalRequestRepository,
     },
-    // REMOVED DUPLICATE - ApprovalChainRepository needs its own entity
+    // ✅ ApprovalChainRepository now has its own entity (composition pattern)
+    {
+      provide: getRepositoryToken(ApprovalChain),
+      useClass: ApprovalChainRepository,
+    },
     {
       provide: getRepositoryToken(InterruptionPoint),
       useClass: InterruptionRepository,
@@ -290,6 +297,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
 
     // ✅ Neo4j Repositories (exported via injection tokens)
     getRepositoryToken(Memory),
+    getRepositoryToken(ApprovalChain),
     getRepositoryToken(ApprovalRequest),
     getRepositoryToken(InterruptionPoint),
     getRepositoryToken(ConfidencePattern),
