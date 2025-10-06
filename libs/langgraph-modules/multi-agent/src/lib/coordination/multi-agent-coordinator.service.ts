@@ -19,9 +19,9 @@ import {
   MultiAgentResult,
   AgentState,
 } from '../interfaces/multi-agent.interface';
-import { AgentRegistryService } from './agent-registry.service';
-import { NetworkManagerService } from './network-manager.service';
-import { LlmProviderService } from './llm-provider.service';
+import { AgentRegistryService } from '../agent/agent-registry.service';
+import { NetworkManagerService } from '../network/network-manager.service';
+import { LlmProviderService } from '../llm/llm-provider.service';
 
 /**
  * Main facade service for multi-agent coordination
@@ -116,16 +116,9 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   /**
    * Get agent by ID
    */
-  getAgent(agentId: string): AgentDefinition {
-    return this.agentRegistry.getAgent(agentId);
-  }
-
-  /**
-   * Get all registered agents
-   */
-  getAllAgents(): AgentDefinition[] {
-    return this.agentRegistry.getAllAgents();
-  }
+  // ❌ REMOVED: Pure delegation to AgentRegistryService
+  // Use AgentRegistryService.getAgent() directly
+  // Use AgentRegistryService.getAllAgents() directly
 
   /**
    * Get agents by capability
@@ -155,26 +148,10 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     return agents;
   }
 
-  /**
-   * Check if agent exists
-   */
-  hasAgent(agentId: string): boolean {
-    return this.agentRegistry.hasAgent(agentId);
-  }
-
-  /**
-   * Get agent health status
-   */
-  getAgentHealth(agentId: string): boolean {
-    return this.agentRegistry.getAgentHealth(agentId);
-  }
-
-  /**
-   * List all agent IDs
-   */
-  listAgentIds(): string[] {
-    return this.agentRegistry.listAgentIds();
-  }
+  // ❌ REMOVED: Pure delegations to AgentRegistryService
+  // Use AgentRegistryService.hasAgent() directly
+  // Use AgentRegistryService.getAgentHealth() directly
+  // Use AgentRegistryService.listAgentIds() directly
 
   // ============================================================================
   // NETWORK MANAGEMENT (Delegates to NetworkManagerService)
@@ -183,9 +160,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   /**
    * Create and compile a multi-agent network
    */
-  async createNetwork(networkConfig: AgentNetwork): Promise<string> {
-    return this.networkManager.createNetwork(networkConfig);
-  }
+  // ❌ REMOVED: Pure delegation to NetworkManagerService
+  // Use NetworkManagerService.createNetwork() directly
 
   /**
    * Execute multi-agent workflow
@@ -444,37 +420,12 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   /**
    * Get network configuration
    */
-  getNetworkConfig(networkId: string): AgentNetwork | undefined {
-    return this.networkManager.getNetworkConfig(networkId);
-  }
-
-  /**
-   * List all networks
-   */
-  listNetworks(): Array<{ id: string; type: string; agentCount: number }> {
-    return this.networkManager.listNetworks();
-  }
-
-  /**
-   * Remove network
-   */
-  removeNetwork(networkId: string): boolean {
-    return this.networkManager.removeNetwork(networkId);
-  }
-
-  /**
-   * Get network statistics
-   */
-  getNetworkStats(networkId: string) {
-    return this.networkManager.getNetworkStats(networkId);
-  }
-
-  /**
-   * Health check for network
-   */
-  async healthCheck(networkId: string) {
-    return this.networkManager.healthCheck(networkId);
-  }
+  // ❌ REMOVED: Pure delegations to NetworkManagerService
+  // Use NetworkManagerService.getNetworkConfig() directly
+  // Use NetworkManagerService.listNetworks() directly
+  // Use NetworkManagerService.removeNetwork() directly
+  // Use NetworkManagerService.getNetworkStats() directly
+  // Use NetworkManagerService.healthCheck() directly
 
   // ============================================================================
   // CONVENIENCE METHODS (High-level operations)
@@ -576,7 +527,7 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         break;
     }
 
-    const createdNetworkId = await this.createNetwork(networkConfig);
+    const createdNetworkId = await this.networkManager.createNetwork(networkConfig);
 
     // 🧠 MEMORY SUPERPOWERS: Store network creation event for learning
     if (this.memoryAdapter) {

@@ -11,8 +11,8 @@ import {
   AgentDefinition,
 } from '../interfaces/multi-agent.interface';
 import { WorkflowRegistryService } from './workflow-registry.service';
-import { AgentRegistryService } from './agent-registry.service';
-import { MultiAgentCoordinatorService } from './multi-agent-coordinator.service';
+import { AgentRegistryService } from '../agent/agent-registry.service';
+import { MultiAgentCoordinatorService } from '../coordination/multi-agent-coordinator.service';
 
 /**
  * Workflow Checkpoint Service

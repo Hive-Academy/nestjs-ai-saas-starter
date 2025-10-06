@@ -5,7 +5,7 @@ import {
   WorkflowProvider,
   WorkflowConfig,
 } from '../interfaces/multi-agent.interface';
-import { AgentRegistryService } from './agent-registry.service';
+import { AgentRegistryService } from '../agent/agent-registry.service';
 
 /**
  * Workflow Registry Service

@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { WORKFLOW_NODES_KEY } from '@hive-academy/langgraph-core';
 import { getFunctionalApiConfigWithDefaults } from '../utils/functional-api-config.accessor';
+import { validateDecoratorPattern } from '../utils/decorator-validator';
 
 /**
  * Options for @Node decorator
@@ -80,6 +81,15 @@ export function Node(optionsOrId?: NodeOptions | string): MethodDecorator {
     propertyKey: string | symbol,
     descriptor: PropertyDescriptor
   ) => {
+    // 🔒 VALIDATION: Enforce node-based pattern
+    // @Node is mutually exclusive with @Entrypoint and @Task
+    validateDecoratorPattern(
+      target.constructor,
+      'node-based',
+      'Node',
+      target.constructor.name
+    );
+
     // Normalize options
     const options: NodeOptions =
       typeof optionsOrId === 'string' ? { id: optionsOrId } : optionsOrId || {};

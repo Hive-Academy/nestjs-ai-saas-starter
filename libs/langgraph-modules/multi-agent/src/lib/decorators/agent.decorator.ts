@@ -62,6 +62,17 @@ export interface AgentWorkflowConfig {
   description?: string;
 
   /**
+   * 🆕 EXPLICIT WORKFLOW TYPE DECLARATION
+   * Determines which decorators are allowed:
+   * - 'functional-task': @Entrypoint + @Task only (linear/sequential workflows)
+   * - 'functional-node': @Node + @Edge only (complex routing/branching workflows)
+   *
+   * Import from functional-api:
+   * import { WorkflowType } from '@hive-academy/langgraph-functional-api';
+   */
+  type?: 'functional-task' | 'functional-node';
+
+  /**
    * Enable workflow streaming
    */
   streaming?: boolean;
@@ -372,6 +383,7 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
         name: agentConfig.workflow.name || `${agentConfig.id}-workflow`,
         description:
           agentConfig.workflow.description || agentConfig.description,
+        type: agentConfig.workflow.type, // 🔧 FIX: Include workflow type for pattern validation
         streaming: agentConfig.workflow.streaming ?? true,
         confidenceThreshold: agentConfig.workflow.confidenceThreshold ?? 0.7,
         metrics: agentConfig.workflow.metrics ?? true,

@@ -52,6 +52,19 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 // Health check
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
+import { PerformanceController } from './controllers/performance.controller';
+
+// Performance monitoring
+import { PerformanceDashboardService } from './services/performance-dashboard.service';
+
+// Brand monitoring
+import { BrandMonitoringService } from './services/brand-monitoring.service';
+
+// Content Strategy Intelligence
+import { ContentStrategyEngine } from './services/content-strategy-engine.service';
+
+// Competitive Intelligence
+import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
@@ -257,9 +270,13 @@ import {
     // Business modules
     BusinessWorkflowsModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, PerformanceController],
   providers: [
     AppStreamingManager,
+    PerformanceDashboardService,
+    BrandMonitoringService,
+    ContentStrategyEngine,
+    CompetitiveIntelligenceService,
     // All adapters are now provided by AdaptersModule
   ],
 })

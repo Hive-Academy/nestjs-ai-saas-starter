@@ -1,44 +1,37 @@
-import { Injectable, Inject, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import type { TypedWorkflowAgentState } from '../../types';
-import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
+import { generateId } from '@hive-academy/langgraph-core';
 import {
-  Entrypoint,
-  Task,
-  Node,
   Edge,
+  Node
 } from '@hive-academy/langgraph-functional-api';
-import type {
-  TaskExecutionContext,
-  TaskExecutionResult,
-} from '@hive-academy/langgraph-functional-api';
-import type { ContentCreatorMetadata } from '../shared/metadata.types';
+import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { EventStreamProcessorService, StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import {
   DeclarativeWorkflowBase,
-  WorkflowGraphBuilderService,
-  SubgraphManagerService,
   MetadataProcessorService,
+  SubgraphManagerService,
+  WorkflowGraphBuilderService,
   WorkflowStreamService,
 } from '@hive-academy/langgraph-workflow-engine';
-import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
-import { generateId } from '@hive-academy/langgraph-core';
 import { AIMessage } from '@langchain/core/messages';
-import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LLMProviderError } from '../../core/errors/business-workflow.errors';
-import { Validate, Required } from '../../core/validation/workflow.validators';
+import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
 import { Optimize } from '../../core/performance/optimization.decorators';
+import { Validate } from '../../core/validation/workflow.validators';
+import type { TypedWorkflowAgentState } from '../../types';
 import type { BrandStrategy } from '../shared/agent.types';
+import type { ContentCreatorMetadata } from '../shared/metadata.types';
 import {
-  buildLinkedInPrompt,
   buildDevToPrompt,
+  buildLinkedInPrompt,
 } from './content-creator.prompts';
 import {
-  optimizeLinkedInContent,
-  optimizeDevToContent,
-  predictEngagement,
-  calculateQualityScore,
   buildFinalContentMessage,
+  calculateQualityScore,
+  optimizeDevToContent,
+  optimizeLinkedInContent,
+  predictEngagement,
 } from './content-creator.utils';
 
 /**
@@ -85,6 +78,7 @@ import {
     name: 'content-creator-workflow',
     description:
       'Creates optimized content for multiple platforms using sophisticated workflow',
+    type: 'functional-node', // 🔑 Explicit node-based workflow type
     streaming: true,
     confidenceThreshold: 0.7,
     metrics: true,
@@ -129,32 +123,24 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * Entry point for the internal content creation workflow
    * Initializes content creation and extracts key parameters
    */
-  @Entrypoint({ timeout: 10000 })
+  @Node({ type: 'standard' })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeContentCreation(
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<ContentCreatorMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<ContentCreatorMetadata>>
-  > {
-    const { state } = context;
+    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername || 'developer';
     const achievements = state.metadata.achievements || [];
 
     return {
-      state: {
-        ...state,
-        metadata: {
-          ...state.metadata,
-          workflowStartTime: new Date(),
-          currentStep: 'initialization',
-          githubUsername,
-          achievements,
-          contentStartTime: new Date(),
-          workflowInstanceId: generateId('content'),
-          targetPlatforms: ['linkedin', 'devto'],
-        },
+      metadata: {
+        ...state.metadata,
+        workflowStartTime: new Date(),
+        currentStep: 'initialization',
+        githubUsername,
+        achievements,
+        contentStartTime: new Date(),
+        workflowInstanceId: generateId('content'),
+        targetPlatforms: ['linkedin', 'devto'],
       },
     };
   }
@@ -163,16 +149,11 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * Gather comprehensive brand context from memory
    * REAL BUSINESS LOGIC: Memory service integration for brand consistency
    */
-  @Task({ dependsOn: ['initializeContentCreation'] })
+  @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   async gatherBrandContext(
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<ContentCreatorMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<ContentCreatorMetadata>>
-  > {
-    const { state } = context;
+    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
 
     try {
@@ -183,32 +164,26 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
       ]);
 
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'brand-context-gathered',
-            brandVoice: voice,
-            brandStrategy: strategy,
-            positioning:
-              (strategy as BrandStrategy)?.positioning ||
-              'Technical Excellence',
-          },
+        metadata: {
+          ...state.metadata,
+          currentStep: 'brand-context-gathered',
+          brandVoice: voice,
+          brandStrategy: strategy,
+          positioning:
+            (strategy as BrandStrategy)?.positioning ||
+            'Technical Excellence',
         },
       };
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'brand-context-fallback',
-            brandVoice: { tone: 'professional', style: 'technical' },
-            brandStrategy: { positioning: 'Technical Excellence' },
-            error: errorMessage,
-          },
+        metadata: {
+          ...state.metadata,
+          currentStep: 'brand-context-fallback',
+          brandVoice: { tone: 'professional', style: 'technical' },
+          brandStrategy: { positioning: 'Technical Excellence' },
+          error: errorMessage,
         },
       };
     }
@@ -218,7 +193,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * Generate platform-specific content using LLM
    * REAL BUSINESS LOGIC: AI-powered content generation with brand consistency
    */
-  @Task({ dependsOn: ['gatherBrandContext'] })
+  @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   @StreamToken({ enabled: true, format: 'structured' })
   @Validate
@@ -229,14 +204,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     metrics: { trackExecutionTime: true, trackErrorRate: true },
   })
   async generatePlatformContent(
-    @Required()
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<ContentCreatorMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<ContentCreatorMetadata>>
-  > {
-    const { state } = context;
+    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
     const achievements = state.metadata.achievements || [];
     const brandVoice = state.metadata.brandVoice;
@@ -299,15 +268,12 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
       }
 
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'content-generated',
-            rawLinkedinContent: linkedinContent,
-            rawDevtoContent: devtoContent,
-            contentGenerated: true,
-          },
+        metadata: {
+          ...state.metadata,
+          currentStep: 'content-generated',
+          rawLinkedinContent: linkedinContent,
+          rawDevtoContent: devtoContent,
+          contentGenerated: true,
         },
       };
     } catch (error: unknown) {
@@ -336,16 +302,11 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * Optimize content for engagement and platform best practices
    * REAL BUSINESS LOGIC: Platform-specific optimization and enhancement
    */
-  @Task({ dependsOn: ['generatePlatformContent'] })
+  @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   async optimizeContent(
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<ContentCreatorMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<ContentCreatorMetadata>>
-  > {
-    const { state } = context;
+    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
     const rawLinkedinContent = state.metadata.rawLinkedinContent;
     const rawDevtoContent = state.metadata.rawDevtoContent;
     const achievements = state.metadata.achievements || [];
@@ -371,33 +332,27 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
       const devtoEngagement = predictEngagement('devto', optimizedDevto);
 
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'content-optimized',
-            linkedinContent: optimizedLinkedin,
-            devtoContent: optimizedDevto,
-            linkedinEngagement,
-            devtoEngagement,
-            contentOptimized: true,
-          },
+        metadata: {
+          ...state.metadata,
+          currentStep: 'content-optimized',
+          linkedinContent: optimizedLinkedin,
+          devtoContent: optimizedDevto,
+          linkedinEngagement,
+          devtoEngagement,
+          contentOptimized: true,
         },
       };
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'optimization-fallback',
-            linkedinContent:
-              rawLinkedinContent || 'Content generated successfully',
-            devtoContent: rawDevtoContent || 'Article content ready',
-            error: errorMessage,
-          },
+        metadata: {
+          ...state.metadata,
+          currentStep: 'optimization-fallback',
+          linkedinContent:
+            rawLinkedinContent || 'Content generated successfully',
+          devtoContent: rawDevtoContent || 'Article content ready',
+          error: errorMessage,
         },
       };
     }
@@ -408,11 +363,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    */
   @Node({ type: 'condition' })
   async assessContentQuality(
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<ContentCreatorMetadata>
-    >
+    state: TypedWorkflowAgentState<ContentCreatorMetadata>
   ): Promise<{ route: string }> {
-    const { state } = context;
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;
     const achievements = state.metadata.achievements || [];
@@ -443,16 +395,11 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
   /**
    * Finalize content and package for delivery
    */
-  @Task({ dependsOn: ['assessContentQuality'] })
+  @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   async finalizeContent(
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<ContentCreatorMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<ContentCreatorMetadata>>
-  > {
-    const { state } = context;
+    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
     const linkedinContent = state.metadata.linkedinContent || '';
     const devtoContent = state.metadata.devtoContent || '';
@@ -470,24 +417,49 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     );
 
     return {
-      state: {
-        ...state,
-        messages: [new AIMessage(finalMessage)],
-        metadata: {
-          ...state.metadata,
-          currentStep: 'completed',
-          contentCreated: true,
-          workflowCompleted: true,
-          contentEndTime: new Date(),
-          totalProcessingTime:
-            Date.now() -
-            (state.metadata.contentStartTime?.getTime() || Date.now()),
-          finalStage: true,
-        },
-        next: undefined,
+      messages: [new AIMessage(finalMessage)],
+      metadata: {
+        ...state.metadata,
+        currentStep: 'completed',
+        contentCreated: true,
+        workflowCompleted: true,
+        contentEndTime: new Date(),
+        totalProcessingTime:
+          Date.now() -
+          (state.metadata.contentStartTime?.getTime() || Date.now()),
+        finalStage: true,
       },
+      next: undefined,
     };
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // EXPLICIT EDGE DEFINITIONS
+  // ═══════════════════════════════════════════════════════════════
+
+  @Edge('initializeContentCreation', 'gatherBrandContext')
+  initToGather() {
+    return true;
+  }
+
+  @Edge('gatherBrandContext', 'generatePlatformContent')
+  gatherToGenerate() {
+    return true;
+  }
+
+  @Edge('generatePlatformContent', 'optimizeContent')
+  generateToOptimize() {
+    return true;
+  }
+
+  @Edge('optimizeContent', 'assessContentQuality')
+  optimizeToAssess() {
+    return true;
+  }
+
+  /**
+   * Define workflow edges
+   */
 
   /**
    * Define workflow edges

@@ -6,8 +6,6 @@ import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import {
   Entrypoint,
   Task,
-  Node,
-  Edge,
 } from '@hive-academy/langgraph-functional-api';
 import type {
   TaskExecutionContext,
@@ -82,6 +80,7 @@ import {
     name: 'github-analyzer-workflow',
     description:
       'AI-powered GitHub repository analysis and achievement extraction',
+    type: 'functional-task', // 🔑 Explicit workflow type: uses @Entrypoint + @Task
     streaming: true,
     confidenceThreshold: 0.8,
     metrics: true,
@@ -424,33 +423,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   }
 
   /**
-   * Assess analysis quality and confidence - decision point
-   */
-  @Node({ type: 'condition' })
-  async assessAnalysisQuality(
-    context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<{ route: string }> {
-    const { state } = context;
-    const githubData = state.metadata.githubData;
-    const achievements = state.metadata.achievements || [];
-    const hasRealData =
-      githubData && githubData.summary && achievements.length > 0;
-    const hasAIAnalysis =
-      state.metadata.aiAnalysis && state.metadata.aiAnalysis.length > 100;
-
-    const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
-
-    return {
-      route: confidenceScore > 0.8 ? 'high-confidence' : 'standard',
-    };
-  }
-
-  /**
    * Finalize comprehensive analysis results
+   * Note: Confidence assessment integrated directly (removed separate assessAnalysisQuality node)
    */
-  @Task({ dependsOn: ['assessAnalysisQuality'] })
+  @Task({ dependsOn: ['synthesizeWithAI'] })
   @StreamProgress({ enabled: true })
   async finalizeAnalysis(
     context: TaskExecutionContext<
@@ -514,22 +490,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
     };
   }
 
-  /**
-   * Define workflow edges
-   */
-  @Edge('assessAnalysisQuality', 'finalizeAnalysis')
-  shouldProceedToFinalize(
-    state: TypedWorkflowAgentState<GitHubAnalyzerMetadata>
-  ): boolean {
-    const githubData = state.metadata.githubData;
-    const achievements = state.metadata.achievements || [];
-    const hasRealData =
-      githubData && githubData.summary && achievements.length > 0;
-    const hasAIAnalysis =
-      state.metadata.aiAnalysis && state.metadata.aiAnalysis.length > 100;
-    const confidenceScore = hasRealData && hasAIAnalysis ? 0.95 : 0.7;
-    return confidenceScore > 0.0; // Always proceed to finalize
-  }
 }
 
 // Export alias for config compatibility

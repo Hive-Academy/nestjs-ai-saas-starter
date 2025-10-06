@@ -14,6 +14,7 @@ import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.
 import { RepositoryModule } from '../repositories/repository.module';
 import { WebResearchTools } from './core/tools/web-research.tools';
 import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
+import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 
 /**
  * DevBrand Chat Studio MVP Module - Post-Legacy Cleanup
@@ -28,6 +29,7 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
   imports: [
     ConfigModule, // For environment configuration
     WorkflowEngineModule, // Required for DeclarativeWorkflowBase services
+    FunctionalApiModule, // Required for FunctionalWorkflow services
     MultiAgentModule, // Required for Agent decorator services
     RepositoryModule, // Provides all repositories (ChromaDB + Neo4j)
   ],

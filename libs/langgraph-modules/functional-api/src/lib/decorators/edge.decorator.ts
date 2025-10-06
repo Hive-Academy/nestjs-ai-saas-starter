@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { WORKFLOW_EDGES_KEY } from '@hive-academy/langgraph-core';
+import { validateDecoratorPattern } from '../utils/decorator-validator';
 
 /**
  * Options for @Edge decorator
@@ -36,60 +37,65 @@ export interface EdgeMetadata extends EdgeOptions {
 }
 
 /**
- * 🆕 ENHANCED: Decorator to define edges between nodes
- * 
- * Now supports functional condition methods that return boolean values,
- * eliminating the need for empty method boilerplate.
- * 
- * @example Traditional approach (still supported)
+ * Decorator to define edges between nodes with functional condition support
+ *
+ * @example Simple edge (no condition)
  * ```typescript
  * @Workflow({ name: 'my-workflow' })
  * export class MyWorkflow extends DeclarativeWorkflowBase {
- *   
- *   // Simple edge
+ *
+ *   // Simple edge - no condition needed
  *   @Edge('analyze', 'process')
- *   connectAnalyzeToProcess() {}
- *   
- *   // Conditional edge with condition property
- *   @Edge('analyze', 'process', { 
- *     minConfidence: 0.8,
- *     condition: (state) => state.analysis.quality === 'good' 
- *   })
- *   conditionalAnalyzeToProcess() {}
+ *   analyzeToProcess() {}
  * }
  * ```
- * 
- * @example 🆕 ENHANCED: Functional approach (new)
+ *
+ * @example Conditional edge with inline condition
  * ```typescript
- * @Workflow({ name: 'my-workflow' })
- * export class MyWorkflow extends DeclarativeWorkflowBase {
- *   
- *   // Simple edge (unchanged)
- *   @Edge('analyze', 'process')
- *   connectAnalyzeToProcess() {}
- *   
- *   // 🆕 Functional condition method
- *   @Edge('analyze', 'process')
- *   shouldProcessAnalysis(state: WorkflowState): boolean {
- *     return state.analysis.quality === 'good' && state.confidence > 0.8;
- *   }
- *   
- *   // 🆕 Complex functional condition
- *   @Edge('assessment', 'optimization')
- *   isOptimizationPath(state: WorkflowState): boolean {
- *     return (state.metadata?.brandScore as number) > 0.7;
- *   }
+ * @Edge('analyze', 'process', {
+ *   condition: (state) => state.analysis.quality === 'good'
+ * })
+ * conditionalEdge() {}
+ * ```
+ *
+ * @example Functional condition method
+ * ```typescript
+ * // Method body used as condition - evaluates to boolean
+ * @Edge('analyze', 'process')
+ * shouldProcessAnalysis(state: WorkflowState): boolean {
+ *   return state.analysis.quality === 'good' && state.confidence > 0.8;
+ * }
+ *
+ * // Complex functional condition
+ * @Edge('assessment', 'optimization')
+ * isOptimizationPath(state: WorkflowState): boolean {
+ *   return (state.metadata?.brandScore as number) > 0.7;
  * }
  * ```
  */
 export function Edge(from: string, to: string, options?: EdgeOptions): MethodDecorator;
 export function Edge(from: string, to: (state: any) => string | null, options?: EdgeOptions): MethodDecorator;
 export function Edge(
-  from: string, 
-  to: string | ((state: any) => string | null), 
+  from: string,
+  to: string | ((state: any) => string | null),
   options: EdgeOptions = {}
 ): MethodDecorator {
   return (target: any, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
+    // 🔒 VALIDATION: Enforce node-based pattern
+    // @Edge is mutually exclusive with @Entrypoint and @Task
+    validateDecoratorPattern(
+      target.constructor,
+      'node-based',
+      'Edge',
+      target.constructor.name
+    );
+
+    const originalMethod = descriptor?.value;
+
+    // Determine if this is a functional condition method
+    // A method is functional if it has parameters (accepts state)
+    const isFunctionalCondition = originalMethod && originalMethod.length > 0;
+
     // Create edge metadata
     const edgeMetadata: EdgeMetadata = {
       ...options,
@@ -97,69 +103,51 @@ export function Edge(
       from,
       to,
       methodName: String(propertyKey),
-      handler: descriptor?.value,
+      handler: originalMethod,
     };
-    
+
+    // If method accepts state parameter and 'to' is a string, use method as condition
+    if (isFunctionalCondition && typeof to === 'string' && !options.condition) {
+      edgeMetadata.condition = function(state: any): boolean {
+        try {
+          const result = originalMethod.call(this, state);
+          return Boolean(result);
+        } catch (error) {
+          console.warn(`Edge condition method ${String(propertyKey)} failed:`, error);
+          return false;
+        }
+      };
+    }
+
     // Get existing edges or initialize
     const existingEdges = Reflect.getMetadata(WORKFLOW_EDGES_KEY, target.constructor) || [];
-    
+
     // Add this edge
     existingEdges.push(edgeMetadata);
-    
+
     // Store updated edges
     Reflect.defineMetadata(WORKFLOW_EDGES_KEY, existingEdges, target.constructor);
-    
+
     // Also store on the method itself for direct access
     Reflect.defineMetadata('edge:metadata', edgeMetadata, target, propertyKey);
-    
-    // 🆕 ENHANCEMENT: Enhanced method handling for functional conditions
-    if (descriptor && typeof to === 'string') {
-      const originalMethod = descriptor.value;
-      
-      // Check if method has functional implementation (accepts parameters and likely returns boolean)
-      const methodSource = originalMethod?.toString() || '';
-      const hasParameters = originalMethod?.length > 0;
-      const likelyFunctional = hasParameters || 
-        (methodSource.includes('return') && !methodSource.includes('return edgeMetadata')) ||
-        (methodSource.includes('=>') && !methodSource.includes('{}'));
-      
-      if (likelyFunctional && originalMethod) {
-        // 🆕 Functional approach: use method return value as condition
-        descriptor.value = function(this: any, state?: any) {
-          if (state !== undefined) {
-            // Called as condition function - execute functional logic
-            try {
-              const result = originalMethod.call(this, state);
-              // Support both boolean returns and truthy/falsy evaluation
-              return Boolean(result);
-            } catch (error) {
-              console.warn(`Edge condition method ${String(propertyKey)} failed:`, error);
-              return false;
-            }
-          } else {
-            // Called as metadata getter (backward compatibility)
-            return edgeMetadata;
-          }
-        };
-        
-        // Update edge metadata to use functional condition
-        edgeMetadata.condition = (state: any) => {
+
+    // Replace method to return metadata when called without arguments
+    if (descriptor) {
+      descriptor.value = function(this: any, state?: any) {
+        if (state !== undefined && isFunctionalCondition) {
+          // Called as condition function with state
           try {
-            const result = originalMethod.call(target, state);
-            return Boolean(result);
+            return Boolean(originalMethod.call(this, state));
           } catch (error) {
-            console.warn(`Edge condition ${String(propertyKey)} failed:`, error);
+            console.warn(`Edge condition method ${String(propertyKey)} failed:`, error);
             return false;
           }
-        };
-      } else {
-        // Traditional approach: empty method returns metadata
-        descriptor.value = function(this: any) {
-          return edgeMetadata;
-        };
-      }
+        }
+        // Called as metadata getter
+        return edgeMetadata;
+      };
     }
-    
+
     return descriptor;
   };
 }

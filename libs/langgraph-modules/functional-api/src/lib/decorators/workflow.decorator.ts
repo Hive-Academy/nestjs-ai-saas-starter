@@ -11,9 +11,28 @@ import {
 import { getFunctionalApiConfigWithDefaults } from '../utils/functional-api-config.accessor';
 
 /**
- * Options for @Workflow decorator
+ * Workflow type enumeration
+ * Determines which decorators are allowed in a workflow
+ */
+export enum WorkflowType {
+  /** Functional workflow using @Entrypoint + @Task decorators (linear/sequential) */
+  FUNCTIONAL_TASK = 'functional-task',
+
+  /** Functional workflow using @Node + @Edge decorators (complex routing/branching) */
+  FUNCTIONAL_NODE = 'functional-node',
+}
+
+/**
+ * Options for @FunctionalWorkflow decorator
  */
 export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
+  /**
+   * 🆕 EXPLICIT WORKFLOW TYPE DECLARATION
+   * Determines which decorators are allowed:
+   * - FUNCTIONAL_TASK: @Entrypoint + @Task only (linear/sequential workflows)
+   * - FUNCTIONAL_NODE: @Node + @Edge only (complex routing/branching workflows)
+   */
+  type?: WorkflowType;
   /** Unique name for the workflow */
   name?: string;
   /** Human-readable description */

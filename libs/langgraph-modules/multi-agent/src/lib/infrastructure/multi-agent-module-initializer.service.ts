@@ -1,9 +1,9 @@
 import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
 import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
 import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
-import { ToolRegistrationService } from './tool-registration.service';
-import { AgentRegistrationService } from './agent-registration.service';
-import { WorkflowManagerService } from './workflow-manager.service';
+import { ToolRegistrationService } from '../tools/tool-registration.service';
+import { AgentRegistrationService } from '../agent/agent-registration.service';
+import { WorkflowManagerService } from '../workflow/workflow-manager.service';
 
 /**
  * Service responsible for initializing the MultiAgent module

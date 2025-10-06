@@ -12,7 +12,7 @@ import {
   HandoffTool,
   MULTI_AGENT_CONSTANTS,
 } from '../interfaces/multi-agent.interface';
-import { LlmProviderService } from './llm-provider.service';
+import { LlmProviderService } from '../llm/llm-provider.service';
 import { ToolNodeService } from '../tools/tool-node.service';
 
 /**

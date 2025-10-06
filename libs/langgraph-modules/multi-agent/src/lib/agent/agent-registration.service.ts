@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { getAgentConfig } from '../decorators/agent.decorator';
-import { AgentRegistryService } from './agent-registry.service';
+import { AgentRegistryService } from '../agent/agent-registry.service';
 import type {
   AgentProvider,
   AgentDefinition,

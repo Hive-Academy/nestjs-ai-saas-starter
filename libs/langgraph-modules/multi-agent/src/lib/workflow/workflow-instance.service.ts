@@ -9,8 +9,8 @@ import {
   AgentDefinition,
 } from '../interfaces/multi-agent.interface';
 import { WorkflowRegistryService } from './workflow-registry.service';
-import { AgentRegistryService } from './agent-registry.service';
-import { MultiAgentCoordinatorService } from './multi-agent-coordinator.service';
+import { AgentRegistryService } from '../agent/agent-registry.service';
+import { MultiAgentCoordinatorService } from '../coordination/multi-agent-coordinator.service';
 import { WorkflowCheckpointService } from './workflow-checkpoint.service';
 import { ToolRegistryService } from '../tools/tool-registry.service';
 import type { DynamicStructuredTool } from '@langchain/core/tools';

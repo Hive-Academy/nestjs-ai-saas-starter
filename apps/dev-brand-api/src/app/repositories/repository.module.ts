@@ -18,15 +18,25 @@ import { VectorMemoryRepository } from './chromadb/vector-memory.repository';
 import { MemoryGraphRepository } from './neo4j/memory-graph.repository';
 
 // ChromaDB Entities (for forFeature registration)
+import { AudienceAnalysisEntity } from '../entities/chromadb/audience-analysis.entity';
+import { BrandMentionEntity } from '../entities/chromadb/brand-mention.entity';
 import { BrandStrategyEntity } from '../entities/chromadb/brand-strategy.entity';
 import { CodeAchievementEntity } from '../entities/chromadb/code-achievement.entity';
+import { CompetitorAnalysisEntity } from '../entities/chromadb/competitor-analysis.entity';
 import { ContentPerformanceEntity } from '../entities/chromadb/content-performance.entity';
+import { DeveloperProfileEntity } from '../entities/chromadb/developer-profile.entity';
+import { TechTrendEntity } from '../entities/chromadb/tech-trend.entity';
 import { VectorMemoryEntity } from '../entities/chromadb/vector-memory.entity';
 
 // Custom ChromaDB Repositories (analytics only)
+import { AudienceRepository } from './chromadb/audience-analysis.repository';
+import { BrandMentionRepository } from './chromadb/brand-mention.repository';
 import { BrandStrategyRepository } from './chromadb/brand-strategy.repository';
 import { CodeAchievementRepository } from './chromadb/code-achievement.repository';
+import { CompetitorAnalysisRepository } from './chromadb/competitor-analysis.repository';
 import { ContentPerformanceRepository } from './chromadb/content-performance.repository';
+import { DeveloperProfileRepository } from './chromadb/developer-profile.repository';
+import { TechTrendsRepository } from './chromadb/tech-trends.repository';
 
 // HITL Repositories (needed by AdaptersModule)
 import { ApprovalChainRepository } from './neo4j/approval-chain.repository';
@@ -86,6 +96,11 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
       CodeAchievementEntity,
       BrandStrategyEntity,
       ContentPerformanceEntity,
+      DeveloperProfileEntity,
+      BrandMentionEntity,
+      TechTrendEntity,
+      AudienceAnalysisEntity,
+      CompetitorAnalysisEntity,
     ]),
   ],
   providers: [
@@ -115,6 +130,26 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     {
       provide: getChromaRepositoryToken(ContentPerformanceEntity),
       useClass: ContentPerformanceRepository,
+    },
+    {
+      provide: getChromaRepositoryToken(DeveloperProfileEntity),
+      useClass: DeveloperProfileRepository,
+    },
+    {
+      provide: getChromaRepositoryToken(BrandMentionEntity),
+      useClass: BrandMentionRepository,
+    },
+    {
+      provide: getChromaRepositoryToken(TechTrendEntity),
+      useClass: TechTrendsRepository,
+    },
+    {
+      provide: getChromaRepositoryToken(AudienceAnalysisEntity),
+      useClass: AudienceRepository,
+    },
+    {
+      provide: getChromaRepositoryToken(CompetitorAnalysisEntity),
+      useClass: CompetitorAnalysisRepository,
     },
 
     // ✅ Custom Neo4j Repositories (override auto-generated defaults)
@@ -294,6 +329,11 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     getChromaRepositoryToken(CodeAchievementEntity),
     getChromaRepositoryToken(BrandStrategyEntity),
     getChromaRepositoryToken(ContentPerformanceEntity),
+    getChromaRepositoryToken(DeveloperProfileEntity),
+    getChromaRepositoryToken(BrandMentionEntity),
+    getChromaRepositoryToken(TechTrendEntity),
+    getChromaRepositoryToken(AudienceAnalysisEntity),
+    getChromaRepositoryToken(CompetitorAnalysisEntity),
 
     // ✅ Neo4j Repositories (exported via injection tokens)
     getRepositoryToken(Memory),

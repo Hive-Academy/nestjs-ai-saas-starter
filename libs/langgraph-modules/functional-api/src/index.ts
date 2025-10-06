@@ -62,6 +62,9 @@ export { FUNCTIONAL_API_MODULE_OPTIONS } from './lib/constants/module.constants'
 // Configuration utilities
 export * from './lib/utils/functional-api-config.accessor';
 
+// Decorator validation utilities
+export * from './lib/utils/decorator-validator';
+
 // Enhanced Workflow Extension Decorators removed - contained broken TypeScript code
 
 // Type aliases for workflow classes
