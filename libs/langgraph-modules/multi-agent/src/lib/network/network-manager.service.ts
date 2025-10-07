@@ -17,6 +17,7 @@ import { AgentRegistryService } from '../agent/agent-registry.service';
 import { GraphBuilderService } from './graph-builder.service';
 import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
 import { generateExecutionId } from '@hive-academy/langgraph-core';
+import { getAgentConfig } from '../decorators/agent.decorator';
 
 /**
  * High-level service for managing agent networks and workflow execution
@@ -280,28 +281,71 @@ export class NetworkManagerService {
     };
 
     try {
-      const streamMode = input.streamMode || 'values';
-
-      this.eventEmitter.emit('workflow.stream.started', {
-        networkId,
-        executionId: initialState.metadata?.executionId,
-        streamMode,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Stream the workflow execution
-      let finalResult: AgentState | undefined;
-      const executionPath: string[] = [];
-
-      for await (const chunk of (graph as any).stream(initialState as any, {
+      // 🆕 PHASE 2: Read streaming configuration from agent metadata
+      const streamOptions: any = {
         ...input.config,
-        streamMode,
+        streamMode: input.streamMode || 'values',
         configurable: {
           ...input.config?.configurable,
           networkId,
           networkType: networkConfig.type,
         },
-      })) {
+      };
+
+      // Aggregate streaming config from worker agents
+      const agentMetadataList = networkConfig.agents
+        .map((agent) => ({
+          agent,
+          metadata: agent.metadata?.agentClass
+            ? getAgentConfig(agent.metadata.agentClass)
+            : undefined,
+        }))
+        .filter((item) => item.metadata !== undefined);
+
+      if (agentMetadataList.length > 0) {
+        // Check if any worker has multi-agent streaming enabled
+        const streamingConfigs = agentMetadataList
+          .map((item) => item.metadata?.workflow?.multiAgentStreaming)
+          .filter((cfg) => cfg?.enabled);
+
+        if (streamingConfigs.length > 0) {
+          // Get the first enabled streaming config (or aggregate if multiple)
+          const primaryStreamingConfig = streamingConfigs[0];
+
+          // Apply subgraphs configuration (default to true if not specified)
+          if (primaryStreamingConfig?.captureSubgraphs !== false) {
+            streamOptions.subgraphs = true;
+            this.logger.debug(
+              `Applied subgraphs: true from agent metadata for network ${networkId}`
+            );
+          }
+
+          // Apply stream mode from metadata if not specified in input
+          if (!input.streamMode && primaryStreamingConfig?.streamMode) {
+            streamOptions.streamMode = primaryStreamingConfig.streamMode;
+            this.logger.debug(
+              `Applied streamMode: ${primaryStreamingConfig.streamMode} from agent metadata`
+            );
+          }
+        }
+      }
+
+      this.eventEmitter.emit('workflow.stream.started', {
+        networkId,
+        executionId: initialState.metadata?.executionId,
+        streamMode: streamOptions.streamMode,
+        subgraphs: streamOptions.subgraphs,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Stream the workflow execution with enhanced streaming options
+      let finalResult: AgentState | undefined;
+      const executionPath: string[] = [];
+
+      for await (const chunk of (graph as any).stream(
+        initialState as any,
+        streamOptions
+      )) {
         // Track execution path
         if (chunk.current) {
           executionPath.push(chunk.current);

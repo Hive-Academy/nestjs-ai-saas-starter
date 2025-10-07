@@ -60,8 +60,7 @@ export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
         ? allTrends.filter((trend) =>
             technologies.some(
               (tech) =>
-                trend.metadata.technology.toLowerCase() ===
-                tech.toLowerCase()
+                trend.metadata.technology.toLowerCase() === tech.toLowerCase()
             )
           )
         : allTrends;
@@ -171,7 +170,13 @@ export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
 
     trendingWithDemand.forEach((tech) => {
       recommendations.push(
-        `${tech.metadata.technology} - High growth (${tech.metadata.growthRate}%) with strong demand (${tech.metadata.demandScore}/100). Related skills: ${tech.metadata.relatedSkills.slice(0, 3).join(', ')}`
+        `${tech.metadata.technology} - High growth (${
+          tech.metadata.growthRate
+        }%) with strong demand (${
+          tech.metadata.demandScore
+        }/100). Related skills: ${tech.metadata.relatedSkills
+          .slice(0, 3)
+          .join(', ')}`
       );
     });
 
@@ -179,7 +184,11 @@ export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
     const topEmerging = emerging.slice(0, 2);
     topEmerging.forEach((tech) => {
       recommendations.push(
-        `${tech.metadata.technology} - Emerging technology with high demand (${tech.metadata.demandScore}/100). Early adoption advantage in ${tech.metadata.industryAdoption.slice(0, 2).join(', ')}`
+        `${tech.metadata.technology} - Emerging technology with high demand (${
+          tech.metadata.demandScore
+        }/100). Early adoption advantage in ${tech.metadata.industryAdoption
+          .slice(0, 2)
+          .join(', ')}`
       );
     });
 
@@ -209,60 +218,5 @@ export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
     }
 
     return recommendations.slice(0, 5);
-  }
-
-  /**
-   * Analyze technology stack composition for recommendations
-   */
-  private analyzeStackComposition(
-    technologies: TechTrendEntity[]
-  ): Map<string, number> {
-    const categoryDistribution = new Map<string, number>();
-
-    technologies.forEach((tech) => {
-      const category = tech.metadata.category;
-      categoryDistribution.set(
-        category,
-        (categoryDistribution.get(category) || 0) + 1
-      );
-    });
-
-    return categoryDistribution;
-  }
-
-  /**
-   * Calculate technology synergy scores for combinations
-   */
-  private calculateSynergyScore(
-    tech1: TechTrendEntity,
-    tech2: TechTrendEntity
-  ): number {
-    let score = 0;
-
-    // Check for related skills overlap
-    const relatedOverlap = tech1.metadata.relatedSkills.filter((skill) =>
-      tech2.metadata.relatedSkills.includes(skill)
-    ).length;
-
-    score += relatedOverlap * 10;
-
-    // Check for industry adoption overlap
-    const industryOverlap = tech1.metadata.industryAdoption.filter((industry) =>
-      tech2.metadata.industryAdoption.includes(industry)
-    ).length;
-
-    score += industryOverlap * 5;
-
-    // Bonus for complementary categories
-    if (
-      (tech1.metadata.category === 'frontend' &&
-        tech2.metadata.category === 'backend') ||
-      (tech1.metadata.category === 'backend' &&
-        tech2.metadata.category === 'devops')
-    ) {
-      score += 15;
-    }
-
-    return score;
   }
 }

@@ -1,1448 +1,1073 @@
-# Multi-Agent Module - Agent Coordination and Tool System
+# Multi-Agent Module - Agent Coordination and Multi-Agent Workflows
 
-## 🚀 LangGraph Multi-Agent Coordination
+## Overview
 
-**Evidence-Based API Documentation** (verified through source code inspection)
+The **Multi-Agent Module** enables sophisticated multi-agent coordination patterns in LangGraph workflows. It provides declarative configuration for agent networks, streaming propagation from worker subgraphs, and human-in-the-loop (HITL) integration.
 
-The Multi-Agent Module provides sophisticated agent coordination through a facade pattern that orchestrates 15+ specialized services and a complete tool registration system.
+### Key Features
 
-## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
+- **Declarative Agent Definition**: Define agents with `@Agent` decorator and metadata-driven configuration
+- **Multi-Agent Coordination**: Supervisor, hierarchical, and sequential patterns
+- **Streaming from Subgraphs**: Automatic streaming capture from worker agents via LangGraph's `subgraphs: true`
+- **HITL Integration**: Configurable interruption points with automatic checkpointer propagation
+- **Metadata-Driven Architecture**: Configuration stored in agent metadata, consumed during graph compilation
+- **Type-Safe**: Full TypeScript support with strict typing
+- **LangGraph 2025 Native**: Built on LangGraph's subgraph and interruption APIs
 
-**Source Code Analysis Results** (January 2025)
+### Integration Architecture
 
-The multi-agent module is the **agent orchestration layer** integrated through **LLM providers**, **decorator composition**, and **central registration**.
+The multi-agent module integrates with:
 
-### 🔗 Integration Architecture
+- **@hive-academy/langgraph-core**: Core workflow interfaces and state management
+- **@hive-academy/langgraph-workflow-engine**: Workflow execution and agent registration
+- **@hive-academy/langgraph-streaming**: Token streaming decorators (@StreamToken, @StreamProgress)
+- **@hive-academy/langgraph-hitl**: Human approval decorators (@RequiresApproval)
 
-| Module              | Integration Pattern      | Usage                                                                         | File Reference                                                     |
-| ------------------- | ------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **dev-brand-api**   | Production Configuration | 7 LLM providers (OpenAI, Anthropic, OpenRouter, Google, Local, Azure, Cohere) | `apps/dev-brand-api/src/app/config/multi-agent.config.ts:1-162`    |
-| **workflow-engine** | Central Registration     | Agents, tools, workflows registered in `CentralRegistryService`               | `apps/dev-brand-api/src/app/config/workflow-engine.config.ts:1-49` |
-| **functional-api**  | Decorator Composition    | `@Agent` used with `@Workflow`, `@Entrypoint`, `@Task` for workflow agents    | `github-code-analyzer.agent.ts:61-98`                              |
-| **streaming**       | Real-time Updates        | `@StreamToken`, `@StreamProgress` decorators in agents                        | `github-code-analyzer.agent.ts:5,14,24`                            |
-| **workflow-engine** | Agent-Workflow Bridge    | Workflow agents extend `DeclarativeWorkflowBase`                              | `github-code-analyzer.agent.ts:98`                                 |
+### Bottom-Up Architecture
 
-### 🎯 Key Architectural Insight
+**Critical Understanding**: Multi-agent workflows are built on top of the decorator system.
 
-**Multi-agent provides agents, workflow-engine orchestrates them**:
+- **Workers ARE Workflows**: Each worker extends `DeclarativeWorkflowBase`
+- **Decorators Already Work**: @StreamToken, @RequiresApproval execute within worker workflows
+- **Multi-Agent IS Subgraph Pattern**: Supervisor treats workers as LangGraph subgraphs
+- **No Custom Wiring**: Configuration applies existing LangGraph APIs
 
-```typescript
-// ✅ CORRECT: Multi-agent defines agents, workflow-engine registers them
-import { Agent } from '@hive-academy/langgraph-multi-agent';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+**Execution Flow**:
 
-// 1. Define agent with multi-agent decorators
-@Agent({ id: 'my-agent', type: 'simple-agent' })
-export class MyAgent {}
-
-// 2. Register agent in workflow-engine
-WorkflowEngineModule.forRoot({
-  agents: [MyAgent], // Central registration
-});
-
-// 3. Workflow-engine's CentralRegistryService manages lifecycle
+```
+SupervisorGraph (StateGraph)
+  └─> workerNode (registered in supervisor graph)
+      └─> agent.execute() ← Runs worker's internal workflow
+          └─> @decorators execute ← Base level functionality (streaming, HITL)
 ```
 
-### 📊 Real Production Configuration
+---
 
-**DevBrand API Multi-Agent Config** (verified source: `multi-agent.config.ts:1-162`):
+## Quick Start
 
-```typescript
-import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agent';
+### Installation
 
-/**
- * Multi-Agent Module Configuration for dev-brand-api
- * Simple and consistent LLM provider configuration
- */
-export function getMultiAgentConfig(): MultiAgentModuleOptions {
-  // Simple provider selection - explicit from LLM_PROVIDER environment variable
-  const provider = (process.env.LLM_PROVIDER as 'openai' | 'anthropic' | 'openrouter' | 'google' | 'local' | 'azure-openai' | 'cohere') || 'openai';
-
-  return {
-    // Simple and consistent LLM configuration
-    defaultLlm: {
-      provider,
-      model: getModel(),
-      temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
-      maxTokens: parseInt(process.env.LLM_MAX_TOKENS || '2048'),
-
-      // Universal API keys - users provide all they want to use
-      openaiApiKey: process.env.OPENAI_API_KEY,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-      openrouterApiKey: process.env.OPENROUTER_API_KEY,
-      googleApiKey: process.env.GOOGLE_API_KEY,
-      azureOpenaiApiKey: process.env.AZURE_OPENAI_API_KEY,
-      cohereApiKey: process.env.COHERE_API_KEY,
-    },
-
-    // Message history limits
-    messageHistory: {
-      maxMessages: parseInt(process.env.MULTI_AGENT_MAX_MESSAGES || '50'),
-      pruneStrategy: 'fifo',
-    },
-
-    // Streaming configuration
-    streaming: {
-      enabled: process.env.MULTI_AGENT_STREAMING_ENABLED !== 'false',
-      modes: ['values', 'updates', 'messages'],
-    },
-
-    // Checkpointing configuration
-    checkpointing: {
-      enabled: process.env.MULTI_AGENT_CHECKPOINTING_ENABLED !== 'false',
-      enableForAllNetworks: true,
-      defaultThreadPrefix: 'multi-agent',
-    },
-  };
-}
-```
-
-**Source Reference**: `apps/dev-brand-api/src/app/config/multi-agent.config.ts`
-
-### 🔄 Workflow-Engine Central Registration
-
-**DevBrand API Workflow-Engine Config** (verified source: `workflow-engine.config.ts:1-49`):
-
-```typescript
-import type { WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
-import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist.agent';
-import { ContentCreatorAgent } from '../business-workflows/agents/content-creator.agent';
-import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer.agent';
-import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
-import { GitHubIntegrationTools } from '../business-workflows/core/tools/github-integration.tools';
-import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
-import { DevBrandChatWorkflow } from '../business-workflows/workflows/devbrand-chat.workflow';
-
-/**
- * Workflow Engine Module Configuration for dev-brand-api
- * CENTRAL REGISTRATION POINT for agents, tools, and workflows
- */
-export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
-  return {
-    // ✅ CENTRALIZED REGISTRATION: All providers in one place
-    agents: [PersonalBrandStrategistAgent, ContentCreatorAgent, GitHubCodeAnalyzerAgent],
-
-    tools: [WebResearchTools, GitHubIntegrationTools],
-
-    workflows: [DevBrandSupervisorWorkflow, DevBrandChatWorkflow],
-  };
-}
-```
-
-**Source Reference**: `apps/dev-brand-api/src/app/config/workflow-engine.config.ts`
-
-### 🤖 Workflow Agent Pattern
-
-**GitHub Code Analyzer Workflow Agent** (verified source: `github-code-analyzer.agent.ts:61-100`):
-
-```typescript
-import { Agent } from '@hive-academy/langgraph-multi-agent';
-import { Workflow, Entrypoint, Task, Node, Edge } from '@hive-academy/langgraph-functional-api';
-import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
-import { DeclarativeWorkflowBase } from '@hive-academy/langgraph-workflow-engine';
-
-/**
- * ENHANCED GITHUB CODE ANALYZER AGENT - Workflow Agent Type
- * Combines multi-agent @Agent decorator with functional-api workflow decorators
- */
-@Agent({
-  id: 'github-code-analyzer',
-  name: 'GitHub Code Analyzer',
-  type: 'workflow-agent', // 🆕 New workflow agent type
-  capabilities: ['code-analysis', 'achievement-extraction', 'developer-insights', 'ai-synthesis'],
-  tools: ['github-analyzer', 'achievement-extractor', 'developer-insights'],
-  priority: 'high',
-  workflowConfig: {
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: true,
-    internalTimeout: 90000, // 1.5 minutes
-    enableErrorRecovery: true,
-    maxInternalRetries: 2,
-  },
-})
-@Workflow({
-  name: 'github-analyzer-workflow',
-  description: 'AI-powered GitHub repository analysis',
-  streaming: true,
-  confidenceThreshold: 0.8,
-})
-@Injectable()
-export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
-  @Entrypoint({ timeout: 10000 })
-  @StreamProgress({ enabled: true })
-  async initializeGitHubAnalysis(context: TaskExecutionContext): Promise<TaskExecutionResult> {
-    // Initialize GitHub analysis
-    return { state: { initialized: true } };
-  }
-
-  @Task({ dependsOn: ['initializeGitHubAnalysis'] })
-  @StreamToken({ enabled: true })
-  async analyzeGitHubActivity(context: TaskExecutionContext): Promise<TaskExecutionResult> {
-    // Real GitHub API integration
-    const result = await this.githubTools.analyzeRepository(state.githubUsername);
-    return { state: { analysis: result } };
-  }
-
-  @Node({ type: 'condition' })
-  async assessAnalysisQuality(context: TaskExecutionContext): Promise<{ route: string }> {
-    return state.confidence > 0.8 ? { route: 'high-quality' } : { route: 'needs-refinement' };
-  }
-
-  @Edge('assessAnalysisQuality', 'finalizeAnalysis')
-  routeToFinalization(state: WorkflowAgentState): boolean {
-    return state.confidence > 0.8;
-  }
-}
-```
-
-**Source Reference**: `apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer.agent.ts`
-
-### 🏗️ Complete Ecosystem Integration Example
-
-**Full Multi-Agent Integration**:
-
-```typescript
-import { Module } from '@nestjs/common';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
-import { getMultiAgentConfig } from './config/multi-agent.config';
-import { getWorkflowEngineConfig } from './config/workflow-engine.config';
-
-@Module({
-  imports: [
-    // 1. Multi-Agent provides LLM orchestration and agent decorators
-    MultiAgentModule.forRoot(getMultiAgentConfig()),
-
-    // 2. Workflow-Engine registers agents, tools, workflows
-    WorkflowEngineModule.forRoot(getWorkflowEngineConfig()),
-
-    // 3. Functional-API provides workflow decorators
-    FunctionalApiModule.forRoot({
-      enableStreaming: true,
-    }),
-
-    // 4. Streaming provides real-time updates
-    StreamingModule.forRoot({
-      websocket: { enabled: true },
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-### 🎯 Consumer Value Proposition
-
-**Before Multi-Agent**: Manual LLM integration, no agent coordination
-**With Multi-Agent**: 7 LLM providers, sophisticated coordination patterns
-
-| Feature                | Manual LLM     | Multi-Agent Module              |
-| ---------------------- | -------------- | ------------------------------- |
-| **LLM Providers**      | 1 (hard-coded) | 7 (configurable)                |
-| **Agent Coordination** | None           | Supervisor, Swarm, Hierarchical |
-| **Tool Integration**   | Manual         | Automatic registration          |
-| **Workflow Agents**    | No             | Yes (decorator composition)     |
-
-**Key Benefits**:
-
-- ✅ 7 LLM providers (OpenAI, Anthropic, OpenRouter, Google, Local, Azure, Cohere)
-- ✅ 3 coordination patterns (Supervisor, Swarm, Hierarchical)
-- ✅ Workflow agents (agents as workflows with internal steps)
-- ✅ Central registration through workflow-engine
-- ✅ Real-time streaming with decorator integration
-
-### ✅ Verified Architecture Patterns
-
-**Facade Pattern**: MultiAgentCoordinatorService coordinates multiple internal services
-
-```typescript
-// VERIFIED EXPORT: Primary coordination facade
-import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
-
-// Real implementation: Facade coordinating specialized services
-class MultiAgentCoordinatorService {
-  constructor(private readonly agentRegistry: AgentRegistryService, private readonly graphBuilder: GraphBuilderService, private readonly networkManager: NetworkManagerService, private readonly llmProvider: LlmProviderService) {}
-}
-```
-
-**Tool System**: Complete tool registration and execution system
-
-```typescript
-// VERIFIED EXPORTS: Tool system services
-import {
-  ToolRegistrationService, // Explicit tool registration (replaces discovery)
-  ToolRegistryService, // Tool lifecycle management
-  ToolBuilderService, // Tool construction
-  ToolNodeService, // Tool execution nodes
-} from '@hive-academy/langgraph-multi-agent';
-```
-
-**Decorator System**: Real agent, tool, and workflow decorators
-
-```typescript
-// VERIFIED EXPORTS: Core decorators
-import { Agent, Tool, Workflow } from '@hive-academy/langgraph-multi-agent';
-
-// Usage patterns verified in source
-@Agent({ id: 'my-agent', type: 'simple-agent' })
-@Tool({ name: 'my-tool', description: 'Tool function' })
-@Workflow({ name: 'my-workflow' })
-```
-
-## I. Foundation Layer
-
-### ✅ Complete Verified API
-
-**All Exports** (verified from src/index.ts):
-
-```typescript
-// VERIFIED EXPORTS: NestJS Module
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
-
-// VERIFIED EXPORTS: Core Coordination Services
-import {
-  MultiAgentCoordinatorService, // Main facade (also aliased as MultiAgentService)
-  AgentRegistryService, // Agent lifecycle management
-  GraphBuilderService, // Agent network topology
-  NetworkManagerService, // Communication management
-  LlmProviderService, // Language model integration
-  NodeFactoryService, // Node creation utilities
-} from '@hive-academy/langgraph-multi-agent';
-
-// VERIFIED EXPORTS: Workflow Integration
-import { WorkflowManagerService } from '@hive-academy/langgraph-multi-agent';
-
-// VERIFIED EXPORTS: Tool System (Complete Implementation)
-import {
-  ToolRegistrationService, // Explicit tool registration
-  ToolRegistryService, // Tool lifecycle
-  ToolBuilderService, // Tool construction
-  ToolNodeService, // Tool execution nodes
-} from '@hive-academy/langgraph-multi-agent';
-
-// VERIFIED EXPORTS: Decorators
-import { Agent, Tool, Workflow } from '@hive-academy/langgraph-multi-agent';
-
-// VERIFIED EXPORTS: Interfaces and Types
-import type {
-  AgentType, // Agent type definitions
-  WorkflowAgentConfig, // Workflow agent configuration
-  AgentWorkflowConfig, // Agent workflow settings
-} from '@hive-academy/langgraph-multi-agent';
-```
-
-### Quick Start & Installation
+The multi-agent module is part of the LangGraph modules workspace:
 
 ```bash
 npm install @hive-academy/langgraph-multi-agent
 ```
 
+### 1. Define Worker Agents
+
+Create worker agents with the `@Agent` decorator:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { Agent } from '@hive-academy/langgraph-multi-agent';
+import { DeclarativeWorkflowBase } from '@hive-academy/langgraph-workflow-engine';
+import { Entrypoint } from '@hive-academy/langgraph-functional-api';
+import { StreamToken } from '@hive-academy/langgraph-streaming';
+
+@Agent({
+  id: 'github-analyzer',
+  name: 'GitHub Code Analyzer',
+  description: 'Analyzes GitHub repositories to extract achievements',
+  type: 'workflow-agent',
+
+  // Worker configuration with streaming
+  workflow: {
+    name: 'github-analyzer-workflow',
+    multiAgentStreaming: {
+      enabled: true,
+      captureSubgraphs: true,
+      streamMode: 'values',
+    },
+  },
+})
+@Injectable()
+export class GitHubAnalyzerAgent extends DeclarativeWorkflowBase<AgentState> {
+  @Entrypoint()
+  @StreamToken({ enabled: true })
+  async analyze(context: TaskExecutionContext<AgentState>) {
+    // Your analysis logic here
+    return {
+      messages: [...context.state.messages],
+      metadata: { analysis: 'complete' },
+    };
+  }
+}
+```
+
+### 2. Create Multi-Agent Workflow
+
+Use the `@MultiAgent` decorator to create a supervisor workflow:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { MultiAgent, MultiAgentTopology, MultiAgentWorkflowBase } from '@hive-academy/langgraph-multi-agent';
+
+@MultiAgent({
+  networkId: 'devbrand-supervisor',
+  topology: MultiAgentTopology.SUPERVISOR,
+
+  // Explicitly list worker agents
+  agents: [GitHubAnalyzerAgent, BrandStrategistAgent, ContentCreatorAgent],
+
+  // Supervisor configuration
+  config: {
+    systemPrompt: `You are a supervisor coordinating agents for personal branding.
+
+    Available workers:
+    1. github-analyzer: Analyzes GitHub activity
+    2. brand-strategist: Develops brand strategy
+    3. content-creator: Creates platform content
+
+    Execute them in sequence.`,
+
+    workers: ['github-analyzer', 'brand-strategist', 'content-creator'],
+    enableForwardMessage: true,
+  },
+
+  streaming: true,
+  checkpointing: true,
+})
+@Injectable()
+export class DevBrandWorkflow extends MultiAgentWorkflowBase {
+  async execute(input: { userId: string; githubUsername: string }) {
+    const message = `Create personal brand for ${input.githubUsername}`;
+
+    // Execute multi-agent coordination (automatic)
+    const result = await this.executeSimple(message, {
+      userId: input.userId,
+      githubUsername: input.githubUsername,
+    });
+
+    return {
+      achievements: result.finalState.metadata?.githubData?.achievements || [],
+      strategy: result.finalState.metadata?.brandStrategy || {},
+      content: result.finalState.metadata?.generatedContent || {},
+    };
+  }
+}
+```
+
+### 3. Register in Module
+
 ```typescript
 import { Module } from '@nestjs/common';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 
 @Module({
-  imports: [
-    MultiAgentModule.forRoot({
-      // Agent registry configuration
-      registry: {
-        autoRegister: true,
-        scanPaths: ['./agents/**/*.ts'],
-      },
-
-      // Tool system configuration
-      tools: {
-        autoRegister: true,
-        explicitRegistration: true, // Uses ToolRegistrationService
-      },
-
-      // Network coordination
-      network: {
-        topology: 'hierarchical', // or 'peer-to-peer', 'supervisor'
-        communication: 'event-driven',
-      },
-    }),
+  imports: [MultiAgentModule],
+  providers: [
+    // Register workflow and all agents
+    DevBrandWorkflow,
+    GitHubAnalyzerAgent,
+    BrandStrategistAgent,
+    ContentCreatorAgent,
   ],
+  exports: [DevBrandWorkflow],
 })
-export class AppModule {}
+export class WorkflowsModule {}
 ```
 
-### 🏗️ Core Architecture Patterns
-
-**Facade Coordination**: MultiAgentCoordinatorService orchestrates all services
+### 4. Use in Your Application
 
 ```typescript
 @Injectable()
-export class MyAgentService {
-  constructor(private readonly coordinator: MultiAgentCoordinatorService, private readonly toolRegistry: ToolRegistryService) {}
+export class AppService {
+  constructor(private workflow: DevBrandWorkflow) {}
 
-  async setupAgentSystem() {
-    // Facade coordinates all internal services
-    const network = await this.coordinator.createNetwork({
-      agents: ['analyzer', 'processor', 'validator'],
-      topology: 'hierarchical',
-      // GraphBuilder, NetworkManager, LlmProvider coordinated internally
-    });
-
-    // Tool system with explicit registration
-    await this.toolRegistry.registerTool('data-processor', {
-      name: 'data-processor',
-      description: 'Processes input data',
-      execute: async (input) => ({ processed: true, data: input }),
-    });
-
-    return network;
+  async createPersonalBrand(userId: string, githubUsername: string) {
+    return this.workflow.execute({ userId, githubUsername });
   }
 }
 ```
 
-### 🚀 Complete Agent System Integration Example
+**That's it!** No manual service injection, no boilerplate setup, just clean declarative configuration.
 
-**Multi-Agent + Functional-API + HITL working together:**
+### Key Benefits
 
-```typescript
-import { Injectable } from '@nestjs/common';
-import { MultiAgentCoordinator } from '@hive-academy/langgraph-multi-agent';
-import { FunctionalComposition, pipe } from '@hive-academy/langgraph-functional-api';
-import { HITLOversight } from '@hive-academy/langgraph-hitl';
+✅ **Zero Boilerplate** - No manual `onModuleInit` or agent registration
+✅ **Declarative** - Configuration via decorators
+✅ **Type-Safe** - Full TypeScript support with validation
+✅ **Clean API** - Internal services hidden from consumers
+✅ **Automatic Setup** - Lifecycle managed automatically
 
-@Injectable()
-export class CompleteAgentSystemService {
-  constructor(private readonly multiAgent: MultiAgentCoordinator, private readonly functional: FunctionalComposition, private readonly hitl: HITLOversight) {}
+---
 
-  async createIntelligentWorkflow(): Promise<CompleteAgentResult> {
-    // Define pure functions for agent processing (Functional-API)
-    const processingPipeline = pipe(validateInput, enrichWithContext, normalizeData, extractFeatures, generateCandidates, rankSolutions);
+## Core Concepts
 
-    // Create multi-agent network with functional composition
-    const agentNetwork = await this.multiAgent.createNetwork({
-      name: 'intelligent-processing-network',
+### @Agent Decorator
 
-      // Agents using functional composition
-      agents: {
-        analyzer: this.createFunctionalAgent('analyzer', processingPipeline),
-        validator: this.createFunctionalAgent('validator', processingPipeline),
-        synthesizer: this.createFunctionalAgent('synthesizer', processingPipeline),
-      },
+The `@Agent` decorator defines agent metadata and configuration.
 
-      // Coordination pattern with HITL integration
-      coordination: {
-        pattern: 'hierarchical',
-        supervisor: 'synthesizer',
-
-        // Human oversight integration
-        humanOversight: {
-          enabled: true,
-          provider: this.hitl,
-          threshold: 0.8, // Require human approval if confidence < 80%
-          escalationRules: {
-            lowConfidence: 'human-review',
-            conflictingResults: 'human-mediation',
-            highRisk: 'human-approval',
-          },
-        },
-      },
-    });
-
-    return await agentNetwork.execute({
-      input: 'Complex AI task requiring multiple agents',
-
-      // Functional composition applied to entire workflow
-      preprocessing: pipe(sanitizeInput, validateBusinessRules, enrichWithMetadata),
-
-      // HITL checkpoints during execution
-      hitlCheckpoints: [
-        { after: 'analysis', condition: (result) => result.complexity > 0.7 },
-        { after: 'validation', condition: (result) => result.confidence < 0.8 },
-        { before: 'synthesis', condition: (context) => context.hasConflicts },
-      ],
-
-      // Post-processing with functional composition
-      postprocessing: pipe(consolidateResults, validateOutput, formatForClient),
-    });
-  }
-
-  private createFunctionalAgent(agentId: string, processingPipeline: Function): AgentDefinition {
-    return {
-      id: agentId,
-
-      // Agent processing using functional composition
-      processor: async (input: AgentInput) => {
-        // Apply pure function pipeline
-        const processedData = processingPipeline(input.data);
-
-        // Agent-specific logic
-        const agentResult = await this.performAgentSpecificProcessing(agentId, processedData);
-
-        return {
-          ...agentResult,
-          functionallyProcessed: true,
-          pipelineApplied: processingPipeline.name,
-        };
-      },
-
-      // HITL integration within agent
-      oversight: {
-        provider: this.hitl,
-        rules: {
-          requireApproval: (result) => result.confidence < 0.8,
-          autoApprove: (result) => result.confidence > 0.95,
-          timeout: Duration.minutes(5),
-        },
-      },
-    };
-  }
-}
-
-// Usage with complete integration
-@Injectable()
-export class AIApplicationService {
-  constructor(private readonly completeAgentSystem: CompleteAgentSystemService) {}
-
-  async processComplexTask(task: ComplexTask): Promise<TaskResult> {
-    // Single call integrates all three modules automatically
-    const result = await this.completeAgentSystem.createIntelligentWorkflow();
-
-    console.log('Multi-Agent Results:', result.agentOutputs);
-    console.log('Functional Processing:', result.functionalSteps);
-    console.log('Human Approvals:', result.hitlApprovals);
-
-    return {
-      success: true,
-      result: result.finalOutput,
-      metadata: {
-        agentsUsed: result.agentsInvolved,
-        functionsApplied: result.functionalPipeline,
-        humanInterventions: result.hitlInterventions,
-      },
-    };
-  }
-}
-```
-
-**🎯 What This Integration Demonstrates:**
-
-- **Multi-Agent**: Intelligent agent networks with hierarchical coordination
-- **Functional-API**: Pure function pipelines applied within agent processing
-- **HITL**: Automatic human oversight when agent confidence is insufficient
-- **Seamless Integration**: All three modules working together without manual coordination
-- **Real Intelligence**: Combining machine intelligence with human oversight for optimal results
-
-**⏱️ Time to Complete Agent System**: 30 minutes from basic setup to production-ready intelligent agents
-
-## 🔄 Workflow System
-
-The **Multi-Agent Module** now includes a complete **Workflow System** for orchestrating complex AI workflows with agents:
-
-### @Workflow Decorator - CLASS-LEVEL
-
-**Applied to workflow classes** to define workflow metadata:
-
-```typescript
-@Workflow({
-  id: string;                    // Unique workflow identifier
-  name: string;                  // Human-readable workflow name
-  description: string;           // Workflow description
-  version?: string;              // Workflow version
-  requiredAgents?: string[];     // Required agents for this workflow
-  inputSchema?: any;             // Input validation schema
-  outputSchema?: any;            // Output schema definition
-  config?: WorkflowConfig;       // Workflow configuration
-  metadata?: Record<string, unknown>; // Extended configuration
-})
-```
-
-### Complete Workflow Example
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { Workflow } from '@hive-academy/langgraph-modules-multi-agent';
-import { WorkflowContext } from '@hive-academy/langgraph-modules-multi-agent';
-import { AIMessage } from '@langchain/core/messages';
-
-@Workflow({
-  id: 'content-creation-pipeline',
-  name: 'Content Creation Pipeline',
-  description: 'Orchestrates research, writing, and editing for content creation',
-  version: '1.0.0',
-  requiredAgents: ['researcher', 'writer', 'editor'],
-  config: {
-    timeout: 300000, // 5 minutes
-    streaming: true,
-    retry: {
-      enabled: true,
-      maxAttempts: 3,
-      backoffMs: 1000,
-    },
-  },
-})
-@Injectable()
-export class ContentCreationWorkflow {
-  async execute(input: ContentRequest, context: WorkflowContext): Promise<WorkflowResult> {
-    // Step 1: Research phase using agents
-    const researchResult = await context.coordinator.executeSimpleWorkflow('research-network', input.topic);
-
-    // Step 2: Writing phase
-    const writingResult = await context.coordinator.executeSimpleWorkflow('writing-network', {
-      topic: input.topic,
-      research: researchResult.finalState.metadata.research,
-    });
-
-    // Step 3: Editing phase
-    const editingResult = await context.coordinator.executeSimpleWorkflow('editing-network', {
-      content: writingResult.finalState.metadata.content,
-      requirements: input.requirements,
-    });
-
-    return {
-      success: true,
-      data: {
-        finalContent: editingResult.finalState.metadata.editedContent,
-        research: researchResult.finalState.metadata.research,
-        metrics: {
-          researchTime: researchResult.finalState.metadata.duration,
-          writingTime: writingResult.finalState.metadata.duration,
-          editingTime: editingResult.finalState.metadata.duration,
-        },
-      },
-      metadata: {
-        workflowId: 'content-creation-pipeline',
-        totalSteps: 3,
-        completedAt: new Date(),
-      },
-    };
-  }
-}
-```
-
-### Workflow Registration & Execution
-
-```typescript
-// Module configuration with workflows
-MultiAgentModule.forRoot({
-  agents: [ResearchAgent, WriterAgent, EditorAgent],
-  workflows: [ContentCreationWorkflow], // Register workflows
-  defaultLlm: {
-    provider: 'openai',
-    model: 'gpt-4',
-    openaiApiKey: process.env.OPENAI_API_KEY,
-  },
-});
-
-// Service usage
-@Injectable()
-export class ContentService {
-  constructor(private readonly workflowManager: WorkflowManagerService) {}
-
-  async createContent(request: ContentRequest): Promise<WorkflowResult> {
-    return this.workflowManager.executeWorkflow('content-creation-pipeline', request, {
-      streaming: true,
-      timeout: 600000, // 10 minutes
-    });
-  }
-
-  async createContentWithStreaming(request: ContentRequest, onProgress: (event: any) => void): Promise<WorkflowResult> {
-    return this.workflowManager.executeWorkflowWithStreaming('content-creation-pipeline', request, onProgress);
-  }
-}
-```
-
-### WorkflowManagerService API
-
-**Primary interface** for workflow operations:
-
-```typescript
-// Workflow execution
-async executeWorkflow(
-  workflowId: string,
-  input: any,
-  config?: Partial<WorkflowConfig>
-): Promise<WorkflowResult>
-
-// Streaming execution
-async executeWorkflowWithStreaming(
-  workflowId: string,
-  input: any,
-  streamCallback?: (event: any) => void,
-  config?: Partial<WorkflowConfig>
-): Promise<WorkflowResult>
-
-// Workflow management
-getWorkflow(workflowId: string): WorkflowDefinition | null
-getAllWorkflows(): WorkflowDefinition[]
-getWorkflowInfo(workflowId: string): WorkflowInfo | null
-
-// Instance management
-getActiveInstances(): WorkflowInstance[]
-cancelWorkflow(instanceId: string): Promise<boolean>
-getWorkflowHistory(workflowId: string): WorkflowInstance[]
-
-// Health & statistics
-getWorkflowStats(): WorkflowSystemStats
-healthCheck(): Promise<WorkflowHealthStatus>
-```
-
-### Workflow Context Interface
-
-```typescript
-interface WorkflowContext {
-  instanceId: string; // Unique instance identifier
-  agents: Map<string, AgentDefinition>; // Available agents
-  tools: ToolDefinition[]; // Available tools
-  config: WorkflowConfig; // Workflow configuration
-  logger: Logger; // Logger instance
-  coordinator: MultiAgentCoordinatorService; // Agent coordination
-}
-```
-
-## 🚀 Enhanced Internal Infrastructure
-
-### Powerful Internal Services
-
-**Major Update**: The Multi-Agent Module now includes sophisticated **internal infrastructure services** that provide enterprise-grade capabilities:
-
-#### GraphBuilderService - **Enhanced Hierarchical Coordination**
-
-_Internal service (not exported) - Used automatically by MultiAgentCoordinatorService_
-
-**Capabilities:**
-
-- **True Multi-Level Hierarchical Graphs** - Real executive → specialist → operational routing
-- **Dynamic Escalation Logic** - Condition-based level switching with contextual messaging
-- **Level-Specific Coordination** - Each hierarchy level has tailored prompt engineering
-- **Intelligent Routing Decisions** - Context-aware agent selection and workflow orchestration
-
-**Usage (Automatic):**
-
-```typescript
-// When you use 'hierarchical' pattern, GraphBuilderService handles the complexity:
-const networkId = await coordinator.setupNetwork(
-  'support-hierarchy',
-  agents,
-  'hierarchical', // ← Automatically uses enhanced GraphBuilderService
-  {
-    levels: [['executive'], ['specialist'], ['operational']],
-    escalationRules: [
-      /* intelligent escalation logic */
-    ],
-  }
-);
-```
-
-#### ToolNodeService - **Enhanced Weighted Merging**
-
-_Internal service (not exported) - Used automatically by agent execution_
-
-**Capabilities:**
-
-- **Multi-Type Weighted Merging** - Numbers, strings, arrays, objects handled intelligently
-- **Confidence-Based Selection** - Chooses best values based on tool confidence levels
-- **Recursive Object Merging** - Deep merging of complex nested structures
-- **Cumulative Weight Tracking** - Results improve with more confident sources
-
-**Usage (Automatic):**
-
-```typescript
-// Agents return weighted metadata that gets automatically merged:
-return {
-  messages: [new AIMessage('Analysis complete')],
-  metadata: {
-    ...state.metadata,
-    analysis: result,
-    toolWeight: 0.8, // ← ToolNodeService uses this automatically
-    confidence: 0.9,
-  },
-};
-```
-
-#### NodeFactoryService - **Enhanced Coordination Patterns**
-
-_Internal integration service - Orchestrates other internal services_
-
-**Capabilities:**
-
-- **Tool-Enhanced Agent Nodes** - Agents with automatic weighted result processing
-- **Adaptive Coordinator Nodes** - Dynamic strategy selection and pattern switching
-- **Advanced Retry Logic** - Intelligent failure handling and recovery
-- **Performance Optimization** - Efficient resource utilization and scaling
-
-### Clean Public API Design
-
-**Key Principle**: All enhanced capabilities are accessed through the **MultiAgentCoordinatorService facade**
-
-```typescript
-// Simple public interface hides complex internal infrastructure:
-
-// 1. Hierarchical coordination (uses GraphBuilderService internally)
-const hierarchicalResult = await coordinator.setupNetwork('hierarchy-id', agents, 'hierarchical', hierarchicalConfig);
-
-// 2. Weighted tool coordination (uses ToolNodeService internally)
-const weightedResult = await coordinator.executeSimpleWorkflow(
-  networkId,
-  message // Weighted merging happens automatically
-);
-
-// 3. Adaptive strategies (uses NodeFactoryService internally)
-const adaptiveResult = await coordinator.setupNetwork('adaptive-id', agents, dynamicPattern, adaptiveConfig);
-```
-
-## Quick Start
-
-### Installation & Setup
-
-```bash
-npm install @hive-academy/langgraph-modules-multi-agent
-```
-
-```typescript
-import { Module } from '@nestjs/common';
-import { MultiAgentModule } from '@hive-academy/langgraph-modules-multi-agent';
-
-@Module({
-  imports: [
-    MultiAgentModule.forRoot({
-      // LLM Configuration
-      defaultLlm: {
-        provider: 'openai',
-        model: 'gpt-4',
-        temperature: 0,
-        openaiApiKey: process.env.OPENAI_API_KEY,
-      },
-      // Enable streaming and performance optimizations
-      streaming: { enabled: true },
-      performance: {
-        tokenOptimization: true,
-        enableMessageForwarding: true,
-      },
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-## Agent Definition
-
-### @Agent Decorator - CLASS-LEVEL
-
-**Applied to the entire class** to define agent metadata:
+**Basic Usage**:
 
 ```typescript
 @Agent({
-  id: string;                    // Unique agent identifier
-  name: string;                  // Human-readable name for routing
-  description: string;           // Description for supervisor routing decisions
-  capabilities?: string[];       // Agent capabilities for discovery
-  priority?: 'low' | 'medium' | 'high' | 'critical';
-  tools?: string[];              // Tool names available to agent
-  metadata?: Record<string, unknown>; // Extended configuration
+  id: 'agent-id', // Required: Unique agent identifier
+  name: 'Agent Name', // Required: Human-readable name
+  description: 'Description', // Optional: Agent purpose
+  type: 'workflow-agent', // Optional: Agent type
+
+  workflow: {
+    name: 'workflow-name', // Workflow identifier
+    // ... streaming and HITL config
+  },
 })
+export class MyAgent extends DeclarativeWorkflowBase<State> {}
 ```
 
-### nodeFunction - METHOD-LEVEL
+**Configuration Properties**:
 
-**Core agent logic** - not decorated, standard TypeScript method:
+| Property      | Type                | Required | Description                         |
+| ------------- | ------------------- | -------- | ----------------------------------- |
+| `id`          | string              | Yes      | Unique agent identifier             |
+| `name`        | string              | Yes      | Human-readable name                 |
+| `description` | string              | No       | Agent purpose description           |
+| `type`        | string              | No       | Agent type (default: auto-detected) |
+| `workflow`    | AgentWorkflowConfig | No       | Workflow configuration              |
+
+### AgentWorkflowConfig
+
+The `workflow` property configures streaming and HITL integration.
 
 ```typescript
-// METHOD-LEVEL: Standard TypeScript method (no decorator)
-async nodeFunction(state: AgentState, config?: RunnableConfig): Promise<Partial<AgentState>> {
-  // Agent processing logic
-  return {
-    messages: [new AIMessage('Response from agent')],
-    metadata: { processedBy: this.agentId, completedAt: new Date() }
+interface AgentWorkflowConfig {
+  name?: string;
+
+  // Streaming configuration (Phase 1)
+  multiAgentStreaming?: {
+    enabled: boolean;
+    captureSubgraphs?: boolean; // Default: true
+    streamMode?: 'values' | 'updates' | 'messages'; // Default: 'values'
+  };
+
+  // HITL configuration (Phase 1)
+  multiAgentInterruption?: {
+    enabled: boolean;
+    interruptBefore?: readonly string[]; // Worker names to interrupt before
+    interruptAfter?: readonly string[]; // Worker names to interrupt after
   };
 }
 ```
 
-## Complete Agent Example
+### Agent State
 
-```typescript
-import { Injectable } from '@nestjs/common';
-import { Agent } from '@hive-academy/langgraph-modules-multi-agent';
-import { AgentState } from '@hive-academy/langgraph-modules-multi-agent';
-import { AIMessage } from '@langchain/core/messages';
-
-// CLASS-LEVEL DECORATOR: Applied to entire class
-@Agent({
-  id: 'content-creator',
-  name: 'Content Creation Specialist',
-  description: 'Creates high-quality content based on research and requirements',
-  capabilities: ['writing', 'content_creation', 'editing'],
-  priority: 'high',
-})
-@Injectable()
-export class ContentCreatorAgent {
-  constructor(private readonly writingService: AIWritingService) {}
-
-  // METHOD-LEVEL: Standard method implementation (no decorator)
-  async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
-    const lastMessage = state.messages[state.messages.length - 1];
-    const requirements = lastMessage.content.toString();
-
-    // Create content based on requirements
-    const content = await this.writingService.createContent(requirements);
-
-    // Determine next step based on content complexity
-    const needsReview = content.complexity > 0.8;
-
-    return {
-      messages: [new AIMessage(`Content created: ${content.title}\n\nPreview: ${content.preview}`)],
-      next: needsReview ? 'content-editor' : undefined,
-      metadata: {
-        ...state.metadata,
-        contentCreated: true,
-        needsReview,
-        complexity: content.complexity,
-      },
-    };
-  }
-}
-```
-
-## Coordination Patterns
-
-### Supervisor Pattern
-
-**Best for**: Sequential workflows, quality control, structured processes
-
-```typescript
-// Setup supervisor network
-const networkId = await coordinator.setupNetwork(
-  'content-team',
-  [
-    { id: 'researcher', type: 'ResearchAgent' },
-    { id: 'writer', type: 'ContentCreatorAgent' },
-    { id: 'editor', type: 'EditorAgent' },
-  ],
-  'supervisor',
-  {
-    systemPrompt: 'You coordinate content creation: researcher → writer → editor',
-    workers: ['researcher', 'writer', 'editor'],
-    enableForwardMessage: true,
-    removeHandoffMessages: true,
-  }
-);
-
-// Execute workflow
-const result = await coordinator.executeSimpleWorkflow(networkId, 'Create comprehensive guide about TypeScript best practices');
-```
-
-### Swarm Pattern
-
-**Best for**: Creative collaboration, brainstorming, flexible workflows
-
-```typescript
-// Setup swarm network
-const networkId = await coordinator.setupNetwork(
-  'creative-swarm',
-  [
-    { id: 'idea-generator', type: 'IdeaGeneratorAgent' },
-    { id: 'concept-developer', type: 'ConceptDeveloperAgent' },
-    { id: 'content-creator', type: 'ContentCreatorAgent' },
-  ],
-  'swarm',
-  {
-    enableDynamicHandoffs: true,
-    messageHistory: {
-      removeHandoffMessages: true,
-      addAgentAttribution: true,
-      maxMessages: 50,
-    },
-    contextIsolation: {
-      enabled: false, // Share context for collaboration
-      sharedKeys: ['projectBrief', 'targetAudience'],
-    },
-  }
-);
-```
-
-### Hierarchical Pattern
-
-**Best for**: Approval workflows, escalation systems, enterprise processes
-
-```typescript
-// Setup hierarchical network
-const networkId = await coordinator.setupNetwork(
-  'support-hierarchy',
-  [
-    { id: 'tier1-support', type: 'Tier1SupportAgent' },
-    { id: 'tier2-support', type: 'Tier2SupportAgent' },
-    { id: 'support-manager', type: 'SupportManagerAgent' },
-  ],
-  'hierarchical',
-  {
-    levels: [
-      ['support-manager'], // Management level
-      ['tier2-support'], // Specialist level
-      ['tier1-support'], // Front-line level
-    ],
-    escalationRules: [
-      {
-        condition: (state) => state.metadata?.severity === 'critical',
-        targetLevel: 0, // Escalate to management
-        message: 'Critical severity - immediate attention required',
-      },
-    ],
-  }
-);
-```
-
-## Core Interfaces
-
-### AgentState
-
-Foundation of all multi-agent communication:
+Agents work with a shared state structure:
 
 ```typescript
 interface AgentState {
-  messages: BaseMessage[]; // Message history - core component
-  next?: string; // Next agent to execute (supervisor pattern)
-  current?: string; // Current executing agent
-  scratchpad?: string; // Shared workspace for collaboration
-  task?: string; // Task description passed between agents
-  metadata?: Record<string, unknown>; // Extensible context
+  messages: Array<{
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+  }>;
+  metadata?: Record<string, any>;
+  next?: string; // For interruptions - which node to execute next
 }
 ```
 
-### AgentDefinition
+---
+
+## Streaming Integration
+
+### Overview
+
+Multi-agent workflows support streaming from worker subgraphs via LangGraph's native `subgraphs: true` option. Workers are subgraphs, and their streaming output (via @StreamToken, @StreamProgress decorators) is automatically captured.
+
+### How It Works
+
+1. **Worker Defines Streaming**: Use @StreamToken, @StreamProgress decorators on worker methods
+2. **Metadata Storage**: `multiAgentStreaming` config stored in agent metadata (Phase 1)
+3. **Graph Execution**: `NetworkManagerService` reads metadata and applies `subgraphs: true` (Phase 2)
+4. **LangGraph Captures**: Worker subgraph streaming output automatically propagated
+5. **No Custom Wiring**: Uses native LangGraph 2025 API
+
+### Configuration
+
+**Step 1: Configure Worker Agent**
 
 ```typescript
-interface AgentDefinition {
-  id: string; // Unique agent identifier
-  name: string; // Agent name for routing decisions
-  description: string; // Agent description for supervisor routing
-  nodeFunction: AgentNodeFunction; // Core agent logic
-  capabilities?: string[]; // Agent capabilities
-  metadata?: Record<string, unknown>; // Extended configuration
+@Agent({
+  id: 'streaming-worker',
+  workflow: {
+    multiAgentStreaming: {
+      enabled: true,
+      captureSubgraphs: true, // Captures streaming from worker internal workflow
+      streamMode: 'values', // 'values' | 'updates' | 'messages'
+    },
+  },
+})
+export class StreamingWorkerAgent extends DeclarativeWorkflowBase<AgentState> {
+  @Entrypoint()
+  @StreamToken({ enabled: true }) // Streaming decorator works naturally
+  async processTask(context: TaskExecutionContext<AgentState>) {
+    // Streams tokens as workflow executes
+    await this.performLongRunningTask();
+
+    return {
+      messages: [
+        ...context.state.messages,
+        {
+          role: 'assistant',
+          content: 'Task completed',
+        },
+      ],
+    };
+  }
 }
 ```
 
-## Service APIs
-
-### MultiAgentCoordinatorService
-
-**Primary interface** for multi-agent operations:
+**Step 2: Execute with Streaming**
 
 ```typescript
-// Quick network setup and execution
-async setupNetwork(
-  networkId: string,
-  agents: AgentDefinition[],
-  type: 'supervisor' | 'swarm' | 'hierarchical',
-  config: SupervisorConfig | SwarmConfig | HierarchicalConfig
-): Promise<string>
+const coordinator = new MultiAgentCoordinator();
 
-// Simple workflow execution
-async executeSimpleWorkflow(
-  networkId: string,
-  initialMessage: string,
-  config?: RunnableConfig
-): Promise<MultiAgentResult>
+// Stream captures events from worker subgraphs
+for await (const event of coordinator.stream(input, config)) {
+  if (event.type === 'token') {
+    console.log(`[${event.source}]: ${event.content}`);
+  }
 
-// Agent management
-registerAgent(definition: AgentDefinition): void
-getAgent(agentId: string): AgentDefinition
-getAllAgents(): AgentDefinition[]
-getAgentsByCapability(capability: string): AgentDefinition[]
+  if (event.type === 'progress') {
+    console.log(`Progress: ${event.percentage}%`);
+  }
+}
 ```
 
-### WorkflowManagerService
+### Metadata Aggregation
 
-**Primary interface** for workflow operations:
+When multiple workers define streaming configuration, the system uses the **first enabled configuration**:
 
 ```typescript
-// Workflow execution
-async executeWorkflow(
-  workflowId: string,
-  input: any,
-  config?: Partial<WorkflowConfig>
-): Promise<WorkflowResult>
+// Worker 1
+multiAgentStreaming: {
+  enabled: true,
+  captureSubgraphs: true,
+  streamMode: 'values'  // ← This config used
+}
 
-async executeWorkflowWithStreaming(
-  workflowId: string,
-  input: any,
-  streamCallback?: (event: any) => void,
-  config?: Partial<WorkflowConfig>
-): Promise<WorkflowResult>
-
-// Workflow management
-getWorkflow(workflowId: string): WorkflowDefinition | null
-getAllWorkflows(): WorkflowDefinition[]
-hasWorkflow(workflowId: string): boolean
-getWorkflowInfo(workflowId: string): WorkflowInfo | null
-
-// Instance management
-getActiveInstances(): WorkflowInstance[]
-cancelWorkflow(instanceId: string): Promise<boolean>
-getWorkflowHistory(workflowId: string): WorkflowInstance[]
-
-// Statistics and health
-getWorkflowStats(): WorkflowSystemStats
-healthCheck(): Promise<WorkflowHealthStatus>
+// Worker 2
+multiAgentStreaming: {
+  enabled: true,
+  streamMode: 'updates'  // Ignored (Worker 1 config takes precedence)
+}
 ```
 
-### AgentRegistryService
+### Stream Mode Options
 
-**Agent lifecycle management**:
+| Mode       | Description                  | Use Case                 |
+| ---------- | ---------------------------- | ------------------------ |
+| `values`   | Full state after each update | Complete state snapshots |
+| `updates`  | Only state changes           | Minimal data transfer    |
+| `messages` | Message updates only         | Chat-style workflows     |
+
+### API Reference
+
+**MultiAgentStreamingConfig**
 
 ```typescript
-// Core registration
-registerAgent(definition: AgentDefinition): void
-getAgent(agentId: string): AgentDefinition
-hasAgent(agentId: string): boolean
-
-// Discovery and querying
-getAllAgents(): AgentDefinition[]
-getAgentsByCapability(capability: string): AgentDefinition[]
-
-// Health monitoring
-getAgentHealth(agentId: string): boolean
-updateAgentHealth(agentId: string, isHealthy: boolean): void
+interface MultiAgentStreamingConfig {
+  enabled: boolean; // Enable streaming capture
+  captureSubgraphs?: boolean; // Capture worker subgraph streaming (default: true)
+  streamMode?: 'values' | 'updates' | 'messages'; // Stream mode (default: 'values')
+}
 ```
+
+**Usage in @Agent decorator**
+
+```typescript
+@Agent({
+  workflow: {
+    multiAgentStreaming: {
+      enabled: true,
+      captureSubgraphs: true,
+      streamMode: 'values'
+    }
+  }
+})
+```
+
+---
+
+## HITL (Human-in-the-Loop) Integration
+
+### Overview
+
+Multi-agent workflows support interruptions at worker nodes via LangGraph's `interruptBefore`/`interruptAfter` compilation options. Workers can trigger approval requests naturally via @RequiresApproval decorators.
+
+### How It Works
+
+1. **Worker Defines HITL**: Use @RequiresApproval decorator on worker methods
+2. **Metadata Storage**: `multiAgentInterruption` config stored in agent metadata (Phase 1)
+3. **Graph Compilation**: `GraphBuilderService` aggregates interrupt points and applies to `.compile()` (Phase 2)
+4. **LangGraph Triggers**: Workflow pauses at configured worker nodes
+5. **Checkpointer Propagates**: Automatically to worker subgraphs
+
+### Configuration
+
+**Step 1: Configure Worker Agent**
+
+```typescript
+@Agent({
+  id: 'content-creator',
+  workflow: {
+    multiAgentInterruption: {
+      enabled: true,
+      interruptBefore: ['content-creator'], // Pause before this worker
+    },
+  },
+})
+export class ContentCreatorAgent extends DeclarativeWorkflowBase<AgentState> {
+  @Entrypoint()
+  @RequiresApproval({ timeout: 60000 }) // Approval decorator works naturally
+  async createContent(context: TaskExecutionContext<AgentState>) {
+    // Requests approval naturally via decorator
+    const content = await this.generateContent(context.state);
+
+    return {
+      messages: [
+        ...context.state.messages,
+        {
+          role: 'assistant',
+          content: `Created: ${content.title}`,
+        },
+      ],
+      metadata: { content },
+    };
+  }
+}
+```
+
+**Step 2: Execute with Checkpointer**
+
+```typescript
+import { MemorySaver } from '@langchain/langgraph';
+
+const checkpointer = new MemorySaver();
+const coordinator = new MultiAgentCoordinator();
+
+// First execution - pauses at interrupt point
+const result1 = await coordinator.execute(input, { checkpointer });
+
+if (result1.next) {
+  console.log(`Paused for approval at: ${result1.next}`);
+
+  // Request user approval
+  const approved = await getUserApproval();
+
+  // Resume with approval
+  const approvedInput = { ...input, userApproval: approved };
+  const result2 = await coordinator.execute(approvedInput, { checkpointer });
+
+  console.log('Workflow completed:', result2);
+}
+```
+
+### Metadata Aggregation
+
+Multiple workers can define interruption points. The system **aggregates and deduplicates**:
+
+```typescript
+// Worker 1
+multiAgentInterruption: {
+  enabled: true,
+  interruptBefore: ['worker1', 'shared-checkpoint']
+}
+
+// Worker 2
+multiAgentInterruption: {
+  enabled: true,
+  interruptBefore: ['worker2', 'shared-checkpoint']
+}
+
+// Compiled graph automatically gets:
+// interruptBefore: ['worker1', 'worker2', 'shared-checkpoint']  ← Deduplicated
+```
+
+### Execution Flow
+
+```
+┌─────────────────────────────────────┐
+│ Execute workflow with checkpointer  │
+└─────────────────┬───────────────────┘
+                  │
+                  v
+┌─────────────────────────────────────┐
+│ Graph executes until interrupt node │
+└─────────────────┬───────────────────┘
+                  │
+                  v
+┌─────────────────────────────────────┐
+│ State saved to checkpointer         │
+│ result.next = 'content-creator'     │
+└─────────────────┬───────────────────┘
+                  │
+                  v
+┌─────────────────────────────────────┐
+│ Request user approval               │
+└─────────────────┬───────────────────┘
+                  │
+                  v
+┌─────────────────────────────────────┐
+│ Resume with approved input          │
+│ Workflow continues from checkpoint  │
+└─────────────────────────────────────┘
+```
+
+### API Reference
+
+**MultiAgentInterruptionConfig**
+
+```typescript
+interface MultiAgentInterruptionConfig {
+  enabled: boolean; // Enable interruptions
+  interruptBefore?: readonly string[]; // Worker names to interrupt before
+  interruptAfter?: readonly string[]; // Worker names to interrupt after
+}
+```
+
+**Usage in @Agent decorator**
+
+```typescript
+@Agent({
+  workflow: {
+    multiAgentInterruption: {
+      enabled: true,
+      interruptBefore: ['worker1', 'worker2'],
+      interruptAfter: ['worker3']
+    }
+  }
+})
+```
+
+---
+
+## Architecture Notes
+
+### Metadata-Driven Configuration (Phase 1 & 2)
+
+The multi-agent module uses a **metadata-driven architecture**:
+
+1. **Phase 1 (Decorator Enhancement)**:
+
+   - Developers define configuration in `@Agent` decorator
+   - Metadata stored via Reflection API
+   - Configuration includes streaming and HITL options
+
+2. **Phase 2 (Graph Configuration)**:
+   - `GraphBuilderService` reads metadata during compilation
+   - `NetworkManagerService` reads metadata during execution
+   - Configuration applied to LangGraph native APIs
+
+**Benefits**:
+
+- Declarative configuration (no imperative setup code)
+- Type-safe configuration interfaces
+- Single source of truth (agent class metadata)
+- Automatic aggregation from multiple workers
+
+### LangGraph Native Integration
+
+The implementation uses LangGraph 2025 native APIs:
+
+**Streaming from Subgraphs**:
+
+```typescript
+// Applied in NetworkManagerService (Phase 2)
+const streamOptions = {
+  ...config,
+  subgraphs: streamingConfig.captureSubgraphs, // ← LangGraph native option
+  streamMode: streamingConfig.streamMode,
+};
+
+for await (const chunk of graph.stream(input, streamOptions)) {
+  // Events from worker subgraphs automatically captured
+}
+```
+
+**Interruptions**:
+
+```typescript
+// Applied in GraphBuilderService (Phase 2)
+const compiledGraph = graph.compile({
+  checkpointer,
+  interruptBefore: aggregatedInterruptBefore, // ← LangGraph native option
+  interruptAfter: aggregatedInterruptAfter,
+});
+```
+
+### Why No Custom Wiring?
+
+Because workers ARE workflows that extend `DeclarativeWorkflowBase`:
+
+- Workers already use @StreamToken, @StreamProgress decorators
+- Workers already use @RequiresApproval decorators
+- Supervisor graph treats workers as subgraphs
+- LangGraph natively supports subgraph streaming and interruptions
+
+**Result**: Configuration, not implementation. Just tell LangGraph to capture subgraph output.
+
+---
 
 ## Configuration
 
-### Basic Configuration
+### Complete Agent Configuration
 
 ```typescript
-MultiAgentModule.forRoot({
-  // Agent registration (replaces auto-discovery)
-  agents: [ResearchAgent, WriterAgent, EditorAgent],
+import { Agent } from '@hive-academy/langgraph-multi-agent';
+import { DeclarativeWorkflowBase } from '@hive-academy/langgraph-workflow-engine';
+import { Entrypoint, Task } from '@hive-academy/langgraph-workflow-engine';
+import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 
-  // Workflow registration
-  workflows: [ContentCreationWorkflow, CustomerSupportWorkflow],
+@Agent({
+  // Basic configuration
+  id: 'complete-agent',
+  name: 'Complete Agent Example',
+  description: 'Demonstrates all configuration options',
+  type: 'workflow-agent',
 
-  // LLM provider configuration
-  defaultLlm: {
-    provider: 'openai',
-    model: 'gpt-4',
-    temperature: 0,
-    maxTokens: 4000,
-    openaiApiKey: process.env.OPENAI_API_KEY,
-  },
+  // Workflow configuration
+  workflow: {
+    name: 'complete-agent-workflow',
 
-  // Message management
-  messageHistory: {
-    maxMessages: 50,
-    pruneStrategy: 'fifo',
-  },
-
-  // Performance settings
-  performance: {
-    tokenOptimization: true,
-    contextWindowManagement: true,
-    enableMessageForwarding: true,
-  },
-
-  // Streaming configuration
-  streaming: {
-    enabled: true,
-    modes: ['values', 'updates'],
-  },
-});
-```
-
-### Advanced Configuration
-
-```typescript
-MultiAgentModule.forRootAsync({
-  imports: [ConfigModule],
-  useFactory: async (configService: ConfigService) => ({
-    // Multiple provider support
-    defaultLlm: {
-      provider: configService.get('LLM_PROVIDER', 'openai'),
-      model: configService.get('LLM_MODEL', 'gpt-4'),
-      temperature: configService.get('LLM_TEMPERATURE', 0),
-
-      // Multiple API keys for redundancy
-      openaiApiKey: configService.get('OPENAI_API_KEY'),
-      anthropicApiKey: configService.get('ANTHROPIC_API_KEY'),
-      openrouterApiKey: configService.get('OPENROUTER_API_KEY'),
-    },
-
-    // Checkpointing configuration
-    checkpointing: {
+    // Streaming configuration
+    multiAgentStreaming: {
       enabled: true,
-      enableForAllNetworks: true,
-      defaultThreadPrefix: 'multi-agent',
-      autoCheckpoint: {
-        enabled: true,
-        interval: 30000, // 30 seconds
-        after: ['task', 'decision', 'error'],
-      },
+      captureSubgraphs: true,
+      streamMode: 'values',
     },
 
-    // Debug configuration
-    debug: {
-      enabled: configService.get('NODE_ENV') === 'development',
-      logLevel: 'debug',
+    // HITL configuration
+    multiAgentInterruption: {
+      enabled: true,
+      interruptBefore: ['complete-agent'],
+      interruptAfter: [],
     },
-  }),
-  inject: [ConfigService],
-});
-```
+  },
+})
+export class CompleteAgent extends DeclarativeWorkflowBase<AgentState> {
+  @Entrypoint()
+  @StreamToken({ enabled: true })
+  @StreamProgress({ enabled: true })
+  @RequiresApproval({ timeout: 60000 })
+  async processTask(context: TaskExecutionContext<AgentState>) {
+    // All decorators work naturally within worker workflow
 
-### Provider-Specific Configurations
-
-```typescript
-// OpenAI
-defaultLlm: {
-  provider: 'openai',
-  model: 'gpt-4-turbo-preview',
-  openaiApiKey: process.env.OPENAI_API_KEY,
-  openai: {
-    organization: 'your-org-id',
-    project: 'your-project-id'
-  }
-}
-
-// Anthropic
-defaultLlm: {
-  provider: 'anthropic',
-  model: 'claude-3-sonnet-20240229',
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-  anthropic: {
-    version: '2023-06-01'
-  }
-}
-
-// OpenRouter
-defaultLlm: {
-  provider: 'openrouter',
-  model: 'anthropic/claude-3-sonnet',
-  openrouterApiKey: process.env.OPENROUTER_API_KEY,
-  openrouter: {
-    baseUrl: 'https://openrouter.ai/api/v1',
-    siteName: 'Your App',
-    siteUrl: 'https://yourapp.com'
+    return {
+      messages: [
+        ...context.state.messages,
+        {
+          role: 'assistant',
+          content: 'Task completed with streaming and approval',
+        },
+      ],
+    };
   }
 }
 ```
 
-## Advanced Features
-
-### Checkpointing & Recovery
+### Module Configuration
 
 ```typescript
-// Enable checkpointing
-MultiAgentModule.forRoot({
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+
+WorkflowEngineModule.forRoot({
+  // Explicitly register agents
+  agents: [Agent1, Agent2, Agent3],
+
+  // LLM configuration
+  llm: {
+    provider: 'openai',
+    model: 'gpt-4-turbo',
+    apiKey: process.env.OPENAI_API_KEY,
+    temperature: 0.7,
+  },
+
+  // Optional: Checkpointing for HITL
   checkpointing: {
     enabled: true,
-    enableForAllNetworks: true,
-    autoCheckpoint: {
-      enabled: true,
-      interval: 30000, // Checkpoint every 30 seconds
-      after: ['task', 'decision', 'error'],
+    provider: 'redis', // or 'memory' for testing
+    config: {
+      url: process.env.REDIS_URL,
     },
   },
-  checkpointAdapter: new RedisCheckpointAdapter({
-    host: 'localhost',
-    port: 6379,
-  }),
 });
-
-// Resume from checkpoint
-const result = await coordinator.resumeFromCheckpoint('workflow-12345', 'checkpoint-67890');
 ```
 
-### Streaming & Real-time Updates
+### LLM Provider Configuration
+
+**OpenAI**:
 
 ```typescript
-// Enable streaming
-MultiAgentModule.forRoot({
-  streaming: {
-    enabled: true,
-    modes: ['values', 'updates', 'messages'],
-  },
-});
-
-// Stream workflow execution
-@WebSocketGateway()
-export class WorkflowGateway {
-  async handleStreamWorkflow(networkId: string, input: string) {
-    const observable = this.networkManager.streamWorkflow(networkId, {
-      messages: [new HumanMessage(input)],
-    });
-
-    observable.subscribe((state) => {
-      this.server.emit('workflow-update', {
-        networkId,
-        currentAgent: state.current,
-        messages: state.messages,
-        progress: this.calculateProgress(state),
-      });
-    });
-  }
+llm: {
+  provider: 'openai',
+  model: 'gpt-4-turbo',
+  apiKey: process.env.OPENAI_API_KEY,
+  temperature: 0.7,
+  maxTokens: 4096,
 }
 ```
 
-### Error Handling & Recovery
+**Azure OpenAI**:
 
 ```typescript
-// Custom error handling in agents
-// METHOD-LEVEL: Error-aware agent implementation
-async nodeFunction(state: AgentState): Promise<Partial<AgentState>> {
-  try {
-    const result = await this.performOperation(state);
-    return { messages: [new AIMessage(result)] };
-  } catch (error) {
-    if (error instanceof RetryableError && state.metadata?.retryCount < 3) {
-      return {
-        messages: [new AIMessage(`Retrying... (${state.metadata?.retryCount + 1}/3)`)],
-        metadata: {
-          ...state.metadata,
-          retryCount: (state.metadata?.retryCount || 0) + 1
-        }
-      };
-    }
-
-    // Escalate after max retries
-    return {
-      messages: [new AIMessage(`Operation failed: ${error.message}`)],
-      next: 'error-handler',
-      metadata: {
-        ...state.metadata,
-        error: true,
-        errorType: error.constructor.name
-      }
-    };
-  }
+llm: {
+  provider: 'azure-openai',
+  model: 'gpt-4',
+  apiKey: process.env.AZURE_OPENAI_API_KEY,
+  endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+  deployment: 'gpt-4-deployment',
 }
 ```
 
-## Testing
-
-### Unit Testing Agents
+**Anthropic**:
 
 ```typescript
-import { Test } from '@nestjs/testing';
-import { MultiAgentModule } from '@hive-academy/langgraph-modules-multi-agent';
-
-describe('ContentCreatorAgent', () => {
-  let agent: ContentCreatorAgent;
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      imports: [
-        MultiAgentModule.forRoot({
-          agents: [ContentCreatorAgent],
-          defaultLlm: {
-            provider: 'openai',
-            model: 'gpt-3.5-turbo',
-            openaiApiKey: 'test-key',
-          },
-        }),
-      ],
-      providers: [ContentCreatorAgent],
-    }).compile();
-
-    agent = module.get<ContentCreatorAgent>(ContentCreatorAgent);
-  });
-
-  it('should create content from requirements', async () => {
-    const state: AgentState = {
-      messages: [new HumanMessage('Create article about TypeScript')],
-    };
-
-    const result = await agent.nodeFunction(state);
-
-    expect(result.messages).toHaveLength(1);
-    expect(result.messages[0].content).toContain('Content created');
-    expect(result.metadata.contentCreated).toBe(true);
-  });
-});
+llm: {
+  provider: 'anthropic',
+  model: 'claude-3-opus-20240229',
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  maxTokens: 4096,
+}
 ```
 
-### Integration Testing Networks
+---
+
+## API Reference
+
+### Public API (Recommended)
+
+**Decorators** (✅ Use These):
+
+- `@MultiAgent` - Define multi-agent workflows declaratively
+- `@Agent` - Define worker agent metadata and configuration
+- `MultiAgentWorkflowBase` - Base class for multi-agent workflows
+
+**Configuration Types**:
+
+- `MultiAgentConfig` - Complete multi-agent workflow configuration
+- `MultiAgentTopology` - Topology types (SUPERVISOR, SWARM, HIERARCHICAL, SEQUENTIAL)
+- `SupervisorConfig` - Supervisor-specific configuration
+- `SwarmConfig` - Swarm-specific configuration
+- `HierarchicalConfig` - Hierarchical-specific configuration
+- `SequentialConfig` - Sequential-specific configuration
+- `AgentWorkflowConfig` - Worker agent workflow configuration
+- `MultiAgentStreamingConfig` - Streaming configuration interface
+- `MultiAgentInterruptionConfig` - HITL interruption configuration interface
+
+**Tool Registration** (Advanced):
+
+- `ToolRegistrationService` - Register custom tools
+- `ToolRegistryService` - Query registered tools
+
+### Advanced API (For Power Users)
+
+⚠️ **WARNING**: The following service is for advanced use cases only. Most users should use `@MultiAgent` decorator instead.
+
+**MultiAgentCoordinatorService**:
 
 ```typescript
-describe('MultiAgentNetworkIntegration', () => {
-  let coordinator: MultiAgentCoordinatorService;
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      imports: [
-        MultiAgentModule.forRoot({
-          agents: [ResearchAgent, WriterAgent, EditorAgent],
-        }),
-      ],
-    }).compile();
-
-    coordinator = module.get<MultiAgentCoordinatorService>(MultiAgentCoordinatorService);
-  });
-
-  it('should execute complete workflow', async () => {
-    const networkId = await coordinator.setupNetwork(
-      'test-content-team',
-      [
-        { id: 'researcher', type: 'ResearchAgent' },
-        { id: 'writer', type: 'WriterAgent' },
-        { id: 'editor', type: 'EditorAgent' },
-      ],
-      'supervisor',
-      {
-        systemPrompt: 'Coordinate content creation workflow',
-        workers: ['researcher', 'writer', 'editor'],
-      }
-    );
-
-    const result = await coordinator.executeSimpleWorkflow(networkId, 'Create article about TypeScript best practices');
-
-    expect(result.success).toBe(true);
-    expect(result.executionPath).toContain('researcher');
-    expect(result.finalState.messages).toBeTruthy();
-  });
-});
+/**
+ * ⚠️ Use @MultiAgent decorator instead for 99% of use cases
+ *
+ * This service is for advanced scenarios requiring manual coordination control.
+ * It is automatically injected into MultiAgentWorkflowBase internally.
+ */
+class MultiAgentCoordinatorService {
+  // Internal methods - use MultiAgentWorkflowBase instead
+}
 ```
+
+### Internal Services (DO NOT USE)
+
+The following services are internal implementation details and are **NOT exported**:
+
+❌ `AgentRegistryService` - Internal agent registration
+❌ `GraphBuilderService` - Internal graph compilation
+❌ `NetworkManagerService` - Internal network execution
+❌ `NodeFactoryService` - Internal node creation
+❌ `LlmProviderService` - Internal LLM management
+❌ `WorkflowManagerService` - Internal workflow orchestration
+❌ `ToolBuilderService` - Internal tool compilation
+❌ `ToolNodeService` - Internal tool node creation
+
+**These services are used internally by `MultiAgentWorkflowBase` and should never be injected or used directly by consumers.**
+
+### Utilities
+
+- `getAgentConfig(agentClass)` - Retrieves agent metadata from decorator
+- `getMultiAgentConfig(workflowClass)` - Retrieves multi-agent metadata from decorator
+- `isMultiAgentWorkflow(target)` - Type guard for multi-agent workflows
+
+### Stream Event Types
+
+```typescript
+interface StreamEvent {
+  type: 'token' | 'progress' | 'state' | 'error' | 'interrupt';
+  source?: string; // Worker agent ID
+  content?: string; // For token events
+  percentage?: number; // For progress events
+  state?: any; // For state events
+  next?: string; // For interrupt events - which node to execute next
+}
+```
+
+---
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### 1. Agent Registration Failures
+| Issue                         | Cause                           | Solution                                                           |
+| ----------------------------- | ------------------------------- | ------------------------------------------------------------------ |
+| Streaming events not captured | `captureSubgraphs` not enabled  | Set `multiAgentStreaming.captureSubgraphs: true` in agent metadata |
+| Workflow doesn't pause        | Missing checkpointer            | Provide checkpointer in execute config: `{ checkpointer }`         |
+| Worker not found              | Agent not registered            | Add agent to `WorkflowEngineModule.forRoot({ agents: [...] })`     |
+| Metadata not available        | Using instance instead of class | Use `getAgentConfig(AgentClass)`, not `getAgentConfig(instance)`   |
+| Type errors                   | Missing imports                 | Import types from `@hive-academy/langgraph-multi-agent`            |
+
+### Debugging Tips
+
+**Enable debug logging**:
 
 ```typescript
-// Error: Agent 'my-agent' not found
-// Solution: Ensure agent is registered in module configuration
-MultiAgentModule.forRoot({
-  agents: [MyAgent], // Add agent class to registration
-});
-
-// Check @Agent decorator is properly applied
-@Agent({
-  id: 'my-agent', // Ensure ID matches usage
-  name: 'My Agent',
-  description: 'Agent description',
+WorkflowEngineModule.forRoot({
+  agents: [...],
+  debug: true,  // Enables detailed logging
 })
-@Injectable()
-export class MyAgent {
-  /* ... */
-}
 ```
 
-#### 2. LLM Configuration Issues
+**Check metadata storage**:
 
 ```typescript
-// Error: LLM provider not configured
-// Solution: Provide complete LLM configuration
-defaultLlm: {
-  provider: 'openai',              // Must specify provider
-  model: 'gpt-4',                  // Must specify model
-  openaiApiKey: process.env.OPENAI_API_KEY // Must provide API key
-}
+import { getAgentConfig } from '@hive-academy/langgraph-multi-agent';
+
+const config = getAgentConfig(MyAgent);
+console.log('Agent metadata:', config);
 ```
 
-#### 3. Network Execution Failures
+**Verify streaming configuration**:
 
 ```typescript
-// Error: Network execution timeout
-// Solution: Increase timeout or optimize agents
-const result = await coordinator.executeSimpleWorkflow(networkId, message, {
-  configurable: {
-    recursionLimit: 50, // Increase if needed
-    maxConcurrency: 5, // Adjust based on resources
-  },
+const config = getAgentConfig(MyAgent);
+console.log('Streaming config:', config?.workflow?.multiAgentStreaming);
+```
+
+**Verify interruption configuration**:
+
+```typescript
+const config = getAgentConfig(MyAgent);
+console.log('Interruption config:', config?.workflow?.multiAgentInterruption);
+```
+
+---
+
+## Best Practices
+
+### 1. Use Metadata-Driven Configuration
+
+✅ **Good** - Declarative configuration in @Agent decorator:
+
+```typescript
+@Agent({
+  id: 'worker',
+  workflow: {
+    multiAgentStreaming: { enabled: true, captureSubgraphs: true }
+  }
+})
+```
+
+❌ **Avoid** - Manual configuration:
+
+```typescript
+// Don't do this - use metadata instead
+const graph = new StateGraph();
+graph.compile({
+  /* manual config */
 });
 ```
 
-This comprehensive manual provides everything needed to build sophisticated multi-agent systems with proper coordination patterns, error handling, and production-ready features.
+### 2. Explicitly Register Agents
+
+✅ **Good** - Explicit registration:
+
+```typescript
+WorkflowEngineModule.forRoot({
+  agents: [Agent1, Agent2, Agent3],
+});
+```
+
+❌ **Avoid** - Auto-discovery (not supported):
+
+```typescript
+// Don't do this - not supported
+WorkflowEngineModule.forRoot({
+  autoRegister: true, // Does not exist
+});
+```
+
+### 3. Use Checkpointer for HITL
+
+✅ **Good** - Provide checkpointer for interruptions:
+
+```typescript
+const checkpointer = new MemorySaver();
+await coordinator.execute(input, { checkpointer });
+```
+
+❌ **Avoid** - HITL without checkpointer:
+
+```typescript
+// Won't work - no state persistence
+await coordinator.execute(input); // Missing checkpointer
+```
+
+### 4. Aggregate Interruption Points
+
+✅ **Good** - Configure interruptions on workers:
+
+```typescript
+@Agent({
+  workflow: {
+    multiAgentInterruption: {
+      enabled: true,
+      interruptBefore: ['this-worker']
+    }
+  }
+})
+```
+
+System automatically aggregates from all workers.
+
+### 5. Handle Stream Events Properly
+
+✅ **Good** - Check event types:
+
+```typescript
+for await (const event of coordinator.stream(input)) {
+  if (event.type === 'token') {
+    console.log(event.content);
+  }
+  if (event.type === 'interrupt') {
+    await handleInterruption(event.next);
+  }
+}
+```
+
+---
+
+## Advanced Topics
+
+### Custom State Schemas
+
+Define custom state beyond AgentState:
+
+```typescript
+interface CustomState extends AgentState {
+  customField: string;
+  metadata: {
+    repositoryUrl: string;
+    analysisResult: AnalysisResult;
+  };
+}
+
+@Agent({ id: 'custom-agent' })
+export class CustomAgent extends DeclarativeWorkflowBase<CustomState> {
+  @Entrypoint()
+  async process(context: TaskExecutionContext<CustomState>) {
+    // Access custom state fields
+    const repo = context.state.metadata.repositoryUrl;
+    return { ...context.state, customField: 'updated' };
+  }
+}
+```
+
+### Multiple Streaming Modes
+
+Different workers can have different streaming configurations:
+
+```typescript
+// Worker 1 - Full state snapshots
+@Agent({
+  id: 'worker1',
+  workflow: {
+    multiAgentStreaming: {
+      enabled: true,
+      streamMode: 'values'  // Full state after each update
+    }
+  }
+})
+
+// Worker 2 - Only changes
+@Agent({
+  id: 'worker2',
+  workflow: {
+    multiAgentStreaming: {
+      enabled: true,
+      streamMode: 'updates'  // Only state changes
+    }
+  }
+})
+```
+
+Note: First enabled configuration takes precedence during execution.
+
+### Conditional Interruptions
+
+Workers can conditionally trigger interruptions:
+
+```typescript
+@Agent({
+  id: 'conditional-worker',
+  workflow: {
+    multiAgentInterruption: {
+      enabled: true,
+      interruptBefore: ['conditional-worker'],
+    },
+  },
+})
+export class ConditionalWorkerAgent extends DeclarativeWorkflowBase<AgentState> {
+  @Entrypoint()
+  @RequiresApproval({
+    condition: (state) => state.metadata.requiresReview, // Conditional approval
+    timeout: 60000,
+  })
+  async process(context: TaskExecutionContext<AgentState>) {
+    // Approval only requested if condition true
+    return context.state;
+  }
+}
+```
+
+---
+
+## Additional Resources
+
+### Documentation
+
+- [Phase 1 Implementation Summary](../../../docs/PHASE_1_IMPLEMENTATION_SUMMARY.md)
+- [Phase 2 Multi-Agent HITL & Streaming](../../../docs/PHASE_2_MULTI_AGENT_HITL_STREAMING.md)
+- [Configuration Flow Example](../../../docs/PHASE_2_CONFIGURATION_FLOW_EXAMPLE.md)
+- [Implementation Plan](../../../task-tracking/MULTI_AGENT_HITL_STREAMING_IMPLEMENTATION_PLAN.md)
+
+### Related Modules
+
+- [@hive-academy/langgraph-core](../core/CLAUDE.md) - Core workflow interfaces
+- [@hive-academy/langgraph-workflow-engine](../workflow-engine/CLAUDE.md) - Workflow execution
+- [@hive-academy/langgraph-streaming](../streaming/CLAUDE.md) - Streaming decorators
+- [@hive-academy/langgraph-hitl](../hitl/CLAUDE.md) - Human approval decorators
+
+### LangGraph Documentation
+
+- [Multi-Agent Systems](https://langchain-ai.github.io/langgraph/concepts/multi_agent/)
+- [Streaming](https://langchain-ai.github.io/langgraph/concepts/streaming/)
+- [Checkpoints & Interruptions](https://langchain-ai.github.io/langgraph/concepts/persistence/)
+
+---
+
+## Support
+
+For issues, questions, or feature requests:
+
+- GitHub Issues: [nestjs-ai-saas-starter](https://github.com/your-org/nestjs-ai-saas-starter/issues)
+- Documentation: [Project README](../../../README.md)
+- Community: [Discussions](https://github.com/your-org/nestjs-ai-saas-starter/discussions)

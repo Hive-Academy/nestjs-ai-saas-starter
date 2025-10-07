@@ -1,344 +1,168 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
-  FunctionalWorkflow,
-  Entrypoint,
-  Task,
-  WorkflowType,
-} from '@hive-academy/langgraph-functional-api';
-import type {
-  TaskExecutionContext,
-  TaskExecutionResult,
-  FunctionalWorkflowState,
-} from '@hive-academy/langgraph-functional-api';
-import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
-import {
-  MultiAgentCoordinatorService,
-  LlmProviderService,
+  MultiAgent,
+  MultiAgentTopology,
+  MultiAgentWorkflowBase,
+  SupervisorConfig,
 } from '@hive-academy/langgraph-multi-agent';
-import type {
-  AgentDefinition,
-  AgentState,
-} from '@hive-academy/langgraph-multi-agent';
-import { HumanMessage } from '@langchain/core/messages';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
 
 /**
- * 🆕 TRANSFORMED: DevBrand Supervisor Workflow
+ * ✨ DevBrand Supervisor Workflow - Clean Multi-Agent Implementation
  *
- * NOW USES PROPER MULTI-AGENT COORDINATION:
- * ✅ Supervisor pattern with LLM-based routing
- * ✅ Multi-agent network topology
- * ✅ Memory-enhanced coordination
- * ✅ Agent compatibility learning
- * ✅ Automatic checkpoint and recovery
+ * This workflow uses the new @MultiAgent decorator for:
+ * ✅ Automatic agent registration and network setup
+ * ✅ No manual onModuleInit or createAgentDefinition boilerplate
+ * ✅ Clean, declarative configuration
+ * ✅ Automatic streaming and HITL from worker metadata
+ * ✅ Internal coordination services (not exposed to consumers)
  *
- * BEFORE: Manual agent orchestration with direct .execute() calls
- * AFTER: Intelligent supervisor coordinates agents via LLM routing
+ * ARCHITECTURE:
+ * - Extends MultiAgentWorkflowBase for automatic lifecycle management
+ * - @MultiAgent decorator handles all setup automatically
+ * - Workers explicitly listed with their streaming/HITL configuration
+ * - Supervisor coordinates via LLM-based routing
  *
- * Architecture:
- * 1. Setup multi-agent network (supervisor + 3 workflow-agents)
- * 2. Supervisor LLM decides which agent to call based on task
- * 3. Agents communicate through AgentState messages
- * 4. Coordinator enhances with memory and learned patterns
- * 5. Results stored in personal brand memory
+ * TOPOLOGY: SUPERVISOR
+ * - Central LLM coordinator routes tasks to specialized worker agents
+ * - Workers: GitHub Analyzer → Brand Strategist → Content Creator
+ * - Sequential execution with intelligent routing
  */
 
-export interface DevBrandWorkflowState extends FunctionalWorkflowState {
-  // User context
-  userId: string;
-  githubUsername?: string;
+@MultiAgent({
+  // Network configuration
+  networkId: 'devbrand-supervisor-network',
+  topology: MultiAgentTopology.SUPERVISOR,
 
-  // Workflow execution
-  executionId: string;
-  currentStep: number;
-  confidence: number;
+  // Explicit agent registration
+  agents: [
+    GitHubCodeAnalyzerAgent,
+    PersonalBrandStrategistAgent,
+    ContentCreatorAgent,
+  ],
 
-  // Multi-agent network
-  networkId?: string;
+  // Supervisor-specific configuration
+  config: {
+    systemPrompt: `You are the supervisor coordinator for a personal branding workflow.
 
-  // Agent communication results
-  agentResults?: {
-    githubAnalysis?: any;
-    brandStrategy?: any;
-    contentCreation?: any;
-  };
+Your role is to orchestrate three specialized agents to help developers build their personal brand:
 
-  // Final outputs
-  finalResult?: {
+**Available Workers:**
+
+1. **github-code-analyzer**: Analyzes GitHub activity to extract achievements
+   - Extracts repository contributions, technologies used, impact metrics
+   - Identifies standout projects and technical skills
+   - Outputs: achievements, technologies, project highlights
+
+2. **personal-brand-strategist**: Develops brand strategy and positioning
+   - Analyzes achievements and creates positioning strategy
+   - Defines unique value proposition and target audience
+   - Outputs: brand strategy, positioning, recommendations
+
+3. **content-creator**: Creates optimized content for multiple platforms
+   - Generates platform-specific content (LinkedIn, Dev.to, Twitter)
+   - Optimizes for engagement and reach
+   - Outputs: generated content for each platform
+
+**Workflow Sequence (ALWAYS follow this order):**
+
+Step 1: First, call **github-code-analyzer** to analyze the developer's GitHub profile
+Step 2: Then, call **personal-brand-strategist** to develop brand strategy based on achievements
+Step 3: Finally, call **content-creator** to generate platform-specific content
+
+**Routing Rules:**
+
+- If user provides GitHub username → Start with github-code-analyzer
+- If analysis is complete → Route to personal-brand-strategist
+- If strategy is complete → Route to content-creator
+- If all steps done → Return control to workflow with FINISH
+
+**Context Management:**
+
+Always maintain context between agents by passing previous results in metadata.
+Each agent builds on the work of the previous agent.`,
+
+    workers: [
+      'github-code-analyzer',
+      'personal-brand-strategist',
+      'content-creator',
+    ],
+
+    // 🆕 DEFAULTS APPLIED: enableForwardMessage and removeHandoffMessages now use module defaults
+    // Keeping explicit config to override defaults
+    enableForwardMessage: true,
+    removeHandoffMessages: true,
+
+    // 🆕 LLM CONFIG REMOVED: Supervisor LLM now uses module-level configuration
+    // Configure via MultiAgentModule.forRoot({ defaultLlm: { ... } })
+    // This ensures single source of truth for all LLM instances
+  } as SupervisorConfig,
+
+  // 🆕 DEFAULTS APPLIED: streaming, checkpointing, debug now inherit from module config
+  // Keeping explicit config for documentation purposes
+  streaming: true,
+  checkpointing: true,
+  debug: false,
+})
+@Injectable()
+export class DevBrandSupervisorWorkflow extends MultiAgentWorkflowBase {
+  constructor(private readonly brandMemory: PersonalBrandMemoryService) {
+    super();
+  }
+
+  /**
+   * Execute the complete personal branding workflow
+   *
+   * This is the main entry point for consumers. The multi-agent coordination
+   * happens automatically via the @MultiAgent decorator.
+   */
+  async execute(input: {
+    userId: string;
+    githubUsername: string;
+    executionId?: string;
+  }): Promise<{
     achievements: any[];
     strategy: any;
     content: any;
     confidence: number;
-  };
-}
+  }> {
+    const executionId = input.executionId || `devbrand-${Date.now()}`;
 
-@FunctionalWorkflow({
-  name: 'devbrand-supervisor-workflow-transformed',
-  description:
-    '🆕 TRANSFORMED: Multi-agent coordination using supervisor pattern for developer personal branding',
-  type: WorkflowType.FUNCTIONAL_TASK,
-  streaming: true,
-  confidenceThreshold: 0.7,
-})
-@Injectable()
-export class DevBrandSupervisorWorkflowTransformed implements OnModuleInit {
-  private networkId: string | null = null;
-
-  constructor(
-    private readonly coordinator: MultiAgentCoordinatorService,
-    private readonly llmProvider: LlmProviderService,
-    private readonly githubAnalyzer: GitHubCodeAnalyzerAgent,
-    private readonly contentCreator: ContentCreatorAgent,
-    private readonly brandStrategist: PersonalBrandStrategistAgent,
-    private readonly brandMemory: PersonalBrandMemoryService
-  ) {}
-
-  /**
-   * Initialize multi-agent network on module startup
-   * Creates supervisor network with 3 workflow-agents
-   */
-  async onModuleInit(): Promise<void> {
-    try {
-      // Convert workflow-agent classes to AgentDefinition objects
-      const agents: AgentDefinition[] = [
-        this.createAgentDefinition(
-          this.githubAnalyzer,
-          'github-code-analyzer',
-          'GitHub Code Analyzer',
-          'Analyzes GitHub repositories to extract developer achievements, technical skills, productivity metrics, and developer insights using AI-powered analysis'
-        ),
-        this.createAgentDefinition(
-          this.brandStrategist,
-          'personal-brand-strategist',
-          'Personal Brand Strategist',
-          'Develops personal brand strategy based on achievements, determines optimal positioning, defines brand voice, and provides strategic recommendations for professional growth'
-        ),
-        this.createAgentDefinition(
-          this.contentCreator,
-          'content-creator',
-          'Content Creator',
-          'Creates platform-specific content (LinkedIn, Dev.to) optimized for engagement, integrates brand voice, and generates high-quality professional content based on achievements and strategy'
-        ),
-      ];
-
-      // Setup supervisor network with LLM-based routing
-      this.networkId = await this.coordinator.setupNetwork(
-        'devbrand-supervisor-network',
-        agents,
-        'supervisor',
-        {
-          systemPrompt: `You are the supervisor coordinator for a personal branding workflow.
-
-Your role is to orchestrate three specialized agents to help developers build their personal brand:
-
-1. github-code-analyzer: Analyzes GitHub activity to extract achievements
-2. personal-brand-strategist: Develops brand strategy and positioning
-3. content-creator: Creates optimized content for multiple platforms
-
-WORKFLOW SEQUENCE (always follow this order):
-Step 1: First, call github-code-analyzer to analyze the developer's GitHub profile
-Step 2: Then, call personal-brand-strategist to develop brand strategy based on achievements
-Step 3: Finally, call content-creator to generate platform-specific content
-
-ROUTING RULES:
-- If user provides GitHub username → Start with github-code-analyzer
-- If analysis is complete → Route to personal-brand-strategist
-- If strategy is complete → Route to content-creator
-- If all steps done → Return control to workflow
-
-Always maintain context between agents by passing previous results in metadata.`,
-          workers: [
-            'github-code-analyzer',
-            'personal-brand-strategist',
-            'content-creator',
-          ],
-          enableForwardMessage: true, // Pass context between agents
-          removeHandoffMessages: true, // Clean message history
-        }
-      );
-
-      console.log(
-        `✅ Multi-agent network initialized: ${this.networkId} with ${agents.length} agents`
-      );
-    } catch (error) {
-      console.error('❌ Failed to initialize multi-agent network:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Convert workflow-agent instance to AgentDefinition
-   * Extracts metadata from @Agent decorator and creates nodeFunction
-   */
-  private createAgentDefinition(
-    agentInstance: any,
-    id: string,
-    name: string,
-    description: string
-  ): AgentDefinition {
-    return {
-      id,
-      name,
-      description,
-      // nodeFunction calls the workflow-agent's execute method
-      nodeFunction: async (state: AgentState) => {
-        // Execute the workflow-agent's internal workflow
-        const result = await agentInstance.execute(state);
-
-        // Return partial state update
-        return {
-          messages: result.messages || state.messages,
-          metadata: {
-            ...state.metadata,
-            ...result.metadata,
-            lastAgent: id,
-            lastAgentResult: result,
-          },
-        };
-      },
-      metadata: {
-        type: 'workflow-agent',
-        capabilities: this.getAgentCapabilities(id),
-        priority: 'high',
-      },
-    };
-  }
-
-  /**
-   * Get agent capabilities based on agent ID
-   */
-  private getAgentCapabilities(agentId: string): string[] {
-    switch (agentId) {
-      case 'github-code-analyzer':
-        return [
-          'code-analysis',
-          'achievement-extraction',
-          'developer-insights',
-          'ai-synthesis',
-        ];
-      case 'personal-brand-strategist':
-        return [
-          'brand-analysis',
-          'strategic-positioning',
-          'career-guidance',
-          'voice-definition',
-        ];
-      case 'content-creator':
-        return [
-          'content-generation',
-          'platform-optimization',
-          'engagement-analysis',
-          'brand-voice-integration',
-        ];
-      default:
-        return [];
-    }
-  }
-
-  /**
-   * Entry point - Initialize the multi-agent workflow
-   */
-  @Entrypoint({ timeout: 15000 })
-  @StreamProgress({ enabled: true, includeETA: true })
-  async initializeWorkflow(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
-    const { state } = context;
-    const workflowState = state as unknown as DevBrandWorkflowState;
-
-    // Validate network is initialized
-    if (!this.networkId) {
-      throw new Error(
-        'Multi-agent network not initialized. Module initialization may have failed.'
-      );
-    }
-
-    return {
-      state: {
-        ...workflowState,
-        executionId: `devbrand-${Date.now()}`,
-        networkId: this.networkId,
-        currentStep: 1,
-        currentTask: 'initialization',
-        confidence: 1.0,
-        agentResults: {},
-      },
-    };
-  }
-
-  /**
-   * 🆕 TRANSFORMED: Execute multi-agent coordination via supervisor
-   *
-   * BEFORE: Manual calls to githubAnalyzer.execute(), brandStrategist.execute()
-   * AFTER: Single supervisor call with LLM-based routing
-   *
-   * The supervisor LLM will:
-   * 1. Analyze the task
-   * 2. Route to appropriate agent (github-code-analyzer first)
-   * 3. Pass results to next agent (personal-brand-strategist)
-   * 4. Continue to final agent (content-creator)
-   * 5. Return consolidated results
-   */
-  @Task({ dependsOn: ['initializeWorkflow'] })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
-  async executeMultiAgentCoordination(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
-    const { state } = context;
-    const workflowState = state as unknown as DevBrandWorkflowState;
-
-    // Validate required input
-    if (!workflowState.githubUsername) {
-      throw new Error('GitHub username is required for personal branding');
-    }
-
-    if (!workflowState.networkId) {
-      throw new Error('Network ID is missing from workflow state');
-    }
+    this.logger.log(
+      `🚀 Starting DevBrand workflow for user: ${input.userId}, GitHub: ${input.githubUsername}`
+    );
 
     try {
-      // 🎯 KEY TRANSFORMATION: Use supervisor coordination instead of direct agent calls
-      const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${workflowState.githubUsername}
+      // Build supervisor message
+      const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
 
 User Context:
-- User ID: ${workflowState.userId}
-- GitHub Username: ${workflowState.githubUsername}
-- Execution ID: ${workflowState.executionId}
+- User ID: ${input.userId}
+- GitHub Username: ${input.githubUsername}
+- Execution ID: ${executionId}
 
 Task Sequence:
 1. Analyze GitHub profile to extract achievements and technical skills
 2. Develop personal brand strategy based on the analysis
 3. Create platform-specific content (LinkedIn, Dev.to) for the brand
 
-Please coordinate the three agents (github-code-analyzer, personal-brand-strategist, content-creator) to complete this workflow.`;
+Please coordinate the three agents to complete this workflow.`;
 
-      console.log(
-        `🚀 Executing multi-agent coordination for ${workflowState.githubUsername}`
-      );
+      // Execute multi-agent coordination (automatic streaming/HITL)
+      const result = await this.executeSimple(supervisorMessage, {
+        userId: input.userId,
+        githubUsername: input.githubUsername,
+        executionId,
+        workflowType: 'personal-branding',
+      });
 
-      // Execute through supervisor - LLM decides routing automatically
-      const result = await this.coordinator.executeSimpleWorkflow(
-        workflowState.networkId,
-        supervisorMessage,
-        {
-          streamMode: 'values',
-          config: {
-            metadata: {
-              userId: workflowState.userId,
-              githubUsername: workflowState.githubUsername,
-              executionId: workflowState.executionId,
-              workflowType: 'personal-branding',
-            },
-          },
-        }
-      );
-
-      console.log(
-        `✅ Multi-agent coordination completed. Execution path: ${result.executionPath.join(' → ')}`
+      this.logger.log(
+        `✅ Multi-agent coordination completed. Execution path: ${result.executionPath?.join(
+          ' → '
+        )}`
       );
 
       // Extract results from agent coordination
@@ -348,95 +172,90 @@ Please coordinate the three agents (github-code-analyzer, personal-brand-strateg
         contentCreation: result.finalState.metadata?.generatedContent || {},
       };
 
-      return {
-        state: {
-          ...workflowState,
-          currentStep: 2,
-          currentTask: 'multi-agent-coordination-complete',
-          agentResults,
-          confidence: result.finalState.metadata?.confidence || 0.8,
-        },
-      };
-    } catch (error) {
-      console.error('❌ Multi-agent coordination failed:', error);
-      return {
-        state: {
-          ...workflowState,
-          currentStep: 2,
-          currentTask: 'multi-agent-coordination-error',
-          confidence: 0.3,
-        },
-      };
-    }
-  }
-
-  /**
-   * Final step: Consolidate results and store in memory
-   */
-  @Task({ dependsOn: ['executeMultiAgentCoordination'] })
-  @StreamProgress({ enabled: true })
-  async finalizeWorkflow(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
-    const { state } = context;
-    const workflowState = state as unknown as DevBrandWorkflowState;
-
-    try {
-      const results = workflowState.agentResults || {};
-
-      // Extract achievements from GitHub analysis
+      // Store achievements in personal brand memory
       const achievements =
-        results.githubAnalysis?.achievements ||
-        results.githubAnalysis?.data?.achievements ||
+        agentResults.githubAnalysis?.achievements ||
+        agentResults.githubAnalysis?.data?.achievements ||
         [];
 
-      // Store achievements in personal brand memory
       if (achievements.length > 0) {
+        this.logger.log(
+          `Storing ${achievements.length} achievements in memory`
+        );
+
         for (const achievement of achievements) {
-          await this.brandMemory.storeCodeAchievement(workflowState.userId, {
+          await this.brandMemory.storeCodeAchievement(input.userId, {
             id: achievement.id || `achievement-${Date.now()}`,
             description: achievement.description,
             technologies: achievement.technologies || [],
             impact: achievement.impact || 'medium',
             date: new Date().toISOString(),
             repository: achievement.repository || 'unknown',
-            userId: workflowState.userId,
+            userId: input.userId,
           });
         }
       }
 
-      // Store brand strategy
-      if (results.brandStrategy) {
-        // TODO: Implement brand strategy storage in memory
-        console.log('Brand strategy stored:', results.brandStrategy);
-      }
-
-      // Consolidate final result
-      const finalResult = {
-        achievements,
-        strategy: results.brandStrategy,
-        content: results.contentCreation,
-        confidence: workflowState.confidence,
-      };
-
+      // Return consolidated results
       return {
-        state: {
-          ...workflowState,
-          currentStep: 3,
-          currentTask: 'completed',
-          finalResult,
-          confidence: 1.0,
-        },
+        achievements,
+        strategy: agentResults.brandStrategy,
+        content: agentResults.contentCreation,
+        confidence: result.finalState.metadata?.confidence || 0.8,
       };
     } catch (error) {
-      console.error('Workflow finalization failed:', error);
-      return {
-        state: {
-          ...workflowState,
-          currentStep: 3,
-          currentTask: 'finalization-error',
+      this.logger.error('Multi-agent coordination failed:', error);
+      throw new Error(
+        `DevBrand workflow failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  /**
+   * Execute with streaming support
+   *
+   * Returns an async iterator for real-time streaming of agent events
+   */
+  async *executeWithStreaming(input: {
+    userId: string;
+    githubUsername: string;
+    executionId?: string;
+  }): AsyncIterableIterator<any> {
+    const executionId = input.executionId || `devbrand-${Date.now()}`;
+
+    const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
+
+User Context:
+- User ID: ${input.userId}
+- GitHub Username: ${input.githubUsername}
+- Execution ID: ${executionId}
+
+Task Sequence:
+1. Analyze GitHub profile to extract achievements and technical skills
+2. Develop personal brand strategy based on the analysis
+3. Create platform-specific content (LinkedIn, Dev.to) for the brand`;
+
+    // Execute with streaming
+    const stream = await this.executeCoordination(
+      {
+        messages: [supervisorMessage],
+        config: {
+          metadata: {
+            userId: input.userId,
+            githubUsername: input.githubUsername,
+            executionId,
+            workflowType: 'personal-branding',
+          },
         },
-      };
+      },
+      { stream: true, streamMode: 'values' }
+    );
+
+    // Yield events from stream
+    for await (const event of stream) {
+      yield event;
     }
   }
 }

@@ -8,8 +8,8 @@ import { ContentCreatorTools } from '../business-workflows/core/tools/content-cr
 import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { ContentCreatorAgent } from '../business-workflows/agents/content-creator/content-creator.agent';
 import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
-import { DevBrandSupervisorWorkflowTransformed } from '../business-workflows/workflows/devbrand-supervisor.workflow';
 import { DevBrandChatWorkflow } from '../business-workflows/workflows/devbrand-chat.workflow';
+import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
 
 /**
  * Workflow Engine Module Configuration for dev-brand-api
@@ -31,7 +31,7 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
       ContentCreatorTools,
     ],
 
-    workflows: [DevBrandSupervisorWorkflowTransformed, DevBrandChatWorkflow],
+    workflows: [DevBrandSupervisorWorkflow, DevBrandChatWorkflow],
 
     // Workflow engine configuration
     compilation: {

@@ -44,26 +44,21 @@ import {
 @Agent({
   id: 'personal-brand-strategist',
   name: 'Personal Brand Strategist',
+  description:
+    'Enhanced Personal Brand Strategist with internal multi-step workflow',
   type: 'workflow-agent',
+  // 🆕 DEFAULTS APPLIED: metadata, outputFormat now use defaults
   capabilities: ['brand-analysis', 'strategic-positioning', 'career-guidance'],
   tools: ['memory-analysis', 'brand-optimization', 'strategy-generation'],
   priority: 'high',
   executionTime: 'medium',
   workflow: {
     name: 'brand-strategist-workflow',
-    description:
-      'Enhanced Personal Brand Strategist with internal multi-step workflow',
     type: 'functional-node', // 🔑 Explicit node-based workflow type
-    streaming: true,
-    confidenceThreshold: 0.7,
-    metrics: true,
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: true,
-    internalTimeout: 60000,
-    enableErrorRecovery: true,
-    maxInternalRetries: 2,
-    enableStepProgress: true,
-    stateKey: 'brand-strategist-workflow',
+    // 🆕 DEFAULTS APPLIED: streaming, confidenceThreshold, metrics, checkpointing,
+    // enableInternalStreaming, enableInternalCheckpointing, internalTimeout,
+    // enableErrorRecovery, maxInternalRetries, enableStepProgress, stateKey,
+    // multiAgentStreaming, multiAgentInterruption now use module defaults
   },
 })
 @Injectable()

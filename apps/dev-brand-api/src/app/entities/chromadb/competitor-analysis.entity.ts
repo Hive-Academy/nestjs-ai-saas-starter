@@ -10,7 +10,7 @@ import {
  *
  * Comprehensive competitive intelligence for developer profiles
  */
-export interface CompetitorAnalysisMetadata {
+export interface CompetitorAnalysisMetadata extends Record<string, unknown> {
   /** Competitor's GitHub username */
   competitorUsername: string;
 
@@ -130,4 +130,7 @@ export class CompetitorAnalysisEntity extends BaseChromaEntity<CompetitorAnalysi
 
   @ChromaProp()
   metadata!: CompetitorAnalysisMetadata;
+
+  @ChromaProp()
+  embedding?: number[];
 }

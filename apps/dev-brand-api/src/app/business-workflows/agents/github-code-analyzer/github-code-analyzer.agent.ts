@@ -3,10 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import type { TypedWorkflowAgentState } from '../../types';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
-import {
-  Entrypoint,
-  Task,
-} from '@hive-academy/langgraph-functional-api';
+import { Entrypoint, Task } from '@hive-academy/langgraph-functional-api';
 import type {
   TaskExecutionContext,
   TaskExecutionResult,
@@ -61,7 +58,10 @@ import {
 @Agent({
   id: 'github-code-analyzer',
   name: 'GitHub Code Analyzer',
+  description:
+    'AI-powered GitHub repository analysis and achievement extraction',
   type: 'workflow-agent',
+  // 🆕 DEFAULTS APPLIED: tools, capabilities, metadata, outputFormat now use defaults
   capabilities: [
     'code-analysis',
     'achievement-extraction',
@@ -78,19 +78,13 @@ import {
   executionTime: 'fast',
   workflow: {
     name: 'github-analyzer-workflow',
-    description:
-      'AI-powered GitHub repository analysis and achievement extraction',
     type: 'functional-task', // 🔑 Explicit workflow type: uses @Entrypoint + @Task
-    streaming: true,
-    confidenceThreshold: 0.8,
-    metrics: true,
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: true,
-    internalTimeout: 90000,
-    enableErrorRecovery: true,
-    maxInternalRetries: 2,
-    enableStepProgress: true,
-    stateKey: 'github-analyzer-workflow',
+    // 🆕 DEFAULTS APPLIED: streaming, metrics, checkpointing now inherit from module config
+    confidenceThreshold: 0.8, // Override default 0.7
+    internalTimeout: 90000, // Override default 60000 (1.5 minutes for GitHub API calls)
+    // 🆕 enableInternalStreaming, enableInternalCheckpointing, enableErrorRecovery,
+    // maxInternalRetries, enableStepProgress now use module defaults
+    // 🆕 multiAgentStreaming and multiAgentInterruption now use module defaults
   },
 })
 @Injectable()
@@ -489,7 +483,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
       },
     };
   }
-
 }
 
 // Export alias for config compatibility

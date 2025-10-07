@@ -5,11 +5,9 @@ import {
   Profiled,
   Retry,
   Cached,
+  Where,
 } from '@hive-academy/nestjs-chromadb';
-import {
-  CompetitorAnalysisEntity,
-  CompetitorAnalysisMetadata,
-} from '../../entities/chromadb/competitor-analysis.entity';
+import { CompetitorAnalysisEntity } from '../../entities/chromadb/competitor-analysis.entity';
 
 /**
  * Competitor Profile - Simplified input for analysis
@@ -230,7 +228,9 @@ export class CompetitorAnalysisRepository extends ChromaDBRepository<CompetitorA
 
     // Create entity
     const entity = new CompetitorAnalysisEntity();
-    entity.content = `${profile.name} - ${category} competitor in ${profile.expertise.join(', ')}`;
+    entity.content = `${
+      profile.name
+    } - ${category} competitor in ${profile.expertise.join(', ')}`;
     entity.metadata = {
       competitorUsername: profile.username,
       name: profile.name,
@@ -287,12 +287,9 @@ export class CompetitorAnalysisRepository extends ChromaDBRepository<CompetitorA
     await this.create(entity);
 
     // Find similar competitors using semantic search
-    const similarResults = await this.search({
-      queryTexts: [entity.content],
-      nResults: 5,
-    });
+    const similarResults = await this.search(entity.content, { limit: 5 });
 
-    const similarCompetitors = similarResults.documents
+    const similarCompetitors = similarResults
       .filter((doc) => doc.id !== entity.id)
       .slice(0, 4);
 
@@ -336,7 +333,7 @@ export class CompetitorAnalysisRepository extends ChromaDBRepository<CompetitorA
     category: 'direct' | 'indirect' | 'aspirational' | 'emerging'
   ): Promise<CompetitorAnalysisEntity[]> {
     return await this.findAll({
-      where: { category } as CompetitorAnalysisMetadata,
+      where: { category } as Where,
       limit: 50,
     });
   }
@@ -357,7 +354,7 @@ export class CompetitorAnalysisRepository extends ChromaDBRepository<CompetitorA
     position: 'leader' | 'challenger' | 'follower' | 'niche'
   ): Promise<CompetitorAnalysisEntity[]> {
     return await this.findAll({
-      where: { marketPosition: position } as CompetitorAnalysisMetadata,
+      where: { marketPosition: position } as Where,
       limit: 50,
     });
   }
@@ -399,12 +396,7 @@ export class CompetitorAnalysisRepository extends ChromaDBRepository<CompetitorA
   @Retry({ maxAttempts: 3, strategy: 'exponential' })
   async getMarketLandscape(expertise: string): Promise<MarketLandscape> {
     // Get all competitors in this expertise area
-    const allCompetitors = await this.search({
-      queryTexts: [expertise],
-      nResults: 100,
-    });
-
-    const competitors = allCompetitors.documents;
+    const competitors = await this.search(expertise, { limit: 100 });
 
     // Segment by market position
     const leaders = competitors.filter(

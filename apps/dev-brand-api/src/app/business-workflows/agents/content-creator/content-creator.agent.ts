@@ -1,10 +1,11 @@
 import { generateId } from '@hive-academy/langgraph-core';
-import {
-  Edge,
-  Node
-} from '@hive-academy/langgraph-functional-api';
+import { Edge, Node } from '@hive-academy/langgraph-functional-api';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import { EventStreamProcessorService, StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
+import {
+  EventStreamProcessorService,
+  StreamProgress,
+  StreamToken,
+} from '@hive-academy/langgraph-streaming';
 import {
   DeclarativeWorkflowBase,
   MetadataProcessorService,
@@ -58,7 +59,10 @@ import {
 @Agent({
   id: 'content-creator',
   name: 'Content Creator',
+  description:
+    'Creates optimized content for multiple platforms using sophisticated workflow',
   type: 'workflow-agent',
+  // 🆕 DEFAULTS APPLIED: metadata, outputFormat now use defaults
   capabilities: [
     'content-generation',
     'platform-optimization',
@@ -76,19 +80,19 @@ import {
   executionTime: 'medium',
   workflow: {
     name: 'content-creator-workflow',
-    description:
-      'Creates optimized content for multiple platforms using sophisticated workflow',
     type: 'functional-node', // 🔑 Explicit node-based workflow type
-    streaming: true,
-    confidenceThreshold: 0.7,
-    metrics: true,
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: false,
-    internalTimeout: 45000,
-    enableErrorRecovery: true,
-    maxInternalRetries: 2,
-    enableStepProgress: true,
-    stateKey: 'content-creator-workflow',
+    // 🆕 DEFAULTS APPLIED: streaming, confidenceThreshold, metrics now inherit from module config
+    enableInternalCheckpointing: false, // Override default true (no checkpointing needed)
+    internalTimeout: 45000, // Override default 60000 (45 seconds for content generation)
+    // 🆕 enableInternalStreaming, enableErrorRecovery, maxInternalRetries,
+    // enableStepProgress, stateKey now use module defaults
+    // 🆕 multiAgentStreaming uses module defaults
+
+    // Multi-agent interruption configuration - HITL for content approval
+    multiAgentInterruption: {
+      enabled: true, // Override default false - Enable approval for content before publishing
+      interruptBefore: ['content-creator'], // Pause before content creation for review
+    },
   },
 })
 @Injectable()
@@ -170,8 +174,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
           brandVoice: voice,
           brandStrategy: strategy,
           positioning:
-            (strategy as BrandStrategy)?.positioning ||
-            'Technical Excellence',
+            (strategy as BrandStrategy)?.positioning || 'Technical Excellence',
         },
       };
     } catch (error: unknown) {

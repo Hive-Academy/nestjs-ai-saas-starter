@@ -12,6 +12,7 @@ import {
 } from '../interfaces/multi-agent.interface';
 // AgentRegistryService import removed as it's no longer used
 import { NodeFactoryService } from './node-factory.service';
+import { getAgentConfig } from '../decorators/agent.decorator';
 
 /**
  * Service for building and compiling LangGraph StateGraph instances
@@ -72,13 +73,68 @@ export class GraphBuilderService {
     // Add edges
     this.addSupervisorEdges(graph as any, config.workers);
 
+    // 🆕 PHASE 2: Read interruption configuration from agent metadata
+    let interruptBefore: string[] | undefined;
+    let interruptAfter: string[] | undefined;
+
+    // Aggregate interruption config from worker agents
+    const agentMetadataList = agents
+      .map((agent) => ({
+        agent,
+        metadata: agent.metadata?.agentClass
+          ? getAgentConfig(agent.metadata.agentClass)
+          : undefined,
+      }))
+      .filter((item) => item.metadata !== undefined);
+
+    if (agentMetadataList.length > 0) {
+      // Check if any worker has multi-agent interruption enabled
+      const interruptionConfigs = agentMetadataList
+        .map((item) => item.metadata?.workflow?.multiAgentInterruption)
+        .filter((cfg) => cfg?.enabled);
+
+      if (interruptionConfigs.length > 0) {
+        // Aggregate interrupt before from all workers
+        const allInterruptBefore = interruptionConfigs
+          .filter((cfg) => cfg?.interruptBefore)
+          .flatMap((cfg) => cfg!.interruptBefore!);
+
+        const allInterruptAfter = interruptionConfigs
+          .filter((cfg) => cfg?.interruptAfter)
+          .flatMap((cfg) => cfg!.interruptAfter!);
+
+        if (allInterruptBefore.length > 0) {
+          interruptBefore = [...new Set(allInterruptBefore)]; // Remove duplicates
+          this.logger.debug(
+            `Applied interruptBefore from agent metadata: ${interruptBefore.join(
+              ', '
+            )}`
+          );
+        }
+
+        if (allInterruptAfter.length > 0) {
+          interruptAfter = [...new Set(allInterruptAfter)]; // Remove duplicates
+          this.logger.debug(
+            `Applied interruptAfter from agent metadata: ${interruptAfter.join(
+              ', '
+            )}`
+          );
+        }
+      }
+    } else if (compilationOptions?.enableInterrupts) {
+      // 🔧 BACKWARD COMPATIBILITY: Use old boolean flag if no metadata present
+      interruptBefore = [...config.workers];
+      this.logger.debug(
+        'Using legacy enableInterrupts flag for interruption configuration'
+      );
+    }
+
     // Compile and return
     return (graph as any).compile({
       checkpointer: compilationOptions?.checkpointer as any,
       debug: compilationOptions?.debug,
-      interruptBefore: compilationOptions?.enableInterrupts
-        ? [...config.workers]
-        : undefined,
+      interruptBefore,
+      interruptAfter,
     });
   }
 

@@ -1,17 +1,12 @@
-import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@hive-academy/nestjs-chromadb';
-import {
-  CompetitorAnalysisRepository,
-  CompetitorProfile,
-  CompetitiveAnalysis,
-  MarketLandscape,
-} from '../repositories/chromadb/competitor-analysis.repository';
-import {
-  DeveloperProfileRepository,
-  CodingAnalysis,
-} from '../repositories/chromadb/developer-profile.repository';
+import { Injectable } from '@nestjs/common';
 import { CompetitorAnalysisEntity } from '../entities/chromadb/competitor-analysis.entity';
 import { DeveloperProfileEntity } from '../entities/chromadb/developer-profile.entity';
+import {
+  CompetitorAnalysisRepository,
+  MarketLandscape,
+} from '../repositories/chromadb/competitor-analysis.repository';
+import { DeveloperProfileRepository } from '../repositories/chromadb/developer-profile.repository';
 
 /**
  * Competitive Positioning Report
@@ -339,14 +334,15 @@ export class CompetitiveIntelligenceService {
     score += repoScore;
 
     // Experience level (0-20 points)
-    const experienceLevels = {
+    const experienceLevels: Record<string, number> = {
       junior: 5,
       mid: 10,
       senior: 15,
       lead: 18,
       principal: 20,
     };
-    score += experienceLevels[metadata.experience] || 5;
+    const experienceLevel = metadata.experience as string;
+    score += experienceLevels[experienceLevel] || 5;
 
     // Technical breadth/depth (0-10 points)
     score += Math.min(
@@ -492,10 +488,6 @@ export class CompetitiveIntelligenceService {
   ): string[] {
     const vulnerabilities: string[] = [];
 
-    const maxCompetitorFollowers = Math.max(
-      ...competitors.map((c) => c.metadata.followers.total)
-    );
-
     if ((userMetadata.contributionScore || 0) < 30) {
       vulnerabilities.push('Low contribution activity compared to competitors');
     }
@@ -630,10 +622,8 @@ export class CompetitiveIntelligenceService {
     // Competitiveness score
     const userScore = this.calculateCompetitivenessScore(userMetadata);
     const avgCompetitorScore =
-      competitors.reduce(
-        (sum, c) => sum + c.metadata.competitivenessScore,
-        0
-      ) / (competitors.length || 1);
+      competitors.reduce((sum, c) => sum + c.metadata.competitivenessScore, 0) /
+      (competitors.length || 1);
     metrics.push({
       metric: 'Competitiveness Score',
       userValue: userScore,

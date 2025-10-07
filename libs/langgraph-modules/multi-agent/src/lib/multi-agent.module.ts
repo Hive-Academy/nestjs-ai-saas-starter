@@ -1,7 +1,6 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-// Agent services
-import { AgentRegistrationService } from './agent/agent-registration.service';
+
 import { AgentRegistryService } from './agent/agent-registry.service';
 // Network services
 import { GraphBuilderService } from './network/graph-builder.service';
@@ -16,10 +15,12 @@ import { WorkflowRegistryService } from './workflow/workflow-registry.service';
 import { WorkflowMetricsService } from './workflow/workflow-metrics.service';
 // Coordination services
 import { MultiAgentCoordinatorService } from './coordination/multi-agent-coordinator.service';
+import { NetworkSetupService } from './coordination/network-setup.service';
+import { WorkflowExecutionCoordinationService } from './coordination/workflow-execution-coordination.service';
+import { StreamCoordinationService } from './coordination/stream-coordination.service';
+import { MemoryCoordinationService } from './coordination/memory-coordination.service';
 // LLM services
 import { LlmProviderService } from './llm/llm-provider.service';
-// Infrastructure services
-import { MultiAgentModuleInitializer } from './infrastructure/multi-agent-module-initializer.service';
 // Tool services
 import { ToolRegistrationService } from './tools/tool-registration.service';
 // Tool services
@@ -54,45 +55,65 @@ export class MultiAgentModule {
     setMultiAgentConfig(mergedOptions);
 
     const providers: Provider[] = [
+      // ============================================
+      // MODULE CONFIGURATION
+      // ============================================
       {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
-      // Note: ICheckpointAdapter, IStreamingService, and IMemoryAdapter should be provided by the app module via adapter pattern
-      // No local providers needed as they will be injected globally
-      // Core services
+
+      // ============================================
+      // CORE COORDINATION SERVICES
+      // ============================================
+      MultiAgentCoordinatorService,
+
+      // Coordination Services (Internal - used by coordinator)
+      NetworkSetupService,
+      WorkflowExecutionCoordinationService,
+      StreamCoordinationService,
+      MemoryCoordinationService,
+
+      // ============================================
+      // AGENT MANAGEMENT (Internal)
+      // ============================================
       AgentRegistryService,
-      LlmProviderService,
-      NodeFactoryService,
+
+      // ============================================
+      // NETWORK SERVICES (Internal)
+      // ============================================
       GraphBuilderService,
+      NodeFactoryService,
       NetworkManagerService,
-      // Tool services
-      ToolRegistryService,
-      ToolRegistrationService,
-      ToolBuilderService,
-      ToolNodeService,
-      // Agent services
-      AgentRegistrationService,
-      // Workflow services (internal infrastructure)
+
+      // ============================================
+      // LLM SERVICES (Internal)
+      // ============================================
+      LlmProviderService,
+
+      // ============================================
+      // WORKFLOW SERVICES (Internal Infrastructure)
+      // ============================================
       WorkflowRegistryService,
       WorkflowCheckpointService,
       WorkflowInstanceService,
       WorkflowCanonicalIdService,
       WorkflowManagerService,
-      // Specialized workflow services (SRP-compliant)
       WorkflowMetricsService,
       WorkflowExecutionService,
       WorkflowStreamingService,
-      // Tool service aliases
+
+      // ============================================
+      // TOOL SERVICES (Public API)
+      // ============================================
+      ToolRegistryService,
+      ToolRegistrationService,
+      ToolBuilderService,
+      ToolNodeService,
       {
         provide: TOOL_REGISTRY,
         useExisting: ToolRegistryService,
       },
-      // Facade and examples
-      MultiAgentCoordinatorService,
-
-      // Module initializer
-      MultiAgentModuleInitializer,
     ];
 
     return {
@@ -100,27 +121,18 @@ export class MultiAgentModule {
       imports: [EventEmitterModule.forRoot()],
       providers,
       exports: [
-        // Main facade service (primary interface)
+        // ============================================
+        // PUBLIC API - These are the ONLY exports
+        // ============================================
+
+        // Main facade service (for advanced use cases)
         MultiAgentCoordinatorService,
-        // Individual services for advanced users
-        AgentRegistryService,
-        NetworkManagerService,
-        LlmProviderService,
-        // NOTE: GraphBuilderService and ToolNodeService are now internal-only
-        // They provide powerful infrastructure but are implementation details
-        // Workflow facade service (external interface)
-        WorkflowManagerService,
-        // NOTE: WorkflowRegistryService and internal services delegate to workflow-engine
-        // WorkflowManagerService provides the external facade for workflow operations
-        // Tool services for external use
-        ToolRegistryService,
+
+        // Tool services (public API)
         ToolRegistrationService,
-        ToolBuilderService,
-        WorkflowExecutionService,
-        WorkflowStreamingService,
-        // Agent services
-        AgentRegistrationService,
-        // Tool service aliases
+        ToolRegistryService,
+
+        // Tool service alias token
         TOOL_REGISTRY,
       ],
       global: true,
@@ -132,6 +144,9 @@ export class MultiAgentModule {
    */
   static forRootAsync(options: MultiAgentModuleAsyncOptions): DynamicModule {
     const providers: Provider[] = [
+      // ============================================
+      // MODULE CONFIGURATION (Async Factory)
+      // ============================================
       {
         provide: MULTI_AGENT_MODULE_OPTIONS,
         useFactory: async (...args: unknown[]) => {
@@ -143,41 +158,58 @@ export class MultiAgentModule {
         },
         inject: options.inject || [],
       },
-      // Note: ICheckpointAdapter and IStreamingService should be provided by the app module via adapter pattern
-      // No local providers needed as they will be injected globally
-      // Core services
+
+      // ============================================
+      // CORE COORDINATION SERVICES
+      // ============================================
+      MultiAgentCoordinatorService,
+
+      // Coordination Services (Internal - used by coordinator)
+      NetworkSetupService,
+      WorkflowExecutionCoordinationService,
+      StreamCoordinationService,
+      MemoryCoordinationService,
+
+      // ============================================
+      // AGENT MANAGEMENT (Internal)
+      // ============================================
       AgentRegistryService,
-      LlmProviderService,
-      NodeFactoryService,
+
+      // ============================================
+      // NETWORK SERVICES (Internal)
+      // ============================================
       GraphBuilderService,
+      NodeFactoryService,
       NetworkManagerService,
-      // Tool services
-      ToolRegistryService,
-      ToolRegistrationService,
-      ToolBuilderService,
-      ToolNodeService,
-      // Agent services
-      AgentRegistrationService,
-      // Workflow services (internal infrastructure)
+
+      // ============================================
+      // LLM SERVICES (Internal)
+      // ============================================
+      LlmProviderService,
+
+      // ============================================
+      // WORKFLOW SERVICES (Internal Infrastructure)
+      // ============================================
       WorkflowRegistryService,
       WorkflowCheckpointService,
       WorkflowInstanceService,
       WorkflowCanonicalIdService,
       WorkflowManagerService,
-      // Specialized workflow services (SRP-compliant)
       WorkflowMetricsService,
       WorkflowExecutionService,
       WorkflowStreamingService,
-      // Tool service aliases
+
+      // ============================================
+      // TOOL SERVICES (Public API)
+      // ============================================
+      ToolRegistryService,
+      ToolRegistrationService,
+      ToolBuilderService,
+      ToolNodeService,
       {
         provide: TOOL_REGISTRY,
         useExisting: ToolRegistryService,
       },
-      // Facade and examples
-      MultiAgentCoordinatorService,
-
-      // Module initializer
-      MultiAgentModuleInitializer,
     ];
 
     return {
@@ -185,21 +217,18 @@ export class MultiAgentModule {
       imports: [EventEmitterModule.forRoot()],
       providers,
       exports: [
-        // Main facade service (primary interface)
-        MultiAgentCoordinatorService,
-        // Individual services for advanced users
-        AgentRegistryService,
-        NetworkManagerService,
-        LlmProviderService,
-        WorkflowManagerService,
-        ToolRegistryService,
-        ToolRegistrationService,
-        ToolBuilderService,
-        WorkflowExecutionService,
-        // Agent services
-        AgentRegistrationService,
+        // ============================================
+        // PUBLIC API - These are the ONLY exports
+        // ============================================
 
-        // Tool service aliases
+        // Main facade service (for advanced use cases)
+        MultiAgentCoordinatorService,
+
+        // Tool services (public API)
+        ToolRegistrationService,
+        ToolRegistryService,
+
+        // Tool service alias token
         TOOL_REGISTRY,
       ],
       global: true,

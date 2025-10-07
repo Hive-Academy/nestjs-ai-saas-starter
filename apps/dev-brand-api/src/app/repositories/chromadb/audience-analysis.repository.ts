@@ -71,12 +71,10 @@ export class AudienceRepository extends ChromaDBRepository<AudienceAnalysisEntit
     const demographics = this.aggregateDemographics(relevantProfiles);
 
     // 4. Analyze content preferences
-    const contentPreferences =
-      this.analyzeContentPreferences(relevantProfiles);
+    const contentPreferences = this.analyzeContentPreferences(relevantProfiles);
 
     // 5. Extract engagement patterns
-    const engagementPatterns =
-      this.extractEngagementPatterns(relevantProfiles);
+    const engagementPatterns = this.extractEngagementPatterns(relevantProfiles);
 
     // 6. Generate platform recommendations
     const platformRecommendations =
@@ -114,9 +112,7 @@ export class AudienceRepository extends ChromaDBRepository<AudienceAnalysisEntit
    * @returns Array of audience profiles at the seniority level
    */
   @Profiled({ slowQueryThreshold: 100 })
-  async findBySeniorityLevel(
-    level: string
-  ): Promise<AudienceAnalysisEntity[]> {
+  async findBySeniorityLevel(level: string): Promise<AudienceAnalysisEntity[]> {
     const allAudiences = await this.findAll({ limit: 1000 });
 
     return allAudiences.filter(
@@ -255,10 +251,7 @@ export class AudienceRepository extends ChromaDBRepository<AudienceAnalysisEntit
 
     profiles.forEach((profile) => {
       profile.metadata.platforms.forEach((platform) => {
-        platformCounts.set(
-          platform,
-          (platformCounts.get(platform) || 0) + 1
-        );
+        platformCounts.set(platform, (platformCounts.get(platform) || 0) + 1);
 
         // Calculate score based on platform usage and content preferences
         const contentPreferenceScore =
@@ -286,68 +279,5 @@ export class AudienceRepository extends ChromaDBRepository<AudienceAnalysisEntit
 
         return `${platform} - ${usagePercentage}% audience reach with engagement score ${score}`;
       });
-  }
-
-  /**
-   * Analyze platform-specific engagement metrics
-   */
-  private analyzePlatformEngagement(
-    profiles: AudienceAnalysisEntity[],
-    platform: string
-  ): {
-    avgEngagement: number;
-    bestContentTypes: string[];
-    bestPostingTimes: string[];
-  } {
-    const platformProfiles = profiles.filter((p) =>
-      p.metadata.platforms.includes(platform)
-    );
-
-    if (platformProfiles.length === 0) {
-      return {
-        avgEngagement: 0,
-        bestContentTypes: [],
-        bestPostingTimes: [],
-      };
-    }
-
-    // Calculate average engagement score
-    const avgEngagement =
-      platformProfiles.reduce(
-        (sum, p) => sum + p.metadata.contentPreferences.length,
-        0
-      ) / platformProfiles.length;
-
-    // Extract best content types for this platform
-    const contentTypeCounts = new Map<string, number>();
-    platformProfiles.forEach((profile) => {
-      profile.metadata.contentPreferences.forEach((pref) => {
-        contentTypeCounts.set(pref, (contentTypeCounts.get(pref) || 0) + 1);
-      });
-    });
-
-    const bestContentTypes = Array.from(contentTypeCounts.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([type]) => type);
-
-    // Extract best posting times for this platform
-    const timeCounts = new Map<string, number>();
-    platformProfiles.forEach((profile) => {
-      profile.metadata.engagementPatterns.bestPostingTimes.forEach((time) => {
-        timeCounts.set(time, (timeCounts.get(time) || 0) + 1);
-      });
-    });
-
-    const bestPostingTimes = Array.from(timeCounts.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([time]) => time);
-
-    return {
-      avgEngagement: Math.round(avgEngagement * 10) / 10,
-      bestContentTypes,
-      bestPostingTimes,
-    };
   }
 }
