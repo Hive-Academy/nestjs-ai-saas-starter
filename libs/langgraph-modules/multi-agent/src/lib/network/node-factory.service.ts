@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { AIMessage } from '@langchain/core/messages';
+import { Command } from '@langchain/langgraph';
 // BaseLanguageModelInterface import removed as it's not used
 import type { RunnableConfig } from '@langchain/core/runnables';
 import type { IMemoryAdapter } from '@hive-academy/langgraph-core';
@@ -14,6 +15,8 @@ import {
 } from '../interfaces/multi-agent.interface';
 import { LlmProviderService } from '../llm/llm-provider.service';
 import { ToolNodeService } from '../tools/tool-node.service';
+import { CommandProcessorService } from '../routing/command-processor.service';
+import type { Command as InternalCommand } from '../routing/command-processor.service';
 
 /**
  * Service for creating LangGraph node functions
@@ -26,10 +29,83 @@ export class NodeFactoryService {
   constructor(
     private readonly llmProvider: LlmProviderService,
     private readonly toolNodeService: ToolNodeService,
+    private readonly commandProcessor: CommandProcessorService,
     @Optional()
     @Inject('IMemoryAdapter')
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
+
+  /**
+   * Process agent result - detect and handle Command objects
+   * If result is a Command, process it through CommandProcessorService
+   * Otherwise, return the result as-is
+   */
+  private async processAgentResult(
+    result: any,
+    state: AgentState,
+    sourceNodeId: string
+  ): Promise<Partial<AgentState>> {
+    // Check if result is a Command object (either from @langchain/langgraph or our internal Command)
+    if (this.isCommand(result)) {
+      this.logger.debug(`Processing Command from agent ${sourceNodeId}`, {
+        goto: result.goto,
+        hasUpdate: !!result.update,
+      });
+
+      // LangGraph Command only has goto and update properties
+      // If there's additional metadata in the update, extract it
+      const updateObj =
+        result.update && typeof result.update === 'object'
+          ? (result.update as Record<string, unknown>)
+          : {};
+
+      const internalCommand: InternalCommand = {
+        type:
+          (updateObj.type as
+            | 'goto'
+            | 'retry'
+            | 'skip'
+            | 'stop'
+            | 'update'
+            | 'end'
+            | 'error') || 'goto',
+        goto: result.goto as string,
+        update: updateObj as Partial<AgentState>,
+        reason: updateObj.reason as string | undefined,
+        maxAttempts: updateObj.maxAttempts as number | undefined,
+        error: updateObj.error ? (updateObj.error as Error).message : undefined,
+        params: updateObj.params as Record<string, unknown> | undefined,
+        metadata: updateObj.metadata as Record<string, unknown> | undefined,
+        timestamp: new Date(),
+      };
+
+      // Process command through CommandProcessorService
+      return await this.commandProcessor.processCommand(
+        internalCommand,
+        state,
+        {
+          sourceNodeId,
+          validateCommand: true,
+          applyMetadata: true,
+        }
+      );
+    }
+
+    // Not a command - return as-is
+    return result;
+  }
+
+  /**
+   * Check if a value is a Command object
+   */
+  private isCommand(value: any): value is Command {
+    return (
+      value &&
+      typeof value === 'object' &&
+      'goto' in value &&
+      typeof value.goto === 'string'
+    );
+  }
 
   /**
    * Automagical memory enhancement for agent execution
@@ -193,6 +269,7 @@ export class NodeFactoryService {
 
   /**
    * Create worker node for supervisor pattern
+   * Now with Command processing support
    */
   async createWorkerNode(
     agent: AgentDefinition,
@@ -201,9 +278,11 @@ export class NodeFactoryService {
     (
       state: AgentState,
       runConfig?: RunnableConfig
-    ) => Promise<Partial<AgentState>>
+    ) => Promise<Partial<AgentState> | Command>
   > {
-    return async (state: AgentState): Promise<Partial<AgentState>> => {
+    return async (
+      state: AgentState
+    ): Promise<Partial<AgentState> | Command> => {
       try {
         // Filter messages if configured
         let filteredState = state;
@@ -217,47 +296,73 @@ export class NodeFactoryService {
         });
 
         // Execute agent with automagical memory enhancement
-        const result = await this.enhanceAgentWithMemory(
+        const agentResult = await this.enhanceAgentWithMemory(
           agent,
           filteredState,
           () => agent.nodeFunction(filteredState)
         );
 
-        return {
-          ...result,
-          current: agent.id,
-          metadata: {
-            ...state.metadata,
-            lastAgent: agent.id,
-            agentExecutionTime: new Date().toISOString(),
-            taskCompleted: state.task,
+        // Check if agent returned a Command object
+        if (this.isCommand(agentResult)) {
+          this.logger.debug(
+            `Worker ${agent.id} returned Command - processing`,
+            {
+              goto: agentResult.goto,
+            }
+          );
+
+          // Process command through CommandProcessorService
+          return await this.processAgentResult(
+            agentResult,
+            filteredState,
+            agent.id
+          );
+        }
+
+        // Agent returned plain state - wrap in Command for supervisor routing
+        return new Command({
+          goto: 'supervisor', // Return to supervisor after task completion
+          update: {
+            ...agentResult,
+            current: agent.id,
+            metadata: {
+              ...state.metadata,
+              lastAgent: agent.id,
+              agentExecutionTime: new Date().toISOString(),
+              taskCompleted: state.task,
+            },
           },
-        };
+        });
       } catch (error) {
         this.logger.error(`Worker agent ${agent.id} execution failed:`, error);
 
-        return {
-          messages: [
-            new AIMessage(
-              `Agent ${agent.name} encountered an error: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`
-            ),
-          ],
-          current: agent.id,
-          metadata: {
-            ...state.metadata,
-            lastAgent: agent.id,
-            agentError:
-              error instanceof Error ? error.message : 'Unknown error',
+        // Return Command with error information
+        return new Command({
+          goto: 'supervisor', // Return to supervisor even on error
+          update: {
+            messages: [
+              new AIMessage(
+                `Agent ${agent.name} encountered an error: ${
+                  error instanceof Error ? error.message : 'Unknown error'
+                }`
+              ),
+            ],
+            current: agent.id,
+            metadata: {
+              ...state.metadata,
+              lastAgent: agent.id,
+              agentError:
+                error instanceof Error ? error.message : 'Unknown error',
+            },
           },
-        };
+        });
       }
     };
   }
 
   /**
    * Create swarm node with handoff capabilities
+   * Now with Command processing support for sophisticated routing
    */
   async createSwarmNode(
     agent: AgentDefinition,
@@ -267,9 +372,11 @@ export class NodeFactoryService {
     (
       state: AgentState,
       runConfig?: RunnableConfig
-    ) => Promise<Partial<AgentState>>
+    ) => Promise<Partial<AgentState> | Command>
   > {
-    return async (state: AgentState): Promise<Partial<AgentState>> => {
+    return async (
+      state: AgentState
+    ): Promise<Partial<AgentState> | Command> => {
       try {
         this.logger.debug(`Executing swarm agent: ${agent.id}`, {
           enableDynamicHandoffs: config.enableDynamicHandoffs,
@@ -277,14 +384,29 @@ export class NodeFactoryService {
         });
 
         // Execute agent logic with automagical memory enhancement
-        const result = await this.enhanceAgentWithMemory(agent, state, () =>
-          agent.nodeFunction(state)
+        const agentResult = await this.enhanceAgentWithMemory(
+          agent,
+          state,
+          () => agent.nodeFunction(state)
         );
 
-        // Handle handoff tools if configured
+        // Check if agent returned a Command object with sophisticated routing
+        if (this.isCommand(agentResult)) {
+          this.logger.debug(
+            `Swarm agent ${agent.id} returned Command - processing`,
+            {
+              goto: agentResult.goto,
+            }
+          );
+
+          // Process command through CommandProcessorService for retry/skip/error handling
+          return await this.processAgentResult(agentResult, state, agent.id);
+        }
+
+        // Agent returned plain state - check for handoffs
         if (config.enableDynamicHandoffs && agent.handoffTools) {
           const handoffDecision = this.checkForHandoff(
-            result,
+            agentResult,
             agent.handoffTools
           );
 
@@ -302,56 +424,74 @@ export class NodeFactoryService {
               (tool) => tool.targetAgent === handoffDecision.targetAgent
             )?.contextFilter;
 
-            let filteredResult = result;
+            let filteredResult = agentResult;
             if (contextFilter) {
-              const filteredState = contextFilter({ ...state, ...result });
-              filteredResult = { ...result, ...filteredState };
+              const filteredState = contextFilter({
+                ...state,
+                ...agentResult,
+              });
+              filteredResult = { ...agentResult, ...filteredState };
             }
 
-            return {
-              ...filteredResult,
-              next: handoffDecision.targetAgent,
-              current: agent.id,
-              task: handoffDecision.task,
-              metadata: {
-                ...state.metadata,
-                handoffReason: handoffDecision.reason,
-                handoffTimestamp: new Date().toISOString(),
-                sourceAgent: agent.id,
+            // Return Command with activeAgent for swarm routing
+            return new Command({
+              goto: '__router__', // Official swarm router
+              update: {
+                ...filteredResult,
+                current: agent.id,
+                task: handoffDecision.task,
+                metadata: {
+                  ...state.metadata,
+                  active_agent: handoffDecision.targetAgent, // Track active agent
+                  handoff_from: agent.id,
+                  handoff_task: handoffDecision.task,
+                  handoff_round:
+                    ((state.metadata?.handoff_round as number) || 0) + 1,
+                  handoffReason: handoffDecision.reason,
+                  handoffTimestamp: new Date().toISOString(),
+                },
               },
-            };
+            });
           }
         }
 
-        return {
-          ...result,
-          current: agent.id,
-          next: result.next || MULTI_AGENT_CONSTANTS.END,
-          metadata: {
-            ...state.metadata,
-            lastAgent: agent.id,
-            agentExecutionTime: new Date().toISOString(),
+        // No handoff - end execution or continue based on result
+        return new Command({
+          goto: '__router__',
+          update: {
+            ...agentResult,
+            current: agent.id,
+            metadata: {
+              ...state.metadata,
+              active_agent: undefined, // Clear active agent to signal END
+              lastAgent: agent.id,
+              agentExecutionTime: new Date().toISOString(),
+            },
           },
-        };
+        });
       } catch (error) {
         this.logger.error(`Swarm agent ${agent.id} execution failed:`, error);
 
-        return {
-          messages: [
-            new AIMessage(
-              `Agent ${agent.name} encountered an error: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`
-            ),
-          ],
-          current: agent.id,
-          next: MULTI_AGENT_CONSTANTS.END,
-          metadata: {
-            ...state.metadata,
-            agentError:
-              error instanceof Error ? error.message : 'Unknown error',
+        // Return Command with error - end execution
+        return new Command({
+          goto: '__router__',
+          update: {
+            messages: [
+              new AIMessage(
+                `Agent ${agent.name} encountered an error: ${
+                  error instanceof Error ? error.message : 'Unknown error'
+                }`
+              ),
+            ],
+            current: agent.id,
+            metadata: {
+              ...state.metadata,
+              active_agent: undefined, // Clear to signal END
+              agentError:
+                error instanceof Error ? error.message : 'Unknown error',
+            },
           },
-        };
+        });
       }
     };
   }

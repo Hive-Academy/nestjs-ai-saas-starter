@@ -47,6 +47,19 @@ export { ToolRegistryService } from './lib/tools/tool-registry.service';
  */
 export { LlmProviderService } from './lib/llm/llm-provider.service';
 
+/**
+ * Command Processing Service - For workflow command handling and routing
+ *
+ * Implements the LangGraph Command pattern for multi-agent workflow control.
+ * Provides retry/skip/error recovery patterns for Command objects.
+ */
+export {
+  CommandProcessorService,
+  CommandBuilder,
+  type Command,
+  type CommandProcessingState,
+} from './lib/routing/command-processor.service';
+
 // ============================================================================
 // INTERNAL SERVICES - DO NOT USE DIRECTLY
 // ============================================================================
@@ -67,6 +80,13 @@ export { LlmProviderService } from './lib/llm/llm-provider.service';
 export * from './lib/interfaces/multi-agent.interface';
 export type * from './lib/interfaces/tool.interface';
 export * from './lib/types/agent-config.interface';
+
+// Provider types for workflow-engine integration
+export type {
+  AgentProvider,
+  ToolProvider,
+  WorkflowProvider,
+} from './lib/interfaces/multi-agent.interface';
 
 // Constants
 export * from './lib/constants/multi-agent.constants';

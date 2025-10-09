@@ -41,7 +41,8 @@
       "mcp__filesystem__read_text_file",
       "Bash(cat:*)",
       "Bash(git commit:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": [],

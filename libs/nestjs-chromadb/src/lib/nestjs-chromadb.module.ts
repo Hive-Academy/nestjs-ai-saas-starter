@@ -44,6 +44,7 @@ import { ChromaDBValidationService } from './services/core/chromadb-validation.s
 import { DocumentSanitizerService } from './services/core/validation/document-sanitizer.service';
 import { DocumentValidatorService } from './services/core/validation/document-validator.service';
 import { OptionsValidatorService } from './services/core/validation/options-validator.service';
+import { ChromaDBHealthIndicator } from './services/core/health.service';
 import { EmbeddingService } from './services/embedding.service';
 import { ChromaDBEmbeddingProcessorService } from './services/facade/chromadb-embedding-processor.service';
 import { ChromaDBPerformanceService } from './services/facade/chromadb-performance.service';
@@ -152,6 +153,7 @@ export class ChromaDBModule {
       ChromaDBDocumentService,
       ChromaDBRepositoryService,
       ChromaDBOperationsService,
+      ChromaDBHealthIndicator,
       DocumentValidatorService,
       OptionsValidatorService,
       DocumentSanitizerService,
@@ -180,6 +182,7 @@ export class ChromaDBModule {
         ChromaAdminService,
         TextSplitterService,
         MetadataExtractorService,
+        ChromaDBHealthIndicator,
         CHROMADB_CLIENT,
       ],
       global: true,
@@ -274,6 +277,7 @@ export class ChromaDBModule {
       OptionsValidatorService,
       DocumentSanitizerService,
       ChromaDBValidationService,
+      ChromaDBHealthIndicator,
       {
         provide: ChromaDBPerformanceService,
         useFactory: (
@@ -300,6 +304,7 @@ export class ChromaDBModule {
         TextSplitterService,
         MetadataExtractorService,
         CHROMADB_CLIENT,
+        ChromaDBHealthIndicator,
       ],
       global: true,
     };

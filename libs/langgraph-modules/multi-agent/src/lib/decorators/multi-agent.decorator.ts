@@ -27,6 +27,13 @@ export enum MultiAgentTopology {
    * Sequential pattern: Linear execution of agents in defined order
    */
   SEQUENTIAL = 'sequential',
+
+  /**
+   * Network pattern: All-to-all agent communication with LLM-based routing
+   * Each agent can communicate with any other agent
+   * @see https://langchain-ai.github.io/langgraph/concepts/multi_agent/#network
+   */
+  NETWORK = 'network',
 }
 
 /**

@@ -57,12 +57,14 @@ export class NetworkManagerService {
         this.agentRegistry.registerAgent(agent);
       }
 
-      // Validate graph configuration
-      this.graphBuilder.validateGraphConfiguration(
-        networkConfig.agents,
-        networkConfig.config,
-        networkConfig.type
-      );
+      // Validate graph configuration (skip for network type as it has different structure)
+      if (networkConfig.type !== 'network') {
+        this.graphBuilder.validateGraphConfiguration(
+          networkConfig.agents,
+          networkConfig.config as any,
+          networkConfig.type as any
+        );
+      }
 
       // Prepare compilation options with checkpointer if enabled
       const compilationOptions = await this.prepareCompilationOptions(

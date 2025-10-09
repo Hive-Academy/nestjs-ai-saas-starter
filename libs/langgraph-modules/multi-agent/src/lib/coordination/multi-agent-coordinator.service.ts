@@ -21,6 +21,7 @@ import {
 } from '../interfaces/multi-agent.interface';
 import { LlmProviderService } from '../llm/llm-provider.service';
 import { NetworkManagerService } from '../network/network-manager.service';
+import { CommandProcessorService } from '../routing/command-processor.service';
 import { MemoryCoordinationService } from './memory-coordination.service';
 import { NetworkSetupService } from './network-setup.service';
 import { StreamCoordinationService } from './stream-coordination.service';
@@ -47,6 +48,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
     private readonly workflowExecution: WorkflowExecutionCoordinationService,
     private readonly streamCoordination: StreamCoordinationService,
     private readonly memoryCoordination: MemoryCoordinationService,
+    // @ts-expect-error - Reserved for future Command processing integration
+    private readonly commandProcessor: CommandProcessorService,
     @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter,
     // @Inject('IStreamingService')
@@ -427,6 +430,47 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
+
+  /**
+   * Execute swarm workflow with peer-to-peer coordination
+   */
+  async executeSwarmWorkflow(
+    networkId: string,
+    input: {
+      messages: string[] | any[];
+      config?: any;
+      initialAgent?: string;
+      maxRounds?: number;
+    }
+  ): Promise<any> {
+    this.logger.log(`Executing swarm workflow: ${networkId}`, {
+      initialAgent: input.initialAgent,
+      maxRounds: input.maxRounds,
+    });
+
+    const networkConfig = this.networkManager.getNetworkConfig(networkId);
+    if (!networkConfig) {
+      throw new Error(`Network ${networkId} not found`);
+    }
+
+    if (networkConfig.type !== 'swarm') {
+      throw new Error(
+        `Network ${networkId} is not a swarm network (type: ${networkConfig.type})`
+      );
+    }
+
+    return this.workflowExecution.executeWorkflow(networkId, {
+      ...input,
+      config: {
+        ...input.config,
+        configurable: {
+          ...input.config?.configurable,
+          initialAgent: input.initialAgent,
+          maxRounds: input.maxRounds || 10,
+        },
+      },
+    });
+  }
 
   /**
    * Generate thread ID for a network (consistent naming)

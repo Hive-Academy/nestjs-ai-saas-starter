@@ -13,17 +13,7 @@ export * from './lib/core/graph-optimization.service';
 
 // Decorator Bridge Services (cleaned up)
 export * from './lib/services/decorator-translation.service';
-export * from './lib/services/enhanced-decorator-orchestrator.service';
-export * from './lib/services/enhanced-execution-context.service';
 export * from './lib/services/multi-agent-translation.service';
-export * from './lib/services/agent-workflow-bridge.service';
-
-// Enhanced Agent Architecture Types (cleaned up)
-export type {
-  InternalWorkflowDefinition,
-  AgentRegistration,
-  AgentInstance,
-} from './lib/services/agent-workflow-bridge.service';
 
 // CENTRALIZED REGISTRATION: The single source of truth for all agents, tools, workflows
 export * from './lib/services/central-registry.service';
@@ -52,10 +42,10 @@ export * from './lib/interfaces/workflow-engine.interface';
 export type * from './lib/interfaces/workflow-metadata.interface';
 
 // Specific type exports for external module imports
-export type { 
-  WorkflowState, 
-  WorkflowDefinition, 
-  WorkflowNode, 
+export type {
+  WorkflowState,
+  WorkflowDefinition,
+  WorkflowNode,
   WorkflowEdge,
   Command,
   ConditionalRouting,
@@ -63,7 +53,7 @@ export type {
   HumanFeedback,
   WorkflowNodeConfig,
   WorkflowEdgeConfig,
-  WorkflowExecutionConfig
+  WorkflowExecutionConfig,
 } from './lib/interfaces/workflow-engine.interface';
 
 // Multi-agent bridge exports are already included via the wildcard export above

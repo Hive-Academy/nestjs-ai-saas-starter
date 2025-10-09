@@ -5,32 +5,17 @@
 
 // Load encapsulated environment configurations before any other imports
 import { EnvLoader } from './app/config/env-loader.util';
-import { join } from 'path';
 
-// Initialize environment loading with only encapsulated .env files
-// Resolve project root: from apps/dev-brand-api -> ../../ (project root)
-const projectRoot = join(__dirname, '../../..');
-const envResult = EnvLoader.load({
-  rootDir: projectRoot,
-  envFiles: [
-    '.env.chromadb', // ChromaDB & Memory configuration
-    '.env.neo4j', // Neo4j configuration
-    '.env.llm', // LLM providers configuration
-    '.env.platform', // LangGraph platform configuration
-    '.env.app', // Application-level configuration
-  ],
-  expand: true,
-});
+const envResult = EnvLoader.load();
 
 console.log('🔧 Encapsulated environment loaded:', {
-  projectRoot,
   loadedFiles: envResult.loadedFiles,
   errors: envResult.errors,
 });
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { AppStreamingManager } from './app/services/app-streaming-manager.service';
 

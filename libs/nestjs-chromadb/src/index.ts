@@ -9,7 +9,6 @@ export type { EmbeddingProcessingOptions } from './lib/services/facade/chromadb-
 export { ChromaDBEmbeddingProcessorService } from './lib/services/facade/chromadb-embedding-processor.service';
 
 // Repository Operations (new split components)
-export * from './lib/services/core/collection.service';
 export * from './lib/services/embedding.service';
 export * from './lib/services/chroma-admin.service';
 export * from './lib/services/text-splitter.service';

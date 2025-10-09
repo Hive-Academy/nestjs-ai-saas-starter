@@ -23,6 +23,8 @@ import { MemoryCoordinationService } from './coordination/memory-coordination.se
 import { LlmProviderService } from './llm/llm-provider.service';
 // Tool services
 import { ToolRegistrationService } from './tools/tool-registration.service';
+// Routing services
+import { CommandProcessorService } from './routing/command-processor.service';
 // Tool services
 import {
   DEFAULT_MULTI_AGENT_OPTIONS,
@@ -114,6 +116,11 @@ export class MultiAgentModule {
         provide: TOOL_REGISTRY,
         useExisting: ToolRegistryService,
       },
+
+      // ============================================
+      // ROUTING SERVICES
+      // ============================================
+      CommandProcessorService,
     ];
 
     return {
@@ -134,6 +141,9 @@ export class MultiAgentModule {
 
         // Tool service alias token
         TOOL_REGISTRY,
+        LlmProviderService,
+        // Routing services (public API)
+        CommandProcessorService,
       ],
       global: true,
     };
@@ -183,7 +193,7 @@ export class MultiAgentModule {
       NetworkManagerService,
 
       // ============================================
-      // LLM SERVICES (Internal)
+      // LLM SERVICES
       // ============================================
       LlmProviderService,
 
@@ -210,6 +220,11 @@ export class MultiAgentModule {
         provide: TOOL_REGISTRY,
         useExisting: ToolRegistryService,
       },
+
+      // ============================================
+      // ROUTING SERVICES
+      // ============================================
+      CommandProcessorService,
     ];
 
     return {
@@ -230,6 +245,10 @@ export class MultiAgentModule {
 
         // Tool service alias token
         TOOL_REGISTRY,
+
+        // Routing services (public API)
+        CommandProcessorService,
+        LlmProviderService,
       ],
       global: true,
     };
