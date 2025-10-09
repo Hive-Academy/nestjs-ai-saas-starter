@@ -34,7 +34,7 @@ This NestJS AI SaaS Starter is a sophisticated monorepo designed for building en
 6. **NO CODE DUPLICATION**: Never create parallel implementations (v1, v2, legacy, enhanced versions)
 7. **NO COMPATIBILITY LAYERS**: Never build bridges, adapters, or version compatibility systems
 
-### 🔴 EXPANDED ANTI-BACKWARD COMPATIBILITY MANDATE
+### 🔴 ANTI-BACKWARD COMPATIBILITY
 
 **ZERO TOLERANCE FOR BACKWARD COMPATIBILITY CODE:**
 
