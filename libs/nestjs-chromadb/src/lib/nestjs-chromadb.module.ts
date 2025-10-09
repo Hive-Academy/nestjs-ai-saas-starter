@@ -100,10 +100,16 @@ export class ChromaDBModule {
       },
       {
         provide: ChromaDBCollectionService,
-        useFactory: (connectionService: ChromaDBConnectionService) => {
-          return new ChromaDBCollectionService(connectionService);
+        useFactory: (
+          connectionService: ChromaDBConnectionService,
+          embeddingService: EmbeddingService
+        ) => {
+          return new ChromaDBCollectionService(
+            connectionService,
+            embeddingService
+          );
         },
-        inject: [ChromaDBConnectionService],
+        inject: [ChromaDBConnectionService, EmbeddingService],
       },
       {
         provide: ChromaAdminService,
@@ -220,10 +226,16 @@ export class ChromaDBModule {
       },
       {
         provide: ChromaDBCollectionService,
-        useFactory: (connectionService: ChromaDBConnectionService) => {
-          return new ChromaDBCollectionService(connectionService);
+        useFactory: (
+          connectionService: ChromaDBConnectionService,
+          embeddingService: EmbeddingService
+        ) => {
+          return new ChromaDBCollectionService(
+            connectionService,
+            embeddingService
+          );
         },
-        inject: [ChromaDBConnectionService],
+        inject: [ChromaDBConnectionService, EmbeddingService],
       },
       {
         provide: ChromaAdminService,

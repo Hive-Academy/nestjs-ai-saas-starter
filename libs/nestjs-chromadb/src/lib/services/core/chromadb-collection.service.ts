@@ -6,10 +6,9 @@ import {
   EmbeddingFunction,
 } from 'chromadb';
 import { ChromaDBConnectionService } from './chromadb-connection.service';
+import { EmbeddingService } from '../embedding.service';
 import { ChromaCollectionInfo } from '../../interfaces/chromadb-service.interface';
-import {
-  ChromaDBCollectionNotFoundError,
-} from '../../errors/chromadb.errors';
+import { ChromaDBCollectionNotFoundError } from '../../errors/chromadb.errors';
 
 /**
  * ChromaDB Collection Management Service
@@ -21,7 +20,10 @@ import {
 export class ChromaDBCollectionService {
   private readonly logger = new Logger(ChromaDBCollectionService.name);
 
-  constructor(private readonly connectionService: ChromaDBConnectionService) {}
+  constructor(
+    private readonly connectionService: ChromaDBConnectionService,
+    private readonly embeddingService: EmbeddingService
+  ) {}
 
   /**
    * List all collections
@@ -51,17 +53,21 @@ export class ChromaDBCollectionService {
     return this.connectionService.executeWithRetry(async () => {
       const client = this.connectionService.getClient();
 
+      // Use provided embedding function or get from EmbeddingService
+      const finalEmbeddingFn =
+        embeddingFunction || this.embeddingService.getEmbeddingFunction();
+
       if (getOrCreate) {
         return await client.getOrCreateCollection({
           name,
           metadata,
-          embeddingFunction: embeddingFunction as EmbeddingFunction,
+          embeddingFunction: finalEmbeddingFn as EmbeddingFunction,
         });
       } else {
         return await client.createCollection({
           name,
           metadata,
-          embeddingFunction: embeddingFunction as EmbeddingFunction,
+          embeddingFunction: finalEmbeddingFn as EmbeddingFunction,
         });
       }
     });
@@ -77,10 +83,14 @@ export class ChromaDBCollectionService {
     return this.connectionService.executeWithRetry(async () => {
       const client = this.connectionService.getClient();
 
+      // Use provided embedding function or get from EmbeddingService
+      const finalEmbeddingFn =
+        embeddingFunction || this.embeddingService.getEmbeddingFunction();
+
       try {
         return await client.getCollection({
           name,
-          embeddingFunction: embeddingFunction as EmbeddingFunction,
+          embeddingFunction: finalEmbeddingFn as EmbeddingFunction,
         });
       } catch (error) {
         if (error instanceof Error && error.message.includes('not found')) {

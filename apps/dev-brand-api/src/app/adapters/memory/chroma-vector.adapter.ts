@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   IVectorService,
   VectorStoreData,
@@ -15,50 +15,57 @@ import {
 } from '@hive-academy/langgraph-memory';
 import { ChromaLangGraphStore } from '@hive-academy/langgraph-memory';
 import {
-  ChromaDBService,
-  BaseDocument,
-  ChromaSearchOptions,
+  getRepositoryToken as getChromaRepositoryToken,
   Where,
-  GetDocumentsOptions,
 } from '@hive-academy/nestjs-chromadb';
-import type { VectorMemoryMetadata } from '../../entities/chromadb/vector-memory.entity';
+import {
+  VectorMemoryEntity,
+  VectorMemoryMetadata,
+} from '../../entities/chromadb/vector-memory.entity';
+import { VectorMemoryRepository } from '../../repositories/chromadb/vector-memory.repository';
 
 /**
  * Application-specific ChromaDB adapter for the Memory module.
  *
- * ARCHITECTURE: Multi-Collection Support
- * --------------------------------------
- * This adapter uses ChromaDBService directly (not repository pattern) because:
- * - IVectorService requires multi-collection support (collection as method parameter)
- * - ChromaRepository binds to a SINGLE collection via decorator
- * - Repository methods don't support dynamic collection parameter
- * - ChromaDBService provides native multi-collection operations
+ * ARCHITECTURE: TypeORM-Style Repository Pattern (CLEAN - matches Neo4j pattern)
+ * -------------------------------------------------------------------------------
+ * This adapter uses VectorMemoryRepository following the same pattern as Neo4jGraphAdapter:
+ * - Uses @Inject(getChromaRepositoryToken(VectorMemoryEntity)) for clean DI
+ * - Entity-based registration ensures proper collection initialization
+ * - Automatic embedding function injection via entity decorator
+ * - Type-safe operations with VectorMemoryEntity and VectorMemoryMetadata
+ * - Inherits 15+ CRUD methods from ChromaDBRepository<T>
+ * - NO low-level ChromaDBService exposure (kept inside library)
  *
- * Benefits of ChromaDBService:
- * - Full multi-collection support
- * - Auto-embedding generation
- * - Performance monitoring
- * - Caching and optimization
- * - Type-safe operations
+ * Benefits of Repository Token Pattern:
+ * - Clean dependency injection (matches Neo4j adapter pattern)
+ * - No low-level service exposure outside library
+ * - Proper entity/collection registration
+ * - Type-safe metadata handling
+ * - Zero boilerplate CRUD operations
  */
 @Injectable()
 export class ChromaVectorAdapter extends IVectorService {
   private readonly logger = new Logger(ChromaVectorAdapter.name);
 
-  constructor(private readonly chromaDB: ChromaDBService) {
+  constructor(
+    @Inject(getChromaRepositoryToken(VectorMemoryEntity))
+    private readonly vectorMemoryRepo: VectorMemoryRepository
+  ) {
     super();
-    this.logger.debug('ChromaVectorAdapter initialized with ChromaDBService');
+    this.logger.debug(
+      'ChromaVectorAdapter initialized with VectorMemoryRepository (clean token pattern)'
+    );
   }
 
   /**
-   * Store a single document using ChromaDBService
+   * Store a single document using VectorMemoryRepository
+   * Collection is bound to 'vector-memories' via entity decorator
    */
   override async store(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     data: VectorStoreData
   ): Promise<string> {
-    this.validateCollection(collection);
-
     try {
       const defaultState: AgentState = {
         messages: [],
@@ -71,48 +78,47 @@ export class ChromaVectorAdapter extends IVectorService {
         ? (data.metadata as unknown as AgentState)
         : defaultState;
 
-      const document: BaseDocument<VectorMemoryMetadata> = {
-        id: data.id || this.generateId(),
-        content: data.document,
-        embedding: data.embedding ? [...data.embedding] : undefined,
-        metadata: {
-          agentId: (data.metadata?.agentId as string) || 'default',
-          threadId: (data.metadata?.threadId as string) || 'unknown',
-          userId: (data.metadata?.userId as string) || 'system',
-          importance: this.calculateImportance(data.document, metadataOrState),
-          classification: this.classifyMemory(data.document, metadataOrState),
-          timestamp: new Date().toISOString(),
-          ...data.metadata,
-        } as VectorMemoryMetadata,
+      const metadata: VectorMemoryMetadata = {
+        agentId: (data.metadata?.agentId as string) || 'default',
+        threadId: (data.metadata?.threadId as string) || 'unknown',
+        userId: (data.metadata?.userId as string) || 'system',
+        importance: this.calculateImportance(data.document, metadataOrState),
+        classification: this.classifyMemory(data.document, metadataOrState),
+        timestamp: new Date().toISOString(),
+        ...data.metadata,
       };
 
-      await this.chromaDB.addDocuments(collection, [document]);
+      // Use repository (collection bound at instantiation)
+      const entity = await this.vectorMemoryRepo.create({
+        id: data.id,
+        content: data.document,
+        embedding: data.embedding ? [...data.embedding] : undefined,
+        metadata,
+      });
 
       this.logger.debug(
-        `Stored document ${document.id} in collection ${collection}`
+        `Stored document ${entity.id} via VectorMemoryRepository`
       );
-      return document.id;
+      return entity.id;
     } catch (error) {
       this.logger.error(
-        `Failed to store document in collection ${collection}`,
+        `Failed to store document via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError('Failed to store document', 'store', {
-        collection,
+        collection: 'vector-memories',
         error: this.serializeError(error),
       });
     }
   }
 
   /**
-   * Store multiple documents in batch using ChromaDBService
+   * Store multiple documents in batch using VectorMemoryRepository.createMany
    */
   override async storeBatch(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     data: readonly VectorStoreData[]
   ): Promise<readonly string[]> {
-    this.validateCollection(collection);
-
     if (data.length === 0) {
       return [];
     }
@@ -125,64 +131,62 @@ export class ChromaVectorAdapter extends IVectorService {
         current: 'default',
       };
 
-      const documents: BaseDocument<VectorMemoryMetadata>[] = data.map(
-        (item) => {
-          const metadataOrState = item.metadata
-            ? (item.metadata as unknown as AgentState)
-            : defaultState;
+      const documents = data.map((item) => {
+        const metadataOrState = item.metadata
+          ? (item.metadata as unknown as AgentState)
+          : defaultState;
 
-          return {
-            id: item.id || this.generateId(),
-            content: item.document,
-            embedding: item.embedding ? [...item.embedding] : undefined,
-            metadata: {
-              agentId: (item.metadata?.agentId as string) || 'default',
-              threadId: (item.metadata?.threadId as string) || 'unknown',
-              userId: (item.metadata?.userId as string) || 'system',
-              importance: this.calculateImportance(
-                item.document,
-                metadataOrState
-              ),
-              classification: this.classifyMemory(
-                item.document,
-                metadataOrState
-              ),
-              timestamp: new Date().toISOString(),
-              ...item.metadata,
-            } as VectorMemoryMetadata,
-          };
-        }
-      );
+        return {
+          id: item.id || this.generateId(),
+          content: item.document,
+          embedding: item.embedding ? [...item.embedding] : undefined,
+          metadata: {
+            agentId: (item.metadata?.agentId as string) || 'default',
+            threadId: (item.metadata?.threadId as string) || 'unknown',
+            userId: (item.metadata?.userId as string) || 'system',
+            importance: this.calculateImportance(
+              item.document,
+              metadataOrState
+            ),
+            classification: this.classifyMemory(item.document, metadataOrState),
+            timestamp: new Date().toISOString(),
+            ...item.metadata,
+          } as VectorMemoryMetadata,
+        };
+      });
 
-      await this.chromaDB.addDocuments(collection, documents);
+      // Use repository.createMany instead of chromaDB.addDocuments
+      const result = await this.vectorMemoryRepo.createMany(documents);
 
       this.logger.debug(
-        `Batch stored ${documents.length} documents in collection ${collection}`
+        `Batch stored ${result.successCount} documents via VectorMemoryRepository`
       );
 
-      return documents.map((doc) => doc.id);
+      return result.success.map((doc) => doc.id);
     } catch (error) {
       this.logger.error(
-        `Failed to batch store documents in collection ${collection}`,
+        `Failed to batch store documents via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError(
         'Failed to batch store documents',
         'storeBatch',
-        { collection, count: data.length, error: this.serializeError(error) }
+        {
+          collection: 'vector-memories',
+          count: data.length,
+          error: this.serializeError(error),
+        }
       );
     }
   }
 
   /**
-   * Search for similar documents using ChromaDBService
+   * Search for similar documents using VectorMemoryRepository
    */
   override async search(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     query: VectorSearchQuery
   ): Promise<readonly VectorSearchResult[]> {
-    this.validateCollection(collection);
-
     if (!query.queryText && !query.queryEmbedding) {
       throw new InvalidInputError(
         'Either queryText or queryEmbedding must be provided'
@@ -190,87 +194,114 @@ export class ChromaVectorAdapter extends IVectorService {
     }
 
     try {
-      const searchOptions: ChromaSearchOptions = {
-        nResults: query.limit || 10,
-        where: query.filter as Where,
-        includeMetadata: true,
-        includeDocuments: true,
-        includeDistances: true,
-      };
+      // Text-based search
+      if (query.queryText) {
+        const entities = await this.vectorMemoryRepo.searchWithScores(
+          query.queryText,
+          {
+            limit: query.limit || 10,
+            where: query.filter as Where,
+          }
+        );
 
-      const queryEmbeddings = query.queryEmbedding
-        ? [[...query.queryEmbedding]]
-        : undefined;
+        const searchResults: VectorSearchResult[] = entities
+          .filter((result) => {
+            // Apply minScore filter if provided
+            return !query.minScore || result.score >= query.minScore;
+          })
+          .map((result) => ({
+            id: result.document.id,
+            document: result.document.content,
+            metadata: result.document.metadata as Record<string, unknown>,
+            distance: result.distance || 0,
+            relevanceScore: result.score,
+          }));
 
-      const result = await this.chromaDB.searchDocuments(
-        collection,
-        query.queryText ? [query.queryText] : [],
-        queryEmbeddings,
-        searchOptions
-      );
+        this.logger.debug(
+          `Found ${searchResults.length} similar documents via VectorMemoryRepository (text search)`
+        );
 
-      const searchResults: VectorSearchResult[] = [];
-      const ids = result.ids[0] || [];
-      const documents = result.documents?.[0] || [];
-      const metadatas = result.metadatas?.[0] || [];
-      const distances = result.distances?.[0] || [];
-
-      for (let i = 0; i < ids.length; i++) {
-        const distance = distances[i] || 0;
-        // Apply minScore filter if provided (distance threshold)
-        if (query.minScore && distance > query.minScore) {
-          continue;
-        }
-
-        searchResults.push({
-          id: ids[i],
-          document: (documents[i] as string) || '',
-          metadata: (metadatas[i] as Record<string, unknown>) || {},
-          distance: distance,
-          relevanceScore: 1 - distance, // Convert distance to similarity score
-        });
+        return searchResults;
       }
 
-      this.logger.debug(
-        `Found ${searchResults.length} similar documents in collection ${collection}`
-      );
+      // Embedding-based search
+      if (query.queryEmbedding) {
+        const entities = await this.vectorMemoryRepo.searchSimilar(
+          query.queryEmbedding as number[],
+          {
+            limit: query.limit || 10,
+            where: query.filter as Where,
+          }
+        );
 
-      return searchResults;
+        const searchResults: VectorSearchResult[] = entities
+          .filter((entity) => {
+            // Apply minScore filter if provided (use distance for embedding search)
+            if (query.minScore && entity.embedding) {
+              const distance = this.calculateDistance(
+                query.queryEmbedding!,
+                entity.embedding
+              );
+              return distance <= query.minScore;
+            }
+            return true;
+          })
+          .map((entity) => {
+            const distance = entity.embedding
+              ? this.calculateDistance(query.queryEmbedding!, entity.embedding)
+              : 0;
+
+            return {
+              id: entity.id,
+              document: entity.content,
+              metadata: entity.metadata as Record<string, unknown>,
+              distance,
+              relevanceScore: 1 - distance,
+            };
+          });
+
+        this.logger.debug(
+          `Found ${searchResults.length} similar documents via VectorMemoryRepository (embedding search)`
+        );
+
+        return searchResults;
+      }
+
+      return [];
     } catch (error) {
       this.logger.error(
-        `Failed to search documents in collection ${collection}`,
+        `Failed to search documents via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError('Failed to search documents', 'search', {
-        collection,
+        collection: 'vector-memories',
         error: this.serializeError(error),
       });
     }
   }
 
   /**
-   * Delete documents by IDs using ChromaDBService
+   * Delete documents by IDs using VectorMemoryRepository
    */
   override async delete(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     ids: readonly string[]
   ): Promise<void> {
-    this.validateCollection(collection);
     this.validateIds(ids);
 
     try {
-      await this.chromaDB.deleteDocuments(collection, [...ids], undefined);
+      await this.vectorMemoryRepo.deleteMany([...ids]);
 
       this.logger.debug(
-        `Deleted ${ids.length} documents from collection ${collection}`
+        `Deleted ${ids.length} documents via VectorMemoryRepository`
       );
     } catch (error) {
       this.logger.error(
-        `Failed to delete documents from collection ${collection}`,
+        `Failed to delete documents via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError('Failed to delete documents', 'delete', {
-        collection,
+        collection: 'vector-memories',
         ids: [...ids],
         error: this.serializeError(error),
       });
@@ -278,135 +309,149 @@ export class ChromaVectorAdapter extends IVectorService {
   }
 
   /**
-   * Delete documents by filter criteria using ChromaDBService
+   * Delete documents by filter criteria using VectorMemoryRepository
    */
   override async deleteByFilter(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     filter: Record<string, unknown>
   ): Promise<number> {
-    this.validateCollection(collection);
-
     if (!filter || Object.keys(filter).length === 0) {
       throw new InvalidInputError('Filter criteria are required for deletion');
     }
 
     try {
       // Get count before deletion
-      const countBefore = await this.chromaDB.countDocuments(collection);
+      const countBefore = await this.vectorMemoryRepo.count(filter as Where);
 
       // Delete using filter
-      await this.chromaDB.deleteDocuments(
-        collection,
-        [],
-        filter as Where,
-        undefined
+      const result = await this.vectorMemoryRepo.deleteByFilter(
+        filter as Where
       );
 
-      // Get count after deletion
-      const countAfter = await this.chromaDB.countDocuments(collection);
-      const deletedCount = countBefore - countAfter;
+      const deletedCount = result.successCount || 0;
 
       this.logger.debug(
-        `Deleted ${deletedCount} documents by filter from collection ${collection}`
+        `Deleted ${deletedCount} from ${countBefore} documents by filter via VectorMemoryRepository`
       );
 
       return deletedCount;
     } catch (error) {
       this.logger.error(
-        `Failed to delete documents by filter from collection ${collection}`,
+        `Failed to delete documents by filter via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError(
         'Failed to delete documents by filter',
         'deleteByFilter',
-        { collection, filter, error: this.serializeError(error) }
+        {
+          collection: 'vector-memories',
+          filter,
+          error: this.serializeError(error),
+        }
       );
     }
   }
 
   /**
-   * Get collection statistics using ChromaDBService
+   * Get collection statistics using VectorMemoryRepository
    */
   override async getStats(collection: string): Promise<VectorStats> {
-    this.validateCollection(collection);
-
     try {
-      const count = await this.chromaDB.countDocuments(collection);
-      const metadata = await this.chromaDB.getCollectionMetadata(collection);
+      const count = await this.vectorMemoryRepo.count();
+      const collectionInfo = await this.vectorMemoryRepo.getCollectionInfo();
 
       return {
         documentCount: count,
         collectionSize: 0, // Not directly available from ChromaDB
         lastUpdated: new Date(),
-        dimensions: metadata?.dimensions as number | undefined,
+        dimensions: collectionInfo.metadata?.dimensions as number | undefined,
       };
     } catch (error) {
       this.logger.error(
-        `Failed to get stats for collection ${collection}`,
+        `Failed to get stats via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError(
         'Failed to get collection statistics',
         'getStats',
-        { collection, error: this.serializeError(error) }
+        {
+          collection: 'vector-memories',
+          error: this.serializeError(error),
+        }
       );
     }
   }
 
   /**
-   * Get documents with optional filtering using ChromaDBService
+   * Get documents with optional filtering using VectorMemoryRepository
    */
   override async getDocuments(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     options: VectorGetOptions = {}
   ): Promise<VectorGetResult> {
-    this.validateCollection(collection);
-
     try {
-      const getOptions: GetDocumentsOptions = {
-        ids: options.ids ? [...options.ids] : undefined,
-        where: options.where as Where,
-        limit: options.limit,
-        offset: options.offset,
-        includeMetadata: options.includeMetadata,
-        includeDocuments: options.includeDocuments,
-      };
+      let entities: VectorMemoryEntity[];
 
-      const result = await this.chromaDB.getDocuments(collection, getOptions);
+      // Get by IDs if provided
+      if (options.ids && options.ids.length > 0) {
+        entities = await this.vectorMemoryRepo.findByIds([...options.ids]);
+      }
+      // Get by filter if provided
+      else if (options.where) {
+        entities = await this.vectorMemoryRepo.findAll({
+          where: options.where as Where,
+          limit: options.limit,
+        });
+      }
+      // Get all with pagination
+      else {
+        entities = await this.vectorMemoryRepo.findAll({
+          limit: options.limit,
+        });
+      }
+
+      // Apply offset if provided (client-side pagination)
+      if (options.offset) {
+        entities = entities.slice(options.offset);
+      }
 
       this.logger.debug(
-        `Retrieved ${result.ids.length} documents from collection ${collection}`
+        `Retrieved ${entities.length} documents via VectorMemoryRepository`
       );
 
       return {
-        ids: result.ids,
+        ids: entities.map((e) => e.id),
         documents:
           options.includeDocuments !== false
-            ? (result.documents as (string | null)[])
+            ? entities.map((e) => e.content)
             : undefined,
         metadatas:
           options.includeMetadata !== false
-            ? (result.metadatas as (Record<string, unknown> | null)[])
+            ? entities.map((e) => e.metadata as Record<string, unknown>)
             : undefined,
         embeddings: options.includeEmbeddings
-          ? (result.embeddings as number[][])
+          ? entities.map((e) => (e.embedding ? [...e.embedding] : []))
           : undefined,
       };
     } catch (error) {
       this.logger.error(
-        `Failed to get documents from collection ${collection}`,
+        `Failed to get documents via VectorMemoryRepository`,
         error
       );
       throw new VectorOperationError(
         'Failed to get documents',
         'getDocuments',
-        { collection, options, error: this.serializeError(error) }
+        {
+          collection: 'vector-memories',
+          options,
+          error: this.serializeError(error),
+        }
       );
     }
   }
 
   /**
-   * Validate collection name
+   * Validate collection name (kept for interface compatibility, but collection is bound)
    */
   protected override validateCollection(collection: string): void {
     if (!collection || collection.trim().length === 0) {
@@ -437,9 +482,35 @@ export class ChromaVectorAdapter extends IVectorService {
     return { error: String(error) };
   }
 
-  // Agent state-aware memory storage (business logic)
+  /**
+   * Calculate Euclidean distance between two vectors
+   */
+  private calculateDistance(
+    embedding1: readonly number[],
+    embedding2: readonly number[]
+  ): number {
+    if (embedding1.length !== embedding2.length) {
+      return 1.0; // Maximum distance if dimensions don't match
+    }
+
+    let sum = 0;
+    for (let i = 0; i < embedding1.length; i++) {
+      const diff = embedding1[i] - embedding2[i];
+      sum += diff * diff;
+    }
+
+    return Math.sqrt(sum);
+  }
+
+  // ============================================================================
+  // Agent-Specific Business Logic
+  // ============================================================================
+
+  /**
+   * Store agent memory with state-aware metadata
+   */
   async storeAgentMemory(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     agentId: string,
     state: AgentState,
     memory: string,
@@ -464,9 +535,11 @@ export class ChromaVectorAdapter extends IVectorService {
     });
   }
 
-  // NEW: Multi-faceted agent memory search
+  /**
+   * Multi-faceted agent memory search (thread, user, agent context)
+   */
   async searchAgentMemories(
-    collection: string,
+    collection: string, // Ignored - using repository's bound collection
     query: string,
     state: AgentState,
     limit = 10
@@ -510,12 +583,17 @@ export class ChromaVectorAdapter extends IVectorService {
     };
   }
 
-  // NEW: LangGraph Store interface provider
+  /**
+   * Get LangGraph Store interface for this adapter
+   */
   getLangGraphStore(collection = 'langgraph_store'): ChromaLangGraphStore {
     return new ChromaLangGraphStore(this, collection);
   }
 
-  // Private helper methods
+  // ============================================================================
+  // Private Helper Methods
+  // ============================================================================
+
   private classifyMemory(memory: string, state: AgentState): string {
     if (memory.includes('error') || memory.includes('failed')) return 'error';
     if (memory.includes('success') || memory.includes('completed'))
