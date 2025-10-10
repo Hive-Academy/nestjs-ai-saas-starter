@@ -16,6 +16,7 @@ import {
   GraphNode,
   TransactionError,
   AgentState,
+  MemoryEntry,
 } from '@hive-academy/langgraph-memory';
 
 /**
@@ -208,5 +209,30 @@ export class Neo4jGraphAdapter extends IGraphService {
       memoryIds,
       similarityThreshold
     );
+  }
+
+  // ============================================================================
+  // PRIORITY 0: CORE MEMORY TRACKING OPERATIONS
+  // ============================================================================
+
+  /**
+   * Track a memory entry in the graph database - delegates to repository
+   */
+  async trackMemory(memory: MemoryEntry): Promise<void> {
+    return this.memoryGraphRepo.trackMemory(memory);
+  }
+
+  /**
+   * Track multiple memories in batch - delegates to repository
+   */
+  async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
+    return this.memoryGraphRepo.trackMemoriesBatch(memories);
+  }
+
+  /**
+   * Delete memories from graph - delegates to repository
+   */
+  async deleteMemories(memoryIds: readonly string[]): Promise<number> {
+    return this.memoryGraphRepo.deleteMemories(memoryIds);
   }
 }

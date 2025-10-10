@@ -1,7 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
-    "allow": ["mcp__sequential-thinking__sequentialthinking"],
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(cat:*)",
+      "Bash(npx nx build:*)",
+      "Bash(npx tsc:*)"
+    ],
     "deny": [],
     "ask": [],
     "additionalDirectories": ["D:\\projects\\nestjs-ai-saas-starter"]

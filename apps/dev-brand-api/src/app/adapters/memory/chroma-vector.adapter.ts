@@ -12,6 +12,7 @@ import {
   AgentState,
   AgentMemoryContext,
   MemoryEntry,
+  MemoryMetadata,
 } from '@hive-academy/langgraph-memory';
 import { ChromaLangGraphStore } from '@hive-academy/langgraph-memory';
 import {
@@ -137,7 +138,7 @@ export class ChromaVectorAdapter extends IVectorService {
           : defaultState;
 
         return {
-          id: item.id || this.generateId(),
+          id: item.id, // Repository generates ID if not provided (crypto.randomUUID)
           content: item.document,
           embedding: item.embedding ? [...item.embedding] : undefined,
           metadata: {
@@ -669,10 +670,199 @@ export class ChromaVectorAdapter extends IVectorService {
     return patterns;
   }
 
+  // Note: generateId() is now handled by VectorMemoryRepository
+  // Repository uses crypto.randomUUID() with fallback (inherited from ChromaDBRepository)
+
+  // ============================================================================
+  // Memory Business Logic Methods - Pure Delegation to Repository
+  // ============================================================================
+
   /**
-   * Generate a unique ID for documents
+   * Store a single memory entry - delegates to repository
    */
-  private generateId(): string {
-    return `mem-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  async storeMemory(
+    threadId: string,
+    content: string,
+    metadata?: Partial<MemoryMetadata>,
+    userId?: string
+  ): Promise<MemoryEntry> {
+    return await this.vectorMemoryRepo.storeMemory(
+      threadId,
+      content,
+      metadata,
+      userId
+    );
+  }
+
+  /**
+   * Store multiple memory entries in batch - delegates to repository
+   */
+  async storeMemoriesBatch(
+    threadId: string,
+    entries: ReadonlyArray<{
+      content: string;
+      metadata?: Partial<MemoryMetadata>;
+    }>,
+    userId?: string
+  ): Promise<readonly MemoryEntry[]> {
+    return await this.vectorMemoryRepo.storeMemoriesBatch(
+      threadId,
+      entries,
+      userId
+    );
+  }
+
+  /**
+   * Retrieve memories by thread ID - delegates to repository
+   */
+  async retrieveByThread(
+    threadId: string,
+    limit = 100
+  ): Promise<readonly MemoryEntry[]> {
+    return await this.vectorMemoryRepo.retrieveByThread(threadId, limit);
+  }
+
+  /**
+   * Search for similar memories using semantic search - delegates to repository
+   */
+  async searchMemoriesSimilar(
+    query: string,
+    filter: Record<string, unknown> = {},
+    limit = 10
+  ): Promise<readonly MemoryEntry[]> {
+    return await this.vectorMemoryRepo.searchMemoriesSimilar(
+      query,
+      filter,
+      limit
+    );
+  }
+
+  /**
+   * Delete memories by IDs - delegates to repository
+   */
+  async deleteMemories(memoryIds: readonly string[]): Promise<number> {
+    return await this.vectorMemoryRepo.deleteMemories(memoryIds);
+  }
+
+  /**
+   * Clear all memories for a thread - delegates to repository
+   */
+  async clearThread(threadId: string): Promise<void> {
+    return await this.vectorMemoryRepo.clearThread(threadId);
+  }
+
+  /**
+   * Get memory count for a thread - delegates to repository
+   */
+  async getThreadCount(threadId: string): Promise<number> {
+    return await this.vectorMemoryRepo.getThreadCount(threadId);
+  }
+
+  /**
+   * Get vector storage statistics - delegates to repository
+   */
+  async getVectorStats(): Promise<{
+    totalMemories: number;
+    averageSize: number;
+    totalStorageUsed: number;
+  }> {
+    return await this.vectorMemoryRepo.getVectorStats();
+  }
+
+  /**
+   * Get operation metrics - delegates to repository
+   */
+  async getOperationMetrics(): Promise<{
+    searchCount: number;
+    averageSearchTime: number;
+    summarizationCount: number;
+    cacheHitRate: number;
+  }> {
+    return await this.vectorMemoryRepo.getOperationMetrics();
+  }
+
+  /**
+   * Build vector-based semantic relationships between memories
+   *
+   * Uses vector similarity search to find related memories and returns
+   * pairs with their similarity scores. These can then be used by the
+   * graph service to create actual relationship edges.
+   */
+  async buildVectorBasedRelationships(
+    maxRelationships: number,
+    similarityThreshold: number,
+    countLimit: number
+  ): Promise<
+    ReadonlyArray<{
+      fromMemoryId: string;
+      toMemoryId: string;
+      similarityScore: number;
+    }>
+  > {
+    try {
+      // Get all memories (limited by countLimit)
+      const allMemories = await this.vectorMemoryRepo.findAll({
+        limit: countLimit,
+      });
+
+      if (allMemories.length === 0) {
+        this.logger.debug('No memories found for relationship building');
+        return [];
+      }
+
+      this.logger.debug(
+        `Building vector-based relationships for ${allMemories.length} memories ` +
+          `(max: ${maxRelationships} per memory, threshold: ${similarityThreshold})`
+      );
+
+      const relationships: Array<{
+        fromMemoryId: string;
+        toMemoryId: string;
+        similarityScore: number;
+      }> = [];
+
+      // For each memory, find similar memories
+      for (const memory of allMemories) {
+        if (!memory.embedding || memory.embedding.length === 0) {
+          continue; // Skip memories without embeddings
+        }
+
+        // Search for similar memories using embedding
+        const similarMemories = await this.search('vector-memories', {
+          queryEmbedding: memory.embedding,
+          limit: maxRelationships + 1, // +1 to exclude self
+          minScore: similarityThreshold,
+        });
+
+        // Create relationship pairs (exclude self-reference)
+        for (const similar of similarMemories) {
+          if (similar.id !== memory.id && similar.relevanceScore) {
+            relationships.push({
+              fromMemoryId: memory.id,
+              toMemoryId: similar.id,
+              similarityScore: similar.relevanceScore,
+            });
+          }
+        }
+      }
+
+      this.logger.debug(
+        `Built ${relationships.length} vector-based relationships`
+      );
+
+      return relationships;
+    } catch (error) {
+      this.logger.error('Failed to build vector-based relationships', error);
+      throw new VectorOperationError(
+        'Failed to build vector-based relationships',
+        'buildVectorBasedRelationships',
+        {
+          maxRelationships,
+          similarityThreshold,
+          countLimit,
+          error: this.serializeError(error),
+        }
+      );
+    }
   }
 }

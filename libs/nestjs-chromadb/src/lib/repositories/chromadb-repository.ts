@@ -851,7 +851,7 @@ export class ChromaDBRepository<T extends BaseDocument> {
    *
    * @returns UUID string
    */
-  private generateId(): string {
+  public generateId(): string {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
     }

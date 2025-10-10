@@ -23,6 +23,7 @@ import type {
   GraphOperation,
   GraphBatchResult,
   GraphFindCriteria,
+  MemoryEntry,
 } from '@hive-academy/langgraph-memory';
 import { GraphTraversalService } from '../services/graph-traversal.service';
 import { GraphAgentService } from '../services/graph-agent.service';
@@ -175,6 +176,30 @@ export class MemoryGraphRepository extends Neo4jRepositoryBase<Memory> {
       memoryIds,
       similarityThreshold
     );
+  }
+
+  /**
+   * Track a memory entry in graph - delegates to agent service
+   */
+  @Safe()
+  async trackMemory(memory: MemoryEntry): Promise<void> {
+    return this.agentService.trackMemory(memory);
+  }
+
+  /**
+   * Track multiple memories in batch - delegates to agent service
+   */
+  @Safe()
+  async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
+    return this.agentService.trackMemoriesBatch(memories);
+  }
+
+  /**
+   * Delete memories from graph - delegates to agent service
+   */
+  @Safe()
+  async deleteMemories(memoryIds: readonly string[]): Promise<number> {
+    return this.agentService.deleteMemories(memoryIds);
   }
 
   // ============================================================================
