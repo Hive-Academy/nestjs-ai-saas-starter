@@ -243,19 +243,30 @@ npx nx build dev-brand-api                   # ✅ Success (4.28s)
 
 ---
 
-## Phase 2: Refactor AgentMemoryBridgeService ⏳ PENDING
+## Phase 2: Refactor AgentMemoryBridgeService 🔄 ACTIVE (Architecture Review Complete)
 
-### Subtask 2.1: Update constructor signature
+**Architecture Document**: `task-tracking/TASK_2025_005/phase-2-architecture.md`
 
-**Current Constructor** (BROKEN):
+**Status**: ✅ Architecture Approved - Ready for Implementation
 
-```typescript
-constructor(
-  private readonly memoryService: MemoryService,  // ❌ Bypasses adapters
-  @Optional() @Inject('ICheckpointAdapter')
-  private readonly checkpointAdapter?: ICheckpointAdapter
-) {}
-```
+**Total Methods Analyzed**: 17 (5 require refactoring, 3 review only, 2 no changes, 1 new)
+
+**Implementation Phases**: 4 phases (9-12 hours estimated)
+
+---
+
+### Phase 2.1: Constructor and Simple Methods ⏳ PENDING (2-3 hours)
+
+**Scope**:
+
+1. Update constructor signature (inject IVectorService, IGraphService, IStoreService)
+2. Refactor `searchAgentMemories()` (LOW complexity)
+3. Refactor `clearAgentMemories()` (LOW complexity)
+4. Add `getStore()` method (NEW)
+
+**Files to Modify**:
+
+- `agent-memory-bridge.service.ts` (constructor + 2 methods + 1 new method)
 
 **Target Constructor**:
 
@@ -265,23 +276,100 @@ constructor(
   private readonly vectorService: IVectorService,  // ✅ Direct adapter
   @Inject('IGraphService')
   private readonly graphService: IGraphService,    // ✅ Direct adapter
+  @Inject('IStoreService')
+  private readonly storeService: IStoreService,    // ✅ NEW: Store adapter
   @Optional() @Inject('ICheckpointAdapter')
   private readonly checkpointAdapter?: ICheckpointAdapter
 ) {}
 ```
 
+**Acceptance Criteria**:
+
+- [ ] Constructor refactored (MemoryService removed, adapters injected)
+- [ ] `searchAgentMemories()` refactored to use vectorService
+- [ ] `clearAgentMemories()` refactored to use vectorService + graphService
+- [ ] `getStore()` implemented
+- [ ] Build checkpoint passes
+
 ---
 
-### Subtask 2.2: Refactor all 15+ methods
+### Phase 2.2: Medium Complexity Methods ⏳ PENDING (2-3 hours)
 
-**Methods Requiring Refactoring**:
+**Scope**:
 
-1. `getAgentMemoryContext()` - Replace memoryService.searchForContext() with vectorService.searchAgentMemories()
-2. `storeAgentMemory()` - Replace memoryService.store() with vectorService.storeAgentMemory()
-3. `storeAgentMemoriesBatch()` - Replace memoryService.storeBatch() with vectorService batch methods
-4. `searchAgentMemories()` - Replace memoryService.search() with direct vectorService calls
-5. `clearAgentMemories()` - Replace memoryService.delete() with vectorService.delete()
-6. Additional 10+ helper methods
+1. Refactor `storeAgentMemory()` (MEDIUM complexity)
+2. Refactor `storeAgentMemoriesBatch()` (MEDIUM complexity)
+
+**Files to Modify**:
+
+- `agent-memory-bridge.service.ts` (2 methods)
+
+**Acceptance Criteria**:
+
+- [ ] `storeAgentMemory()` refactored (vectorService + graphService)
+- [ ] `storeAgentMemoriesBatch()` refactored (vectorService + graphService)
+- [ ] Dual storage coordination implemented
+- [ ] Build checkpoint passes
+
+---
+
+### Phase 2.3: Complex Context Method ⏳ PENDING (3-4 hours)
+
+**Scope**:
+
+1. Refactor `getAgentMemoryContext()` (HIGH complexity)
+
+**Files to Modify**:
+
+- `agent-memory-bridge.service.ts` (1 method)
+
+**Acceptance Criteria**:
+
+- [ ] `getAgentMemoryContext()` refactored (vectorService with enhanced filtering)
+- [ ] Multiple searches coordinated
+- [ ] Result merging logic preserved
+- [ ] Build + unit tests pass
+
+---
+
+### Phase 2.4: Module Registration and Integration ⏳ PENDING (1-2 hours)
+
+**Scope**:
+
+1. Update MemoryModule provider configuration
+2. Update exports in memory.module.ts
+3. Update exports in index.ts
+4. Integration testing
+
+**Files to Modify**:
+
+- `memory.module.ts` (provider configuration)
+- `index.ts` (exports)
+
+**Acceptance Criteria**:
+
+- [ ] Module provider updated (factory pattern)
+- [ ] IMemoryAdapter provider configured
+- [ ] All exports updated
+- [ ] E2E tests pass
+
+---
+
+### Method Refactoring Summary
+
+**Priority 0 (Requires Refactoring)** - 5 methods:
+
+1. `getAgentMemoryContext()` - HIGH complexity (Phase 2.3)
+2. `storeAgentMemory()` - MEDIUM complexity (Phase 2.2)
+3. `storeAgentMemoriesBatch()` - MEDIUM complexity (Phase 2.2)
+4. `searchAgentMemories()` - LOW complexity (Phase 2.1)
+5. `clearAgentMemories()` - LOW complexity (Phase 2.1)
+
+**Priority 0 (New Method)** - 1 method: 6. `getStore()` - LOW complexity (Phase 2.1)
+
+**Priority 1 (Review Only)** - 3 methods: 7. `syncWithCheckpoint()` - Already uses ICheckpointAdapter (no changes) 8. `getAgentMemoryStats()` - Local stats map (no changes) 9. `updateAgentStats()` - Local stats map (no changes)
+
+**Priority 2 (No Changes)** - 2 methods: 10. `linkMemoriesToCheckpoint()` - Placeholder (no changes) 11. `convertToMutableUserPatterns()` - Pure function (no changes)
 
 ---
 
