@@ -5,6 +5,7 @@ export { MemoryModule } from './lib/memory.module';
 export { MemoryService } from './lib/services/memory.service';
 export { MemoryStorageService } from './lib/services/memory-storage.service';
 export { MemoryGraphService } from './lib/services/memory-graph.service';
+export { AgentMemoryBridgeService } from './lib/services/agent-memory-bridge.service';
 
 // Interfaces
 export type {

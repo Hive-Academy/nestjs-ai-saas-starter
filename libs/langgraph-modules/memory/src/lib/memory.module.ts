@@ -5,11 +5,12 @@ import { ConfigModule } from '@nestjs/config';
 import { MemoryService } from './services/memory.service';
 import { MemoryStorageService } from './services/memory-storage.service';
 import { MemoryGraphService } from './services/memory-graph.service';
+import { AgentMemoryBridgeService } from './services/agent-memory-bridge.service';
 
 // Import interfaces only - adapters moved to application layer
-import { IVectorService } from './interfaces/vector-service.interface';
-import { IGraphService } from './interfaces/graph-service.interface';
-import { MemoryManagerAdapter } from './interfaces/memory-adapter.interface';
+import type { IVectorService } from './interfaces/vector-service.interface';
+import type { IGraphService } from './interfaces/graph-service.interface';
+import type { IStoreService } from './store/services/interfaces/store-service.interface';
 
 import type {
   MemoryModuleOptions,
@@ -63,6 +64,29 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       MemoryService,
+      // AgentMemoryBridgeService with direct adapter injection
+      {
+        provide: AgentMemoryBridgeService,
+        useFactory: (
+          vectorService: IVectorService,
+          graphService: IGraphService,
+          storeService: IStoreService,
+          checkpointAdapter?: any
+        ) => {
+          return new AgentMemoryBridgeService(
+            vectorService,
+            graphService,
+            storeService,
+            checkpointAdapter
+          );
+        },
+        inject: [
+          'IVectorService',
+          'IGraphService',
+          'IStoreService',
+          { token: 'ICheckpointAdapter', optional: true },
+        ],
+      },
     ];
 
     // NEW: Provide IMemoryAdapter globally if adapters are available
@@ -70,6 +94,7 @@ export class MemoryModule {
       MemoryService,
       MemoryStorageService,
       MemoryGraphService,
+      AgentMemoryBridgeService,
       MEMORY_CONFIG,
       // NOTE: IVectorService and IGraphService are NOT exported here
       // They are provided by the application module via adapter injection
@@ -78,17 +103,7 @@ export class MemoryModule {
     if (options.adapters?.vector) {
       providers.push({
         provide: 'IMemoryAdapter',
-        useFactory: (
-          memoryService: MemoryService,
-          vectorAdapter: any,
-          graphAdapter?: any
-        ) =>
-          new MemoryManagerAdapter(memoryService, vectorAdapter, graphAdapter),
-        inject: [
-          MemoryService,
-          IVectorService,
-          ...(options.adapters.graph ? [IGraphService] : []),
-        ],
+        useExisting: AgentMemoryBridgeService,
       });
 
       // Export memory adapter globally
@@ -119,32 +134,43 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       MemoryService,
+      // AgentMemoryBridgeService with direct adapter injection
+      {
+        provide: AgentMemoryBridgeService,
+        useFactory: (
+          vectorService: IVectorService,
+          graphService: IGraphService,
+          storeService: IStoreService,
+          checkpointAdapter?: any
+        ) => {
+          return new AgentMemoryBridgeService(
+            vectorService,
+            graphService,
+            storeService,
+            checkpointAdapter
+          );
+        },
+        inject: [
+          'IVectorService',
+          'IGraphService',
+          'IStoreService',
+          { token: 'ICheckpointAdapter', optional: true },
+        ],
+      },
     ];
 
     const exports: any[] = [
       MemoryService,
       MemoryStorageService,
       MemoryGraphService,
+      AgentMemoryBridgeService,
       MEMORY_CONFIG,
     ];
 
-    // Create IMemoryAdapter provider - adapters come from MEMORY_CONFIG (provided by app.module.ts)
+    // Create IMemoryAdapter provider using AgentMemoryBridgeService
     providers.push({
       provide: 'IMemoryAdapter',
-      useFactory: (
-        memoryService: MemoryService,
-        config: MemoryModuleOptions
-      ) => {
-        if (config.adapters?.vector) {
-          return new MemoryManagerAdapter(
-            memoryService,
-            config.adapters.vector,
-            config.adapters.graph
-          );
-        }
-        return null;
-      },
-      inject: [MemoryService, MEMORY_CONFIG],
+      useExisting: AgentMemoryBridgeService,
     });
 
     exports.push('IMemoryAdapter');
@@ -296,13 +322,13 @@ export class MemoryModule {
       if (typeof vectorAdapter === 'function') {
         // It's a class type
         providers.push({
-          provide: IVectorService,
+          provide: 'IVectorService',
           useClass: vectorAdapter as Type<IVectorService>,
         });
       } else {
         // It's an instance
         providers.push({
-          provide: IVectorService,
+          provide: 'IVectorService',
           useValue: vectorAdapter,
         });
       }
@@ -320,13 +346,13 @@ export class MemoryModule {
       if (typeof graphAdapter === 'function') {
         // It's a class type
         providers.push({
-          provide: IGraphService,
+          provide: 'IGraphService',
           useClass: graphAdapter as Type<IGraphService>,
         });
       } else {
         // It's an instance
         providers.push({
-          provide: IGraphService,
+          provide: 'IGraphService',
           useValue: graphAdapter,
         });
       }
