@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
-  Where,
 } from '@hive-academy/nestjs-chromadb';
 import { VectorMemoryEntity } from '../../entities/chromadb/vector-memory.entity';
 import {
@@ -252,7 +251,7 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
       metadata?: Partial<MemoryMetadata>;
     }>,
     userId?: string
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     if (entries.length === 0) return [];
 
     try {
@@ -319,7 +318,7 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
   async retrieveByThread(
     threadId: string,
     limit = 100
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     try {
       const entities = await this.findAll({
         where: { threadId } as any,
@@ -375,7 +374,7 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
     query: string,
     filter: Record<string, unknown> = {},
     limit = 10
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     try {
       const results = await this.searchWithScores(query, {
         where: filter as any,

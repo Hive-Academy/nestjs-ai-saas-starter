@@ -24,26 +24,30 @@ import {
   VectorMemoryMetadata,
 } from '../../entities/chromadb/vector-memory.entity';
 import { VectorMemoryRepository } from '../../repositories/chromadb/vector-memory.repository';
+import { LangGraphStoreEntity } from '../../entities/chromadb/langgraph-store.entity';
+import { LangGraphStoreRepository } from '../../repositories/chromadb/langgraph-store.repository';
 
 /**
  * Application-specific ChromaDB adapter for the Memory module.
  *
  * ARCHITECTURE: TypeORM-Style Repository Pattern (CLEAN - matches Neo4j pattern)
  * -------------------------------------------------------------------------------
- * This adapter uses VectorMemoryRepository following the same pattern as Neo4jGraphAdapter:
- * - Uses @Inject(getChromaRepositoryToken(VectorMemoryEntity)) for clean DI
+ * This adapter uses TWO repositories for collection separation:
+ * - VectorMemoryRepository → 'vector-memories' collection (Memory operations)
+ * - LangGraphStoreRepository → 'langgraph-stores' collection (Store operations)
+ *
+ * Pattern Benefits:
+ * - Uses @Inject(getChromaRepositoryToken(Entity)) for clean DI
  * - Entity-based registration ensures proper collection initialization
  * - Automatic embedding function injection via entity decorator
- * - Type-safe operations with VectorMemoryEntity and VectorMemoryMetadata
+ * - Type-safe operations with distinct entity types
  * - Inherits 15+ CRUD methods from ChromaDBRepository<T>
  * - NO low-level ChromaDBService exposure (kept inside library)
+ * - Collection separation prevents data mixing
  *
- * Benefits of Repository Token Pattern:
- * - Clean dependency injection (matches Neo4j adapter pattern)
- * - No low-level service exposure outside library
- * - Proper entity/collection registration
- * - Type-safe metadata handling
- * - Zero boilerplate CRUD operations
+ * Repository Routing:
+ * - Memory operations → vectorMemoryRepo → 'vector-memories'
+ * - Store operations → langGraphStoreRepo → 'langgraph-stores'
  */
 @Injectable()
 export class ChromaVectorAdapter extends IVectorService {
@@ -51,11 +55,14 @@ export class ChromaVectorAdapter extends IVectorService {
 
   constructor(
     @Inject(getChromaRepositoryToken(VectorMemoryEntity))
-    private readonly vectorMemoryRepo: VectorMemoryRepository
+    private readonly vectorMemoryRepo: VectorMemoryRepository,
+
+    @Inject(getChromaRepositoryToken(LangGraphStoreEntity))
+    private readonly langGraphStoreRepo: LangGraphStoreRepository
   ) {
     super();
     this.logger.debug(
-      'ChromaVectorAdapter initialized with VectorMemoryRepository (clean token pattern)'
+      'ChromaVectorAdapter initialized with VectorMemoryRepository + LangGraphStoreRepository (dual-collection pattern)'
     );
   }
 
@@ -704,7 +711,7 @@ export class ChromaVectorAdapter extends IVectorService {
       metadata?: Partial<MemoryMetadata>;
     }>,
     userId?: string
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     return await this.vectorMemoryRepo.storeMemoriesBatch(
       threadId,
       entries,
@@ -718,7 +725,7 @@ export class ChromaVectorAdapter extends IVectorService {
   async retrieveByThread(
     threadId: string,
     limit = 100
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     return await this.vectorMemoryRepo.retrieveByThread(threadId, limit);
   }
 
@@ -729,7 +736,7 @@ export class ChromaVectorAdapter extends IVectorService {
     query: string,
     filter: Record<string, unknown> = {},
     limit = 10
-  ): Promise<readonly MemoryEntry[]> {
+  ): Promise<MemoryEntry[]> {
     return await this.vectorMemoryRepo.searchMemoriesSimilar(
       query,
       filter,
@@ -864,5 +871,100 @@ export class ChromaVectorAdapter extends IVectorService {
         }
       );
     }
+  }
+
+  // ============================================================================
+  // Store-Specific Business Methods (Pure Delegation to Repository)
+  // ============================================================================
+  // Pattern matches Memory delegation (lines 687-789)
+  // All Store operations delegate to langGraphStoreRepo
+
+  /**
+   * Store an item in LangGraph Store - delegates to repository
+   */
+  async putStoreItem(
+    namespace: string[],
+    key: string,
+    value: Record<string, unknown>
+  ): Promise<void> {
+    return await this.langGraphStoreRepo.putItem(namespace, key, value);
+  }
+
+  /**
+   * Retrieve a store item - delegates to repository
+   */
+  async getStoreItem(
+    namespace: string[],
+    key: string
+  ): Promise<Record<string, unknown> | null> {
+    return await this.langGraphStoreRepo.getItem(namespace, key);
+  }
+
+  /**
+   * Search store items - delegates to repository
+   */
+  async searchStoreItems(
+    namespacePrefix: string[],
+    query: string,
+    limit?: number,
+    filter?: Record<string, unknown>
+  ): Promise<
+    Array<{
+      namespace: string[];
+      key: string;
+      value: Record<string, unknown>;
+      score: number;
+    }>
+  > {
+    return await this.langGraphStoreRepo.searchItems(
+      namespacePrefix,
+      query,
+      limit,
+      filter
+    );
+  }
+
+  /**
+   * List store items - delegates to repository
+   */
+  async listStoreItems(
+    namespacePrefix: string[],
+    limit?: number,
+    offset?: number
+  ): Promise<
+    Array<{
+      namespace: string[];
+      key: string;
+      value: Record<string, unknown>;
+    }>
+  > {
+    return await this.langGraphStoreRepo.listItems(
+      namespacePrefix,
+      limit,
+      offset
+    );
+  }
+
+  /**
+   * Delete a store item - delegates to repository
+   */
+  async deleteStoreItem(namespace: string[], key: string): Promise<void> {
+    return await this.langGraphStoreRepo.deleteItem(namespace, key);
+  }
+
+  /**
+   * Delete entire namespace - delegates to repository
+   */
+  async deleteStoreNamespace(namespacePrefix: string[]): Promise<void> {
+    return await this.langGraphStoreRepo.deleteNamespace(namespacePrefix);
+  }
+
+  /**
+   * Get namespace statistics - delegates to repository
+   */
+  async getStoreNamespaceStats(
+    namespacePrefix: string[]
+  ): Promise<{ itemCount: number; namespaces: string[][] }> {
+    return await this.langGraphStoreRepo.getNamespaceStats(namespacePrefix);
   }
 }

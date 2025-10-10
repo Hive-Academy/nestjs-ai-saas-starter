@@ -15,7 +15,9 @@ import { Module } from '@nestjs/common';
 
 // Memory Repositories
 import { VectorMemoryRepository } from './chromadb/vector-memory.repository';
+import { LangGraphStoreRepository } from './chromadb/langgraph-store.repository';
 import { MemoryGraphRepository } from './neo4j/memory-graph.repository';
+import { StoreGraphRepository } from './neo4j/store-graph.repository';
 
 // ChromaDB Entities (for forFeature registration)
 import { AudienceAnalysisEntity } from '../entities/chromadb/audience-analysis.entity';
@@ -27,6 +29,7 @@ import { ContentPerformanceEntity } from '../entities/chromadb/content-performan
 import { DeveloperProfileEntity } from '../entities/chromadb/developer-profile.entity';
 import { TechTrendEntity } from '../entities/chromadb/tech-trend.entity';
 import { VectorMemoryEntity } from '../entities/chromadb/vector-memory.entity';
+import { LangGraphStoreEntity } from '../entities/chromadb/langgraph-store.entity';
 
 // Custom ChromaDB Repositories (analytics only)
 import { AudienceRepository } from './chromadb/audience-analysis.repository';
@@ -58,6 +61,7 @@ import { Developer } from '../entities/neo4j/developer.entity';
 import { FeedbackEntry } from '../entities/neo4j/feedback-entry.entity';
 import { InterruptionPoint } from '../entities/neo4j/interruption-point.entity';
 import { Memory } from '../entities/neo4j/memory.entity';
+import { StoreItemEntity } from '../entities/neo4j/store-item.entity';
 
 // Graph Services (local implementations)
 import { GraphAgentService } from './services/graph-agent.service';
@@ -82,6 +86,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     // ✅ Auto-generate Neo4j repositories for all entities
     Neo4jModule.forFeature([
       Memory,
+      StoreItemEntity,
       ApprovalChain,
       ApprovalRequest,
       InterruptionPoint,
@@ -93,6 +98,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     // ✅ Auto-generate ChromaDB repositories for all entities
     ChromaDBModule.forFeature([
       VectorMemoryEntity,
+      LangGraphStoreEntity,
       CodeAchievementEntity,
       BrandStrategyEntity,
       ContentPerformanceEntity,
@@ -118,6 +124,10 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     {
       provide: getChromaRepositoryToken(VectorMemoryEntity),
       useClass: VectorMemoryRepository,
+    },
+    {
+      provide: getChromaRepositoryToken(LangGraphStoreEntity),
+      useClass: LangGraphStoreRepository,
     },
     {
       provide: getChromaRepositoryToken(CodeAchievementEntity),
@@ -156,6 +166,10 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     {
       provide: getRepositoryToken(Memory),
       useClass: MemoryGraphRepository,
+    },
+    {
+      provide: getRepositoryToken(StoreItemEntity),
+      useClass: StoreGraphRepository,
     },
     {
       provide: getRepositoryToken(ApprovalRequest),
@@ -326,6 +340,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
   exports: [
     // ✅ ChromaDB Repositories (exported via injection tokens)
     getChromaRepositoryToken(VectorMemoryEntity),
+    getChromaRepositoryToken(LangGraphStoreEntity),
     getChromaRepositoryToken(CodeAchievementEntity),
     getChromaRepositoryToken(BrandStrategyEntity),
     getChromaRepositoryToken(ContentPerformanceEntity),
@@ -337,6 +352,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
 
     // ✅ Neo4j Repositories (exported via injection tokens)
     getRepositoryToken(Memory),
+    getRepositoryToken(StoreItemEntity),
     getRepositoryToken(ApprovalChain),
     getRepositoryToken(ApprovalRequest),
     getRepositoryToken(InterruptionPoint),

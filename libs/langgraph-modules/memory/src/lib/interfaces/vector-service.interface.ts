@@ -267,6 +267,168 @@ export abstract class IVectorService {
     }>
   >;
 
+  // ===================================================================
+  // Store-Specific Business Methods (LangGraph Store Pattern)
+  // ===================================================================
+  // These methods contain ALL business logic for Store operations.
+  // Application adapters (ChromaVectorAdapter) implement these methods
+  // with full business logic delegating to LangGraphStoreRepository.
+  //
+  // Library services (StoreStorageService) delegate to these methods.
+  // ===================================================================
+
+  /**
+   * Store an item in the LangGraph Store with vector embedding
+   *
+   * @param namespace - Hierarchical namespace path
+   * @param key - Item key within namespace
+   * @param value - Item value to store
+   * @returns Promise that resolves when item is stored
+   *
+   * @example
+   * ```typescript
+   * await vectorService.putStoreItem(
+   *   ['user', 'user-123', 'preferences'],
+   *   'theme',
+   *   { mode: 'dark', fontSize: 14 }
+   * );
+   * ```
+   */
+  abstract putStoreItem(
+    namespace: string[],
+    key: string,
+    value: Record<string, unknown>
+  ): Promise<void>;
+
+  /**
+   * Retrieve an item from the Store by namespace and key
+   *
+   * @param namespace - Hierarchical namespace path
+   * @param key - Item key within namespace
+   * @returns Store item value or null if not found
+   *
+   * @example
+   * ```typescript
+   * const preferences = await vectorService.getStoreItem(
+   *   ['user', 'user-123', 'preferences'],
+   *   'theme'
+   * );
+   * ```
+   */
+  abstract getStoreItem(
+    namespace: string[],
+    key: string
+  ): Promise<Record<string, unknown> | null>;
+
+  /**
+   * Search Store items by vector similarity
+   *
+   * @param namespacePrefix - Namespace prefix to filter by
+   * @param query - Search query text
+   * @param limit - Optional maximum number of results
+   * @param filter - Optional metadata filter criteria
+   * @returns Array of matching store items with similarity scores
+   *
+   * @example
+   * ```typescript
+   * const results = await vectorService.searchStoreItems(
+   *   ['user', 'user-123'],
+   *   'dark mode preferences',
+   *   5
+   * );
+   * ```
+   */
+  abstract searchStoreItems(
+    namespacePrefix: string[],
+    query: string,
+    limit?: number,
+    filter?: Record<string, unknown>
+  ): Promise<
+    Array<{
+      namespace: string[];
+      key: string;
+      value: Record<string, unknown>;
+      score: number;
+    }>
+  >;
+
+  /**
+   * List all items in a namespace
+   *
+   * @param namespacePrefix - Namespace prefix to filter by
+   * @param limit - Optional maximum number of items
+   * @param offset - Optional offset for pagination
+   * @returns Array of store items in namespace
+   *
+   * @example
+   * ```typescript
+   * const items = await vectorService.listStoreItems(
+   *   ['user', 'user-123'],
+   *   10,
+   *   0
+   * );
+   * ```
+   */
+  abstract listStoreItems(
+    namespacePrefix: string[],
+    limit?: number,
+    offset?: number
+  ): Promise<
+    Array<{
+      namespace: string[];
+      key: string;
+      value: Record<string, unknown>;
+    }>
+  >;
+
+  /**
+   * Delete a specific Store item
+   *
+   * @param namespace - Hierarchical namespace path
+   * @param key - Item key to delete
+   * @returns Promise that resolves when item is deleted
+   *
+   * @example
+   * ```typescript
+   * await vectorService.deleteStoreItem(
+   *   ['user', 'user-123', 'preferences'],
+   *   'theme'
+   * );
+   * ```
+   */
+  abstract deleteStoreItem(namespace: string[], key: string): Promise<void>;
+
+  /**
+   * Delete entire namespace and all items within
+   *
+   * @param namespacePrefix - Namespace prefix to delete
+   * @returns Promise that resolves when namespace is deleted
+   *
+   * @example
+   * ```typescript
+   * await vectorService.deleteStoreNamespace(['user', 'user-123']);
+   * // Deletes all items under ['user', 'user-123', ...]
+   * ```
+   */
+  abstract deleteStoreNamespace(namespacePrefix: string[]): Promise<void>;
+
+  /**
+   * Get statistics for a namespace
+   *
+   * @param namespacePrefix - Namespace prefix to analyze
+   * @returns Statistics including item count and child namespaces
+   *
+   * @example
+   * ```typescript
+   * const stats = await vectorService.getStoreNamespaceStats(['user', 'user-123']);
+   * console.log(`Items: ${stats.itemCount}`);
+   * console.log(`Child namespaces: ${stats.namespaces.length}`);
+   * ```
+   */
+  abstract getStoreNamespaceStats(
+    namespacePrefix: string[]
+  ): Promise<{ itemCount: number; namespaces: string[][] }>;
+
   /**
    * Common validation method for collection names
    * Available to all implementations as template method
