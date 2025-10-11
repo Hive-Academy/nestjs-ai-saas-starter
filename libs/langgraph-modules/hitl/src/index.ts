@@ -93,3 +93,10 @@ export type {
   ProcessingResult,
   FeedbackAnalytics,
 } from './lib/interfaces/feedback-storage.interface';
+
+// Approver Intelligence Types (Phase 1 P0-CRITICAL)
+export type {
+  ApproverProfile,
+  ApproverExpertise,
+  ApproverRanking,
+} from './lib/interfaces/approver-intelligence.interface';
