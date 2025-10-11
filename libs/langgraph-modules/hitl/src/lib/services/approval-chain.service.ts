@@ -1,5 +1,12 @@
 import { generateId } from '@hive-academy/langgraph-core';
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import type { IMemoryAdapter, Store } from '@hive-academy/langgraph-core';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { IApprovalChainStorageService } from '../interfaces/approval-chain-storage.interface';
 
@@ -231,11 +238,20 @@ export class ApprovalChainService implements OnModuleInit {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     @Inject('IApprovalChainStorageService')
-    private readonly chainStorage: IApprovalChainStorageService
+    private readonly chainStorage: IApprovalChainStorageService,
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
   ) {
-    this.logger.log(
-      '🔗 Approval Chain Service initialized with adapter-first storage'
-    );
+    if (this.memoryAdapter) {
+      this.logger.log(
+        '🔗 Approval Chain Service initialized with adapter-first storage + IMemoryAdapter.getStore() for hierarchical tracking'
+      );
+    } else {
+      this.logger.log(
+        '🔗 Approval Chain Service initialized with adapter-first storage (IMemoryAdapter unavailable - Store tracking disabled)'
+      );
+    }
   }
 
   /**
@@ -362,6 +378,9 @@ export class ApprovalChainService implements OnModuleInit {
     // Emit event for first level
     await this.notifyApprovers(request, requiredLevels[0]);
 
+    // Track chain initiation in Store (hierarchical namespace)
+    await this.trackChainProgressionInStore(request, 0, 'pending');
+
     this.logger.log(
       `Initiated approval request ${requestId} for execution ${executionId}`
     );
@@ -431,6 +450,13 @@ export class ApprovalChainService implements OnModuleInit {
         this.logger.log(
           `Approval request ${requestId} escalated to level ${nextLevel.name}`
         );
+
+        // Track level completion in Store (hierarchical namespace)
+        await this.trackChainProgressionInStore(
+          request,
+          request.currentLevel - 1,
+          'approved'
+        );
       } else {
         // All levels approved
         request.status = 'approved';
@@ -441,6 +467,13 @@ export class ApprovalChainService implements OnModuleInit {
         });
 
         this.logger.log(`Approval request ${requestId} fully approved`);
+
+        // Track final level completion in Store
+        await this.trackChainProgressionInStore(
+          request,
+          request.currentLevel,
+          'approved'
+        );
       }
     } else if (levelDecision === 'rejected') {
       request.status = 'rejected';
@@ -452,6 +485,13 @@ export class ApprovalChainService implements OnModuleInit {
       });
 
       this.logger.log(`Approval request ${requestId} rejected`);
+
+      // Track rejection in Store
+      await this.trackChainProgressionInStore(
+        request,
+        request.currentLevel,
+        'rejected'
+      );
     }
 
     request.updatedAt = new Date();
@@ -713,5 +753,153 @@ export class ApprovalChainService implements OnModuleInit {
   ): Promise<ApprovalRequest[]> {
     // ✅ CORRECT: Use storage adapter for comprehensive search
     return await this.chainStorage.getPendingApprovalsForApprover(approverId);
+  }
+
+  /**
+   * Track approval chain progression in Store (IMemoryAdapter.getStore())
+   * Uses hierarchical namespaces for multi-level chain tracking
+   *
+   * Namespace pattern: ['approval-chains', executionId, chainId, 'level', levelIndex]
+   */
+  private async trackChainProgressionInStore(
+    request: ApprovalRequest,
+    levelIndex: number,
+    decision: 'approved' | 'rejected' | 'pending'
+  ): Promise<void> {
+    if (!this.memoryAdapter) {
+      // Graceful degradation - Store tracking unavailable
+      return;
+    }
+
+    try {
+      const store: Store = this.memoryAdapter.getStore('hitl-approval-chains');
+      const currentLevel = request.chain[levelIndex];
+
+      // Store current chain level state with hierarchical namespace
+      // Pattern: ['approval-chains', executionId, chainId, 'level', levelIndex.toString()]
+      const namespace = [
+        'approval-chains',
+        request.executionId,
+        request.chainId,
+        'level',
+        levelIndex.toString(),
+      ];
+
+      await store.put(namespace, 'state', {
+        levelId: currentLevel.id,
+        levelName: currentLevel.name,
+        priority: currentLevel.priority,
+        policy: currentLevel.policy,
+        decision,
+        timestamp: new Date().toISOString(),
+        approvers: currentLevel.approvers.map((a) => ({
+          id: a.id,
+          name: a.name,
+          role: a.role,
+        })),
+        approvalHistory: request.history.filter(
+          (h) => h.levelId === currentLevel.id
+        ),
+      });
+
+      // Store chain overview for quick queries
+      const chainOverviewNamespace = [
+        'approval-chains',
+        request.executionId,
+        request.chainId,
+      ];
+
+      await store.put(chainOverviewNamespace, 'overview', {
+        requestId: request.id,
+        executionId: request.executionId,
+        chainId: request.chainId,
+        currentLevel: levelIndex,
+        totalLevels: request.chain.length,
+        status: request.status,
+        createdAt: request.createdAt.toISOString(),
+        updatedAt: request.updatedAt.toISOString(),
+      });
+
+      this.logger.debug(
+        `Tracked chain progression for ${request.chainId} level ${levelIndex} in Store`
+      );
+    } catch (error) {
+      // Log error but don't fail the approval chain
+      this.logger.error(
+        `Failed to track chain progression in Store: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  /**
+   * Get approval chain history from Store
+   * Query all levels for a specific approval chain
+   */
+  async getChainHistoryFromStore(
+    executionId: string,
+    chainId: string
+  ): Promise<Array<{ level: number; state: any }> | null> {
+    if (!this.memoryAdapter) {
+      return null;
+    }
+
+    try {
+      const store: Store = this.memoryAdapter.getStore('hitl-approval-chains');
+
+      // List all levels in the chain
+      const chainLevelsNamespace = [
+        'approval-chains',
+        executionId,
+        chainId,
+        'level',
+      ];
+
+      const levels = await store.list(chainLevelsNamespace);
+
+      return levels.map((levelItem: any) => ({
+        level: parseInt(levelItem.key, 10),
+        state: levelItem.value,
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve chain history from Store: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Search related approval chains via Store namespace search
+   * Find similar chains by execution context or chain characteristics
+   */
+  async searchRelatedChains(
+    executionId: string,
+    searchQuery: string
+  ): Promise<any[]> {
+    if (!this.memoryAdapter) {
+      return [];
+    }
+
+    try {
+      const store: Store = this.memoryAdapter.getStore('hitl-approval-chains');
+
+      // Search within execution's approval chains
+      const executionChainsNamespace = ['approval-chains', executionId];
+
+      const results = await store.search(executionChainsNamespace, searchQuery);
+
+      return results;
+    } catch (error) {
+      this.logger.error(
+        `Failed to search related chains in Store: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return [];
+    }
   }
 }

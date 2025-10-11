@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { WorkflowState } from '@hive-academy/langgraph-core';
 import { ApprovalRiskLevel } from '../decorators/approval.decorator';
@@ -131,25 +137,36 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
-    @Optional() @Inject('IConfidenceStorageService') 
+    @Optional()
+    @Inject('IConfidenceStorageService')
     private readonly confidenceStorage?: IConfidenceStorageService
   ) {
     if (!this.confidenceStorage) {
-      this.logger.warn('⚠️  No confidence storage adapter provided - confidence learning disabled');
+      this.logger.warn(
+        '⚠️  No confidence storage adapter provided - confidence learning disabled'
+      );
     } else {
-      this.logger.log('🧠 Confidence Evaluator Service initialized with adapter-first storage');
+      this.logger.log(
+        '🧠 Confidence Evaluator Service initialized with adapter-first storage'
+      );
     }
   }
 
   async onModuleInit(): Promise<void> {
-    this.logger.log('Confidence Evaluator Service initializing with persistent storage');
-    
+    this.logger.log(
+      'Confidence Evaluator Service initializing with persistent storage'
+    );
+
     if (this.confidenceStorage) {
       await this.loadHistoricalPatterns();
       await this.initializeMLHooks();
-      this.logger.log('✅ Confidence Evaluator Service initialized with storage adapter');
+      this.logger.log(
+        '✅ Confidence Evaluator Service initialized with storage adapter'
+      );
     } else {
-      this.logger.warn('⚠️  Confidence Evaluator Service running in degraded mode without storage');
+      this.logger.warn(
+        '⚠️  Confidence Evaluator Service running in degraded mode without storage'
+      );
     }
   }
 
@@ -201,10 +218,15 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       // Store confidence factors in adapter first, then cache
       if (this.confidenceStorage) {
         try {
-          await this.confidenceStorage.storeConfidenceHistory(state.executionId, factors);
+          await this.confidenceStorage.storeConfidenceHistory(
+            state.executionId,
+            factors
+          );
           this.historyCache.set(state.executionId, factors);
         } catch (error) {
-          this.logger.error(`Failed to store confidence history in adapter: ${error}`);
+          this.logger.error(
+            `Failed to store confidence history in adapter: ${error}`
+          );
           // Cache-only fallback for this execution
           this.historyCache.set(state.executionId, factors);
         }
@@ -368,19 +390,23 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     state: WorkflowState
   ): Promise<Record<string, number>> {
     let factors = this.historyCache.get(state.executionId);
-    
+
     // Load from storage if not in cache
     if (!factors && this.confidenceStorage) {
       try {
-        factors = await this.confidenceStorage.getConfidenceHistory(state.executionId);
+        factors = await this.confidenceStorage.getConfidenceHistory(
+          state.executionId
+        );
         if (factors) {
           this.historyCache.set(state.executionId, factors);
         }
       } catch (error) {
-        this.logger.error(`Failed to load confidence factors from storage: ${error}`);
+        this.logger.error(
+          `Failed to load confidence factors from storage: ${error}`
+        );
       }
     }
-    
+
     if (!factors) {
       return {};
     }
@@ -411,11 +437,13 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     try {
       // Update historical pattern - adapter first, then cache
       let pattern = this.patternCache.get(nodeId);
-      
+
       // Load from storage if not in cache
       if (!pattern && this.confidenceStorage) {
         try {
-          pattern = (await this.confidenceStorage.getApprovalPattern(nodeId)) || undefined;
+          pattern =
+            (await this.confidenceStorage.getApprovalPattern(nodeId)) ||
+            undefined;
           if (pattern) {
             this.patternCache.set(nodeId, pattern);
           }
@@ -423,7 +451,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
           this.logger.error(`Failed to load pattern from storage: ${error}`);
         }
       }
-      
+
       if (!pattern) {
         pattern = {
           nodeId,
@@ -456,7 +484,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       }
 
       pattern.lastUpdated = new Date();
-      
+
       // Store updated pattern in adapter first, then cache
       if (this.confidenceStorage) {
         try {
@@ -487,7 +515,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
           this.logger.error(`Failed to store confidence outcome: ${error}`);
         }
       }
-      
+
       if (this.mlHooks?.learnFromOutcome && actualOutcome) {
         await this.mlHooks.learnFromOutcome(
           state,
@@ -515,13 +543,17 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   /**
    * Get historical approval pattern for a node
    */
-  async getHistoricalPattern(nodeId: string): Promise<ApprovalPattern | undefined> {
+  async getHistoricalPattern(
+    nodeId: string
+  ): Promise<ApprovalPattern | undefined> {
     let pattern = this.patternCache.get(nodeId);
-    
+
     // Load from storage if not in cache
     if (!pattern && this.confidenceStorage) {
       try {
-        pattern = (await this.confidenceStorage.getApprovalPattern(nodeId)) || undefined;
+        pattern =
+          (await this.confidenceStorage.getApprovalPattern(nodeId)) ||
+          undefined;
         if (pattern) {
           this.patternCache.set(nodeId, pattern);
         }
@@ -529,7 +561,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
         this.logger.error(`Failed to load pattern from storage: ${error}`);
       }
     }
-    
+
     return pattern;
   }
 
@@ -563,7 +595,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     this.mlHooks = { ...this.mlHooks, ...hooks };
     this.logger.log('ML integration hooks registered');
   }
-  
+
   /**
    * Update confidence evaluation based on human feedback
    */
@@ -573,44 +605,63 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     humanConfidence: number
   ): Promise<void> {
     if (!this.confidenceStorage) {
-      this.logger.warn('No storage adapter available - cannot store feedback learning');
+      this.logger.warn(
+        'No storage adapter available - cannot store feedback learning'
+      );
       return;
     }
-    
+
     try {
       // Load current confidence factors
       let factors = this.historyCache.get(executionId);
       if (!factors) {
-        factors = await this.confidenceStorage.getConfidenceHistory(executionId);
+        factors = await this.confidenceStorage.getConfidenceHistory(
+          executionId
+        );
         if (factors) {
           this.historyCache.set(executionId, factors);
         }
       }
 
       if (!factors) {
-        this.logger.warn(`No confidence history found for execution ${executionId}`);
+        this.logger.warn(
+          `No confidence history found for execution ${executionId}`
+        );
         return;
       }
 
       // Calculate accuracy and update patterns
-      const updatedFactors = this.calculateAccuracyAdjustment(factors, actualOutcome, humanConfidence);
-      
+      const updatedFactors = this.calculateAccuracyAdjustment(
+        factors,
+        actualOutcome,
+        humanConfidence
+      );
+
       // Store in adapter first
-      await this.confidenceStorage.updateConfidenceFactors(executionId, updatedFactors);
-      
+      await this.confidenceStorage.updateConfidenceFactors(
+        executionId,
+        updatedFactors
+      );
+
       // Update cache
       this.historyCache.set(executionId, updatedFactors);
 
       // Update ML training data
-      await this.updateMLTrainingData(executionId, actualOutcome, humanConfidence);
+      await this.updateMLTrainingData(
+        executionId,
+        actualOutcome,
+        humanConfidence
+      );
 
-      this.logger.log(`Updated confidence factors for execution ${executionId} based on human feedback`);
+      this.logger.log(
+        `Updated confidence factors for execution ${executionId} based on human feedback`
+      );
     } catch (error) {
       this.logger.error(`Failed to update confidence from feedback:`, error);
       throw error;
     }
   }
-  
+
   /**
    * Calculate accuracy adjustment based on human feedback
    */
@@ -621,18 +672,19 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   ): ConfidenceFactor[] {
     // Add feedback-based factor
     const updatedFactors = [...factors];
-    
+
     updatedFactors.push({
       name: 'human_feedback',
-      value: actualOutcome === 'approved' ? humanConfidence : (1 - humanConfidence),
+      value:
+        actualOutcome === 'approved' ? humanConfidence : 1 - humanConfidence,
       weight: 0.4, // High weight for human feedback
       source: 'user',
       description: `Human feedback: ${actualOutcome} with confidence ${humanConfidence}`,
     });
-    
+
     return updatedFactors;
   }
-  
+
   /**
    * Update ML training data with feedback
    */
@@ -642,7 +694,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     humanConfidence: number
   ): Promise<void> {
     if (!this.confidenceStorage) return;
-    
+
     try {
       await this.confidenceStorage.storeConfidenceOutcome({
         executionId,
@@ -656,7 +708,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       this.logger.error(`Failed to store ML training data: ${error}`);
     }
   }
-  
+
   /**
    * Get confidence analytics for monitoring
    */
@@ -664,10 +716,10 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     if (!this.confidenceStorage) {
       throw new Error('Storage adapter required for analytics');
     }
-    
+
     return this.confidenceStorage.getConfidenceAnalytics(timeRange);
   }
-  
+
   /**
    * Get pattern insights for optimization
    */
@@ -675,7 +727,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     if (!this.confidenceStorage) {
       throw new Error('Storage adapter required for insights');
     }
-    
+
     return this.confidenceStorage.getPatternInsights(timeRange);
   }
 
@@ -684,14 +736,16 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    */
   private async loadHistoricalPatterns(): Promise<void> {
     if (!this.confidenceStorage) {
-      this.logger.warn('No storage adapter available - cannot load historical patterns');
+      this.logger.warn(
+        'No storage adapter available - cannot load historical patterns'
+      );
       return;
     }
-    
+
     try {
       // Load all patterns from adapter storage, not stub comment
       const allPatterns = await this.confidenceStorage.getAllActivePatterns();
-      allPatterns.forEach(pattern => {
+      allPatterns.forEach((pattern) => {
         this.patternCache.set(pattern.nodeId, pattern);
       });
 
@@ -700,13 +754,22 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
         this.historyCache.set(executionId, factors);
       });
 
-      this.logger.log(`✅ Loaded ${allPatterns.length} patterns and ${Object.keys(allHistory).length} history entries from persistent storage`);
+      this.logger.log(
+        `✅ Loaded ${allPatterns.length} patterns and ${
+          Object.keys(allHistory).length
+        } history entries from persistent storage`
+      );
     } catch (error) {
-      this.logger.error('❌ CRITICAL: Failed to load confidence data - service will fail fast', error);
-      throw new Error('Cannot initialize ConfidenceEvaluatorService without persistent storage access');
+      this.logger.error(
+        '❌ CRITICAL: Failed to load confidence data - service will fail fast',
+        error
+      );
+      throw new Error(
+        'Cannot initialize ConfidenceEvaluatorService without persistent storage access'
+      );
     }
   }
-  
+
   /**
    * Initialize ML hooks if available
    */
@@ -718,7 +781,10 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
         // Note: ML hooks don't require explicit initialization in current interface
         this.logger.log('✅ ML hooks available with training data loaded');
       } catch (error) {
-        this.logger.warn('ML hooks initialization failed - continuing without ML:', error);
+        this.logger.warn(
+          'ML hooks initialization failed - continuing without ML:',
+          error
+        );
       }
     }
   }
@@ -748,7 +814,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     if (!historicalPattern && state.currentNode) {
       historicalPattern = await this.getHistoricalPattern(state.currentNode);
     }
-    
+
     if (historicalPattern) {
       const pattern = historicalPattern;
       const successRate =
@@ -869,12 +935,21 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   ): string[] {
     const factors: string[] = [];
 
-    if (details.security > 0.6) {factors.push('high-security-risk');}
-    if (details.dataImpact > 0.7) {factors.push('high-data-impact');}
-    if (details.userImpact > 0.6) {factors.push('high-user-impact');}
-    if (details.businessImpact > 0.7) {factors.push('high-business-impact');}
-    if (details.operationalImpact > 0.8)
-      {factors.push('high-operational-impact');}
+    if (details.security > 0.6) {
+      factors.push('high-security-risk');
+    }
+    if (details.dataImpact > 0.7) {
+      factors.push('high-data-impact');
+    }
+    if (details.userImpact > 0.6) {
+      factors.push('high-user-impact');
+    }
+    if (details.businessImpact > 0.7) {
+      factors.push('high-business-impact');
+    }
+    if (details.operationalImpact > 0.8) {
+      factors.push('high-operational-impact');
+    }
 
     factors.push(...customFactors);
 

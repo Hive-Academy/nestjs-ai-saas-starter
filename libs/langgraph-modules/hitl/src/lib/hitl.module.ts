@@ -17,6 +17,11 @@ import { HitlCheckpointService } from './services/hitl-checkpoint.service';
 import { HitlValidationService } from './services/hitl-validation.service';
 import { HitlRecoveryService } from './services/hitl-recovery.service';
 import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
+// Phase 1a SOLID Refactoring - New services
+import { ApproverIntelligenceService } from './services/approver-intelligence.service';
+import { ApprovalOutcomeService } from './services/approval-outcome.service';
+// Phase 1b SOLID Refactoring - Historical search service
+import { ApprovalHistorySearchService } from './services/approval-history-search.service';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Import interfaces only - adapters moved to application layer
@@ -71,8 +76,13 @@ export class HitlModule {
         // Adapter providers (conditional)
         ...adapterProviders,
         // Core services (order: dependencies first, orchestrator last)
+        // Phase 1a: New specialized services (SOLID refactoring)
+        ApproverIntelligenceService, // Approver selection using memory patterns
+        ApprovalOutcomeService, // Outcome tracking and memory learning
+        // Phase 1b: Historical search service
+        ApprovalHistorySearchService, // Historical approval pattern search
         // Processing & helper services
-        ApprovalProcessingService,
+        ApprovalProcessingService, // Depends on ApproverIntelligence & ApprovalOutcome
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -98,6 +108,11 @@ export class HitlModule {
       exports: [
         HumanApprovalService,
         ApprovalProcessingService,
+        // Phase 1a: Export new SOLID refactored services
+        ApproverIntelligenceService,
+        ApprovalOutcomeService,
+        // Phase 1b: Export historical search service
+        ApprovalHistorySearchService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -141,7 +156,12 @@ export class HitlModule {
         // Adapter providers (self-contained)
         ...adapterProviders,
         // Core services (dependencies first)
-        ApprovalProcessingService,
+        // Phase 1a: New specialized services (SOLID refactoring)
+        ApproverIntelligenceService,
+        ApprovalOutcomeService,
+        // Phase 1b: Historical search service
+        ApprovalHistorySearchService,
+        ApprovalProcessingService, // Depends on ApproverIntelligence & ApprovalOutcome
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -161,6 +181,11 @@ export class HitlModule {
       exports: [
         HumanApprovalService,
         ApprovalProcessingService,
+        // Phase 1a: Export new SOLID refactored services
+        ApproverIntelligenceService,
+        ApprovalOutcomeService,
+        // Phase 1b: Export historical search service
+        ApprovalHistorySearchService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
