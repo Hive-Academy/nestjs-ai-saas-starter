@@ -5,7 +5,8 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(cat:*)",
       "Bash(npx nx build:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__nx-mcp__nx_project_details"
     ],
     "deny": [],
     "ask": [],

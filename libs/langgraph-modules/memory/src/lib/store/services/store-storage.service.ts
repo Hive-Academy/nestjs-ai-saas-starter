@@ -111,12 +111,36 @@ export class StoreStorageService {
   }
 
   /**
+   * Get statistics for a namespace including all unique namespaces
+   *
+   * REAL IMPLEMENTATION - Delegates to IVectorService adapter
+   *
+   * Returns namespace statistics including:
+   * - itemCount: Total number of items matching prefix
+   * - namespaces: List of unique namespace arrays
+   *
+   * Verification:
+   * - Architecture design: TASK_2025_007 lines 447-472
+   * - IVectorService.getStoreNamespaceStats: line 319 (verified)
+   *
+   * @param namespacePrefix - Optional prefix to filter namespaces (empty array = all namespaces)
+   * @returns Statistics with item count and unique namespace list
+   */
+  async getNamespaceStats(
+    namespacePrefix: string[]
+  ): Promise<{ itemCount: number; namespaces: string[][] }> {
+    return this.vectorService.getStoreNamespaceStats(namespacePrefix);
+  }
+
+  /**
    * Get statistics for a namespace
    * Delegates to application adapter's getStoreNamespaceStats method
+   *
+   * @deprecated Use getNamespaceStats() instead (consistent naming)
    */
   async getStats(
     namespacePrefix: string[]
   ): Promise<{ itemCount: number; namespaces: string[][] }> {
-    return this.vectorService.getStoreNamespaceStats(namespacePrefix);
+    return this.getNamespaceStats(namespacePrefix);
   }
 }
