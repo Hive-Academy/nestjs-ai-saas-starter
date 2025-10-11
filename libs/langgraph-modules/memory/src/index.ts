@@ -137,6 +137,21 @@ export {
   SUMMARIZATION_STRATEGIES,
 } from './lib/constants/memory.constants';
 
+// Store namespace constants (TASK_2025_008 Phase 2)
+export {
+  STORE_COLLECTIONS,
+  validateNamespace,
+  NamespaceBuilder,
+  extractModule,
+  matchesPattern,
+} from './lib/constants/store-namespaces';
+
+export type {
+  StoreCollectionKey,
+  NamespaceValidationResult,
+  NamespaceValidationOptions,
+} from './lib/constants/store-namespaces';
+
 // Validation schemas
 export {
   MemoryEntrySchema,

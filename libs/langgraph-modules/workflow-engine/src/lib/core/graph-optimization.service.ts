@@ -1,5 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import type { IMemoryAdapter } from '@hive-academy/langgraph-core';
+import type { IMemoryAdapter, Store } from '@hive-academy/langgraph-core';
+import { STORE_COLLECTIONS } from '@hive-academy/langgraph-memory';
 import type { WorkflowDefinition, WorkflowState } from '../interfaces';
 import type { GraphBuilderOptions } from './workflow-graph-builder.service';
 
@@ -23,7 +24,9 @@ export class GraphOptimizationService {
    * This follows the 2025 LangGraph pattern for graph compilation intelligence,
    * where previous compilation performance and patterns inform future optimizations.
    */
-  async enhanceWithOptimizationPatterns<TState extends WorkflowState = WorkflowState>(
+  async enhanceWithOptimizationPatterns<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: WorkflowDefinition<TState>,
     options: GraphBuilderOptions
   ): Promise<GraphBuilderOptions> {
@@ -204,16 +207,21 @@ export class GraphOptimizationService {
 
         // Performance outcome
         outcome: {
-          efficiency: this.categorizeGraphEfficiency(buildTime, graphComplexity),
+          efficiency: this.categorizeGraphEfficiency(
+            buildTime,
+            graphComplexity
+          ),
           successful: buildTime < 200, // Consider successful if < 200ms
           scalable: graphComplexity.nodeCount < 50 || buildTime < 500,
         },
 
         // Recommendations for similar graphs
         recommendations: {
-          optimalInterrupts: this.generateInterruptRecommendations(graphComplexity),
+          optimalInterrupts:
+            this.generateInterruptRecommendations(graphComplexity),
           debugRecommendation: buildTime > 100 ? true : false, // Debug mode for slow graphs
-          channelOptimizations: this.generateChannelOptimizations(graphComplexity),
+          channelOptimizations:
+            this.generateChannelOptimizations(graphComplexity),
         },
       };
 
@@ -317,7 +325,8 @@ export class GraphOptimizationService {
    * Categorize graph compilation efficiency
    */
   categorizeGraphEfficiency(buildTime: number, complexity: any): string {
-    const complexityMultiplier = complexity.nodeCount * 2 + complexity.edgeCount;
+    const complexityMultiplier =
+      complexity.nodeCount * 2 + complexity.edgeCount;
     const efficiencyRatio = buildTime / Math.max(complexityMultiplier, 1);
 
     if (efficiencyRatio < 2) return 'very_efficient';
@@ -354,7 +363,9 @@ export class GraphOptimizationService {
     }
 
     if (complexity.complexity === 'very_high' && !options.checkpointer) {
-      suggestions.push('Complex graph - checkpointing recommended for reliability');
+      suggestions.push(
+        'Complex graph - checkpointing recommended for reliability'
+      );
     }
 
     return suggestions;
@@ -393,7 +404,10 @@ export class GraphOptimizationService {
       recommendations.before = ['tool_execution'];
     }
 
-    if (complexity.complexity === 'high' || complexity.complexity === 'very_high') {
+    if (
+      complexity.complexity === 'high' ||
+      complexity.complexity === 'very_high'
+    ) {
       recommendations.after = ['validation', 'checkpoint'];
     }
 
@@ -413,4 +427,121 @@ export class GraphOptimizationService {
       parallelization: complexity.nodeCount > 10,
     };
   }
+
+  /**
+   * Discover similar workflow patterns using Store search
+   * Phase 2: Hierarchical namespace semantic search
+   *
+   * Verification:
+   * - Store interface: memory-adapter.interface.ts:60-100
+   * - Pattern: implementation-plan-workflow-engine.md:92-113
+   */
+  async discoverSimilarPatterns(
+    workflowType: string,
+    nodeCount: number,
+    edgeCount: number
+  ): Promise<WorkflowPattern[]> {
+    if (!this.memoryAdapter) {
+      return [];
+    }
+
+    try {
+      const store: Store = this.memoryAdapter.getStore(
+        STORE_COLLECTIONS.WORKFLOW.PATTERNS
+      );
+
+      // Search within workflow type namespace
+      const results = await store.search(
+        ['workflows', workflowType], // All workflows of this type
+        `${nodeCount} nodes ${edgeCount} edges fast compilation`
+      );
+
+      return results.map((item) => ({
+        workflowName: item.key,
+        optimizations: item.value.optimizations,
+        performance: item.value.performance,
+        similarity: item.score || 0,
+      }));
+    } catch (error) {
+      this.logger.warn('Failed to discover similar patterns:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Store workflow compilation pattern
+   * Phase 2: Store with hierarchical namespace
+   *
+   * Verification:
+   * - Store interface: memory-adapter.interface.ts:60-100
+   * - Pattern: implementation-plan-workflow-engine.md:119-158
+   */
+  async storeWorkflowPattern(
+    definition: WorkflowDefinition,
+    compilationResult: {
+      appliedOptimizations: string[];
+      duration: number;
+      complexity: number;
+      success: boolean;
+    }
+  ): Promise<void> {
+    if (!this.memoryAdapter) return;
+
+    // Non-blocking storage
+    this.storePatternAsync(definition, compilationResult).catch((error) => {
+      this.logger.warn('Failed to store workflow pattern:', error);
+    });
+  }
+
+  /**
+   * Internal async pattern storage
+   */
+  private async storePatternAsync(
+    definition: WorkflowDefinition,
+    result: {
+      appliedOptimizations: string[];
+      duration: number;
+      complexity: number;
+      success: boolean;
+    }
+  ): Promise<void> {
+    const store: Store = this.memoryAdapter!.getStore(
+      STORE_COLLECTIONS.WORKFLOW.PATTERNS
+    );
+
+    const workflowType = this.classifyGraphType(definition);
+
+    // Hierarchical namespace: [domain, workflowType, workflowName, subdomain]
+    await store.put(
+      ['workflows', workflowType, definition.name, 'optimizations'],
+      {
+        optimizations: result.appliedOptimizations,
+        performance: {
+          compilationTime: result.duration,
+          graphComplexity: result.complexity,
+          nodeCount: definition.nodes.length,
+          edgeCount: definition.edges.length,
+        },
+        timestamp: new Date(),
+        success: result.success,
+      }
+    );
+
+    this.logger.debug(`Stored workflow pattern: ${definition.name}`);
+  }
+}
+
+/**
+ * Supporting interfaces for Store-based pattern discovery
+ */
+interface WorkflowPattern {
+  workflowName: string;
+  optimizations: string[];
+  performance: {
+    compilationTime: number;
+    graphComplexity: number;
+    nodeCount: number;
+    edgeCount: number;
+  };
+  similarity: number;
 }

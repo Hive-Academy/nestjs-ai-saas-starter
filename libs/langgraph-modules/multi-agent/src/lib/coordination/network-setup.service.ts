@@ -1,11 +1,12 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import type { IMemoryAdapter } from '@hive-academy/langgraph-core';
+import type { IMemoryAdapter, Store } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentNetwork,
 } from '../interfaces/multi-agent.interface';
 import { AgentRegistryService } from '../agent/agent-registry.service';
 import { NetworkManagerService } from '../network/network-manager.service';
+import { STORE_COLLECTIONS } from '@hive-academy/langgraph-memory';
 
 /**
  * Network Setup Service
@@ -492,5 +493,191 @@ export class NetworkSetupService {
     }
 
     return [agentIds];
+  }
+
+  // ============================================================================
+  // PHASE 2: Store-based Agent Collaboration Graph
+  // ============================================================================
+
+  /**
+   * Track agent collaboration in network
+   * Phase 2: Store-based collaboration graph with hierarchical namespaces
+   *
+   * Verification:
+   * - Store interface: langgraph-core/src/lib/interfaces/memory-adapter.interface.ts:60-100
+   * - Constants: langgraph-modules/memory/src/lib/constants/store-namespaces.ts
+   * - Pattern: implementation-plan-multi-agent.md:57-101
+   */
+  async trackAgentCollaboration(
+    networkId: string,
+    agent1Id: string,
+    agent2Id: string,
+    collaboration: {
+      successRate: number;
+      avgResponseTime: number;
+      taskTypes: string[];
+      count: number;
+      errorRate?: number;
+      qualityScore?: number;
+    }
+  ): Promise<void> {
+    if (!this.memoryAdapter) return;
+
+    // Non-blocking storage (fire-and-forget pattern)
+    this.storeCollaborationAsync(
+      networkId,
+      agent1Id,
+      agent2Id,
+      collaboration
+    ).catch((error) => {
+      this.logger.warn(`Failed to store collaboration: ${error.message}`);
+    });
+  }
+
+  /**
+   * Store collaboration data in Store
+   * Uses hierarchical namespace: ['networks', networkId, 'collaborations', agent1Id, agent2Id]
+   */
+  private async storeCollaborationAsync(
+    networkId: string,
+    agent1Id: string,
+    agent2Id: string,
+    collaboration: {
+      successRate: number;
+      avgResponseTime: number;
+      taskTypes: string[];
+      count: number;
+      errorRate?: number;
+      qualityScore?: number;
+    }
+  ): Promise<void> {
+    const store: Store = this.memoryAdapter!.getStore(
+      STORE_COLLECTIONS.MULTI_AGENT.COLLABORATIONS
+    );
+
+    // Store bidirectional collaboration data
+    // Namespace: ['networks', networkId, 'collaborations', agent1Id, agent2Id]
+    await store.put(
+      ['networks', networkId, 'collaborations', agent1Id, agent2Id],
+      {
+        successRate: collaboration.successRate,
+        avgResponseTime: collaboration.avgResponseTime,
+        taskTypes: collaboration.taskTypes,
+        totalCollaborations: collaboration.count,
+        lastCollaboration: new Date(),
+        metrics: {
+          errorRate: collaboration.errorRate || 0,
+          avgQuality: collaboration.qualityScore || 0.8,
+        },
+      }
+    );
+
+    this.logger.debug(
+      `Stored collaboration: ${agent1Id} <-> ${agent2Id} in network ${networkId}`
+    );
+  }
+
+  /**
+   * Query best collaboration partners for an agent
+   * Phase 2: Hierarchical namespace queries for optimal partner discovery
+   */
+  async getAgentCollaborators(
+    networkId: string,
+    agentId: string
+  ): Promise<
+    Array<{
+      agentId: string;
+      successRate: number;
+      avgResponseTime: number;
+      taskTypes: string[];
+      score: number;
+    }>
+  > {
+    if (!this.memoryAdapter) {
+      return []; // Graceful degradation
+    }
+
+    const store: Store = this.memoryAdapter.getStore(
+      STORE_COLLECTIONS.MULTI_AGENT.COLLABORATIONS
+    );
+
+    try {
+      // List all collaborators for this agent
+      const collaborators = await store.list([
+        'networks',
+        networkId,
+        'collaborations',
+        agentId,
+      ]);
+
+      // Rank by success rate and response time
+      return this.rankCollaborators(collaborators);
+    } catch (error) {
+      this.logger.warn(`Failed to get agent collaborators: ${error}`);
+      return [];
+    }
+  }
+
+  /**
+   * Find best collaboration partner for specific task type
+   */
+  async findBestCollaborator(
+    networkId: string,
+    agentId: string,
+    taskType: string
+  ): Promise<string | null> {
+    const collaborators = await this.getAgentCollaborators(networkId, agentId);
+
+    if (collaborators.length === 0) return null;
+
+    // Find collaborator with best success rate for this task type
+    const bestForTask = collaborators.find((c) =>
+      c.taskTypes.includes(taskType)
+    );
+
+    return bestForTask?.agentId || collaborators[0].agentId;
+  }
+
+  /**
+   * Rank collaborators by performance
+   * Algorithm: 60% success rate + 30% response time + 10% quality
+   */
+  private rankCollaborators(
+    collaborators: Array<{ key: string; value: any }>
+  ): Array<{
+    agentId: string;
+    successRate: number;
+    avgResponseTime: number;
+    taskTypes: string[];
+    score: number;
+  }> {
+    return collaborators
+      .map((item) => ({
+        agentId: item.key,
+        successRate: item.value.successRate,
+        avgResponseTime: item.value.avgResponseTime,
+        taskTypes: item.value.taskTypes,
+        score: this.calculateCollaboratorScore(item.value),
+      }))
+      .sort((a, b) => b.score - a.score);
+  }
+
+  /**
+   * Calculate collaborator score (higher is better)
+   * Weights: 60% success, 30% response time, 10% quality
+   */
+  private calculateCollaboratorScore(collaboration: any): number {
+    const successWeight = 0.6;
+    const responseTimeWeight = 0.3;
+    const qualityWeight = 0.1;
+
+    const successScore = collaboration.successRate * successWeight;
+    const responseScore =
+      Math.max(0, 1 - collaboration.avgResponseTime / 5000) *
+      responseTimeWeight;
+    const qualityScore =
+      (collaboration.metrics?.avgQuality || 0.8) * qualityWeight;
+
+    return successScore + responseScore + qualityScore;
   }
 }
