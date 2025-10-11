@@ -6,11 +6,14 @@ import { MemoryService } from './services/memory.service';
 import { MemoryStorageService } from './services/memory-storage.service';
 import { MemoryGraphService } from './services/memory-graph.service';
 import { AgentMemoryBridgeService } from './services/agent-memory-bridge.service';
+import { AgentMemoryCoreService } from './services/agent-memory-core.service';
+import { AgentMemoryContextService } from './services/agent-memory-context.service';
+import { AgentMemoryCheckpointService } from './services/agent-memory-checkpoint.service';
+import { AgentMemoryStatsService } from './services/agent-memory-stats.service';
 
 // Import interfaces only - adapters moved to application layer
 import type { IVectorService } from './interfaces/vector-service.interface';
 import type { IGraphService } from './interfaces/graph-service.interface';
-import type { IStoreService } from './store/services/interfaces/store-service.interface';
 
 import type {
   MemoryModuleOptions,
@@ -64,29 +67,13 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       MemoryService,
-      // AgentMemoryBridgeService with direct adapter injection
-      {
-        provide: AgentMemoryBridgeService,
-        useFactory: (
-          vectorService: IVectorService,
-          graphService: IGraphService,
-          storeService: IStoreService,
-          checkpointAdapter?: any
-        ) => {
-          return new AgentMemoryBridgeService(
-            vectorService,
-            graphService,
-            storeService,
-            checkpointAdapter
-          );
-        },
-        inject: [
-          'IVectorService',
-          'IGraphService',
-          'IStoreService',
-          { token: 'ICheckpointAdapter', optional: true },
-        ],
-      },
+      // Specialized agent memory services (TASK_2025_006)
+      AgentMemoryCoreService,
+      AgentMemoryContextService,
+      AgentMemoryCheckpointService,
+      AgentMemoryStatsService,
+      // AgentMemoryBridgeService with orchestrator pattern
+      AgentMemoryBridgeService,
     ];
 
     // NEW: Provide IMemoryAdapter globally if adapters are available
@@ -95,6 +82,11 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       AgentMemoryBridgeService,
+      // Specialized agent memory services (TASK_2025_006)
+      AgentMemoryCoreService,
+      AgentMemoryContextService,
+      AgentMemoryCheckpointService,
+      AgentMemoryStatsService,
       MEMORY_CONFIG,
       // NOTE: IVectorService and IGraphService are NOT exported here
       // They are provided by the application module via adapter injection
@@ -134,29 +126,13 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       MemoryService,
-      // AgentMemoryBridgeService with direct adapter injection
-      {
-        provide: AgentMemoryBridgeService,
-        useFactory: (
-          vectorService: IVectorService,
-          graphService: IGraphService,
-          storeService: IStoreService,
-          checkpointAdapter?: any
-        ) => {
-          return new AgentMemoryBridgeService(
-            vectorService,
-            graphService,
-            storeService,
-            checkpointAdapter
-          );
-        },
-        inject: [
-          'IVectorService',
-          'IGraphService',
-          'IStoreService',
-          { token: 'ICheckpointAdapter', optional: true },
-        ],
-      },
+      // Specialized agent memory services (TASK_2025_006)
+      AgentMemoryCoreService,
+      AgentMemoryContextService,
+      AgentMemoryCheckpointService,
+      AgentMemoryStatsService,
+      // AgentMemoryBridgeService with orchestrator pattern
+      AgentMemoryBridgeService,
     ];
 
     const exports: any[] = [
@@ -164,6 +140,11 @@ export class MemoryModule {
       MemoryStorageService,
       MemoryGraphService,
       AgentMemoryBridgeService,
+      // Specialized agent memory services (TASK_2025_006)
+      AgentMemoryCoreService,
+      AgentMemoryContextService,
+      AgentMemoryCheckpointService,
+      AgentMemoryStatsService,
       MEMORY_CONFIG,
     ];
 

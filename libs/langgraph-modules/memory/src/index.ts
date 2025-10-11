@@ -7,6 +7,12 @@ export { MemoryStorageService } from './lib/services/memory-storage.service';
 export { MemoryGraphService } from './lib/services/memory-graph.service';
 export { AgentMemoryBridgeService } from './lib/services/agent-memory-bridge.service';
 
+// Specialized agent memory services (TASK_2025_006)
+export { AgentMemoryCoreService } from './lib/services/agent-memory-core.service';
+export { AgentMemoryContextService } from './lib/services/agent-memory-context.service';
+export { AgentMemoryCheckpointService } from './lib/services/agent-memory-checkpoint.service';
+export { AgentMemoryStatsService } from './lib/services/agent-memory-stats.service';
+
 // Interfaces
 export type {
   MemoryEntry,
