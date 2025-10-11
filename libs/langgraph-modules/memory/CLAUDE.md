@@ -208,16 +208,16 @@ export type { VectorStoreData, VectorSearchQuery, VectorSearchResult, VectorStat
 export type { GraphNodeData, GraphRelationshipData, TraversalSpec, GraphTraversalResult, GraphQueryResult, GraphStats, GraphOperation, GraphBatchResult, GraphFindCriteria, GraphNode, GraphRelationship, GraphPath } from '@hive-academy/langgraph-memory';
 ```
 
-### Enhanced Memory Adapters (New)
+### Memory Adapter Interfaces
 
 ```typescript
-// Memory Adapter Extensions
-export { ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory } from '@hive-academy/langgraph-memory';
-
-// Core Re-exports
+// Core Memory Adapter Interface (from langgraph-core)
 export { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-memory';
 
-export type { AgentState, AgentMemoryContext, UserMemoryPatterns, Store } from '@hive-academy/langgraph-memory';
+export type { AgentState, AgentMemoryContext, UserMemoryPatterns, Store, MemorySearchOptions as CoreMemorySearchOptions } from '@hive-academy/langgraph-memory';
+
+// Implementation: Use AgentMemoryBridgeService (exported from this module)
+// AgentMemoryBridgeService implements IMemoryAdapter and is provided via MemoryModule
 ```
 
 ### LangGraph Store Integration (2025 Compliance)
@@ -695,85 +695,21 @@ export class ProductionWorkflowService {
 }
 ```
 
-### Previous Example (Not Accurate)
+### Deprecated Example (Removed Classes)
 
 ```typescript
-// ❌ OLD EXAMPLE (NOT VERIFIED): Multi-agent using MemoryService directly
-import { MultiAgentCoordinatorService, AgentDefinition } from '@hive-academy/langgraph-multi-agent';
-import { MemoryService, ExtendedMemoryAdapter, MemoryEntry, MemorySearchOptions } from '@hive-academy/langgraph-memory';
-
-@Injectable()
-export class SharedMemoryAgentSystem {
-  constructor(private readonly multiAgent: MultiAgentCoordinatorService, private readonly sharedMemory: MemoryService) {}
-
-  async createMemoryAwareAgentNetwork(): Promise<AgentDefinition[]> {
-    const agents: AgentDefinition[] = [
-      {
-        id: 'analyzer-agent',
-        type: 'analyzer',
-        capabilities: ['text-analysis', 'pattern-recognition'],
-        memoryConfig: {
-          sharedMemory: true,
-          privateMemory: false,
-        },
-      },
-      {
-        id: 'synthesizer-agent',
-        type: 'synthesizer',
-        capabilities: ['content-generation', 'summarization'],
-        memoryConfig: {
-          sharedMemory: true,
-          privateMemory: true,
-        },
-      },
-    ];
-
-    const sharedAdapter = new ExtendedMemoryAdapter({
-      enableSharedAccess: true,
-      enableCrossAgentLearning: true,
-      memoryService: this.sharedMemory,
-    });
-
-    await this.multiAgent.registerAgents(agents, {
-      sharedMemoryAdapter: sharedAdapter,
-      enableCollectiveIntelligence: true,
-    });
-
-    return agents;
-  }
-
-  async coordinateWithSharedMemory(task: string): Promise<any> {
-    const contextSearch: MemorySearchOptions = {
-      query: task,
-      includeMetadata: true,
-      crossAgentMemory: true,
-      limit: 20,
-    };
-
-    const collectiveContext = await this.sharedMemory.search(contextSearch);
-
-    const result = await this.multiAgent.coordinate({
-      task,
-      context: collectiveContext,
-      enableMemorySharing: true,
-    });
-
-    const coordinationEntry: MemoryEntry = {
-      content: JSON.stringify(result),
-      metadata: {
-        type: 'agent-coordination',
-        importance: 0.9,
-        tags: ['multi-agent', 'coordination'],
-        agentsInvolved: result.agentsUsed,
-        timestamp: new Date(),
-      },
-    };
-
-    await this.sharedMemory.storeEntry(coordinationEntry);
-
-    return result;
-  }
-}
+// ❌ DEPRECATED: ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory removed
+// These concrete implementations were architectural violations (concrete code in interface file)
+//
+// ✅ CORRECT APPROACH: Use IMemoryAdapter interface with AgentMemoryBridgeService
+// AgentMemoryBridgeService is automatically provided by MemoryModule via 'IMemoryAdapter' token
+//
+// Consuming modules should inject IMemoryAdapter:
+// constructor(
+//   @Optional()
+//   @Inject('IMemoryAdapter')
+//   private readonly memoryAdapter?: IMemoryAdapter
+// ) {}
 ```
 
 ### LangGraph Store Integration (2025 Compliance)

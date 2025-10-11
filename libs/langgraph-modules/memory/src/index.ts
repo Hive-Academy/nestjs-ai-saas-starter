@@ -48,12 +48,9 @@ export {
 export { IVectorService } from './lib/interfaces/vector-service.interface';
 export { IGraphService } from './lib/interfaces/graph-service.interface';
 
-// NEW: Memory Adapter Interfaces for Agentic Superpowers
-export {
-  ExtendedMemoryAdapter,
-  MemoryManagerAdapter,
-  MemoryAdapterFactory,
-} from './lib/interfaces/memory-adapter.interface';
+// Memory Adapter Interfaces (re-exported from core)
+// Note: ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory removed
+// Use IMemoryAdapter from core and AgentMemoryBridgeService for implementations
 
 // Re-export core memory adapter interfaces for convenience
 export { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-core';
