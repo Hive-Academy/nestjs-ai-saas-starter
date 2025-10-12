@@ -556,9 +556,11 @@ export class NetworkSetupService {
     );
 
     // Store bidirectional collaboration data
-    // Namespace: ['networks', networkId, 'collaborations', agent1Id, agent2Id]
+    // Namespace: ['networks', networkId, 'collaborations', agent1Id]
+    // Key: agent2Id
     await store.put(
-      ['networks', networkId, 'collaborations', agent1Id, agent2Id],
+      ['networks', networkId, 'collaborations', agent1Id],
+      agent2Id,
       {
         successRate: collaboration.successRate,
         avgResponseTime: collaboration.avgResponseTime,

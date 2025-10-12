@@ -20,8 +20,3 @@ export type {
 export { StoreService } from './services/store.service';
 export { StoreStorageService } from './services/store-storage.service';
 export { StoreGraphService } from './services/store-graph.service';
-
-// ============================================================================
-// Module
-// ============================================================================
-export { StoreModule } from './store.module';

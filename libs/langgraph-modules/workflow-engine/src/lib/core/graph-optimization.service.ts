@@ -511,9 +511,11 @@ export class GraphOptimizationService {
 
     const workflowType = this.classifyGraphType(definition);
 
-    // Hierarchical namespace: [domain, workflowType, workflowName, subdomain]
+    // Hierarchical namespace: [domain, workflowType, workflowName]
+    // Key: 'optimizations'
     await store.put(
-      ['workflows', workflowType, definition.name, 'optimizations'],
+      ['workflows', workflowType, definition.name],
+      'optimizations',
       {
         optimizations: result.appliedOptimizations,
         performance: {

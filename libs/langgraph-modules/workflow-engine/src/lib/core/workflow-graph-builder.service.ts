@@ -463,15 +463,15 @@ export class WorkflowGraphBuilderService {
    * - getAgentContext interface: memory-adapter.interface.ts:115
    * - Pattern: implementation-plan-workflow-engine.md:420-436
    */
-  private async getBuilderContext(
-    definition: WorkflowDefinition
+  private async getBuilderContext<TState extends WorkflowState = WorkflowState>(
+    definition: WorkflowDefinition<TState>
   ): Promise<AgentMemoryContext | null> {
     if (!this.memoryAdapter) return null;
 
     const state: AgentState = {
       messages: [],
-      agentId: 'workflow-graph-builder',
       metadata: {
+        agentId: 'workflow-graph-builder',
         graphType:
           this.graphOptimization.analyzeGraphComplexity(definition).complexity,
         nodeCount: definition.nodes.length,
@@ -519,8 +519,10 @@ export class WorkflowGraphBuilderService {
    * - storeAgentExecution interface: memory-adapter.interface.ts:121-125
    * - Pattern: implementation-plan-workflow-engine.md:464-496
    */
-  private async storeBuilderExecution(
-    definition: WorkflowDefinition,
+  private async storeBuilderExecution<
+    TState extends WorkflowState = WorkflowState
+  >(
+    definition: WorkflowDefinition<TState>,
     compilationTime: number,
     options: GraphBuilderOptions
   ): Promise<void> {
@@ -530,20 +532,23 @@ export class WorkflowGraphBuilderService {
     const state: AgentState = {
       messages: [],
       metadata: {
+        agentId: 'workflow-graph-builder',
         graphType: graphComplexity.complexity,
         workflowName: definition.name,
       },
     };
 
-    const result = {
-      graphComplexity: graphComplexity.complexity,
-      compilationTime,
-      optimizationsApplied: this.extractAppliedOptimizations(options),
-      success: compilationTime < 1000, // Success if <1 second
-      performance: {
-        nodeCount: definition.nodes.length,
-        edgeCount: definition.edges.length,
-        avgNodeComplexity: graphComplexity.averageNodeComplexity,
+    const result: Partial<AgentState> = {
+      metadata: {
+        graphComplexity: graphComplexity.complexity,
+        compilationTime,
+        optimizationsApplied: this.extractAppliedOptimizations(options),
+        success: compilationTime < 1000, // Success if <1 second
+        performance: {
+          nodeCount: definition.nodes.length,
+          edgeCount: definition.edges.length,
+          avgNodeComplexity: graphComplexity.averageNodeComplexity,
+        },
       },
     };
 

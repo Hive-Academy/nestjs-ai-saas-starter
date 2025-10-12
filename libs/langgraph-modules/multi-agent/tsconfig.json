@@ -8,6 +8,9 @@
       "path": "../checkpoint"
     },
     {
+      "path": "../memory"
+    },
+    {
       "path": "../core"
     },
     {
