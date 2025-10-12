@@ -6,6 +6,35 @@
 
 The Streaming Module provides production-ready real-time processing using RxJS observables and WebSocket integration, with comprehensive decorator system for streaming workflows.
 
+## EventEmitter Configuration
+
+The Streaming module uses NestJS EventEmitter2 for real-time token streaming and event broadcasting.
+
+**IMPORTANT**: Do NOT import EventEmitterModule in this module.
+EventEmitter should be provided globally by the root application module.
+
+### Correct Configuration
+
+```typescript
+// apps/your-app/src/app/app.module.ts
+@Module({
+  imports: [
+    EventEmitterModule.forRoot({
+      maxListeners: 20, // Prevent false-positive memory leak warnings
+    }),
+    StreamingModule.forRoot({...}), // No EventEmitterModule import needed
+  ],
+})
+export class AppModule {}
+```
+
+### Why Global?
+
+- EventEmitter2 is designed to be a singleton event bus
+- Multiple instances cause duplicate listener warnings (false positives)
+- Global import provides consistent event bus across all modules
+- Critical for streaming: High event volume requires single coordinated bus
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Source Code Analysis Results** (January 2025)

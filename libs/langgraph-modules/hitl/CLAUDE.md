@@ -6,6 +6,34 @@
 
 The HITL Module provides an enterprise-grade human approval system with 16 specialized services, ML confidence scoring, and sophisticated approval chain management.
 
+## EventEmitter Configuration
+
+The HITL module uses NestJS EventEmitter2 for approval events and notifications.
+
+**IMPORTANT**: Do NOT import EventEmitterModule in this module.
+EventEmitter should be provided globally by the root application module.
+
+### Correct Configuration
+
+```typescript
+// apps/your-app/src/app/app.module.ts
+@Module({
+  imports: [
+    EventEmitterModule.forRoot({
+      maxListeners: 20, // Prevent false-positive memory leak warnings
+    }),
+    HitlModule.forRoot({...}), // No EventEmitterModule import needed
+  ],
+})
+export class AppModule {}
+```
+
+### Why Global?
+
+- EventEmitter2 is designed to be a singleton event bus
+- Multiple instances cause duplicate listener warnings (false positives)
+- Global import provides consistent event bus across all modules
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Source Code Analysis Results** (January 2025)

@@ -1,497 +1,548 @@
-> node dist/main.js
+[Nest] 25964 - 10/13/2025, 1:47:56 AM ERROR [HuggingFaceEmbeddingProvider] HuggingFace embedding failed: HuggingFace API error: Request timeout after 3000ms: <https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5>
+Error: HuggingFace API error: Request timeout after 3000ms: <https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5>
+at HuggingFaceEmbeddingProvider.callHuggingFaceAPI (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3854:13)
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+at async HuggingFaceEmbeddingProvider.embedBatch (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3811:24)
+at async HuggingFaceEmbeddingProvider.processBatches (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3392:28)
+at async EmbeddingService.embed (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:4045:14)
+at async ChromaDBEmbeddingProcessorService.generateEmbeddingsBatch (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:6250:26)
+at async ChromaDBEmbeddingProcessorService.processQueryEmbeddings (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:6229:26)
+at async ChromaDBService.searchDocuments (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:6550:38)
+at async VectorMemoryRepository.searchWithScores (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:544:20)
+at async VectorMemoryRepository.searchMemoriesSimilar (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:16039)
+[Nest] 25964 - 10/13/2025, 1:47:56 AM WARN [ChromaDBEmbeddingProcessorService] Failed to generate query embeddings: HuggingFace embedding failed: HuggingFace API error: Request timeout after 3000ms: <https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5>
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 0,
+timeout: 3000,
+timestamp: '2025-10-12T22:47:56.139Z'
+}
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:47:56.140Z'
+}
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:47:58 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:47:58 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2697,
+totalTime: 2697,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:47:58 AM WARN [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:47:58 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:47:58 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 2712
+}
+[Nest] 25964 - 10/13/2025, 1:47:59 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:47:59 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3011,
+totalTime: 3011,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:47:59 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:47:59 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:47:59 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Connection not established, reconnecting...
+[Nest] 25964 - 10/13/2025, 1:47:59 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 8ms
+[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 3021
+}
+[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:47:59.161Z'
+}
+[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2272,
+totalTime: 4983,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:01 AM WARN [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 4998
+}
+[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2264,
+totalTime: 2264,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:01 AM WARN [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 2278
+}
+[Nest] 25964 - 10/13/2025, 1:48:02 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:02 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3015,
+totalTime: 6028,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:02 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:02 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:02 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Connection not established, reconnecting...
+[Nest] 25964 - 10/13/2025, 1:48:02 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 4ms
+[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 6048
+}
+[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:48:02.187Z'
+}
+[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ❌ FAILED on attempt 3/3
+[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2264,
+totalTime: 7262,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: false,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] 🔴 FINAL FAILURE after 7263ms
+[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] Object(2) {
+totalAttempts: 3,
+finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
+}
+[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2280,
+totalTime: 4558,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:03 AM WARN [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:03 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:03 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 4572
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3001,
+totalTime: 3001,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ❌ FAILED on attempt 3/3
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3007,
+totalTime: 9050,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: false,
+willRetry: false,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] 🔴 FINAL FAILURE after 9051ms
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] Object(2) {
+totalAttempts: 3,
+finalError: 'Operation timed out after 3000ms'
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaMetricsService] Slow operation detected: searchDocuments took 9051ms
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaMetricsService] Operation failed: searchDocuments - Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [VectorMemoryRepository] Failed to search memories
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [VectorMemoryRepository] ChromaDBTimeoutError: Operation timed out after 3000ms
+at Timeout.\_onTimeout (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3304:31)
+at listOnTimeout (node:internal/timers:588:17)
+at process.processTimers (node:internal/timers:523:7) {
+timestamp: 2025-10-12T22:48:05.189Z,
+context: {
+timeoutMs: undefined
+},
+timeoutMs: undefined,
+code: 'CHROMADB_TIMEOUT_ERROR'
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [AgentMemoryCoreService] Failed to search agent memories: Failed to search memories
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBEmbeddingProcessorService] Generating embeddings for 1 query texts
+[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Connection not established, reconnecting...
+[Nest] 25964 - 10/13/2025, 1:48:05 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 2ms
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 3008
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBEmbeddingProcessorService] Successfully generated embeddings for 1 queries
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:48:05.920Z'
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 1
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:48:05.921Z'
+}
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ❌ FAILED on attempt 3/3
+[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2283,
+totalTime: 6855,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: false,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] 🔴 FINAL FAILURE after 6857ms
+[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] Object(2) {
+totalAttempts: 3,
+finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
+}
+[Nest] 25964 - 10/13/2025, 1:48:07 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:07 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2759,
+totalTime: 5765,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:07 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:07 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:07 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 5780
+}
+[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2354,
+totalTime: 2354,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 2363
+}
+[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3007,
+totalTime: 3008,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Connection not established, reconnecting...
+[Nest] 25964 - 10/13/2025, 1:48:08 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 2ms
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 3019
+}
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:48:08.939Z'
+}
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ❌ FAILED on attempt 3/3
+[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2262,
+totalTime: 8042,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: false,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] 🔴 FINAL FAILURE after 8043ms
+[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] Object(2) {
+totalAttempts: 3,
+finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
+}
+[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2272,
+totalTime: 4635,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:10 AM WARN [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:10 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:10 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 4639
+}
+[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3002,
+totalTime: 3002,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3007,
+totalTime: 6022,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: false,
+willRetry: true,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Connection not established, reconnecting...
+[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Connection not established, reconnecting...
+[Nest] 25964 - 10/13/2025, 1:48:11 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 4ms
+[Nest] 25964 - 10/13/2025, 1:48:11 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:11 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 3016
+}
+[Nest] 25964 - 10/13/2025, 1:48:12 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 564ms
+[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 6596
+}
+[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] [op-1760309292517-856whr53z] Starting ChromaDB operation
+[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] Object(4) {
+isConnected: true,
+maxRetries: 3,
+timeout: 3000,
+timestamp: '2025-10-12T22:48:12.517Z'
+}
+[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] [op-1760309292517-856whr53z] Attempt 1/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 0
+}
+[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ❌ FAILED on attempt 3/3
+[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2286,
+totalTime: 6925,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: false,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] 🔴 FINAL FAILURE after 6925ms
+[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] Object(2) {
+totalAttempts: 3,
+finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
+}
+[Nest] 25964 - 10/13/2025, 1:48:14 AM ERROR [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ❌ FAILED on attempt 2/3
+[Nest] 25964 - 10/13/2025, 1:48:14 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2824,
+totalTime: 5836,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:14 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ⏳ Waiting 0ms before retry 3...
+[Nest] 25964 - 10/13/2025, 1:48:14 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Attempt 3/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:14 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 5837
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] [op-1760309292517-856whr53z] ❌ FAILED on attempt 1/3
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 2602,
+totalTime: 2602,
+errorType: 'UNKNOWN',
+errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
+isConnectionError: false,
+wasConnected: true,
+willRetry: true,
+stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [ChromaDBConnectionService] [op-1760309292517-856whr53z] ⏳ Waiting 0ms before retry 2...
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [ChromaDBConnectionService] [op-1760309292517-856whr53z] Attempt 2/3 - executing operation
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [ChromaDBConnectionService] Object(1) {
+timeElapsed: 2608
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ❌ FAILED on attempt 3/3
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] Object(8) {
+duration: 3566,
+totalTime: 9598,
+errorType: 'TIMEOUT',
+errorMessage: 'Operation timed out after 3000ms',
+isConnectionError: true,
+wasConnected: true,
+willRetry: false,
+stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Marking connection as unhealthy due to: Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] 🔴 FINAL FAILURE after 9599ms
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] Object(2) {
+totalAttempts: 3,
+finalError: 'Operation timed out after 3000ms'
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [ChromaMetricsService] Slow operation detected: searchDocuments took 9600ms
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaMetricsService] Operation failed: searchDocuments - Operation timed out after 3000ms
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [VectorMemoryRepository] Failed to search memories
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [VectorMemoryRepository] ChromaDBTimeoutError: Operation timed out after 3000ms
+at Timeout.\_onTimeout (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3304:31)
+at listOnTimeout (node:internal/timers:588:17)
+at process.processTimers (node:internal/timers:523:7) {
+timestamp: 2025-10-12T22:48:15.518Z,
+context: {
+timeoutMs: undefined
+},
+timeoutMs: undefined,
+code: 'CHROMADB_TIMEOUT_ERROR'
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [AgentMemoryCoreService] Failed to search agent memories: Failed to search memories
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [NetworkSetupService] Retrieved network optimizations for devbrand-supervisor-network
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [NetworkSetupService] Object(3) {
+agentOrderOptimized: true,
+topologyOptimized: false,
+performanceTuned: false
+}
+[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [AgentRegistryService] Agent github-code-analyzer is already registered, updating definition
+[Nest] 25964 - 10/13/2025, 1:48:15 AM LOG [AgentRegistryService] Registered agent: github-code-analyzer (GitHub Code Analyzer)
+[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [AgentRegistryService] Agent personal-brand-strategist is already registered, updating definition
+[Nest] 25964 - 10/13/2025, 1:48:15 AM LOG [AgentRegistryService] Registered agent: personal-brand-strategist (Personal Brand Strategist)
+[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [AgentRegistryService] Agent content-creator is already registered, updating definition
+[Nest] 25964 - 10/13/2025, 1:48:15 AM LOG [AgentRegistryService] Registered agent: content-creator (Content Creator)
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [NetworkManagerService] CheckpointManager not available - checkpointing disabled
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [GraphBuilderService] Building supervisor graph with agents:
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [GraphBuilderService] Array(3) [
+'github-code-analyzer',
+'personal-brand-strategist',
+'content-creator'
+]
+[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [LlmProviderService] Using cached LLM: moonshotai/kimi-k2:free
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [NetworkManagerService] Failed to create network devbrand-supervisor-network:
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [NetworkManagerService] TypeError
+at Reflect.getMetadata (D:\projects\nestjs-ai-saas-starter\node_modules\reflect-metadata\Reflect.js:354:23)
+at getAgentConfig (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2824:18)
+at D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2876:46
+at Array.map (<anonymous>)
+at GraphBuilderService.buildSupervisorGraph (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2874:38)
+at async NetworkManagerService.createNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17249:19)
+at async NetworkSetupService.setupNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:23116:30)
+at async DevBrandSupervisorWorkflow.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:27569:24)
+at async Promise.all (index 3)
+at async callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [DevBrandSupervisorWorkflow] Failed to initialize multi-agent workflow: Failed to create network:
+D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17276
+throw new NetworkConfigurationError(`Failed to create network: ${error instanceof Error ? error.message : 'Unknown error'}`, error);
+^
 
-```bash
-🔧 Encapsulated environment loaded: {
-loadedFiles: [
-'.env.chromadb',
-'.env.neo4j',
-'.env.llm',
-'.env.platform',
-'.env.app'
-],
-errors: []
+NetworkConfigurationError: Failed to create network:
+at NetworkManagerService.createNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17276:13)
+at async NetworkSetupService.setupNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:23116:30)
+at async DevBrandSupervisorWorkflow.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:27569:24)
+at async Promise.all (index 3)
+at async callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
+at async NestApplication.callInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application-context.js:242:13)
+at async NestApplication.init (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application.js:103:9)
+at async D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:456887 {
+code: 'NETWORK_CONFIGURATION_ERROR',
+details: TypeError
+at Reflect.getMetadata (D:\projects\nestjs-ai-saas-starter\node_modules\reflect-metadata\Reflect.js:354:23)
+at getAgentConfig (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2824:18)
+at D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2876:46
+at Array.map (<anonymous>)
+at GraphBuilderService.buildSupervisorGraph (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2874:38)
+at async NetworkManagerService.createNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17249:19)
+at async NetworkSetupService.setupNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:23116:30)
+at async DevBrandSupervisorWorkflow.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:27569:24)
+at async Promise.all (index 3)
+at async callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
 }
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [NestFactory] Starting Nest application...
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [CacheStore] CacheStore initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [NeogmaMetricsService] NeogmaMetricsService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [AgentMemoryStatsService] AgentMemoryStatsService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HitlValidationService] ✅ HITL Validation Service initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowMetricsService] WorkflowMetricsService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [MetricsCollectorService] MetricsCollectorService initialized with batch processing
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HealthCheckService] Health check registered: memory
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HealthCheckService] Health check registered: cpu
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HealthCheckService] Health check registered: uptime
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [HealthCheckService] Default system health checks registered
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HealthCheckService] HealthCheckService initialized with 60s monitoring interval
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [PerformanceTrackerService] PerformanceTrackerService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [DashboardService] Mock metric data initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [DashboardService] DashboardService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CheckpointSaverRegistry] Set 'primary' as default checkpoint saver
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CheckpointSaverRegistry] Registered checkpoint saver: primary
-✅ Checkpoint saver registered: sqlite (provided by user)
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] ChromaDBModule dependencies initialized +8ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] Neo4jModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] WorkflowEngineModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] FunctionalApiModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] MultiAgentModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowRegistryService] WorkflowRegistryService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowRegistryService] Agent event listeners setup completed
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] ConfigHostModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] TerminusModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] DiscoveryModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [AlertingService] AlertingService initialized with 30s evaluation interval. Metrics collection: disabled (fallback mode)
-✅ Neo4j configuration validation passed
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [ChromaCacheService] ChromaCacheService initialized with segregated services
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [WorkflowCheckpointService] Workflow checkpoint service initialized. Enabled: true
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HitlCheckpointService] 💾 HITL Checkpoint Service initialized with adapter-first storage
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] ConfigModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] ConfigModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] EventEmitterModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] EventEmitterModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] EventEmitterModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] EventEmitterModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [EmbeddingService] Successfully initialized huggingface embedding provider
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [MonitoringFacadeService] MonitoringFacadeService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] LanggraphModulesCheckpointModule dependencies initialized +19ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] LanggraphModulesMonitoringModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowStreamingService] WorkflowStreamingService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowStreamingService] Streaming service available for workflow operations
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [HitlNotificationService] HitlNotificationService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [HitlNotificationService] Object(1) {
-streamingAvailable: true
-}
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] StreamingModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] StreamingModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [LangGraphStoreRepository] LangGraphStoreRepository initialized with collection: langgraph-stores
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [ChromaVectorAdapter] ChromaVectorAdapter initialized with VectorMemoryRepository + LangGraphStoreRepository (dual-collection pattern)
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] ChromaDBModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] ChromaDBModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] AppModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] NeogmaModule dependencies initialized +67ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: Memory
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: StoreItem
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: ApprovalChain
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: ApprovalRequest
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: InterruptionPoint
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: ConfidencePattern
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: FeedbackEntry
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: Developer
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaService] Registered model: Achievement
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [NeogmaConnectionService] NeogmaConnectionService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [NeogmaConnectionService] Starting periodic health checks every 30000ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [StoreGraphRepository] StoreGraphRepository initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [FeedbackRepository] FeedbackRepository initialized with base class pattern
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [MemoryGraphRepository] MemoryGraphRepository initialized with composition pattern
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] Neo4jModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [Neo4jHitlStorageAdapter] Neo4jHitlStorageAdapter initialized with ApprovalRequestRepository
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [Neo4jInterruptionStorageAdapter] Neo4jInterruptionStorageAdapter initialized with InterruptionRepository
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [Neo4jFeedbackStorageAdapter] Neo4jFeedbackStorageAdapter initialized with FeedbackRepository
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [Neo4jConfidenceStorageAdapter] 🧠 Neo4j Confidence Storage Adapter initialized with ConfidencePatternRepository
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [Neo4jGraphAdapter] Neo4jGraphAdapter initialized with MemoryGraphRepository
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] Neo4jModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [Neo4jApprovalChainStorageAdapter] Neo4jApprovalChainStorageAdapter initialized with ApprovalChainRepository
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [AgentMemoryCoreService] AgentMemoryCoreService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [AgentMemoryCheckpointService] AgentMemoryCheckpointService initialized with full capabilities (checkpoint + vector + graph)
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] RepositoryModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [AgentMemoryContextService] AgentMemoryContextService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [MemoryGraphService] MemoryGraphService initialized with configuration
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [MemoryGraphService] Object(2) {
-neo4jDatabase: 'neo4j',
-enableAutoSummarization: false
-}
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] AdaptersModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [AgentMemoryBridgeService] AgentMemoryBridge initialized (orchestrator pattern) with specialized services
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [MemoryCoordinationService] Memory adapter available - memory superpowers enabled
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HitlMemoryLearningService] 🧠 HITL Memory Learning Service initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] MemoryModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Initializing centralized registry...
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: web-search
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: news-search
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: social-profile-search
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: research-search
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: github-analyzer
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: achievement-extractor
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: developer-insights
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: ai-synthesis
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: memory-analysis
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: brand-optimization
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: strategy-generation
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: linkedin-formatter
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: devto-formatter
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: content-optimizer
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: quality-scorer
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Tool registered: engagement-predictor
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Agent registered: PersonalBrandStrategistAgent
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Agent registered: ContentCreatorAgent
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Agent registered: GitHubCodeAnalyzerAgent
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Workflow registered: DevBrandSupervisorWorkflow
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Workflow registered: DevBrandChatWorkflow
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [CentralRegistryService] Registry initialized with 3 agents, 16 tools, 2 workflows
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [HitlTimeoutService] HitlTimeoutService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [HitlTimeoutService] Object(2) {
-storageAvailable: true,
-notificationsAvailable: true
-}
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HitlRecoveryService] 🔧 HITL Recovery Service initialized with persistent storage
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [UserInterruptionService] ✅ Memory adapter available for interruption pattern learning
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [ApprovalChainService] 🔗 Approval Chain Service initialized with adapter-first storage + IMemoryAdapter.getStore() for hierarchical tracking
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [FeedbackProcessorService] 💬 Feedback Processor Service initialized with adapter-first storage
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [ConfidenceEvaluatorService] 🧠 Confidence Evaluator Service initialized with adapter-first storage
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] TimeTravelModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] FunctionalApiModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HitlApprovalRequestService] 📝 HITL Approval Request Service initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] WorkflowEngineModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [HumanApprovalService] 🎯 Human Approval Service initialized with specialized services
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] HitlModule dependencies initialized +1ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [StreamCoordinationService] Streaming service available:
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [StreamCoordinationService] true
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [MultiAgentCoordinatorService] Memory adapter available - memory superpowers enabled
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowCheckpointService] WorkflowCheckpointService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [WorkflowCheckpointService] Checkpoint adapter available - checkpoint operations enabled
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowInstanceService] WorkflowInstanceService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowInstanceService] Tool registry available with 0 registered tools
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] BusinessWorkflowsModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowExecutionService] WorkflowExecutionService initialized
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [WorkflowExecutionService] Checkpoint service available - automatic checkpointing enabled
-[Nest] 17920 - 10/12/2025, 3:54:48 PM DEBUG [WorkflowManagerService] WorkflowManagerService initialized with specialized services
-[Nest] 17920 - 10/12/2025, 3:54:48 PM LOG [InstanceLoader] MultiAgentModule dependencies initialized +0ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RoutesResolver] HealthController {/api/health}: +334ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/health, GET} route +5ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/health/detailed, GET} route +1ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/health/libraries, GET} route +1ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RoutesResolver] PerformanceController {/api/performance}: +0ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/performance/dashboard, GET} route +0ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/performance/repositories, GET} route +1ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/performance/recommendations, GET} route +0ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [RouterExplorer] Mapped {/api/performance/summary, GET} route +1ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ChromaDBConnectionService] Connected to ChromaDB in 28ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ChromaDBConnectionService] ChromaDB connection initialized successfully
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [CheckpointManagerService] ✅ Checkpoint system initialized with 1 saver(s): primary
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [CheckpointCleanupService] Checkpoint cleanup scheduler started (interval: 3600000ms)
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [CheckpointHealthService] Health monitoring started (interval: 30000ms)
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [CheckpointManagerService] Checkpoint background services started: cleanup, health monitoring
-[Safe] getAllActiveInterruptions - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ConfidenceEvaluatorService] Confidence Evaluator Service initializing with persistent storage
-[Safe] getAllActivePatterns - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Safe] getAllApprovalPatterns - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ApprovalChainService] Approval Chain Service initializing with persistent storage
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [FeedbackProcessorService] Feedback Processor Service initializing with persistent storage
-[Safe] getAllActiveFeedback - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [HumanApprovalService] Human Approval Service initializing with specialized services
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [HitlRecoveryService] 🔄 Starting recovery of pending approvals from persistent storage
-[Safe] getPendingApprovals - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Safe] getAllActiveInterruptions - Completed successfully in 53ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [UserInterruptionService] ✅ Successfully recovered 0 active interruptions from persistent storage
-[Safe] getAllActiveFeedback - Completed successfully in 105ms
-[Safe] getAllExecutionFeedback - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Safe] getAllApprovalPatterns - Completed successfully in 117ms
-[Safe] getAllActivePatterns - Completed successfully in 119ms
-[Safe] getAllActivePatterns - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Safe] getAllApprovalPatterns - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Safe] getAllExecutionFeedback - Completed successfully in 21ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [FeedbackProcessorService] ✅ Recovered 0 feedback entries across 0 executions
-[Safe] getUnprocessedFeedback - Preprocessing completed in 0ms {
-originalArgs: [],
-transformedArgs: [],
-config: {
-strict: true,
-log: true,
-rules: {
-maxDepth: 10,
-maxParams: 20,
-maxProperties: 1000,
-maxArrayLength: 10000,
-maxStringLength: 1000000,
-preventInjection: true,
-onInjectionDetected: 'throw',
-sanitizeHtml: false,
-escapeSpecialChars: false,
-customSanitizers: []
-},
-transforms: {
-autoSerialize: true,
-autoInt: true,
-autoDateTransform: true,
-autoDeserialize: true
-},
-customValidators: []
-}
-}
-[Safe] getPendingApprovals - Completed successfully in 135ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [HitlRecoveryService] ✅ No pending approvals found to recover
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [HumanApprovalService] ✅ Human Approval Service initialized
-[Safe] getAllApprovalPatterns - Completed successfully in 26ms
-[Safe] getAllActivePatterns - Completed successfully in 28ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ConfidenceEvaluatorService] ✅ Loaded 0 patterns and 0 history entries from persistent storage
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ConfidenceEvaluatorService] ✅ Confidence Evaluator Service initialized with storage adapter
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ApprovalChainService] ✅ Recovered 0 requests and 0 chains
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ApprovalChainService] ✅ Approval Chain Service initialized
-[Safe] getUnprocessedFeedback - Completed successfully in 31ms
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [FeedbackProcessorService] 🔄 Starting processing pipeline for 0 unprocessed feedback entries
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [FeedbackProcessorService] ✅ Feedback Processor Service initialized
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [WorkflowStreamOrchestratorService] WorkflowStreamOrchestratorService initializing
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MultiAgentCoordinatorService] Multi-agent coordinator service initialized with SOLID architecture
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [FunctionalApiModuleInitializer] Initializing FunctionalApi module with explicit registration
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [FunctionalApiModuleInitializer] No workflows provided for registration
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [FunctionalApiModuleInitializer] FunctionalApi module initialization completed successfully
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [TimeTravelService] ✅ Checkpoint operations delegated to injected checkpoint adapter
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [TimeTravelService] 🚀 Time Travel facade service initialized with focused services
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [GitHubCodeAnalyzerAgent] Initializing declarative workflow: workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [GitHubCodeAnalyzerAgent] Extracting workflow definition from decorators for GitHubCodeAnalyzerAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Extracting workflow definition from GitHubCodeAnalyzerAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Detected workflow pattern: functional-task for GitHubCodeAnalyzerAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Found 6 task-based nodes for workflow github-analyzer-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MetadataProcessorService] Generated task-based workflow definition for github-analyzer-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Validating workflow definition: github-analyzer-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MetadataProcessorService] Workflow definition validation completed for github-analyzer-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [GitHubCodeAnalyzerAgent] Workflow 'github-analyzer-workflow': 6 nodes, 5 edges, 0 approval nodes, 0 streaming nodes
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [GitHubCodeAnalyzerAgent] Declarative workflow initialized successfully: workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [PersonalBrandStrategistAgent] Initializing declarative workflow: workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [PersonalBrandStrategistAgent] Extracting workflow definition from decorators for PersonalBrandStrategistAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Extracting workflow definition from PersonalBrandStrategistAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Detected workflow pattern: functional-node for PersonalBrandStrategistAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Found 7 nodes for workflow brand-strategist-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Found 7 edges for workflow brand-strategist-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MetadataProcessorService] Generated node-based workflow definition for brand-strategist-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Validating workflow definition: brand-strategist-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MetadataProcessorService] Workflow definition validation completed for brand-strategist-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [PersonalBrandStrategistAgent] Workflow 'brand-strategist-workflow': 7 nodes, 7 edges, 0 approval nodes, 0 streaming nodes
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [PersonalBrandStrategistAgent] Declarative workflow initialized successfully: workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ContentCreatorAgent] Initializing declarative workflow: workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [ContentCreatorAgent] Extracting workflow definition from decorators for ContentCreatorAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Extracting workflow definition from ContentCreatorAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Detected workflow pattern: functional-node for ContentCreatorAgent
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Found 6 nodes for workflow content-creator-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Found 5 edges for workflow content-creator-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MetadataProcessorService] Generated node-based workflow definition for content-creator-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [MetadataProcessorService] Validating workflow definition: content-creator-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [MetadataProcessorService] Workflow definition validation completed for content-creator-workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [ContentCreatorAgent] Workflow 'content-creator-workflow': 6 nodes, 5 edges, 0 approval nodes, 0 streaming nodes
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [ContentCreatorAgent] Declarative workflow initialized successfully: workflow
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [DevBrandSupervisorWorkflow] Initializing multi-agent workflow: devbrand-supervisor-network (supervisor)
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [DevBrandSupervisorWorkflow] Created 3 agent definitions: github-code-analyzer, personal-brand-strategist, content-creator
-[Nest] 17920 - 10/12/2025, 3:54:49 PM LOG [AgentRegistryService] Registered agent: github-code-analyzer (GitHub Code Analyzer)
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [WorkflowRegistryService] Initialized status tracking for agent github-code-analyzer
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [AgentMemoryCoreService] Storing memory from agent github-code-analyzer: {"agentId":"github-code-analyzer","name":"GitHub C...
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [ChromaDBEmbeddingProcessorService] Processing embeddings for 1 documents
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [LlmProviderService] Model configuration validated: provider=openrouter, model=moonshotai/kimi-k2:free
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [LlmProviderService] Testing LLM connectivity: provider=openrouter, model=moonshotai/kimi-k2:free
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [LlmProviderService] Creating new LLM instance: moonshotai/kimi-k2:free
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [LlmProviderService] Creating LLM instance: provider=openrouter, model=moonshotai/kimi-k2:free
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [LlmProviderService] Creating OpenRouter LLM with model: moonshotai/kimi-k2:free
-[Nest] 17920 - 10/12/2025, 3:54:49 PM DEBUG [ChromaDBEmbeddingProcessorService] Successfully processed embeddings for 1 documents
-[Nest] 17920 - 10/12/2025, 3:54:52 PM LOG [LlmProviderService] LLM connectivity test PASSED for provider=openrouter, model=moonshotai/kimi-k2:free
-[Nest] 17920 - 10/12/2025, 3:54:52 PM LOG [MultiAgentCoordinatorService] LLM connectivity verified
-[Nest] 17920 - 10/12/2025, 3:54:52 PM DEBUG [StreamCoordinationService] Setting up agent streaming hooks
-[Nest] 17920 - 10/12/2025, 3:54:53 PM WARN [ChromaDBConnectionService] Connection retry attempt 1 after error: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.
-[Nest] 17920 - 10/12/2025, 3:54:57 PM WARN [ChromaDBConnectionService] Connection retry attempt 2 after error: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.
-[Nest] 17920 - 10/12/2025, 3:55:00 PM WARN [ChromaDBConnectionService] Connection retry attempt 1 after error: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.
-```

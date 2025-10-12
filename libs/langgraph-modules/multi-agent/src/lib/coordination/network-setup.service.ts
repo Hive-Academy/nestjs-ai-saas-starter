@@ -31,29 +31,39 @@ export class NetworkSetupService {
 
   /**
    * Register an agent
-   * Memory-enhanced with agent performance tracking
+   *
+   * ARCHITECTURE DECISION (TASK_2025_009):
+   * - Agent registration metadata is NOT stored in memory/store
+   * - Rationale: Static data that never changes, no need for persistence
+   * - Already tracked in AgentRegistryService (in-memory during app lifecycle)
+   * - Memory should focus on: agent performance, work results, learned patterns
+   * - Storing registration on every server restart just pollutes the database
+   *
+   * What SHOULD be stored (future):
+   * - Agent execution metrics (success rate, response time)
+   * - Task completion statistics
+   * - Learned optimization patterns
+   * - Collaboration effectiveness scores
    */
   async registerAgent(definition: AgentDefinition): Promise<void> {
     this.agentRegistry.registerAgent(definition);
-
-    // Memory superpowers: Store agent registration for performance tracking
-    if (this.memoryAdapter) {
-      try {
-        await this.storeAgentRegistration(definition);
-        this.logger.debug(
-          `Agent ${definition.id} registered with memory tracking`
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to store agent registration in memory: ${error}`
-        );
-      }
-    }
+    // No memory storage - AgentRegistryService handles in-memory tracking
   }
 
   /**
    * Quick setup: Register agents and create network in one call
-   * Memory-enhanced with network topology optimization
+   *
+   * ARCHITECTURE DECISION (TASK_2025_009):
+   * - Network optimization queries are NOT performed during setup
+   * - Rationale: Optimization searches require embeddings via HuggingFace API
+   * - Causes 9+ second delays during application startup
+   * - Empty collections return no useful patterns anyway
+   * - Optimization queries should be lazy-loaded when needed, not on every startup
+   *
+   * What SHOULD be queried (future):
+   * - Only when network has substantial execution history (>100 runs)
+   * - On-demand optimization when performance issues detected
+   * - Background optimization jobs, not blocking startup
    */
   async setupNetwork(
     networkId: string,
@@ -66,24 +76,10 @@ export class NetworkSetupService {
       await this.registerAgent(agent);
     }
 
-    // Memory superpowers: Get optimal network configuration based on learned patterns
-    let networkOptimizations: any = {};
-    if (this.memoryAdapter) {
-      try {
-        networkOptimizations = await this.getOptimalNetworkConfiguration(
-          networkId,
-          agents,
-          networkType
-        );
-        this.logger.debug(`Retrieved network optimizations for ${networkId}`, {
-          agentOrderOptimized: networkOptimizations.agentOrder?.length > 0,
-          topologyOptimized: !!networkOptimizations.topology,
-          performanceTuned: !!networkOptimizations.performance,
-        });
-      } catch (error) {
-        this.logger.warn(`Failed to get network optimizations: ${error}`);
-      }
-    }
+    // Skip network optimization queries during startup (TASK_2025_009)
+    // These searches require embedding generation which is slow and unnecessary
+    // for fresh networks with no execution history
+    const networkOptimizations: any = {};
 
     // Create default configuration based on type
     let networkConfig: AgentNetwork;
@@ -148,21 +144,10 @@ export class NetworkSetupService {
       networkConfig
     );
 
-    // Memory superpowers: Store network creation event for learning
-    if (this.memoryAdapter) {
-      try {
-        await this.storeNetworkCreationEvent({
-          networkId: createdNetworkId,
-          type: networkType,
-          agents,
-          optimizations: networkOptimizations,
-          timestamp: new Date().toISOString(),
-        });
-        this.logger.debug(`Stored network creation event: ${createdNetworkId}`);
-      } catch (error) {
-        this.logger.warn(`Failed to store network creation event: ${error}`);
-      }
-    }
+    // Skip network creation event storage (TASK_2025_009)
+    // Rationale: Static network configuration doesn't need persistence
+    // Events should only be stored when they represent runtime performance data
+    // Not static configuration that's already in code
 
     return createdNetworkId;
   }
@@ -172,328 +157,33 @@ export class NetworkSetupService {
   // ============================================================================
 
   /**
-   * Store agent registration for performance tracking
+   * REMOVED METHODS (TASK_2025_009):
+   *
+   * 1. storeAgentRegistration()
+   *    - Stored agent registration metadata in memory on every server restart
+   *    - Caused 29s startup time with HuggingFace API embedding generation
+   *    - Agent registration is static, already in AgentRegistryService
+   *
+   * 2. getOptimalNetworkConfiguration()
+   *    - Queried memory for network optimization patterns during setup
+   *    - Required embedding generation for search queries
+   *    - Caused 9+ second delays with HuggingFace API timeouts
+   *    - Empty collections return no useful patterns anyway
+   *
+   * 3. storeNetworkCreationEvent()
+   *    - Stored network creation events with embedding generation
+   *    - Static network configuration doesn't need persistence
+   *    - Already defined in code
+   *
+   * ARCHITECTURE PRINCIPLE:
+   * Memory storage should focus on RUNTIME PERFORMANCE DATA, not static configuration.
+   *
+   * What SHOULD be stored (Future):
+   * - Agent collaboration effectiveness metrics (trackAgentCollaboration)
+   * - Runtime performance patterns from actual workflow executions
+   * - Dynamic learned optimizations based on >100 workflow runs
+   * - Background optimization jobs, NOT blocking startup operations
    */
-  private async storeAgentRegistration(agent: AgentDefinition): Promise<void> {
-    if (!this.memoryAdapter) return;
-
-    try {
-      const registrationData = {
-        agentId: agent.id,
-        name: agent.name,
-        capabilities: agent.capabilities || [],
-        role: (agent.metadata?.role as string) || 'agent',
-        metadata: agent.metadata,
-        registeredAt: new Date().toISOString(),
-        type: 'agent_registration',
-      };
-
-      await this.memoryAdapter.store(
-        `agents.coordination.registry.${agent.id}`,
-        JSON.stringify(registrationData),
-        {
-          type: 'agent_registration',
-          source: 'network_setup',
-          agentId: agent.id,
-          importance: 0.7,
-          persistent: true,
-          tags: JSON.stringify([
-            'agent',
-            'registration',
-            agent.id,
-            'coordination',
-          ]),
-        }
-      );
-    } catch (error) {
-      this.logger.warn(`Failed to store agent registration: ${error}`);
-    }
-  }
-
-  /**
-   * Get optimal network configuration from learned patterns
-   */
-  private async getOptimalNetworkConfiguration(
-    networkId: string,
-    agents: AgentDefinition[],
-    networkType: string
-  ): Promise<any> {
-    if (!this.memoryAdapter) return {};
-
-    try {
-      // Get network topology optimization patterns
-      const topologyMemories = await this.memoryAdapter.search({
-        query: `network ${networkType} topology optimization agent order`,
-        limit: 10,
-        minRelevance: 0.6,
-      });
-
-      // Get configuration optimization patterns
-      const configMemories = await this.memoryAdapter.search({
-        query: `network ${networkType} configuration performance success`,
-        limit: 5,
-        minRelevance: 0.7,
-      });
-
-      const optimizations: any = {};
-
-      // Extract agent order optimization
-      const agentOrderPatterns = this.extractAgentOrderPatterns(
-        topologyMemories,
-        agents
-      );
-      if (agentOrderPatterns.length > 0) {
-        optimizations.agentOrder = agentOrderPatterns;
-      }
-
-      // Extract configuration optimizations
-      const configOptimizations = this.extractConfigurationOptimizations(
-        configMemories,
-        networkType
-      );
-      if (Object.keys(configOptimizations).length > 0) {
-        optimizations.configuration = configOptimizations;
-      }
-
-      // Network type specific optimizations
-      switch (networkType) {
-        case 'swarm':
-          optimizations.dynamicHandoffs =
-            this.shouldEnableDynamicHandoffs(topologyMemories);
-          optimizations.cleanMessages =
-            this.shouldCleanMessages(configMemories);
-          optimizations.attribution = this.shouldAddAttribution(configMemories);
-          optimizations.isolation = this.shouldEnableIsolation(configMemories);
-          break;
-
-        case 'hierarchical':
-          optimizations.levels = this.getOptimalHierarchy(
-            topologyMemories,
-            agents
-          );
-          break;
-      }
-
-      return optimizations;
-    } catch (error) {
-      this.logger.warn(`Failed to get network optimizations: ${error}`);
-      return {};
-    }
-  }
-
-  /**
-   * Store network creation event for learning
-   */
-  private async storeNetworkCreationEvent(eventData: {
-    networkId: string;
-    type: string;
-    agents: AgentDefinition[];
-    optimizations: any;
-    timestamp: string;
-  }): Promise<void> {
-    if (!this.memoryAdapter) return;
-
-    try {
-      const networkEvent = {
-        networkId: eventData.networkId,
-        type: eventData.type,
-        agentCount: eventData.agents.length,
-        agentIds: eventData.agents.map((a) => a.id),
-        agentCapabilities: eventData.agents.flatMap(
-          (a) => a.capabilities || []
-        ),
-        optimizations: eventData.optimizations,
-        timestamp: eventData.timestamp,
-      };
-
-      await this.memoryAdapter.store(
-        `agents.coordination.network.${eventData.networkId}`,
-        JSON.stringify(networkEvent),
-        {
-          type: 'network_creation',
-          source: 'network_setup',
-          networkId: eventData.networkId,
-          networkType: eventData.type,
-          importance: 0.7,
-          persistent: true,
-          tags: JSON.stringify([
-            'network',
-            'creation',
-            eventData.type,
-            eventData.networkId,
-          ]),
-        }
-      );
-    } catch (error) {
-      this.logger.warn(`Failed to store network creation event: ${error}`);
-    }
-  }
-
-  // ============================================================================
-  // MEMORY PATTERN EXTRACTION HELPERS
-  // ============================================================================
-
-  private extractAgentOrderPatterns(
-    memories: any[],
-    agents: AgentDefinition[]
-  ): string[] {
-    const agentIds = agents.map((a) => a.id);
-    const orderPatterns: { [key: string]: number } = {};
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.agentOrder && Array.isArray(data.agentOrder)) {
-          const relevantOrder = data.agentOrder.filter((id: string) =>
-            agentIds.includes(id)
-          );
-          const orderKey = relevantOrder.join(',');
-          orderPatterns[orderKey] = (orderPatterns[orderKey] || 0) + 1;
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    const bestPattern = Object.keys(orderPatterns).reduce(
-      (a, b) => (orderPatterns[a] > orderPatterns[b] ? a : b),
-      ''
-    );
-
-    return bestPattern ? bestPattern.split(',') : agentIds;
-  }
-
-  private extractConfigurationOptimizations(
-    memories: any[],
-    networkType: string
-  ): any {
-    const optimizations: any = {};
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.networkType === networkType && data.configuration) {
-          Object.assign(optimizations, data.configuration);
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    return optimizations;
-  }
-
-  private shouldEnableDynamicHandoffs(memories: any[]): boolean {
-    let successCount = 0;
-    let totalCount = 0;
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.dynamicHandoffs !== undefined) {
-          totalCount++;
-          if (data.success && data.dynamicHandoffs) {
-            successCount++;
-          }
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    return totalCount > 0 ? successCount / totalCount > 0.6 : true;
-  }
-
-  private shouldCleanMessages(memories: any[]): boolean {
-    let successCount = 0;
-    let totalCount = 0;
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.cleanMessages !== undefined) {
-          totalCount++;
-          if (data.success && data.cleanMessages) {
-            successCount++;
-          }
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    return totalCount > 0 ? successCount / totalCount > 0.5 : true;
-  }
-
-  private shouldAddAttribution(memories: any[]): boolean {
-    let successCount = 0;
-    let totalCount = 0;
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.attribution !== undefined) {
-          totalCount++;
-          if (data.success && data.attribution) {
-            successCount++;
-          }
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    return totalCount > 0 ? successCount / totalCount > 0.7 : true;
-  }
-
-  private shouldEnableIsolation(memories: any[]): boolean {
-    let successCount = 0;
-    let totalCount = 0;
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.isolation !== undefined) {
-          totalCount++;
-          if (data.success && data.isolation) {
-            successCount++;
-          }
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    return totalCount > 0 ? successCount / totalCount > 0.6 : false;
-  }
-
-  private getOptimalHierarchy(
-    memories: any[],
-    agents: AgentDefinition[]
-  ): string[][] {
-    const agentIds = agents.map((a) => a.id);
-
-    for (const memory of memories) {
-      try {
-        const data = JSON.parse(memory.content);
-        if (data.levels && Array.isArray(data.levels) && data.success) {
-          const relevantLevels = data.levels
-            .map((level: string[]) =>
-              level.filter((id) => agentIds.includes(id))
-            )
-            .filter((level: string[]) => level.length > 0);
-
-          if (relevantLevels.length > 0) {
-            return relevantLevels;
-          }
-        }
-      } catch {
-        // Skip invalid JSON
-      }
-    }
-
-    return [agentIds];
-  }
 
   // ============================================================================
   // PHASE 2: Store-based Agent Collaboration Graph
