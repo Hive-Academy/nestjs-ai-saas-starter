@@ -264,7 +264,7 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
         },
         metadata: {
           type: 'workflow-agent',
-          agentClass: AgentClass.name,
+          agentClass: AgentClass,
           capabilities: agentConfig.capabilities,
           priority: agentConfig.priority,
           // Include streaming/interruption config from agent decorator
