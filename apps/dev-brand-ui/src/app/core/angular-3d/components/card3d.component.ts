@@ -4,6 +4,7 @@ import {
   ElementRef,
   AfterViewInit,
   OnDestroy,
+  DestroyRef,
   input,
   output,
   signal,
@@ -336,6 +337,7 @@ export class Card3DComponent implements AfterViewInit, OnDestroy {
 
   // Services
   private readonly hybridUIService = inject(HybridUIService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Component state
   private readonly isInitialized = signal(false);
@@ -546,33 +548,33 @@ export class Card3DComponent implements AfterViewInit, OnDestroy {
 
     // Mouse events
     fromEvent(element, 'mouseenter')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.hovered.emit(true);
       });
 
     fromEvent(element, 'mouseleave')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.hovered.emit(false);
       });
 
     // Focus events
     fromEvent(element, 'focusin')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.focused.emit(true);
       });
 
     fromEvent(element, 'focusout')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.focused.emit(false);
       });
 
     // Click events
     fromEvent<MouseEvent>(element, 'click')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => {
         this.clicked.emit(event);
       });
