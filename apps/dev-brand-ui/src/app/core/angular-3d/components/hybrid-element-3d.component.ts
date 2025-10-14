@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import * as THREE from 'three';
 
-import { EnhancedContentTextureService } from '../services/enhanced-content-texture.service';
+import { ContentTextureService } from '../services/content-texture.service';
 import { AnimationService } from '../services/animation.service';
 
 // Strict type definitions following Angular best practices
@@ -56,62 +56,72 @@ interface ElementInteractionEvent {
   template: `
     <!-- Phase 2: Enhanced with Angular Three integration -->
     <!-- DOM content container for texture generation -->
-    <div #contentContainer
-         class="hybrid-content-container"
-         [style.width.px]="config().width"
-         [style.height.px]="config().height"
-         [style.opacity]="showDOMContent() ? 1 : 0"
-         [style.position]="'absolute'"
-         [style.pointer-events]="config().interactive ? 'auto' : 'none'">
+    <div
+      #contentContainer
+      class="hybrid-content-container"
+      [style.width.px]="config().width"
+      [style.height.px]="config().height"
+      [style.opacity]="showDOMContent() ? 1 : 0"
+      [style.position]="'absolute'"
+      [style.pointer-events]="config().interactive ? 'auto' : 'none'"
+    >
       <ng-content></ng-content>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-      position: relative;
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+        position: relative;
+      }
 
-    .hybrid-content-container {
-      box-sizing: border-box;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.95);
-      color: #333;
-      font-family: system-ui, -apple-system, sans-serif;
-      overflow: hidden;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-    }
+      .hybrid-content-container {
+        box-sizing: border-box;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        color: #333;
+        font-family: system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
 
-    :host(.interactive) .hybrid-content-container {
-      cursor: pointer;
-    }
+      :host(.interactive) .hybrid-content-container {
+        cursor: pointer;
+      }
 
-    :host(.hovered) .hybrid-content-container {
-      background: rgba(255, 255, 255, 1);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      transform: scale(1.02);
-    }
+      :host(.hovered) .hybrid-content-container {
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        transform: scale(1.02);
+      }
 
-    :host(.performance-optimized) .hybrid-content-container {
-      will-change: transform, opacity;
-    }
-  `],
+      :host(.performance-optimized) .hybrid-content-container {
+        will-change: transform, opacity;
+      }
+    `,
+  ],
 })
 export class HybridElement3DComponent implements OnInit, OnDestroy {
   // Required input signals with strict typing
   readonly config = input.required<ElementConfig>();
   readonly content = input.required<string>();
-  readonly position = input<readonly [number, number, number]>([0, 0, 0] as const);
+  readonly position = input<readonly [number, number, number]>([
+    0, 0, 0,
+  ] as const);
   readonly animation = input<AnimationConfig>({
     type: 'fade' as const,
-    duration: 1000
+    duration: 1000,
   });
 
   // Optional inputs with defaults
-  readonly initialRotation = input<readonly [number, number, number]>([0, 0, 0] as const);
-  readonly initialScale = input<readonly [number, number, number]>([1, 1, 1] as const);
+  readonly initialRotation = input<readonly [number, number, number]>([
+    0, 0, 0,
+  ] as const);
+  readonly initialScale = input<readonly [number, number, number]>([
+    1, 1, 1,
+  ] as const);
   readonly zIndex = input(0);
   readonly opacity = input(1);
   readonly showDOM = input(false); // Controls whether to show DOM content container
@@ -125,23 +135,31 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
   readonly performanceUpdate = output<{ fps: number; memoryUsage: number }>();
 
   // ViewChild for DOM content container
-  readonly contentContainer = viewChild<ElementRef<HTMLDivElement>>('contentContainer');
+  readonly contentContainer =
+    viewChild<ElementRef<HTMLDivElement>>('contentContainer');
 
   // Dependency injection with inject() function - Phase 2 enhanced
-  private readonly textureService = inject(EnhancedContentTextureService);
+  private readonly textureService = inject(ContentTextureService);
   private readonly animationService = inject(AnimationService);
 
   // State management signals
   private readonly _isHovered = signal(false);
   private readonly _texture = signal<THREE.Texture | null>(null);
-  private readonly _rotation = signal<readonly [number, number, number]>([0, 0, 0] as const);
-  private readonly _scale = signal<readonly [number, number, number]>([1, 1, 1] as const);
+  private readonly _rotation = signal<readonly [number, number, number]>([
+    0, 0, 0,
+  ] as const);
+  private readonly _scale = signal<readonly [number, number, number]>([
+    1, 1, 1,
+  ] as const);
   private readonly _currentOpacity = signal(1);
   private readonly _mesh = signal<THREE.Mesh | null>(null);
   private readonly _group = signal<THREE.Group | null>(null);
 
   // Component state and lifecycle - Phase 2 enhanced
-  private performanceMonitor?: { interval: ReturnType<typeof setInterval>; lastTime: number };
+  private performanceMonitor?: {
+    interval: ReturnType<typeof setInterval>;
+    lastTime: number;
+  };
   private animationTimelineId?: string;
 
   // Readonly accessors for state
@@ -154,26 +172,32 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
   readonly group = this._group.asReadonly();
 
   // Computed derived state
-  readonly elementId = computed(() =>
-    `hybrid-element-${this.config().width}-${this.config().height}-${Math.random().toString(36).substr(2, 9)}`
+  readonly elementId = computed(
+    () =>
+      `hybrid-element-${this.config().width}-${
+        this.config().height
+      }-${Math.random().toString(36).substr(2, 9)}`
   );
 
-  readonly geometryArgs = computed(() =>
-    [this.config().width, this.config().height] as const
+  readonly geometryArgs = computed(
+    () => [this.config().width, this.config().height] as const
   );
 
   readonly isVisible = computed(() => this._currentOpacity() > 0);
 
-  readonly geometry = computed(() =>
-    new THREE.PlaneGeometry(this.config().width, this.config().height)
+  readonly geometry = computed(
+    () => new THREE.PlaneGeometry(this.config().width, this.config().height)
   );
 
-  readonly material = computed(() => new THREE.MeshBasicMaterial({
-    map: this._texture(),
-    transparent: true,
-    opacity: this._currentOpacity(),
-    side: THREE.DoubleSide,
-  }));
+  readonly material = computed(
+    () =>
+      new THREE.MeshBasicMaterial({
+        map: this._texture(),
+        transparent: true,
+        opacity: this._currentOpacity(),
+        side: THREE.DoubleSide,
+      })
+  );
 
   // Computed transform matrix
   readonly transformMatrix = computed(() => {
@@ -213,7 +237,7 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     return {
       position: `translate3d(${pos[0]}px, ${pos[1]}px, ${pos[2]}px)`,
       rotation: `rotateX(${rot[0]}rad) rotateY(${rot[1]}rad) rotateZ(${rot[2]}rad)`,
-      scale: `scale3d(${scale[0]}, ${scale[1]}, ${scale[2]})`
+      scale: `scale3d(${scale[0]}, ${scale[1]}, ${scale[2]})`,
     };
   });
 
@@ -297,10 +321,12 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
       const currentTime = performance.now();
       const elapsedTime = currentTime - startTime;
 
-      if (elapsedTime >= 1000) { // Report every second
+      if (elapsedTime >= 1000) {
+        // Report every second
         const fps = Math.round((frameCount * 1000) / elapsedTime);
-        const memoryUsage = (performance as any).memory ?
-          Math.round((performance as any).memory.usedJSHeapSize / 1048576) : 0;
+        const memoryUsage = (performance as any).memory
+          ? Math.round((performance as any).memory.usedJSHeapSize / 1048576)
+          : 0;
 
         this.performanceUpdate.emit({ fps, memoryUsage });
         frameCount = 0;
@@ -446,7 +472,6 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
       // Store references
       this._group.set(group);
       this._mesh.set(mesh);
-
     } catch (error) {
       console.error('Failed to create Three.js elements:', error);
       this.textureError.emit(error as Error);
@@ -481,7 +506,7 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
       try {
         const texture = this.textureService.createReactiveTexture(tempElement, {
           quality: 'medium',
-          watchForChanges: false
+          watchForChanges: false,
         });
 
         this._texture.set(texture);
@@ -512,14 +537,16 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     this.animationTimelineId = this.animationService.createTimeline({
       name: `Element Animation - ${this.elementId()}`,
       animations: [config],
-      targets: [{
-        elementId: this.elementId(),
-        object3D: mesh,
-        position: this.position(),
-        rotation: this.initialRotation(),
-        scale: this.initialScale(),
-        opacity: this.opacity()
-      }]
+      targets: [
+        {
+          elementId: this.elementId(),
+          object3D: mesh,
+          position: this.position(),
+          rotation: this.initialRotation(),
+          scale: this.initialScale(),
+          opacity: this.opacity(),
+        },
+      ],
     });
 
     // Add animation to timeline based on type
@@ -531,12 +558,12 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
         position: this.getAnimationTargetPosition(config),
         rotation: this.getAnimationTargetRotation(config),
         scale: this.getAnimationTargetScale(config),
-        opacity: this.getAnimationTargetOpacity(config)
+        opacity: this.getAnimationTargetOpacity(config),
       },
       {
         ...config,
         ease: this.getAnimationEasing(config.type),
-        autoplay: true
+        autoplay: true,
       }
     );
 
@@ -546,7 +573,9 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getAnimationTargetPosition(config: AnimationConfig): readonly [number, number, number] {
+  private getAnimationTargetPosition(
+    config: AnimationConfig
+  ): readonly [number, number, number] {
     const currentPos = this.position();
 
     switch (config.type) {
@@ -558,7 +587,9 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getAnimationTargetRotation(config: AnimationConfig): readonly [number, number, number] {
+  private getAnimationTargetRotation(
+    config: AnimationConfig
+  ): readonly [number, number, number] {
     switch (config.type) {
       case 'fade':
       case 'scale':
@@ -571,7 +602,9 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getAnimationTargetScale(config: AnimationConfig): readonly [number, number, number] {
+  private getAnimationTargetScale(
+    config: AnimationConfig
+  ): readonly [number, number, number] {
     switch (config.type) {
       case 'scale':
         return this.initialScale();
@@ -612,8 +645,6 @@ export class HybridElement3DComponent implements OnInit, OnDestroy {
       this.animationTimelineId = undefined;
     }
   }
-
-
 
   private cleanupThreeJSResources(): void {
     // Cleanup Three.js resources

@@ -9,7 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
 import { fromEvent, debounceTime } from 'rxjs';
 import { AngularThreeFoundationService } from './angular-three-foundation.service';
-import { EnhancedContentTextureService } from './enhanced-content-texture.service';
+import { ContentTextureService } from './content-texture.service';
 import type {
   HybridElementExtended,
   HybridElementConfigExtended,
@@ -25,9 +25,7 @@ export class HybridUIService {
   private readonly angularThreeFoundation = inject(
     AngularThreeFoundationService
   );
-  private readonly contentTextureService = inject(
-    EnhancedContentTextureService
-  );
+  private readonly contentTextureService = inject(ContentTextureService);
 
   private readonly config = signal<HybridUIServiceConfig>({
     angularThree: {
@@ -174,7 +172,7 @@ export class HybridUIService {
     // Create Angular Three group
     const ngtGroup = this.angularThreeFoundation.createHybridGroup({
       name: id,
-      userData: { type: 'hybrid-element', createdAt: Date.now() }
+      userData: { type: 'hybrid-element', createdAt: Date.now() },
     });
 
     // Apply Angular Three configuration

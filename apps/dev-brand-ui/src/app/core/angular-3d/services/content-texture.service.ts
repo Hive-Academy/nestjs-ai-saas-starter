@@ -13,7 +13,7 @@ import type { ContentTextureServiceConfig } from '../interfaces';
 @Injectable({
   providedIn: 'root',
 })
-export class EnhancedContentTextureService {
+export class ContentTextureService {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly config = signal<ContentTextureServiceConfig>({
