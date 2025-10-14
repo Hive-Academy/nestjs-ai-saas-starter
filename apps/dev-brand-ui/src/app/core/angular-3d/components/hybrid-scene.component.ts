@@ -96,7 +96,10 @@ interface PerformanceMetrics {
           <button
             class="toggle-detail"
             (click)="toggleDetailedMetrics()"
-            [attr.aria-label]="detailedMetrics() ? 'Show less details' : 'Show more details'">
+            [attr.aria-label]="
+              detailedMetrics() ? 'Show less details' : 'Show more details'
+            "
+          >
             {{ detailedMetrics() ? '−' : '+' }}
           </button>
         </div>
@@ -120,7 +123,9 @@ interface PerformanceMetrics {
           <div class="detailed-stats">
             <div class="stat">
               <span class="label">Render Time:</span>
-              <span class="value">{{ performanceMetrics().renderTime.toFixed(2) }}ms</span>
+              <span class="value"
+                >{{ performanceMetrics().renderTime.toFixed(2) }}ms</span
+              >
             </div>
 
             <div class="stat">
@@ -130,12 +135,16 @@ interface PerformanceMetrics {
 
             <div class="stat">
               <span class="label">Visible:</span>
-              <span class="value">{{ hybridService.visibleElementCount() }}</span>
+              <span class="value">{{
+                hybridService.visibleElementCount()
+              }}</span>
             </div>
 
             <div class="stat">
               <span class="label">Animations:</span>
-              <span class="value">{{ performanceMetrics().activeAnimations }}</span>
+              <span class="value">{{
+                performanceMetrics().activeAnimations
+              }}</span>
             </div>
 
             <div class="stat status">
@@ -168,7 +177,8 @@ interface PerformanceMetrics {
         class="hybrid-content"
         [style.opacity]="contentVisible() ? 1 : 0"
         [style.pointer-events]="contentInteractive() ? 'auto' : 'none'"
-        #contentContainer>
+        #contentContainer
+      >
         <ng-content></ng-content>
       </div>
 
@@ -177,8 +187,13 @@ interface PerformanceMetrics {
       <div class="animation-debug-panel">
         <h5>Animation Debug</h5>
         <div class="debug-stats">
-          <div>Active Timelines: {{ animationService.activeAnimationCount() }}</div>
-          <div>Performance: {{ animationService.animationPerformanceStatus().status }}</div>
+          <div>
+            Active Timelines: {{ animationService.activeAnimationCount() }}
+          </div>
+          <div>
+            Performance:
+            {{ animationService.animationPerformanceStatus().status }}
+          </div>
         </div>
       </div>
       }
@@ -189,7 +204,8 @@ interface PerformanceMetrics {
 })
 export class HybridSceneComponent implements OnInit, OnDestroy {
   // ViewChild references for advanced DOM integration
-  private readonly container = viewChild<ElementRef<HTMLDivElement>>('container');
+  private readonly container =
+    viewChild<ElementRef<HTMLDivElement>>('container');
 
   // Input signals with comprehensive configuration options
   readonly sceneId = input<string>();
@@ -199,25 +215,41 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   readonly contentVisible = input(true);
   readonly contentInteractive = input(true);
   readonly backgroundColor = input<string>('transparent');
-  readonly cameraPosition = input<readonly [number, number, number]>([0, 0, 5] as const);
-  readonly cameraTarget = input<readonly [number, number, number]>([0, 0, 0] as const);
+  readonly cameraPosition = input<readonly [number, number, number]>([
+    0, 0, 5,
+  ] as const);
+  readonly cameraTarget = input<readonly [number, number, number]>([
+    0, 0, 0,
+  ] as const);
   readonly enableShadows = input(true);
   readonly antialias = input(true);
   readonly alpha = input(true);
-  readonly powerPreference = input<'default' | 'high-performance' | 'low-power'>('high-performance');
+  readonly powerPreference = input<
+    'default' | 'high-performance' | 'low-power'
+  >('high-performance');
   readonly enableAnimation = input(true);
-  readonly performanceTarget = input<'mobile' | 'desktop' | 'high-end'>('desktop');
+  readonly performanceTarget = input<'mobile' | 'desktop' | 'high-end'>(
+    'desktop'
+  );
   readonly showAnimationDebug = input(false);
 
   // Output events for component integration
   readonly sceneInitialized = output<THREE.Scene>();
   readonly performanceUpdate = output<PerformanceMetrics>();
-  readonly elementAdded = output<{ elementId: string; object: THREE.Object3D }>();
-  readonly elementRemoved = output<{ elementId: string; object: THREE.Object3D }>();
+  readonly elementAdded = output<{
+    elementId: string;
+    object: THREE.Object3D;
+  }>();
+  readonly elementRemoved = output<{
+    elementId: string;
+    object: THREE.Object3D;
+  }>();
   readonly animationEvent = output<{ type: string; data: any }>();
 
   // Dependency injection with modern Angular patterns
-  private readonly angularThreeFoundation = inject(AngularThreeFoundationService);
+  private readonly angularThreeFoundation = inject(
+    AngularThreeFoundationService
+  );
   readonly hybridService = inject(HybridUIService);
   readonly animationService = inject(AnimationService);
   readonly stateStore = inject(Angular3DStateStore);
@@ -246,10 +278,16 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   readonly detailedMetrics = computed(() => this._detailedMetrics());
   readonly performanceMetrics = computed(() => this._performanceMetrics());
 
-  readonly showPerformanceOverlay = computed(() => this.enablePerformanceOverlay());
-  readonly performanceOptimal = computed(() => this.performanceMetrics().isOptimal);
+  readonly showPerformanceOverlay = computed(() =>
+    this.enablePerformanceOverlay()
+  );
+  readonly performanceOptimal = computed(
+    () => this.performanceMetrics().isOptimal
+  );
   readonly animationEnabled = computed(() => this.enableAnimation());
-  readonly memoryUsageMB = computed(() => Math.round(this.performanceMetrics().memoryUsage / (1024 * 1024)));
+  readonly memoryUsageMB = computed(() =>
+    Math.round(this.performanceMetrics().memoryUsage / (1024 * 1024))
+  );
 
   readonly performanceStatus = computed(() => {
     const metrics = this.performanceMetrics();
@@ -271,7 +309,11 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
     // Adjust based on performance target
     switch (target) {
       case 'mobile':
-        return { ...baseConfig, antialias: false, precision: 'mediump' as const };
+        return {
+          ...baseConfig,
+          antialias: false,
+          precision: 'mediump' as const,
+        };
       case 'high-end':
         return { ...baseConfig, logarithmicDepthBuffer: true };
       default:
@@ -290,7 +332,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
     const configs = {
       mobile: { min: 0.2, max: 1, debounce: 300 },
       desktop: { min: 0.5, max: 1, debounce: 200 },
-      'high-end': { min: 0.8, max: 1, debounce: 100 }
+      'high-end': { min: 0.8, max: 1, debounce: 100 },
     };
     return configs[target];
   });
@@ -298,9 +340,12 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   readonly dprConfig = computed(() => {
     const target = this.performanceTarget();
     switch (target) {
-      case 'mobile': return [1, 1.5] as [number, number];
-      case 'high-end': return [1, 3] as [number, number];
-      default: return [1, 2] as [number, number];
+      case 'mobile':
+        return [1, 1.5] as [number, number];
+      case 'high-end':
+        return [1, 3] as [number, number];
+      default:
+        return [1, 2] as [number, number];
     }
   });
 
@@ -309,6 +354,12 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   // Private state
   private performanceMonitorId?: number;
   private resizeObserver?: ResizeObserver;
+
+  // Setup reactive effects in constructor context
+  constructor() {
+    this.setupReactiveEffects();
+    this.initializeStateStore();
+  }
 
   async ngOnInit(): Promise<void> {
     this._loadingMessage.set('Loading Angular Three...');
@@ -321,11 +372,6 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
       this._loadingProgress.set(50);
     }
 
-    // Setup reactive effects
-    this.setupReactiveEffects();
-
-    // Initialize state store integration
-    this.initializeStateStore();
     this._loadingProgress.set(75);
   }
 
@@ -395,16 +441,20 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
       // Use GSAP for smooth camera movement
       const timelineId = this.animationService.createTimeline({
         name: 'Camera Position Animation',
-        animations: [{
-          type: 'slide',
-          duration,
-          ease: 'power2.inOut'
-        }],
-        targets: [{
-          elementId: 'camera',
-          object3D: camera,
-          position
-        }]
+        animations: [
+          {
+            type: 'slide',
+            duration,
+            ease: 'power2.inOut',
+          },
+        ],
+        targets: [
+          {
+            elementId: 'camera',
+            object3D: camera,
+            position,
+          },
+        ],
       });
       this.animationService.playTimeline(timelineId);
     } else {
@@ -433,15 +483,19 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
 
       const timelineId = this.animationService.createTimeline({
         name: 'Camera Target Animation',
-        animations: [{
-          type: 'slide',
-          duration,
-          ease: 'power2.inOut'
-        }],
-        targets: [{
-          elementId: 'camera-target',
-          position: target
-        }]
+        animations: [
+          {
+            type: 'slide',
+            duration,
+            ease: 'power2.inOut',
+          },
+        ],
+        targets: [
+          {
+            elementId: 'camera-target',
+            position: target,
+          },
+        ],
       });
       this.animationService.playTimeline(timelineId);
     } else {
@@ -452,7 +506,10 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   /**
    * Take a high-quality screenshot of the scene
    */
-  takeScreenshot(format: 'png' | 'jpeg' = 'png', quality = 0.92): string | null {
+  takeScreenshot(
+    format: 'png' | 'jpeg' = 'png',
+    quality = 0.92
+  ): string | null {
     const renderer = this.getRenderer();
     if (!renderer?.domElement) return null;
 
@@ -499,7 +556,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
    * Toggle detailed metrics view
    */
   toggleDetailedMetrics(): void {
-    this._detailedMetrics.update(current => !current);
+    this._detailedMetrics.update((current) => !current);
   }
 
   /**
@@ -590,7 +647,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
       if (this.animationService.isAnimating()) {
         this.animationEvent.emit({
           type: 'animation-state-changed',
-          data: { isAnimating: true }
+          data: { isAnimating: true },
         });
       }
     });
@@ -606,7 +663,11 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
     // Create scene in state store
     const sceneId = this.sceneId() || 'default-scene';
     this.stateStore.createScene(sceneId, `Scene ${sceneId}`, {
-      backgroundColor: parseInt(this.backgroundColor()?.replace('#', '0x') || '0x000000', 16) || 0x000000,
+      backgroundColor:
+        parseInt(
+          this.backgroundColor()?.replace('#', '0x') || '0x000000',
+          16
+        ) || 0x000000,
       isActive: true,
     });
 
@@ -650,7 +711,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
           // This would trigger a scene background update
           this.animationEvent.emit({
             type: 'background-changed',
-            data: { backgroundColor: activeScene.backgroundColor }
+            data: { backgroundColor: activeScene.backgroundColor },
           });
         }
       }
