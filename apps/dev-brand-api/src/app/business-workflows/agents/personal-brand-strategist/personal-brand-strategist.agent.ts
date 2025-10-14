@@ -5,6 +5,7 @@ import {
   StreamProgress,
   StreamToken,
 } from '@hive-academy/langgraph-streaming';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import {
   DeclarativeWorkflowBase,
   MetadataProcessorService,
@@ -59,6 +60,9 @@ import {
     // enableInternalStreaming, enableInternalCheckpointing, internalTimeout,
     // enableErrorRecovery, maxInternalRetries, enableStepProgress, stateKey,
     // multiAgentStreaming, multiAgentInterruption now use module defaults
+    multiAgentInterruption: {
+      enabled: true, // Enable HITL approval at end of agent execution
+    },
   },
 })
 @Injectable()
@@ -360,8 +364,34 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
   /**
    * Final node: consolidate strategy and prepare output
    * Reached from both optimizeBrand and rebuildStrategy paths
+   *
+   * HITL Integration: Requires user approval before proceeding to content creation
+   * - Users can validate brand strategy, request revisions, or provide guidance
+   * - Approval timeout: 3 minutes (longer for strategy review)
+   * - WebSocket events: interruption_request, interruption_resolved
    */
   @Node({ type: 'standard' })
+  @RequiresApproval({
+    confidenceThreshold: 0.7,
+    timeoutMs: 180000, // 3 minutes for strategy review
+    message: (state) => {
+      const strategyType = state.metadata?.strategyType || 'unknown';
+      const brandScore =
+        typeof state.metadata?.brandScore === 'number'
+          ? state.metadata.brandScore
+          : 0;
+      return `Brand strategy complete (${strategyType}, score: ${brandScore.toFixed(
+        2
+      )}). Please review the strategy and approve to continue.`;
+    },
+    onTimeout: 'escalate',
+    metadata: (state) => ({
+      agentId: 'personal-brand-strategist',
+      strategyType: state.metadata?.strategyType,
+      brandScore: state.metadata?.brandScore,
+      hasAnalysis: !!state.metadata?.brandAnalysis,
+    }),
+  })
   async generateFinalStrategy(
     state: TypedWorkflowAgentState<BrandStrategistMetadata>
   ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {

@@ -6,6 +6,7 @@ import {
   StreamProgress,
   StreamToken,
 } from '@hive-academy/langgraph-streaming';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import {
   DeclarativeWorkflowBase,
   MetadataProcessorService,
@@ -397,9 +398,57 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
 
   /**
    * Finalize content and package for delivery
+   *
+   * HITL Integration: Requires user approval before publishing content
+   * - Users can review generated content for LinkedIn and Dev.to
+   * - Request changes, approve, or reject before publishing
+   * - Approval timeout: 5 minutes (longer for content review)
+   * - WebSocket events: interruption_request, interruption_resolved
    */
   @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
+  @RequiresApproval({
+    confidenceThreshold: 0.75,
+    timeoutMs: 300000, // 5 minutes for content review
+    message: (state) => {
+      const linkedinLength =
+        typeof state.metadata?.linkedinContent === 'string'
+          ? state.metadata.linkedinContent.length
+          : 0;
+      const devtoLength =
+        typeof state.metadata?.devtoContent === 'string'
+          ? state.metadata.devtoContent.length
+          : 0;
+      const linkedinEng =
+        typeof state.metadata?.linkedinEngagement === 'number'
+          ? state.metadata.linkedinEngagement
+          : 0;
+      const devtoEng =
+        typeof state.metadata?.devtoEngagement === 'number'
+          ? state.metadata.devtoEngagement
+          : 0;
+      return `Content creation complete. LinkedIn: ${linkedinLength} chars (engagement: ${linkedinEng.toFixed(
+        2
+      )}), Dev.to: ${devtoLength} chars (engagement: ${devtoEng.toFixed(
+        2
+      )}). Please review and approve.`;
+    },
+    onTimeout: 'escalate',
+    metadata: (state) => ({
+      agentId: 'content-creator',
+      linkedinLength:
+        typeof state.metadata?.linkedinContent === 'string'
+          ? state.metadata.linkedinContent.length
+          : undefined,
+      devtoLength:
+        typeof state.metadata?.devtoContent === 'string'
+          ? state.metadata.devtoContent.length
+          : undefined,
+      linkedinEngagement: state.metadata?.linkedinEngagement,
+      devtoEngagement: state.metadata?.devtoEngagement,
+      platforms: state.metadata?.targetPlatforms,
+    }),
+  })
   async finalizeContent(
     state: TypedWorkflowAgentState<ContentCreatorMetadata>
   ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
