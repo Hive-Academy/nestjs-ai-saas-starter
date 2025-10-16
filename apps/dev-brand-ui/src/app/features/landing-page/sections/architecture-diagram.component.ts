@@ -69,7 +69,8 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
     {
       level: 0,
       name: 'Persistence Layer',
-      description: 'External database adapters providing vector and graph storage capabilities. These are published NPM packages with Beta stability.',
+      description:
+        'External database adapters providing vector and graph storage capabilities. These are published NPM packages with Beta stability.',
       color: '#10b981', // green
       complexity: 'Low',
       dependencies: [],
@@ -82,7 +83,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#10b981',
           status: 'stable',
           statusText: 'Beta',
-          description: 'Vector embeddings with multi-provider support'
+          description: 'Vector embeddings with multi-provider support',
         },
         {
           id: 'nestjs-neo4j',
@@ -92,14 +93,15 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#10b981',
           status: 'stable',
           statusText: 'Beta',
-          description: 'Graph relationships with health monitoring'
-        }
-      ]
+          description: 'Graph relationships with health monitoring',
+        },
+      ],
     },
     {
       level: 1,
       name: 'Core Foundation',
-      description: 'Minimal contract layer providing shared types, tokens, and dependency injection contracts for the entire platform.',
+      description:
+        'Minimal contract layer providing shared types, tokens, and dependency injection contracts for the entire platform.',
       color: '#8b5cf6', // purple
       complexity: 'Medium',
       dependencies: [0],
@@ -112,14 +114,15 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#8b5cf6',
           status: 'active',
           statusText: 'Alpha',
-          description: 'Opinionated minimal contract layer'
-        }
-      ]
+          description: 'Opinionated minimal contract layer',
+        },
+      ],
     },
     {
       level: 2,
       name: 'Execution Engine',
-      description: 'Dual paradigm orchestration combining declarative and functional approaches with workflow engine and API helpers.',
+      description:
+        'Dual paradigm orchestration combining declarative and functional approaches with workflow engine and API helpers.',
       color: '#3b82f6', // blue
       complexity: 'High',
       dependencies: [1],
@@ -132,7 +135,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#3b82f6',
           status: 'active',
           statusText: 'Alpha',
-          description: 'Graph orchestration with decorator execution'
+          description: 'Graph orchestration with decorator execution',
         },
         {
           id: 'functional-api',
@@ -142,14 +145,15 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#3b82f6',
           status: 'active',
           statusText: 'Alpha',
-          description: 'FP style with 40% code reduction'
-        }
-      ]
+          description: 'FP style with 40% code reduction',
+        },
+      ],
     },
     {
       level: 3,
       name: 'Cross-Cutting Services',
-      description: 'Advanced capabilities including streaming, state management, memory fusion, multi-agent coordination, and human-in-the-loop systems.',
+      description:
+        'Advanced capabilities including streaming, state management, memory fusion, multi-agent coordination, and human-in-the-loop systems.',
       color: '#f59e0b', // amber
       complexity: 'Very High',
       dependencies: [2, 0],
@@ -162,7 +166,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#f59e0b',
           status: 'active',
           statusText: 'Alpha',
-          description: 'WebSocket streaming with decorators'
+          description: 'WebSocket streaming with decorators',
         },
         {
           id: 'checkpoint',
@@ -172,7 +176,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#f59e0b',
           status: 'active',
           statusText: 'Alpha',
-          description: 'Durable state with zero-downtime resume'
+          description: 'Durable state with zero-downtime resume',
         },
         {
           id: 'memory',
@@ -182,7 +186,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#f59e0b',
           status: 'prototype',
           statusText: 'Prototype',
-          description: 'Vector → graph expansion cascade'
+          description: 'Vector → graph expansion cascade',
         },
         {
           id: 'multi-agent',
@@ -192,7 +196,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#f59e0b',
           status: 'prototype',
           statusText: 'Prototype',
-          description: 'Lightweight role graph primitives'
+          description: 'Lightweight role graph primitives',
         },
         {
           id: 'hitl',
@@ -202,7 +206,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#f59e0b',
           status: 'active',
           statusText: 'Alpha',
-          description: 'Zero-churn removable approval gates'
+          description: 'Zero-churn removable approval gates',
         },
         {
           id: 'monitoring',
@@ -212,14 +216,15 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#f59e0b',
           status: 'planning',
           statusText: 'Planning',
-          description: 'Pre-wired health surfaces'
-        }
-      ]
+          description: 'Pre-wired health surfaces',
+        },
+      ],
     },
     {
       level: 4,
       name: 'Advanced Features',
-      description: 'Developer tools and platform integration including time-travel debugging and enterprise deployment capabilities.',
+      description:
+        'Developer tools and platform integration including time-travel debugging and enterprise deployment capabilities.',
       color: '#ec4899', // pink
       complexity: 'High',
       dependencies: [3],
@@ -232,7 +237,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#ec4899',
           status: 'prototype',
           statusText: 'Prototype',
-          description: 'Deterministic replay with token cadence'
+          description: 'Deterministic replay with token cadence',
         },
         {
           id: 'platform',
@@ -242,10 +247,10 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
           color: '#ec4899',
           status: 'active',
           statusText: 'Alpha',
-          description: 'Central DI composition boundary'
-        }
-      ]
-    }
+          description: 'Central DI composition boundary',
+        },
+      ],
+    },
   ];
 
   ngAfterViewInit(): void {
@@ -265,32 +270,38 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   getTotalComponents(): number {
-    return this.architectureLayers.reduce((total, layer) => total + layer.components.length, 0);
+    return this.architectureLayers.reduce(
+      (total, layer) => total + layer.components.length,
+      0
+    );
   }
 
   getTotalDependencies(): number {
-    return this.architectureLayers.reduce((total, layer) => total + layer.dependencies.length, 0);
+    return this.architectureLayers.reduce(
+      (total, layer) => total + layer.dependencies.length,
+      0
+    );
   }
 
   getComponentStatusClasses(status: string): string {
     const classes = {
-      'stable': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'active': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'prototype': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-      'planning': 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+      stable: 'bg-green-500/20 text-green-300 border-green-500/30',
+      active: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      prototype: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      planning: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
     };
     return classes[status as keyof typeof classes] || classes.active;
   }
 
   getComponentLayer(component: ArchitectureComponent): string {
-    const layer = this.architectureLayers.find(l =>
-      l.components.some(c => c.id === component.id)
+    const layer = this.architectureLayers.find((l) =>
+      l.components.some((c) => c.id === component.id)
     );
     return layer ? `Layer ${layer.level}: ${layer.name}` : 'Unknown';
   }
 
   navigateToLayer(level: number): void {
-    const layer = this.architectureLayers.find(l => l.level === level);
+    const layer = this.architectureLayers.find((l) => l.level === level);
     if (layer) {
       this.selectedLayer.set(layer);
       // Scroll to layer
@@ -321,10 +332,10 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
 
   getComponentStatus(component: ArchitectureComponent): string {
     const statusMap = {
-      'stable': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'active': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'prototype': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-      'planning': 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+      stable: 'bg-green-500/20 text-green-300 border-green-500/30',
+      active: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      prototype: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      planning: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
     };
     return statusMap[component.status] || statusMap.active;
   }
@@ -334,7 +345,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   getLayerName(level: number): string {
-    const layer = this.architectureLayers.find(l => l.level === level);
+    const layer = this.architectureLayers.find((l) => l.level === level);
     return layer ? layer.name : `Layer ${level}`;
   }
 
@@ -349,7 +360,6 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
   resetComponentHighlight(): void {
     // Reset highlight
   }
-
 
   private initializeSubtleBackground(): void {
     const container = this.canvasRef.nativeElement;
@@ -368,7 +378,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      powerPreference: 'low-power'
+      powerPreference: 'low-power',
     });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
@@ -411,25 +421,25 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
       const material = new THREE.LineBasicMaterial({
         color: layer.color,
         transparent: true,
-        opacity: 0.3
+        opacity: 0.3,
       });
 
       const wireframe = new THREE.LineSegments(edges, material);
-      wireframe.position.y = i * 3 - (layerCount * 1.5);
+      wireframe.position.y = i * 3 - layerCount * 1.5;
       this.scene.add(wireframe);
     }
 
     // Add connecting lines between layers
     for (let i = 0; i < layerCount - 1; i++) {
       const points = [
-        new THREE.Vector3(0, i * 3 - (layerCount * 1.5), 0),
-        new THREE.Vector3(0, (i + 1) * 3 - (layerCount * 1.5), 0)
+        new THREE.Vector3(0, i * 3 - layerCount * 1.5, 0),
+        new THREE.Vector3(0, (i + 1) * 3 - layerCount * 1.5, 0),
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const material = new THREE.LineBasicMaterial({
         color: 0x64748b,
         transparent: true,
-        opacity: 0.2
+        opacity: 0.2,
       });
       const line = new THREE.Line(geometry, material);
       this.scene.add(line);
@@ -458,7 +468,7 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
       if (obj instanceof THREE.LineSegments || obj instanceof THREE.Line) {
         obj.geometry.dispose();
         if (Array.isArray(obj.material)) {
-          obj.material.forEach(m => m.dispose());
+          obj.material.forEach((m) => m.dispose());
         } else {
           (obj.material as THREE.Material).dispose();
         }
@@ -469,7 +479,6 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
     this.camera = null;
     this.renderer = null;
   }
-
 
   private onResize = (): void => {
     if (!this.renderer || !this.camera) return;
@@ -482,5 +491,4 @@ export class ArchitectureDiagramComponent implements AfterViewInit, OnDestroy {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   };
-
 }

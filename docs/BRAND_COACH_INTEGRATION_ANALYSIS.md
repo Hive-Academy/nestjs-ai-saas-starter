@@ -127,20 +127,24 @@ export interface BrandStrategistMetadata extends WorkflowAgentMetadata {
 ### Services to Leverage
 
 1. **DeveloperProfileRepository** (Phase 1)
+
    - `analyzeCodingPatterns(githubData): Promise<CodingAnalysis>`
    - `findByExperienceLevel(level): Promise<DeveloperProfileEntity[]>`
    - `findBySpecialization(specialization): Promise<DeveloperProfileEntity[]>`
    - `findTopContributors(limit): Promise<DeveloperProfileEntity[]>`
 
 2. **CompetitiveIntelligenceService** (Phase 3)
+
    - `getCompetitivePositioning(userId): Promise<CompetitivePositioningReport>`
    - `generateDifferentiationStrategy(userId): Promise<DifferentiationStrategy>`
    - `benchmarkAgainstCompetitors(userId, competitorIds): Promise<BenchmarkAnalysis>`
 
 3. **ContentStrategyEngine** (Phase 2)
+
    - `generatePersonalizedStrategy(userId, goals): Promise<ContentStrategy>`
 
 4. **BrandMonitoringService** (Phase 2)
+
    - `generateBrandHealthReport(userId): Promise<BrandHealthReport>`
    - `detectAnomalies(userId): Promise<Alert[]>`
 
@@ -158,13 +162,13 @@ The **Conversational Brand Coach** is a conversational AI agent that provides pe
 
 ### Key Differences from Existing Agents
 
-| Aspect | Existing Agents | Brand Coach |
-|--------|----------------|-------------|
-| **Interaction Model** | Single execution (task → result) | Multi-turn conversation |
-| **State Management** | Workflow state (transient) | Conversation history (persistent) |
-| **Output Format** | Structured data (JSON) | Natural language responses |
-| **Integration** | Sequential pipeline | On-demand consultation |
-| **Tools** | Internal analysis | External service calls |
+| Aspect                | Existing Agents                  | Brand Coach                       |
+| --------------------- | -------------------------------- | --------------------------------- |
+| **Interaction Model** | Single execution (task → result) | Multi-turn conversation           |
+| **State Management**  | Workflow state (transient)       | Conversation history (persistent) |
+| **Output Format**     | Structured data (JSON)           | Natural language responses        |
+| **Integration**       | Sequential pipeline              | On-demand consultation            |
+| **Tools**             | Internal analysis                | External service calls            |
 
 ### Architecture Decision: Two Approaches
 
@@ -249,11 +253,13 @@ Implement Brand Coach as a **standalone conversational service** outside the wor
 **Internal Workflow Nodes**:
 
 1. **initializeConversation** (Entry Point)
+
    - Load user profile from memory
    - Load conversation history
    - Set conversation context
 
 2. **analyzeUserIntent** (Analysis Node)
+
    - Parse user message
    - Determine intent category:
      - Profile analysis request
@@ -264,9 +270,11 @@ Implement Brand Coach as a **standalone conversational service** outside the wor
    - Extract entities (skills, competitors, goals)
 
 3. **routeToSpecialist** (Condition Node)
+
    - Route to appropriate specialist node based on intent
 
 4. **Specialist Nodes** (Multiple Paths):
+
    - **profileGuidance**: Uses DeveloperProfileRepository + PerformanceDashboardService
    - **competitiveGuidance**: Uses CompetitiveIntelligenceService
    - **contentStrategyGuidance**: Uses ContentStrategyEngine
@@ -334,12 +342,7 @@ export interface BrandCoachMetadata extends WorkflowAgentMetadata {
   followUpQuestions?: string[];
 
   // Workflow state
-  currentStep?:
-    | 'initialization'
-    | 'intent-analyzed'
-    | 'specialist-consulted'
-    | 'response-generated'
-    | 'conversation-complete';
+  currentStep?: 'initialization' | 'intent-analyzed' | 'specialist-consulted' | 'response-generated' | 'conversation-complete';
 
   // Metadata
   conversationStartTime?: Date;
@@ -443,25 +446,18 @@ ROUTING RULES:
 ```typescript
 @Controller('brand-coach')
 export class BrandCoachController {
-  constructor(
-    private readonly coordinator: MultiAgentCoordinatorService,
-    private readonly brandCoach: BrandCoachAgent
-  ) {}
+  constructor(private readonly coordinator: MultiAgentCoordinatorService, private readonly brandCoach: BrandCoachAgent) {}
 
   @Post('chat')
   async chat(@Body() body: { userId: string; message: string; conversationId?: string }) {
     // Route through supervisor or direct to brand coach
-    const result = await this.coordinator.executeSimpleWorkflow(
-      networkId,
-      body.message,
-      {
-        metadata: {
-          userId: body.userId,
-          conversationId: body.conversationId || `conv-${Date.now()}`,
-          targetAgent: 'brand-coach',
-        },
-      }
-    );
+    const result = await this.coordinator.executeSimpleWorkflow(networkId, body.message, {
+      metadata: {
+        userId: body.userId,
+        conversationId: body.conversationId || `conv-${Date.now()}`,
+        targetAgent: 'brand-coach',
+      },
+    });
 
     return {
       conversationId: result.finalState.metadata.conversationId,
@@ -489,30 +485,36 @@ export class BrandCoachController {
 **Task Breakdown**:
 
 1. **Create Brand Coach Metadata Types** (30 min)
+
    - Add `BrandCoachMetadata` to `metadata.types.ts`
    - Add conversation types to `agent.types.ts`
 
 2. **Implement Brand Coach Agent** (2-3 hours)
+
    - Create `brand-coach.agent.ts`
    - Implement 6 internal nodes (init, analyze, route, 3 specialists, generate)
    - Define edges between nodes
    - Integrate with Phase 1-3 services
 
 3. **Create Brand Coach Prompts** (30 min)
+
    - Create `brand-coach.prompts.ts`
    - Define prompts for intent analysis and response generation
 
 4. **Integrate with Supervisor** (1 hour)
+
    - Update `DevBrandSupervisorWorkflow`
    - Add brand coach to agent network
    - Update system prompt with routing rules
 
 5. **Create Controller & Endpoints** (1 hour)
+
    - Create `BrandCoachController`
    - Implement `/chat` endpoint
    - Implement `/history/:conversationId` endpoint
 
 6. **Add Conversation Memory Storage** (30 min)
+
    - Extend `PersonalBrandMemoryService`
    - Add conversation persistence methods
 
@@ -525,15 +527,15 @@ export class BrandCoachController {
 
 ## Success Metrics
 
-| Metric | Target | Validation |
-|--------|--------|------------|
-| **Response Time** | <2 seconds | Average coach response time |
-| **Intent Accuracy** | >85% | Correct routing to specialist nodes |
-| **Recommendation Quality** | >4/5 rating | User feedback scores |
-| **Conversation Continuity** | 100% | State preserved across turns |
-| **Service Integration** | 5/5 services | All Phase 1-3 services working |
-| **Type Safety** | Zero `any` types | TypeScript compilation |
-| **Build Success** | Pass | No errors |
+| Metric                      | Target           | Validation                          |
+| --------------------------- | ---------------- | ----------------------------------- |
+| **Response Time**           | <2 seconds       | Average coach response time         |
+| **Intent Accuracy**         | >85%             | Correct routing to specialist nodes |
+| **Recommendation Quality**  | >4/5 rating      | User feedback scores                |
+| **Conversation Continuity** | 100%             | State preserved across turns        |
+| **Service Integration**     | 5/5 services     | All Phase 1-3 services working      |
+| **Type Safety**             | Zero `any` types | TypeScript compilation              |
+| **Build Success**           | Pass             | No errors                           |
 
 ---
 

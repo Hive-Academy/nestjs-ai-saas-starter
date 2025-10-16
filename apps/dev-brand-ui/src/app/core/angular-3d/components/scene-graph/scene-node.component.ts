@@ -76,34 +76,34 @@ export interface NodeBounds {
       class="scene-node-container"
       [attr.data-node-id]="config().id"
       [style.display]="visible() ? 'block' : 'none'"
-      #containerRef>
-
+      #containerRef
+    >
       <!-- Content projection for child components -->
       <ng-content></ng-content>
 
       <!-- Debug information when enabled -->
       @if (showDebugBounds()) {
-        <div class="debug-info">
-          <div class="debug-header">Node: {{ config().name || config().id }}</div>
-          <div class="debug-stats">
-            <div>Position: {{ formatVector(transformedPosition()) }}</div>
-            <div>Rotation: {{ formatVector(transformedRotation()) }}</div>
-            <div>Scale: {{ formatVector(transformedScale()) }}</div>
-            @if (bounds(); as nodeBounds) {
-              <div>Bounds: {{ formatBounds(nodeBounds) }}</div>
-            }
-            <div>Children: {{ childCount() }}</div>
-            <div>Visible: {{ effectiveVisibility() }}</div>
-          </div>
+      <div class="debug-info">
+        <div class="debug-header">Node: {{ config().name || config().id }}</div>
+        <div class="debug-stats">
+          <div>Position: {{ formatVector(transformedPosition()) }}</div>
+          <div>Rotation: {{ formatVector(transformedRotation()) }}</div>
+          <div>Scale: {{ formatVector(transformedScale()) }}</div>
+          @if (bounds(); as nodeBounds) {
+          <div>Bounds: {{ formatBounds(nodeBounds) }}</div>
+          }
+          <div>Children: {{ childCount() }}</div>
+          <div>Visible: {{ effectiveVisibility() }}</div>
         </div>
+      </div>
       }
 
       <!-- Performance metrics when enabled -->
       @if (showPerformanceInfo()) {
-        <div class="performance-info">
-          <div>LOD Level: {{ lodLevel() }}</div>
-          <div>Animating: {{ isAnimating() }}</div>
-        </div>
+      <div class="performance-info">
+        <div>LOD Level: {{ lodLevel() }}</div>
+        <div>Animating: {{ isAnimating() }}</div>
+      </div>
       }
     </div>
   `,
@@ -122,7 +122,9 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   readonly showDebugBounds = input(false);
   readonly showPerformanceInfo = input(false);
   readonly debugColor = input('#ff0000');
-  readonly performanceMode = input<'normal' | 'optimized' | 'high-performance'>('normal');
+  readonly performanceMode = input<'normal' | 'optimized' | 'high-performance'>(
+    'normal'
+  );
 
   // Transform input signals
   readonly position = input<readonly [number, number, number]>([0, 0, 0]);
@@ -142,7 +144,11 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   readonly visibilityChanged = output<boolean>();
   readonly lodLevelChanged = output<number>();
   readonly transformChanged = output<Transform3D>();
-  readonly animationEvent = output<{ type: string; node: SceneNodeComponent; data: any }>();
+  readonly animationEvent = output<{
+    type: string;
+    node: SceneNodeComponent;
+    data: any;
+  }>();
 
   // Child nodes for hierarchy management
   @ContentChildren(forwardRef(() => SceneNodeComponent), { descendants: false })
@@ -247,11 +253,13 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
     return baseVisible;
   });
 
-  readonly currentTransform = computed((): Transform3D => ({
-    position: this.transformedPosition(),
-    rotation: this.transformedRotation(),
-    scale: this.transformedScale(),
-  }));
+  readonly currentTransform = computed(
+    (): Transform3D => ({
+      position: this.transformedPosition(),
+      rotation: this.transformedRotation(),
+      scale: this.transformedScale(),
+    })
+  );
 
   readonly bounds = computed(() => this._bounds());
   readonly lodLevel = computed(() => this._lodLevel());
@@ -263,7 +271,9 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
 
   // Template helper methods
   formatVector(vector: readonly [number, number, number]): string {
-    return `(${vector[0].toFixed(2)}, ${vector[1].toFixed(2)}, ${vector[2].toFixed(2)})`;
+    return `(${vector[0].toFixed(2)}, ${vector[1].toFixed(
+      2
+    )}, ${vector[2].toFixed(2)})`;
   }
 
   formatBounds(bounds: NodeBounds): string {
@@ -317,16 +327,20 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
 
       const timelineId = this.animationService.createTimeline({
         name: `Scene Node ${this.config().id} Transform`,
-        animations: [{
-          type: 'slide',
-          duration,
-          ease,
-        }],
-        targets: [{
-          elementId: this.animationTarget(),
-          object3D: this.getGroup() || undefined,
-          ...transform,
-        }],
+        animations: [
+          {
+            type: 'slide',
+            duration,
+            ease,
+          },
+        ],
+        targets: [
+          {
+            elementId: this.animationTarget(),
+            object3D: this.getGroup() || undefined,
+            ...transform,
+          },
+        ],
       });
 
       this.animationService.playTimeline(timelineId);
@@ -349,7 +363,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
         this.animationEvent.emit({
           type: 'transform-animation-complete',
           node: this,
-          data: { transform, timelineId }
+          data: { transform, timelineId },
         });
       }, 1000); // Default duration
     }
@@ -400,9 +414,12 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   /**
    * Traverse hierarchy and execute callback on each node
    */
-  traverse(callback: (node: SceneNodeComponent, depth: number) => void, depth = 0): void {
+  traverse(
+    callback: (node: SceneNodeComponent, depth: number) => void,
+    depth = 0
+  ): void {
     callback(this, depth);
-    this.childNodes.forEach(child => child.traverse(callback, depth + 1));
+    this.childNodes.forEach((child) => child.traverse(callback, depth + 1));
   }
 
   // Event handlers
@@ -463,12 +480,12 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
       name: config.name || `Node ${config.id}`,
       type: 'group' as const,
       visible: this.effectiveVisibility(),
-      position: this.position() || [0, 0, 0] as const,
-      rotation: this.rotation() || [0, 0, 0] as const,
-      scale: this.scale() || [1, 1, 1] as const,
+      position: this.position() || ([0, 0, 0] as const),
+      rotation: this.rotation() || ([0, 0, 0] as const),
+      scale: this.scale() || ([1, 1, 1] as const),
       parent: undefined, // Parent will be determined by component hierarchy
       children: [],
-      userData: { nodeType: 'scene-node', config }
+      userData: { nodeType: 'scene-node', config },
     };
 
     // Register with state store
@@ -494,7 +511,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
     this._group.userData = {
       ...config.userData,
       sceneNodeId: config.id,
-      component: this
+      component: this,
     };
 
     this.applyConfiguration(config);
@@ -532,7 +549,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   }
 
   private updateChildTransforms(): void {
-    this.childNodes.forEach(child => {
+    this.childNodes.forEach((child) => {
       // Update child's parent transform
       // This would require a way to update child's parentTransform input
       // In a real implementation, you might use a service or different approach
@@ -552,7 +569,10 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
     group.userData = { ...group.userData, ...config.userData };
   }
 
-  private hasTransformChanged(current: Transform3D, last: Transform3D): boolean {
+  private hasTransformChanged(
+    current: Transform3D,
+    last: Transform3D
+  ): boolean {
     return (
       !this.arraysEqual(current.position, last.position) ||
       !this.arraysEqual(current.rotation, last.rotation) ||
@@ -576,7 +596,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   }
 
   private optimizeChildren(): void {
-    this.childNodes.forEach(child => {
+    this.childNodes.forEach((child) => {
       const childBounds = child.bounds();
       if (childBounds && this.isOutsideFrustum(childBounds)) {
         child.setVisibility(false);
@@ -584,7 +604,10 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
     });
   }
 
-  private async animateOpacity(targetOpacity: number, duration: number): Promise<void> {
+  private async animateOpacity(
+    targetOpacity: number,
+    duration: number
+  ): Promise<void> {
     return new Promise((resolve) => {
       const group = this.getGroup();
       if (!group) {
@@ -603,15 +626,19 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
             // Use GSAP for smooth opacity animation
             const timelineId = this.animationService.createTimeline({
               name: `Opacity Animation ${this.config().id}`,
-              animations: [{
-                type: 'fade',
-                duration,
-                ease: 'power2.inOut',
-              }],
-              targets: [{
-                elementId: `${this.config().id}-opacity`,
-                opacity: targetOpacity,
-              }],
+              animations: [
+                {
+                  type: 'fade',
+                  duration,
+                  ease: 'power2.inOut',
+                },
+              ],
+              targets: [
+                {
+                  elementId: `${this.config().id}-opacity`,
+                  opacity: targetOpacity,
+                },
+              ],
             });
 
             this.animationService.playTimeline(timelineId);
@@ -636,6 +663,6 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
     }
 
     // Clean up child nodes
-    this.childNodes.forEach(child => child.ngOnDestroy());
+    this.childNodes.forEach((child) => child.ngOnDestroy());
   }
 }

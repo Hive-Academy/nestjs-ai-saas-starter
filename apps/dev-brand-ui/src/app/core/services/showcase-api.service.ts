@@ -226,14 +226,15 @@ export class ShowcaseApiService {
       description: request.input,
       priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
       category: 'demo-supervisor',
-      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      customerTier:
+        request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
       metadata: {
         pattern: 'supervisor',
         selectedAgents: request.selectedAgents,
         enableStreaming: request.enableStreaming,
         enableHitl: request.enableHitl,
-        demonstrationMode: request.demonstrationMode
-      }
+        demonstrationMode: request.demonstrationMode,
+      },
     };
 
     return this.http
@@ -242,7 +243,7 @@ export class ShowcaseApiService {
         ticketRequest
       )
       .pipe(
-        map(response => this.adaptToShowcaseResponse(response, 'supervisor')),
+        map((response) => this.adaptToShowcaseResponse(response, 'supervisor')),
         catchError(this.handleError('executeSupervisorShowcase'))
       );
   }
@@ -260,14 +261,15 @@ export class ShowcaseApiService {
       description: request.input,
       priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
       category: 'demo-swarm',
-      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      customerTier:
+        request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
       metadata: {
         pattern: 'swarm',
         selectedAgents: request.selectedAgents,
         enableStreaming: request.enableStreaming,
         enableHitl: request.enableHitl,
-        demonstrationMode: request.demonstrationMode
-      }
+        demonstrationMode: request.demonstrationMode,
+      },
     };
 
     return this.http
@@ -276,7 +278,7 @@ export class ShowcaseApiService {
         ticketRequest
       )
       .pipe(
-        map(response => this.adaptToShowcaseResponse(response, 'swarm')),
+        map((response) => this.adaptToShowcaseResponse(response, 'swarm')),
         catchError(this.handleError('executeSwarmShowcase'))
       );
   }
@@ -350,29 +352,34 @@ export class ShowcaseApiService {
    */
   getAvailableAgents(): Observable<ShowcaseAgent[]> {
     return this.http
-      .get<{success: boolean; data: any[]; total: number}>(
+      .get<{ success: boolean; data: any[]; total: number }>(
         `${this.customerSupportUrl}/agents`
       )
       .pipe(
-        map(response => response.data.map(agent => ({
-          id: agent.id || agent.name,
-          name: agent.name,
-          description: agent.description || 'Customer support agent',
-          tools: agent.tools || [],
-          capabilities: agent.capabilities || [],
-          priority: agent.priority || 'medium',
-          executionTime: agent.executionTime || 'medium',
-          outputFormat: agent.outputFormat || 'detailed',
-          systemPrompt: agent.systemPrompt || '',
-          metadata: {
-            version: '1.0',
-            category: 'customer-support',
-            complexity: 'advanced',
-            showcaseLevel: 'production',
-            decoratorsUsed: ['@Workflow', '@Task', '@RequiresApproval'],
-            enterpriseFeatures: ['hitl', 'streaming', 'approval']
-          }
-        } as ShowcaseAgent))),
+        map((response) =>
+          response.data.map(
+            (agent) =>
+              ({
+                id: agent.id || agent.name,
+                name: agent.name,
+                description: agent.description || 'Customer support agent',
+                tools: agent.tools || [],
+                capabilities: agent.capabilities || [],
+                priority: agent.priority || 'medium',
+                executionTime: agent.executionTime || 'medium',
+                outputFormat: agent.outputFormat || 'detailed',
+                systemPrompt: agent.systemPrompt || '',
+                metadata: {
+                  version: '1.0',
+                  category: 'customer-support',
+                  complexity: 'advanced',
+                  showcaseLevel: 'production',
+                  decoratorsUsed: ['@Workflow', '@Task', '@RequiresApproval'],
+                  enterpriseFeatures: ['hitl', 'streaming', 'approval'],
+                },
+              } as ShowcaseAgent)
+          )
+        ),
         catchError(this.handleError('getAvailableAgents'))
       );
   }
@@ -391,26 +398,33 @@ export class ShowcaseApiService {
    * Knowledge Base Search
    * Search the customer support knowledge base instead of web search
    */
-  searchWeb(query: string, maxResults = 5, searchDepth: 'basic' | 'advanced' = 'basic'): Observable<SearchResponse> {
+  searchWeb(
+    query: string,
+    maxResults = 5,
+    searchDepth: 'basic' | 'advanced' = 'basic'
+  ): Observable<SearchResponse> {
     return this.http
       .post<any>(`${this.customerSupportUrl}/knowledge-base/search`, {
         query,
         maxResults,
-        searchDepth: searchDepth === 'advanced' ? 'comprehensive' : 'summary'
+        searchDepth: searchDepth === 'advanced' ? 'comprehensive' : 'summary',
       })
       .pipe(
-        map(response => ({
-          query,
-          results: response.results || [],
-          totalResults: response.totalResults || 0,
-          searchTime: response.searchTime || '0ms',
-          answer: response.answer,
-          metadata: {
-            timestamp: new Date().toISOString(),
-            provider: 'knowledge-base',
-            version: '1.0'
-          }
-        } as SearchResponse)),
+        map(
+          (response) =>
+            ({
+              query,
+              results: response.results || [],
+              totalResults: response.totalResults || 0,
+              searchTime: response.searchTime || '0ms',
+              answer: response.answer,
+              metadata: {
+                timestamp: new Date().toISOString(),
+                provider: 'knowledge-base',
+                version: '1.0',
+              },
+            } as SearchResponse)
+        ),
         catchError(this.handleError('searchWeb'))
       );
   }
@@ -420,9 +434,14 @@ export class ShowcaseApiService {
    * Search for recent news articles
    */
   searchNews(
-    query: string, 
+    query: string,
     timeframe: 'day' | 'week' | 'month' = 'week',
-    category: 'general' | 'tech' | 'business' | 'science' | 'health' = 'general',
+    category:
+      | 'general'
+      | 'tech'
+      | 'business'
+      | 'science'
+      | 'health' = 'general',
     maxResults = 8
   ): Observable<NewsSearchResponse> {
     return this.http
@@ -430,7 +449,7 @@ export class ShowcaseApiService {
         query,
         timeframe,
         category,
-        maxResults
+        maxResults,
       })
       .pipe(catchError(this.handleError('searchNews')));
   }
@@ -450,7 +469,7 @@ export class ShowcaseApiService {
         topic,
         analysisDepth,
         minSources,
-        includeAcademic
+        includeAcademic,
       })
       .pipe(catchError(this.handleError('searchResearch')));
   }
@@ -473,7 +492,9 @@ export class ShowcaseApiService {
   /**
    * Create a new support ticket (new method for frontend)
    */
-  createSupportTicket(request: TicketRequest): Observable<SupportTicketResponse> {
+  createSupportTicket(
+    request: TicketRequest
+  ): Observable<SupportTicketResponse> {
     return this.http
       .post<SupportTicketResponse>(
         `${this.customerSupportUrl}/tickets`,
@@ -522,12 +543,13 @@ export class ShowcaseApiService {
         '@RequiresApproval',
         '@StreamProgress',
         '@StreamEvent',
-        '@StreamToken'
+        '@StreamToken',
       ],
       enterpriseFeatures: ['hitl', 'vector', 'graph', 'multi-agent'],
       executionPath: [],
       duration: 0,
-      streamingUrl: response.streamUrl || 
+      streamingUrl:
+        response.streamUrl ||
         `${this.customerSupportUrl}/tickets/${response.data?.ticketId}/stream`,
       metricsUrl: `${this.customerSupportUrl}/metrics`,
       ...(pattern === 'swarm' && {
@@ -535,9 +557,9 @@ export class ShowcaseApiService {
           peerCount: 3,
           consensusScore: 0.85,
           emergentBehaviors: 0,
-          collectiveIntelligenceGain: 0
-        }
-      })
+          collectiveIntelligenceGain: 0,
+        },
+      }),
     };
   }
 

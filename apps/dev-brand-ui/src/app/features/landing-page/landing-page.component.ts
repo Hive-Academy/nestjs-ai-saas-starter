@@ -15,18 +15,20 @@ import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.compon
 
 import { PlatformPillarsComponent } from './sections/platform-pillars.component';
 import { LoadingStateService } from './services/loading-state.service';
-import { HeroAngularThreeComponent } from './components/hero-angular-three/hero-angular-three.component';
+// import { HeroAngularThreeComponent } from './components/hero-angular-three/hero-angular-three.component';
+import { HeroSectionComponent } from './sections/hero-section.component';
 
 @Component({
   selector: 'brand-landing-page',
   standalone: true,
   imports: [
     CommonModule,
-    HeroAngularThreeComponent,
+    // HeroAngularThreeComponent,
     PlatformPillarsComponent,
     DemoTheaterComponent,
     EcosystemExplorerComponent,
     ArchitectureDiagramComponent,
+    HeroSectionComponent,
   ],
   template: ` <div
     class="w-full min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out relative"
@@ -146,11 +148,12 @@ import { HeroAngularThreeComponent } from './components/hero-angular-three/hero-
     <main class="w-full">
       <!-- Hero Section -->
       <div id="hero" class="section-container">
-        <app-hero-angular-three
+        <!-- <app-hero-angular-three
           (getStarted)="onGetStarted()"
           (watchDemo)="onWatchDemo()"
           (featureSelected)="onFeatureSelected($event)">
-        </app-hero-angular-three>
+        </app-hero-angular-three> -->
+        <brand-hero-section />
       </div>
 
       <!-- Platform Pillars Section -->

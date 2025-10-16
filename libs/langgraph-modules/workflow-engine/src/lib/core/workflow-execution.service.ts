@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph } from '@langchain/langgraph';
-import type {
-  WorkflowState,
-  WorkflowNode,
-  Command,
-} from '../interfaces';
+import type { WorkflowState, WorkflowNode, Command } from '../interfaces';
 // Removed unused import: WorkflowDefinition
 import { WorkflowCommandType } from '../constants';
 

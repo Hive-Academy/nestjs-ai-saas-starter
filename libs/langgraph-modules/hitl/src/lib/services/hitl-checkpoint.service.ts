@@ -1,9 +1,9 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { 
-  NodeIdBuilder, 
-  ICheckpointAdapter, 
-  BaseCheckpointMetadata, 
-  BaseCheckpointTuple 
+import {
+  NodeIdBuilder,
+  ICheckpointAdapter,
+  BaseCheckpointMetadata,
+  BaseCheckpointTuple,
 } from '@hive-academy/langgraph-core';
 import { HumanApprovalRequest } from './approval-workflow.types';
 import { IHitlCheckpointService } from '../interfaces/hitl-services.interface';
@@ -22,7 +22,9 @@ export class HitlCheckpointService implements IHitlCheckpointService {
     @Inject('ICheckpointAdapter')
     private readonly checkpointAdapter: ICheckpointAdapter
   ) {
-    this.logger.log('💾 HITL Checkpoint Service initialized with adapter-first storage');
+    this.logger.log(
+      '💾 HITL Checkpoint Service initialized with adapter-first storage'
+    );
   }
 
   /**
@@ -262,10 +264,7 @@ export class HitlCheckpointService implements IHitlCheckpointService {
   /**
    * Generate canonical thread ID for approval workflow
    */
-  generateApprovalThreadId(
-    executionId: string,
-    nodeId: string
-  ): string {
+  generateApprovalThreadId(executionId: string, nodeId: string): string {
     return NodeIdBuilder.create()
       .domain('hitl')
       .phase('approval')

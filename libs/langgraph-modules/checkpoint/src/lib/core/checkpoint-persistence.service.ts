@@ -36,7 +36,9 @@ export class CheckpointPersistenceService
   /**
    * Save checkpoint with metadata enrichment
    */
-  async saveCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
+  async saveCheckpoint<
+    T extends Record<string, unknown> = Record<string, unknown>
+  >(
     threadId: string,
     checkpoint: unknown,
     metadata?: EnhancedCheckpointMetadata,
@@ -48,13 +50,17 @@ export class CheckpointPersistenceService
       this.validateSaveInput(threadId, checkpoint);
 
       const saver = this.registryService.getSaver(saverName);
-      const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+      const actualSaverName =
+        saverName || this.registryService.getDefaultSaverName() || 'default';
 
       // Enrich metadata with additional information
       const enrichedMetadata = this.enrichMetadata(threadId, metadata);
 
       // Create enhanced checkpoint with size and checksum
-      const enhancedCheckpoint = await this.createEnhancedCheckpoint<T>(checkpoint, enrichedMetadata);
+      const enhancedCheckpoint = await this.createEnhancedCheckpoint<T>(
+        checkpoint,
+        enrichedMetadata
+      );
 
       // Save to storage backend
       await saver.put(
@@ -70,11 +76,14 @@ export class CheckpointPersistenceService
       this.metricsService.recordSaveMetrics(actualSaverName, duration, true);
 
       this.logger.debug(
-        `Checkpoint saved for thread ${threadId}: ${(checkpoint as any).id} (${duration}ms)`
+        `Checkpoint saved for thread ${threadId}: ${
+          (checkpoint as any).id
+        } (${duration}ms)`
       );
     } catch (error) {
       const duration = Date.now() - startTime;
-      const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+      const actualSaverName =
+        saverName || this.registryService.getDefaultSaverName() || 'default';
 
       // Record metrics for failed operation
       this.metricsService.recordSaveMetrics(actualSaverName, duration, false);
@@ -84,14 +93,20 @@ export class CheckpointPersistenceService
         error
       );
 
-      throw this.createSaveError(error as Error, threadId, (checkpoint as any)?.id);
+      throw this.createSaveError(
+        error as Error,
+        threadId,
+        (checkpoint as any)?.id
+      );
     }
   }
 
   /**
    * Load checkpoint with version support
    */
-  async loadCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
+  async loadCheckpoint<
+    T extends Record<string, unknown> = Record<string, unknown>
+  >(
     threadId: string,
     checkpointId?: string,
     saverName?: string
@@ -102,7 +117,8 @@ export class CheckpointPersistenceService
       this.validateLoadInput(threadId);
 
       const saver = this.registryService.getSaver(saverName);
-      const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+      const actualSaverName =
+        saverName || this.registryService.getDefaultSaverName() || 'default';
 
       const config = {
         configurable: {
@@ -111,7 +127,9 @@ export class CheckpointPersistenceService
         },
       };
 
-      const checkpoint = await saver.get(config) as EnhancedCheckpoint<T> | null;
+      const checkpoint = (await saver.get(
+        config
+      )) as EnhancedCheckpoint<T> | null;
 
       const duration = Date.now() - startTime;
 
@@ -134,7 +152,8 @@ export class CheckpointPersistenceService
       return checkpoint;
     } catch (error) {
       const duration = Date.now() - startTime;
-      const actualSaverName = saverName || this.registryService.getDefaultSaverName() || 'default';
+      const actualSaverName =
+        saverName || this.registryService.getDefaultSaverName() || 'default';
 
       // Record metrics for failed operation
       this.metricsService.recordLoadMetrics(actualSaverName, duration, false);
@@ -171,7 +190,10 @@ export class CheckpointPersistenceService
       }
 
       // Apply enhanced filtering
-      const filteredCheckpoints = this.applyAdvancedFiltering(checkpoints, options);
+      const filteredCheckpoints = this.applyAdvancedFiltering(
+        checkpoints,
+        options
+      );
 
       // Apply sorting
       const sortedCheckpoints = this.applySorting(filteredCheckpoints, options);
@@ -212,7 +234,9 @@ export class CheckpointPersistenceService
   /**
    * Create enhanced checkpoint with size and checksum
    */
-  async createEnhancedCheckpoint<T extends Record<string, unknown> = Record<string, unknown>>(
+  async createEnhancedCheckpoint<
+    T extends Record<string, unknown> = Record<string, unknown>
+  >(
     checkpoint: unknown,
     metadata: EnhancedCheckpointMetadata
   ): Promise<EnhancedCheckpoint<T>> {
@@ -237,13 +261,14 @@ export class CheckpointPersistenceService
     }
 
     if (!checkpoint) {
-      throw this.createError(
-        'Checkpoint is required',
-        'MISSING_CHECKPOINT'
-      );
+      throw this.createError('Checkpoint is required', 'MISSING_CHECKPOINT');
     }
 
-    if (!checkpoint || typeof checkpoint !== 'object' || !(checkpoint as any).id) {
+    if (
+      !checkpoint ||
+      typeof checkpoint !== 'object' ||
+      !(checkpoint as any).id
+    ) {
       throw this.createError(
         'Checkpoint ID is required',
         'MISSING_CHECKPOINT_ID'
@@ -266,7 +291,10 @@ export class CheckpointPersistenceService
   /**
    * Validate list input parameters
    */
-  private validateListInput(threadId: string, options: ListCheckpointsOptions): void {
+  private validateListInput(
+    threadId: string,
+    options: ListCheckpointsOptions
+  ): void {
     if (!threadId || typeof threadId !== 'string') {
       throw this.createError(
         'Thread ID is required and must be a string',
@@ -282,10 +310,7 @@ export class CheckpointPersistenceService
     }
 
     if (options.offset && options.offset < 0) {
-      throw this.createError(
-        'Offset must be non-negative',
-        'INVALID_OFFSET'
-      );
+      throw this.createError('Offset must be non-negative', 'INVALID_OFFSET');
     }
   }
 
@@ -312,7 +337,9 @@ export class CheckpointPersistenceService
 
     if (options.dateRange) {
       filtered = filtered.filter(([, , metadata]) => {
-        if (!metadata.timestamp) {return true;}
+        if (!metadata.timestamp) {
+          return true;
+        }
         const checkpointDate = new Date(metadata.timestamp);
         const { from, to } = options.dateRange as { from?: Date; to?: Date };
         return (
@@ -329,7 +356,11 @@ export class CheckpointPersistenceService
           options.includeFields,
           options.excludeFields
         );
-        return [config, checkpoint, filteredMetadata] as EnhancedCheckpointTuple;
+        return [
+          config,
+          checkpoint,
+          filteredMetadata,
+        ] as EnhancedCheckpointTuple;
       });
     }
 
@@ -422,7 +453,9 @@ export class CheckpointPersistenceService
   /**
    * Verify checkpoint integrity
    */
-  private async verifyCheckpointIntegrity<T>(checkpoint: EnhancedCheckpoint<T>): Promise<void> {
+  private async verifyCheckpointIntegrity<T>(
+    checkpoint: EnhancedCheckpoint<T>
+  ): Promise<void> {
     if (checkpoint.checksum) {
       const calculatedChecksum = await this.calculateChecksum(checkpoint);
       if (calculatedChecksum !== checkpoint.checksum) {
@@ -444,7 +477,7 @@ export class CheckpointPersistenceService
     const saveError: CheckpointSaveError = new Error(
       `Failed to save checkpoint: ${originalError.message}`
     ) as CheckpointSaveError;
-    
+
     saveError.code = 'CHECKPOINT_SAVE_FAILED';
     saveError.threadId = threadId;
     saveError.checkpointId = checkpointId;
@@ -465,7 +498,7 @@ export class CheckpointPersistenceService
     const loadError: CheckpointLoadError = new Error(
       `Failed to load checkpoint: ${originalError.message}`
     ) as CheckpointLoadError;
-    
+
     loadError.code = 'CHECKPOINT_LOAD_FAILED';
     loadError.threadId = threadId;
     loadError.checkpointId = checkpointId;
@@ -477,7 +510,9 @@ export class CheckpointPersistenceService
   /**
    * Calculate checksum for checkpoint data
    */
-  protected override async calculateChecksum(checkpoint: unknown): Promise<string> {
+  protected override async calculateChecksum(
+    checkpoint: unknown
+  ): Promise<string> {
     const data = JSON.stringify(checkpoint);
     return createHash('sha256').update(data).digest('hex');
   }

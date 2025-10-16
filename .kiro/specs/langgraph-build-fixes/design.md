@@ -11,7 +11,7 @@ This design addresses systematic build failures across the langgraph-modules eco
 ```
 Core Modules (Foundation):
 ├── langgraph-modules/core (@hive-academy/langgraph-core)
-├── langgraph-modules/checkpoint (@hive-academy/langgraph-checkpoint)  
+├── langgraph-modules/checkpoint (@hive-academy/langgraph-checkpoint)
 └── langgraph-modules/streaming (@hive-academy/langgraph-streaming)
 
 Mid-Level Modules:
@@ -22,13 +22,14 @@ Mid-Level Modules:
 
 High-Level Modules:
 ├── langgraph-modules/hitl → depends on: core
-├── langgraph-modules/multi-agent → depends on: core  
+├── langgraph-modules/multi-agent → depends on: core
 └── langgraph-modules/time-travel → depends on: checkpoint
 ```
 
 ### Build System Configuration
 
 **Rollup Configuration Pattern:**
+
 ```json
 {
   "buildLibsFromSource": true,
@@ -44,68 +45,36 @@ High-Level Modules:
 **Purpose**: Ensure consistent export patterns across all modules
 
 **Core Module Exports**:
+
 ```typescript
 // Constants (runtime exports)
-export { 
-  WORKFLOW_METADATA_KEY,
-  WORKFLOW_NODES_KEY, 
-  WORKFLOW_EDGES_KEY,
-  WORKFLOW_TOOLS_KEY,
-  LANGGRAPH_MODULE_OPTIONS 
-} from './lib/constants';
+export { WORKFLOW_METADATA_KEY, WORKFLOW_NODES_KEY, WORKFLOW_EDGES_KEY, WORKFLOW_TOOLS_KEY, LANGGRAPH_MODULE_OPTIONS } from './lib/constants';
 
 // Interfaces (type exports)
-export type {
-  WorkflowState,
-  HumanFeedback,
-  Command,
-  WorkflowDefinition,
-  WorkflowNode,
-  WorkflowEdge,
-  WorkflowError,
-  LangGraphModuleOptions
-} from './lib/interfaces/workflow.interface';
+export type { WorkflowState, HumanFeedback, Command, WorkflowDefinition, WorkflowNode, WorkflowEdge, WorkflowError, LangGraphModuleOptions } from './lib/interfaces/workflow.interface';
 
 // Annotations (runtime exports)
-export { 
-  WorkflowStateAnnotation,
-  createCustomStateAnnotation 
-} from './lib/annotations/workflow-state.annotation';
+export { WorkflowStateAnnotation, createCustomStateAnnotation } from './lib/annotations/workflow-state.annotation';
 
-// Utils (runtime exports)  
+// Utils (runtime exports)
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
 ```
 
 **Streaming Module Exports**:
+
 ```typescript
 // Services (runtime exports)
-export { 
-  TokenStreamingService,
-  EventStreamProcessorService, 
-  WebSocketBridgeService 
-} from './lib/services';
+export { TokenStreamingService, EventStreamProcessorService, WebSocketBridgeService } from './lib/services';
 
 // Interfaces (type exports)
-export type {
-  StreamUpdate,
-  StreamMetadata,
-  StreamContext,
-  TokenData,
-  StreamTokenMetadata,
-  StreamEventMetadata,
-  StreamProgressMetadata
-} from './lib/interfaces/streaming.interface';
+export type { StreamUpdate, StreamMetadata, StreamContext, TokenData, StreamTokenMetadata, StreamEventMetadata, StreamProgressMetadata } from './lib/interfaces/streaming.interface';
 
 // Enums and functions (runtime exports)
-export {
-  StreamEventType,
-  getStreamTokenMetadata,
-  getStreamEventMetadata,
-  getStreamProgressMetadata
-} from './lib/interfaces/streaming.interface';
+export { StreamEventType, getStreamTokenMetadata, getStreamEventMetadata, getStreamProgressMetadata } from './lib/interfaces/streaming.interface';
 ```
 
 **Functional-API Module Exports**:
+
 ```typescript
 // Decorators (runtime exports)
 export * from './lib/decorators/workflow.decorator';
@@ -113,18 +82,10 @@ export * from './lib/decorators/node.decorator';
 export * from './lib/decorators/edge.decorator';
 
 // Metadata functions (runtime exports)
-export { 
-  getWorkflowMetadata,
-  getWorkflowNodes,
-  getWorkflowEdges,
-  getAllStreamingMetadata
-} from './lib/decorators';
+export { getWorkflowMetadata, getWorkflowNodes, getWorkflowEdges, getAllStreamingMetadata } from './lib/decorators';
 
 // Metadata types (type exports)
-export type { 
-  NodeMetadata,
-  EdgeMetadata 
-} from './lib/decorators';
+export type { NodeMetadata, EdgeMetadata } from './lib/decorators';
 
 // Re-exports from core
 export { isWorkflow } from '@hive-academy/langgraph-core';
@@ -135,30 +96,20 @@ export { isWorkflow } from '@hive-academy/langgraph-core';
 **Purpose**: Fix import statements to match export types
 
 **Type Import Pattern**:
+
 ```typescript
 // For interfaces and types
-import type {
-  StreamUpdate,
-  StreamMetadata,
-  WorkflowState
-} from '@hive-academy/langgraph-streaming';
+import type { StreamUpdate, StreamMetadata, WorkflowState } from '@hive-academy/langgraph-streaming';
 
 // For enums, functions, and runtime values
-import { 
-  StreamEventType,
-  getStreamTokenMetadata,
-  WorkflowStateAnnotation
-} from '@hive-academy/langgraph-streaming';
+import { StreamEventType, getStreamTokenMetadata, WorkflowStateAnnotation } from '@hive-academy/langgraph-streaming';
 ```
 
 **Mixed Import Pattern**:
+
 ```typescript
 import type { WorkflowState, Command } from '@hive-academy/langgraph-core';
-import { 
-  WORKFLOW_METADATA_KEY,
-  WorkflowStateAnnotation,
-  isWorkflow 
-} from '@hive-academy/langgraph-core';
+import { WORKFLOW_METADATA_KEY, WorkflowStateAnnotation, isWorkflow } from '@hive-academy/langgraph-core';
 ```
 
 ### 3. Rollup Configuration Component
@@ -166,6 +117,7 @@ import {
 **Purpose**: Configure Rollup for proper inter-module dependency handling
 
 **Base Configuration**:
+
 ```json
 {
   "executor": "@nx/rollup:rollup",
@@ -179,6 +131,7 @@ import {
 ```
 
 **Module-Specific External Dependencies**:
+
 - **functional-api**: `["@hive-academy/langgraph-core", "@hive-academy/langgraph-checkpoint"]`
 - **workflow-engine**: `["@hive-academy/langgraph-core", "@hive-academy/langgraph-streaming", "@hive-academy/langgraph-functional-api"]`
 - **hitl**: `["@hive-academy/langgraph-core"]`
@@ -216,18 +169,21 @@ interface ModuleDependency {
 ## Error Handling
 
 ### Missing Export Detection
+
 - Scan import statements across all modules
 - Cross-reference with actual exports
 - Generate missing export report
 - Prioritize fixes by dependency order
 
 ### Build Failure Recovery
+
 - Implement incremental build validation
 - Rollback capability for configuration changes
 - Clear error messaging for debugging
 - Automated retry with corrected configurations
 
 ### Type Mismatch Resolution
+
 - Detect type vs runtime import mismatches
 - Suggest correct import syntax
 - Validate export availability
@@ -236,18 +192,21 @@ interface ModuleDependency {
 ## Testing Strategy
 
 ### Unit Testing
+
 - Test individual module exports
 - Validate import statement correctness
 - Test Rollup configuration effectiveness
 - Verify type resolution
 
-### Integration Testing  
+### Integration Testing
+
 - Test cross-module imports
 - Validate build order dependencies
 - Test complete build pipeline
 - Verify API server startup
 
 ### Build Validation Testing
+
 - Automated build success verification
 - Import/export completeness checks
 - Performance regression testing
@@ -256,36 +215,42 @@ interface ModuleDependency {
 ## Implementation Phases
 
 ### Phase 1: Core Module Fixes (Priority: Critical)
+
 - Fix core module exports (constants, interfaces, annotations)
 - Add missing LANGGRAPH_MODULE_OPTIONS export
 - Ensure WorkflowStateAnnotation is properly exported
 - Validate all core interfaces are available
 
 ### Phase 2: Streaming Module Fixes (Priority: High)
+
 - Add missing streaming interfaces and metadata types
 - Fix StreamEventType enum export
 - Add helper functions for metadata creation
 - Correct type vs runtime export classification
 
-### Phase 3: Functional-API Module Fixes (Priority: High)  
+### Phase 3: Functional-API Module Fixes (Priority: High)
+
 - Export metadata functions (getWorkflowMetadata, etc.)
 - Export metadata types (NodeMetadata, EdgeMetadata)
 - Ensure decorator exports are complete
 - Fix isWorkflow re-export
 
 ### Phase 4: Rollup Configuration (Priority: High)
+
 - Add buildLibsFromSource to all dependent modules
 - Configure external dependencies properly
 - Test build order and dependency resolution
 - Validate configuration consistency
 
 ### Phase 5: Import Statement Corrections (Priority: Medium)
+
 - Fix type imports in workflow-engine
 - Correct runtime imports for enums and functions
 - Ensure import/export type matching
 - Validate all cross-module imports
 
 ### Phase 6: Validation and Testing (Priority: Medium)
+
 - Test individual module builds
 - Validate complete build pipeline
 - Test API server startup

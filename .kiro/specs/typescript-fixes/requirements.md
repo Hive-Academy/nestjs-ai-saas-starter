@@ -124,7 +124,7 @@ This project aims to systematically fix 3,000+ TypeScript and ESLint issues acro
 1. WHEN building applications THEN bundle sizes SHALL not increase by more than 5% due to type fixes
 2. WHEN running applications THEN runtime performance SHALL not degrade due to type changes
 3. WHEN compiling TypeScript THEN build times SHALL not increase by
- more than 10%
+   more than 10%
 4. WHEN using type utilities THEN they SHALL be optimized for compilation speed
 5. WHEN importing types THEN tree-shaking SHALL work effectively to minimize bundle impact
 

@@ -10,9 +10,7 @@
         "D://projects/nestjs-ai-saas-starter"
       ],
       "disabled": false,
-      "autoApprove": [
-        "nx_docs"
-      ]
+      "autoApprove": ["nx_docs"]
     },
 
     "angular-cli": {
@@ -37,6 +35,5 @@
       ],
       "disabled": true
     }
-
   }
 }

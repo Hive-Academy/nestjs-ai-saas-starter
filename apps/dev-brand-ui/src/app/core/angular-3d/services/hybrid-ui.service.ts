@@ -683,6 +683,274 @@ export class HybridUIService {
   }
 
   /**
+   * Create scene objects (spheres, cubes, lights) from configuration
+   * This supports large decorative 3D objects for hero scenes
+   */
+  createSceneObjects(
+    config: HybridElementConfigExtended['sceneObjects']
+  ): THREE.Object3D[] {
+    if (!config) return [];
+
+    const objects: THREE.Object3D[] = [];
+    const scene = this.scene();
+
+    if (!scene) {
+      console.warn('Scene not available for scene objects');
+      return [];
+    }
+
+    // Create spheres
+    if (config.spheres) {
+      config.spheres.forEach((sphereConfig, index) => {
+        const geometry = new THREE.SphereGeometry(sphereConfig.radius, 32, 32);
+        const material = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(sphereConfig.color),
+          metalness: sphereConfig.metalness ?? 0.3,
+          roughness: sphereConfig.roughness ?? 0.1,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.1,
+          transmission:
+            sphereConfig.opacity !== undefined ? 1 - sphereConfig.opacity : 0.1,
+          ior: 1.5,
+          thickness: 0.5,
+        });
+
+        if (sphereConfig.emissive) {
+          material.emissive = new THREE.Color(sphereConfig.emissive);
+          material.emissiveIntensity = sphereConfig.emissiveIntensity ?? 0.2;
+        }
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(...sphereConfig.position);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.name = `sphere-${index}`;
+
+        // Add glow effect
+        const glowGeometry = new THREE.SphereGeometry(
+          sphereConfig.radius * 1.2,
+          16,
+          16
+        );
+        const glowMaterial = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(sphereConfig.color),
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.BackSide,
+        });
+        const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+        mesh.add(glowMesh);
+
+        // Store animation config in userData
+        mesh.userData = {
+          animation: sphereConfig.animation ?? 'float',
+          animationSpeed: sphereConfig.animationSpeed ?? 1.0,
+          originalPosition: [...sphereConfig.position],
+        };
+
+        scene.add(mesh);
+        objects.push(mesh);
+      });
+    }
+
+    // Create cubes
+    if (config.cubes) {
+      config.cubes.forEach((cubeConfig, index) => {
+        const size = Array.isArray(cubeConfig.size)
+          ? cubeConfig.size
+          : [cubeConfig.size, cubeConfig.size, cubeConfig.size];
+
+        const geometry = new THREE.BoxGeometry(...size);
+        const material = new THREE.MeshLambertMaterial({
+          color: new THREE.Color(cubeConfig.color),
+          transparent: cubeConfig.opacity !== undefined,
+          opacity: cubeConfig.opacity ?? 1.0,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(...cubeConfig.position);
+
+        if (cubeConfig.rotation) {
+          mesh.rotation.set(...cubeConfig.rotation);
+        }
+
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.name = `cube-${index}`;
+
+        // Store animation config in userData
+        mesh.userData = {
+          animation: cubeConfig.animation ?? 'rotate',
+          animationSpeed: cubeConfig.animationSpeed ?? 1.0,
+          originalPosition: [...cubeConfig.position],
+          originalRotation: cubeConfig.rotation
+            ? [...cubeConfig.rotation]
+            : [0, 0, 0],
+        };
+
+        scene.add(mesh);
+        objects.push(mesh);
+      });
+    }
+
+    // Create lights
+    if (config.lights) {
+      config.lights.forEach((lightConfig, index) => {
+        let light: THREE.Light;
+
+        switch (lightConfig.type) {
+          case 'ambient':
+            light = new THREE.AmbientLight(
+              new THREE.Color(lightConfig.color),
+              lightConfig.intensity
+            );
+            break;
+
+          case 'directional': {
+            const dirLight = new THREE.DirectionalLight(
+              new THREE.Color(lightConfig.color),
+              lightConfig.intensity
+            );
+            if (lightConfig.position) {
+              dirLight.position.set(...lightConfig.position);
+            }
+            if (lightConfig.target) {
+              dirLight.target.position.set(...lightConfig.target);
+              scene.add(dirLight.target);
+            }
+            if (lightConfig.castShadow) {
+              dirLight.castShadow = true;
+              dirLight.shadow.mapSize.width = 2048;
+              dirLight.shadow.mapSize.height = 2048;
+            }
+            light = dirLight;
+            break;
+          }
+
+          case 'point':
+            light = new THREE.PointLight(
+              new THREE.Color(lightConfig.color),
+              lightConfig.intensity,
+              lightConfig.distance ?? 50,
+              lightConfig.decay ?? 2
+            );
+            if (lightConfig.position) {
+              light.position.set(...lightConfig.position);
+            }
+            if (lightConfig.castShadow) {
+              light.castShadow = true;
+            }
+            break;
+
+          case 'spot': {
+            const spotLight = new THREE.SpotLight(
+              new THREE.Color(lightConfig.color),
+              lightConfig.intensity,
+              lightConfig.distance ?? 0,
+              Math.PI / 4,
+              0.5,
+              lightConfig.decay ?? 2
+            );
+            if (lightConfig.position) {
+              spotLight.position.set(...lightConfig.position);
+            }
+            if (lightConfig.target) {
+              spotLight.target.position.set(...lightConfig.target);
+              scene.add(spotLight.target);
+            }
+            if (lightConfig.castShadow) {
+              spotLight.castShadow = true;
+            }
+            light = spotLight;
+            break;
+          }
+        }
+
+        light.name = `light-${lightConfig.type}-${index}`;
+        scene.add(light);
+        objects.push(light);
+      });
+    }
+
+    // Setup animations for scene objects
+    this.setupSceneObjectAnimations(objects);
+
+    return objects;
+  }
+
+  /**
+   * Setup animations for scene objects (spheres, cubes)
+   */
+  private setupSceneObjectAnimations(objects: THREE.Object3D[]): void {
+    const cleanup = this.angularThreeFoundation.addToRenderLoop(
+      (delta, time) => {
+        objects.forEach((object) => {
+          const userData = object.userData;
+          if (
+            !userData ||
+            !userData['animation'] ||
+            userData['animation'] === 'none'
+          )
+            return;
+
+          const speed = userData['animationSpeed'] || 1.0;
+          const originalPos = userData['originalPosition'] || [0, 0, 0];
+
+          switch (userData['animation']) {
+            case 'float': {
+              // Gentle floating motion
+              object.position.y =
+                originalPos[1] + Math.sin(time * 0.001 * speed) * 0.3;
+              object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.1;
+              object.rotation.y = time * 0.0002 * speed;
+              break;
+            }
+
+            case 'rotate': {
+              // Continuous rotation
+              const originalRot = userData['originalRotation'] || [0, 0, 0];
+              object.rotation.x = originalRot[0] + time * 0.0003 * speed;
+              object.rotation.y = originalRot[1] + time * 0.0005 * speed;
+              object.rotation.z = originalRot[2] + time * 0.0002 * speed;
+              break;
+            }
+
+            case 'pulse': {
+              // Pulsing scale animation
+              const pulse = 1 + Math.sin(time * 0.002 * speed) * 0.1;
+              object.scale.setScalar(pulse);
+              break;
+            }
+          }
+        });
+      }
+    );
+
+    this.destroyRef.onDestroy(cleanup);
+  }
+
+  /**
+   * Add arbitrary THREE.Object3D to scene
+   * Useful for custom 3D objects not covered by scene objects config
+   */
+  addObjectToScene(object: THREE.Object3D): void {
+    const scene = this.scene();
+    if (scene) {
+      scene.add(object);
+    }
+  }
+
+  /**
+   * Remove object from scene
+   */
+  removeObjectFromScene(object: THREE.Object3D): void {
+    const scene = this.scene();
+    if (scene) {
+      scene.remove(object);
+    }
+  }
+
+  /**
    * Cleanup service resources
    */
   cleanup(): void {

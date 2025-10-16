@@ -7,7 +7,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
-import { AgentState, AgentPosition } from '../../../core/interfaces/agent-state.interface';
+import {
+  AgentState,
+  AgentPosition,
+} from '../../../core/interfaces/agent-state.interface';
 import { AgentCommunicationService } from '../../../core/services/agent-communication.service';
 
 export interface ConstellationConfig {
@@ -41,7 +44,9 @@ export class ConstellationLayoutService {
   private readonly destroyRef = inject(DestroyRef);
 
   // Service state
-  private readonly agentPositions = signal<Map<string, LayoutPosition>>(new Map());
+  private readonly agentPositions = signal<Map<string, LayoutPosition>>(
+    new Map()
+  );
   private readonly isLayoutActive = signal(false);
   private readonly layoutConfig = signal<ConstellationConfig>({
     centerRadius: 2.0,
@@ -76,10 +81,10 @@ export class ConstellationLayoutService {
 
     this.isLayoutActive.set(true);
     this.startAnimationLoop();
-    
+
     // Initial layout calculation
     this.recalculateLayout();
-    
+
     console.log('ConstellationLayoutService initialized');
   }
 
@@ -89,7 +94,7 @@ export class ConstellationLayoutService {
   updateConfig(config: Partial<ConstellationConfig>): void {
     const currentConfig = this.layoutConfig();
     this.layoutConfig.set({ ...currentConfig, ...config });
-    
+
     if (this.isLayoutActive()) {
       this.recalculateLayout();
     }
@@ -103,7 +108,7 @@ export class ConstellationLayoutService {
 
     const currentPositions = this.agentPositions();
     const existingPosition = currentPositions.get(agent.id);
-    
+
     if (existingPosition) {
       // Update existing agent
       this.updateAgentPosition(agent, existingPosition);
@@ -122,7 +127,7 @@ export class ConstellationLayoutService {
       const newPositions = new Map(currentPositions);
       newPositions.delete(agentId);
       this.agentPositions.set(newPositions);
-      
+
       // Recalculate layout to fill gaps
       this.recalculateLayout();
     }
@@ -138,17 +143,19 @@ export class ConstellationLayoutService {
   /**
    * Get all agents of a specific type with their positions
    */
-  getAgentsByType(type: AgentState['type']): Array<{ agentId: string; position: LayoutPosition }> {
+  getAgentsByType(
+    type: AgentState['type']
+  ): Array<{ agentId: string; position: LayoutPosition }> {
     const agents = this.agentCommunication.getAgentsByType(type);
     const result: Array<{ agentId: string; position: LayoutPosition }> = [];
-    
-    agents.forEach(agent => {
+
+    agents.forEach((agent) => {
       const position = this.agentPositions().get(agent.id);
       if (position) {
         result.push({ agentId: agent.id, position });
       }
     });
-    
+
     return result;
   }
 
@@ -158,11 +165,11 @@ export class ConstellationLayoutService {
   recalculateLayout(): void {
     const agents = this.agentCommunication.availableAgents();
     const config = this.layoutConfig();
-    
+
     if (agents.length === 0) return;
 
     const newPositions = new Map(this.agentPositions());
-    
+
     if (config.hierarchicalLayout) {
       this.calculateHierarchicalLayout(agents, newPositions);
     } else {
@@ -177,7 +184,7 @@ export class ConstellationLayoutService {
    */
   getConstellationCenter(): THREE.Vector3 {
     const positions = Array.from(this.agentPositions().values());
-    
+
     if (positions.length === 0) {
       return new THREE.Vector3(0, 0, 0);
     }
@@ -205,10 +212,12 @@ export class ConstellationLayoutService {
   getConstellationBounds(): { center: THREE.Vector3; radius: number } {
     const center = this.getConstellationCenter();
     const positions = Array.from(this.agentPositions().values());
-    
+
     let maxDistance = 0;
-    positions.forEach(pos => {
-      const distance = center.distanceTo(new THREE.Vector3(pos.x, pos.y, pos.z || 0));
+    positions.forEach((pos) => {
+      const distance = center.distanceTo(
+        new THREE.Vector3(pos.x, pos.y, pos.z || 0)
+      );
       maxDistance = Math.max(maxDistance, distance);
     });
 
@@ -222,7 +231,7 @@ export class ConstellationLayoutService {
     this.isLayoutActive.set(false);
     this.stopAnimationLoop();
     this.agentPositions.set(new Map());
-    
+
     console.log('ConstellationLayoutService cleaned up');
   }
 
@@ -239,7 +248,7 @@ export class ConstellationLayoutService {
 
     // Handle initial agents
     const existingAgents = this.agentCommunication.availableAgents();
-    existingAgents.forEach(agent => {
+    existingAgents.forEach((agent) => {
       this.positionAgent(agent);
     });
   }
@@ -252,16 +261,22 @@ export class ConstellationLayoutService {
     positions: Map<string, LayoutPosition>
   ): void {
     const config = this.layoutConfig();
-    
+
     // Separate agents by type
-    const coordinators = agents.filter(a => a.type === 'coordinator');
-    const specialists = agents.filter(a => a.type === 'specialist');
-    const analysts = agents.filter(a => a.type === 'analyst');
-    const creators = agents.filter(a => a.type === 'creator');
+    const coordinators = agents.filter((a) => a.type === 'coordinator');
+    const specialists = agents.filter((a) => a.type === 'specialist');
+    const analysts = agents.filter((a) => a.type === 'analyst');
+    const creators = agents.filter((a) => a.type === 'creator');
 
     // Position coordinators at center
     if (coordinators.length > 0) {
-      this.positionAgentsInRing(coordinators, positions, 0, config.centerRadius, 0);
+      this.positionAgentsInRing(
+        coordinators,
+        positions,
+        0,
+        config.centerRadius,
+        0
+      );
     }
 
     // Position specialists in first orbit
@@ -306,7 +321,13 @@ export class ConstellationLayoutService {
     positions: Map<string, LayoutPosition>
   ): void {
     const config = this.layoutConfig();
-    this.positionAgentsInRing(agents, positions, config.orbitalRadius, config.orbitalRadius * 1.2, 0);
+    this.positionAgentsInRing(
+      agents,
+      positions,
+      config.orbitalRadius,
+      config.orbitalRadius * 1.2,
+      0
+    );
   }
 
   /**
@@ -321,29 +342,30 @@ export class ConstellationLayoutService {
   ): void {
     const config = this.layoutConfig();
     const agentCount = agents.length;
-    
+
     if (agentCount === 0) return;
 
     agents.forEach((agent, index) => {
       const angle = (index / agentCount) * Math.PI * 2;
       const radius = minRadius + (maxRadius - minRadius) * Math.random();
-      
+
       // Add some randomness for natural look
       const radiusVariation = radius * 0.2 * (Math.random() - 0.5);
       const finalRadius = radius + radiusVariation;
-      
+
       const targetX = Math.cos(angle) * finalRadius;
       const targetZ = Math.sin(angle) * finalRadius;
-      const targetY = heightOffset + (Math.random() - 0.5) * config.verticalSpread;
+      const targetY =
+        heightOffset + (Math.random() - 0.5) * config.verticalSpread;
 
       const existingPosition = positions.get(agent.id);
-      
+
       if (existingPosition) {
         // Update existing position
         existingPosition.targetX = targetX;
         existingPosition.targetY = targetY;
         existingPosition.targetZ = targetZ;
-        
+
         if (!existingPosition.isAnimating) {
           this.startPositionAnimation(existingPosition);
         }
@@ -359,7 +381,7 @@ export class ConstellationLayoutService {
           isAnimating: false,
           animationProgress: 1,
         };
-        
+
         positions.set(agent.id, newPosition);
       }
     });
@@ -382,11 +404,11 @@ export class ConstellationLayoutService {
 
     for (let iter = 0; iter < iterations; iter++) {
       const agentPositions = agents
-        .map(agent => ({
+        .map((agent) => ({
           agent,
           position: positions.get(agent.id)!,
         }))
-        .filter(item => item.position);
+        .filter((item) => item.position);
 
       for (let i = 0; i < agentPositions.length; i++) {
         for (let j = i + 1; j < agentPositions.length; j++) {
@@ -395,8 +417,8 @@ export class ConstellationLayoutService {
 
           const distance = Math.sqrt(
             Math.pow(pos1.targetX - pos2.targetX, 2) +
-            Math.pow(pos1.targetY - pos2.targetY, 2) +
-            Math.pow(pos1.targetZ - pos2.targetZ, 2)
+              Math.pow(pos1.targetY - pos2.targetY, 2) +
+              Math.pow(pos1.targetZ - pos2.targetZ, 2)
           );
 
           if (distance < minDistance) {
@@ -406,7 +428,8 @@ export class ConstellationLayoutService {
             const dz = pos1.targetZ - pos2.targetZ;
 
             const normalizedDistance = Math.max(distance, 0.01);
-            const separationForce = (minDistance - distance) / normalizedDistance * 0.5;
+            const separationForce =
+              ((minDistance - distance) / normalizedDistance) * 0.5;
 
             // Apply separation
             pos1.targetX += dx * separationForce;
@@ -433,7 +456,10 @@ export class ConstellationLayoutService {
   /**
    * Update existing agent position
    */
-  private updateAgentPosition(agent: AgentState, position: LayoutPosition): void {
+  private updateAgentPosition(
+    agent: AgentState,
+    position: LayoutPosition
+  ): void {
     // Check if agent properties that affect positioning have changed
     // For now, we'll recalculate layout on any agent update
     this.recalculateLayout();
@@ -446,11 +472,11 @@ export class ConstellationLayoutService {
     // Calculate position for new agent
     const config = this.layoutConfig();
     const existingAgents = this.agentCommunication.availableAgents();
-    
+
     // For now, add to appropriate orbit based on type
     let radius = config.orbitalRadius;
     let height = 0;
-    
+
     switch (agent.type) {
       case 'coordinator':
         radius = config.centerRadius;
@@ -472,10 +498,11 @@ export class ConstellationLayoutService {
 
     // Find a good angle that doesn't conflict with existing agents
     const angle = this.findOptimalAngle(radius, existingAgents);
-    
+
     const targetX = Math.cos(angle) * radius;
     const targetZ = Math.sin(angle) * radius;
-    const targetY = height + (Math.random() - 0.5) * config.verticalSpread * 0.5;
+    const targetY =
+      height + (Math.random() - 0.5) * config.verticalSpread * 0.5;
 
     const newPosition: LayoutPosition = {
       x: targetX + (Math.random() - 0.5) * 2, // Start slightly offset for animation
@@ -497,11 +524,20 @@ export class ConstellationLayoutService {
   /**
    * Find optimal angle for placing new agent
    */
-  private findOptimalAngle(radius: number, existingAgents: AgentState[]): number {
+  private findOptimalAngle(
+    radius: number,
+    existingAgents: AgentState[]
+  ): number {
     const existingPositions = existingAgents
-      .map(agent => this.agentPositions().get(agent.id))
-      .filter(pos => pos && Math.abs(Math.sqrt(pos.x * pos.x + (pos.z || 0) * (pos.z || 0)) - radius) < 1)
-      .map(pos => Math.atan2(pos!.z || 0, pos!.x));
+      .map((agent) => this.agentPositions().get(agent.id))
+      .filter(
+        (pos) =>
+          pos &&
+          Math.abs(
+            Math.sqrt(pos.x * pos.x + (pos.z || 0) * (pos.z || 0)) - radius
+          ) < 1
+      )
+      .map((pos) => Math.atan2(pos!.z || 0, pos!.x));
 
     if (existingPositions.length === 0) {
       return Math.random() * Math.PI * 2;
@@ -509,17 +545,17 @@ export class ConstellationLayoutService {
 
     // Find the largest gap between existing positions
     existingPositions.sort((a, b) => a - b);
-    
+
     let maxGap = 0;
     let bestAngle = 0;
-    
+
     for (let i = 0; i < existingPositions.length; i++) {
       const current = existingPositions[i];
       const next = existingPositions[(i + 1) % existingPositions.length];
-      
+
       let gap = next - current;
       if (gap < 0) gap += Math.PI * 2;
-      
+
       if (gap > maxGap) {
         maxGap = gap;
         bestAngle = current + gap / 2;
@@ -569,7 +605,7 @@ export class ConstellationLayoutService {
     positions.forEach((position) => {
       if (position.isAnimating) {
         hasAnimations = true;
-        
+
         // Update animation progress
         position.animationProgress += deltaTime / config.animationDuration;
         position.animationProgress = Math.min(position.animationProgress, 1);

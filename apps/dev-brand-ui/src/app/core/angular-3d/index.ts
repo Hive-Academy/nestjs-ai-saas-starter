@@ -10,6 +10,7 @@ export { Card3DComponent } from './components/card3d.component';
 
 // Directives
 export { Hybrid3DDirective } from './directives/hybrid3d.directive';
+export { Element3DDirective } from './directives/element-3d.directive';
 
 // Interfaces and Types
 export type {
@@ -42,6 +43,13 @@ export type {
 // Export base types enum for direct access
 export { ContentPriority } from './types/base-types';
 export type { ContentPriority as ContentPriorityType } from './types/base-types';
+
+// Configuration builders
+export {
+  HybridElementConfigBuilder,
+  createHeroSceneConfig,
+  type HeroSceneConfigOptions,
+} from './utils/config-builders';
 
 // Utility functions for easier integration
 export const Angular3DUtils = {

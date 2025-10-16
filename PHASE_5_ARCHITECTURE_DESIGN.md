@@ -302,11 +302,13 @@ async getPerformanceMetrics(userId: string): Promise<PerformanceDashboard> {
 **NEW Repositories Using VectorMemoryRepository**:
 
 1. **DeveloperProfileRepository** (extends VectorMemoryRepository)
+
    - Stores aggregated skill profiles
    - Collection: `developer-skills`
    - Custom methods: `findBySkill()`, `findSimilarProfiles()`, `updateSkillLevel()`
 
 2. **BrandMentionRepository** (extends VectorMemoryRepository)
+
    - Stores brand monitoring data
    - Collection: `brand-mentions`
    - Custom methods: `findBySentiment()`, `findBySource()`, `findRecentMentions()`
@@ -328,12 +330,14 @@ async getPerformanceMetrics(userId: string): Promise<PerformanceDashboard> {
 **EXISTING Repositories (Enhanced)**:
 
 1. **CodeAchievementRepository** (ENHANCE, don't replace)
+
    - **NEW Methods**:
      - `aggregateSkillsByTechnology()`: For developer profiling
      - `findHighImpactAchievements()`: For competitive intelligence
      - `getTemporalAchievementTrend()`: For brand evolution analysis
 
 2. **BrandStrategyRepository** (ENHANCE, don't replace)
+
    - **NEW Methods**:
      - `getTemporalEvolution()`: Semantic change detection over time
      - `compareBrandStrategies()`: For coaching suggestions
@@ -389,15 +393,15 @@ async generateContentStrategy(userId: string): Promise<ContentStrategy> {
 
 ### Repository Decision Matrix
 
-| Capability | Primary Repository | Supporting Repositories | Use ChromaVectorAdapter? |
-|------------|-------------------|-------------------------|--------------------------|
-| **Developer Profiling** | DeveloperProfileRepository (NEW) | CodeAchievementRepository | No - single collection |
-| **Content Strategy** | ContentPerformanceRepository | BrandStrategyRepository | **YES** - multi-collection search |
-| **Brand Monitoring** | BrandMentionRepository (NEW) | N/A | No - single collection |
-| **Brand Coach** | BrandStrategyRepository | All repositories | **YES** - cross-collection patterns |
-| **Brand Evolution** | BrandStrategyRepository | N/A | No - temporal queries |
+| Capability                   | Primary Repository                  | Supporting Repositories    | Use ChromaVectorAdapter?             |
+| ---------------------------- | ----------------------------------- | -------------------------- | ------------------------------------ |
+| **Developer Profiling**      | DeveloperProfileRepository (NEW)    | CodeAchievementRepository  | No - single collection               |
+| **Content Strategy**         | ContentPerformanceRepository        | BrandStrategyRepository    | **YES** - multi-collection search    |
+| **Brand Monitoring**         | BrandMentionRepository (NEW)        | N/A                        | No - single collection               |
+| **Brand Coach**              | BrandStrategyRepository             | All repositories           | **YES** - cross-collection patterns  |
+| **Brand Evolution**          | BrandStrategyRepository             | N/A                        | No - temporal queries                |
 | **Competitive Intelligence** | CompetitiveAnalysisRepository (NEW) | DeveloperProfileRepository | **YES** - cross-developer comparison |
-| **Performance Dashboard** | N/A (aggregation only) | All repositories | **YES** - multi-source aggregation |
+| **Performance Dashboard**    | N/A (aggregation only)              | All repositories           | **YES** - multi-source aggregation   |
 
 ---
 
@@ -415,12 +419,11 @@ async generateContentStrategy(userId: string): Promise<ContentStrategy> {
   capabilities: [
     'code-analysis',
     'achievement-extraction',
-    'developer-profiling' // NEW
+    'developer-profiling', // NEW
   ],
   // ... existing config
 })
 export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
-
   /**
    * NEW TASK 1: Analyze skills and expertise from code patterns
    *
@@ -431,22 +434,17 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
    */
   @Task({
     dependsOn: ['analyzeRepositories'], // Existing task
-    timeout: 30000
+    timeout: 30000,
   })
   @StreamProgress({ enabled: true })
-  async analyzeSkillsAndExpertise(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async analyzeSkillsAndExpertise(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const achievements = state.metadata?.achievements as Achievement[];
 
     try {
       // Call memory service method
-      const developerProfile = await this.memory.buildDeveloperProfile(
-        githubUsername,
-        achievements
-      );
+      const developerProfile = await this.memory.buildDeveloperProfile(githubUsername, achievements);
 
       return {
         state: {
@@ -455,9 +453,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
             ...state.metadata,
             developerProfile,
             skillsAnalyzed: true,
-            profileId: developerProfile.id
-          }
-        }
+            profileId: developerProfile.id,
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -467,9 +465,9 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
           metadata: {
             ...state.metadata,
             skillsAnalysisFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -503,15 +501,14 @@ NEW Flow:
     'brand-analysis',
     'strategic-positioning',
     'career-guidance',
-    'brand-monitoring',        // NEW
-    'coaching-suggestions',    // NEW
+    'brand-monitoring', // NEW
+    'coaching-suggestions', // NEW
     'brand-evolution-tracking', // NEW
-    'competitive-intelligence' // NEW
+    'competitive-intelligence', // NEW
   ],
   // ... existing config
 })
 export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
-
   /**
    * NEW TASK 1: Monitor brand presence across online platforms
    *
@@ -522,19 +519,15 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({
     dependsOn: ['analyzeBrandPositioning'], // Existing task
-    timeout: 20000
+    timeout: 20000,
   })
   @StreamProgress({ enabled: true })
-  async monitorBrandPresence(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async monitorBrandPresence(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
 
     try {
-      const presenceReport = await this.memory.trackBrandPresence(
-        githubUsername
-      );
+      const presenceReport = await this.memory.trackBrandPresence(githubUsername);
 
       return {
         state: {
@@ -545,10 +538,10 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
             monitoring: {
               totalMentions: presenceReport.totalMentions,
               positiveSentiment: presenceReport.sentimentScore,
-              reach: presenceReport.estimatedReach
-            }
-          }
-        }
+              reach: presenceReport.estimatedReach,
+            },
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -558,9 +551,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
           metadata: {
             ...state.metadata,
             monitoringFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -575,21 +568,16 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({
     dependsOn: ['analyzeBrandPositioning'],
-    timeout: 25000
+    timeout: 25000,
   })
   @StreamToken({ enabled: true, format: 'structured' })
-  async provideCoachingSuggestions(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async provideCoachingSuggestions(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const brandAnalysis = state.metadata?.brandAnalysis as BrandAnalysis;
 
     try {
-      const suggestions = await this.memory.getCoachingSuggestions(
-        githubUsername,
-        brandAnalysis
-      );
+      const suggestions = await this.memory.getCoachingSuggestions(githubUsername, brandAnalysis);
 
       return {
         state: {
@@ -597,9 +585,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
           metadata: {
             ...state.metadata,
             coachingSuggestions: suggestions,
-            suggestionsCount: suggestions.recommendations.length
-          }
-        }
+            suggestionsCount: suggestions.recommendations.length,
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -609,9 +597,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
           metadata: {
             ...state.metadata,
             coachingFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -626,11 +614,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({
     dependsOn: ['analyzeBrandPositioning'],
-    timeout: 20000
+    timeout: 20000,
   })
-  async analyzeBrandEvolutionTask(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async analyzeBrandEvolutionTask(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
 
@@ -644,9 +630,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
             ...state.metadata,
             brandEvolution: evolution,
             evolutionTrend: evolution.trajectory,
-            semanticDrift: evolution.semanticChangeScore
-          }
-        }
+            semanticDrift: evolution.semanticChangeScore,
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -656,9 +642,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
           metadata: {
             ...state.metadata,
             evolutionAnalysisFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -673,21 +659,16 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
    */
   @Task({
     dependsOn: ['analyzeBrandPositioning'],
-    timeout: 30000
+    timeout: 30000,
   })
   @StreamProgress({ enabled: true })
-  async compareWithPeers(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async compareWithPeers(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const developerProfile = state.metadata?.developerProfile as DeveloperProfile;
 
     try {
-      const competitiveAnalysis = await this.memory.compareWithDevelopers(
-        githubUsername,
-        developerProfile
-      );
+      const competitiveAnalysis = await this.memory.compareWithDevelopers(githubUsername, developerProfile);
 
       return {
         state: {
@@ -696,9 +677,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
             ...state.metadata,
             competitiveAnalysis,
             similarDevelopers: competitiveAnalysis.similarProfiles.length,
-            uniqueStrengths: competitiveAnalysis.differentiators
-          }
-        }
+            uniqueStrengths: competitiveAnalysis.differentiators,
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -708,9 +689,9 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
           metadata: {
             ...state.metadata,
             competitiveAnalysisFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -745,13 +726,12 @@ NEW Flow (Parallel Enhancements):
   name: 'Content Creator',
   capabilities: [
     'content-generation',
-    'content-strategy',         // NEW
-    'performance-tracking'      // NEW
+    'content-strategy', // NEW
+    'performance-tracking', // NEW
   ],
   // ... existing config
 })
 export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
-
   /**
    * NEW TASK 1: Generate AI-powered content strategy
    *
@@ -762,21 +742,16 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
    */
   @Task({
     dependsOn: ['analyzeBrandContext'], // Existing task
-    timeout: 25000
+    timeout: 25000,
   })
   @StreamToken({ enabled: true, format: 'structured' })
-  async generateContentStrategy(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async generateContentStrategy(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const brandStrategy = state.metadata?.brandStrategy;
 
     try {
-      const contentStrategy = await this.memory.generateContentStrategy(
-        githubUsername,
-        brandStrategy
-      );
+      const contentStrategy = await this.memory.generateContentStrategy(githubUsername, brandStrategy);
 
       return {
         state: {
@@ -785,9 +760,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
             ...state.metadata,
             contentStrategy,
             recommendedTopics: contentStrategy.topics,
-            optimalPlatforms: contentStrategy.platforms
-          }
-        }
+            optimalPlatforms: contentStrategy.platforms,
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -797,9 +772,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
           metadata: {
             ...state.metadata,
             strategyGenerationFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -814,20 +789,16 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
    */
   @Task({
     dependsOn: ['publishContent'], // Existing task
-    timeout: 15000
+    timeout: 15000,
   })
   @StreamProgress({ enabled: true })
-  async trackContentPerformance(
-    context: TaskExecutionContext
-  ): Promise<TaskExecutionResult> {
+  async trackContentPerformance(context: TaskExecutionContext): Promise<TaskExecutionResult> {
     const { state } = context;
     const githubUsername = state.metadata?.githubUsername as string;
     const publishedContent = state.metadata?.publishedContent;
 
     try {
-      const performanceReport = await this.memory.getPerformanceMetrics(
-        githubUsername
-      );
+      const performanceReport = await this.memory.getPerformanceMetrics(githubUsername);
 
       return {
         state: {
@@ -836,9 +807,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
             ...state.metadata,
             contentPerformance: performanceReport.content,
             engagementTrend: performanceReport.trends.engagement,
-            overallScore: performanceReport.overallScore
-          }
-        }
+            overallScore: performanceReport.overallScore,
+          },
+        },
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -848,9 +819,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
           metadata: {
             ...state.metadata,
             performanceTrackingFailed: true,
-            error: errorMessage
-          }
-        }
+            error: errorMessage,
+          },
+        },
       };
     }
   }
@@ -911,25 +882,20 @@ export class PersonalBrandMemoryService {
    */
   @Performance.Monitor('build-developer-profile')
   @Cached({ ttl: 3600000, key: 'dev_profile_${userId}' })
-  async buildDeveloperProfile(
-    userId: string,
-    achievements: Achievement[]
-  ): Promise<DeveloperProfile> {
+  async buildDeveloperProfile(userId: string, achievements: Achievement[]): Promise<DeveloperProfile> {
     this.logger.log(`Building developer profile for ${userId}`);
 
     try {
       // Aggregate skills from achievements
-      const skillAggregation = await this.achievementRepo.aggregateSkillsByTechnology(
-        userId
-      );
+      const skillAggregation = await this.achievementRepo.aggregateSkillsByTechnology(userId);
 
       // Extract expertise levels
-      const skills: Skill[] = skillAggregation.technologies.map(tech => ({
+      const skills: Skill[] = skillAggregation.technologies.map((tech) => ({
         name: tech.name,
         proficiencyLevel: this.calculateProficiency(tech.usageCount, tech.complexity),
         yearOfExperience: this.estimateExperience(tech.firstUsed, tech.lastUsed),
         projects: tech.projects,
-        domains: tech.domains
+        domains: tech.domains,
       }));
 
       // Create profile entity
@@ -947,8 +913,8 @@ export class PersonalBrandMemoryService {
           totalProjects: achievements.length,
           averageProficiency: this.calculateAvgProficiency(skills),
           primaryDomains: this.extractPrimaryDomains(skills),
-          lastUpdated: new Date().toISOString()
-        }
+          lastUpdated: new Date().toISOString(),
+        },
       };
 
       // Store in VectorMemoryRepository with embeddings
@@ -965,7 +931,7 @@ export class PersonalBrandMemoryService {
         primaryDomains: this.extractPrimaryDomains(skills),
         expertiseLevel: this.calculateOverallExpertise(skills),
         createdAt: new Date(),
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
 
       this.logger.log(`Developer profile built: ${profile.id} with ${skills.length} skills`);
@@ -988,10 +954,7 @@ export class PersonalBrandMemoryService {
    * Returns: ContentStrategy
    */
   @Performance.Monitor('generate-content-strategy')
-  async generateContentStrategy(
-    userId: string,
-    brandStrategy: any
-  ): Promise<ContentStrategy> {
+  async generateContentStrategy(userId: string, brandStrategy: any): Promise<ContentStrategy> {
     this.logger.log(`Generating content strategy for ${userId}`);
 
     try {
@@ -1000,7 +963,7 @@ export class PersonalBrandMemoryService {
         messages: [],
         threadId: `strategy-${userId}`,
         userId,
-        current: 'content-creator'
+        current: 'content-creator',
       };
 
       const memoryContext = await this.chromaAdapter.searchAgentMemories(
@@ -1014,23 +977,19 @@ export class PersonalBrandMemoryService {
       const successPatterns = await this.contentRepo.findSuccessPatterns(userId);
 
       // Extract brand-aligned topics
-      const brandTopics = this.extractBrandAlignedTopics(
-        brandStrategy,
-        memoryContext,
-        successPatterns
-      );
+      const brandTopics = this.extractBrandAlignedTopics(brandStrategy, memoryContext, successPatterns);
 
       // Build strategy
       const strategy: ContentStrategy = {
         userId,
         recommendedTopics: brandTopics.slice(0, 10),
-        platforms: successPatterns.bestPerformingPlatforms.map(p => p.platform),
+        platforms: successPatterns.bestPerformingPlatforms.map((p) => p.platform),
         optimalTiming: successPatterns.optimalPostingTimes,
         expectedEngagement: this.calculateExpectedEngagement(successPatterns),
         contentTypes: this.suggestContentTypes(brandStrategy, successPatterns),
         keyHashtags: this.extractTopHashtags(memoryContext),
         frequencyRecommendation: this.recommendPostingFrequency(successPatterns),
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       this.logger.log(`Content strategy generated with ${strategy.recommendedTopics.length} topics`);
@@ -1062,7 +1021,7 @@ export class PersonalBrandMemoryService {
       const mentions = await this.fetchBrandMentions(userId);
 
       // Store each mention with semantic embeddings
-      const mentionEntities: VectorMemoryEntity[] = mentions.map(mention => ({
+      const mentionEntities: VectorMemoryEntity[] = mentions.map((mention) => ({
         id: `mention-${mention.source}-${Date.now()}-${Math.random()}`,
         document: mention.content,
         agentId: 'personal-brand-strategist',
@@ -1076,14 +1035,12 @@ export class PersonalBrandMemoryService {
           sentiment: mention.sentiment,
           reach: mention.estimatedReach,
           engagement: mention.engagement,
-          url: mention.url
-        }
+          url: mention.url,
+        },
       }));
 
       // Batch store with embeddings
-      await Promise.all(
-        mentionEntities.map(entity => this.brandMentionRepo.create(entity))
-      );
+      await Promise.all(mentionEntities.map((entity) => this.brandMentionRepo.create(entity)));
 
       // Create Neo4j relationships
       await this.developerRepo.createBrandMentionRelationships(userId, mentions);
@@ -1099,9 +1056,9 @@ export class PersonalBrandMemoryService {
         engagementRate: this.calculateEngagementRate(mentions),
         period: {
           from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          to: new Date()
+          to: new Date(),
         },
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       this.logger.log(`Brand presence tracked: ${report.totalMentions} mentions`);
@@ -1124,10 +1081,7 @@ export class PersonalBrandMemoryService {
    * Returns: CoachingSuggestions
    */
   @Performance.Monitor('get-coaching-suggestions')
-  async getCoachingSuggestions(
-    userId: string,
-    brandAnalysis: BrandAnalysis
-  ): Promise<CoachingSuggestions> {
+  async getCoachingSuggestions(userId: string, brandAnalysis: BrandAnalysis): Promise<CoachingSuggestions> {
     this.logger.log(`Generating coaching suggestions for ${userId}`);
 
     try {
@@ -1136,7 +1090,7 @@ export class PersonalBrandMemoryService {
         messages: [],
         threadId: `coaching-${userId}`,
         userId,
-        current: 'personal-brand-strategist'
+        current: 'personal-brand-strategist',
       };
 
       // Parallel queries across all collections
@@ -1144,41 +1098,32 @@ export class PersonalBrandMemoryService {
         this.chromaAdapter.search('dev-achievements', {
           queryText: `user:${userId} improvement opportunities`,
           filter: { userId },
-          limit: 20
+          limit: 20,
         }),
         this.chromaAdapter.search('brand-evolution', {
           queryText: `user:${userId} brand growth strategies`,
           filter: { userId },
-          limit: 10
+          limit: 10,
         }),
         this.chromaAdapter.search('content-metrics', {
           queryText: `user:${userId} content performance gaps`,
           filter: { userId },
-          limit: 15
-        })
+          limit: 15,
+        }),
       ]);
 
       // Compare with successful strategies
-      const similarStrategies = await this.brandRepo.compareBrandStrategies(
-        userId,
-        brandAnalysis
-      );
+      const similarStrategies = await this.brandRepo.compareBrandStrategies(userId, brandAnalysis);
 
       // Generate suggestions
       const suggestions: CoachingSuggestions = {
         userId,
-        recommendations: this.generateRecommendations(
-          brandAnalysis,
-          achievementContext,
-          brandContext,
-          contentContext,
-          similarStrategies
-        ),
+        recommendations: this.generateRecommendations(brandAnalysis, achievementContext, brandContext, contentContext, similarStrategies),
         priorities: this.prioritizeSuggestions(brandAnalysis),
         expectedImpact: this.estimateImpact(brandAnalysis),
         timeframe: this.estimateTimeframe(brandAnalysis),
         resources: this.suggestResources(brandAnalysis),
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       this.logger.log(`Coaching suggestions generated: ${suggestions.recommendations.length} items`);
@@ -1216,7 +1161,7 @@ export class PersonalBrandMemoryService {
           milestones: [],
           keyChanges: [],
           futureProjection: null,
-          createdAt: new Date()
+          createdAt: new Date(),
         };
       }
 
@@ -1224,31 +1169,26 @@ export class PersonalBrandMemoryService {
       const semanticDrifts = this.calculateSemanticDrift(temporalEvolution.strategies);
 
       // Identify key milestones
-      const milestones = temporalEvolution.strategies.filter(
-        s => s.evolution.improvementScore > 0.2 || s.confidenceScore > 0.8
-      );
+      const milestones = temporalEvolution.strategies.filter((s) => s.evolution.improvementScore > 0.2 || s.confidenceScore > 0.8);
 
       // Analyze trajectory
       const trajectory = this.analyzeTrajectory(semanticDrifts);
 
       // Project future evolution
-      const futureProjection = this.projectFutureEvolution(
-        temporalEvolution.strategies,
-        semanticDrifts
-      );
+      const futureProjection = this.projectFutureEvolution(temporalEvolution.strategies, semanticDrifts);
 
       const analysis: BrandEvolutionAnalysis = {
         userId,
         trajectory,
         semanticChangeScore: this.calculateAvgSemanticChange(semanticDrifts),
-        milestones: milestones.map(m => ({
+        milestones: milestones.map((m) => ({
           date: new Date(m.createdAt),
           description: m.positioning,
-          impactScore: m.evolution.improvementScore
+          impactScore: m.evolution.improvementScore,
         })),
         keyChanges: this.extractKeyChanges(temporalEvolution.strategies),
         futureProjection,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       this.logger.log(`Brand evolution analyzed: ${analysis.trajectory} trajectory`);
@@ -1271,47 +1211,35 @@ export class PersonalBrandMemoryService {
    * Returns: CompetitiveAnalysis
    */
   @Performance.Monitor('compare-with-developers')
-  async compareWithDevelopers(
-    userId: string,
-    developerProfile: DeveloperProfile
-  ): Promise<CompetitiveAnalysis> {
+  async compareWithDevelopers(userId: string, developerProfile: DeveloperProfile): Promise<CompetitiveAnalysis> {
     this.logger.log(`Comparing ${userId} with peer developers`);
 
     try {
       // Find similar developer profiles using semantic search
-      const profileDocument = this.buildProfileDocument(
-        userId,
-        developerProfile.skills
-      );
+      const profileDocument = this.buildProfileDocument(userId, developerProfile.skills);
 
-      const similarProfiles = await this.developerProfileRepo.search(
-        profileDocument,
-        {
-          where: {
-            userId: { $ne: userId } // Exclude self
-          } as any,
-          limit: 10,
-          minScore: 0.6 // Minimum similarity threshold
-        }
-      );
+      const similarProfiles = await this.developerProfileRepo.search(profileDocument, {
+        where: {
+          userId: { $ne: userId }, // Exclude self
+        } as any,
+        limit: 10,
+        minScore: 0.6, // Minimum similarity threshold
+      });
 
       // Analyze skill overlaps and differentiators
-      const comparisons = similarProfiles.map(profile => {
+      const comparisons = similarProfiles.map((profile) => {
         const peerSkills = this.extractSkillsFromDocument(profile.document);
         return {
           userId: profile.userId,
           similarityScore: profile.distance ? 1 - profile.distance : 0,
           skillOverlap: this.calculateSkillOverlap(developerProfile.skills, peerSkills),
           skillGaps: this.identifySkillGaps(developerProfile.skills, peerSkills),
-          uniqueStrengths: this.identifyUniqueStrengths(developerProfile.skills, peerSkills)
+          uniqueStrengths: this.identifyUniqueStrengths(developerProfile.skills, peerSkills),
         };
       });
 
       // Identify differentiation opportunities
-      const differentiators = this.identifyDifferentiators(
-        developerProfile,
-        comparisons
-      );
+      const differentiators = this.identifyDifferentiators(developerProfile, comparisons);
 
       // Store competitive analysis
       const analysisEntity: VectorMemoryEntity = {
@@ -1326,8 +1254,8 @@ export class PersonalBrandMemoryService {
         metadata: {
           peerCount: comparisons.length,
           avgSimilarity: this.calculateAvgSimilarity(comparisons),
-          uniqueSkills: differentiators.length
-        }
+          uniqueSkills: differentiators.length,
+        },
       };
 
       await this.competitiveAnalysisRepo.create(analysisEntity);
@@ -1337,12 +1265,8 @@ export class PersonalBrandMemoryService {
         similarProfiles: comparisons,
         differentiators,
         marketPosition: this.calculateMarketPosition(comparisons),
-        recommendations: this.generateCompetitiveRecommendations(
-          developerProfile,
-          comparisons,
-          differentiators
-        ),
-        createdAt: new Date()
+        recommendations: this.generateCompetitiveRecommendations(developerProfile, comparisons, differentiators),
+        createdAt: new Date(),
       };
 
       this.logger.log(`Competitive analysis complete: ${comparisons.length} peers analyzed`);
@@ -1371,34 +1295,28 @@ export class PersonalBrandMemoryService {
 
     try {
       // Parallel queries across all data sources
-      const [
-        achievementMetrics,
-        brandMetrics,
-        contentMetrics,
-        skillMetrics,
-        neo4jMetrics
-      ] = await Promise.all([
+      const [achievementMetrics, brandMetrics, contentMetrics, skillMetrics, neo4jMetrics] = await Promise.all([
         this.chromaAdapter.search('dev-achievements', {
           queryText: `user:${userId}`,
           filter: { userId },
-          limit: 50
+          limit: 50,
         }),
         this.chromaAdapter.search('brand-evolution', {
           queryText: `user:${userId}`,
           filter: { userId },
-          limit: 20
+          limit: 20,
         }),
         this.chromaAdapter.search('content-metrics', {
           queryText: `user:${userId}`,
           filter: { userId },
-          limit: 30
+          limit: 30,
         }),
         this.chromaAdapter.search('developer-skills', {
           queryText: `user:${userId}`,
           filter: { userId },
-          limit: 10
+          limit: 10,
         }),
-        this.developerRepo.getPerformanceMetrics(userId)
+        this.developerRepo.getPerformanceMetrics(userId),
       ]);
 
       // Aggregate metrics
@@ -1408,55 +1326,45 @@ export class PersonalBrandMemoryService {
           totalAchievements: achievementMetrics.length,
           brandStrategies: brandMetrics.length,
           contentPublished: contentMetrics.length,
-          skillsMastered: skillMetrics.length
+          skillsMastered: skillMetrics.length,
         },
         achievements: {
           total: achievementMetrics.length,
           highImpact: this.countHighImpact(achievementMetrics),
           recentTrend: this.calculateAchievementTrend(achievementMetrics),
-          topTechnologies: this.extractTopTechnologies(achievementMetrics)
+          topTechnologies: this.extractTopTechnologies(achievementMetrics),
         },
         brand: {
           currentScore: this.calculateCurrentBrandScore(brandMetrics),
           evolutionTrend: this.calculateBrandTrend(brandMetrics),
           confidenceLevel: this.calculateConfidenceLevel(brandMetrics),
-          positioningStrength: this.calculatePositioningStrength(brandMetrics)
+          positioningStrength: this.calculatePositioningStrength(brandMetrics),
         },
         content: {
           totalEngagement: this.calculateTotalEngagement(contentMetrics),
           averagePerformance: this.calculateAvgPerformance(contentMetrics),
           topPerformingTopics: this.extractTopTopics(contentMetrics),
-          bestPlatforms: this.extractBestPlatforms(contentMetrics)
+          bestPlatforms: this.extractBestPlatforms(contentMetrics),
         },
         skills: {
           totalSkills: skillMetrics.length,
           expertiseDistribution: this.calculateExpertiseDistribution(skillMetrics),
           growthAreas: this.identifyGrowthAreas(skillMetrics),
-          marketDemand: this.assessMarketDemand(skillMetrics)
+          marketDemand: this.assessMarketDemand(skillMetrics),
         },
         network: {
           connections: neo4jMetrics.connections,
           influence: neo4jMetrics.influenceScore,
-          collaborations: neo4jMetrics.collaborations
+          collaborations: neo4jMetrics.collaborations,
         },
         trends: {
           achievement: this.calculateAchievementTrend(achievementMetrics),
           brand: this.calculateBrandTrend(brandMetrics),
           content: this.calculateContentTrend(contentMetrics),
-          overall: this.calculateOverallTrend(
-            achievementMetrics,
-            brandMetrics,
-            contentMetrics
-          )
+          overall: this.calculateOverallTrend(achievementMetrics, brandMetrics, contentMetrics),
         },
-        overallScore: this.calculateOverallScore(
-          achievementMetrics,
-          brandMetrics,
-          contentMetrics,
-          skillMetrics,
-          neo4jMetrics
-        ),
-        createdAt: new Date()
+        overallScore: this.calculateOverallScore(achievementMetrics, brandMetrics, contentMetrics, skillMetrics, neo4jMetrics),
+        createdAt: new Date(),
       };
 
       this.logger.log(`Performance dashboard generated: score ${dashboard.overallScore}`);
@@ -2333,32 +2241,36 @@ getPerformanceMetrics(userId)
 **Priority**: HIGH (blocks all other phases)
 
 - [ ] **5A.1**: Create new ChromaDB collections
-    - File: `apps/dev-brand-api/src/app/config/chromadb.config.ts`
-    - Collections: `developer-skills`, `brand-mentions`, `competitive-analysis`
-    - Action: Add collection initialization logic
+
+  - File: `apps/dev-brand-api/src/app/config/chromadb.config.ts`
+  - Collections: `developer-skills`, `brand-mentions`, `competitive-analysis`
+  - Action: Add collection initialization logic
 
 - [ ] **5A.2**: Create DeveloperProfileRepository
-    - File: `apps/dev-brand-api/src/app/repositories/chromadb/developer-profile.repository.ts`
-    - Extends: VectorMemoryRepository
-    - Methods: `findBySkill()`, `findSimilarProfiles()`, `updateSkillLevel()`
-    - Test: Unit + integration tests
+
+  - File: `apps/dev-brand-api/src/app/repositories/chromadb/developer-profile.repository.ts`
+  - Extends: VectorMemoryRepository
+  - Methods: `findBySkill()`, `findSimilarProfiles()`, `updateSkillLevel()`
+  - Test: Unit + integration tests
 
 - [ ] **5A.3**: Create BrandMentionRepository
-    - File: `apps/dev-brand-api/src/app/repositories/chromadb/brand-mention.repository.ts`
-    - Extends: VectorMemoryRepository
-    - Methods: `findBySentiment()`, `findBySource()`, `findRecentMentions()`
-    - Test: Unit + integration tests
+
+  - File: `apps/dev-brand-api/src/app/repositories/chromadb/brand-mention.repository.ts`
+  - Extends: VectorMemoryRepository
+  - Methods: `findBySentiment()`, `findBySource()`, `findRecentMentions()`
+  - Test: Unit + integration tests
 
 - [ ] **5A.4**: Create CompetitiveAnalysisRepository
-    - File: `apps/dev-brand-api/src/app/repositories/chromadb/competitive-analysis.repository.ts`
-    - Extends: VectorMemoryRepository
-    - Methods: `findCompetitors()`, `compareProfiles()`, `findDifferentiators()`
-    - Test: Unit + integration tests
+
+  - File: `apps/dev-brand-api/src/app/repositories/chromadb/competitive-analysis.repository.ts`
+  - Extends: VectorMemoryRepository
+  - Methods: `findCompetitors()`, `compareProfiles()`, `findDifferentiators()`
+  - Test: Unit + integration tests
 
 - [ ] **5A.5**: Verify ChromaVectorAdapter multi-collection access
-    - File: `apps/dev-brand-api/src/app/adapters/memory/chroma-vector.adapter.ts`
-    - Test: Can search across all new collections
-    - Test: Multi-collection aggregation works
+  - File: `apps/dev-brand-api/src/app/adapters/memory/chroma-vector.adapter.ts`
+  - Test: Can search across all new collections
+  - Test: Multi-collection aggregation works
 
 ### Phase 5B: Memory Service Extensions
 
@@ -2367,46 +2279,52 @@ getPerformanceMetrics(userId)
 **Dependencies**: Phase 5A complete
 
 - [ ] **5B.1**: Add buildDeveloperProfile() method
-    - File: `apps/dev-brand-api/src/app/business-workflows/core/memory/personal-brand-memory.service.ts`
-    - Lines: ~1210-1350
-    - Dependencies: DeveloperProfileRepository, CodeAchievementRepository
-    - Test: Integration test with real ChromaDB + Neo4j
+
+  - File: `apps/dev-brand-api/src/app/business-workflows/core/memory/personal-brand-memory.service.ts`
+  - Lines: ~1210-1350
+  - Dependencies: DeveloperProfileRepository, CodeAchievementRepository
+  - Test: Integration test with real ChromaDB + Neo4j
 
 - [ ] **5B.2**: Add generateContentStrategy() method
-    - File: `personal-brand-memory.service.ts`
-    - Lines: ~1350-1500
-    - Dependencies: ChromaVectorAdapter, ContentPerformanceRepository
-    - Test: Multi-collection search verification
+
+  - File: `personal-brand-memory.service.ts`
+  - Lines: ~1350-1500
+  - Dependencies: ChromaVectorAdapter, ContentPerformanceRepository
+  - Test: Multi-collection search verification
 
 - [ ] **5B.3**: Add trackBrandPresence() method
-    - File: `personal-brand-memory.service.ts`
-    - Lines: ~1500-1650
-    - Dependencies: BrandMentionRepository
-    - Test: External API integration (mocked)
+
+  - File: `personal-brand-memory.service.ts`
+  - Lines: ~1500-1650
+  - Dependencies: BrandMentionRepository
+  - Test: External API integration (mocked)
 
 - [ ] **5B.4**: Add getCoachingSuggestions() method
-    - File: `personal-brand-memory.service.ts`
-    - Lines: ~1650-1800
-    - Dependencies: ChromaVectorAdapter, all repositories
-    - Test: Multi-source aggregation
+
+  - File: `personal-brand-memory.service.ts`
+  - Lines: ~1650-1800
+  - Dependencies: ChromaVectorAdapter, all repositories
+  - Test: Multi-source aggregation
 
 - [ ] **5B.5**: Add analyzeBrandEvolution() method
-    - File: `personal-brand-memory.service.ts`
-    - Lines: ~1800-1950
-    - Dependencies: BrandStrategyRepository (enhanced)
-    - Test: Temporal query verification
+
+  - File: `personal-brand-memory.service.ts`
+  - Lines: ~1800-1950
+  - Dependencies: BrandStrategyRepository (enhanced)
+  - Test: Temporal query verification
 
 - [ ] **5B.6**: Add compareWithDevelopers() method
-    - File: `personal-brand-memory.service.ts`
-    - Lines: ~1950-2100
-    - Dependencies: ChromaVectorAdapter, DeveloperProfileRepository
-    - Test: Cross-developer similarity
+
+  - File: `personal-brand-memory.service.ts`
+  - Lines: ~1950-2100
+  - Dependencies: ChromaVectorAdapter, DeveloperProfileRepository
+  - Test: Cross-developer similarity
 
 - [ ] **5B.7**: Add getPerformanceMetrics() method
-    - File: `personal-brand-memory.service.ts`
-    - Lines: ~2100-2300
-    - Dependencies: ChromaVectorAdapter, all repositories, Neo4j
-    - Test: Full stack integration
+  - File: `personal-brand-memory.service.ts`
+  - Lines: ~2100-2300
+  - Dependencies: ChromaVectorAdapter, all repositories, Neo4j
+  - Test: Full stack integration
 
 ### Phase 5C: Specialized Repository Enhancements
 
@@ -2415,28 +2333,30 @@ getPerformanceMetrics(userId)
 **Dependencies**: None (can run parallel with 5A/5B)
 
 - [ ] **5C.1**: Enhance CodeAchievementRepository
-    - File: `apps/dev-brand-api/src/app/repositories/chromadb/code-achievement.repository.ts`
-    - NEW methods:
-        - `aggregateSkillsByTechnology(userId)`: Lines ~254-310
-        - `findHighImpactAchievements(userId)`: Lines ~311-340
-        - `getTemporalAchievementTrend(userId, period)`: Lines ~341-380
-    - Test: Repository method tests
+
+  - File: `apps/dev-brand-api/src/app/repositories/chromadb/code-achievement.repository.ts`
+  - NEW methods:
+    - `aggregateSkillsByTechnology(userId)`: Lines ~254-310
+    - `findHighImpactAchievements(userId)`: Lines ~311-340
+    - `getTemporalAchievementTrend(userId, period)`: Lines ~341-380
+  - Test: Repository method tests
 
 - [ ] **5C.2**: Enhance BrandStrategyRepository
-    - File: `apps/dev-brand-api/src/app/repositories/chromadb/brand-strategy.repository.ts`
-    - NEW methods:
-        - `getTemporalEvolution(userId)`: Lines ~405-460
-        - `compareBrandStrategies(userId, currentAnalysis)`: Lines ~461-510
-        - `findSimilarStrategies(positioning, limit)`: Lines ~511-550
-    - Test: Repository method tests
+
+  - File: `apps/dev-brand-api/src/app/repositories/chromadb/brand-strategy.repository.ts`
+  - NEW methods:
+    - `getTemporalEvolution(userId)`: Lines ~405-460
+    - `compareBrandStrategies(userId, currentAnalysis)`: Lines ~461-510
+    - `findSimilarStrategies(positioning, limit)`: Lines ~511-550
+  - Test: Repository method tests
 
 - [ ] **5C.3**: Enhance ContentPerformanceRepository
-    - File: `apps/dev-brand-api/src/app/repositories/chromadb/content-performance.repository.ts`
-    - NEW methods:
-        - `findSuccessPatterns(userId)`: Lines ~650-720
-        - `getEngagementTrends(userId, period)`: Lines ~721-770
-        - `compareContentPerformance(userId, peerIds)`: Lines ~771-820
-    - Test: Repository method tests
+  - File: `apps/dev-brand-api/src/app/repositories/chromadb/content-performance.repository.ts`
+  - NEW methods:
+    - `findSuccessPatterns(userId)`: Lines ~650-720
+    - `getEngagementTrends(userId, period)`: Lines ~721-770
+    - `compareContentPerformance(userId, peerIds)`: Lines ~771-820
+  - Test: Repository method tests
 
 ### Phase 5D: Agent Enhancements
 
@@ -2445,28 +2365,30 @@ getPerformanceMetrics(userId)
 **Dependencies**: Phase 5B complete
 
 - [ ] **5D.1**: Enhance GitHubCodeAnalyzerAgent
-    - File: `apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts`
-    - NEW task: `analyzeSkillsAndExpertise()`: Lines ~XXX-YYY
-    - Integration: Wire to memory service
-    - Test: Agent workflow test
+
+  - File: `apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts`
+  - NEW task: `analyzeSkillsAndExpertise()`: Lines ~XXX-YYY
+  - Integration: Wire to memory service
+  - Test: Agent workflow test
 
 - [ ] **5D.2**: Enhance PersonalBrandStrategistAgent (4 new tasks)
-    - File: `apps/dev-brand-api/src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts`
-    - NEW tasks:
-        - `monitorBrandPresence()`: Lines ~XXX
-        - `provideCoachingSuggestions()`: Lines ~XXX
-        - `analyzeBrandEvolutionTask()`: Lines ~XXX
-        - `compareWithPeers()`: Lines ~XXX
-    - Integration: Wire to memory service
-    - Test: Agent workflow tests (4 separate)
+
+  - File: `apps/dev-brand-api/src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts`
+  - NEW tasks:
+    - `monitorBrandPresence()`: Lines ~XXX
+    - `provideCoachingSuggestions()`: Lines ~XXX
+    - `analyzeBrandEvolutionTask()`: Lines ~XXX
+    - `compareWithPeers()`: Lines ~XXX
+  - Integration: Wire to memory service
+  - Test: Agent workflow tests (4 separate)
 
 - [ ] **5D.3**: Enhance ContentCreatorAgent (2 new tasks)
-    - File: `apps/dev-brand-api/src/app/business-workflows/agents/content-creator/content-creator.agent.ts`
-    - NEW tasks:
-        - `generateContentStrategy()`: Lines ~XXX
-        - `trackContentPerformance()`: Lines ~XXX
-    - Integration: Wire to memory service
-    - Test: Agent workflow tests (2 separate)
+  - File: `apps/dev-brand-api/src/app/business-workflows/agents/content-creator/content-creator.agent.ts`
+  - NEW tasks:
+    - `generateContentStrategy()`: Lines ~XXX
+    - `trackContentPerformance()`: Lines ~XXX
+  - Integration: Wire to memory service
+  - Test: Agent workflow tests (2 separate)
 
 ### Phase 5E: Supervisor Integration
 
@@ -2475,17 +2397,17 @@ getPerformanceMetrics(userId)
 **Dependencies**: Phase 5D complete
 
 - [ ] **5E.1**: Update DevBrandSupervisorWorkflow
-    - File: `apps/dev-brand-api/src/app/business-workflows/workflows/devbrand-supervisor.workflow.ts`
-    - NEW tasks:
-        - `orchestrateDeveloperProfiling()`
-        - `orchestrateContentStrategy()`
-        - `orchestrateBrandMonitoring()`
-        - `orchestrateCoaching()`
-        - `orchestrateBrandEvolution()`
-        - `orchestrateCompetitiveIntel()`
-        - `generateDashboard()`
-    - Integration: Route to appropriate agents
-    - Test: End-to-end workflow tests
+  - File: `apps/dev-brand-api/src/app/business-workflows/workflows/devbrand-supervisor.workflow.ts`
+  - NEW tasks:
+    - `orchestrateDeveloperProfiling()`
+    - `orchestrateContentStrategy()`
+    - `orchestrateBrandMonitoring()`
+    - `orchestrateCoaching()`
+    - `orchestrateBrandEvolution()`
+    - `orchestrateCompetitiveIntel()`
+    - `generateDashboard()`
+  - Integration: Route to appropriate agents
+  - Test: End-to-end workflow tests
 
 ### Phase 5F: Type Definitions
 
@@ -2494,16 +2416,16 @@ getPerformanceMetrics(userId)
 **Dependencies**: None (can run parallel with 5A)
 
 - [ ] **5F.1**: Create entity type files
-    - Files:
-        - `apps/dev-brand-api/src/app/entities/chromadb/developer-profile.entity.ts`
-        - `apps/dev-brand-api/src/app/entities/chromadb/brand-mention.entity.ts`
-        - `apps/dev-brand-api/src/app/entities/chromadb/content-strategy.entity.ts`
-        - `apps/dev-brand-api/src/app/entities/chromadb/coaching-suggestion.entity.ts`
-        - `apps/dev-brand-api/src/app/entities/chromadb/brand-evolution.entity.ts`
-        - `apps/dev-brand-api/src/app/entities/chromadb/competitive-analysis.entity.ts`
-        - `apps/dev-brand-api/src/app/entities/chromadb/performance-dashboard.entity.ts`
-    - Standards: Zero 'any' types, strict TypeScript
-    - Export: Update index files
+  - Files:
+    - `apps/dev-brand-api/src/app/entities/chromadb/developer-profile.entity.ts`
+    - `apps/dev-brand-api/src/app/entities/chromadb/brand-mention.entity.ts`
+    - `apps/dev-brand-api/src/app/entities/chromadb/content-strategy.entity.ts`
+    - `apps/dev-brand-api/src/app/entities/chromadb/coaching-suggestion.entity.ts`
+    - `apps/dev-brand-api/src/app/entities/chromadb/brand-evolution.entity.ts`
+    - `apps/dev-brand-api/src/app/entities/chromadb/competitive-analysis.entity.ts`
+    - `apps/dev-brand-api/src/app/entities/chromadb/performance-dashboard.entity.ts`
+  - Standards: Zero 'any' types, strict TypeScript
+  - Export: Update index files
 
 ### Phase 5G: Testing & Quality Assurance
 
@@ -2512,26 +2434,29 @@ getPerformanceMetrics(userId)
 **Dependencies**: ALL phases complete
 
 - [ ] **5G.1**: Unit tests (80% coverage minimum)
-    - Repository methods: All new methods
-    - Memory service methods: All 7 new methods
-    - Agent tasks: All new tasks
+
+  - Repository methods: All new methods
+  - Memory service methods: All 7 new methods
+  - Agent tasks: All new tasks
 
 - [ ] **5G.2**: Integration tests
-    - ChromaDB operations: Create, search, update, delete
-    - Neo4j operations: Relationship creation and queries
-    - Multi-collection operations: ChromaVectorAdapter tests
+
+  - ChromaDB operations: Create, search, update, delete
+  - Neo4j operations: Relationship creation and queries
+  - Multi-collection operations: ChromaVectorAdapter tests
 
 - [ ] **5G.3**: E2E workflow tests
-    - Developer profiling: Full flow
-    - Content strategy: Full flow
-    - Performance dashboard: Full flow
+
+  - Developer profiling: Full flow
+  - Content strategy: Full flow
+  - Performance dashboard: Full flow
 
 - [ ] **5G.4**: Quality gates validation
-    - Type safety: Zero 'any' types
-    - Import standards: All @hive-academy/* paths
-    - File limits: Services <200 lines (split if needed)
-    - Error handling: Comprehensive try-catch
-    - Documentation: All methods documented
+  - Type safety: Zero 'any' types
+  - Import standards: All @hive-academy/\* paths
+  - File limits: Services <200 lines (split if needed)
+  - Error handling: Comprehensive try-catch
+  - Documentation: All methods documented
 
 ### Phase 5H: Documentation & Deployment
 
@@ -2540,16 +2465,18 @@ getPerformanceMetrics(userId)
 **Dependencies**: Phase 5G complete
 
 - [ ] **5H.1**: Update CLAUDE.md files
-    - Root CLAUDE.md: Add Phase 5 capabilities
-    - Repository READMEs: Document new methods
+
+  - Root CLAUDE.md: Add Phase 5 capabilities
+  - Repository READMEs: Document new methods
 
 - [ ] **5H.2**: Create migration guide
-    - Document breaking changes (if any)
-    - Provide upgrade path for existing users
+
+  - Document breaking changes (if any)
+  - Provide upgrade path for existing users
 
 - [ ] **5H.3**: Deploy to development environment
-    - Run migrations (if needed)
-    - Verify all features work
+  - Run migrations (if needed)
+  - Verify all features work
 
 ---
 
@@ -2560,53 +2487,62 @@ getPerformanceMetrics(userId)
 Before marking Phase 5 complete, ALL items must pass:
 
 1. **✅ Type Safety** (0/10 = FAIL)
+
    - Zero 'any' types in all new code
    - All function signatures fully typed
    - Strict TypeScript mode enabled
    - No type assertions without justification
 
 2. **✅ Import Standards** (0/10 = FAIL)
+
    - All cross-library imports use `@hive-academy/*` paths
    - No relative imports across library boundaries
    - Consistent import order
 
 3. **✅ File Organization** (0/10 = FAIL)
+
    - Services <200 lines (split into multiple files if needed)
    - Modules <500 lines
    - Functions <30 lines
    - Clear file naming conventions
 
 4. **✅ Real Business Logic** (0/10 = FAIL)
+
    - No stubs or placeholder implementations
    - All methods implement actual functionality
    - ChromaDB + Neo4j + LangGraph fully integrated
    - Semantic search used throughout
 
 5. **✅ Error Handling** (0/10 = FAIL)
+
    - Comprehensive try-catch blocks
    - Meaningful error messages
    - Error context included (userId, operation, etc.)
    - Retry logic for transient failures
 
 6. **✅ Testing Coverage** (0/10 = FAIL)
+
    - Minimum 80% line coverage
    - Minimum 80% branch coverage
    - Minimum 80% function coverage
    - Integration tests for all new features
 
 7. **✅ Documentation** (0/10 = FAIL)
+
    - All methods have JSDoc comments
    - All parameters documented
    - Return types documented
    - Usage examples provided
 
 8. **✅ Agentic Patterns** (0/10 = FAIL)
+
    - All capabilities accessed through `@Task` methods
    - No direct REST API controllers
    - Agent state properly managed
    - Workflow decorators used correctly
 
 9. **✅ Performance** (0/10 = FAIL)
+
    - Parallel queries where possible
    - Caching enabled on expensive operations
    - Database queries optimized

@@ -25,7 +25,7 @@ export type {
   MaterialState,
   AnimationState,
   PerformanceState,
-  Angular3DAppState
+  Angular3DAppState,
 } from './angular-3d-state.store';
 
 // Re-export types from reactive state manager
@@ -33,7 +33,7 @@ export type {
   SceneGraphEvent,
   CrossComponentMessage,
   SceneQuery,
-  ComponentRegistration
+  ComponentRegistration,
 } from './reactive-state-manager.service';
 
 // Re-export animation types
@@ -41,7 +41,7 @@ export type {
   AnimationConfig,
   AnimationTimeline,
   ElementAnimationTarget,
-  AnimationState as AnimationConfigState
+  AnimationState as AnimationConfigState,
 } from './animation.service';
 
 // Re-export content texture pipeline types
@@ -51,5 +51,5 @@ export type {
   CachingOptions,
   TexturePipelineState,
   TextureEntry,
-  TextureAtlasEntry
+  TextureAtlasEntry,
 } from './content-texture-pipeline.service';

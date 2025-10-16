@@ -23,7 +23,7 @@ export interface CinematicConfig {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CinematicScrollService {
   // Section management
@@ -35,7 +35,7 @@ export class CinematicScrollService {
     playbackSpeed: 1,
     sectionDuration: 8000, // 8 seconds per section
     transitionDuration: 2000, // 2 seconds for transitions
-    pauseBetweenSections: 1000 // 1 second pause
+    pauseBetweenSections: 1000, // 1 second pause
   });
 
   // Performance tracking
@@ -43,7 +43,7 @@ export class CinematicScrollService {
   private readonly _performanceMetrics = signal({
     frameDrops: 0,
     averageFps: 60,
-    lastFrameTime: 0
+    lastFrameTime: 0,
   });
 
   // Auto-play state
@@ -61,8 +61,8 @@ export class CinematicScrollService {
   readonly narrativeProgress = computed(() => {
     const sections = this._sections();
     const current = this._currentSection();
-    const currentIndex = sections.findIndex(s => s.id === current);
-    return currentIndex >= 0 ? (currentIndex + 1) / sections.length * 100 : 0;
+    const currentIndex = sections.findIndex((s) => s.id === current);
+    return currentIndex >= 0 ? ((currentIndex + 1) / sections.length) * 100 : 0;
   });
 
   readonly isOptimalPerformance = computed(() => {
@@ -70,7 +70,9 @@ export class CinematicScrollService {
   });
 
   private readonly sectionTransitionService = inject(SectionTransitionService);
-  private readonly recordingPerformanceService = inject(RecordingPerformanceService);
+  private readonly recordingPerformanceService = inject(
+    RecordingPerformanceService
+  );
 
   constructor() {
     this.initializePerformanceMonitoring();
@@ -81,13 +83,15 @@ export class CinematicScrollService {
    * Initialize scroll-triggered animations for cinematic flow
    */
   initializeSections(sectionElements: HTMLElement[]): void {
-    const sectionData: SectionProgress[] = sectionElements.map((element, index) => ({
-      id: element.id || `section-${index}`,
-      progress: 0,
-      isActive: index === 0,
-      isVisible: false,
-      element
-    }));
+    const sectionData: SectionProgress[] = sectionElements.map(
+      (element, index) => ({
+        id: element.id || `section-${index}`,
+        progress: 0,
+        isActive: index === 0,
+        isVisible: false,
+        element,
+      })
+    );
 
     this._sections.set(sectionData);
 
@@ -102,14 +106,14 @@ export class CinematicScrollService {
    */
   enableRecordingMode(config?: Partial<CinematicConfig>): void {
     this._isRecordingMode.set(true);
-    
+
     if (config) {
-      this._autoPlayConfig.update(current => ({ ...current, ...config }));
+      this._autoPlayConfig.update((current) => ({ ...current, ...config }));
     }
 
     // Enable performance optimization
     this.recordingPerformanceService.enableRecordingMode('Balanced Quality');
-    
+
     // Optimize for recording
     this.optimizeForRecording();
   }
@@ -128,7 +132,7 @@ export class CinematicScrollService {
       }
 
       this.autoPlayTimeline = gsap.timeline({
-        onComplete: resolve
+        onComplete: resolve,
       });
 
       sections.forEach((section, index) => {
@@ -149,10 +153,10 @@ export class CinematicScrollService {
       this.autoPlayTimeline.kill();
       this.autoPlayTimeline = undefined;
     }
-    
+
     const config = this._autoPlayConfig();
     this._autoPlayConfig.set({ ...config, autoPlay: false });
-    
+
     // Disable recording optimizations if no longer recording
     if (!this._isRecordingMode()) {
       this.recordingPerformanceService.disableRecordingMode();
@@ -163,11 +167,11 @@ export class CinematicScrollService {
    * Navigate to specific section programmatically
    */
   async navigateToSection(sectionId: string, smooth = true): Promise<void> {
-    const section = this._sections().find(s => s.id === sectionId);
+    const section = this._sections().find((s) => s.id === sectionId);
     if (!section?.element) return;
 
     const currentSection = this._currentSection();
-    
+
     // Use transition service for enhanced navigation
     await this.sectionTransitionService.executeTransition(
       currentSection,
@@ -177,25 +181,31 @@ export class CinematicScrollService {
         duration: smooth ? 1.5 : 0.5,
         ease: 'power2.inOut',
         stagger: 0.1,
-        delay: 0
+        delay: 0,
       }
     );
-    
+
     this._currentSection.set(sectionId);
   }
 
   /**
    * Get cinematic timing for narration synchronization
    */
-  getCinematicTiming(): { sectionTimings: number[], totalDuration: number } {
+  getCinematicTiming(): { sectionTimings: number[]; totalDuration: number } {
     const config = this._autoPlayConfig();
     const sections = this._sections();
-    
+
     const sectionTimings = sections.map((_, index) => {
-      return index * (config.sectionDuration + config.transitionDuration + config.pauseBetweenSections);
+      return (
+        index *
+        (config.sectionDuration +
+          config.transitionDuration +
+          config.pauseBetweenSections)
+      );
     });
 
-    const totalDuration = sectionTimings[sectionTimings.length - 1] + config.sectionDuration;
+    const totalDuration =
+      sectionTimings[sectionTimings.length - 1] + config.sectionDuration;
 
     return { sectionTimings, totalDuration };
   }
@@ -203,19 +213,22 @@ export class CinematicScrollService {
   private setupScrollTriggers(): void {
     // Global scroll trigger for performance monitoring
     ScrollTrigger.create({
-      trigger: "body",
-      start: "top top",
-      end: "bottom bottom",
+      trigger: 'body',
+      start: 'top top',
+      end: 'bottom bottom',
       onUpdate: (self) => {
         // this.updatePerformanceMetrics();
-      }
+      },
     });
   }
 
-  private createSectionScrollTrigger(element: HTMLElement, index: number): void {
+  private createSectionScrollTrigger(
+    element: HTMLElement,
+    index: number
+  ): void {
     // Create entrance animation
     const entranceTimeline = gsap.timeline({
-      paused: true
+      paused: true,
     });
 
     // Add subtle entrance effects
@@ -224,22 +237,26 @@ export class CinematicScrollService {
         opacity: 0,
         y: 50,
         duration: 1,
-        ease: "power2.out"
+        ease: 'power2.out',
       })
-      .from(element.querySelectorAll('.animate-in'), {
-        opacity: 0,
-        y: 30,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "power2.out"
-      }, "-=0.5");
+      .from(
+        element.querySelectorAll('.animate-in'),
+        {
+          opacity: 0,
+          y: 30,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: 'power2.out',
+        },
+        '-=0.5'
+      );
 
     ScrollTrigger.create({
       trigger: element,
-      start: "top 80%",
-      end: "bottom 20%",
+      start: 'top 80%',
+      end: 'bottom 20%',
       animation: entranceTimeline,
-      toggleActions: "play none none reverse",
+      toggleActions: 'play none none reverse',
       onEnter: () => {
         this._currentSection.set(element.id);
         this.updateSectionProgress(element.id, 0);
@@ -249,7 +266,7 @@ export class CinematicScrollService {
       // },
       onLeave: () => {
         this.updateSectionProgress(element.id, 1);
-      }
+      },
     });
   }
 
@@ -261,7 +278,10 @@ export class CinematicScrollService {
 
     // Add pause before section (except first)
     if (!isFirst) {
-      this.autoPlayTimeline.to({}, { duration: config.pauseBetweenSections / 1000 });
+      this.autoPlayTimeline.to(
+        {},
+        { duration: config.pauseBetweenSections / 1000 }
+      );
     }
 
     // Scroll to section
@@ -269,45 +289,51 @@ export class CinematicScrollService {
       duration: config.transitionDuration / 1000,
       scrollTo: {
         y: element,
-        offsetY: 0
+        offsetY: 0,
       },
-      ease: "power2.inOut",
+      ease: 'power2.inOut',
       onStart: () => {
         this._currentSection.set(element.id);
-      }
+      },
     });
 
     // Stay on section for demonstration
-    this.autoPlayTimeline.to({}, { 
-      duration: config.sectionDuration / 1000,
-      onUpdate: () => {
-        // Trigger any section-specific animations
-        this.triggerSectionDemonstration(element.id);
+    this.autoPlayTimeline.to(
+      {},
+      {
+        duration: config.sectionDuration / 1000,
+        onUpdate: () => {
+          // Trigger any section-specific animations
+          this.triggerSectionDemonstration(element.id);
+        },
       }
-    });
+    );
   }
 
   private triggerSectionDemonstration(sectionId: string): void {
     // Use transition service for enhanced demonstration
     this.sectionTransitionService.triggerSectionDemo(sectionId);
-    
+
     // Dispatch custom event for section components to handle
     const sectionElement = document.getElementById(sectionId);
     if (sectionElement) {
-      sectionElement.dispatchEvent(new CustomEvent('cinematic-demonstration', {
-        detail: { 
-          sectionId, 
-          timestamp: Date.now(),
-          narrativeFlow: this.sectionTransitionService.getNarrativeFlow(sectionId)
-        }
-      }));
+      sectionElement.dispatchEvent(
+        new CustomEvent('cinematic-demonstration', {
+          detail: {
+            sectionId,
+            timestamp: Date.now(),
+            narrativeFlow:
+              this.sectionTransitionService.getNarrativeFlow(sectionId),
+          },
+        })
+      );
     }
   }
 
   private updateSectionProgress(sectionId: string, progress: number): void {
-    this._sections.update(sections => 
-      sections.map(section => 
-        section.id === sectionId 
+    this._sections.update((sections) =>
+      sections.map((section) =>
+        section.id === sectionId
           ? { ...section, progress, isActive: progress > 0.1 && progress < 0.9 }
           : section
       )
@@ -319,12 +345,18 @@ export class CinematicScrollService {
     if (this._isRecordingMode()) {
       // Reduce particle counts
       document.documentElement.style.setProperty('--particle-density', '0.3');
-      
+
       // Optimize render quality
-      document.documentElement.style.setProperty('--render-quality', 'performance');
-      
+      document.documentElement.style.setProperty(
+        '--render-quality',
+        'performance'
+      );
+
       // Enable hardware acceleration
-      document.documentElement.style.setProperty('--gpu-acceleration', 'enabled');
+      document.documentElement.style.setProperty(
+        '--gpu-acceleration',
+        'enabled'
+      );
     }
   }
 
@@ -336,17 +368,18 @@ export class CinematicScrollService {
     const measurePerformance = (currentTime: number) => {
       frameCount++;
       const deltaTime = currentTime - lastTime;
-      
+
       if (deltaTime >= 1000) {
         const currentFps = Math.round((frameCount * 1000) / deltaTime);
         totalFps += currentFps;
-        
+
         this._fps.set(currentFps);
-        this._performanceMetrics.update(metrics => ({
+        this._performanceMetrics.update((metrics) => ({
           ...metrics,
           averageFps: Math.round(totalFps / (frameCount / 60)),
           lastFrameTime: deltaTime,
-          frameDrops: currentFps < 55 ? metrics.frameDrops + 1 : metrics.frameDrops
+          frameDrops:
+            currentFps < 55 ? metrics.frameDrops + 1 : metrics.frameDrops,
         }));
 
         frameCount = 0;
@@ -364,13 +397,14 @@ export class CinematicScrollService {
    */
   getDemoInformation(): {
     script: string;
-    timings: { sectionTimings: number[], totalDuration: number };
+    timings: { sectionTimings: number[]; totalDuration: number };
     performanceReport: string;
   } {
     return {
       script: this.sectionTransitionService.generateDemoScript(),
       timings: this.getCinematicTiming(),
-      performanceReport: this.recordingPerformanceService.exportPerformanceReport()
+      performanceReport:
+        this.recordingPerformanceService.exportPerformanceReport(),
     };
   }
 
@@ -382,7 +416,8 @@ export class CinematicScrollService {
       fps: this.recordingPerformanceService.currentMetrics().fps,
       grade: this.recordingPerformanceService.performanceGrade(),
       isOptimal: this.recordingPerformanceService.isPerformanceOptimal(),
-      recommendations: this.recordingPerformanceService.getPerformanceRecommendations()
+      recommendations:
+        this.recordingPerformanceService.getPerformanceRecommendations(),
     };
   }
 
@@ -398,6 +433,6 @@ export class CinematicScrollService {
     // Clean up services
     this.recordingPerformanceService.destroy();
 
-    ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
   }
 }

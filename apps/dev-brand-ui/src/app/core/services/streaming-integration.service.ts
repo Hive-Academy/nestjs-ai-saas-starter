@@ -241,12 +241,13 @@ export class StreamingIntegrationService {
       description: request.input,
       priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
       category: 'demo-supervisor',
-      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      customerTier:
+        request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
       metadata: {
         pattern: 'supervisor',
         enableStreaming: request.enableStreaming,
-        demonstrationMode: request.demonstrationMode
-      }
+        demonstrationMode: request.demonstrationMode,
+      },
     };
 
     // Initiate workflow via customer-support API and get real executionId
@@ -262,11 +263,15 @@ export class StreamingIntegrationService {
         .then((response) => response.json())
         .then((result) => {
           const executionId = result.executionId;
-          console.log(`✅ Supervisor workflow initiated with executionId: ${executionId}`);
+          console.log(
+            `✅ Supervisor workflow initiated with executionId: ${executionId}`
+          );
 
           // Join supervisor-specific rooms for targeted messaging
           this.joinRoom('supervisor-showcase', { metadata: { executionId } });
-          this.joinRoom('devbrand-streaming', { metadata: { type: 'supervisor' } });
+          this.joinRoom('devbrand-streaming', {
+            metadata: { type: 'supervisor' },
+          });
 
           // Subscribe to workflow streaming with real executionId
           const streamObservable = this.subscribeToWorkflow(executionId, {
@@ -287,7 +292,7 @@ export class StreamingIntegrationService {
           streamObservable.subscribe({
             next: (update) => observer.next(update),
             error: (error) => observer.error(error),
-            complete: () => observer.complete()
+            complete: () => observer.complete(),
           });
         })
         .catch((error) => {
@@ -315,12 +320,13 @@ export class StreamingIntegrationService {
       description: request.input,
       priority: request.demonstrationMode === 'enterprise' ? 'high' : 'medium',
       category: 'demo-swarm',
-      customerTier: request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
+      customerTier:
+        request.demonstrationMode === 'enterprise' ? 'enterprise' : 'premium',
       metadata: {
         pattern: 'swarm',
         enableStreaming: request.enableStreaming,
-        demonstrationMode: request.demonstrationMode
-      }
+        demonstrationMode: request.demonstrationMode,
+      },
     };
 
     // Initiate workflow via customer-support API and get real executionId
@@ -336,7 +342,9 @@ export class StreamingIntegrationService {
         .then((response) => response.json())
         .then((result) => {
           const executionId = result.executionId;
-          console.log(`✅ Swarm workflow initiated with executionId: ${executionId}`);
+          console.log(
+            `✅ Swarm workflow initiated with executionId: ${executionId}`
+          );
 
           // Join swarm-specific rooms for targeted messaging
           this.joinRoom('swarm-showcase', { metadata: { executionId } });
@@ -368,7 +376,7 @@ export class StreamingIntegrationService {
           streamObservable.subscribe({
             next: (update) => observer.next(update),
             error: (error) => observer.error(error),
-            complete: () => observer.complete()
+            complete: () => observer.complete(),
           });
         })
         .catch((error) => {

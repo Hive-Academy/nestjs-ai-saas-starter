@@ -53,33 +53,38 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* Geometry type specific styling */
-.geometry-node-container[data-geometry-type="box"] .debug-header::before {
-  content: "📦 ";
+.geometry-node-container[data-geometry-type='box'] .debug-header::before {
+  content: '📦 ';
 }
 
-.geometry-node-container[data-geometry-type="sphere"] .debug-header::before {
-  content: "🌐 ";
+.geometry-node-container[data-geometry-type='sphere'] .debug-header::before {
+  content: '🌐 ';
 }
 
-.geometry-node-container[data-geometry-type="plane"] .debug-header::before {
-  content: "📄 ";
+.geometry-node-container[data-geometry-type='plane'] .debug-header::before {
+  content: '📄 ';
 }
 
-.geometry-node-container[data-geometry-type="cylinder"] .debug-header::before {
-  content: "🥫 ";
+.geometry-node-container[data-geometry-type='cylinder'] .debug-header::before {
+  content: '🥫 ';
 }
 
-.geometry-node-container[data-geometry-type="cone"] .debug-header::before {
-  content: "🔺 ";
+.geometry-node-container[data-geometry-type='cone'] .debug-header::before {
+  content: '🔺 ';
 }
 
-.geometry-node-container[data-geometry-type="torus"] .debug-header::before {
-  content: "🍩 ";
+.geometry-node-container[data-geometry-type='torus'] .debug-header::before {
+  content: '🍩 ';
 }
 
 /* Responsive design */

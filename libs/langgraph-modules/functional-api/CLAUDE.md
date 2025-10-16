@@ -861,6 +861,7 @@ This module provides powerful workflow orchestration with both functional and de
 The Functional API Module supports **two workflow patterns** that **cannot be mixed**:
 
 1. **Task-Based Pattern** (Dependency-Driven)
+
    - Uses `@Entrypoint` + `@Task` decorators
    - Edges automatically created from `dependsOn` relationships
    - Best for: Linear/sequential workflows with straightforward dependencies
@@ -877,12 +878,14 @@ The Functional API Module supports **two workflow patterns** that **cannot be mi
 ### Pattern Selection Guide
 
 **Choose Task-Based Pattern When:**
+
 - ✅ Workflow is mostly linear/sequential
 - ✅ Dependencies are straightforward (A → B → C)
 - ✅ You want automatic edge creation from `dependsOn`
 - ✅ Simpler implementation with less boilerplate
 
 **Choose Node-Based Pattern When:**
+
 - ✅ Complex conditional routing required
 - ✅ Multiple branching paths with dynamic routing
 - ✅ Need explicit control over graph structure
@@ -949,11 +952,13 @@ export class TaskBasedWorkflow {
 ```
 
 **Execution Flow** (implicit edges):
+
 ```
 initializeWorkflow → processData → validateResults → finalizeWorkflow
 ```
 
 **Key Features**:
+
 - ✅ `dependsOn` automatically creates edges
 - ✅ Parallel execution when dependencies allow: `@Task({ dependsOn: ['A', 'B'] })`
 - ✅ Type-safe context with `TaskExecutionContext`
@@ -1041,6 +1046,7 @@ export class NodeBasedWorkflow extends DeclarativeWorkflowBase {
 ```
 
 **Execution Flow** (explicit edges):
+
 ```
                                       ┌─> processHighConfidence ─┐
 initializeWorkflow → processData → routeBasedOnConfidence           → finalizeWorkflow
@@ -1048,6 +1054,7 @@ initializeWorkflow → processData → routeBasedOnConfidence           → fina
 ```
 
 **Key Features**:
+
 - ✅ Explicit edge declarations for full control
 - ✅ Conditional routing with `@Node({ type: 'condition' })`
 - ✅ Dynamic branching based on state
@@ -1081,6 +1088,7 @@ async searchData(state: WorkflowState) { }
 ```
 
 **Cross-Cutting Decorators List**:
+
 - `@Tool` - Register methods as LangGraph tools
 - `@RequiresApproval` - Human-in-the-loop approval
 - `@StreamToken` - Token-level streaming for LLM responses
@@ -1099,17 +1107,18 @@ async searchData(state: WorkflowState) { }
 })
 export class MyWorkflow {
   @Entrypoint() // ✅ Allowed
-  async start(context: TaskExecutionContext) { }
+  async start(context: TaskExecutionContext) {}
 
   @Task({ dependsOn: ['start'] }) // ✅ Allowed
-  async process(context: TaskExecutionContext) { }
+  async process(context: TaskExecutionContext) {}
 
   @Node({ type: 'standard' }) // ❌ ERROR! Type mismatch
-  async invalid(state: WorkflowState) { }
+  async invalid(state: WorkflowState) {}
 }
 ```
 
 **Validation Flow**:
+
 1. First decorator sets the pattern (task-based or node-based)
 2. Subsequent decorators must match the established pattern
 3. Explicit `type` in `@FunctionalWorkflow` enforces pattern from the start
@@ -1117,16 +1126,16 @@ export class MyWorkflow {
 
 ### Pattern Validation Rules
 
-| Decorator Category | Task-Based | Node-Based | Class-Level | Notes |
-|-------------------|------------|------------|-------------|-------|
-| @Entrypoint | ✅ PRIMARY | ❌ FORBIDDEN | ❌ | Task-based entry point |
-| @Task | ✅ PRIMARY | ❌ FORBIDDEN | ❌ | Task-based node |
-| @Node | ❌ FORBIDDEN | ✅ PRIMARY | ❌ | Node-based node |
-| @Edge | ❌ FORBIDDEN | ✅ PRIMARY | ❌ | Node-based connection |
-| @FunctionalWorkflow | ✅ Compatible | ✅ Compatible | ✅ | Class-level config |
-| @Tool | ✅ Compatible | ✅ Compatible | ❌ | Cross-cutting |
-| @RequiresApproval | ✅ Compatible | ✅ Compatible | ❌ | Cross-cutting |
-| @Stream* | ✅ Compatible | ✅ Compatible | ❌ | Cross-cutting |
+| Decorator Category  | Task-Based    | Node-Based    | Class-Level | Notes                  |
+| ------------------- | ------------- | ------------- | ----------- | ---------------------- |
+| @Entrypoint         | ✅ PRIMARY    | ❌ FORBIDDEN  | ❌          | Task-based entry point |
+| @Task               | ✅ PRIMARY    | ❌ FORBIDDEN  | ❌          | Task-based node        |
+| @Node               | ❌ FORBIDDEN  | ✅ PRIMARY    | ❌          | Node-based node        |
+| @Edge               | ❌ FORBIDDEN  | ✅ PRIMARY    | ❌          | Node-based connection  |
+| @FunctionalWorkflow | ✅ Compatible | ✅ Compatible | ✅          | Class-level config     |
+| @Tool               | ✅ Compatible | ✅ Compatible | ❌          | Cross-cutting          |
+| @RequiresApproval   | ✅ Compatible | ✅ Compatible | ❌          | Cross-cutting          |
+| @Stream\*           | ✅ Compatible | ✅ Compatible | ❌          | Cross-cutting          |
 
 ### Anti-Pattern: Mixing Decorators (FORBIDDEN)
 
@@ -1135,13 +1144,13 @@ export class MyWorkflow {
 @FunctionalWorkflow({ name: 'bad-workflow' })
 export class MixedPatternWorkflow {
   @Entrypoint() // Sets pattern to 'task-based'
-  async start(context: TaskExecutionContext) { }
+  async start(context: TaskExecutionContext) {}
 
   @Task({ dependsOn: ['start'] }) // ✅ Task-based - OK
-  async step1(context: TaskExecutionContext) { }
+  async step1(context: TaskExecutionContext) {}
 
   @Node({ type: 'standard' }) // ❌ ERROR! Attempting node-based in task-based workflow
-  async step2(state: WorkflowState) { }
+  async step2(state: WorkflowState) {}
 
   @Edge('step1', 'step2') // ❌ ERROR! Attempting node-based in task-based workflow
   route() {}
@@ -1149,6 +1158,7 @@ export class MixedPatternWorkflow {
 ```
 
 **Error Thrown**:
+
 ```
 ╔════════════════════════════════════════════════════════════════════════╗
 ║ DECORATOR PATTERN CONFLICT                                             ║
@@ -1172,6 +1182,7 @@ Incompatible decorator @Node detected in "MixedPatternWorkflow"
 #### Migrating Task-Based → Node-Based
 
 **Before (Task-Based)**:
+
 ```typescript
 @Entrypoint()
 async start(context: TaskExecutionContext) { }
@@ -1184,6 +1195,7 @@ async finalize(context: TaskExecutionContext) { }
 ```
 
 **After (Node-Based)**:
+
 ```typescript
 @Node({ type: 'standard' })
 async start(state: WorkflowState) { }
@@ -1202,6 +1214,7 @@ processToFinalize() {}
 ```
 
 **Changes Required**:
+
 1. Replace `@Entrypoint` with `@Node({ type: 'standard' })`
 2. Replace all `@Task` with `@Node`
 3. Add explicit `@Edge` decorators for all connections
@@ -1212,6 +1225,7 @@ processToFinalize() {}
 #### Migrating Node-Based → Task-Based
 
 **Before (Node-Based)**:
+
 ```typescript
 @Node({ type: 'standard' })
 async start(state: WorkflowState) { }
@@ -1224,6 +1238,7 @@ startToProcess() {}
 ```
 
 **After (Task-Based)**:
+
 ```typescript
 @Entrypoint()
 async start(context: TaskExecutionContext) { }
@@ -1233,6 +1248,7 @@ async process(context: TaskExecutionContext) { }
 ```
 
 **Changes Required**:
+
 1. Replace first `@Node` with `@Entrypoint`
 2. Replace remaining `@Node` decorators with `@Task({ dependsOn: [...] })`
 3. Remove all `@Edge` decorators (dependencies now expressed via `dependsOn`)
@@ -1247,6 +1263,7 @@ The functional-api module includes **compile-time validation** that prevents pat
 **Validator Location**: `libs/langgraph-modules/functional-api/src/lib/utils/decorator-validator.ts`
 
 **Validation Flow**:
+
 ```typescript
 // When @Entrypoint is applied
 validateDecoratorPattern(target, 'task-based', 'Entrypoint');
@@ -1262,6 +1279,7 @@ validateDecoratorPattern(target, 'node-based', 'Node');
 ```
 
 **Validation Triggers**:
+
 - ✅ During TypeScript compilation when decorators are applied
 - ✅ When `@Entrypoint`, `@Task`, `@Node`, or `@Edge` are used
 - ✅ When explicit `@FunctionalWorkflow.type` is declared
@@ -1322,6 +1340,6 @@ async process(context) { }
 1. **Two Patterns Only**: Task-based (@Entrypoint/@Task) OR Node-based (@Node/@Edge)
 2. **Pattern Exclusivity**: Never mix patterns in a single workflow
 3. **Explicit Types**: Always declare `@FunctionalWorkflow.type` for clarity
-4. **Cross-Cutting Freedom**: @Tool, @RequiresApproval, @Stream* work with both patterns
+4. **Cross-Cutting Freedom**: @Tool, @RequiresApproval, @Stream\* work with both patterns
 5. **Validation Timing**: Errors caught at compile-time during TypeScript decoration
 6. **Pattern Selection**: Task-based for simple flows, node-based for complex routing

@@ -4,7 +4,7 @@ import {
   inject,
   input,
   output,
-  signal
+  signal,
 } from '@angular/core';
 import * as THREE from 'three';
 import {
@@ -188,12 +188,12 @@ export class NavigationControlsComponent {
   private readonly spatialNavigation = inject(SpatialNavigationService);
 
   readonly config = input<NavigationControlsConfig | null>({
-        showZoomControls: true,
-        showResetButton: true,
-        showKeyboardHints: true,
-        showTouchHints: true,
-        position: 'bottom-right',
-      });
+    showZoomControls: true,
+    showResetButton: true,
+    showKeyboardHints: true,
+    showTouchHints: true,
+    position: 'bottom-right',
+  });
   readonly focusRequested = output<NavigationTarget>();
   readonly resetRequested = output<void>();
 

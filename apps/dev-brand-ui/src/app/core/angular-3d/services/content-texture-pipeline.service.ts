@@ -14,7 +14,14 @@
  * - WebGL texture format optimization
  */
 
-import { Injectable, signal, computed, inject, effect, PLATFORM_ID } from '@angular/core';
+import {
+  Injectable,
+  signal,
+  computed,
+  inject,
+  effect,
+  PLATFORM_ID,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import * as THREE from 'three';
 import { BehaviorSubject, fromEvent } from 'rxjs';
@@ -91,7 +98,9 @@ export interface TextureAtlasEntry {
   providedIn: 'root',
 })
 export class ContentTexturePipelineService {
-  private readonly performanceOptimizer = inject(AdvancedPerformanceOptimizerService);
+  private readonly performanceOptimizer = inject(
+    AdvancedPerformanceOptimizerService
+  );
   private readonly platformId = inject(PLATFORM_ID);
 
   // Canvas and rendering contexts
@@ -119,7 +128,9 @@ export class ContentTexturePipelineService {
   });
 
   private readonly isInitialized = signal(false);
-  private readonly currentQualityLevel = signal<'low' | 'medium' | 'high' | 'ultra'>('medium');
+  private readonly currentQualityLevel = signal<
+    'low' | 'medium' | 'high' | 'ultra'
+  >('medium');
 
   // Default configurations
   private readonly defaultTextureConfig: TextureConfig = {
@@ -147,15 +158,20 @@ export class ContentTexturePipelineService {
   };
 
   // Observable streams
-  private readonly textureUpdate$ = new BehaviorSubject<TextureEntry | null>(null);
-  private readonly cacheUpdate$ = new BehaviorSubject<Map<string, TextureEntry>>(new Map());
+  private readonly textureUpdate$ = new BehaviorSubject<TextureEntry | null>(
+    null
+  );
+  private readonly cacheUpdate$ = new BehaviorSubject<
+    Map<string, TextureEntry>
+  >(new Map());
 
   // Computed properties
   readonly state = this.pipelineState.asReadonly();
 
   readonly qualitySettings = computed(() => {
     const quality = this.currentQualityLevel();
-    const performanceHealth = this.performanceOptimizer.performanceHealthScore();
+    const performanceHealth =
+      this.performanceOptimizer.performanceHealthScore();
 
     // Adjust quality based on performance
     if (performanceHealth < 50) {
@@ -380,7 +396,6 @@ export class ContentTexturePipelineService {
 
       // Emit update event
       this.textureUpdate$.next(cached);
-
     } catch (error) {
       console.error('Failed to update texture:', error);
     }
@@ -391,7 +406,7 @@ export class ContentTexturePipelineService {
    */
   clearCache(): void {
     // Dispose all textures
-    this.textureCache.forEach(entry => {
+    this.textureCache.forEach((entry) => {
       entry.texture.dispose();
     });
 
@@ -423,7 +438,10 @@ export class ContentTexturePipelineService {
   /**
    * Convert DOM element to texture (compatibility method)
    */
-  convertDOMToTexture(selector: string, config: { width: number; height: number; scale: number }): THREE.Texture | null {
+  convertDOMToTexture(
+    selector: string,
+    config: { width: number; height: number; scale: number }
+  ): THREE.Texture | null {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
@@ -449,8 +467,8 @@ export class ContentTexturePipelineService {
         maxSize: 100,
         ttl: 300000,
         compression: false,
-        strategy: 'lru' as const
-      }
+        strategy: 'lru' as const,
+      },
     };
 
     // This would normally be async, but for compatibility we return a placeholder
@@ -458,12 +476,14 @@ export class ContentTexturePipelineService {
     const placeholderTexture = new THREE.Texture();
 
     // Async update the texture
-    this.createTextureFromElement(element, domOptions).then(texture => {
-      placeholderTexture.image = texture.image;
-      placeholderTexture.needsUpdate = true;
-    }).catch(error => {
-      console.warn('Failed to create texture from DOM element:', error);
-    });
+    this.createTextureFromElement(element, domOptions)
+      .then((texture) => {
+        placeholderTexture.image = texture.image;
+        placeholderTexture.needsUpdate = true;
+      })
+      .catch((error) => {
+        console.warn('Failed to create texture from DOM element:', error);
+      });
 
     return placeholderTexture;
   }
@@ -548,7 +568,9 @@ export class ContentTexturePipelineService {
     });
   }
 
-  private mergeOptions(options?: Partial<DOMToTextureOptions>): DOMToTextureOptions {
+  private mergeOptions(
+    options?: Partial<DOMToTextureOptions>
+  ): DOMToTextureOptions {
     return {
       element: options?.element || document.body,
       width: options?.width,
@@ -562,7 +584,9 @@ export class ContentTexturePipelineService {
     };
   }
 
-  private getQualityConfig(quality: 'low' | 'medium' | 'high' | 'ultra'): TextureConfig {
+  private getQualityConfig(
+    quality: 'low' | 'medium' | 'high' | 'ultra'
+  ): TextureConfig {
     const baseConfig = { ...this.defaultTextureConfig };
 
     switch (quality) {
@@ -577,7 +601,10 @@ export class ContentTexturePipelineService {
     }
   }
 
-  private applyTextureConfig(texture: THREE.Texture, config: TextureConfig): void {
+  private applyTextureConfig(
+    texture: THREE.Texture,
+    config: TextureConfig
+  ): void {
     texture.format = config.format;
     texture.type = config.type;
     texture.generateMipmaps = config.generateMipmaps;
@@ -585,13 +612,19 @@ export class ContentTexturePipelineService {
     texture.wrapT = config.wrapT;
     texture.magFilter = config.magFilter as THREE.MagnificationTextureFilter;
     texture.minFilter = config.minFilter;
-    texture.anisotropy = Math.min(config.anisotropy, this.renderer?.capabilities.getMaxAnisotropy() || 1);
+    texture.anisotropy = Math.min(
+      config.anisotropy,
+      this.renderer?.capabilities.getMaxAnisotropy() || 1
+    );
     texture.flipY = config.flipY;
     texture.premultiplyAlpha = config.premultiplyAlpha;
     texture.unpackAlignment = config.unpackAlignment;
   }
 
-  private generateCacheKey(element: HTMLElement, config: DOMToTextureOptions): string {
+  private generateCacheKey(
+    element: HTMLElement,
+    config: DOMToTextureOptions
+  ): string {
     const elementId = element.id || element.tagName + '_' + Date.now();
     const configHash = JSON.stringify({
       width: config.width,
@@ -633,7 +666,11 @@ export class ContentTexturePipelineService {
     return updatedEntry;
   }
 
-  private addToCache(cacheKey: string, texture: THREE.Texture, source: HTMLElement): void {
+  private addToCache(
+    cacheKey: string,
+    texture: THREE.Texture,
+    source: HTMLElement
+  ): void {
     const entry: TextureEntry = {
       id: cacheKey,
       texture,
@@ -664,14 +701,15 @@ export class ContentTexturePipelineService {
     let currentBytes = 0;
 
     // Calculate current memory usage
-    this.textureCache.forEach(entry => {
+    this.textureCache.forEach((entry) => {
       currentBytes += entry.size;
     });
 
     // Remove entries if over limit (LRU strategy)
     if (currentBytes > maxBytes) {
-      const entries = Array.from(this.textureCache.entries())
-        .sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+      const entries = Array.from(this.textureCache.entries()).sort(
+        ([, a], [, b]) => a.lastAccessed - b.lastAccessed
+      );
 
       while (currentBytes > maxBytes && entries.length > 0) {
         const [key, entry] = entries.shift()!;
@@ -690,10 +728,7 @@ export class ContentTexturePipelineService {
     if (config.updateOnResize) {
       // Watch for resize events
       fromEvent(window, 'resize')
-        .pipe(
-          debounceTime(250),
-          distinctUntilChanged()
-        )
+        .pipe(debounceTime(250), distinctUntilChanged())
         .subscribe(() => {
           this.updateTexture(cacheKey, element);
         });
@@ -741,7 +776,7 @@ export class ContentTexturePipelineService {
         }
       });
 
-      expiredKeys.forEach(key => {
+      expiredKeys.forEach((key) => {
         const entry = this.textureCache.get(key);
         if (entry) {
           entry.texture.dispose();
@@ -776,12 +811,18 @@ export class ContentTexturePipelineService {
     const totalRequests = this.cacheHits + this.cacheMisses;
     const cacheHitRate = totalRequests > 0 ? this.cacheHits / totalRequests : 0;
 
-    const averageGenerationTime = this.generationTimes.length > 0
-      ? this.generationTimes.reduce((a, b) => a + b, 0) / this.generationTimes.length
-      : 0;
+    const averageGenerationTime =
+      this.generationTimes.length > 0
+        ? this.generationTimes.reduce((a, b) => a + b, 0) /
+          this.generationTimes.length
+        : 0;
 
-    const memoryUsage = Array.from(this.textureCache.values())
-      .reduce((total, entry) => total + entry.size, 0) / (1024 * 1024); // Convert to MB
+    const memoryUsage =
+      Array.from(this.textureCache.values()).reduce(
+        (total, entry) => total + entry.size,
+        0
+      ) /
+      (1024 * 1024); // Convert to MB
 
     this.pipelineState.set({
       activeTextures: this.textureCache.size,

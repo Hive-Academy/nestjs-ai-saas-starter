@@ -55,7 +55,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-
       - name: Build libraries
         run: npx nx run-many -t build -p nestjs-chromadb,nestjs-neo4j
 

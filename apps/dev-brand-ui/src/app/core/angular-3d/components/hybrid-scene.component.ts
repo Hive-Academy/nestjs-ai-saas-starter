@@ -25,6 +25,7 @@ import {
   ChangeDetectionStrategy,
   OnInit,
   OnDestroy,
+  DestroyRef,
   ElementRef,
   viewChild,
 } from '@angular/core';
@@ -254,6 +255,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   readonly animationService = inject(AnimationService);
   readonly stateStore = inject(Angular3DStateStore);
   private readonly ngtStore = injectStore({ optional: true });
+  private readonly destroyRef = inject(DestroyRef);
 
   // Internal state management with signals
   private readonly _initialized = signal(false);
@@ -597,13 +599,15 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
    */
   async onCanvasCreated(event: any): Promise<void> {
     try {
-      console.log('Angular Three canvas created:', event);
       this._loadingMessage.set('Initializing foundation services...');
       this._loadingProgress.set(90);
 
-      // Pass the store to foundation service before initializing
-      if (this.ngtStore) {
-        this.angularThreeFoundation.setStore(this.ngtStore);
+      // The Angular Three created event IS the store
+      // It contains scene, camera, gl, and other properties directly
+      if (event) {
+        this.angularThreeFoundation.setStore(event);
+      } else {
+        console.error('No event received from Angular Three canvas creation');
       }
 
       // Initialize foundation service
@@ -735,7 +739,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
 
     // Window resize fallback
     fromEvent(window, 'resize')
-      .pipe(debounceTime(150), takeUntilDestroyed())
+      .pipe(debounceTime(150), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         const rect = containerElement.getBoundingClientRect();
         this.handleResize(rect.width, rect.height);

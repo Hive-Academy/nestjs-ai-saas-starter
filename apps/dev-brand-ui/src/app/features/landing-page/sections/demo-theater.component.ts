@@ -39,21 +39,23 @@ interface BusinessMetric {
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './demo-theater.component.html',
-  styles: [`
-    :host {
-      display: block;
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+      }
 
-    .container {
-      max-width: 1400px;
-    }
+      .container {
+        max-width: 1400px;
+      }
 
-    /* Smooth transitions for all interactive elements */
-    * {
-      transition-property: all;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    }
-  `]
+      /* Smooth transitions for all interactive elements */
+      * {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    `,
+  ],
 })
 export class DemoTheaterComponent implements OnInit, OnDestroy {
   @ViewChild('theatreBg', { static: true }) theatreBg!: ElementRef;
@@ -85,7 +87,9 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
   // User interaction state
   readonly currentInterruption = this.interruptionService.dialogData;
   readonly showApprovalPanel = signal(false);
-  readonly approvalStatus = signal<'pending' | 'approved' | 'rejected'>('pending');
+  readonly approvalStatus = signal<'pending' | 'approved' | 'rejected'>(
+    'pending'
+  );
   readonly approvalFeedback = signal('');
   protected userQuestion = '';
   protected interruptionResponse = '';
@@ -98,63 +102,69 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
     {
       id: 'strategy',
       title: 'Unified Memory Context Analysis',
-      description: 'Vector similarity (ChromaDB) + relationship expansion (Neo4j) for market intelligence',
+      description:
+        'Vector similarity (ChromaDB) + relationship expansion (Neo4j) for market intelligence',
       agent: 'Memory Fusion Agent',
       status: 'pending',
       duration: 4,
       icon: '🧠',
-      color: '#9333ea'
+      color: '#9333ea',
     },
     {
       id: 'generation',
       title: 'Multi-Agent Content Synthesis',
-      description: '@StreamToken coordination with role-based messaging and shared context',
+      description:
+        '@StreamToken coordination with role-based messaging and shared context',
       agent: 'Copywriter + SEO + Technical Agents',
       status: 'pending',
       duration: 6,
       icon: '⚡',
-      color: '#f59e0b'
+      color: '#f59e0b',
     },
     {
       id: 'compliance',
       title: 'Checkpoint & Validation Pipeline',
-      description: 'State persistence with brand compliance scoring and error recovery',
+      description:
+        'State persistence with brand compliance scoring and error recovery',
       agent: 'Compliance Validation Agent',
       status: 'pending',
       duration: 3,
       icon: '🔒',
-      color: '#06b6d4'
+      color: '#06b6d4',
     },
     {
       id: 'approval',
       title: 'Human-in-the-Loop Gate',
-      description: '@RequiresApproval with escalation strategies and timeout handling',
+      description:
+        '@RequiresApproval with escalation strategies and timeout handling',
       agent: 'HITL Oversight System',
       status: 'pending',
       duration: 0,
       icon: '👥',
-      color: '#ef4444'
+      color: '#ef4444',
     },
     {
       id: 'deployment',
       title: 'Streaming Deployment Pipeline',
-      description: 'Real-time progress tracking with WebSocket broadcasting across channels',
+      description:
+        'Real-time progress tracking with WebSocket broadcasting across channels',
       agent: 'Platform Distribution Agent',
       status: 'pending',
       duration: 4,
       icon: '🌐',
-      color: '#22c55e'
+      color: '#22c55e',
     },
     {
       id: 'monitoring',
       title: 'Time-Travel Analytics',
-      description: 'Deterministic replay capabilities with performance metrics and observability',
+      description:
+        'Deterministic replay capabilities with performance metrics and observability',
       agent: 'Monitoring & Time-Travel System',
       status: 'pending',
       duration: 2,
       icon: '📈',
-      color: '#8b5cf6'
-    }
+      color: '#8b5cf6',
+    },
   ]);
 
   readonly businessMetrics = signal<BusinessMetric[]>([
@@ -162,26 +172,26 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
       label: 'Content Production Speed',
       value: '10x faster',
       improvement: '+900%',
-      icon: '⚡'
+      icon: '⚡',
     },
     {
       label: 'Brand Compliance Rate',
       value: '95%',
       improvement: '+40%',
-      icon: '🛡️'
+      icon: '🛡️',
     },
     {
       label: 'Campaign ROI',
       value: '$2.3M',
       improvement: '+280%',
-      icon: '💰'
+      icon: '💰',
     },
     {
       label: 'Cost Reduction',
       value: '70%',
       improvement: '-$1.2M',
-      icon: '📉'
-    }
+      icon: '📉',
+    },
   ]);
 
   ngOnInit(): void {
@@ -193,7 +203,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     // Clean up subscriptions
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
 
     // Stop any running demo
     this.isRunning.set(false);
@@ -211,13 +221,13 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
 
     // Dispose of all background meshes
     if (this.backgroundMeshes) {
-      this.backgroundMeshes.forEach(mesh => {
+      this.backgroundMeshes.forEach((mesh) => {
         if (mesh.geometry) {
           mesh.geometry.dispose();
         }
         if (mesh.material) {
           if (Array.isArray(mesh.material)) {
-            mesh.material.forEach(material => material.dispose());
+            mesh.material.forEach((material) => material.dispose());
           } else {
             mesh.material.dispose();
           }
@@ -239,7 +249,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
           if (mesh.geometry) mesh.geometry.dispose();
           if (mesh.material) {
             if (Array.isArray(mesh.material)) {
-              mesh.material.forEach(material => material.dispose());
+              mesh.material.forEach((material) => material.dispose());
             } else {
               mesh.material.dispose();
             }
@@ -266,7 +276,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
 
     // Reset all steps
     const steps = this.workflowSteps();
-    steps.forEach(step => step.status = 'pending');
+    steps.forEach((step) => (step.status = 'pending'));
     this.workflowSteps.set([...steps]);
 
     try {
@@ -281,9 +291,10 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
 
   private async attemptRealWorkflow(): Promise<void> {
     const demoRequest = {
-      input: 'Create a comprehensive content marketing strategy for our AI-powered enterprise platform, including blog posts, social media content, and technical documentation that showcases our multi-agent workflow capabilities.',
+      input:
+        'Create a comprehensive content marketing strategy for our AI-powered enterprise platform, including blog posts, social media content, and technical documentation that showcases our multi-agent workflow capabilities.',
       demonstrationMode: 'enterprise' as const,
-      enableStreaming: true
+      enableStreaming: true,
     };
 
     console.log('🚀 Attempting to start real supervisor workflow...');
@@ -293,7 +304,8 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
         reject(new Error('Backend connection timeout'));
       }, 3000); // 3 second timeout
 
-      const streamSubscription = this.streamingService.startSupervisorShowcase(demoRequest)
+      const streamSubscription = this.streamingService
+        .startSupervisorShowcase(demoRequest)
         .subscribe({
           next: (update) => {
             clearTimeout(timeout);
@@ -312,7 +324,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
             this.demoStatus.set('Completed');
             this.isRunning.set(false);
             resolve();
-          }
+          },
         });
 
       this.subscriptions.push(streamSubscription);
@@ -344,7 +356,8 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
       if (step.id === 'generation') {
         const sampleContent = {
           type: 'Technical Content Suite',
-          title: 'Enterprise AI Platform: 40% Code Reduction with LangGraph Integration',
+          title:
+            'Enterprise AI Platform: 40% Code Reduction with LangGraph Integration',
           body: `
             ## Revolutionizing Development with Unified AI Orchestration
 
@@ -366,27 +379,38 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
             Experience the future of AI development with transparent durability,
             unified intelligence, and enterprise reliability.
           `,
-          channels: ['Technical Blog', 'Developer Portal', 'GitHub Documentation', 'LinkedIn Engineering'],
+          channels: [
+            'Technical Blog',
+            'Developer Portal',
+            'GitHub Documentation',
+            'LinkedIn Engineering',
+          ],
           metrics: {
             compliance: 94,
             seoScore: 97,
             readability: 'Technical',
-            keywords: ['LangGraph', 'Vector Database', 'Multi-Agent', 'TypeScript', 'Enterprise AI'],
+            keywords: [
+              'LangGraph',
+              'Vector Database',
+              'Multi-Agent',
+              'TypeScript',
+              'Enterprise AI',
+            ],
             estimatedReach: '25,000+',
-            engagementScore: 'High'
+            engagementScore: 'High',
           },
           codeExamples: {
             streaming: '@StreamToken() // Real-time token emission',
             checkpoint: '@RequiresApproval() // Human oversight gates',
-            memory: 'cascadeRetrieval(vector + graph) // Unified context'
-          }
+            memory: 'cascadeRetrieval(vector + graph) // Unified context',
+          },
         };
 
         this.generatedContent.set(sampleContent);
       }
 
       // Brief pause between steps
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
     this.demoStatus.set('Demo Completed Successfully');
@@ -397,7 +421,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
     const duration = step.duration * 1000; // Convert to milliseconds
     const startTime = Date.now();
 
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const updateProgress = () => {
         const elapsed = Date.now() - startTime;
         const progress = Math.min((elapsed / duration) * 100, 100);
@@ -413,8 +437,6 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
       updateProgress();
     });
   }
-
-
 
   // Removed - using real interruption system instead
 
@@ -477,7 +499,6 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
     }
   }
 
-
   private initBackground3D(): void {
     const container = this.theatreBg.nativeElement;
 
@@ -495,7 +516,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -507,23 +528,38 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
   private createNetworkVisualization(): void {
     // Create a network of connected nodes representing the AI workflow
     const nodePositions: [number, number, number][] = [
-      [-20, 15, -10], [0, 20, -15], [20, 15, -10],
-      [-25, 0, -5], [0, 0, -8], [25, 0, -5],
-      [-20, -15, -12], [0, -20, -15], [20, -15, -12]
+      [-20, 15, -10],
+      [0, 20, -15],
+      [20, 15, -10],
+      [-25, 0, -5],
+      [0, 0, -8],
+      [25, 0, -5],
+      [-20, -15, -12],
+      [0, -20, -15],
+      [20, -15, -12],
     ];
 
-    const colors = ['#8a2be2', '#ff69b4', '#00bfff', '#32cd32', '#ffd700', '#ff6347'];
+    const colors = [
+      '#8a2be2',
+      '#ff69b4',
+      '#00bfff',
+      '#32cd32',
+      '#ffd700',
+      '#ff6347',
+    ];
 
     nodePositions.forEach((pos, index) => {
       // Create node
       const nodeGeometry = new THREE.SphereGeometry(1.5, 16, 16);
       const nodeMaterial = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(colors[index % colors.length]),
-        emissive: new THREE.Color(colors[index % colors.length]).multiplyScalar(0.2),
+        emissive: new THREE.Color(colors[index % colors.length]).multiplyScalar(
+          0.2
+        ),
         transparent: true,
         opacity: 0.8,
         roughness: 0.1,
-        metalness: 0.9
+        metalness: 0.9,
       });
 
       const nodeMesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
@@ -531,7 +567,7 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
       nodeMesh.userData = {
         originalPosition: pos,
         floatOffset: index * 0.5,
-        pulseOffset: index * 0.3
+        pulseOffset: index * 0.3,
       };
 
       this.scene.add(nodeMesh);
@@ -570,11 +606,13 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
         const userData = mesh.userData;
 
         // Floating motion
-        mesh.position.y = userData['originalPosition'][1] +
+        mesh.position.y =
+          userData['originalPosition'][1] +
           Math.sin(elapsedTime * 0.8 + userData['floatOffset']) * 2;
 
         // Pulsing scale
-        const pulseScale = 1 + Math.sin(elapsedTime * 2 + userData['pulseOffset']) * 0.2;
+        const pulseScale =
+          1 + Math.sin(elapsedTime * 2 + userData['pulseOffset']) * 0.2;
         mesh.scale.setScalar(pulseScale);
 
         // Slow rotation
@@ -601,23 +639,35 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
 
   getInterruptionIcon(type: string): string {
     switch (type) {
-      case 'question': return '💬';
-      case 'clarification': return '❓';
-      case 'approval_request': return '✋';
-      case 'input_request': return '📝';
-      case 'correction': return '✏️';
-      default: return '🤖';
+      case 'question':
+        return '💬';
+      case 'clarification':
+        return '❓';
+      case 'approval_request':
+        return '✋';
+      case 'input_request':
+        return '📝';
+      case 'correction':
+        return '✏️';
+      default:
+        return '🤖';
     }
   }
 
   getInterruptionTitle(type: string): string {
     switch (type) {
-      case 'question': return 'Agent Question';
-      case 'clarification': return 'Clarification Needed';
-      case 'approval_request': return 'Approval Required';
-      case 'input_request': return 'Input Required';
-      case 'correction': return 'Correction Needed';
-      default: return 'Agent Interaction';
+      case 'question':
+        return 'Agent Question';
+      case 'clarification':
+        return 'Clarification Needed';
+      case 'approval_request':
+        return 'Approval Required';
+      case 'input_request':
+        return 'Input Required';
+      case 'correction':
+        return 'Correction Needed';
+      default:
+        return 'Agent Interaction';
     }
   }
 
@@ -644,13 +694,17 @@ export class DemoTheaterComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateStepStatus(nodeId: string, status: 'pending' | 'active' | 'completed'): void {
+  private updateStepStatus(
+    nodeId: string,
+    status: 'pending' | 'active' | 'completed'
+  ): void {
     if (!nodeId) return;
 
     const steps = this.workflowSteps();
-    const stepIndex = steps.findIndex(step =>
-      step.id === nodeId ||
-      step.title.toLowerCase().includes(nodeId.toLowerCase())
+    const stepIndex = steps.findIndex(
+      (step) =>
+        step.id === nodeId ||
+        step.title.toLowerCase().includes(nodeId.toLowerCase())
     );
 
     if (stepIndex >= 0) {

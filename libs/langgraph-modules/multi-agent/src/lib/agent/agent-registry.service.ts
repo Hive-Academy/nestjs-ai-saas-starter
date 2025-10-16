@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { 
-  AgentDefinition, 
+import {
+  AgentDefinition,
   AgentNotFoundError,
   AgentDefinitionSchema,
 } from '../interfaces/multi-agent.interface';
@@ -30,12 +30,14 @@ export class AgentRegistryService {
 
     // Check for duplicate registration
     if (this.agentRegistry.has(definition.id)) {
-      this.logger.warn(`Agent ${definition.id} is already registered, updating definition`);
+      this.logger.warn(
+        `Agent ${definition.id} is already registered, updating definition`
+      );
     }
 
     this.agentRegistry.set(definition.id, definition);
     this.agentHealth.set(definition.id, true);
-    
+
     this.logger.log(`Registered agent: ${definition.id} (${definition.name})`);
 
     this.eventEmitter.emit('agent.registered', {
@@ -97,7 +99,7 @@ export class AgentRegistryService {
    * Get agents by capability
    */
   getAgentsByCapability(capability: string): AgentDefinition[] {
-    return this.getAllAgents().filter(agent => {
+    return this.getAllAgents().filter((agent) => {
       const capabilities = agent.metadata?.capabilities;
       return Array.isArray(capabilities) && capabilities.includes(capability);
     });
@@ -128,9 +130,11 @@ export class AgentRegistryService {
    * Validate agents exist
    */
   validateAgentsExist(agentIds: readonly string[]): void {
-    const missingAgents = agentIds.filter(id => !this.hasAgent(id));
+    const missingAgents = agentIds.filter((id) => !this.hasAgent(id));
     if (missingAgents.length > 0) {
-      throw new AgentNotFoundError(`Agents not found: ${missingAgents.join(', ')}`);
+      throw new AgentNotFoundError(
+        `Agents not found: ${missingAgents.join(', ')}`
+      );
     }
   }
 
@@ -177,9 +181,7 @@ export class AgentRegistryService {
    * Get healthy agents only
    */
   getHealthyAgents(): AgentDefinition[] {
-    return this.getAllAgents().filter(agent => 
-      this.getAgentHealth(agent.id)
-    );
+    return this.getAllAgents().filter((agent) => this.getAgentHealth(agent.id));
   }
 
   /**
@@ -189,9 +191,9 @@ export class AgentRegistryService {
     const agentCount = this.agentRegistry.size;
     this.agentRegistry.clear();
     this.agentHealth.clear();
-    
+
     this.logger.log(`Cleared ${agentCount} agents from registry`);
-    
+
     this.eventEmitter.emit('agent.registry.cleared', {
       count: agentCount,
       timestamp: new Date().toISOString(),

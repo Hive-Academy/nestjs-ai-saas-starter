@@ -82,11 +82,17 @@ describe('MonitoringModule Integration Tests', () => {
     }).compile();
 
     // Get service instances
-    monitoringFacade = module.get<MonitoringFacadeService>(MonitoringFacadeService);
-    metricsCollector = module.get<MetricsCollectorService>(MetricsCollectorService);
+    monitoringFacade = module.get<MonitoringFacadeService>(
+      MonitoringFacadeService
+    );
+    metricsCollector = module.get<MetricsCollectorService>(
+      MetricsCollectorService
+    );
     alertingService = module.get<AlertingService>(AlertingService);
     healthCheck = module.get<HealthCheckService>(HealthCheckService);
-    performanceTracker = module.get<PerformanceTrackerService>(PerformanceTrackerService);
+    performanceTracker = module.get<PerformanceTrackerService>(
+      PerformanceTrackerService
+    );
     dashboardService = module.get<DashboardService>(DashboardService);
   });
 
@@ -107,7 +113,7 @@ describe('MonitoringModule Integration Tests', () => {
     it('should inject dependencies correctly (DI container validation)', () => {
       // Verify that facade service has access to all underlying services
       expect(monitoringFacade).toBeDefined();
-      
+
       // Test that services are properly connected by calling facade operations
       expect(async () => {
         await monitoringFacade.recordMetric('test.integration', 100);
@@ -125,7 +131,9 @@ describe('MonitoringModule Integration Tests', () => {
         ],
       }).compile();
 
-      const asyncFacade = asyncModule.get<MonitoringFacadeService>(MonitoringFacadeService);
+      const asyncFacade = asyncModule.get<MonitoringFacadeService>(
+        MonitoringFacadeService
+      );
       expect(asyncFacade).toBeInstanceOf(MonitoringFacadeService);
 
       await asyncModule.close();
@@ -142,7 +150,9 @@ describe('MonitoringModule Integration Tests', () => {
       }).compile();
 
       // Should be able to inject monitoring services in any module
-      const globalFacade = globalModule.get<MonitoringFacadeService>(MonitoringFacadeService);
+      const globalFacade = globalModule.get<MonitoringFacadeService>(
+        MonitoringFacadeService
+      );
       expect(globalFacade).toBeDefined();
 
       await globalModule.close();
@@ -151,15 +161,19 @@ describe('MonitoringModule Integration Tests', () => {
 
   describe('End-to-End Workflow Integration', () => {
     it('should handle complete monitoring workflow', async () => {
-      const testTags: MetricTags = { 
-        workflow: 'e2e-test', 
-        step: 'integration' 
+      const testTags: MetricTags = {
+        workflow: 'e2e-test',
+        step: 'integration',
       };
 
       // Step 1: Record metrics through facade
       await monitoringFacade.recordMetric('workflow.duration', 1250, testTags);
       await monitoringFacade.recordCounter('workflow.executions', 1, testTags);
-      await monitoringFacade.recordGauge('workflow.memory.usage', 256, testTags);
+      await monitoringFacade.recordGauge(
+        'workflow.memory.usage',
+        256,
+        testTags
+      );
 
       // Step 2: Track performance
       await performanceTracker.trackExecution('workflow.e2e.test', 1250, {
@@ -168,10 +182,14 @@ describe('MonitoringModule Integration Tests', () => {
       });
 
       // Step 3: Register and check health
-      const testHealthCheck: HealthCheckFunction = jest.fn().mockResolvedValue(true);
+      const testHealthCheck: HealthCheckFunction = jest
+        .fn()
+        .mockResolvedValue(true);
       await healthCheck.register('e2e-test-service', testHealthCheck);
-      
-      const serviceHealth = await monitoringFacade.getServiceHealth('e2e-test-service');
+
+      const serviceHealth = await monitoringFacade.getServiceHealth(
+        'e2e-test-service'
+      );
       expect(serviceHealth.state).toBe('healthy');
 
       // Step 4: Create alert rule
@@ -188,7 +206,9 @@ describe('MonitoringModule Integration Tests', () => {
           evaluationWindow: 60,
         },
         severity: 'warning',
-        channels: [{ type: 'custom', name: 'test-console', config: {}, enabled: true }],
+        channels: [
+          { type: 'custom', name: 'test-console', config: {}, enabled: true },
+        ],
         cooldownPeriod: 300,
         enabled: true,
         createdAt: new Date(),
@@ -210,7 +230,10 @@ describe('MonitoringModule Integration Tests', () => {
             title: 'Workflow Duration',
             query: {
               metric: 'workflow.duration',
-              timeRange: { start: new Date(Date.now() - 3600000), end: new Date() },
+              timeRange: {
+                start: new Date(Date.now() - 3600000),
+                end: new Date(),
+              },
               aggregation: 'avg',
               filters: testTags,
             },
@@ -224,11 +247,15 @@ describe('MonitoringModule Integration Tests', () => {
         updatedAt: new Date(),
       };
 
-      const dashboardId = await monitoringFacade.createDashboard(dashboardConfig);
+      const dashboardId = await monitoringFacade.createDashboard(
+        dashboardConfig
+      );
       expect(dashboardId).toBe('e2e-test-dashboard');
 
       // Step 6: Query dashboard data
-      const dashboardData = await monitoringFacade.getDashboardData(dashboardId);
+      const dashboardData = await monitoringFacade.getDashboardData(
+        dashboardId
+      );
       expect(dashboardData.dashboardId).toBe(dashboardId);
       expect(dashboardData.widgets).toHaveProperty('duration-widget');
 
@@ -251,11 +278,12 @@ describe('MonitoringModule Integration Tests', () => {
       // Generate high volume of monitoring data
       for (let i = 0; i < metricsCount; i++) {
         promises.push(
-          monitoringFacade.recordMetric(`high.throughput.metric.${i % 10}`, 
-            Math.random() * 1000, 
-            { 
+          monitoringFacade.recordMetric(
+            `high.throughput.metric.${i % 10}`,
+            Math.random() * 1000,
+            {
               batch: Math.floor(i / 100).toString(),
-              index: i.toString() 
+              index: i.toString(),
             }
           )
         );
@@ -265,12 +293,12 @@ describe('MonitoringModule Integration Tests', () => {
       await Promise.all(promises);
 
       const duration = Date.now() - startTime;
-      
+
       // Should handle 1000 metrics in reasonable time (< 5 seconds)
       expect(duration).toBeLessThan(5000);
 
       // Verify metrics were processed
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Allow for batch processing
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Allow for batch processing
       const stats = metricsCollector.getCollectorStats();
       expect(stats.processedMetrics).toBeGreaterThan(0);
     });
@@ -278,7 +306,7 @@ describe('MonitoringModule Integration Tests', () => {
     it('should maintain monitoring during service failures (Resilience)', async () => {
       // Record some metrics successfully
       await monitoringFacade.recordMetric('resilience.test', 100);
-      
+
       // Simulate backend failure
       const mockBackend = {
         initialize: jest.fn().mockResolvedValue(undefined),
@@ -293,8 +321,10 @@ describe('MonitoringModule Integration Tests', () => {
       await metricsCollector.registerBackend('failing-backend', mockBackend);
 
       // Should continue operating despite backend failure
-      await expect(monitoringFacade.recordMetric('resilience.test.2', 200)).resolves.toBeUndefined();
-      
+      await expect(
+        monitoringFacade.recordMetric('resilience.test.2', 200)
+      ).resolves.toBeUndefined();
+
       // Health checks should still work
       const health = await monitoringFacade.getSystemHealth();
       expect(health).toBeDefined();
@@ -307,16 +337,25 @@ describe('MonitoringModule Integration Tests', () => {
     it('should support concurrent monitoring operations safely', async () => {
       const concurrentOperations = [
         // Metrics recording
-        ...Array.from({ length: 50 }, (_, i) => 
-          monitoringFacade.recordMetric(`concurrent.test.${i}`, Math.random() * 100)
+        ...Array.from({ length: 50 }, (_, i) =>
+          monitoringFacade.recordMetric(
+            `concurrent.test.${i}`,
+            Math.random() * 100
+          )
         ),
         // Health checks
-        ...Array.from({ length: 10 }, (_, i) => 
-          healthCheck.register(`concurrent-service-${i}`, jest.fn().mockResolvedValue(true))
+        ...Array.from({ length: 10 }, (_, i) =>
+          healthCheck.register(
+            `concurrent-service-${i}`,
+            jest.fn().mockResolvedValue(true)
+          )
         ),
         // Performance tracking
-        ...Array.from({ length: 20 }, (_, i) => 
-          performanceTracker.trackExecution(`concurrent.perf.${i}`, 100 + Math.random() * 50)
+        ...Array.from({ length: 20 }, (_, i) =>
+          performanceTracker.trackExecution(
+            `concurrent.perf.${i}`,
+            100 + Math.random() * 50
+          )
         ),
       ];
 
@@ -339,7 +378,7 @@ describe('MonitoringModule Integration Tests', () => {
       await monitoringFacade.recordMetric(metricName, metricValue, tags);
 
       // Allow time for processing
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Query metric through dashboard service
       const dashboardQuery = {
@@ -356,7 +395,7 @@ describe('MonitoringModule Integration Tests', () => {
 
     it('should trigger alerts based on performance metrics', async () => {
       const metricName = 'performance.alert.test';
-      
+
       // Create alert rule for performance metric
       const alertRule: AlertRule = {
         id: 'perf-alert-test',
@@ -396,9 +435,11 @@ describe('MonitoringModule Integration Tests', () => {
 
     it('should integrate health checks with alerting system', async () => {
       const serviceName = 'health-alert-integration';
-      
+
       // Register a health check that will fail
-      const failingHealthCheck: HealthCheckFunction = jest.fn().mockResolvedValue(false);
+      const failingHealthCheck: HealthCheckFunction = jest
+        .fn()
+        .mockResolvedValue(false);
       await healthCheck.register(serviceName, failingHealthCheck);
 
       // Create alert rule for health check failures
@@ -455,23 +496,29 @@ describe('MonitoringModule Integration Tests', () => {
         imports: [MonitoringModule.forRoot(invalidConfig)],
       }).compile();
 
-      const facade = testModule.get<MonitoringFacadeService>(MonitoringFacadeService);
-      
+      const facade = testModule.get<MonitoringFacadeService>(
+        MonitoringFacadeService
+      );
+
       // Should still be able to record metrics (with fallback)
-      await expect(facade.recordMetric('recovery.test', 100)).resolves.toBeUndefined();
+      await expect(
+        facade.recordMetric('recovery.test', 100)
+      ).resolves.toBeUndefined();
 
       await testModule.close();
     });
 
     it('should maintain functionality when some services are degraded', async () => {
       // Simulate alerting service failure
-      jest.spyOn(alertingService, 'getActiveAlerts').mockRejectedValueOnce(
-        new Error('Alerting service degraded')
-      );
+      jest
+        .spyOn(alertingService, 'getActiveAlerts')
+        .mockRejectedValueOnce(new Error('Alerting service degraded'));
 
       // Other services should continue working
-      await expect(monitoringFacade.recordMetric('degraded.test', 100)).resolves.toBeUndefined();
-      
+      await expect(
+        monitoringFacade.recordMetric('degraded.test', 100)
+      ).resolves.toBeUndefined();
+
       const health = await monitoringFacade.getSystemHealth();
       expect(health).toBeDefined();
 
@@ -480,14 +527,16 @@ describe('MonitoringModule Integration Tests', () => {
       expect(alerts).toEqual([]);
 
       // Dashboard should continue working
-      const dashboardData = await monitoringFacade.getDashboardData('test-dashboard');
+      const dashboardData = await monitoringFacade.getDashboardData(
+        'test-dashboard'
+      );
       expect(dashboardData).toBeDefined();
     });
 
     it('should handle module shutdown gracefully', async () => {
       // Record some metrics before shutdown
       await monitoringFacade.recordMetric('shutdown.test', 100);
-      
+
       // Services should have cleanup methods
       expect(typeof metricsCollector.onModuleDestroy).toBe('function');
       expect(typeof alertingService.onModuleDestroy).toBe('function');
@@ -503,11 +552,17 @@ describe('MonitoringModule Integration Tests', () => {
   describe('Performance and Resource Usage Integration', () => {
     it('should monitor its own resource usage (Self-Monitoring)', async () => {
       const initialMemory = process.memoryUsage().heapUsed;
-      
+
       // Generate monitoring workload
       for (let i = 0; i < 100; i++) {
-        await monitoringFacade.recordMetric(`self.monitoring.${i}`, Math.random() * 100);
-        await performanceTracker.trackExecution(`self.perf.${i}`, 50 + Math.random() * 50);
+        await monitoringFacade.recordMetric(
+          `self.monitoring.${i}`,
+          Math.random() * 100
+        );
+        await performanceTracker.trackExecution(
+          `self.perf.${i}`,
+          50 + Math.random() * 50
+        );
       }
 
       // Force health checks
@@ -536,8 +591,13 @@ describe('MonitoringModule Integration Tests', () => {
       while (Date.now() - startTime < loadTestDuration) {
         await Promise.all([
           monitoringFacade.recordMetric('load.test', Math.random() * 100),
-          performanceTracker.trackExecution('load.perf', 10 + Math.random() * 20),
-          operationCount % 10 === 0 ? monitoringFacade.getSystemHealth() : Promise.resolve(),
+          performanceTracker.trackExecution(
+            'load.perf',
+            10 + Math.random() * 20
+          ),
+          operationCount % 10 === 0
+            ? monitoringFacade.getSystemHealth()
+            : Promise.resolve(),
         ]);
         operationCount++;
       }
@@ -553,15 +613,21 @@ describe('MonitoringModule Integration Tests', () => {
       // Generate load on different services
       const loadPromises = [
         // Metrics collection load
-        ...Array.from({ length: 200 }, (_, i) => 
-          monitoringFacade.recordMetric(`bottleneck.metrics.${i}`, Math.random() * 100)
+        ...Array.from({ length: 200 }, (_, i) =>
+          monitoringFacade.recordMetric(
+            `bottleneck.metrics.${i}`,
+            Math.random() * 100
+          )
         ),
         // Health check load
-        ...Array.from({ length: 20 }, (_, i) => 
-          healthCheck.register(`bottleneck-service-${i}`, jest.fn().mockResolvedValue(true))
+        ...Array.from({ length: 20 }, (_, i) =>
+          healthCheck.register(
+            `bottleneck-service-${i}`,
+            jest.fn().mockResolvedValue(true)
+          )
         ),
         // Dashboard query load
-        ...Array.from({ length: 10 }, () => 
+        ...Array.from({ length: 10 }, () =>
           monitoringFacade.getDashboardData('test-dashboard')
         ),
       ];
@@ -574,10 +640,14 @@ describe('MonitoringModule Integration Tests', () => {
       expect(duration).toBeLessThan(5000);
 
       // Check for any performance degradation indicators
-      const performanceInsights = await performanceTracker.analyzePerformanceTrend('monitoring.system.load', {
-        start: new Date(Date.now() - 300000), // 5 minutes ago
-        end: new Date(),
-      });
+      const performanceInsights =
+        await performanceTracker.analyzePerformanceTrend(
+          'monitoring.system.load',
+          {
+            start: new Date(Date.now() - 300000), // 5 minutes ago
+            end: new Date(),
+          }
+        );
 
       expect(performanceInsights).toBeDefined();
     });
@@ -597,7 +667,7 @@ describe('MonitoringModule Integration Tests', () => {
 
       // Update configuration (if supported)
       // Note: This would depend on implementation of runtime config updates
-      await expect(() => 
+      await expect(() =>
         monitoringFacade.updateConfiguration(newConfig)
       ).not.toThrow();
 

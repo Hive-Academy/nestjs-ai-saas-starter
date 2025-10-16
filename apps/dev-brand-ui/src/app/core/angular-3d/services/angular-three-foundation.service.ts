@@ -3,7 +3,7 @@ import {
   DestroyRef,
   inject,
   Injectable,
-  signal
+  signal,
 } from '@angular/core';
 import * as THREE from 'three';
 
@@ -21,7 +21,6 @@ interface HybridGroupConfig {
   readonly userData: Record<string, string | number | boolean>;
 }
 
-
 /**
  * Angular Three Foundation Service
  *
@@ -36,7 +35,6 @@ export class AngularThreeFoundationService {
   private ngtStore: any = null;
   private readonly destroyRef = inject(DestroyRef);
 
-
   // Foundation state - now managed by Angular Three with strict typing
   private readonly _isInitialized = signal(false);
   private readonly _canvasReady = signal(false);
@@ -48,15 +46,15 @@ export class AngularThreeFoundationService {
   // Angular Three computed properties for reactive access with strict typing
   readonly scene = computed((): THREE.Scene | null => {
     const store = this.getStore();
-    return store?.get('scene') || null;
+    return store?.scene || null;
   });
   readonly camera = computed((): THREE.Camera | null => {
     const store = this.getStore();
-    return store?.get('camera') || null;
+    return store?.camera || null;
   });
   readonly renderer = computed((): THREE.WebGLRenderer | null => {
     const store = this.getStore();
-    return store?.get('gl') || null;
+    return store?.gl || null;
   });
 
   // Performance monitoring with strict typing
@@ -70,12 +68,14 @@ export class AngularThreeFoundationService {
 
   // Computed derived state
   readonly ready = computed(() =>
-    Boolean(this.scene() && this.camera() && this.renderer() && this._isInitialized())
+    Boolean(
+      this.scene() && this.camera() && this.renderer() && this._isInitialized()
+    )
   );
 
   readonly aspectRatio = computed(() => {
     const store = this.getStore();
-    const size = store?.get('size');
+    const size = store?.size;
     return size ? size.width / size.height : 1;
   });
 
@@ -120,7 +120,7 @@ export class AngularThreeFoundationService {
       while (attempts < maxAttempts) {
         const store = this.getStore();
         if (!store) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           attempts++;
           continue;
         }
@@ -135,7 +135,7 @@ export class AngularThreeFoundationService {
           return true;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         attempts++;
       }
 
@@ -152,7 +152,9 @@ export class AngularThreeFoundationService {
   handleCanvasCreated(event: CanvasCreatedEvent): void {
     // Validate event structure with strict typing
     if (!event.scene || !event.camera || !event.gl) {
-      throw new Error('Invalid canvas creation event: missing required properties');
+      throw new Error(
+        'Invalid canvas creation event: missing required properties'
+      );
     }
 
     this._canvasReady.set(true);

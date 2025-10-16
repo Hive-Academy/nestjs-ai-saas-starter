@@ -44,7 +44,9 @@ export class HybridThreeSceneComponent implements OnInit {
   readonly shadowCameraBounds = input<number>(10);
 
   // Light position configuration signals
-  readonly directionalLightPosition = input<[number, number, number]>([5, 5, 5]);
+  readonly directionalLightPosition = input<[number, number, number]>([
+    5, 5, 5,
+  ]);
   readonly pointLightPosition = input<[number, number, number]>([-5, 5, 5]);
 
   // Light references for reactive updates
@@ -96,7 +98,9 @@ export class HybridThreeSceneComponent implements OnInit {
       // Create and configure point light
       this.createPointLight(scene);
 
-      console.log('Phase 2 Hybrid Three Scene initialized with reactive lighting');
+      console.log(
+        'Phase 2 Hybrid Three Scene initialized with reactive lighting'
+      );
     }
   }
 
@@ -139,7 +143,8 @@ export class HybridThreeSceneComponent implements OnInit {
   private setupDirectionalLightShadows(): void {
     if (!this.directionalLight) return;
 
-    const shadowCamera = this.directionalLight.shadow.camera as THREE.OrthographicCamera;
+    const shadowCamera = this.directionalLight.shadow
+      .camera as THREE.OrthographicCamera;
     const bounds = this.shadowCameraBounds();
 
     shadowCamera.near = this.shadowCameraNear();

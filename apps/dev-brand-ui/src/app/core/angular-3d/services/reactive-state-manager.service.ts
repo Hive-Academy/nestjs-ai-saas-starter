@@ -16,13 +16,27 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject } from 'rxjs';
-import { map, distinctUntilChanged, debounceTime, filter } from 'rxjs/operators';
+import {
+  map,
+  distinctUntilChanged,
+  debounceTime,
+  filter,
+} from 'rxjs/operators';
 
-import { Angular3DStateStore, type SceneObjectState, type AnimationState } from './angular-3d-state.store';
+import {
+  Angular3DStateStore,
+  type SceneObjectState,
+  type AnimationState,
+} from './angular-3d-state.store';
 
 // Enhanced event types for reactive communication
 export interface SceneGraphEvent {
-  readonly type: 'node-added' | 'node-removed' | 'node-updated' | 'animation-started' | 'animation-stopped';
+  readonly type:
+    | 'node-added'
+    | 'node-removed'
+    | 'node-updated'
+    | 'animation-started'
+    | 'animation-stopped';
   readonly source: string; // component ID
   readonly target?: string; // target component ID
   readonly data: unknown;
@@ -47,7 +61,11 @@ export interface SceneQuery {
 
 export interface ComponentRegistration {
   readonly componentId: string;
-  readonly componentType: 'scene-node' | 'geometry-node' | 'hybrid-scene' | 'animation-demo';
+  readonly componentType:
+    | 'scene-node'
+    | 'geometry-node'
+    | 'hybrid-scene'
+    | 'animation-demo';
   readonly sceneObjectId?: string;
   readonly isActive: boolean;
   readonly dependencies: readonly string[];
@@ -71,16 +89,22 @@ export class ReactiveStateManagerService {
   private readonly _componentMessages$ = new Subject<CrossComponentMessage>();
 
   // Component registry for coordination
-  private readonly componentRegistry = signal<Record<string, ComponentRegistration>>({});
+  private readonly componentRegistry = signal<
+    Record<string, ComponentRegistration>
+  >({});
 
   // Reactive selectors and computed properties
   readonly activeComponents = computed(() => {
-    return Object.values(this.componentRegistry()).filter(comp => comp.isActive);
+    return Object.values(this.componentRegistry()).filter(
+      (comp) => comp.isActive
+    );
   });
 
   readonly sceneObjectsByType = computed(() => {
     const state = this.stateStore.state();
-    const activeScene = state.activeSceneId ? state.scenes[state.activeSceneId] : null;
+    const activeScene = state.activeSceneId
+      ? state.scenes[state.activeSceneId]
+      : null;
 
     if (!activeScene) return {};
 
@@ -94,8 +118,8 @@ export class ReactiveStateManagerService {
 
   readonly animatedObjects = computed(() => {
     return Object.values(this.stateStore.state().animations)
-      .filter(anim => anim.isPlaying)
-      .map(anim => anim.target);
+      .filter((anim) => anim.isPlaying)
+      .map((anim) => anim.target);
   });
 
   readonly performanceStatus = computed(() => {
@@ -105,7 +129,8 @@ export class ReactiveStateManagerService {
     return {
       ...performance,
       componentCount,
-      averageLoad: componentCount > 0 ? performance.drawCalls / componentCount : 0,
+      averageLoad:
+        componentCount > 0 ? performance.drawCalls / componentCount : 0,
       isHealthy: performance.fps >= 30 && performance.frameTime < 33.33,
     };
   });
@@ -115,19 +140,19 @@ export class ReactiveStateManagerService {
   readonly componentMessages$ = this._componentMessages$.asObservable();
 
   readonly sceneUpdates$ = this.stateStore.getStateStream().pipe(
-    map(state => state.scenes),
+    map((state) => state.scenes),
     distinctUntilChanged(),
     debounceTime(16) // Throttle to ~60fps
   );
 
   readonly animationUpdates$ = this.stateStore.getStateStream().pipe(
-    map(state => state.animations),
+    map((state) => state.animations),
     distinctUntilChanged(),
     debounceTime(32) // Throttle animation updates
   );
 
   readonly performanceUpdates$ = this.stateStore.getStateStream().pipe(
-    map(state => state.performance),
+    map((state) => state.performance),
     distinctUntilChanged(),
     debounceTime(100) // Performance updates every 100ms
   );
@@ -139,9 +164,9 @@ export class ReactiveStateManagerService {
 
   // Component registration and lifecycle management
   registerComponent(registration: ComponentRegistration): void {
-    this.componentRegistry.update(registry => ({
+    this.componentRegistry.update((registry) => ({
       ...registry,
-      [registration.componentId]: registration
+      [registration.componentId]: registration,
     }));
 
     this.emitEvent({
@@ -154,7 +179,7 @@ export class ReactiveStateManagerService {
   unregisterComponent(componentId: string): void {
     const registration = this.componentRegistry()[componentId];
     if (registration) {
-      this.componentRegistry.update(registry => {
+      this.componentRegistry.update((registry) => {
         const { [componentId]: removed, ...remaining } = registry;
         return remaining;
       });
@@ -169,20 +194,26 @@ export class ReactiveStateManagerService {
       if (registration.sceneObjectId) {
         const activeSceneId = this.stateStore.state().activeSceneId;
         if (activeSceneId) {
-          this.stateStore.removeSceneObject(activeSceneId, registration.sceneObjectId);
+          this.stateStore.removeSceneObject(
+            activeSceneId,
+            registration.sceneObjectId
+          );
         }
       }
     }
   }
 
-  updateComponent(componentId: string, updates: Partial<ComponentRegistration>): void {
-    this.componentRegistry.update(registry => {
+  updateComponent(
+    componentId: string,
+    updates: Partial<ComponentRegistration>
+  ): void {
+    this.componentRegistry.update((registry) => {
       const existing = registry[componentId];
       if (!existing) return registry;
 
       return {
         ...registry,
-        [componentId]: { ...existing, ...updates }
+        [componentId]: { ...existing, ...updates },
       };
     });
   }
@@ -196,12 +227,16 @@ export class ReactiveStateManagerService {
 
     const objects = Object.values(state.scenes[sceneId].objects);
 
-    return objects.filter(obj => {
+    return objects.filter((obj) => {
       if (query.objectType && obj.type !== query.objectType) return false;
-      if (query.visible !== undefined && obj.visible !== query.visible) return false;
-      if (query.parent !== undefined && obj.parent !== query.parent) return false;
+      if (query.visible !== undefined && obj.visible !== query.visible)
+        return false;
+      if (query.parent !== undefined && obj.parent !== query.parent)
+        return false;
       if (query.hasAnimation) {
-        const hasAnim = Object.values(state.animations).some(anim => anim.target === obj.id);
+        const hasAnim = Object.values(state.animations).some(
+          (anim) => anim.target === obj.id
+        );
         if (!hasAnim) return false;
       }
       return true;
@@ -213,12 +248,16 @@ export class ReactiveStateManagerService {
     if (!component) return [];
 
     return component.dependencies
-      .map(depId => this.componentRegistry()[depId])
+      .map((depId) => this.componentRegistry()[depId])
       .filter(Boolean);
   }
 
-  getComponentsByType(type: ComponentRegistration['componentType']): ComponentRegistration[] {
-    return Object.values(this.componentRegistry()).filter(comp => comp.componentType === type);
+  getComponentsByType(
+    type: ComponentRegistration['componentType']
+  ): ComponentRegistration[] {
+    return Object.values(this.componentRegistry()).filter(
+      (comp) => comp.componentType === type
+    );
   }
 
   // Event communication methods
@@ -260,7 +299,11 @@ export class ReactiveStateManagerService {
   syncTransformWithStore(
     componentId: string,
     sceneObjectId: string,
-    transform: () => { position: readonly [number, number, number], rotation: readonly [number, number, number], scale: readonly [number, number, number] }
+    transform: () => {
+      position: readonly [number, number, number];
+      rotation: readonly [number, number, number];
+      scale: readonly [number, number, number];
+    }
   ): void {
     const activeSceneId = this.stateStore.state().activeSceneId;
     if (!activeSceneId) return;
@@ -278,7 +321,11 @@ export class ReactiveStateManagerService {
   syncAnimationWithStore(
     componentId: string,
     animationId: string,
-    animationState: () => { isPlaying: boolean, currentTime: number, duration: number }
+    animationState: () => {
+      isPlaying: boolean;
+      currentTime: number;
+      duration: number;
+    }
   ): void {
     effect(() => {
       const state = animationState();
@@ -293,7 +340,7 @@ export class ReactiveStateManagerService {
   // Observable factories for reactive streams
   createObjectStream(objectId: string): Observable<SceneObjectState | null> {
     return this.sceneUpdates$.pipe(
-      map(scenes => {
+      map((scenes) => {
         for (const scene of Object.values(scenes)) {
           if (scene.objects[objectId]) {
             return scene.objects[objectId];
@@ -305,23 +352,31 @@ export class ReactiveStateManagerService {
     );
   }
 
-  createAnimationStream(animationId: string): Observable<AnimationState | null> {
+  createAnimationStream(
+    animationId: string
+  ): Observable<AnimationState | null> {
     return this.animationUpdates$.pipe(
-      map(animations => animations[animationId] || null),
+      map((animations) => animations[animationId] || null),
       distinctUntilChanged()
     );
   }
 
-  createComponentMessagesStream(componentId: string): Observable<CrossComponentMessage> {
+  createComponentMessagesStream(
+    componentId: string
+  ): Observable<CrossComponentMessage> {
     return this.componentMessages$.pipe(
-      filter(message => message.to === componentId || message.to === '*')
+      filter((message) => message.to === componentId || message.to === '*')
     );
   }
 
   // Performance monitoring utilities
   trackComponentPerformance(
     componentId: string,
-    metrics: () => { renderTime?: number; memoryUsage?: number; complexity?: number }
+    metrics: () => {
+      renderTime?: number;
+      memoryUsage?: number;
+      complexity?: number;
+    }
   ): void {
     effect(() => {
       const componentMetrics = metrics();
@@ -367,7 +422,7 @@ export class ReactiveStateManagerService {
             type: 'performance-warning',
             fps: performance.fps,
             frameTime: performance.frameTime,
-            componentCount: performance.componentCount
+            componentCount: performance.componentCount,
           },
         });
       }
@@ -376,37 +431,50 @@ export class ReactiveStateManagerService {
 
   private setupEventHandlers(): void {
     // Handle component lifecycle events
-    this.events$.pipe(
-      takeUntilDestroyed(this.destroyRef),
-      filter(event => event.type === 'node-added' || event.type === 'node-removed')
-    ).subscribe(event => {
-      // Additional cleanup or initialization based on component lifecycle
-      if (event.type === 'node-removed') {
-        // Perform any cross-component cleanup
-        this.cleanupComponentDependencies(event.source);
-      }
-    });
+    this.events$
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        filter(
+          (event) =>
+            event.type === 'node-added' || event.type === 'node-removed'
+        )
+      )
+      .subscribe((event) => {
+        // Additional cleanup or initialization based on component lifecycle
+        if (event.type === 'node-removed') {
+          // Perform any cross-component cleanup
+          this.cleanupComponentDependencies(event.source);
+        }
+      });
 
     // Handle animation events
-    this.events$.pipe(
-      takeUntilDestroyed(this.destroyRef),
-      filter(event => event.type === 'animation-started' || event.type === 'animation-stopped')
-    ).subscribe(event => {
-      // Coordinate animation states across components
-      this.coordinateAnimations(event);
-    });
+    this.events$
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        filter(
+          (event) =>
+            event.type === 'animation-started' ||
+            event.type === 'animation-stopped'
+        )
+      )
+      .subscribe((event) => {
+        // Coordinate animation states across components
+        this.coordinateAnimations(event);
+      });
   }
 
   private cleanupComponentDependencies(componentId: string): void {
     // Remove component from other components' dependency lists
-    this.componentRegistry.update(registry => {
+    this.componentRegistry.update((registry) => {
       const updated = { ...registry };
 
-      Object.keys(updated).forEach(id => {
+      Object.keys(updated).forEach((id) => {
         if (updated[id].dependencies.includes(componentId)) {
           updated[id] = {
             ...updated[id],
-            dependencies: updated[id].dependencies.filter(dep => dep !== componentId)
+            dependencies: updated[id].dependencies.filter(
+              (dep) => dep !== componentId
+            ),
           };
         }
       });
@@ -417,13 +485,16 @@ export class ReactiveStateManagerService {
 
   private coordinateAnimations(event: SceneGraphEvent): void {
     // Implement cross-component animation coordination logic
-    const relatedComponents = this.getComponentsByType('geometry-node')
-      .filter(comp => comp.isActive);
+    const relatedComponents = this.getComponentsByType('geometry-node').filter(
+      (comp) => comp.isActive
+    );
 
     // Could implement things like:
     // - Animation sequencing based on event.data
     // - Performance-based animation throttling
     // - Cross-component animation synchronization
-    console.log(`Animation coordination for event: ${event.type} from ${event.source} - affecting ${relatedComponents.length} components`);
+    console.log(
+      `Animation coordination for event: ${event.type} from ${event.source} - affecting ${relatedComponents.length} components`
+    );
   }
 }

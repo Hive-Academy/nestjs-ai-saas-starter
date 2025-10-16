@@ -655,6 +655,7 @@ async process(context: TaskExecutionContext) { }
 ```
 
 **Two Patterns Available**:
+
 - **Task-Based**: `@Entrypoint` + `@Task` (dependency-driven, automatic edges)
 - **Node-Based**: `@Node` + `@Edge` (graph-driven, explicit edges)
 
@@ -768,18 +769,19 @@ export class MyWorkflow extends DeclarativeWorkflowBase {
 
 ### Pattern Comparison
 
-| Feature | Task-Based | Node-Based |
-|---------|-----------|------------|
-| **Decorators** | `@Entrypoint` + `@Task` | `@Node` + `@Edge` |
-| **Edge Creation** | Automatic from `dependsOn` | Explicit with `@Edge` |
-| **Best For** | Linear/sequential flows | Complex routing/branching |
-| **Boilerplate** | Less (no edge definitions) | More (explicit edges) |
-| **Control** | Dependency-driven | Full graph control |
-| **Method Signature** | `(context: TaskExecutionContext)` | `(state: WorkflowState)` |
+| Feature              | Task-Based                        | Node-Based                |
+| -------------------- | --------------------------------- | ------------------------- |
+| **Decorators**       | `@Entrypoint` + `@Task`           | `@Node` + `@Edge`         |
+| **Edge Creation**    | Automatic from `dependsOn`        | Explicit with `@Edge`     |
+| **Best For**         | Linear/sequential flows           | Complex routing/branching |
+| **Boilerplate**      | Less (no edge definitions)        | More (explicit edges)     |
+| **Control**          | Dependency-driven                 | Full graph control        |
+| **Method Signature** | `(context: TaskExecutionContext)` | `(state: WorkflowState)`  |
 
 ### Cross-Cutting Decorators (Work with Both Patterns)
 
 The following decorators work with **both** task-based and node-based patterns:
+
 - `@Tool` - Register methods as LangGraph tools
 - `@RequiresApproval` - Human-in-the-loop approval
 - `@StreamToken` - Token-level streaming for LLM responses

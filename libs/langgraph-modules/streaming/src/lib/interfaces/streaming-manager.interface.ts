@@ -9,9 +9,9 @@ export interface IInitializableService {
 
 /**
  * StreamingManager Interface - User-Controlled Initialization Pattern
- * 
+ *
  * This interface provides a clean contract for consumer applications to control
- * when and how streaming services are initialized, removing the need for 
+ * when and how streaming services are initialized, removing the need for
  * problematic auto-initialization during NestJS lifecycle hooks.
  */
 

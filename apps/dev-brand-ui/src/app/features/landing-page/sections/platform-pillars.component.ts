@@ -50,14 +50,13 @@ interface PlatformPillar {
         </p>
       </div>
 
-      <div
-        class="absolute inset-0 top-16"
-        #sceneContainer
-      ></div>
+      <div class="absolute inset-0 top-16" #sceneContainer></div>
 
       <!-- Instructions overlay -->
       <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div class="bg-black/40 backdrop-blur-lg rounded-full px-6 py-3 border border-white/20">
+        <div
+          class="bg-black/40 backdrop-blur-lg rounded-full px-6 py-3 border border-white/20"
+        >
           <p class="text-white/70 text-sm text-center">
             Move mouse to explore • Click pillars to focus
           </p>
@@ -78,7 +77,6 @@ interface PlatformPillar {
           background-position: 0% 50%;
         }
       }
-
 
       @keyframes slideIn {
         from {
@@ -304,7 +302,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     this.pillars.forEach((pillar, index) => {
       // Create subtle, secondary geometric shapes - SMALLER and more transparent
       let geometry: THREE.BufferGeometry;
-      
+
       // Smaller, more subtle shapes that support the content
       switch (index) {
         case 0: // Orchestration - Crystalline structure
@@ -438,7 +436,12 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     const pillarColor = new THREE.Color(pillar.color);
     gradient.addColorStop(0, `rgba(15, 15, 35, 0.95)`);
-    gradient.addColorStop(0.3, `rgba(${Math.floor(pillarColor.r * 60)}, ${Math.floor(pillarColor.g * 60)}, ${Math.floor(pillarColor.b * 60)}, 0.9)`);
+    gradient.addColorStop(
+      0.3,
+      `rgba(${Math.floor(pillarColor.r * 60)}, ${Math.floor(
+        pillarColor.g * 60
+      )}, ${Math.floor(pillarColor.b * 60)}, 0.9)`
+    );
     gradient.addColorStop(1, `rgba(10, 10, 20, 0.95)`);
 
     // Fill background
@@ -446,7 +449,9 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     ctx.fillRect(0, 0, width, height);
 
     // Add subtle grid pattern
-    ctx.strokeStyle = `rgba(${Math.floor(pillarColor.r * 255)}, ${Math.floor(pillarColor.g * 255)}, ${Math.floor(pillarColor.b * 255)}, 0.1)`;
+    ctx.strokeStyle = `rgba(${Math.floor(pillarColor.r * 255)}, ${Math.floor(
+      pillarColor.g * 255
+    )}, ${Math.floor(pillarColor.b * 255)}, 0.1)`;
     ctx.lineWidth = 1;
     const gridSize = 20;
     for (let x = 0; x <= width; x += gridSize) {
@@ -469,15 +474,27 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     ctx.strokeRect(8, 8, width - 16, height - 16);
 
     // Add inner glow border
-    ctx.strokeStyle = `rgba(${Math.floor(pillarColor.r * 255)}, ${Math.floor(pillarColor.g * 255)}, ${Math.floor(pillarColor.b * 255)}, 0.3)`;
+    ctx.strokeStyle = `rgba(${Math.floor(pillarColor.r * 255)}, ${Math.floor(
+      pillarColor.g * 255
+    )}, ${Math.floor(pillarColor.b * 255)}, 0.3)`;
     ctx.lineWidth = 2;
     ctx.strokeRect(12, 12, width - 24, height - 24);
 
     // Header section with enhanced styling
     const headerHeight = 200;
     const headerGradient = ctx.createLinearGradient(0, 20, 0, headerHeight);
-    headerGradient.addColorStop(0, `rgba(${Math.floor(pillarColor.r * 100)}, ${Math.floor(pillarColor.g * 100)}, ${Math.floor(pillarColor.b * 100)}, 0.3)`);
-    headerGradient.addColorStop(1, `rgba(${Math.floor(pillarColor.r * 50)}, ${Math.floor(pillarColor.g * 50)}, ${Math.floor(pillarColor.b * 50)}, 0.1)`);
+    headerGradient.addColorStop(
+      0,
+      `rgba(${Math.floor(pillarColor.r * 100)}, ${Math.floor(
+        pillarColor.g * 100
+      )}, ${Math.floor(pillarColor.b * 100)}, 0.3)`
+    );
+    headerGradient.addColorStop(
+      1,
+      `rgba(${Math.floor(pillarColor.r * 50)}, ${Math.floor(
+        pillarColor.g * 50
+      )}, ${Math.floor(pillarColor.b * 50)}, 0.1)`
+    );
     ctx.fillStyle = headerGradient;
     ctx.fillRect(20, 20, width - 40, headerHeight);
 
@@ -502,18 +519,18 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     ctx.font = '28px "Segoe UI", Arial, sans-serif';
     ctx.fillStyle = '#e0e0e0';
     ctx.textAlign = 'center';
-    
+
     // Enhanced word wrap with better spacing
     const words = pillar.description.split(' ');
     let line = '';
     let y = 320;
     const lineHeight = 40;
-    
+
     for (let n = 0; n < words.length; n++) {
       const testLine = line + words[n] + ' ';
       const metrics = ctx.measureText(testLine);
       const testWidth = metrics.width;
-      
+
       if (testWidth > width - 80 && n > 0) {
         ctx.fillText(line, width / 2, y);
         line = words[n] + ' ';
@@ -526,7 +543,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
 
     // Features section with enhanced styling
     const featuresStartY = y + 80;
-    
+
     // Features header
     ctx.font = 'bold 32px "Segoe UI", Arial, sans-serif';
     ctx.fillStyle = '#ffffff';
@@ -537,14 +554,14 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     ctx.font = '24px "Segoe UI", Arial, sans-serif';
     ctx.fillStyle = '#c0c0c0';
     ctx.textAlign = 'left';
-    
+
     let featureY = featuresStartY + 60;
     pillar.features.forEach((feature, index) => {
       if (featureY < height - 80) {
         // Feature bullet point with pillar color
         ctx.fillStyle = pillarColor.getStyle();
         ctx.fillRect(60, featureY - 12, 8, 8);
-        
+
         // Feature text
         ctx.fillStyle = '#c0c0c0';
         ctx.fillText(feature, 90, featureY);
@@ -577,7 +594,7 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       const cardWidth = 8;
       const cardHeight = 10;
       const cardGeometry = new THREE.PlaneGeometry(cardWidth, cardHeight);
-      
+
       // Create premium card material - high visibility and quality
       const cardMaterial = new THREE.MeshPhysicalMaterial({
         map: cardTexture,
@@ -595,19 +612,19 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
 
       // Create card mesh
       const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
-      
+
       // Position cards as PRIMARY elements
       const cardGroup = new THREE.Group();
       cardMesh.position.set(0, 0, 0);
       cardMesh.userData = { pillarId: pillar.id, isCard: true };
-      
+
       // Position cards prominently in front
       cardGroup.position.set(
         pillar.position[0],
         pillar.position[1] + 1, // Lower, more accessible
-        pillar.position[2] - 3  // Closer to camera - CARDS ARE PRIMARY
+        pillar.position[2] - 3 // Closer to camera - CARDS ARE PRIMARY
       );
-      
+
       // Optimal rotation for readability
       cardGroup.rotation.x = -Math.PI / 12; // Subtle tilt for readability
       cardGroup.rotation.y = index * 0.1; // Gentle spread
@@ -615,7 +632,10 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       cardGroup.add(cardMesh);
 
       // Enhanced glow/border effect with multiple layers
-      const borderGeometry = new THREE.PlaneGeometry(cardWidth + 0.4, cardHeight + 0.4);
+      const borderGeometry = new THREE.PlaneGeometry(
+        cardWidth + 0.4,
+        cardHeight + 0.4
+      );
       const borderMaterial = new THREE.MeshBasicMaterial({
         color: new THREE.Color(pillar.color),
         transparent: true,
@@ -628,7 +648,10 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
       cardGroup.add(borderMesh);
 
       // Add subtle outer glow
-      const outerGlowGeometry = new THREE.PlaneGeometry(cardWidth + 0.8, cardHeight + 0.8);
+      const outerGlowGeometry = new THREE.PlaneGeometry(
+        cardWidth + 0.8,
+        cardHeight + 0.8
+      );
       const outerGlowMaterial = new THREE.MeshBasicMaterial({
         color: new THREE.Color(pillar.color),
         transparent: true,
@@ -636,7 +659,10 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending,
       });
-      const outerGlowMesh = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
+      const outerGlowMesh = new THREE.Mesh(
+        outerGlowGeometry,
+        outerGlowMaterial
+      );
       outerGlowMesh.position.z = -0.04;
       cardGroup.add(outerGlowMesh);
 
@@ -666,15 +692,15 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.sceneInstance.camera);
-    
+
     // Check both pillars and cards for interaction
     const interactableObjects: THREE.Object3D[] = [
       ...Array.from(this.pillarMeshes.values()),
     ];
-    
+
     // Add card meshes to interactable objects
-    this.cardMeshes.forEach(cardGroup => {
-      cardGroup.children.forEach(child => {
+    this.cardMeshes.forEach((cardGroup) => {
+      cardGroup.children.forEach((child) => {
         if (child.userData['isCard']) {
           interactableObjects.push(child);
         }
@@ -701,15 +727,15 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouse, this.sceneInstance.camera);
-    
+
     // Check both pillars and cards for click interaction
     const interactableObjects: THREE.Object3D[] = [
       ...Array.from(this.pillarMeshes.values()),
     ];
-    
+
     // Add card meshes to interactable objects
-    this.cardMeshes.forEach(cardGroup => {
-      cardGroup.children.forEach(child => {
+    this.cardMeshes.forEach((cardGroup) => {
+      cardGroup.children.forEach((child) => {
         if (child.userData['isCard']) {
           interactableObjects.push(child);
         }
@@ -728,11 +754,11 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     const time = performance.now() * 0.001;
 
     this.pillarMeshes.forEach((mesh, pillarId) => {
-      const pillarIndex = this.pillars.findIndex(p => p.id === pillarId);
-      
+      const pillarIndex = this.pillars.findIndex((p) => p.id === pillarId);
+
       // Gentle floating animation
       mesh.position.y = 3 + Math.sin(time * 0.8 + pillarIndex * 0.5) * 0.3;
-      
+
       // Slow elegant rotation
       mesh.rotation.y = time * 0.1 + pillarIndex * 0.2;
       mesh.rotation.x = Math.sin(time * 0.5 + pillarIndex) * 0.1;
@@ -746,7 +772,8 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
         // Enhanced glow on selection
         const glow = this.glowEffects.get(pillarId);
         if (glow) {
-          (glow.material as THREE.MeshBasicMaterial).opacity = 0.15 + Math.sin(time * 3) * 0.05;
+          (glow.material as THREE.MeshBasicMaterial).opacity =
+            0.15 + Math.sin(time * 3) * 0.05;
           glow.scale.setScalar(1.4 + Math.sin(time * 2) * 0.1);
         }
       } else {
@@ -769,37 +796,39 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
 
     // Animate 3D cards
     this.cardMeshes.forEach((cardGroup, pillarId) => {
-      const pillarIndex = this.pillars.findIndex(p => p.id === pillarId);
-      
+      const pillarIndex = this.pillars.findIndex((p) => p.id === pillarId);
+
       // Gentle floating for cards
       cardGroup.position.y = 1 + Math.sin(time * 0.6 + pillarIndex * 0.3) * 0.2;
-      
+
       // Subtle rotation
       cardGroup.rotation.z = Math.sin(time * 0.4 + pillarIndex) * 0.02;
-      
+
       // Enhanced effects when pillar is active
       if (this.activePillar() === pillarId) {
         // Bring card forward and scale slightly
         cardGroup.position.z = -4 + Math.sin(time * 2) * 0.8;
         cardGroup.scale.setScalar(1.15 + Math.sin(time * 3) * 0.05);
-        
+
         // Enhanced glow on all border layers
         const borderMesh = cardGroup.children[1] as THREE.Mesh;
         const outerGlowMesh = cardGroup.children[2] as THREE.Mesh;
-        
+
         if (borderMesh) {
-          (borderMesh.material as THREE.MeshBasicMaterial).opacity = 0.7 + Math.sin(time * 4) * 0.2;
+          (borderMesh.material as THREE.MeshBasicMaterial).opacity =
+            0.7 + Math.sin(time * 4) * 0.2;
         }
         if (outerGlowMesh) {
-          (outerGlowMesh.material as THREE.MeshBasicMaterial).opacity = 0.3 + Math.sin(time * 5) * 0.15;
+          (outerGlowMesh.material as THREE.MeshBasicMaterial).opacity =
+            0.3 + Math.sin(time * 5) * 0.15;
         }
       } else {
         cardGroup.position.z = -6;
         cardGroup.scale.setScalar(1);
-        
+
         const borderMesh = cardGroup.children[1] as THREE.Mesh;
         const outerGlowMesh = cardGroup.children[2] as THREE.Mesh;
-        
+
         if (borderMesh) {
           (borderMesh.material as THREE.MeshBasicMaterial).opacity = 0.4;
         }
@@ -807,21 +836,24 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
           (outerGlowMesh.material as THREE.MeshBasicMaterial).opacity = 0.15;
         }
       }
-      
+
       // Mouse-responsive movement
       if (this.mouse.x !== 0 || this.mouse.y !== 0) {
         const mouseInfluence = 0.5;
-        cardGroup.rotation.y = (pillarIndex * 0.1) + (this.mouse.x * mouseInfluence * 0.3);
-        cardGroup.rotation.x = -Math.PI / 12 + (this.mouse.y * mouseInfluence * 0.2);
+        cardGroup.rotation.y =
+          pillarIndex * 0.1 + this.mouse.x * mouseInfluence * 0.3;
+        cardGroup.rotation.x =
+          -Math.PI / 12 + this.mouse.y * mouseInfluence * 0.2;
       }
     });
 
     // Gentle ambient particle rotation for subtle movement
     if (this.ambientParticles) {
       this.ambientParticles.rotation.y += 0.002;
-      
+
       // Subtle opacity animation for breathing effect
-      const particleMaterial = this.ambientParticles.material as THREE.PointsMaterial;
+      const particleMaterial = this.ambientParticles
+        .material as THREE.PointsMaterial;
       particleMaterial.opacity = 0.3 + Math.sin(time * 0.5) * 0.1;
     }
   }
@@ -948,9 +980,9 @@ export class PlatformPillarsComponent implements OnInit, OnDestroy {
     this.statusIndicators.clear();
     this.glowEffects.clear();
     this.cardMeshes.clear();
-    
+
     // Dispose card textures
-    this.cardTextures.forEach(texture => {
+    this.cardTextures.forEach((texture) => {
       texture.dispose();
     });
     this.cardTextures.clear();

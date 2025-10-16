@@ -12,7 +12,6 @@ permissions:
   checks: write
 
 jobs:
-
   security:
     runs-on: ubuntu-latest
 

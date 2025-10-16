@@ -59,8 +59,7 @@
 
 ```typescript
 // Generic state interface with typed metadata
-interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
-  extends WorkflowState {
+interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends WorkflowState {
   metadata: TMetadata; // Strongly typed instead of Record<string, unknown>
 }
 
@@ -103,14 +102,16 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
       type: config.type || detectAgentType(target),
 
       // Workflow defaults for workflow-agent type
-      workflow: config.workflow ? {
-        streaming: config.workflow.streaming ?? true,
-        confidenceThreshold: config.workflow.confidenceThreshold ?? 0.7,
-        enableErrorRecovery: config.workflow.enableErrorRecovery ?? true,
-        internalTimeout: config.workflow.internalTimeout ?? 60000,
-        maxInternalRetries: config.workflow.maxInternalRetries ?? 2,
-        ...config.workflow, // Explicit config overrides defaults
-      } : undefined,
+      workflow: config.workflow
+        ? {
+            streaming: config.workflow.streaming ?? true,
+            confidenceThreshold: config.workflow.confidenceThreshold ?? 0.7,
+            enableErrorRecovery: config.workflow.enableErrorRecovery ?? true,
+            internalTimeout: config.workflow.internalTimeout ?? 60000,
+            maxInternalRetries: config.workflow.maxInternalRetries ?? 2,
+            ...config.workflow, // Explicit config overrides defaults
+          }
+        : undefined,
 
       ...config, // All explicit config takes precedence
     };
@@ -149,10 +150,7 @@ class CentralRegistryService {
     for (const toolName of requestedTools) {
       if (!this.tools.has(toolName)) {
         const available = Array.from(this.tools.keys()).join(', ');
-        throw new Error(
-          `Agent '${agentConfig.id}' requires tool '${toolName}' ` +
-          `but it is not registered. Available tools: ${available}`
-        );
+        throw new Error(`Agent '${agentConfig.id}' requires tool '${toolName}' ` + `but it is not registered. Available tools: ${available}`);
       }
     }
   }
@@ -244,8 +242,7 @@ export interface GitHubAnalyzerMetadata extends WorkflowAgentMetadata {
 }
 
 // 2. Typed state interface (new file)
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
-  extends WorkflowState {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends WorkflowState {
   metadata: TMetadata; // Generic instead of Record<string, unknown>
 }
 
@@ -255,12 +252,8 @@ export interface TaskExecutionContext<TState = WorkflowState> {
 }
 
 // 4. Agent usage (update existing)
-export class GitHubCodeAnalyzerAgent
-  extends DeclarativeWorkflowBase<TypedWorkflowAgentState<GitHubAnalyzerMetadata>> {
-
-  async nodeFunction(
-    context: TaskExecutionContext<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>> {
+export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<GitHubAnalyzerMetadata>> {
+  async nodeFunction(context: TaskExecutionContext<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>): Promise<TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>> {
     // Type-safe access - no casting needed
     const username = context.state.metadata.githubUsername; // string
     const achievements = context.state.metadata.achievements; // Achievement[] | undefined
@@ -469,7 +462,7 @@ describe('Agent Decorator - Workflow Config', () => {
   it('should set workflow config with correct metadata key', () => {
     @Agent({
       id: 'test-agent',
-      workflow: { streaming: true, confidenceThreshold: 0.8 }
+      workflow: { streaming: true, confidenceThreshold: 0.8 },
     })
     class TestAgent {}
 
@@ -662,7 +655,7 @@ describe('Agent Decorator - Smart Defaults', () => {
     @Agent({
       id: 'custom-id',
       name: 'Custom Name',
-      workflow: { streaming: false, confidenceThreshold: 0.9 }
+      workflow: { streaming: false, confidenceThreshold: 0.9 },
     })
     class TestAgent {}
 
@@ -868,8 +861,7 @@ import type { WorkflowState } from '@hive-academy/langgraph-core';
  *
  * Evidence: AGENT_ARCHITECTURE_ANALYSIS.md Lines 159-174
  */
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
-  extends WorkflowState {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends WorkflowState {
   messages: BaseMessage[];
   next?: string;
   task?: string;
@@ -1077,15 +1069,15 @@ async initializeGitHubAnalysis(
 
 ```typescript
 // BEFORE - Find and remove these patterns:
-state.metadata?.githubUsername as string
-state.metadata?.achievements as Achievement[]
-state.metadata?.brandData as BrandData
+state.metadata?.githubUsername as string;
+state.metadata?.achievements as Achievement[];
+state.metadata?.brandData as BrandData;
 // ... all type casts throughout the agent
 
 // AFTER - Direct access:
-state.metadata.githubUsername // TypeScript knows it's string
-state.metadata.achievements // TypeScript knows it's Achievement[] | undefined
-state.metadata.brandData // TypeScript knows it's BrandData | undefined
+state.metadata.githubUsername; // TypeScript knows it's string
+state.metadata.achievements; // TypeScript knows it's Achievement[] | undefined
+state.metadata.brandData; // TypeScript knows it's BrandData | undefined
 ```
 
 **Detailed Agent-Specific Changes**:
@@ -1228,8 +1220,8 @@ describe('CentralRegistryService - Tool Validation', () => {
 
   it('should allow agent registration when all tools exist', () => {
     // Register tools first
-    service.registerTool({ name: 'github-analyzer', /* ... */ });
-    service.registerTool({ name: 'achievement-extractor', /* ... */ });
+    service.registerTool({ name: 'github-analyzer' /* ... */ });
+    service.registerTool({ name: 'achievement-extractor' /* ... */ });
 
     // Register agent requesting those tools
     expect(() => {
@@ -1243,7 +1235,7 @@ describe('CentralRegistryService - Tool Validation', () => {
 
   it('should throw descriptive error when tools are missing', () => {
     // Register only one tool
-    service.registerTool({ name: 'github-analyzer', /* ... */ });
+    service.registerTool({ name: 'github-analyzer' /* ... */ });
 
     // Try to register agent requesting missing tool
     expect(() => {
@@ -1256,8 +1248,8 @@ describe('CentralRegistryService - Tool Validation', () => {
   });
 
   it('should list available tools in error message', () => {
-    service.registerTool({ name: 'tool-1', /* ... */ });
-    service.registerTool({ name: 'tool-2', /* ... */ });
+    service.registerTool({ name: 'tool-1' /* ... */ });
+    service.registerTool({ name: 'tool-2' /* ... */ });
 
     expect(() => {
       service.registerAgent({
@@ -1336,11 +1328,7 @@ describe('Agent Architecture Fixes - Integration Tests', () => {
           enableStreaming: true,
         }),
         WorkflowEngineModule.forRoot({
-          agents: [
-            GitHubCodeAnalyzerAgent,
-            PersonalBrandStrategistAgent,
-            ContentCreatorAgent,
-          ],
+          agents: [GitHubCodeAnalyzerAgent, PersonalBrandStrategistAgent, ContentCreatorAgent],
           tools: [GitHubIntegrationTools, WebResearchTools],
         }),
       ],
@@ -1450,7 +1438,7 @@ describe('Agent Architecture Fixes - Integration Tests', () => {
     it('should allow explicit config to override defaults', () => {
       @Agent({
         id: 'custom-id',
-        workflow: { streaming: false, confidenceThreshold: 0.9 }
+        workflow: { streaming: false, confidenceThreshold: 0.9 },
       })
       class CustomAgent extends DeclarativeWorkflowBase {}
 
@@ -1467,7 +1455,7 @@ describe('Agent Architecture Fixes - Integration Tests', () => {
       const requestedTools = config.tools || [];
 
       // All requested tools should be registered
-      requestedTools.forEach(toolName => {
+      requestedTools.forEach((toolName) => {
         expect(module.get('REGISTERED_TOOLS')).toContain(toolName);
       });
     });
@@ -1475,7 +1463,7 @@ describe('Agent Architecture Fixes - Integration Tests', () => {
     it('should throw error for agent with missing tools', () => {
       @Agent({
         id: 'invalid-agent',
-        tools: ['non-existent-tool']
+        tools: ['non-existent-tool'],
       })
       class InvalidAgent {}
 
@@ -1557,21 +1545,21 @@ describe('Agent Architecture E2E Tests', () => {
   it('should handle complete DevBrand workflow with all fixes', async () => {
     // Test complete flow: GitHub Analysis → Brand Strategy → Content Creation
     const githubResult = await executeAgent('github-code-analyzer', {
-      metadata: { githubUsername: 'realuser', timeframe: 'month' }
+      metadata: { githubUsername: 'realuser', timeframe: 'month' },
     });
 
     const brandResult = await executeAgent('personal-brand-strategist', {
       metadata: {
         githubUsername: 'realuser',
         brandData: githubResult.metadata.developerInsights,
-      }
+      },
     });
 
     const contentResult = await executeAgent('content-creator', {
       metadata: {
         githubUsername: 'realuser',
         brandStrategy: brandResult.metadata.finalStrategy,
-      }
+      },
     });
 
     // Verify all agents executed successfully with type-safe metadata
@@ -1789,9 +1777,7 @@ export class MyAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
   },
 })
 export class MyAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<MyAgentMetadata>> {
-  async nodeFunction(
-    context: TaskExecutionContext<TypedWorkflowAgentState<MyAgentMetadata>>
-  ): Promise<TaskExecutionResult<TypedWorkflowAgentState<MyAgentMetadata>>> {
+  async nodeFunction(context: TaskExecutionContext<TypedWorkflowAgentState<MyAgentMetadata>>): Promise<TaskExecutionResult<TypedWorkflowAgentState<MyAgentMetadata>>> {
     const username = context.state.metadata.username; // ✅ Type-safe
   }
 }
@@ -1827,7 +1813,7 @@ export class MyAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<MyA
 3. **✅ Pattern Consistency**: All architectural patterns applied correctly
 4. **✅ Error Handling**: Fail-fast validation with descriptive errors
 5. **✅ Testing Strategy**: 80%+ coverage with unit, integration, E2E tests
-6. **✅ Import Standards**: Correct module imports (@hive-academy/*)
+6. **✅ Import Standards**: Correct module imports (@hive-academy/\*)
 7. **✅ File Organization**: Proper directory structure with type definitions
 8. **✅ Progress Documentation**: Professional progress.md with phases and checkboxes
 9. **✅ Developer Handoff**: Clear, specific tasks with acceptance criteria

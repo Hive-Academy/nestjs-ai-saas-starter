@@ -11,7 +11,7 @@ import { MetricsCollectionError } from '../interfaces/monitoring.interface';
 
 /**
  * MetricsCollectorService - Advanced metrics collection with batching
- * 
+ *
  * Features:
  * - Batch processing for performance
  * - Multiple backend support (Strategy pattern)
@@ -21,7 +21,9 @@ import { MetricsCollectionError } from '../interfaces/monitoring.interface';
  * - Comprehensive error handling
  */
 @Injectable()
-export class MetricsCollectorService implements IMetricsCollector, OnModuleDestroy {
+export class MetricsCollectorService
+  implements IMetricsCollector, OnModuleDestroy
+{
   private readonly logger = new Logger(MetricsCollectorService.name);
   private readonly backends = new Map<string, IMetricsBackend>();
   private readonly metricBuffer = new Map<string, Metric[]>();
@@ -40,24 +42,26 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
     };
 
     this.batchProcessor = setInterval(() => {
-      this.processBatches().catch(error => {
+      this.processBatches().catch((error) => {
         this.logger.error('Batch processing failed:', error);
       });
     }, this.batchConfig.flushInterval);
 
-    this.logger.log('MetricsCollectorService initialized with batch processing');
+    this.logger.log(
+      'MetricsCollectorService initialized with batch processing'
+    );
   }
 
   async onModuleDestroy(): Promise<void> {
     this.isShuttingDown = true;
-    
+
     if (this.batchProcessor) {
       clearInterval(this.batchProcessor);
     }
-    
+
     // Flush all remaining metrics before shutdown
     await this.flush();
-    
+
     // Cleanup backends
     for (const backend of this.backends.values()) {
       try {
@@ -66,8 +70,10 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
         this.logger.warn('Backend cleanup failed:', error);
       }
     }
-    
-    this.logger.log(`MetricsCollectorService shutdown - Processed: ${this.processedMetrics}, Failed: ${this.failedMetrics}`);
+
+    this.logger.log(
+      `MetricsCollectorService shutdown - Processed: ${this.processedMetrics}, Failed: ${this.failedMetrics}`
+    );
   }
 
   // ================================
@@ -93,10 +99,12 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
       this.processedMetrics++;
     } catch (error) {
       this.failedMetrics++;
-      throw new MetricsCollectionError(
-        `Failed to collect metric: ${name}`,
-        { name, value, tags, error: error instanceof Error ? error.message : String(error) }
-      );
+      throw new MetricsCollectionError(`Failed to collect metric: ${name}`, {
+        name,
+        value,
+        tags,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -114,7 +122,10 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
       this.failedMetrics += metrics.length;
       throw new MetricsCollectionError(
         `Failed to collect batch of ${metrics.length} metrics`,
-        { batchSize: metrics.length, error: error instanceof Error ? error.message : String(error) }
+        {
+          batchSize: metrics.length,
+          error: error instanceof Error ? error.message : String(error),
+        }
       );
     }
   }
@@ -127,13 +138,13 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
   async getMetrics(pattern: string): Promise<Metric[]> {
     const regex = new RegExp(pattern);
     const matchingMetrics: Metric[] = [];
-    
+
     for (const [name, buffer] of this.metricBuffer.entries()) {
       if (regex.test(name)) {
         matchingMetrics.push(...buffer);
       }
     }
-    
+
     return matchingMetrics;
   }
 
@@ -161,7 +172,7 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
   unregisterBackend(name: string): void {
     const backend = this.backends.get(name);
     if (backend) {
-      backend.cleanup().catch(error => {
+      backend.cleanup().catch((error) => {
         this.logger.warn(`Backend cleanup failed for ${name}:`, error);
       });
       this.backends.delete(name);
@@ -178,17 +189,19 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
    */
   private async bufferMetric(metric: Metric): Promise<void> {
     const buffer = this.metricBuffer.get(metric.name) || [];
-    
+
     // Check buffer size limits
     if (buffer.length >= this.batchConfig.maxBufferSize) {
-      this.logger.warn(`Buffer overflow for metric: ${metric.name}, forcing flush`);
+      this.logger.warn(
+        `Buffer overflow for metric: ${metric.name}, forcing flush`
+      );
       await this.flushBuffer(metric.name, buffer);
       this.metricBuffer.set(metric.name, []);
     }
-    
+
     buffer.push(metric);
     this.metricBuffer.set(metric.name, buffer);
-    
+
     // Check if batch size reached
     if (buffer.length >= this.batchConfig.maxBatchSize) {
       await this.flushBuffer(metric.name, buffer);
@@ -201,14 +214,14 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
    */
   private async processBatches(): Promise<void> {
     const flushPromises: Promise<void>[] = [];
-    
+
     for (const [name, buffer] of this.metricBuffer.entries()) {
       if (buffer.length > 0) {
         flushPromises.push(this.flushBuffer(name, [...buffer]));
         this.metricBuffer.set(name, []);
       }
     }
-    
+
     if (flushPromises.length > 0) {
       await Promise.allSettled(flushPromises);
     }
@@ -217,23 +230,30 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
   /**
    * Flush buffer to all registered backends
    */
-  private async flushBuffer(metricName: string, metrics: Metric[]): Promise<void> {
+  private async flushBuffer(
+    metricName: string,
+    metrics: Metric[]
+  ): Promise<void> {
     if (this.backends.size === 0) {
       this.logger.debug('No backends registered, skipping flush');
       return;
     }
 
-    const backendPromises = Array.from(this.backends.entries()).map(([name, backend]) =>
-      this.safeBackendOperation(name, () => backend.recordBatch(metrics))
+    const backendPromises = Array.from(this.backends.entries()).map(
+      ([name, backend]) =>
+        this.safeBackendOperation(name, () => backend.recordBatch(metrics))
     );
-    
+
     const results = await Promise.allSettled(backendPromises);
-    
+
     // Log any failures
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
         const backendName = Array.from(this.backends.keys())[index];
-        this.logger.warn(`Backend ${backendName} failed to process batch:`, result.reason);
+        this.logger.warn(
+          `Backend ${backendName} failed to process batch:`,
+          result.reason
+        );
       }
     });
   }
@@ -264,24 +284,36 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
     if (tags?.metric_type) {
       return tags.metric_type as MetricType;
     }
-    
+
     // Infer from metric name patterns
-    if (name.includes('count') || name.includes('total') || name.endsWith('_count')) {
+    if (
+      name.includes('count') ||
+      name.includes('total') ||
+      name.endsWith('_count')
+    ) {
       return 'counter';
     }
-    
-    if (name.includes('duration') || name.includes('time') || name.includes('latency')) {
+
+    if (
+      name.includes('duration') ||
+      name.includes('time') ||
+      name.includes('latency')
+    ) {
       return 'timer';
     }
-    
-    if (name.includes('usage') || name.includes('level') || name.includes('current')) {
+
+    if (
+      name.includes('usage') ||
+      name.includes('level') ||
+      name.includes('current')
+    ) {
       return 'gauge';
     }
-    
+
     if (name.includes('histogram') || name.includes('distribution')) {
       return 'histogram';
     }
-    
+
     // Default to gauge for unknown patterns
     return 'gauge';
   }
@@ -293,23 +325,27 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
     if (tags?.unit) {
       return tags.unit as string;
     }
-    
-    if (name.includes('duration') || name.includes('time') || name.includes('latency')) {
+
+    if (
+      name.includes('duration') ||
+      name.includes('time') ||
+      name.includes('latency')
+    ) {
       return 'ms';
     }
-    
+
     if (name.includes('bytes') || name.includes('memory')) {
       return 'bytes';
     }
-    
+
     if (name.includes('percent') || name.includes('usage')) {
       return 'percent';
     }
-    
+
     if (name.includes('count') || name.includes('total')) {
       return 'count';
     }
-    
+
     return undefined;
   }
 
@@ -327,13 +363,16 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
   /**
    * Export metrics to various formats
    */
-  async exportMetrics(format: 'json' | 'csv' = 'json', filter?: { pattern?: string; tags?: MetricTags }): Promise<string> {
+  async exportMetrics(
+    format: 'json' | 'csv' = 'json',
+    filter?: { pattern?: string; tags?: MetricTags }
+  ): Promise<string> {
     const allMetrics: Metric[] = [];
 
     // Collect all metrics
     for (const [name, buffer] of this.metricBuffer.entries()) {
       let metrics = [...buffer];
-      
+
       // Apply pattern filter
       if (filter?.pattern) {
         const regex = new RegExp(filter.pattern);
@@ -341,16 +380,16 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
           continue;
         }
       }
-      
+
       // Apply tag filters
       if (filter?.tags) {
-        metrics = metrics.filter(metric => {
-          return Object.entries(filter.tags!).every(([key, value]) =>
-            metric.tags[key] === value
+        metrics = metrics.filter((metric) => {
+          return Object.entries(filter.tags!).every(
+            ([key, value]) => metric.tags[key] === value
           );
         });
       }
-      
+
       allMetrics.push(...metrics);
     }
 
@@ -358,7 +397,7 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
       return JSON.stringify(allMetrics, null, 2);
     } else if (format === 'csv') {
       const headers = ['name', 'type', 'value', 'unit', 'timestamp', 'tags'];
-      const rows = allMetrics.map(metric => [
+      const rows = allMetrics.map((metric) => [
         metric.name,
         metric.type,
         metric.value.toString(),
@@ -366,10 +405,12 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
         metric.timestamp.toISOString(),
         JSON.stringify(metric.tags),
       ]);
-      
-      return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+
+      return [headers.join(','), ...rows.map((row) => row.join(','))].join(
+        '\n'
+      );
     }
-    
+
     throw new Error(`Unsupported export format: ${format}`);
   }
 
@@ -385,7 +426,7 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
     avgProcessingTime: number;
   } {
     const baseStats = this.getCollectorStats();
-    
+
     return {
       ...baseStats,
       bufferSize: baseStats.bufferedMetrics, // Alias for compatibility
@@ -402,9 +443,11 @@ export class MetricsCollectorService implements IMetricsCollector, OnModuleDestr
     bufferedMetrics: number;
     registeredBackends: number;
   } {
-    const bufferedMetrics = Array.from(this.metricBuffer.values())
-      .reduce((total, buffer) => total + buffer.length, 0);
-    
+    const bufferedMetrics = Array.from(this.metricBuffer.values()).reduce(
+      (total, buffer) => total + buffer.length,
+      0
+    );
+
     return {
       processedMetrics: this.processedMetrics,
       failedMetrics: this.failedMetrics,

@@ -410,3 +410,185 @@ export function createBackgroundConfig(
 
   return builder.build();
 }
+
+/**
+ * Options for createHeroSceneConfig factory
+ */
+export interface HeroSceneConfigOptions {
+  /** Enable large floating spheres - optional, defaults to true */
+  enableFloatingSpheres?: boolean;
+  /** Enable background cubes - optional, defaults to true */
+  enableBackgroundCubes?: boolean;
+  /** Number of spheres - optional, defaults to 5 */
+  sphereCount?: number;
+  /** Number of cubes - optional, defaults to 20 */
+  cubeCount?: number;
+  /** Sphere colors - optional, defaults to colorful palette */
+  sphereColors?: string[];
+  /** Enable dramatic lighting - optional, defaults to true */
+  enableDramaticLighting?: boolean;
+}
+
+/**
+ * Factory function for hero scene with large floating spheres
+ *
+ * Creates an immersive hero scene with:
+ * - Large colorful floating spheres (1.0+ scale) positioned around content
+ * - Background cubes for depth
+ * - Dramatic colored lighting
+ * - Automatic animations (floating, rotating)
+ *
+ * @param options Hero scene configuration options
+ * @returns Scene objects configuration for HybridUIService
+ *
+ * @example
+ * ```typescript
+ * const sceneObjects = createHeroSceneConfig({
+ *   sphereCount: 5,
+ *   sphereColors: ['#8a2be2', '#ff69b4', '#00bfff', '#32cd32', '#ffd700']
+ * });
+ *
+ * // Use with HybridUIService
+ * hybridUI.createSceneObjects(sceneObjects);
+ * ```
+ */
+export function createHeroSceneConfig(
+  options: HeroSceneConfigOptions = {}
+): NonNullable<HybridElementConfigExtended['sceneObjects']> {
+  const sphereColors = options.sphereColors || [
+    '#8a2be2', // Purple
+    '#ff69b4', // Pink
+    '#00bfff', // Cyan
+    '#32cd32', // Green
+    '#ffd700', // Gold
+  ];
+
+  const sphereConfigs =
+    options.enableFloatingSpheres !== false
+      ? sphereColors.slice(0, options.sphereCount || 5).map((color, index) => {
+          const angle = (index / sphereColors.length) * Math.PI * 2;
+          const radius = 6 + Math.random() * 2;
+          const x = Math.cos(angle) * radius * (index % 2 === 0 ? 1 : -1);
+          const y = (Math.random() - 0.5) * 6;
+          const z = -2 - Math.random() * 3;
+
+          return {
+            position: [x, y, z] as [number, number, number],
+            radius: 0.8 + Math.random() * 0.4,
+            color,
+            emissive: color,
+            emissiveIntensity: 0.2,
+            metalness: 0.3,
+            roughness: 0.1,
+            animation: 'float' as const,
+            animationSpeed: 0.8 + Math.random() * 0.4,
+          };
+        })
+      : undefined;
+
+  const cubeCount = options.cubeCount || 20;
+  const cubeColors = [
+    '#2d1b47',
+    '#1a0d2e',
+    '#0f0a1c',
+    '#1e1139',
+    '#261242',
+    '#0a0a15',
+  ];
+
+  const cubeConfigs =
+    options.enableBackgroundCubes !== false
+      ? Array.from({ length: cubeCount }, (_, index) => {
+          const zone = index % 4;
+          let x = 0,
+            y = 0,
+            z = 0;
+
+          switch (zone) {
+            case 0:
+              x = (Math.random() - 0.5) * 50;
+              y = 8 + Math.random() * 15;
+              z = -8 + Math.random() * -20;
+              break;
+            case 1:
+              x = (Math.random() - 0.5) * 50;
+              y = -8 - Math.random() * 15;
+              z = -8 + Math.random() * -20;
+              break;
+            case 2:
+              x = -15 - Math.random() * 25;
+              y = (Math.random() - 0.5) * 30;
+              z = -8 + Math.random() * -20;
+              break;
+            case 3:
+              x = 15 + Math.random() * 25;
+              y = (Math.random() - 0.5) * 30;
+              z = -8 + Math.random() * -20;
+              break;
+          }
+
+          if (Math.abs(x) < 12 && Math.abs(y) < 8) {
+            if (Math.abs(x) > Math.abs(y)) {
+              x = x > 0 ? 15 + Math.random() * 10 : -15 - Math.random() * 10;
+            } else {
+              y = y > 0 ? 10 + Math.random() * 8 : -10 - Math.random() * 8;
+            }
+          }
+
+          return {
+            position: [x, y, z] as [number, number, number],
+            size: 0.8 + Math.random() * 1.8,
+            color: cubeColors[Math.floor(Math.random() * cubeColors.length)],
+            opacity: 0.6,
+            rotation: [
+              Math.random() * Math.PI,
+              Math.random() * Math.PI,
+              Math.random() * Math.PI,
+            ] as [number, number, number],
+            animation: 'rotate' as const,
+            animationSpeed: 0.5 + Math.random() * 0.5,
+          };
+        })
+      : undefined;
+
+  const lightConfigs =
+    options.enableDramaticLighting !== false
+      ? [
+          { type: 'ambient' as const, color: '#404040', intensity: 0.4 },
+          {
+            type: 'directional' as const,
+            position: [10, 10, 10] as [number, number, number],
+            color: '#ffffff',
+            intensity: 1.0,
+            castShadow: true,
+          },
+          {
+            type: 'point' as const,
+            position: [-10, 5, 5] as [number, number, number],
+            color: '#8a2be2',
+            intensity: 0.8,
+            distance: 50,
+          },
+          {
+            type: 'point' as const,
+            position: [10, -5, 5] as [number, number, number],
+            color: '#00bfff',
+            intensity: 0.8,
+            distance: 50,
+          },
+          {
+            type: 'point' as const,
+            position: [0, 10, -5] as [number, number, number],
+            color: '#ff69b4',
+            intensity: 0.6,
+            distance: 40,
+          },
+        ]
+      : undefined;
+
+  return {
+    spheres: sphereConfigs,
+    cubes: cubeConfigs,
+    lights: lightConfigs,
+  };
+}

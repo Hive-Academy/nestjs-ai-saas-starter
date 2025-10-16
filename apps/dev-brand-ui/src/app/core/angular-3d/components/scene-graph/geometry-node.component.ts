@@ -74,40 +74,40 @@ export interface MaterialConfig {
     <div
       class="geometry-node-container"
       [attr.data-geometry-type]="geometryConfig().type"
-      [style.display]="visible() ? 'block' : 'none'">
-
+      [style.display]="visible() ? 'block' : 'none'"
+    >
       <!-- Content projection for child nodes -->
       <ng-content></ng-content>
 
       <!-- Debug geometry information -->
       @if (showDebugInfo()) {
-        <div class="geometry-debug-info">
-          <div class="debug-header">Geometry: {{ geometryConfig().type }}</div>
-          <div class="debug-stats">
-            <div>
-              <span>Args:</span>
-              <span>{{ formatArgs(geometryConfig().args) }}</span>
-            </div>
-            <div>
-              <span>Material:</span>
-              <span>{{ materialConfig().type }}</span>
-            </div>
-            <div>
-              <span>Triangles:</span>
-              <span>{{ triangleCount() }}</span>
-            </div>
-            <div>
-              <span>Vertices:</span>
-              <span>{{ vertexCount() }}</span>
-            </div>
-            @if (isAnimating()) {
-              <div>
-                <span>Status:</span>
-                <span class="animating">Animating</span>
-              </div>
-            }
+      <div class="geometry-debug-info">
+        <div class="debug-header">Geometry: {{ geometryConfig().type }}</div>
+        <div class="debug-stats">
+          <div>
+            <span>Args:</span>
+            <span>{{ formatArgs(geometryConfig().args) }}</span>
           </div>
+          <div>
+            <span>Material:</span>
+            <span>{{ materialConfig().type }}</span>
+          </div>
+          <div>
+            <span>Triangles:</span>
+            <span>{{ triangleCount() }}</span>
+          </div>
+          <div>
+            <span>Vertices:</span>
+            <span>{{ vertexCount() }}</span>
+          </div>
+          @if (isAnimating()) {
+          <div>
+            <span>Status:</span>
+            <span class="animating">Animating</span>
+          </div>
+          }
         </div>
+      </div>
       }
     </div>
   `,
@@ -154,7 +154,9 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
   private readonly reactiveStateManager = inject(ReactiveStateManagerService);
 
   // Component ID for state management
-  private readonly componentId = `geometry-${Math.random().toString(36).substr(2, 9)}`;
+  private readonly componentId = `geometry-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
 
   // Internal state
   private readonly _triangleCount = signal(0);
@@ -221,15 +223,19 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
 
     const timelineId = this.animationService.createTimeline({
       name: `Geometry Material Animation ${Date.now()}`,
-      animations: [{
-        type: 'custom',
-        duration,
-        ease,
-      }],
-      targets: [{
-        elementId: this.animationTarget() || `geometry-${Date.now()}`,
-        object3D: this._mesh || undefined,
-      }],
+      animations: [
+        {
+          type: 'custom',
+          duration,
+          ease,
+        },
+      ],
+      targets: [
+        {
+          elementId: this.animationTarget() || `geometry-${Date.now()}`,
+          object3D: this._mesh || undefined,
+        },
+      ],
     });
 
     this.animationService.playTimeline(timelineId);
@@ -238,7 +244,7 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
       this._isAnimating.set(false);
       this.animationEvent.emit({
         type: 'material-animation-complete',
-        data: { properties, timelineId }
+        data: { properties, timelineId },
       });
     }, duration);
   }
@@ -254,7 +260,7 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
 
   // Template helper methods
   formatArgs(args: readonly number[]): string {
-    return args.map(arg => arg.toFixed(2)).join(', ');
+    return args.map((arg) => arg.toFixed(2)).join(', ');
   }
 
   // Private methods
@@ -265,31 +271,58 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
     // Create geometry based on type
     switch (config.type) {
       case 'box':
-        this._geometry = new THREE.BoxGeometry(...(config.args as [number, number, number]));
+        this._geometry = new THREE.BoxGeometry(
+          ...(config.args as [number, number, number])
+        );
         break;
       case 'sphere': {
         const [radius, widthSeg, heightSeg] = config.args;
-        this._geometry = new THREE.SphereGeometry(radius, widthSeg || 32, heightSeg || 16);
+        this._geometry = new THREE.SphereGeometry(
+          radius,
+          widthSeg || 32,
+          heightSeg || 16
+        );
         break;
       }
       case 'plane': {
         const [width, height, wSeg, hSeg] = config.args;
-        this._geometry = new THREE.PlaneGeometry(width, height, wSeg || 1, hSeg || 1);
+        this._geometry = new THREE.PlaneGeometry(
+          width,
+          height,
+          wSeg || 1,
+          hSeg || 1
+        );
         break;
       }
       case 'cylinder': {
-        const [radiusTop, radiusBottom, cylinderHeight, radialSeg] = config.args;
-        this._geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, cylinderHeight, radialSeg || 8);
+        const [radiusTop, radiusBottom, cylinderHeight, radialSeg] =
+          config.args;
+        this._geometry = new THREE.CylinderGeometry(
+          radiusTop,
+          radiusBottom,
+          cylinderHeight,
+          radialSeg || 8
+        );
         break;
       }
       case 'cone': {
         const [coneRadius, coneHeight, coneRadialSeg] = config.args;
-        this._geometry = new THREE.ConeGeometry(coneRadius, coneHeight, coneRadialSeg || 8);
+        this._geometry = new THREE.ConeGeometry(
+          coneRadius,
+          coneHeight,
+          coneRadialSeg || 8
+        );
         break;
       }
       case 'torus': {
-        const [torusRadius, tubeRadius, radialSegments, tubularSegments] = config.args;
-        this._geometry = new THREE.TorusGeometry(torusRadius, tubeRadius, radialSegments || 8, tubularSegments || 16);
+        const [torusRadius, tubeRadius, radialSegments, tubularSegments] =
+          config.args;
+        this._geometry = new THREE.TorusGeometry(
+          torusRadius,
+          tubeRadius,
+          radialSegments || 8,
+          tubularSegments || 16
+        );
         break;
       }
       default:
@@ -325,7 +358,9 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
       case 'phong':
         this._material = new THREE.MeshPhongMaterial({
           ...commonProps,
-          emissive: config.emissive ? new THREE.Color(config.emissive) : new THREE.Color(0x000000),
+          emissive: config.emissive
+            ? new THREE.Color(config.emissive)
+            : new THREE.Color(0x000000),
         });
         break;
       case 'physical':
@@ -341,7 +376,9 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
           ...commonProps,
           metalness: config.metalness ?? 0.0,
           roughness: config.roughness ?? 0.5,
-          emissive: config.emissive ? new THREE.Color(config.emissive) : new THREE.Color(0x000000),
+          emissive: config.emissive
+            ? new THREE.Color(config.emissive)
+            : new THREE.Color(0x000000),
         });
     }
   }
@@ -403,7 +440,7 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
       componentType: 'geometry-node',
       sceneObjectId: this.componentId,
       isActive: this.visible(),
-      dependencies: []
+      dependencies: [],
     });
 
     // Set up reactive state synchronization
@@ -411,21 +448,24 @@ export class GeometryNodeComponent implements OnInit, OnDestroy {
       this.componentId,
       this.componentId,
       () => ({
-        position: this.position() || [0, 0, 0] as const,
-        rotation: this.rotation() || [0, 0, 0] as const,
-        scale: this.scale() || [1, 1, 1] as const
+        position: this.position() || ([0, 0, 0] as const),
+        rotation: this.rotation() || ([0, 0, 0] as const),
+        scale: this.scale() || ([1, 1, 1] as const),
       })
     );
 
     // Track performance metrics
-    this.reactiveStateManager.trackComponentPerformance(this.componentId, () => ({
-      complexity: this._triangleCount(),
-      memoryUsage: this._triangleCount() * 24, // Estimated bytes per triangle
-      renderTime: this._triangleCount() > 1000 ? 1 : 0.5 // Estimated render impact
-    }));
+    this.reactiveStateManager.trackComponentPerformance(
+      this.componentId,
+      () => ({
+        complexity: this._triangleCount(),
+        memoryUsage: this._triangleCount() * 24, // Estimated bytes per triangle
+        renderTime: this._triangleCount() > 1000 ? 1 : 0.5, // Estimated render impact
+      })
+    );
 
     // React to global geometry events
-    this.reactiveStateManager.events$.subscribe(event => {
+    this.reactiveStateManager.events$.subscribe((event) => {
       if (event.type === 'node-updated' && event.source !== this.componentId) {
         // Could coordinate LOD levels or visibility based on other geometry nodes
         console.log(`Geometry event from ${event.source}:`, event.data);

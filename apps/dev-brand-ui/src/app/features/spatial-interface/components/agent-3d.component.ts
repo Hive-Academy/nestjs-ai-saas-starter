@@ -6,7 +6,7 @@ import {
   signal,
   computed,
   effect,
-  input
+  input,
 } from '@angular/core';
 
 import * as THREE from 'three';
@@ -192,7 +192,9 @@ export class Agent3DComponent implements OnInit, OnDestroy {
     sceneInstance.scene.add(this.agentMesh);
 
     this.isInitialized.set(true);
-    console.log(`Agent 3D initialized: ${this.agent().name} (${this.agent().id})`);
+    console.log(
+      `Agent 3D initialized: ${this.agent().name} (${this.agent().id})`
+    );
   }
 
   /**

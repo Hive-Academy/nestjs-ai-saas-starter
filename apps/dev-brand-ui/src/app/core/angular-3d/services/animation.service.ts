@@ -61,7 +61,7 @@ export interface PerformanceMetrics {
  * Provides reactive animation state management with GSAP timeline integration
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AnimationService {
   // Angular Three store integration with optional injection
@@ -73,14 +73,14 @@ export class AnimationService {
     currentTime: 0,
     progress: 0,
     activeAnimations: [],
-    timelines: []
+    timelines: [],
   });
 
   private readonly _performanceMetrics = signal<PerformanceMetrics>({
     fps: 60,
     animationCount: 0,
     memoryUsage: 0,
-    lastUpdateTime: performance.now()
+    lastUpdateTime: performance.now(),
   });
 
   // Private state for GSAP management
@@ -96,7 +96,9 @@ export class AnimationService {
   // Computed properties for reactive updates
   readonly isAnimating = computed(() => this.animationState().isPlaying);
   readonly animationProgress = computed(() => this.animationState().progress);
-  readonly activeAnimationCount = computed(() => this.animationState().activeAnimations.length);
+  readonly activeAnimationCount = computed(
+    () => this.animationState().activeAnimations.length
+  );
 
   readonly canPlayAnimations = computed(() => {
     const state = this.animationState();
@@ -106,8 +108,10 @@ export class AnimationService {
   readonly animationPerformanceStatus = computed(() => {
     const metrics = this.performanceMetrics();
     return {
-      status: metrics.fps >= 55 ? 'excellent' : metrics.fps >= 30 ? 'good' : 'poor',
-      recommendation: metrics.animationCount > 10 ? 'reduce-concurrent' : 'optimal'
+      status:
+        metrics.fps >= 55 ? 'excellent' : metrics.fps >= 30 ? 'good' : 'poor',
+      recommendation:
+        metrics.animationCount > 10 ? 'reduce-concurrent' : 'optimal',
     } as const;
   });
 
@@ -126,11 +130,13 @@ export class AnimationService {
    * Create and register an animation timeline with Angular Three integration
    */
   createTimeline(config: Omit<AnimationTimeline, 'id'>): string {
-    const timelineId = `timeline-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const timelineId = `timeline-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
 
     const timeline: AnimationTimeline = {
       id: timelineId,
-      ...config
+      ...config,
     };
 
     const gsapTimeline = gsap.timeline({
@@ -142,9 +148,9 @@ export class AnimationService {
     });
 
     this.activeTimelines.set(timelineId, gsapTimeline);
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
-      timelines: [...state.timelines, timeline]
+      timelines: [...state.timelines, timeline],
     }));
 
     return timelineId;
@@ -179,10 +185,10 @@ export class AnimationService {
     if (!timeline) return;
 
     timeline.play();
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
       isPlaying: true,
-      activeAnimations: [...state.activeAnimations, timelineId]
+      activeAnimations: [...state.activeAnimations, timelineId],
     }));
   }
 
@@ -194,10 +200,12 @@ export class AnimationService {
     if (!timeline) return;
 
     timeline.pause();
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
       isPlaying: false,
-      activeAnimations: state.activeAnimations.filter(id => id !== timelineId)
+      activeAnimations: state.activeAnimations.filter(
+        (id) => id !== timelineId
+      ),
     }));
   }
 
@@ -209,11 +217,13 @@ export class AnimationService {
     if (!timeline) return;
 
     timeline.progress(0).pause();
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
       isPlaying: false,
       progress: 0,
-      activeAnimations: state.activeAnimations.filter(id => id !== timelineId)
+      activeAnimations: state.activeAnimations.filter(
+        (id) => id !== timelineId
+      ),
     }));
   }
 
@@ -227,10 +237,12 @@ export class AnimationService {
       this.activeTimelines.delete(timelineId);
     }
 
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
-      timelines: state.timelines.filter(t => t.id !== timelineId),
-      activeAnimations: state.activeAnimations.filter(id => id !== timelineId)
+      timelines: state.timelines.filter((t) => t.id !== timelineId),
+      activeAnimations: state.activeAnimations.filter(
+        (id) => id !== timelineId
+      ),
     }));
   }
 
@@ -246,16 +258,20 @@ export class AnimationService {
       animations: [config],
       targets: sceneObjects.map((obj, index) => ({
         elementId: `scene-object-${index}`,
-        object3D: obj
-      }))
+        object3D: obj,
+      })),
     });
 
     // Add animations for each scene object
     sceneObjects.forEach((obj, index) => {
-      this.addAnimationToTimeline(timelineId, {
-        elementId: `scene-object-${index}`,
-        object3D: obj
-      }, config);
+      this.addAnimationToTimeline(
+        timelineId,
+        {
+          elementId: `scene-object-${index}`,
+          object3D: obj,
+        },
+        config
+      );
     });
 
     return timelineId;
@@ -264,13 +280,15 @@ export class AnimationService {
   /**
    * Get timeline state for debugging
    */
-  getTimelineState(timelineId: string): { progress: number; isActive: boolean } | null {
+  getTimelineState(
+    timelineId: string
+  ): { progress: number; isActive: boolean } | null {
     const timeline = this.activeTimelines.get(timelineId);
     if (!timeline) return null;
 
     return {
       progress: timeline.progress(),
-      isActive: timeline.isActive()
+      isActive: timeline.isActive(),
     };
   }
 
@@ -294,7 +312,7 @@ export class AnimationService {
           ease: config.ease || 'power2.out',
           delay: config.delay || 0,
           repeat: config.repeat || 0,
-          yoyo: config.yoyo || false
+          yoyo: config.yoyo || false,
         })
       : gsap.to(config.element, {
           ...config.properties,
@@ -302,7 +320,7 @@ export class AnimationService {
           ease: config.ease || 'power2.out',
           delay: config.delay || 0,
           repeat: config.repeat || 0,
-          yoyo: config.yoyo || false
+          yoyo: config.yoyo || false,
         });
 
     // Track the animation
@@ -335,12 +353,15 @@ export class AnimationService {
    * Update animation state for tracking
    */
   private trackActiveAnimations(): void {
-    const activeAnimations = this.activeTimelines.size > 0 ? Array.from(this.activeTimelines.keys()) : [];
+    const activeAnimations =
+      this.activeTimelines.size > 0
+        ? Array.from(this.activeTimelines.keys())
+        : [];
 
-    this._animationState.update(state => ({
+    this._animationState.update((state) => ({
       ...state,
       activeAnimations,
-      isPlaying: activeAnimations.length > 0
+      isPlaying: activeAnimations.length > 0,
     }));
   }
 
@@ -349,7 +370,7 @@ export class AnimationService {
    */
   dispose(): void {
     // Kill all GSAP timelines
-    this.activeTimelines.forEach(timeline => timeline.kill());
+    this.activeTimelines.forEach((timeline) => timeline.kill());
     this.activeTimelines.clear();
     this.masterTimeline.kill();
 
@@ -363,7 +384,7 @@ export class AnimationService {
       currentTime: 0,
       progress: 0,
       activeAnimations: [],
-      timelines: []
+      timelines: [],
     });
   }
 
@@ -372,8 +393,8 @@ export class AnimationService {
   private initializeGSAP(): void {
     // Configure GSAP for Angular Three coordinate system
     gsap.defaults({
-      ease: "power2.out",
-      duration: 1
+      ease: 'power2.out',
+      duration: 1,
     });
 
     // Set up GSAP plugins if needed
@@ -410,11 +431,11 @@ export class AnimationService {
     switch (config.type) {
       case 'fade':
         if (object3D && 'material' in object3D && object3D.material) {
-          timeline.to((object3D.material as any), {
+          timeline.to(object3D.material as any, {
             opacity: target.opacity ?? 1,
             duration,
             delay: config.delay ? config.delay / 1000 : 0,
-            ease: config.ease ?? "power2.out"
+            ease: config.ease ?? 'power2.out',
           });
         }
         break;
@@ -427,7 +448,7 @@ export class AnimationService {
             z: target.position[2],
             duration,
             delay: config.delay ? config.delay / 1000 : 0,
-            ease: config.ease ?? "power2.out"
+            ease: config.ease ?? 'power2.out',
           });
         }
         break;
@@ -440,7 +461,7 @@ export class AnimationService {
             z: target.scale[2],
             duration,
             delay: config.delay ? config.delay / 1000 : 0,
-            ease: config.ease ?? "back.out(1.7)"
+            ease: config.ease ?? 'back.out(1.7)',
           });
         }
         break;
@@ -453,7 +474,7 @@ export class AnimationService {
             z: target.rotation[2],
             duration,
             delay: config.delay ? config.delay / 1000 : 0,
-            ease: config.ease ?? "power2.inOut"
+            ease: config.ease ?? 'power2.inOut',
           });
         }
         break;
@@ -481,30 +502,36 @@ export class AnimationService {
     const timeline = this.activeTimelines.get(timelineId);
     if (!timeline) return;
 
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
       currentTime: performance.now(),
-      progress: timeline.progress()
+      progress: timeline.progress(),
     }));
   }
 
   private onTimelineStart(timelineId: string): void {
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
       isPlaying: true,
-      activeAnimations: Array.from(new Set([...state.activeAnimations, timelineId]))
+      activeAnimations: Array.from(
+        new Set([...state.activeAnimations, timelineId])
+      ),
     }));
   }
 
   private onTimelineComplete(timelineId: string): void {
-    this.updateAnimationState(state => ({
+    this.updateAnimationState((state) => ({
       ...state,
-      activeAnimations: state.activeAnimations.filter(id => id !== timelineId),
-      isPlaying: state.activeAnimations.length > 1
+      activeAnimations: state.activeAnimations.filter(
+        (id) => id !== timelineId
+      ),
+      isPlaying: state.activeAnimations.length > 1,
     }));
   }
 
-  private updateAnimationState(updater: (state: AnimationState) => AnimationState): void {
+  private updateAnimationState(
+    updater: (state: AnimationState) => AnimationState
+  ): void {
     this._animationState.update(updater);
   }
 
@@ -528,7 +555,7 @@ export class AnimationService {
           fps,
           animationCount,
           memoryUsage,
-          lastUpdateTime: currentTime
+          lastUpdateTime: currentTime,
         });
 
         frameCount = 0;

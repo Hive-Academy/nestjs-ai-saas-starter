@@ -6,12 +6,7 @@
  * Follows Angular best practices with injectable services and signal-based patterns.
  */
 
-import {
-  Injectable,
-  signal,
-  computed,
-  effect,
-} from '@angular/core';
+import { Injectable, signal, computed, effect } from '@angular/core';
 // import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // Commented out as unused
 import * as THREE from 'three';
 import { injectStore } from 'angular-three';
@@ -161,7 +156,9 @@ export class Angular3DStateStore {
   private readonly _lastUpdateTime = signal<number>(Date.now());
 
   // State update subject for reactive streams
-  private readonly stateUpdates$ = new BehaviorSubject<Angular3DAppState>(initialState);
+  private readonly stateUpdates$ = new BehaviorSubject<Angular3DAppState>(
+    initialState
+  );
 
   // Public readonly state accessors
   readonly state = this._state.asReadonly();
@@ -188,7 +185,9 @@ export class Angular3DStateStore {
   });
 
   readonly playingAnimations = computed(() => {
-    return Object.values(this._state().animations).filter(anim => anim.isPlaying);
+    return Object.values(this._state().animations).filter(
+      (anim) => anim.isPlaying
+    );
   });
 
   readonly isDebugMode = computed(() => this._state().isDebugMode);
@@ -210,7 +209,7 @@ export class Angular3DStateStore {
 
   // State update methods with immutable updates
   updateScene(sceneId: string, updates: Partial<Omit<SceneState, 'id'>>) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       scenes: {
         ...state.scenes,
@@ -218,31 +217,35 @@ export class Angular3DStateStore {
           ...state.scenes[sceneId],
           ...updates,
           id: sceneId,
-        }
-      }
+        },
+      },
     }));
     this.notifyStateChange();
   }
 
   addSceneObject(sceneId: string, objectState: SceneObjectState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       scenes: {
         ...state.scenes,
         [sceneId]: {
           ...state.scenes[sceneId],
           objects: {
-            ...state.scenes[sceneId]?.objects || {},
-            [objectState.id]: objectState
-          }
-        }
-      }
+            ...(state.scenes[sceneId]?.objects || {}),
+            [objectState.id]: objectState,
+          },
+        },
+      },
     }));
     this.notifyStateChange();
   }
 
-  updateSceneObject(sceneId: string, objectId: string, updates: Partial<Omit<SceneObjectState, 'id'>>) {
-    this._state.update(state => {
+  updateSceneObject(
+    sceneId: string,
+    objectId: string,
+    updates: Partial<Omit<SceneObjectState, 'id'>>
+  ) {
+    this._state.update((state) => {
       const scene = state.scenes[sceneId];
       if (!scene || !scene.objects[objectId]) return state;
 
@@ -258,17 +261,17 @@ export class Angular3DStateStore {
                 ...scene.objects[objectId],
                 ...updates,
                 id: objectId,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   removeSceneObject(sceneId: string, objectId: string) {
-    this._state.update(state => {
+    this._state.update((state) => {
       const scene = state.scenes[sceneId];
       if (!scene || !scene.objects[objectId]) return state;
 
@@ -280,35 +283,35 @@ export class Angular3DStateStore {
           ...state.scenes,
           [sceneId]: {
             ...scene,
-            objects: remainingObjects
-          }
-        }
+            objects: remainingObjects,
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   updateCamera(updates: Partial<CameraState>) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      camera: { ...state.camera, ...updates }
+      camera: { ...state.camera, ...updates },
     }));
     this.notifyStateChange();
   }
 
   addLight(lightState: LightState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       lights: {
         ...state.lights,
-        [lightState.id]: lightState
-      }
+        [lightState.id]: lightState,
+      },
     }));
     this.notifyStateChange();
   }
 
   updateLight(lightId: string, updates: Partial<Omit<LightState, 'id'>>) {
-    this._state.update(state => {
+    this._state.update((state) => {
       if (!state.lights[lightId]) return state;
 
       return {
@@ -319,37 +322,40 @@ export class Angular3DStateStore {
             ...state.lights[lightId],
             ...updates,
             id: lightId,
-          }
-        }
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   removeLight(lightId: string) {
-    this._state.update(state => {
+    this._state.update((state) => {
       const { [lightId]: removed, ...remainingLights } = state.lights;
       return {
         ...state,
-        lights: remainingLights
+        lights: remainingLights,
       };
     });
     this.notifyStateChange();
   }
 
   addMaterial(materialState: MaterialState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       materials: {
         ...state.materials,
-        [materialState.id]: materialState
-      }
+        [materialState.id]: materialState,
+      },
     }));
     this.notifyStateChange();
   }
 
-  updateMaterial(materialId: string, updates: Partial<Omit<MaterialState, 'id'>>) {
-    this._state.update(state => {
+  updateMaterial(
+    materialId: string,
+    updates: Partial<Omit<MaterialState, 'id'>>
+  ) {
+    this._state.update((state) => {
       if (!state.materials[materialId]) return state;
 
       return {
@@ -360,26 +366,29 @@ export class Angular3DStateStore {
             ...state.materials[materialId],
             ...updates,
             id: materialId,
-          }
-        }
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   addAnimation(animationState: AnimationState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       animations: {
         ...state.animations,
-        [animationState.id]: animationState
-      }
+        [animationState.id]: animationState,
+      },
     }));
     this.notifyStateChange();
   }
 
-  updateAnimation(animationId: string, updates: Partial<Omit<AnimationState, 'id'>>) {
-    this._state.update(state => {
+  updateAnimation(
+    animationId: string,
+    updates: Partial<Omit<AnimationState, 'id'>>
+  ) {
+    this._state.update((state) => {
       if (!state.animations[animationId]) return state;
 
       return {
@@ -390,33 +399,33 @@ export class Angular3DStateStore {
             ...state.animations[animationId],
             ...updates,
             id: animationId,
-          }
-        }
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   updatePerformance(updates: Partial<PerformanceState>) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      performance: { ...state.performance, ...updates }
+      performance: { ...state.performance, ...updates },
     }));
     // Don't notify for performance updates to avoid spam
   }
 
   setActiveScene(sceneId: string | null) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      activeSceneId: sceneId
+      activeSceneId: sceneId,
     }));
     this.notifyStateChange();
   }
 
   toggleDebugMode() {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      isDebugMode: !state.isDebugMode
+      isDebugMode: !state.isDebugMode,
     }));
     this.notifyStateChange();
   }
@@ -427,7 +436,11 @@ export class Angular3DStateStore {
   }
 
   // Utility methods
-  createScene(id: string, name: string, config?: Partial<SceneState>): SceneState {
+  createScene(
+    id: string,
+    name: string,
+    config?: Partial<SceneState>
+  ): SceneState {
     const sceneState: SceneState = {
       id,
       name,
@@ -437,12 +450,12 @@ export class Angular3DStateStore {
       ...config,
     };
 
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       scenes: {
         ...state.scenes,
-        [id]: sceneState
-      }
+        [id]: sceneState,
+      },
     }));
 
     this.notifyStateChange();
@@ -462,23 +475,30 @@ export class Angular3DStateStore {
 
   private setupAngularThreeSync() {
     // Sync Angular Three store changes with our state
-    effect(() => {
-      const ngtScene = this.ngtScene();
-      const ngtCamera = this.ngtCamera();
+    effect(
+      () => {
+        const ngtScene = this.ngtScene();
+        const ngtCamera = this.ngtCamera();
 
-      if (ngtScene && ngtCamera) {
-        // Update camera state from Angular Three
-        if (ngtCamera instanceof THREE.PerspectiveCamera) {
-          this.updateCamera({
-            type: 'perspective',
-            position: [ngtCamera.position.x, ngtCamera.position.y, ngtCamera.position.z],
-            fov: ngtCamera.fov,
-            near: ngtCamera.near,
-            far: ngtCamera.far,
-          });
+        if (ngtScene && ngtCamera) {
+          // Update camera state from Angular Three
+          if (ngtCamera instanceof THREE.PerspectiveCamera) {
+            this.updateCamera({
+              type: 'perspective',
+              position: [
+                ngtCamera.position.x,
+                ngtCamera.position.y,
+                ngtCamera.position.z,
+              ],
+              fov: ngtCamera.fov,
+              near: ngtCamera.near,
+              far: ngtCamera.far,
+            });
+          }
         }
-      }
-    }, { allowSignalWrites: true });
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   private setupPerformanceMonitoring() {
@@ -490,7 +510,8 @@ export class Angular3DStateStore {
       const currentTime = performance.now();
       const deltaTime = currentTime - lastTime;
 
-      if (deltaTime >= 1000) { // Update every second
+      if (deltaTime >= 1000) {
+        // Update every second
         const fps = Math.round((frameCount * 1000) / deltaTime);
         const frameTime = deltaTime / frameCount;
 

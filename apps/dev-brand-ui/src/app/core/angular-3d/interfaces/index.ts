@@ -99,6 +99,41 @@ export interface HybridElementConfigExtended {
     memoryBudget?: number; // MB
     texturePooling?: boolean;
   };
+
+  // Scene objects - large decorative 3D objects (spheres, cubes, lights)
+  sceneObjects?: {
+    spheres?: Array<{
+      position: [number, number, number];
+      radius: number;
+      color: string | number;
+      emissive?: string | number;
+      emissiveIntensity?: number;
+      opacity?: number;
+      metalness?: number;
+      roughness?: number;
+      animation?: 'float' | 'rotate' | 'pulse' | 'none';
+      animationSpeed?: number;
+    }>;
+    cubes?: Array<{
+      position: [number, number, number];
+      size: number | [number, number, number];
+      color: string | number;
+      opacity?: number;
+      rotation?: [number, number, number];
+      animation?: 'float' | 'rotate' | 'pulse' | 'none';
+      animationSpeed?: number;
+    }>;
+    lights?: Array<{
+      type: 'point' | 'directional' | 'ambient' | 'spot';
+      position?: [number, number, number];
+      target?: [number, number, number];
+      color: string | number;
+      intensity: number;
+      distance?: number;
+      decay?: number;
+      castShadow?: boolean;
+    }>;
+  };
 }
 
 export interface AnimationConfig {

@@ -49,7 +49,8 @@ export class BrandMentionEntity extends BaseChromaEntity<BrandMentionMetadata> {
 
   @ChromaProp({
     description: 'Full mention content for semantic analysis',
-    validate: (content: string) => content.length > 10 && content.length < 10000,
+    validate: (content: string) =>
+      content.length > 10 && content.length < 10000,
   })
   content!: string;
 

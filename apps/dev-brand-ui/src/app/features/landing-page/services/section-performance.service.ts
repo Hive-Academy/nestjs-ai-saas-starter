@@ -26,11 +26,13 @@ interface ActiveSection {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SectionPerformanceService {
   private readonly _activeSection = signal<ActiveSection | null>(null);
-  private readonly _performanceMetrics = signal<SectionPerformanceMetrics[]>([]);
+  private readonly _performanceMetrics = signal<SectionPerformanceMetrics[]>(
+    []
+  );
   private readonly _isOptimized = signal(true);
 
   // Memory and performance tracking
@@ -65,7 +67,7 @@ export class SectionPerformanceService {
       renderer,
       scene,
       camera,
-      loadStartTime: performance.now()
+      loadStartTime: performance.now(),
     };
 
     this._activeSection.set(activeSection);
@@ -138,7 +140,9 @@ export class SectionPerformanceService {
     const active = this._activeSection();
     if (!active) return null;
 
-    const metrics = this._performanceMetrics().find(m => m.sectionId === active.id);
+    const metrics = this._performanceMetrics().find(
+      (m) => m.sectionId === active.id
+    );
     return metrics || null;
   }
 
@@ -159,7 +163,7 @@ export class SectionPerformanceService {
   private setupRouteCleanup(): void {
     // Clean up when navigating away from landing pages
     this.router.events
-      .pipe(filter(event => event instanceof NavigationStart))
+      .pipe(filter((event) => event instanceof NavigationStart))
       .subscribe((event: NavigationStart) => {
         if (!event.url.includes('/landing/')) {
           this.cleanupActiveSection();
@@ -211,7 +215,7 @@ export class SectionPerformanceService {
 
         if (object.material) {
           if (Array.isArray(object.material)) {
-            object.material.forEach(material => {
+            object.material.forEach((material) => {
               if (material.map) material.map.dispose();
               if (material.normalMap) material.normalMap.dispose();
               if (material.emissiveMap) material.emissiveMap.dispose();
@@ -220,7 +224,8 @@ export class SectionPerformanceService {
           } else {
             if (object.material.map) object.material.map.dispose();
             if (object.material.normalMap) object.material.normalMap.dispose();
-            if (object.material.emissiveMap) object.material.emissiveMap.dispose();
+            if (object.material.emissiveMap)
+              object.material.emissiveMap.dispose();
             object.material.dispose();
           }
         }
@@ -239,7 +244,8 @@ export class SectionPerformanceService {
       frameCount++;
       const deltaTime = currentTime - lastTime;
 
-      if (deltaTime >= 1000) { // Update every second
+      if (deltaTime >= 1000) {
+        // Update every second
         const fps = Math.round((frameCount * 1000) / deltaTime);
         const memoryUsage = this.getMemoryUsage();
         const loadTime = currentTime - startTime;
@@ -249,7 +255,7 @@ export class SectionPerformanceService {
           loadTime,
           memoryUsage,
           frameRate: fps,
-          threeJsObjects: this.countThreeJsObjects()
+          threeJsObjects: this.countThreeJsObjects(),
         };
 
         this.updateMetrics(metrics);
@@ -276,7 +282,9 @@ export class SectionPerformanceService {
       this._isOptimized.set(isOptimized);
 
       if (!isOptimized) {
-        console.warn(`⚠️ High memory usage detected: ${memoryUsage.toFixed(2)}MB`);
+        console.warn(
+          `⚠️ High memory usage detected: ${memoryUsage.toFixed(2)}MB`
+        );
         this.attemptMemoryOptimization();
       }
     }, 5000);
@@ -300,8 +308,10 @@ export class SectionPerformanceService {
   }
 
   private updateMetrics(metrics: SectionPerformanceMetrics): void {
-    this._performanceMetrics.update(current => {
-      const existing = current.findIndex(m => m.sectionId === metrics.sectionId);
+    this._performanceMetrics.update((current) => {
+      const existing = current.findIndex(
+        (m) => m.sectionId === metrics.sectionId
+      );
       if (existing >= 0) {
         current[existing] = metrics;
         return [...current];
