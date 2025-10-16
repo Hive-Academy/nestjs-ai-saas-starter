@@ -18,7 +18,6 @@
  */
 
 export { SceneNodeComponent } from './scene-node.component';
-export { GeometryNodeComponent } from './geometry-node.component';
 
 // Export type definitions
 export type {
@@ -27,12 +26,5 @@ export type {
   NodeBounds,
 } from './scene-node.component';
 
-export type {
-  GeometryType,
-  GeometryConfig,
-  MaterialConfig,
-} from './geometry-node.component';
-
 // Re-export for convenience
 export * from './scene-node.component';
-export * from './geometry-node.component';

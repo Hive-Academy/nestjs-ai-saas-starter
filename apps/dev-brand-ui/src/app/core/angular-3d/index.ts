@@ -5,11 +5,8 @@ export { HybridUIService } from './services/hybrid-ui.service';
 
 // Components
 export { HybridSceneComponent } from './components/hybrid-scene.component';
-export { HybridElement3DComponent } from './components/hybrid-element-3d.component';
-export { Card3DComponent } from './components/card3d.component';
 
 // Directives
-export { Hybrid3DDirective } from './directives/hybrid3d.directive';
 export { Element3DDirective } from './directives/element-3d.directive';
 
 // Interfaces and Types
