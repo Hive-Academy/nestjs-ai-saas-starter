@@ -6,7 +6,7 @@ import {
   ViewChild,
   OnDestroy,
 } from '@angular/core';
- 
+
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 
