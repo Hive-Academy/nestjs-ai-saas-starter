@@ -7,10 +7,10 @@
  */
 
 import { Injectable, signal, computed, effect } from '@angular/core';
-// import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // Commented out as unused
 import * as THREE from 'three';
 import { injectStore } from 'angular-three';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { map, distinctUntilChanged, debounceTime, filter } from 'rxjs/operators';
 
 // State interfaces
 export interface SceneState {
@@ -96,6 +96,47 @@ export interface PerformanceState {
   readonly textures: number;
 }
 
+// Component registry and event types (merged from ReactiveStateManagerService)
+export interface ComponentRegistration {
+  readonly componentId: string;
+  readonly componentType:
+    | 'scene-node'
+    | 'geometry-node'
+    | 'hybrid-scene'
+    | 'animation-demo';
+  readonly sceneObjectId?: string;
+  readonly isActive: boolean;
+  readonly dependencies: readonly string[];
+}
+
+export interface SceneGraphEvent {
+  readonly type:
+    | 'node-added'
+    | 'node-removed'
+    | 'node-updated'
+    | 'animation-started'
+    | 'animation-stopped';
+  readonly source: string; // component ID
+  readonly target?: string; // target component ID
+  readonly data: unknown;
+  readonly timestamp: number;
+}
+
+export interface CrossComponentMessage {
+  readonly from: string;
+  readonly to: string;
+  readonly action: string;
+  readonly payload: unknown;
+}
+
+export interface SceneQuery {
+  readonly sceneId?: string;
+  readonly objectType?: 'mesh' | 'group' | 'light' | 'camera';
+  readonly visible?: boolean;
+  readonly hasAnimation?: boolean;
+  readonly parent?: string;
+}
+
 // Main application state interface
 export interface Angular3DAppState {
   readonly scenes: Record<string, SceneState>;
@@ -149,11 +190,15 @@ const initialState: Angular3DAppState = {
 })
 export class Angular3DStateStore {
   private readonly ngtStore = injectStore({ optional: true });
-  // private readonly destroyRef = inject(DestroyRef); // Commented out as unused
 
   // Core state signals
   private readonly _state = signal<Angular3DAppState>(initialState);
   private readonly _lastUpdateTime = signal<number>(Date.now());
+
+  // Component registry and event bus (merged from ReactiveStateManagerService)
+  private readonly componentRegistry = signal<Map<string, ComponentRegistration>>(new Map());
+  private readonly eventBus$ = new Subject<SceneGraphEvent>();
+  private readonly _componentMessages$ = new Subject<CrossComponentMessage>();
 
   // State update subject for reactive streams
   private readonly stateUpdates$ = new BehaviorSubject<Angular3DAppState>(
@@ -193,6 +238,70 @@ export class Angular3DStateStore {
   readonly isDebugMode = computed(() => this._state().isDebugMode);
 
   readonly performance = computed(() => this._state().performance);
+
+  // Component registry computed properties (merged from ReactiveStateManagerService)
+  readonly activeComponents = computed(() => {
+    return Array.from(this.componentRegistry().values()).filter(
+      (comp) => comp.isActive
+    );
+  });
+
+  readonly sceneObjectsByType = computed(() => {
+    const state = this._state();
+    const activeScene = state.activeSceneId
+      ? state.scenes[state.activeSceneId]
+      : null;
+
+    if (!activeScene) return {};
+
+    const objects = Object.values(activeScene.objects);
+    return objects.reduce((acc, obj) => {
+      if (!acc[obj.type]) acc[obj.type] = [];
+      acc[obj.type].push(obj);
+      return acc;
+    }, {} as Record<string, SceneObjectState[]>);
+  });
+
+  readonly animatedObjects = computed(() => {
+    return Object.values(this._state().animations)
+      .filter((anim) => anim.isPlaying)
+      .map((anim) => anim.target);
+  });
+
+  readonly performanceStatus = computed(() => {
+    const performance = this._state().performance;
+    const componentCount = this.activeComponents().length;
+
+    return {
+      ...performance,
+      componentCount,
+      averageLoad:
+        componentCount > 0 ? performance.drawCalls / componentCount : 0,
+      isHealthy: performance.fps >= 30 && performance.frameTime < 33.33,
+    };
+  });
+
+  // Event streams (merged from ReactiveStateManagerService)
+  readonly events$ = this.eventBus$.asObservable();
+  readonly componentMessages$ = this._componentMessages$.asObservable();
+
+  readonly sceneUpdates$ = this.getStateStream().pipe(
+    map((state) => state.scenes),
+    distinctUntilChanged(),
+    debounceTime(16) // Throttle to ~60fps
+  );
+
+  readonly animationUpdates$ = this.getStateStream().pipe(
+    map((state) => state.animations),
+    distinctUntilChanged(),
+    debounceTime(32) // Throttle animation updates
+  );
+
+  readonly performanceUpdates$ = this.getStateStream().pipe(
+    map((state) => state.performance),
+    distinctUntilChanged(),
+    debounceTime(100) // Performance updates every 100ms
+  );
 
   // Angular Three integration computed properties
   readonly ngtScene = computed(() => this.ngtStore?.get('scene') || null);
@@ -462,9 +571,157 @@ export class Angular3DStateStore {
     return sceneState;
   }
 
+  // Component registration and lifecycle management (merged from ReactiveStateManagerService)
+  registerComponent(registration: ComponentRegistration): void {
+    this.componentRegistry.update((registry) => {
+      const newRegistry = new Map(registry);
+      newRegistry.set(registration.componentId, registration);
+      return newRegistry;
+    });
+
+    this.emitEvent({
+      type: 'node-added',
+      source: registration.componentId,
+      data: registration,
+    });
+  }
+
+  unregisterComponent(componentId: string): void {
+    const registration = this.componentRegistry().get(componentId);
+    if (registration) {
+      this.componentRegistry.update((registry) => {
+        const newRegistry = new Map(registry);
+        newRegistry.delete(componentId);
+        return newRegistry;
+      });
+
+      this.emitEvent({
+        type: 'node-removed',
+        source: componentId,
+        data: registration,
+      });
+
+      // Clean up associated scene objects
+      if (registration.sceneObjectId) {
+        const activeSceneId = this._state().activeSceneId;
+        if (activeSceneId) {
+          this.removeSceneObject(activeSceneId, registration.sceneObjectId);
+        }
+      }
+    }
+  }
+
+  updateComponent(
+    componentId: string,
+    updates: Partial<ComponentRegistration>
+  ): void {
+    this.componentRegistry.update((registry) => {
+      const existing = registry.get(componentId);
+      if (!existing) return registry;
+
+      const newRegistry = new Map(registry);
+      newRegistry.set(componentId, { ...existing, ...updates });
+      return newRegistry;
+    });
+  }
+
+  // Query methods for component coordination (merged from ReactiveStateManagerService)
+  querySceneObjects(query: SceneQuery): SceneObjectState[] {
+    const state = this._state();
+    const sceneId = query.sceneId || state.activeSceneId;
+
+    if (!sceneId || !state.scenes[sceneId]) return [];
+
+    const objects = Object.values(state.scenes[sceneId].objects);
+
+    return objects.filter((obj) => {
+      if (query.objectType && obj.type !== query.objectType) return false;
+      if (query.visible !== undefined && obj.visible !== query.visible)
+        return false;
+      if (query.parent !== undefined && obj.parent !== query.parent)
+        return false;
+      if (query.hasAnimation) {
+        const hasAnim = Object.values(state.animations).some(
+          (anim) => anim.target === obj.id
+        );
+        if (!hasAnim) return false;
+      }
+      return true;
+    });
+  }
+
+  getComponentDependencies(componentId: string): ComponentRegistration[] {
+    const component = this.componentRegistry().get(componentId);
+    if (!component) return [];
+
+    return component.dependencies
+      .map((depId) => this.componentRegistry().get(depId))
+      .filter((comp): comp is ComponentRegistration => comp !== undefined);
+  }
+
+  getComponentsByType(
+    type: ComponentRegistration['componentType']
+  ): ComponentRegistration[] {
+    return Array.from(this.componentRegistry().values()).filter(
+      (comp) => comp.componentType === type
+    );
+  }
+
+  // Event communication methods (merged from ReactiveStateManagerService)
+  emitEvent(event: Omit<SceneGraphEvent, 'timestamp'>): void {
+    this.eventBus$.next({
+      ...(event as SceneGraphEvent),
+      timestamp: Date.now(),
+    });
+  }
+
+  sendMessage(message: CrossComponentMessage): void {
+    this._componentMessages$.next(message);
+  }
+
+  // Observable factories for reactive streams (merged from ReactiveStateManagerService)
+  createObjectStream(objectId: string): Observable<SceneObjectState | null> {
+    return this.sceneUpdates$.pipe(
+      map((scenes) => {
+        for (const scene of Object.values(scenes)) {
+          if (scene.objects[objectId]) {
+            return scene.objects[objectId];
+          }
+        }
+        return null;
+      }),
+      distinctUntilChanged()
+    );
+  }
+
+  createAnimationStream(
+    animationId: string
+  ): Observable<AnimationState | null> {
+    return this.animationUpdates$.pipe(
+      map((animations) => animations[animationId] || null),
+      distinctUntilChanged()
+    );
+  }
+
+  createComponentMessagesStream(
+    componentId: string
+  ): Observable<CrossComponentMessage> {
+    return this.componentMessages$.pipe(
+      filter((message) => message.to === componentId || message.to === '*')
+    );
+  }
+
+  // Cleanup and resource management (merged from ReactiveStateManagerService)
+  cleanup(): void {
+    this.componentRegistry.set(new Map());
+    this.eventBus$.complete();
+    this._componentMessages$.complete();
+  }
+
   // Reset state to initial
   reset() {
     this._state.set(initialState);
+    this.componentRegistry.set(new Map());
     this.notifyStateChange();
   }
 

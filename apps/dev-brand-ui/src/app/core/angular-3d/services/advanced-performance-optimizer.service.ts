@@ -26,7 +26,7 @@ import * as THREE from 'three';
 import { BehaviorSubject, interval } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
-import { ReactiveStateManagerService } from './reactive-state-manager.service';
+import { Angular3DStateStore } from './angular-3d-state.store';
 import { PerformanceMonitorService } from '../../../features/spatial-interface/services/performance-monitor.service';
 
 // Enhanced optimization interfaces
@@ -80,7 +80,7 @@ export interface PerformanceTarget {
   providedIn: 'root',
 })
 export class AdvancedPerformanceOptimizerService {
-  private readonly stateManager = inject(ReactiveStateManagerService);
+  private readonly stateStore = inject(Angular3DStateStore);
   private readonly performanceMonitor = inject(PerformanceMonitorService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -155,7 +155,7 @@ export class AdvancedPerformanceOptimizerService {
   readonly performanceTargetConfig = this.performanceTarget.asReadonly();
 
   readonly performanceHealthScore = computed(() => {
-    const metrics = this.stateManager.performanceStatus();
+    const metrics = this.stateStore.performanceStatus();
     const target = this.performanceTarget();
 
     const fpsScore = Math.min(metrics.fps / target.targetFPS, 1);
@@ -287,7 +287,7 @@ export class AdvancedPerformanceOptimizerService {
   }> {
     const recommendations = [];
     const healthScore = this.performanceHealthScore();
-    const metrics = this.stateManager.performanceStatus();
+    const metrics = this.stateStore.performanceStatus();
 
     if (metrics.fps < this.performanceTarget().targetFPS * 0.8) {
       recommendations.push({
@@ -371,8 +371,8 @@ export class AdvancedPerformanceOptimizerService {
       this.trackMonitorMetrics(metrics);
     });
 
-    // Subscribe to state manager updates for object tracking
-    this.stateManager.sceneUpdates$
+    // Subscribe to state store updates for object tracking
+    this.stateStore.sceneUpdates$
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         debounceTime(16) // 60fps throttle

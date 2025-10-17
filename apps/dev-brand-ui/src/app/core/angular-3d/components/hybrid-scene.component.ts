@@ -246,7 +246,9 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   readonly shadowCameraNear = input<number>(0.1);
   readonly shadowCameraFar = input<number>(50);
   readonly shadowCameraBounds = input<number>(10);
-  readonly directionalLightPosition = input<[number, number, number]>([5, 5, 5]);
+  readonly directionalLightPosition = input<[number, number, number]>([
+    5, 5, 5,
+  ]);
   readonly pointLightPosition = input<[number, number, number]>([-5, 5, 5]);
 
   // Output events for component integration

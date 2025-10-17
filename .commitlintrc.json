@@ -9,7 +9,7 @@
     "scope-enum": [
       2,
       "always",
-      ["chromadb", "neo4j", "langgraph", "deps", "release", "ci", "docs", "hooks", "scripts"]
+      ["chromadb", "neo4j", "langgraph", "deps", "release", "ci", "docs", "hooks", "scripts","angular-3d"]
     ],
     "scope-case": [2, "always", "lower-case"],
     "subject-case": [2, "never", ["sentence-case", "start-case", "pascal-case", "upper-case"]],

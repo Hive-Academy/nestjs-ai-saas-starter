@@ -12,11 +12,10 @@ export { AngularThreeFoundationService } from './angular-three-foundation.servic
 export { HybridUIService } from './hybrid-ui.service';
 export { AnimationService } from './animation.service';
 export { Angular3DStateStore } from './angular-3d-state.store';
-export { ReactiveStateManagerService } from './reactive-state-manager.service';
 export { AdvancedPerformanceOptimizerService } from './advanced-performance-optimizer.service';
 export { ContentTexturePipelineService } from './content-texture-pipeline.service';
 
-// Re-export types from state store
+// Re-export types from state store (including merged types from ReactiveStateManager)
 export type {
   SceneState,
   SceneObjectState,
@@ -26,15 +25,11 @@ export type {
   AnimationState,
   PerformanceState,
   Angular3DAppState,
-} from './angular-3d-state.store';
-
-// Re-export types from reactive state manager
-export type {
+  ComponentRegistration,
   SceneGraphEvent,
   CrossComponentMessage,
   SceneQuery,
-  ComponentRegistration,
-} from './reactive-state-manager.service';
+} from './angular-3d-state.store';
 
 // Re-export animation types
 export type {
