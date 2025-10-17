@@ -197,7 +197,12 @@ Implement Brand Coach as a **workflow-agent** similar to existing agents, but wi
   name: 'Brand Coach',
   type: 'workflow-agent',
   capabilities: ['conversational-guidance', 'personalized-recommendations', 'brand-consulting'],
-  tools: ['developer-profiling', 'competitive-intelligence', 'content-strategy', 'brand-monitoring'],
+  tools: [
+    'developer-profiling',
+    'competitive-intelligence',
+    'content-strategy',
+    'brand-monitoring',
+  ],
   priority: 'high',
   executionTime: 'fast',
   workflow: {
@@ -217,7 +222,9 @@ Implement Brand Coach as a **workflow-agent** similar to existing agents, but wi
   },
 })
 @Injectable()
-export class BrandCoachAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<BrandCoachMetadata>> {
+export class BrandCoachAgent extends DeclarativeWorkflowBase<
+  TypedWorkflowAgentState<BrandCoachMetadata>
+> {
   // Internal workflow nodes:
   // 1. initializeConversation
   // 2. analyzeUserContext
@@ -342,7 +349,12 @@ export interface BrandCoachMetadata extends WorkflowAgentMetadata {
   followUpQuestions?: string[];
 
   // Workflow state
-  currentStep?: 'initialization' | 'intent-analyzed' | 'specialist-consulted' | 'response-generated' | 'conversation-complete';
+  currentStep?:
+    | 'initialization'
+    | 'intent-analyzed'
+    | 'specialist-consulted'
+    | 'response-generated'
+    | 'conversation-complete';
 
   // Metadata
   conversationStartTime?: Date;
@@ -446,7 +458,10 @@ ROUTING RULES:
 ```typescript
 @Controller('brand-coach')
 export class BrandCoachController {
-  constructor(private readonly coordinator: MultiAgentCoordinatorService, private readonly brandCoach: BrandCoachAgent) {}
+  constructor(
+    private readonly coordinator: MultiAgentCoordinatorService,
+    private readonly brandCoach: BrandCoachAgent
+  ) {}
 
   @Post('chat')
   async chat(@Body() body: { userId: string; message: string; conversationId?: string }) {

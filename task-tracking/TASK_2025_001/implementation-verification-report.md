@@ -156,7 +156,8 @@ export interface WorkflowAgentMetadata {
 **Required Interface** (lines 72-84):
 
 ```typescript
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends Omit<WorkflowAgentState, 'metadata'> {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
+  extends Omit<WorkflowAgentState, 'metadata'> {
   metadata: TMetadata; // Strongly typed metadata
 }
 ```
@@ -257,7 +258,9 @@ PASS
 **Required Interface** (lines 16-23):
 
 ```typescript
-export interface TaskExecutionContext<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
+export interface TaskExecutionContext<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
   readonly state: TState;
   readonly taskName: string;
   readonly workflowId: string;
@@ -328,7 +331,11 @@ function detectAgentType(target: any): AgentType {
   let proto = Object.getPrototypeOf(target);
   while (proto && proto !== Object.prototype) {
     const protoName = proto.name;
-    if (protoName === 'DeclarativeWorkflowBase' || protoName === 'StreamingWorkflowBase' || protoName === 'UnifiedWorkflowBase') {
+    if (
+      protoName === 'DeclarativeWorkflowBase' ||
+      protoName === 'StreamingWorkflowBase' ||
+      protoName === 'UnifiedWorkflowBase'
+    ) {
       return 'workflow-agent';
     }
     proto = Object.getPrototypeOf(proto);
@@ -342,7 +349,10 @@ PASS - Auto-detects from class hierarchy
 **createDefaultWorkflowConfig** (lines 252-270):
 
 ```typescript
-function createDefaultWorkflowConfig(agentId: string, agentDescription: string): AgentWorkflowConfig {
+function createDefaultWorkflowConfig(
+  agentId: string,
+  agentDescription: string
+): AgentWorkflowConfig {
   return {
     name: `${agentId}-workflow`,
     description: agentDescription,
@@ -395,7 +405,10 @@ PASS - Auto-applies workflow defaults for workflow-agent type
 const agentConfig: AgentConfig = {
   ...baseConfig,
   ...config,
-  workflow: config.workflow && baseConfig.workflow ? { ...baseConfig.workflow, ...config.workflow } : config.workflow || baseConfig.workflow,
+  workflow:
+    config.workflow && baseConfig.workflow
+      ? { ...baseConfig.workflow, ...config.workflow }
+      : config.workflow || baseConfig.workflow,
 };
 ```
 

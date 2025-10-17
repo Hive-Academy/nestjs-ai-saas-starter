@@ -824,7 +824,11 @@ import { HybridSceneComponent } from '@app/core/angular-3d';
 
 @Component({
   template: `
-    <app-hybrid-scene [backgroundColor]="'#f0f0f0'" [ambientLightIntensity]="0.4" [directionalLightIntensity]="0.8">
+    <app-hybrid-scene
+      [backgroundColor]="'#f0f0f0'"
+      [ambientLightIntensity]="0.4"
+      [directionalLightIntensity]="0.8"
+    >
       <!-- Your 3D content here -->
     </app-hybrid-scene>
   `,

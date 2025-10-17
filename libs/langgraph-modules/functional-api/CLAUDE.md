@@ -51,7 +51,13 @@ await workflowExecutionService.executeWorkflow(definition);
 
 ```typescript
 // REAL PRODUCTION WORKFLOW using functional-api decorators
-import { FunctionalWorkflow as Workflow, Entrypoint, Task, Node, Edge } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow as Workflow,
+  Entrypoint,
+  Task,
+  Node,
+  Edge,
+} from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 
@@ -63,7 +69,13 @@ import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 })
 @Injectable()
 export class DevBrandSupervisorWorkflow {
-  constructor(private readonly llmProvider: LlmProviderService, private readonly githubAnalyzer: GitHubCodeAnalyzerAgent, private readonly contentCreator: ContentCreatorAgent, private readonly brandStrategist: PersonalBrandStrategistAgent, private readonly brandMemory: PersonalBrandMemoryService) {}
+  constructor(
+    private readonly llmProvider: LlmProviderService,
+    private readonly githubAnalyzer: GitHubCodeAnalyzerAgent,
+    private readonly contentCreator: ContentCreatorAgent,
+    private readonly brandStrategist: PersonalBrandStrategistAgent,
+    private readonly brandMemory: PersonalBrandMemoryService
+  ) {}
 
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
@@ -123,7 +135,9 @@ export class DevBrandSupervisorWorkflow {
 
   @Node({ type: 'condition' })
   async routeBasedOnConfidence(context: TaskExecutionContext): Promise<{ route: string }> {
-    return workflowState.confidence > 0.8 ? { route: 'high-confidence' } : { route: 'low-confidence' };
+    return workflowState.confidence > 0.8
+      ? { route: 'high-confidence' }
+      : { route: 'low-confidence' };
   }
 
   @Edge('routeBasedOnConfidence', 'generateContent')
@@ -141,7 +155,12 @@ export class DevBrandSupervisorWorkflow {
 
 ```typescript
 // REAL WORKFLOW-ENGINE INTEGRATION
-import { getWorkflowMetadata, getWorkflowNodes, getWorkflowEdges, getAllStreamingMetadata } from '@hive-academy/langgraph-functional-api';
+import {
+  getWorkflowMetadata,
+  getWorkflowNodes,
+  getWorkflowEdges,
+  getAllStreamingMetadata,
+} from '@hive-academy/langgraph-functional-api';
 import type { NodeMetadata, EdgeMetadata } from '@hive-academy/langgraph-functional-api';
 
 @Injectable()
@@ -149,7 +168,9 @@ export class MetadataProcessorService {
   /**
    * Extract WorkflowDefinition from decorator metadata
    */
-  extractWorkflowDefinition<TState extends WorkflowState>(workflowClass: any): WorkflowDefinition<TState> {
+  extractWorkflowDefinition<TState extends WorkflowState>(
+    workflowClass: any
+  ): WorkflowDefinition<TState> {
     // 1. Get workflow metadata from @Workflow decorator
     const workflowOptions = getWorkflowMetadata(workflowClass);
     if (!workflowOptions) {
@@ -449,7 +470,12 @@ Defines workflow tasks with explicit dependencies.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Entrypoint, Task, TaskExecutionContext, TaskExecutionResult } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Entrypoint,
+  Task,
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class DataProcessingWorkflow {
@@ -551,7 +577,12 @@ Defines connections between nodes.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Node, Edge, ConditionalEdge, DeclarativeWorkflowBase } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Node,
+  Edge,
+  ConditionalEdge,
+  DeclarativeWorkflowBase,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class ApprovalWorkflow extends DeclarativeWorkflowBase {
@@ -896,7 +927,13 @@ The Functional API Module supports **two workflow patterns** that **cannot be mi
 **Architecture**: Dependency-driven execution with implicit edges
 
 ```typescript
-import { Entrypoint, Task, TaskExecutionContext, TaskExecutionResult, WorkflowType } from '@hive-academy/langgraph-functional-api';
+import {
+  Entrypoint,
+  Task,
+  TaskExecutionContext,
+  TaskExecutionResult,
+  WorkflowType,
+} from '@hive-academy/langgraph-functional-api';
 
 @FunctionalWorkflow({
   name: 'task-workflow',

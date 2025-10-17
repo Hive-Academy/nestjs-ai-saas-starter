@@ -102,7 +102,11 @@ export class MyModule {
     return {
       module: MyModule,
       imports: [...this.getRequiredImports()],
-      providers: [...this.createCoreProviders(), ...this.createFeatureProviders(options), ...this.createInfrastructureProviders()],
+      providers: [
+        ...this.createCoreProviders(),
+        ...this.createFeatureProviders(options),
+        ...this.createInfrastructureProviders(),
+      ],
       exports: [...this.getPublicExports()],
     };
   }

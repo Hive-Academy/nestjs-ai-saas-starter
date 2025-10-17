@@ -64,7 +64,11 @@ providers.push({
 // memory.module.ts - AFTER (CORRECT)
 providers.push({
   provide: 'IMemoryAdapter',
-  useFactory: (vectorAdapter: IVectorService, graphAdapter: IGraphService, checkpointAdapter: ICheckpointAdapter) => {
+  useFactory: (
+    vectorAdapter: IVectorService,
+    graphAdapter: IGraphService,
+    checkpointAdapter: ICheckpointAdapter
+  ) => {
     return new AgentMemoryBridgeService(
       vectorAdapter, // ✅ Direct ChromaVectorAdapter injection
       graphAdapter, // ✅ Direct Neo4jGraphAdapter injection
@@ -105,7 +109,10 @@ providers.push({
 
 ```typescript
 // migration-scripts/migrate-memory-collections.ts
-export async function migrateMemoryCollections(chromaClient: ChromaClient, neo4jService: INeo4jService): Promise<MigrationReport> {
+export async function migrateMemoryCollections(
+  chromaClient: ChromaClient,
+  neo4jService: INeo4jService
+): Promise<MigrationReport> {
   const report: MigrationReport = {
     totalMigrated: 0,
     totalFailed: 0,
@@ -169,7 +176,10 @@ export async function migrateMemoryCollections(chromaClient: ChromaClient, neo4j
 **Validation Strategy**:
 
 ```typescript
-async function validateMigration(oldCollection: ChromaCollection, newRepository: VectorMemoryRepository): Promise<ValidationResult> {
+async function validateMigration(
+  oldCollection: ChromaCollection,
+  newRepository: VectorMemoryRepository
+): Promise<ValidationResult> {
   const oldDocs = await oldCollection.get();
   const newDocs = await newRepository.findAll();
 
@@ -300,12 +310,36 @@ async getAgentMemoryContext(
 // IMemoryAdapter interface (from @hive-academy/langgraph-core)
 export abstract class IMemoryAdapter {
   abstract getAgentContext(state: AgentState): Promise<AgentMemoryContext>;
-  abstract storeAgentExecution(state: AgentState, result: Partial<AgentState>, agentId: string): Promise<void>;
-  abstract storeConversationTurn(threadId: string, humanMessage: string, aiMessage: string, metadata?: Record<string, unknown>): Promise<void>;
+  abstract storeAgentExecution(
+    state: AgentState,
+    result: Partial<AgentState>,
+    agentId: string
+  ): Promise<void>;
+  abstract storeConversationTurn(
+    threadId: string,
+    humanMessage: string,
+    aiMessage: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void>;
   abstract getStore(collection?: string): Store;
-  abstract search(options: { query: string; threadId?: string; userId?: string; agentId?: string; limit?: number; namespace?: string[]; minRelevance?: number }): Promise<any[]>;
-  abstract store(threadId: string, content: string, metadata?: Record<string, unknown>): Promise<string>;
-  abstract storeBatch(threadId: string, entries: Array<{ content: string; metadata?: Record<string, unknown> }>): Promise<string[]>;
+  abstract search(options: {
+    query: string;
+    threadId?: string;
+    userId?: string;
+    agentId?: string;
+    limit?: number;
+    namespace?: string[];
+    minRelevance?: number;
+  }): Promise<any[]>;
+  abstract store(
+    threadId: string,
+    content: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string>;
+  abstract storeBatch(
+    threadId: string,
+    entries: Array<{ content: string; metadata?: Record<string, unknown> }>
+  ): Promise<string[]>;
   abstract getUserPatterns(userId: string, limitDays?: number): Promise<any>;
   abstract isHealthy(): Promise<boolean>;
 }
@@ -573,7 +607,11 @@ class ChromaVectorAdapter implements IVectorService {
 class MemoryStorageService {
   constructor(@Inject('IVectorService') private readonly vectorService: IVectorService) {}
 
-  async store(threadId: string, content: string, metadata?: Partial<MemoryMetadata>): Promise<MemoryEntry> {
+  async store(
+    threadId: string,
+    content: string,
+    metadata?: Partial<MemoryMetadata>
+  ): Promise<MemoryEntry> {
     // Pure delegation - no business logic
     await this.vectorService.store('vector-memories', {
       id: randomUUID(),
@@ -604,7 +642,12 @@ class MemoryService implements MemoryServiceInterface {
     private readonly graphService: MemoryGraphService // Graph subsystem
   ) {}
 
-  async store(threadId: string, content: string, metadata?: Partial<MemoryMetadata>, userId?: string): Promise<MemoryEntry> {
+  async store(
+    threadId: string,
+    content: string,
+    metadata?: Partial<MemoryMetadata>,
+    userId?: string
+  ): Promise<MemoryEntry> {
     // Coordinate vector + graph storage
     const entry = await this.storageService.store(threadId, content, metadata, userId);
     await this.graphService.trackMemory(entry); // Graceful degradation if fails
@@ -613,10 +656,15 @@ class MemoryService implements MemoryServiceInterface {
 
   async getStats(): Promise<MemoryStats> {
     // Coordinate statistics from both subsystems
-    const [vectorStats, graphStats] = await Promise.allSettled([this.storageService.getVectorStats(), this.graphService.getGraphStats()]);
+    const [vectorStats, graphStats] = await Promise.allSettled([
+      this.storageService.getVectorStats(),
+      this.graphService.getGraphStats(),
+    ]);
 
     return {
-      totalMemories: (vectorStats.status === 'fulfilled' ? vectorStats.value.totalMemories : 0) + (graphStats.status === 'fulfilled' ? graphStats.value.totalMemories : 0),
+      totalMemories:
+        (vectorStats.status === 'fulfilled' ? vectorStats.value.totalMemories : 0) +
+        (graphStats.status === 'fulfilled' ? graphStats.value.totalMemories : 0),
       // ... combined stats
     };
   }
@@ -639,7 +687,11 @@ class MemoryService implements MemoryServiceInterface {
 // Factory in Module Configuration
 providers.push({
   provide: 'IMemoryAdapter',
-  useFactory: (vectorAdapter: IVectorService, graphAdapter: IGraphService, checkpointAdapter: ICheckpointAdapter) => {
+  useFactory: (
+    vectorAdapter: IVectorService,
+    graphAdapter: IGraphService,
+    checkpointAdapter: ICheckpointAdapter
+  ) => {
     // Factory with validation
     return new AgentMemoryBridgeService(vectorAdapter, graphAdapter, checkpointAdapter);
   },
@@ -1228,12 +1280,18 @@ Quality Attributes:
    ```typescript
    // BEFORE:
    import { MemoryService } from './memory.service';
-   import type { MemoryEntry, UserMemoryPatterns as ReadonlyUserMemoryPatterns } from '../interfaces/memory.interface';
+   import type {
+     MemoryEntry,
+     UserMemoryPatterns as ReadonlyUserMemoryPatterns,
+   } from '../interfaces/memory.interface';
 
    // AFTER:
    import { IVectorService } from '../interfaces/vector-service.interface';
    import { IGraphService } from '../interfaces/graph-service.interface';
-   import type { MemoryEntry, UserMemoryPatterns as ReadonlyUserMemoryPatterns } from '../interfaces/memory.interface';
+   import type {
+     MemoryEntry,
+     UserMemoryPatterns as ReadonlyUserMemoryPatterns,
+   } from '../interfaces/memory.interface';
    ```
 
 2. **Lines 33-42 - Refactor constructor**:
@@ -1293,7 +1351,11 @@ Quality Attributes:
 
    ```typescript
    // BEFORE:
-   const searchResults = await this.memoryService.searchForContext(query || `agent context for ${agentId}`, threadId, userId); // ❌ Calls broken MemoryService
+   const searchResults = await this.memoryService.searchForContext(
+     query || `agent context for ${agentId}`,
+     threadId,
+     userId
+   ); // ❌ Calls broken MemoryService
 
    const agentSpecificMemories = await this.searchAgentMemories(agentId, query || '', {
      threadId,
@@ -1310,24 +1372,43 @@ Quality Attributes:
      10 // limit
    ); // ✅ Direct adapter call
 
-   const agentSpecificMemories = await this.vectorService.searchAgentMemories('vector-memories', query || '', { threadId, userId, agentId, limit: 5, minRelevance: 0.6 }); // ✅ Direct adapter call with agent filter
+   const agentSpecificMemories = await this.vectorService.searchAgentMemories(
+     'vector-memories',
+     query || '',
+     { threadId, userId, agentId, limit: 5, minRelevance: 0.6 }
+   ); // ✅ Direct adapter call with agent filter
    ```
 
 2. **Lines 166-217 - storeAgentMemory()**:
 
    ```typescript
    // BEFORE:
-   const storedMemory = await this.memoryService.store(agentThreadId, memory.content, enhancedMetadata, memory.userId); // ❌ Calls broken MemoryService
+   const storedMemory = await this.memoryService.store(
+     agentThreadId,
+     memory.content,
+     enhancedMetadata,
+     memory.userId
+   ); // ❌ Calls broken MemoryService
 
    // AFTER:
-   const storedMemory = await this.vectorService.storeAgentMemory('vector-memories', agentId, { threadId: agentThreadId, userId: memory.userId, current: agentId }, memory.content, enhancedMetadata); // ✅ Direct adapter call with agent namespace
+   const storedMemory = await this.vectorService.storeAgentMemory(
+     'vector-memories',
+     agentId,
+     { threadId: agentThreadId, userId: memory.userId, current: agentId },
+     memory.content,
+     enhancedMetadata
+   ); // ✅ Direct adapter call with agent namespace
    ```
 
 3. **Lines 222-292 - storeAgentMemoriesBatch()**:
 
    ```typescript
    // BEFORE:
-   const batchResults = await this.memoryService.storeBatch(agentThreadId, batchEntries, threadMemories[0]?.userId); // ❌ Calls broken MemoryService
+   const batchResults = await this.memoryService.storeBatch(
+     agentThreadId,
+     batchEntries,
+     threadMemories[0]?.userId
+   ); // ❌ Calls broken MemoryService
 
    // AFTER:
    const batchResults = await this.vectorService.storeAgentMemoriesBatch(
@@ -1376,7 +1457,11 @@ Quality Attributes:
    ); // ❌ Calls broken MemoryService
 
    // AFTER:
-   const agentMemories = await this.vectorService.searchAgentMemories('vector-memories', '', { threadId, agentId, limit: 1000 });
+   const agentMemories = await this.vectorService.searchAgentMemories('vector-memories', '', {
+     threadId,
+     agentId,
+     limit: 1000,
+   });
    const deletedCount = await this.vectorService.delete(
      'vector-memories',
      agentMemories.map((m) => m.id)
@@ -1713,7 +1798,11 @@ Quality Attributes:
    // AFTER:
    providers.push({
      provide: 'IMemoryAdapter',
-     useFactory: (vectorAdapter: IVectorService, graphAdapter: IGraphService, checkpointAdapter: ICheckpointAdapter) => {
+     useFactory: (
+       vectorAdapter: IVectorService,
+       graphAdapter: IGraphService,
+       checkpointAdapter: ICheckpointAdapter
+     ) => {
        // Direct AgentMemoryBridgeService usage (Decision 1: Option A)
        return new AgentMemoryBridgeService(
          vectorAdapter, // ✅ Direct ChromaVectorAdapter injection
@@ -1812,7 +1901,13 @@ Quality Attributes:
 
    ```typescript
    // Interface exports
-   export type { IAgentMemoryService, AgentMemory, AgentMemoryConfig, AgentMemoryStats, IAgentMemoryBridge } from './lib/interfaces/agent-memory.interface';
+   export type {
+     IAgentMemoryService,
+     AgentMemory,
+     AgentMemoryConfig,
+     AgentMemoryStats,
+     IAgentMemoryBridge,
+   } from './lib/interfaces/agent-memory.interface';
    ```
 
 **Acceptance Criteria**:
@@ -2048,7 +2143,9 @@ describe('Single Data Store Integration', () => {
       );
 
       // Verify Neo4j schema
-      const result = await neo4jService.executeCypher('MATCH (m:Memory) RETURN m.memoryType, m.agentId, m.sessionId LIMIT 1');
+      const result = await neo4jService.executeCypher(
+        'MATCH (m:Memory) RETURN m.memoryType, m.agentId, m.sessionId LIMIT 1'
+      );
 
       // CRITICAL ASSERTIONS: Application schema properties exist
       expect(result.records[0].get('memoryType')).toBeDefined();
@@ -2058,7 +2155,9 @@ describe('Single Data Store Integration', () => {
 
     it('should NOT have generic Memory nodes with hardcoded labels', async () => {
       // Verify no generic schema
-      const genericResult = await neo4jService.executeCypher('MATCH (m:Memory) WHERE NOT exists(m.memoryType) RETURN count(m) as genericCount');
+      const genericResult = await neo4jService.executeCypher(
+        'MATCH (m:Memory) WHERE NOT exists(m.memoryType) RETURN count(m) as genericCount'
+      );
 
       // CRITICAL ASSERTION: No generic nodes
       expect(genericResult.records[0].get('genericCount')).toBe(0);
@@ -2082,7 +2181,10 @@ describe('Single Data Store Integration', () => {
       expect(vectorDocs.documents[0]).toBe(testContent);
 
       // Verify in Neo4j
-      const graphResults = await neo4jService.executeCypher('MATCH (m:Memory {id: $memoryId}) RETURN m.content as content', { memoryId: stored.id });
+      const graphResults = await neo4jService.executeCypher(
+        'MATCH (m:Memory {id: $memoryId}) RETURN m.content as content',
+        { memoryId: stored.id }
+      );
       expect(graphResults.records[0].get('content')).toBe(testContent);
     });
   });
@@ -2207,7 +2309,11 @@ describe('IMemoryAdapter Integration', () => {
       };
 
       // Store approval learning (HITL pattern)
-      await memoryAdapter.store('hitl-learning-thread', approvalMemory.content, approvalMemory.metadata);
+      await memoryAdapter.store(
+        'hitl-learning-thread',
+        approvalMemory.content,
+        approvalMemory.metadata
+      );
 
       // Verify approval patterns retrievable
       const patterns = await memoryAdapter.search({
@@ -2312,7 +2418,11 @@ describe('AgentMemoryBridgeService Features', () => {
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AgentMemoryBridgeService, { provide: 'IVectorService', useValue: vectorService }, { provide: 'IGraphService', useValue: graphService }],
+      providers: [
+        AgentMemoryBridgeService,
+        { provide: 'IVectorService', useValue: vectorService },
+        { provide: 'IGraphService', useValue: graphService },
+      ],
     }).compile();
 
     service = module.get<AgentMemoryBridgeService>(AgentMemoryBridgeService);
@@ -2332,7 +2442,13 @@ describe('AgentMemoryBridgeService Features', () => {
       await service.storeAgentMemory(agentId, memory);
 
       // Verify namespace in metadata
-      expect(vectorService.storeAgentMemory).toHaveBeenCalledWith('vector-memories', agentId, expect.objectContaining({ threadId: expect.stringContaining('agent:memory') }), memory.content, expect.objectContaining({ namespace: `agent:${agentId}` }));
+      expect(vectorService.storeAgentMemory).toHaveBeenCalledWith(
+        'vector-memories',
+        agentId,
+        expect.objectContaining({ threadId: expect.stringContaining('agent:memory') }),
+        memory.content,
+        expect.objectContaining({ namespace: `agent:${agentId}` })
+      );
     });
 
     it('should isolate memories by agent ID', async () => {
@@ -2377,7 +2493,10 @@ describe('AgentMemoryBridgeService Features', () => {
 
   describe('Per-Agent Statistics', () => {
     it('should track memories accessed per agent', async () => {
-      vectorService.searchAgentMemories.mockResolvedValue([{ id: 'mem-1' }, { id: 'mem-2' }] as any);
+      vectorService.searchAgentMemories.mockResolvedValue([
+        { id: 'mem-1' },
+        { id: 'mem-2' },
+      ] as any);
 
       await service.getAgentMemoryContext('agent-1', 'thread-1', 'query');
 

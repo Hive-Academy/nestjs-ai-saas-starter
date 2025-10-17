@@ -344,7 +344,9 @@ describe('NetworkManagerService - Checkpoint Integration', () => {
     expect(serviceWithoutCheckpoint['checkpointAdapter']).toBeUndefined();
 
     // Should not throw errors
-    const checkpointer = await serviceWithoutCheckpoint['createCheckpointerForNetwork']('test-network');
+    const checkpointer = await serviceWithoutCheckpoint['createCheckpointerForNetwork'](
+      'test-network'
+    );
     expect(checkpointer).toBeNull();
   });
 });
@@ -956,7 +958,12 @@ DELETE /streaming/sessions/:id         - Close streaming session
 **Evidence-Based Design**:
 
 ```typescript
-import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+} from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -966,7 +973,10 @@ export class StreamingGateway {
   constructor(private readonly streamingService: StreamingService) {}
 
   @SubscribeMessage('workflow:stream')
-  async handleWorkflowStream(@MessageBody() data: StreamWorkflowDto, @ConnectedSocket() client: Socket) {
+  async handleWorkflowStream(
+    @MessageBody() data: StreamWorkflowDto,
+    @ConnectedSocket() client: Socket
+  ) {
     const stream = this.streamingService.streamWorkflow(data.workflowId, data.input);
 
     for await (const event of stream) {
@@ -1259,7 +1269,14 @@ export class WorkflowController {
 **Pattern** (all controllers):
 
 ```typescript
-import { Controller, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  HttpException,
+  HttpStatus,
+  InternalServerErrorException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 
 @Controller('workflows')
 export class WorkflowController {
@@ -1313,7 +1330,24 @@ async function bootstrap() {
   );
 
   // Swagger configuration
-  const config = new DocumentBuilder().setTitle('DevBrand API').setDescription('Enterprise AI SaaS API - LangGraph Workflow Orchestration').setVersion('1.0').addTag('System Health', 'Health checks and system status').addTag('Performance Monitoring', 'Performance metrics and analytics').addTag('Workflow Management', 'Workflow execution and orchestration').addTag('Multi-Agent Coordination', 'Multi-agent network management').addTag('Human-in-the-Loop', 'Approval requests and human oversight').addTag('Contextual Memory', 'Memory storage and retrieval').addTag('Monitoring & Observability', 'Production monitoring').addTag('Vector Database', 'ChromaDB vector operations').addTag('Graph Database', 'Neo4j graph operations').addTag('Real-Time Streaming', 'WebSocket streaming').addTag('Checkpoint Management', 'State persistence').addTag('Time Travel & Debugging', 'Workflow replay and debugging').addBearerAuth().build();
+  const config = new DocumentBuilder()
+    .setTitle('DevBrand API')
+    .setDescription('Enterprise AI SaaS API - LangGraph Workflow Orchestration')
+    .setVersion('1.0')
+    .addTag('System Health', 'Health checks and system status')
+    .addTag('Performance Monitoring', 'Performance metrics and analytics')
+    .addTag('Workflow Management', 'Workflow execution and orchestration')
+    .addTag('Multi-Agent Coordination', 'Multi-agent network management')
+    .addTag('Human-in-the-Loop', 'Approval requests and human oversight')
+    .addTag('Contextual Memory', 'Memory storage and retrieval')
+    .addTag('Monitoring & Observability', 'Production monitoring')
+    .addTag('Vector Database', 'ChromaDB vector operations')
+    .addTag('Graph Database', 'Neo4j graph operations')
+    .addTag('Real-Time Streaming', 'WebSocket streaming')
+    .addTag('Checkpoint Management', 'State persistence')
+    .addTag('Time Travel & Debugging', 'Workflow replay and debugging')
+    .addBearerAuth()
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
@@ -1511,12 +1545,16 @@ describe('Complete Workflow Execution Flow (E2E)', () => {
     expect(executionId).toBeDefined();
 
     // 3. Check status
-    const statusResponse = await request(app.getHttpServer()).get(`/workflows/devbrand-workflow/status?executionId=${executionId}`).expect(200);
+    const statusResponse = await request(app.getHttpServer())
+      .get(`/workflows/devbrand-workflow/status?executionId=${executionId}`)
+      .expect(200);
 
     expect(statusResponse.body.status).toMatch(/pending|active|completed/);
 
     // 4. Get execution history
-    const historyResponse = await request(app.getHttpServer()).get(`/workflows/devbrand-workflow/history?executionId=${executionId}`).expect(200);
+    const historyResponse = await request(app.getHttpServer())
+      .get(`/workflows/devbrand-workflow/history?executionId=${executionId}`)
+      .expect(200);
 
     expect(historyResponse.body.history).toBeDefined();
     expect(Array.isArray(historyResponse.body.history)).toBe(true);

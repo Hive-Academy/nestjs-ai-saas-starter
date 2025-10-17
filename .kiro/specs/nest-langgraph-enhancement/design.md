@@ -519,14 +519,37 @@ The enhanced library follows a modular architecture with clear separation of con
 ```typescript
 // Core Module Structure
 @Module({
-  imports: [NestjsLanggraphCoreModule, NestjsLanggraphPersistenceModule, NestjsLanggraphMultiAgentModule, NestjsLanggraphPlatformModule, NestjsLanggraphMonitoringModule],
+  imports: [
+    NestjsLanggraphCoreModule,
+    NestjsLanggraphPersistenceModule,
+    NestjsLanggraphMultiAgentModule,
+    NestjsLanggraphPlatformModule,
+    NestjsLanggraphMonitoringModule,
+  ],
 })
 export class NestjsLanggraphModule {
   static forRoot(options: LanggraphModuleOptions): DynamicModule {
     return {
       module: NestjsLanggraphModule,
-      providers: [...this.createCoreProviders(options), ...this.createPersistenceProviders(options), ...this.createMultiAgentProviders(options), ...this.createPlatformProviders(options), ...this.createMonitoringProviders(options)],
-      exports: [StateTransformerService, CheckpointManagerService, TimeTravelService, MultiAgentCoordinatorService, FunctionalWorkflowService, AdvancedMemoryService, AssistantService, ThreadService, WebhookService, MonitoringService],
+      providers: [
+        ...this.createCoreProviders(options),
+        ...this.createPersistenceProviders(options),
+        ...this.createMultiAgentProviders(options),
+        ...this.createPlatformProviders(options),
+        ...this.createMonitoringProviders(options),
+      ],
+      exports: [
+        StateTransformerService,
+        CheckpointManagerService,
+        TimeTravelService,
+        MultiAgentCoordinatorService,
+        FunctionalWorkflowService,
+        AdvancedMemoryService,
+        AssistantService,
+        ThreadService,
+        WebhookService,
+        MonitoringService,
+      ],
     };
   }
 }
@@ -730,7 +753,11 @@ export class RedisCheckpointSaver extends BaseCheckpointSaver {
     this.redis = new Redis(config);
   }
 
-  async put(config: RunnableConfig, checkpoint: Checkpoint, metadata?: CheckpointMetadata): Promise<void> {
+  async put(
+    config: RunnableConfig,
+    checkpoint: Checkpoint,
+    metadata?: CheckpointMetadata
+  ): Promise<void> {
     const threadId = config.configurable?.thread_id;
     const checkpointId = checkpoint.id;
 
@@ -821,7 +848,11 @@ export class RedisCheckpointSaver extends BaseCheckpointSaver {
 
       if (data) {
         const parsed = JSON.parse(data);
-        results.push([{ configurable: { thread_id: threadId, checkpoint_id: checkpointId } }, parsed.checkpoint, parsed.metadata]);
+        results.push([
+          { configurable: { thread_id: threadId, checkpoint_id: checkpointId } },
+          parsed.checkpoint,
+          parsed.metadata,
+        ]);
       }
     }
 
@@ -1065,7 +1096,13 @@ private createSimpleSummary(messages: BaseMessage[]): string {
 // Current Facade Implementation with 2025 Patterns
 @Injectable()
 export class MultiAgentCoordinatorService {
-  constructor(private readonly agentRegistry: AgentRegistryService, private readonly graphBuilder: GraphBuilderService, private readonly nodeFactory: NodeFactoryService, private readonly llmProvider: LlmProviderService, private readonly networkManager: NetworkManagerService);
+  constructor(
+    private readonly agentRegistry: AgentRegistryService,
+    private readonly graphBuilder: GraphBuilderService,
+    private readonly nodeFactory: NodeFactoryService,
+    private readonly llmProvider: LlmProviderService,
+    private readonly networkManager: NetworkManagerService
+  );
 
   /**
    * Register agent with comprehensive configuration
@@ -1074,7 +1111,9 @@ export class MultiAgentCoordinatorService {
     this.validateAgentDefinition(definition);
 
     this.agentRegistry.set(definition.id, definition);
-    this.logger.log(`Registered agent: ${definition.id} with capabilities: ${definition.capabilities.join(', ')}`);
+    this.logger.log(
+      `Registered agent: ${definition.id} with capabilities: ${definition.capabilities.join(', ')}`
+    );
 
     this.eventEmitter.emit('agent.registered', {
       agentId: definition.id,
@@ -1086,7 +1125,12 @@ export class MultiAgentCoordinatorService {
   /**
    * Execute handoff between agents with validation and transformation
    */
-  async executeHandoff<T>(fromAgent: string, toAgent: string, payload: HandoffPayload<T>, context: ExecutionContext): Promise<HandoffResult<T>> {
+  async executeHandoff<T>(
+    fromAgent: string,
+    toAgent: string,
+    payload: HandoffPayload<T>,
+    context: ExecutionContext
+  ): Promise<HandoffResult<T>> {
     const sourceAgent = this.agentRegistry.get(fromAgent);
     const targetAgent = this.agentRegistry.get(toAgent);
 
@@ -1123,7 +1167,11 @@ export class MultiAgentCoordinatorService {
   /**
    * Create supervisor workflow with worker coordination
    */
-  createSupervisorWorkflow<T>(supervisorAgent: string, workerAgents: string[], options: SupervisorOptions = {}): WorkflowDefinition<T> {
+  createSupervisorWorkflow<T>(
+    supervisorAgent: string,
+    workerAgents: string[],
+    options: SupervisorOptions = {}
+  ): WorkflowDefinition<T> {
     const supervisor = this.agentRegistry.get(supervisorAgent);
     if (!supervisor) {
       throw new AgentNotFoundError(`Supervisor agent not found: ${supervisorAgent}`);
@@ -1204,7 +1252,10 @@ export class MultiAgentCoordinatorService {
     };
   }
 
-  private createWorkerHandler<T>(agentId: string, supervisorConfig: SupervisorConfig): NodeHandler<T> {
+  private createWorkerHandler<T>(
+    agentId: string,
+    supervisorConfig: SupervisorConfig
+  ): NodeHandler<T> {
     return async (state: T) => {
       const worker = this.agentRegistry.get(agentId);
 
@@ -1263,12 +1314,21 @@ Enables decorator-based workflow definition:
 ```typescript
 @Injectable()
 export class FunctionalWorkflowService {
-  constructor(private readonly workflowBuilder: WorkflowGraphBuilderService, private readonly moduleRef: ModuleRef, private readonly logger: Logger) {}
+  constructor(
+    private readonly workflowBuilder: WorkflowGraphBuilderService,
+    private readonly moduleRef: ModuleRef,
+    private readonly logger: Logger
+  ) {}
 
   /**
    * Execute entrypoint method as workflow
    */
-  async executeEntrypoint<T>(instance: any, methodName: string, input: T, config?: RunnableConfig): Promise<any> {
+  async executeEntrypoint<T>(
+    instance: any,
+    methodName: string,
+    input: T,
+    config?: RunnableConfig
+  ): Promise<any> {
     // Get metadata from decorators
     const entrypointMeta = Reflect.getMetadata(LANGGRAPH_ENTRYPOINT_METADATA, instance.constructor);
 
@@ -1288,7 +1348,11 @@ export class FunctionalWorkflowService {
   /**
    * Build workflow from functional API decorators
    */
-  private async buildFunctionalWorkflow(instance: any, entrypoint: EntrypointMetadata, tasks: TaskMetadata[]): Promise<CompiledWorkflow> {
+  private async buildFunctionalWorkflow(
+    instance: any,
+    entrypoint: EntrypointMetadata,
+    tasks: TaskMetadata[]
+  ): Promise<CompiledWorkflow> {
     const workflowName = `functional_${instance.constructor.name}_${Date.now()}`;
 
     // Create nodes from decorated methods
@@ -1335,7 +1399,11 @@ export class FunctionalWorkflowService {
   /**
    * Wrap method with execution tracking and error handling
    */
-  private wrapMethodHandler(instance: any, methodName: string, nodeType: 'entrypoint' | 'task'): NodeHandler<any> {
+  private wrapMethodHandler(
+    instance: any,
+    methodName: string,
+    nodeType: 'entrypoint' | 'task'
+  ): NodeHandler<any> {
     return async (state: any) => {
       const startTime = Date.now();
       const executionId = `${instance.constructor.name}.${methodName}_${Date.now()}`;
@@ -1385,7 +1453,10 @@ export class FunctionalWorkflowService {
   /**
    * Infer workflow edges from task dependencies
    */
-  private async inferEdgesFromTasks(entrypoint: EntrypointMetadata, tasks: TaskMetadata[]): Promise<WorkflowEdge[]> {
+  private async inferEdgesFromTasks(
+    entrypoint: EntrypointMetadata,
+    tasks: TaskMetadata[]
+  ): Promise<WorkflowEdge[]> {
     const edges: WorkflowEdge[] = [];
 
     // Start with entrypoint
@@ -1438,7 +1509,8 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
     // Wrap method for workflow execution
     const originalMethod = descriptor.value;
     descriptor.value = async function (this: any, input: any, config?: any) {
-      const workflowService = this.workflowService || (await this.moduleRef?.get(FunctionalWorkflowService));
+      const workflowService =
+        this.workflowService || (await this.moduleRef?.get(FunctionalWorkflowService));
 
       if (workflowService) {
         return workflowService.executeEntrypoint(this, propertyKey as string, input, config);
@@ -1585,7 +1657,12 @@ export class HandoffValidationError extends Error {
 }
 
 export class WorkflowExecutionError extends Error {
-  constructor(message: string, public readonly workflowName: string, public readonly nodeId?: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly workflowName: string,
+    public readonly nodeId?: string,
+    public readonly cause?: Error
+  ) {
     super(message);
     this.name = 'WorkflowExecutionError';
   }
@@ -1600,12 +1677,19 @@ export class ErrorRecoveryService {
   /**
    * Handle checkpoint save failures with fallback strategies
    */
-  async handleCheckpointSaveFailure(error: CheckpointSaveError, checkpoint: Checkpoint, threadId: string): Promise<void> {
+  async handleCheckpointSaveFailure(
+    error: CheckpointSaveError,
+    checkpoint: Checkpoint,
+    threadId: string
+  ): Promise<void> {
     // Try alternative checkpoint saver
     const fallbackSaver = this.getFallbackCheckpointSaver();
 
     try {
-      await fallbackSaver.put({ configurable: { thread_id: threadId } }, checkpoint, { ...checkpoint.metadata, fallback: true });
+      await fallbackSaver.put({ configurable: { thread_id: threadId } }, checkpoint, {
+        ...checkpoint.metadata,
+        fallback: true,
+      });
     } catch (fallbackError) {
       // Log both errors and use in-memory as last resort
       this.logger.error('All checkpoint savers failed', {
@@ -1626,7 +1710,9 @@ export class ErrorRecoveryService {
 
     if (lastCheckpoint) {
       // Attempt recovery from last checkpoint
-      await this.timeTravelService.replayFromCheckpoint(threadId, lastCheckpoint.id, { errorRecovery: true });
+      await this.timeTravelService.replayFromCheckpoint(threadId, lastCheckpoint.id, {
+        errorRecovery: true,
+      });
     }
   }
 }
@@ -1700,7 +1786,9 @@ describe('CheckpointManagerService', () => {
       mockRedisCheckpointSaver.put.mockRejectedValue(new Error('Redis connection failed'));
 
       // Act & Assert
-      await expect(service.saveCheckpoint(threadId, checkpoint)).rejects.toThrow(CheckpointSaveError);
+      await expect(service.saveCheckpoint(threadId, checkpoint)).rejects.toThrow(
+        CheckpointSaveError
+      );
     });
   });
 });

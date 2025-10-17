@@ -34,7 +34,11 @@
 
 ```typescript
 // Line 190, 308 (verified): Generic storage without relationships
-await this.memoryAdapter.store(`network-topology-${networkId}`, JSON.stringify(topologyData), metadata);
+await this.memoryAdapter.store(
+  `network-topology-${networkId}`,
+  JSON.stringify(topologyData),
+  metadata
+);
 ```
 
 ### Enhanced Implementation
@@ -55,7 +59,10 @@ export class NetworkSetupService {
    * Track agent collaboration in network
    * Phase 2: Store-based collaboration graph
    */
-  async trackAgentCollaboration(networkId: string, collaboration: AgentCollaboration): Promise<void> {
+  async trackAgentCollaboration(
+    networkId: string,
+    collaboration: AgentCollaboration
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     // Non-blocking storage
@@ -64,24 +71,32 @@ export class NetworkSetupService {
     });
   }
 
-  private async storeCollaborationAsync(networkId: string, collaboration: AgentCollaboration): Promise<void> {
+  private async storeCollaborationAsync(
+    networkId: string,
+    collaboration: AgentCollaboration
+  ): Promise<void> {
     const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.MULTI_AGENT.COLLABORATIONS);
 
     // Store bidirectional collaboration data
     // Namespace: [collection, domain, networkId, subdomain, agent1, agent2]
-    await store.put(['networks', networkId, 'collaborations', collaboration.agent1Id, collaboration.agent2Id], {
-      successRate: collaboration.successRate,
-      avgResponseTime: collaboration.avgResponseTime,
-      taskTypes: collaboration.commonTasks,
-      totalCollaborations: collaboration.count,
-      lastCollaboration: new Date(),
-      metrics: {
-        errorRate: collaboration.errorRate || 0,
-        avgQuality: collaboration.qualityScore || 0.8,
-      },
-    });
+    await store.put(
+      ['networks', networkId, 'collaborations', collaboration.agent1Id, collaboration.agent2Id],
+      {
+        successRate: collaboration.successRate,
+        avgResponseTime: collaboration.avgResponseTime,
+        taskTypes: collaboration.commonTasks,
+        totalCollaborations: collaboration.count,
+        lastCollaboration: new Date(),
+        metrics: {
+          errorRate: collaboration.errorRate || 0,
+          avgQuality: collaboration.qualityScore || 0.8,
+        },
+      }
+    );
 
-    this.logger.debug(`Stored collaboration: ${collaboration.agent1Id} <-> ${collaboration.agent2Id}`);
+    this.logger.debug(
+      `Stored collaboration: ${collaboration.agent1Id} <-> ${collaboration.agent2Id}`
+    );
   }
 
   /**
@@ -110,7 +125,11 @@ export class NetworkSetupService {
   /**
    * Find best collaboration partner for task
    */
-  async findBestCollaborator(networkId: string, agentId: string, taskType: string): Promise<string | null> {
+  async findBestCollaborator(
+    networkId: string,
+    agentId: string,
+    taskType: string
+  ): Promise<string | null> {
     const collaborators = await this.getAgentCollaborators(networkId, agentId);
 
     if (collaborators.length === 0) return null;
@@ -124,7 +143,9 @@ export class NetworkSetupService {
   /**
    * Rank collaborators by performance
    */
-  private rankCollaborators(collaborators: Array<{ key: string; value: any }>): CollaboratorRanking[] {
+  private rankCollaborators(
+    collaborators: Array<{ key: string; value: any }>
+  ): CollaboratorRanking[] {
     return collaborators
       .map((item) => ({
         agentId: item.key,
@@ -145,7 +166,8 @@ export class NetworkSetupService {
     const qualityWeight = 0.1;
 
     const successScore = collaboration.successRate * successWeight;
-    const responseScore = Math.max(0, 1 - collaboration.avgResponseTime / 5000) * responseTimeWeight;
+    const responseScore =
+      Math.max(0, 1 - collaboration.avgResponseTime / 5000) * responseTimeWeight;
     const qualityScore = (collaboration.metrics?.avgQuality || 0.8) * qualityWeight;
 
     return successScore + responseScore + qualityScore;
@@ -311,7 +333,11 @@ describe('NetworkSetupService - Collaboration Graph', () => {
       },
     ]);
 
-    const bestForProcessing = await service.findBestCollaborator('network-123', 'agent-A', 'data-processing');
+    const bestForProcessing = await service.findBestCollaborator(
+      'network-123',
+      'agent-A',
+      'data-processing'
+    );
 
     expect(bestForProcessing).toBe('agent-X'); // Has data-processing task
   });
@@ -390,7 +416,11 @@ export class MultiAgentCoordinatorService {
    * Select agent using user affinity patterns
    * Phase 2: getUserPatterns for personalization
    */
-  private async selectWithUserAffinity(userId: string, task: TaskDescriptor, compatibleAgents: AgentDefinition[]): Promise<string> {
+  private async selectWithUserAffinity(
+    userId: string,
+    task: TaskDescriptor,
+    compatibleAgents: AgentDefinition[]
+  ): Promise<string> {
     // Get user's historical agent preferences
     const userPatterns: UserMemoryPatterns = await this.memoryAdapter!.getUserPatterns(userId);
 
@@ -398,7 +428,9 @@ export class MultiAgentCoordinatorService {
     const preferredAgents = userPatterns.preferredAgents || [];
 
     // Find preferred agent that's compatible with task
-    const preferredCompatible = compatibleAgents.find((agent) => preferredAgents.includes(agent.id));
+    const preferredCompatible = compatibleAgents.find((agent) =>
+      preferredAgents.includes(agent.id)
+    );
 
     if (preferredCompatible) {
       this.logger.log(`Selected preferred agent ${preferredCompatible.id} for user ${userId}`);
@@ -441,7 +473,12 @@ export class MultiAgentCoordinatorService {
   /**
    * Store agent selection outcome for learning
    */
-  async recordAgentOutcome(userId: string, agentId: string, task: TaskDescriptor, success: boolean): Promise<void> {
+  async recordAgentOutcome(
+    userId: string,
+    agentId: string,
+    task: TaskDescriptor,
+    success: boolean
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     // Non-blocking storage
@@ -539,7 +576,11 @@ describe('MultiAgentCoordinatorService - User Affinity', () => {
     mockMemoryAdapter.getUserPatterns = jest.fn().mockResolvedValue({
       userId: 'user-123',
       preferredAgents: [],
-      successfulWorkflows: ['workflow-1-agent-A-success', 'workflow-2-agent-A-success', 'workflow-3-agent-C-success'],
+      successfulWorkflows: [
+        'workflow-1-agent-A-success',
+        'workflow-2-agent-A-success',
+        'workflow-3-agent-C-success',
+      ],
     });
 
     const task = { type: 'data-processing' };
@@ -560,7 +601,9 @@ describe('MultiAgentCoordinatorService - User Affinity', () => {
 
   it('should select first compatible agent when no memory adapter', async () => {
     const serviceWithoutMemory = new MultiAgentCoordinatorService(undefined);
-    serviceWithoutMemory['registeredAgents'] = [{ id: 'agent-A', capabilities: ['data-processing'] }];
+    serviceWithoutMemory['registeredAgents'] = [
+      { id: 'agent-A', capabilities: ['data-processing'] },
+    ];
 
     const task = { type: 'data-processing' };
     const selectedAgent = await serviceWithoutMemory.selectAgentForUser('user-123', task);
@@ -589,7 +632,9 @@ describe('MultiAgentCoordinatorService - User Affinity', () => {
   it('should throw when no compatible agents found', async () => {
     const task = { type: 'unsupported-task-type' };
 
-    await expect(service.selectAgentForUser('user-123', task)).rejects.toThrow('No agents compatible with task type');
+    await expect(service.selectAgentForUser('user-123', task)).rejects.toThrow(
+      'No agents compatible with task type'
+    );
   });
 });
 ```

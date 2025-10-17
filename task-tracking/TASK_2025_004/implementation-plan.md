@@ -281,7 +281,10 @@ Validation:
 export class ExampleRepository {
   private readonly label = 'EntityLabel';
 
-  constructor(private readonly crud: Neo4jCrudService, @InjectNeogma() private readonly neogma: NeogmaService) {}
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   // CRUD methods (delegated)
   findById(id: string) {
@@ -413,7 +416,12 @@ npx nx test @hive-academy/langgraph-hitl
 
 ```typescript
 export class Neo4jRepository<T extends Neo4jCompatibleEntity> {
-  constructor(protected readonly entity: Type<T>, protected readonly label: string, protected readonly neogma: NeogmaService, protected readonly crud: Neo4jCrudService) {}
+  constructor(
+    protected readonly entity: Type<T>,
+    protected readonly label: string,
+    protected readonly neogma: NeogmaService,
+    protected readonly crud: Neo4jCrudService
+  ) {}
 
   // CRUD Operations
   async findById(id: string): Promise<T | null> {
@@ -969,7 +977,16 @@ npx nx e2e dev-brand-api-e2e --grep="<feature>"
    @Module({
      imports: [
        // Auto-generate repositories for ALL entities
-       Neo4jModule.forFeature([ApprovalRequest, ApprovalChain, Interruption, ConfidencePattern, Feedback, MemoryGraph, Developer, Achievement]),
+       Neo4jModule.forFeature([
+         ApprovalRequest,
+         ApprovalChain,
+         Interruption,
+         ConfidencePattern,
+         Feedback,
+         MemoryGraph,
+         Developer,
+         Achievement,
+       ]),
      ],
      providers: [
        // Override with custom repositories (if they have custom methods)
@@ -1044,7 +1061,10 @@ npx nx e2e dev-brand-api-e2e --grep="<feature>"
 @Injectable()
 export class UserRepository {
   private readonly label = 'User';
-  constructor(private readonly crud: Neo4jCrudService, @InjectNeogma() private readonly neogma: NeogmaService) {}
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   findById(id: string) {
     return this.crud.findById<User>(this.label, id);

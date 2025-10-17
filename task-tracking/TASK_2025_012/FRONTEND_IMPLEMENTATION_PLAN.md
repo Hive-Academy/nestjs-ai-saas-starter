@@ -156,40 +156,77 @@ const colors = {
 ```typescript
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HybridSceneComponent, Element3DDirective, HybridUIService, createHeroSceneConfig } from '../../../core/angular-3d';
+import {
+  HybridSceneComponent,
+  Element3DDirective,
+  HybridUIService,
+  createHeroSceneConfig,
+} from '../../../core/angular-3d';
 
 @Component({
   selector: 'brand-hero-section',
   standalone: true,
   imports: [CommonModule, HybridSceneComponent, Element3DDirective],
   template: `
-    <app-hybrid-scene [enablePerformanceOverlay]="false" [backgroundColor]="'#1a0d2e'" class="relative w-full h-screen overflow-hidden">
+    <app-hybrid-scene
+      [enablePerformanceOverlay]="false"
+      [backgroundColor]="'#1a0d2e'"
+      class="relative w-full h-screen overflow-hidden"
+    >
       <!-- Tailwind-controlled layout - flex column, centered -->
       <div class="relative z-20 flex flex-col items-center justify-center h-full px-8 gap-8">
         <!-- Hero Title - Native H1 with Tailwind + Element3D -->
-        <h1 element3d priority="HERO" quality="high" [depth]="-2" class="text-6xl md:text-7xl lg:text-8xl font-bold text-center leading-tight">
+        <h1
+          element3d
+          priority="HERO"
+          quality="high"
+          [depth]="-2"
+          class="text-6xl md:text-7xl lg:text-8xl font-bold text-center leading-tight"
+        >
           <span class="block text-white">Enterprise AI</span>
-          <span class="block bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"> SaaS Starter </span>
+          <span
+            class="block bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent"
+          >
+            SaaS Starter
+          </span>
         </h1>
 
         <!-- Subtitle - Native P with Tailwind + Element3D -->
-        <p element3d priority="PRIMARY" quality="medium" [depth]="-2.5" class="text-lg md:text-xl lg:text-2xl text-center text-white/90 max-w-3xl leading-relaxed">
+        <p
+          element3d
+          priority="PRIMARY"
+          quality="medium"
+          [depth]="-2.5"
+          class="text-lg md:text-xl lg:text-2xl text-center text-white/90 max-w-3xl leading-relaxed"
+        >
           Production-ready foundation for AI-powered applications combining
-          <span class="text-purple-400 font-semibold">vector search</span>, <span class="text-purple-400 font-semibold">graph relationships</span>, and
+          <span class="text-purple-400 font-semibold">vector search</span>,
+          <span class="text-purple-400 font-semibold">graph relationships</span>, and
           <span class="text-purple-400 font-semibold">intelligent workflows</span>
         </p>
 
         <!-- Badges - Flex layout with Tailwind -->
-        <div element3d priority="PRIMARY" [depth]="-2" class="flex flex-wrap justify-center gap-4 my-4">
-          <div class="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm">
+        <div
+          element3d
+          priority="PRIMARY"
+          [depth]="-2"
+          class="flex flex-wrap justify-center gap-4 my-4"
+        >
+          <div
+            class="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm"
+          >
             <span class="text-xl">🧠</span>
             <span>Semantic Intelligence</span>
           </div>
-          <div class="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm">
+          <div
+            class="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm"
+          >
             <span class="text-xl">🕸️</span>
             <span>Relationship Mapping</span>
           </div>
-          <div class="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm">
+          <div
+            class="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm"
+          >
             <span class="text-xl">⚡</span>
             <span>Intelligent Workflows</span>
           </div>
@@ -197,12 +234,24 @@ import { HybridSceneComponent, Element3DDirective, HybridUIService, createHeroSc
 
         <!-- Action Buttons - Flex layout with Tailwind -->
         <div class="flex flex-wrap justify-center gap-6 mt-8">
-          <button element3d priority="PRIMARY" [depth]="-1.8" class="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/70 hover:-translate-y-1" (click)="exploreDemo()">
+          <button
+            element3d
+            priority="PRIMARY"
+            [depth]="-1.8"
+            class="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/70 hover:-translate-y-1"
+            (click)="exploreDemo()"
+          >
             <span>Explore Live Demo</span>
             <span class="text-xl">🚀</span>
           </button>
 
-          <button element3d priority="SECONDARY" [depth]="-1.8" class="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-lg border-2 border-white/30 hover:border-white/50 hover:bg-white/20 text-white font-semibold rounded-xl transition-all duration-300 hover:-translate-y-1" (click)="viewArchitecture()">
+          <button
+            element3d
+            priority="SECONDARY"
+            [depth]="-1.8"
+            class="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-lg border-2 border-white/30 hover:border-white/50 hover:bg-white/20 text-white font-semibold rounded-xl transition-all duration-300 hover:-translate-y-1"
+            (click)="viewArchitecture()"
+          >
             <span>View Architecture</span>
             <span class="text-xl">🏗️</span>
           </button>

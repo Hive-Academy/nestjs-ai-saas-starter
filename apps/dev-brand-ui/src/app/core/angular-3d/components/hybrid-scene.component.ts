@@ -234,6 +234,21 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   );
   readonly showAnimationDebug = input(false);
 
+  // Lighting configuration inputs (merged from HybridThreeSceneComponent)
+  readonly ambientLightColor = input<number>(0xffffff);
+  readonly ambientLightIntensity = input<number>(0.4);
+  readonly directionalLightColor = input<number>(0xffffff);
+  readonly directionalLightIntensity = input<number>(0.8);
+  readonly directionalShadowsEnabled = input<boolean>(true);
+  readonly pointLightColor = input<number>(0xffffff);
+  readonly pointLightIntensity = input<number>(0.3);
+  readonly shadowMapSize = input<number>(2048);
+  readonly shadowCameraNear = input<number>(0.1);
+  readonly shadowCameraFar = input<number>(50);
+  readonly shadowCameraBounds = input<number>(10);
+  readonly directionalLightPosition = input<[number, number, number]>([5, 5, 5]);
+  readonly pointLightPosition = input<[number, number, number]>([-5, 5, 5]);
+
   // Output events for component integration
   readonly sceneInitialized = output<THREE.Scene>();
   readonly performanceUpdate = output<PerformanceMetrics>();
@@ -357,10 +372,16 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   private performanceMonitorId?: number;
   private resizeObserver?: ResizeObserver;
 
+  // Light references for reactive updates (merged from HybridThreeSceneComponent)
+  private ambientLight: THREE.AmbientLight | null = null;
+  private directionalLight: THREE.DirectionalLight | null = null;
+  private pointLight: THREE.PointLight | null = null;
+
   // Setup reactive effects in constructor context
   constructor() {
     this.setupReactiveEffects();
     this.initializeStateStore();
+    this.setupLightingEffects();
   }
 
   async ngOnInit(): Promise<void> {
@@ -616,6 +637,7 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
       if (initialized) {
         this.setupPerformanceMonitoring();
         this.setupEventListeners();
+        this.setupSceneLighting();
 
         this._loadingProgress.set(100);
         this._initialized.set(true);
@@ -806,6 +828,176 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
       return (performance as any).memory.usedJSHeapSize;
     }
     return 0;
+  }
+
+  // Lighting setup methods (merged from HybridThreeSceneComponent)
+
+  /**
+   * Setup reactive effects for lighting configuration updates
+   */
+  private setupLightingEffects(): void {
+    effect(() => {
+      this.updateAmbientLight();
+    });
+
+    effect(() => {
+      this.updateDirectionalLight();
+    });
+
+    effect(() => {
+      this.updatePointLight();
+    });
+
+    effect(() => {
+      this.updateSceneBackground();
+    });
+  }
+
+  /**
+   * Set up the complete 3D scene lighting
+   */
+  private setupSceneLighting(): void {
+    const scene = this.getScene();
+
+    if (scene) {
+      // Set background color
+      this.updateSceneBackground();
+
+      // Create and configure ambient light
+      this.createAmbientLight(scene);
+
+      // Create and configure directional light with shadows
+      this.createDirectionalLight(scene);
+
+      // Create and configure point light
+      this.createPointLight(scene);
+
+      console.log('Scene lighting initialized with reactive configuration');
+    }
+  }
+
+  /**
+   * Create ambient light with signal-based configuration
+   */
+  private createAmbientLight(scene: THREE.Scene): void {
+    this.ambientLight = new THREE.AmbientLight(
+      this.ambientLightColor(),
+      this.ambientLightIntensity()
+    );
+    scene.add(this.ambientLight);
+  }
+
+  /**
+   * Create directional light with signal-based configuration
+   */
+  private createDirectionalLight(scene: THREE.Scene): void {
+    this.directionalLight = new THREE.DirectionalLight(
+      this.directionalLightColor(),
+      this.directionalLightIntensity()
+    );
+
+    // Set position from signal
+    const [x, y, z] = this.directionalLightPosition();
+    this.directionalLight.position.set(x, y, z);
+
+    // Configure shadows if enabled
+    if (this.directionalShadowsEnabled()) {
+      this.directionalLight.castShadow = true;
+      this.setupDirectionalLightShadows();
+    }
+
+    scene.add(this.directionalLight);
+  }
+
+  /**
+   * Set up directional light shadow configuration with signals
+   */
+  private setupDirectionalLightShadows(): void {
+    if (!this.directionalLight) return;
+
+    const shadowCamera = this.directionalLight.shadow
+      .camera as THREE.OrthographicCamera;
+    const bounds = this.shadowCameraBounds();
+
+    shadowCamera.near = this.shadowCameraNear();
+    shadowCamera.far = this.shadowCameraFar();
+    shadowCamera.left = -bounds;
+    shadowCamera.right = bounds;
+    shadowCamera.top = bounds;
+    shadowCamera.bottom = -bounds;
+
+    const mapSize = this.shadowMapSize();
+    this.directionalLight.shadow.mapSize.setScalar(mapSize);
+  }
+
+  /**
+   * Create point light with signal-based configuration
+   */
+  private createPointLight(scene: THREE.Scene): void {
+    this.pointLight = new THREE.PointLight(
+      this.pointLightColor(),
+      this.pointLightIntensity()
+    );
+
+    // Set position from signal
+    const [x, y, z] = this.pointLightPosition();
+    this.pointLight.position.set(x, y, z);
+
+    scene.add(this.pointLight);
+  }
+
+  /**
+   * Reactive effect: Update ambient light configuration
+   */
+  private updateAmbientLight(): void {
+    if (this.ambientLight) {
+      this.ambientLight.color.setHex(this.ambientLightColor());
+      this.ambientLight.intensity = this.ambientLightIntensity();
+    }
+  }
+
+  /**
+   * Reactive effect: Update directional light configuration
+   */
+  private updateDirectionalLight(): void {
+    if (this.directionalLight) {
+      this.directionalLight.color.setHex(this.directionalLightColor());
+      this.directionalLight.intensity = this.directionalLightIntensity();
+
+      const [x, y, z] = this.directionalLightPosition();
+      this.directionalLight.position.set(x, y, z);
+
+      // Update shadow settings
+      if (this.directionalShadowsEnabled()) {
+        this.directionalLight.castShadow = true;
+        this.setupDirectionalLightShadows();
+      } else {
+        this.directionalLight.castShadow = false;
+      }
+    }
+  }
+
+  /**
+   * Reactive effect: Update point light configuration
+   */
+  private updatePointLight(): void {
+    if (this.pointLight) {
+      this.pointLight.color.setHex(this.pointLightColor());
+      this.pointLight.intensity = this.pointLightIntensity();
+
+      const [x, y, z] = this.pointLightPosition();
+      this.pointLight.position.set(x, y, z);
+    }
+  }
+
+  /**
+   * Reactive effect: Update scene background
+   */
+  private updateSceneBackground(): void {
+    const scene = this.getScene();
+    if (scene && this.backgroundColor() !== 'transparent') {
+      scene.background = new THREE.Color(this.backgroundColor());
+    }
   }
 
   private cleanup(): void {

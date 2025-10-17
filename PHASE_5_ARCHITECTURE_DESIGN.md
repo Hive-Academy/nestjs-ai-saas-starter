@@ -444,7 +444,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<WorkflowAge
 
     try {
       // Call memory service method
-      const developerProfile = await this.memory.buildDeveloperProfile(githubUsername, achievements);
+      const developerProfile = await this.memory.buildDeveloperProfile(
+        githubUsername,
+        achievements
+      );
 
       return {
         state: {
@@ -668,7 +671,10 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<Workfl
     const developerProfile = state.metadata?.developerProfile as DeveloperProfile;
 
     try {
-      const competitiveAnalysis = await this.memory.compareWithDevelopers(githubUsername, developerProfile);
+      const competitiveAnalysis = await this.memory.compareWithDevelopers(
+        githubUsername,
+        developerProfile
+      );
 
       return {
         state: {
@@ -751,7 +757,10 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<WorkflowAgentSt
     const brandStrategy = state.metadata?.brandStrategy;
 
     try {
-      const contentStrategy = await this.memory.generateContentStrategy(githubUsername, brandStrategy);
+      const contentStrategy = await this.memory.generateContentStrategy(
+        githubUsername,
+        brandStrategy
+      );
 
       return {
         state: {
@@ -882,7 +891,10 @@ export class PersonalBrandMemoryService {
    */
   @Performance.Monitor('build-developer-profile')
   @Cached({ ttl: 3600000, key: 'dev_profile_${userId}' })
-  async buildDeveloperProfile(userId: string, achievements: Achievement[]): Promise<DeveloperProfile> {
+  async buildDeveloperProfile(
+    userId: string,
+    achievements: Achievement[]
+  ): Promise<DeveloperProfile> {
     this.logger.log(`Building developer profile for ${userId}`);
 
     try {
@@ -977,7 +989,11 @@ export class PersonalBrandMemoryService {
       const successPatterns = await this.contentRepo.findSuccessPatterns(userId);
 
       // Extract brand-aligned topics
-      const brandTopics = this.extractBrandAlignedTopics(brandStrategy, memoryContext, successPatterns);
+      const brandTopics = this.extractBrandAlignedTopics(
+        brandStrategy,
+        memoryContext,
+        successPatterns
+      );
 
       // Build strategy
       const strategy: ContentStrategy = {
@@ -992,7 +1008,9 @@ export class PersonalBrandMemoryService {
         createdAt: new Date(),
       };
 
-      this.logger.log(`Content strategy generated with ${strategy.recommendedTopics.length} topics`);
+      this.logger.log(
+        `Content strategy generated with ${strategy.recommendedTopics.length} topics`
+      );
       return strategy;
     } catch (error) {
       this.logger.error(`Failed to generate content strategy: ${error.message}`);
@@ -1081,7 +1099,10 @@ export class PersonalBrandMemoryService {
    * Returns: CoachingSuggestions
    */
   @Performance.Monitor('get-coaching-suggestions')
-  async getCoachingSuggestions(userId: string, brandAnalysis: BrandAnalysis): Promise<CoachingSuggestions> {
+  async getCoachingSuggestions(
+    userId: string,
+    brandAnalysis: BrandAnalysis
+  ): Promise<CoachingSuggestions> {
     this.logger.log(`Generating coaching suggestions for ${userId}`);
 
     try {
@@ -1118,7 +1139,13 @@ export class PersonalBrandMemoryService {
       // Generate suggestions
       const suggestions: CoachingSuggestions = {
         userId,
-        recommendations: this.generateRecommendations(brandAnalysis, achievementContext, brandContext, contentContext, similarStrategies),
+        recommendations: this.generateRecommendations(
+          brandAnalysis,
+          achievementContext,
+          brandContext,
+          contentContext,
+          similarStrategies
+        ),
         priorities: this.prioritizeSuggestions(brandAnalysis),
         expectedImpact: this.estimateImpact(brandAnalysis),
         timeframe: this.estimateTimeframe(brandAnalysis),
@@ -1126,7 +1153,9 @@ export class PersonalBrandMemoryService {
         createdAt: new Date(),
       };
 
-      this.logger.log(`Coaching suggestions generated: ${suggestions.recommendations.length} items`);
+      this.logger.log(
+        `Coaching suggestions generated: ${suggestions.recommendations.length} items`
+      );
       return suggestions;
     } catch (error) {
       this.logger.error(`Failed to get coaching suggestions: ${error.message}`);
@@ -1169,13 +1198,18 @@ export class PersonalBrandMemoryService {
       const semanticDrifts = this.calculateSemanticDrift(temporalEvolution.strategies);
 
       // Identify key milestones
-      const milestones = temporalEvolution.strategies.filter((s) => s.evolution.improvementScore > 0.2 || s.confidenceScore > 0.8);
+      const milestones = temporalEvolution.strategies.filter(
+        (s) => s.evolution.improvementScore > 0.2 || s.confidenceScore > 0.8
+      );
 
       // Analyze trajectory
       const trajectory = this.analyzeTrajectory(semanticDrifts);
 
       // Project future evolution
-      const futureProjection = this.projectFutureEvolution(temporalEvolution.strategies, semanticDrifts);
+      const futureProjection = this.projectFutureEvolution(
+        temporalEvolution.strategies,
+        semanticDrifts
+      );
 
       const analysis: BrandEvolutionAnalysis = {
         userId,
@@ -1211,7 +1245,10 @@ export class PersonalBrandMemoryService {
    * Returns: CompetitiveAnalysis
    */
   @Performance.Monitor('compare-with-developers')
-  async compareWithDevelopers(userId: string, developerProfile: DeveloperProfile): Promise<CompetitiveAnalysis> {
+  async compareWithDevelopers(
+    userId: string,
+    developerProfile: DeveloperProfile
+  ): Promise<CompetitiveAnalysis> {
     this.logger.log(`Comparing ${userId} with peer developers`);
 
     try {
@@ -1265,7 +1302,11 @@ export class PersonalBrandMemoryService {
         similarProfiles: comparisons,
         differentiators,
         marketPosition: this.calculateMarketPosition(comparisons),
-        recommendations: this.generateCompetitiveRecommendations(developerProfile, comparisons, differentiators),
+        recommendations: this.generateCompetitiveRecommendations(
+          developerProfile,
+          comparisons,
+          differentiators
+        ),
         createdAt: new Date(),
       };
 
@@ -1295,29 +1336,30 @@ export class PersonalBrandMemoryService {
 
     try {
       // Parallel queries across all data sources
-      const [achievementMetrics, brandMetrics, contentMetrics, skillMetrics, neo4jMetrics] = await Promise.all([
-        this.chromaAdapter.search('dev-achievements', {
-          queryText: `user:${userId}`,
-          filter: { userId },
-          limit: 50,
-        }),
-        this.chromaAdapter.search('brand-evolution', {
-          queryText: `user:${userId}`,
-          filter: { userId },
-          limit: 20,
-        }),
-        this.chromaAdapter.search('content-metrics', {
-          queryText: `user:${userId}`,
-          filter: { userId },
-          limit: 30,
-        }),
-        this.chromaAdapter.search('developer-skills', {
-          queryText: `user:${userId}`,
-          filter: { userId },
-          limit: 10,
-        }),
-        this.developerRepo.getPerformanceMetrics(userId),
-      ]);
+      const [achievementMetrics, brandMetrics, contentMetrics, skillMetrics, neo4jMetrics] =
+        await Promise.all([
+          this.chromaAdapter.search('dev-achievements', {
+            queryText: `user:${userId}`,
+            filter: { userId },
+            limit: 50,
+          }),
+          this.chromaAdapter.search('brand-evolution', {
+            queryText: `user:${userId}`,
+            filter: { userId },
+            limit: 20,
+          }),
+          this.chromaAdapter.search('content-metrics', {
+            queryText: `user:${userId}`,
+            filter: { userId },
+            limit: 30,
+          }),
+          this.chromaAdapter.search('developer-skills', {
+            queryText: `user:${userId}`,
+            filter: { userId },
+            limit: 10,
+          }),
+          this.developerRepo.getPerformanceMetrics(userId),
+        ]);
 
       // Aggregate metrics
       const dashboard: PerformanceDashboard = {
@@ -1363,7 +1405,13 @@ export class PersonalBrandMemoryService {
           content: this.calculateContentTrend(contentMetrics),
           overall: this.calculateOverallTrend(achievementMetrics, brandMetrics, contentMetrics),
         },
-        overallScore: this.calculateOverallScore(achievementMetrics, brandMetrics, contentMetrics, skillMetrics, neo4jMetrics),
+        overallScore: this.calculateOverallScore(
+          achievementMetrics,
+          brandMetrics,
+          contentMetrics,
+          skillMetrics,
+          neo4jMetrics
+        ),
         createdAt: new Date(),
       };
 

@@ -54,7 +54,11 @@ export class ApprovalChainService {
    * Complete approval chain and store with hierarchical namespace
    * Phase 2: Store-based chain tracking
    */
-  async completeApprovalChain(chainId: string, executionId: string, finalDecision: 'approved' | 'rejected'): Promise<void> {
+  async completeApprovalChain(
+    chainId: string,
+    executionId: string,
+    finalDecision: 'approved' | 'rejected'
+  ): Promise<void> {
     // 1. Complete chain in Neo4j (primary storage - blocking)
     await this.chainStorage.updateChainStatus(chainId, 'completed', finalDecision);
 
@@ -70,7 +74,11 @@ export class ApprovalChainService {
    * Store approval chain pattern in Store with hierarchical namespace
    * Non-blocking async operation
    */
-  private async storeChainPatternAsync(chainId: string, executionId: string, finalDecision: string): Promise<void> {
+  private async storeChainPatternAsync(
+    chainId: string,
+    executionId: string,
+    finalDecision: string
+  ): Promise<void> {
     const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.HITL.CHAINS);
 
     // Get chain data from Neo4j
@@ -118,7 +126,11 @@ export class ApprovalChainService {
    * Search related approval chains across executions
    * Phase 2: Semantic search in Store
    */
-  async findSimilarChains(riskLevel: string, query: string, limit: number = 10): Promise<ChainSummary[]> {
+  async findSimilarChains(
+    riskLevel: string,
+    query: string,
+    limit: number = 10
+  ): Promise<ChainSummary[]> {
     if (!this.memoryAdapter) {
       return [];
     }
@@ -234,7 +246,9 @@ describe('ApprovalChainService - Store Integration', () => {
     mockStore.put = jest.fn().mockRejectedValue(new Error('Store unavailable'));
 
     // Should not throw
-    await expect(service.completeApprovalChain('chain-123', 'exec-456', 'approved')).resolves.not.toThrow();
+    await expect(
+      service.completeApprovalChain('chain-123', 'exec-456', 'approved')
+    ).resolves.not.toThrow();
   });
 
   it('should work without memory adapter', async () => {
@@ -283,7 +297,10 @@ export class ApprovalProcessingService {
    * Process approval with agent execution tracking
    * Phase 2: Track approval coordinator as agent
    */
-  async processApprovalWithTracking(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void> {
+  async processApprovalWithTracking(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): Promise<void> {
     // 1. Process approval (blocking)
     await this.processApprovalLogic(request, response);
 
@@ -299,7 +316,10 @@ export class ApprovalProcessingService {
    * Store approval coordinator agent execution
    * Phase 2: Enhanced storeAgentExecution with metrics
    */
-  private async storeApprovalAgentExecution(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void> {
+  private async storeApprovalAgentExecution(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): Promise<void> {
     const state: AgentState = {
       messages: [],
       metadata: {
@@ -329,14 +349,20 @@ export class ApprovalProcessingService {
   /**
    * Calculate response time from request creation to approval
    */
-  private calculateResponseTime(request: HumanApprovalRequest, response: HumanApprovalResponse): number {
+  private calculateResponseTime(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): number {
     return response.approvedAt.getTime() - request.timestamps.requested.getTime();
   }
 
   /**
    * Calculate confidence alignment (how well confidence predicted approval)
    */
-  private calculateConfidenceAlignment(request: HumanApprovalRequest, response: HumanApprovalResponse): number {
+  private calculateConfidenceAlignment(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): number {
     const confidence = request.confidence.current;
     const approved = response.decision === 'approved';
 
@@ -349,8 +375,12 @@ export class ApprovalProcessingService {
   /**
    * Assess if risk prediction was accurate
    */
-  private assessRiskPredictionAccuracy(request: HumanApprovalRequest, response: HumanApprovalResponse): boolean {
-    const predictedHighRisk = request.riskAssessment?.level === 'high' || request.riskAssessment?.level === 'critical';
+  private assessRiskPredictionAccuracy(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): boolean {
+    const predictedHighRisk =
+      request.riskAssessment?.level === 'high' || request.riskAssessment?.level === 'critical';
     const humanRejected = response.decision === 'rejected';
 
     // Accurate if: (high risk predicted AND rejected) OR (low risk AND approved)
@@ -475,7 +505,9 @@ describe('ApprovalProcessingService - Agent Tracking', () => {
   });
 
   it('should not block approval flow on agent execution failure', async () => {
-    mockMemoryAdapter.storeAgentExecution = jest.fn().mockRejectedValue(new Error('Agent execution storage failed'));
+    mockMemoryAdapter.storeAgentExecution = jest
+      .fn()
+      .mockRejectedValue(new Error('Agent execution storage failed'));
 
     const request = {
       /* ... */

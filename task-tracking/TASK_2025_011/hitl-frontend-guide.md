@@ -400,7 +400,17 @@ export function DevBrandWorkflow() {
   const [githubUsername, setGithubUsername] = React.useState('');
   const [feedback, setFeedback] = React.useState('');
 
-  const { startWorkflow, approve, reject, requestModification, interruptWithQuestion, state, tokens, error, isConnected } = useDevBrandWorkflowWithHITL(githubUsername);
+  const {
+    startWorkflow,
+    approve,
+    reject,
+    requestModification,
+    interruptWithQuestion,
+    state,
+    tokens,
+    error,
+    isConnected,
+  } = useDevBrandWorkflowWithHITL(githubUsername);
 
   // Render approval modal
   const renderApprovalModal = () => {
@@ -439,9 +449,16 @@ export function DevBrandWorkflow() {
             </div>
           )}
 
-          <div className="timeout-indicator">⏱️ Timeout: {Math.floor(timeout / 1000 / 60)} minutes</div>
+          <div className="timeout-indicator">
+            ⏱️ Timeout: {Math.floor(timeout / 1000 / 60)} minutes
+          </div>
 
-          <textarea placeholder="Optional feedback or modification request..." value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3} />
+          <textarea
+            placeholder="Optional feedback or modification request..."
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            rows={3}
+          />
 
           <div className="action-buttons">
             <button onClick={() => approve(feedback)} className="btn-approve">
@@ -483,7 +500,12 @@ export function DevBrandWorkflow() {
 
       {!state.executionId ? (
         <div className="start-section">
-          <input type="text" placeholder="GitHub Username" value={githubUsername} onChange={(e) => setGithubUsername(e.target.value)} />
+          <input
+            type="text"
+            placeholder="GitHub Username"
+            value={githubUsername}
+            onChange={(e) => setGithubUsername(e.target.value)}
+          />
           <button onClick={startWorkflow} disabled={!githubUsername}>
             🚀 Start Workflow
           </button>
@@ -491,7 +513,9 @@ export function DevBrandWorkflow() {
       ) : (
         <div className="workflow-status">
           <div className="status-header">
-            <span className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>{isConnected ? '🟢 Connected' : '🔴 Disconnected'}</span>
+            <span className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
+              {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+            </span>
             <span className="execution-id">Execution: {state.executionId}</span>
           </div>
 
@@ -525,7 +549,9 @@ export function DevBrandWorkflow() {
 
           {error && <div className="error">❌ {error}</div>}
 
-          {state.workflowComplete && <div className="completion-message">✅ Workflow Complete!</div>}
+          {state.workflowComplete && (
+            <div className="completion-message">✅ Workflow Complete!</div>
+          )}
         </div>
       )}
 

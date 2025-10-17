@@ -169,7 +169,10 @@ interface DebugConfig {
 
 @Injectable()
 export class WorkflowDebuggerService {
-  constructor(private readonly timeTravelService: TimeTravelService, private readonly branchManager: BranchManagerService) {}
+  constructor(
+    private readonly timeTravelService: TimeTravelService,
+    private readonly branchManager: BranchManagerService
+  ) {}
 
   async debugWorkflowFailure(failedThreadId: string, config: DebugConfig): Promise<DebugReport> {
     // Step 1: Get execution history to find failure point
@@ -196,40 +199,52 @@ export class WorkflowDebuggerService {
     const preFailureState = await this.getCheckpointState(failedThreadId, preFailureCheckpoint);
 
     // Step 3: Create debug branch for analysis
-    const debugBranchId = await this.timeTravelService.createBranch(failedThreadId, preFailureCheckpoint, {
-      name: `debug-${Date.now()}`,
-      description: `Debug analysis for failure at ${failureNode.nodeId}`,
-      stateModifications: {
-        debugMode: true,
-        logLevel: config.logLevel,
-        failureAnalysis: true,
-      },
-      metadata: {
-        originalFailure: failureNode.error?.message,
-        debugConfig: config,
-      },
-    });
+    const debugBranchId = await this.timeTravelService.createBranch(
+      failedThreadId,
+      preFailureCheckpoint,
+      {
+        name: `debug-${Date.now()}`,
+        description: `Debug analysis for failure at ${failureNode.nodeId}`,
+        stateModifications: {
+          debugMode: true,
+          logLevel: config.logLevel,
+          failureAnalysis: true,
+        },
+        metadata: {
+          originalFailure: failureNode.error?.message,
+          debugConfig: config,
+        },
+      }
+    );
 
     // Step 4: Replay with debug configuration
-    const debugReplay = await this.timeTravelService.replayFromCheckpoint(failedThreadId, preFailureCheckpoint, {
-      newThreadId: debugBranchId,
-      replaySpeed: 0.5, // Slow replay for detailed analysis
-      stateModifications: {
-        debugMode: true,
-        verbose: true,
-        errorHandling: 'continue', // Don't stop on errors
-      },
-      skipNodes: [], // Don't skip any nodes for complete analysis
-      beforeNodeExecution: async (nodeId, state) => {
-        console.log(`Executing node: ${nodeId}`, { state: this.sanitizeState(state) });
-      },
-      afterNodeExecution: async (nodeId, state, result) => {
-        console.log(`Node ${nodeId} completed`, { result: this.sanitizeResult(result) });
-      },
-    });
+    const debugReplay = await this.timeTravelService.replayFromCheckpoint(
+      failedThreadId,
+      preFailureCheckpoint,
+      {
+        newThreadId: debugBranchId,
+        replaySpeed: 0.5, // Slow replay for detailed analysis
+        stateModifications: {
+          debugMode: true,
+          verbose: true,
+          errorHandling: 'continue', // Don't stop on errors
+        },
+        skipNodes: [], // Don't skip any nodes for complete analysis
+        beforeNodeExecution: async (nodeId, state) => {
+          console.log(`Executing node: ${nodeId}`, { state: this.sanitizeState(state) });
+        },
+        afterNodeExecution: async (nodeId, state, result) => {
+          console.log(`Node ${nodeId} completed`, { result: this.sanitizeResult(result) });
+        },
+      }
+    );
 
     // Step 5: Analyze differences and provide fix suggestions
-    const stateComparison = await this.timeTravelService.compareCheckpoints(failedThreadId, preFailureCheckpoint, failureNode.checkpointId);
+    const stateComparison = await this.timeTravelService.compareCheckpoints(
+      failedThreadId,
+      preFailureCheckpoint,
+      failureNode.checkpointId
+    );
 
     return {
       failureAnalysis: {
@@ -246,30 +261,42 @@ export class WorkflowDebuggerService {
     };
   }
 
-  async testWorkflowFix(originalThreadId: string, fixBranchId: string, testScenarios: TestScenario[]): Promise<TestResults> {
+  async testWorkflowFix(
+    originalThreadId: string,
+    fixBranchId: string,
+    testScenarios: TestScenario[]
+  ): Promise<TestResults> {
     const results: TestResult[] = [];
 
     for (const scenario of testScenarios) {
       console.log(`Testing scenario: ${scenario.name}`);
 
       // Create test branch from fix branch
-      const testBranchId = await this.timeTravelService.createBranch(originalThreadId, scenario.fromCheckpointId, {
-        name: `test-${scenario.name}-${Date.now()}`,
-        description: `Testing fix with scenario: ${scenario.description}`,
-        stateModifications: scenario.inputModifications,
-        metadata: {
-          testScenario: scenario.name,
-          expectedOutcome: scenario.expectedOutcome,
-        },
-      });
+      const testBranchId = await this.timeTravelService.createBranch(
+        originalThreadId,
+        scenario.fromCheckpointId,
+        {
+          name: `test-${scenario.name}-${Date.now()}`,
+          description: `Testing fix with scenario: ${scenario.description}`,
+          stateModifications: scenario.inputModifications,
+          metadata: {
+            testScenario: scenario.name,
+            expectedOutcome: scenario.expectedOutcome,
+          },
+        }
+      );
 
       try {
         // Execute test
-        const testResult = await this.timeTravelService.replayFromCheckpoint(originalThreadId, scenario.fromCheckpointId, {
-          newThreadId: testBranchId,
-          stateModifications: scenario.inputModifications,
-          replaySpeed: 2.0, // Faster replay for testing
-        });
+        const testResult = await this.timeTravelService.replayFromCheckpoint(
+          originalThreadId,
+          scenario.fromCheckpointId,
+          {
+            newThreadId: testBranchId,
+            stateModifications: scenario.inputModifications,
+            replaySpeed: 2.0, // Faster replay for testing
+          }
+        );
 
         // Validate result
         const passed = await this.validateTestResult(testResult, scenario.expectedOutcome);
@@ -302,7 +329,11 @@ export class WorkflowDebuggerService {
     };
   }
 
-  async createExperimentalBranch(threadId: string, checkpointId: string, experimentConfig: ExperimentConfig): Promise<string> {
+  async createExperimentalBranch(
+    threadId: string,
+    checkpointId: string,
+    experimentConfig: ExperimentConfig
+  ): Promise<string> {
     const branchId = await this.timeTravelService.createBranch(threadId, checkpointId, {
       name: `experiment-${experimentConfig.name}`,
       description: experimentConfig.description,
@@ -321,7 +352,11 @@ export class WorkflowDebuggerService {
     return branchId;
   }
 
-  async compareExperimentResults(threadId: string, baselineCheckpointId: string, experimentBranchIds: string[]): Promise<ExperimentComparison> {
+  async compareExperimentResults(
+    threadId: string,
+    baselineCheckpointId: string,
+    experimentBranchIds: string[]
+  ): Promise<ExperimentComparison> {
     const comparisons: BranchComparison[] = [];
 
     for (const branchId of experimentBranchIds) {
@@ -363,7 +398,10 @@ export class WorkflowDebuggerService {
     return result;
   }
 
-  private async generateFixRecommendations(comparison: StateComparison, failureNode: ExecutionHistoryNode): Promise<string[]> {
+  private async generateFixRecommendations(
+    comparison: StateComparison,
+    failureNode: ExecutionHistoryNode
+  ): Promise<string[]> {
     const recommendations: string[] = [];
 
     // Analyze state differences for common issues
@@ -377,7 +415,9 @@ export class WorkflowDebuggerService {
       }
 
       if (diff.type === 'type-changed') {
-        recommendations.push(`Type mismatch detected in: ${diff.path} (${diff.type1} → ${diff.type2})`);
+        recommendations.push(
+          `Type mismatch detected in: ${diff.path} (${diff.type1} → ${diff.type2})`
+        );
       }
     }
 
@@ -444,7 +484,10 @@ export class WorkflowDebuggerService {
 
   private async getCheckpointState(threadId: string, checkpointId: string): Promise<any> {
     // Load checkpoint state via checkpoint adapter
-    const checkpoint = await this.timeTravelService['checkpointAdapter'].loadCheckpoint(threadId, checkpointId);
+    const checkpoint = await this.timeTravelService['checkpointAdapter'].loadCheckpoint(
+      threadId,
+      checkpointId
+    );
     return checkpoint?.channel_values;
   }
 }
@@ -511,9 +554,16 @@ TimeTravelModule.forRootAsync({
 ```typescript
 @Injectable()
 export class ExperimentationService {
-  constructor(private readonly timeTravelService: TimeTravelService, private readonly branchManager: BranchManagerService) {}
+  constructor(
+    private readonly timeTravelService: TimeTravelService,
+    private readonly branchManager: BranchManagerService
+  ) {}
 
-  async runABTest(threadId: string, baseCheckpointId: string, variants: ABTestVariant[]): Promise<ABTestResults> {
+  async runABTest(
+    threadId: string,
+    baseCheckpointId: string,
+    variants: ABTestVariant[]
+  ): Promise<ABTestResults> {
     const results: VariantResult[] = [];
 
     for (const variant of variants) {
@@ -532,11 +582,15 @@ export class ExperimentationService {
       // Execute variant multiple times for statistical significance
       const runs: VariantRun[] = [];
       for (let i = 0; i < variant.sampleSize; i++) {
-        const runResult = await this.timeTravelService.replayFromCheckpoint(threadId, baseCheckpointId, {
-          newThreadId: `${branchId}-run-${i}`,
-          stateModifications: variant.modifications,
-          replaySpeed: 5.0, // Fast execution for testing
-        });
+        const runResult = await this.timeTravelService.replayFromCheckpoint(
+          threadId,
+          baseCheckpointId,
+          {
+            newThreadId: `${branchId}-run-${i}`,
+            stateModifications: variant.modifications,
+            replaySpeed: 5.0, // Fast execution for testing
+          }
+        );
 
         runs.push({
           runId: `run-${i}`,
@@ -566,18 +620,26 @@ export class ExperimentationService {
     };
   }
 
-  async createCanaryDeployment(threadId: string, productionCheckpointId: string, canaryConfig: CanaryConfig): Promise<CanaryDeployment> {
+  async createCanaryDeployment(
+    threadId: string,
+    productionCheckpointId: string,
+    canaryConfig: CanaryConfig
+  ): Promise<CanaryDeployment> {
     // Create canary branch
-    const canaryBranchId = await this.timeTravelService.createBranch(threadId, productionCheckpointId, {
-      name: `canary-${canaryConfig.version}`,
-      description: `Canary deployment for version ${canaryConfig.version}`,
-      stateModifications: canaryConfig.changes,
-      metadata: {
-        deploymentType: 'canary',
-        version: canaryConfig.version,
-        trafficPercent: canaryConfig.trafficPercent,
-      },
-    });
+    const canaryBranchId = await this.timeTravelService.createBranch(
+      threadId,
+      productionCheckpointId,
+      {
+        name: `canary-${canaryConfig.version}`,
+        description: `Canary deployment for version ${canaryConfig.version}`,
+        stateModifications: canaryConfig.changes,
+        metadata: {
+          deploymentType: 'canary',
+          version: canaryConfig.version,
+          trafficPercent: canaryConfig.trafficPercent,
+        },
+      }
+    );
 
     // Set up monitoring and gradual rollout
     const monitoring = await this.setupCanaryMonitoring(canaryBranchId, canaryConfig);
@@ -606,7 +668,9 @@ export class ExperimentationService {
   }
 
   private determineWinner(results: VariantResult[]): string {
-    return results.reduce((winner, current) => (current.statistics.successRate > winner.statistics.successRate ? current : winner)).variantName;
+    return results.reduce((winner, current) =>
+      current.statistics.successRate > winner.statistics.successRate ? current : winner
+    ).variantName;
   }
 
   private calculateSignificance(results: VariantResult[]): number {
@@ -634,7 +698,11 @@ export class ExperimentationService {
 export class StateAnalysisService {
   constructor(private readonly timeTravelService: TimeTravelService) {}
 
-  async analyzeStateEvolution(threadId: string, fieldPath: string, options?: AnalysisOptions): Promise<StateEvolution> {
+  async analyzeStateEvolution(
+    threadId: string,
+    fieldPath: string,
+    options?: AnalysisOptions
+  ): Promise<StateEvolution> {
     const history = await this.timeTravelService.getExecutionHistory(threadId, {
       limit: options?.limit || 100,
       includeChildren: true,
@@ -712,7 +780,10 @@ export class StateAnalysisService {
     return anomalies.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
-  async generateExecutionReport(threadId: string, reportConfig: ReportConfig): Promise<ExecutionReport> {
+  async generateExecutionReport(
+    threadId: string,
+    reportConfig: ReportConfig
+  ): Promise<ExecutionReport> {
     const history = await this.timeTravelService.getExecutionHistory(threadId);
     const anomalies = await this.detectAnomalies(threadId, reportConfig.anomalyConfig);
 
@@ -743,7 +814,10 @@ export class StateAnalysisService {
       return acc;
     }, {} as Record<string, number>);
 
-    const avgDuration = history.filter((n) => n.executionDuration).reduce((sum, n) => sum + (n.executionDuration || 0), 0) / history.length;
+    const avgDuration =
+      history
+        .filter((n) => n.executionDuration)
+        .reduce((sum, n) => sum + (n.executionDuration || 0), 0) / history.length;
 
     return {
       nodeTypes,
@@ -834,13 +908,21 @@ interface StorageConfig {
 ## Error Handling
 
 ```typescript
-import { CheckpointNotFoundError, BranchNotFoundError, ReplayFailedError } from '@hive-academy/langgraph-time-travel';
+import {
+  CheckpointNotFoundError,
+  BranchNotFoundError,
+  ReplayFailedError,
+} from '@hive-academy/langgraph-time-travel';
 
 @Injectable()
 export class RobustTimeTravelService {
   constructor(private readonly timeTravelService: TimeTravelService) {}
 
-  async safeReplay<T>(threadId: string, checkpointId: string, options: ReplayOptions<T>): Promise<WorkflowExecution<T> | null> {
+  async safeReplay<T>(
+    threadId: string,
+    checkpointId: string,
+    options: ReplayOptions<T>
+  ): Promise<WorkflowExecution<T> | null> {
     try {
       return await this.timeTravelService.replayFromCheckpoint(threadId, checkpointId, options);
     } catch (error) {
@@ -859,7 +941,11 @@ export class RobustTimeTravelService {
     }
   }
 
-  private async attemptSimplifiedReplay<T>(threadId: string, checkpointId: string, options: ReplayOptions<T>): Promise<WorkflowExecution<T> | null> {
+  private async attemptSimplifiedReplay<T>(
+    threadId: string,
+    checkpointId: string,
+    options: ReplayOptions<T>
+  ): Promise<WorkflowExecution<T> | null> {
     // Retry with simplified state modifications
     const simplifiedOptions = {
       ...options,
@@ -868,7 +954,11 @@ export class RobustTimeTravelService {
     };
 
     try {
-      return await this.timeTravelService.replayFromCheckpoint(threadId, checkpointId, simplifiedOptions);
+      return await this.timeTravelService.replayFromCheckpoint(
+        threadId,
+        checkpointId,
+        simplifiedOptions
+      );
     } catch (error) {
       this.logger.error('Simplified replay also failed:', error.message);
       return null;

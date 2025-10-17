@@ -136,7 +136,9 @@ export class ThreeDElementDirective implements AfterViewInit, OnDestroy {
 <h1 app3d priority="HERO" quality="high">Enterprise AI Platform</h1>
 
 <!-- Subtitle - auto positioning at different depth -->
-<p app3d priority="PRIMARY" [depth]="-3">Build intelligent applications with vector search and knowledge graphs</p>
+<p app3d priority="PRIMARY" [depth]="-3">
+  Build intelligent applications with vector search and knowledge graphs
+</p>
 
 <!-- Button - manual positioning -->
 <button app3d [position]="[0, -2, -1.5]" priority="PRIMARY">Get Started</button>
@@ -206,7 +208,11 @@ const heroConfig = HybridElementConfigBuilder.create('HERO')
 **New Component**: `HeroScene3D`
 
 ```html
-<app-hybrid-scene [enablePerformanceOverlay]="false" [backgroundColor]="'#000000'" [sceneConfig]="heroSceneConfig()">
+<app-hybrid-scene
+  [enablePerformanceOverlay]="false"
+  [backgroundColor]="'#000000'"
+  [sceneConfig]="heroSceneConfig()"
+>
   <!-- Native elements with app3d directive -->
   <h1 app3d priority="HERO" quality="high" [depth]="-2">
     Enterprise AI
@@ -214,7 +220,10 @@ const heroConfig = HybridElementConfigBuilder.create('HERO')
     <span class="gradient-text">SaaS Starter</span>
   </h1>
 
-  <p app3d priority="PRIMARY" [depth]="-2.5" class="hero-subtitle">Production-ready foundation combining vector search, graph relationships, and intelligent workflows</p>
+  <p app3d priority="PRIMARY" [depth]="-2.5" class="hero-subtitle">
+    Production-ready foundation combining vector search, graph relationships, and intelligent
+    workflows
+  </p>
 
   <div app3d priority="PRIMARY" [depth]="-2" class="hero-badges">
     <span class="badge">🧠 Semantic Intelligence</span>
@@ -342,13 +351,27 @@ export class HeroSection3DComponent {
   <h1 element3d priority="HERO" class="text-6xl font-bold mb-4 text-white">Enterprise AI</h1>
 
   <!-- Subtitle - Tailwind positioning, directive adds 3D -->
-  <p element3d priority="PRIMARY" class="text-xl text-gray-300 max-w-2xl text-center mb-8">Production-ready AI platform</p>
+  <p element3d priority="PRIMARY" class="text-xl text-gray-300 max-w-2xl text-center mb-8">
+    Production-ready AI platform
+  </p>
 
   <!-- Buttons - Flex layout via Tailwind -->
   <div class="flex gap-4 justify-center">
-    <button element3d priority="PRIMARY" class="px-8 py-4 bg-purple-500 hover:bg-purple-600 rounded-xl text-white font-semibold transition-colors">Get Started</button>
+    <button
+      element3d
+      priority="PRIMARY"
+      class="px-8 py-4 bg-purple-500 hover:bg-purple-600 rounded-xl text-white font-semibold transition-colors"
+    >
+      Get Started
+    </button>
 
-    <button element3d priority="SECONDARY" class="px-8 py-4 bg-transparent border-2 border-white/30 hover:border-white/50 rounded-xl text-white font-semibold transition-colors">Learn More</button>
+    <button
+      element3d
+      priority="SECONDARY"
+      class="px-8 py-4 bg-transparent border-2 border-white/30 hover:border-white/50 rounded-xl text-white font-semibold transition-colors"
+    >
+      Learn More
+    </button>
   </div>
 </div>
 ```

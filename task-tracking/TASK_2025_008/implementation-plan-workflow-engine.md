@@ -59,7 +59,10 @@ export class GraphOptimizationService {
    * Enhance workflow with optimization patterns from Store
    * Phase 2: Store-based pattern discovery
    */
-  async enhanceWithOptimizationPatterns(definition: WorkflowDefinition, options: GraphBuilderOptions): Promise<GraphBuilderOptions> {
+  async enhanceWithOptimizationPatterns(
+    definition: WorkflowDefinition,
+    options: GraphBuilderOptions
+  ): Promise<GraphBuilderOptions> {
     if (!this.memoryAdapter) {
       return options; // No enhancement without memory
     }
@@ -69,7 +72,11 @@ export class GraphOptimizationService {
       const workflowType = this.classifyGraphType(definition);
 
       // 2. Discover patterns from Store
-      const patterns = await this.discoverSimilarPatterns(workflowType, definition.nodes.length, definition.edges.length);
+      const patterns = await this.discoverSimilarPatterns(
+        workflowType,
+        definition.nodes.length,
+        definition.edges.length
+      );
 
       // 3. Apply learned optimizations
       return this.applyOptimizationsFromPatterns(options, patterns);
@@ -83,7 +90,11 @@ export class GraphOptimizationService {
    * Discover similar workflow patterns using Store search
    * Phase 2: Hierarchical namespace semantic search
    */
-  private async discoverSimilarPatterns(workflowType: string, nodeCount: number, edgeCount: number): Promise<WorkflowPattern[]> {
+  private async discoverSimilarPatterns(
+    workflowType: string,
+    nodeCount: number,
+    edgeCount: number
+  ): Promise<WorkflowPattern[]> {
     const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.WORKFLOW.PATTERNS);
 
     // Search within workflow type namespace
@@ -104,7 +115,10 @@ export class GraphOptimizationService {
    * Store workflow compilation pattern
    * Phase 2: Store with hierarchical namespace
    */
-  async storeWorkflowPattern(definition: WorkflowDefinition, compilationResult: CompilationResult): Promise<void> {
+  async storeWorkflowPattern(
+    definition: WorkflowDefinition,
+    compilationResult: CompilationResult
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     // Non-blocking storage
@@ -113,7 +127,10 @@ export class GraphOptimizationService {
     });
   }
 
-  private async storePatternAsync(definition: WorkflowDefinition, result: CompilationResult): Promise<void> {
+  private async storePatternAsync(
+    definition: WorkflowDefinition,
+    result: CompilationResult
+  ): Promise<void> {
     const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.WORKFLOW.PATTERNS);
 
     const workflowType = this.classifyGraphType(definition);
@@ -151,11 +168,16 @@ export class GraphOptimizationService {
   /**
    * Apply optimizations from discovered patterns
    */
-  private applyOptimizationsFromPatterns(options: GraphBuilderOptions, patterns: WorkflowPattern[]): GraphBuilderOptions {
+  private applyOptimizationsFromPatterns(
+    options: GraphBuilderOptions,
+    patterns: WorkflowPattern[]
+  ): GraphBuilderOptions {
     if (patterns.length === 0) return options;
 
     // Find best performing pattern
-    const bestPattern = patterns.reduce((best, current) => (current.performance.compilationTime < best.performance.compilationTime ? current : best));
+    const bestPattern = patterns.reduce((best, current) =>
+      current.performance.compilationTime < best.performance.compilationTime ? current : best
+    );
 
     // Apply optimizations
     return {
@@ -351,7 +373,10 @@ export class WorkflowGraphBuilderService {
    * Build workflow graph with agent context and tracking
    * Phase 2: Builder tracked as agent
    */
-  async buildFromDefinition<TState extends WorkflowState>(definition: WorkflowDefinition<TState>, options: GraphBuilderOptions = {}): Promise<StateGraph<TState>> {
+  async buildFromDefinition<TState extends WorkflowState>(
+    definition: WorkflowDefinition<TState>,
+    options: GraphBuilderOptions = {}
+  ): Promise<StateGraph<TState>> {
     // 1. Get builder's learned patterns (non-blocking on failure)
     const builderContext = await this.getBuilderContext(definition).catch((error) => {
       this.logger.debug('No builder context available:', error);
@@ -359,7 +384,9 @@ export class WorkflowGraphBuilderService {
     });
 
     // 2. Enhance options with learned patterns
-    const enhancedOptions = builderContext ? this.applyBuilderContext(options, builderContext) : options;
+    const enhancedOptions = builderContext
+      ? this.applyBuilderContext(options, builderContext)
+      : options;
 
     // 3. Build graph (core operation)
     const startTime = Date.now();
@@ -380,7 +407,9 @@ export class WorkflowGraphBuilderService {
    * Get workflow builder agent context
    * Phase 2: Retrieve builder's learned compilation strategies
    */
-  private async getBuilderContext(definition: WorkflowDefinition): Promise<AgentMemoryContext | null> {
+  private async getBuilderContext(
+    definition: WorkflowDefinition
+  ): Promise<AgentMemoryContext | null> {
     if (!this.memoryAdapter) return null;
 
     const state: AgentState = {
@@ -399,7 +428,10 @@ export class WorkflowGraphBuilderService {
   /**
    * Apply builder context to options
    */
-  private applyBuilderContext(options: GraphBuilderOptions, context: AgentMemoryContext): GraphBuilderOptions {
+  private applyBuilderContext(
+    options: GraphBuilderOptions,
+    context: AgentMemoryContext
+  ): GraphBuilderOptions {
     // Extract learned preferences from agent memories
     const learnedOptimizations = context.agentMemories
       .filter((m) => m.type === 'builder_execution')
@@ -419,7 +451,11 @@ export class WorkflowGraphBuilderService {
    * Store builder agent execution
    * Phase 2: Track builder decisions for learning
    */
-  private async storeBuilderExecution(definition: WorkflowDefinition, compilationTime: number, options: GraphBuilderOptions): Promise<void> {
+  private async storeBuilderExecution(
+    definition: WorkflowDefinition,
+    compilationTime: number,
+    options: GraphBuilderOptions
+  ): Promise<void> {
     const state: AgentState = {
       messages: [],
       metadata: {
@@ -574,7 +610,9 @@ describe('WorkflowGraphBuilderService - Agent Tracking', () => {
   });
 
   it('should not slow compilation when retrieving context', async () => {
-    mockMemoryAdapter.getAgentContext = jest.fn().mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(null), 100)));
+    mockMemoryAdapter.getAgentContext = jest
+      .fn()
+      .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(null), 100)));
 
     const definition = { name: 'test', nodes: [], edges: [] };
     const startTime = Date.now();

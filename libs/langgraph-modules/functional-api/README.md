@@ -53,7 +53,13 @@ await workflowExecutionService.executeWorkflow(definition);
 **DevBrand Supervisor Workflow** - Multi-agent personal branding workflow:
 
 ```typescript
-import { FunctionalWorkflow as Workflow, Entrypoint, Task, Node, Edge } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow as Workflow,
+  Entrypoint,
+  Task,
+  Node,
+  Edge,
+} from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 
@@ -64,7 +70,11 @@ import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 })
 @Injectable()
 export class DevBrandSupervisorWorkflow {
-  constructor(private readonly llmProvider: LlmProviderService, private readonly githubAnalyzer: GitHubCodeAnalyzerAgent, private readonly brandMemory: PersonalBrandMemoryService) {}
+  constructor(
+    private readonly llmProvider: LlmProviderService,
+    private readonly githubAnalyzer: GitHubCodeAnalyzerAgent,
+    private readonly brandMemory: PersonalBrandMemoryService
+  ) {}
 
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
@@ -229,7 +239,12 @@ Defines workflow tasks with explicit dependencies.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Entrypoint, Task, TaskExecutionContext, TaskExecutionResult } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Entrypoint,
+  Task,
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class DataProcessingWorkflow {
@@ -331,7 +346,12 @@ Defines connections between nodes.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Node, Edge, ConditionalEdge, DeclarativeWorkflowBase } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Node,
+  Edge,
+  ConditionalEdge,
+  DeclarativeWorkflowBase,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class ApprovalWorkflow extends DeclarativeWorkflowBase {
@@ -692,7 +712,12 @@ route() {}
 **When to use**: Simple, sequential workflows with straightforward dependencies
 
 ```typescript
-import { FunctionalWorkflow, Entrypoint, Task, WorkflowType } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow,
+  Entrypoint,
+  Task,
+  WorkflowType,
+} from '@hive-academy/langgraph-functional-api';
 
 @FunctionalWorkflow({
   name: 'my-workflow',
@@ -723,7 +748,13 @@ export class MyWorkflow {
 **When to use**: Complex workflows with conditional routing and branching
 
 ```typescript
-import { FunctionalWorkflow, Node, Edge, WorkflowType, DeclarativeWorkflowBase } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow,
+  Node,
+  Edge,
+  WorkflowType,
+  DeclarativeWorkflowBase,
+} from '@hive-academy/langgraph-functional-api';
 
 @FunctionalWorkflow({
   name: 'my-workflow',

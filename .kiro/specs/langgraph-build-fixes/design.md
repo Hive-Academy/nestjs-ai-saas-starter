@@ -48,13 +48,31 @@ High-Level Modules:
 
 ```typescript
 // Constants (runtime exports)
-export { WORKFLOW_METADATA_KEY, WORKFLOW_NODES_KEY, WORKFLOW_EDGES_KEY, WORKFLOW_TOOLS_KEY, LANGGRAPH_MODULE_OPTIONS } from './lib/constants';
+export {
+  WORKFLOW_METADATA_KEY,
+  WORKFLOW_NODES_KEY,
+  WORKFLOW_EDGES_KEY,
+  WORKFLOW_TOOLS_KEY,
+  LANGGRAPH_MODULE_OPTIONS,
+} from './lib/constants';
 
 // Interfaces (type exports)
-export type { WorkflowState, HumanFeedback, Command, WorkflowDefinition, WorkflowNode, WorkflowEdge, WorkflowError, LangGraphModuleOptions } from './lib/interfaces/workflow.interface';
+export type {
+  WorkflowState,
+  HumanFeedback,
+  Command,
+  WorkflowDefinition,
+  WorkflowNode,
+  WorkflowEdge,
+  WorkflowError,
+  LangGraphModuleOptions,
+} from './lib/interfaces/workflow.interface';
 
 // Annotations (runtime exports)
-export { WorkflowStateAnnotation, createCustomStateAnnotation } from './lib/annotations/workflow-state.annotation';
+export {
+  WorkflowStateAnnotation,
+  createCustomStateAnnotation,
+} from './lib/annotations/workflow-state.annotation';
 
 // Utils (runtime exports)
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
@@ -64,13 +82,30 @@ export { isWorkflow } from './lib/utils/workflow-metadata.utils';
 
 ```typescript
 // Services (runtime exports)
-export { TokenStreamingService, EventStreamProcessorService, WebSocketBridgeService } from './lib/services';
+export {
+  TokenStreamingService,
+  EventStreamProcessorService,
+  WebSocketBridgeService,
+} from './lib/services';
 
 // Interfaces (type exports)
-export type { StreamUpdate, StreamMetadata, StreamContext, TokenData, StreamTokenMetadata, StreamEventMetadata, StreamProgressMetadata } from './lib/interfaces/streaming.interface';
+export type {
+  StreamUpdate,
+  StreamMetadata,
+  StreamContext,
+  TokenData,
+  StreamTokenMetadata,
+  StreamEventMetadata,
+  StreamProgressMetadata,
+} from './lib/interfaces/streaming.interface';
 
 // Enums and functions (runtime exports)
-export { StreamEventType, getStreamTokenMetadata, getStreamEventMetadata, getStreamProgressMetadata } from './lib/interfaces/streaming.interface';
+export {
+  StreamEventType,
+  getStreamTokenMetadata,
+  getStreamEventMetadata,
+  getStreamProgressMetadata,
+} from './lib/interfaces/streaming.interface';
 ```
 
 **Functional-API Module Exports**:
@@ -82,7 +117,12 @@ export * from './lib/decorators/node.decorator';
 export * from './lib/decorators/edge.decorator';
 
 // Metadata functions (runtime exports)
-export { getWorkflowMetadata, getWorkflowNodes, getWorkflowEdges, getAllStreamingMetadata } from './lib/decorators';
+export {
+  getWorkflowMetadata,
+  getWorkflowNodes,
+  getWorkflowEdges,
+  getAllStreamingMetadata,
+} from './lib/decorators';
 
 // Metadata types (type exports)
 export type { NodeMetadata, EdgeMetadata } from './lib/decorators';
@@ -99,17 +139,29 @@ export { isWorkflow } from '@hive-academy/langgraph-core';
 
 ```typescript
 // For interfaces and types
-import type { StreamUpdate, StreamMetadata, WorkflowState } from '@hive-academy/langgraph-streaming';
+import type {
+  StreamUpdate,
+  StreamMetadata,
+  WorkflowState,
+} from '@hive-academy/langgraph-streaming';
 
 // For enums, functions, and runtime values
-import { StreamEventType, getStreamTokenMetadata, WorkflowStateAnnotation } from '@hive-academy/langgraph-streaming';
+import {
+  StreamEventType,
+  getStreamTokenMetadata,
+  WorkflowStateAnnotation,
+} from '@hive-academy/langgraph-streaming';
 ```
 
 **Mixed Import Pattern**:
 
 ```typescript
 import type { WorkflowState, Command } from '@hive-academy/langgraph-core';
-import { WORKFLOW_METADATA_KEY, WorkflowStateAnnotation, isWorkflow } from '@hive-academy/langgraph-core';
+import {
+  WORKFLOW_METADATA_KEY,
+  WorkflowStateAnnotation,
+  isWorkflow,
+} from '@hive-academy/langgraph-core';
 ```
 
 ### 3. Rollup Configuration Component

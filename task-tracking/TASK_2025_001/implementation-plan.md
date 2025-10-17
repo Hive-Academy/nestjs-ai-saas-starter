@@ -150,7 +150,10 @@ class CentralRegistryService {
     for (const toolName of requestedTools) {
       if (!this.tools.has(toolName)) {
         const available = Array.from(this.tools.keys()).join(', ');
-        throw new Error(`Agent '${agentConfig.id}' requires tool '${toolName}' ` + `but it is not registered. Available tools: ${available}`);
+        throw new Error(
+          `Agent '${agentConfig.id}' requires tool '${toolName}' ` +
+            `but it is not registered. Available tools: ${available}`
+        );
       }
     }
   }
@@ -242,7 +245,8 @@ export interface GitHubAnalyzerMetadata extends WorkflowAgentMetadata {
 }
 
 // 2. Typed state interface (new file)
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends WorkflowState {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
+  extends WorkflowState {
   metadata: TMetadata; // Generic instead of Record<string, unknown>
 }
 
@@ -252,8 +256,12 @@ export interface TaskExecutionContext<TState = WorkflowState> {
 }
 
 // 4. Agent usage (update existing)
-export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<GitHubAnalyzerMetadata>> {
-  async nodeFunction(context: TaskExecutionContext<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>): Promise<TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>> {
+export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
+  TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+> {
+  async nodeFunction(
+    context: TaskExecutionContext<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>> {
     // Type-safe access - no casting needed
     const username = context.state.metadata.githubUsername; // string
     const achievements = context.state.metadata.achievements; // Achievement[] | undefined
@@ -861,7 +869,8 @@ import type { WorkflowState } from '@hive-academy/langgraph-core';
  *
  * Evidence: AGENT_ARCHITECTURE_ANALYSIS.md Lines 159-174
  */
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends WorkflowState {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
+  extends WorkflowState {
   messages: BaseMessage[];
   next?: string;
   task?: string;
@@ -1030,7 +1039,10 @@ describe('Generic Task Types', () => {
 // Add new imports
 import type { TypedWorkflowAgentState } from '../../types/typed-agent-state';
 import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
-import type { TaskExecutionContext, TaskExecutionResult } from '@hive-academy/langgraph-functional-api';
+import type {
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-functional-api';
 ```
 
 **Step 2: Update class signature**
@@ -1777,7 +1789,9 @@ export class MyAgent extends DeclarativeWorkflowBase<WorkflowAgentState> {
   },
 })
 export class MyAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<MyAgentMetadata>> {
-  async nodeFunction(context: TaskExecutionContext<TypedWorkflowAgentState<MyAgentMetadata>>): Promise<TaskExecutionResult<TypedWorkflowAgentState<MyAgentMetadata>>> {
+  async nodeFunction(
+    context: TaskExecutionContext<TypedWorkflowAgentState<MyAgentMetadata>>
+  ): Promise<TaskExecutionResult<TypedWorkflowAgentState<MyAgentMetadata>>> {
     const username = context.state.metadata.username; // ✅ Type-safe
   }
 }

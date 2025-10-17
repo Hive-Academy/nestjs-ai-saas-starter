@@ -144,7 +144,12 @@ Skip extending adoption if:
 
 ```ts
 import { NodeIdBuilder } from '@hive-academy/langgraph-core';
-const nodeId = NodeIdBuilder.create().domain('content').phase('ingest').activity('chunk').detail('tokens').build(); // => content|ingest:chunk:tokens
+const nodeId = NodeIdBuilder.create()
+  .domain('content')
+  .phase('ingest')
+  .activity('chunk')
+  .detail('tokens')
+  .build(); // => content|ingest:chunk:tokens
 ```
 
 ### 10.2 Defensive Validation (CI Gate)

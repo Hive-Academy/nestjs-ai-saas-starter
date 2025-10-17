@@ -385,7 +385,9 @@ import { HybridElementConfigExtended, AnimationConfig } from '../interfaces';
 export class HybridElementConfigBuilder {
   private config: Partial<HybridElementConfigExtended> = {};
 
-  static create(priority: 'HERO' | 'PRIMARY' | 'SECONDARY' | 'TERTIARY'): HybridElementConfigBuilder {
+  static create(
+    priority: 'HERO' | 'PRIMARY' | 'SECONDARY' | 'TERTIARY'
+  ): HybridElementConfigBuilder {
     const builder = new HybridElementConfigBuilder();
     builder.config.priority = priority;
     return builder;
@@ -435,7 +437,12 @@ export class HybridElementConfigBuilder {
  * Preset config factories for common use cases
  */
 
-export function createCardConfig(options: { color?: string; opacity?: number; priority?: 'PRIMARY' | 'SECONDARY' | 'TERTIARY'; enableHoverEffect?: boolean }): HybridElementConfigExtended {
+export function createCardConfig(options: {
+  color?: string;
+  opacity?: number;
+  priority?: 'PRIMARY' | 'SECONDARY' | 'TERTIARY';
+  enableHoverEffect?: boolean;
+}): HybridElementConfigExtended {
   const builder = HybridElementConfigBuilder.create(options.priority || 'SECONDARY')
     .withMaterial({
       opacity: options.opacity || 0.1,
@@ -468,7 +475,10 @@ export function createCardConfig(options: { color?: string; opacity?: number; pr
   return builder.build();
 }
 
-export function createButtonConfig(options: { priority?: 'PRIMARY' | 'SECONDARY'; emissive?: boolean }): HybridElementConfigExtended {
+export function createButtonConfig(options: {
+  priority?: 'PRIMARY' | 'SECONDARY';
+  emissive?: boolean;
+}): HybridElementConfigExtended {
   return HybridElementConfigBuilder.create(options.priority || 'PRIMARY')
     .withMaterial({
       opacity: 0.95,
@@ -489,7 +499,10 @@ export function createButtonConfig(options: { priority?: 'PRIMARY' | 'SECONDARY'
     .build();
 }
 
-export function createBackgroundConfig(options: { quality?: 'low' | 'medium' | 'high'; enableParticles?: boolean }): HybridElementConfigExtended {
+export function createBackgroundConfig(options: {
+  quality?: 'low' | 'medium' | 'high';
+  enableParticles?: boolean;
+}): HybridElementConfigExtended {
   const config = HybridElementConfigBuilder.create('TERTIARY')
     .withMaterial({
       opacity: 0.05,
@@ -543,7 +556,10 @@ describe('HybridElementConfigBuilder', () => {
   });
 
   it('should support fluent API', () => {
-    const config = HybridElementConfigBuilder.create('PRIMARY').withMaterial({ opacity: 0.5 }).withPosition(0, 0, -2).build();
+    const config = HybridElementConfigBuilder.create('PRIMARY')
+      .withMaterial({ opacity: 0.5 })
+      .withPosition(0, 0, -2)
+      .build();
     expect(config.position).toEqual([0, 0, -2]);
   });
 });
@@ -744,7 +760,10 @@ export class ThreeDInfoCardComponent implements OnInit {
     });
 
     // Single service call replaces entire scene/camera/renderer/mesh setup
-    this.hybridElement = await this.hybridUI.createHybridElement(this.sceneContainer.nativeElement, config);
+    this.hybridElement = await this.hybridUI.createHybridElement(
+      this.sceneContainer.nativeElement,
+      config
+    );
 
     // Particles: Defer to Phase 2 (use ParticleAdapter when available)
     // For now: Remove particles or keep as manual addon
@@ -1052,7 +1071,11 @@ export class LayoutManager {
     return new THREE.PlaneGeometry(width, height, 1, 1);
   }
 
-  positionInScene(group: THREE.Group, domElement: HTMLElement, config: HybridElementConfigExtended): void {
+  positionInScene(
+    group: THREE.Group,
+    domElement: HTMLElement,
+    config: HybridElementConfigExtended
+  ): void {
     const rect = domElement.getBoundingClientRect();
 
     // Convert screen coordinates to 3D world coordinates
@@ -1190,7 +1213,10 @@ export class AnimationController {
 
     Object.entries(element.config.animations).forEach(([trigger, animConfig]) => {
       if (animConfig && typeof animConfig === 'object' && 'type' in animConfig) {
-        element.animations.set(trigger, this.createTimeline(element, animConfig as AnimationConfig));
+        element.animations.set(
+          trigger,
+          this.createTimeline(element, animConfig as AnimationConfig)
+        );
       }
     });
   }
@@ -1739,7 +1765,10 @@ angular-3d/
 ```typescript
 class HybridUIService {
   // VERIFIED: Line 164-283
-  async createHybridElement(domElement: HTMLElement, config: HybridElementConfigExtended): Promise<HybridElementExtended>;
+  async createHybridElement(
+    domElement: HTMLElement,
+    config: HybridElementConfigExtended
+  ): Promise<HybridElementExtended>;
 
   // VERIFIED: Line 602-605
   getElement(id: string): HybridElementExtended | null;
@@ -1781,7 +1810,9 @@ class HybridUIService {
 ```typescript
 // Fluent builder pattern
 class HybridElementConfigBuilder {
-  static create(priority: 'HERO' | 'PRIMARY' | 'SECONDARY' | 'TERTIARY'): HybridElementConfigBuilder;
+  static create(
+    priority: 'HERO' | 'PRIMARY' | 'SECONDARY' | 'TERTIARY'
+  ): HybridElementConfigBuilder;
   withMaterial(material: MaterialConfig): this;
   withContent(content: ContentConfig): this;
   withDecoration(decoration: DecorationConfig): this;
@@ -1909,7 +1940,21 @@ test('three-d-info-card visual parity', async ({ page }) => {
 
 ```yaml
 # lighthouserc.json
-{ 'ci': { 'collect': { 'url': ['http://localhost:4200/landing-page'], 'numberOfRuns': 3 }, 'assert': { 'assertions': { 'categories:performance': ['error', { 'minScore': 0.9 }], 'first-contentful-paint': ['error', { 'maxNumericValue': 3000 }], 'interactive': ['error', { 'maxNumericValue': 5000 }] } } } }
+{
+  'ci':
+    {
+      'collect': { 'url': ['http://localhost:4200/landing-page'], 'numberOfRuns': 3 },
+      'assert':
+        {
+          'assertions':
+            {
+              'categories:performance': ['error', { 'minScore': 0.9 }],
+              'first-contentful-paint': ['error', { 'maxNumericValue': 3000 }],
+              'interactive': ['error', { 'maxNumericValue': 5000 }],
+            },
+        },
+    },
+}
 ```
 
 **Test Coverage Targets**:

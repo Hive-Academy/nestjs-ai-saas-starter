@@ -14,11 +14,6 @@
     "additionalDirectories": ["D:\\projects\\nestjs-ai-saas-starter"]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "sequential-thinking",
-    "nx-mcp",
-    "angular-cli",
-    "fetch"
-  ],
+  "enabledMcpjsonServers": ["sequential-thinking", "nx-mcp", "angular-cli", "fetch"],
   "outputStyle": "default"
 }

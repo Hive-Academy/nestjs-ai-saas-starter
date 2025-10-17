@@ -279,8 +279,16 @@ export class AgentMemoryCheckpointService {
     if (checkpointAdapter && vectorService && graphService) {
       this.logger.log('AgentMemoryCheckpointService initialized with full capabilities');
     } else {
-      const missing = [!checkpointAdapter && 'checkpoint', !vectorService && 'vector', !graphService && 'graph'].filter(Boolean);
-      this.logger.warn(`AgentMemoryCheckpointService initialized with limited capabilities (missing: ${missing.join(', ')})`);
+      const missing = [
+        !checkpointAdapter && 'checkpoint',
+        !vectorService && 'vector',
+        !graphService && 'graph',
+      ].filter(Boolean);
+      this.logger.warn(
+        `AgentMemoryCheckpointService initialized with limited capabilities (missing: ${missing.join(
+          ', '
+        )})`
+      );
     }
   }
 }
@@ -329,14 +337,20 @@ describe('AgentMemoryCheckpointService.linkMemoriesToCheckpoint', () => {
       })
     );
     // Verify: Relationship created
-    expect(mockGraphService.createRelationship).toHaveBeenCalledWith('memory:mem1', 'checkpoint:checkpoint1', expect.objectContaining({ type: 'LINKED_TO_CHECKPOINT' }));
+    expect(mockGraphService.createRelationship).toHaveBeenCalledWith(
+      'memory:mem1',
+      'checkpoint:checkpoint1',
+      expect.objectContaining({ type: 'LINKED_TO_CHECKPOINT' })
+    );
   });
 
   it('should handle missing vector service gracefully', async () => {
     service['vectorService'] = undefined;
     const memories = [createMockMemory({ id: 'mem1' })];
 
-    await expect(service.syncWithCheckpoint('thread1', 'checkpoint1', memories)).resolves.not.toThrow();
+    await expect(
+      service.syncWithCheckpoint('thread1', 'checkpoint1', memories)
+    ).resolves.not.toThrow();
 
     // Verify: Graph relationships still created
     expect(mockGraphService.createRelationship).toHaveBeenCalled();
@@ -883,7 +897,9 @@ describe('StoreGraphService.findNamespaceConnections', () => {
   });
 
   it('should deduplicate connected namespaces', async () => {
-    mockGraphService.findNodes.mockResolvedValue([{ id: 'store:user/user-123:item1', labels: ['StoreItem'], properties: {} }]);
+    mockGraphService.findNodes.mockResolvedValue([
+      { id: 'store:user/user-123:item1', labels: ['StoreItem'], properties: {} },
+    ]);
 
     // Mock: Multiple items connect to same namespace
     mockGraphService.traverse.mockResolvedValue({
@@ -1186,7 +1202,11 @@ const mockGraphService: jest.Mocked<IGraphService> = {
 
 // Provide in test module
 TestingModule = await Test.createTestingModule({
-  providers: [AgentMemoryCheckpointService, { provide: IVectorService, useValue: mockVectorService }, { provide: IGraphService, useValue: mockGraphService }],
+  providers: [
+    AgentMemoryCheckpointService,
+    { provide: IVectorService, useValue: mockVectorService },
+    { provide: IGraphService, useValue: mockGraphService },
+  ],
 }).compile();
 ```
 

@@ -78,7 +78,16 @@ The codebase has **4 PARALLEL IMPLEMENTATIONS** doing the same thing:
 **API**:
 
 ```html
-<div hybrid3d priority="PRIMARY" [opacity]="0.95" [metalness]="0.8" [enableLOD]="true" [debug]="true">Content</div>
+<div
+  hybrid3d
+  priority="PRIMARY"
+  [opacity]="0.95"
+  [metalness]="0.8"
+  [enableLOD]="true"
+  [debug]="true"
+>
+  Content
+</div>
 ```
 
 **Size**: 509 lines (feature-rich but redundant)
@@ -108,7 +117,11 @@ The codebase has **4 PARALLEL IMPLEMENTATIONS** doing the same thing:
 **API**:
 
 ```html
-<app-hybrid-element-3d [config]="{width: 400, height: 300, interactive: true}" [content]="htmlContent" [position]="[0, 0, -2]">
+<app-hybrid-element-3d
+  [config]="{width: 400, height: 300, interactive: true}"
+  [content]="htmlContent"
+  [position]="[0, 0, -2]"
+>
   <ng-content></ng-content>
 </app-hybrid-element-3d>
 ```

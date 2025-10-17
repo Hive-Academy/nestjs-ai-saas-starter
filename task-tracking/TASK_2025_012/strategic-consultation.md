@@ -119,7 +119,11 @@ The Element3D directive allows you to transform ANY HTML element into 3D:
 // Use Element3D directive:
 <div class="grid grid-cols-2 gap-8">
   <div class="space-y-6">
-    <h1 element3d priority="HERO" class="text-6xl font-bold bg-gradient-to-r from-pink-500 to-blue-500">
+    <h1
+      element3d
+      priority="HERO"
+      class="text-6xl font-bold bg-gradient-to-r from-pink-500 to-blue-500"
+    >
       Build AI-Powered Applications
     </h1>
 
@@ -128,7 +132,11 @@ The Element3D directive allows you to transform ANY HTML element into 3D:
     </p>
 
     <div class="flex gap-4">
-      <button element3d priority="PRIMARY" class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500">
+      <button
+        element3d
+        priority="PRIMARY"
+        class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500"
+      >
         Get Started
       </button>
     </div>
