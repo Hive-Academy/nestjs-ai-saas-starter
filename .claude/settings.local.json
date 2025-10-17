@@ -7,7 +7,9 @@
       "Bash(npx nx build:*)",
       "Bash(npx tsc:*)",
       "mcp__nx-mcp__nx_project_details",
-      "Bash(npm run format:*)"
+      "Bash(npm run format:*)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__navigate_page"
     ],
     "deny": [],
     "ask": [],

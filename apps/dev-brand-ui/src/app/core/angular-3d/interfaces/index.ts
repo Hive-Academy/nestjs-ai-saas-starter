@@ -100,7 +100,7 @@ export interface HybridElementConfigExtended {
     texturePooling?: boolean;
   };
 
-  // Scene objects - large decorative 3D objects (spheres, cubes, lights)
+  // Scene objects - large decorative 3D objects (spheres, cubes, lights, particles)
   sceneObjects?: {
     spheres?: Array<{
       position: [number, number, number];
@@ -123,6 +123,15 @@ export interface HybridElementConfigExtended {
       animation?: 'float' | 'rotate' | 'pulse' | 'none';
       animationSpeed?: number;
     }>;
+    particles?: {
+      count: number;
+      colors?: (string | number)[];
+      sizeRange?: [number, number];
+      spread?: { x: number; y: number; z: number };
+      opacity?: number;
+      animation?: 'float' | 'rotate' | 'spiral' | 'none';
+      animationSpeed?: number;
+    };
     lights?: Array<{
       type: 'point' | 'directional' | 'ambient' | 'spot';
       position?: [number, number, number];

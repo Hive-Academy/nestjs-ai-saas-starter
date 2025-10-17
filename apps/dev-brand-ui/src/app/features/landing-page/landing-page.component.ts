@@ -11,24 +11,24 @@ import {
 } from '@angular/core';
 import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
 import { DemoTheaterComponent } from './sections/demo-theater.component';
-import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
+// import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
 
 import { PlatformPillarsComponent } from './sections/platform-pillars.component';
 import { LoadingStateService } from './services/loading-state.service';
-// import { HeroAngularThreeComponent } from './components/hero-angular-three/hero-angular-three.component';
 import { HeroSectionComponent } from './sections/hero-section.component';
+// import { HeroSection3dComponent } from "./components/hero-section-3d/hero-section-3d.component";
 
 @Component({
   selector: 'brand-landing-page',
   standalone: true,
   imports: [
     CommonModule,
-    // HeroAngularThreeComponent,
     PlatformPillarsComponent,
     DemoTheaterComponent,
-    EcosystemExplorerComponent,
+    // EcosystemExplorerComponent,
     ArchitectureDiagramComponent,
     HeroSectionComponent,
+    // HeroSection3dComponent,
   ],
   template: ` <div
     class="w-full min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out relative"
@@ -154,6 +154,7 @@ import { HeroSectionComponent } from './sections/hero-section.component';
           (featureSelected)="onFeatureSelected($event)">
         </app-hero-angular-three> -->
         <brand-hero-section />
+        <!-- <hero-section-3d /> -->
       </div>
 
       <!-- Platform Pillars Section -->
@@ -167,9 +168,9 @@ import { HeroSectionComponent } from './sections/hero-section.component';
       </div>
 
       <!-- Ecosystem Explorer Section -->
-      <div id="ecosystem-explorer" class="section-container">
+      <!-- <div id="ecosystem-explorer" class="section-container">
         <brand-ecosystem-explorer></brand-ecosystem-explorer>
-      </div>
+      </div> -->
 
       <!-- Architecture Diagram Section -->
       <div id="architecture-diagram" class="section-container">

@@ -419,12 +419,18 @@ export interface HeroSceneConfigOptions {
   enableFloatingSpheres?: boolean;
   /** Enable background cubes - optional, defaults to true */
   enableBackgroundCubes?: boolean;
+  /** Enable particle system - optional, defaults to true */
+  enableParticles?: boolean;
   /** Number of spheres - optional, defaults to 5 */
   sphereCount?: number;
   /** Number of cubes - optional, defaults to 20 */
   cubeCount?: number;
+  /** Number of particles - optional, defaults to 200 */
+  particleCount?: number;
   /** Sphere colors - optional, defaults to colorful palette */
   sphereColors?: string[];
+  /** Particle colors - optional, defaults to purple/pink palette */
+  particleColors?: string[];
   /** Enable dramatic lighting - optional, defaults to true */
   enableDramaticLighting?: boolean;
 }
@@ -586,9 +592,28 @@ export function createHeroSceneConfig(
         ]
       : undefined;
 
+  const particleConfig =
+    options.enableParticles !== false
+      ? {
+          count: options.particleCount || 200,
+          colors: options.particleColors || [
+            '#8a2be2', // Purple
+            '#ff69b4', // Pink
+            '#00bfff', // Cyan
+            '#ffd700', // Gold
+          ],
+          sizeRange: [1, 3] as [number, number],
+          spread: { x: 50, y: 30, z: 30 },
+          opacity: 0.6,
+          animation: 'float' as const,
+          animationSpeed: 1.0,
+        }
+      : undefined;
+
   return {
     spheres: sphereConfigs,
     cubes: cubeConfigs,
+    particles: particleConfig,
     lights: lightConfigs,
   };
 }

@@ -798,6 +798,72 @@ export class HybridUIService {
       });
     }
 
+    // Create particle system
+    if (config.particles) {
+      const particleConfig = config.particles;
+      const particleCount = particleConfig.count;
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+      const sizes = new Float32Array(particleCount);
+
+      const spread = particleConfig.spread || { x: 50, y: 30, z: 30 };
+      const sizeRange = particleConfig.sizeRange || [1, 3];
+      const colorPalette = particleConfig.colors || [
+        '#8a2be2', // Purple
+        '#ff69b4', // Pink
+        '#00bfff', // Cyan
+        '#ffd700', // Gold
+      ];
+
+      for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3;
+
+        // Random positions within spread
+        positions[i3] = (Math.random() - 0.5) * spread.x;
+        positions[i3 + 1] = (Math.random() - 0.5) * spread.y;
+        positions[i3 + 2] = (Math.random() - 0.5) * spread.z - 10;
+
+        // Random colors from palette
+        const color = new THREE.Color(
+          colorPalette[Math.floor(Math.random() * colorPalette.length)]
+        );
+        colors[i3] = color.r;
+        colors[i3 + 1] = color.g;
+        colors[i3 + 2] = color.b;
+
+        // Random sizes within range
+        sizes[i] = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]);
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(positions, 3)
+      );
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.1,
+        vertexColors: true,
+        transparent: true,
+        opacity: particleConfig.opacity ?? 0.6,
+        sizeAttenuation: true,
+      });
+
+      const particles = new THREE.Points(geometry, material);
+      particles.name = 'particles';
+
+      // Store animation config
+      particles.userData = {
+        animation: particleConfig.animation ?? 'float',
+        animationSpeed: particleConfig.animationSpeed ?? 1.0,
+      };
+
+      scene.add(particles);
+      objects.push(particles);
+    }
+
     // Create lights
     if (config.lights) {
       config.lights.forEach((lightConfig, index) => {
@@ -904,10 +970,16 @@ export class HybridUIService {
           switch (userData['animation']) {
             case 'float': {
               // Gentle floating motion
-              object.position.y =
-                originalPos[1] + Math.sin(time * 0.001 * speed) * 0.3;
-              object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.1;
-              object.rotation.y = time * 0.0002 * speed;
+              if (object instanceof THREE.Points) {
+                // Particle system floating
+                object.rotation.y = time * 0.0005 * speed;
+              } else {
+                // Regular object floating
+                object.position.y =
+                  originalPos[1] + Math.sin(time * 0.001 * speed) * 0.3;
+                object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.1;
+                object.rotation.y = time * 0.0002 * speed;
+              }
               break;
             }
 
@@ -917,6 +989,15 @@ export class HybridUIService {
               object.rotation.x = originalRot[0] + time * 0.0003 * speed;
               object.rotation.y = originalRot[1] + time * 0.0005 * speed;
               object.rotation.z = originalRot[2] + time * 0.0002 * speed;
+              break;
+            }
+
+            case 'spiral': {
+              // Spiral animation for particles
+              if (object instanceof THREE.Points) {
+                object.rotation.y = time * 0.001 * speed;
+                object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.3;
+              }
               break;
             }
 
