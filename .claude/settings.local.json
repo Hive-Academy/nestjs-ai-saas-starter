@@ -9,7 +9,10 @@
       "mcp__nx-mcp__nx_project_details",
       "Bash(npm run format:*)",
       "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__navigate_page"
+      "mcp__chrome-devtools__navigate_page",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": [],
