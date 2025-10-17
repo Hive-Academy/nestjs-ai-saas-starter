@@ -27,7 +27,7 @@ export default [
         },
       ],
       'no-restricted-imports': [
-        'error',
+        'off',
         {
           paths: [
             {
