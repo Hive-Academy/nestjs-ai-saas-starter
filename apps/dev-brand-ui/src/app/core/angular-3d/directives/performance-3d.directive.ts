@@ -113,24 +113,106 @@ export class Performance3dDirective implements AfterViewInit, OnDestroy {
   private getMeshFromHostComponent(): any | null {
     const hostElement = this.elementRef.nativeElement;
 
-    // Try to get component instance
-    const componentInstance = (hostElement as any).__ngContext__?.[8];
+    console.log(
+      '[Performance3dDirective] Attempting to get mesh from host component'
+    );
 
-    if (componentInstance && typeof componentInstance.getMesh === 'function') {
-      return componentInstance.getMesh();
+    // Strategy 1: Try multiple __ngContext__ indices
+    const ngContext = (hostElement as any).__ngContext__;
+    if (ngContext && Array.isArray(ngContext)) {
+      for (const index of [8, 9, 10, 3, 4, 5]) {
+        const componentInstance = ngContext[index];
+        if (
+          componentInstance &&
+          typeof componentInstance.getMesh === 'function'
+        ) {
+          console.log(
+            `[Performance3dDirective] Found component instance at index ${index} with getMesh()`
+          );
+          const mesh = componentInstance.getMesh();
+          if (mesh) {
+            console.log(
+              '[Performance3dDirective] Successfully retrieved mesh via getMesh()'
+            );
+            return mesh;
+          }
+        }
+      }
     }
 
-    // Fallback: Try direct object3D access
+    // Strategy 2: Try to find ngt-mesh child element
+    const ngtMesh = hostElement.querySelector('ngt-mesh');
+    if (ngtMesh && (ngtMesh as any).object3D) {
+      console.log(
+        '[Performance3dDirective] Found ngt-mesh child with object3D'
+      );
+      return (ngtMesh as any).object3D;
+    }
+
+    // Strategy 3: Try direct object3D access
     if (hostElement.object3D) {
+      console.log('[Performance3dDirective] Found object3D on host element');
       return hostElement.object3D;
     }
 
-    // Try first child
+    // Strategy 4: Try first child
     const firstChild = hostElement.firstElementChild;
     if (firstChild && (firstChild as any).object3D) {
+      console.log('[Performance3dDirective] Found object3D on first child');
       return (firstChild as any).object3D;
     }
 
+    // Strategy 5: Delayed retry
+    console.warn(
+      '[Performance3dDirective] No mesh found on initial attempt, will retry after delay'
+    );
+    setTimeout(() => {
+      const retryMesh = this.retryGetMesh();
+      if (retryMesh) {
+        this.mesh = retryMesh;
+        this.registerWithOptimizer();
+      }
+    }, 100);
+
+    return null;
+  }
+
+  /**
+   * Retry getting mesh after initial failure
+   */
+  private retryGetMesh(): any | null {
+    const hostElement = this.elementRef.nativeElement;
+    const ngtMesh = hostElement.querySelector('ngt-mesh');
+
+    if (ngtMesh && (ngtMesh as any).object3D) {
+      console.log(
+        '[Performance3dDirective] Retry successful - found ngt-mesh with object3D'
+      );
+      return (ngtMesh as any).object3D;
+    }
+
+    const ngContext = (hostElement as any).__ngContext__;
+    if (ngContext && Array.isArray(ngContext)) {
+      for (const index of [8, 9, 10, 3, 4, 5]) {
+        const componentInstance = ngContext[index];
+        if (
+          componentInstance &&
+          typeof componentInstance.getMesh === 'function'
+        ) {
+          const mesh = componentInstance.getMesh();
+          if (mesh) {
+            console.log(
+              '[Performance3dDirective] Retry successful - got mesh via getMesh()'
+            );
+            return mesh;
+          }
+        }
+      }
+    }
+
+    console.error(
+      '[Performance3dDirective] Retry failed - still no mesh found'
+    );
     return null;
   }
 

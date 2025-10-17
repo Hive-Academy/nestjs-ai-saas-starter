@@ -6,8 +6,116 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <style>
+      /* App-level loading overlay styles */
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #000000 0%, #6b21a8 50%, #000000 100%);
+        transition: opacity 0.5s ease-out;
+      }
+      #app-loading.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .app-loading-content {
+        text-align: center;
+      }
+      .app-loading-spinner {
+        width: 80px;
+        height: 80px;
+        border: 4px solid #a855f7;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: app-spin 1s linear infinite;
+        margin: 0 auto 24px;
+      }
+      .app-loading-title {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 8px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .app-loading-subtitle {
+        color: #9ca3af;
+        font-size: 14px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      @keyframes app-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
+    <!-- App-level loading overlay -->
+    <div id="app-loading">
+      <div class="app-loading-content">
+        <div class="app-loading-spinner"></div>
+        <h2 class="app-loading-title">Loading Application</h2>
+        <p class="app-loading-subtitle">Initializing Angular...</p>
+      </div>
+    </div>
+
     <brand-root></brand-root>
+
+    <script>
+      // Remove loading screen when Angular fully bootstraps
+      (function () {
+        let loadingElement = document.getElementById('app-loading');
+
+        // Wait for Angular to bootstrap
+        function checkAngularReady() {
+          const rootElement = document.querySelector('brand-root');
+
+          // Check if Angular has rendered content
+          if (
+            rootElement &&
+            (rootElement.children.length > 0 || rootElement.shadowRoot)
+          ) {
+            // Angular has bootstrapped, fade out loading screen
+            setTimeout(function () {
+              if (loadingElement) {
+                loadingElement.classList.add('fade-out');
+                setTimeout(function () {
+                  if (loadingElement && loadingElement.parentNode) {
+                    loadingElement.parentNode.removeChild(loadingElement);
+                    loadingElement = null;
+                  }
+                }, 500); // Match transition duration
+              }
+            }, 200); // Small delay to ensure smooth transition
+          } else {
+            // Check again in 50ms
+            setTimeout(checkAngularReady, 50);
+          }
+        }
+
+        // Start checking after DOM is loaded
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', checkAngularReady);
+        } else {
+          checkAngularReady();
+        }
+
+        // Fallback: Remove after 10 seconds to prevent permanent loading screen
+        setTimeout(function () {
+          if (loadingElement) {
+            loadingElement.classList.add('fade-out');
+            setTimeout(function () {
+              if (loadingElement && loadingElement.parentNode) {
+                loadingElement.parentNode.removeChild(loadingElement);
+              }
+            }, 500);
+          }
+        }, 10000);
+      })();
+    </script>
   </body>
 </html>

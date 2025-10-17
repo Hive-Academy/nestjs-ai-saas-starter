@@ -185,26 +185,115 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
   private getMeshFromHostComponent(): any | null {
     const hostElement = this.elementRef.nativeElement;
 
-    // Try to get component instance from Angular
-    // This works for components that expose getMesh() public API
-    const componentInstance = (hostElement as any).__ngContext__?.[8]; // Angular component instance
+    console.log(
+      '[Float3dDirective] Attempting to get mesh from host component'
+    );
+    console.log('[Float3dDirective] Host element:', hostElement);
+    console.log('[Float3dDirective] Host element tag:', hostElement.tagName);
 
-    if (componentInstance && typeof componentInstance.getMesh === 'function') {
-      return componentInstance.getMesh();
+    // Strategy 1: Try multiple __ngContext__ indices (Angular stores component at different indices)
+    const ngContext = (hostElement as any).__ngContext__;
+    if (ngContext && Array.isArray(ngContext)) {
+      console.log(
+        '[Float3dDirective] Found __ngContext__, length:',
+        ngContext.length
+      );
+
+      // Try common indices where Angular stores component instances
+      for (const index of [8, 9, 10, 3, 4, 5]) {
+        const componentInstance = ngContext[index];
+        if (
+          componentInstance &&
+          typeof componentInstance.getMesh === 'function'
+        ) {
+          console.log(
+            `[Float3dDirective] Found component instance at index ${index} with getMesh()`
+          );
+          const mesh = componentInstance.getMesh();
+          if (mesh) {
+            console.log(
+              '[Float3dDirective] Successfully retrieved mesh via getMesh()'
+            );
+            return mesh;
+          }
+        }
+      }
     }
 
-    // Fallback: Try to find mesh in host element's children (for ngt-mesh)
-    // Angular Three components might expose mesh via nativeElement
+    // Strategy 2: Try to find ngt-mesh child element (Angular Three pattern)
+    const ngtMesh = hostElement.querySelector('ngt-mesh');
+    if (ngtMesh && (ngtMesh as any).object3D) {
+      console.log('[Float3dDirective] Found ngt-mesh child with object3D');
+      return (ngtMesh as any).object3D;
+    }
+
+    // Strategy 3: Try direct object3D on host
     if (hostElement.object3D) {
+      console.log('[Float3dDirective] Found object3D on host element');
       return hostElement.object3D;
     }
 
-    // Try to find first child with object3D
+    // Strategy 4: Try first child with object3D
     const firstChild = hostElement.firstElementChild;
     if (firstChild && (firstChild as any).object3D) {
+      console.log('[Float3dDirective] Found object3D on first child');
       return (firstChild as any).object3D;
     }
 
+    // Strategy 5: Delayed retry (give Angular Three time to initialize)
+    console.warn(
+      '[Float3dDirective] No mesh found on initial attempt, will retry after delay'
+    );
+    setTimeout(() => {
+      const retryMesh = this.retryGetMesh();
+      if (retryMesh) {
+        this.mesh = retryMesh;
+        this.originalPosition = [
+          this.mesh.position.x,
+          this.mesh.position.y,
+          this.mesh.position.z,
+        ];
+        this.createFloatingAnimation();
+      }
+    }, 100);
+
+    return null;
+  }
+
+  /**
+   * Retry getting mesh after initial failure (for async Angular Three initialization)
+   */
+  private retryGetMesh(): any | null {
+    const hostElement = this.elementRef.nativeElement;
+    const ngtMesh = hostElement.querySelector('ngt-mesh');
+
+    if (ngtMesh && (ngtMesh as any).object3D) {
+      console.log(
+        '[Float3dDirective] Retry successful - found ngt-mesh with object3D'
+      );
+      return (ngtMesh as any).object3D;
+    }
+
+    const ngContext = (hostElement as any).__ngContext__;
+    if (ngContext && Array.isArray(ngContext)) {
+      for (const index of [8, 9, 10, 3, 4, 5]) {
+        const componentInstance = ngContext[index];
+        if (
+          componentInstance &&
+          typeof componentInstance.getMesh === 'function'
+        ) {
+          const mesh = componentInstance.getMesh();
+          if (mesh) {
+            console.log(
+              '[Float3dDirective] Retry successful - got mesh via getMesh()'
+            );
+            return mesh;
+          }
+        }
+      }
+    }
+
+    console.error('[Float3dDirective] Retry failed - still no mesh found');
     return null;
   }
 
