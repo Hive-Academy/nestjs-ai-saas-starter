@@ -1,4 +1,4 @@
-import { Component, computed, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
@@ -12,6 +12,8 @@ import {
   Glow3dDirective,
   Performance3dDirective,
 } from '../../../core/angular-3d/directives';
+import { Element3DDirective } from '../../../core/angular-3d/directives/element-3d.directive';
+import { LoadingStateService } from '../services/loading-state.service';
 
 @Component({
   selector: 'brand-hero-section',
@@ -24,12 +26,28 @@ import {
     Float3dDirective,
     Performance3dDirective,
     Glow3dDirective,
+    Element3DDirective,
   ],
   template: `
     <div
       class="relative w-full h-screen overflow-auto bg-gradient-to-br from-black via-purple-900 to-black"
       [class.loaded]="isLoaded()"
     >
+      <!-- Loading Overlay -->
+      @if (!isLoaded()) {
+      <div
+        class="absolute inset-0 z-30 flex items-center justify-center bg-gradient-to-br from-black via-purple-900 to-black"
+      >
+        <div class="text-center">
+          <div
+            class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+          ></div>
+          <p class="text-white text-lg">Loading Hero Section...</p>
+          <p class="text-gray-400 text-sm mt-2">Initializing 3D scene</p>
+        </div>
+      </div>
+      }
+
       <!-- Declarative Angular Three Scene -->
       <app-hybrid-scene
         class="absolute inset-0 z-10"
@@ -91,90 +109,117 @@ import {
           performance3d
         />
         }
-      </app-hybrid-scene>
 
-      <!-- Hero Content Overlay -->
-      <div
-        class="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
-      >
-        <div
-          class="text-center max-w-4xl px-8 opacity-0 transform translate-y-8 transition-all duration-1000 ease-out pointer-events-auto"
-          [class.opacity-100]="contentVisible()"
-          [class.translate-y-0]="contentVisible()"
-        >
+        <!-- 3D Hero Content using element3d directive -->
+        @if (isLoaded()) {
+        <ng-container>
+          <!-- Hero Title as 3D textured mesh -->
           <h1
-            class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight"
+            element3d
+            [position]="[0, 1.8, -1.2]"
+            priority="HERO"
+            quality="high"
+            [depth]="-1.2"
+            class="text-5xl md:text-6xl lg:text-7xl font-bold text-center max-w-4xl px-8"
+            style="
+                background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #8a2be2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+              "
           >
+            <span class="block">Enterprise AI</span>
             <span
-              class="block bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent"
-              >Enterprise AI</span
-            >
-            <span
-              class="block bg-gradient-to-r from-purple-500 via-pink-500 to-sky-500 bg-clip-text text-transparent animate-pulse"
+              class="block bg-gradient-to-r from-purple-500 via-pink-500 to-sky-500 bg-clip-text text-transparent"
               >SaaS Starter</span
             >
           </h1>
+
+          <!-- Hero Description as 3D textured mesh -->
           <p
-            class="text-lg md:text-xl lg:text-2xl leading-relaxed text-white text-opacity-85 mb-8 max-w-2xl mx-auto"
+            element3d
+            [position]="[0, 0.2, -1.3]"
+            priority="PRIMARY"
+            quality="medium"
+            [depth]="-1.3"
+            class="text-lg md:text-xl text-white text-opacity-85 text-center max-w-2xl px-8"
+            style="text-shadow: 0 2px 8px rgba(0,0,0,0.3)"
           >
             Production-ready foundation for AI-powered applications combining
-            <span
-              class="text-purple-500 font-semibold"
-              style="text-shadow: 0 0 10px rgba(138, 43, 226, 0.5)"
-              >vector search</span
-            >,
-            <span
-              class="text-purple-500 font-semibold"
-              style="text-shadow: 0 0 10px rgba(138, 43, 226, 0.5)"
+            <span class="text-purple-400 font-semibold">vector search</span>,
+            <span class="text-purple-400 font-semibold"
               >graph relationships</span
             >, and
-            <span
-              class="text-purple-500 font-semibold"
-              style="text-shadow: 0 0 10px rgba(138, 43, 226, 0.5)"
+            <span class="text-purple-400 font-semibold"
               >intelligent workflows</span
             >
           </p>
-          <div class="flex justify-center gap-4 my-8 flex-wrap">
+
+          <!-- Feature Badges as 3D textured meshes -->
+          <div
+            element3d
+            [position]="[0, -0.8, -1.4]"
+            priority="SECONDARY"
+            quality="medium"
+            [depth]="-1.4"
+            class="flex justify-center gap-3 flex-wrap px-8"
+          >
             <div
-              class="flex items-center gap-2 px-5 py-3 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white transition-all duration-300 hover:bg-purple-500 hover:bg-opacity-20 hover:border-purple-500 hover:border-opacity-50 hover:-translate-y-0.5"
+              class="flex items-center gap-2 px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white"
             >
               <span class="text-xl">🧠</span>
               <span>Semantic Intelligence</span>
             </div>
             <div
-              class="flex items-center gap-2 px-5 py-3 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white transition-all duration-300 hover:bg-purple-500 hover:bg-opacity-20 hover:border-purple-500 hover:border-opacity-50 hover:-translate-y-0.5"
+              class="flex items-center gap-2 px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white"
             >
               <span class="text-xl">🕸️</span>
               <span>Relationship Mapping</span>
             </div>
             <div
-              class="flex items-center gap-2 px-5 py-3 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white transition-all duration-300 hover:bg-purple-500 hover:bg-opacity-20 hover:border-purple-500 hover:border-opacity-50 hover:-translate-y-0.5"
+              class="flex items-center gap-2 px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white"
             >
               <span class="text-xl">⚡</span>
               <span>Intelligent Workflows</span>
             </div>
           </div>
-          <div class="flex justify-center gap-4 mt-10 flex-wrap">
-            <button
-              class="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none rounded-xl text-lg font-semibold cursor-pointer transition-all duration-300 backdrop-blur-lg hover:-translate-y-1"
-              style="box-shadow: 0 4px 20px rgba(138, 43, 226, 0.4)"
-              (click)="exploreDemo()"
-              onmouseover="this.style.boxShadow='0 8px 30px rgba(138, 43, 226, 0.6)'"
-              onmouseout="this.style.boxShadow='0 4px 20px rgba(138, 43, 226, 0.4)'"
-            >
+
+          <!-- CTA Buttons as 3D textured meshes -->
+          <button
+            element3d
+            [position]="[-1.8, -2, -1.5]"
+            priority="PRIMARY"
+            quality="high"
+            [depth]="-1.5"
+            [enableInteraction]="true"
+            (clicked)="exploreDemo()"
+            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-lg font-semibold cursor-pointer"
+            style="box-shadow: 0 4px 20px rgba(138, 43, 226, 0.6)"
+          >
+            <span class="flex items-center gap-2">
               <span>Explore Live Demo</span>
               <span class="text-xl">🚀</span>
-            </button>
-            <button
-              class="flex items-center gap-2 px-8 py-4 bg-white bg-opacity-10 text-white border border-white border-opacity-30 rounded-xl text-lg font-semibold cursor-pointer transition-all duration-300 backdrop-blur-lg hover:bg-opacity-20 hover:-translate-y-0.5"
-              (click)="viewArchitecture()"
-            >
+            </span>
+          </button>
+
+          <button
+            element3d
+            [position]="[1.8, -2, -1.5]"
+            priority="SECONDARY"
+            quality="medium"
+            [depth]="-1.5"
+            [enableInteraction]="true"
+            (clicked)="viewArchitecture()"
+            class="px-8 py-4 bg-white bg-opacity-10 text-white border border-white border-opacity-30 rounded-xl text-lg font-semibold cursor-pointer backdrop-blur-lg"
+          >
+            <span class="flex items-center gap-2">
               <span>View Architecture</span>
               <span class="text-xl">🏗️</span>
-            </button>
-          </div>
-        </div>
-      </div>
+            </span>
+          </button>
+        </ng-container>
+        }
+      </app-hybrid-scene>
 
       <!-- Performance Indicator -->
       @if (showPerformanceDebug()) {
@@ -188,6 +233,9 @@ import {
   `,
 })
 export class HeroSectionComponent implements OnInit {
+  // Services
+  private readonly loadingState = inject(LoadingStateService);
+
   // Component state signals
   readonly isLoaded = signal(false);
   readonly contentVisible = signal(false);
@@ -281,6 +329,9 @@ export class HeroSectionComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Update loading state service
+    this.loadingState.updateStage('Loading Hero Section');
+
     // Minimal initialization - Angular Three handles scene setup
     this.setupMouseTracking(); // Optional: for camera interaction
   }
@@ -291,12 +342,17 @@ export class HeroSectionComponent implements OnInit {
    */
   onSceneInitialized(scene: THREE.Scene): void {
     console.log('Hero scene initialized with Angular Three', scene);
+
+    // Mark as loaded (will trigger element3d content to appear)
     this.isLoaded.set(true);
 
-    // Trigger content entrance animation after a delay
+    // Notify loading state service
+    this.loadingState.markSectionLoaded('hero');
+
+    // Trigger content visibility with shorter delay since element3d handles entrance
     setTimeout(() => {
       this.contentVisible.set(true);
-    }, 1500);
+    }, 800); // Reduced from 1500ms
   }
 
   /**
