@@ -226,13 +226,16 @@ Task: TASK_2025_012 Phase 2.2
 **Steps Completed**:
 
 1. ✅ Updated import in `hybrid-ui.service.ts` (line 12):
+
    - Changed from `ContentTextureService` to `ContentTexturePipelineService`
 
 2. ✅ Updated injection (line 28):
+
    - Changed from `contentTextureService` to `contentTexturePipeline`
    - Using `ContentTexturePipelineService` injection
 
 3. ✅ Updated method calls in `createHybridElement()` (lines 189-203):
+
    - Replaced `createReactiveTexture()` with async `domToTexture()`
    - Mapped old config options to new API:
      - `watchForChanges` → `updateOnMutation`
@@ -240,12 +243,15 @@ Task: TASK_2025_012 Phase 2.2
      - Added caching configuration (enabled, LRU strategy)
 
 4. ✅ Updated `updatePerformanceMetrics()` (line 148):
+
    - Changed `contentTextureService.performance()` to `contentTexturePipeline.getStatistics()`
 
 5. ✅ Updated `updateConfig()` (line 651):
+
    - Changed to use `contentTexturePipeline.setQualityLevel()`
 
 6. ✅ Fixed type compatibility:
+
    - Updated `interfaces/index.ts` - Changed `texture: WritableSignal<THREE.CanvasTexture>` to `THREE.Texture`
    - Updated `createEnhancedMaterial()` parameter type from `THREE.CanvasTexture` to `THREE.Texture`
 

@@ -25,7 +25,9 @@ export class HybridUIService {
   private readonly angularThreeFoundation = inject(
     AngularThreeFoundationService
   );
-  private readonly contentTexturePipeline = inject(ContentTexturePipelineService);
+  private readonly contentTexturePipeline = inject(
+    ContentTexturePipelineService
+  );
 
   private readonly config = signal<HybridUIServiceConfig>({
     angularThree: {
@@ -186,21 +188,19 @@ export class HybridUIService {
     }
 
     // Create reactive texture using pipeline service
-    const texture = await this.contentTexturePipeline.domToTexture(
-      domElement,
-      {
-        quality: config.content?.quality ?? 'medium',
-        updateOnMutation: config.content?.watchForChanges ?? true,
-        updateOnResize: config.content?.updateTriggers?.includes('resize') ?? true,
-        caching: {
-          enabled: true,
-          maxSize: 50, // MB
-          ttl: 300000, // 5 minutes
-          compression: true,
-          strategy: 'lru',
-        },
-      }
-    );
+    const texture = await this.contentTexturePipeline.domToTexture(domElement, {
+      quality: config.content?.quality ?? 'medium',
+      updateOnMutation: config.content?.watchForChanges ?? true,
+      updateOnResize:
+        config.content?.updateTriggers?.includes('resize') ?? true,
+      caching: {
+        enabled: true,
+        maxSize: 50, // MB
+        ttl: 300000, // 5 minutes
+        compression: true,
+        strategy: 'lru',
+      },
+    });
 
     // Create material with enhanced properties
     const material = this.createEnhancedMaterial(texture, config);
@@ -648,7 +648,9 @@ export class HybridUIService {
 
     // Update texture pipeline quality if needed
     if (newConfig.textureService?.defaultQuality) {
-      this.contentTexturePipeline.setQualityLevel(newConfig.textureService.defaultQuality);
+      this.contentTexturePipeline.setQualityLevel(
+        newConfig.textureService.defaultQuality
+      );
     }
   }
 

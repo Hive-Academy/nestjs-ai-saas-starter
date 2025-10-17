@@ -10,7 +10,12 @@ import { Injectable, signal, computed, effect } from '@angular/core';
 import * as THREE from 'three';
 import { injectStore } from 'angular-three';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { map, distinctUntilChanged, debounceTime, filter } from 'rxjs/operators';
+import {
+  map,
+  distinctUntilChanged,
+  debounceTime,
+  filter,
+} from 'rxjs/operators';
 
 // State interfaces
 export interface SceneState {
@@ -196,7 +201,9 @@ export class Angular3DStateStore {
   private readonly _lastUpdateTime = signal<number>(Date.now());
 
   // Component registry and event bus (merged from ReactiveStateManagerService)
-  private readonly componentRegistry = signal<Map<string, ComponentRegistration>>(new Map());
+  private readonly componentRegistry = signal<
+    Map<string, ComponentRegistration>
+  >(new Map());
   private readonly eventBus$ = new Subject<SceneGraphEvent>();
   private readonly _componentMessages$ = new Subject<CrossComponentMessage>();
 
