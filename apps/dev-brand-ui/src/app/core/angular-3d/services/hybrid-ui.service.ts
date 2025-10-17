@@ -9,7 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
 import { fromEvent, debounceTime } from 'rxjs';
 import { AngularThreeFoundationService } from './angular-three-foundation.service';
-import { ContentTextureService } from './content-texture.service';
+import { ContentTexturePipelineService } from './content-texture-pipeline.service';
 import type {
   HybridElementExtended,
   HybridElementConfigExtended,
@@ -25,7 +25,7 @@ export class HybridUIService {
   private readonly angularThreeFoundation = inject(
     AngularThreeFoundationService
   );
-  private readonly contentTextureService = inject(ContentTextureService);
+  private readonly contentTexturePipeline = inject(ContentTexturePipelineService);
 
   private readonly config = signal<HybridUIServiceConfig>({
     angularThree: {
@@ -145,13 +145,13 @@ export class HybridUIService {
   }
 
   private updatePerformanceMetrics(delta: number): void {
-    const texturePerf = this.contentTextureService.performance();
+    const textureStats = this.contentTexturePipeline.getStatistics();
 
     this.performanceMetrics.update((current) => ({
       totalElements: this.elements.size,
       visibleElements: this.activeElements().length,
       renderTime: delta,
-      memoryUsage: texturePerf.memoryUsage,
+      memoryUsage: textureStats.memoryUsage,
       lastUpdate: Date.now(),
     }));
   }
@@ -185,17 +185,20 @@ export class HybridUIService {
       }
     }
 
-    // Create reactive texture
-    const texture = this.contentTextureService.createReactiveTexture(
+    // Create reactive texture using pipeline service
+    const texture = await this.contentTexturePipeline.domToTexture(
       domElement,
       {
-        watchForChanges: config.content?.watchForChanges ?? true,
-        updateTriggers: config.content?.updateTriggers ?? [
-          'resize',
-          'mutation',
-        ],
         quality: config.content?.quality ?? 'medium',
-        format: config.content?.format ?? 'webp',
+        updateOnMutation: config.content?.watchForChanges ?? true,
+        updateOnResize: config.content?.updateTriggers?.includes('resize') ?? true,
+        caching: {
+          enabled: true,
+          maxSize: 50, // MB
+          ttl: 300000, // 5 minutes
+          compression: true,
+          strategy: 'lru',
+        },
       }
     );
 
@@ -281,7 +284,7 @@ export class HybridUIService {
   }
 
   private createEnhancedMaterial(
-    texture: THREE.CanvasTexture,
+    texture: THREE.Texture,
     config: HybridElementConfigExtended
   ): THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial {
     // Use MeshPhysicalMaterial if advanced properties are needed
@@ -643,9 +646,9 @@ export class HybridUIService {
   updateConfig(newConfig: Partial<HybridUIServiceConfig>): void {
     this.config.update((current) => ({ ...current, ...newConfig }));
 
-    // Update texture service config if needed
-    if (newConfig.textureService) {
-      this.contentTextureService.updateConfig(newConfig.textureService);
+    // Update texture pipeline quality if needed
+    if (newConfig.textureService?.defaultQuality) {
+      this.contentTexturePipeline.setQualityLevel(newConfig.textureService.defaultQuality);
     }
   }
 

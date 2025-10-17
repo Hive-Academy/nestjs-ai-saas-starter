@@ -1,6 +1,6 @@
 // Services
 export { AngularThreeFoundationService } from './services/angular-three-foundation.service';
-export { ContentTextureService } from './services/content-texture.service';
+export { ContentTexturePipelineService } from './services/content-texture-pipeline.service';
 export { HybridUIService } from './services/hybrid-ui.service';
 
 // Components

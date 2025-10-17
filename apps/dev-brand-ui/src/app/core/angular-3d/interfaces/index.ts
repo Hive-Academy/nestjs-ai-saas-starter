@@ -183,7 +183,7 @@ export interface HybridElementExtended {
   }>;
 
   // Reactive texture updates
-  texture: WritableSignal<THREE.CanvasTexture>;
+  texture: WritableSignal<THREE.Texture>;
   needsTextureUpdate: WritableSignal<boolean>;
 
   // Animation controller
