@@ -104,11 +104,7 @@ export interface PerformanceState {
 // Component registry and event types (merged from ReactiveStateManagerService)
 export interface ComponentRegistration {
   readonly componentId: string;
-  readonly componentType:
-    | 'scene-node'
-    | 'geometry-node'
-    | 'hybrid-scene'
-    | 'animation-demo';
+  readonly componentType: 'scene-node' | 'hybrid-scene' | 'animation-demo';
   readonly sceneObjectId?: string;
   readonly isActive: boolean;
   readonly dependencies: readonly string[];
