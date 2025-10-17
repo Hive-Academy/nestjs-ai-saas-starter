@@ -35,6 +35,57 @@ import { HeroSectionComponent } from './sections/hero-section.component';
     [class.opacity-100]="isLoaded()"
     #landingContainer
   >
+    <!-- Global Loading Overlay -->
+    @if (!isLoaded()) {
+    <div
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-black via-purple-900 to-black"
+    >
+      <div class="text-center">
+        <div
+          class="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"
+        ></div>
+        <h2 class="text-white text-2xl font-bold mb-2">
+          {{ loadingStateService.currentStage() }}
+        </h2>
+        <p class="text-gray-400 text-sm mb-4">
+          {{ loadingStateService.globalLoadingState().stage }}
+        </p>
+
+        <!-- Progress Bar -->
+        <div class="w-64 h-2 bg-gray-800 rounded-full mx-auto overflow-hidden">
+          <div
+            class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+            [style.width.%]="loadingStateService.loadingProgress()"
+          ></div>
+        </div>
+
+        <p class="text-gray-500 text-xs mt-2">
+          {{ loadingStateService.loadingProgress() | number : '1.0-0' }}%
+          Complete
+        </p>
+
+        <!-- Section Status -->
+        <div class="mt-6 text-xs text-gray-600">
+          @if (loadingStateService.sectionLoadingStates(); as sections) {
+          <div class="flex gap-2 justify-center flex-wrap">
+            @for (section of sections; track section.sectionId) {
+            <span
+              class="px-2 py-1 rounded"
+              [class.bg-green-900]="section.isLoaded"
+              [class.bg-gray-800]="!section.isLoaded"
+              [class.text-green-400]="section.isLoaded"
+              [class.text-gray-500]="!section.isLoaded"
+            >
+              {{ section.sectionId }} @if (section.isLoaded) { ✓ } @else { ... }
+            </span>
+            }
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+
     <!-- Floating Page Controls -->
     <div
       class="fixed top-5 right-5 transition-all duration-300 ease-out"
@@ -315,9 +366,26 @@ export class LandingPageComponent implements OnInit, OnDestroy {
       // Start loading state service
       this.loadingStateService.startLoading();
 
-      // Simulate progressive loading for development
-      if (typeof window !== 'undefined') {
-        await this.loadingStateService.simulateLoading();
+      // Wait for all sections to load (hero, platform-pillars, demo-theater, etc.)
+      // LoadingStateService will automatically track via markSectionLoaded() calls from each section
+
+      // Poll until all sections loaded or timeout (10 seconds)
+      let attempts = 0;
+      const maxAttempts = 100; // 10 seconds (100ms intervals)
+
+      while (
+        attempts < maxAttempts &&
+        !this.loadingStateService.allSectionsLoaded()
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        attempts++;
+      }
+
+      // Check if loading completed successfully
+      if (this.loadingStateService.allSectionsLoaded()) {
+        console.log('All sections loaded successfully');
+      } else {
+        console.warn('Loading timeout - some sections may not have loaded');
       }
 
       // Mark as loaded for transition effect

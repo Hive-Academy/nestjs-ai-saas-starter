@@ -33,21 +33,6 @@ import { LoadingStateService } from '../services/loading-state.service';
       class="relative w-full h-screen overflow-auto bg-gradient-to-br from-black via-purple-900 to-black"
       [class.loaded]="isLoaded()"
     >
-      <!-- Loading Overlay -->
-      @if (!isLoaded()) {
-      <div
-        class="absolute inset-0 z-30 flex items-center justify-center bg-gradient-to-br from-black via-purple-900 to-black"
-      >
-        <div class="text-center">
-          <div
-            class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"
-          ></div>
-          <p class="text-white text-lg">Loading Hero Section...</p>
-          <p class="text-gray-400 text-sm mt-2">Initializing 3D scene</p>
-        </div>
-      </div>
-      }
-
       <!-- Declarative Angular Three Scene -->
       <app-hybrid-scene
         class="absolute inset-0 z-10"

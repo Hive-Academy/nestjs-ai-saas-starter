@@ -628,18 +628,25 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
    */
   async onCanvasCreated(event: any): Promise<void> {
     try {
+      console.log(
+        '[HybridSceneComponent] Canvas created event received',
+        event
+      );
+
       this._loadingMessage.set('Initializing foundation services...');
       this._loadingProgress.set(90);
 
-      // The Angular Three created event IS the store
-      // It contains scene, camera, gl, and other properties directly
+      // CRITICAL: Set the store in foundation service FIRST
       if (event) {
         this.angularThreeFoundation.setStore(event);
       } else {
-        console.error('No event received from Angular Three canvas creation');
+        console.error(
+          '[HybridSceneComponent] No event received from Angular Three canvas creation'
+        );
+        throw new Error('Canvas creation event is null');
       }
 
-      // Initialize foundation service
+      // Initialize foundation service (now has store reference)
       const initialized = await this.angularThreeFoundation.initialize();
 
       if (initialized) {
@@ -655,12 +662,17 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
           this.sceneInitialized.emit(scene);
         }
 
-        console.log('Unified Hybrid Scene initialized successfully');
+        console.log(
+          '[HybridSceneComponent] Unified Hybrid Scene initialized successfully'
+        );
       } else {
         throw new Error('Failed to initialize Angular Three foundation');
       }
     } catch (error) {
-      console.error('Failed to initialize unified hybrid scene:', error);
+      console.error(
+        '[HybridSceneComponent] Failed to initialize unified hybrid scene:',
+        error
+      );
       this._loadingMessage.set('Initialization failed');
     }
   }

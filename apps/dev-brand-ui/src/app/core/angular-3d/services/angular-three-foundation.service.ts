@@ -80,22 +80,10 @@ export class AngularThreeFoundationService {
   });
 
   /**
-   * Get Angular Three store dynamically when needed
-   * This allows the store to be captured after NgtCanvas is initialized
+   * Get Angular Three store
+   * Returns the stored reference set via setStore()
    */
   private getStore(): any {
-    if (!this.ngtStore) {
-      try {
-        // Try to access the store from the global Angular Three context
-        // This is a fallback approach when inject context isn't available
-        const globalThis = window as any;
-        if (globalThis.NgtStore) {
-          this.ngtStore = globalThis.NgtStore;
-        }
-      } catch (error) {
-        // Store not available yet
-      }
-    }
     return this.ngtStore;
   }
 
@@ -113,33 +101,26 @@ export class AngularThreeFoundationService {
    */
   async initialize(): Promise<boolean> {
     try {
-      // Wait for Angular Three store to be available with timeout
-      let attempts = 0;
-      const maxAttempts = 50; // 5 second timeout
-
-      while (attempts < maxAttempts) {
-        const store = this.getStore();
-        if (!store) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          attempts++;
-          continue;
-        }
-
-        const scene = this.scene();
-        const renderer = this.renderer();
-
-        if (scene && renderer) {
-          this.setupPerformanceMonitoring();
-          this._isInitialized.set(true);
-          console.log('Angular Three Foundation initialized successfully');
-          return true;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        attempts++;
+      // Check if store is already set via setStore() from HybridSceneComponent
+      if (!this.ngtStore) {
+        console.warn(
+          'Angular Three store not set. Call setStore() from HybridSceneComponent first.'
+        );
+        return false;
       }
 
-      throw new Error('Angular Three initialization timeout');
+      const scene = this.scene();
+      const renderer = this.renderer();
+
+      if (scene && renderer) {
+        this.setupPerformanceMonitoring();
+        this._isInitialized.set(true);
+        console.log('Angular Three Foundation initialized successfully');
+        return true;
+      }
+
+      console.warn('Scene or renderer not available yet');
+      return false;
     } catch (error) {
       console.error('Failed to initialize Angular Three foundation:', error);
       return false;
