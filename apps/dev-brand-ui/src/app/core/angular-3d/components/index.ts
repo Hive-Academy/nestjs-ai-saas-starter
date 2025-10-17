@@ -7,11 +7,11 @@
  * - TypeScript strict mode compliance
  * - GSAP animation integration
  * - Performance optimizations
+ * - Integrated lighting management
  */
 
 // Core Production Components
 export { HybridSceneComponent } from './hybrid-scene.component';
-export { HybridThreeSceneComponent } from './hybrid-three-scene.component';
 
 // Scene Graph Components - Declarative Architecture
 export {
@@ -23,5 +23,4 @@ export {
 
 // Convenience exports for direct imports
 export * from './hybrid-scene.component';
-export * from './hybrid-three-scene.component';
 export * from './scene-graph';

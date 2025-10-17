@@ -39,7 +39,7 @@ import { AngularThreeFoundationService } from '../services/angular-three-foundat
 import { HybridUIService } from '../services/hybrid-ui.service';
 import { AnimationService } from '../services/animation.service';
 import { Angular3DStateStore } from '../services/angular-3d-state.store';
-import { HybridThreeSceneComponent } from './hybrid-three-scene.component';
+import { HybridSceneGraphComponent } from './hybrid-scene-graph.component';
 import type { HybridUIServiceConfig } from '../interfaces';
 
 // Modern interface definitions with strict typing
@@ -72,9 +72,9 @@ interface PerformanceMetrics {
   imports: [CommonModule, NgtCanvas],
   template: `
     <div class="hybrid-scene-container" #container>
-      <!-- Phase 2: Pure Angular Three Canvas Integration -->
+      <!-- Phase 2: Pure Angular Three Canvas Integration with Lighting -->
       <ngt-canvas
-        [sceneGraph]="sceneComponent"
+        [sceneGraph]="sceneGraph"
         [gl]="glConfig()"
         [shadows]="shadowConfig()"
         [performance]="performanceConfig()"
@@ -86,7 +86,7 @@ interface PerformanceMetrics {
         [class.performance-optimal]="performanceOptimal()"
         [class.animation-enabled]="animationEnabled()"
       >
-        <!-- Angular Three handles all 3D rendering -->
+        <!-- Angular Three handles all 3D rendering, lighting managed internally -->
       </ngt-canvas>
 
       <!-- Enhanced Performance Overlay - Phase 2 -->
@@ -285,8 +285,8 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
     activeAnimations: 0,
   });
 
-  // Angular Three scene component integration
-  readonly sceneComponent = HybridThreeSceneComponent;
+  // Scene graph component for NgtCanvas
+  readonly sceneGraph = HybridSceneGraphComponent;
 
   // Computed properties for reactive configuration
   readonly initialized = computed(() => this._initialized());

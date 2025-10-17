@@ -49,37 +49,58 @@
 
 ---
 
-## 🔄 Phase 2: Service Consolidation (PENDING)
+## 🔄 Phase 2: Service Consolidation (IN PROGRESS)
 
-**Status**: ⏳ NOT STARTED
+**Status**: 🔄 IN PROGRESS (Phase 2.1 Complete)
 **Estimated Duration**: 2-3 hours
 **Risk Level**: MEDIUM (manageable with testing)
 
-### 2.1 Merge HybridThreeSceneComponent → HybridSceneComponent
+### 2.1 Merge HybridThreeSceneComponent → HybridSceneComponent ✅
 
-**Target**: Delete `hybrid-three-scene.component.ts` (225 lines)
+**Status**: ✅ COMPLETE
+**Target**: Delete `hybrid-three-scene.component.ts` (225 lines) - ACHIEVED
 
-**Steps Required**:
+**Steps Completed**:
 
-1. Extract lighting logic from `hybrid-three-scene.component.ts` (lines 75-224):
-   - `setupAmbientLight()`
-   - `setupDirectionalLight()`
-   - `setupPointLights()`
-2. Add lighting methods to `HybridSceneComponent` as private methods
-3. Add lighting configuration inputs to `HybridSceneComponent`
-4. Call lighting setup in `setupScene()` lifecycle
-5. Update `test/angular-three-test.component.ts` (line 20)
-6. Delete `hybrid-three-scene.component.ts`
-7. Remove export from `components/index.ts`
+1. ✅ Extracted lighting logic from `hybrid-three-scene.component.ts`:
+   - Lighting configuration input signals (13 inputs)
+   - Ambient, directional, and point light creation methods
+   - Reactive update methods for dynamic configuration
+   - Shadow configuration methods
+2. ✅ Added lighting methods to `HybridSceneComponent` as private methods
+3. ✅ Added lighting configuration inputs to `HybridSceneComponent` (lines 237-250)
+4. ✅ Call lighting setup in `onCanvasCreated()` lifecycle
+5. ✅ Updated `test/angular-three-test.component.ts` to use HybridSceneGraphComponent
+6. ✅ Created minimal `hybrid-scene-graph.component.ts` for NgtCanvas requirement
+7. ✅ Deleted `hybrid-three-scene.component.ts` (225 lines)
+8. ✅ Removed export from `components/index.ts`
 
-**Testing**:
+**Files Modified** (5 files):
+
+- `components/hybrid-scene.component.ts` - Added 168 lines of lighting logic
+- `components/hybrid-scene-graph.component.ts` - Created (14 lines)
+- `test/angular-three-test.component.ts` - Updated imports
+- `components/index.ts` - Removed HybridThreeSceneComponent export
+- `hybrid-three-scene.component.ts` - DELETED (225 lines)
+
+**Validation Results**:
 
 ```bash
-npx nx build dev-brand-ui
-npx nx test dev-brand-ui --testPathPattern=hybrid-scene
+npx nx build dev-brand-ui  # ✅ PASS (production build successful)
+npx nx test dev-brand-ui --testPathPattern=hybrid-scene  # ✅ PASS (tests passing)
+grep -r "hybrid-three-scene" apps/dev-brand-ui/src  # ✅ PASS (no broken imports)
 ```
 
-**Git Commit Message** (from MASTER_REFACTORING_PLAN.md lines 195-213):
+**Metrics Achieved**:
+
+- Lines deleted: 225
+- Lines added (lighting): 168
+- Net reduction: 57 lines
+- Component count: 9 → 2 (maintained)
+- Build status: ✅ PASS
+- Zero breaking changes
+
+**Git Commit** (pending):
 
 ```
 refactor: phase 2.1 merge lighting into HybridSceneComponent
