@@ -46,15 +46,107 @@ export class AngularThreeFoundationService {
   // Angular Three computed properties for reactive access with strict typing
   readonly scene = computed((): THREE.Scene | null => {
     const store = this.getStore();
-    return store?.scene || null;
+    if (!store) return null;
+
+    // Angular Three stores are signal-based, access via get() or direct property call
+    try {
+      // Try as function first (signal pattern)
+      if (typeof store.scene === 'function') {
+        const sceneValue = store.scene();
+        console.log(
+          '[AngularThreeFoundation] Scene accessed via function call:',
+          !!sceneValue
+        );
+        return sceneValue;
+      }
+      // Try get() method
+      if (typeof store.get === 'function') {
+        const state = store.get();
+        console.log(
+          '[AngularThreeFoundation] Scene accessed via get():',
+          !!state?.scene
+        );
+        return state?.scene || null;
+      }
+      // Try direct property access as fallback
+      if (store.scene) {
+        console.log(
+          '[AngularThreeFoundation] Scene accessed via direct property'
+        );
+        return store.scene;
+      }
+    } catch (error) {
+      console.error('[AngularThreeFoundation] Error accessing scene:', error);
+    }
+    return null;
   });
   readonly camera = computed((): THREE.Camera | null => {
     const store = this.getStore();
-    return store?.camera || null;
+    if (!store) return null;
+
+    try {
+      if (typeof store.camera === 'function') {
+        const cameraValue = store.camera();
+        console.log(
+          '[AngularThreeFoundation] Camera accessed via function call:',
+          !!cameraValue
+        );
+        return cameraValue;
+      }
+      if (typeof store.get === 'function') {
+        const state = store.get();
+        console.log(
+          '[AngularThreeFoundation] Camera accessed via get():',
+          !!state?.camera
+        );
+        return state?.camera || null;
+      }
+      if (store.camera) {
+        console.log(
+          '[AngularThreeFoundation] Camera accessed via direct property'
+        );
+        return store.camera;
+      }
+    } catch (error) {
+      console.error('[AngularThreeFoundation] Error accessing camera:', error);
+    }
+    return null;
   });
   readonly renderer = computed((): THREE.WebGLRenderer | null => {
     const store = this.getStore();
-    return store?.gl || null;
+    if (!store) return null;
+
+    try {
+      // Angular Three uses 'gl' for renderer
+      if (typeof store.gl === 'function') {
+        const glValue = store.gl();
+        console.log(
+          '[AngularThreeFoundation] Renderer accessed via function call:',
+          !!glValue
+        );
+        return glValue;
+      }
+      if (typeof store.get === 'function') {
+        const state = store.get();
+        console.log(
+          '[AngularThreeFoundation] Renderer accessed via get():',
+          !!state?.gl
+        );
+        return state?.gl || null;
+      }
+      if (store.gl) {
+        console.log(
+          '[AngularThreeFoundation] Renderer accessed via direct property'
+        );
+        return store.gl;
+      }
+    } catch (error) {
+      console.error(
+        '[AngularThreeFoundation] Error accessing renderer:',
+        error
+      );
+    }
+    return null;
   });
 
   // Performance monitoring with strict typing
@@ -75,8 +167,34 @@ export class AngularThreeFoundationService {
 
   readonly aspectRatio = computed(() => {
     const store = this.getStore();
-    const size = store?.size;
-    return size ? size.width / size.height : 1;
+    if (!store) return 1;
+
+    try {
+      let size = null;
+      if (typeof store.size === 'function') {
+        size = store.size();
+        console.log(
+          '[AngularThreeFoundation] Size accessed via function call:',
+          !!size
+        );
+      } else if (typeof store.get === 'function') {
+        const state = store.get();
+        size = state?.size;
+        console.log(
+          '[AngularThreeFoundation] Size accessed via get():',
+          !!size
+        );
+      } else if (store.size) {
+        size = store.size;
+        console.log(
+          '[AngularThreeFoundation] Size accessed via direct property'
+        );
+      }
+      return size ? size.width / size.height : 1;
+    } catch (error) {
+      console.error('[AngularThreeFoundation] Error accessing size:', error);
+      return 1;
+    }
   });
 
   /**
