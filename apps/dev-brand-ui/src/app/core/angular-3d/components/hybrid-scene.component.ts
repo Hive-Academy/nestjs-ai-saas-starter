@@ -86,7 +86,10 @@ interface PerformanceMetrics {
         [class.performance-optimal]="performanceOptimal()"
         [class.animation-enabled]="animationEnabled()"
       >
-        <!-- Angular Three handles all 3D rendering, lighting managed internally -->
+        <!-- Project declarative Angular Three primitives INSIDE canvas -->
+        <ng-content
+          select="app-floating-sphere, app-background-cube, app-cylinder, app-torus, app-scene-node"
+        ></ng-content>
       </ngt-canvas>
 
       <!-- Enhanced Performance Overlay - Phase 2 -->
@@ -173,14 +176,17 @@ interface PerformanceMetrics {
       </div>
       }
 
-      <!-- Content projection for DOM elements -->
+      <!-- Content projection for DOM elements (element3d directive and regular DOM content) -->
       <div
         class="hybrid-content"
         [style.opacity]="contentVisible() ? 1 : 0"
         [style.pointer-events]="contentInteractive() ? 'auto' : 'none'"
         #contentContainer
       >
-        <ng-content></ng-content>
+        <!-- Project element3d directives and other non-3D-primitive content -->
+        <ng-content
+          select="[element3d], :not(app-floating-sphere):not(app-background-cube):not(app-cylinder):not(app-torus):not(app-scene-node)"
+        ></ng-content>
       </div>
 
       <!-- Animation Debug Panel (Development only) -->

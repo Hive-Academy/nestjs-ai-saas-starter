@@ -36,6 +36,7 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
+import * as THREE from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 
 @Component({
@@ -144,8 +145,27 @@ export class TorusComponent implements OnInit {
     console.log('[Torus] Cleanup completed');
   }
 
-  getMesh(): any | null {
-    return this.meshRef()?.nativeElement || null;
+  /**
+   * Public API: Get the THREE.Mesh instance
+   * Angular Three custom elements expose THREE.Mesh via the object3D property
+   */
+  getMesh(): THREE.Mesh | null {
+    const element = this.meshRef()?.nativeElement;
+    if (!element) {
+      return null;
+    }
+
+    if ('object3D' in element) {
+      const obj = (element as any).object3D;
+      if (obj instanceof THREE.Mesh) {
+        return obj;
+      }
+    }
+
+    console.warn(
+      '[TorusComponent] Unable to access THREE.Mesh from ngt-mesh element'
+    );
+    return null;
   }
 
   isReady(): boolean {

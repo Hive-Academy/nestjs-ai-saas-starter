@@ -62,6 +62,7 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
+import * as THREE from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 
 /**
@@ -226,9 +227,27 @@ export class FloatingSphereComponent implements OnInit {
   /**
    * Public API: Get the THREE.Mesh instance
    * Useful for directives that need direct mesh access
+   *
+   * Angular Three custom elements expose THREE.Mesh via the object3D property
    */
-  getMesh(): any | null {
-    return this.meshRef()?.nativeElement || null;
+  getMesh(): THREE.Mesh | null {
+    const element = this.meshRef()?.nativeElement;
+    if (!element) {
+      return null;
+    }
+
+    // Angular Three ngt-mesh elements expose the THREE.Mesh via object3D property
+    if ('object3D' in element) {
+      const obj = (element as any).object3D;
+      if (obj instanceof THREE.Mesh) {
+        return obj;
+      }
+    }
+
+    console.warn(
+      '[FloatingSphereComponent] Unable to access THREE.Mesh from ngt-mesh element'
+    );
+    return null;
   }
 
   /**
