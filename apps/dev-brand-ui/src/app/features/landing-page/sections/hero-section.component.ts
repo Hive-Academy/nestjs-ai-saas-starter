@@ -1,33 +1,29 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  OnInit,
+  signal,
+  DestroyRef,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { HybridSceneComponent } from '../../../core/angular-3d/components/hybrid-scene.component';
-import {
-  BackgroundCubeComponent,
-  FloatingSphereComponent,
-} from '../../../core/angular-3d/components/primitives';
-import {
-  Float3dDirective,
-  Glow3dDirective,
-  Performance3dDirective,
-} from '../../../core/angular-3d/directives';
+import type {
+  SphereData,
+  CubeData,
+} from '../../../core/angular-3d/components/hybrid-scene-graph.component';
 import { Element3DDirective } from '../../../core/angular-3d/directives/element-3d.directive';
+import { HybridUIService } from '../../../core/angular-3d/services/hybrid-ui.service';
 import { LoadingStateService } from '../services/loading-state.service';
 
 @Component({
   selector: 'brand-hero-section',
   standalone: true,
-  imports: [
-    CommonModule,
-    HybridSceneComponent,
-    FloatingSphereComponent,
-    BackgroundCubeComponent,
-    Float3dDirective,
-    Performance3dDirective,
-    Glow3dDirective,
-    Element3DDirective,
-  ],
+  imports: [CommonModule, HybridSceneComponent, Element3DDirective],
   template: `
     <div
       class="relative w-full h-screen overflow-auto bg-gradient-to-br from-black via-purple-900 to-black"
@@ -36,9 +32,9 @@ import { LoadingStateService } from '../services/loading-state.service';
       <!-- Declarative Angular Three Scene -->
       <app-hybrid-scene
         class="absolute inset-0 z-10"
-        [backgroundColor]="'#000000'"
-        [cameraPosition]="[0, 0, 12]"
-        [cameraTarget]="[0, 0, 0]"
+        [backgroundColor]="'transparent'"
+        [cameraPosition]="[0, 0, 15]"
+        [cameraTarget]="[0, 0, -5]"
         [enableShadows]="true"
         [antialias]="true"
         [alpha]="true"
@@ -46,9 +42,9 @@ import { LoadingStateService } from '../services/loading-state.service';
         [performanceTarget]="'desktop'"
         [enableAnimation]="true"
         [ambientLightColor]="4210752"
-        [ambientLightIntensity]="0.4"
+        [ambientLightIntensity]="0.8"
         [directionalLightColor]="16777215"
-        [directionalLightIntensity]="1.0"
+        [directionalLightIntensity]="1.5"
         [directionalLightPosition]="[10, 10, 10]"
         [directionalShadowsEnabled]="true"
         [shadowMapSize]="2048"
@@ -56,56 +52,16 @@ import { LoadingStateService } from '../services/loading-state.service';
         [pointLightIntensity]="0.8"
         [pointLightPosition]="[-10, 5, 5]"
         [enablePerformanceOverlay]="showPerformanceDebug()"
+        [spheres]="heroCircles()"
+        [cubes]="backgroundCubes()"
         (sceneInitialized)="onSceneInitialized($event)"
       >
-        <!-- Floating Spheres (5 hero circles) -->
-        @for (circle of heroCircles(); track circle.id; let idx = $index) {
-        <app-floating-sphere
-          [position]="[circle.position.x, circle.position.y, circle.position.z]"
-          [radius]="circle.scale * 0.8"
-          [color]="parseColor(circle.color)"
-          [metalness]="0.3"
-          [roughness]="0.1"
-          [clearcoat]="1.0"
-          [clearcoatRoughness]="0.1"
-          [transmission]="0.1"
-          [emissive]="parseColor(circle.color)"
-          [emissiveIntensity]="0.2"
-          float3d
-          [floatHeight]="0.3"
-          [floatSpeed]="1500"
-          [floatDelay]="idx * 200"
-          [autoStart]="isLoaded()"
-          performance3d
-          glow3d
-          [glowColor]="parseColor(circle.color)"
-        />
-        }
-
-        <!-- Background Cubes (35 cubes) -->
-        @for (cube of backgroundCubes(); track cube.id) {
-        <app-background-cube
-          [position]="cube.position"
-          [size]="cube.size"
-          [color]="parseColor(cube.color)"
-          [rotation]="cube.rotation"
-          [transparent]="true"
-          [opacity]="0.6"
-          performance3d
-        />
-        }
-
-        <!-- 3D Hero Content using element3d directive -->
+        <!-- 3D Hero Content - TEMPORARILY DISABLED element3d to debug scene -->
         @if (isLoaded()) {
         <ng-container>
-          <!-- Hero Title as 3D textured mesh -->
+          <!-- Hero Title as regular DOM (3D directive disabled) -->
           <h1
-            element3d
-            [position]="[0, 1.8, -1.2]"
-            priority="HERO"
-            quality="high"
-            [depth]="-1.2"
-            class="text-5xl md:text-6xl lg:text-7xl font-bold text-center max-w-4xl px-8"
+            class="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-5xl md:text-6xl lg:text-7xl font-bold text-center max-w-4xl px-8 z-20"
             style="
                 background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #8a2be2 100%);
                 -webkit-background-clip: text;
@@ -120,14 +76,9 @@ import { LoadingStateService } from '../services/loading-state.service';
             >
           </h1>
 
-          <!-- Hero Description as 3D textured mesh -->
+          <!-- Hero Description as regular DOM (3D directive disabled) -->
           <p
-            element3d
-            [position]="[0, 0.2, -1.3]"
-            priority="PRIMARY"
-            quality="medium"
-            [depth]="-1.3"
-            class="text-lg md:text-xl text-white text-opacity-85 text-center max-w-2xl px-8"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-lg md:text-xl text-white text-opacity-85 text-center max-w-2xl px-8 z-20"
             style="text-shadow: 0 2px 8px rgba(0,0,0,0.3)"
           >
             Production-ready foundation for AI-powered applications combining
@@ -140,14 +91,9 @@ import { LoadingStateService } from '../services/loading-state.service';
             >
           </p>
 
-          <!-- Feature Badges as 3D textured meshes -->
+          <!-- Feature Badges as regular DOM (3D directive disabled) -->
           <div
-            element3d
-            [position]="[0, -0.8, -1.4]"
-            priority="SECONDARY"
-            quality="medium"
-            [depth]="-1.4"
-            class="flex justify-center gap-3 flex-wrap px-8"
+            class="absolute top-2/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex justify-center gap-3 flex-wrap px-8 z-20"
           >
             <div
               class="flex items-center gap-2 px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-20 rounded-full backdrop-blur-lg text-sm text-white"
@@ -169,16 +115,10 @@ import { LoadingStateService } from '../services/loading-state.service';
             </div>
           </div>
 
-          <!-- CTA Buttons as 3D textured meshes -->
+          <!-- CTA Buttons as regular DOM (3D directive disabled) -->
           <button
-            element3d
-            [position]="[-1.8, -2, -1.5]"
-            priority="PRIMARY"
-            quality="high"
-            [depth]="-1.5"
-            [enableInteraction]="true"
-            (clicked)="exploreDemo()"
-            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-lg font-semibold cursor-pointer"
+            (click)="exploreDemo()"
+            class="absolute bottom-32 left-1/4 transform -translate-x-1/2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-lg font-semibold cursor-pointer z-20"
             style="box-shadow: 0 4px 20px rgba(138, 43, 226, 0.6)"
           >
             <span class="flex items-center gap-2">
@@ -188,14 +128,8 @@ import { LoadingStateService } from '../services/loading-state.service';
           </button>
 
           <button
-            element3d
-            [position]="[1.8, -2, -1.5]"
-            priority="SECONDARY"
-            quality="medium"
-            [depth]="-1.5"
-            [enableInteraction]="true"
-            (clicked)="viewArchitecture()"
-            class="px-8 py-4 bg-white bg-opacity-10 text-white border border-white border-opacity-30 rounded-xl text-lg font-semibold cursor-pointer backdrop-blur-lg"
+            (click)="viewArchitecture()"
+            class="absolute bottom-32 right-1/4 transform translate-x-1/2 px-8 py-4 bg-white bg-opacity-10 text-white border border-white border-opacity-30 rounded-xl text-lg font-semibold cursor-pointer backdrop-blur-lg z-20"
           >
             <span class="flex items-center gap-2">
               <span>View Architecture</span>
@@ -220,6 +154,8 @@ import { LoadingStateService } from '../services/loading-state.service';
 export class HeroSectionComponent implements OnInit {
   // Services
   private readonly loadingState = inject(LoadingStateService);
+  private readonly hybridUIService = inject(HybridUIService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Component state signals
   readonly isLoaded = signal(false);
@@ -230,9 +166,24 @@ export class HeroSectionComponent implements OnInit {
   // Mouse tracking for interactive camera animation (optional enhancement)
   private mousePosition = { x: 0, y: 0 };
 
+  constructor() {
+    // Watch for when HybridUIService initializes
+    effect(() => {
+      if (this.hybridUIService.initialized()) {
+        const scene = this.hybridUIService.scene();
+        if (scene && !this.isLoaded()) {
+          console.log(
+            '[HeroSectionComponent] HybridUIService initialized, calling onSceneInitialized'
+          );
+          this.onSceneInitialized(scene);
+        }
+      }
+    });
+  }
+
   // Hero-specific agent configuration for 3D positioning
   // Restored floating circles positioned around hero text area
-  readonly heroCircles = signal([
+  private readonly heroCirclesData = signal([
     {
       id: 'circle-1',
       name: 'Floating Circle 1',
@@ -280,16 +231,34 @@ export class HeroSectionComponent implements OnInit {
     },
   ]);
 
-  // Computed signal for background cubes (declarative approach)
-  readonly backgroundCubes = computed(() => {
-    const cubes = [];
+  // Convert heroCirclesData to SphereData[] format for HybridSceneComponent
+  readonly heroCircles = computed((): SphereData[] => {
+    return this.heroCirclesData().map((circle, idx) => ({
+      id: circle.id,
+      position: circle.position,
+      radius: circle.scale * 0.8,
+      color: this.parseColor(circle.color),
+      metalness: 0.3,
+      roughness: 0.1,
+      emissive: this.parseColor(circle.color),
+      emissiveIntensity: 0.2,
+      floatHeight: 0.3,
+      floatSpeed: 1500,
+      floatDelay: idx * 200,
+      autoStart: this.isLoaded(),
+    }));
+  });
+
+  // Computed signal for background cubes (declarative approach) - returns CubeData[]
+  readonly backgroundCubes = computed((): CubeData[] => {
+    const cubes: CubeData[] = [];
     const cubeColors = [
-      '#2d1b47',
-      '#1a0d2e',
-      '#0f0a1c',
-      '#1e1139',
-      '#261242',
-      '#0a0a15',
+      '#6d3b97', // Brighter purple
+      '#4a2d6e', // Medium purple
+      '#3f2a5c', // Visible dark purple
+      '#5e3179', // Bright purple
+      '#7642a2', // Light purple
+      '#2a1a35', // Darkest (but still visible)
     ];
 
     for (let i = 0; i < 35; i++) {
@@ -301,12 +270,15 @@ export class HeroSectionComponent implements OnInit {
         id: `bg-cube-${i}`,
         position,
         size,
-        color: cubeColors[Math.floor(Math.random() * cubeColors.length)],
+        color: this.parseColor(
+          cubeColors[Math.floor(Math.random() * cubeColors.length)]
+        ),
         rotation: [
           Math.random() * Math.PI,
           Math.random() * Math.PI,
           Math.random() * Math.PI,
-        ] as const,
+        ],
+        opacity: 0.6,
       });
     }
 
@@ -334,10 +306,12 @@ export class HeroSectionComponent implements OnInit {
     // Notify loading state service
     this.loadingState.markSectionLoaded('hero');
 
-    // Trigger content visibility with shorter delay since element3d handles entrance
-    setTimeout(() => {
-      this.contentVisible.set(true);
-    }, 800); // Reduced from 1500ms
+    // Trigger content visibility using RxJS timer (NO setTimeout!)
+    timer(800)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.contentVisible.set(true);
+      });
   }
 
   /**

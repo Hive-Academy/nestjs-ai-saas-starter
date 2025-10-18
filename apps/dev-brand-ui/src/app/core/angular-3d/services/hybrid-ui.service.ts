@@ -8,8 +8,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import * as THREE from 'three';
 import { fromEvent, debounceTime } from 'rxjs';
-import { AngularThreeFoundationService } from './angular-three-foundation.service';
-import { ContentTexturePipelineService } from './content-texture-pipeline.service';
+import { AngularThreeService } from './angular-three.service';
+import { TextureFactoryService, TextureLoaderService } from './texture';
 import type {
   HybridElementExtended,
   HybridElementConfigExtended,
@@ -22,12 +22,14 @@ import type {
 })
 export class HybridUIService {
   private readonly destroyRef = inject(DestroyRef);
-  private readonly angularThreeFoundation = inject(
-    AngularThreeFoundationService
-  );
-  private readonly contentTexturePipeline = inject(
-    ContentTexturePipelineService
-  );
+  private readonly angularThreeService = inject(AngularThreeService);
+  private readonly textureFactory = inject(TextureFactoryService);
+  private readonly textureLoader = inject(TextureLoaderService);
+
+  // Scene references (set externally by HybridSceneComponent)
+  private readonly _scene = signal<THREE.Scene | null>(null);
+  private readonly _camera = signal<THREE.Camera | null>(null);
+  private readonly _renderer = signal<THREE.WebGLRenderer | null>(null);
 
   private readonly config = signal<HybridUIServiceConfig>({
     angularThree: {
@@ -67,20 +69,42 @@ export class HybridUIService {
   readonly visibleElementCount = computed(() => this.activeElements().length);
   readonly performance = computed(() => this.performanceMetrics());
 
-  // Scene management
-  readonly scene = computed(() => this.angularThreeFoundation.scene());
-  readonly camera = computed(() => this.angularThreeFoundation.camera());
-  readonly renderer = computed(() => this.angularThreeFoundation.renderer());
+  // Scene management (readonly accessors)
+  readonly scene = computed(() => this._scene());
+  readonly camera = computed(() => this._camera());
+  readonly renderer = computed(() => this._renderer());
 
   constructor() {
     this.initializeService();
   }
 
-  private async initializeService(): Promise<void> {
-    // Wait for Angular Three foundation
-    await this.angularThreeFoundation.initialize();
+  /**
+   * Set scene references from HybridSceneComponent
+   * This should be called after NgtCanvas is initialized
+   */
+  setSceneReferences(
+    scene: THREE.Scene | null,
+    camera: THREE.Camera | null,
+    renderer: THREE.WebGLRenderer | null
+  ): void {
+    this._scene.set(scene);
+    this._camera.set(camera);
+    this._renderer.set(renderer);
 
+    // Initialize service if not already done
+    if (!this.isInitialized() && scene && camera && renderer) {
+      this.finalizeInitialization();
+    }
+  }
+
+  private initializeService(): void {
+    // Setup observers immediately
     this.setupObservers();
+    // Note: Performance monitoring setup deferred until scene is available
+  }
+
+  private finalizeInitialization(): void {
+    // Setup performance monitoring now that we have scene access
     this.setupPerformanceMonitoring();
     this.isInitialized.set(true);
   }
@@ -137,23 +161,21 @@ export class HybridUIService {
   }
 
   private setupPerformanceMonitoring(): void {
-    const cleanup = this.angularThreeFoundation.addToRenderLoop(
-      (delta, time) => {
-        this.updatePerformanceMetrics(delta);
-      }
-    );
+    const cleanup = this.angularThreeService.addToRenderLoop((delta, time) => {
+      this.updatePerformanceMetrics(delta);
+    });
 
     this.destroyRef.onDestroy(cleanup);
   }
 
   private updatePerformanceMetrics(delta: number): void {
-    const textureStats = this.contentTexturePipeline.getStatistics();
+    const cacheStats = this.textureLoader.getCacheStatistics();
 
     this.performanceMetrics.update((current) => ({
       totalElements: this.elements.size,
       visibleElements: this.activeElements().length,
       renderTime: delta,
-      memoryUsage: textureStats.memoryUsage,
+      memoryUsage: cacheStats().sizeMB,
       lastUpdate: Date.now(),
     }));
   }
@@ -172,10 +194,9 @@ export class HybridUIService {
     const id = this.generateElementId();
 
     // Create Angular Three group
-    const ngtGroup = this.angularThreeFoundation.createHybridGroup({
-      name: id,
-      userData: { type: 'hybrid-element', createdAt: Date.now() },
-    });
+    const ngtGroup = new THREE.Group();
+    ngtGroup.name = id;
+    ngtGroup.userData = { type: 'hybrid-element', createdAt: Date.now() };
 
     // Apply Angular Three configuration
     if (config.angularThree) {
@@ -187,33 +208,30 @@ export class HybridUIService {
       }
     }
 
-    // Create reactive texture using pipeline service
-    const texture = await this.contentTexturePipeline.domToTexture(domElement, {
-      quality: config.content?.quality ?? 'medium',
-      updateOnMutation: config.content?.watchForChanges ?? true,
-      updateOnResize:
-        config.content?.updateTriggers?.includes('resize') ?? true,
-      caching: {
-        enabled: true,
-        maxSize: 50, // MB
-        ttl: 300000, // 5 minutes
-        compression: true,
-        strategy: 'lru',
-      },
-    });
+    // Create placeholder texture for immediate rendering (CORS-safe, no taint!)
+    // Use a more visible color so elements aren't invisible during loading
+    const placeholderTexture = this.textureFactory.createPlaceholderTexture(
+      256,
+      256,
+      '#6366f1'
+    );
 
-    // Create material with enhanced properties
-    const material = this.createEnhancedMaterial(texture, config);
+    // Create material with placeholder texture
+    const material = this.createEnhancedMaterial(placeholderTexture, config);
+
+    // Prepare texture loading config
+    const quality = config.content?.quality ?? 'medium';
 
     // Create geometry based on element dimensions
     const geometry = this.createElementGeometry(domElement);
 
     // Create optimized mesh
-    const ngtMesh = this.angularThreeFoundation.createOptimizedMesh(
+    const ngtMesh = this.angularThreeService.createOptimizedMesh(
       geometry,
       material,
       {
-        enableLOD: config.performance?.enableLOD,
+        castShadow: config.angularThree?.castShadow ?? true,
+        receiveShadow: config.angularThree?.receiveShadow ?? true,
         renderOrder: config.angularThree?.renderOrder,
         layers: config.angularThree?.layers,
       }
@@ -247,6 +265,9 @@ export class HybridUIService {
 
     const needsTextureUpdate = signal(false);
 
+    // Create texture signal
+    const textureSignal = signal(placeholderTexture);
+
     // Create hybrid element
     const hybridElement: HybridElementExtended = {
       id,
@@ -260,10 +281,43 @@ export class HybridUIService {
       ngtMaterial: material,
       state: elementState,
       performance: elementPerformance,
-      texture: signal(texture),
+      texture: textureSignal, // Start with placeholder
       needsTextureUpdate,
       animations: new Map(),
     };
+
+    // Load real texture asynchronously using new modular, CORS-safe service
+    const cacheKey = this.textureLoader.generateCacheKey(domElement, {
+      quality,
+    });
+
+    this.textureLoader
+      .loadTexture({
+        element: domElement,
+        cacheKey,
+        quality,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          // Update material with real texture (NO TAINT - CORS-safe rendering!)
+          material.map = result.texture;
+          material.needsUpdate = true;
+          // Update texture signal
+          textureSignal.set(result.texture);
+          console.log(
+            `[HybridUIService] ✅ Texture loaded for ${id} (cache:${
+              result.fromCache
+            }, time:${result.loadTimeMs.toFixed(1)}ms)`
+          );
+        },
+        error: (error) => {
+          console.error(
+            `[HybridUIService] ❌ Failed to load texture for ${id}:`,
+            error
+          );
+        },
+      });
 
     // Setup animations if configured
     if (config.animations) {
@@ -276,6 +330,12 @@ export class HybridUIService {
     // Start observing element
     this.intersectionObserver()?.observe(domElement);
     this.resizeObserver()?.observe(domElement);
+
+    // Add group to scene
+    const scene = this.scene();
+    if (scene) {
+      scene.add(ngtGroup);
+    }
 
     // Store element
     this.elements.set(id, hybridElement);
@@ -574,8 +634,18 @@ export class HybridUIService {
     // Update camera aspect ratio
     const width = window.innerWidth;
     const height = window.innerHeight;
+    const camera = this._camera();
 
-    this.angularThreeFoundation.updateCameraAspect(width, height);
+    if (camera && 'aspect' in camera) {
+      (camera as THREE.PerspectiveCamera).aspect = width / height;
+      (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+    }
+
+    // Update renderer size
+    const renderer = this._renderer();
+    if (renderer) {
+      renderer.setSize(width, height);
+    }
 
     // Update all element positions
     this.elements.forEach((element) => {
@@ -646,11 +716,11 @@ export class HybridUIService {
   updateConfig(newConfig: Partial<HybridUIServiceConfig>): void {
     this.config.update((current) => ({ ...current, ...newConfig }));
 
-    // Update texture pipeline quality if needed
-    if (newConfig.textureService?.defaultQuality) {
-      this.contentTexturePipeline.setQualityLevel(
-        newConfig.textureService.defaultQuality
-      );
+    // Update texture cache config if needed
+    if (newConfig.textureService) {
+      // Texture quality is now handled per-element during loading
+      // Cache configuration could be updated here if needed
+      console.log('[HybridUIService] Config updated:', newConfig);
     }
   }
 
@@ -953,64 +1023,62 @@ export class HybridUIService {
    * Setup animations for scene objects (spheres, cubes)
    */
   private setupSceneObjectAnimations(objects: THREE.Object3D[]): void {
-    const cleanup = this.angularThreeFoundation.addToRenderLoop(
-      (delta, time) => {
-        objects.forEach((object) => {
-          const userData = object.userData;
-          if (
-            !userData ||
-            !userData['animation'] ||
-            userData['animation'] === 'none'
-          )
-            return;
+    const cleanup = this.angularThreeService.addToRenderLoop((delta, time) => {
+      objects.forEach((object) => {
+        const userData = object.userData;
+        if (
+          !userData ||
+          !userData['animation'] ||
+          userData['animation'] === 'none'
+        )
+          return;
 
-          const speed = userData['animationSpeed'] || 1.0;
-          const originalPos = userData['originalPosition'] || [0, 0, 0];
+        const speed = userData['animationSpeed'] || 1.0;
+        const originalPos = userData['originalPosition'] || [0, 0, 0];
 
-          switch (userData['animation']) {
-            case 'float': {
-              // Gentle floating motion
-              if (object instanceof THREE.Points) {
-                // Particle system floating
-                object.rotation.y = time * 0.0005 * speed;
-              } else {
-                // Regular object floating
-                object.position.y =
-                  originalPos[1] + Math.sin(time * 0.001 * speed) * 0.3;
-                object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.1;
-                object.rotation.y = time * 0.0002 * speed;
-              }
-              break;
+        switch (userData['animation']) {
+          case 'float': {
+            // Gentle floating motion
+            if (object instanceof THREE.Points) {
+              // Particle system floating
+              object.rotation.y = time * 0.0005 * speed;
+            } else {
+              // Regular object floating
+              object.position.y =
+                originalPos[1] + Math.sin(time * 0.001 * speed) * 0.3;
+              object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.1;
+              object.rotation.y = time * 0.0002 * speed;
             }
-
-            case 'rotate': {
-              // Continuous rotation
-              const originalRot = userData['originalRotation'] || [0, 0, 0];
-              object.rotation.x = originalRot[0] + time * 0.0003 * speed;
-              object.rotation.y = originalRot[1] + time * 0.0005 * speed;
-              object.rotation.z = originalRot[2] + time * 0.0002 * speed;
-              break;
-            }
-
-            case 'spiral': {
-              // Spiral animation for particles
-              if (object instanceof THREE.Points) {
-                object.rotation.y = time * 0.001 * speed;
-                object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.3;
-              }
-              break;
-            }
-
-            case 'pulse': {
-              // Pulsing scale animation
-              const pulse = 1 + Math.sin(time * 0.002 * speed) * 0.1;
-              object.scale.setScalar(pulse);
-              break;
-            }
+            break;
           }
-        });
-      }
-    );
+
+          case 'rotate': {
+            // Continuous rotation
+            const originalRot = userData['originalRotation'] || [0, 0, 0];
+            object.rotation.x = originalRot[0] + time * 0.0003 * speed;
+            object.rotation.y = originalRot[1] + time * 0.0005 * speed;
+            object.rotation.z = originalRot[2] + time * 0.0002 * speed;
+            break;
+          }
+
+          case 'spiral': {
+            // Spiral animation for particles
+            if (object instanceof THREE.Points) {
+              object.rotation.y = time * 0.001 * speed;
+              object.rotation.x = Math.sin(time * 0.0005 * speed) * 0.3;
+            }
+            break;
+          }
+
+          case 'pulse': {
+            // Pulsing scale animation
+            const pulse = 1 + Math.sin(time * 0.002 * speed) * 0.1;
+            object.scale.setScalar(pulse);
+            break;
+          }
+        }
+      });
+    });
 
     this.destroyRef.onDestroy(cleanup);
   }

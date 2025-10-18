@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   inject,
   OnDestroy,
@@ -9,6 +10,9 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { first, delay, timeout, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
 import { DemoTheaterComponent } from './sections/demo-theater.component';
 // import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
@@ -366,33 +370,36 @@ export class LandingPageComponent implements OnInit, OnDestroy {
       // Start loading state service
       this.loadingStateService.startLoading();
 
-      // Wait for all sections to load (hero, platform-pillars, demo-theater, etc.)
-      // LoadingStateService will automatically track via markSectionLoaded() calls from each section
+      console.log(
+        '[LandingPage] Waiting for all sections to load using RxJS observable...'
+      );
 
-      // Poll until all sections loaded or timeout (10 seconds)
-      let attempts = 0;
-      const maxAttempts = 100; // 10 seconds (100ms intervals)
-
-      while (
-        attempts < maxAttempts &&
-        !this.loadingStateService.allSectionsLoaded()
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        attempts++;
-      }
-
-      // Check if loading completed successfully
-      if (this.loadingStateService.allSectionsLoaded()) {
-        console.log('All sections loaded successfully');
-      } else {
-        console.warn('Loading timeout - some sections may not have loaded');
-      }
-
-      // Mark as loaded for transition effect
-      setTimeout(() => {
-        this.loadingStateService.completeLoading();
-        this.isLoaded.set(true);
-      }, 500);
+      // Use pure RxJS - NO setTimeout!
+      // Wait for hero section to load with 5-second timeout
+      this.loadingStateService.allSectionsLoaded$
+        .pipe(
+          first((allLoaded) => allLoaded === true),
+          timeout(5000), // 5-second timeout - hero should load quickly
+          delay(300), // Short transition delay
+          catchError((error) => {
+            if (error.name === 'TimeoutError') {
+              console.warn(
+                '[LandingPage] ⚠️ Timeout after 5s - completing anyway'
+              );
+            } else {
+              console.error('[LandingPage] ❌ Loading error:', error);
+            }
+            return of(true); // Continue with loading completion
+          }),
+          takeUntilDestroyed(this.destroyRef)
+        )
+        .subscribe({
+          next: () => {
+            console.log('[LandingPage] ✅ Hero loaded, showing page...');
+            this.loadingStateService.completeLoading();
+            this.isLoaded.set(true);
+          },
+        });
     } catch (error) {
       console.error('Failed to initialize landing page:', error);
       // Complete loading even if there are errors
@@ -400,6 +407,9 @@ export class LandingPageComponent implements OnInit, OnDestroy {
       this.isLoaded.set(true);
     }
   }
+
+  // Add DestroyRef for cleanup
+  private readonly destroyRef = inject(DestroyRef);
 
   private setupSmoothScrolling(): void {
     if (typeof window !== 'undefined') {

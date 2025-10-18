@@ -27,7 +27,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 
-import { AngularThreeFoundationService } from '../../services/angular-three-foundation.service';
+import { HybridUIService } from '../../services/hybrid-ui.service';
 import { AnimationService } from '../../services/animation.service';
 import { Angular3DStateStore } from '../../services/angular-3d-state.store';
 
@@ -155,7 +155,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   private readonly childNodes!: QueryList<SceneNodeComponent>;
 
   // Dependency injection
-  private readonly angularThree = inject(AngularThreeFoundationService);
+  private readonly hybridUI = inject(HybridUIService);
   private readonly animationService = inject(AnimationService);
   private readonly stateStore = inject(Angular3DStateStore);
 
@@ -521,7 +521,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   private addToScene(): void {
     if (!this._group) return;
 
-    const scene = this.angularThree.scene();
+    const scene = this.hybridUI.scene();
     if (scene) {
       scene.add(this._group);
       this.updateBounds();
@@ -587,7 +587,7 @@ export class SceneNodeComponent implements OnInit, OnDestroy, AfterContentInit {
   private isOutsideFrustum(bounds: NodeBounds): boolean {
     // Simplified frustum culling check
     // In a real implementation, you'd get the camera frustum
-    const camera = this.angularThree.camera();
+    const camera = this.hybridUI.camera();
     if (!camera) return false;
 
     // This is a placeholder - implement proper frustum culling

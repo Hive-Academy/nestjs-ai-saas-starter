@@ -33,13 +33,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { fromEvent, debounceTime } from 'rxjs';
 import * as THREE from 'three';
-import { NgtCanvas, injectStore } from 'angular-three';
+import { NgtCanvas } from 'angular-three';
 
-import { AngularThreeFoundationService } from '../services/angular-three-foundation.service';
 import { HybridUIService } from '../services/hybrid-ui.service';
 import { AnimationService } from '../services/animation.service';
 import { Angular3DStateStore } from '../services/angular-3d-state.store';
-import { HybridSceneGraphComponent } from './hybrid-scene-graph.component';
+import { SceneConfigService } from '../services/scene-config.service';
+import {
+  CubeData,
+  HybridSceneGraphComponent,
+  SphereData,
+} from './hybrid-scene-graph.component';
 import type { HybridUIServiceConfig } from '../interfaces';
 
 // Modern interface definitions with strict typing
@@ -86,10 +90,6 @@ interface PerformanceMetrics {
         [class.performance-optimal]="performanceOptimal()"
         [class.animation-enabled]="animationEnabled()"
       >
-        <!-- Project declarative Angular Three primitives INSIDE canvas -->
-        <ng-content
-          select="app-floating-sphere, app-background-cube, app-cylinder, app-torus, app-scene-node"
-        ></ng-content>
       </ngt-canvas>
 
       <!-- Enhanced Performance Overlay - Phase 2 -->
@@ -257,6 +257,10 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   ]);
   readonly pointLightPosition = input<[number, number, number]>([-5, 5, 5]);
 
+  // Scene content inputs (sphere/cube data)
+  readonly spheres = input<SphereData[]>([]);
+  readonly cubes = input<CubeData[]>([]);
+
   // Output events for component integration
   readonly sceneInitialized = output<THREE.Scene>();
   readonly performanceUpdate = output<PerformanceMetrics>();
@@ -271,14 +275,14 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   readonly animationEvent = output<{ type: string; data: any }>();
 
   // Dependency injection with modern Angular patterns
-  private readonly angularThreeFoundation = inject(
-    AngularThreeFoundationService
-  );
+  private readonly sceneConfig = inject(SceneConfigService);
   readonly hybridService = inject(HybridUIService);
   readonly animationService = inject(AnimationService);
   readonly stateStore = inject(Angular3DStateStore);
-  private readonly ngtStore = injectStore({ optional: true });
   private readonly destroyRef = inject(DestroyRef);
+
+  // ViewChild reference to SceneGraph component for accessing store
+  private sceneGraphRef = viewChild(HybridSceneGraphComponent);
 
   // Internal state management with signals
   private readonly _initialized = signal(false);
@@ -380,21 +384,36 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
   private performanceMonitorId?: number;
   private resizeObserver?: ResizeObserver;
 
-  // Light references for reactive updates (merged from HybridThreeSceneComponent)
-  private ambientLight: THREE.AmbientLight | null = null;
-  private directionalLight: THREE.DirectionalLight | null = null;
-  private pointLight: THREE.PointLight | null = null;
-
   // Setup reactive effects in constructor context
   constructor() {
     this.setupReactiveEffects();
     this.initializeStateStore();
-    this.setupLightingEffects();
+    this.setupSphereAndCubeDataSync();
   }
 
   async ngOnInit(): Promise<void> {
     this._loadingMessage.set('Loading Angular Three...');
     this._loadingProgress.set(25);
+
+    // Set scene configuration for SceneGraph component to read
+    this.sceneConfig.setConfig({
+      cameraPosition: this.cameraPosition(),
+      cameraTarget: this.cameraTarget(),
+      backgroundColor: this.backgroundColor(),
+      ambientLightColor: this.ambientLightColor(),
+      ambientLightIntensity: this.ambientLightIntensity(),
+      directionalLightColor: this.directionalLightColor(),
+      directionalLightIntensity: this.directionalLightIntensity(),
+      directionalLightPosition: this.directionalLightPosition(),
+      directionalShadowsEnabled: this.directionalShadowsEnabled(),
+      shadowMapSize: this.shadowMapSize(),
+      shadowCameraNear: this.shadowCameraNear(),
+      shadowCameraFar: this.shadowCameraFar(),
+      shadowCameraBounds: this.shadowCameraBounds(),
+      pointLightColor: this.pointLightColor(),
+      pointLightIntensity: this.pointLightIntensity(),
+      pointLightPosition: this.pointLightPosition(),
+    });
 
     // Apply hybrid service configuration
     const serviceConfig = this.config();
@@ -414,23 +433,29 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
 
   /**
    * Get the current Three.js scene instance
+   * Accesses via SceneGraph component which is inside NgtCanvas
    */
   getScene(): THREE.Scene | null {
-    return this.angularThreeFoundation.scene();
+    const sceneGraph = this.sceneGraphRef();
+    return sceneGraph?.getScene() || null;
   }
 
   /**
    * Get the current Three.js camera instance
+   * Accesses via SceneGraph component which is inside NgtCanvas
    */
   getCamera(): THREE.Camera | null {
-    return this.angularThreeFoundation.camera();
+    const sceneGraph = this.sceneGraphRef();
+    return sceneGraph?.getCamera() || null;
   }
 
   /**
    * Get the current Three.js renderer instance
+   * Accesses via SceneGraph component which is inside NgtCanvas
    */
   getRenderer(): THREE.WebGLRenderer | null {
-    return this.angularThreeFoundation.getRenderer();
+    const sceneGraph = this.sceneGraphRef();
+    return sceneGraph?.getRenderer() || null;
   }
 
   /**
@@ -605,7 +630,6 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
         scene: !!this.getScene(),
         camera: !!this.getCamera(),
         renderer: !!this.getRenderer(),
-        store: !!this.ngtStore,
       },
       animation: {
         active: this.animationService.activeAnimationCount(),
@@ -625,116 +649,72 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
 
   /**
    * Handle Angular Three canvas creation
+   * NOTE: We no longer need to do much here - the SceneGraph component
+   * (which is INSIDE the canvas) handles all the THREE.js setup via injectStore()
    */
   async onCanvasCreated(event: any): Promise<void> {
     try {
-      console.log(
-        '[HybridSceneComponent] Canvas created event received',
-        event
-      );
-      console.log('[HybridSceneComponent] Event type:', typeof event);
-      console.log(
-        '[HybridSceneComponent] Event keys:',
-        event ? Object.keys(event) : 'null'
-      );
+      console.log('[HybridSceneComponent] Canvas created event received');
 
-      // Comprehensive event structure logging
-      if (event) {
-        console.log('[HybridSceneComponent] Event.scene:', event.scene);
-        console.log('[HybridSceneComponent] Event.camera:', event.camera);
-        console.log('[HybridSceneComponent] Event.gl:', event.gl);
-        console.log('[HybridSceneComponent] Event.renderer:', event.renderer);
-        console.log('[HybridSceneComponent] Event.store:', event.store);
-        console.log('[HybridSceneComponent] Event.get:', event.get);
-        console.log('[HybridSceneComponent] Event.set:', event.set);
-
-        // Check if event itself is the store (common Angular Three pattern)
-        if (
-          typeof event.get === 'function' &&
-          typeof event.set === 'function'
-        ) {
-          console.log(
-            '[HybridSceneComponent] Event appears to be the store itself (has get/set methods)'
-          );
-        }
-      }
-
-      this._loadingMessage.set('Initializing foundation services...');
+      this._loadingMessage.set('Initializing scene...');
       this._loadingProgress.set(90);
 
-      // CRITICAL: Set the store in foundation service FIRST
-      // Angular Three's (created) output emits the store directly
-      if (event) {
-        // The event IS the store in Angular Three
-        this.angularThreeFoundation.setStore(event);
-        console.log('[HybridSceneComponent] Store set in foundation service');
-      } else {
-        console.error(
-          '[HybridSceneComponent] No event received from Angular Three canvas creation'
-        );
-        throw new Error('Canvas creation event is null');
-      }
+      // Setup performance monitoring
+      this.setupPerformanceMonitoring();
 
-      // Initialize foundation service (now has store reference)
-      console.log('[HybridSceneComponent] Initializing foundation service...');
-      const initialized = await this.angularThreeFoundation.initialize();
-      console.log(
-        '[HybridSceneComponent] Foundation initialized:',
-        initialized
-      );
+      // Setup event listeners (resize, etc.)
+      this.setupEventListeners();
 
-      if (initialized) {
-        console.log('[HybridSceneComponent] Setting up performance monitoring');
-        this.setupPerformanceMonitoring();
+      // Note: Lighting setup is now handled by HybridSceneGraphComponent
+      // which has direct access to the scene via injectStore()
 
-        console.log('[HybridSceneComponent] Setting up event listeners');
-        this.setupEventListeners();
+      this._loadingProgress.set(100);
+      this._initialized.set(true);
 
-        console.log('[HybridSceneComponent] Setting up scene lighting');
-        this.setupSceneLighting();
+      // Note: Scene references are now set via effect() in setupReactiveEffects()
+      // when sceneGraphRef() becomes available
 
-        this._loadingProgress.set(100);
-        this._initialized.set(true);
-
-        const scene = this.getScene();
-        if (scene) {
-          console.log(
-            '[HybridSceneComponent] Scene initialized, emitting event'
-          );
-          this.sceneInitialized.emit(scene);
-        } else {
-          console.warn(
-            '[HybridSceneComponent] Scene is null after initialization'
-          );
-        }
-
-        console.log(
-          '[HybridSceneComponent] Unified Hybrid Scene initialized successfully'
-        );
-      } else {
-        console.error(
-          '[HybridSceneComponent] Foundation service initialization returned false'
-        );
-        throw new Error('Failed to initialize Angular Three foundation');
-      }
+      console.log('[HybridSceneComponent] Canvas initialization complete');
     } catch (error) {
       console.error(
-        '[HybridSceneComponent] Failed to initialize unified hybrid scene:',
+        '[HybridSceneComponent] Failed to initialize canvas:',
         error
       );
-      console.error(
-        '[HybridSceneComponent] Error stack:',
-        (error as Error).stack
-      );
-      this._loadingMessage.set(
-        'Initialization failed - Check console for details'
-      );
+
+      // Graceful degradation
+      this._loadingProgress.set(100);
+      this._initialized.set(true);
+      this._loadingMessage.set('Initialization complete');
     }
   }
 
   // Private methods
 
+  private setupSphereAndCubeDataSync(): void {
+    // Sync sphere and cube data to SceneConfigService
+    effect(() => {
+      this.sceneConfig.setConfig({
+        spheres: this.spheres(),
+        cubes: this.cubes(),
+      });
+    });
+  }
+
   private setupReactiveEffects(): void {
+    // Note: Scene references are now set directly by HybridSceneGraphComponent
+    // in its ngOnInit() method
+
+    // Emit sceneInitialized event when both initialized and scene is available
+    effect(() => {
+      if (this.initialized()) {
+        const scene = this.getScene();
+        if (scene) {
+          console.log('[HybridSceneComponent] Emitting sceneInitialized event');
+          this.sceneInitialized.emit(scene);
+        }
+      }
+    });
+
     // React to configuration changes
     effect(() => {
       const config = this.config();
@@ -787,18 +767,16 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
 
     // Sync camera state with state store
     effect(() => {
-      if (this.ngtStore) {
-        const camera = this.ngtStore.get('camera');
-        if (camera instanceof THREE.PerspectiveCamera) {
-          this.stateStore.updateCamera({
-            type: 'perspective',
-            position: [camera.position.x, camera.position.y, camera.position.z],
-            fov: camera.fov,
-            near: camera.near,
-            far: camera.far,
-            zoom: camera.zoom,
-          });
-        }
+      const camera = this.getCamera();
+      if (camera instanceof THREE.PerspectiveCamera) {
+        this.stateStore.updateCamera({
+          type: 'perspective',
+          position: [camera.position.x, camera.position.y, camera.position.z],
+          fov: camera.fov,
+          near: camera.near,
+          far: camera.far,
+          zoom: camera.zoom,
+        });
       }
     });
 
@@ -856,8 +834,6 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
       perspCamera.aspect = width / height;
       perspCamera.updateProjectionMatrix();
     }
-
-    this.angularThreeFoundation.updateCameraAspect(width, height);
   }
 
   private setupPerformanceMonitoring(): void {
@@ -905,176 +881,6 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
     return 0;
   }
 
-  // Lighting setup methods (merged from HybridThreeSceneComponent)
-
-  /**
-   * Setup reactive effects for lighting configuration updates
-   */
-  private setupLightingEffects(): void {
-    effect(() => {
-      this.updateAmbientLight();
-    });
-
-    effect(() => {
-      this.updateDirectionalLight();
-    });
-
-    effect(() => {
-      this.updatePointLight();
-    });
-
-    effect(() => {
-      this.updateSceneBackground();
-    });
-  }
-
-  /**
-   * Set up the complete 3D scene lighting
-   */
-  private setupSceneLighting(): void {
-    const scene = this.getScene();
-
-    if (scene) {
-      // Set background color
-      this.updateSceneBackground();
-
-      // Create and configure ambient light
-      this.createAmbientLight(scene);
-
-      // Create and configure directional light with shadows
-      this.createDirectionalLight(scene);
-
-      // Create and configure point light
-      this.createPointLight(scene);
-
-      console.log('Scene lighting initialized with reactive configuration');
-    }
-  }
-
-  /**
-   * Create ambient light with signal-based configuration
-   */
-  private createAmbientLight(scene: THREE.Scene): void {
-    this.ambientLight = new THREE.AmbientLight(
-      this.ambientLightColor(),
-      this.ambientLightIntensity()
-    );
-    scene.add(this.ambientLight);
-  }
-
-  /**
-   * Create directional light with signal-based configuration
-   */
-  private createDirectionalLight(scene: THREE.Scene): void {
-    this.directionalLight = new THREE.DirectionalLight(
-      this.directionalLightColor(),
-      this.directionalLightIntensity()
-    );
-
-    // Set position from signal
-    const [x, y, z] = this.directionalLightPosition();
-    this.directionalLight.position.set(x, y, z);
-
-    // Configure shadows if enabled
-    if (this.directionalShadowsEnabled()) {
-      this.directionalLight.castShadow = true;
-      this.setupDirectionalLightShadows();
-    }
-
-    scene.add(this.directionalLight);
-  }
-
-  /**
-   * Set up directional light shadow configuration with signals
-   */
-  private setupDirectionalLightShadows(): void {
-    if (!this.directionalLight) return;
-
-    const shadowCamera = this.directionalLight.shadow
-      .camera as THREE.OrthographicCamera;
-    const bounds = this.shadowCameraBounds();
-
-    shadowCamera.near = this.shadowCameraNear();
-    shadowCamera.far = this.shadowCameraFar();
-    shadowCamera.left = -bounds;
-    shadowCamera.right = bounds;
-    shadowCamera.top = bounds;
-    shadowCamera.bottom = -bounds;
-
-    const mapSize = this.shadowMapSize();
-    this.directionalLight.shadow.mapSize.setScalar(mapSize);
-  }
-
-  /**
-   * Create point light with signal-based configuration
-   */
-  private createPointLight(scene: THREE.Scene): void {
-    this.pointLight = new THREE.PointLight(
-      this.pointLightColor(),
-      this.pointLightIntensity()
-    );
-
-    // Set position from signal
-    const [x, y, z] = this.pointLightPosition();
-    this.pointLight.position.set(x, y, z);
-
-    scene.add(this.pointLight);
-  }
-
-  /**
-   * Reactive effect: Update ambient light configuration
-   */
-  private updateAmbientLight(): void {
-    if (this.ambientLight) {
-      this.ambientLight.color.setHex(this.ambientLightColor());
-      this.ambientLight.intensity = this.ambientLightIntensity();
-    }
-  }
-
-  /**
-   * Reactive effect: Update directional light configuration
-   */
-  private updateDirectionalLight(): void {
-    if (this.directionalLight) {
-      this.directionalLight.color.setHex(this.directionalLightColor());
-      this.directionalLight.intensity = this.directionalLightIntensity();
-
-      const [x, y, z] = this.directionalLightPosition();
-      this.directionalLight.position.set(x, y, z);
-
-      // Update shadow settings
-      if (this.directionalShadowsEnabled()) {
-        this.directionalLight.castShadow = true;
-        this.setupDirectionalLightShadows();
-      } else {
-        this.directionalLight.castShadow = false;
-      }
-    }
-  }
-
-  /**
-   * Reactive effect: Update point light configuration
-   */
-  private updatePointLight(): void {
-    if (this.pointLight) {
-      this.pointLight.color.setHex(this.pointLightColor());
-      this.pointLight.intensity = this.pointLightIntensity();
-
-      const [x, y, z] = this.pointLightPosition();
-      this.pointLight.position.set(x, y, z);
-    }
-  }
-
-  /**
-   * Reactive effect: Update scene background
-   */
-  private updateSceneBackground(): void {
-    const scene = this.getScene();
-    if (scene && this.backgroundColor() !== 'transparent') {
-      scene.background = new THREE.Color(this.backgroundColor());
-    }
-  }
-
   private cleanup(): void {
     if (this.performanceMonitorId) {
       cancelAnimationFrame(this.performanceMonitorId);
@@ -1087,6 +893,6 @@ export class HybridSceneComponent implements OnInit, OnDestroy {
     }
 
     // Angular Three handles its own cleanup
-    this.angularThreeFoundation.cleanup();
+    console.log('[HybridSceneComponent] Cleanup complete');
   }
 }

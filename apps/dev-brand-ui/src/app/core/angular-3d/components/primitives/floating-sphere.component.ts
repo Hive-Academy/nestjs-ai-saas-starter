@@ -50,20 +50,24 @@
  */
 
 import {
+  ChangeDetectionStrategy,
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
-  ChangeDetectionStrategy,
-  input,
-  output,
-  viewChild,
-  ElementRef,
-  inject,
   DestroyRef,
   effect,
+  ElementRef,
+  inject,
+  input,
   OnInit,
+  output,
+  viewChild,
 } from '@angular/core';
-import * as THREE from 'three';
+
+import { Mesh } from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
+import { Float3dDirective } from '../../directives/float-3d.directive';
+import { Glow3dDirective } from '../../directives/glow-3d.directive';
+import { Performance3dDirective } from '../../directives/performance-3d.directive';
 
 /**
  * FloatingSphere Component
@@ -74,6 +78,7 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
 @Component({
   selector: 'app-floating-sphere',
   standalone: true,
+  imports: [Float3dDirective, Glow3dDirective, Performance3dDirective],
   template: `
     <ngt-mesh
       #mesh
@@ -82,6 +87,12 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
       [rotation]="rotation()"
       [castShadow]="castShadow()"
       [receiveShadow]="receiveShadow()"
+      float3d
+      [floatConfig]="floatConfig()"
+      glow3d
+      [glowConfig]="glowConfig()"
+      performance3d
+      [performanceConfig]="performanceConfig()"
     >
       <!-- Sphere geometry with reactive args -->
       <ngt-sphere-geometry
@@ -108,7 +119,7 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
 })
 export class FloatingSphereComponent implements OnInit {
   // ViewChild reference to access the mesh for directives
-  readonly meshRef = viewChild<ElementRef<any>>('mesh');
+  readonly meshRef = viewChild<ElementRef<Mesh>>('mesh');
 
   // Dependency injection
   private readonly destroyRef = inject(DestroyRef);
@@ -140,6 +151,33 @@ export class FloatingSphereComponent implements OnInit {
   // Shadow configuration
   readonly castShadow = input<boolean>(true);
   readonly receiveShadow = input<boolean>(true);
+
+  // Directive configurations - passed to internal ngt-mesh
+  readonly floatConfig = input<
+    | {
+        height?: number;
+        speed?: number;
+        delay?: number;
+        ease?: string;
+        autoStart?: boolean;
+      }
+    | undefined
+  >(undefined);
+
+  readonly glowConfig = input<
+    | {
+        color?: number;
+        intensity?: number;
+        scale?: number;
+        segments?: number;
+        autoAdjustQuality?: boolean;
+      }
+    | undefined
+  >(undefined);
+
+  readonly performanceConfig = input<
+    boolean | { enabled: boolean } | undefined
+  >(undefined);
 
   // Lifecycle events for tracking
   readonly objectCreated = output<{
@@ -191,8 +229,8 @@ export class FloatingSphereComponent implements OnInit {
     effect(() => {
       const pos = this.position();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[FloatingSphere] Position updated:`, pos);
+      if (mesh?.nativeElement && this.isInitialized && pos) {
+        // console.log(`[FloatingSphere] Position updated:`, pos);
       }
     });
 
@@ -200,8 +238,8 @@ export class FloatingSphereComponent implements OnInit {
     effect(() => {
       const r = this.radius();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[FloatingSphere] Radius updated:`, r);
+      if (mesh?.nativeElement && this.isInitialized && r) {
+        // console.log(`[FloatingSphere] Radius updated:`, r);
       }
     });
 
@@ -209,8 +247,8 @@ export class FloatingSphereComponent implements OnInit {
     effect(() => {
       const c = this.color();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[FloatingSphere] Color updated:`, c);
+      if (mesh?.nativeElement && this.isInitialized && c) {
+        // console.log(`[FloatingSphere] Color updated:`, c);
       }
     });
   }
@@ -228,26 +266,18 @@ export class FloatingSphereComponent implements OnInit {
    * Public API: Get the THREE.Mesh instance
    * Useful for directives that need direct mesh access
    *
-   * Angular Three custom elements expose THREE.Mesh via the object3D property
+   * Angular Three's template refs expose THREE.js objects via nativeElement
    */
-  getMesh(): THREE.Mesh | null {
-    const element = this.meshRef()?.nativeElement;
-    if (!element) {
+  getMesh(): Mesh | null {
+    const meshRef = this.meshRef();
+    if (!meshRef) {
+      console.warn(
+        '[FloatingSphereComponent] nativeElement is not a THREE.Mesh instance'
+      );
       return null;
     }
 
-    // Angular Three ngt-mesh elements expose the THREE.Mesh via object3D property
-    if ('object3D' in element) {
-      const obj = (element as any).object3D;
-      if (obj instanceof THREE.Mesh) {
-        return obj;
-      }
-    }
-
-    console.warn(
-      '[FloatingSphereComponent] Unable to access THREE.Mesh from ngt-mesh element'
-    );
-    return null;
+    return meshRef.nativeElement;
   }
 
   /**

@@ -36,8 +36,8 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import * as THREE from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
+import { Mesh } from 'three';
 
 @Component({
   selector: 'app-torus',
@@ -70,7 +70,7 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TorusComponent implements OnInit {
-  readonly meshRef = viewChild<ElementRef<any>>('mesh');
+  readonly meshRef = viewChild<ElementRef<Mesh>>('mesh');
   private readonly destroyRef = inject(DestroyRef);
 
   // Position and transformation
@@ -135,8 +135,8 @@ export class TorusComponent implements OnInit {
     effect(() => {
       const pos = this.position();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[Torus] Position updated:`, pos);
+      if (mesh?.nativeElement && this.isInitialized && pos) {
+        // console.log(`[Torus] Position updated:`, pos);
       }
     });
   }
@@ -149,23 +149,16 @@ export class TorusComponent implements OnInit {
    * Public API: Get the THREE.Mesh instance
    * Angular Three custom elements expose THREE.Mesh via the object3D property
    */
-  getMesh(): THREE.Mesh | null {
+  getMesh(): Mesh | null {
     const element = this.meshRef()?.nativeElement;
     if (!element) {
+      console.warn(
+        '[TorusComponent] Unable to access THREE.Mesh from ngt-mesh element'
+      );
       return null;
     }
 
-    if ('object3D' in element) {
-      const obj = (element as any).object3D;
-      if (obj instanceof THREE.Mesh) {
-        return obj;
-      }
-    }
-
-    console.warn(
-      '[TorusComponent] Unable to access THREE.Mesh from ngt-mesh element'
-    );
-    return null;
+    return element;
   }
 
   isReady(): boolean {

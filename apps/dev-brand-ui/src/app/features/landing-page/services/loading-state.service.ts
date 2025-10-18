@@ -1,4 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { map, distinctUntilChanged } from 'rxjs/operators';
 // import { gsap } from 'gsap';
 
 export interface LoadingState {
@@ -34,6 +36,10 @@ export class LoadingStateService {
   });
 
   private readonly _sectionLoadingStates = signal<SectionLoadingState[]>([]);
+  private readonly sectionLoadingSubjects = new Map<
+    string,
+    BehaviorSubject<SectionLoadingState>
+  >();
   private readonly _loadingStages = signal<LoadingStage[]>([
     {
       name: 'Initializing',
@@ -95,6 +101,60 @@ export class LoadingStateService {
   });
 
   /**
+   * Observable that emits when all sections are loaded
+   * This replaces the polling mechanism with reactive loading
+   */
+  readonly allSectionsLoaded$: Observable<boolean>;
+
+  constructor() {
+    // Initialize the observable that combines all section loading states
+    this.allSectionsLoaded$ = new Observable<boolean>((subscriber) => {
+      // Subscribe to section loading states signal changes
+      const checkSections = () => {
+        const sections = this._sectionLoadingStates();
+        const allLoaded =
+          sections.length > 0 && sections.every((s) => s.isLoaded);
+        subscriber.next(allLoaded);
+      };
+
+      // Check immediately
+      checkSections();
+
+      // Set up interval to check (will be replaced by proper signal effect)
+      const interval = setInterval(checkSections, 100);
+
+      return () => clearInterval(interval);
+    }).pipe(distinctUntilChanged());
+  }
+
+  /**
+   * Get observable for specific section loading state
+   */
+  getSectionLoaded$(sectionId: string): Observable<boolean> {
+    const subject = this.sectionLoadingSubjects.get(sectionId);
+    if (!subject) {
+      // Create new subject if it doesn't exist
+      const newSubject = new BehaviorSubject<SectionLoadingState>({
+        sectionId,
+        isLoaded: false,
+        loadProgress: 0,
+        hasError: false,
+      });
+      this.sectionLoadingSubjects.set(sectionId, newSubject);
+
+      return newSubject.asObservable().pipe(
+        map((state) => state.isLoaded),
+        distinctUntilChanged()
+      );
+    }
+
+    return subject.asObservable().pipe(
+      map((state) => state.isLoaded),
+      distinctUntilChanged()
+    );
+  }
+
+  /**
    * Initialize loading process
    */
   startLoading(): void {
@@ -109,13 +169,9 @@ export class LoadingStateService {
     });
 
     // Initialize section loading states
-    const sections = [
-      'hero',
-      'platform-pillars',
-      'demo-theater',
-      'ecosystem-explorer',
-      'architecture-diagram',
-    ];
+    // ONLY hero section has 3D complexity that needs loading
+    // Other sections render instantly
+    const sections = ['hero'];
     const sectionStates: SectionLoadingState[] = sections.map((id) => ({
       sectionId: id,
       isLoaded: false,
@@ -182,6 +238,17 @@ export class LoadingStateService {
           : section
       )
     );
+
+    // Emit to subject if it exists
+    const subject = this.sectionLoadingSubjects.get(sectionId);
+    if (subject) {
+      subject.next({
+        sectionId,
+        isLoaded: true,
+        loadProgress: 100,
+        hasError: false,
+      });
+    }
 
     this.checkCompletion();
   }

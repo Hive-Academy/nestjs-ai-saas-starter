@@ -2,13 +2,14 @@
  * Angular 3D Services - Public API Exports
  *
  * Centralized exports for all Angular Three services including:
- * - Core foundation services
+ * - Core Angular Three integration
  * - State management services
  * - Animation services
  * - Reactive state management
  */
 
-export { AngularThreeFoundationService } from './angular-three-foundation.service';
+export { AngularThreeService } from './angular-three.service';
+export { SceneConfigService } from './scene-config.service';
 export { HybridUIService } from './hybrid-ui.service';
 export { AnimationService } from './animation.service';
 export { Angular3DStateStore } from './angular-3d-state.store';

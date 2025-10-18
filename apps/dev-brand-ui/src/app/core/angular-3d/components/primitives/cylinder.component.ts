@@ -36,8 +36,8 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import * as THREE from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
+import { Mesh } from 'three';
 
 @Component({
   selector: 'app-cylinder',
@@ -77,7 +77,7 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CylinderComponent implements OnInit {
-  readonly meshRef = viewChild<ElementRef<any>>('mesh');
+  readonly meshRef = viewChild<ElementRef<Mesh>>('mesh');
   private readonly destroyRef = inject(DestroyRef);
 
   // Position and transformation
@@ -108,10 +108,10 @@ export class CylinderComponent implements OnInit {
 
   // Lifecycle events
   readonly objectCreated = output<{
-    mesh: any;
+    mesh: Mesh;
     position: readonly [number, number, number];
   }>();
-  readonly objectDestroyed = output<{ mesh: any }>();
+  readonly objectDestroyed = output<{ mesh: Mesh }>();
 
   private isInitialized = false;
 
@@ -157,23 +157,16 @@ export class CylinderComponent implements OnInit {
    * Public API: Get the THREE.Mesh instance
    * Angular Three custom elements expose THREE.Mesh via the object3D property
    */
-  getMesh(): THREE.Mesh | null {
+  getMesh(): Mesh | null {
     const element = this.meshRef()?.nativeElement;
     if (!element) {
+      console.warn(
+        '[CylinderComponent] Unable to access THREE.Mesh from ngt-mesh element'
+      );
       return null;
     }
 
-    if ('object3D' in element) {
-      const obj = (element as any).object3D;
-      if (obj instanceof THREE.Mesh) {
-        return obj;
-      }
-    }
-
-    console.warn(
-      '[CylinderComponent] Unable to access THREE.Mesh from ngt-mesh element'
-    );
-    return null;
+    return element;
   }
 
   isReady(): boolean {

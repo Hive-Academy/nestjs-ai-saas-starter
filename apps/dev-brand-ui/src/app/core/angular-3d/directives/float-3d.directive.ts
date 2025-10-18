@@ -41,14 +41,15 @@
  */
 
 import {
-  Directive,
-  input,
-  inject,
-  DestroyRef,
-  ElementRef,
   AfterViewInit,
+  DestroyRef,
+  Directive,
+  inject,
+  input,
   OnDestroy,
+  ElementRef,
 } from '@angular/core';
+import { Mesh } from 'three';
 import { AnimationService } from '../services/animation.service';
 
 /**
@@ -64,10 +65,22 @@ import { AnimationService } from '../services/animation.service';
 export class Float3dDirective implements AfterViewInit, OnDestroy {
   // Dependency injection
   private readonly animationService = inject(AnimationService);
-  private readonly elementRef = inject(ElementRef);
+  private readonly elementRef = inject(ElementRef<Mesh>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Configuration inputs with smart defaults
+  // Configuration input - optional, directive is inactive if undefined
+  readonly floatConfig = input<
+    | {
+        height?: number;
+        speed?: number;
+        delay?: number;
+        ease?: string;
+        autoStart?: boolean;
+      }
+    | undefined
+  >(undefined);
+
+  // Legacy individual inputs (deprecated - use floatConfig instead)
   readonly floatHeight = input<number>(0.3); // Height in 3D units
   readonly floatSpeed = input<number>(2000); // Duration in milliseconds
   readonly floatDelay = input<number>(0); // Delay before starting
@@ -76,19 +89,40 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
 
   // Internal state
   private timelineId: string | null = null;
-  private mesh: any = null;
+  private mesh: Mesh | null = null;
   private originalPosition: [number, number, number] | null = null;
 
   ngAfterViewInit(): void {
-    // Get the mesh from the host component
-    this.mesh = this.getMeshFromHostComponent();
+    // Skip if no configuration provided (directive is optional)
+    const config = this.floatConfig();
+    if (!config) {
+      console.log('[Float3dDirective] No config provided, directive inactive');
+      return;
+    }
+
+    // Get mesh from Angular Three's nativeElement
+    this.mesh = this.elementRef.nativeElement;
 
     if (!this.mesh) {
       console.warn(
-        '[Float3dDirective] No mesh found - host component must implement getMesh() or have mesh property'
+        '[Float3dDirective] Could not access mesh from nativeElement'
       );
       return;
     }
+
+    this.initializeAnimation();
+
+    // Register cleanup on destroy
+    this.destroyRef.onDestroy(() => {
+      this.cleanup();
+    });
+  }
+
+  /**
+   * Initialize the floating animation
+   */
+  private initializeAnimation(): void {
+    if (!this.mesh) return;
 
     // Store original position for animation
     this.originalPosition = [
@@ -100,10 +134,10 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     // Create floating animation
     this.createFloatingAnimation();
 
-    // Register cleanup on destroy
-    this.destroyRef.onDestroy(() => {
-      this.cleanup();
-    });
+    console.log(
+      '[Float3dDirective] Animation initialized for mesh:',
+      this.mesh.name || 'unnamed'
+    );
   }
 
   ngOnDestroy(): void {
@@ -117,10 +151,14 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     if (!this.mesh || !this.originalPosition) return;
 
     const [x, y, z] = this.originalPosition;
-    const height = this.floatHeight();
-    const speed = this.floatSpeed();
-    const delay = this.floatDelay();
-    const ease = this.floatEase();
+
+    // Get config with fallback to legacy inputs
+    const config = this.floatConfig();
+    const height = config?.height ?? this.floatHeight();
+    const speed = config?.speed ?? this.floatSpeed();
+    const delay = config?.delay ?? this.floatDelay();
+    const ease = config?.ease ?? this.floatEase();
+    const autoStart = config?.autoStart ?? this.autoStart();
 
     // Create timeline with AnimationService
     this.timelineId = this.animationService.createTimeline({
@@ -143,7 +181,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
         },
       ],
       loop: true,
-      paused: !this.autoStart(),
+      paused: !autoStart,
     });
 
     // Add animation to timeline
@@ -166,7 +204,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
       );
 
       // Auto-start if configured
-      if (this.autoStart()) {
+      if (autoStart) {
         this.animationService.playTimeline(this.timelineId);
       }
 
@@ -176,125 +214,6 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
         `- Timeline ID: ${this.timelineId}`
       );
     }
-  }
-
-  /**
-   * Get mesh from host component
-   * Supports components with getMesh() method or direct mesh property
-   */
-  private getMeshFromHostComponent(): any | null {
-    const hostElement = this.elementRef.nativeElement;
-
-    console.log(
-      '[Float3dDirective] Attempting to get mesh from host component'
-    );
-    console.log('[Float3dDirective] Host element:', hostElement);
-    console.log('[Float3dDirective] Host element tag:', hostElement.tagName);
-
-    // Strategy 1: Try multiple __ngContext__ indices (Angular stores component at different indices)
-    const ngContext = (hostElement as any).__ngContext__;
-    if (ngContext && Array.isArray(ngContext)) {
-      console.log(
-        '[Float3dDirective] Found __ngContext__, length:',
-        ngContext.length
-      );
-
-      // Try common indices where Angular stores component instances
-      for (const index of [8, 9, 10, 3, 4, 5]) {
-        const componentInstance = ngContext[index];
-        if (
-          componentInstance &&
-          typeof componentInstance.getMesh === 'function'
-        ) {
-          console.log(
-            `[Float3dDirective] Found component instance at index ${index} with getMesh()`
-          );
-          const mesh = componentInstance.getMesh();
-          if (mesh) {
-            console.log(
-              '[Float3dDirective] Successfully retrieved mesh via getMesh()'
-            );
-            return mesh;
-          }
-        }
-      }
-    }
-
-    // Strategy 2: Try to find ngt-mesh child element (Angular Three pattern)
-    const ngtMesh = hostElement.querySelector('ngt-mesh');
-    if (ngtMesh && (ngtMesh as any).object3D) {
-      console.log('[Float3dDirective] Found ngt-mesh child with object3D');
-      return (ngtMesh as any).object3D;
-    }
-
-    // Strategy 3: Try direct object3D on host
-    if (hostElement.object3D) {
-      console.log('[Float3dDirective] Found object3D on host element');
-      return hostElement.object3D;
-    }
-
-    // Strategy 4: Try first child with object3D
-    const firstChild = hostElement.firstElementChild;
-    if (firstChild && (firstChild as any).object3D) {
-      console.log('[Float3dDirective] Found object3D on first child');
-      return (firstChild as any).object3D;
-    }
-
-    // Strategy 5: Delayed retry (give Angular Three time to initialize)
-    console.warn(
-      '[Float3dDirective] No mesh found on initial attempt, will retry after delay'
-    );
-    setTimeout(() => {
-      const retryMesh = this.retryGetMesh();
-      if (retryMesh) {
-        this.mesh = retryMesh;
-        this.originalPosition = [
-          this.mesh.position.x,
-          this.mesh.position.y,
-          this.mesh.position.z,
-        ];
-        this.createFloatingAnimation();
-      }
-    }, 100);
-
-    return null;
-  }
-
-  /**
-   * Retry getting mesh after initial failure (for async Angular Three initialization)
-   */
-  private retryGetMesh(): any | null {
-    const hostElement = this.elementRef.nativeElement;
-    const ngtMesh = hostElement.querySelector('ngt-mesh');
-
-    if (ngtMesh && (ngtMesh as any).object3D) {
-      console.log(
-        '[Float3dDirective] Retry successful - found ngt-mesh with object3D'
-      );
-      return (ngtMesh as any).object3D;
-    }
-
-    const ngContext = (hostElement as any).__ngContext__;
-    if (ngContext && Array.isArray(ngContext)) {
-      for (const index of [8, 9, 10, 3, 4, 5]) {
-        const componentInstance = ngContext[index];
-        if (
-          componentInstance &&
-          typeof componentInstance.getMesh === 'function'
-        ) {
-          const mesh = componentInstance.getMesh();
-          if (mesh) {
-            console.log(
-              '[Float3dDirective] Retry successful - got mesh via getMesh()'
-            );
-            return mesh;
-          }
-        }
-      }
-    }
-
-    console.error('[Float3dDirective] Retry failed - still no mesh found');
-    return null;
   }
 
   /**

@@ -1,5 +1,6 @@
 // Services
-export { AngularThreeFoundationService } from './services/angular-three-foundation.service';
+export { AngularThreeService } from './services/angular-three.service';
+export { SceneConfigService } from './services/scene-config.service';
 export { ContentTexturePipelineService } from './services/content-texture-pipeline.service';
 export { HybridUIService } from './services/hybrid-ui.service';
 

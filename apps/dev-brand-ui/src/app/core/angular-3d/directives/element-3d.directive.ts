@@ -20,13 +20,13 @@ import {
   inject,
   effect,
   signal,
+  DestroyRef,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent } from 'rxjs';
 import * as THREE from 'three';
 
 import { HybridUIService } from '../services/hybrid-ui.service';
-import { AngularThreeFoundationService } from '../services/angular-three-foundation.service';
 import type {
   HybridElementConfigExtended,
   HybridElementExtended,
@@ -46,7 +46,7 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
   // Services
   private readonly element = inject(ElementRef<HTMLElement>);
   private readonly hybridUI = inject(HybridUIService);
-  private readonly foundation = inject(AngularThreeFoundationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Inputs
   readonly position = input<[number, number, number] | 'auto'>('auto');
@@ -66,7 +66,7 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
 
   // State (readonly for host bindings to access)
   readonly elementId = signal<string>('');
-  readonly domVisible = signal(false);
+  readonly domVisible = signal(true); // TEMPORARY: Keep DOM visible during debugging
   private hybridElement: HybridElementExtended | null = null;
 
   constructor() {
@@ -80,9 +80,9 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     try {
-      // Wait for foundation to be ready
-      if (!this.foundation.initialized) {
-        await this.waitForFoundation();
+      // Wait for HybridUI service to be initialized
+      if (!this.hybridUI.initialized()) {
+        await this.waitForHybridUI();
       }
 
       // Calculate position
@@ -99,8 +99,8 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
 
       this.elementId.set(this.hybridElement.id);
 
-      // Hide original DOM element (make it invisible but keep in layout for measuring)
-      this.hideDOMElement();
+      // TEMPORARY: Don't hide DOM element to debug 3D rendering
+      this.hideDOMElement(); // Re-enabled but now does nothing
 
       // Setup event forwarding from 3D mesh to directive outputs
       this.setupEventForwarding();
@@ -143,7 +143,7 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
 
     // Auto-calculate position from DOM layout
     const rect = this.element.nativeElement.getBoundingClientRect();
-    const camera = this.foundation.camera();
+    const camera = this.hybridUI.camera();
 
     if (!camera) {
       console.warn('Camera not available, using default position');
@@ -283,16 +283,13 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
   }
 
   private hideDOMElement(): void {
-    const el = this.element.nativeElement;
-
-    // Make invisible but keep in layout for measuring
-    el.style.opacity = '0';
-    el.style.pointerEvents = 'none';
-
-    // Keep it accessible for screen readers unless explicitly hidden
-    if (!this.keepDOMVisible()) {
-      el.setAttribute('aria-hidden', 'true');
-    }
+    // TEMPORARY: Disabled to debug 3D rendering
+    // const el = this.element.nativeElement;
+    // el.style.opacity = '0';
+    // el.style.pointerEvents = 'none';
+    // if (!this.keepDOMVisible()) {
+    //   el.setAttribute('aria-hidden', 'true');
+    // }
   }
 
   private setupEventForwarding(): void {
@@ -302,15 +299,15 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
 
     // Forward hover events (in reality, these would come from 3D raycasting)
     fromEvent(domElement, 'mouseenter')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.hovered.emit(true));
 
     fromEvent(domElement, 'mouseleave')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.hovered.emit(false));
 
     fromEvent<MouseEvent>(domElement, 'click')
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => this.clicked.emit(event));
   }
 
@@ -323,9 +320,7 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
     resizeObserver.observe(this.element.nativeElement);
 
     // Cleanup on destroy
-    fromEvent(window, 'beforeunload')
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => resizeObserver.disconnect());
+    this.destroyRef.onDestroy(() => resizeObserver.disconnect());
   }
 
   private handleResize = debounce(() => {
@@ -339,17 +334,17 @@ export class Element3DDirective implements AfterViewInit, OnDestroy {
     }
   }, 250);
 
-  private async waitForFoundation(): Promise<void> {
+  private async waitForHybridUI(): Promise<void> {
     let attempts = 0;
     const maxAttempts = 50; // 5 second timeout
 
-    while (attempts < maxAttempts && !this.foundation.initialized) {
+    while (attempts < maxAttempts && !this.hybridUI.initialized()) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       attempts++;
     }
 
-    if (!this.foundation.initialized) {
-      throw new Error('Foundation initialization timeout');
+    if (!this.hybridUI.initialized()) {
+      throw new Error('HybridUI initialization timeout');
     }
   }
 }

@@ -49,20 +49,22 @@
  */
 
 import {
+  ChangeDetectionStrategy,
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
-  ChangeDetectionStrategy,
-  input,
-  output,
-  viewChild,
-  ElementRef,
-  inject,
   DestroyRef,
   effect,
+  ElementRef,
+  inject,
+  input,
   OnInit,
+  output,
+  viewChild,
 } from '@angular/core';
-import * as THREE from 'three';
+import { Mesh } from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
+import { Float3dDirective } from '../../directives/float-3d.directive';
+import { Performance3dDirective } from '../../directives/performance-3d.directive';
 
 /**
  * BackgroundCube Component
@@ -73,6 +75,7 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
 @Component({
   selector: 'app-background-cube',
   standalone: true,
+  imports: [Float3dDirective, Performance3dDirective],
   template: `
     <ngt-mesh
       #mesh
@@ -81,6 +84,10 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
       [rotation]="rotation()"
       [castShadow]="castShadow()"
       [receiveShadow]="receiveShadow()"
+      float3d
+      [floatConfig]="floatConfig()"
+      performance3d
+      [performanceConfig]="performanceConfig()"
     >
       <!-- Box geometry with reactive size -->
       <ngt-box-geometry [args]="boxGeometryArgs()" />
@@ -100,7 +107,7 @@ import { registerAngularThreePrimitives } from '../../utils/angular-three-primit
 })
 export class BackgroundCubeComponent implements OnInit {
   // ViewChild reference to access the mesh for directives
-  readonly meshRef = viewChild<ElementRef<any>>('mesh');
+  readonly meshRef = viewChild<ElementRef<Mesh>>('mesh');
 
   // Dependency injection
   private readonly destroyRef = inject(DestroyRef);
@@ -126,6 +133,22 @@ export class BackgroundCubeComponent implements OnInit {
   // Shadow configuration
   readonly castShadow = input<boolean>(true);
   readonly receiveShadow = input<boolean>(true);
+
+  // Directive configurations - passed to internal ngt-mesh
+  readonly floatConfig = input<
+    | {
+        height?: number;
+        speed?: number;
+        delay?: number;
+        ease?: string;
+        autoStart?: boolean;
+      }
+    | undefined
+  >(undefined);
+
+  readonly performanceConfig = input<
+    boolean | { enabled: boolean } | undefined
+  >(undefined);
 
   // Lifecycle events
   readonly objectCreated = output<{
@@ -197,8 +220,8 @@ export class BackgroundCubeComponent implements OnInit {
     effect(() => {
       const pos = this.position();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[BackgroundCube] Position updated:`, pos);
+      if (mesh?.nativeElement && this.isInitialized && pos) {
+        // console.debug(`[BackgroundCube] Position updated:`, pos);
       }
     });
 
@@ -206,8 +229,8 @@ export class BackgroundCubeComponent implements OnInit {
     effect(() => {
       const size = this.size();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[BackgroundCube] Size updated:`, size);
+      if (mesh?.nativeElement && this.isInitialized && size) {
+        // console.log(`[BackgroundCube] Size updated:`, size);
       }
     });
 
@@ -215,8 +238,8 @@ export class BackgroundCubeComponent implements OnInit {
     effect(() => {
       const rot = this.rotation();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[BackgroundCube] Rotation updated:`, rot);
+      if (mesh?.nativeElement && this.isInitialized && rot) {
+        // console.log(`[BackgroundCube] Rotation updated:`, rot);
       }
     });
 
@@ -224,8 +247,8 @@ export class BackgroundCubeComponent implements OnInit {
     effect(() => {
       const c = this.color();
       const mesh = this.meshRef();
-      if (mesh?.nativeElement && this.isInitialized) {
-        console.log(`[BackgroundCube] Color updated:`, c);
+      if (mesh?.nativeElement && this.isInitialized && c) {
+        // console.log(`[BackgroundCube] Color updated:`, c);
       }
     });
   }
@@ -239,25 +262,18 @@ export class BackgroundCubeComponent implements OnInit {
 
   /**
    * Public API: Get the THREE.Mesh instance
-   * Angular Three custom elements expose THREE.Mesh via the object3D property
+   * Angular Three's template refs expose THREE.js objects via nativeElement
    */
-  getMesh(): THREE.Mesh | null {
-    const element = this.meshRef()?.nativeElement;
-    if (!element) {
+  getMesh(): Mesh | null {
+    const meshRef = this.meshRef();
+    if (!meshRef) {
+      console.warn(
+        '[BackgroundCubeComponent] nativeElement is not a THREE.Mesh instance'
+      );
       return null;
     }
 
-    if ('object3D' in element) {
-      const obj = (element as any).object3D;
-      if (obj instanceof THREE.Mesh) {
-        return obj;
-      }
-    }
-
-    console.warn(
-      '[BackgroundCubeComponent] Unable to access THREE.Mesh from ngt-mesh element'
-    );
-    return null;
+    return meshRef.nativeElement;
   }
 
   /**

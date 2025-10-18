@@ -46,10 +46,10 @@ import {
   input,
   inject,
   DestroyRef,
-  ElementRef,
   AfterViewInit,
   OnDestroy,
   effect,
+  ElementRef,
 } from '@angular/core';
 import * as THREE from 'three';
 import { ContentTexturePipelineService } from '../services/content-texture-pipeline.service';
@@ -69,10 +69,22 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
   private readonly contentTexturePipeline = inject(
     ContentTexturePipelineService
   );
-  private readonly elementRef = inject(ElementRef);
+  private readonly elementRef = inject(ElementRef<THREE.Mesh>);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Configuration inputs with smart defaults
+  // Configuration input - optional, directive is inactive if undefined
+  readonly glowConfig = input<
+    | {
+        color?: number;
+        intensity?: number;
+        scale?: number;
+        segments?: number;
+        autoAdjustQuality?: boolean;
+      }
+    | undefined
+  >(undefined);
+
+  // Legacy individual inputs (deprecated - use glowConfig instead)
   readonly glowColor = input<number>(0xffffff); // Glow color (hex)
   readonly glowIntensity = input<number>(0.2); // Opacity of glow (0-1)
   readonly glowScale = input<number>(1.2); // Scale multiplier for glow mesh
@@ -80,7 +92,7 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
   readonly autoAdjustQuality = input<boolean>(true); // Adjust quality based on performance
 
   // Internal state
-  private targetMesh: any = null;
+  private targetMesh: THREE.Mesh | null = null;
   private glowMesh: THREE.Mesh | null = null;
   private glowMaterial: THREE.MeshBasicMaterial | null = null;
   private glowGeometry: THREE.SphereGeometry | null = null;
@@ -91,17 +103,30 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // Get target mesh from host component
-    this.targetMesh = this.getMeshFromHostComponent();
+    // Skip if no configuration provided (directive is optional)
+    const config = this.glowConfig();
+    if (!config) {
+      console.log('[Glow3dDirective] No config provided, directive inactive');
+      return;
+    }
+
+    // Get mesh from component's getMesh() method (Angular Three pattern)
+    const component = this.elementRef.nativeElement as any;
+
+    if (typeof component.getMesh === 'function') {
+      this.targetMesh = component.getMesh();
+    } else {
+      // Fallback: try to access THREE.Mesh directly from nativeElement
+      this.targetMesh = this.elementRef.nativeElement as unknown as THREE.Mesh;
+    }
 
     if (!this.targetMesh) {
       console.warn(
-        '[Glow3dDirective] No mesh found - host component must implement getMesh() or have mesh property'
+        '[Glow3dDirective] Could not access mesh - component may not have getMesh() method'
       );
       return;
     }
 
-    // Create glow effect
     this.createGlowEffect();
 
     // Register cleanup
@@ -123,7 +148,11 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
     // Get target geometry to determine glow size
     const targetGeometry = this.targetMesh.geometry;
     if (!targetGeometry) {
-      console.warn('[Glow3dDirective] Target mesh has no geometry');
+      console.warn(
+        '[Glow3dDirective] Target mesh has no geometry yet - this is expected during initialization'
+      );
+      // Geometry will be added by Angular Three's render loop
+      // We'll check again on next frame via effect()
       return;
     }
 
@@ -133,10 +162,22 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
     }
 
     const baseRadius = targetGeometry.boundingSphere?.radius || 1;
-    const glowRadius = baseRadius * this.glowScale();
+
+    // Get config with fallback to legacy inputs
+    const config = this.glowConfig();
+    const glowScale = config?.scale ?? this.glowScale();
+    const glowColor = config?.color ?? this.glowColor();
+    const glowIntensity = config?.intensity ?? this.glowIntensity();
+    const autoAdjustQuality =
+      config?.autoAdjustQuality ?? this.autoAdjustQuality();
+
+    const glowRadius = baseRadius * glowScale;
 
     // Determine segment count based on performance
-    const segments = this.getOptimalSegments();
+    const segments = this.getOptimalSegments(
+      config?.segments,
+      autoAdjustQuality
+    );
 
     // Create glow geometry (sphere)
     this.glowGeometry = new THREE.SphereGeometry(
@@ -147,9 +188,9 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
 
     // Create glow material (basic material with BackSide)
     this.glowMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(this.glowColor()),
+      color: new THREE.Color(glowColor),
       transparent: true,
-      opacity: this.glowIntensity(),
+      opacity: glowIntensity,
       side: THREE.BackSide, // Render from inside-out for glow effect
       depthWrite: false, // Don't write to depth buffer for proper transparency
     });
@@ -172,9 +213,14 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
   /**
    * Determine optimal segment count based on performance
    */
-  private getOptimalSegments(): number {
-    if (!this.autoAdjustQuality()) {
-      return this.glowSegments();
+  private getOptimalSegments(
+    configSegments?: number,
+    autoAdjust?: boolean
+  ): number {
+    const segments = configSegments ?? this.glowSegments();
+
+    if (!autoAdjust) {
+      return segments;
     }
 
     // Query performance statistics
@@ -192,117 +238,14 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
     // Adjust segments based on performance
     if (performanceHealthScore > 60) {
       // High performance - use requested segments
-      return this.glowSegments();
+      return segments;
     } else if (performanceHealthScore > 30) {
       // Medium performance - reduce segments by half
-      return Math.max(8, Math.floor(this.glowSegments() / 2));
+      return Math.max(8, Math.floor(segments / 2));
     } else {
       // Low performance - minimum segments
       return 8;
     }
-  }
-
-  /**
-   * Get mesh from host component
-   */
-  private getMeshFromHostComponent(): any | null {
-    const hostElement = this.elementRef.nativeElement;
-
-    console.log('[Glow3dDirective] Attempting to get mesh from host component');
-
-    // Strategy 1: Try multiple __ngContext__ indices
-    const ngContext = (hostElement as any).__ngContext__;
-    if (ngContext && Array.isArray(ngContext)) {
-      for (const index of [8, 9, 10, 3, 4, 5]) {
-        const componentInstance = ngContext[index];
-        if (
-          componentInstance &&
-          typeof componentInstance.getMesh === 'function'
-        ) {
-          console.log(
-            `[Glow3dDirective] Found component instance at index ${index} with getMesh()`
-          );
-          const mesh = componentInstance.getMesh();
-          if (mesh) {
-            console.log(
-              '[Glow3dDirective] Successfully retrieved mesh via getMesh()'
-            );
-            return mesh;
-          }
-        }
-      }
-    }
-
-    // Strategy 2: Try to find ngt-mesh child element
-    const ngtMesh = hostElement.querySelector('ngt-mesh');
-    if (ngtMesh && (ngtMesh as any).object3D) {
-      console.log('[Glow3dDirective] Found ngt-mesh child with object3D');
-      return (ngtMesh as any).object3D;
-    }
-
-    // Strategy 3: Try direct object3D access
-    if (hostElement.object3D) {
-      console.log('[Glow3dDirective] Found object3D on host element');
-      return hostElement.object3D;
-    }
-
-    // Strategy 4: Try first child
-    const firstChild = hostElement.firstElementChild;
-    if (firstChild && (firstChild as any).object3D) {
-      console.log('[Glow3dDirective] Found object3D on first child');
-      return (firstChild as any).object3D;
-    }
-
-    // Strategy 5: Delayed retry
-    console.warn(
-      '[Glow3dDirective] No mesh found on initial attempt, will retry after delay'
-    );
-    setTimeout(() => {
-      const retryMesh = this.retryGetMesh();
-      if (retryMesh) {
-        this.targetMesh = retryMesh;
-        this.createGlowEffect();
-      }
-    }, 100);
-
-    return null;
-  }
-
-  /**
-   * Retry getting mesh after initial failure
-   */
-  private retryGetMesh(): any | null {
-    const hostElement = this.elementRef.nativeElement;
-    const ngtMesh = hostElement.querySelector('ngt-mesh');
-
-    if (ngtMesh && (ngtMesh as any).object3D) {
-      console.log(
-        '[Glow3dDirective] Retry successful - found ngt-mesh with object3D'
-      );
-      return (ngtMesh as any).object3D;
-    }
-
-    const ngContext = (hostElement as any).__ngContext__;
-    if (ngContext && Array.isArray(ngContext)) {
-      for (const index of [8, 9, 10, 3, 4, 5]) {
-        const componentInstance = ngContext[index];
-        if (
-          componentInstance &&
-          typeof componentInstance.getMesh === 'function'
-        ) {
-          const mesh = componentInstance.getMesh();
-          if (mesh) {
-            console.log(
-              '[Glow3dDirective] Retry successful - got mesh via getMesh()'
-            );
-            return mesh;
-          }
-        }
-      }
-    }
-
-    console.error('[Glow3dDirective] Retry failed - still no mesh found');
-    return null;
   }
 
   /**

@@ -24,8 +24,13 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import * as THREE from 'three';
-import { BehaviorSubject, fromEvent } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { BehaviorSubject, fromEvent, Observable } from 'rxjs';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  take,
+} from 'rxjs/operators';
 
 import { AdvancedPerformanceOptimizerService } from './advanced-performance-optimizer.service';
 
@@ -165,6 +170,12 @@ export class ContentTexturePipelineService {
     Map<string, TextureEntry>
   >(new Map());
 
+  // Texture loading completion tracking
+  private readonly textureLoadingSubjects = new Map<
+    string,
+    BehaviorSubject<THREE.Texture | null>
+  >();
+
   // Computed properties
   readonly state = this.pipelineState.asReadonly();
 
@@ -191,6 +202,76 @@ export class ContentTexturePipelineService {
   // Public observables
   readonly textureUpdates$ = this.textureUpdate$.asObservable();
   readonly cacheUpdates$ = this.cacheUpdate$.asObservable();
+
+  /**
+   * Get an observable that emits when a texture is fully loaded and ready
+   * This replaces the polling/timeout pattern with reactive loading
+   */
+  getTextureReady$(cacheKey: string): Observable<THREE.Texture> {
+    const existing = this.textureLoadingSubjects.get(cacheKey);
+    if (existing) {
+      return existing.asObservable().pipe(
+        filter((texture): texture is THREE.Texture => texture !== null),
+        take(1)
+      );
+    }
+
+    // Create new subject for this texture
+    const subject = new BehaviorSubject<THREE.Texture | null>(null);
+    this.textureLoadingSubjects.set(cacheKey, subject);
+
+    return subject.asObservable().pipe(
+      filter((texture): texture is THREE.Texture => texture !== null),
+      take(1)
+    );
+  }
+
+  /**
+   * Create a simple placeholder texture for immediate use
+   * This prevents WebGLState errors while real texture loads
+   */
+  createPlaceholderTexture(
+    width = 256,
+    height = 256,
+    color = '#cccccc'
+  ): THREE.Texture {
+    // Create a simple 1x1 pixel texture to avoid canvas issues
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d', {
+      willReadFrequently: false,
+      alpha: true,
+    });
+
+    if (context) {
+      // Fill with solid color
+      context.fillStyle = color;
+      context.fillRect(0, 0, width, height);
+
+      // Add a subtle pattern to make it distinguishable
+      context.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(0, 0);
+      context.lineTo(width, height);
+      context.moveTo(width, 0);
+      context.lineTo(0, height);
+      context.stroke();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+
+    // Configure texture to prevent errors
+    texture.format = THREE.RGBAFormat;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+
+    return texture;
+  }
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
@@ -283,6 +364,13 @@ export class ContentTexturePipelineService {
       // Setup reactive updates if requested
       if (config.updateOnMutation || config.updateOnResize) {
         this.setupElementWatching(element, cacheKey, config);
+      }
+
+      // Emit texture ready signal
+      const subject = this.textureLoadingSubjects.get(cacheKey);
+      if (subject) {
+        subject.next(texture);
+        subject.complete();
       }
 
       return texture;
@@ -533,39 +621,138 @@ export class ContentTexturePipelineService {
   ): Promise<void> {
     if (!this.context) return;
 
-    // Use html2canvas-like approach for DOM rendering
-    const svgData = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-        <foreignObject width="100%" height="100%">
-          <div xmlns="http://www.w3.org/1999/xhtml" style="
-            width: ${width}px;
-            height: ${height}px;
-            transform-origin: 0 0;
-          ">
-            ${element.outerHTML}
-          </div>
-        </foreignObject>
-      </svg>
-    `;
+    try {
+      // Try SVG foreignObject approach first (works for simple elements)
+      const svgData = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+          <foreignObject width="100%" height="100%">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="
+              width: ${width}px;
+              height: ${height}px;
+              transform-origin: 0 0;
+            ">
+              ${element.outerHTML}
+            </div>
+          </foreignObject>
+        </svg>
+      `;
 
-    const img = new Image();
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+      const img = new Image();
+      const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
 
-    return new Promise((resolve, reject) => {
-      img.onload = () => {
-        this.context!.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-        resolve();
-      };
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          URL.revokeObjectURL(url);
+          reject(new Error('SVG rendering timeout'));
+        }, 5000);
 
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Failed to render element to canvas'));
-      };
+        img.onload = () => {
+          clearTimeout(timeout);
+          try {
+            this.context!.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+            resolve();
+          } catch (err) {
+            URL.revokeObjectURL(url);
+            reject(err);
+          }
+        };
 
-      img.src = url;
+        img.onerror = () => {
+          clearTimeout(timeout);
+          URL.revokeObjectURL(url);
+          reject(new Error('Failed to load SVG'));
+        };
+
+        img.src = url;
+      });
+    } catch (error) {
+      // Fallback: render a simple representation
+      console.warn('SVG rendering failed, using fallback:', error);
+      this.renderElementFallback(element, width, height);
+    }
+  }
+
+  /**
+   * Fallback rendering when SVG foreignObject fails
+   * Creates a simple visual representation of the element
+   */
+  private renderElementFallback(
+    element: HTMLElement,
+    width: number,
+    height: number
+  ): void {
+    if (!this.context) return;
+
+    const ctx = this.context;
+
+    // Get computed styles
+    const styles = window.getComputedStyle(element);
+    const bgColor = styles.backgroundColor || '#ffffff';
+    const textColor = styles.color || '#000000';
+
+    // Draw background
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw border if present
+    const borderWidth = parseInt(styles.borderWidth || '0');
+    if (borderWidth > 0) {
+      ctx.strokeStyle = styles.borderColor || '#000000';
+      ctx.lineWidth = borderWidth;
+      ctx.strokeRect(0, 0, width, height);
+    }
+
+    // Draw text content
+    const text = element.textContent || element.innerText || '';
+    if (text.trim()) {
+      ctx.fillStyle = textColor;
+      ctx.font = styles.font || '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Wrap text if needed
+      const maxWidth = width - 20;
+      const lines = this.wrapText(ctx, text, maxWidth);
+      const lineHeight = parseInt(styles.lineHeight || '24');
+      const startY = (height - lines.length * lineHeight) / 2;
+
+      lines.forEach((line, index) => {
+        ctx.fillText(line, width / 2, startY + index * lineHeight);
+      });
+    }
+  }
+
+  /**
+   * Helper to wrap text for canvas rendering
+   */
+  private wrapText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number
+  ): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach((word) => {
+      const testLine = currentLine + word + ' ';
+      const metrics = ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine.trim());
+        currentLine = word + ' ';
+      } else {
+        currentLine = testLine;
+      }
     });
+
+    if (currentLine) {
+      lines.push(currentLine.trim());
+    }
+
+    return lines;
   }
 
   private mergeOptions(
