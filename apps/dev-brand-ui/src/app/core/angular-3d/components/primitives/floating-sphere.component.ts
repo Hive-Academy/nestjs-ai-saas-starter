@@ -66,8 +66,6 @@ import {
 import { Mesh } from 'three';
 import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Float3dDirective } from '../../directives/float-3d.directive';
-import { Glow3dDirective } from '../../directives/glow-3d.directive';
-import { Performance3dDirective } from '../../directives/performance-3d.directive';
 
 /**
  * FloatingSphere Component
@@ -78,7 +76,7 @@ import { Performance3dDirective } from '../../directives/performance-3d.directiv
 @Component({
   selector: 'app-floating-sphere',
   standalone: true,
-  imports: [Float3dDirective, Glow3dDirective, Performance3dDirective],
+  imports: [Float3dDirective],
   template: `
     <ngt-mesh
       #mesh
@@ -89,10 +87,6 @@ import { Performance3dDirective } from '../../directives/performance-3d.directiv
       [receiveShadow]="receiveShadow()"
       float3d
       [floatConfig]="floatConfig()"
-      glow3d
-      [glowConfig]="glowConfig()"
-      performance3d
-      [performanceConfig]="performanceConfig()"
     >
       <!-- Sphere geometry with reactive args -->
       <ngt-sphere-geometry
@@ -112,6 +106,21 @@ import { Performance3dDirective } from '../../directives/performance-3d.directiv
         [emissive]="emissive()"
         [emissiveIntensity]="emissiveIntensity()"
       />
+
+      <!-- Optional glow effect - BackSide mesh (enabled via glowConfig) -->
+      @if (glowConfig()) {
+      <ngt-mesh>
+        <ngt-sphere-geometry
+          [args]="[radius() * (glowConfig()!.scale ?? 1.5), 16, 16]"
+        />
+        <ngt-mesh-basic-material
+          [color]="glowConfig()!.color ?? emissive()"
+          [transparent]="true"
+          [opacity]="glowConfig()!.opacity ?? 0.2"
+          side="BackSide"
+        />
+      </ngt-mesh>
+      }
     </ngt-mesh>
   `,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -167,7 +176,7 @@ export class FloatingSphereComponent implements OnInit {
   readonly glowConfig = input<
     | {
         color?: number;
-        intensity?: number;
+        opacity?: number;
         scale?: number;
         segments?: number;
         autoAdjustQuality?: boolean;

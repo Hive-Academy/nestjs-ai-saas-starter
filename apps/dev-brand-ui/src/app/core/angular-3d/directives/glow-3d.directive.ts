@@ -52,7 +52,6 @@ import {
   ElementRef,
 } from '@angular/core';
 import * as THREE from 'three';
-import { ContentTexturePipelineService } from '../services/content-texture-pipeline.service';
 
 /**
  * Glow3dDirective
@@ -66,9 +65,9 @@ import { ContentTexturePipelineService } from '../services/content-texture-pipel
 })
 export class Glow3dDirective implements AfterViewInit, OnDestroy {
   // Dependency injection
-  private readonly contentTexturePipeline = inject(
-    ContentTexturePipelineService
-  );
+  // private readonly contentTexturePipeline = inject(
+  //   ContentTexturePipelineService
+  // );
   private readonly elementRef = inject(ElementRef<THREE.Mesh>);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -224,28 +223,29 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
     }
 
     // Query performance statistics
-    const statistics = this.contentTexturePipeline.getStatistics();
+    // const statistics = this.contentTexturePipeline.getStatistics();
 
     // Calculate a simple performance score based on memory usage
     // Lower memory usage = better performance
-    const memoryUsageMB = statistics.memoryUsage / (1024 * 1024);
-    const maxMemoryMB = 200; // Maximum expected memory usage
-    const performanceHealthScore = Math.max(
-      0,
-      Math.min(100, 100 - (memoryUsageMB / maxMemoryMB) * 100)
-    );
+    // const memoryUsageMB = statistics.memoryUsage / (1024 * 1024);
+    // const maxMemoryMB = 200; // Maximum expected memory usage
+    // const performanceHealthScore = Math.max(
+    //   0,
+    //   Math.min(100, 100 - (memoryUsageMB / maxMemoryMB) * 100)
+    // );
 
     // Adjust segments based on performance
-    if (performanceHealthScore > 60) {
-      // High performance - use requested segments
-      return segments;
-    } else if (performanceHealthScore > 30) {
-      // Medium performance - reduce segments by half
-      return Math.max(8, Math.floor(segments / 2));
-    } else {
-      // Low performance - minimum segments
-      return 8;
-    }
+    // if (performanceHealthScore > 60) {
+    //   // High performance - use requested segments
+    //   return segments;
+    // } else if (performanceHealthScore > 30) {
+    //   // Medium performance - reduce segments by half
+    //   return Math.max(8, Math.floor(segments / 2));
+    // } else {
+    //   // Low performance - minimum segments
+    //   return 8;
+    // }
+    return Math.max(8, segments); // Placeholder: always return at least 8 segments
   }
 
   /**
