@@ -68,164 +68,234 @@ extend({ AmbientLight, DirectionalLight, PointLight });
 
     <!-- Tech Shapes - Using dedicated primitive components + Text Labels + Glow Effects -->
 
-    <!-- AI Brain (Icosahedron) - TOP LEFT EDGE -->
+    <!-- AI Brain (Icosahedron) - Top-left -->
     <app-polyhedron
       type="icosahedron"
-      [position]="[-12, 6, 1]"
+      [position]="[-8, 4, 1]"
       [rotation]="[0.3, 0.5, 0]"
-      [radius]="0.7"
+      [radius]="1.0"
       [color]="purpleColor"
       [emissive]="purpleColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.9"
+      [roughness]="0.1"
       [floatConfig]="{
-        height: 1.0,
+        height: 1.2,
         speed: 3500,
         delay: 0,
         ease: 'sine.inOut',
         autoStart: true
       }"
     />
-    <!-- Subtle glow light -->
+    <!-- Glow light for AI shape -->
     <ngt-point-light
-      [position]="[-12, 6, 2]"
-      [intensity]="1.2"
+      [position]="[-8, 4, 2]"
+      [intensity]="2.0"
       [color]="purpleColor"
-      [distance]="4"
+      [distance]="5"
       [decay]="2"
     />
+    <app-text-3d
+      text="AI"
+      [position]="[-8, 5.5, 1]"
+      [fontSize]="0.5"
+      [color]="purpleColor"
+      [emissive]="purpleColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.8"
+      [roughness]="0.2"
+      [height]="0.1"
+      [bevelEnabled]="true"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+    />
 
-    <!-- Network Node (Octahedron) - TOP RIGHT EDGE -->
+    <!-- Network Node (Octahedron) - Top-right -->
     <app-polyhedron
       type="octahedron"
-      [position]="[12, 6, 1]"
+      [position]="[8, 3, 1]"
       [rotation]="[0.2, 0.8, 0.1]"
-      [radius]="0.7"
+      [radius]="1.0"
       [color]="pinkColor"
       [emissive]="pinkColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.9"
+      [roughness]="0.1"
       [floatConfig]="{
-        height: 1.0,
+        height: 1.5,
         speed: 3200,
         delay: 400,
         ease: 'sine.inOut',
         autoStart: true
       }"
     />
-    <!-- Subtle glow light -->
+    <!-- Glow light for Network shape -->
     <ngt-point-light
-      [position]="[12, 6, 2]"
-      [intensity]="1.2"
+      [position]="[8, 3, 2]"
+      [intensity]="2.0"
       [color]="pinkColor"
-      [distance]="4"
+      [distance]="5"
       [decay]="2"
     />
+    <app-text-3d
+      text="NETWORK"
+      [position]="[8, 4.5, 1]"
+      [fontSize]="0.4"
+      [color]="pinkColor"
+      [emissive]="pinkColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.8"
+      [roughness]="0.2"
+      [height]="0.1"
+      [bevelEnabled]="true"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+    />
 
-    <!-- Database Stack (Cylinder) - BOTTOM LEFT EDGE -->
+    <!-- Database Stack (Cylinder) - Bottom-left -->
     <app-cylinder
-      [position]="[-12, -6, 1]"
-      [radiusTop]="0.6"
-      [radiusBottom]="0.6"
-      [height]="1.2"
+      [position]="[-7, -3.5, 1]"
+      [radiusTop]="0.8"
+      [radiusBottom]="0.8"
+      [height]="1.5"
       [color]="cyanColor"
       [emissive]="cyanColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.9"
+      [roughness]="0.1"
       [floatConfig]="{
-        height: 1.0,
+        height: 1.3,
         speed: 3000,
         delay: 800,
         ease: 'sine.inOut',
         autoStart: true
       }"
     />
-    <!-- Subtle glow light -->
+    <!-- Glow light for Database shape -->
     <ngt-point-light
-      [position]="[-12, -6, 2]"
-      [intensity]="1.2"
+      [position]="[-7, -3.5, 2]"
+      [intensity]="2.0"
       [color]="cyanColor"
-      [distance]="4"
+      [distance]="5"
       [decay]="2"
     />
+    <app-text-3d
+      text="DATABASE"
+      [position]="[-7, -2, 1]"
+      [fontSize]="0.4"
+      [color]="cyanColor"
+      [emissive]="cyanColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.8"
+      [roughness]="0.2"
+      [height]="0.1"
+      [bevelEnabled]="true"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+    />
 
-    <!-- Cloud/Connectivity (Torus) - BOTTOM RIGHT EDGE -->
+    <!-- Cloud/Connectivity (Torus) - Right -->
     <app-torus
-      [position]="[12, -6, 1]"
+      [position]="[8.5, 0, 1]"
       [rotation]="[0.5, 0.3, 0.2]"
-      [radius]="0.6"
-      [tube]="0.22"
+      [radius]="0.8"
+      [tube]="0.3"
       [color]="greenColor"
       [emissive]="greenColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.9"
+      [roughness]="0.1"
       [floatConfig]="{
-        height: 1.0,
+        height: 1.4,
         speed: 2800,
         delay: 1200,
         ease: 'sine.inOut',
         autoStart: true
       }"
     />
-    <!-- Subtle glow light -->
+    <!-- Glow light for Cloud shape -->
     <ngt-point-light
-      [position]="[12, -6, 2]"
-      [intensity]="1.2"
+      [position]="[8.5, 0, 2]"
+      [intensity]="2.0"
       [color]="greenColor"
-      [distance]="4"
+      [distance]="5"
       [decay]="2"
     />
+    <app-text-3d
+      text="CLOUD"
+      [position]="[8.5, 1.5, 1]"
+      [fontSize]="0.45"
+      [color]="greenColor"
+      [emissive]="greenColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.8"
+      [roughness]="0.2"
+      [height]="0.1"
+      [bevelEnabled]="true"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+    />
 
-    <!-- Microchip (Box) - LEFT MID EDGE -->
+    <!-- Microchip (Box) - Left -->
     <app-box
-      [position]="[-13, 0, 1]"
+      [position]="[-8.5, -1, 1]"
       [rotation]="[0.4, 0.6, 0.1]"
-      [width]="1.2"
-      [height]="1.2"
-      [depth]="0.25"
+      [width]="1.6"
+      [height]="1.6"
+      [depth]="0.3"
       [color]="goldColor"
       [emissive]="goldColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.9"
+      [roughness]="0.1"
       [floatConfig]="{
-        height: 1.0,
+        height: 1.6,
         speed: 3400,
         delay: 1600,
         ease: 'sine.inOut',
         autoStart: true
       }"
     />
-    <!-- Subtle glow light -->
+    <!-- Glow light for Chip shape -->
     <ngt-point-light
-      [position]="[-13, 0, 2]"
-      [intensity]="1.2"
+      [position]="[-8.5, -1, 2]"
+      [intensity]="2.0"
       [color]="goldColor"
-      [distance]="4"
+      [distance]="5"
       [decay]="2"
     />
+    <app-text-3d
+      text="CHIP"
+      [position]="[-8.5, 0.5, 1]"
+      [fontSize]="0.5"
+      [color]="goldColor"
+      [emissive]="goldColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.8"
+      [roughness]="0.2"
+      [height]="0.1"
+      [bevelEnabled]="true"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+    />
 
-    <!-- Particle System (avoiding large center area) -->
+    <!-- Particle System (700 particles avoiding center) -->
     <app-particle-system
       [particleCount]="700"
       [colorPalette]="particleColors"
-      [exclusionZone]="{ x: 14, y: 10 }"
+      [exclusionZone]="{ x: 8, y: 4 }"
       [size]="1.2"
-      [opacity]="0.6"
+      [opacity]="0.7"
     />
 
-    <!-- Animated Background Cubes (avoiding large center area for clean focus) -->
+    <!-- Animated Background Cubes - more cubes with vibrant colors -->
     <app-background-cubes
       [count]="200"
       [colorPalette]="cubeColors"
-      [exclusionZone]="{ x: 14, y: 10 }"
-      [sizeRange]="{ min: 0.5, max: 2.0 }"
+      [exclusionZone]="{ x: 12, y: 8 }"
+      [sizeRange]="{ min: 0.5, max: 2.2 }"
       [transparent]="true"
-      [opacity]="0.6"
+      [opacity]="0.7"
       [floatAnimation]="{
         heightMin: 0.8,
         heightMax: 2.0,
@@ -240,10 +310,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- Positioned much further back (z: -15 to -20) and near edges for depth -->
     <!-- ================================ -->
 
-    <!-- AI - Far edge, deep background (matching shape positions) -->
+    <!-- AI - Far left edge, deep background -->
     <app-text-3d
       text="AI"
-      [position]="[-12, 6, -18]"
+      [position]="[-15, 6, -18]"
       [fontSize]="1.0"
       [color]="purpleColor"
       [emissive]="purpleColor"
@@ -256,10 +326,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
       [bevelThickness]="0.025"
     />
 
-    <!-- LangChain - Far edge, deep background (matching shape positions) -->
+    <!-- LangChain - Top right edge, deep background -->
     <app-text-3d
       text="LangChain"
-      [position]="[12, 6, -20]"
+      [position]="[14, 8, -20]"
       [fontSize]="0.8"
       [color]="pinkColor"
       [emissive]="pinkColor"
@@ -272,10 +342,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
       [bevelThickness]="0.02"
     />
 
-    <!-- Angular - Far edge, deep background (matching shape positions) -->
+    <!-- Angular - Left edge mid, deep background -->
     <app-text-3d
       text="Angular"
-      [position]="[-13, 0, -17]"
+      [position]="[-14, -1, -17]"
       [fontSize]="0.9"
       [color]="cyanColor"
       [emissive]="cyanColor"
@@ -288,10 +358,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
       [bevelThickness]="0.022"
     />
 
-    <!-- NestJS - Far edge, deep background (matching shape positions) -->
+    <!-- NestJS - Right edge mid, deep background -->
     <app-text-3d
       text="NestJS"
-      [position]="[13, 0, -16]"
+      [position]="[15, -2, -16]"
       [fontSize]="0.85"
       [color]="goldColor"
       [emissive]="goldColor"
@@ -304,10 +374,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
       [bevelThickness]="0.02"
     />
 
-    <!-- ChromaDB - Far edge, deep background (matching shape positions) -->
+    <!-- ChromaDB - Bottom left edge, deep background -->
     <app-text-3d
       text="ChromaDB"
-      [position]="[-12, -6, -15]"
+      [position]="[-13, -7, -15]"
       [fontSize]="0.7"
       [color]="purpleColor"
       [emissive]="purpleColor"
@@ -320,10 +390,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
       [bevelThickness]="0.018"
     />
 
-    <!-- Neo4j - Far edge, deep background (matching shape positions) -->
+    <!-- Neo4j - Bottom right edge, deep background -->
     <app-text-3d
       text="Neo4j"
-      [position]="[12, -6, -19]"
+      [position]="[16, -6, -19]"
       [fontSize]="0.75"
       [color]="greenColor"
       [emissive]="greenColor"
@@ -336,10 +406,10 @@ extend({ AmbientLight, DirectionalLight, PointLight });
       [bevelThickness]="0.02"
     />
 
-    <!-- WebSockets - Far edge, deep background (matching shape positions) -->
+    <!-- WebSockets - Top left edge, deep background -->
     <app-text-3d
       text="WebSockets"
-      [position]="[-11, 8, -20]"
+      [position]="[-12, 9, -20]"
       [fontSize]="0.65"
       [color]="pinkColor"
       [emissive]="pinkColor"

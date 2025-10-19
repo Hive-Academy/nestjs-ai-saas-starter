@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-import { LoadingStateService } from '../services/loading-state.service';
 import { HeroSceneGraphComponent } from './hero-scene-graph.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 
 @Component({
   selector: 'brand-hero-section',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent],
+  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   template: `
     <div
       class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-black via-sky-900 to-black"
@@ -19,11 +19,20 @@ import { HeroSceneGraphComponent } from './hero-scene-graph.component';
       <!-- DOM Content Overlay - Compact with breathing room for 3D depth -->
       <div
         class="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
+        scrollAnimation
+        [scrollConfig]="{
+          animation: 'custom',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.5,
+          from: { y: 0, opacity: 1 },
+          to: { y: -150, opacity: 0, ease: 'none' }
+        }"
       >
         <div
           class="max-w-3xl mx-auto px-8 text-center space-y-6 pointer-events-auto transform-gpu"
         >
-          <!-- Hero Title - Reduced size for better 3D integration -->
+          <!-- Hero Title - Scroll up and fade out as user scrolls -->
           <h1
             class="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in-up"
             style="text-shadow: 0 10px 30px rgba(168, 85, 247, 0.5), 0 2px 5px rgba(0,0,0,0.8);"
@@ -37,7 +46,7 @@ import { HeroSceneGraphComponent } from './hero-scene-graph.component';
             </span>
           </h1>
 
-          <!-- Hero Description - Reduced and more concise -->
+          <!-- Hero Description - Parallax scroll effect -->
           <p
             class="text-base md:text-xl text-gray-200 leading-relaxed max-w-xl mx-auto animate-fade-in-up animation-delay-200"
             style="text-shadow: 0 2px 20px rgba(0,0,0,0.6);"
@@ -60,7 +69,7 @@ import { HeroSceneGraphComponent } from './hero-scene-graph.component';
             >
           </p>
 
-          <!-- Feature Badges - Smaller, more compact -->
+          <!-- Feature Badges - Faster parallax -->
           <div
             class="flex flex-wrap justify-center gap-3 animate-fade-in-up animation-delay-400"
           >
@@ -81,7 +90,7 @@ import { HeroSceneGraphComponent } from './hero-scene-graph.component';
             }
           </div>
 
-          <!-- CTA Buttons - Smaller footprint -->
+          <!-- CTA Buttons - Slowest parallax for depth -->
           <div
             class="flex flex-wrap justify-center gap-3 pt-2 animate-fade-in-up animation-delay-600"
           >
@@ -153,11 +162,7 @@ import { HeroSceneGraphComponent } from './hero-scene-graph.component';
     `,
   ],
 })
-export class HeroSectionComponent implements OnInit {
-  // Services
-  private readonly loadingState = inject(LoadingStateService);
-  // private readonly destroyRef = inject(DestroyRef);
-
+export class HeroSectionComponent {
   // Scene graph reference - 3D background only (spheres + cubes)
   readonly heroSceneGraph = HeroSceneGraphComponent;
 
@@ -167,17 +172,4 @@ export class HeroSectionComponent implements OnInit {
     { icon: '🕸️', text: 'Relationship Mapping' },
     { icon: '⚡', text: 'Intelligent Workflows' },
   ];
-
-  ngOnInit(): void {
-    // Update loading state service
-    this.loadingState.updateStage('Loading Hero Section');
-
-    // // Auto-load after minimal delay (Angular Three handles scene initialization)
-    // timer(500)
-    //   .pipe(takeUntilDestroyed(this.destroyRef))
-    //   .subscribe(() => {
-    //     this.isLoaded.set(true);
-    //     this.loadingState.markSectionLoaded('hero');
-    //   });
-  }
 }

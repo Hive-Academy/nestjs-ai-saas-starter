@@ -1,25 +1,17 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
-  computed,
-  DestroyRef,
   ElementRef,
-  inject,
-  OnDestroy,
-  OnInit,
   signal,
   ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { first, delay, timeout, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
 import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
 import { DemoTheaterComponent } from './sections/demo-theater.component';
 // import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
 
-import { PlatformPillarsComponent } from './sections/platform-pillars.component';
-import { LoadingStateService } from './services/loading-state.service';
 import { HeroSectionComponent } from './sections/hero-section.component';
+import { PlatformPillarsComponent } from './sections/platform-pillars.component';
 // import { HeroSection3dComponent } from "./components/hero-section-3d/hero-section-3d.component";
 
 @Component({
@@ -32,7 +24,6 @@ import { HeroSectionComponent } from './sections/hero-section.component';
     // EcosystemExplorerComponent,
     ArchitectureDiagramComponent,
     HeroSectionComponent,
-    // HeroSection3dComponent,
   ],
   template: ` <div
     class="w-full min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out relative"
@@ -48,44 +39,22 @@ import { HeroSectionComponent } from './sections/hero-section.component';
         <div
           class="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"
         ></div>
-        <h2 class="text-white text-2xl font-bold mb-2">
-          {{ loadingStateService.currentStage() }}
-        </h2>
+        <h2 class="text-white text-2xl font-bold mb-2">Loading Experience</h2>
         <p class="text-gray-400 text-sm mb-4">
-          {{ loadingStateService.globalLoadingState().stage }}
+          Preparing your immersive journey...
         </p>
 
         <!-- Progress Bar -->
         <div class="w-64 h-2 bg-gray-800 rounded-full mx-auto overflow-hidden">
           <div
             class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-            [style.width.%]="loadingStateService.loadingProgress()"
+            [style.width.%]="loadingProgress()"
           ></div>
         </div>
 
         <p class="text-gray-500 text-xs mt-2">
-          {{ loadingStateService.loadingProgress() | number : '1.0-0' }}%
-          Complete
+          {{ loadingProgress() }}% Complete
         </p>
-
-        <!-- Section Status -->
-        <div class="mt-6 text-xs text-gray-600">
-          @if (loadingStateService.sectionLoadingStates(); as sections) {
-          <div class="flex gap-2 justify-center flex-wrap">
-            @for (section of sections; track section.sectionId) {
-            <span
-              class="px-2 py-1 rounded"
-              [class.bg-green-900]="section.isLoaded"
-              [class.bg-gray-800]="!section.isLoaded"
-              [class.text-green-400]="section.isLoaded"
-              [class.text-gray-500]="!section.isLoaded"
-            >
-              {{ section.sectionId }} @if (section.isLoaded) { ✓ } @else { ... }
-            </span>
-            }
-          </div>
-          }
-        </div>
       </div>
     </div>
     }
@@ -203,13 +172,7 @@ import { HeroSectionComponent } from './sections/hero-section.component';
     <main class="w-full">
       <!-- Hero Section -->
       <div id="hero" class="section-container">
-        <!-- <app-hero-angular-three
-          (getStarted)="onGetStarted()"
-          (watchDemo)="onWatchDemo()"
-          (featureSelected)="onFeatureSelected($event)">
-        </app-hero-angular-three> -->
         <brand-hero-section />
-        <!-- <hero-section-3d /> -->
       </div>
 
       <!-- Platform Pillars Section -->
@@ -328,7 +291,7 @@ import { HeroSectionComponent } from './sections/hero-section.component';
     `,
   ],
 })
-export class LandingPageComponent implements OnInit, OnDestroy {
+export class LandingPageComponent implements AfterViewInit {
   @ViewChild('landingContainer', { static: true })
   landingContainer!: ElementRef<HTMLElement>;
 
@@ -338,10 +301,9 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   readonly showNavigationDots = signal(true);
   readonly smoothScrollEnabled = signal(true);
 
-  public loadingStateService = inject(LoadingStateService);
-
   // Component state
   readonly isLoaded = signal(false);
+  readonly loadingProgress = signal(0);
   readonly sections = signal([
     'hero',
     'platform-pillars',
@@ -351,65 +313,30 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     'feature-navigation',
   ]);
 
-  readonly loadingProgress = computed(() => {
-    // Calculate loading progress based on loaded sections
-    return 100; // For now, return 100% once component initializes
-  });
+  ngAfterViewInit(): void {
+    // Simple, immediate loading - no complex observables
+    // Angular Three (NgtCanvas) handles its own initialization
+    // We just need a brief moment for the initial render, then fade in
 
-  ngOnInit(): void {
-    this.initializeLandingPage();
+    // Use requestAnimationFrame to wait for next paint cycle
+    requestAnimationFrame(() => {
+      // Update progress for visual feedback
+      this.loadingProgress.set(50);
+
+      // Wait one more frame for Angular Three to mount
+      requestAnimationFrame(() => {
+        this.loadingProgress.set(100);
+
+        // Short delay for smooth transition, then show content
+        setTimeout(() => {
+          console.log('[LandingPage] ✅ Content ready, fading in...');
+          this.isLoaded.set(true);
+        }, 300);
+      });
+    });
+
     this.setupSmoothScrolling();
   }
-
-  ngOnDestroy(): void {
-    this.loadingStateService.reset();
-  }
-
-  private async initializeLandingPage(): Promise<void> {
-    try {
-      // Start loading state service
-      this.loadingStateService.startLoading();
-
-      console.log(
-        '[LandingPage] Waiting for all sections to load using RxJS observable...'
-      );
-
-      // Use pure RxJS - NO setTimeout!
-      // Wait for hero section to load with 5-second timeout
-      this.loadingStateService.allSectionsLoaded$
-        .pipe(
-          first((allLoaded) => allLoaded === true),
-          timeout(5000), // 5-second timeout - hero should load quickly
-          delay(300), // Short transition delay
-          catchError((error) => {
-            if (error.name === 'TimeoutError') {
-              console.warn(
-                '[LandingPage] ⚠️ Timeout after 5s - completing anyway'
-              );
-            } else {
-              console.error('[LandingPage] ❌ Loading error:', error);
-            }
-            return of(true); // Continue with loading completion
-          }),
-          takeUntilDestroyed(this.destroyRef)
-        )
-        .subscribe({
-          next: () => {
-            console.log('[LandingPage] ✅ Hero loaded, showing page...');
-            this.loadingStateService.completeLoading();
-            this.isLoaded.set(true);
-          },
-        });
-    } catch (error) {
-      console.error('Failed to initialize landing page:', error);
-      // Complete loading even if there are errors
-      this.loadingStateService.completeLoading();
-      this.isLoaded.set(true);
-    }
-  }
-
-  // Add DestroyRef for cleanup
-  private readonly destroyRef = inject(DestroyRef);
 
   private setupSmoothScrolling(): void {
     if (typeof window !== 'undefined') {
