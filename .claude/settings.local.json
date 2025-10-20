@@ -2,22 +2,9 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "mcp__sequential-thinking__sequentialthinking",
-      "Bash(cat:*)",
-      "Bash(npx nx build:*)",
-      "Bash(npx tsc:*)",
-      "mcp__nx-mcp__nx_project_details",
-      "Bash(npm run format:*)",
-      "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__navigate_page",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "mcp__chrome-devtools__list_console_messages",
-      "mcp__chrome-devtools__take_screenshot",
-      "mcp__chrome-devtools__take_snapshot",
-      "mcp__chrome-devtools__evaluate_script",
-      "WebSearch"
+      "Bash(npx nx test dev-brand-ui --testPathPattern=\"(core-foundation-section|workflow-orchestration-section)\" --no-cache)",
+      "mcp__nx-mcp__nx_workspace",
+      "mcp__nx-mcp__nx_project_details"
     ],
     "deny": [],
     "ask": [],

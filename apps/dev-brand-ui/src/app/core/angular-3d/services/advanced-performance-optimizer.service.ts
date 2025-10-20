@@ -27,7 +27,7 @@ import { BehaviorSubject, interval } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
 import { Angular3DStateStore } from './angular-3d-state.store';
-import { PerformanceMonitorService } from '../../../features/spatial-interface/services/performance-monitor.service';
+import { PerformanceMonitorService } from './performance-monitor.service';
 
 // Enhanced optimization interfaces
 export interface FrustumCullingConfig {
