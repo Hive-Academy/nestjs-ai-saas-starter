@@ -17,3 +17,4 @@
 export { GlassmorphismCardComponent } from './glassmorphism-card.component';
 export { SectionContainerComponent } from './section-container.component';
 export { SectionParticleBackgroundComponent } from './section-particle-background.component';
+export { DataFoundationSectionComponent } from './data-foundation-section.component';
