@@ -1513,12 +1513,12 @@ Navigate to `http://localhost:4200` and see your LangGraph workflow in action! ð
 
 ### External References
 
-- **AG-UI Protocol**: https://docs.ag-ui.com/introduction
-- **CopilotKit**: https://github.com/CopilotKit/CopilotKit
-- **Angular Signals**: https://angular.dev/guide/signals
-- **Angular Standalone**: https://angular.dev/guide/standalone-components
-- **RxJS**: https://rxjs.dev/
-- **RxJS WebSocket**: https://rxjs.dev/api/webSocket/webSocket
+- **AG-UI Protocol**: <https://docs.ag-ui.com/introduction>
+- **CopilotKit**: <https://github.com/CopilotKit/CopilotKit>
+- **Angular Signals**: <https://angular.dev/guide/signals>
+- **Angular Standalone**: <https://angular.dev/guide/standalone-components>
+- **RxJS**: <https://rxjs.dev/>
+- **RxJS WebSocket**: <https://rxjs.dev/api/webSocket/webSocket>
 
 ---
 

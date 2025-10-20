@@ -131,11 +131,14 @@ export class ParticleSystemComponent implements AfterViewInit {
     const meshEl = this.meshRef();
     if (meshEl?.nativeElement) {
       const mesh = meshEl.nativeElement;
-      mesh.userData['originalPosition'] = {
-        x: mesh.position.x,
-        y: mesh.position.y,
-        z: mesh.position.z,
-      };
+      // Safety check: ensure position exists before accessing properties
+      if (mesh.position) {
+        mesh.userData['originalPosition'] = {
+          x: mesh.position.x,
+          y: mesh.position.y,
+          z: mesh.position.z,
+        };
+      }
     }
   }
 
