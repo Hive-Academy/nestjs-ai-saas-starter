@@ -20,3 +20,5 @@ export { SectionParticleBackgroundComponent } from './section-particle-backgroun
 export { DataFoundationSectionComponent } from './data-foundation-section.component';
 export { CoreFoundationSectionComponent } from './core-foundation-section.component';
 export { WorkflowOrchestrationSectionComponent } from './workflow-orchestration-section.component';
+export { IntelligenceLayerSectionComponent } from './intelligence-layer-section.component';
+export { ProductionSystemsSectionComponent } from './production-systems-section.component';
