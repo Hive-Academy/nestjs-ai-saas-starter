@@ -34,14 +34,7 @@ extend({ MeshStandardMaterial });
   imports: [NgtsText3D],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <ngts-text-3d
-      [text]="text()"
-      [font]="font()"
-      [options]="textOptions()"
-      [position]="position()"
-      [rotation]="rotation()"
-      [scale]="scale()"
-    >
+    <ngts-text-3d [text]="text()" [font]="font()" [options]="textOptions()">
       <ngt-mesh-standard-material
         [color]="color()"
         [emissive]="emissive()"

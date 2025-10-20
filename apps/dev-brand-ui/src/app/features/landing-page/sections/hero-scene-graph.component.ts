@@ -99,7 +99,7 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- Network Node (Octahedron) - TOP RIGHT EDGE -->
     <app-polyhedron
       type="octahedron"
-      [position]="[12, 6, 1]"
+      [position]="[12, 6, -1]"
       [rotation]="[0.2, 0.8, 0.1]"
       [radius]="0.7"
       [color]="pinkColor"
@@ -243,8 +243,8 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- AI - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="AI"
-      [position]="[-12, 6, -18]"
-      [fontSize]="1.0"
+      [position]="[-12, 4, -7]"
+      [fontSize]="0.7"
       [color]="purpleColor"
       [emissive]="purpleColor"
       [emissiveIntensity]="0.4"
@@ -259,8 +259,8 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- LangChain - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="LangChain"
-      [position]="[12, 6, -20]"
-      [fontSize]="0.8"
+      [position]="[15, 12, -20]"
+      [fontSize]="0.7"
       [color]="pinkColor"
       [emissive]="pinkColor"
       [emissiveIntensity]="0.4"
@@ -275,8 +275,8 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- Angular - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="Angular"
-      [position]="[-13, 0, -17]"
-      [fontSize]="0.9"
+      [position]="[-20, 0, -10]"
+      [fontSize]="0.7"
       [color]="cyanColor"
       [emissive]="cyanColor"
       [emissiveIntensity]="0.4"
@@ -291,8 +291,8 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- NestJS - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="NestJS"
-      [position]="[13, 0, -16]"
-      [fontSize]="0.85"
+      [position]="[13, 4, -12]"
+      [fontSize]="0.7"
       [color]="goldColor"
       [emissive]="goldColor"
       [emissiveIntensity]="0.4"
@@ -307,7 +307,7 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- ChromaDB - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="ChromaDB"
-      [position]="[-12, -6, -15]"
+      [position]="[-12, -10, -15]"
       [fontSize]="0.7"
       [color]="purpleColor"
       [emissive]="purpleColor"
@@ -323,8 +323,8 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- Neo4j - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="Neo4j"
-      [position]="[12, -6, -19]"
-      [fontSize]="0.75"
+      [position]="[12, -10, -15]"
+      [fontSize]="0.7"
       [color]="greenColor"
       [emissive]="greenColor"
       [emissiveIntensity]="0.4"
@@ -339,8 +339,8 @@ extend({ AmbientLight, DirectionalLight, PointLight });
     <!-- WebSockets - Far edge, deep background (matching shape positions) -->
     <app-text-3d
       text="WebSockets"
-      [position]="[-11, 8, -20]"
-      [fontSize]="0.65"
+      [position]="[-22, 14, -20]"
+      [fontSize]="0.7"
       [color]="pinkColor"
       [emissive]="pinkColor"
       [emissiveIntensity]="0.4"

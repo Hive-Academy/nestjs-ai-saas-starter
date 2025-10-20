@@ -39,8 +39,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           >
             <span class="text-white drop-shadow-2xl">Enterprise AI</span><br />
             <span
-              class="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent"
-              style="text-shadow: 0 0 80px rgba(236, 72, 153, 0.8);"
+              class="text-white drop-shadow-2xl text-3xl md:text-5xl lg:text-6xl"
             >
               SaaS Starter
             </span>
@@ -53,13 +52,13 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           >
             Production-ready foundation combining
             <span
-              class="text-purple-400 font-semibold"
-              style="text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);"
+              class="text-purple-300 font-semibold"
+              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
               >vector search</span
             >,
             <span
-              class="text-pink-400 font-semibold"
-              style="text-shadow: 0 0 20px rgba(236, 72, 153, 0.6);"
+              class="text-purple-300 font-semibold"
+              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
               >graph relationships</span
             >, and
             <span
