@@ -24,9 +24,9 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   Injector,
 } from '@angular/core';
-import { GlassmorphismCardComponent } from './glassmorphism-card.component';
-import { SectionContainerComponent } from './section-container.component';
-import { SectionParticleBackgroundComponent } from './section-particle-background.component';
+import { GlassmorphismCardComponent } from '../../../shared/components/glassmorphism-card.component';
+import { SectionContainerComponent } from '../../../shared/components/section-container.component';
+import { SectionParticleBackgroundComponent } from '../../../shared/components/section-particle-background.component';
 
 // Lazy import GSAP for performance
 let gsap: any;

@@ -8,13 +8,11 @@ import {
 } from '@angular/core';
 
 import { HeroSectionComponent } from './sections/hero-section.component';
-import {
-  DataFoundationSectionComponent,
-  CoreFoundationSectionComponent,
-  WorkflowOrchestrationSectionComponent,
-  IntelligenceLayerSectionComponent,
-  ProductionSystemsSectionComponent,
-} from '../../shared/components';
+import { DataFoundationSectionComponent } from './sections/data-foundation-section.component';
+import { CoreFoundationSectionComponent } from './sections/core-foundation-section.component';
+import { WorkflowOrchestrationSectionComponent } from './sections/workflow-orchestration-section.component';
+import { IntelligenceLayerSectionComponent } from './sections/intelligence-layer-section.component';
+import { ProductionSystemsSectionComponent } from './sections/production-systems-section.component';
 
 @Component({
   selector: 'brand-landing-page',

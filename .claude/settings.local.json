@@ -4,7 +4,9 @@
     "allow": [
       "Bash(npx nx test dev-brand-ui --testPathPattern=\"(core-foundation-section|workflow-orchestration-section)\" --no-cache)",
       "mcp__nx-mcp__nx_workspace",
-      "mcp__nx-mcp__nx_project_details"
+      "mcp__nx-mcp__nx_project_details",
+      "Bash(git mv apps/dev-brand-ui/src/app/shared/components/intelligence-layer-section.component.ts apps/dev-brand-ui/src/app/features/landing-page/sections/intelligence-layer-section.component.ts)",
+      "Bash(git mv apps/dev-brand-ui/src/app/shared/components/intelligence-layer-section.component.spec.ts apps/dev-brand-ui/src/app/features/landing-page/sections/intelligence-layer-section.component.spec.ts)"
     ],
     "deny": [],
     "ask": [],

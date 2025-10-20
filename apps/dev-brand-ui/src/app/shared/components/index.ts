@@ -1,7 +1,7 @@
 /**
  * Shared Components Barrel Export
  *
- * Centralizes exports for all shared landing page components.
+ * Centralizes exports for reusable components across the application.
  * Provides clean import paths throughout the application.
  *
  * Usage:
@@ -17,8 +17,3 @@
 export { GlassmorphismCardComponent } from './glassmorphism-card.component';
 export { SectionContainerComponent } from './section-container.component';
 export { SectionParticleBackgroundComponent } from './section-particle-background.component';
-export { DataFoundationSectionComponent } from './data-foundation-section.component';
-export { CoreFoundationSectionComponent } from './core-foundation-section.component';
-export { WorkflowOrchestrationSectionComponent } from './workflow-orchestration-section.component';
-export { IntelligenceLayerSectionComponent } from './intelligence-layer-section.component';
-export { ProductionSystemsSectionComponent } from './production-systems-section.component';

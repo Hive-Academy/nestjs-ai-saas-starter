@@ -16,9 +16,20 @@ I've conducted a comprehensive analysis of:
 4. ✅ **AG-UI Protocol Specification** - 16 event types, SSE/WebSocket streaming
 5. ✅ **Frontend Integration Guides** - Existing documentation for dev-brand-ui
 
-### Key Finding
+### Key Findings
 
-**CopilotKit is React-only and doesn't support Angular**. However, we can create a superior Angular-native library that leverages your existing NestJS infrastructure with better TypeScript integration and RxJS-powered reactivity.
+1. **CopilotKit is React-only** - No Angular support, opens market opportunity
+2. **RxJS WebSocket > socket.io-client** - Zero extra dependencies, native Observable API, smaller bundle (~50KB saved)
+3. **Superior architecture** - Signals + RxJS + TypeScript generics = best-in-class DX
+4. **Seamless integration** - Direct integration with your 12 LangGraph modules
+
+### Architecture Highlights
+
+- ✅ **RxJS WebSocket** - Native Observable streams, auto-reconnection with exponential backoff
+- ✅ **Latest Angular syntax** - Signals, `input()`/`output()`, `@if`/`@for` control flow
+- ✅ **Zero extra dependencies** - RxJS already included in Angular
+- ✅ **Type-safe** - Full generic support across all components and services
+- ✅ **Production-ready** - Error handling, reconnection, memory management built-in
 
 ---
 
@@ -76,9 +87,11 @@ I've conducted a comprehensive analysis of:
 │   ├── use-langgraph-approval.ts              # HITL approvals
 │   └── use-langgraph-streaming.ts             # Real-time streaming
 │
-└── module/
-    ├── langgraph.module.ts                    # Module configuration
-    └── langgraph-config.ts                    # Configuration provider
+├── providers/                      # Modern provider functions
+│   ├── provide-langgraph.ts                   # Main provider function
+│   └── provide-langgraph-feature.ts           # Feature providers
+│
+└── public-api.ts                   # Public API exports
 ```
 
 ---
@@ -408,8 +421,150 @@ export class LangGraphStateService {
 
   // Update state (sends to backend)
   updateState(delta: Partial<WorkflowState>): void {
-    this.connection['socket'].emit('state_update', delta);
+    this.connection.send({
+      type: 'state_update',
+      data: delta,
+    });
   }
+}
+```
+
+---
+
+## 📐 Type Definitions
+
+**Core TypeScript interfaces and types** (in `models/`):
+
+```typescript
+// WebSocket Message Structure
+export interface WebSocketMessage<T = any> {
+  type: string;
+  data: T;
+  timestamp?: Date;
+  executionId?: string;
+}
+
+// Connection State
+export type ConnectionState =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'error';
+
+// LangGraph Configuration
+export interface LangGraphConfig {
+  apiUrl: string; // REST API URL (http://localhost:3000)
+  websocketUrl: string; // WebSocket URL (ws://localhost:8080)
+  authToken?: string; // Optional JWT token
+  autoConnect?: boolean; // Auto-connect on service init
+  reconnection?: boolean; // Enable auto-reconnection
+  reconnectionAttempts?: number; // Max reconnection attempts
+  reconnectionDelay?: number; // Delay between attempts (ms)
+}
+
+// Workflow Execution
+export interface WorkflowExecution {
+  executionId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startedAt: Date;
+  githubUsername?: string;
+  userId?: string;
+}
+
+// Workflow Result
+export interface WorkflowResult {
+  executionId: string;
+  status: 'completed' | 'failed';
+  result: any;
+  completedAt: Date;
+  error?: string;
+}
+
+// Workflow State
+export interface WorkflowState {
+  currentAgent?: string;
+  progress?: number;
+  metadata?: Record<string, any>;
+  [key: string]: any;
+}
+
+// State Snapshot & Delta
+export interface StateSnapshot {
+  state: WorkflowState;
+  timestamp: Date;
+}
+
+export interface StateDelta {
+  state: Partial<WorkflowState>;
+  timestamp: Date;
+}
+
+// Message Types
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  agentId?: string;
+}
+
+// HITL Approval
+export interface ApprovalRequest {
+  approvalId: string;
+  agentId: string;
+  message: string;
+  metadata?: Record<string, any>;
+  timeout?: number;
+  createdAt: Date;
+}
+
+export interface ApprovalResponse {
+  approvalId: string;
+  approved: boolean;
+  feedback?: string;
+  timestamp: Date;
+}
+
+// Token Streaming
+export interface TokenUpdate {
+  token: string;
+  agentId: string;
+  timestamp: Date;
+}
+
+// AG-UI Event Types
+export enum AGUIEventType {
+  // Lifecycle Events
+  RUN_STARTED = 'run_started',
+  RUN_FINISHED = 'run_finished',
+
+  // Message Events
+  STREAM_UPDATE = 'stream_update',
+  TOKEN_UPDATE = 'token_update',
+
+  // Tool Events
+  TOOL_CALL_START = 'tool_call_start',
+  TOOL_CALL_ARGS = 'tool_call_args',
+  TOOL_CALL_END = 'tool_call_end',
+
+  // State Events
+  STATE_SNAPSHOT = 'state_snapshot',
+  STATE_DELTA = 'state_delta',
+
+  // HITL Events
+  INTERRUPTION_REQUEST = 'interruption_request',
+  INTERRUPTION_RESOLVED = 'interruption_resolved',
+
+  // Error Events
+  ERROR = 'error',
+}
+
+// Processed Event
+export interface ProcessedEvent<T = any> {
+  type: string;
+  data: T;
+  timestamp: Date;
 }
 ```
 
@@ -804,74 +959,129 @@ export function useLangGraphApproval() {
 
 ---
 
-## 📦 Module Configuration
+## 📦 Provider Configuration (Modern Angular)
 
-**Angular module with forRoot/forFeature pattern**:
+**Using `provideLangGraph()` function** - No NgModule needed!
 
-```typescript
-import { NgModule, ModuleWithProviders, Type, InjectionToken, Provider } from '@angular/core';
+````typescript
+// langgraph-config.ts
+import {
+  InjectionToken,
+  Provider,
+  EnvironmentProviders,
+  makeEnvironmentProviders,
+} from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  LangGraphConnectionService,
+  LangGraphProtocolService,
+  LangGraphStateService,
+  LangGraphStreamingService,
+  LangGraphChatService,
+  LangGraphHITLService,
+} from './services';
+import { authInterceptor, retryInterceptor } from './interceptors';
 
 export const LANGGRAPH_CONFIG = new InjectionToken<LangGraphConfig>('LANGGRAPH_CONFIG');
 
-@NgModule({
-  providers: [
+// Configuration interface
+export interface LangGraphConfig {
+  apiUrl: string; // REST API base URL (http://localhost:3000)
+  websocketUrl: string; // WebSocket URL (ws://localhost:8080)
+  authToken?: string; // JWT token for authentication
+  autoConnect?: boolean; // Auto-connect on initialization (default: true)
+  reconnection?: boolean; // Enable automatic reconnection (default: true)
+  reconnectionAttempts?: number; // Number of reconnection attempts (default: 5)
+  reconnectionDelay?: number; // Delay between reconnection attempts in ms (default: 1000)
+  enableLogging?: boolean; // Enable debug logging (default: false)
+  defaultTimeout?: number; // Default timeout for requests in ms (default: 30000)
+}
+
+/**
+ * Provides LangGraph services and configuration
+ * @param config - LangGraph configuration
+ * @returns Environment providers for LangGraph
+ *
+ * @example
+ * ```typescript
+ * // app.config.ts
+ * export const appConfig: ApplicationConfig = {
+ *   providers: [
+ *     provideLangGraph({
+ *       apiUrl: 'http://localhost:3000',
+ *       websocketUrl: 'ws://localhost:8080',
+ *       autoConnect: true
+ *     })
+ *   ]
+ * };
+ * ```
+ */
+export function provideLangGraph(config: LangGraphConfig): EnvironmentProviders {
+  return makeEnvironmentProviders([
+    // Configuration
+    {
+      provide: LANGGRAPH_CONFIG,
+      useValue: {
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        enableLogging: false,
+        defaultTimeout: 30000,
+        ...config, // User config overrides defaults
+      },
+    },
+
+    // Core services
     LangGraphConnectionService,
     LangGraphProtocolService,
     LangGraphStateService,
     LangGraphStreamingService,
     LangGraphChatService,
     LangGraphHITLService,
-  ],
-})
-export class LangGraphModule {
-  static forRoot(config: LangGraphConfig): ModuleWithProviders<LangGraphModule> {
-    return {
-      ngModule: LangGraphModule,
-      providers: [
-        {
-          provide: LANGGRAPH_CONFIG,
-          useValue: config,
-        },
-        provideHttpClient(withInterceptors([authInterceptor, retryInterceptor])),
-      ],
-    };
-  }
 
-  static forFeature(components: Type<any>[]): ModuleWithProviders<LangGraphModule> {
-    return {
-      ngModule: LangGraphModule,
-      providers: components,
-    };
-  }
+    // HTTP client with interceptors
+    provideHttpClient(withInterceptors([authInterceptor, retryInterceptor])),
+  ]);
 }
 
-// Configuration interface
-export interface LangGraphConfig {
-  apiUrl: string; // REST API base URL (http://localhost:3000)
-  websocketUrl: string; // WebSocket URL (ws://localhost:8080/streaming)
-  authToken?: string; // JWT token for authentication
-  autoConnect?: boolean; // Auto-connect on initialization
-  reconnection?: boolean; // Enable automatic reconnection
-  reconnectionAttempts?: number; // Number of reconnection attempts
-  reconnectionDelay?: number; // Delay between reconnection attempts (ms)
-  enableLogging?: boolean; // Enable debug logging
-  defaultTimeout?: number; // Default timeout for requests (ms)
+/**
+ * Provides LangGraph with custom feature providers
+ * @param providers - Additional providers for custom features
+ * @returns Environment providers
+ *
+ * @example
+ * ```typescript
+ * // feature.config.ts
+ * export const featureConfig = {
+ *   providers: [
+ *     provideLangGraphFeature([
+ *       CustomAgentService,
+ *       CustomVisualizerService
+ *     ])
+ *   ]
+ * };
+ * ```
+ */
+export function provideLangGraphFeature(providers: Provider[]): EnvironmentProviders {
+  return makeEnvironmentProviders(providers);
 }
-```
+````
 
 **Usage in application**:
 
 ```typescript
-// app.config.ts (Angular standalone - RECOMMENDED)
+// app.config.ts
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { LangGraphModule } from '@hive-academy/angular-langgraph';
+import { provideLangGraph } from '@hive-academy/angular-langgraph';
+import { environment } from './environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    ...LangGraphModule.forRoot({
+    // LangGraph configuration
+    provideLangGraph({
       apiUrl: environment.apiUrl,
       websocketUrl: environment.websocketUrl,
       authToken: environment.authToken,
@@ -880,7 +1090,9 @@ export const appConfig: ApplicationConfig = {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       enableLogging: !environment.production,
-    }).providers!,
+    }),
+
+    // Other providers
     provideRouter(routes),
     provideAnimations(),
   ],
@@ -891,81 +1103,195 @@ export const appConfig: ApplicationConfig = {
 
 ## 🚀 Quick Start Example
 
-**Complete working example with latest Angular syntax**:
+**Complete working example with modern Angular standalone API**:
+
+### Step 1: Install
+
+```bash
+npm install @hive-academy/angular-langgraph
+```
+
+### Step 2: Configure Providers
 
 ```typescript
-// 1. Install library
-// npm install @hive-academy/angular-langgraph socket.io-client
-
-// 2. Configure in app.config.ts
+// app.config.ts
 import { ApplicationConfig } from '@angular/core';
-import { LangGraphModule } from '@hive-academy/angular-langgraph';
+import { provideRouter } from '@angular/router';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideLangGraph } from '@hive-academy/angular-langgraph';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    ...LangGraphModule.forRoot({
+    // LangGraph with your NestJS backend
+    provideLangGraph({
       apiUrl: 'http://localhost:3000',
-      websocketUrl: 'ws://localhost:8080/streaming',
+      websocketUrl: 'ws://localhost:8080',
       autoConnect: true,
-    }).providers!,
+    }),
+
+    // Other app providers
+    provideRouter(routes),
+    provideAnimations(),
   ],
 };
+```
 
-// 3. Use in component (Standalone API)
-import { Component } from '@angular/core';
+### Step 3: Use Prebuilt Components
+
+```typescript
+// devbrand-workflow.component.ts
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { LangGraphChatComponent } from '@hive-academy/angular-langgraph';
+import type { WorkflowExecution, ApprovalRequest } from '@hive-academy/angular-langgraph';
 
 @Component({
   selector: 'app-devbrand-workflow',
-  standalone: true,
   imports: [LangGraphChatComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <lg-chat
-      [title]="'DevBrand AI Assistant'"
-      [placement]="'sidebar'"
-      (workflowStarted)="onWorkflowStarted($event)"
-      (approvalRequired)="onApprovalRequired($event)"
-    />
+    <div class="workflow-container">
+      <h1>DevBrand AI Assistant</h1>
+
+      <lg-chat
+        [title]="'GitHub Profile Analyzer'"
+        [placement]="'sidebar'"
+        [autoConnect]="true"
+        (workflowStarted)="onWorkflowStarted($event)"
+        (workflowCompleted)="onWorkflowCompleted($event)"
+        (approvalRequired)="onApprovalRequired($event)"
+      />
+    </div>
   `,
+  styles: [
+    `
+      .workflow-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+    `,
+  ],
 })
 export class DevBrandWorkflowComponent {
   onWorkflowStarted(execution: WorkflowExecution) {
-    console.log('Workflow started:', execution.executionId);
+    console.log('✅ Workflow started:', execution.executionId);
+  }
+
+  onWorkflowCompleted(result: any) {
+    console.log('✅ Workflow completed:', result);
   }
 
   onApprovalRequired(approval: ApprovalRequest) {
-    console.log('Approval required:', approval);
+    console.log('⏸️ Approval required:', approval.message);
   }
 }
+```
 
-// 4. Or use composables (functional approach)
-import { Component, signal } from '@angular/core';
+### Step 4: Or Use Composables (Functional Approach)
+
+```typescript
+// devbrand-simple.component.ts
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { useLangGraphWorkflow } from '@hive-academy/angular-langgraph';
 
 @Component({
   selector: 'app-devbrand-simple',
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div>
+    <div class="simple-workflow">
+      <input
+        type="text"
+        [value]="githubUsername()"
+        (input)="githubUsername.set($any($event.target).value)"
+        placeholder="Enter GitHub username"
+      />
+
       <button (click)="workflow.startWorkflow()" [disabled]="!workflow.isConnected()">
-        Start DevBrand Workflow
+        @if (workflow.isConnected()) { 🚀 Start DevBrand Workflow } @else { 🔌 Connecting... }
       </button>
 
       @if (workflow.workflowState(); as state) {
-      <div>Current Agent: {{ state.currentAgent }}</div>
-      }
-
-      <div class="tokens">
-        {{ workflow.tokens() }}
+      <div class="state-info">
+        <h3>Current Agent: {{ state.currentAgent }}</h3>
+        <p>Progress: {{ state.progress }}%</p>
       </div>
+      } @if (workflow.tokens(); as tokens) {
+      <div class="streaming-tokens">
+        {{ tokens }}
+      </div>
+      }
     </div>
   `,
+  styles: [
+    `
+      .simple-workflow {
+        padding: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      button {
+        width: 100%;
+        padding: 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .state-info {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
+
+      .streaming-tokens {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        min-height: 100px;
+        font-family: monospace;
+      }
+    `,
+  ],
 })
 export class DevBrandSimpleComponent {
-  githubUsername = signal('yourGithubUsername');
+  githubUsername = signal('octocat');
   workflow = useLangGraphWorkflow(this.githubUsername());
 }
 ```
+
+### Step 5: Run Your Application
+
+```bash
+# Start your NestJS backend
+npm run dev:services  # Starts Neo4j, ChromaDB, Redis
+npm run dev:api       # Starts dev-brand-api on port 3000
+
+# Start your Angular frontend
+ng serve              # Starts on port 4200
+```
+
+Navigate to `http://localhost:4200` and see your LangGraph workflow in action! 🚀
 
 ---
 
@@ -980,7 +1306,7 @@ export class DevBrandSimpleComponent {
 - [ ] Implement `LangGraphProtocolService` (AG-UI events)
 - [ ] Implement `LangGraphStateService` (bi-directional sync)
 - [ ] Implement `LangGraphStreamingService` (RxJS token streaming)
-- [ ] Create configuration module with `forRoot` pattern
+- [ ] Create `provideLangGraph()` and `provideLangGraphFeature()` functions
 - [ ] Unit tests for all core services (80% coverage)
 
 **Deliverables**:
@@ -1102,20 +1428,22 @@ export class DevBrandSimpleComponent {
 
 ## 📊 Comparison: CopilotKit vs Angular LangGraph
 
-| Feature          | CopilotKit (React) | @hive-academy/angular-langgraph    |
-| ---------------- | ------------------ | ---------------------------------- |
-| **Framework**    | React only         | Angular only                       |
-| **Backend**      | Generic LangGraph  | Your NestJS LangGraph ecosystem    |
-| **Protocol**     | AG-UI (generic)    | AG-UI + custom NestJS events       |
-| **Streaming**    | SSE/WebSocket      | WebSocket (Socket.io) + REST       |
-| **State Mgmt**   | React hooks        | RxJS observables + Angular signals |
-| **TypeScript**   | Good               | Excellent (full generic support)   |
-| **HITL Support** | Basic              | Advanced (16-service HITL module)  |
-| **Components**   | React components   | Angular standalone components      |
-| **Directives**   | N/A                | Angular directives + pipes         |
-| **Offline**      | Limited            | Built-in (Phase 6)                 |
-| **Real-time**    | SSE (default)      | WebSocket (faster)                 |
-| **Integration**  | Generic            | Tailored to your ecosystem         |
+| Feature          | CopilotKit (React)       | @hive-academy/angular-langgraph    |
+| ---------------- | ------------------------ | ---------------------------------- |
+| **Framework**    | React only               | Angular only                       |
+| **Backend**      | Generic LangGraph        | Your NestJS LangGraph ecosystem    |
+| **Protocol**     | AG-UI (generic)          | AG-UI + custom NestJS events       |
+| **WebSocket**    | socket.io-client (~50KB) | RxJS WebSocket (0KB extra)         |
+| **Streaming**    | SSE/WebSocket            | RxJS WebSocket + REST              |
+| **State Mgmt**   | React hooks              | RxJS observables + Angular signals |
+| **TypeScript**   | Good                     | Excellent (full generic support)   |
+| **HITL Support** | Basic                    | Advanced (16-service HITL module)  |
+| **Components**   | React components         | Angular standalone components      |
+| **Directives**   | N/A                      | Angular directives + pipes         |
+| **Reconnection** | Manual                   | Automatic (exponential backoff)    |
+| **Offline**      | Limited                  | Built-in (Phase 6)                 |
+| **Real-time**    | SSE (default)            | WebSocket (faster, bi-directional) |
+| **Integration**  | Generic                  | Tailored to your ecosystem         |
 
 ---
 
@@ -1133,11 +1461,20 @@ export class DevBrandSimpleComponent {
 - Better IDE autocomplete
 - Compile-time type safety for all events
 
-### 3. **RxJS-Powered Reactivity**
+### 3. **RxJS WebSocket - Native Observable Streams**
 
-- More powerful stream composition
-- Better memory management
-- Advanced operators for complex workflows
+**Why RxJS WebSocket over socket.io-client:**
+
+- ✅ **Zero extra dependencies** - RxJS is already included in Angular
+- ✅ **Smaller bundle size** - No socket.io-client (saves ~50KB)
+- ✅ **Native Observable API** - Perfect integration with Angular's reactive patterns
+- ✅ **Built-in reconnection** - Using RxJS operators (`retryWhen`, `delayWhen`)
+- ✅ **Type-safe** - Full TypeScript support with generics
+- ✅ **Memory efficient** - Automatic cleanup with `takeUntilDestroyed`
+- ✅ **Composable** - Chain with RxJS operators for complex workflows
+- ✅ **Better error handling** - RxJS error pipeline with `catchError`
+- ✅ **Exponential backoff** - Smart reconnection strategy included
+- ✅ **Shared connections** - Use `share()` operator to multiplex
 
 ### 4. **Angular-Native DX**
 
@@ -1181,7 +1518,7 @@ export class DevBrandSimpleComponent {
 - **Angular Signals**: https://angular.dev/guide/signals
 - **Angular Standalone**: https://angular.dev/guide/standalone-components
 - **RxJS**: https://rxjs.dev/
-- **Socket.io Client**: https://socket.io/docs/v4/client-api/
+- **RxJS WebSocket**: https://rxjs.dev/api/webSocket/webSocket
 
 ---
 
