@@ -94,7 +94,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     // Skip if no configuration provided (directive is optional)
     const config = this.floatConfig();
     if (!config) {
-      console.log('[Float3dDirective] No config provided, directive inactive');
+      // console.log('[Float3dDirective] No config provided, directive inactive');
       return;
     }
 
@@ -102,9 +102,9 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     this.mesh = this.elementRef.nativeElement;
 
     if (!this.mesh) {
-      console.warn(
-        '[Float3dDirective] Could not access mesh from nativeElement'
-      );
+      // console.warn(
+      //   '[Float3dDirective] Could not access mesh from nativeElement'
+      // );
       return;
     }
 
@@ -132,10 +132,10 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     // Create floating animation
     this.createFloatingAnimation();
 
-    console.log(
-      '[Float3dDirective] Animation initialized for mesh:',
-      this.mesh.name || 'unnamed'
-    );
+    // console.log(
+    //   '[Float3dDirective] Animation initialized for mesh:',
+    //   this.mesh.name || 'unnamed'
+    // );
   }
 
   ngOnDestroy(): void {
@@ -199,11 +199,11 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
         timeline.pause();
       }
 
-      console.log(
-        `[Float3dDirective] Seamless floating animation created for mesh:`,
-        this.mesh.name || 'unnamed',
-        `- Height: ${height}, Speed: ${speed}ms, Ease: ${ease}`
-      );
+      // console.log(
+      //   `[Float3dDirective] Seamless floating animation created for mesh:`,
+      //   this.mesh.name || 'unnamed',
+      //   `- Height: ${height}, Speed: ${speed}ms, Ease: ${ease}`
+      // );
     });
   }
 
@@ -214,7 +214,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     if (this.gsapTimeline) {
       this.gsapTimeline.kill();
       this.gsapTimeline = null;
-      console.log('[Float3dDirective] Animation cleanup completed');
+      // console.log('[Float3dDirective] Animation cleanup completed');
     }
 
     // Reset position to original if mesh still exists

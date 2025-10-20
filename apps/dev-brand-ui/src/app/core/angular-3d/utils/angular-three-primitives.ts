@@ -47,11 +47,11 @@ let primitivesRegistered = false;
  */
 export function registerAngularThreePrimitives(): void {
   if (primitivesRegistered) {
-    console.log('[Angular Three] Primitives already registered, skipping');
+    // console.log('[Angular Three] Primitives already registered, skipping');
     return;
   }
 
-  console.log('[Angular Three] Registering THREE.js primitives...');
+  // console.log('[Angular Three] Registering THREE.js primitives...');
 
   // Register core objects
   extend({

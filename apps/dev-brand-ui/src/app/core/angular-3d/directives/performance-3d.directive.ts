@@ -70,9 +70,9 @@ export class Performance3dDirective implements AfterViewInit, OnDestroy {
       typeof config === 'boolean' ? config : config?.enabled ?? false;
 
     if (!enabled) {
-      console.log(
-        '[Performance3dDirective] Performance optimization disabled, directive inactive'
-      );
+      // console.log(
+      //   '[Performance3dDirective] Performance optimization disabled, directive inactive'
+      // );
       return;
     }
 
@@ -80,17 +80,17 @@ export class Performance3dDirective implements AfterViewInit, OnDestroy {
     this.mesh = this.elementRef.nativeElement;
 
     if (!this.mesh) {
-      console.warn(
-        '[Performance3dDirective] Could not access mesh from nativeElement'
-      );
+      // console.warn(
+      //   '[Performance3dDirective] Could not access mesh from nativeElement'
+      // );
       return;
     }
 
     this.registerWithOptimizer();
-    console.log(
-      `[Performance3dDirective] Object registered for performance optimization:`,
-      this.mesh.name || 'unnamed'
-    );
+    // console.log(
+    //   `[Performance3dDirective] Object registered for performance optimization:`,
+    //   this.mesh.name || 'unnamed'
+    // );
 
     // Register cleanup
     this.destroyRef.onDestroy(() => {
@@ -130,9 +130,9 @@ export class Performance3dDirective implements AfterViewInit, OnDestroy {
     if (this.mesh && this.isRegistered) {
       // The service automatically stops tracking objects that are removed from scene
       // No manual cleanup needed - Three.js and Angular Three handle disposal
-      console.log(
-        '[Performance3dDirective] Object unregistered from performance tracking'
-      );
+      // console.log(
+      //   '[Performance3dDirective] Object unregistered from performance tracking'
+      // );
       this.isRegistered = false;
     }
   }
