@@ -1,99 +1,149 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ElementRef,
-  ViewChild,
-  PLATFORM_ID,
-  inject,
-} from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import * as THREE from 'three';
-import { gsap } from 'gsap';
+/**
+ * Intelligence Layer Section - Triangle layout
+ */
+import { CommonModule } from '@angular/common';
+import { Component, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { RouterModule } from '@angular/router';
+import { SectionParticleBackgroundComponent } from '../../../shared/components/section-particle-background.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 
-interface ModuleCard {
+interface IntelligenceModule {
+  icon: string;
   title: string;
   description: string;
+  color: 'orange' | 'purple' | 'pink';
   features: string[];
-  accentColor: string;
-  particleColor: number;
+  metric?: { value: string; label: string };
+  slug: string;
 }
 
 @Component({
   selector: 'app-intelligence-layer-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SectionParticleBackgroundComponent,
+    ScrollAnimationDirective,
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <section class="relative py-20 bg-gradient-to-b from-gray-900 to-black">
-      <div class="container mx-auto px-4">
-        <!-- Section Header -->
-        <div class="text-center mb-16 opacity-0" #sectionHeader>
-          <h2 class="text-4xl md:text-5xl font-bold text-white mb-4">
-            Intelligence Layer
+    <section
+      class="w-full min-h-screen relative bg-gradient-to-br from-gray-900/95 to-purple-900/90 py-20"
+    >
+      <div class="container mx-auto px-8 relative z-10">
+        <div
+          class="text-center mb-16"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'slideUp',
+            start: 'top 80%',
+            duration: 0.6,
+            ease: 'power2.out'
+          }"
+        >
+          <h2
+            class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent"
+          >
+            🧠 Intelligence Layer
           </h2>
-          <p class="text-xl text-gray-300 max-w-3xl mx-auto">
-            Advanced memory systems, multi-agent coordination, and
-            human-in-the-loop patterns for intelligent workflow orchestration
+          <p class="text-xl md:text-2xl text-white/80 max-w-4xl mx-auto">
+            AI coordination combining memory fusion, multi-agent systems, and
+            human oversight
           </p>
         </div>
-
-        <!-- Module Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          @for (module of modules; track module.title) {
-          <div
-            class="module-card relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 border border-gray-700 hover:border-{{
-              module.accentColor
-            }}-500 transition-all duration-300 overflow-hidden opacity-0"
-            [attr.data-accent]="module.accentColor"
+        <div class="max-w-7xl mx-auto">
+          <a
+            [routerLink]="['/library', 'langgraph-memory']"
+            class="block max-w-3xl mx-auto mb-12 cursor-pointer"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'scaleIn',
+              start: 'top 80%',
+              duration: 0.8,
+              ease: 'power2.out'
+            }"
           >
-            <!-- Particle Background Canvas -->
-            <canvas
-              class="absolute inset-0 w-full h-full pointer-events-none"
-              [attr.data-module]="module.title"
-            ></canvas>
-
-            <!-- Content -->
-            <div class="relative z-10">
-              <div class="flex items-center mb-4">
-                <div
-                  class="w-3 h-3 rounded-full bg-{{
-                    module.accentColor
-                  }}-500 mr-3"
-                ></div>
-                <h3 class="text-2xl font-bold text-white">
-                  {{ module.title }}
-                </h3>
-              </div>
-
-              <p class="text-gray-300 mb-6">
-                {{ module.description }}
+            <div
+              class="relative bg-orange-600/30 backdrop-blur-sm border border-orange-400/30 rounded-2xl p-10 hover:scale-105 transition-transform"
+            >
+              <div class="text-6xl mb-4 text-center">🧠</div>
+              <h3
+                class="text-3xl md:text-4xl font-bold text-orange-400 mb-4 text-center"
+              >
+                Memory Fusion
+              </h3>
+              <p class="text-lg text-white/80 mb-8 text-center">
+                Dual storage combining ChromaDB + Neo4j
               </p>
-
-              <div class="space-y-3">
-                @for (feature of module.features; track feature) {
-                <div class="flex items-start">
-                  <svg
-                    class="w-5 h-5 text-{{
-                      module.accentColor
-                    }}-500 mt-0.5 mr-2 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span class="text-sm text-gray-400">{{ feature }}</span>
+              <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-black/30 rounded p-6">
+                  <div class="font-bold text-white mb-2">🔍 Vector Search</div>
+                  <div class="text-sm text-white/60">Semantic similarity</div>
                 </div>
-                }
+                <div class="bg-black/30 rounded p-6">
+                  <div class="font-bold text-white mb-2">
+                    🌐 Graph Expansion
+                  </div>
+                  <div class="text-sm text-white/60">
+                    Relationship traversal
+                  </div>
+                </div>
+              </div>
+              <div class="bg-black/40 rounded p-4 text-center">
+                <span class="text-orange-300 font-bold text-xl"
+                  >IMemoryAdapter</span
+                >
               </div>
             </div>
+          </a>
+          <div class="grid md:grid-cols-2 gap-10">
+            @for (module of bottomModules(); track module.title; let i = $index)
+            {
+            <a
+              [routerLink]="['/library', module.slug]"
+              class="relative block cursor-pointer"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideUp',
+                start: 'top 80%',
+                duration: 0.6,
+                delay: i * 0.2,
+                ease: 'power2.out'
+              }"
+              ><div
+                class="relative h-full bg-{{
+                  module.color
+                }}-600/30 backdrop-blur-sm border border-{{
+                  module.color
+                }}-400/30 rounded-2xl p-8 hover:bg-white/20 hover:-translate-y-2 transition-all"
+              >
+                <div class="text-5xl mb-4">{{ module.icon }}</div>
+                <h3 class="text-2xl font-bold text-{{ module.color }}-400 mb-3">
+                  {{ module.title }}
+                </h3>
+                <p class="text-base text-white/70 mb-6">
+                  {{ module.description }}
+                </p>
+                <ul class="space-y-2 mb-6">
+                  @for (feature of module.features; track feature) {
+                  <li class="flex gap-2 text-white/60 text-sm">
+                    <span class="text-{{ module.color }}-400">▸</span
+                    ><span>{{ feature }}</span>
+                  </li>
+                  }
+                </ul>
+                @if (module.metric) {
+                <div class="bg-black/30 rounded p-4 text-center">
+                  <span class="text-{{ module.color }}-300 font-bold">{{
+                    module.metric.value
+                  }}</span>
+                </div>
+                }
+              </div></a
+            >
+            }
           </div>
-          }
         </div>
       </div>
     </section>
@@ -103,248 +153,32 @@ interface ModuleCard {
       :host {
         display: block;
       }
-
-      .module-card {
-        position: relative;
-        min-height: 400px;
-      }
-
-      canvas {
-        opacity: 0.6;
-      }
     `,
   ],
 })
-export class IntelligenceLayerSectionComponent implements OnInit, OnDestroy {
-  @ViewChild('sectionHeader', { static: true })
-  sectionHeader!: ElementRef<HTMLDivElement>;
-
-  private platformId = inject(PLATFORM_ID);
-  private particleSystems: THREE.Scene[] = [];
-  private renderers: THREE.WebGLRenderer[] = [];
-  private animationFrameIds: number[] = [];
-  private isAnimating = false;
-
-  modules: ModuleCard[] = [
+export class IntelligenceLayerSectionComponent {
+  readonly bottomModules = signal<IntelligenceModule[]>([
     {
-      title: 'memory',
-      description:
-        'Agent Memory Management - Contextual memory with semantic search, temporal awareness, and multi-agent shared context',
-      features: [
-        'Semantic search with embeddings',
-        'Temporal context tracking',
-        'Multi-agent shared memory',
-        'Conversation history management',
-        'Memory decay and relevance scoring',
-      ],
-      accentColor: 'purple',
-      particleColor: 0x9333ea,
+      icon: '👥',
+      title: 'Multi-Agent Systems',
+      description: 'Role-based agent coordination with memory',
+      color: 'purple',
+      features: ['@Agent decorator', 'Shared context', 'Memory integration'],
+      metric: { value: 'Agent Coordination', label: 'Memory-aware' },
+      slug: 'langgraph-multi-agent',
     },
     {
-      title: 'multi-agent',
-      description:
-        'Multi-Agent Network Orchestration - Agent coordination with network topology, message passing, and role-based collaboration',
+      icon: '👤',
+      title: 'Human-in-the-Loop',
+      description: '@RequiresApproval gates with learning',
+      color: 'pink',
       features: [
-        'Network topology management',
-        'Message passing protocols',
-        'Role-based agent collaboration',
-        'Task distribution strategies',
-        'Conflict resolution mechanisms',
+        'Declarative approval',
+        'Timeout handling',
+        'Pattern learning',
       ],
-      accentColor: 'blue',
-      particleColor: 0x3b82f6,
+      metric: { value: 'Human Oversight', label: 'Removable gates' },
+      slug: 'langgraph-hitl',
     },
-    {
-      title: 'hitl',
-      description:
-        'Human-in-the-Loop Integration - Human approval workflows with interrupt handling, approval queues, and escalation policies',
-      features: [
-        'Approval workflow automation',
-        'Interrupt handling & recovery',
-        'Priority-based approval queues',
-        'Escalation policy enforcement',
-        'Audit trail and compliance tracking',
-      ],
-      accentColor: 'green',
-      particleColor: 0x10b981,
-    },
-  ];
-
-  ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.initializeAnimations();
-      this.initializeParticleSystems();
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.cleanup();
-    }
-  }
-
-  private initializeAnimations(): void {
-    const timeline = gsap.timeline();
-
-    // Animate section header
-    timeline.to(this.sectionHeader.nativeElement, {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      ease: 'power3.out',
-    });
-
-    // Stagger animate module cards
-    timeline.to(
-      '.module-card',
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        stagger: 0.15,
-        ease: 'power3.out',
-      },
-      '-=0.5'
-    );
-  }
-
-  private initializeParticleSystems(): void {
-    const canvases = document.querySelectorAll(
-      'canvas[data-module]'
-    ) as NodeListOf<HTMLCanvasElement>;
-
-    canvases.forEach((canvas, index) => {
-      const module = this.modules[index];
-      if (!module) return;
-
-      // Scene setup
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        canvas.clientWidth / canvas.clientHeight,
-        0.1,
-        1000
-      );
-      camera.position.z = 5;
-
-      // Renderer setup
-      const renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-      });
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-      // Particle system
-      const particleCount = 15;
-      const particles = new THREE.BufferGeometry();
-      const positions = new Float32Array(particleCount * 3);
-      const velocities: THREE.Vector3[] = [];
-
-      for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 10;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 5;
-
-        velocities.push(
-          new THREE.Vector3(
-            (Math.random() - 0.5) * 0.02,
-            (Math.random() - 0.5) * 0.02,
-            (Math.random() - 0.5) * 0.02
-          )
-        );
-      }
-
-      particles.setAttribute(
-        'position',
-        new THREE.BufferAttribute(positions, 3)
-      );
-
-      const particleMaterial = new THREE.PointsMaterial({
-        color: module.particleColor,
-        size: 0.1,
-        transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending,
-      });
-
-      const particleSystem = new THREE.Points(particles, particleMaterial);
-      scene.add(particleSystem);
-
-      this.particleSystems.push(scene);
-      this.renderers.push(renderer);
-
-      // Animation loop
-      const animate = () => {
-        if (!this.isAnimating) return;
-
-        const positions = particles.attributes[
-          'position'
-        ] as THREE.BufferAttribute;
-        const positionArray = positions.array as Float32Array;
-
-        for (let i = 0; i < particleCount; i++) {
-          positionArray[i * 3] += velocities[i].x;
-          positionArray[i * 3 + 1] += velocities[i].y;
-          positionArray[i * 3 + 2] += velocities[i].z;
-
-          // Boundary check
-          if (Math.abs(positionArray[i * 3]) > 5) velocities[i].x *= -1;
-          if (Math.abs(positionArray[i * 3 + 1]) > 5) velocities[i].y *= -1;
-          if (Math.abs(positionArray[i * 3 + 2]) > 2.5) velocities[i].z *= -1;
-        }
-
-        positions.needsUpdate = true;
-        particleSystem.rotation.y += 0.001;
-
-        renderer.render(scene, camera);
-        const frameId = requestAnimationFrame(animate);
-        this.animationFrameIds.push(frameId);
-      };
-
-      this.isAnimating = true;
-      animate();
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', this.handleResize.bind(this));
-  }
-
-  private handleResize(): void {
-    const canvases = document.querySelectorAll(
-      'canvas[data-module]'
-    ) as NodeListOf<HTMLCanvasElement>;
-
-    canvases.forEach((canvas, index) => {
-      const renderer = this.renderers[index];
-      if (!renderer) return;
-
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    });
-  }
-
-  private cleanup(): void {
-    this.isAnimating = false;
-
-    this.animationFrameIds.forEach((id) => cancelAnimationFrame(id));
-    this.animationFrameIds = [];
-
-    this.renderers.forEach((renderer) => renderer.dispose());
-    this.renderers = [];
-
-    this.particleSystems.forEach((scene) => {
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
-          object.geometry.dispose();
-          if (object.material instanceof THREE.Material) {
-            object.material.dispose();
-          }
-        }
-      });
-    });
-    this.particleSystems = [];
-
-    window.removeEventListener('resize', this.handleResize.bind(this));
-  }
+  ]);
 }

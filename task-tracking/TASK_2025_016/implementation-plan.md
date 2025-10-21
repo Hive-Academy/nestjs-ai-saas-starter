@@ -107,6 +107,7 @@
 
 - **Location**: apps/dev-brand-ui/src/app/core/angular-3d/components/scene-3d.component.ts:62-95
 - **Interface**:
+
   ```typescript
   @Input() sceneGraph: Type<any>; // Scene graph component class
   @Input() camera: CameraConfig = { position: [0, 0, 15], fov: 60 };
@@ -115,12 +116,14 @@
   @Input() enableMouseParallax: boolean = false;
   @Input() mouseParallax: MouseParallaxConfig = { sensitivity: 0.5, smoothing: 0.1, cameraDistance: 15 };
   ```
+
 - **Usage**: Wrap scene graph components with configurable camera and renderer
 
 **2. Float3dDirective API**
 
 - **Location**: apps/dev-brand-ui/src/app/core/angular-3d/directives/float-3d.directive.ts:60-265
 - **Interface**:
+
   ```typescript
   @Input() floatConfig?: { height?: number; speed?: number; delay?: number; ease?: string; autoStart?: boolean };
   // Legacy inputs (deprecated):
@@ -128,12 +131,14 @@
   @Input() floatSpeed: number = 2000;
   @Input() floatDelay: number = 0;
   ```
+
 - **Usage**: Apply to any component with THREE.Mesh nativeElement
 
 **3. ParticleSystemComponent API**
 
 - **Location**: apps/dev-brand-ui/src/app/core/angular-3d/components/primitives/particle-system.component.ts:64-149
 - **Interface**:
+
   ```typescript
   @Input() particleCount: number = 200;
   @Input() colorPalette: string[] = ['#4a1d6b', '#2d1b47', '#1a0d2e', '#261242', '#1e1139'];
@@ -141,6 +146,7 @@
   @Input() size: number = 0.8;
   @Input() opacity: number = 0.5;
   ```
+
 - **Usage**: Add to scene graphs for background particle effects
 
 ---

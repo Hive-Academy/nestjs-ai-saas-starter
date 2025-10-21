@@ -36,6 +36,9 @@ import { Component, input, output, computed } from '@angular/core';
       [style.borderColor]="borderColor()"
       [style.boxShadow]="shadowStyle()"
       (click)="onCardClick()"
+      (keyup)="onCardClick()"
+      role="button"
+      tabindex="0"
       class="group px-6 py-4 rounded-xl backdrop-blur-sm border
              transform transition-all duration-300 hover:scale-105 hover:-translate-y-2
              cursor-pointer"

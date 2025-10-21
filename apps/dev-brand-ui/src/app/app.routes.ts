@@ -15,6 +15,14 @@ export const routes: Routes = [
     title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
   {
+    path: 'library/:slug',
+    loadComponent: () =>
+      import('./features/library-details/library-detail-page.component').then(
+        (m) => m.LibraryDetailPageComponent
+      ),
+    title: 'Library Details',
+  },
+  {
     path: '**',
     redirectTo: '/landing',
   },

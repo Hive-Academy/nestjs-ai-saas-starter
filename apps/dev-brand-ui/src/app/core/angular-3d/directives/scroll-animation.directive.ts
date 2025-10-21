@@ -163,12 +163,6 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
     // Create GSAP timeline (paused by default to prevent auto-play)
     const timeline = gsap.timeline({
       paused: true,
-      onStart: () => console.log('[ScrollAnimation] Timeline started'),
-      onUpdate: () =>
-        console.log(
-          '[ScrollAnimation] Timeline progress:',
-          timeline.progress()
-        ),
     });
     timeline.fromTo(element, animationProps.from, animationProps.to);
     this.animation = timeline;

@@ -1,99 +1,178 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ElementRef,
-  ViewChild,
-  PLATFORM_ID,
-  inject,
-} from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import * as THREE from 'three';
-import { gsap } from 'gsap';
+/**
+ * Production Systems Section - 2x2 Grid Layout
+ *
+ * Showcases 4 production-ready modules for enterprise deployment:
+ * - Checkpoint (state persistence)
+ * - Monitoring (observability)
+ * - Time-Travel (debugging)
+ * - Platform (cloud integration)
+ */
+import { CommonModule } from '@angular/common';
+import { Component, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { RouterModule } from '@angular/router';
+import { SectionParticleBackgroundComponent } from '../../../shared/components/section-particle-background.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 
-interface ModuleCard {
+interface ProductionModule {
+  icon: string;
   title: string;
   description: string;
+  color: 'green' | 'blue' | 'purple' | 'orange';
   features: string[];
-  accentColor: string;
-  particleColor: number;
+  metric: { value: string; label: string };
+  status: 'production' | 'beta' | 'alpha';
+  slug: string;
 }
 
 @Component({
   selector: 'app-production-systems-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    SectionParticleBackgroundComponent,
+    ScrollAnimationDirective,
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <section class="relative py-20 bg-gradient-to-b from-black to-gray-900">
-      <div class="container mx-auto px-4">
-        <!-- Section Header -->
-        <div class="text-center mb-16 opacity-0" #sectionHeader>
-          <h2 class="text-4xl md:text-5xl font-bold text-white mb-4">
-            Production Systems
+    <section
+      class="w-full min-h-screen relative bg-gradient-to-br from-gray-900/95 via-black to-gray-900/95 py-20 overflow-hidden"
+    >
+      <!-- Particle Background -->
+      <div class="absolute inset-0 pointer-events-none opacity-20">
+        <app-section-particle-background
+          [particleCount]="30"
+          tintColor="purple"
+          [particleSize]="0.8"
+          [particleOpacity]="0.4"
+        />
+      </div>
+
+      <div class="container mx-auto px-8 relative z-10">
+        <div
+          class="text-center mb-16"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'slideUp',
+            start: 'top 80%',
+            duration: 0.6,
+            ease: 'power2.out'
+          }"
+        >
+          <h2
+            class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent"
+          >
+            🏭 Production Systems
           </h2>
-          <p class="text-xl text-gray-300 max-w-3xl mx-auto">
-            Enterprise-grade state persistence, observability, debugging, and
-            platform integration for production-ready workflows
+          <p class="text-xl md:text-2xl text-white/80 max-w-4xl mx-auto">
+            Enterprise-grade modules for deployment, monitoring, debugging, and
+            cloud integration
           </p>
         </div>
 
-        <!-- Module Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          @for (module of modules; track module.title) {
-          <div
-            class="module-card relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 border border-gray-700 hover:border-{{
-              module.accentColor
-            }}-500 transition-all duration-300 overflow-hidden opacity-0"
-            [attr.data-accent]="module.accentColor"
+        <!-- 2x2 Grid Layout -->
+        <div class="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+          @for (module of productionModules(); track module.title; let i =
+          $index) {
+          <a
+            [routerLink]="['/library', module.slug]"
+            class="relative group block cursor-pointer"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'slideUp',
+              start: 'top 80%',
+              duration: 0.6,
+              delay: i * 0.15,
+              ease: 'power2.out'
+            }"
           >
-            <!-- Particle Background Canvas -->
-            <canvas
-              class="absolute inset-0 w-full h-full pointer-events-none"
-              [attr.data-module]="module.title"
-            ></canvas>
-
-            <!-- Content -->
-            <div class="relative z-10">
-              <div class="flex items-center mb-4">
+            <div
+              class="relative h-full bg-{{
+                module.color
+              }}-600/30 backdrop-blur-sm border border-{{
+                module.color
+              }}-400/30 rounded-2xl p-8 hover:bg-white/20 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl"
+            >
+              <!-- Icon & Status Badge -->
+              <div class="flex items-start justify-between mb-4">
+                <div class="text-5xl">{{ module.icon }}</div>
                 <div
-                  class="w-3 h-3 rounded-full bg-{{
-                    module.accentColor
-                  }}-500 mr-3"
-                ></div>
-                <h3 class="text-2xl font-bold text-white">
-                  {{ module.title }}
-                </h3>
+                  class="px-3 py-1 rounded-full text-xs font-semibold"
+                  [ngClass]="{
+                    'bg-green-500/20 text-green-400 border border-green-400/30':
+                      module.status === 'production',
+                    'bg-blue-500/20 text-blue-400 border border-blue-400/30':
+                      module.status === 'beta',
+                    'bg-orange-500/20 text-orange-400 border border-orange-400/30':
+                      module.status === 'alpha'
+                  }"
+                >
+                  {{ module.status.toUpperCase() }}
+                </div>
               </div>
 
-              <p class="text-gray-300 mb-6">
+              <!-- Title & Description -->
+              <h3
+                class="text-2xl md:text-3xl font-bold text-{{
+                  module.color
+                }}-400 mb-3"
+              >
+                {{ module.title }}
+              </h3>
+              <p class="text-base md:text-lg text-white/70 mb-6">
                 {{ module.description }}
               </p>
 
-              <div class="space-y-3">
+              <!-- Features List -->
+              <ul class="space-y-2 mb-6">
                 @for (feature of module.features; track feature) {
-                <div class="flex items-start">
-                  <svg
-                    class="w-5 h-5 text-{{
-                      module.accentColor
-                    }}-500 mt-0.5 mr-2 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span class="text-sm text-gray-400">{{ feature }}</span>
-                </div>
+                <li class="flex items-start gap-2 text-white/60 text-sm">
+                  <span class="text-{{ module.color }}-400 mt-1">▸</span>
+                  <span>{{ feature }}</span>
+                </li>
                 }
+              </ul>
+
+              <!-- Business Metric -->
+              <div class="bg-black/30 rounded p-4 text-center">
+                <span class="text-{{ module.color }}-300 font-bold text-lg">{{
+                  module.metric.value
+                }}</span>
+                <div class="text-xs text-white/50 mt-1">
+                  {{ module.metric.label }}
+                </div>
+              </div>
+            </div>
+          </a>
+          }
+        </div>
+
+        <!-- Production Ready Badge -->
+        <div
+          class="text-center mt-12"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'fadeIn',
+            start: 'top 80%',
+            duration: 0.6,
+            ease: 'power2.out'
+          }"
+        >
+          <div
+            class="inline-block px-8 py-4 bg-gradient-to-r from-green-600/30 to-blue-600/30 backdrop-blur-sm border border-green-400/30 rounded-xl"
+          >
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">✅</span>
+              <div class="text-left">
+                <div class="text-lg font-bold text-green-400">
+                  Production Ready
+                </div>
+                <div class="text-sm text-white/60">
+                  Enterprise deployment with comprehensive monitoring
+                </div>
               </div>
             </div>
           </div>
-          }
         </div>
       </div>
     </section>
@@ -103,262 +182,82 @@ interface ModuleCard {
       :host {
         display: block;
       }
-
-      .module-card {
-        position: relative;
-        min-height: 400px;
-      }
-
-      canvas {
-        opacity: 0.6;
-      }
     `,
   ],
 })
-export class ProductionSystemsSectionComponent implements OnInit, OnDestroy {
-  @ViewChild('sectionHeader', { static: true })
-  sectionHeader!: ElementRef<HTMLDivElement>;
-
-  private platformId = inject(PLATFORM_ID);
-  private particleSystems: THREE.Scene[] = [];
-  private renderers: THREE.WebGLRenderer[] = [];
-  private animationFrameIds: number[] = [];
-  private isAnimating = false;
-
-  modules: ModuleCard[] = [
+export class ProductionSystemsSectionComponent {
+  readonly productionModules = signal<ProductionModule[]>([
     {
-      title: 'checkpoint',
+      icon: '💾',
+      title: 'Checkpoint',
       description:
-        'Checkpoint Management - Multi-backend state persistence with PostgreSQL, SQLite, and Redis support',
+        'Automagical state persistence with 8-service facade pattern and automatic fallback to in-memory storage',
+      color: 'green',
       features: [
-        'Multi-backend state persistence',
-        'PostgreSQL, SQLite, Redis support',
-        'Automatic state recovery',
-        'Checkpoint versioning',
-        'Transaction-safe state updates',
+        'Auto-fallback to MemorySaver for zero-config start',
+        'Multi-storage backends (SQLite, Redis, Postgres)',
+        '8-service SOLID architecture with graceful degradation',
+        'Auto-cleanup with configurable retention policies',
+        'Real-time health monitoring and performance metrics',
+        'Ecosystem-wide integration (Multi-Agent, HITL, Workflow-Engine)',
       ],
-      accentColor: 'orange',
-      particleColor: 0xf97316,
+      metric: { value: 'Zero-Config', label: 'Auto-fallback storage' },
+      status: 'production',
+      slug: 'langgraph-checkpoint',
     },
     {
-      title: 'monitoring',
+      icon: '📊',
+      title: 'Monitoring',
       description:
-        'Production Observability - Facade pattern coordinating 5 specialized services (MetricsCollector, Alerting, HealthCheck, PerformanceTracker, Dashboard)',
+        'Production observability with 5-service facade for real-time metrics, intelligent alerting, and health monitoring',
+      color: 'blue',
       features: [
-        'Metrics collection and aggregation',
-        'Real-time alerting system',
-        'Health check automation',
-        'Performance tracking and profiling',
-        'Dashboard visualization',
+        'Real-time metrics collection (counters, gauges, histograms, timers)',
+        'Intelligent alerting with multi-channel notifications',
+        'Comprehensive health checks with dependency tracking',
+        'Performance anomaly detection and baseline analysis',
+        'Prometheus backend with batch processing',
+        'Dashboard & visualization with customizable widgets',
       ],
-      accentColor: 'red',
-      particleColor: 0xef4444,
+      metric: { value: 'Real-Time', label: 'Production observability' },
+      status: 'production',
+      slug: 'langgraph-monitoring',
     },
     {
-      title: 'time-travel',
+      icon: '⏰',
+      title: 'Time-Travel',
       description:
-        'Workflow Debugging and Replay - Facade pattern coordinating 5 services (BranchManager, WorkflowReplay, ExecutionHistory, WorkflowRegistry)',
+        'Sophisticated workflow debugging with replay, branching, and state comparison for temporal navigation',
+      color: 'purple',
       features: [
-        'Branch management for workflow variants',
-        'Workflow replay and debugging',
-        'Execution history tracking',
-        'Workflow registry and versioning',
-        'State snapshot comparison',
+        'Workflow replay from any checkpoint with state modifications',
+        'Branch management for experimentation and A/B testing',
+        'State comparison and deep diff analysis',
+        'Execution history timeline visualization',
+        'Debug sessions with production-safe isolation',
+        'Environment-based settings (3 branches prod, 10 dev)',
       ],
-      accentColor: 'cyan',
-      particleColor: 0x06b6d4,
+      metric: { value: 'Time-Travel', label: 'Workflow debugging' },
+      status: 'production',
+      slug: 'langgraph-time-travel',
     },
     {
-      title: 'platform',
+      icon: '☁️',
+      title: 'Platform',
       description:
-        'LangGraph Platform Integration - HTTP client integration with retry policies and webhook handling',
+        'LangGraph Platform integration with HTTP client for hosted assistants, thread management, and webhook events',
+      color: 'orange',
       features: [
-        'HTTP client with retry policies',
-        'Webhook event handling',
-        'Platform API integration',
-        'Authentication management',
-        'Request/response interceptors',
+        'Hosted assistant management on LangGraph Platform',
+        'Thread lifecycle operations with state persistence',
+        'Run execution monitoring with streaming support',
+        'Real-time webhook notifications and secure payload handling',
+        'Exponential backoff retry policy (3 retries, 30s max)',
+        'Hybrid deployment: local workflows + cloud assistants',
       ],
-      accentColor: 'pink',
-      particleColor: 0xec4899,
+      metric: { value: 'Hybrid', label: 'Cloud + Local' },
+      status: 'production',
+      slug: 'langgraph-platform',
     },
-  ];
-
-  ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.initializeAnimations();
-      this.initializeParticleSystems();
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.cleanup();
-    }
-  }
-
-  private initializeAnimations(): void {
-    const timeline = gsap.timeline();
-
-    // Animate section header
-    timeline.to(this.sectionHeader.nativeElement, {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      ease: 'power3.out',
-    });
-
-    // Stagger animate module cards
-    timeline.to(
-      '.module-card',
-      {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        stagger: 0.15,
-        ease: 'power3.out',
-      },
-      '-=0.5'
-    );
-  }
-
-  private initializeParticleSystems(): void {
-    const canvases = document.querySelectorAll(
-      'canvas[data-module]'
-    ) as NodeListOf<HTMLCanvasElement>;
-
-    canvases.forEach((canvas, index) => {
-      const module = this.modules[index];
-      if (!module) return;
-
-      // Scene setup
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        75,
-        canvas.clientWidth / canvas.clientHeight,
-        0.1,
-        1000
-      );
-      camera.position.z = 5;
-
-      // Renderer setup
-      const renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-      });
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-      // Particle system
-      const particleCount = 15;
-      const particles = new THREE.BufferGeometry();
-      const positions = new Float32Array(particleCount * 3);
-      const velocities: THREE.Vector3[] = [];
-
-      for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 10;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 5;
-
-        velocities.push(
-          new THREE.Vector3(
-            (Math.random() - 0.5) * 0.02,
-            (Math.random() - 0.5) * 0.02,
-            (Math.random() - 0.5) * 0.02
-          )
-        );
-      }
-
-      particles.setAttribute(
-        'position',
-        new THREE.BufferAttribute(positions, 3)
-      );
-
-      const particleMaterial = new THREE.PointsMaterial({
-        color: module.particleColor,
-        size: 0.1,
-        transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending,
-      });
-
-      const particleSystem = new THREE.Points(particles, particleMaterial);
-      scene.add(particleSystem);
-
-      this.particleSystems.push(scene);
-      this.renderers.push(renderer);
-
-      // Animation loop
-      const animate = () => {
-        if (!this.isAnimating) return;
-
-        const positions = particles.attributes[
-          'position'
-        ] as THREE.BufferAttribute;
-        const positionArray = positions.array as Float32Array;
-
-        for (let i = 0; i < particleCount; i++) {
-          positionArray[i * 3] += velocities[i].x;
-          positionArray[i * 3 + 1] += velocities[i].y;
-          positionArray[i * 3 + 2] += velocities[i].z;
-
-          // Boundary check
-          if (Math.abs(positionArray[i * 3]) > 5) velocities[i].x *= -1;
-          if (Math.abs(positionArray[i * 3 + 1]) > 5) velocities[i].y *= -1;
-          if (Math.abs(positionArray[i * 3 + 2]) > 2.5) velocities[i].z *= -1;
-        }
-
-        positions.needsUpdate = true;
-        particleSystem.rotation.y += 0.001;
-
-        renderer.render(scene, camera);
-        const frameId = requestAnimationFrame(animate);
-        this.animationFrameIds.push(frameId);
-      };
-
-      this.isAnimating = true;
-      animate();
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', this.handleResize.bind(this));
-  }
-
-  private handleResize(): void {
-    const canvases = document.querySelectorAll(
-      'canvas[data-module]'
-    ) as NodeListOf<HTMLCanvasElement>;
-
-    canvases.forEach((canvas, index) => {
-      const renderer = this.renderers[index];
-      if (!renderer) return;
-
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    });
-  }
-
-  private cleanup(): void {
-    this.isAnimating = false;
-
-    this.animationFrameIds.forEach((id) => cancelAnimationFrame(id));
-    this.animationFrameIds = [];
-
-    this.renderers.forEach((renderer) => renderer.dispose());
-    this.renderers = [];
-
-    this.particleSystems.forEach((scene) => {
-      scene.traverse((object) => {
-        if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
-          object.geometry.dispose();
-          if (object.material instanceof THREE.Material) {
-            object.material.dispose();
-          }
-        }
-      });
-    });
-    this.particleSystems = [];
-
-    window.removeEventListener('resize', this.handleResize.bind(this));
-  }
+  ]);
 }

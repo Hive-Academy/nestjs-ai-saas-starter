@@ -56,7 +56,9 @@ export class SectionParticleBackgroundComponent {
   readonly exclusionZone = input<{ x: number; y: number }>({ x: 10, y: 6 });
   readonly particleSize = input<number>(0.8);
   readonly particleOpacity = input<number>(0.5);
-  readonly tintColor = input<'purple' | 'green' | 'cyan' | 'orange'>('purple');
+  readonly tintColor = input<
+    'purple' | 'green' | 'cyan' | 'orange' | 'pink' | 'blue'
+  >('purple');
 
   // Computed color palettes based on tint
   // Color values extracted from design analysis and hero section
