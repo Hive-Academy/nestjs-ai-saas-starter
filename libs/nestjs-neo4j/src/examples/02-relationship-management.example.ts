@@ -18,16 +18,16 @@ import {
   UpdatedAt,
   PropIndex,
   NotNull,
-  Neo4jRepository,
+  Neo4jRepositoryBase,
   InjectNeogma,
   NeogmaService,
   Safe,
   Authorize,
   AuditLog,
-  RelationshipRepository,
-  GraphRepository,
-  Neo4jCrudService,
-  FindOptions,
+  RelationshipCoreRepository,
+  GraphTraversalService,
+  GraphMetricsService,
+  CentralityResult,
 } from '../index';
 
 // ============================================================================
@@ -165,33 +165,43 @@ export type SocialRelationship =
 // ============================================================================
 
 /**
- * PersonRepository - demonstrates @Repository decorator usage
+ * PersonRepository - demonstrates TypeORM-style inheritance pattern
  *
- * The @Repository decorator auto-generates CRUD methods:
- * - findById, findAll, create, update, delete, count, exists
+ * Inherited CRUD methods from Neo4jRepositoryBase<Person>:
+ * - findById(id: string): Promise<Person | null>
+ * - findAll(options?: FindOptions<Person>): Promise<Person[]>
+ * - findOne(options: FindOptions<Person>): Promise<Person | null>
+ * - create(data: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>): Promise<Person>
+ * - update(id: string, updates: Partial<Person>): Promise<Person | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Person>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Person>): Promise<Person>
+ *
+ * Plus helper methods for custom logic:
+ * - createQueryBuilder(): QueryBuilder
+ * - executeQuery<R>(cypher, params): Promise<R>
+ * - findRelated<R>(id, relationshipType, direction): Promise<R[]>
+ * - And more...
  */
-@Repository(() => Person)
 @Injectable()
-export class PersonRepository extends BaseRepositoryService<Person> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
-  }
+export class PersonRepository extends Neo4jRepositoryBase<Person> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find people by profession with relationship counts
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   @Safe()
   async findByProfession(profession: string): Promise<Person[]> {
     return this.findAll({
       where: { profession },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
     });
   }
 
   /**
    * Find people in same location
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   async findInLocation(location: string, limit = 50): Promise<Person[]> {
     return this.findAll({
@@ -202,23 +212,30 @@ export class PersonRepository extends BaseRepositoryService<Person> {
 }
 
 /**
- * CompanyRepository - uses @Repository decorator
+ * CompanyRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Company>:
+ * - findById(id: string): Promise<Company | null>
+ * - findAll(options?: FindOptions<Company>): Promise<Company[]>
+ * - findOne(options: FindOptions<Company>): Promise<Company | null>
+ * - create(data: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>): Promise<Company>
+ * - update(id: string, updates: Partial<Company>): Promise<Company | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Company>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Company>): Promise<Company>
  */
-@Repository(() => Company)
 @Injectable()
-export class CompanyRepository extends BaseRepositoryService<Company> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
-  }
+export class CompanyRepository extends Neo4jRepositoryBase<Company> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find companies by industry
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   async findByIndustry(industry: string): Promise<Company[]> {
     return this.findAll({
       where: { industry },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
     });
   }
 }
@@ -227,17 +244,17 @@ export class CompanyRepository extends BaseRepositoryService<Company> {
 // 4. RELATIONSHIP SERVICE WITH GRAPH OPERATIONS
 // ============================================================================
 
-// Properly typed relationship repository for friendships
+// Properly typed relationship repository for friendships using new specialized services
 @Injectable()
-export class FriendshipRelationshipRepository extends RelationshipRepository<
+export class FriendshipRelationshipRepository extends RelationshipCoreRepository<
   FriendshipRelationship,
   Person,
   Person
 > {}
 
-// Properly typed relationship repository for employment
+// Properly typed relationship repository for employment using new specialized services
 @Injectable()
-export class WorksAtRelationshipRepository extends RelationshipRepository<
+export class WorksAtRelationshipRepository extends RelationshipCoreRepository<
   WorksAtRelationship,
   Person,
   Company
@@ -248,7 +265,8 @@ export class SocialNetworkService {
   constructor(
     private readonly friendshipRepo: FriendshipRelationshipRepository,
     private readonly worksAtRepo: WorksAtRelationshipRepository,
-    private readonly graphRepo: GraphRepository<Person>,
+    private readonly graphTraversal: GraphTraversalService,
+    private readonly graphMetrics: GraphMetricsService<Person>,
     @InjectNeogma() private readonly neogma: NeogmaService
   ) {}
 
@@ -345,11 +363,11 @@ export class SocialNetworkService {
   }
 
   /**
-   * Find shortest path between two people
+   * Find shortest path between two people using GraphTraversalService
    */
   @Safe()
   async findConnectionPath(person1Id: string, person2Id: string): Promise<any> {
-    return this.graphRepo.findShortestPath(person1Id, person2Id, {
+    return this.graphTraversal.findShortestPath(person1Id, person2Id, {
       relationshipTypes: ['FRIEND', 'COLLEAGUE'],
       maxDepth: 6,
       direction: 'BOTH',
@@ -492,12 +510,13 @@ export class SocialNetworkService {
   }
 
   /**
-   * Find influential people in network (high centrality)
+   * Find influential people in network (high centrality) using GraphMetricsService
    * Returns CentralityResult with node and score properties
    */
   @Safe()
   async findInfluencers(): Promise<Array<{ person: Person; score: number }>> {
-    const results = await this.graphRepo.findCentralNodes('betweenness', 10);
+    const results: CentralityResult<Person>[] =
+      await this.graphMetrics.findCentralNodes('betweenness', 10);
     return results.map((result) => ({
       person: result.node,
       score: result.score,
@@ -505,12 +524,12 @@ export class SocialNetworkService {
   }
 
   /**
-   * Detect communities in the social network
+   * Detect communities in the social network using GraphMetricsService
    */
   @Safe()
   @Authorize({ roles: ['admin', 'analyst'] })
   async detectCommunities(): Promise<any> {
-    return this.graphRepo.detectCommunities({
+    return this.graphMetrics.detectCommunities({
       algorithm: 'louvain',
     });
   }

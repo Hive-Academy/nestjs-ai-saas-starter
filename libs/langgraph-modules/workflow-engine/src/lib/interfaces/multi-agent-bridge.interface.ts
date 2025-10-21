@@ -4,7 +4,11 @@
  * without creating a direct dependency on multi-agent module
  */
 
-import type { WorkflowState, WorkflowNode, WorkflowEdge } from './workflow-engine.interface';
+import type {
+  WorkflowState,
+  WorkflowNode,
+  WorkflowEdge,
+} from './workflow-engine.interface';
 
 /**
  * Multi-agent workflow definition from decorator patterns
@@ -46,7 +50,12 @@ export interface NetworkTopologyDefinition {
  * Coordination strategy for multi-agent execution
  */
 export interface CoordinationStrategyDefinition {
-  readonly strategy: 'sequential' | 'parallel' | 'pipeline' | 'supervisor' | 'democratic';
+  readonly strategy:
+    | 'sequential'
+    | 'parallel'
+    | 'pipeline'
+    | 'supervisor'
+    | 'democratic';
   readonly decisionMaking: 'consensus' | 'majority' | 'leader' | 'weighted';
   readonly conflictResolution: 'priority' | 'vote' | 'escalate' | 'merge';
   readonly synchronization: boolean;
@@ -69,7 +78,11 @@ export interface MultiAgentStreamingConfig {
 export function isMultiAgentDefinition(
   definition: any
 ): definition is MultiAgentWorkflowDefinition {
-  return 'agents' in definition && 'network' in definition && 'coordination' in definition;
+  return (
+    'agents' in definition &&
+    'network' in definition &&
+    'coordination' in definition
+  );
 }
 
 /**
@@ -80,12 +93,12 @@ export interface MultiAgentBridgeConfig {
    * Enable automatic conversion of multi-agent definitions
    */
   enableMultiAgentConversion?: boolean;
-  
+
   /**
    * Default coordination timeout (ms)
    */
   defaultCoordinationTimeout?: number;
-  
+
   /**
    * Default retry configuration for agent failures
    */
@@ -94,12 +107,12 @@ export interface MultiAgentBridgeConfig {
     delay: number;
     backoff: 'linear' | 'exponential';
   };
-  
+
   /**
    * Enable streaming for agent coordination
    */
   enableCoordinationStreaming?: boolean;
-  
+
   /**
    * Enable consensus tracking
    */
@@ -109,22 +122,24 @@ export interface MultiAgentBridgeConfig {
 /**
  * Result of multi-agent definition translation
  */
-export interface MultiAgentTranslationResult<TState extends WorkflowState = WorkflowState> {
+export interface MultiAgentTranslationResult<
+  TState extends WorkflowState = WorkflowState
+> {
   /**
    * The translated workflow nodes (one per agent + coordination nodes)
    */
   nodes: WorkflowNode<TState>[];
-  
+
   /**
    * The translated workflow edges (agent communication + coordination)
    */
   edges: WorkflowEdge<TState>[];
-  
+
   /**
    * The entry point node ID (usually coordinator or first agent)
    */
   entryPoint: string;
-  
+
   /**
    * Metadata about the translation
    */
@@ -142,7 +157,9 @@ export interface MultiAgentTranslationResult<TState extends WorkflowState = Work
 /**
  * Multi-agent execution context for workflow nodes
  */
-export interface MultiAgentExecutionContext<TState extends WorkflowState = WorkflowState> {
+export interface MultiAgentExecutionContext<
+  TState extends WorkflowState = WorkflowState
+> {
   readonly state: TState;
   readonly agentId: string;
   readonly networkState: NetworkState;
@@ -167,7 +184,11 @@ export interface NetworkState {
 export interface CoordinationMetadata {
   readonly coordinationId: string;
   readonly strategy: string;
-  readonly phase: 'initialization' | 'execution' | 'coordination' | 'completion';
+  readonly phase:
+    | 'initialization'
+    | 'execution'
+    | 'coordination'
+    | 'completion';
   readonly decisions: readonly CoordinationDecision[];
   readonly conflicts: readonly CoordinationConflict[];
 }

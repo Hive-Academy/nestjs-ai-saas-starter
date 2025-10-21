@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { validateDecoratorPattern } from '../utils/decorator-validator';
 
 /**
  * Metadata key for entrypoint decorator
@@ -66,6 +67,15 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
     descriptor: PropertyDescriptor
   ) => {
     const methodName = String(propertyKey);
+
+    // 🔒 VALIDATION: Enforce task-based pattern
+    // @Entrypoint is mutually exclusive with @Node and @Edge
+    validateDecoratorPattern(
+      target.constructor,
+      'task-based',
+      'Entrypoint',
+      target.constructor.name
+    );
 
     const metadata: EntrypointMetadata = {
       name: options.name ?? methodName,

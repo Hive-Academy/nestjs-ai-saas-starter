@@ -3,11 +3,13 @@ import type { WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workfl
 // Centralized imports for all agents, tools, and workflows
 import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
 import { GitHubIntegrationTools } from '../business-workflows/core/tools/github-integration.tools';
+import { BrandStrategistTools } from '../business-workflows/core/tools/brand-strategist.tools';
+import { ContentCreatorTools } from '../business-workflows/core/tools/content-creator.tools';
 import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { ContentCreatorAgent } from '../business-workflows/agents/content-creator/content-creator.agent';
 import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
-import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
 import { DevBrandChatWorkflow } from '../business-workflows/workflows/devbrand-chat.workflow';
+import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
 
 /**
  * Workflow Engine Module Configuration for dev-brand-api
@@ -22,7 +24,12 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
       GitHubCodeAnalyzerAgent,
     ],
 
-    tools: [WebResearchTools, GitHubIntegrationTools],
+    tools: [
+      WebResearchTools,
+      GitHubIntegrationTools,
+      BrandStrategistTools,
+      ContentCreatorTools,
+    ],
 
     workflows: [DevBrandSupervisorWorkflow, DevBrandChatWorkflow],
 

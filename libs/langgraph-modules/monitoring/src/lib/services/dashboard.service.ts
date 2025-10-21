@@ -10,7 +10,7 @@ import type {
 
 /**
  * DashboardService - Dashboard data aggregation and visualization support
- * 
+ *
  * Features:
  * - Real-time dashboard data queries with caching
  * - Time-series data aggregation with multiple functions
@@ -23,7 +23,10 @@ import type {
 export class DashboardService implements IDashboard, OnModuleDestroy {
   private readonly logger = new Logger(DashboardService.name);
   private readonly dashboards = new Map<string, DashboardConfig>();
-  private readonly queryCache = new Map<string, { data: MetricData[]; timestamp: Date; ttl: number }>();
+  private readonly queryCache = new Map<
+    string,
+    { data: MetricData[]; timestamp: Date; ttl: number }
+  >();
   private readonly mockMetricData = new Map<string, MetricData[]>();
   private readonly cacheDefaultTTL = 30000; // 30 seconds
 
@@ -40,21 +43,21 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   async createDashboard(config: DashboardConfig): Promise<string> {
     try {
       this.validateDashboardConfig(config);
-      
+
       const dashboardWithTimestamps: DashboardConfig = {
         ...config,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       this.dashboards.set(config.id, dashboardWithTimestamps);
-      
+
       this.logger.log(`Dashboard created: ${config.name}`, {
         dashboardId: config.id,
         widgets: config.widgets.length,
         refreshInterval: config.refreshInterval,
       });
-      
+
       return config.id;
     } catch (error) {
       this.logger.error(`Failed to create dashboard: ${config.name}`, error);
@@ -62,7 +65,10 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     }
   }
 
-  async updateDashboard(dashboardId: string, updates: Partial<DashboardConfig>): Promise<void> {
+  async updateDashboard(
+    dashboardId: string,
+    updates: Partial<DashboardConfig>
+  ): Promise<void> {
     const existing = this.dashboards.get(dashboardId);
     if (!existing) {
       throw new Error(`Dashboard not found: ${dashboardId}`);
@@ -74,13 +80,13 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
         ...updates,
         updatedAt: new Date(),
       };
-      
+
       this.validateDashboardConfig(updated);
       this.dashboards.set(dashboardId, updated);
-      
+
       // Invalidate related cache entries
       this.invalidateDashboardCache(dashboardId);
-      
+
       this.logger.log(`Dashboard updated: ${dashboardId}`, {
         updates: Object.keys(updates),
       });
@@ -97,7 +103,7 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
 
     this.dashboards.delete(dashboardId);
     this.invalidateDashboardCache(dashboardId);
-    
+
     this.logger.log(`Dashboard deleted: ${dashboardId}`);
   }
 
@@ -106,7 +112,7 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     if (!dashboard) {
       throw new Error(`Dashboard not found: ${dashboardId}`);
     }
-    
+
     return { ...dashboard }; // Return copy to prevent mutations
   }
 
@@ -118,18 +124,21 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     try {
       const dashboard = await this.getDashboard(dashboardId);
       const widgets: Record<string, MetricData[]> = {};
-      
+
       // Query data for each widget
       for (const widget of dashboard.widgets) {
         try {
           const data = await this.queryMetrics(widget.query);
           widgets[widget.id] = data;
         } catch (error) {
-          this.logger.warn(`Failed to load data for widget ${widget.id}:`, error);
+          this.logger.warn(
+            `Failed to load data for widget ${widget.id}:`,
+            error
+          );
           widgets[widget.id] = []; // Empty data on error
         }
       }
-      
+
       return {
         dashboardId,
         widgets,
@@ -147,31 +156,31 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
       // Check cache first
       const cacheKey = this.generateCacheKey(query);
       const cached = this.queryCache.get(cacheKey);
-      
+
       if (cached && this.isCacheValid(cached)) {
         this.logger.debug(`Cache hit for query: ${query.metric}`);
         return [...cached.data]; // Return copy
       }
-      
+
       // Execute query
       const startTime = Date.now();
       const data = await this.executeQuery(query);
       const executionTime = Date.now() - startTime;
-      
+
       // Cache result
       this.queryCache.set(cacheKey, {
         data: [...data],
         timestamp: new Date(),
         ttl: this.cacheDefaultTTL,
       });
-      
+
       this.logger.debug(`Query executed: ${query.metric}`, {
         metric: query.metric,
         dataPoints: data.length,
         executionTime,
         aggregation: query.aggregation,
       });
-      
+
       return data;
     } catch (error) {
       this.logger.error(`Query execution failed: ${query.metric}`, error);
@@ -179,10 +188,13 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     }
   }
 
-  async exportDashboard(dashboardId: string, format: 'json' | 'csv'): Promise<string> {
+  async exportDashboard(
+    dashboardId: string,
+    format: 'json' | 'csv'
+  ): Promise<string> {
     try {
       const dashboardData = await this.getDashboardData(dashboardId);
-      
+
       if (format === 'json') {
         return JSON.stringify(dashboardData, null, 2);
       } else if (format === 'csv') {
@@ -206,37 +218,38 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   private async executeQuery(query: DashboardQuery): Promise<MetricData[]> {
     // In a real implementation, this would query the actual metrics backend
     // For now, return mock data based on the query
-    
+
     const mockData = this.mockMetricData.get(query.metric) || [];
     let filteredData = [...mockData];
-    
+
     // Apply time range filter
     if (query.timeRange) {
-      filteredData = filteredData.filter(data => 
-        data.timestamp >= query.timeRange!.start && 
-        data.timestamp <= query.timeRange!.end
+      filteredData = filteredData.filter(
+        (data) =>
+          data.timestamp >= query.timeRange!.start &&
+          data.timestamp <= query.timeRange!.end
       );
     }
-    
+
     // Apply tag filters
     if (query.filters) {
-      filteredData = filteredData.filter(data => {
-        return Object.entries(query.filters!).every(([key, value]) =>
-          data.tags[key] === value
+      filteredData = filteredData.filter((data) => {
+        return Object.entries(query.filters!).every(
+          ([key, value]) => data.tags[key] === value
         );
       });
     }
-    
+
     // Apply aggregation (simplified)
     if (query.aggregation && filteredData.length > 1) {
       filteredData = [this.aggregateData(filteredData, query.aggregation)];
     }
-    
+
     // Apply limit
     if (query.limit) {
       filteredData = filteredData.slice(0, query.limit);
     }
-    
+
     return filteredData;
   }
 
@@ -244,12 +257,13 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
    * Aggregate metric data based on aggregation type
    */
   private aggregateData(data: MetricData[], aggregation: string): MetricData {
-    const values = data.map(d => d.value);
+    const values = data.map((d) => d.value);
     let aggregatedValue: number;
-    
+
     switch (aggregation) {
       case 'avg': {
-        aggregatedValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+        aggregatedValue =
+          values.reduce((sum, val) => sum + val, 0) / values.length;
         break;
       }
       case 'sum': {
@@ -281,10 +295,11 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
         break;
       }
       default: {
-        aggregatedValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+        aggregatedValue =
+          values.reduce((sum, val) => sum + val, 0) / values.length;
       }
     }
-    
+
     return {
       metric: data[0].metric,
       timestamp: new Date(),
@@ -300,15 +315,15 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     if (!config.id || !config.name) {
       throw new Error('Dashboard must have id and name');
     }
-    
+
     if (!config.widgets || config.widgets.length === 0) {
       throw new Error('Dashboard must have at least one widget');
     }
-    
+
     if (config.refreshInterval < 1000) {
       throw new Error('Dashboard refresh interval must be at least 1 second');
     }
-    
+
     // Validate widgets
     for (const widget of config.widgets) {
       this.validateWidget(widget);
@@ -322,12 +337,14 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     if (!widget.id || !widget.title) {
       throw new Error('Widget must have id and title');
     }
-    
+
     if (!widget.query || !widget.query.metric) {
       throw new Error('Widget must have query with metric');
     }
-    
-    if (!['line', 'bar', 'pie', 'gauge', 'table', 'stat'].includes(widget.type)) {
+
+    if (
+      !['line', 'bar', 'pie', 'gauge', 'table', 'stat'].includes(widget.type)
+    ) {
       throw new Error(`Invalid widget type: ${widget.type}`);
     }
   }
@@ -336,13 +353,19 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
    * Generate cache key for query
    */
   private generateCacheKey(query: DashboardQuery): string {
-    return `${query.metric}:${query.aggregation}:${JSON.stringify(query.timeRange)}:${JSON.stringify(query.filters)}:${query.limit}`;
+    return `${query.metric}:${query.aggregation}:${JSON.stringify(
+      query.timeRange
+    )}:${JSON.stringify(query.filters)}:${query.limit}`;
   }
 
   /**
    * Check if cached data is still valid
    */
-  private isCacheValid(cached: { data: MetricData[]; timestamp: Date; ttl: number }): boolean {
+  private isCacheValid(cached: {
+    data: MetricData[];
+    timestamp: Date;
+    ttl: number;
+  }): boolean {
     const age = Date.now() - cached.timestamp.getTime();
     return age < cached.ttl;
   }
@@ -353,12 +376,12 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   private invalidateDashboardCache(dashboardId: string): void {
     const dashboard = this.dashboards.get(dashboardId);
     if (!dashboard) return;
-    
+
     for (const widget of dashboard.widgets) {
       const cacheKey = this.generateCacheKey(widget.query);
       this.queryCache.delete(cacheKey);
     }
-    
+
     this.logger.debug(`Cache invalidated for dashboard: ${dashboardId}`);
   }
 
@@ -368,14 +391,18 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   private convertToCSV(data: DashboardData): string {
     const rows: string[] = [];
     rows.push('Widget,Metric,Timestamp,Value,Tags');
-    
+
     for (const [widgetId, metricData] of Object.entries(data.widgets)) {
       for (const metric of metricData) {
         const tags = JSON.stringify(metric.tags);
-        rows.push(`${widgetId},${metric.metric},${metric.timestamp.toISOString()},${metric.value},"${tags}"`);
+        rows.push(
+          `${widgetId},${metric.metric},${metric.timestamp.toISOString()},${
+            metric.value
+          },"${tags}"`
+        );
       }
     }
-    
+
     return rows.join('\n');
   }
 
@@ -384,20 +411,29 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
    */
   private initializeMockData(): void {
     const now = new Date();
-    const metrics = ['workflow.execution.duration', 'workflow.success.rate', 'system.cpu.usage', 'system.memory.usage'];
-    
+    const metrics = [
+      'workflow.execution.duration',
+      'workflow.success.rate',
+      'system.cpu.usage',
+      'system.memory.usage',
+    ];
+
     for (const metric of metrics) {
       const data: MetricData[] = [];
-      
+
       // Generate 100 data points over the last hour
       for (let i = 0; i < 100; i++) {
-        const timestamp = new Date(now.getTime() - (i * 60000)); // Every minute
-        const baseValue = metric.includes('duration') ? 1000 : 
-                         metric.includes('rate') ? 95 : 
-                         metric.includes('cpu') ? 60 : 70;
+        const timestamp = new Date(now.getTime() - i * 60000); // Every minute
+        const baseValue = metric.includes('duration')
+          ? 1000
+          : metric.includes('rate')
+          ? 95
+          : metric.includes('cpu')
+          ? 60
+          : 70;
         const randomVariation = (Math.random() - 0.5) * 20;
         const value = Math.max(0, baseValue + randomVariation);
-        
+
         data.push({
           metric,
           timestamp,
@@ -408,10 +444,10 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
           },
         });
       }
-      
+
       this.mockMetricData.set(metric, data.reverse()); // Chronological order
     }
-    
+
     this.logger.debug('Mock metric data initialized');
   }
 
@@ -438,7 +474,12 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   /**
    * Get dashboard templates
    */
-  getDashboardTemplates(): Array<{ id: string; name: string; description: string; widgets: Widget[] }> {
+  getDashboardTemplates(): Array<{
+    id: string;
+    name: string;
+    description: string;
+    widgets: Widget[];
+  }> {
     return [
       {
         id: 'system-overview',
@@ -520,10 +561,14 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   /**
    * Create dashboard from template
    */
-  async createDashboardFromTemplate(templateId: string, dashboardId: string, name?: string): Promise<string> {
+  async createDashboardFromTemplate(
+    templateId: string,
+    dashboardId: string,
+    name?: string
+  ): Promise<string> {
     const templates = this.getDashboardTemplates();
-    const template = templates.find(t => t.id === templateId);
-    
+    const template = templates.find((t) => t.id === templateId);
+
     if (!template) {
       throw new Error(`Template not found: ${templateId}`);
     }
@@ -557,12 +602,14 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
       dataPoints: number;
     }>;
   } {
-    const entries = Array.from(this.queryCache.entries()).map(([key, cached]) => ({
-      key,
-      timestamp: cached.timestamp,
-      ttl: cached.ttl,
-      dataPoints: cached.data.length,
-    }));
+    const entries = Array.from(this.queryCache.entries()).map(
+      ([key, cached]) => ({
+        key,
+        timestamp: cached.timestamp,
+        ttl: cached.ttl,
+        dataPoints: cached.data.length,
+      })
+    );
 
     return {
       size: this.queryCache.size,
@@ -596,17 +643,19 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     const getDashboardData = this.getDashboardData.bind(this);
     const getDashboard = this.getDashboard.bind(this);
     const logger = this.logger;
-    
+
     return {
       async *[Symbol.asyncIterator]() {
         while (true) {
           try {
             const data = await getDashboardData(dashboardId);
             yield data;
-            
+
             // Wait for refresh interval
             const dashboard = await getDashboard(dashboardId);
-            await new Promise(resolve => setTimeout(resolve, dashboard.refreshInterval));
+            await new Promise((resolve) =>
+              setTimeout(resolve, dashboard.refreshInterval)
+            );
           } catch (error) {
             logger.error(`Stream error for dashboard ${dashboardId}:`, error);
             break;
@@ -640,7 +689,11 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
   getDashboardInsights(dashboardId: string): {
     performance: string;
     suggestions: string[];
-    trends: Array<{ metric: string; trend: 'up' | 'down' | 'stable'; change: number }>;
+    trends: Array<{
+      metric: string;
+      trend: 'up' | 'down' | 'stable';
+      change: number;
+    }>;
   } {
     return {
       performance: 'good',
@@ -697,12 +750,14 @@ export class DashboardService implements IDashboard, OnModuleDestroy {
     cacheSize: number;
     cacheHitRate: number;
   } {
-    const totalWidgets = Array.from(this.dashboards.values())
-      .reduce((total, dashboard) => total + dashboard.widgets.length, 0);
-    
+    const totalWidgets = Array.from(this.dashboards.values()).reduce(
+      (total, dashboard) => total + dashboard.widgets.length,
+      0
+    );
+
     // Cache hit rate would be tracked in a real implementation
     const cacheHitRate = 0; // Placeholder
-    
+
     return {
       totalDashboards: this.dashboards.size,
       totalWidgets,

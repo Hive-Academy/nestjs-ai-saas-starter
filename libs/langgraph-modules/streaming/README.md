@@ -34,7 +34,10 @@ The streaming module is **embedded in workflow-engine** to avoid circular depend
 ```typescript
 // ✅ CORRECT: Streaming services embedded in workflow-engine
 import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-import { WorkflowStreamService, TokenProcessingService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowStreamService,
+  TokenProcessingService,
+} from '@hive-academy/langgraph-workflow-engine';
 
 // Decorators imported from streaming module
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
@@ -221,7 +224,12 @@ transformEvents(events: StreamUpdate[], transformer: EventTransformer): StreamUp
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { Workflow, Node, DeclarativeWorkflowBase } from '@hive-academy/nestjs-langgraph';
-import { StreamToken, StreamEvent, StreamProgress, StreamEventType } from '@hive-academy/langgraph-streaming';
+import {
+  StreamToken,
+  StreamEvent,
+  StreamProgress,
+  StreamEventType,
+} from '@hive-academy/langgraph-streaming';
 
 interface AIWritingState {
   prompt: string;
@@ -548,11 +556,17 @@ socket.onmessage = (event) => {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { StreamingWebSocketGateway, WebSocketBridgeService } from '@hive-academy/langgraph-streaming';
+import {
+  StreamingWebSocketGateway,
+  WebSocketBridgeService,
+} from '@hive-academy/langgraph-streaming';
 
 @Injectable()
 export class WorkflowStreamingService {
-  constructor(private readonly webSocketGateway: StreamingWebSocketGateway, private readonly bridgeService: WebSocketBridgeService) {}
+  constructor(
+    private readonly webSocketGateway: StreamingWebSocketGateway,
+    private readonly bridgeService: WebSocketBridgeService
+  ) {}
 
   async broadcastToClients(executionId: string, data: any): Promise<void> {
     // Broadcast to all subscribed clients
@@ -637,11 +651,18 @@ interface WebSocketGatewayConfig {
 ## Error Handling
 
 ```typescript
-import { StreamingError, TokenStreamingError, WebSocketError } from '@hive-academy/langgraph-streaming';
+import {
+  StreamingError,
+  TokenStreamingError,
+  WebSocketError,
+} from '@hive-academy/langgraph-streaming';
 
 @Injectable()
 export class RobustStreamingService {
-  constructor(private readonly tokenStreaming: TokenStreamingService, private readonly eventProcessor: EventStreamProcessorService) {}
+  constructor(
+    private readonly tokenStreaming: TokenStreamingService,
+    private readonly eventProcessor: EventStreamProcessorService
+  ) {}
 
   async safeStreamOperation<T>(operation: () => Promise<T>): Promise<T | null> {
     try {

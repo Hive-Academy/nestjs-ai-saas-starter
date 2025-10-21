@@ -218,7 +218,11 @@ export class ProductionWorkflowMonitoringService {
     console.log('Production monitoring initialized with health checks and alert rules');
   }
 
-  async trackWorkflowExecution(workflowName: string, threadId: string, execution: WorkflowMetrics): Promise<void> {
+  async trackWorkflowExecution(
+    workflowName: string,
+    threadId: string,
+    execution: WorkflowMetrics
+  ): Promise<void> {
     const tags = {
       workflow_name: workflowName,
       thread_id: threadId,
@@ -227,7 +231,16 @@ export class ProductionWorkflowMonitoringService {
     };
 
     // Record execution metrics
-    await Promise.all([this.monitoring.recordTimer('workflow.execution.duration', execution.executionTime, tags), this.monitoring.recordGauge('workflow.execution.nodes', execution.nodeCount, tags), this.monitoring.recordGauge('workflow.execution.memory_mb', execution.memoryUsage / 1024 / 1024, tags), this.monitoring.recordCounter('workflow.executions.total', 1, tags)]);
+    await Promise.all([
+      this.monitoring.recordTimer('workflow.execution.duration', execution.executionTime, tags),
+      this.monitoring.recordGauge('workflow.execution.nodes', execution.nodeCount, tags),
+      this.monitoring.recordGauge(
+        'workflow.execution.memory_mb',
+        execution.memoryUsage / 1024 / 1024,
+        tags
+      ),
+      this.monitoring.recordCounter('workflow.executions.total', 1, tags),
+    ]);
 
     // Record success/error metrics
     if (execution.success) {
@@ -257,7 +270,10 @@ export class ProductionWorkflowMonitoringService {
     return errorCount / totalExecutions;
   }
 
-  private async detectPerformanceAnomalies(workflowName: string, execution: WorkflowMetrics): Promise<void> {
+  private async detectPerformanceAnomalies(
+    workflowName: string,
+    execution: WorkflowMetrics
+  ): Promise<void> {
     // Detect execution time anomalies
     const avgExecutionTime = 5000; // Would come from baseline calculation
     if (execution.executionTime > avgExecutionTime * 3) {
@@ -478,7 +494,11 @@ interface DetailedHealthCheckResult {
 ## Error Handling
 
 ```typescript
-import { MetricsCollectionError, AlertingError, HealthCheckError } from '@hive-academy/langgraph-monitoring';
+import {
+  MetricsCollectionError,
+  AlertingError,
+  HealthCheckError,
+} from '@hive-academy/langgraph-monitoring';
 
 @Injectable()
 export class RobustMonitoringService {
@@ -630,7 +650,9 @@ const alertRule: AlertRule = {
 ```typescript
 // Solution: Increase timeouts and implement circuit breakers
 await monitoring.registerHealthCheck('slow-service', async () => {
-  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), 8000));
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Health check timeout')), 8000)
+  );
 
   const check = this.performHealthCheck();
 

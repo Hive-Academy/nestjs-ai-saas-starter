@@ -5,19 +5,19 @@
  * Uses real Neogma API patterns and QueryBuilder, not custom abstractions.
  */
 
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Neogma } from 'neogma';
 import { QueryBuilder } from 'neogma';
-import { NEOGMA_TOKEN } from '../neogma/neogma.constants';
+import { NEOGMA_TOKEN } from '../constants/neogma.constants';
 import {
-  type NeogmaEntity,
-  type TypedNeogmaModel,
-  type INeogmaService,
-  type NeogmaMetrics,
   type FindOptions,
-  type QueryResult,
+  type INeogmaService,
+  type NeogmaEntity,
+  type NeogmaMetrics,
   type NeogmaModelInterface,
   NeogmaNotFoundError,
+  type QueryResult,
+  type TypedNeogmaModel,
 } from '../types/neogma-types';
 
 /**
@@ -37,6 +37,22 @@ export class NeogmaService implements INeogmaService {
   };
 
   constructor(@Inject(NEOGMA_TOKEN) private readonly neogma: Neogma) {}
+
+  /**
+   * Get the underlying Neogma instance
+   * Useful for advanced operations and direct access to Neogma API
+   */
+  getNeogmaInstance(): Neogma {
+    return this.neogma;
+  }
+
+  /**
+   * Get the raw Neo4j driver from Neogma
+   * Use this if you need direct driver access (instead of deprecated NEO4J_DRIVER)
+   */
+  getDriver() {
+    return this.neogma.driver;
+  }
 
   // ==================== MODEL MANAGEMENT ====================
 
@@ -279,10 +295,13 @@ export class NeogmaService implements INeogmaService {
   }
 
   /**
-   * Create a Neogma QueryBuilder instance
+   * Create a Neogma QueryBuilder instance with proper BindParam initialization
    */
   createQueryBuilder(): QueryBuilder {
-    return new QueryBuilder();
+    // IMPORTANT: Don't pass a BindParam - let QueryBuilder create its own
+    // This ensures proper parameter binding
+    const queryBuilder = new QueryBuilder();
+    return queryBuilder;
   }
 
   // ==================== CONNECTION MANAGEMENT ====================

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import {
   IHitlStorageService,
   InvalidApprovalDataError,
@@ -10,6 +11,7 @@ import type {
   HitlStorageStats,
 } from '@hive-academy/langgraph-hitl';
 import { ApprovalRequestRepository } from '../../repositories/neo4j/approval-request.repository';
+import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 
 /**
  * Clean Neo4j adapter for HITL approval storage.
@@ -23,7 +25,10 @@ import { ApprovalRequestRepository } from '../../repositories/neo4j/approval-req
 export class Neo4jHitlStorageAdapter extends IHitlStorageService {
   private readonly logger = new Logger(Neo4jHitlStorageAdapter.name);
 
-  constructor(private readonly approvalRequestRepo: ApprovalRequestRepository) {
+  constructor(
+    @Inject(getRepositoryToken(ApprovalRequest))
+    private readonly approvalRequestRepo: ApprovalRequestRepository
+  ) {
     super();
     this.logger.debug(
       'Neo4jHitlStorageAdapter initialized with ApprovalRequestRepository'
@@ -106,5 +111,70 @@ export class Neo4jHitlStorageAdapter extends IHitlStorageService {
    */
   async getStorageStats(): Promise<HitlStorageStats> {
     return this.approvalRequestRepo.getStorageStats();
+  }
+
+  // ============================================================================
+  // ALIAS METHODS (required by IHitlStorageService interface)
+  // ============================================================================
+
+  /**
+   * Save approval request (alias for storeApprovalRequest)
+   */
+  async save(request: any): Promise<void> {
+    await this.storeApprovalRequest(request);
+  }
+
+  /**
+   * Get approval request (alias for getApprovalRequest)
+   */
+  async get(id: string): Promise<any> {
+    return this.getApprovalRequest(id);
+  }
+
+  /**
+   * Get all pending approvals (alias for getPendingApprovals)
+   */
+  async getAllPending(): Promise<any[]> {
+    return this.getPendingApprovals() as Promise<any[]>;
+  }
+
+  /**
+   * Get approvals by execution ID (alias for getApprovalsByExecution)
+   */
+  async getByExecutionId(executionId: string): Promise<any[]> {
+    return this.getApprovalsByExecution(executionId) as Promise<any[]>;
+  }
+
+  /**
+   * Update approval request (alias for updateApprovalStatus)
+   */
+  async update(request: any): Promise<void> {
+    if (request.id && request.status) {
+      await this.updateApprovalStatus(
+        request.id,
+        request.status,
+        request.response
+      );
+    }
+  }
+
+  /**
+   * Backup all approval data
+   */
+  async backup(): Promise<{ backupId: string; count: number }> {
+    const allApprovals = await this.getPendingApprovals();
+    const backupId = `backup_${Date.now()}`;
+    // TODO: Implement actual backup logic
+    return { backupId, count: allApprovals.length };
+  }
+
+  /**
+   * Restore approval data from backup
+   */
+  async restore(
+    backupId: string
+  ): Promise<{ restored: number; failed: number }> {
+    // TODO: Implement actual restore logic
+    return { restored: 0, failed: 0 };
   }
 }

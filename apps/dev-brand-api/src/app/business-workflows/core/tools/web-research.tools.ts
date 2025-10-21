@@ -113,7 +113,11 @@ export class WebResearchTools {
     });
   }
 
-  @Tool() // ✅ Zero-config! Tavily integration, rate limits, and search configuration inherited from MultiAgentModule.forRoot()
+  @Tool({
+    name: 'web-search',
+    description:
+      'Search the web using Tavily API for general information with configurable depth, result limits, and domain filtering',
+  })
   async webSearch({
     query,
     maxResults,
@@ -191,7 +195,11 @@ export class WebResearchTools {
     }
   }
 
-  @Tool() // ✅ Zero-config! News filtering, timeframes, and categories managed by global search configuration
+  @Tool({
+    name: 'news-search',
+    description:
+      'Search for news articles using Tavily API with timeframe filtering (day/week/month) and category classification (tech/business/science/health)',
+  })
   async newsSearch({
     query,
     timeframe,
@@ -267,7 +275,11 @@ export class WebResearchTools {
     }
   }
 
-  @Tool() // ✅ Zero-config! Social profile search across platforms with intelligent username extraction
+  @Tool({
+    name: 'social-profile-search',
+    description:
+      'Search for social media profiles across multiple platforms (LinkedIn, Twitter, GitHub, Dev.to, etc.) with intelligent username extraction',
+  })
   async searchSocialProfiles({
     query,
     platforms,
@@ -334,7 +346,11 @@ export class WebResearchTools {
     }
   }
 
-  @Tool() // ✅ Zero-config! Research depth, source credibility scoring, and academic integration configured globally
+  @Tool({
+    name: 'research-search',
+    description:
+      'Comprehensive research search using Tavily API with academic source integration, credibility assessment, and multi-depth analysis (summary/detailed/comprehensive)',
+  })
   async researchSearch({
     topic,
     includeAcademic,

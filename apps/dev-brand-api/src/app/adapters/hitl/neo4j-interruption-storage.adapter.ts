@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import {
   IUserInterruptionStorageService,
   UserInterruption,
@@ -6,6 +7,7 @@ import {
   InterruptionStatus,
 } from '@hive-academy/langgraph-hitl';
 import { InterruptionRepository } from '../../repositories/neo4j/interruption.repository';
+import { InterruptionPoint } from '../../entities/neo4j/interruption-point.entity';
 
 /**
  * Clean Neo4j adapter for user interruption storage.
@@ -17,7 +19,10 @@ import { InterruptionRepository } from '../../repositories/neo4j/interruption.re
 export class Neo4jInterruptionStorageAdapter extends IUserInterruptionStorageService {
   private readonly logger = new Logger(Neo4jInterruptionStorageAdapter.name);
 
-  constructor(private readonly interruptionRepo: InterruptionRepository) {
+  constructor(
+    @Inject(getRepositoryToken(InterruptionPoint))
+    private readonly interruptionRepo: InterruptionRepository
+  ) {
     super();
     this.logger.debug(
       'Neo4jInterruptionStorageAdapter initialized with InterruptionRepository'

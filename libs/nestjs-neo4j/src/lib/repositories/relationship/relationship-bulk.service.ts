@@ -12,7 +12,12 @@ import {
   BatchRelationshipOperation,
   CreateRelationshipData,
   RelationshipResult,
+  BatchRelationshipMergeOperation,
+  BatchRelationshipNodeMergeOperation,
 } from './base-relationship.service';
+import { NeogmaService } from '../../services/neogma.service';
+import { NeogmaQueryBuilderService } from '../../query-builder/neogma-query-builder.service';
+import { NeogmaQueryRunnerService } from '../../query-builder/neogma-query-runner.service';
 
 /**
  * Bulk operations service for relationships
@@ -34,6 +39,23 @@ export class RelationshipBulkOperationsService<
   TSource = any,
   TTarget = any
 > extends BaseRelationshipService<TRel, TSource, TTarget> {
+  constructor(
+    neogmaService: NeogmaService,
+    queryBuilder: NeogmaQueryBuilderService,
+    queryRunner: NeogmaQueryRunnerService,
+    relationshipType?: string,
+    sourceLabel?: string,
+    targetLabel?: string
+  ) {
+    super(
+      neogmaService,
+      queryBuilder,
+      queryRunner,
+      relationshipType,
+      sourceLabel,
+      targetLabel
+    );
+  }
   /**
    * Delete all relationships from a source node
    */
@@ -415,5 +437,150 @@ export class RelationshipBulkOperationsService<
     }
 
     return results;
+  }
+
+  /**
+   * Batch MERGE relationships (idempotent - create if not exists, match if exists)
+   *
+   * This method is safe to run multiple times as it uses MERGE operations.
+   * It will create relationships that don't exist and match existing ones.
+   *
+   * @param operations - Array of merge operations
+   * @param options - Query options
+   * @returns Array of relationship results
+   *
+   * @example
+   * ```typescript
+   * await service.batchMerge([
+   *   {
+   *     sourceId: 'dev1',
+   *     targetId: 'tech1',
+   *     type: 'USES_TECHNOLOGY',
+   *     onCreate: { level: 'beginner', createdAt: new Date() },
+   *     onMatch: { lastUsed: new Date() }
+   *   }
+   * ]);
+   * ```
+   */
+  async batchMerge(
+    operations: BatchRelationshipMergeOperation<TRel>[],
+    options?: RelationshipQueryOptions
+  ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
+    if (operations.length === 0) return [];
+
+    const builder = this.queryBuilder.createBuilder();
+    const bindParam = builder.getBindParam();
+
+    // Add operations as parameter
+    const opsParam = bindParam.add(
+      operations.map((op) => ({
+        sourceId: op.sourceId,
+        targetId: op.targetId,
+        type: op.type,
+        properties: op.properties || {},
+        onCreate: op.onCreate || {},
+        onMatch: op.onMatch || {},
+      }))
+    );
+
+    // Build UNWIND + MERGE query
+    builder
+      .raw(`UNWIND $${opsParam} AS op`)
+      .match(`(source:${this.sourceLabel} {id: op.sourceId})`)
+      .match(`(target:${this.targetLabel} {id: op.targetId})`)
+      .raw(`MERGE (source)-[r:${this.relationshipType}]->(target)`)
+      .raw(
+        'ON CREATE SET r += op.properties, r += op.onCreate, r.createdAt = datetime()'
+      )
+      .raw(
+        'ON MATCH SET r += op.properties, r += op.onMatch, r.updatedAt = datetime()'
+      );
+
+    // Add return clause based on options
+    const returnVars = this.buildReturnVars(options);
+    builder.return(returnVars.join(', '));
+
+    const queryResult = await this.queryRunner.executeRaw(
+      builder.getStatement(),
+      bindParam.get()
+    );
+
+    return queryResult.records.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
+  }
+
+  /**
+   * Batch MERGE relationships WITH node creation (idempotent)
+   *
+   * This method creates both target nodes and relationships if they don't exist.
+   * Useful for operations like adding technologies, tags, or categories that may not exist yet.
+   *
+   * @param operations - Array of merge operations with node creation
+   * @param options - Query options including targetLabel
+   * @returns Array of relationship results
+   *
+   * @example
+   * ```typescript
+   * await service.batchMergeWithNodeCreation([
+   *   {
+   *     sourceId: 'dev1',
+   *     targetKey: 'TypeScript',
+   *     type: 'EXPERIENCED_WITH',
+   *     targetLabel: 'Technology',
+   *     targetProperties: { category: 'Programming Language' },
+   *     relationshipProperties: { level: 'expert', since: new Date() }
+   *   }
+   * ], { targetLabel: 'Technology' });
+   * ```
+   */
+  async batchMergeWithNodeCreation(
+    operations: BatchRelationshipNodeMergeOperation<TRel>[],
+    options?: RelationshipQueryOptions & { targetLabel: string }
+  ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
+    if (operations.length === 0) return [];
+
+    const targetLabel = options?.targetLabel || this.targetLabel;
+    const builder = this.queryBuilder.createBuilder();
+    const bindParam = builder.getBindParam();
+
+    // Add operations as parameter
+    const opsParam = bindParam.add(
+      operations.map((op) => ({
+        sourceId: op.sourceId,
+        targetKey:
+          typeof op.targetKey === 'string' ? op.targetKey : op.targetKey,
+        type: op.type,
+        targetProps: op.targetProperties || {},
+        relProps: op.relationshipProperties || {},
+      }))
+    );
+
+    // Build UNWIND + MERGE query with node creation
+    const targetKeyProperty =
+      typeof operations[0]?.targetKey === 'string' ? 'name' : 'id';
+
+    builder
+      .raw(`UNWIND $${opsParam} AS op`)
+      .match(`(source:${this.sourceLabel} {id: op.sourceId})`)
+      .raw(`MERGE (target:${targetLabel} {${targetKeyProperty}: op.targetKey})`)
+      .raw(
+        'ON CREATE SET target += op.targetProps, target.createdAt = datetime()'
+      )
+      .raw(`MERGE (source)-[r:${this.relationshipType}]->(target)`)
+      .raw('ON CREATE SET r += op.relProps, r.createdAt = datetime()');
+
+    // Add return clause based on options
+    const returnVars = this.buildReturnVars(options);
+    builder.return(returnVars.join(', '));
+
+    const queryResult = await this.queryRunner.executeRaw(
+      builder.getStatement(),
+      bindParam.get()
+    );
+
+    return queryResult.records.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
   }
 }

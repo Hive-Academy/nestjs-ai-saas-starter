@@ -24,7 +24,6 @@ interface CohereEmbeddingResponse {
   };
 }
 
-
 /**
  * Cohere embedding provider
  */

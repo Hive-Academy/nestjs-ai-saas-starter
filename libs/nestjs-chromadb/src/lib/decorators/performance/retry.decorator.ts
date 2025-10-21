@@ -24,7 +24,6 @@ export {
 
 /**
  * Predefined retry configurations for common scenarios
- * @deprecated Use RetryConfigPresets from './retry/retry-config' instead
  */
 export const RetryPresets = {
   /**

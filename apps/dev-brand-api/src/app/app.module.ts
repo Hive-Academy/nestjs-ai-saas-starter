@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Core library imports
 import {
@@ -52,6 +53,20 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 // Health check
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
+import { PerformanceController } from './controllers/performance.controller';
+import { DevBrandController } from './controllers/devbrand.controller';
+
+// Performance monitoring
+import { PerformanceDashboardService } from './services/performance-dashboard.service';
+
+// Brand monitoring
+import { BrandMonitoringService } from './services/brand-monitoring.service';
+
+// Content Strategy Intelligence
+import { ContentStrategyEngine } from './services/content-strategy-engine.service';
+
+// Competitive Intelligence
+import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
@@ -70,6 +85,18 @@ import {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+
+    // CRITICAL: Global EventEmitter - provided once for entire app
+    // Increased maxListeners from 10 to 20 to prevent false-positive warnings
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
     }),
 
     // Core database modules - Enhanced with decorator and performance support
@@ -257,9 +284,13 @@ import {
     // Business modules
     BusinessWorkflowsModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [
     AppStreamingManager,
+    PerformanceDashboardService,
+    BrandMonitoringService,
+    ContentStrategyEngine,
+    CompetitiveIntelligenceService,
     // All adapters are now provided by AdaptersModule
   ],
 })

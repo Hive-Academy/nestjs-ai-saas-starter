@@ -22,19 +22,16 @@ import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
   ChromaDBModule,
   ChromaDBService,
-  ChromaRepository,
-  BaseChromaRepository,
+  ChromaDBRepository,
   ChromaEntity,
   ChromaProp,
   ChromaId,
   CreatedAt,
   UpdatedAt,
   BaseChromaEntity,
+  type CreateDocumentInput,
+  type UpsertDocumentInput,
 } from '../../index';
-import type {
-  CreateDocumentInput,
-  UpsertDocumentInput,
-} from '../decorators/repository/base-repository.interface';
 
 // ============================================================================
 // 1. METADATA TYPE DEFINITIONS
@@ -140,19 +137,16 @@ export class AuthorEntity extends BaseChromaEntity<AuthorMetadata> {
 
 /**
  * Book repository with auto-generated CRUD methods
- * Demonstrates the full BaseChromaRepository interface
+ * Demonstrates the TypeORM-style ChromaDBRepository pattern
  */
 @Injectable()
-@ChromaRepository<BookEntity>({
-  collection: 'books',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-export class BookRepository extends BaseChromaRepository<BookEntity> {
-  constructor() {
-    super();
+export class BookRepository extends ChromaDBRepository<BookEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(BookEntity, 'books', chromaDB);
   }
 
   // All base CRUD methods are auto-generated:
@@ -179,84 +173,89 @@ export class BookRepository extends BaseChromaRepository<BookEntity> {
 
   /**
    * Custom business method: Find books by author
+   * Uses application-level filtering for type safety
    */
   async findByAuthor(author: string): Promise<BookEntity[]> {
-    return this.findAll({
-      where: { author },
-      orderBy: [{ field: 'publishedYear', direction: 'desc' }],
-    });
+    const allBooks = await this.findAll({ limit: 500 });
+    return allBooks
+      .filter((book) => book.metadata.author === author)
+      .sort((a, b) => b.metadata.publishedYear - a.metadata.publishedYear);
   }
 
   /**
    * Custom business method: Find books by genre with rating filter
+   * Combines application-level filtering with sorting
    */
   async findByGenreWithRating(
     genre: string,
     minRating = 0
   ): Promise<BookEntity[]> {
-    return this.findAll({
-      where: {
-        genre,
-        rating: { $gte: minRating },
-        inStock: true,
-      },
-      orderBy: [{ field: 'rating', direction: 'desc' }],
-      limit: 20,
-    });
+    const allBooks = await this.findAll({ limit: 500 });
+    return allBooks
+      .filter(
+        (book) =>
+          book.metadata.genre === genre &&
+          book.metadata.rating >= minRating &&
+          book.metadata.inStock
+      )
+      .sort((a, b) => b.metadata.rating - a.metadata.rating)
+      .slice(0, 20);
   }
 
   /**
    * Custom business method: Find books in price range
+   * Application-level filtering for complex queries
    */
   async findInPriceRange(
     minPrice: number,
     maxPrice: number
   ): Promise<BookEntity[]> {
-    return this.findAll({
-      where: {
-        price: { $gte: minPrice, $lte: maxPrice },
-        inStock: true,
-      },
-      orderBy: [{ field: 'price', direction: 'asc' }],
-    });
+    const allBooks = await this.findAll({ limit: 500 });
+    return allBooks
+      .filter(
+        (book) =>
+          book.metadata.price >= minPrice &&
+          book.metadata.price <= maxPrice &&
+          book.metadata.inStock
+      )
+      .sort((a, b) => a.metadata.price - b.metadata.price);
   }
 }
 
 /**
  * Author repository demonstrating relationship management
+ * Uses TypeORM-style pattern with explicit constructor
  */
 @Injectable()
-@ChromaRepository<AuthorEntity>({
-  collection: 'authors',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-})
-export class AuthorRepository extends BaseChromaRepository<AuthorEntity> {
-  constructor(chromaService: ChromaDBService) {
-    super();
+export class AuthorRepository extends ChromaDBRepository<AuthorEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(AuthorEntity, 'authors', chromaDB);
   }
 
   /**
    * Find authors by nationality
+   * Uses application-level filtering for type-safe metadata queries
    */
   async findByNationality(nationality: string): Promise<AuthorEntity[]> {
-    return this.findAll({
-      where: { nationality },
-      orderBy: [{ field: 'name', direction: 'asc' }],
-    });
+    const allAuthors = await this.findAll({ limit: 500 });
+    return allAuthors
+      .filter((author) => author.metadata.nationality === nationality)
+      .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
   }
 
   /**
    * Find prolific authors (with many books)
+   * Uses application-level filtering for type-safe metadata queries
    */
   async findProlificAuthors(minBooks = 5): Promise<AuthorEntity[]> {
-    return this.findAll({
-      where: {
-        booksCount: { $gte: minBooks },
-      },
-      orderBy: [{ field: 'booksCount', direction: 'desc' }],
-    });
+    const allAuthors = await this.findAll({ limit: 500 });
+    return allAuthors
+      .filter((author) => author.metadata.booksCount >= minBooks)
+      .sort((a, b) => b.metadata.booksCount - a.metadata.booksCount);
   }
 }
 

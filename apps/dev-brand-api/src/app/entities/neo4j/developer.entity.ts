@@ -6,10 +6,12 @@ import {
   Neo4jEntity,
   Neo4jProp,
   Neo4jRelationship,
+  NodeKey,
   NotNull,
   PropIndex,
   Unique,
   UpdatedAt,
+  Validate,
 } from '@hive-academy/nestjs-neo4j';
 
 /**
@@ -24,6 +26,7 @@ import {
 @Neo4jEntity('Developer', {
   description: 'Developer profiles with skills and personal brand context',
 })
+@NodeKey(['email'])
 export class Developer extends Neo4jBaseEntity {
   @Id()
   @Unique()
@@ -33,10 +36,19 @@ export class Developer extends Neo4jBaseEntity {
   @NotNull()
   @Unique()
   @PropIndex()
+  @Validate({
+    validation: {
+      custom: {
+        validator: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+        message: 'Invalid email format',
+      },
+    },
+  })
   email!: string;
 
   @Neo4jProp()
   @NotNull()
+  @PropIndex()
   name!: string;
 
   @Neo4jProp()
@@ -49,6 +61,25 @@ export class Developer extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @JsonProperty()
+  @Validate({
+    validation: {
+      custom: {
+        validator: (value: any) => {
+          if (!value) return false;
+          const validTrends = ['improving', 'stable', 'declining'];
+          const validEngagementTrends = ['growing', 'stable', 'declining'];
+          return (
+            validTrends.includes(value.achievementTrend) &&
+            validEngagementTrends.includes(value.contentEngagementTrend) &&
+            value.brandEvolutionScore >= 0 &&
+            value.brandEvolutionScore <= 1
+          );
+        },
+        message:
+          'Invalid analytics structure: scores must be 0-1, trends must be valid enum values',
+      },
+    },
+  })
   analytics!: {
     achievementTrend: 'improving' | 'stable' | 'declining';
     brandEvolutionScore: number;

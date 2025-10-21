@@ -39,6 +39,24 @@ Dynamic coordination patterns that **adapt in real-time**:
 - **Performance Optimization** - Route selection based on urgency, complexity, customer tier
 - **Feedback-Driven Learning** - Strategy effectiveness tracking and optimization
 
+### Streaming Support (NEW)
+
+Capture streaming output from worker subgraphs:
+
+- **Worker Subgraph Streaming** - Uses LangGraph's `subgraphs: true` option
+- **Decorator Integration** - @StreamToken, @StreamProgress work within workers
+- **Metadata-Driven Configuration** - Configure via `multiAgentStreaming` in @Agent decorator
+- **No Custom Wiring** - Native LangGraph 2025 API integration
+
+### HITL Integration (NEW)
+
+Human-in-the-loop with configurable interruption points:
+
+- **Interruption Points** - Uses LangGraph's `interruptBefore`/`interruptAfter` compilation options
+- **Approval Decorators** - @RequiresApproval triggers pauses naturally
+- **Metadata-Driven Configuration** - Configure via `multiAgentInterruption` in @Agent decorator
+- **Automatic Aggregation** - Multiple workers' interruption points merged automatically
+
 ## Quick Start
 
 ### Installation & Setup
@@ -151,6 +169,66 @@ export class ContentCreatorAgent {
 }
 ```
 
+### With Streaming
+
+```typescript
+@Agent({
+  id: 'streaming-worker',
+  workflow: {
+    multiAgentStreaming: {
+      enabled: true,
+      captureSubgraphs: true,
+      streamMode: 'values',
+    },
+  },
+})
+export class StreamingWorkerAgent extends DeclarativeWorkflowBase {
+  @Entrypoint()
+  @StreamToken({ enabled: true })
+  async process(context: TaskExecutionContext) {
+    // Streams tokens naturally
+  }
+}
+
+// Execute with streaming
+const coordinator = new MultiAgentCoordinator();
+for await (const event of coordinator.stream(input)) {
+  console.log(event);
+}
+```
+
+### With HITL (Human-in-the-Loop)
+
+```typescript
+@Agent({
+  id: 'approval-worker',
+  workflow: {
+    multiAgentInterruption: {
+      enabled: true,
+      interruptBefore: ['approval-worker'],
+    },
+  },
+})
+export class ApprovalWorkerAgent extends DeclarativeWorkflowBase {
+  @Entrypoint()
+  @RequiresApproval({ timeout: 60000 })
+  async process(context: TaskExecutionContext) {
+    // Requires user approval
+  }
+}
+
+// Execute with checkpointer
+import { MemorySaver } from '@langchain/langgraph';
+const checkpointer = new MemorySaver();
+
+const result = await coordinator.execute(input, { checkpointer });
+if (result.next) {
+  // Paused for approval
+  const approved = await getUserApproval();
+  await coordinator.execute({ ...input, approved }, { checkpointer });
+}
+```
+
 ## Coordination Patterns
 
 ### Supervisor Pattern
@@ -176,7 +254,10 @@ const networkId = await coordinator.setupNetwork(
 );
 
 // Execute workflow
-const result = await coordinator.executeSimpleWorkflow(networkId, 'Create comprehensive guide about TypeScript best practices');
+const result = await coordinator.executeSimpleWorkflow(
+  networkId,
+  'Create comprehensive guide about TypeScript best practices'
+);
 ```
 
 ### Swarm Pattern
@@ -374,7 +455,9 @@ const networkId = await coordinator.setupNetwork(
 
 // Function to determine strategy based on real-time conditions:
 function determineOptimalStrategy(request: any): 'urgent' | 'thorough' {
-  return request.priority === 'critical' || request.customerTier === 'enterprise' ? 'urgent' : 'thorough';
+  return request.priority === 'critical' || request.customerTier === 'enterprise'
+    ? 'urgent'
+    : 'thorough';
 }
 ```
 
@@ -406,6 +489,33 @@ interface AgentDefinition {
   capabilities?: string[]; // Agent capabilities
   metadata?: Record<string, unknown>; // Extended configuration
 }
+```
+
+## API
+
+### Configuration Interfaces
+
+**MultiAgentStreamingConfig**
+
+- `enabled: boolean` - Enable streaming capture
+- `captureSubgraphs?: boolean` - Capture worker subgraph streaming (default: true)
+- `streamMode?: 'values' | 'updates' | 'messages'` - Stream mode (default: 'values')
+
+**MultiAgentInterruptionConfig**
+
+- `enabled: boolean` - Enable interruptions
+- `interruptBefore?: readonly string[]` - Worker names to interrupt before
+- `interruptAfter?: readonly string[]` - Worker names to interrupt after
+
+### Usage
+
+```typescript
+@Agent({
+  workflow: {
+    multiAgentStreaming: { enabled: true, captureSubgraphs: true },
+    multiAgentInterruption: { enabled: true, interruptBefore: ['worker1'] }
+  }
+})
 ```
 
 ## Service APIs
@@ -790,7 +900,10 @@ describe('MultiAgentNetworkIntegration', () => {
       }
     );
 
-    const result = await coordinator.executeSimpleWorkflow(networkId, 'Create article about TypeScript best practices');
+    const result = await coordinator.executeSimpleWorkflow(
+      networkId,
+      'Create article about TypeScript best practices'
+    );
 
     expect(result.success).toBe(true);
     expect(result.executionPath).toContain('researcher');

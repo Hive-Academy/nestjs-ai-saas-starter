@@ -20,13 +20,13 @@
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
-  BaseChromaRepository,
+  ChromaDBRepository,
   BaseDocument,
   ChromaDBModule,
+  ChromaDBService,
   ChromaEntity,
   ChromaId,
   ChromaProp,
-  ChromaRepository,
   CreatedAt,
   UpdatedAt,
 } from '../../index';
@@ -302,14 +302,13 @@ export class KnowledgeChunkEntity
 // ============================================================================
 
 @Injectable()
-@ChromaRepository<UserEntity>({
-  collection: 'users',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class UserRepository extends BaseChromaRepository<UserEntity> {
-  constructor() {
-    super();
+export class UserRepository extends ChromaDBRepository<UserEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(UserEntity, 'users', chromaDB);
   }
 
   async findByRole(role: string): Promise<UserEntity[]> {
@@ -345,14 +344,13 @@ export class UserRepository extends BaseChromaRepository<UserEntity> {
 }
 
 @Injectable()
-@ChromaRepository<DocumentEntity>({
-  collection: 'documents',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class DocumentRepository extends BaseChromaRepository<DocumentEntity> {
-  constructor() {
-    super();
+export class DocumentRepository extends ChromaDBRepository<DocumentEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(DocumentEntity, 'documents', chromaDB);
   }
 
   async findByAuthor(authorId: string): Promise<DocumentEntity[]> {
@@ -383,14 +381,13 @@ export class DocumentRepository extends BaseChromaRepository<DocumentEntity> {
 }
 
 @Injectable()
-@ChromaRepository<CommentEntity>({
-  collection: 'comments',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class CommentRepository extends BaseChromaRepository<CommentEntity> {
-  constructor() {
-    super();
+export class CommentRepository extends ChromaDBRepository<CommentEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(CommentEntity, 'comments', chromaDB);
   }
 
   async findByDocument(documentId: string): Promise<CommentEntity[]> {
@@ -410,14 +407,13 @@ export class CommentRepository extends BaseChromaRepository<CommentEntity> {
 }
 
 @Injectable()
-@ChromaRepository<KnowledgeChunkEntity>({
-  collection: 'knowledge_chunks',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class KnowledgeChunkRepository extends BaseChromaRepository<KnowledgeChunkEntity> {
-  constructor() {
-    super();
+export class KnowledgeChunkRepository extends ChromaDBRepository<KnowledgeChunkEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(KnowledgeChunkEntity, 'knowledge_chunks', chromaDB);
   }
 
   async findByDocument(documentId: string): Promise<KnowledgeChunkEntity[]> {

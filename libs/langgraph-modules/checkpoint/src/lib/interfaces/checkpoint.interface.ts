@@ -28,6 +28,4 @@ export type {
 } from './checkpoint-errors.interface';
 
 // Statistics interfaces
-export type {
-  CheckpointStats,
-} from './checkpoint-stats.interface';
+export type { CheckpointStats } from './checkpoint-stats.interface';

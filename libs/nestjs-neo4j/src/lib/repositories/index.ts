@@ -32,39 +32,8 @@
  * - Metrics collection
  */
 
-// BaseRepository removed - use @Repository decorator instead
-export { GraphRepository } from './graph-repository';
-
-// Re-export graph types from graph-repository
-export type {
-  GraphTraversalOptions,
-  GraphPattern,
-  NeighborResult,
-  PathResult,
-  CentralityMetric,
-  ConnectedComponent,
-  GraphStatistics,
-  CentralityResult,
-  CommunityDetectionOptions,
-  PathFindingOptions,
-  GraphQueryPattern,
-  SubgraphOptions,
-  SubgraphResult,
-  GraphCycle,
-} from './graph-repository';
-
 // Modern Graph Services (Post-Split Architecture)
 export { BaseGraphService } from './graph/base-graph.service';
 export { GraphTraversalService } from './graph/graph-traversal.service';
 export { GraphMetricsService } from './graph/graph-metrics.service';
 export { GraphPatternService } from './graph/graph-pattern.service';
-export {
-  RelationshipRepository,
-  type RelationshipQueryOptions,
-  type CreateRelationshipData,
-  type RelationshipResult,
-  type BatchRelationshipOperation,
-} from './relationship/relationship-repository';
-
-// Repository decorators
-export * from './repository.decorator';

@@ -14,8 +14,6 @@ import type { Neo4jRecord } from '../index';
 import {
   AuditLog,
   Authorize,
-  Neo4jCrudService,
-  FindOptions,
   CreatedAt,
   Id,
   InjectNeogma,
@@ -25,7 +23,7 @@ import {
   NeogmaService,
   NotNull,
   PropIndex,
-  Neo4jRepository,
+  Neo4jRepositoryBase,
   RequireTenantFeatures,
   Safe,
   TenantContextService,
@@ -247,67 +245,80 @@ export interface TenantHealthMetrics {
 // ============================================================================
 
 /**
- * OrderRepository - demonstrates @Repository decorator with auto-generated CRUD methods
- * Auto-generated methods: findById, findAll, create, update, delete, count, exists
+ * OrderRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Order>:
+ * - findById(id: string): Promise<Order | null>
+ * - findAll(options?: FindOptions<Order>): Promise<Order[]>
+ * - findOne(options: FindOptions<Order>): Promise<Order | null>
+ * - create(data: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>): Promise<Order>
+ * - update(id: string, updates: Partial<Order>): Promise<Order | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Order>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Order>): Promise<Order>
  */
-@Repository(() => Order)
 @Injectable()
-export class OrderRepository extends BaseRepositoryService<Order> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
-    // The @Repository decorator auto-injects NeogmaService and creates CRUD methods
-  }
+export class OrderRepository extends Neo4jRepositoryBase<Order> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find orders by customer with tenant isolation
-   * Note: In production, implement tenant scoping via middleware or guards
+   * Uses inherited findAll() method
    */
   @Safe()
   async findByCustomer(customerId: string): Promise<Order[]> {
     return this.findAll({
       where: { customerId },
-      orderBy: [{ property: 'orderDate', direction: 'DESC' }],
+      orderBy: [{ orderDate: 'DESC' }],
     });
   }
 
   /**
    * Find orders by status
+   * Uses inherited findAll() method
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findByStatus(status: Order['status']): Promise<Order[]> {
     return this.findAll({
       where: { status },
-      orderBy: [{ property: 'orderDate', direction: 'DESC' }],
+      orderBy: [{ orderDate: 'DESC' }],
     });
   }
 
   /**
    * Find recent orders
+   * Uses inherited findAll() method
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findRecent(limit = 20): Promise<Order[]> {
     return this.findAll({
-      orderBy: [{ property: 'orderDate', direction: 'DESC' }],
+      orderBy: [{ orderDate: 'DESC' }],
       limit,
     });
   }
 }
 
 /**
- * CustomerRepository - demonstrates @Repository decorator with auto-generated CRUD methods
- * Auto-generated methods: findById, findAll, create, update, delete, count, exists
+ * CustomerRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Customer>:
+ * - findById(id: string): Promise<Customer | null>
+ * - findAll(options?: FindOptions<Customer>): Promise<Customer[]>
+ * - findOne(options: FindOptions<Customer>): Promise<Customer | null>
+ * - create(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Promise<Customer>
+ * - update(id: string, updates: Partial<Customer>): Promise<Customer | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Customer>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Customer>): Promise<Customer>
  */
-@Repository(() => Customer)
 @Injectable()
-export class CustomerRepository extends BaseRepositoryService<Customer> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
-  }
+export class CustomerRepository extends Neo4jRepositoryBase<Customer> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find customer by email (tenant-scoped)
+   * Uses inherited findAll() method
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findByEmail(email: string): Promise<Customer | null> {
     const customers = await this.findAll({ where: { email } });
     return customers[0] || null;
@@ -315,56 +326,63 @@ export class CustomerRepository extends BaseRepositoryService<Customer> {
 
   /**
    * Find customers by tier
+   * Uses inherited findAll() method
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findByTier(tier: Customer['tier']): Promise<Customer[]> {
     return this.findAll({
       where: { tier, isActive: true },
-      orderBy: [{ property: 'totalSpent', direction: 'DESC' }],
+      orderBy: [{ totalSpent: 'DESC' }],
     });
   }
 
   /**
    * Find top customers by spending
+   * Uses inherited findAll() method
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findTopCustomers(limit = 10): Promise<Customer[]> {
     return this.findAll({
       where: { isActive: true },
-      orderBy: [{ property: 'totalSpent', direction: 'DESC' }],
+      orderBy: [{ totalSpent: 'DESC' }],
       limit,
     });
   }
 }
 
 /**
- * ProductRepository - demonstrates @Repository decorator with auto-generated CRUD methods
- * Auto-generated methods: findById, findAll, create, update, delete, count, exists
+ * ProductRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Product>:
+ * - findById(id: string): Promise<Product | null>
+ * - findAll(options?: FindOptions<Product>): Promise<Product[]>
+ * - findOne(options: FindOptions<Product>): Promise<Product | null>
+ * - create(data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product>
+ * - update(id: string, updates: Partial<Product>): Promise<Product | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Product>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Product>): Promise<Product>
  */
-@Repository(() => Product)
 @Injectable()
-export class ProductRepository extends BaseRepositoryService<Product> {
-  constructor(neogmaService: NeogmaService) {
-    super(neogmaService);
-  }
+export class ProductRepository extends Neo4jRepositoryBase<Product> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find products by category
+   * Uses inherited findAll() method
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findByCategory(category: string): Promise<Product[]> {
     return this.findAll({
       where: { category, isActive: true },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
+      orderBy: [{ name: 'ASC' }],
     });
   }
 
   /**
-   * Find low stock products using QueryBuilder
+   * Find low stock products using inherited executeQuery() method
+   * Demonstrates custom query with helper method from base class
    */
-  // Tenant scoping: Implement via middleware or query filters
   async findLowStock(threshold = 10): Promise<Product[]> {
-    const queryBuilder = this.neogmaService.createQueryBuilder();
+    const queryBuilder = this.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     const thresholdParam = bindParam.add(threshold);
@@ -380,7 +398,7 @@ export class ProductRepository extends BaseRepositoryService<Product> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogmaService.run(cypher, params);
+    const result = await this.executeQuery(cypher, params);
     return result.records.map(
       (record: Neo4jRecord) => record.get('p').properties as Product
     );

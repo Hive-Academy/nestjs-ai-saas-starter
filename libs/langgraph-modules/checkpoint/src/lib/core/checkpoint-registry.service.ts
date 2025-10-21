@@ -1,8 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import type { EnhancedBaseCheckpointSaver } from '../interfaces/checkpoint.interface';
-import type {
-  ICheckpointRegistryService,
-} from '../interfaces/checkpoint-services.interface';
+import type { ICheckpointRegistryService } from '../interfaces/checkpoint-services.interface';
 import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
 
 /**
@@ -14,7 +12,10 @@ export class CheckpointRegistryService
   extends BaseCheckpointService
   implements ICheckpointRegistryService, OnModuleDestroy
 {
-  private readonly checkpointSavers = new Map<string, EnhancedBaseCheckpointSaver>();
+  private readonly checkpointSavers = new Map<
+    string,
+    EnhancedBaseCheckpointSaver
+  >();
   private defaultSaver: EnhancedBaseCheckpointSaver | null = null;
   private defaultSaverName: string | null = null;
 
@@ -35,10 +36,7 @@ export class CheckpointRegistryService
     isDefault = false
   ): void {
     if (!name) {
-      throw this.createError(
-        'Saver name is required',
-        'MISSING_SAVER_NAME'
-      );
+      throw this.createError('Saver name is required', 'MISSING_SAVER_NAME');
     }
 
     if (!saver) {
@@ -58,7 +56,9 @@ export class CheckpointRegistryService
       this.setDefaultSaver(name);
     }
 
-    this.logger.log(`Registered checkpoint saver: ${name}${isDefault ? ' (default)' : ''}`);
+    this.logger.log(
+      `Registered checkpoint saver: ${name}${isDefault ? ' (default)' : ''}`
+    );
   }
 
   /**
@@ -208,14 +208,17 @@ export class CheckpointRegistryService
     type: string;
     status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
   }> {
-    return this.getAvailableSavers().map(name => this.getSaverInfo(name));
+    return this.getAvailableSavers().map((name) => this.getSaverInfo(name));
   }
 
   /**
    * Get savers by type
    */
-  public getSaversByType(type: string): Array<{ name: string; saver: EnhancedBaseCheckpointSaver }> {
-    const result: Array<{ name: string; saver: EnhancedBaseCheckpointSaver }> = [];
+  public getSaversByType(
+    type: string
+  ): Array<{ name: string; saver: EnhancedBaseCheckpointSaver }> {
+    const result: Array<{ name: string; saver: EnhancedBaseCheckpointSaver }> =
+      [];
 
     for (const [name, saver] of this.checkpointSavers) {
       if (this.getSaverType(saver) === type) {
@@ -278,7 +281,9 @@ export class CheckpointRegistryService
 
     for (const [type, count] of Object.entries(typeCount)) {
       if (count > 1) {
-        warnings.push(`Multiple savers of type '${type}' registered (${count})`);
+        warnings.push(
+          `Multiple savers of type '${type}' registered (${count})`
+        );
       }
     }
 
@@ -294,10 +299,10 @@ export class CheckpointRegistryService
    */
   private selectNewDefaultSaver(): void {
     const availableSavers = this.getAvailableSavers();
-    
+
     if (availableSavers.length > 0) {
       // Prefer memory saver as default, then the first available
-      const memorySaver = availableSavers.find(name => {
+      const memorySaver = availableSavers.find((name) => {
         const saver = this.checkpointSavers.get(name);
         return saver && this.getSaverType(saver) === 'memory';
       });
@@ -316,21 +321,35 @@ export class CheckpointRegistryService
   private getSaverType(saver: EnhancedBaseCheckpointSaver): string {
     // Try to determine type from constructor name or other properties
     const constructorName = saver.constructor.name.toLowerCase();
-    
-    if (constructorName.includes('memory')) {return 'memory';}
-    if (constructorName.includes('redis')) {return 'redis';}
-    if (constructorName.includes('postgres')) {return 'postgres';}
-    if (constructorName.includes('sqlite')) {return 'sqlite';}
-    
+
+    if (constructorName.includes('memory')) {
+      return 'memory';
+    }
+    if (constructorName.includes('redis')) {
+      return 'redis';
+    }
+    if (constructorName.includes('postgres')) {
+      return 'postgres';
+    }
+    if (constructorName.includes('sqlite')) {
+      return 'sqlite';
+    }
+
     return 'unknown';
   }
 
   /**
    * Close a single saver safely
    */
-  private async closeSaver(saver: EnhancedBaseCheckpointSaver, name: string): Promise<void> {
+  private async closeSaver(
+    saver: EnhancedBaseCheckpointSaver,
+    name: string
+  ): Promise<void> {
     try {
-      if ('close' in saver && typeof (saver as { close?: () => Promise<void> }).close === 'function') {
+      if (
+        'close' in saver &&
+        typeof (saver as { close?: () => Promise<void> }).close === 'function'
+      ) {
         await (saver as { close: () => Promise<void> }).close();
         this.logger.debug(`Closed checkpoint saver: ${name}`);
       }

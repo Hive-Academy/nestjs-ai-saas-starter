@@ -1,5 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 import { WORKFLOW_METADATA_KEY } from '@hive-academy/langgraph-core';
+import { getMultiAgentConfigWithDefaults } from '../utils/multi-agent-config.accessor';
 
 /**
  * Agent type enumeration for enhanced agent architecture
@@ -47,6 +48,54 @@ export interface WorkflowAgentConfig {
 }
 
 /**
+ * Streaming configuration for multi-agent workflows
+ * Maps directly to LangGraph's streaming capabilities
+ */
+export interface MultiAgentStreamingConfig {
+  /**
+   * Enable streaming for this multi-agent workflow
+   */
+  enabled: boolean;
+
+  /**
+   * Capture worker/subgraph execution in stream
+   * Maps to LangGraph's subgraphs: true parameter
+   */
+  captureSubgraphs?: boolean;
+
+  /**
+   * Stream mode for multi-agent execution
+   * - 'values': Stream full state updates
+   * - 'updates': Stream incremental state changes
+   * - 'messages': Stream message-level updates
+   */
+  streamMode?: 'values' | 'updates' | 'messages';
+}
+
+/**
+ * Human-in-the-loop (HITL) interruption configuration for multi-agent workflows
+ * Controls when multi-agent execution pauses for human approval
+ */
+export interface MultiAgentInterruptionConfig {
+  /**
+   * Enable interruption/HITL for this multi-agent workflow
+   */
+  enabled: boolean;
+
+  /**
+   * Worker names to interrupt BEFORE execution
+   * Workflow pauses before these workers execute
+   */
+  interruptBefore?: readonly string[];
+
+  /**
+   * Worker names to interrupt AFTER execution
+   * Workflow pauses after these workers complete
+   */
+  interruptAfter?: readonly string[];
+}
+
+/**
  * 🆕 ENHANCED: Agent-specific workflow configuration interface
  * Combines workflow metadata with agent-specific workflow settings
  */
@@ -60,6 +109,17 @@ export interface AgentWorkflowConfig {
    * Workflow description
    */
   description?: string;
+
+  /**
+   * 🆕 EXPLICIT WORKFLOW TYPE DECLARATION
+   * Determines which decorators are allowed:
+   * - 'functional-task': @Entrypoint + @Task only (linear/sequential workflows)
+   * - 'functional-node': @Node + @Edge only (complex routing/branching workflows)
+   *
+   * Import from functional-api:
+   * import { WorkflowType } from '@hive-academy/langgraph-functional-api';
+   */
+  type?: 'functional-task' | 'functional-node';
 
   /**
    * Enable workflow streaming
@@ -110,6 +170,18 @@ export interface AgentWorkflowConfig {
    * Internal workflow state persistence key
    */
   stateKey?: string;
+
+  /**
+   * 🆕 PHASE 1: Multi-agent streaming configuration
+   * Controls streaming behavior for multi-agent workflows
+   */
+  multiAgentStreaming?: MultiAgentStreamingConfig;
+
+  /**
+   * 🆕 PHASE 1: Multi-agent interruption/HITL configuration
+   * Controls when workflow pauses for human approval
+   */
+  multiAgentInterruption?: MultiAgentInterruptionConfig;
 }
 
 /**
@@ -248,24 +320,43 @@ function detectAgentType(target: any): AgentType {
 
 /**
  * Creates default workflow configuration for workflow-agent types
+ * Now uses module configuration for defaults
  */
 function createDefaultWorkflowConfig(
   agentId: string,
-  agentDescription: string
+  agentDescription: string,
+  moduleConfig: ReturnType<typeof getMultiAgentConfigWithDefaults>
 ): AgentWorkflowConfig {
   return {
     name: `${agentId}-workflow`,
     description: agentDescription,
-    streaming: true,
+    // Use module config for streaming, fallback to sensible defaults
+    streaming: moduleConfig.streaming.enabled ?? true,
     confidenceThreshold: 0.7,
     metrics: true,
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: true,
+    enableInternalStreaming: moduleConfig.streaming.enabled ?? true,
+    enableInternalCheckpointing: moduleConfig.checkpointing.enabled ?? true,
     internalTimeout: 60000, // 1 minute
     enableErrorRecovery: true,
     maxInternalRetries: 2,
     enableStepProgress: true,
     stateKey: `${agentId}-state`,
+    // Apply multi-agent streaming defaults from module config
+    multiAgentStreaming: {
+      enabled: moduleConfig.streaming.enabled ?? true,
+      captureSubgraphs: true,
+      streamMode:
+        (moduleConfig.streaming.modes?.[0] as
+          | 'values'
+          | 'updates'
+          | 'messages') ?? 'values',
+    },
+    // Apply multi-agent interruption defaults (disabled by default)
+    multiAgentInterruption: {
+      enabled: false,
+      interruptBefore: [],
+      interruptAfter: [],
+    },
   };
 }
 
@@ -333,24 +424,35 @@ function createDefaultWorkflowConfig(
  */
 export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
   return (target: any) => {
+    // 🆕 MODULE CONFIG: Load defaults from module configuration
+    const moduleConfig = getMultiAgentConfigWithDefaults();
+
     // 🆕 SMART DEFAULTS: Apply convention-based configuration
     const derivedId = deriveIdFromClassName(target.name);
     const derivedName = humanizeClassName(target.name);
     const detectedType = detectAgentType(target);
 
-    // Build base configuration with smart defaults
+    // Build base configuration with smart defaults from module + conventions
     const baseConfig: AgentConfig = {
       id: derivedId,
       name: derivedName,
       description: `${derivedName} Agent`,
       type: detectedType,
+      // Apply sensible defaults for optional properties
+      tools: [],
+      capabilities: [],
+      metadata: {},
+      priority: 'medium',
+      executionTime: 'medium',
+      outputFormat: 'text',
     };
 
     // 🆕 WORKFLOW DEFAULTS: Auto-apply workflow configuration for workflow-agent types
     if (detectedType === 'workflow-agent' && !config.workflow) {
       baseConfig.workflow = createDefaultWorkflowConfig(
         derivedId,
-        baseConfig.description
+        baseConfig.description,
+        moduleConfig
       );
     }
 
@@ -372,6 +474,7 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
         name: agentConfig.workflow.name || `${agentConfig.id}-workflow`,
         description:
           agentConfig.workflow.description || agentConfig.description,
+        type: agentConfig.workflow.type, // 🔧 FIX: Include workflow type for pattern validation
         streaming: agentConfig.workflow.streaming ?? true,
         confidenceThreshold: agentConfig.workflow.confidenceThreshold ?? 0.7,
         metrics: agentConfig.workflow.metrics ?? true,

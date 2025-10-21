@@ -30,7 +30,9 @@ export class MetricsProvider {
     errorsByType: new Map(),
   };
 
-  constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {
+  constructor(
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
+  ) {
     this.subscribeToEvents();
   }
 
@@ -62,7 +64,7 @@ export class MetricsProvider {
 
     // Node events
     this.eventEmitter.on('node.completed', (data: any) => {
-      const {nodeId} = data;
+      const { nodeId } = data;
       this.metrics.nodeExecutions.set(
         nodeId,
         (this.metrics.nodeExecutions.get(nodeId) || 0) + 1
@@ -71,7 +73,7 @@ export class MetricsProvider {
 
     // Tool events
     this.eventEmitter.on('tool.completed', (data: any) => {
-      const {toolName} = data;
+      const { toolName } = data;
       this.metrics.toolExecutions.set(
         toolName,
         (this.metrics.toolExecutions.get(toolName) || 0) + 1
@@ -84,7 +86,7 @@ export class MetricsProvider {
    */
   private updateDuration(duration: number): void {
     this.metrics.totalDuration += duration;
-    this.metrics.averageDuration = 
+    this.metrics.averageDuration =
       this.metrics.totalDuration / this.metrics.successCount;
   }
 
@@ -116,7 +118,9 @@ export class MetricsProvider {
    * Get success rate
    */
   getSuccessRate(): number {
-    if (this.metrics.executionCount === 0) {return 0;}
+    if (this.metrics.executionCount === 0) {
+      return 0;
+    }
     return this.metrics.successCount / this.metrics.executionCount;
   }
 
@@ -128,7 +132,7 @@ export class MetricsProvider {
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([nodeId, count]) => ({ nodeId, count }));
-    
+
     return sorted;
   }
 
@@ -143,7 +147,7 @@ export class MetricsProvider {
       errorsByType: Array.from(this.metrics.errorsByType.entries()),
       exportedAt: new Date(),
     };
-    
+
     return JSON.stringify(exportData, null, 2);
   }
 }

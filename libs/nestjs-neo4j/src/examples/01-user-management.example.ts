@@ -11,25 +11,23 @@
 
 import { Injectable } from '@nestjs/common';
 import {
+  AuditLog,
+  Authorize,
+  CreatedAt,
+  Id,
+  InjectNeogma,
   Neo4jEntity,
   Neo4jProp,
-  Id,
-  CreatedAt,
-  UpdatedAt,
-  NodeKey,
-  Unique,
-  NotNull,
-  Neo4jRepository,
-  InjectNeogma,
+  Neo4jRepositoryBase,
   NeogmaService,
-  Neo4jCrudService,
-  FindOptions,
-  Safe,
-  Authorize,
-  ValidateInput,
-  AuditLog,
-  Transactional,
+  NodeKey,
+  NotNull,
   PropIndex,
+  Safe,
+  Transactional,
+  Unique,
+  UpdatedAt,
+  ValidateInput,
 } from '../index';
 
 // ============================================================================
@@ -121,80 +119,48 @@ export interface UserAnalytics {
 }
 
 // ============================================================================
-// 3. REPOSITORY WITH AUTO-GENERATED METHODS
+// 3. REPOSITORY WITH TYPEORM-STYLE PATTERN (ZERO BOILERPLATE)
 // ============================================================================
 
 /**
- * UserRepository - demonstrates composition pattern with Neo4jCrudService
+ * UserRepository - demonstrates TypeORM-style repository pattern
  *
- * CRUD methods delegated to Neo4jCrudService:
+ * Inherited CRUD methods from Neo4jRepositoryBase<User>:
  * - findById(id: string): Promise<User | null>
  * - findAll(options?: FindOptions<User>): Promise<User[]>
- * - create(data: Partial<User>): Promise<User>
+ * - findOne(options: FindOptions<User>): Promise<User | null>
+ * - create(data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User>
  * - update(id: string, updates: Partial<User>): Promise<User | null>
- * - delete(id: string): Promise<boolean>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
  * - count(where?: Partial<User>): Promise<number>
  * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<User>): Promise<User>
  *
- * Uses composition pattern - inject Neo4jCrudService for CRUD, NeogmaService for custom queries
+ * Plus helper methods for custom logic:
+ * - createQueryBuilder(): QueryBuilder
+ * - executeQuery<R>(cypher, params): Promise<R>
+ * - findRelated<R>(id, relationshipType, direction): Promise<R[]>
+ * - And more...
  */
-@Neo4jRepository(() => User)
 @Injectable()
-export class UserRepository {
-  private readonly label = 'User';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // Delegate CRUD operations to Neo4jCrudService
-  findById(id: string) {
-    return this.crud.findById<User>(this.label, id);
-  }
-
-  findAll(options?: FindOptions<User>) {
-    return this.crud.findAll<User>(this.label, options);
-  }
-
-  create(data: Partial<User>) {
-    return this.crud.create<User>(
-      this.label,
-      data as Omit<User, 'id' | 'createdAt' | 'updatedAt'>
-    );
-  }
-
-  update(id: string, updates: Partial<User>) {
-    return this.crud.update<User>(this.label, id, updates);
-  }
-
-  delete(id: string) {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<User>) {
-    return this.crud.count<User>(this.label, where);
-  }
-
-  exists(id: string) {
-    return this.crud.exists(this.label, id);
-  }
+export class UserRepository extends Neo4jRepositoryBase<User> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find users by department with type safety
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   @Safe()
   async findByDepartment(department: string): Promise<User[]> {
     return this.findAll({
       where: { department, isActive: true },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
+      orderBy: [{ name: 'ASC' }],
     });
   }
 
   /**
    * Find user by email (unique constraint ensures single result)
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   async findByEmail(email: string): Promise<User | null> {
     const users = await this.findAll({ where: { email } });
@@ -203,7 +169,7 @@ export class UserRepository {
 
   /**
    * Soft delete user (set inactive instead of deleting)
-   * Uses auto-generated update() method
+   * Uses inherited update() method
    */
   @AuditLog({ logLevel: 'full', enabled: true })
   async deactivateUser(userId: string): Promise<User | null> {

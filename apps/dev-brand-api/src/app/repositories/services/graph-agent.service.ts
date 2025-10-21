@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectNeogma, NeogmaService, Safe } from '@hive-academy/nestjs-neo4j';
-import type { AgentState } from '@hive-academy/langgraph-memory';
+import type { AgentState, MemoryEntry } from '@hive-academy/langgraph-memory';
 import { Memory } from '../../entities/neo4j/memory.entity';
 import { GraphHelpersService } from './graph-helpers.service';
 
@@ -19,6 +19,161 @@ export class GraphAgentService {
     @InjectNeogma() private readonly neogma: NeogmaService,
     private readonly helpers: GraphHelpersService
   ) {}
+
+  // ============================================================================
+  // PRIORITY 0: CORE MEMORY TRACKING OPERATIONS (MOVED FROM LIBRARY)
+  // ============================================================================
+
+  /**
+   * Track a memory entry in the graph database
+   * Moved from MemoryGraphService.trackMemory() (lines 38-78)
+   */
+  @Safe()
+  async trackMemory(memory: MemoryEntry): Promise<void> {
+    try {
+      const queryBuilder = this.neogma.createQueryBuilder();
+      const bindParam = queryBuilder.getBindParam();
+
+      const threadIdParam = bindParam.add(memory.threadId);
+      const memoryIdParam = bindParam.add(memory.id);
+      const contentParam = bindParam.add(memory.content);
+      const typeParam = bindParam.add(memory.metadata.type);
+      const importanceParam = bindParam.add(memory.metadata.importance || 0.5);
+      const createdAtParam = bindParam.add(memory.createdAt.toISOString());
+      const accessCountParam = bindParam.add(memory.accessCount);
+
+      // Build base query for Thread and Memory nodes
+      queryBuilder.raw(
+        `MERGE (t:Thread {id: $${threadIdParam}})
+           SET t.lastActivity = datetime()
+           MERGE (m:Memory {id: $${memoryIdParam}})
+           SET m.content = $${contentParam},
+               m.type = $${typeParam},
+               m.importance = $${importanceParam},
+               m.createdAt = datetime($${createdAtParam}),
+               m.accessCount = $${accessCountParam}
+           MERGE (t)-[:CONTAINS]->(m)`
+      );
+
+      // Add user relationship if userId exists
+      if (memory.metadata.userId) {
+        const userIdParam = bindParam.add(memory.metadata.userId);
+        queryBuilder.raw(
+          `MERGE (u:User {id: $${userIdParam}})
+           MERGE (u)-[:HAS_MEMORY]->(m)`
+        );
+      }
+
+      queryBuilder.return('m.id as memoryId');
+
+      const cypher = queryBuilder.getStatement();
+      const params = bindParam.get();
+      await this.neogma.run(cypher, params);
+
+      this.logger.debug(`Tracked memory ${memory.id} in graph`);
+    } catch (error) {
+      this.logger.warn(`Failed to track memory ${memory.id} in graph`, error);
+      throw new Error(
+        `Failed to track memory: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  /**
+   * Track multiple memories in batch
+   * Moved from MemoryGraphService.trackMemoriesBatch() (lines 83-121)
+   */
+  @Safe()
+  async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
+    if (memories.length === 0) return;
+
+    try {
+      const queryBuilder = this.neogma.createQueryBuilder();
+      const bindParam = queryBuilder.getBindParam();
+
+      // Prepare batch data with content length limits
+      const memoryData = memories.map((memory) => ({
+        threadId: memory.threadId,
+        memoryId: memory.id,
+        content: memory.content.substring(0, 1000), // Limit content length
+        type: memory.metadata.type,
+        importance: memory.metadata.importance || 0.5,
+        createdAt: memory.createdAt.toISOString(),
+        accessCount: memory.accessCount,
+      }));
+
+      const memoriesParam = bindParam.add(memoryData);
+
+      queryBuilder.raw(
+        `UNWIND $${memoriesParam} as memoryData
+           MERGE (t:Thread {id: memoryData.threadId})
+           SET t.lastActivity = datetime()
+           MERGE (m:Memory {id: memoryData.memoryId})
+           SET m.content = memoryData.content,
+               m.type = memoryData.type,
+               m.importance = memoryData.importance,
+               m.createdAt = datetime(memoryData.createdAt),
+               m.accessCount = memoryData.accessCount
+           MERGE (t)-[:CONTAINS]->(m)
+           RETURN count(m) as created`
+      );
+
+      const cypher = queryBuilder.getStatement();
+      const params = bindParam.get();
+      await this.neogma.run(cypher, params);
+
+      this.logger.debug(`Batch tracked ${memories.length} memories in graph`);
+    } catch (error) {
+      this.logger.warn(`Failed to batch track memories in graph`, error);
+      throw new Error(
+        `Failed to batch track memories: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  /**
+   * Remove memories from graph with DETACH DELETE
+   * Moved from MemoryGraphService.removeMemories() (lines 126-145)
+   */
+  @Safe()
+  async deleteMemories(memoryIds: readonly string[]): Promise<number> {
+    if (memoryIds.length === 0) return 0;
+
+    try {
+      const queryBuilder = this.neogma.createQueryBuilder();
+      const bindParam = queryBuilder.getBindParam();
+
+      const memoryIdsParam = bindParam.add([...memoryIds]);
+
+      queryBuilder.raw(
+        `MATCH (m:Memory)
+           WHERE m.id IN $${memoryIdsParam}
+           DETACH DELETE m
+           RETURN count(m) as deleted`
+      );
+
+      const cypher = queryBuilder.getStatement();
+      const params = bindParam.get();
+      const result = await this.neogma.run(cypher, params);
+
+      const deletedCount = Number(result.records[0]?.get('deleted')) || 0;
+
+      this.logger.debug(`Removed ${deletedCount} memories from graph`);
+
+      return deletedCount;
+    } catch (error) {
+      this.logger.warn(`Failed to remove memories from graph`, error);
+      throw new Error(
+        `Failed to delete memories: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
 
   // ============================================================================
   // AGENT-AWARE MEMORY OPERATIONS

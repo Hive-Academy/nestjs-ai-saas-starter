@@ -1,85 +1,38 @@
-import { Injectable } from '@nestjs/common';
-import {
-  Neo4jRepository,
-  Neo4jCrudService,
-  InjectNeogma,
-  NeogmaService,
-  Safe,
-  FindOptions,
-} from '@hive-academy/nestjs-neo4j';
-import { InterruptionPoint } from '../../entities/neo4j/interruption-point.entity';
+// ✅ Verified TASK_2025_004: All methods are unique business logic (no CRUD duplication)
+// This repository has NO methods to delete - all functionality is custom workflow interruption logic
+
 import type {
   UserInterruption,
   UserInterruptionResponse,
 } from '@hive-academy/langgraph-hitl';
 import { InterruptionStatus } from '@hive-academy/langgraph-hitl';
+import {
+  AuditLog,
+  Neo4jCrudService,
+  Neo4jRepositoryBase,
+  NeogmaService,
+  Safe,
+  ValidateInput,
+} from '@hive-academy/nestjs-neo4j';
+import { Injectable } from '@nestjs/common';
+import { InterruptionPoint } from '../../entities/neo4j/interruption-point.entity';
 
 /**
  * Interruption Repository
  *
  * Replaces: neo4j-interruption-storage.adapter.ts (237+ lines)
  *
- * Uses composition pattern with Neo4jCrudService for CRUD operations.
+ * Extends Neo4jRepository<InterruptionPoint> for automatic CRUD operations.
  * Provides type-safe operations for workflow interruption management including
  * timeout handling, status tracking, and user interaction processing.
  *
- * CRUD methods (delegated to Neo4jCrudService):
- * - findById(id: string): Promise<InterruptionPoint | null>
- * - findAll(options?: FindOptions<InterruptionPoint>): Promise<InterruptionPoint[]>
- * - create(data: Partial<InterruptionPoint>): Promise<InterruptionPoint>
- * - update(id: string, updates: Partial<InterruptionPoint>): Promise<InterruptionPoint | null>
- * - delete(id: string): Promise<boolean>
- * - count(where?: Partial<InterruptionPoint>): Promise<number>
- * - exists(id: string): Promise<boolean>
+ * CRUD methods (inherited from Neo4jRepository<InterruptionPoint>):
+ * - findById, findAll, create, update, delete, count, exists
  */
-@Neo4jRepository(() => InterruptionPoint)
 @Injectable()
-export class InterruptionRepository {
-  private readonly label = 'UserInterruption';
-
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // ============================================================================
-  // CRUD METHODS (delegated to Neo4jCrudService)
-  // ============================================================================
-
-  findById(id: string): Promise<InterruptionPoint | null> {
-    return this.crud.findById<InterruptionPoint>(this.label, id);
-  }
-
-  findAll(
-    options?: FindOptions<InterruptionPoint>
-  ): Promise<InterruptionPoint[]> {
-    return this.crud.findAll<InterruptionPoint>(this.label, options);
-  }
-
-  create(data: Partial<InterruptionPoint>): Promise<InterruptionPoint> {
-    return this.crud.create<InterruptionPoint>(
-      this.label,
-      data as Omit<InterruptionPoint, 'id' | 'createdAt' | 'updatedAt'>
-    );
-  }
-
-  update(
-    id: string,
-    data: Partial<InterruptionPoint>
-  ): Promise<InterruptionPoint | null> {
-    return this.crud.update<InterruptionPoint>(this.label, id, data);
-  }
-
-  delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<InterruptionPoint>): Promise<number> {
-    return this.crud.count<InterruptionPoint>(this.label, where);
-  }
-
-  exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
+export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoint> {
+  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+    super(InterruptionPoint, 'InterruptionPoint', neogma, crud);
   }
 
   // ============================================================================
@@ -90,6 +43,8 @@ export class InterruptionRepository {
    * Store interruption request in Neo4j
    * Migrated from: storeInterruption in neo4j-interruption-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async storeInterruption(interruption: UserInterruption): Promise<string> {
     try {
@@ -243,6 +198,8 @@ export class InterruptionRepository {
    * Update interruption status
    * Migrated from: updateInterruptionStatus in neo4j-interruption-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async updateInterruptionStatus(
     id: string,
@@ -352,21 +309,18 @@ export class InterruptionRepository {
   @Safe()
   async getAllActiveInterruptions(): Promise<readonly UserInterruption[]> {
     try {
+      // ✅ CORRECT QueryBuilder pattern with raw() for OPTIONAL MATCH
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const statusParam = bindParam.add('pending');
 
       queryBuilder
         .match('(i:UserInterruption)')
-        .where(`i.status = $${statusParam}`)
-        .match('(i)-[:HAS_RESPONSE]->(r:InterruptionResponse)')
+        .where('i.status = $status') // Named parameter
+        .raw('OPTIONAL MATCH (i)-[:HAS_RESPONSE]->(r:InterruptionResponse)') // Use raw() for OPTIONAL MATCH
         .return('i, r')
         .orderBy('i.createdAt ASC');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, { status: 'pending' });
 
       const interruptions: UserInterruption[] = [];
 

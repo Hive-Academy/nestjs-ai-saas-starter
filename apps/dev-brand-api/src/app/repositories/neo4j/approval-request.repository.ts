@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
-  Neo4jRepository,
-  Neo4jCrudService,
-  InjectNeogma,
+  Neo4jRepositoryBase,
   NeogmaService,
+  Neo4jCrudService,
   Safe,
-  FindOptions,
+  Transactional,
+  Authorize,
+  ValidateInput,
+  AuditLog,
+  RateLimit,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import {
@@ -19,22 +22,15 @@ import type {
 } from '@hive-academy/langgraph-hitl';
 
 /**
- * ApprovalRequest Repository
+ * ApprovalRequest Repository (TypeORM-Style)
  *
  * Replaces: neo4j-hitl-storage.adapter.ts (500 lines)
  *
- * Uses composition pattern with Neo4jCrudService for CRUD operations.
- * Provides type-safe CRUD operations and custom business methods
- * for HITL approval request management.
+ * Extends Neo4jRepository<ApprovalRequest> for automatic CRUD operations.
+ * Inherits 9 CRUD methods automatically (no manual delegation needed).
  *
- * CRUD methods (delegated to Neo4jCrudService):
- * - findById(id: string): Promise<ApprovalRequest | null>
- * - findAll(options?: FindOptions): Promise<ApprovalRequest[]>
- * - create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
- * - update(id: string, updates: Partial<ApprovalRequest>): Promise<ApprovalRequest | null>
- * - delete(id: string): Promise<boolean>
- * - count(where?: Partial<ApprovalRequest>): Promise<number>
- * - exists(id: string): Promise<boolean>
+ * Inherited CRUD methods (from Neo4jRepository base class):
+ * - findById, findAll, findOne, create, update, delete, count, exists, save
  *
  * Custom methods for approval workflow:
  * - storeApprovalRequest(): Store new approval request
@@ -46,53 +42,16 @@ import type {
  * - deleteExpiredApprovals(): Clean up expired approvals
  * - getStorageStats(): Get storage statistics
  */
-@Neo4jRepository(() => ApprovalRequest)
 @Injectable()
-export class ApprovalRequestRepository {
-  private readonly label = 'ApprovalRequest';
+export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalRequest> {
+  private readonly logger = new Logger(ApprovalRequestRepository.name);
 
-  constructor(
-    private readonly crud: Neo4jCrudService,
-    @InjectNeogma() private readonly neogma: NeogmaService
-  ) {}
-
-  // ============================================================================
-  // CRUD METHODS (delegated to Neo4jCrudService)
-  // ============================================================================
-
-  findById(id: string): Promise<ApprovalRequest | null> {
-    return this.crud.findById<ApprovalRequest>(this.label, id);
+  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+    super(ApprovalRequest, 'ApprovalRequest', neogma, crud);
   }
 
-  findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]> {
-    return this.crud.findAll<ApprovalRequest>(this.label, options);
-  }
-
-  create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest> {
-    return this.crud.create<ApprovalRequest>(
-      this.label,
-      data as Omit<ApprovalRequest, 'id' | 'createdAt' | 'updatedAt'>
-    );
-  }
-
-  update(
-    id: string,
-    data: Partial<ApprovalRequest>
-  ): Promise<ApprovalRequest | null> {
-    return this.crud.update<ApprovalRequest>(this.label, id, data);
-  }
-
-  delete(id: string): Promise<boolean> {
-    return this.crud.delete(this.label, id);
-  }
-
-  count(where?: Partial<ApprovalRequest>): Promise<number> {
-    return this.crud.count<ApprovalRequest>(this.label, where);
-  }
-
-  exists(id: string): Promise<boolean> {
-    return this.crud.exists(this.label, id);
-  }
+  // ✅ Inherits ALL CRUD methods from Neo4jRepository base class (9 methods)
+  // ✅ No manual delegation needed - ZERO boilerplate!
 
   // ============================================================================
   // CUSTOM BUSINESS METHODS (migrated from legacy adapter)
@@ -102,6 +61,8 @@ export class ApprovalRequestRepository {
    * Store an approval request in Neo4j
    * Migrated from: storeApprovalRequest in neo4j-hitl-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async storeApprovalRequest(request: ApprovalStorageData): Promise<string> {
     this.validateApprovalData(request);
@@ -180,8 +141,7 @@ export class ApprovalRequestRepository {
 
   /**
    * Get approval request by ID with optional response
-   * Migrated from: getApprovalRequest in neo4j-hitl-storage.adapter.ts
-   * Uses RECOMMENDED QueryBuilder pattern with BindParam
+   * Optimized: Uses executeQuery helper (was 48 lines, now 18 lines)
    */
   @Safe()
   async getApprovalRequest(id: string): Promise<ApprovalStorageData | null> {
@@ -189,94 +149,49 @@ export class ApprovalRequestRepository {
       throw new InvalidApprovalDataError('Approval request ID is required');
     }
 
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+    const result = await this.executeQuery(
+      `MATCH (a:ApprovalRequest)
+       WHERE a.id = $id
+       OPTIONAL MATCH (a)-[:HAS_RESPONSE]->(r:ApprovalResponse)
+       RETURN a, r`,
+      { id }
+    );
 
-      const idParam = bindParam.add(id);
+    if (result.records.length === 0) return null;
 
-      queryBuilder
-        .match('(a:ApprovalRequest)')
-        .where(`a.id = $${idParam}`)
-        .match('(r:ApprovalResponse)')
-        .where(
-          '(a)-[:HAS_RESPONSE]->(r) OR NOT EXISTS((a)-[:HAS_RESPONSE]->())'
-        )
-        .return('a, r');
+    const record = result.records[0];
+    const approvalNode = record.get('a')?.properties;
+    const responseNode = record.get('r')?.properties;
+    if (!approvalNode) return null;
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-
-      if (result.records.length === 0) {
-        return null;
-      }
-
-      const record = result.records[0];
-      const approvalNode = record.get('a')?.properties;
-      const responseNode = record.get('r')?.properties;
-
-      if (!approvalNode) {
-        return null;
-      }
-
-      return this.mapNodeToApprovalData(approvalNode, responseNode);
-    } catch (error) {
-      throw new HitlStorageError(
-        'Failed to get approval request',
-        'getApprovalRequest',
-        { id, error: this.serializeError(error) }
-      );
-    }
+    return this.mapNodeToApprovalData(approvalNode, responseNode);
   }
 
   /**
    * Get all pending approval requests that haven't expired
-   * Migrated from: getPendingApprovals in neo4j-hitl-storage.adapter.ts
+   * Optimized: Uses executeQuery helper (was 43 lines, now 13 lines)
    */
   @Safe()
   async getPendingApprovals(): Promise<readonly ApprovalStorageData[]> {
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+    const result = await this.executeQuery(
+      `MATCH (a:ApprovalRequest)
+       WHERE a.status IN $pendingStatuses AND (a.expiresAt IS NULL OR datetime() < a.expiresAt)
+       OPTIONAL MATCH (a)-[:HAS_RESPONSE]->(r:ApprovalResponse)
+       RETURN a, r ORDER BY a.requestedAt ASC`,
+      { pendingStatuses: ['pending', 'in_progress'] }
+    );
 
-      const pendingStatuses = bindParam.add(['pending', 'in_progress']);
-
-      queryBuilder
-        .match('(a:ApprovalRequest)')
-        .where(
-          `a.status IN $${pendingStatuses} AND (a.expiresAt IS NULL OR datetime() < a.expiresAt)`
-        )
-        .match('(r:ApprovalResponse)')
-        .where(
-          '(a)-[:HAS_RESPONSE]->(r) OR NOT EXISTS((a)-[:HAS_RESPONSE]->())'
-        )
-        .return('a, r')
-        .orderBy('a.requestedAt ASC');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-
-      const approvals = result.records.map((record) => {
-        const approvalNode = record.get('a')?.properties;
-        const responseNode = record.get('r')?.properties;
-        return this.mapNodeToApprovalData(approvalNode, responseNode);
-      });
-
-      return approvals;
-    } catch (error) {
-      throw new HitlStorageError(
-        'Failed to get pending approvals',
-        'getPendingApprovals',
-        { error: this.serializeError(error) }
-      );
-    }
+    return result.records.map((record) =>
+      this.mapNodeToApprovalData(
+        record.get('a')?.properties,
+        record.get('r')?.properties
+      )
+    );
   }
 
   /**
    * Get approval requests for a specific execution
-   * Migrated from: getApprovalsByExecution in neo4j-hitl-storage.adapter.ts
+   * Optimized: Uses executeQuery helper (was 47 lines, now 17 lines)
    */
   @Safe()
   async getApprovalsByExecution(
@@ -286,46 +201,29 @@ export class ApprovalRequestRepository {
       throw new InvalidApprovalDataError('Execution ID is required');
     }
 
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+    const result = await this.executeQuery(
+      `MATCH (a:ApprovalRequest)
+       WHERE a.executionId = $executionId
+       OPTIONAL MATCH (a)-[:HAS_RESPONSE]->(r:ApprovalResponse)
+       RETURN a, r ORDER BY a.requestedAt ASC`,
+      { executionId }
+    );
 
-      const executionIdParam = bindParam.add(executionId);
-
-      queryBuilder
-        .match('(a:ApprovalRequest)')
-        .where(`a.executionId = $${executionIdParam}`)
-        .match('(r:ApprovalResponse)')
-        .where(
-          '(a)-[:HAS_RESPONSE]->(r) OR NOT EXISTS((a)-[:HAS_RESPONSE]->())'
-        )
-        .return('a, r')
-        .orderBy('a.requestedAt ASC');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-
-      const approvals = result.records.map((record) => {
-        const approvalNode = record.get('a')?.properties;
-        const responseNode = record.get('r')?.properties;
-        return this.mapNodeToApprovalData(approvalNode, responseNode);
-      });
-
-      return approvals;
-    } catch (error) {
-      throw new HitlStorageError(
-        'Failed to get approvals by execution',
-        'getApprovalsByExecution',
-        { executionId, error: this.serializeError(error) }
-      );
-    }
+    return result.records.map((record) =>
+      this.mapNodeToApprovalData(
+        record.get('a')?.properties,
+        record.get('r')?.properties
+      )
+    );
   }
 
   /**
    * Update approval request status and response
    * Migrated from: updateApprovalStatus in neo4j-hitl-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Transactional()
   @Safe()
   async updateApprovalStatus(
     id: string,
@@ -454,139 +352,82 @@ export class ApprovalRequestRepository {
   }
 
   /**
-   * Delete approval request by ID
-   * Migrated from: deleteApprovalRequest in neo4j-hitl-storage.adapter.ts
+   * Delete approval request by ID (includes cascade delete of response)
+   * Optimized: Custom query for cascade delete (was 37 lines, now 16 lines)
    */
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
   @Safe()
   async deleteApprovalRequest(id: string): Promise<boolean> {
     if (!id?.trim()) {
       throw new InvalidApprovalDataError('Approval request ID is required');
     }
 
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+    const result = await this.executeQuery(
+      `MATCH (a:ApprovalRequest)
+       WHERE a.id = $id
+       OPTIONAL MATCH (a)-[:HAS_RESPONSE]->(r:ApprovalResponse)
+       DELETE r, a
+       RETURN count(a) as deletedCount`,
+      { id }
+    );
 
-      const idParam = bindParam.add(id);
-
-      queryBuilder
-        .match('(a:ApprovalRequest)')
-        .where(`a.id = $${idParam}`)
-        .match('(r:ApprovalResponse)')
-        .where(
-          '(a)-[:HAS_RESPONSE]->(r) OR NOT EXISTS((a)-[:HAS_RESPONSE]->())'
-        )
-        .delete('r, a')
-        .return('count(a) as deletedCount');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-      const firstRecord = result.records[0];
-      const deletedCount = Number(firstRecord?.get('deletedCount')) || 0;
-
-      return deletedCount > 0;
-    } catch (error) {
-      throw new HitlStorageError(
-        'Failed to delete approval request',
-        'deleteApprovalRequest',
-        { id, error: this.serializeError(error) }
-      );
-    }
+    return Number(result.records[0]?.get('deletedCount')) > 0;
   }
 
   /**
    * Delete expired approval requests
-   * Migrated from: deleteExpiredApprovals in neo4j-hitl-storage.adapter.ts
+   * Optimized: Uses executeQuery helper (was 37 lines, now 12 lines)
    */
   @Safe()
   async deleteExpiredApprovals(before: Date): Promise<number> {
-    try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+    const result = await this.executeQuery(
+      `MATCH (a:ApprovalRequest)
+       WHERE a.expiresAt IS NOT NULL AND a.expiresAt < datetime($before)
+       OPTIONAL MATCH (a)-[:HAS_RESPONSE]->(r:ApprovalResponse)
+       DELETE r, a
+       RETURN count(a) as deletedCount`,
+      { before: before.toISOString() }
+    );
 
-      const beforeParam = bindParam.add(before.toISOString());
-
-      queryBuilder
-        .match('(a:ApprovalRequest)')
-        .where(
-          `a.expiresAt IS NOT NULL AND a.expiresAt < datetime($${beforeParam})`
-        )
-        .match('(r:ApprovalResponse)')
-        .where(
-          '(a)-[:HAS_RESPONSE]->(r) OR NOT EXISTS((a)-[:HAS_RESPONSE]->())'
-        )
-        .delete('r, a')
-        .return('count(a) as deletedCount');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-      const firstRecord = result.records[0];
-      const deletedCount = Number(firstRecord?.get('deletedCount')) || 0;
-
-      return deletedCount;
-    } catch (error) {
-      throw new HitlStorageError(
-        'Failed to delete expired approvals',
-        'deleteExpiredApprovals',
-        { before, error: this.serializeError(error) }
-      );
-    }
+    return Number(result.records[0]?.get('deletedCount')) || 0;
   }
 
   /**
    * Get storage statistics
-   * Migrated from: getStorageStats in neo4j-hitl-storage.adapter.ts
+   *
+   * ✅ OPTIMIZED: Uses single unified Cypher query with aggregations
+   * (NOT using GraphMetricsService - this is domain-specific business logic, not graph analytics)
+   * Reduced from 93 lines to 45 lines (48 lines removed)
+   * Performance improvement: 3 separate queries → 1 unified query
    */
+  @RateLimit({ strategy: 'fixed-window', requests: 100, window: '1h' })
   @Safe()
   async getStorageStats(): Promise<HitlStorageStats> {
     try {
-      // Get basic counts by status
-      const statusBuilder = this.neogma.createQueryBuilder();
-      statusBuilder
-        .match('(a:ApprovalRequest)')
-        .return('a.status as status, count(*) as count');
-      const statusCypher = statusBuilder.getStatement();
-      const statusParams = statusBuilder.getBindParam().get();
+      // Single unified query with all aggregations in Cypher
+      const result = await this.executeQuery(
+        `MATCH (a:ApprovalRequest)
+         OPTIONAL MATCH (a)-[:HAS_RESPONSE]->(r:ApprovalResponse)
+         WITH a.status as status,
+              count(DISTINCT a) as statusCount,
+              avg(CASE WHEN r.timestamp IS NOT NULL AND a.requestedAt IS NOT NULL
+                  THEN duration.between(a.requestedAt, r.timestamp).milliseconds
+                  END) as avgResponseTime
+         WITH collect({status: status, count: statusCount}) as statusData,
+              avg(avgResponseTime) as overallAvgResponseTime,
+              sum(statusCount) as total
+         RETURN statusData, overallAvgResponseTime, total`,
+        {}
+      );
 
-      // Get response time statistics
-      const timingBuilder = this.neogma.createQueryBuilder();
-      timingBuilder
-        .match('(a:ApprovalRequest)-[:HAS_RESPONSE]->(r:ApprovalResponse)')
-        .where('r.timestamp IS NOT NULL AND a.requestedAt IS NOT NULL')
-        .with(
-          'duration.between(a.requestedAt, r.timestamp).milliseconds as responseTime'
-        )
-        .return(
-          'avg(responseTime) as averageResponseTime, count(*) as responseCount'
-        );
-      const timingCypher = timingBuilder.getStatement();
-      const timingParams = timingBuilder.getBindParam().get();
+      const record = result.records[0];
+      const statusData = record?.get('statusData') || [];
+      const averageResponseTime =
+        Number(record?.get('overallAvgResponseTime')) || 0;
+      const totalRequests = Number(record?.get('total')) || 0;
 
-      // Get timeout and approval rates
-      const rateBuilder = this.neogma.createQueryBuilder();
-      rateBuilder.match('(a:ApprovalRequest)').with(`
-          count(*) as total,
-          count(CASE WHEN a.status = 'timeout' THEN 1 END) as timeouts,
-          count(CASE WHEN a.status = 'approved' THEN 1 END) as approved
-        `).return(`
-          total,
-          timeouts,
-          approved,
-          CASE WHEN total > 0 THEN toFloat(timeouts) / total ELSE 0.0 END as timeoutRate,
-          CASE WHEN total > 0 THEN toFloat(approved) / total ELSE 0.0 END as approvalRate
-        `);
-      const rateCypher = rateBuilder.getStatement();
-      const rateParams = rateBuilder.getBindParam().get();
-
-      const [statusResult, timingResult, rateResult] = await Promise.all([
-        this.neogma.run(statusCypher, statusParams),
-        this.neogma.run(timingCypher, timingParams),
-        this.neogma.run(rateCypher, rateParams),
-      ]);
-
-      // Process status counts
+      // Map status data to expected format
       const requestsByStatus: Record<string, number> = {
         pending: 0,
         in_progress: 0,
@@ -597,24 +438,24 @@ export class ApprovalRequestRepository {
         cancelled: 0,
       };
 
-      statusResult.records.forEach((record) => {
-        const status = record.get('status') as string;
-        const count = Number(record.get('count')) || 0;
+      let timeoutCount = 0;
+      let approvedCount = 0;
+
+      statusData.forEach((item: { status: string; count: number }) => {
+        const status = item.status;
+        const count = Number(item.count) || 0;
+
         if (status in requestsByStatus) {
           requestsByStatus[status] = count;
         }
+
+        if (status === 'timeout') timeoutCount = count;
+        if (status === 'approved') approvedCount = count;
       });
 
-      // Process timing data
-      const timingRecord = timingResult.records[0];
-      const averageResponseTime =
-        Number(timingRecord?.get('averageResponseTime')) || 0;
-
-      // Process rate data
-      const rateRecord = rateResult.records[0];
-      const totalRequests = Number(rateRecord?.get('total')) || 0;
-      const timeoutRate = Number(rateRecord?.get('timeoutRate')) || 0;
-      const approvalRate = Number(rateRecord?.get('approvalRate')) || 0;
+      const timeoutRate = totalRequests > 0 ? timeoutCount / totalRequests : 0;
+      const approvalRate =
+        totalRequests > 0 ? approvedCount / totalRequests : 0;
 
       return {
         totalRequests,
@@ -629,6 +470,71 @@ export class ApprovalRequestRepository {
         'Failed to get storage statistics',
         'getStorageStats',
         { error: this.serializeError(error) }
+      );
+    }
+  }
+
+  /**
+   * Batch update approval request statuses
+   * NEW (Phase 4): Added for better performance on bulk status updates
+   * Uses UNWIND for efficient batch processing
+   */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
+  async batchUpdateApprovalStatus(
+    requestIds: string[],
+    status: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    if (!requestIds || requestIds.length === 0) {
+      throw new InvalidApprovalDataError(
+        'Request IDs array is required and cannot be empty'
+      );
+    }
+    if (!status?.trim()) {
+      throw new InvalidApprovalDataError(
+        'Status is required and cannot be empty'
+      );
+    }
+
+    try {
+      const queryBuilder = this.neogma.createQueryBuilder();
+      const bindParam = queryBuilder.getBindParam();
+
+      const idsParam = bindParam.add(requestIds);
+      const statusParam = bindParam.add(status);
+
+      queryBuilder
+        .raw(`UNWIND $${idsParam} as requestId`)
+        .match('(a:ApprovalRequest)')
+        .where(`a.id = requestId`)
+        .set(`a.status = $${statusParam}`)
+        .set('a.updatedAt = datetime()');
+
+      // If metadata provided, update it as well
+      if (metadata) {
+        const metadataParam = bindParam.add(metadata);
+        queryBuilder.set(`a.metadata = $${metadataParam}`);
+      }
+
+      queryBuilder.return('count(a) as updatedCount');
+
+      const result = await this.neogma.run(
+        queryBuilder.getStatement(),
+        bindParam.get()
+      );
+
+      const updatedCount = Number(result.records[0]?.get('updatedCount')) || 0;
+
+      this.logger.debug(
+        `Batch updated ${updatedCount} approval requests to status: ${status}`
+      );
+    } catch (error) {
+      throw new HitlStorageError(
+        'Failed to batch update approval status',
+        'batchUpdateApprovalStatus',
+        { requestIds, status, metadata, error: this.serializeError(error) }
       );
     }
   }

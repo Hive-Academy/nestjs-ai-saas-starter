@@ -21,8 +21,8 @@
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
   ChromaDBModule,
-  ChromaRepository,
-  BaseChromaRepository,
+  ChromaDBRepository,
+  ChromaDBService,
   ChromaEntity,
   ChromaProp,
   ChromaId,
@@ -186,16 +186,18 @@ export class ProductEntity extends BaseChromaEntity<ProductMetadata> {
 /**
  * Article repository with advanced semantic search methods
  */
+/**
+ * Article repository with semantic search capabilities
+ * Uses TypeORM-style pattern with explicit constructor
+ */
 @Injectable()
-@ChromaRepository<ArticleEntity>({
-  collection: 'articles',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-})
-export class ArticleRepository extends BaseChromaRepository<ArticleEntity> {
-  constructor() {
-    super();
+export class ArticleRepository extends ChromaDBRepository<ArticleEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection
+   * @param chromaDB - ChromaDBService instance
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(ArticleEntity, 'articles', chromaDB);
   }
 
   /**
@@ -354,15 +356,18 @@ export class ArticleRepository extends BaseChromaRepository<ArticleEntity> {
 /**
  * Product repository with e-commerce search patterns
  */
+/**
+ * Product repository with e-commerce search patterns
+ * Uses TypeORM-style pattern with explicit constructor
+ */
 @Injectable()
-@ChromaRepository<ProductEntity>({
-  collection: 'products',
-  autoEmbed: true,
-  enableCaching: true,
-})
-export class ProductRepository extends BaseChromaRepository<ProductEntity> {
-  constructor() {
-    super();
+export class ProductRepository extends ChromaDBRepository<ProductEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection
+   * @param chromaDB - ChromaDBService instance
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(ProductEntity, 'products', chromaDB);
   }
 
   /**

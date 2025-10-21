@@ -1,5 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 import { getFunctionalApiConfigWithDefaults } from '../utils/functional-api-config.accessor';
+import { validateDecoratorPattern } from '../utils/decorator-validator';
 
 /**
  * Metadata key for task decorator
@@ -77,6 +78,15 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
     descriptor: PropertyDescriptor
   ) => {
     const methodName = String(propertyKey);
+
+    // 🔒 VALIDATION: Enforce task-based pattern
+    // @Task is mutually exclusive with @Node and @Edge
+    validateDecoratorPattern(
+      target.constructor,
+      'task-based',
+      'Task',
+      target.constructor.name
+    );
 
     // Get module config with defaults for zero-config experience
     const moduleConfig = getFunctionalApiConfigWithDefaults();

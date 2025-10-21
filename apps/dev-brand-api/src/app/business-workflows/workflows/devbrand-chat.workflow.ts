@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
-  FunctionalWorkflow as Workflow,
+  FunctionalWorkflow,
   Entrypoint,
   Task,
-  Node,
-  Edge,
+  WorkflowType,
 } from '@hive-academy/langgraph-functional-api';
 import type {
   TaskExecutionContext,
@@ -65,9 +64,10 @@ export interface ChatWorkflowState extends FunctionalWorkflowState {
   requiresFollowup: boolean;
 }
 
-@Workflow({
+@FunctionalWorkflow({
   name: 'devbrand-chat-workflow',
   description: 'Conversational interface for DevBrand Chat Studio',
+  type: WorkflowType.FUNCTIONAL_TASK, // 🔑 Explicit workflow type: uses @Entrypoint + @Task
   streaming: true,
   confidenceThreshold: 0.6,
 })
@@ -179,31 +179,10 @@ Confidence: [0.0-1.0]`;
   }
 
   /**
-   * Step 3: Route to intent-specific action
-   */
-  @Node({ type: 'condition' })
-  async routeByIntent(
-    context: TaskExecutionContext
-  ): Promise<{ route: string }> {
-    const { state } = context;
-    const chatState = state as ChatWorkflowState;
-
-    switch (chatState.intent) {
-      case 'analyze-github':
-        return { route: 'github-analysis' };
-      case 'create-content':
-        return { route: 'content-creation' };
-      case 'strategy-advice':
-        return { route: 'strategy-advice' };
-      default:
-        return { route: 'general-chat' };
-    }
-  }
-
-  /**
    * GitHub Analysis Action - Analyze user's GitHub activity
+   * Note: Routing logic moved to conditional task dependencies
    */
-  @Task({ dependsOn: ['routeByIntent'] })
+  @Task({ dependsOn: ['retrieveContext'] })
   @StreamProgress({ enabled: true })
   @StreamToken({ enabled: true, format: 'structured' })
   async executeGitHubAnalysis(
@@ -280,7 +259,7 @@ Create a friendly, informative response highlighting key insights and suggestion
   /**
    * Content Creation Action - Generate social media content
    */
-  @Task({ dependsOn: ['routeByIntent'] })
+  @Task({ dependsOn: ['retrieveContext'] })
   @StreamProgress({ enabled: true })
   @StreamToken({ enabled: true, format: 'structured' })
   async executeContentCreation(
@@ -341,7 +320,7 @@ Generate engaging content that showcases technical expertise and personal brand.
   /**
    * Strategy Advice Action - Provide personalized brand strategy guidance
    */
-  @Task({ dependsOn: ['routeByIntent'] })
+  @Task({ dependsOn: ['retrieveContext'] })
   @StreamProgress({ enabled: true })
   async executeStrategyAdvice(
     context: TaskExecutionContext
@@ -420,7 +399,7 @@ Provide actionable, specific advice for improving their personal brand as a deve
   /**
    * General Chat Action - Handle casual conversation
    */
-  @Task({ dependsOn: ['routeByIntent'] })
+  @Task({ dependsOn: ['retrieveContext'] })
   @StreamProgress({ enabled: true })
   async executeGeneralChat(
     context: TaskExecutionContext
@@ -523,27 +502,6 @@ Provide a helpful, encouraging response and suggest ways I can help with their d
       console.error('Conversation finalization failed:', error);
       return { state: chatState };
     }
-  }
-
-  // Enhanced functional edge decorators - use boolean return instead of condition objects
-  @Edge('routeByIntent', 'executeGitHubAnalysis')
-  routeToGitHubAnalysis(state: ChatWorkflowState): boolean {
-    return state.intent === 'analyze-github';
-  }
-
-  @Edge('routeByIntent', 'executeContentCreation')
-  routeToContentCreation(state: ChatWorkflowState): boolean {
-    return state.intent === 'create-content';
-  }
-
-  @Edge('routeByIntent', 'executeStrategyAdvice')
-  routeToStrategyAdvice(state: ChatWorkflowState): boolean {
-    return state.intent === 'strategy-advice';
-  }
-
-  @Edge('routeByIntent', 'executeGeneralChat')
-  routeToGeneralChat(state: ChatWorkflowState): boolean {
-    return state.intent === 'general-chat';
   }
 
   /**

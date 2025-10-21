@@ -13,16 +13,11 @@ import { StreamEventProcessorService } from './streaming/stream-event-processor.
 import { WorkflowCheckpointService } from './core/workflow-checkpoint.service';
 import { WorkflowExecutionService } from './core/workflow-execution.service';
 import { DecoratorTranslationService } from './services/decorator-translation.service';
-import { EnhancedDecoratorOrchestratorService } from './services/enhanced-decorator-orchestrator.service';
-import { EnhancedExecutionContextService } from './services/enhanced-execution-context.service';
 import { MultiAgentTranslationService } from './services/multi-agent-translation.service';
 import { GraphPatternsService } from './core/graph-patterns.service';
 import { GraphOptimizationService } from './core/graph-optimization.service';
-import { AgentWorkflowBridgeService } from './services/agent-workflow-bridge.service';
-import { AgentRegistrationService } from './services/agent-registration.service';
-import { AgentResolutionService } from './services/agent-resolution.service';
-import { AgentCoordinationService } from './services/agent-coordination.service';
 import { CentralRegistryService } from './services/central-registry.service';
+import { CommandProcessorService } from './routing/command-processor.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
   IStreamingService,
@@ -78,13 +73,7 @@ export class WorkflowEngineModule {
 
     return {
       module: WorkflowEngineModule,
-      imports: [
-        ConfigModule,
-        StreamingModule.forRoot({
-          websocket: { enabled: false }, // Default disabled, can be overridden by app module
-          defaultBufferSize: 50,
-        }),
-      ],
+      imports: [ConfigModule, StreamingModule],
       providers: [
         {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
@@ -110,23 +99,13 @@ export class WorkflowEngineModule {
         WorkflowCheckpointService,
         WorkflowExecutionService,
 
-        // Split decorator translation services
-        // EnhancedMetadataProcessorService removed
-        EnhancedExecutionContextService,
-        // EnhancedNodeProcessorService removed
-        EnhancedDecoratorOrchestratorService,
-        // Backward compatibility removed
-
-        // New services for decorator support and optimization
+        // Decorator translation services
         DecoratorTranslationService,
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
-        // Agent services
-        AgentRegistrationService,
-        AgentResolutionService,
-        AgentCoordinationService,
-        AgentWorkflowBridgeService,
+        // Command processing service
+        CommandProcessorService,
         // CENTRALIZED REGISTRATION: Provider arrays for central registry
         {
           provide: 'WORKFLOW_ENGINE_AGENTS',
@@ -153,10 +132,6 @@ export class WorkflowEngineModule {
           useClass: DecoratorTranslationService,
         },
         {
-          provide: 'EnhancedDecoratorTranslationService',
-          useClass: EnhancedDecoratorOrchestratorService,
-        },
-        {
           provide: 'MultiAgentTranslationService',
           useClass: MultiAgentTranslationService,
         },
@@ -178,20 +153,12 @@ export class WorkflowEngineModule {
         WorkflowCheckpointService,
         WorkflowExecutionService,
         DecoratorTranslationService,
-        EnhancedDecoratorOrchestratorService,
-        // Enhanced decorator services
-        // EnhancedMetadataProcessorService removed
-        EnhancedExecutionContextService,
-        // EnhancedNodeProcessorService removed
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
-        // Agent services
-        AgentRegistrationService,
-        AgentResolutionService,
-        AgentCoordinationService,
-        AgentWorkflowBridgeService,
         CentralRegistryService,
+        // Command processing service
+        CommandProcessorService,
       ],
       global: true,
     };
@@ -241,23 +208,13 @@ export class WorkflowEngineModule {
         WorkflowCheckpointService,
         WorkflowExecutionService,
 
-        // Split decorator translation services
-        // EnhancedMetadataProcessorService removed
-        EnhancedExecutionContextService,
-        // EnhancedNodeProcessorService removed
-        EnhancedDecoratorOrchestratorService,
-        // Backward compatibility removed
-
-        // New services for decorator support and optimization
+        // Decorator translation services
         DecoratorTranslationService,
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
-        // Agent services
-        AgentRegistrationService,
-        AgentResolutionService,
-        AgentCoordinationService,
-        AgentWorkflowBridgeService,
+        // Command processing service
+        CommandProcessorService,
         // CENTRALIZED REGISTRATION: Provider arrays for central registry
         {
           provide: 'WORKFLOW_ENGINE_AGENTS',
@@ -284,10 +241,6 @@ export class WorkflowEngineModule {
           useClass: DecoratorTranslationService,
         },
         {
-          provide: 'EnhancedDecoratorTranslationService',
-          useClass: EnhancedDecoratorOrchestratorService,
-        },
-        {
           provide: 'MultiAgentTranslationService',
           useClass: MultiAgentTranslationService,
         },
@@ -309,20 +262,12 @@ export class WorkflowEngineModule {
         WorkflowCheckpointService,
         WorkflowExecutionService,
         DecoratorTranslationService,
-        EnhancedDecoratorOrchestratorService,
-        // Enhanced decorator services
-        // EnhancedMetadataProcessorService removed
-        EnhancedExecutionContextService,
-        // EnhancedNodeProcessorService removed
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
-        // Agent services
-        AgentRegistrationService,
-        AgentResolutionService,
-        AgentCoordinationService,
-        AgentWorkflowBridgeService,
         CentralRegistryService,
+        // Command processing service
+        CommandProcessorService,
       ],
       global: true,
     };

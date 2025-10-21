@@ -5,6 +5,12 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
+      "path": "../memory"
+    },
+    {
+      "path": "../multi-agent"
+    },
+    {
       "path": "../functional-api"
     },
     {
@@ -12,9 +18,6 @@
     },
     {
       "path": "../streaming"
-    },
-    {
-      "path": "../multi-agent"
     },
     {
       "path": "./tsconfig.lib.json"

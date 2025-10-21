@@ -3,20 +3,30 @@
  */
 
 import { Inject } from '@nestjs/common';
-import { NEOGMA_TOKEN } from './neogma.constants';
+import { NeogmaService } from '../services/neogma.service';
 
 /**
- * Decorator to inject Neogma instance
+ * Decorator to inject NeogmaService (RECOMMENDED)
+ *
+ * Provides access to the complete Neogma API through NeogmaService including:
+ * - neogma.getDriver() - Access to Neo4j driver
+ * - neogma.getNeogmaInstance() - Access to raw Neogma instance
+ * - neogma.run() - Execute Cypher queries
+ * - neogma.createQueryBuilder() - Type-safe query building
+ * - Model management, CRUD operations, transactions, and more
  *
  * @example
  * ```typescript
  * @Injectable()
  * export class UserService {
- *   constructor(@InjectNeogma() private readonly neogma: Neogma) {}
+ *   constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
+ *     // Access driver: this.neogma.getDriver()
+ *     // Access raw Neogma: this.neogma.getNeogmaInstance()
+ *   }
  * }
  * ```
  */
-export const InjectNeogma = () => Inject(NEOGMA_TOKEN);
+export const InjectNeogma = () => Inject(NeogmaService);
 
 /**
  * Token for model injection

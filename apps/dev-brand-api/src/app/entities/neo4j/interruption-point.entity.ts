@@ -10,6 +10,7 @@ import {
   PropIndex,
   Unique,
   UpdatedAt,
+  Validate,
 } from '@hive-academy/nestjs-neo4j';
 
 /**
@@ -42,11 +43,39 @@ export class InterruptionPoint extends Neo4jBaseEntity {
   @Neo4jProp()
   @NotNull()
   @PropIndex()
+  @Validate({
+    validation: {
+      custom: {
+        validator: (value, entity) => {
+          const validTypes = [
+            'user_input',
+            'approval',
+            'decision',
+            'confirmation',
+          ];
+          return validTypes.includes(value);
+        },
+        message:
+          'Type must be one of: user_input, approval, decision, confirmation',
+      },
+    },
+  })
   type!: 'user_input' | 'approval' | 'decision' | 'confirmation';
 
   @Neo4jProp()
   @NotNull()
   @PropIndex()
+  @Validate({
+    validation: {
+      custom: {
+        validator: (value, entity) => {
+          const validStatuses = ['pending', 'resolved', 'timeout', 'cancelled'];
+          return validStatuses.includes(value);
+        },
+        message: 'Status must be one of: pending, resolved, timeout, cancelled',
+      },
+    },
+  })
   status!: 'pending' | 'resolved' | 'timeout' | 'cancelled';
 
   @Neo4jProp()
@@ -62,6 +91,17 @@ export class InterruptionPoint extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex()
+  @Validate({
+    validation: {
+      custom: {
+        validator: (value, entity) => {
+          const validStrategies = ['proceed', 'fail', 'retry'];
+          return validStrategies.includes(value);
+        },
+        message: 'Timeout strategy must be one of: proceed, fail, retry',
+      },
+    },
+  })
   timeoutStrategy!: 'proceed' | 'fail' | 'retry';
 
   @Neo4jProp()

@@ -49,7 +49,6 @@ export class ChromaDBConnectionService
   private isConnected = false;
   private connectionTime?: number;
   private lastHealthCheck?: Date;
-  private healthCheckInterval?: NodeJS.Timeout;
 
   constructor(
     @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
@@ -62,7 +61,8 @@ export class ChromaDBConnectionService
   async onModuleInit(): Promise<void> {
     try {
       await this.connect();
-      this.startHealthChecking();
+      // Automatic health checks removed - consumers should call isHealthy() when needed
+      // This prevents unnecessary database load and initialization race conditions
       this.logger.log('ChromaDB connection initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize ChromaDB connection', error);
@@ -74,7 +74,6 @@ export class ChromaDBConnectionService
    * Clean up connection on module destruction
    */
   async onModuleDestroy(): Promise<void> {
-    this.stopHealthChecking();
     await this.disconnect();
     this.logger.log('ChromaDB connection cleaned up');
   }
@@ -168,42 +167,114 @@ export class ChromaDBConnectionService
 
   /**
    * Execute operation with connection retry logic
+   * Enhanced with detailed timing and error tracking for debugging
    */
   async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+    const operationId = `op-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    const startTime = Date.now();
     let lastError: Error;
+
+    // Log operation start with full context
+    this.logger.debug(`[${operationId}] Starting ChromaDB operation`, {
+      isConnected: this.isConnected,
+      maxRetries: this.config.retryAttempts || 0,
+      timeout: this.config.timeout,
+      timestamp: new Date().toISOString(),
+    });
 
     if (!this.config.retryAttempts || this.config.retryAttempts < 1) {
       this.config.retryAttempts = 3;
     }
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
+      const attemptStartTime = Date.now();
+
       try {
         // Ensure connection is healthy before operation
         if (!this.isConnected) {
+          this.logger.warn(
+            `[${operationId}] Connection not established, reconnecting...`
+          );
           await this.connect();
         }
 
-        return await this.withTimeout(operation(), this.config.timeout);
+        this.logger.debug(
+          `[${operationId}] Attempt ${attempt}/${this.config.retryAttempts} - executing operation`,
+          {
+            timeElapsed: Date.now() - startTime,
+          }
+        );
+
+        const result = await this.withTimeout(operation(), this.config.timeout);
+
+        const duration = Date.now() - attemptStartTime;
+        this.logger.debug(
+          `[${operationId}] ✅ SUCCESS in ${duration}ms (total: ${
+            Date.now() - startTime
+          }ms)`,
+          {
+            attempt,
+            duration,
+          }
+        );
+
+        return result;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+        const duration = Date.now() - attemptStartTime;
+
+        // Detailed error logging with full context
+        this.logger.error(
+          `[${operationId}] ❌ FAILED on attempt ${attempt}/${this.config.retryAttempts}`,
+          {
+            duration,
+            totalTime: Date.now() - startTime,
+            errorType:
+              error instanceof ChromaDBTimeoutError
+                ? 'TIMEOUT'
+                : error instanceof ChromaDBConnectionError
+                ? 'CONNECTION'
+                : 'UNKNOWN',
+            errorMessage: lastError.message,
+            isConnectionError: this.isConnectionError(error),
+            wasConnected: this.isConnected,
+            willRetry: attempt < this.config.retryAttempts,
+            stack: lastError.stack?.split('\n').slice(0, 3).join('\n'), // First 3 lines of stack
+          }
+        );
 
         // Mark connection as unhealthy on connection errors
         if (this.isConnectionError(error)) {
+          this.logger.warn(
+            `[${operationId}] Marking connection as unhealthy due to: ${lastError.message}`
+          );
           this.isConnected = false;
         }
 
         // Don't retry on last attempt
         if (attempt === this.config.retryAttempts) {
+          this.logger.error(
+            `[${operationId}] 🔴 FINAL FAILURE after ${
+              Date.now() - startTime
+            }ms`,
+            {
+              totalAttempts: attempt,
+              finalError: lastError.message,
+            }
+          );
           break;
         }
 
         // Wait before retry with exponential backoff
         const delay = this.config.retryDelay ?? 1000 * Math.pow(2, attempt - 1);
-        await this.delay(delay);
-
         this.logger.warn(
-          `Connection retry attempt ${attempt} after error: ${lastError.message}`
+          `[${operationId}] ⏳ Waiting ${delay}ms before retry ${
+            attempt + 1
+          }...`
         );
+        await this.delay(delay);
       }
     }
 
@@ -212,12 +283,34 @@ export class ChromaDBConnectionService
 
   /**
    * Test connection with timeout
+   * Uses v2 API endpoint (v1 is deprecated in ChromaDB 0.5+)
    */
   private async performConnectionTest(): Promise<void> {
     try {
-      // Simple heartbeat operation
+      // Use v2 API heartbeat endpoint directly
+      // Handle hosts that already include protocol (e.g., "http://localhost")
+      let baseUrl: string;
+      if (
+        this.config.host.startsWith('http://') ||
+        this.config.host.startsWith('https://')
+      ) {
+        baseUrl = `${this.config.host}:${this.config.port}`;
+      } else {
+        const protocol = this.config.ssl ? 'https' : 'http';
+        baseUrl = `${protocol}://${this.config.host}:${this.config.port}`;
+      }
+
+      const heartbeatUrl = `${baseUrl}/api/v2/heartbeat`;
+
       await this.withTimeout(
-        this.client.heartbeat(),
+        fetch(heartbeatUrl).then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              `Heartbeat failed with status ${response.status}: ${response.statusText}`
+            );
+          }
+          return response.json();
+        }),
         this.config.timeout || 10000
       );
     } catch (error) {
@@ -251,28 +344,35 @@ export class ChromaDBConnectionService
   }
 
   /**
-   * Start periodic health checking
+   * NOTE: Automatic periodic health checks have been removed.
+   *
+   * Rationale:
+   * - Prevents unnecessary database load
+   * - Avoids initialization race conditions
+   * - Consumers have better control over monitoring
+   * - Health checks should be triggered by actual usage, not timers
+   *
+   * For health monitoring, integrate with NestJS Terminus:
+   * @example
+   * ```typescript
+   * @Injectable()
+   * export class ChromaDBHealthIndicator extends HealthIndicator {
+   *   constructor(private connection: ChromaDBConnectionService) {
+   *     super();
+   *   }
+   *
+   *   async isHealthy(key: string) {
+   *     const isHealthy = await this.connection.isHealthy();
+   *     const health = this.connection.getConnectionHealth();
+   *
+   *     return this.getStatus(key, isHealthy, {
+   *       connectionTime: health.connectionTime,
+   *       lastHealthCheck: health.lastHealthCheck,
+   *     });
+   *   }
+   * }
+   * ```
    */
-  private startHealthChecking(): void {
-    // Health check every 30 seconds
-    this.healthCheckInterval = setInterval(async () => {
-      try {
-        await this.isHealthy();
-      } catch (error) {
-        this.logger.warn('Periodic health check failed', error);
-      }
-    }, 30000);
-  }
-
-  /**
-   * Stop periodic health checking
-   */
-  private stopHealthChecking(): void {
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-      this.healthCheckInterval = undefined;
-    }
-  }
 
   /**
    * Check if error is connection-related

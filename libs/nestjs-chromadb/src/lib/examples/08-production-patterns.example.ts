@@ -21,11 +21,11 @@
 
 import { Injectable, Logger, Module, OnModuleInit } from '@nestjs/common';
 import {
+  ChromaDBRepository,
   BaseChromaEntity,
-  BaseChromaRepository,
   ChromaDBModule,
+  ChromaDBService,
   ChromaEntity,
-  ChromaRepository,
   CreateDocumentInput,
   Where,
 } from '../../index';
@@ -86,10 +86,8 @@ export class ProductionDocumentEntity extends BaseChromaEntity<ProductionDocumen
  * Production-grade repository with comprehensive error handling,
  * performance optimization, and monitoring
  */
-@ChromaRepository({
-  collection: 'production_documents',
-})
-export class ProductionDocumentRepository extends BaseChromaRepository<ProductionDocumentEntity> {
+@Injectable()
+export class ProductionDocumentRepository extends ChromaDBRepository<ProductionDocumentEntity> {
   private readonly logger = new Logger(ProductionDocumentRepository.name);
   private readonly retryAttempts = 3;
   private readonly retryDelay = 1000;
@@ -97,8 +95,12 @@ export class ProductionDocumentRepository extends BaseChromaRepository<Productio
   private readonly circuitBreakerThreshold = 5;
   private circuitBreakerOpenUntil = 0;
 
-  constructor() {
-    super();
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(ProductionDocumentEntity, 'production_documents', chromaDB);
   }
 
   // ============================================================================

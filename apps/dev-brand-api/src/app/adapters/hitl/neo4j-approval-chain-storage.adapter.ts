@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import { IApprovalChainStorageService } from '@hive-academy/langgraph-hitl';
 import type {
   ApprovalLevel,
@@ -14,12 +15,15 @@ interface Approver {
 }
 
 import { ApprovalChainRepository } from '../../repositories/neo4j/approval-chain.repository';
+import { ApprovalChain } from '../../entities/neo4j/approval-chain.entity';
 
 /**
  * Clean Neo4j adapter for approval chain storage.
  *
  * This adapter delegates all database operations to ApprovalChainRepository,
  * providing a clean separation of concerns and type-safe database operations.
+ *
+ * Now uses proper DI with getRepositoryToken instead of manual instantiation.
  */
 @Injectable()
 export class Neo4jApprovalChainStorageAdapter
@@ -27,7 +31,10 @@ export class Neo4jApprovalChainStorageAdapter
 {
   private readonly logger = new Logger(Neo4jApprovalChainStorageAdapter.name);
 
-  constructor(private readonly approvalChainRepo: ApprovalChainRepository) {
+  constructor(
+    @Inject(getRepositoryToken(ApprovalChain))
+    private readonly approvalChainRepo: ApprovalChainRepository
+  ) {
     this.logger.debug(
       'Neo4jApprovalChainStorageAdapter initialized with ApprovalChainRepository'
     );
@@ -194,7 +201,7 @@ export class Neo4jApprovalChainStorageAdapter
    */
   async updateApprovalRequestStatus(
     requestId: string,
-    status: string,
+    status: 'pending' | 'approved' | 'rejected' | 'expired' | undefined,
     metadata?: Record<string, unknown>
   ): Promise<void> {
     if (!requestId?.trim()) {
