@@ -25,6 +25,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 **Status**: 100+ TypeScript compilation errors in example files
 
 **Error Categories**:
+
 - Missing `Repository` decorator (should be `@Neo4jRepository`)
 - Missing `BaseRepositoryService` class (incorrect import path)
 - Methods like `findAll`, `create`, `update`, `delete` not found on repository instances
@@ -62,6 +63,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN a developer creates `Neo4jRepository<T>` class THEN the class SHALL provide these methods automatically:
+
    - `findById(id: string): Promise<T | null>`
    - `findAll(options?: FindOptions<T>): Promise<T[]>`
    - `findOne(options: FindOptions<T>): Promise<T | null>`
@@ -73,12 +75,14 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - `save(data: Partial<T>): Promise<T>`
 
 2. WHEN base repository is initialized THEN constructor SHALL accept:
+
    - `entity: Type<T>` - Entity class reference
    - `label: string` - Neo4j node label
    - `neogma: NeogmaService` - Neogma service instance
    - `crud: Neo4jCrudService` - CRUD service instance
 
 3. WHEN developer needs custom business logic THEN base repository SHALL provide helper methods:
+
    - `createQueryBuilder(): NeogmaQueryBuilder` - Query builder access
    - `executeQuery<R>(cypher: string, params?: Record<string, any>): Promise<R>` - Raw query execution
    - `getLabel(): string` - Entity label getter
@@ -88,6 +92,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 4. WHEN base repository executes CRUD operations THEN operations SHALL delegate to `Neo4jCrudService` with proper type safety and error handling
 
 **Technical Specifications**:
+
 - File: `libs/nestjs-neo4j/src/lib/repositories/neo4j-repository.ts`
 - Exports: `Neo4jRepository<T extends Neo4jCompatibleEntity>`
 - TypeScript strict mode compliance required
@@ -100,6 +105,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN developer calls `Neo4jModule.forFeature([User, Post, Comment])` THEN the module SHALL:
+
    - Auto-generate `Neo4jRepository<User>` instance with injection token `UserRepository`
    - Auto-generate `Neo4jRepository<Post>` instance with injection token `PostRepository`
    - Auto-generate `Neo4jRepository<Comment>` instance with injection token `CommentRepository`
@@ -107,6 +113,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - Export all repositories for dependent modules
 
 2. WHEN repository is auto-generated THEN factory function SHALL:
+
    - Extract entity label from `@Neo4jEntity` decorator metadata
    - Generate injection token using `getRepositoryToken(entity)` helper
    - Inject `NeogmaService` and `Neo4jCrudService` dependencies
@@ -118,6 +125,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 4. WHEN multiple modules use `forFeature()` THEN repositories SHALL be properly scoped to their modules with no conflicts
 
 **Technical Specifications**:
+
 - File: `libs/nestjs-neo4j/src/lib/neo4j.module.ts`
 - Method: `static forFeature(entities: Type<any>[]): DynamicModule`
 - Uses NestJS dynamic module pattern
@@ -130,12 +138,14 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN developer uses `@InjectRepository(User)` THEN decorator SHALL:
+
    - Resolve injection token to `UserRepository`
    - Inject `Neo4jRepository<User>` instance
    - Provide full TypeScript type inference
    - Work with both auto-generated and custom repositories
 
 2. WHEN `getRepositoryToken(entity)` is called THEN function SHALL:
+
    - Extract entity label from decorator metadata
    - Return token in format `${label}Repository` (e.g., `UserRepository`)
    - Be usable in module provider configuration
@@ -147,6 +157,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - Module exports
 
 **Technical Specifications**:
+
 - File: `libs/nestjs-neo4j/src/lib/decorators/inject-repository.decorator.ts`
 - Exports:
   - `getRepositoryToken(entity: Type<any>): string`
@@ -160,12 +171,14 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN developer creates custom repository class THEN class SHALL extend `Neo4jRepository<T>` and:
+
    - Inherit ALL base CRUD methods automatically
    - Add custom business logic methods
    - Access helper methods (`createQueryBuilder()`, `executeQuery()`, etc.)
    - Maintain full type safety with entity type parameter
 
 2. WHEN custom repository is registered in module THEN developer SHALL use provider override:
+
    ```typescript
    {
      provide: getRepositoryToken(Entity),
@@ -182,6 +195,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - `protected readonly crud: Neo4jCrudService` - CRUD service
 
 **Technical Specifications**:
+
 - Custom repositories extend `Neo4jRepository<T>`
 - No manual CRUD delegation required
 - Full access to base class utilities
@@ -194,17 +208,20 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN `Neo4jModule.forRoot()` is called THEN module SHALL:
+
    - Provide `Neo4jCrudService` as a global provider
    - Export `Neo4jCrudService` for dependent modules
    - Make service available to all `forFeature()` repositories
 
 2. WHEN `Neo4jModule.forRootAsync()` is called THEN async configuration SHALL:
+
    - Provide `Neo4jCrudService` globally
    - Export service after async initialization completes
 
 3. WHEN application module uses repository module THEN application SHALL NOT need to provide `Neo4jCrudService` manually
 
 **Technical Specifications**:
+
 - Update `Neo4jModule.forRoot()` to include `Neo4jCrudService` in providers and exports
 - Update `Neo4jModule.forRootAsync()` to include `Neo4jCrudService` in providers and exports
 - Mark module as `global: true` to avoid re-importing
@@ -216,12 +233,14 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN repository has ONLY CRUD methods THEN migration SHALL:
+
    - Delete entire repository class file
    - Replace with `Neo4jModule.forFeature([Entity])` registration
    - Use `@InjectRepository(Entity)` in consuming services
    - Result in ZERO lines of repository code
 
 2. WHEN repository has custom business logic THEN migration SHALL:
+
    - Remove ALL manual CRUD delegation methods (49 lines)
    - Change class to extend `Neo4jRepository<Entity>`
    - Keep ONLY custom business logic methods
@@ -235,6 +254,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - **Full** backward compatibility with consuming services (via injection token consistency)
 
 **Migration Targets** (8 repositories):
+
 1. `apps/dev-brand-api/src/app/repositories/neo4j/approval-request.repository.ts` (750 lines → ~700 lines)
 2. `apps/dev-brand-api/src/app/repositories/neo4j/approval-chain.repository.ts` (655 lines → ~610 lines)
 3. `apps/dev-brand-api/src/app/repositories/neo4j/interruption.repository.ts` (533 lines → ~490 lines)
@@ -245,6 +265,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 8. `apps/dev-brand-api/src/app/repositories/neo4j/achievement.repository.ts`
 
 **Technical Specifications**:
+
 - Direct replacement approach (NO backward compatibility layers)
 - Maintain existing custom business logic methods
 - Update module provider configuration
@@ -257,6 +278,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN example file is updated THEN file SHALL demonstrate:
+
    - `Neo4jModule.forFeature([...])` registration pattern
    - `@InjectRepository(Entity)` injection pattern
    - Auto-generated repository usage for simple CRUD
@@ -264,6 +286,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - Zero manual CRUD delegation
 
 2. WHEN all 6 example files are migrated THEN examples SHALL cover:
+
    - **01-user-management.example.ts**: Basic CRUD with auto-generated repositories
    - **02-relationship-management.example.ts**: Relationship operations with custom repositories
    - **03-multi-tenant-application.example.ts**: Multi-tenant patterns with TypeORM-style repositories
@@ -274,6 +297,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 3. WHEN example is executed THEN code SHALL compile with ZERO TypeScript errors and demonstrate working functionality
 
 **Technical Specifications**:
+
 - Update all 6 example files in `libs/nestjs-neo4j/src/examples/`
 - Replace `@Neo4jRepository` decorator pattern with `forFeature()` pattern
 - Remove `BaseRepositoryService` references
@@ -287,6 +311,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 #### Acceptance Criteria
 
 1. WHEN developer reads `CLAUDE.md` THEN documentation SHALL include:
+
    - **Repository Pattern (TypeORM-Style)** section with complete examples
    - Auto-generated repository usage examples
    - Custom repository extension examples
@@ -295,6 +320,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - Best practices and anti-patterns
 
 2. WHEN developer reads `MIGRATION_V2.md` THEN guide SHALL provide:
+
    - Step-by-step migration instructions
    - Before/After code comparisons for all patterns
    - Automated migration script usage instructions
@@ -309,6 +335,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
    - **Zero downtime** migration strategy (injection token consistency)
 
 **Technical Specifications**:
+
 - Update `libs/nestjs-neo4j/CLAUDE.md` with TypeORM-style patterns
 - Create `libs/nestjs-neo4j/MIGRATION_V2.md` with comprehensive guide
 - Include code examples for every migration scenario
@@ -359,19 +386,19 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 
 ### Primary Stakeholders
 
-| Stakeholder | Needs | Success Criteria |
-|-------------|-------|------------------|
-| **Application Developers** | - Zero boilerplate CRUD code<br/>- Familiar TypeORM-style patterns<br/>- Easy custom repository extension | - Reduce repository code by 49 lines per entity<br/>- TypeORM/Mongoose-style API consistency<br/>- Migration completed in <30 minutes per repository |
-| **Library Maintainers** | - Single source of truth for CRUD logic<br/>- Easier to update base functionality<br/>- Clear separation of concerns | - CRUD methods exist ONLY in base repository<br/>- Changes to CRUD logic require updates in 1 file only<br/>- Zero duplicate CRUD implementations |
-| **Technical Leads** | - Architectural consistency<br/>- Reduced technical debt<br/>- Improved code quality metrics | - 392 lines of boilerplate removed<br/>- Zero TypeScript errors<br/>- 10/10 code quality score |
+| Stakeholder                | Needs                                                                                                                | Success Criteria                                                                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Application Developers** | - Zero boilerplate CRUD code<br/>- Familiar TypeORM-style patterns<br/>- Easy custom repository extension            | - Reduce repository code by 49 lines per entity<br/>- TypeORM/Mongoose-style API consistency<br/>- Migration completed in <30 minutes per repository |
+| **Library Maintainers**    | - Single source of truth for CRUD logic<br/>- Easier to update base functionality<br/>- Clear separation of concerns | - CRUD methods exist ONLY in base repository<br/>- Changes to CRUD logic require updates in 1 file only<br/>- Zero duplicate CRUD implementations    |
+| **Technical Leads**        | - Architectural consistency<br/>- Reduced technical debt<br/>- Improved code quality metrics                         | - 392 lines of boilerplate removed<br/>- Zero TypeScript errors<br/>- 10/10 code quality score                                                       |
 
 ### Secondary Stakeholders
 
-| Stakeholder | Impact | Mitigation |
-|-------------|--------|------------|
-| **QA Team** | - Need to test new repository pattern<br/>- Verify no regressions | - Provide comprehensive test suite<br/>- Document testing strategy<br/>- Migration in stages with validation |
-| **Documentation Team** | - Update all Neo4j documentation<br/>- Create migration guides | - Provide draft documentation<br/>- Include before/after examples<br/>- Create troubleshooting guides |
-| **DevOps Team** | - No infrastructure changes<br/>- Monitor for performance regressions | - Performance metrics baseline<br/>- Zero infrastructure changes required |
+| Stakeholder            | Impact                                                                | Mitigation                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **QA Team**            | - Need to test new repository pattern<br/>- Verify no regressions     | - Provide comprehensive test suite<br/>- Document testing strategy<br/>- Migration in stages with validation |
+| **Documentation Team** | - Update all Neo4j documentation<br/>- Create migration guides        | - Provide draft documentation<br/>- Include before/after examples<br/>- Create troubleshooting guides        |
+| **DevOps Team**        | - No infrastructure changes<br/>- Monitor for performance regressions | - Performance metrics baseline<br/>- Zero infrastructure changes required                                    |
 
 ## Risk Assessment
 
@@ -467,27 +494,29 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 
 ## Risk Matrix
 
-| Risk | Probability | Impact | Score | Priority |
-|------|-------------|--------|-------|----------|
-| TypeScript Error Fixes Block Implementation | High | Critical | 9 | P0 - RESOLVE FIRST |
-| HITL Module Dependency | High | High | 8 | P1 - RESOLVE BEFORE PHASE 3 |
-| Edge Cases in Migration | Medium | Medium | 6 | P2 - Monitor During Migration |
-| Migration Time Underestimation | Medium | Medium | 6 | P2 - Buffer Time Allocated |
-| Breaking Changes in Services | Low | High | 5 | P3 - Mitigated by Token Consistency |
-| Developer Learning Curve | Medium | Low | 4 | P3 - Mitigated by Documentation |
-| Performance Regression | Low | Medium | 3 | P4 - Benchmark and Monitor |
+| Risk                                        | Probability | Impact   | Score | Priority                            |
+| ------------------------------------------- | ----------- | -------- | ----- | ----------------------------------- |
+| TypeScript Error Fixes Block Implementation | High        | Critical | 9     | P0 - RESOLVE FIRST                  |
+| HITL Module Dependency                      | High        | High     | 8     | P1 - RESOLVE BEFORE PHASE 3         |
+| Edge Cases in Migration                     | Medium      | Medium   | 6     | P2 - Monitor During Migration       |
+| Migration Time Underestimation              | Medium      | Medium   | 6     | P2 - Buffer Time Allocated          |
+| Breaking Changes in Services                | Low         | High     | 5     | P3 - Mitigated by Token Consistency |
+| Developer Learning Curve                    | Medium      | Low      | 4     | P3 - Mitigated by Documentation     |
+| Performance Regression                      | Low         | Medium   | 3     | P4 - Benchmark and Monitor          |
 
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure (Estimated: 2 days)
 
 **Deliverables**:
+
 - `libs/nestjs-neo4j/src/lib/repositories/neo4j-repository.ts` - Base repository class
 - `libs/nestjs-neo4j/src/lib/decorators/inject-repository.decorator.ts` - Injection decorators
 - `libs/nestjs-neo4j/src/lib/neo4j.module.ts` - Updated with `forFeature()` method
 - Unit tests for base repository and decorators
 
 **Success Criteria**:
+
 - Base repository provides all 9 CRUD methods
 - `forFeature([Entity])` auto-generates working repository
 - `@InjectRepository(Entity)` injects repository successfully
@@ -496,11 +525,13 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Phase 2: Migration Utilities (Estimated: 1 day)
 
 **Deliverables**:
+
 - `libs/nestjs-neo4j/MIGRATION_V2.md` - Comprehensive migration guide
 - Before/After code examples for all patterns
 - Migration checklist and troubleshooting guide
 
 **Success Criteria**:
+
 - Migration guide covers all repository types
 - Examples for simple CRUD and custom repositories
 - Clear step-by-step instructions
@@ -509,12 +540,14 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Phase 3: Repository Migration (Estimated: 1-2 days)
 
 **Deliverables**:
+
 - Migrate 8 application repositories to TypeORM-style pattern
 - Update `apps/dev-brand-api/src/app/repositories/repository.module.ts`
 - Verify all consuming services continue working
 - Remove 392 lines of boilerplate code
 
 **Success Criteria**:
+
 - All 8 repositories migrated successfully
 - Zero TypeScript errors
 - All tests pass
@@ -523,11 +556,13 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Phase 4: Example Files Update (Estimated: 0.5 days)
 
 **Deliverables**:
+
 - Update all 6 example files with TypeORM-style patterns
 - Verify compilation and execution
 - Add comprehensive comments and documentation
 
 **Success Criteria**:
+
 - All example files demonstrate new pattern
 - Zero TypeScript errors
 - Examples executable and educational
@@ -535,12 +570,14 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Phase 5: Documentation and Testing (Estimated: 1 day)
 
 **Deliverables**:
+
 - Update `libs/nestjs-neo4j/CLAUDE.md` with TypeORM-style patterns
 - Integration tests for repository pattern
 - Performance benchmarks
 - Final code review and quality check
 
 **Success Criteria**:
+
 - Documentation complete and accurate
 - 80%+ test coverage
 - Performance meets requirements
@@ -558,6 +595,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Developer Experience Metrics
 
 - **Time to Create Simple CRUD Repository**:
+
   - Before: 15 minutes (manual class creation, CRUD delegation, module configuration)
   - After: 2 minutes (`forFeature([Entity])` registration, `@InjectRepository()` injection)
   - **Improvement**: 87% faster
@@ -592,6 +630,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Breaking Change 1: Neo4jCrudService Now Globally Provided
 
 **Before**:
+
 ```typescript
 @Module({
   providers: [Neo4jCrudService, UserRepository]  // Manual provision
@@ -599,6 +638,7 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ```
 
 **After**:
+
 ```typescript
 @Module({
   imports: [Neo4jModule.forFeature([User])]  // Auto-provided
@@ -612,8 +652,9 @@ This refactoring initiative aims to implement a TypeORM-style repository pattern
 ### Breaking Change 2: @Neo4jRepository Decorator No Longer Required
 
 **Before**:
+
 ```typescript
-@Neo4jRepository(() => User)  // Required decorator
+@Neo4jRepository(() => User) // Required decorator
 @Injectable()
 export class UserRepository {
   // Manual implementation
@@ -621,6 +662,7 @@ export class UserRepository {
 ```
 
 **After**:
+
 ```typescript
 // Auto-generated - NO class needed for simple CRUD
 // OR for custom logic:

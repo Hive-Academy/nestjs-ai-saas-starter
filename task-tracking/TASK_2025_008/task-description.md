@@ -222,7 +222,11 @@ const builderContext = await this.memoryAdapter.getAgentContext({
 
 ```typescript
 // Current (generic storage)
-await this.memoryAdapter.store(`network-topology-${networkId}`, JSON.stringify(topologyData), metadata);
+await this.memoryAdapter.store(
+  `network-topology-${networkId}`,
+  JSON.stringify(topologyData),
+  metadata
+);
 ```
 
 **Enhanced Pattern**:
@@ -257,7 +261,8 @@ const preferredAgents = userPatterns.preferredAgents || [];
 const compatibleAgents = this.getCompatibleAgents(task);
 
 // Prioritize agents user has successfully worked with
-const bestAgent = compatibleAgents.find((agent) => preferredAgents.includes(agent.id)) || compatibleAgents[0];
+const bestAgent =
+  compatibleAgents.find((agent) => preferredAgents.includes(agent.id)) || compatibleAgents[0];
 ```
 
 **Dependencies**:
@@ -313,7 +318,10 @@ await store.put(['compositions', workflowClass, 'tasks'], {
 });
 
 // Discover similar successful compositions
-const similarPatterns = await store.search(['compositions'], `${taskCount} tasks ${dependencyCount} dependencies`);
+const similarPatterns = await store.search(
+  ['compositions'],
+  `${taskCount} tasks ${dependencyCount} dependencies`
+);
 ```
 
 **P1-HIGH: Workflows as Agents (4 hours)**
@@ -478,7 +486,9 @@ export const STORE_NAMESPACES = {
 // Namespace validation utility
 export function validateNamespace(namespace: string[]): boolean {
   if (namespace.length < 2) {
-    throw new Error(`Namespace too short: ${namespace.join('/')}. Must have at least [collection, domain]`);
+    throw new Error(
+      `Namespace too short: ${namespace.join('/')}. Must have at least [collection, domain]`
+    );
   }
   // Additional validation
   return true;

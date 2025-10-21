@@ -257,7 +257,16 @@ Type-safe query construction:
 ```typescript
 const queryBuilder = neogmaService.createQueryBuilder();
 
-const query = queryBuilder.match('(u:User)').where('u.age > $minAge', { minAge: 18 }).andWhere('u.city = $city', { city: 'New York' }).with('u').match('(u)-[:FRIEND]->(friend:User)').return('u, collect(friend) as friends').orderBy('u.name', 'ASC').limit(10).build();
+const query = queryBuilder
+  .match('(u:User)')
+  .where('u.age > $minAge', { minAge: 18 })
+  .andWhere('u.city = $city', { city: 'New York' })
+  .with('u')
+  .match('(u)-[:FRIEND]->(friend:User)')
+  .return('u, collect(friend) as friends')
+  .orderBy('u.name', 'ASC')
+  .limit(10)
+  .build();
 
 const result = await neogmaService.run(query.cypher, query.params);
 ```
@@ -285,7 +294,10 @@ export class AppModule {}
 // Service Usage
 @Injectable()
 export class TenantAwareService {
-  constructor(private readonly multiTenantService: MultiTenantNeo4jService, private readonly tenantContext: TenantContextService) {}
+  constructor(
+    private readonly multiTenantService: MultiTenantNeo4jService,
+    private readonly tenantContext: TenantContextService
+  ) {}
 
   async getUsersForTenant(): Promise<User[]> {
     const tenantId = this.tenantContext.getCurrentTenant();
@@ -480,7 +492,13 @@ export class AnalyticsService {
   async getMostConnectedUsers(limit = 10): Promise<any[]> {
     const queryBuilder = this.neogma.createQueryBuilder();
 
-    const query = queryBuilder.match('(u:User)').optionalMatch('(u)-[r:FRIEND]->()').return('u, count(r) as friendCount').orderBy('friendCount', 'DESC').limit(limit).build();
+    const query = queryBuilder
+      .match('(u:User)')
+      .optionalMatch('(u)-[r:FRIEND]->()')
+      .return('u, count(r) as friendCount')
+      .orderBy('friendCount', 'DESC')
+      .limit(limit)
+      .build();
 
     const result = await this.neogma.run(query.cypher, query.params);
     return result.records.map((record) => ({
@@ -492,7 +510,15 @@ export class AnalyticsService {
   async getRecommendations(userId: string): Promise<User[]> {
     const queryBuilder = this.neogma.createQueryBuilder();
 
-    const query = queryBuilder.match('(u:User)').where('u.id = $userId', { userId }).match('(u)-[:FRIEND]->(friend)-[:FRIEND]->(recommendation:User)').where('NOT (u)-[:FRIEND]->(recommendation)').andWhere('recommendation.id <> $userId', { userId }).return('DISTINCT recommendation').limit(10).build();
+    const query = queryBuilder
+      .match('(u:User)')
+      .where('u.id = $userId', { userId })
+      .match('(u)-[:FRIEND]->(friend)-[:FRIEND]->(recommendation:User)')
+      .where('NOT (u)-[:FRIEND]->(recommendation)')
+      .andWhere('recommendation.id <> $userId', { userId })
+      .return('DISTINCT recommendation')
+      .limit(10)
+      .build();
 
     const result = await this.neogma.run(query.cypher, query.params);
     return result.records.map((r) => r.get('recommendation').properties);
@@ -536,7 +562,11 @@ Always use QueryBuilder with parameters (RECOMMENDED):
 ```typescript
 // ✅ EXCELLENT - Using QueryBuilder (RECOMMENDED)
 const queryBuilder = neogma.createQueryBuilder();
-const query = queryBuilder.match('(u:User)').where('u.email = $email', { email: userInput }).return('u').build();
+const query = queryBuilder
+  .match('(u:User)')
+  .where('u.email = $email', { email: userInput })
+  .return('u')
+  .build();
 await neogma.run(query.cypher, query.params);
 
 // ✅ ACCEPTABLE - Using raw Cypher with parameters
@@ -619,7 +649,10 @@ export class AppModule {}
 ```typescript
 @Injectable()
 export class TenantAwareRepository {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService, private readonly tenantContext: TenantContextService) {}
+  constructor(
+    @InjectNeogma() private readonly neogma: NeogmaService,
+    private readonly tenantContext: TenantContextService
+  ) {}
 
   async findUsers(): Promise<User[]> {
     const tenantId = this.tenantContext.getCurrentTenant();
@@ -668,7 +701,11 @@ export class OptimizedService {
   async findByEmail(email: string) {
     const queryBuilder = this.neogma.createQueryBuilder();
 
-    const query = queryBuilder.match('(u:User)').where('u.email = $email', { email }).return('u').build();
+    const query = queryBuilder
+      .match('(u:User)')
+      .where('u.email = $email', { email })
+      .return('u')
+      .build();
 
     return this.neogma.run(query.cypher, query.params);
   }
@@ -677,7 +714,11 @@ export class OptimizedService {
   async batchCreateUsers(users: CreateUserDto[]): Promise<void> {
     const queryBuilder = this.neogma.createQueryBuilder();
 
-    const query = queryBuilder.unwind('$users as userData').create('(u:User)').set('u = userData').build();
+    const query = queryBuilder
+      .unwind('$users as userData')
+      .create('(u:User)')
+      .set('u = userData')
+      .build();
 
     await this.neogma.run(query.cypher, { users });
   }
@@ -701,7 +742,10 @@ export class OptimizedService {
 ```typescript
 @Injectable()
 export class MonitoringService {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService, private readonly metrics: NeogmaMetricsService) {}
+  constructor(
+    @InjectNeogma() private readonly neogma: NeogmaService,
+    private readonly metrics: NeogmaMetricsService
+  ) {}
 
   async getHealthStatus() {
     const metrics = this.metrics.getMetrics();
@@ -1064,7 +1108,11 @@ import { RelationshipCoreRepository } from '@hive-academy/nestjs-neo4j';
 export class TechnologyService {
   constructor(
     @Inject('USES_TECHNOLOGY_REPOSITORY')
-    private readonly techRelRepo: RelationshipCoreRepository<{ proficiency: string; since: Date }, Achievement, Technology>
+    private readonly techRelRepo: RelationshipCoreRepository<
+      { proficiency: string; since: Date },
+      Achievement,
+      Technology
+    >
   ) {}
 
   async addTechnology(achievementId: string, techId: string) {
@@ -1087,7 +1135,12 @@ export class TechnologyService {
   }
 
   async updateProficiency(achievementId: string, techId: string, level: string) {
-    return this.techRelRepo.updateRelationship(achievementId, techId, { proficiency: level }, { type: 'USES_TECHNOLOGY' });
+    return this.techRelRepo.updateRelationship(
+      achievementId,
+      techId,
+      { proficiency: level },
+      { type: 'USES_TECHNOLOGY' }
+    );
   }
 }
 ```
@@ -1113,7 +1166,11 @@ import { RelationshipBulkOperationsService } from '@hive-academy/nestjs-neo4j';
 export class BulkTechnologyService {
   constructor(
     @Inject('USES_TECHNOLOGY_BULK_SERVICE')
-    private readonly bulkService: RelationshipBulkOperationsService<{ proficiency: string }, Achievement, Technology>
+    private readonly bulkService: RelationshipBulkOperationsService<
+      { proficiency: string },
+      Achievement,
+      Technology
+    >
   ) {}
 
   async addMultipleTechnologies(achievementId: string, techIds: string[]) {
@@ -1130,7 +1187,11 @@ export class BulkTechnologyService {
 
   async updateAllProficiencies(achievementId: string, newLevel: string) {
     // Batch update all relationships from a source
-    return this.bulkService.batchUpdateFromSource(achievementId, { proficiency: newLevel }, { type: 'USES_TECHNOLOGY' });
+    return this.bulkService.batchUpdateFromSource(
+      achievementId,
+      { proficiency: newLevel },
+      { type: 'USES_TECHNOLOGY' }
+    );
   }
 
   async removeAllTechnologies(achievementId: string) {
@@ -1156,7 +1217,14 @@ export class BulkTechnologyService {
 To use specialized services, register them in your module:
 
 ```typescript
-import { Neo4jModule, GraphPatternService, GraphTraversalService, GraphMetricsService, RelationshipCoreRepository, RelationshipBulkOperationsService } from '@hive-academy/nestjs-neo4j';
+import {
+  Neo4jModule,
+  GraphPatternService,
+  GraphTraversalService,
+  GraphMetricsService,
+  RelationshipCoreRepository,
+  RelationshipBulkOperationsService,
+} from '@hive-academy/nestjs-neo4j';
 
 @Module({
   imports: [Neo4jModule.forFeature([Achievement, Technology])],
@@ -1170,14 +1238,24 @@ import { Neo4jModule, GraphPatternService, GraphTraversalService, GraphMetricsSe
     {
       provide: 'USES_TECHNOLOGY_REPOSITORY',
       useFactory: (neogma: NeogmaService) => {
-        return new RelationshipCoreRepository('USES_TECHNOLOGY', 'Achievement', 'Technology', neogma);
+        return new RelationshipCoreRepository(
+          'USES_TECHNOLOGY',
+          'Achievement',
+          'Technology',
+          neogma
+        );
       },
       inject: [NeogmaService],
     },
     {
       provide: 'USES_TECHNOLOGY_BULK_SERVICE',
       useFactory: (neogma: NeogmaService) => {
-        return new RelationshipBulkOperationsService('USES_TECHNOLOGY', 'Achievement', 'Technology', neogma);
+        return new RelationshipBulkOperationsService(
+          'USES_TECHNOLOGY',
+          'Achievement',
+          'Technology',
+          neogma
+        );
       },
       inject: [NeogmaService],
     },
@@ -1370,7 +1448,10 @@ export class ApprovalRequestRepository extends Neo4jRepository<ApprovalRequest> 
 
     const statusParam = bindParam.add('pending');
 
-    qb.match('(a:ApprovalRequest)').where(`a.status = $${statusParam}`).return('a').orderBy('a.requestedAt ASC');
+    qb.match('(a:ApprovalRequest)')
+      .where(`a.status = $${statusParam}`)
+      .return('a')
+      .orderBy('a.requestedAt ASC');
 
     const result = await this.executeQuery(qb.getStatement(), bindParam.get());
     return result.records.map((r) => r.get('a').properties);
@@ -1452,7 +1533,10 @@ export class HitlService {
 export class UserRepository {
   private readonly label = 'User';
 
-  constructor(private readonly crud: Neo4jCrudService, @InjectNeogma() private readonly neogma: NeogmaService) {}
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
 
   // 49 lines of manual CRUD delegation
   findById(id: string) {

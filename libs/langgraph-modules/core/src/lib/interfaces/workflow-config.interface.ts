@@ -1,9 +1,9 @@
 /**
  * Configuration for individual workflow execution behavior
- * 
+ *
  * This interface defines the configuration options available for individual workflows.
  * It supports human-in-the-loop patterns, streaming, caching, and metrics collection.
- * 
+ *
  * Note: This is different from the module-level WorkflowConfig which configures
  * the overall workflow system.
  */

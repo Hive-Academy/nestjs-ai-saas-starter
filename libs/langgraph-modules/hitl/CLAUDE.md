@@ -6,6 +6,34 @@
 
 The HITL Module provides an enterprise-grade human approval system with 16 specialized services, ML confidence scoring, and sophisticated approval chain management.
 
+## EventEmitter Configuration
+
+The HITL module uses NestJS EventEmitter2 for approval events and notifications.
+
+**IMPORTANT**: Do NOT import EventEmitterModule in this module.
+EventEmitter should be provided globally by the root application module.
+
+### Correct Configuration
+
+```typescript
+// apps/your-app/src/app/app.module.ts
+@Module({
+  imports: [
+    EventEmitterModule.forRoot({
+      maxListeners: 20, // Prevent false-positive memory leak warnings
+    }),
+    HitlModule.forRoot({...}), // No EventEmitterModule import needed
+  ],
+})
+export class AppModule {}
+```
+
+### Why Global?
+
+- EventEmitter2 is designed to be a singleton event bus
+- Multiple instances cause duplicate listener warnings (false positives)
+- Global import provides consistent event bus across all modules
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Source Code Analysis Results** (January 2025)
@@ -78,7 +106,11 @@ The DevBrand API implements **5 specialized Neo4j storage adapters** for HITL:
 // REAL STORAGE ADAPTER IMPLEMENTATION
 import { Injectable } from '@nestjs/common';
 import { Neo4jService } from '@hive-academy/nestjs-neo4j';
-import type { IHitlStorageService, ApprovalStorageData, ApprovalStorageResponse } from '@hive-academy/langgraph-hitl';
+import type {
+  IHitlStorageService,
+  ApprovalStorageData,
+  ApprovalStorageResponse,
+} from '@hive-academy/langgraph-hitl';
 
 @Injectable()
 export class Neo4jHitlStorageAdapter implements IHitlStorageService {
@@ -206,7 +238,13 @@ import { Neo4jInterruptionStorageAdapter } from './adapters/hitl/neo4j-interrupt
       registry: { autoRegisterWorkflows: true },
     }),
   ],
-  providers: [Neo4jHitlStorageAdapter, Neo4jApprovalChainStorageAdapter, Neo4jConfidenceStorageAdapter, Neo4jFeedbackStorageAdapter, Neo4jInterruptionStorageAdapter],
+  providers: [
+    Neo4jHitlStorageAdapter,
+    Neo4jApprovalChainStorageAdapter,
+    Neo4jConfidenceStorageAdapter,
+    Neo4jFeedbackStorageAdapter,
+    Neo4jInterruptionStorageAdapter,
+  ],
 })
 export class AppModule {}
 ```
@@ -297,7 +335,10 @@ IMemoryAdapter → ApproverIntelligenceService (pattern learning)
        if (!this.memoryAdapter) return; // Graceful degradation
 
        const threadId = ['approval-pattern', userId, timestamp].join(':');
-       await this.memoryAdapter.store(threadId, JSON.stringify(pattern), { namespace: ['approval-intelligence', userId], tags: ['approval'] });
+       await this.memoryAdapter.store(threadId, JSON.stringify(pattern), {
+         namespace: ['approval-intelligence', userId],
+         tags: ['approval'],
+       });
      }
    }
    ```
@@ -473,7 +514,10 @@ export class HitlMemoryLearningService {
   // 1. Store complete approval event with full context
   async storeApprovalEvent(event: ApprovalEvent): Promise<void> {
     const threadId = ['approval-event', event.requestId].join(':');
-    await this.memoryAdapter.store(threadId, JSON.stringify(event), { namespace: ['approval-events', event.executionId], tags: ['event'] });
+    await this.memoryAdapter.store(threadId, JSON.stringify(event), {
+      namespace: ['approval-events', event.executionId],
+      tags: ['event'],
+    });
   }
 
   // 2. Learn from approval outcomes (batch processing)
@@ -523,7 +567,10 @@ export class UserInterruptionService {
   }
 
   // 1. Store interruption pattern (called on response/timeout)
-  private async storeInterruptionPattern(interruption: UserInterruption, response?: UserInterruptionResponse): Promise<void> {
+  private async storeInterruptionPattern(
+    interruption: UserInterruption,
+    response?: UserInterruptionResponse
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     try {
@@ -577,7 +624,9 @@ export class UserInterruptionService {
   > {
     if (!this.memoryAdapter) return [];
 
-    const namespace = workflowType ? ['user-interruption', userId, workflowType] : ['user-interruption', userId];
+    const namespace = workflowType
+      ? ['user-interruption', userId, workflowType]
+      : ['user-interruption', userId];
 
     const memories = await this.memoryAdapter.search({
       query: `user interruption patterns ${workflowType || ''}`,
@@ -604,7 +653,9 @@ export class UserInterruptionService {
   }
 
   // 3. Integrated into response handling
-  async handleUserInterruptionResponse(response: UserInterruptionResponse): Promise<InterruptionResult> {
+  async handleUserInterruptionResponse(
+    response: UserInterruptionResponse
+  ): Promise<InterruptionResult> {
     const interruption = await this.getActiveInterruption(response.interruptionId);
 
     // Store pattern for learning
@@ -680,9 +731,15 @@ export class ExampleHitlService {
 ```typescript
 @Injectable()
 export class IntelligentApprovalService {
-  constructor(private readonly hitlService: HumanApprovalService, private readonly historySearch: ApprovalHistorySearchService) {}
+  constructor(
+    private readonly hitlService: HumanApprovalService,
+    private readonly historySearch: ApprovalHistorySearchService
+  ) {}
 
-  async requestApprovalWithHistory(executionId: string, context: ApprovalRequestContext): Promise<string> {
+  async requestApprovalWithHistory(
+    executionId: string,
+    context: ApprovalRequestContext
+  ): Promise<string> {
     // Find similar historical approvals
     const similarApprovals = await this.historySearch.searchSimilarApprovals(context);
 
@@ -712,7 +769,10 @@ export class IntelligentApprovalService {
 ```typescript
 @Injectable()
 export class TrendAwareApprovalRouter {
-  constructor(private readonly historySearch: ApprovalHistorySearchService, private readonly approvalChain: ApprovalChainService) {}
+  constructor(
+    private readonly historySearch: ApprovalHistorySearchService,
+    private readonly approvalChain: ApprovalChainService
+  ) {}
 
   async routeApprovalBasedOnTrends(resourceType: string, riskLevel: string): Promise<string> {
     // Get 30-day approval trends
@@ -738,7 +798,10 @@ export class TrendAwareApprovalRouter {
 ```typescript
 @Injectable()
 export class ApprovalLearningService {
-  constructor(private readonly memoryLearning: HitlMemoryLearningService, private readonly approverIntelligence: ApproverIntelligenceService) {}
+  constructor(
+    private readonly memoryLearning: HitlMemoryLearningService,
+    private readonly approverIntelligence: ApproverIntelligenceService
+  ) {}
 
   async processCompletedApprovals(timeRange: { start: Date; end: Date }): Promise<void> {
     // 1. Fetch completed approvals from Neo4j
@@ -980,7 +1043,10 @@ import { HumanApprovalService, InterruptionType } from '@hive-academy/langgraph-
 
 @Injectable()
 export class AdvancedInterruptionService {
-  constructor(private readonly hitlService: HumanApprovalService, private readonly workflowManager: WorkflowManagerService) {}
+  constructor(
+    private readonly hitlService: HumanApprovalService,
+    private readonly workflowManager: WorkflowManagerService
+  ) {}
 
   async handleComplexInterruption(
     executionId: string,
@@ -1006,7 +1072,10 @@ export class AdvancedInterruptionService {
     });
 
     // Step 2: Pause workflow to prevent further execution
-    const workflowPaused = await this.workflowManager.pauseWorkflow(executionId, `User interruption: ${interruptionType}`);
+    const workflowPaused = await this.workflowManager.pauseWorkflow(
+      executionId,
+      `User interruption: ${interruptionType}`
+    );
 
     // Step 3: Set up timeout for automatic resumption
     const estimatedResumeTime = new Date(Date.now() + 300000); // 5 minutes
@@ -1018,7 +1087,11 @@ export class AdvancedInterruptionService {
     };
   }
 
-  async resumeWithUserInput(executionId: string, interruptionId: string, userResponse: string): Promise<{ resumed: boolean; newState?: any }> {
+  async resumeWithUserInput(
+    executionId: string,
+    interruptionId: string,
+    userResponse: string
+  ): Promise<{ resumed: boolean; newState?: any }> {
     // Step 1: Process interruption response
     const interruptionResult = await this.hitlService.handleUserInterruptionResponse({
       interruptionId,
@@ -1179,7 +1252,11 @@ async function handleDifferentInterruptions() {
   });
 
   // Scenario 2: Agent requests clarification
-  await hitlService.requestClarification('analysis-456', 'data-processing', 'The dataset has conflicting date formats. Which format should I prioritize?');
+  await hitlService.requestClarification(
+    'analysis-456',
+    'data-processing',
+    'The dataset has conflicting date formats. Which format should I prioritize?'
+  );
 
   // Scenario 3: User provides correction
   await hitlService.requestUserInterruption({
@@ -1215,7 +1292,12 @@ async processLargeTransaction(state: WorkflowState): Promise<WorkflowState>
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { HumanApprovalService, RequiresApproval, ApprovalRiskLevel, EscalationStrategy } from '@hive-academy/langgraph-hitl';
+import {
+  HumanApprovalService,
+  RequiresApproval,
+  ApprovalRiskLevel,
+  EscalationStrategy,
+} from '@hive-academy/langgraph-hitl';
 
 interface CodeGenerationTask {
   prompt: string;
@@ -1262,7 +1344,12 @@ export class EnterpriseAIWorkflowService {
         const task = state.task as CodeGenerationTask;
         const riskScore = this.calculateCodeRisk(task);
         return {
-          level: riskScore > 8 ? ApprovalRiskLevel.HIGH : riskScore > 5 ? ApprovalRiskLevel.MEDIUM : ApprovalRiskLevel.LOW,
+          level:
+            riskScore > 8
+              ? ApprovalRiskLevel.HIGH
+              : riskScore > 5
+              ? ApprovalRiskLevel.MEDIUM
+              : ApprovalRiskLevel.LOW,
           factors: ['Code complexity', 'File modifications', 'System dependencies'],
           score: riskScore,
         };
@@ -1352,7 +1439,14 @@ export class EnterpriseAIWorkflowService {
         }
 
         return {
-          level: riskScore > 8 ? ApprovalRiskLevel.CRITICAL : riskScore > 5 ? ApprovalRiskLevel.HIGH : riskScore > 2 ? ApprovalRiskLevel.MEDIUM : ApprovalRiskLevel.LOW,
+          level:
+            riskScore > 8
+              ? ApprovalRiskLevel.CRITICAL
+              : riskScore > 5
+              ? ApprovalRiskLevel.HIGH
+              : riskScore > 2
+              ? ApprovalRiskLevel.MEDIUM
+              : ApprovalRiskLevel.LOW,
           factors: riskFactors,
           score: riskScore,
         };
@@ -1415,7 +1509,12 @@ export class EnterpriseAIWorkflowService {
     }
   }
 
-  async processManualApproval(requestId: string, decision: 'approved' | 'rejected', userId: string, feedback?: string): Promise<void> {
+  async processManualApproval(
+    requestId: string,
+    decision: 'approved' | 'rejected',
+    userId: string,
+    feedback?: string
+  ): Promise<void> {
     const response: HumanApprovalResponse = {
       requestId,
       decision,
@@ -1606,7 +1705,14 @@ export class CustomRiskEvaluator {
     }
 
     return {
-      level: score > 7 ? ApprovalRiskLevel.CRITICAL : score > 4 ? ApprovalRiskLevel.HIGH : score > 2 ? ApprovalRiskLevel.MEDIUM : ApprovalRiskLevel.LOW,
+      level:
+        score > 7
+          ? ApprovalRiskLevel.CRITICAL
+          : score > 4
+          ? ApprovalRiskLevel.HIGH
+          : score > 2
+          ? ApprovalRiskLevel.MEDIUM
+          : ApprovalRiskLevel.LOW,
       factors,
       score,
       details: { businessHours: isBusinessHours, systemsCritical: context.criticalSystems },
@@ -1739,7 +1845,10 @@ export class RobustHitlService {
     }
   }
 
-  private async handleApprovalRejection(request: HumanApprovalRequest, error: ApprovalRejectedError): Promise<string | null> {
+  private async handleApprovalRejection(
+    request: HumanApprovalRequest,
+    error: ApprovalRejectedError
+  ): Promise<string | null> {
     // Log rejection for audit
     this.logger.info(`Approval rejected for ${request.executionId}: ${error.reason}`);
 

@@ -54,25 +54,25 @@ export class WorkflowValidator {
   /**
    * Validates that all task dependencies reference existing tasks
    */
-  private validateTaskReferences(definition: FunctionalWorkflowDefinition): void {
+  private validateTaskReferences(
+    definition: FunctionalWorkflowDefinition
+  ): void {
     for (const [taskName, task] of definition.tasks) {
       for (const dependency of task.dependencies) {
         if (!definition.tasks.has(dependency)) {
-          throw new UnknownTaskError(
+          throw new UnknownTaskError(dependency, definition.name, {
+            taskName,
             dependency,
-            definition.name,
-            { taskName, dependency }
-          );
+          });
         }
       }
 
       // Validate error handler references
       if (task.errorHandler && !definition.tasks.has(task.errorHandler)) {
-        throw new UnknownTaskError(
-          task.errorHandler,
-          definition.name,
-          { taskName, errorHandler: task.errorHandler }
-        );
+        throw new UnknownTaskError(task.errorHandler, definition.name, {
+          taskName,
+          errorHandler: task.errorHandler,
+        });
       }
     }
   }
@@ -80,29 +80,33 @@ export class WorkflowValidator {
   /**
    * Validates dependency graph and detects cycles
    */
-  private validateDependencyGraph(definition: FunctionalWorkflowDefinition): void {
+  private validateDependencyGraph(
+    definition: FunctionalWorkflowDefinition
+  ): void {
     const graph = this.buildDependencyGraph(definition);
-    
+
     if (graph.cycles.length > 0) {
-      throw new CircularDependencyError(
-        graph.cycles[0],
-        { workflowName: definition.name, allCycles: graph.cycles }
-      );
+      throw new CircularDependencyError(graph.cycles[0], {
+        workflowName: definition.name,
+        allCycles: graph.cycles,
+      });
     }
   }
 
   /**
    * Builds dependency graph from workflow definition
    */
-  buildDependencyGraph(definition: FunctionalWorkflowDefinition): TaskDependencyGraph {
+  buildDependencyGraph(
+    definition: FunctionalWorkflowDefinition
+  ): TaskDependencyGraph {
     const tasks = new Map(definition.tasks);
     const edges = new Map<string, readonly string[]>();
-    
+
     // Build forward edges (task -> dependents)
     for (const [taskName] of tasks) {
       edges.set(taskName, []);
     }
-    
+
     for (const [taskName, task] of tasks) {
       for (const dependency of task.dependencies) {
         const dependents = edges.get(dependency) || [];
@@ -111,7 +115,7 @@ export class WorkflowValidator {
     }
 
     const cycles = this.detectCycles(tasks, edges);
-    
+
     return {
       tasks,
       edges,
@@ -174,7 +178,7 @@ export class WorkflowValidator {
     executionOrder: readonly string[]
   ): void {
     const executed = new Set<string>();
-    
+
     for (const taskName of executionOrder) {
       const task = definition.tasks.get(taskName);
       if (!task) {

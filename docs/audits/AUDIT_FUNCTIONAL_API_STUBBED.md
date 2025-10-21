@@ -228,7 +228,10 @@ const workflow = new StateGraph<TState>({
 // Strategic type assertion for LangGraph compatibility
 (workflow as any).addNode(taskName, nodeHandler);
 
-const stateGraph = (await this.graphGenerator.generateStateGraph<TState>(definition, instance)) as any;
+const stateGraph = (await this.graphGenerator.generateStateGraph<TState>(
+  definition,
+  instance
+)) as any;
 ```
 
 **Issue**: Multiple `as any` type assertions indicate incomplete type integration with LangGraph.

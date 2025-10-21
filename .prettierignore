@@ -1,6 +1,49 @@
 # Add files here to ignore them from prettier formatting
+
+# Build outputs
 /dist
+/build
 /coverage
+/tmp
+**/*.min.js
+**/*.min.css
+
+# Nx cache
 /.nx/cache
 /.nx/workspace-data
+
+# Angular
 .angular
+**/node_modules/.cache
+
+# Generated files
+**/.rollup.cache
+**/tsconfig.tsbuildinfo
+**/*.tsbuildinfo
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

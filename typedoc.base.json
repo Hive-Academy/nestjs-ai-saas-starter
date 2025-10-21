@@ -24,14 +24,7 @@
   ],
   "categorizeByGroup": true,
   "defaultCategory": "Other",
-  "categoryOrder": [
-    "Modules",
-    "Services",
-    "Interfaces",
-    "Types",
-    "Constants",
-    "Other"
-  ],
+  "categoryOrder": ["Modules", "Services", "Interfaces", "Types", "Constants", "Other"],
   "validation": {
     "notExported": true,
     "invalidLink": true,

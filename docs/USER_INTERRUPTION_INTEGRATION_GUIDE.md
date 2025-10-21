@@ -139,7 +139,11 @@ export class UserInterruptionService {
   }
 
   // User clicks "Ask Agent" button during execution
-  async askQuestion(executionId: string, question: string, urgency: 'low' | 'medium' | 'high' = 'medium') {
+  async askQuestion(
+    executionId: string,
+    question: string,
+    urgency: 'low' | 'medium' | 'high' = 'medium'
+  ) {
     // Send via REST API
     const response = await this.http
       .post('/api/customer-support/interruptions/question', {
@@ -195,7 +199,9 @@ export class UserInterruptionService {
     });
 
     // Remove from active interruptions
-    this.activeInterruptions.update((interruptions) => interruptions.filter((i) => i.id !== interruptionId));
+    this.activeInterruptions.update((interruptions) =>
+      interruptions.filter((i) => i.id !== interruptionId)
+    );
     this.currentDialog.set(null);
 
     return result;
@@ -203,11 +209,13 @@ export class UserInterruptionService {
 
   private setupWebSocketHandlers() {
     // Listen for interruption requests from agents
-    this.websocket.getMessagesByType(WebSocketMessageType.INTERRUPTION_REQUEST).subscribe((message) => {
-      const interruption: UserInterruption = message.data;
-      this.activeInterruptions.update((list) => [...list, interruption]);
-      this.currentDialog.set(interruption);
-    });
+    this.websocket
+      .getMessagesByType(WebSocketMessageType.INTERRUPTION_REQUEST)
+      .subscribe((message) => {
+        const interruption: UserInterruption = message.data;
+        this.activeInterruptions.update((list) => [...list, interruption]);
+        this.currentDialog.set(interruption);
+      });
 
     // Listen for workflow pause notifications
     this.websocket.getMessagesByType(WebSocketMessageType.WORKFLOW_PAUSED).subscribe((message) => {
@@ -460,7 +468,11 @@ this.websocket.subscribeToExecution({
 
 ```typescript
 // In workflow: checkForUserQuestions() method triggers
-const interruptionId = await this.hitlService.requestClarification(state.ticketId, 'analysis-review', 'This ticket is complex. How should I proceed?');
+const interruptionId = await this.hitlService.requestClarification(
+  state.ticketId,
+  'analysis-review',
+  'This ticket is complex. How should I proceed?'
+);
 // Workflow automatically pauses
 ```
 

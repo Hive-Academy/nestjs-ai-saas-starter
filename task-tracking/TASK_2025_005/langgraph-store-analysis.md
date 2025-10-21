@@ -132,7 +132,12 @@ interface Item {
 **File**: `apps/dev-brand-api/src/app/entities/chromadb/langgraph-store.entity.ts`
 
 ```typescript
-import { ChromaEntity, ChromaId, ChromaProp, BaseChromaEntity } from '@hive-academy/nestjs-chromadb';
+import {
+  ChromaEntity,
+  ChromaId,
+  ChromaProp,
+  BaseChromaEntity,
+} from '@hive-academy/nestjs-chromadb';
 
 /**
  * Metadata structure for LangGraph Store items
@@ -448,7 +453,10 @@ export class ChromaVectorAdapter extends IVectorService {
   /**
    * Search - routes to correct repository based on collection
    */
-  override async search(collection: string, query: VectorSearchQuery): Promise<readonly VectorSearchResult[]> {
+  override async search(
+    collection: string,
+    query: VectorSearchQuery
+  ): Promise<readonly VectorSearchResult[]> {
     // Route to LangGraph Store repository
     if (collection === 'langgraph-store' || collection === 'langgraph_store') {
       return this.searchLangGraphStore(query);

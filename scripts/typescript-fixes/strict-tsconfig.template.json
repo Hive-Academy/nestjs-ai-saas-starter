@@ -51,15 +51,6 @@
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
   },
   "compileOnSave": false,
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "**/*.js",
-    "node_modules",
-    "dist",
-    "coverage"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "**/*.js", "node_modules", "dist", "coverage"]
 }

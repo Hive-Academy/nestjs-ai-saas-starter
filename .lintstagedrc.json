@@ -1,5 +1,5 @@
 {
-  "*.{ts,js,json,md}": ["prettier --write"],
-  "*.{ts,js}": ["eslint --fix"],
+  "*.{ts,js,json,md}": ["npx nx format:write"],
+  "*.{ts,js}": ["eslint --fix --max-warnings=0"],
   "libs/**/**/package.json": ["npm run validate:package-json"]
 }

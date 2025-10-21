@@ -127,7 +127,12 @@ Enforces conventional commit format:
 ```json
 {
   "release": {
-    "projects": ["libs/nestjs-chromadb", "libs/nestjs-neo4j", "libs/langgraph-modules/nestjs-langgraph", "libs/shared"],
+    "projects": [
+      "libs/nestjs-chromadb",
+      "libs/nestjs-neo4j",
+      "libs/langgraph-modules/nestjs-langgraph",
+      "libs/shared"
+    ],
     "version": {
       "conventionalCommits": true
     },

@@ -803,7 +803,11 @@ const bestApprover = this.selectApproverBasedOnPatterns(
 );
 
 // AFTER approval - update approver patterns
-await this.memoryAdapter.storeAgentExecution(state, { decision, confidence, reasoning }, 'approval-coordinator');
+await this.memoryAdapter.storeAgentExecution(
+  state,
+  { decision, confidence, reasoning },
+  'approval-coordinator'
+);
 ```
 
 **Benefit**: 40% reduction in approval time through intelligent routing
@@ -996,7 +1000,10 @@ await this.memoryAdapter.store(
 
 // HIERARCHICAL: Track in Store namespace (Memory Store)
 const store = this.memoryAdapter.getStore('hitl-approvals');
-await store.put(['approvals', executionId, approvalId], { decision: response.decision, timestamp: new Date() });
+await store.put(['approvals', executionId, approvalId], {
+  decision: response.decision,
+  timestamp: new Date(),
+});
 ```
 
 **Why This Matters**:
@@ -1041,7 +1048,10 @@ class ApprovalProcessingService {
     return this.rankApprovers(approverProfiles, request);
   }
 
-  async storeApprovalOutcome(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void> {
+  async storeApprovalOutcome(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): Promise<void> {
     // Update approver's decision patterns
     await this.memoryAdapter.storeAgentExecution(
       {
@@ -1228,10 +1238,17 @@ class ConfidencePatternService {
     const store = this.memoryAdapter.getStore('hitl-confidence');
 
     // Search for similar confidence patterns
-    const similarPatterns = await store.search(['patterns', request.riskAssessment?.level || 'unknown'], `confidence ${request.confidence.current} features ${JSON.stringify(request.confidence.factors)}`);
+    const similarPatterns = await store.search(
+      ['patterns', request.riskAssessment?.level || 'unknown'],
+      `confidence ${request.confidence.current} features ${JSON.stringify(
+        request.confidence.factors
+      )}`
+    );
 
     // Calculate likelihood based on historical patterns
-    const approvedCount = similarPatterns.filter((p) => JSON.parse(p.content).outcome === 'approved').length;
+    const approvedCount = similarPatterns.filter(
+      (p) => JSON.parse(p.content).outcome === 'approved'
+    ).length;
 
     return approvedCount / similarPatterns.length;
   }

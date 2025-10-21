@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
-export type ContentCategory = 'code' | 'documentation' | 'configuration' | 'workflow' | 'task' | 'test' | 'data' | 'general';
+export type ContentCategory =
+  | 'code'
+  | 'documentation'
+  | 'configuration'
+  | 'workflow'
+  | 'task'
+  | 'test'
+  | 'data'
+  | 'general';
 export type ComplexityLevel = 'simple' | 'moderate' | 'complex';
 
 export interface ExtractedMetadata {
@@ -156,36 +164,32 @@ export class MetadataExtractorService {
         /user story/i,
         /acceptance criteria/i,
       ],
-      test: [
-        /describe\(/,
-        /it\(/,
-        /test\(/,
-        /expect\(/,
-        /assert/i,
-      ],
+      test: [/describe\(/, /it\(/, /test\(/, /expect\(/, /assert/i],
     };
 
     // Count matches for each category
     const scores: Record<string, number> = {};
     for (const [category, categoryPatterns] of Object.entries(patterns)) {
-      scores[category] = categoryPatterns.filter(pattern =>
+      scores[category] = categoryPatterns.filter((pattern) =>
         pattern.test(content)
       ).length;
     }
 
     // Return category with highest score
-    const topCategory = Object.entries(scores)
-      .sort(([, a], [, b]) => b - a)[0];
+    const topCategory = Object.entries(scores).sort(([, a], [, b]) => b - a)[0];
 
-    return (topCategory && topCategory[1] > 0
-      ? topCategory[0]
-      : 'general') as ContentCategory;
+    return (
+      topCategory && topCategory[1] > 0 ? topCategory[0] : 'general'
+    ) as ContentCategory;
   }
 
   /**
    * Analyze content complexity
    */
-  analyzeComplexity(content: string, category: ContentCategory): ComplexityLevel {
+  analyzeComplexity(
+    content: string,
+    category: ContentCategory
+  ): ComplexityLevel {
     let score = 0;
 
     // Length-based scoring
@@ -218,7 +222,8 @@ export class MetadataExtractorService {
     }
 
     // Check for technical terms
-    const technicalTerms = /algorithm|architecture|implementation|optimization|concurrency/gi;
+    const technicalTerms =
+      /algorithm|architecture|implementation|optimization|concurrency/gi;
     const techMatches = (content.match(technicalTerms) || []).length;
     if (techMatches > 5) score += 1;
 
@@ -236,7 +241,7 @@ export class MetadataExtractorService {
 
     // Extract from headings
     const headings = content.match(/^#{1,6}\s+(.+)$/gm) || [];
-    headings.forEach(h => {
+    headings.forEach((h) => {
       const topic = h.replace(/^#{1,6}\s+/, '').trim();
       if (topic.length > 3 && topic.length < 50) {
         topics.add(topic.toLowerCase());
@@ -245,7 +250,7 @@ export class MetadataExtractorService {
 
     // Extract from emphasized text
     const emphasized = content.match(/\*\*(.+?)\*\*/g) || [];
-    emphasized.forEach(e => {
+    emphasized.forEach((e) => {
       const topic = e.replace(/\*\*/g, '').trim();
       if (topic.length > 3 && topic.length < 30) {
         topics.add(topic.toLowerCase());
@@ -258,9 +263,9 @@ export class MetadataExtractorService {
       /\b\w+(?:Service|Controller|Component|Module|Factory|Provider)\b/g,
     ];
 
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       const matches = content.match(pattern) || [];
-      matches.forEach(match => {
+      matches.forEach((match) => {
         if (match.length < 30) {
           topics.add(match.toLowerCase());
         }
@@ -278,14 +283,28 @@ export class MetadataExtractorService {
 
     // Common technical keywords
     const technicalKeywords = [
-      'async', 'await', 'promise', 'observable', 'stream',
-      'api', 'rest', 'graphql', 'websocket',
-      'database', 'query', 'index', 'cache',
-      'authentication', 'authorization', 'security',
-      'performance', 'optimization', 'scale',
+      'async',
+      'await',
+      'promise',
+      'observable',
+      'stream',
+      'api',
+      'rest',
+      'graphql',
+      'websocket',
+      'database',
+      'query',
+      'index',
+      'cache',
+      'authentication',
+      'authorization',
+      'security',
+      'performance',
+      'optimization',
+      'scale',
     ];
 
-    technicalKeywords.forEach(keyword => {
+    technicalKeywords.forEach((keyword) => {
       if (new RegExp(`\\b${keyword}\\b`, 'i').test(content)) {
         keywords.add(keyword);
       }
@@ -300,9 +319,9 @@ export class MetadataExtractorService {
       /const\s+(\w+)/g,
     ];
 
-    codePatterns.forEach(pattern => {
+    codePatterns.forEach((pattern) => {
       const matches = Array.from(content.matchAll(pattern));
-      matches.forEach(match => {
+      matches.forEach((match) => {
         if (match[1] && match[1].length > 2 && match[1].length < 30) {
           keywords.add(match[1].toLowerCase());
         }
@@ -328,21 +347,22 @@ export class MetadataExtractorService {
 
     // Markdown links
     const links = content.match(/\[.*?\]\((.*?)\)/g) || [];
-    links.forEach(link => {
+    links.forEach((link) => {
       const url = link.match(/\((.*?)\)/)?.[1];
       if (url) references.add(url);
     });
 
     // File references
-    const fileRefs = content.match(/(?:from|import|require)\s+['"](.+?)['"]/g) || [];
-    fileRefs.forEach(ref => {
+    const fileRefs =
+      content.match(/(?:from|import|require)\s+['"](.+?)['"]/g) || [];
+    fileRefs.forEach((ref) => {
       const file = ref.match(/['"](.+?)['"]/)?.[1];
       if (file) references.add(file);
     });
 
     // Document IDs or task references
     const idRefs = content.match(/\b(?:TASK|DOC|WF|REQ)[-_]\w+/g) || [];
-    idRefs.forEach(ref => references.add(ref));
+    idRefs.forEach((ref) => references.add(ref));
 
     return Array.from(references);
   }
@@ -357,20 +377,35 @@ export class MetadataExtractorService {
     metadata.codeLanguage = this.detectCodeLanguage(content);
 
     // Extract imports
-    const imports = content.match(/(?:import|require)\s+.*?(?:from\s+)?['"](.+?)['"]/g) || [];
-    metadata.imports = imports.map(i => i.match(/['"](.+?)['"]/)?.[1] || '').filter(Boolean);
+    const imports =
+      content.match(/(?:import|require)\s+.*?(?:from\s+)?['"](.+?)['"]/g) || [];
+    metadata.imports = imports
+      .map((i) => i.match(/['"](.+?)['"]/)?.[1] || '')
+      .filter(Boolean);
 
     // Extract exports
-    const exports = content.match(/export\s+(?:default\s+)?(?:class|function|const|interface)\s+(\w+)/g) || [];
-    metadata.exports = exports.map(e => e.match(/\s+(\w+)$/)?.[1] || '').filter(Boolean);
+    const exports =
+      content.match(
+        /export\s+(?:default\s+)?(?:class|function|const|interface)\s+(\w+)/g
+      ) || [];
+    metadata.exports = exports
+      .map((e) => e.match(/\s+(\w+)$/)?.[1] || '')
+      .filter(Boolean);
 
     // Extract functions
-    const functions = content.match(/(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|async)/g) || [];
-    metadata.functions = functions.map(f => f.match(/\s+(\w+)/)?.[1] || '').filter(Boolean);
+    const functions =
+      content.match(
+        /(?:function|const|let|var)\s+(\w+)\s*(?:=\s*)?(?:\([^)]*\)|async)/g
+      ) || [];
+    metadata.functions = functions
+      .map((f) => f.match(/\s+(\w+)/)?.[1] || '')
+      .filter(Boolean);
 
     // Extract classes
     const classes = content.match(/class\s+(\w+)/g) || [];
-    metadata.classes = classes.map(c => c.match(/class\s+(\w+)/)?.[1] || '').filter(Boolean);
+    metadata.classes = classes
+      .map((c) => c.match(/class\s+(\w+)/)?.[1] || '')
+      .filter(Boolean);
 
     return metadata;
   }
@@ -380,7 +415,11 @@ export class MetadataExtractorService {
    */
   private detectCodeLanguage(content: string): string {
     const patterns: Record<string, RegExp[]> = {
-      typescript: [/:\s*\w+(?:<.*?>)?(?:\[\])?/g, /interface\s+\w+/g, /type\s+\w+\s*=/g],
+      typescript: [
+        /:\s*\w+(?:<.*?>)?(?:\[\])?/g,
+        /interface\s+\w+/g,
+        /type\s+\w+\s*=/g,
+      ],
       javascript: [/function\s+\w+/g, /const\s+\w+\s*=/g, /=>/g],
       python: [/def\s+\w+/g, /import\s+\w+/g, /if\s+__name__/g],
       java: [/public\s+class/g, /private\s+\w+/g, /package\s+\w+/g],
@@ -389,7 +428,7 @@ export class MetadataExtractorService {
 
     const scores: Record<string, number> = {};
     for (const [lang, langPatterns] of Object.entries(patterns)) {
-      scores[lang] = langPatterns.filter(p => p.test(content)).length;
+      scores[lang] = langPatterns.filter((p) => p.test(content)).length;
     }
 
     const topLang = Object.entries(scores).sort(([, a], [, b]) => b - a)[0];
@@ -399,17 +438,19 @@ export class MetadataExtractorService {
   /**
    * Extract headings from content
    */
-  private extractHeadings(content: string): Array<{ level: number; text: string }> {
+  private extractHeadings(
+    content: string
+  ): Array<{ level: number; text: string }> {
     const headings: Array<{ level: number; text: string }> = [];
 
     // Markdown headings
     const mdHeadings = content.match(/^(#{1,6})\s+(.+)$/gm) || [];
-    mdHeadings.forEach(h => {
+    mdHeadings.forEach((h) => {
       const match = h.match(/^(#{1,6})\s+(.+)$/);
       if (match) {
         headings.push({
           level: match[1].length,
-          text: match[2].trim()
+          text: match[2].trim(),
         });
       }
     });
@@ -459,7 +500,8 @@ export class MetadataExtractorService {
     if (metadata.keywords && metadata.keywords.length > 3) score += 0.1;
     if (metadata.headings && metadata.headings.length > 0) score += 0.1;
     if (metadata.complexity) score += 0.05;
-    if (metadata.codeLanguage && metadata.codeLanguage !== 'plaintext') score += 0.05;
+    if (metadata.codeLanguage && metadata.codeLanguage !== 'plaintext')
+      score += 0.05;
 
     return Math.min(score, 1.0);
   }

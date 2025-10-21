@@ -1,0 +1,11 @@
+Model Information:
+* title:	ROBO BABY HEAD
+* source:	https://sketchfab.com/3d-models/robo-baby-head-bd09a0c8aa4f4f5fbc70612de0157aa2
+* author:	Elvis Thermo (https://sketchfab.com/elvis.thermo)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "ROBO BABY HEAD" (https://sketchfab.com/3d-models/robo-baby-head-bd09a0c8aa4f4f5fbc70612de0157aa2) by Elvis Thermo (https://sketchfab.com/elvis.thermo) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Mini robot
+* source:	https://sketchfab.com/3d-models/mini-robot-cf5dd6fed1f14e33aaa396c558d3c747
+* author:	YarikLegendary (https://sketchfab.com/YarikLegendary)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Mini robot" (https://sketchfab.com/3d-models/mini-robot-cf5dd6fed1f14e33aaa396c558d3c747) by YarikLegendary (https://sketchfab.com/YarikLegendary) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

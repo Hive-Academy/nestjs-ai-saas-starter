@@ -236,7 +236,11 @@ export const DEFAULT_PLATFORM_OPTIONS = {
 ```typescript
 @Injectable()
 export class StreamService {
-  async createRunStream(threadId: string, request: CreateRunRequest, mode: StreamMode = { mode: 'values' }): Promise<AsyncIterable<StreamEvent>> {
+  async createRunStream(
+    threadId: string,
+    request: CreateRunRequest,
+    mode: StreamMode = { mode: 'values' }
+  ): Promise<AsyncIterable<StreamEvent>> {
     // Server-Sent Events or WebSocket implementation
   }
 }

@@ -1275,11 +1275,20 @@ describe('getAgentMemoryContext refactoring', () => {
     expect(context).toHaveProperty('relevanceScore');
 
     // Test 2: Query-based context
-    const queryContext = await agentMemoryBridge.getAgentMemoryContext('agent-123', 'thread-456', 'user preferences');
+    const queryContext = await agentMemoryBridge.getAgentMemoryContext(
+      'agent-123',
+      'thread-456',
+      'user preferences'
+    );
     expect(queryContext.relevanceScore).toBeGreaterThan(0);
 
     // Test 3: User-specific context
-    const userContext = await agentMemoryBridge.getAgentMemoryContext('agent-123', 'thread-456', undefined, 'user-789');
+    const userContext = await agentMemoryBridge.getAgentMemoryContext(
+      'agent-123',
+      'thread-456',
+      undefined,
+      'user-789'
+    );
     expect(userContext.userMemories.length).toBeGreaterThan(0);
   });
 });

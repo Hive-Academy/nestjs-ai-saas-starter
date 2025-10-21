@@ -521,7 +521,11 @@ try {
 
 ```typescript
 // 1. Critical operation (blocking) - Get workflow context
-const enhancedContext = await this.enhanceWorkflowContext(workflowName, executionId, options.initialState || {});
+const enhancedContext = await this.enhanceWorkflowContext(
+  workflowName,
+  executionId,
+  options.initialState || {}
+);
 
 // 2. Memory storage (async with error handling - doesn't fail workflow)
 await this.storeTaskPerformance(workflowName, taskName, executionId, taskData);
@@ -584,7 +588,9 @@ const executionMemories = await this.memoryAdapter.search({
 
 // Apply optimizations from historical data
 if (executionMemories.length > 0) {
-  const successfulExecutions = executionMemories.filter((data) => data?.success && data.executionTime).sort((a, b) => a.executionTime - b.executionTime);
+  const successfulExecutions = executionMemories
+    .filter((data) => data?.success && data.executionTime)
+    .sort((a, b) => a.executionTime - b.executionTime);
 
   enhancedContext.memoryOptimizations = {
     recommendedTimeout: Math.max(fastestExecution.executionTime * 1.5, 10000),

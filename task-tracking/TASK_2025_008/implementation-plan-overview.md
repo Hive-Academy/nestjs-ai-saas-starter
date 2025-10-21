@@ -223,7 +223,11 @@ export const STORE_COLLECTIONS = {
  */
 export function validateNamespace(namespace: string[]): void {
   if (namespace.length < 2) {
-    throw new Error(`Invalid namespace: ${namespace.join('/')}. ` + `Must have at least [collection, domain]. ` + `Example: ['hitl-approvals', 'approvals', executionId]`);
+    throw new Error(
+      `Invalid namespace: ${namespace.join('/')}. ` +
+        `Must have at least [collection, domain]. ` +
+        `Example: ['hitl-approvals', 'approvals', executionId]`
+    );
   }
 
   // Additional validation rules can be added here
@@ -261,7 +265,11 @@ export class NamespaceBuilder {
 
 ```typescript
 // libs/langgraph-modules/memory/src/index.ts
-export { STORE_COLLECTIONS, validateNamespace, NamespaceBuilder } from './lib/constants/store-namespaces';
+export {
+  STORE_COLLECTIONS,
+  validateNamespace,
+  NamespaceBuilder,
+} from './lib/constants/store-namespaces';
 ```
 
 ---
@@ -301,13 +309,19 @@ export function validateStoreNamespace(
   // Check minimum depth
   const minDepth = options.minDepth || 2;
   if (namespace.length < minDepth) {
-    errors.push(`Namespace depth ${namespace.length} is less than required ${minDepth}. ` + `Must have at least [collection, domain].`);
+    errors.push(
+      `Namespace depth ${namespace.length} is less than required ${minDepth}. ` +
+        `Must have at least [collection, domain].`
+    );
   }
 
   // Check maximum depth
   const maxDepth = options.maxDepth || 10;
   if (namespace.length > maxDepth) {
-    warnings.push(`Namespace depth ${namespace.length} exceeds recommended ${maxDepth}. ` + `Consider flattening hierarchy.`);
+    warnings.push(
+      `Namespace depth ${namespace.length} exceeds recommended ${maxDepth}. ` +
+        `Consider flattening hierarchy.`
+    );
   }
 
   // Check collection format (should have module prefix)
@@ -316,14 +330,19 @@ export function validateStoreNamespace(
     const hasPrefix = /^[a-z]+-[a-z]+/.test(collection);
 
     if (!hasPrefix) {
-      warnings.push(`Collection "${collection}" should use module prefix (e.g., "hitl-approvals", "workflow-patterns").`);
+      warnings.push(
+        `Collection "${collection}" should use module prefix (e.g., "hitl-approvals", "workflow-patterns").`
+      );
     }
   }
 
   // Check for invalid characters
   namespace.forEach((part, index) => {
     if (!/^[a-zA-Z0-9_-]+$/.test(part)) {
-      errors.push(`Namespace part ${index} "${part}" contains invalid characters. ` + `Use only alphanumeric, underscore, and hyphen.`);
+      errors.push(
+        `Namespace part ${index} "${part}" contains invalid characters. ` +
+          `Use only alphanumeric, underscore, and hyphen.`
+      );
     }
   });
 
@@ -359,7 +378,12 @@ export function extractModule(collection: string): string | null {
 
 ```typescript
 // libs/langgraph-modules/memory/src/index.ts
-export { validateStoreNamespace, matchesPattern, extractModule, type NamespaceValidationResult } from './lib/utils/namespace-validator';
+export {
+  validateStoreNamespace,
+  matchesPattern,
+  extractModule,
+  type NamespaceValidationResult,
+} from './lib/utils/namespace-validator';
 ```
 
 ### Pattern 2: Async Memory Operation Helper (Cross-Module, 1 hour)
@@ -384,7 +408,10 @@ export class AsyncMemoryHelper {
    */
   async fireAndForget<T>(operation: () => Promise<T>, operationName: string): Promise<void> {
     operation().catch((error) => {
-      this.logger.warn(`Failed to execute async memory operation "${operationName}":`, error instanceof Error ? error.message : String(error));
+      this.logger.warn(
+        `Failed to execute async memory operation "${operationName}":`,
+        error instanceof Error ? error.message : String(error)
+      );
     });
   }
 
@@ -392,11 +419,18 @@ export class AsyncMemoryHelper {
    * Execute memory operation with fallback
    * Returns fallback value on error
    */
-  async withFallback<T>(operation: () => Promise<T>, fallback: T, operationName: string): Promise<T> {
+  async withFallback<T>(
+    operation: () => Promise<T>,
+    fallback: T,
+    operationName: string
+  ): Promise<T> {
     try {
       return await operation();
     } catch (error) {
-      this.logger.warn(`Memory operation "${operationName}" failed, using fallback:`, error instanceof Error ? error.message : String(error));
+      this.logger.warn(
+        `Memory operation "${operationName}" failed, using fallback:`,
+        error instanceof Error ? error.message : String(error)
+      );
       return fallback;
     }
   }
@@ -424,13 +458,18 @@ export class AsyncMemoryHelper {
         lastError = error instanceof Error ? error : new Error(String(error));
 
         if (attempt < maxAttempts) {
-          this.logger.debug(`Memory operation "${options.operationName}" failed (attempt ${attempt}/${maxAttempts}), retrying...`);
+          this.logger.debug(
+            `Memory operation "${options.operationName}" failed (attempt ${attempt}/${maxAttempts}), retrying...`
+          );
           await this.sleep(delayMs);
         }
       }
     }
 
-    this.logger.error(`Memory operation "${options.operationName}" failed after ${maxAttempts} attempts:`, lastError);
+    this.logger.error(
+      `Memory operation "${options.operationName}" failed after ${maxAttempts} attempts:`,
+      lastError
+    );
 
     throw lastError!;
   }
@@ -462,7 +501,10 @@ export class ExampleService {
 
     // Memory storage (non-blocking)
     if (this.memoryAdapter) {
-      await this.asyncHelper.fireAndForget(() => this.memoryAdapter!.store('thread', JSON.stringify(result), {}), 'store-result');
+      await this.asyncHelper.fireAndForget(
+        () => this.memoryAdapter!.store('thread', JSON.stringify(result), {}),
+        'store-result'
+      );
     }
 
     return result;
@@ -474,7 +516,11 @@ export class ExampleService {
     }
 
     // With fallback
-    return await this.asyncHelper.withFallback(() => this.memoryAdapter!.search({ query: 'data', limit: 10 }), [], 'search-data');
+    return await this.asyncHelper.withFallback(
+      () => this.memoryAdapter!.search({ query: 'data', limit: 10 }),
+      [],
+      'search-data'
+    );
   }
 }
 ```
@@ -609,7 +655,10 @@ export class ExampleService {
 ```typescript
 // Calculate collaborator score using weighted formula
 // Weights: success (60%), response time (30%), quality (10%)
-const score = collaboration.successRate * 0.6 + Math.max(0, 1 - collaboration.avgResponseTime / 5000) * 0.3 + (collaboration.metrics?.avgQuality || 0.8) * 0.1;
+const score =
+  collaboration.successRate * 0.6 +
+  Math.max(0, 1 - collaboration.avgResponseTime / 5000) * 0.3 +
+  (collaboration.metrics?.avgQuality || 0.8) * 0.1;
 ```
 
 ---
@@ -626,16 +675,32 @@ const score = collaboration.successRate * 0.6 + Math.max(0, 1 - collaboration.av
 export abstract class IMemoryAdapter {
   // Phase 1 Methods (verified in HITL)
   abstract getAgentContext(state: AgentState): Promise<AgentMemoryContext>;
-  abstract storeAgentExecution(state: AgentState, result: Partial<AgentState>, agentId: string): Promise<void>;
-  abstract storeConversationTurn(threadId: string, humanMessage: string, aiMessage: string, metadata?: Record<string, unknown>): Promise<void>;
+  abstract storeAgentExecution(
+    state: AgentState,
+    result: Partial<AgentState>,
+    agentId: string
+  ): Promise<void>;
+  abstract storeConversationTurn(
+    threadId: string,
+    humanMessage: string,
+    aiMessage: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void>;
   abstract search(options: MemorySearchOptions): Promise<any[]>;
-  abstract store(threadId: string, content: string, metadata?: Record<string, unknown>): Promise<string>;
+  abstract store(
+    threadId: string,
+    content: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string>;
   abstract getUserPatterns(userId: string, limitDays?: number): Promise<UserMemoryPatterns>;
   abstract isHealthy(): Promise<boolean>;
 
   // Phase 2 Focus Methods
   abstract getStore(collection?: string): Store;
-  abstract storeBatch(threadId: string, entries: Array<{ content: string; metadata?: Record<string, unknown> }>): Promise<string[]>;
+  abstract storeBatch(
+    threadId: string,
+    entries: Array<{ content: string; metadata?: Record<string, unknown> }>
+  ): Promise<string[]>;
 }
 ```
 

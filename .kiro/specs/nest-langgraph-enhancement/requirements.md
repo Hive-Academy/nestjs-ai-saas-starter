@@ -402,7 +402,9 @@ Timeline: 1-2 sessions after build issues resolved
 
 ```typescript
 // Before: Complex LangGraph setup
-const graph = new StateGraph(AgentState).addNode('supervisor', supervisorNode).addNode('worker1', worker1Node);
+const graph = new StateGraph(AgentState)
+  .addNode('supervisor', supervisorNode)
+  .addNode('worker1', worker1Node);
 // ... 50+ more lines
 
 // After: Our plug-and-play approach

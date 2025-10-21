@@ -417,7 +417,13 @@ describe('StoreGraphService.findNamespaceConnections Integration', () => {
     // Setup: Create items with relationships
     await storeService.putStoreItem(['user', 'user-123'], 'profile', { name: 'Alice' });
     await storeService.putStoreItem(['project', 'proj-1'], 'details', { name: 'ProjectX' });
-    await storeService.createRelationship(['user', 'user-123'], 'profile', ['project', 'proj-1'], 'details', 'RELATED_TO');
+    await storeService.createRelationship(
+      ['user', 'user-123'],
+      'profile',
+      ['project', 'proj-1'],
+      'details',
+      'RELATED_TO'
+    );
 
     // Test: Find connections from user namespace
     const connections = await storeGraphService.findNamespaceConnections(['user', 'user-123'], 2);

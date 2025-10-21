@@ -9,6 +9,7 @@ import {
   AgentNetwork,
   NetworkConfigurationError,
   MULTI_AGENT_CONSTANTS,
+  NetworkConfig,
 } from '../interfaces/multi-agent.interface';
 // AgentRegistryService import removed as it's no longer used
 import { NodeFactoryService } from './node-factory.service';
@@ -518,7 +519,7 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
    */
   validateGraphConfiguration(
     agents: readonly AgentDefinition[],
-    config: SupervisorConfig | SwarmConfig | HierarchicalConfig,
+    config: SupervisorConfig | SwarmConfig | HierarchicalConfig | NetworkConfig,
     type: 'supervisor' | 'swarm' | 'hierarchical'
   ): void {
     if (agents.length === 0) {
