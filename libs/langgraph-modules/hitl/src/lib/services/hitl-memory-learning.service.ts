@@ -1,6 +1,9 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { IMemoryAdapter } from '@hive-academy/langgraph-core';
-import { HumanApprovalRequest, HumanApprovalResponse } from './approval-workflow.types';
+import {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+} from './approval-workflow.types';
 import { IHitlMemoryLearningService } from '../interfaces/hitl-services.interface';
 
 /**

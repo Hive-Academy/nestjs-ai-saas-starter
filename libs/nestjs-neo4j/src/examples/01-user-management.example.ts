@@ -11,24 +11,23 @@
 
 import { Injectable } from '@nestjs/common';
 import {
+  AuditLog,
+  Authorize,
+  CreatedAt,
+  Id,
+  InjectNeogma,
   Neo4jEntity,
   Neo4jProp,
-  Id,
-  CreatedAt,
-  UpdatedAt,
-  NodeKey,
-  Unique,
-  NotNull,
-  Repository,
-  InjectNeogma,
+  Neo4jRepositoryBase,
   NeogmaService,
-  Safe,
-  Authorize,
-  ValidateInput,
-  AuditLog,
-  Transactional,
+  NodeKey,
+  NotNull,
   PropIndex,
-  BaseRepositoryService,
+  Safe,
+  Transactional,
+  Unique,
+  UpdatedAt,
+  ValidateInput,
 } from '../index';
 
 // ============================================================================
@@ -120,45 +119,48 @@ export interface UserAnalytics {
 }
 
 // ============================================================================
-// 3. REPOSITORY WITH AUTO-GENERATED METHODS
+// 3. REPOSITORY WITH TYPEORM-STYLE PATTERN (ZERO BOILERPLATE)
 // ============================================================================
 
 /**
- * UserRepository - demonstrates @Repository decorator usage
+ * UserRepository - demonstrates TypeORM-style repository pattern
  *
- * The @Repository decorator auto-generates these methods:
+ * Inherited CRUD methods from Neo4jRepositoryBase<User>:
  * - findById(id: string): Promise<User | null>
  * - findAll(options?: FindOptions<User>): Promise<User[]>
- * - create(data: Partial<User>): Promise<User>
+ * - findOne(options: FindOptions<User>): Promise<User | null>
+ * - create(data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User>
  * - update(id: string, updates: Partial<User>): Promise<User | null>
- * - delete(id: string): Promise<boolean>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
  * - count(where?: Partial<User>): Promise<number>
  * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<User>): Promise<User>
  *
- * No need to extend BaseRepositoryService - the decorator handles everything!
+ * Plus helper methods for custom logic:
+ * - createQueryBuilder(): QueryBuilder
+ * - executeQuery<R>(cypher, params): Promise<R>
+ * - findRelated<R>(id, relationshipType, direction): Promise<R[]>
+ * - And more...
  */
-@Repository(() => User)
 @Injectable()
-export class UserRepository extends BaseRepositoryService<User> {
-  constructor() {
-    super();
-  }
+export class UserRepository extends Neo4jRepositoryBase<User> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find users by department with type safety
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   @Safe()
   async findByDepartment(department: string): Promise<User[]> {
     return this.findAll({
       where: { department, isActive: true },
-      orderBy: [{ property: 'name', direction: 'ASC' }],
+      orderBy: [{ name: 'ASC' }],
     });
   }
 
   /**
    * Find user by email (unique constraint ensures single result)
-   * Uses auto-generated findAll() method
+   * Uses inherited findAll() method
    */
   async findByEmail(email: string): Promise<User | null> {
     const users = await this.findAll({ where: { email } });
@@ -167,7 +169,7 @@ export class UserRepository extends BaseRepositoryService<User> {
 
   /**
    * Soft delete user (set inactive instead of deleting)
-   * Uses auto-generated update() method
+   * Uses inherited update() method
    */
   @AuditLog({ logLevel: 'full', enabled: true })
   async deactivateUser(userId: string): Promise<User | null> {

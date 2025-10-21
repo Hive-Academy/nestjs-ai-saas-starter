@@ -27,6 +27,7 @@ export class StreamEventProcessorService {
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
+    @Inject('IStreamingService')
     private readonly streamingService: IStreamingService
   ) {}
 

@@ -7,7 +7,7 @@ import { HttpClient, InputValidator } from '../utils/http/http-client.utils';
 /**
  * Constants for HuggingFace embedding provider
  */
-const HUGGINGFACE_EMBEDDING_DIMENSION = 384 as const; // all-MiniLM-L6-v2 dimension
+const HUGGINGFACE_EMBEDDING_DIMENSION = 384 as const; // Default for BAAI/bge-small-en-v1.5
 const DEFAULT_BATCH_SIZE = 50 as const;
 
 /**
@@ -36,10 +36,10 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
   constructor(config: HuggingFaceEmbeddingConfig) {
     super();
     this.apiKey = config.apiKey;
-    this.model = config.model ?? 'sentence-transformers/all-MiniLM-L6-v2';
+    this.model = config.model ?? 'BAAI/bge-small-en-v1.5';
     this.apiEndpoint =
       config.apiEndpoint ??
-      `https://api-inference.huggingface.co/pipeline/feature-extraction/${this.model}`;
+      `https://api-inference.huggingface.co/models/${this.model}`;
     this.batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
     this.httpClient = new HttpClient(config.http);
     this.validator = new InputValidator();
@@ -145,7 +145,7 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
     }
 
     const body = {
-      inputs: texts.length === 1 ? texts[0] : texts,
+      inputs: texts, // Always send as array
       options: {
         wait_for_model: true,
       },

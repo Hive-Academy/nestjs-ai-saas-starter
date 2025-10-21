@@ -1,31 +1,34 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Core library imports
-import { MemoryModule } from '@hive-academy/langgraph-memory';
+import {
+  IGraphService,
+  IVectorService,
+  MemoryModule,
+  MemoryModuleOptions,
+} from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
-// Adapters - Keep these as they're essential
-import {
-  ChromaVectorAdapter,
-  Neo4jGraphAdapter,
-  Neo4jHitlStorageAdapter,
-  Neo4jInterruptionStorageAdapter,
-  Neo4jConfidenceStorageAdapter,
-  Neo4jFeedbackStorageAdapter,
-  Neo4jApprovalChainStorageAdapter,
-} from './adapters';
-
-// Repositories
-import { VectorMemoryRepository } from './repositories/chromadb/vector-memory.repository';
+// Adapters Module - Provides memory and HITL adapters with token injection
+import { AdaptersModule } from './adapters';
 
 // Remove non-existent entity and repository imports for now
 
 // LangGraph modules with proper streaming integration
 import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
-import { HitlModule } from '@hive-academy/langgraph-hitl';
+import {
+  HitlModule,
+  HitlModuleOptions,
+  IHitlStorageService,
+  IUserInterruptionStorageService,
+  IConfidenceStorageService,
+  IFeedbackStorageService,
+  IApprovalChainStorageService,
+} from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
@@ -50,6 +53,20 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 // Health check
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
+import { PerformanceController } from './controllers/performance.controller';
+import { DevBrandController } from './controllers/devbrand.controller';
+
+// Performance monitoring
+import { PerformanceDashboardService } from './services/performance-dashboard.service';
+
+// Brand monitoring
+import { BrandMonitoringService } from './services/brand-monitoring.service';
+
+// Content Strategy Intelligence
+import { ContentStrategyEngine } from './services/content-strategy-engine.service';
+
+// Competitive Intelligence
+import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
@@ -60,14 +77,26 @@ import { AppStreamingManager } from './services/app-streaming-manager.service';
 // Core interface for adapter pattern
 import {
   ICheckpointAdapter,
-  IStreamingService,
   IMemoryAdapter,
+  IStreamingService,
 } from '@hive-academy/langgraph-core';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+
+    // CRITICAL: Global EventEmitter - provided once for entire app
+    // Increased maxListeners from 10 to 20 to prevent false-positive warnings
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
     }),
 
     // Core database modules - Enhanced with decorator and performance support
@@ -97,13 +126,23 @@ import {
         getNeo4jConfig(configService),
     }),
 
-    // Memory module with enhanced adapters
-    MemoryModule.forRoot({
-      ...getMemoryConfig(),
-      adapters: {
-        vector: ChromaVectorAdapter,
-        graph: Neo4jGraphAdapter, // Use enhanced adapter
-      },
+    // Adapters module (imports RepositoryModule, provides adapter tokens)
+    AdaptersModule,
+
+    // Memory module with adapters - injects tokens from AdaptersModule
+    MemoryModule.forRootAsync({
+      imports: [AdaptersModule], // Import to access exported adapter tokens
+      useFactory: async (
+        vectorAdapter: IVectorService,
+        graphAdapter: IGraphService
+      ): Promise<MemoryModuleOptions> => ({
+        ...getMemoryConfig(),
+        adapters: {
+          vector: vectorAdapter,
+          graph: graphAdapter,
+        },
+      }),
+      inject: ['IVectorService', 'IGraphService'],
     }),
 
     // Checkpoint module with new adapter pattern
@@ -132,22 +171,36 @@ import {
 
     // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
     HitlModule.forRootAsync({
+      imports: [AdaptersModule], // Import to access HITL adapter tokens
       useFactory: async (
         checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ) => ({
+        memoryAdapter: IMemoryAdapter,
+        hitlStorage: IHitlStorageService,
+        interruptionStorage: IUserInterruptionStorageService,
+        confidenceStorage: IConfidenceStorageService,
+        feedbackStorage: IFeedbackStorageService,
+        approvalChainStorage: IApprovalChainStorageService
+      ): Promise<HitlModuleOptions> => ({
         ...getHitlConfig(),
         checkpointAdapter,
         memoryAdapter,
         adapters: {
-          storage: Neo4jHitlStorageAdapter,
-          interruptionStorage: Neo4jInterruptionStorageAdapter,
-          confidenceStorage: Neo4jConfidenceStorageAdapter,
-          feedbackStorage: Neo4jFeedbackStorageAdapter,
-          approvalChainStorage: Neo4jApprovalChainStorageAdapter,
+          storage: hitlStorage,
+          interruptionStorage: interruptionStorage,
+          confidenceStorage: confidenceStorage,
+          feedbackStorage: feedbackStorage,
+          approvalChainStorage: approvalChainStorage,
         },
       }),
-      inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
+      inject: [
+        'ICheckpointAdapter',
+        'IMemoryAdapter',
+        'HITL_STORAGE',
+        'HITL_INTERRUPTION_STORAGE',
+        'HITL_CONFIDENCE_STORAGE',
+        'HITL_FEEDBACK_STORAGE',
+        'HITL_APPROVAL_CHAIN_STORAGE',
+      ],
     }),
 
     // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
@@ -231,23 +284,14 @@ import {
     // Business modules
     BusinessWorkflowsModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [
     AppStreamingManager,
-
-    // HITL Adapters
-    Neo4jHitlStorageAdapter,
-    Neo4jInterruptionStorageAdapter,
-    Neo4jConfidenceStorageAdapter,
-    Neo4jFeedbackStorageAdapter,
-    Neo4jApprovalChainStorageAdapter,
-
-    // Memory Adapters
-    ChromaVectorAdapter,
-    Neo4jGraphAdapter,
-
-    // ChromaDB Repositories
-    VectorMemoryRepository,
+    PerformanceDashboardService,
+    BrandMonitoringService,
+    ContentStrategyEngine,
+    CompetitiveIntelligenceService,
+    // All adapters are now provided by AdaptersModule
   ],
 })
 export class AppModule {}

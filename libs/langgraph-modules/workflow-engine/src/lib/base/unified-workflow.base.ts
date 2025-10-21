@@ -1,8 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  StateGraph,
-} from '@langchain/langgraph';
+import { StateGraph } from '@langchain/langgraph';
 import { RunnableConfig } from '@langchain/core/runnables';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
@@ -19,7 +17,6 @@ import {
 } from '../interfaces';
 import { WorkflowCommandType } from '../constants';
 
-
 /**
  * Base class for all LangGraph workflows
  * Provides common functionality for workflow execution, streaming, and human-in-the-loop
@@ -30,8 +27,11 @@ export abstract class UnifiedWorkflowBase<
 > {
   protected readonly logger: Logger;
 
-  // Workflow configuration
-  protected abstract readonly workflowConfig: WorkflowExecutionConfig;
+  // Workflow configuration - populated from decorator in DeclarativeWorkflowBase.onModuleInit()
+  protected workflowConfig: WorkflowExecutionConfig = {
+    name: 'workflow',
+    description: 'Workflow description',
+  };
 
   // Graph definition
   protected graph?: StateGraph<TState>;
@@ -78,16 +78,15 @@ export abstract class UnifiedWorkflowBase<
         },
       });
     }
-      this.logger.debug(
-        `Building graph from definition for ${this.constructor.name}`
-      );
-      const definition = this.getWorkflowDefinition();
-      return this.graphBuilder.buildFromDefinition<TState>(definition, {
-        interrupt: {
-          before: this.getInterruptNodes(),
-        },
-      });
-
+    this.logger.debug(
+      `Building graph from definition for ${this.constructor.name}`
+    );
+    const definition = this.getWorkflowDefinition();
+    return this.graphBuilder.buildFromDefinition<TState>(definition, {
+      interrupt: {
+        before: this.getInterruptNodes(),
+      },
+    });
   }
 
   /**
@@ -188,7 +187,7 @@ export abstract class UnifiedWorkflowBase<
     }
 
     const initialState = this.createInitialState(input);
-    const {executionId} = initialState;
+    const { executionId } = initialState;
 
     // Create stream
     this.streamService.createStream(executionId);
@@ -310,14 +309,13 @@ export abstract class UnifiedWorkflowBase<
           } as Partial<TState>,
         };
       }
-        return {
-          type: WorkflowCommandType.END,
-          update: {
-            status: 'rejected',
-            rejectionReason: state.humanFeedback.reason,
-          } as unknown as Partial<TState>,
-        };
-
+      return {
+        type: WorkflowCommandType.END,
+        update: {
+          status: 'rejected',
+          rejectionReason: state.humanFeedback.reason,
+        } as unknown as Partial<TState>,
+      };
     }
 
     // Wait for approval (will be interrupted)
@@ -498,7 +496,7 @@ export abstract class UnifiedWorkflowBase<
           input: this.transformSubgraphInput.bind(this),
           output: this.transformSubgraphOutput.bind(this),
         },
-      },
+      }
     );
   }
 

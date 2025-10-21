@@ -5,7 +5,8 @@
  * - Simple entity with @ChromaEntity decorator
  * - Basic properties with @ChromaProp
  * - Essential decorators: @ChromaId, @CreatedAt, @UpdatedAt
- * - Entity serialization methods (toChroma/fromChroma)
+ * - TypeORM-style repository injection with @InjectRepository
+ * - Auto-generated repository CRUD operations
  * - Production-ready entity configuration
  *
  * Key Concepts:
@@ -13,18 +14,20 @@
  * - Property mapping and transformation
  * - Automatic timestamp handling
  * - Type-safe entity definition
+ * - Zero-boilerplate CRUD with repositories
  */
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
   ChromaDBModule,
-  ChromaDBService,
+  ChromaDBRepository,
   ChromaEntity,
   ChromaProp,
   ChromaId,
   CreatedAt,
   UpdatedAt,
   BaseChromaEntity,
+  InjectRepository,
 } from '../../index';
 
 // ============================================================================
@@ -121,49 +124,80 @@ export class BasicProductEntity extends BaseChromaEntity<ProductMetadata> {
 // ============================================================================
 
 /**
- * Service demonstrating basic entity usage patterns
- * Shows how to work with entities directly using ChromaDBService
+ * Service demonstrating basic entity usage patterns with TypeORM-style repositories
+ * Shows zero-boilerplate CRUD operations using auto-generated repository
  */
 @Injectable()
 export class BasicEntityDemoService implements OnModuleInit {
-  constructor(private readonly chromaService: ChromaDBService) {}
+  constructor(
+    @InjectRepository(BasicProductEntity)
+    private readonly productRepo: ChromaDBRepository<BasicProductEntity>
+  ) {}
 
   async onModuleInit() {
-    console.log('\n🎯 Basic Entity Definition Demo\n');
+    console.log('\n🎯 Basic Entity Definition Demo (TypeORM-Style)\n');
     await this.demonstrateEntityCreation();
-    await this.demonstrateEntitySerialization();
     await this.demonstrateEntityRetrieval();
+    await this.demonstrateEntityUpdate();
   }
 
   /**
-   * Demonstrates creating and storing basic entities
+   * Demonstrates creating and storing basic entities using repository
    */
   private async demonstrateEntityCreation(): Promise<void> {
-    console.log('📝 Creating Basic Entities:');
+    console.log('📝 Creating Basic Entities with Repository:');
 
     try {
-      // Create a basic product entity
-      const product = new BasicProductEntity();
-      product.content =
-        'High-quality wireless Bluetooth headphones with noise cancellation technology. Perfect for music lovers and professionals who need crystal-clear audio quality.';
-      product.metadata = {
-        name: 'Wireless Bluetooth Headphones',
-        price: 199.99,
-        category: 'Electronics',
-        inStock: true,
-      };
+      // Create a basic product entity using repository.create()
+      const product = await this.productRepo.create({
+        content:
+          'High-quality wireless Bluetooth headphones with noise cancellation technology. Perfect for music lovers and professionals who need crystal-clear audio quality.',
+        metadata: {
+          name: 'Wireless Bluetooth Headphones',
+          price: 199.99,
+          category: 'Electronics',
+          inStock: true,
+        },
+      });
 
-      console.log('  ✅ Entity created in memory');
+      console.log('  ✅ Entity created and stored in ChromaDB');
+      console.log(`  🔑 ID: ${product.id}`);
       console.log(`  📊 Content length: ${product.content.length} characters`);
       console.log(`  🏷️  Category: ${product.metadata.category}`);
       console.log(`  💰 Price: $${product.metadata.price}`);
+      console.log(`  📅 Created: ${product.createdAt}`);
+      console.log(`  🕒 Updated: ${product.updatedAt}`);
 
-      // Store entity in ChromaDB
-      const chromaDoc = product.toChroma();
-      await this.chromaService.addDocuments(product.getCollectionName(), [
-        chromaDoc as any,
+      // Create multiple products using batch operation
+      const batchProducts = await this.productRepo.createMany([
+        {
+          content:
+            'Premium coffee beans sourced from Ethiopian highlands. Rich, full-bodied flavor with notes of chocolate and berries.',
+          metadata: {
+            name: 'Ethiopian Coffee Beans',
+            price: 24.99,
+            category: 'Food & Beverage',
+            inStock: true,
+          },
+        },
+        {
+          content:
+            'Professional-grade yoga mat with superior grip and cushioning. Made from eco-friendly materials for sustainable practice.',
+          metadata: {
+            name: 'Eco Yoga Mat',
+            price: 39.99,
+            category: 'Fitness',
+            inStock: true,
+          },
+        },
       ]);
-      console.log('  ✅ Entity stored in ChromaDB collection');
+
+      console.log(
+        `\n  ✅ Batch created ${batchProducts.successCount} products`
+      );
+      batchProducts.success.forEach((p, i) => {
+        console.log(`    ${i + 1}. ${p.metadata.name} - $${p.metadata.price}`);
+      });
     } catch (error) {
       console.error(
         '  ❌ Error creating entity:',
@@ -175,60 +209,56 @@ export class BasicEntityDemoService implements OnModuleInit {
   }
 
   /**
-   * Demonstrates entity serialization and deserialization
+   * Demonstrates retrieving and working with stored entities
    */
-  private async demonstrateEntitySerialization(): Promise<void> {
-    console.log('🔄 Entity Serialization Demo:');
+  private async demonstrateEntityRetrieval(): Promise<void> {
+    console.log('🔍 Entity Retrieval with Repository:');
 
     try {
-      // Create test data as it would come from ChromaDB
-      const rawChromaData = {
-        id: 'prod-123',
-        document:
-          'Premium coffee beans sourced from Ethiopian highlands. Rich, full-bodied flavor with notes of chocolate and berries.',
-        metadata: {
-          name: 'Ethiopian Coffee Beans',
-          price: 24.99,
-          category: 'Food & Beverage',
-          inStock: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          version: 1,
-        },
-        embedding: [0.1, 0.2, 0.3, 0.4, 0.5], // Simplified embedding
-      };
+      // Get total count
+      const count = await this.productRepo.count();
+      console.log(`  📊 Total products in collection: ${count}`);
 
-      console.log('  📥 Raw ChromaDB data received');
-      console.log(`  🔑 ID: ${rawChromaData.id}`);
+      // Retrieve all products
+      const allProducts = await this.productRepo.findAll({ limit: 10 });
+      console.log(`  📄 Retrieved ${allProducts.length} products`);
 
-      // Deserialize from ChromaDB format
-      const entity = BasicProductEntity.fromChroma(rawChromaData);
-      console.log('  ✅ Entity deserialized from ChromaDB data');
-      console.log(`  📝 Product name: ${entity.metadata.name}`);
-      console.log(`  💰 Price: $${entity.metadata.price}`);
-      console.log(`  📅 Created: ${entity.createdAt}`);
+      // Display product details
+      if (allProducts.length > 0) {
+        console.log('\n  📦 Product Catalog:');
+        allProducts.forEach((product, index) => {
+          console.log(`    ${index + 1}. ${product.metadata.name}`);
+          console.log(`       💰 Price: $${product.metadata.price}`);
+          console.log(`       🏷️  Category: ${product.metadata.category}`);
+          console.log(
+            `       📦 In Stock: ${product.metadata.inStock ? 'Yes' : 'No'}`
+          );
+          console.log(`       🔑 ID: ${product.id}`);
+          console.log(`       📅 Created: ${product.createdAt}`);
+          console.log('       ---');
+        });
 
-      // Serialize back to ChromaDB format
-      const serialized = entity.toChroma();
-      console.log('  ✅ Entity serialized back to ChromaDB format');
-      console.log(
-        `  🔍 Metadata fields: ${Object.keys(serialized.metadata || {}).join(
-          ', '
-        )}`
-      );
+        // Demonstrate findById
+        const firstProduct = allProducts[0];
+        const retrievedById = await this.productRepo.findById(firstProduct.id);
+        console.log(
+          `\n  ✅ Retrieved by ID: ${
+            retrievedById?.metadata.name || 'Not found'
+          }`
+        );
 
-      // Verify round-trip integrity
-      const isDataIntact =
-        serialized.id === rawChromaData.id &&
-        serialized.metadata?.name === rawChromaData.metadata.name &&
-        serialized.metadata?.price === rawChromaData.metadata.price;
-
-      console.log(
-        `  ✅ Round-trip integrity: ${isDataIntact ? 'PASSED' : 'FAILED'}`
-      );
+        // Demonstrate peek (get first N documents)
+        const preview = await this.productRepo.peek(3);
+        console.log(`\n  👀 Preview (first 3 products):`);
+        preview.forEach((p, i) => {
+          console.log(
+            `    ${i + 1}. ${p.metadata.name} - $${p.metadata.price}`
+          );
+        });
+      }
     } catch (error) {
       console.error(
-        '  ❌ Error in serialization demo:',
+        '  ❌ Error retrieving entities:',
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -237,52 +267,59 @@ export class BasicEntityDemoService implements OnModuleInit {
   }
 
   /**
-   * Demonstrates retrieving and working with stored entities
+   * Demonstrates updating entities using repository
    */
-  private async demonstrateEntityRetrieval(): Promise<void> {
-    console.log('🔍 Entity Retrieval Demo:');
+  private async demonstrateEntityUpdate(): Promise<void> {
+    console.log('✏️  Entity Update with Repository:');
 
     try {
-      // Get collection info
-      const collectionExists = await this.chromaService.collectionExists(
-        'products'
-      );
-      console.log(`  📊 Collection 'products' exists: ${collectionExists}`);
-
-      if (collectionExists) {
-        // Retrieve documents from ChromaDB
-        const results = await this.chromaService.getDocuments('products', {
-          limit: 5,
-        });
-
-        console.log(`  📄 Retrieved ${results.ids.length} documents`);
-
-        // Convert ChromaDB results to entities
-        if (results.ids.length > 0) {
-          for (let i = 0; i < results.ids.length; i++) {
-            const rawData = {
-              id: results.ids[i],
-              document: results.documents?.[i] || '',
-              metadata: results.metadatas?.[i] || {},
-              embedding: results.embeddings?.[i],
-            };
-
-            const entity = BasicProductEntity.fromChroma(rawData);
-            console.log(`    📦 Product: ${entity.metadata.name}`);
-            console.log(`    💰 Price: $${entity.metadata.price}`);
-            console.log(`    🏷️  Category: ${entity.metadata.category}`);
-            console.log(`    📅 Created: ${entity.createdAt}`);
-            console.log('    ---');
-          }
-        }
-
-        // Demonstrate count functionality
-        const count = await this.chromaService.countDocuments('products');
-        console.log(`  🔢 Total products in collection: ${count}`);
+      // Get first product
+      const products = await this.productRepo.peek(1);
+      if (products.length === 0) {
+        console.log('  ⚠️  No products found to update');
+        return;
       }
+
+      const product = products[0];
+      console.log(`  📝 Updating product: ${product.metadata.name}`);
+      console.log(`  💰 Original price: $${product.metadata.price}`);
+
+      // Update using repository.update()
+      const updated = await this.productRepo.update(product.id, {
+        metadata: {
+          ...product.metadata,
+          price: product.metadata.price * 0.9, // 10% discount
+          inStock: false,
+        },
+      });
+
+      if (updated) {
+        console.log(`  ✅ Product updated successfully`);
+        console.log(`  💰 New price: $${updated.metadata.price.toFixed(2)}`);
+        console.log(
+          `  📦 In Stock: ${updated.metadata.inStock ? 'Yes' : 'No'}`
+        );
+        console.log(`  🕒 Updated: ${updated.updatedAt}`);
+      }
+
+      // Demonstrate upsert (create or update)
+      const upserted = await this.productRepo.upsert({
+        id: 'demo-product-001',
+        content:
+          'Smart fitness tracker with heart rate monitoring, sleep tracking, and activity tracking. Water-resistant design for all-day wear.',
+        metadata: {
+          name: 'Smart Fitness Tracker',
+          price: 79.99,
+          category: 'Fitness',
+          inStock: true,
+        },
+      });
+
+      console.log(`\n  ✅ Upserted product: ${upserted.metadata.name}`);
+      console.log(`  🔑 ID: ${upserted.id}`);
     } catch (error) {
       console.error(
-        '  ❌ Error retrieving entities:',
+        '  ❌ Error updating entity:',
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -296,7 +333,13 @@ export class BasicEntityDemoService implements OnModuleInit {
 // ============================================================================
 
 /**
- * Example module showing how to configure ChromaDB for basic entity usage
+ * Example module showing TypeORM-style repository pattern
+ *
+ * Key Changes from Old Pattern:
+ * - Uses ChromaDBModule.forFeature([Entity]) to auto-generate repositories
+ * - Repositories are injected with @InjectRepository(Entity)
+ * - Zero boilerplate - no manual repository class creation needed
+ * - Full CRUD operations available immediately
  */
 @Module({
   imports: [
@@ -313,9 +356,10 @@ export class BasicEntityDemoService implements OnModuleInit {
           model: 'text-embedding-3-small',
         },
       },
-      defaultCollection: 'products',
       enableHealthCheck: false, // Disabled for example
     }),
+    // NEW: Auto-generate repository for BasicProductEntity
+    ChromaDBModule.forFeature([BasicProductEntity]),
   ],
   providers: [BasicEntityDemoService],
   exports: [BasicEntityDemoService],
@@ -329,47 +373,82 @@ export class BasicEntityDefinitionExampleModule {}
 /**
  * Best Practices for Basic Entity Definition:
  *
- * 1. **Collection Naming**: Use descriptive, lowercase names with underscores
+ * 1. **Collection Naming**: Use descriptive, lowercase names with hyphens
  * 2. **Content Field**: Always include meaningful text for embedding generation
  * 3. **Metadata Structure**: Keep metadata flat and simple for basic entities
  * 4. **ID Strategy**: Use UUID for production systems for uniqueness
  * 5. **Timestamps**: Enable autoTimestamp for audit trails
- * 6. **Type Safety**: Implement BaseDocument interface for compile-time checks
+ * 6. **Type Safety**: Extend BaseChromaEntity for compile-time checks
  * 7. **Documentation**: Add JSDoc comments for all entity properties
- * 8. **Validation**: Consider adding validation decorators for critical fields
+ * 8. **Repository Injection**: Use @InjectRepository for type-safe injection
  *
- * Common Patterns:
+ * TypeORM-Style Repository Pattern:
+ *
+ * ```typescript
+ * // ✅ NEW PATTERN: Auto-generated repository
+ * @Module({
+ *   imports: [
+ *     ChromaDBModule.forRoot({ ... }),
+ *     ChromaDBModule.forFeature([UserProfile])  // Auto-generates repository
+ *   ]
+ * })
+ * export class UserModule {}
+ *
+ * @Injectable()
+ * export class UserService {
+ *   constructor(
+ *     @InjectRepository(UserProfile)  // TypeORM-style injection
+ *     private userRepo: ChromaDBRepository<UserProfile>
+ *   ) {}
+ *
+ *   async createUser(data: any) {
+ *     return this.userRepo.create(data);  // Zero boilerplate
+ *   }
+ * }
+ *
+ * // ❌ OLD PATTERN: Manual repository creation (deprecated)
+ * @Injectable()
+ * @ChromaRepository<UserProfile>({ ... })
+ * export class UserRepository extends BaseChromaRepository<UserProfile> {
+ *   // Manual implementation required
+ * }
+ * ```
+ *
+ * Common Entity Patterns:
  *
  * ```typescript
  * // ✅ Good: Clear, descriptive entity
  * @ChromaEntity({
- *   collection: 'user_profiles',
+ *   collection: 'user-profiles',
  *   autoEmbed: true,
  *   embeddingFields: ['content'],
  *   autoTimestamp: true,
+ *   autoGenerateIds: true,
  * })
- * class UserProfile {
+ * class UserProfile extends BaseChromaEntity<UserMetadata> {
  *   @ChromaId()
- *   id!: string;
+ *   declare id: string;
  *
  *   @ChromaProp()
- *   content!: string; // Bio, description, etc.
+ *   declare content: string; // Bio, description, etc.
  *
- *   metadata!: {
- *     name: string;
- *     email: string;
- *     role: string;
- *   };
+ *   declare metadata: UserMetadata;
+ *
+ *   @CreatedAt()
+ *   declare createdAt?: string;
+ *
+ *   @UpdatedAt()
+ *   declare updatedAt?: string;
  * }
  *
  * // ❌ Avoid: Overly complex metadata in basic entities
- * metadata!: {
+ * interface OverlyComplexMetadata {
  *   user: {
  *     personal: {
  *       name: { first: string; last: string; };
  *       addresses: Array<{ type: string; address: any; }>;
  *     };
  *   };
- * };
+ * }
  * ```
  */

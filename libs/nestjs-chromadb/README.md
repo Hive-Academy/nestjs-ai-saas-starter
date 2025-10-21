@@ -84,7 +84,17 @@ export class AppModule {}
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { BaseChromaEntity, BaseChromaRepository, ChromaEntity, ChromaId, ChromaProp, ChromaMetadata, CreatedAt, UpdatedAt, ChromaRepository } from '@hive-academy/nestjs-chromadb';
+import {
+  BaseChromaEntity,
+  BaseChromaRepository,
+  ChromaEntity,
+  ChromaId,
+  ChromaProp,
+  ChromaMetadata,
+  CreatedAt,
+  UpdatedAt,
+  ChromaRepository,
+} from '@hive-academy/nestjs-chromadb';
 
 // Step 1: Define Entity
 interface UserMetadata {
@@ -491,7 +501,11 @@ ChromaDBModule.forRoot({
     enableRegistry: true,
     enableResourceLimits: true,
     enableCrossTenantAdmin: true,
-    securityPolicies: [TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE, TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE, TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION],
+    securityPolicies: [
+      TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE,
+      TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE,
+      TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION,
+    ],
   },
 });
 ```
@@ -567,7 +581,12 @@ await this.chromaDB.addDocuments('documents', docs, bulkOptions);
 ### **Type-Safe Metadata Management**
 
 ```typescript
-import { sanitizeMetadata, validateMetadata, validateMetadataSchema, TypeSafeConverter } from '@hive-academy/nestjs-chromadb';
+import {
+  sanitizeMetadata,
+  validateMetadata,
+  validateMetadataSchema,
+  TypeSafeConverter,
+} from '@hive-academy/nestjs-chromadb';
 
 // Runtime type validation
 const document = TypeSafeConverter.toDocument<UserDocument>(unknownData);
@@ -790,7 +809,11 @@ const hipaaPolicy = TENANT_CONSTANTS.SECURITY_POLICIES.HIPAA_COMPLIANCE;
 const soc2Policy = TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE;
 
 // Apply to tenant
-await tenantSecurityService.applySecurityPolicies('tenant-123', [gdprPolicy.policyId, hipaaPolicy.policyId, soc2Policy.policyId]);
+await tenantSecurityService.applySecurityPolicies('tenant-123', [
+  gdprPolicy.policyId,
+  hipaaPolicy.policyId,
+  soc2Policy.policyId,
+]);
 ```
 
 ### **Data Encryption**

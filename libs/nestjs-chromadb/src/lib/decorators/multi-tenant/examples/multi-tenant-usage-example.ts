@@ -7,9 +7,7 @@
 
 import { Controller, Injectable } from '@nestjs/common';
 import { ChromaDBService } from '../../../services/chromadb.service';
-import {
-  BaseDocument,
-} from '../../../types/core.interface';
+import { BaseDocument } from '../../../types/core.interface';
 import {
   MultiTenantService,
   TenantAwareRepository,
@@ -130,7 +128,9 @@ export class UserManagementService {
     }));
 
     // Add documents directly (service handles wire format conversion internally)
-    await this.chromaService.addDocuments('users', enrichedUsers, { batchSize: 50 });
+    await this.chromaService.addDocuments('users', enrichedUsers, {
+      batchSize: 50,
+    });
     return enrichedUsers;
   }
 }

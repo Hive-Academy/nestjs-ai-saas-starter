@@ -29,7 +29,6 @@ interface OpenAIEmbeddingResponse {
   };
 }
 
-
 /**
  * OpenAI embedding provider
  */

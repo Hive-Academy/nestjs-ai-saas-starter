@@ -1,7 +1,14 @@
-import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
 import { HitlNotificationService } from './hitl-notification.service';
+import type { IMemoryAdapter } from '@hive-academy/langgraph-memory';
 import {
   IUserInterruptionStorageService,
   InterruptionContext,
@@ -14,12 +21,18 @@ import {
 /**
  * User Interruption Service
  * Handles dynamic user interruptions during workflow execution
- * 
+ *
  * PRODUCTION PATTERN: Uses adapter-first storage with performance caching
  * - All persistence operations go through storage adapter FIRST
  * - Map used ONLY for performance caching (not primary storage)
  * - Fail-fast behavior when storage adapter unavailable
  * - Complete state recovery from persistent storage on service restart
+ *
+ * **Phase 1f Memory Integration** (2025-01-11):
+ * - Added optional IMemoryAdapter for interruption pattern learning
+ * - Stores interruption outcomes for pattern recognition
+ * - Tracks common interruption types, resolution times, user patterns
+ * - Graceful degradation when memory adapter unavailable
  */
 @Injectable()
 export class UserInterruptionService implements OnModuleInit {
@@ -32,10 +45,24 @@ export class UserInterruptionService implements OnModuleInit {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     // ✅ CORRECT: Required dependency injection for adapter-first pattern
-    @Inject('IUserInterruptionStorageService')
+    @Inject(IUserInterruptionStorageService)
     private readonly interruptionStorage: IUserInterruptionStorageService,
-    private readonly notifications?: HitlNotificationService
-  ) {}
+    private readonly notifications?: HitlNotificationService,
+    // 🧠 PHASE 1f: Optional memory adapter for pattern learning
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
+  ) {
+    if (!this.memoryAdapter) {
+      this.logger.warn(
+        '⚠️  No memory adapter provided - interruption pattern learning disabled'
+      );
+    } else {
+      this.logger.log(
+        '✅ Memory adapter available for interruption pattern learning'
+      );
+    }
+  }
 
   /**
    * Module initialization: Recover all active interruptions from persistent storage
@@ -50,18 +77,19 @@ export class UserInterruptionService implements OnModuleInit {
   private async recoverActiveInterruptions(): Promise<void> {
     try {
       // ✅ CORRECT: Load all active interruptions from primary storage
-      const allActiveInterruptions = await this.interruptionStorage.getAllActiveInterruptions();
-      
+      const allActiveInterruptions =
+        await this.interruptionStorage.getAllActiveInterruptions();
+
       // ✅ CORRECT: Rebuild cache from persistent storage
-      allActiveInterruptions.forEach(interruption => {
+      allActiveInterruptions.forEach((interruption) => {
         this.interruptionCache.set(interruption.id, interruption);
-        
+
         // ✅ CORRECT: Restore timeout handlers for pending interruptions
         if (interruption.status === InterruptionStatus.PENDING) {
           this.setupInterruptionTimeout(interruption.id);
         }
       });
-      
+
       this.logger.log(
         `✅ Successfully recovered ${allActiveInterruptions.length} active interruptions from persistent storage`
       );
@@ -113,7 +141,9 @@ export class UserInterruptionService implements OnModuleInit {
         error
       );
       // ✅ CORRECT: Fail fast when primary storage unavailable
-      throw new Error(`Cannot store interruption: primary storage failed - ${errorMsg}`);
+      throw new Error(
+        `Cannot store interruption: primary storage failed - ${errorMsg}`
+      );
     }
 
     // Set up timeout
@@ -161,11 +191,14 @@ export class UserInterruptionService implements OnModuleInit {
   }> {
     // ✅ CORRECT: Try cache first for performance, fallback to storage
     let interruption = this.interruptionCache.get(response.interruptionId);
-    
+
     if (!interruption) {
       // ✅ CORRECT: Fallback to primary storage if not in cache
       try {
-        const storedInterruption = await this.interruptionStorage.getInterruption(response.interruptionId);
+        const storedInterruption =
+          await this.interruptionStorage.getInterruption(
+            response.interruptionId
+          );
         if (storedInterruption) {
           interruption = storedInterruption;
           // ✅ CORRECT: Update cache from storage
@@ -173,7 +206,9 @@ export class UserInterruptionService implements OnModuleInit {
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to retrieve interruption from storage: ${errorMsg}`);
+        this.logger.error(
+          `Failed to retrieve interruption from storage: ${errorMsg}`
+        );
         return { success: false, shouldContinue: false, error: errorMsg };
       }
     }
@@ -201,7 +236,7 @@ export class UserInterruptionService implements OnModuleInit {
           InterruptionStatus.RESPONDED,
           response
         );
-        
+
         // ✅ CORRECT: Update cache after successful storage update
         interruption.status = InterruptionStatus.RESPONDED;
         interruption.response = response;
@@ -209,9 +244,14 @@ export class UserInterruptionService implements OnModuleInit {
         this.interruptionCache.set(response.interruptionId, interruption);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`❌ CRITICAL: Failed to update interruption in primary storage: ${errorMsg}`);
+        this.logger.error(
+          `❌ CRITICAL: Failed to update interruption in primary storage: ${errorMsg}`
+        );
         return { success: false, shouldContinue: false, error: errorMsg };
       }
+
+      // 🧠 PHASE 1f: Store interruption pattern for learning
+      await this.storeInterruptionPattern(interruption, response);
 
       // Emit completion event
       await this.eventEmitter.emit('interruption.responded', {
@@ -277,13 +317,14 @@ export class UserInterruptionService implements OnModuleInit {
   ): Promise<readonly UserInterruption[]> {
     // ✅ CORRECT: Load from primary storage first (source of truth)
     try {
-      const storedInterruptions = await this.interruptionStorage.getActiveInterruptions(executionId);
-      
+      const storedInterruptions =
+        await this.interruptionStorage.getActiveInterruptions(executionId);
+
       // ✅ CORRECT: Update cache from storage (performance optimization)
-      storedInterruptions.forEach(interruption => {
+      storedInterruptions.forEach((interruption) => {
         this.interruptionCache.set(interruption.id, interruption);
       });
-      
+
       // ✅ CORRECT: Return from storage (primary source of truth)
       return storedInterruptions;
     } catch (error) {
@@ -291,16 +332,20 @@ export class UserInterruptionService implements OnModuleInit {
       this.logger.error(
         `❌ CRITICAL: Failed to get interruptions from primary storage: ${errorMsg}. Falling back to cache.`
       );
-      
+
       // ✅ FALLBACK: Use cache only when primary storage fails
-      const cachedInterruptions = Array.from(this.interruptionCache.values()).filter(
-        (i) => i.executionId === executionId && i.status === InterruptionStatus.PENDING
+      const cachedInterruptions = Array.from(
+        this.interruptionCache.values()
+      ).filter(
+        (i) =>
+          i.executionId === executionId &&
+          i.status === InterruptionStatus.PENDING
       );
-      
+
       this.logger.warn(
         `Using cached interruptions as fallback: ${cachedInterruptions.length} found`
       );
-      
+
       return cachedInterruptions;
     }
   }
@@ -311,18 +356,21 @@ export class UserInterruptionService implements OnModuleInit {
   async cancelUserInterruption(interruptionId: string): Promise<boolean> {
     // ✅ CORRECT: Try cache first for performance
     let interruption = this.interruptionCache.get(interruptionId);
-    
+
     if (!interruption) {
       // ✅ CORRECT: Fallback to primary storage
       try {
-        const storedInterruption = await this.interruptionStorage.getInterruption(interruptionId);
+        const storedInterruption =
+          await this.interruptionStorage.getInterruption(interruptionId);
         if (storedInterruption) {
           interruption = storedInterruption;
           this.interruptionCache.set(interruptionId, interruption);
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to retrieve interruption from storage: ${errorMsg}`);
+        this.logger.error(
+          `Failed to retrieve interruption from storage: ${errorMsg}`
+        );
         return false;
       }
     }
@@ -344,7 +392,7 @@ export class UserInterruptionService implements OnModuleInit {
         interruptionId,
         InterruptionStatus.CANCELLED
       );
-      
+
       // ✅ CORRECT: Update cache after successful storage update
       interruption.status = InterruptionStatus.CANCELLED;
       this.interruptionCache.set(interruptionId, interruption);
@@ -471,18 +519,21 @@ export class UserInterruptionService implements OnModuleInit {
   ): Promise<void> {
     // ✅ CORRECT: Try cache first for performance
     let interruption = this.interruptionCache.get(interruptionId);
-    
+
     if (!interruption) {
       // ✅ CORRECT: Fallback to primary storage
       try {
-        const storedInterruption = await this.interruptionStorage.getInterruption(interruptionId);
+        const storedInterruption =
+          await this.interruptionStorage.getInterruption(interruptionId);
         if (storedInterruption) {
           interruption = storedInterruption;
           this.interruptionCache.set(interruptionId, interruption);
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to retrieve interruption from storage during timeout: ${errorMsg}`);
+        this.logger.error(
+          `Failed to retrieve interruption from storage during timeout: ${errorMsg}`
+        );
         return;
       }
     }
@@ -496,7 +547,7 @@ export class UserInterruptionService implements OnModuleInit {
         interruptionId,
         InterruptionStatus.TIMEOUT
       );
-      
+
       // ✅ CORRECT: Update cache after successful storage update
       interruption.status = InterruptionStatus.TIMEOUT;
       interruption.timestamps.timeout = new Date();
@@ -508,6 +559,9 @@ export class UserInterruptionService implements OnModuleInit {
       );
       return;
     }
+
+    // 🧠 PHASE 1f: Store timeout pattern for learning
+    await this.storeInterruptionPattern(interruption);
 
     // Emit timeout event
     await this.eventEmitter.emit('interruption.timeout', {
@@ -576,5 +630,219 @@ export class UserInterruptionService implements OnModuleInit {
         this.logger.warn(`Failed to stream interruption update: ${errorMsg}`);
       }
     }
+  }
+
+  // ============================================================================
+  // PHASE 1f: MEMORY PATTERN LEARNING METHODS
+  // ============================================================================
+
+  /**
+   * Store interruption pattern for learning
+   *
+   * Phase 1f: Uses IMemoryAdapter.store() for pattern storage
+   * Non-blocking: failures don't interrupt workflow
+   */
+  private async storeInterruptionPattern(
+    interruption: UserInterruption,
+    response?: UserInterruptionResponse
+  ): Promise<void> {
+    if (!this.memoryAdapter) {
+      return; // Graceful degradation
+    }
+
+    try {
+      const userId = response?.userId || 'system';
+      const workflowType =
+        (interruption.context.metadata?.workflowType as string) || 'unknown';
+
+      const patternData = {
+        interruptionId: interruption.id,
+        executionId: interruption.executionId,
+        nodeId: interruption.nodeId,
+        type: interruption.type,
+        status: interruption.status,
+        timestamp: interruption.timestamps.created.toISOString(),
+        responseTime: response?.timestamp
+          ? response.timestamp.getTime() -
+            interruption.timestamps.created.getTime()
+          : null,
+        resolved: !!response,
+        continueExecution: response?.continueExecution,
+        message: interruption.context.message,
+        responseMessage: response?.response,
+        metadata: {
+          ...interruption.context.metadata,
+          userId,
+          workflowType,
+        },
+      };
+
+      // Store in memory adapter with hierarchical namespace
+      const threadId = [
+        'interruption',
+        userId,
+        workflowType,
+        interruption.timestamps.created.toISOString(),
+      ].join(':');
+
+      await this.memoryAdapter.store(threadId, JSON.stringify(patternData), {
+        type: 'interruption_pattern',
+        interruptionType: interruption.type,
+        status: interruption.status,
+        userId,
+        workflowType,
+        timestamp: interruption.timestamps.created.toISOString(),
+        resolved: !!response,
+      });
+
+      this.logger.debug(
+        `✅ Stored interruption pattern for ${interruption.id} in memory adapter`
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to store interruption pattern in memory: ${errorMsg}. Continuing workflow.`
+      );
+      // Non-blocking: don't throw, just log
+    }
+  }
+
+  /**
+   * Get interruption patterns from memory
+   *
+   * Phase 1f: Retrieves historical interruption patterns for analysis
+   */
+  async getInterruptionPatterns(
+    userId: string,
+    workflowType?: string,
+    limit = 50
+  ): Promise<
+    Array<{
+      interruptionId: string;
+      type: InterruptionType;
+      status: InterruptionStatus;
+      responseTime: number | null;
+      resolved: boolean;
+      timestamp: string;
+    }>
+  > {
+    if (!this.memoryAdapter) {
+      this.logger.debug(
+        'Memory adapter unavailable - returning empty patterns'
+      );
+      return [];
+    }
+
+    try {
+      const queryOptions: any = {
+        userId,
+        limit,
+        metadata: {
+          type: 'interruption_pattern',
+        },
+      };
+
+      if (workflowType) {
+        queryOptions.metadata.workflowType = workflowType;
+      }
+
+      const memories = await this.memoryAdapter.search(queryOptions);
+
+      return memories
+        .map((memory: any) => {
+          try {
+            const data = JSON.parse(memory.content);
+            return {
+              interruptionId: data.interruptionId,
+              type: data.type,
+              status: data.status,
+              responseTime: data.responseTime,
+              resolved: data.resolved,
+              timestamp: data.timestamp,
+            };
+          } catch (parseError) {
+            this.logger.warn('Failed to parse interruption pattern memory');
+            return null;
+          }
+        })
+        .filter(
+          (pattern: any): pattern is NonNullable<typeof pattern> =>
+            pattern !== null
+        );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to retrieve interruption patterns: ${errorMsg}`
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Analyze interruption patterns for insights
+   *
+   * Phase 1f: Provides analytics on interruption patterns
+   */
+  async analyzeInterruptionPatterns(
+    userId: string,
+    workflowType?: string
+  ): Promise<{
+    totalInterruptions: number;
+    resolutionRate: number;
+    avgResponseTime: number;
+    commonTypes: Array<{ type: InterruptionType; count: number }>;
+    timeoutRate: number;
+  }> {
+    const patterns = await this.getInterruptionPatterns(
+      userId,
+      workflowType,
+      100
+    );
+
+    if (patterns.length === 0) {
+      return {
+        totalInterruptions: 0,
+        resolutionRate: 0,
+        avgResponseTime: 0,
+        commonTypes: [],
+        timeoutRate: 0,
+      };
+    }
+
+    const totalInterruptions = patterns.length;
+    const resolvedCount = patterns.filter((p) => p.resolved).length;
+    const resolutionRate = resolvedCount / totalInterruptions;
+
+    const responseTimes = patterns
+      .filter((p) => p.responseTime !== null)
+      .map((p) => p.responseTime as number);
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((sum, time) => sum + time, 0) /
+          responseTimes.length
+        : 0;
+
+    const typeCounts: Record<string, number> = {};
+    patterns.forEach((p) => {
+      typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
+    });
+
+    const commonTypes = Object.entries(typeCounts)
+      .map(([type, count]) => ({ type: type as InterruptionType, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const timeoutCount = patterns.filter(
+      (p) => p.status === InterruptionStatus.TIMEOUT
+    ).length;
+    const timeoutRate = timeoutCount / totalInterruptions;
+
+    return {
+      totalInterruptions,
+      resolutionRate,
+      avgResponseTime,
+      commonTypes,
+      timeoutRate,
+    };
   }
 }

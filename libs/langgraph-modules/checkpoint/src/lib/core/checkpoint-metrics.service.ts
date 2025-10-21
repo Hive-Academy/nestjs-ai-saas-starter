@@ -45,7 +45,11 @@ export class CheckpointMetricsService
   /**
    * Record save operation metrics
    */
-  recordSaveMetrics(saverName: string, duration: number, success: boolean): void {
+  recordSaveMetrics(
+    saverName: string,
+    duration: number,
+    success: boolean
+  ): void {
     this.ensureSaverMetrics(saverName);
     const metrics = this.metrics.get(saverName)!;
 
@@ -53,14 +57,20 @@ export class CheckpointMetricsService
     this.addToHistory(saverName, 'save', duration, success);
 
     this.logger.debug(
-      `Recorded save metrics for ${saverName}: ${duration}ms (${success ? 'success' : 'error'})`
+      `Recorded save metrics for ${saverName}: ${duration}ms (${
+        success ? 'success' : 'error'
+      })`
     );
   }
 
   /**
    * Record load operation metrics
    */
-  recordLoadMetrics(saverName: string, duration: number, success: boolean): void {
+  recordLoadMetrics(
+    saverName: string,
+    duration: number,
+    success: boolean
+  ): void {
     this.ensureSaverMetrics(saverName);
     const metrics = this.metrics.get(saverName)!;
 
@@ -68,7 +78,9 @@ export class CheckpointMetricsService
     this.addToHistory(saverName, 'load', duration, success);
 
     this.logger.debug(
-      `Recorded load metrics for ${saverName}: ${duration}ms (${success ? 'success' : 'error'})`
+      `Recorded load metrics for ${saverName}: ${duration}ms (${
+        success ? 'success' : 'error'
+      })`
     );
   }
 
@@ -76,8 +88,18 @@ export class CheckpointMetricsService
    * Get metrics for a specific saver
    */
   getMetrics(saverName: string): {
-    save: { totalTime: number; count: number; successCount: number; errorCount: number };
-    load: { totalTime: number; count: number; successCount: number; errorCount: number };
+    save: {
+      totalTime: number;
+      count: number;
+      successCount: number;
+      errorCount: number;
+    };
+    load: {
+      totalTime: number;
+      count: number;
+      successCount: number;
+      errorCount: number;
+    };
   } {
     const metrics = this.metrics.get(saverName);
 
@@ -136,9 +158,14 @@ export class CheckpointMetricsService
 
       saverMetrics[saverName] = {
         totalOperations: saveMetrics.count + loadMetrics.count,
-        averageSaveTime: saveMetrics.count > 0 ? saveMetrics.totalTime / saveMetrics.count : 0,
-        averageLoadTime: loadMetrics.count > 0 ? loadMetrics.totalTime / loadMetrics.count : 0,
-        errorRate: this.calculateErrorRate(saveMetrics.count + loadMetrics.count, saveMetrics.errorCount + loadMetrics.errorCount),
+        averageSaveTime:
+          saveMetrics.count > 0 ? saveMetrics.totalTime / saveMetrics.count : 0,
+        averageLoadTime:
+          loadMetrics.count > 0 ? loadMetrics.totalTime / loadMetrics.count : 0,
+        errorRate: this.calculateErrorRate(
+          saveMetrics.count + loadMetrics.count,
+          saveMetrics.errorCount + loadMetrics.errorCount
+        ),
         lastActivity: this.getLastActivity(saverName),
       };
     }
@@ -180,15 +207,19 @@ export class CheckpointMetricsService
     const recommendations: string[] = [];
 
     // Analyze each saver
-    for (const [saverName, metrics] of Object.entries(aggregated.saverMetrics)) {
+    for (const [saverName, metrics] of Object.entries(
+      aggregated.saverMetrics
+    )) {
       const avgTime = (metrics.averageSaveTime + metrics.averageLoadTime) / 2;
-      const {errorRate} = metrics;
+      const { errorRate } = metrics;
 
-      if (avgTime > 1000) { // Slower than 1 second average
+      if (avgTime > 1000) {
+        // Slower than 1 second average
         slowestSavers.push({ name: saverName, averageTime: avgTime });
       }
 
-      if (errorRate > 0.05) { // More than 5% error rate
+      if (errorRate > 0.05) {
+        // More than 5% error rate
         errorProneSavers.push({ name: saverName, errorRate });
       }
     }
@@ -200,30 +231,42 @@ export class CheckpointMetricsService
     // Generate recommendations
     if (slowestSavers.length > 0) {
       recommendations.push(
-        `Consider optimizing ${slowestSavers[0].name} saver (avg: ${Math.round(slowestSavers[0].averageTime)}ms)`
+        `Consider optimizing ${slowestSavers[0].name} saver (avg: ${Math.round(
+          slowestSavers[0].averageTime
+        )}ms)`
       );
     }
 
     if (errorProneSavers.length > 0) {
       recommendations.push(
-        `Check ${errorProneSavers[0].name} saver reliability (${Math.round(errorProneSavers[0].errorRate * 100)}% error rate)`
+        `Check ${errorProneSavers[0].name} saver reliability (${Math.round(
+          errorProneSavers[0].errorRate * 100
+        )}% error rate)`
       );
     }
 
     if (aggregated.totalOperations === 0) {
       recommendations.push('No checkpoint operations recorded yet');
     } else if (aggregated.errorRate > 0.1) {
-      recommendations.push('High overall error rate detected - check system health');
+      recommendations.push(
+        'High overall error rate detected - check system health'
+      );
     }
 
     // Performance-based recommendations
-    const overallAvgTime = (aggregated.averageSaveTime + aggregated.averageLoadTime) / 2;
+    const overallAvgTime =
+      (aggregated.averageSaveTime + aggregated.averageLoadTime) / 2;
     if (overallAvgTime > 500) {
-      recommendations.push('Consider using faster storage backends or optimize existing ones');
+      recommendations.push(
+        'Consider using faster storage backends or optimize existing ones'
+      );
     }
 
-    if (this.getRecentOperations(300000).length > 100) { // More than 100 ops in 5 minutes
-      recommendations.push('High checkpoint frequency detected - consider checkpoint optimization');
+    if (this.getRecentOperations(300000).length > 100) {
+      // More than 100 ops in 5 minutes
+      recommendations.push(
+        'High checkpoint frequency detected - consider checkpoint optimization'
+      );
     }
 
     return {
@@ -252,16 +295,19 @@ export class CheckpointMetricsService
         daily: Record<string, number>;
       };
     };
-    saverDetails: Record<string, {
-      metrics: ReturnType<CheckpointMetricsService['getMetrics']>;
-      performance: {
-        minSaveTime: number;
-        maxSaveTime: number;
-        minLoadTime: number;
-        maxLoadTime: number;
-        uptimePercentage: number;
-      };
-    }>;
+    saverDetails: Record<
+      string,
+      {
+        metrics: ReturnType<CheckpointMetricsService['getMetrics']>;
+        performance: {
+          minSaveTime: number;
+          maxSaveTime: number;
+          minLoadTime: number;
+          maxLoadTime: number;
+          uptimePercentage: number;
+        };
+      }
+    >;
   } {
     const summary = this.getAggregatedMetrics();
     const insights = this.getPerformanceInsights();
@@ -412,14 +458,20 @@ export class CheckpointMetricsService
 
     // Trim history if it gets too large
     if (this.operationHistory.length > this.maxHistorySize) {
-      this.operationHistory.splice(0, this.operationHistory.length - this.maxHistorySize);
+      this.operationHistory.splice(
+        0,
+        this.operationHistory.length - this.maxHistorySize
+      );
     }
   }
 
   /**
    * Calculate error rate
    */
-  private calculateErrorRate(totalOperations: number, errorCount: number): number {
+  private calculateErrorRate(
+    totalOperations: number,
+    errorCount: number
+  ): number {
     return totalOperations > 0 ? errorCount / totalOperations : 0;
   }
 
@@ -428,14 +480,22 @@ export class CheckpointMetricsService
    */
   private getLastActivity(saverName: string): Date | null {
     const saverMetrics = this.metrics.get(saverName);
-    if (!saverMetrics) {return null;}
+    if (!saverMetrics) {
+      return null;
+    }
 
     const lastSave = saverMetrics.save.lastOperation;
     const lastLoad = saverMetrics.load.lastOperation;
 
-    if (!lastSave && !lastLoad) {return null;}
-    if (!lastSave) {return lastLoad!;}
-    if (!lastLoad) {return lastSave;}
+    if (!lastSave && !lastLoad) {
+      return null;
+    }
+    if (!lastSave) {
+      return lastLoad!;
+    }
+    if (!lastLoad) {
+      return lastSave;
+    }
 
     return lastSave > lastLoad ? lastSave : lastLoad;
   }
@@ -443,9 +503,11 @@ export class CheckpointMetricsService
   /**
    * Get recent operations within timeframe
    */
-  private getRecentOperations(timeframeMs: number): typeof this.operationHistory {
+  private getRecentOperations(
+    timeframeMs: number
+  ): typeof this.operationHistory {
     const cutoff = new Date(Date.now() - timeframeMs);
-    return this.operationHistory.filter(op => op.timestamp >= cutoff);
+    return this.operationHistory.filter((op) => op.timestamp >= cutoff);
   }
 
   /**
@@ -474,11 +536,13 @@ export class CheckpointMetricsService
    */
   private calculateUptimePercentage(saverName: string): number {
     const recent = this.getRecentOperations(3600000); // Last hour
-    const saverOps = recent.filter(op => op.saverName === saverName);
+    const saverOps = recent.filter((op) => op.saverName === saverName);
 
-    if (saverOps.length === 0) {return 100;} // No operations, assume healthy
+    if (saverOps.length === 0) {
+      return 100;
+    } // No operations, assume healthy
 
-    const successfulOps = saverOps.filter(op => op.success).length;
+    const successfulOps = saverOps.filter((op) => op.success).length;
     return (successfulOps / saverOps.length) * 100;
   }
 }

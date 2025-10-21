@@ -8,6 +8,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseGraphService, GraphTraversalOptions } from './base-graph.service';
 import type { NeogmaEntity } from '../../types/neogma-types';
+import { NeogmaService } from '../../services/neogma.service';
 
 /**
  * Centrality metric types
@@ -70,6 +71,10 @@ export class GraphMetricsService<
   T extends NeogmaEntity = NeogmaEntity
 > extends BaseGraphService<T> {
   protected readonly GraphMetricsLogger = new Logger(GraphMetricsService.name);
+
+  constructor(protected override readonly neogmaService: NeogmaService) {
+    super(neogmaService, 'Entity');
+  }
 
   // ==================== CENTRALITY OPERATIONS ====================
 

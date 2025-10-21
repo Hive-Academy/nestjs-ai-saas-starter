@@ -15,13 +15,13 @@ Central tracker mapping each landing page (and related showcase) component from 
 
 ## 2. Status Legend
 
-| Code | Meaning |
-|------|---------|
-| NS | Not Started |
-| IP | In Progress |
-| BL | Blocked (dependency needed) |
-| RV | In Review (awaiting approval & parity verification) |
-| DN | Done (legacy can be scheduled for deletion) |
+| Code | Meaning                                             |
+| ---- | --------------------------------------------------- |
+| NS   | Not Started                                         |
+| IP   | In Progress                                         |
+| BL   | Blocked (dependency needed)                         |
+| RV   | In Review (awaiting approval & parity verification) |
+| DN   | Done (legacy can be scheduled for deletion)         |
 
 Deletion of legacy variant only occurs after: (a) visual parity approval, (b) no external dependencies, (c) screenshot diff baseline captured.
 
@@ -31,22 +31,22 @@ Deletion of legacy variant only occurs after: (a) visual parity approval, (b) no
 
 Legend (Patterns): SceneInit, CameraMutate, MeshCreate, MaterialAdjust, rAFLoop, Raycast, Shader, Particles, Instancing, TextureDraw, LayoutCustom
 
-| Component (Legacy) | File Path | Selector (if applicable) | Category | Patterns (Detected) | Migration Builder(s) | Dependencies | Current Status | Notes / Risks |
-|--------------------|-----------|--------------------------|----------|---------------------|----------------------|--------------|----------------|---------------|
-| Hero / Splash | `features/landing-page/sections/hero-section.component.ts` | `app-hero-section` | Hybrid Content + Decorative | SceneInit, CameraMutate, MeshCreate, MaterialAdjust, Particles, rAFLoop | `createHybridConfig(type:'hero')`, `createCardConfig` (metrics tiles) | None | NS | Capture camera/fog constants before refactor |
-| Feature Pillars | `features/landing-page/sections/platform-pillars.component.ts` | `app-platform-pillars` | Content Cards + Interactions | SceneInit, MeshCreate, Raycast, Particles, rAFLoop, LayoutCustom | `createCardConfig` + future `LayoutManager` | LayoutManager (future), InteractionManager | IP | Partial refactor started; raycasting to abstract |
-| Demo Theater | `features/landing-page/sections/demo-theater.component.ts` | `app-demo-theater` | Scene Showcase | SceneInit, MeshCreate, Particles?, rAFLoop | `createHybridConfig(type:'gallery')` | AnimationController (future) | NS | Complex node graph visuals—assess abstraction vs adapter |
-| Ecosystem Explorer | `features/landing-page/sections/ecosystem-explorer.component.ts` | `app-ecosystem-explorer` | Particle / Network Field | SceneInit, Particles, rAFLoop | DecorationAdapter (temp) + `createHybridConfig` | Performance Manager (future) | NS | High particle count—perf validation needed |
-| Libraries Showcase | `features/landing-page/sections/libraries-showcase.component.ts` | `app-libraries-showcase` | Library Icons Orbit | SceneInit, MeshCreate, rAFLoop, MaterialAdjust | `createCardConfig` + orbital layout (LayoutManager) | LayoutManager, AnimationController | NS | Orbital math to move into layout strategy |
-| Architecture Diagram | `features/landing-page/sections/architecture-diagram.component.ts` | `app-architecture-diagram` | Structural Diagram | SceneInit, MeshCreate, LineSegments, rAFLoop | `createHybridConfig(type:'diagram')` | None | NS | Line-based geometry—add diagram layout preset |
-| 3D Info Card | `features/landing-page/components/three-d-info-card.component.ts` | `app-three-d-info-card` | Single Card + Accent | MeshCreate, MaterialAdjust | `createCardConfig` | None | NS | Fast win: wrap plane + accents as decoration config |
-| Section Performance Svc | `features/landing-page/services/section-performance.service.ts` | n/a (service) | Perf Overlay | WebGLRenderer metrics access | Performance metrics integration | Performance Manager | NS | Replace with Hybrid metrics signals |
-| Particle / Stars Field (Shared) | present inside multiple sections | n/a | Decorative Field | Particles, rAFLoop | DecorationAdapter | Performance Manager | NS | Create shared particle decoration config |
-| (Planned) CTA Banner | (not discovered) | `app-cta-banner` (future) | Buttons + Card | (TBD) | `createButtonConfig`, `createCardConfig` | InteractionManager | NS | Add once implementation lands |
-| (Planned) Metrics Panel | (not discovered) | `app-metrics-board` (future) | Dynamic Metrics | (Expected TextureDraw) | `createCardConfig` + texture pipeline | Texture pipeline | NS | Will validate post pipeline PoC |
-| (Planned) Testimonial Slider | (not discovered) | `app-testimonial-cards` | Card Carousel | (Expected rAFLoop, LayoutCustom) | `createCardConfig`, AnimationController | AnimationController | NS | Carousels blocked on AnimationController |
-| (Planned) Pricing Summary | (not discovered) | `app-pricing-summary` | Tier Cards | (Expected Highlight) | `createCardConfig` + priority mapping | None | NS | Priority -> geometry/color derivation |
-| (Planned) Footer Nav 3D | (not discovered) | `app-footer-nav-3d` | Navigation | (Expected Raycast, Interaction) | `createNavConfig` | InteractionManager | NS | Wait for InteractionManager contract |
+| Component (Legacy)              | File Path                                                          | Selector (if applicable)     | Category                     | Patterns (Detected)                                                     | Migration Builder(s)                                                  | Dependencies                               | Current Status | Notes / Risks                                            |
+| ------------------------------- | ------------------------------------------------------------------ | ---------------------------- | ---------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------ | -------------- | -------------------------------------------------------- |
+| Hero / Splash                   | `features/landing-page/sections/hero-section.component.ts`         | `app-hero-section`           | Hybrid Content + Decorative  | SceneInit, CameraMutate, MeshCreate, MaterialAdjust, Particles, rAFLoop | `createHybridConfig(type:'hero')`, `createCardConfig` (metrics tiles) | None                                       | NS             | Capture camera/fog constants before refactor             |
+| Feature Pillars                 | `features/landing-page/sections/platform-pillars.component.ts`     | `app-platform-pillars`       | Content Cards + Interactions | SceneInit, MeshCreate, Raycast, Particles, rAFLoop, LayoutCustom        | `createCardConfig` + future `LayoutManager`                           | LayoutManager (future), InteractionManager | IP             | Partial refactor started; raycasting to abstract         |
+| Demo Theater                    | `features/landing-page/sections/demo-theater.component.ts`         | `app-demo-theater`           | Scene Showcase               | SceneInit, MeshCreate, Particles?, rAFLoop                              | `createHybridConfig(type:'gallery')`                                  | AnimationController (future)               | NS             | Complex node graph visuals—assess abstraction vs adapter |
+| Ecosystem Explorer              | `features/landing-page/sections/ecosystem-explorer.component.ts`   | `app-ecosystem-explorer`     | Particle / Network Field     | SceneInit, Particles, rAFLoop                                           | DecorationAdapter (temp) + `createHybridConfig`                       | Performance Manager (future)               | NS             | High particle count—perf validation needed               |
+| Libraries Showcase              | `features/landing-page/sections/libraries-showcase.component.ts`   | `app-libraries-showcase`     | Library Icons Orbit          | SceneInit, MeshCreate, rAFLoop, MaterialAdjust                          | `createCardConfig` + orbital layout (LayoutManager)                   | LayoutManager, AnimationController         | NS             | Orbital math to move into layout strategy                |
+| Architecture Diagram            | `features/landing-page/sections/architecture-diagram.component.ts` | `app-architecture-diagram`   | Structural Diagram           | SceneInit, MeshCreate, LineSegments, rAFLoop                            | `createHybridConfig(type:'diagram')`                                  | None                                       | NS             | Line-based geometry—add diagram layout preset            |
+| 3D Info Card                    | `features/landing-page/components/three-d-info-card.component.ts`  | `app-three-d-info-card`      | Single Card + Accent         | MeshCreate, MaterialAdjust                                              | `createCardConfig`                                                    | None                                       | NS             | Fast win: wrap plane + accents as decoration config      |
+| Section Performance Svc         | `features/landing-page/services/section-performance.service.ts`    | n/a (service)                | Perf Overlay                 | WebGLRenderer metrics access                                            | Performance metrics integration                                       | Performance Manager                        | NS             | Replace with Hybrid metrics signals                      |
+| Particle / Stars Field (Shared) | present inside multiple sections                                   | n/a                          | Decorative Field             | Particles, rAFLoop                                                      | DecorationAdapter                                                     | Performance Manager                        | NS             | Create shared particle decoration config                 |
+| (Planned) CTA Banner            | (not discovered)                                                   | `app-cta-banner` (future)    | Buttons + Card               | (TBD)                                                                   | `createButtonConfig`, `createCardConfig`                              | InteractionManager                         | NS             | Add once implementation lands                            |
+| (Planned) Metrics Panel         | (not discovered)                                                   | `app-metrics-board` (future) | Dynamic Metrics              | (Expected TextureDraw)                                                  | `createCardConfig` + texture pipeline                                 | Texture pipeline                           | NS             | Will validate post pipeline PoC                          |
+| (Planned) Testimonial Slider    | (not discovered)                                                   | `app-testimonial-cards`      | Card Carousel                | (Expected rAFLoop, LayoutCustom)                                        | `createCardConfig`, AnimationController                               | AnimationController                        | NS             | Carousels blocked on AnimationController                 |
+| (Planned) Pricing Summary       | (not discovered)                                                   | `app-pricing-summary`        | Tier Cards                   | (Expected Highlight)                                                    | `createCardConfig` + priority mapping                                 | None                                       | NS             | Priority -> geometry/color derivation                    |
+| (Planned) Footer Nav 3D         | (not discovered)                                                   | `app-footer-nav-3d`          | Navigation                   | (Expected Raycast, Interaction)                                         | `createNavConfig`                                                     | InteractionManager                         | NS             | Wait for InteractionManager contract                     |
 
 Removed Placeholder Rows: Consolidated planned components explicitly with (Planned) label to avoid confusing unimplemented vs undiscovered.
 
@@ -69,39 +69,39 @@ Removed Placeholder Rows: Consolidated planned components explicitly with (Plann
 
 ## 5. Discovery Tasks (Execution Log)
 
-| ID | Task | Status | Output Summary |
-|----|------|--------|----------------|
-| G1 | Grep raw Three.js imports | Done | 30+ import sites across landing + spatial-interface cataloged |
-| G2 | Enumerate landing components | Done | Hero, Pillars, Demo Theater, Ecosystem Explorer, Libraries Showcase, Architecture Diagram, Info Card identified |
-| G3 | Tag usage patterns | Done | Patterns column populated (SceneInit, Raycast, Particles, Shader, etc.) |
-| G4 | Author audit doc | Pending | Will create `HYBRID_UI_THREE_AUDIT.md` (next task) |
+| ID  | Task                         | Status  | Output Summary                                                                                                  |
+| --- | ---------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| G1  | Grep raw Three.js imports    | Done    | 30+ import sites across landing + spatial-interface cataloged                                                   |
+| G2  | Enumerate landing components | Done    | Hero, Pillars, Demo Theater, Ecosystem Explorer, Libraries Showcase, Architecture Diagram, Info Card identified |
+| G3  | Tag usage patterns           | Done    | Patterns column populated (SceneInit, Raycast, Particles, Shader, etc.)                                         |
+| G4  | Author audit doc             | Pending | Will create `HYBRID_UI_THREE_AUDIT.md` (next task)                                                              |
 
 ---
 
 ## 6. Builder Mapping Cheat Sheet
 
-| Legacy Pattern | Replacement | Notes |
-|----------------|------------|-------|
-| Manual plane + texture material | `createCardConfig()` + `content-3d` | Geometry auto-selected by priority |
-| Spherical button mesh | `createButtonConfig()` | Style controls opacity/color/scale |
-| Radial/orbital position loop | `createSceneLayout({ type:'orbital' })` | LayoutManager will refine distribution |
-| Hard-coded highlight color | Priority mapping (HERO/PRIMARY) | Color + geometry derived |
-| Direct rAF animation | AnimationController subscription (future) | Use decoration.animation placeholder now |
-| Mesh hover scale on pointer | interaction.hover = 'scale' | Standardized easing later |
-| Material emissive pulse | interaction.hover = 'glow' or animation:'pulse' | Extend InteractionManager for easing curves |
-| Texture redraw on every setInterval | Texture versioning + MutationObserver (future) | Debounce + diff detection |
+| Legacy Pattern                      | Replacement                                     | Notes                                       |
+| ----------------------------------- | ----------------------------------------------- | ------------------------------------------- |
+| Manual plane + texture material     | `createCardConfig()` + `content-3d`             | Geometry auto-selected by priority          |
+| Spherical button mesh               | `createButtonConfig()`                          | Style controls opacity/color/scale          |
+| Radial/orbital position loop        | `createSceneLayout({ type:'orbital' })`         | LayoutManager will refine distribution      |
+| Hard-coded highlight color          | Priority mapping (HERO/PRIMARY)                 | Color + geometry derived                    |
+| Direct rAF animation                | AnimationController subscription (future)       | Use decoration.animation placeholder now    |
+| Mesh hover scale on pointer         | interaction.hover = 'scale'                     | Standardized easing later                   |
+| Material emissive pulse             | interaction.hover = 'glow' or animation:'pulse' | Extend InteractionManager for easing curves |
+| Texture redraw on every setInterval | Texture versioning + MutationObserver (future)  | Debounce + diff detection                   |
 
 ## 7. Parity Validation Checklist
 
-| Check | Description | Pass? |
-|-------|-------------|-------|
-| Geometry Match | New geometry shape matches intent (card vs hero vs logo) |  |
-| Color & Material | Opacity / color within ±5% visual delta |  |
-| Layout Spacing | Relative element spacing variance <10% |  |
-| Interaction Feel | Hover & click latency <50ms |  |
-| Animation Presence | Placeholder animation not distracting |  |
-| Content Fidelity | No text clipping or scaling artifacts |  |
-| Performance | FPS within 5% of legacy under idle |  |
+| Check              | Description                                              | Pass? |
+| ------------------ | -------------------------------------------------------- | ----- |
+| Geometry Match     | New geometry shape matches intent (card vs hero vs logo) |       |
+| Color & Material   | Opacity / color within ±5% visual delta                  |       |
+| Layout Spacing     | Relative element spacing variance <10%                   |       |
+| Interaction Feel   | Hover & click latency <50ms                              |       |
+| Animation Presence | Placeholder animation not distracting                    |       |
+| Content Fidelity   | No text clipping or scaling artifacts                    |       |
+| Performance        | FPS within 5% of legacy under idle                       |       |
 
 ## 8. Deletion Gate Criteria
 
@@ -115,16 +115,16 @@ A legacy component may be scheduled for removal ONLY if:
 
 ## 9. Open Items / TODOs
 
-| ID | Item | Blocking | Target Batch |
-|----|------|---------|--------------|
-| O1 | (Completed) Implement grep audit tasks G1–G3 | None | A |
-| O2 | Create `HYBRID_UI_THREE_AUDIT.md` | O1 | A |
-| O3 | Add DecorationAdapter | Need design minimal API | E |
-| O4 | Define LayoutManager interface | Strategy doc section | B |
-| O5 | Define AnimationController interface | Strategy doc section | C |
-| O6 | Decide screenshot diff tooling | None | A |
-| O7 | Establish ESLint rule banning raw three imports | None | A |
-| O8 | Draft MutationObserver texture directive | Texture pipeline phase | B |
+| ID  | Item                                            | Blocking                | Target Batch |
+| --- | ----------------------------------------------- | ----------------------- | ------------ |
+| O1  | (Completed) Implement grep audit tasks G1–G3    | None                    | A            |
+| O2  | Create `HYBRID_UI_THREE_AUDIT.md`               | O1                      | A            |
+| O3  | Add DecorationAdapter                           | Need design minimal API | E            |
+| O4  | Define LayoutManager interface                  | Strategy doc section    | B            |
+| O5  | Define AnimationController interface            | Strategy doc section    | C            |
+| O6  | Decide screenshot diff tooling                  | None                    | A            |
+| O7  | Establish ESLint rule banning raw three imports | None                    | A            |
+| O8  | Draft MutationObserver texture directive        | Texture pipeline phase  | B            |
 
 ## 10. Contribution Rules
 
@@ -142,4 +142,5 @@ A legacy component may be scheduled for removal ONLY if:
 - Legacy landing directory removed in a single cleanup commit.
 
 ---
+
 End of Document.

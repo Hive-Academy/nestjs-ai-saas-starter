@@ -54,7 +54,10 @@ export class ApprovalTimeoutService {
   async handleTimeout(
     requestId: string,
     request: HumanApprovalRequest,
-    processResponse: (requestId: string, response: HumanApprovalResponse) => Promise<any>
+    processResponse: (
+      requestId: string,
+      response: HumanApprovalResponse
+    ) => Promise<any>
   ): Promise<void> {
     if (
       !request ||
@@ -131,7 +134,9 @@ export class ApprovalTimeoutService {
         if (request.retry.count < request.retry.maxAttempts) {
           request.retry.count++;
           request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
-          this.setupTimeout(requestId, request, (id) => this.handleTimeout(id, request, processResponse));
+          this.setupTimeout(requestId, request, (id) =>
+            this.handleTimeout(id, request, processResponse)
+          );
 
           await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
             request,

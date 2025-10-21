@@ -1,11 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  Repository,
-  InjectNeogma,
+  Neo4jRepositoryBase,
   NeogmaService,
-  CypherQuery,
+  Neo4jCrudService,
+  Safe,
+  Authorize,
+  ValidateInput,
+  AuditLog,
+  getRepositoryToken,
 } from '@hive-academy/nestjs-neo4j';
+import { ApprovalChain } from '../../entities/neo4j/approval-chain.entity';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
+import { ApprovalRequestRepository } from './approval-request.repository';
 import type { ApprovalLevel } from '@hive-academy/langgraph-hitl';
 
 interface ApprovalRequestType {
@@ -28,29 +34,30 @@ interface ApprovalRequestType {
 }
 
 /**
- * ApprovalChain Repository
+ * ApprovalChain Repository - Composition Pattern
  *
  * Replaces: neo4j-approval-chain-storage.adapter.ts (603 lines)
  *
- * Provides type-safe operations for approval chain management including
- * hierarchical approval levels and request routing using modern @Repository pattern.
+ * Extends Neo4jRepository<ApprovalChain> for chain operations.
+ * Composes ApprovalRequestRepository for request operations.
  *
- * Note: This repository manages both ApprovalChain nodes and their relationships
- * to ApprovalRequest entities via the chainId property.
+ * This follows proper separation of concerns:
+ * - Manages ApprovalChain entity directly
+ * - Delegates ApprovalRequest operations to ApprovalRequestRepository
  *
- * The @Repository decorator auto-generates these methods:
- * - findById(id: string): Promise<ApprovalRequest | null>
- * - findAll(options?: FindOptions<ApprovalRequest>): Promise<ApprovalRequest[]>
- * - create(data: Partial<ApprovalRequest>): Promise<ApprovalRequest>
- * - update(id: string, updates: Partial<ApprovalRequest>): Promise<ApprovalRequest | null>
- * - delete(id: string): Promise<boolean>
- * - count(where?: Partial<ApprovalRequest>): Promise<number>
- * - exists(id: string): Promise<boolean>
+ * CRUD methods (inherited from Neo4jRepository<ApprovalChain>):
+ * - findById, findAll, create, update, delete, count, exists (for chains)
  */
-@Repository(() => ApprovalRequest) // Using ApprovalRequest entity as base since no dedicated ApprovalChain entity exists
 @Injectable()
-export class ApprovalChainRepository {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {}
+export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> {
+  constructor(
+    neogma: NeogmaService,
+    crud: Neo4jCrudService,
+    @Inject(getRepositoryToken(ApprovalRequest))
+    private readonly approvalRequestRepo: ApprovalRequestRepository
+  ) {
+    super(ApprovalChain, 'ApprovalChain', neogma, crud);
+  }
 
   // ============================================================================
   // APPROVAL CHAIN MANAGEMENT
@@ -60,6 +67,10 @@ export class ApprovalChainRepository {
    * Store an approval chain configuration
    * Migrated from: storeApprovalChain in neo4j-approval-chain-storage.adapter.ts
    */
+  @Authorize({ roles: ['admin'] })
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
   async storeApprovalChain(
     chainId: string,
     levels: ApprovalLevel[]
@@ -137,7 +148,6 @@ export class ApprovalChainRepository {
    * Retrieve an approval chain configuration
    * Migrated from: getApprovalChain in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getApprovalChain(chainId: string): Promise<ApprovalLevel[] | null> {
     if (!chainId?.trim()) {
       throw new Error('Chain ID is required');
@@ -145,18 +155,14 @@ export class ApprovalChainRepository {
 
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const chainIdParam = bindParam.add(chainId);
 
       qb.match('(chain:ApprovalChain)-[:HAS_LEVEL]->(level:ApprovalLevel)')
-        .where(`chain.id = $${chainIdParam}`)
+        .where('chain.id = $chainId') // ✅ Named parameter
         .return('level')
         .orderBy('level.priority ASC');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, { chainId });
 
       if (result.records.length === 0) {
         return null;
@@ -194,7 +200,6 @@ export class ApprovalChainRepository {
    * Get all approval chains
    * Migrated from: getAllApprovalChains in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getAllApprovalChains(): Promise<Record<string, ApprovalLevel[]>> {
     try {
       const qb = this.neogma.createQueryBuilder();
@@ -250,6 +255,9 @@ export class ApprovalChainRepository {
    * Delete an approval chain
    * Migrated from: deleteApprovalChain in neo4j-approval-chain-storage.adapter.ts
    */
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
+  @Safe()
   async deleteApprovalChain(chainId: string): Promise<boolean> {
     if (!chainId?.trim()) {
       throw new Error('Chain ID is required');
@@ -293,55 +301,30 @@ export class ApprovalChainRepository {
   /**
    * Store an approval request
    * Migrated from: storeApprovalRequest in neo4j-approval-chain-storage.adapter.ts
+   * Delegates to ApprovalRequestRepository
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
   async storeApprovalRequest(request: ApprovalRequestType): Promise<void> {
     if (!request.id?.trim()) {
       throw new Error('Request ID is required');
     }
 
     try {
-      const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const idParam = bindParam.add(request.id);
-      const executionIdParam = bindParam.add(request.executionId || null);
-      const nodeIdParam = bindParam.add(request.nodeId || null);
-      const chainIdParam = bindParam.add(request.chainId || null);
-      const levelParam = bindParam.add(request.level || 0);
-      const statusParam = bindParam.add(request.status || 'pending');
-      const messageParam = bindParam.add(request.message || '');
-      const metadataParam = bindParam.add(
-        request.metadata ? JSON.stringify(request.metadata) : null
-      );
-      const requestedAtParam = bindParam.add(
-        request.requestedAt
-          ? request.requestedAt.toISOString()
-          : new Date().toISOString()
-      );
-      const expiresAtParam = bindParam.add(
-        request.expiresAt ? request.expiresAt.toISOString() : null
-      );
-
-      qb.create(
-        `(req:ApprovalRequest {
-          id: $${idParam},
-          executionId: $${executionIdParam},
-          nodeId: $${nodeIdParam},
-          chainId: $${chainIdParam},
-          level: $${levelParam},
-          status: $${statusParam},
-          message: $${messageParam},
-          metadata: $${metadataParam},
-          requestedAt: datetime($${requestedAtParam}),
-          expiresAt: $${expiresAtParam},
-          createdAt: datetime(),
-          updatedAt: datetime()
-        })`
-      ).return('req.id as id');
-
-      const cypher = qb.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      // Delegate to ApprovalRequestRepository
+      await this.approvalRequestRepo.storeApprovalRequest({
+        id: request.id,
+        executionId: request.executionId || '',
+        nodeId: request.nodeId || '',
+        chainId: request.chainId,
+        // riskLevel: request.level || 0,
+        status: (request.status as any) || 'pending',
+        message: request.message || '',
+        metadata: (request.metadata || {}) as any,
+        requestedAt: request.requestedAt || new Date(),
+        expiresAt: request.expiresAt,
+      });
     } catch (error) {
       throw new Error(
         `Failed to store approval request: ${
@@ -353,9 +336,8 @@ export class ApprovalChainRepository {
 
   /**
    * Get approval requests for a specific execution
-   * Migrated from: getApprovalRequestsByExecution in neo4j-approval-chain-storage.adapter.ts
+   * Delegates to ApprovalRequestRepository
    */
-  @CypherQuery()
   async getApprovalRequestsByExecution(
     executionId: string
   ): Promise<ApprovalRequestType[]> {
@@ -364,24 +346,11 @@ export class ApprovalChainRepository {
     }
 
     try {
-      const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const executionIdParam = bindParam.add(executionId);
-
-      qb.match('(req:ApprovalRequest)')
-        .where(`req.executionId = $${executionIdParam}`)
-        .return('req')
-        .orderBy('req.requestedAt ASC');
-
-      const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
-
-      return result.records.map((record) => {
-        const reqProps = record.get('req').properties;
-        return this.mapNodeToApprovalRequest(reqProps);
-      });
+      // Delegate to ApprovalRequestRepository
+      const requests = await this.approvalRequestRepo.getApprovalsByExecution(
+        executionId
+      );
+      return requests.map((req) => this.mapNodeToApprovalRequest(req as any));
     } catch (error) {
       throw new Error(
         `Failed to get approval requests for execution: ${
@@ -395,26 +364,19 @@ export class ApprovalChainRepository {
    * Get all active approval requests (pending, escalated)
    * Migrated from: getAllActiveRequests in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getAllActiveRequests(): Promise<ApprovalRequestType[]> {
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const statusListParam = bindParam.add([
-        'pending',
-        'escalated',
-        'in_progress',
-      ]);
 
       qb.match('(req:ApprovalRequest)')
-        .where(`req.status IN $${statusListParam}`)
+        .where('req.status IN $statusList') // ✅ Named parameter
         .return('req')
         .orderBy('req.requestedAt ASC');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, {
+        statusList: ['pending', 'escalated', 'in_progress'],
+      });
 
       return result.records.map((record) => {
         const reqProps = record.get('req').properties;
@@ -433,7 +395,6 @@ export class ApprovalChainRepository {
    * Get pending approvals for a specific approver
    * Migrated from: getPendingApprovalsForApprover in neo4j-approval-chain-storage.adapter.ts
    */
-  @CypherQuery()
   async getPendingApprovalsForApprover(
     approverId: string
   ): Promise<ApprovalRequestType[]> {
@@ -443,23 +404,21 @@ export class ApprovalChainRepository {
 
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const statusListParam = bindParam.add(['pending', 'in_progress']);
-      const approverIdParam = bindParam.add(approverId);
 
       // This is a complex query that joins with chain levels to find requests assigned to the approver
       qb.match('(req:ApprovalRequest)')
-        .where(`req.status IN $${statusListParam}`)
+        .where('req.status IN $statusList') // ✅ Named parameter
         .match('(chain:ApprovalChain)-[:HAS_LEVEL]->(level:ApprovalLevel)')
         .where('chain.id = req.chainId AND level.priority = req.level')
-        .where(`level.approvers CONTAINS $${approverIdParam}`)
+        .where('level.approvers CONTAINS $approverId') // ✅ Named parameter
         .return('req')
         .orderBy('req.requestedAt ASC');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, {
+        statusList: ['pending', 'in_progress'],
+        approverId,
+      });
 
       return result.records.map((record) => {
         const reqProps = record.get('req').properties;
@@ -476,11 +435,14 @@ export class ApprovalChainRepository {
 
   /**
    * Update approval request status and metadata
-   * Migrated from: updateApprovalRequestStatus in neo4j-approval-chain-storage.adapter.ts
+   * Delegates to ApprovalRequestRepository
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  @Safe()
   async updateApprovalRequestStatus(
     requestId: string,
-    status: string,
+    status: 'pending' | 'approved' | 'rejected' | 'expired' | undefined,
     metadata?: Record<string, unknown>
   ): Promise<void> {
     if (!requestId?.trim()) {
@@ -488,25 +450,12 @@ export class ApprovalChainRepository {
     }
 
     try {
-      const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const requestIdParam = bindParam.add(requestId);
-      const statusParam = bindParam.add(status);
-
-      qb.match('(req:ApprovalRequest)')
-        .where(`req.id = $${requestIdParam}`)
-        .set(`req.status = $${statusParam}`)
-        .set('req.updatedAt = datetime()');
-
-      if (metadata) {
-        const metadataParam = bindParam.add(JSON.stringify(metadata));
-        qb.set(`req.metadata = $${metadataParam}`);
-      }
-
-      const cypher = qb.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      // Delegate to ApprovalRequestRepository
+      await this.approvalRequestRepo.updateApprovalStatus(
+        requestId,
+        status as any,
+        metadata ? ({ response: metadata } as any) : undefined
+      );
     } catch (error) {
       throw new Error(
         `Failed to update approval request status: ${

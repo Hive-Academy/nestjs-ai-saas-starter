@@ -12,6 +12,9 @@ import {
   CreateRelationshipData,
   RelationshipResult,
 } from './base-relationship.service';
+import { NeogmaQueryRunnerService } from '../../query-builder/neogma-query-runner.service';
+import { NeogmaQueryBuilderService } from '../../query-builder/neogma-query-builder.service';
+import { NeogmaService } from '../../services/neogma.service';
 
 /**
  * Core relationship repository for essential CRUD operations
@@ -36,6 +39,23 @@ export class RelationshipCoreRepository<
   TSource = any,
   TTarget = any
 > extends BaseRelationshipService<TRel, TSource, TTarget> {
+  constructor(
+    neogmaService: NeogmaService,
+    queryBuilder: NeogmaQueryBuilderService,
+    queryRunner: NeogmaQueryRunnerService,
+    relationshipType?: string,
+    sourceLabel?: string,
+    targetLabel?: string
+  ) {
+    super(
+      neogmaService,
+      queryBuilder,
+      queryRunner,
+      relationshipType,
+      sourceLabel,
+      targetLabel
+    );
+  }
   /**
    * Create a new relationship between two nodes
    */

@@ -19,6 +19,7 @@ import { HitlRecoveryService } from './hitl-recovery.service';
 import { HitlApprovalRequestService } from './hitl-approval-request.service';
 // User interruption interfaces - removed as using direct service access
 import { HITL_EVENTS } from '../constants';
+import { IHitlStorageService } from '../interfaces/hitl-storage.interface';
 import { RequiresApprovalOptions } from '../decorators/approval.decorator';
 import {
   ApprovalWorkflowState,
@@ -26,15 +27,6 @@ import {
   HumanApprovalResponse,
   ApprovalWorkflowStats,
 } from './approval-workflow.types';
-
-// Storage interface for HITL operations
-interface IHitlStorageService {
-  save(request: HumanApprovalRequest): Promise<void>;
-  get(requestId: string): Promise<HumanApprovalRequest | null>;
-  getByExecutionId(executionId: string): Promise<HumanApprovalRequest[]>;
-  getAllPending(): Promise<HumanApprovalRequest[]>;
-  update(request: HumanApprovalRequest): Promise<void>;
-}
 
 // Re-export moved types for backward compatibility
 export { ApprovalWorkflowState } from './approval-workflow.types';
@@ -64,7 +56,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly hitlValidationService: HitlValidationService,
     private readonly hitlRecoveryService: HitlRecoveryService,
     private readonly hitlApprovalRequestService: HitlApprovalRequestService,
-    @Inject('IHitlStorageService')
+    @Inject(IHitlStorageService)
     private readonly hitlStorage: IHitlStorageService // Required
   ) {
     this.logger.log(
@@ -402,7 +394,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     let responseCount = 0;
 
     for (const request of allApprovals) {
-      byState[request.workflowState]++;
+      byState[request.workflowState as ApprovalWorkflowState]++;
 
       if (request.timestamps.responded) {
         totalResponseTime +=

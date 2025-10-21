@@ -26,7 +26,7 @@ import type {
 @Injectable()
 export class DecoratorTranslationService {
   private readonly logger = new Logger(DecoratorTranslationService.name);
-  
+
   private readonly defaultConfig: DecoratorBridgeConfig = {
     enableFunctionalConversion: true,
     enableDeclarativeConversion: true,
@@ -42,18 +42,22 @@ export class DecoratorTranslationService {
    * Translate a decorator definition to workflow-engine format
    * This is the main entry point for functional-api integration
    */
-  async translateDecoratorDefinition<TState extends WorkflowState = WorkflowState>(
+  async translateDecoratorDefinition<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: DecoratorDefinition<TState>,
     instance: object,
     config?: DecoratorBridgeConfig
   ): Promise<DecoratorTranslationResult<TState>> {
     const startTime = performance.now();
     const mergedConfig = { ...this.defaultConfig, ...config };
-    
-    this.logger.debug(`Translating decorator definition: ${this.getDefinitionName(definition)}`);
-    
+
+    this.logger.debug(
+      `Translating decorator definition: ${this.getDefinitionName(definition)}`
+    );
+
     let result: DecoratorTranslationResult<TState>;
-    
+
     if (isFunctionalDefinition(definition as any)) {
       result = await this.translateFunctionalDefinition(
         definition as any,
@@ -69,21 +73,25 @@ export class DecoratorTranslationService {
     } else {
       throw new Error('Unknown decorator definition type');
     }
-    
+
     const translationTime = performance.now() - startTime;
     result.metadata.translationTime = translationTime;
-    
+
     this.logger.debug(
-      `Translation completed in ${translationTime.toFixed(2)}ms for ${result.nodes.length} nodes and ${result.edges.length} edges`
+      `Translation completed in ${translationTime.toFixed(2)}ms for ${
+        result.nodes.length
+      } nodes and ${result.edges.length} edges`
     );
-    
+
     return result;
   }
 
   /**
    * Translate functional workflow definition (@Entrypoint/@Task decorators)
    */
-  private async translateFunctionalDefinition<TState extends WorkflowState = WorkflowState>(
+  private async translateFunctionalDefinition<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: FunctionalWorkflowDefinition,
     instance: object,
     config: DecoratorBridgeConfig
@@ -91,12 +99,17 @@ export class DecoratorTranslationService {
     const nodes: WorkflowNode<TState>[] = [];
     const edges: WorkflowEdge<TState>[] = [];
     const warnings: string[] = [];
-    
+
     // Convert tasks to nodes
     for (const [taskName, taskDef] of definition.tasks) {
-      const node = this.convertTaskToNode<TState>(taskName, taskDef, instance, config);
+      const node = this.convertTaskToNode<TState>(
+        taskName,
+        taskDef,
+        instance,
+        config
+      );
       nodes.push(node);
-      
+
       // Create edges based on dependencies
       if (taskDef.dependencies && taskDef.dependencies.length > 0) {
         for (const dependency of taskDef.dependencies) {
@@ -107,16 +120,16 @@ export class DecoratorTranslationService {
         }
       }
     }
-    
+
     // Handle entry point
     const entryPoint = definition.entrypoint;
-    if (!nodes.find(n => n.id === entryPoint)) {
+    if (!nodes.find((n) => n.id === entryPoint)) {
       warnings.push(`Entry point '${entryPoint}' not found in nodes`);
     }
-    
+
     // Add edges from dependencies map if not already handled
     for (const [taskName, dependencies] of definition.dependencies) {
-      if (!edges.some(e => e.to === taskName)) {
+      if (!edges.some((e) => e.to === taskName)) {
         for (const dependency of dependencies) {
           edges.push({
             from: dependency,
@@ -125,7 +138,7 @@ export class DecoratorTranslationService {
         }
       }
     }
-    
+
     return {
       nodes,
       edges,
@@ -142,26 +155,29 @@ export class DecoratorTranslationService {
   /**
    * Translate declarative workflow definition (@Node/@Edge decorators)
    */
-  private async translateDeclarativeDefinition<TState extends WorkflowState = WorkflowState>(
+  private async translateDeclarativeDefinition<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: DeclarativeWorkflowDefinition<TState>,
     instance: object,
     config: DecoratorBridgeConfig
   ): Promise<DecoratorTranslationResult<TState>> {
     const warnings: string[] = [];
-    
+
     // Declarative definitions are already in workflow-engine format
     // We just need to bind the handlers to the instance
-    const nodes = definition.nodes.map(node => ({
+    const nodes = definition.nodes.map((node) => ({
       ...node,
       handler: this.bindHandlerToInstance(node.handler as any, instance),
     }));
-    
+
     // Validate edges reference existing nodes
-    const nodeIds = new Set(nodes.map(n => n.id));
+    const nodeIds = new Set(nodes.map((n) => n.id));
     for (const edge of definition.edges) {
-      const fromNode = typeof edge.from === 'string' ? edge.from : 'conditional';
+      const fromNode =
+        typeof edge.from === 'string' ? edge.from : 'conditional';
       const toNode = typeof edge.to === 'string' ? edge.to : 'conditional';
-      
+
       if (fromNode !== 'conditional' && !nodeIds.has(fromNode)) {
         warnings.push(`Edge references unknown source node: ${fromNode}`);
       }
@@ -169,7 +185,7 @@ export class DecoratorTranslationService {
         warnings.push(`Edge references unknown target node: ${toNode}`);
       }
     }
-    
+
     return {
       nodes,
       edges: definition.edges,
@@ -199,7 +215,7 @@ export class DecoratorTranslationService {
         `Method '${taskDef.methodName}' not found on instance for task '${taskName}'`
       );
     }
-    
+
     // Create handler that adapts functional-api context to workflow-engine state
     const handler = async (state: TState): Promise<Partial<TState>> => {
       // Create functional-api compatible context (declare outside try block)
@@ -211,12 +227,11 @@ export class DecoratorTranslationService {
         previousTask: state.currentNode,
         metadata: state.metadata || {},
       };
-      
+
       try {
-        
         // Call the decorated method
         const result = await method.call(instance, context);
-        
+
         // Handle functional-api TaskExecutionResult
         if (result && typeof result === 'object' && 'state' in result) {
           const stateUpdate: Partial<TState> = {
@@ -224,7 +239,7 @@ export class DecoratorTranslationService {
             currentNode: taskName,
             completedNodes: [...(state.completedNodes || []), taskName],
           } as Partial<TState>;
-          
+
           // Handle error in result
           if (result.error) {
             return {
@@ -240,10 +255,10 @@ export class DecoratorTranslationService {
               },
             } as Partial<TState>;
           }
-          
+
           return stateUpdate;
         }
-        
+
         // If method returns something else, treat it as state update
         return {
           ...result,
@@ -253,13 +268,17 @@ export class DecoratorTranslationService {
       } catch (error: any) {
         // Handle execution errors
         this.logger.error(`Task '${taskName}' failed:`, error);
-        
+
         // Check if there's an error handler
         if (taskDef.errorHandler) {
           const errorHandler = (instance as any)[taskDef.errorHandler];
           if (errorHandler && typeof errorHandler === 'function') {
             try {
-              const recoveryResult = await errorHandler.call(instance, context, error);
+              const recoveryResult = await errorHandler.call(
+                instance,
+                context,
+                error
+              );
               return {
                 ...recoveryResult.state,
                 currentNode: taskName,
@@ -271,16 +290,19 @@ export class DecoratorTranslationService {
                 },
               } as Partial<TState>;
             } catch (handlerError) {
-              this.logger.error(`Error handler '${taskDef.errorHandler}' failed:`, handlerError);
+              this.logger.error(
+                `Error handler '${taskDef.errorHandler}' failed:`,
+                handlerError
+              );
             }
           }
         }
-        
+
         // Re-throw if no recovery
         throw error;
       }
     };
-    
+
     return {
       id: taskName,
       name: taskDef.name || taskName,
@@ -315,7 +337,7 @@ export class DecoratorTranslationService {
       }
       return handler;
     }
-    
+
     throw new Error('Invalid handler type - must be a function');
   }
 
@@ -329,7 +351,9 @@ export class DecoratorTranslationService {
   ): WorkflowDefinition<TState> {
     return {
       name,
-      description: description || `Translated from ${translationResult.metadata.source} decorators`,
+      description:
+        description ||
+        `Translated from ${translationResult.metadata.source} decorators`,
       nodes: translationResult.nodes,
       edges: translationResult.edges,
       entryPoint: translationResult.entryPoint,
@@ -340,7 +364,9 @@ export class DecoratorTranslationService {
   /**
    * Get the name of a decorator definition
    */
-  private getDefinitionName<TState extends WorkflowState = WorkflowState>(definition: DecoratorDefinition<TState>): string {
+  private getDefinitionName<TState extends WorkflowState = WorkflowState>(
+    definition: DecoratorDefinition<TState>
+  ): string {
     if ('name' in definition) {
       return definition.name;
     }
@@ -357,18 +383,18 @@ export class DecoratorTranslationService {
     result: DecoratorTranslationResult<TState>
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     // Check for entry point
     if (!result.entryPoint) {
       errors.push('No entry point defined');
-    } else if (!result.nodes.find(n => n.id === result.entryPoint)) {
+    } else if (!result.nodes.find((n) => n.id === result.entryPoint)) {
       errors.push(`Entry point '${result.entryPoint}' not found in nodes`);
     }
-    
+
     // Check for orphaned nodes
-    const nodeIds = new Set(result.nodes.map(n => n.id));
+    const nodeIds = new Set(result.nodes.map((n) => n.id));
     const referencedNodes = new Set<string>();
-    
+
     for (const edge of result.edges) {
       if (typeof edge.from === 'string') {
         referencedNodes.add(edge.from);
@@ -377,21 +403,21 @@ export class DecoratorTranslationService {
         referencedNodes.add(edge.to);
       }
     }
-    
+
     // Entry point is always referenced
     referencedNodes.add(result.entryPoint);
-    
+
     for (const nodeId of nodeIds) {
       if (!referencedNodes.has(nodeId) && nodeId !== result.entryPoint) {
         errors.push(`Node '${nodeId}' is orphaned (not connected to any edge)`);
       }
     }
-    
+
     // Check for invalid edge references
     for (const edge of result.edges) {
       const fromNode = typeof edge.from === 'string' ? edge.from : null;
       const toNode = typeof edge.to === 'string' ? edge.to : null;
-      
+
       if (fromNode && !nodeIds.has(fromNode)) {
         errors.push(`Edge references unknown source node: ${fromNode}`);
       }
@@ -399,12 +425,12 @@ export class DecoratorTranslationService {
         errors.push(`Edge references unknown target node: ${toNode}`);
       }
     }
-    
+
     // Add any warnings from translation
     if (result.metadata.warnings) {
       errors.push(...result.metadata.warnings);
     }
-    
+
     return {
       valid: errors.length === 0,
       errors,
@@ -419,17 +445,22 @@ export class DecoratorTranslationService {
   ): DecoratorTranslationResult<TState> {
     // Remove redundant edges
     const uniqueEdges = new Map<string, WorkflowEdge<TState>>();
-    
+
     for (const edge of result.edges) {
-      const key = `${edge.from}->${typeof edge.to === 'string' ? edge.to : 'conditional'}`;
+      const key = `${edge.from}->${
+        typeof edge.to === 'string' ? edge.to : 'conditional'
+      }`;
       if (!uniqueEdges.has(key)) {
         uniqueEdges.set(key, edge);
       }
     }
-    
+
     // Sort nodes topologically for better execution order
-    const sortedNodes = this.topologicalSort(result.nodes, Array.from(uniqueEdges.values()));
-    
+    const sortedNodes = this.topologicalSort(
+      result.nodes,
+      Array.from(uniqueEdges.values())
+    );
+
     return {
       ...result,
       nodes: sortedNodes,
@@ -448,16 +479,16 @@ export class DecoratorTranslationService {
     nodes: WorkflowNode<TState>[],
     edges: WorkflowEdge<TState>[]
   ): WorkflowNode<TState>[] {
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     const inDegree = new Map<string, number>();
     const adjacencyList = new Map<string, string[]>();
-    
+
     // Initialize
     for (const node of nodes) {
       inDegree.set(node.id, 0);
       adjacencyList.set(node.id, []);
     }
-    
+
     // Build graph
     for (const edge of edges) {
       if (typeof edge.from === 'string' && typeof edge.to === 'string') {
@@ -467,25 +498,25 @@ export class DecoratorTranslationService {
         inDegree.set(edge.to, (inDegree.get(edge.to) || 0) + 1);
       }
     }
-    
+
     // Topological sort using Kahn's algorithm
     const queue: string[] = [];
     const sorted: WorkflowNode<TState>[] = [];
-    
+
     // Find nodes with no incoming edges
     for (const [nodeId, degree] of inDegree) {
       if (degree === 0) {
         queue.push(nodeId);
       }
     }
-    
+
     while (queue.length > 0) {
       const nodeId = queue.shift()!;
       const node = nodeMap.get(nodeId);
       if (node) {
         sorted.push(node);
       }
-      
+
       // Reduce in-degree of adjacent nodes
       const adjacent = adjacencyList.get(nodeId) || [];
       for (const adjNodeId of adjacent) {
@@ -496,13 +527,15 @@ export class DecoratorTranslationService {
         }
       }
     }
-    
+
     // If not all nodes were sorted, there's a cycle
     if (sorted.length !== nodes.length) {
-      this.logger.warn('Cycle detected in workflow graph, returning original order');
+      this.logger.warn(
+        'Cycle detected in workflow graph, returning original order'
+      );
       return nodes;
     }
-    
+
     return sorted;
   }
 }

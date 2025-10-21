@@ -1,4 +1,4 @@
-import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
+import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
 import type { ChromaClient } from 'chromadb';
 import {
   CHROMADB_CLIENT,
@@ -15,13 +15,43 @@ import {
   ChromaDBOptionsFactory,
   CollectionConfig,
 } from './interfaces/config';
+import type { BaseDocument } from './types/core.interface';
+import { ChromaDBRepository } from './repositories/chromadb-repository';
+import {
+  getRepositoryToken,
+  getCollectionName,
+} from './decorators/inject-repository.decorator';
+import { CacheCleanupService } from './services/caching/cache-cleanup.service';
+import { CacheOperationsService } from './services/caching/cache-operations.service';
+import { CacheStatisticsService } from './services/caching/cache-statistics.service';
+import { CacheStore } from './services/caching/cache-store.service';
+import {
+  CacheKeyGeneratorService,
+  SizeEstimatorService,
+  TtlCalculatorService,
+} from './services/caching/cache-utilities.service';
+import { ChromaCacheService } from './services/caching/chroma-cache.service';
+import { VectorCacheService } from './services/caching/vector-cache.service';
 import { ChromaAdminService } from './services/chroma-admin.service';
+import { ChromaMetricsService } from './services/chroma-metrics.service';
 import { ChromaDBService } from './services/chromadb.service';
 import { ChromaDBCollectionService } from './services/core/chromadb-collection.service';
+import { ChromaDBConnectionService } from './services/core/chromadb-connection.service';
+import { ChromaDBDocumentService } from './services/core/chromadb-document.service';
+import { ChromaDBOperationsService } from './services/core/chromadb-operations.service';
+import { ChromaDBRepositoryService } from './services/core/chromadb-repository.service';
+import { ChromaDBValidationService } from './services/core/chromadb-validation.service';
+import { DocumentSanitizerService } from './services/core/validation/document-sanitizer.service';
+import { DocumentValidatorService } from './services/core/validation/document-validator.service';
+import { OptionsValidatorService } from './services/core/validation/options-validator.service';
+import { ChromaDBHealthIndicator } from './services/core/health.service';
 import { EmbeddingService } from './services/embedding.service';
-import { TextSplitterService } from './services/text-splitter.service';
+import { ChromaDBEmbeddingProcessorService } from './services/facade/chromadb-embedding-processor.service';
+import { ChromaDBPerformanceService } from './services/facade/chromadb-performance.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
+import { TextSplitterService } from './services/text-splitter.service';
 import { setChromaDBConfig } from './utils/config/chromadb-config.accessor';
+import { TypeConversionUtils } from './utils/data/type-conversion.utils';
 import { validateChromaDBOptions } from './validation/validate-chromadb-options';
 
 @Global()
@@ -70,10 +100,16 @@ export class ChromaDBModule {
       },
       {
         provide: ChromaDBCollectionService,
-        useFactory: (connectionService: any) => {
-          return new ChromaDBCollectionService(connectionService);
+        useFactory: (
+          connectionService: ChromaDBConnectionService,
+          embeddingService: EmbeddingService
+        ) => {
+          return new ChromaDBCollectionService(
+            connectionService,
+            embeddingService
+          );
         },
-        inject: ['ChromaDBConnectionService'],
+        inject: [ChromaDBConnectionService, EmbeddingService],
       },
       {
         provide: ChromaAdminService,
@@ -82,8 +118,63 @@ export class ChromaDBModule {
         },
         inject: [CHROMADB_CLIENT],
       },
+      {
+        provide: 'ConnectionConfig',
+        useFactory: (opts: ChromaDBModuleOptions) => ({
+          host: opts.connection.host,
+          port: opts.connection.port ?? DEFAULT_CHROMA_PORT,
+          ssl: opts.connection.ssl ?? DEFAULT_CHROMA_SSL,
+          timeout: opts.connection.http?.timeout ?? opts.http?.timeout ?? 30000,
+          retryAttempts:
+            opts.connection.http?.maxRetries ??
+            opts.http?.maxRetries ??
+            opts.maxRetries ??
+            DEFAULT_MAX_RETRIES,
+          retryDelay:
+            opts.connection.http?.retryDelay ??
+            opts.http?.retryDelay ??
+            opts.retryDelay ??
+            DEFAULT_RETRY_DELAY,
+        }),
+        inject: [CHROMADB_OPTIONS],
+      },
       MetadataExtractorService,
       TextSplitterService,
+      TypeConversionUtils,
+      ChromaMetricsService,
+      ChromaCacheService,
+      // Cache utility services and infrastructure
+      CacheKeyGeneratorService,
+      TtlCalculatorService,
+      SizeEstimatorService,
+      // Central cache store - owns the Map, config, and stats
+      CacheStore,
+      // Cache services - now just simple registrations
+      CacheOperationsService,
+      CacheStatisticsService,
+      CacheCleanupService,
+      // VectorCacheService - simple registration
+      VectorCacheService,
+      ChromaDBConnectionService,
+      ChromaDBDocumentService,
+      ChromaDBRepositoryService,
+      ChromaDBOperationsService,
+      ChromaDBHealthIndicator,
+      DocumentValidatorService,
+      OptionsValidatorService,
+      DocumentSanitizerService,
+      ChromaDBValidationService,
+      {
+        provide: ChromaDBPerformanceService,
+        useFactory: (
+          metrics?: ChromaMetricsService,
+          cache?: ChromaCacheService
+        ) => {
+          return new ChromaDBPerformanceService(metrics, cache, {});
+        },
+        inject: [ChromaMetricsService, ChromaCacheService],
+      },
+      ChromaDBEmbeddingProcessorService,
       ChromaDBService,
     ];
 
@@ -97,6 +188,7 @@ export class ChromaDBModule {
         ChromaAdminService,
         TextSplitterService,
         MetadataExtractorService,
+        ChromaDBHealthIndicator,
         CHROMADB_CLIENT,
       ],
       global: true,
@@ -134,10 +226,16 @@ export class ChromaDBModule {
       },
       {
         provide: ChromaDBCollectionService,
-        useFactory: (connectionService: any) => {
-          return new ChromaDBCollectionService(connectionService);
+        useFactory: (
+          connectionService: ChromaDBConnectionService,
+          embeddingService: EmbeddingService
+        ) => {
+          return new ChromaDBCollectionService(
+            connectionService,
+            embeddingService
+          );
         },
-        inject: ['ChromaDBConnectionService'],
+        inject: [ChromaDBConnectionService, EmbeddingService],
       },
       {
         provide: ChromaAdminService,
@@ -146,8 +244,63 @@ export class ChromaDBModule {
         },
         inject: [CHROMADB_CLIENT],
       },
+      {
+        provide: 'ConnectionConfig',
+        useFactory: (opts: ChromaDBModuleOptions) => ({
+          host: opts.connection.host,
+          port: opts.connection.port ?? DEFAULT_CHROMA_PORT,
+          ssl: opts.connection.ssl ?? DEFAULT_CHROMA_SSL,
+          timeout: opts.connection.http?.timeout ?? opts.http?.timeout ?? 30000,
+          retryAttempts:
+            opts.connection.http?.maxRetries ??
+            opts.http?.maxRetries ??
+            opts.maxRetries ??
+            DEFAULT_MAX_RETRIES,
+          retryDelay:
+            opts.connection.http?.retryDelay ??
+            opts.http?.retryDelay ??
+            opts.retryDelay ??
+            DEFAULT_RETRY_DELAY,
+        }),
+        inject: [CHROMADB_OPTIONS],
+      },
       MetadataExtractorService,
       TextSplitterService,
+      TypeConversionUtils,
+      ChromaMetricsService,
+      ChromaCacheService,
+      // Cache utility services and infrastructure
+      CacheKeyGeneratorService,
+      TtlCalculatorService,
+      SizeEstimatorService,
+      // Central cache store - owns the Map, config, and stats
+      CacheStore,
+      // Cache services - now just simple registrations
+      CacheOperationsService,
+      CacheStatisticsService,
+      CacheCleanupService,
+      // VectorCacheService - simple registration
+      VectorCacheService,
+      ChromaDBConnectionService,
+      ChromaDBDocumentService,
+      ChromaDBRepositoryService,
+      ChromaDBOperationsService,
+      DocumentValidatorService,
+      OptionsValidatorService,
+      DocumentSanitizerService,
+      ChromaDBValidationService,
+      ChromaDBHealthIndicator,
+      {
+        provide: ChromaDBPerformanceService,
+        useFactory: (
+          metrics?: ChromaMetricsService,
+          cache?: ChromaCacheService
+        ) => {
+          return new ChromaDBPerformanceService(metrics, cache, {});
+        },
+        inject: [ChromaMetricsService, ChromaCacheService],
+      },
+      ChromaDBEmbeddingProcessorService,
       ChromaDBService,
     ];
 
@@ -163,37 +316,108 @@ export class ChromaDBModule {
         TextSplitterService,
         MetadataExtractorService,
         CHROMADB_CLIENT,
+        ChromaDBHealthIndicator,
       ],
       global: true,
     };
   }
 
   /**
+   * Register entity repositories (TypeORM-style) - NEW PATTERN
+   *
+   * Auto-generates ChromaDBRepository<T> for each entity class.
+   * Custom repositories can override via provider replacement pattern.
+   *
+   * @param entities - Array of entity classes decorated with @ChromaEntity
+   *
+   * @example Auto-generated repositories
+   * @Module({
+   *   imports: [
+   *     ChromaDBModule.forFeature([MemoryDocument, KnowledgeDocument])
+   *   ]
+   * })
+   * export class MemoryModule {}
+   *
+   * @example Custom repository override
+   * @Module({
+   *   imports: [ChromaDBModule.forFeature([MemoryDocument])],
+   *   providers: [
+   *     {
+   *       provide: getRepositoryToken(MemoryDocument),
+   *       useClass: MemoryCustomRepository
+   *     }
+   *   ]
+   * })
+   * export class MemoryModule {}
+   */
+  static forFeature(entities: Type<unknown>[]): DynamicModule;
+
+  /**
    * Register specific collections for injection
    */
-  static forFeature(collections: CollectionConfig[]): DynamicModule {
-    const providers: Provider[] = collections.map((config) => ({
-      provide: `COLLECTION_${config.name.toUpperCase()}`,
-      useFactory: async (
-        collectionService: ChromaDBCollectionService,
-        embeddingService: EmbeddingService
-      ) => {
-        const embeddingFn =
-          config.embeddingFunction ?? embeddingService.getEmbeddingFunction();
-        return collectionService.createCollection(
-          config.name,
-          config.metadata,
-          embeddingFn
-        );
-      },
-      inject: [ChromaDBCollectionService, EmbeddingService],
-    }));
+  static forFeature(collections: CollectionConfig[]): DynamicModule;
 
-    return {
-      module: ChromaDBModule,
-      providers,
-      exports: providers,
-    };
+  // Implementation handles both signatures
+  static forFeature(
+    entitiesOrCollections: Type<unknown>[] | CollectionConfig[]
+  ): DynamicModule {
+    // Check if first element is an entity class or collection config
+    const isEntityBased =
+      entitiesOrCollections.length > 0 &&
+      typeof entitiesOrCollections[0] === 'function';
+
+    if (isEntityBased) {
+      // NEW PATTERN: Entity-based auto-generated repositories
+      const entities = entitiesOrCollections as Type<unknown>[];
+      const providers: Provider[] = entities.map((entity) => {
+        const token = getRepositoryToken(entity);
+        const collection = getCollectionName(entity);
+
+        return {
+          provide: token,
+          useFactory: (chromaDB: ChromaDBService) => {
+            // Auto-generate repository instance
+            return new ChromaDBRepository(
+              entity as Type<BaseDocument>,
+              collection,
+              chromaDB
+            );
+          },
+          inject: [ChromaDBService],
+        };
+      });
+
+      return {
+        module: ChromaDBModule,
+        providers,
+        exports: providers,
+      };
+    } else {
+      // OLD PATTERN: Collection-based (legacy)
+      const collections = entitiesOrCollections as CollectionConfig[];
+      const providers: Provider[] = collections.map((config) => ({
+        provide: `COLLECTION_${config.name.toUpperCase()}`,
+        useFactory: async (
+          collectionService: ChromaDBCollectionService,
+          embeddingService: EmbeddingService
+        ) => {
+          const embeddingFn =
+            config.embeddingFunction ?? embeddingService.getEmbeddingFunction();
+          return collectionService.createCollection(
+            config.name,
+            config.metadata,
+            embeddingFn
+          );
+        },
+        inject: [ChromaDBCollectionService, EmbeddingService],
+      }));
+
+      return {
+        module: ChromaDBModule,
+        providers,
+        exports: providers,
+      };
+    }
   }
 
   private static createAsyncProviders(

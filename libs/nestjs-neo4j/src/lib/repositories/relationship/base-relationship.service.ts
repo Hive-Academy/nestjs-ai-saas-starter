@@ -6,7 +6,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { NeogmaService } from '../../core/neogma.service';
+import { NeogmaService } from '../../services/neogma.service';
 import { NeogmaQueryBuilderService } from '../../query-builder/neogma-query-builder.service';
 import { NeogmaQueryRunnerService } from '../../query-builder/neogma-query-runner.service';
 import type { Neo4jQueryParams } from '../../types/neo4j-types';
@@ -92,6 +92,42 @@ export interface BatchRelationshipOperation<TRel = any> {
 }
 
 /**
+ * Batch relationship MERGE operation (idempotent)
+ */
+export interface BatchRelationshipMergeOperation<TRel = any> {
+  /** Source node ID */
+  sourceId: string;
+  /** Target node ID */
+  targetId: string;
+  /** Relationship type */
+  type: string;
+  /** Properties to set on both CREATE and MATCH */
+  properties?: Partial<TRel>;
+  /** Properties to set ONLY when creating */
+  onCreate?: Partial<TRel>;
+  /** Properties to set ONLY when matching */
+  onMatch?: Partial<TRel>;
+}
+
+/**
+ * Batch relationship MERGE operation with node creation
+ */
+export interface BatchRelationshipNodeMergeOperation<TRel = any> {
+  /** Source node ID */
+  sourceId: string;
+  /** Target node unique key (e.g., technology name) */
+  targetKey: string | Record<string, unknown>;
+  /** Relationship type */
+  type: string;
+  /** Target node label (e.g., 'Technology') */
+  targetLabel?: string;
+  /** Properties for target node (applied on CREATE) */
+  targetProperties?: Record<string, unknown>;
+  /** Properties for relationship */
+  relationshipProperties?: Partial<TRel>;
+}
+
+/**
  * Base service providing shared functionality for relationship operations
  *
  * Generic types are now more flexible - they don't require index signatures
@@ -103,15 +139,22 @@ export abstract class BaseRelationshipService<
   TTarget = any
 > {
   protected readonly logger = new Logger(BaseRelationshipService.name);
-  protected readonly relationshipType: string = 'RELATES_TO';
-  protected readonly sourceLabel: string = 'Entity';
-  protected readonly targetLabel: string = 'Entity';
+  protected readonly relationshipType: string;
+  protected readonly sourceLabel: string;
+  protected readonly targetLabel: string;
 
   constructor(
     protected readonly neogmaService: NeogmaService,
     protected readonly queryBuilder: NeogmaQueryBuilderService,
-    protected readonly queryRunner: NeogmaQueryRunnerService
-  ) {}
+    protected readonly queryRunner: NeogmaQueryRunnerService,
+    relationshipType = 'RELATES_TO',
+    sourceLabel = 'Entity',
+    targetLabel = 'Entity'
+  ) {
+    this.relationshipType = relationshipType;
+    this.sourceLabel = sourceLabel;
+    this.targetLabel = targetLabel;
+  }
 
   /**
    * Execute a query with NeogmaService (legacy support)

@@ -4,10 +4,6 @@ import {
   FunctionalApiModuleAsyncOptions,
   FunctionalApiOptionsFactory,
 } from './interfaces/module-options.interface';
-import {
-  NoOpCheckpointAdapter,
-  NoOpStreamingService,
-} from '@hive-academy/langgraph-core';
 import { FunctionalWorkflowService } from './services/functional-workflow.service';
 import { WorkflowRegistrationService } from './services/workflow-registration.service';
 import { GraphGeneratorService } from './services/graph-generator.service';
@@ -41,30 +37,8 @@ export class FunctionalApiModule {
       imports: [],
       providers: [
         optionsProvider,
-        // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
-        {
-          provide: 'IMemoryAdapter',
-          useFactory: (options: FunctionalApiModuleOptions) => {
-            // Optional memory adapter for functional-api memory integration
-            return options.memoryAdapter || null;
-          },
-          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
-        },
-        // Provide default NoOp implementations for missing adapters
-        {
-          provide: 'ICheckpointAdapter',
-          useFactory: (options: FunctionalApiModuleOptions) => {
-            return options.checkpointAdapter || new NoOpCheckpointAdapter();
-          },
-          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
-        },
-        {
-          provide: 'IStreamingService',
-          useFactory: (options: FunctionalApiModuleOptions) => {
-            return options.streamingAdapter || new NoOpStreamingService();
-          },
-          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
-        },
+        // Don't re-provide adapter tokens - they're injected from external modules
+        // The adapters are passed via module options and don't need to be re-provided
         WorkflowValidator,
         WorkflowRegistrationService,
         GraphGeneratorService,
@@ -92,30 +66,8 @@ export class FunctionalApiModule {
       imports: [...(options.imports || [])],
       providers: [
         ...asyncProviders,
-        // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
-        {
-          provide: 'IMemoryAdapter',
-          useFactory: (options: FunctionalApiModuleOptions) => {
-            // Optional memory adapter for functional-api memory integration
-            return options.memoryAdapter || null;
-          },
-          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
-        },
-        // Provide default NoOp implementations for missing adapters
-        {
-          provide: 'ICheckpointAdapter',
-          useFactory: (options: FunctionalApiModuleOptions) => {
-            return options.checkpointAdapter || new NoOpCheckpointAdapter();
-          },
-          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
-        },
-        {
-          provide: 'IStreamingService',
-          useFactory: (options: FunctionalApiModuleOptions) => {
-            return options.streamingAdapter || new NoOpStreamingService();
-          },
-          inject: [FUNCTIONAL_API_MODULE_OPTIONS],
-        },
+        // Don't re-provide adapter tokens - they're injected from external modules
+        // The adapters are passed via module options and don't need to be re-provided
         WorkflowValidator,
         WorkflowRegistrationService,
         GraphGeneratorService,

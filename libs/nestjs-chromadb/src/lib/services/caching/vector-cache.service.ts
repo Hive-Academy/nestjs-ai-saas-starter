@@ -5,6 +5,7 @@ import {
   CacheKeyGeneratorService,
   TtlCalculatorService,
 } from './cache-utilities.service';
+import { CacheStore } from './cache-store.service';
 
 /**
  * Vector-specific cache operations service - handles vector search and embedding caching
@@ -13,13 +14,16 @@ import {
 @Injectable()
 export class VectorCacheService implements IVectorCacheOperations {
   private readonly logger = new Logger(VectorCacheService.name);
+  private readonly config: Required<CacheConfig>;
 
   constructor(
     private readonly cacheOps: CacheOperationsService,
     private readonly keyGenerator: CacheKeyGeneratorService,
     private readonly ttlCalculator: TtlCalculatorService,
-    private readonly config: Required<CacheConfig>
-  ) {}
+    private readonly cacheStore: CacheStore
+  ) {
+    this.config = this.cacheStore.getConfig();
+  }
 
   /**
    * Cache vector search results with special handling for embeddings

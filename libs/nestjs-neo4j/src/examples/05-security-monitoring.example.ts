@@ -29,7 +29,7 @@ import {
   NotNull,
   Unique,
   PropIndex,
-  Repository,
+  Neo4jRepositoryBase,
   InjectNeogma,
   NeogmaService,
   Safe,
@@ -38,7 +38,6 @@ import {
   Transactional,
   CypherQuery,
   NeogmaMetricsService,
-  BaseRepositoryService,
 } from '../index';
 
 // ============================================================================
@@ -347,15 +346,27 @@ export interface SecurityAlert {
 // 3. SECURE REPOSITORY WITH EXTENSIVE PROTECTION
 // ============================================================================
 
-@Repository(() => UserProfile)
+/**
+ * SecureUserRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<UserProfile>:
+ * - findById(id: string): Promise<UserProfile | null>
+ * - findAll(options?: FindOptions<UserProfile>): Promise<UserProfile[]>
+ * - findOne(options: FindOptions<UserProfile>): Promise<UserProfile | null>
+ * - create(data: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>): Promise<UserProfile>
+ * - update(id: string, updates: Partial<UserProfile>): Promise<UserProfile | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<UserProfile>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<UserProfile>): Promise<UserProfile>
+ */
 @Injectable()
-export class SecureUserRepository extends BaseRepositoryService<UserProfile> {
-  constructor() {
-    super();
-  }
+export class SecureUserRepository extends Neo4jRepositoryBase<UserProfile> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Find user with comprehensive security checks
+   * Uses inherited findAll() method
    */
   @Safe({ strict: true })
   @RateLimit({ requests: 100, window: '1m', strategy: 'fixed-window' })

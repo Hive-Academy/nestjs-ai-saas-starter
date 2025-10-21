@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { Injectable } from '@nestjs/common';
 import {
   Agent,
@@ -33,10 +32,19 @@ describe('@Agent Decorator System', () => {
         expect(isAgent(TestAgent)).toBe(true);
 
         const storedConfig = getAgentConfig(TestAgent);
-        expect(storedConfig).toEqual(config);
+
+        // Decorator adds smart defaults, so check core properties individually
         expect(storedConfig?.id).toBe('test-agent');
         expect(storedConfig?.name).toBe('Test Agent');
         expect(storedConfig?.description).toBe('A test agent for validation');
+
+        // Verify smart defaults are applied
+        expect(storedConfig?.type).toBe('simple-agent');
+        expect(storedConfig?.tools).toEqual([]);
+        expect(storedConfig?.capabilities).toEqual([]);
+        expect(storedConfig?.priority).toBe('medium');
+        expect(storedConfig?.executionTime).toBe('medium');
+        expect(storedConfig?.outputFormat).toBe('text');
       });
 
       it('should support full agent configuration with tools and capabilities', () => {
@@ -64,7 +72,16 @@ describe('@Agent Decorator System', () => {
         }
 
         const storedConfig = getAgentConfig(GitHubAnalyzerAgent);
-        expect(storedConfig).toEqual(config);
+
+        // Verify explicit configuration properties
+        expect(storedConfig?.id).toBe('github-analyzer');
+        expect(storedConfig?.name).toBe('GitHub Analyzer');
+        expect(storedConfig?.description).toBe(
+          'Analyzes GitHub repositories for technical achievements'
+        );
+        expect(storedConfig?.systemPrompt).toBe(
+          'You are a GitHub analysis expert...'
+        );
         expect(storedConfig?.tools).toEqual([
           'github_analyzer',
           'achievement_extractor',
@@ -75,10 +92,14 @@ describe('@Agent Decorator System', () => {
         ]);
         expect(storedConfig?.priority).toBe('high');
         expect(storedConfig?.executionTime).toBe('medium');
+        expect(storedConfig?.outputFormat).toBe('structured');
         expect(storedConfig?.metadata).toEqual({
           version: '1.0',
           category: 'analysis',
         });
+
+        // Decorator adds type based on class hierarchy
+        expect(storedConfig?.type).toBe('simple-agent');
       });
 
       it('should enable agent discovery with proper metadata', () => {
@@ -106,22 +127,66 @@ describe('@Agent Decorator System', () => {
       });
     });
 
-    describe('User Error Scenarios: Invalid agent configuration', () => {
-      it('should throw error when id is missing', () => {
-        // Test user error condition: Missing required id field
-        expect(() => {}).toThrow("@Agent decorator requires 'id' property");
-      });
+    describe('User Scenario: Smart defaults eliminate required fields', () => {
+      it('should auto-generate id from class name when not provided', () => {
+        // Test user's expected outcome: Decorator derives id automatically
+        @Agent({
+          description: 'Test agent with auto-generated id',
+        })
+        @Injectable()
+        class GitHubAnalyzerAgent {
+          async nodeFunction() {
+            return { status: 'test' };
+          }
+        }
 
-      it('should throw error when name is missing', () => {
-        // Test user error condition: Missing required name field
-        expect(() => {}).toThrow("@Agent decorator requires 'name' property");
-      });
+        const storedConfig = getAgentConfig(GitHubAnalyzerAgent);
 
-      it('should throw error when description is missing', () => {
-        // Test user error condition: Missing required description field
-        expect(() => {}).toThrow(
-          "@Agent decorator requires 'description' property"
+        // Verify auto-derived id (GitHubAnalyzerAgent → git-hub-analyzer)
+        // Function removes Agent suffix, inserts hyphens before capitals, lowercases
+        expect(storedConfig?.id).toBe('git-hub-analyzer');
+        expect(storedConfig?.description).toBe(
+          'Test agent with auto-generated id'
         );
+      });
+
+      it('should auto-generate name from class name when not provided', () => {
+        // Test user's expected outcome: Decorator humanizes class name
+        @Agent({
+          description: 'Test agent with auto-generated name',
+        })
+        @Injectable()
+        class PersonalBrandStrategist {
+          async nodeFunction() {
+            return { status: 'test' };
+          }
+        }
+
+        const storedConfig = getAgentConfig(PersonalBrandStrategist);
+
+        // Verify auto-generated name (PersonalBrandStrategist → Personal Brand Strategist)
+        expect(storedConfig?.name).toBe('Personal Brand Strategist');
+        expect(storedConfig?.description).toBe(
+          'Test agent with auto-generated name'
+        );
+      });
+
+      it('should auto-generate description from class name when not provided', () => {
+        // Test user's expected outcome: Decorator creates default description
+        @Agent({})
+        @Injectable()
+        class ContentCreatorAgent {
+          async nodeFunction() {
+            return { status: 'test' };
+          }
+        }
+
+        const storedConfig = getAgentConfig(ContentCreatorAgent);
+
+        // Verify auto-generated description (ContentCreatorAgent → Content Creator Agent)
+        expect(storedConfig?.description).toBe('Content Creator Agent');
+        expect(storedConfig?.id).toBe('content-creator');
+        expect(storedConfig?.name).toBe('Content Creator');
       });
     });
   });

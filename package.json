@@ -33,9 +33,9 @@
     "ci:validate": "node scripts/typescript-fixes/ci-validation.js",
     "security:audit": "node scripts/security-audit.js",
     "security:mitigate": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install --registry=https://registry.npmjs.org/",
-    "typecheck:all": "nx run-many -t typecheck --parallel=false",
-    "typecheck:libs": "nx run-many -t typecheck --projects=tag:type:library --parallel=false",
-    "typecheck:affected": "nx affected -t typecheck --parallel=false"
+    "typecheck:all": "nx run-many -t typecheck ",
+    "typecheck:libs": "nx run-many -t typecheck --projects=tag:type:library",
+    "typecheck:affected": "nx affected -t typecheck"
   },
   "private": true,
   "dependencies": {
@@ -79,6 +79,7 @@
     "cohere-ai": "^7.18.0",
     "d3": "7.9.0",
     "gsap": "3.13.0",
+    "html2canvas": "1.4.1",
     "langchain": "^0.3.30",
     "neo4j-driver": "^5.28.1",
     "openai": "^5.12.2",
@@ -98,7 +99,9 @@
     "@commitlint/cli": "^18.0.0",
     "@commitlint/config-conventional": "^18.0.0",
     "@eslint/js": "^9.8.0",
+    "@langchain/langgraph-swarm": "0.0.6",
     "@langchain/tavily": "0.1.5",
+    "@monogrid/gainmap-js": "3.1.0",
     "@nestjs/axios": "4.0.1",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
@@ -116,7 +119,9 @@
     "@nx/web": "21.5.1",
     "@nx/webpack": "21.5.1",
     "@nx/workspace": "21.5.1",
+    "@omnedia/ngx-light-rays": "3.0.0",
     "@playwright/test": "^1.36.0",
+    "@pmndrs/vanilla": "1.25.0",
     "@schematics/angular": "20.1.6",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
@@ -128,6 +133,7 @@
     "@types/uuid": "10.0.0",
     "@typescript-eslint/utils": "^8.40.0",
     "angular-eslint": "^20.2.0",
+    "angular-three-soba": "3.7.2",
     "autoprefixer": "^10.4.0",
     "chalk": "5.5.0",
     "eslint": "^9.8.0",
@@ -152,6 +158,10 @@
     "rollup": "4.49.0",
     "rollup-plugin-dts": "6.2.3",
     "tailwindcss": "^3.0.2",
+    "three-custom-shader-material": "6.2.1",
+    "three-mesh-bvh": "0.8.3",
+    "three-stdlib": "2.36.0",
+    "troika-three-text": "0.52.4",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "2.8.1",
@@ -181,6 +191,12 @@
     "@angular/build": "20.1.6",
     "@swc/core": "~1.5.7",
     "angular-three": {
+      "@angular/common": "20.1.6",
+      "@angular/core": "20.1.6",
+      "three": "0.180.0"
+    },
+    "angular-three-soba": {
+      "angular-three": "3.7.2",
       "@angular/common": "20.1.6",
       "@angular/core": "20.1.6",
       "three": "0.180.0"

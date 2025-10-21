@@ -1,4 +1,3 @@
-
 /**
  * Base state interface for functional workflows
  */
@@ -13,7 +12,9 @@ export interface FunctionalWorkflowState {
 /**
  * Task execution context provided to decorated methods
  */
-export interface TaskExecutionContext<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
+export interface TaskExecutionContext<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
   readonly state: TState;
   readonly taskName: string;
   readonly workflowId: string;
@@ -25,7 +26,9 @@ export interface TaskExecutionContext<TState extends FunctionalWorkflowState = F
 /**
  * Result of task execution
  */
-export interface TaskExecutionResult<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
+export interface TaskExecutionResult<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
   readonly state: Partial<TState>;
   readonly nextTasks?: readonly string[];
   readonly metadata?: Record<string, unknown>;
@@ -36,7 +39,9 @@ export interface TaskExecutionResult<TState extends FunctionalWorkflowState = Fu
 /**
  * Workflow execution result
  */
-export interface WorkflowExecutionResult<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
+export interface WorkflowExecutionResult<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
   readonly finalState: TState;
   readonly executionPath: readonly string[];
   readonly executionTime: number;
@@ -94,8 +99,17 @@ export interface WorkflowExecutionOptions {
 /**
  * Streaming workflow event types
  */
-export interface WorkflowStreamEvent<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
-  readonly type: 'task_start' | 'task_complete' | 'task_error' | 'workflow_complete' | 'workflow_error' | 'workflow_start' | 'checkpoint_saved';
+export interface WorkflowStreamEvent<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
+  readonly type:
+    | 'task_start'
+    | 'task_complete'
+    | 'task_error'
+    | 'workflow_complete'
+    | 'workflow_error'
+    | 'workflow_start'
+    | 'checkpoint_saved';
   readonly taskName?: string;
   readonly state?: Partial<TState>;
   readonly error?: Error;

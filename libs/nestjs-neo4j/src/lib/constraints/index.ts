@@ -80,4 +80,4 @@ export {
 // Re-export metadata keys
 export { CONSTRAINT_METADATA_KEYS } from '../interfaces/constraint-metadata.interface';
 
-export * from './constraint.service'
+export * from './constraint.service';

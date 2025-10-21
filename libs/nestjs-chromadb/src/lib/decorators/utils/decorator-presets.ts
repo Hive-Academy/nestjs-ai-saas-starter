@@ -6,7 +6,7 @@
  */
 
 import type { VectorQueryConfig } from '../core/vector-query.decorator';
-import type { ChromaRepositoryConfig } from '../repository/repository-metadata';
+// import type { ChromaRepositoryConfig } from '../repository/repository-metadata'; // Removed - legacy decorator pattern
 import type { CachedConfig } from '../performance/cached.decorator';
 import type { ProfiledConfig } from '../performance/profiled.decorator';
 import type { RetryConfig } from '../performance/retry.decorator';
@@ -19,7 +19,6 @@ import type { MultiTenantConfig } from '../../services/multi-tenant';
 export interface CompleteDecoratorConfig {
   // Core functionality
   vectorQuery?: VectorQueryConfig;
-  repository?: ChromaRepositoryConfig;
 
   // Performance features
   caching?: CachedConfig;
@@ -79,12 +78,6 @@ export function validateDecoratorCombination(
     );
   }
 
-  if (configs.repository?.enableBatch && !configs.retry) {
-    suggestions.push(
-      'Consider adding retry decorator for batch operations to handle partial failures'
-    );
-  }
-
   if (
     configs.profiling?.slowQueryThreshold &&
     !configs.profiling.samplingRate
@@ -120,20 +113,6 @@ export function createOptimizedDecoratorConfig(
       cacheTimeout: 300000, // 5 minutes
       validateParams: true,
       ...baseConfig.vectorQuery,
-    },
-
-    repository: {
-      collection: 'default', // Provide required collection property
-      autoEmbed: true,
-      enableCaching: true,
-      enableBatch: true,
-      defaultBatchSize: 100,
-      enableValidation: true,
-      autoTimestamp: true,
-      autoGenerateIds: true,
-      enableSoftDelete: false,
-      errorHandling: 'throw' as const,
-      ...baseConfig.repository,
     },
 
     caching: {
@@ -317,10 +296,6 @@ export function applyDecoratorPreset(
       preset.vectorQuery && overrides.vectorQuery
         ? { ...preset.vectorQuery, ...overrides.vectorQuery }
         : preset.vectorQuery || overrides.vectorQuery,
-    repository:
-      preset.repository && overrides.repository
-        ? { ...preset.repository, ...overrides.repository }
-        : preset.repository || overrides.repository,
     caching:
       preset.caching && overrides.caching
         ? { ...preset.caching, ...overrides.caching }

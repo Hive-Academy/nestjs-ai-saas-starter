@@ -2,20 +2,23 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { Neo4jCrudService } from '@hive-academy/nestjs-neo4j';
 
 // DevBrand Chat Studio MVP Components (Post-Legacy Cleanup)
-import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer.agent';
-import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist.agent';
-import { ContentCreatorAgent } from './agents/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from './agents/github-code-analyzer/github-code-analyzer.agent';
+import { PersonalBrandStrategistAgent } from './agents/personal-brand-strategist/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from './agents/content-creator/content-creator.agent';
 import { DevBrandSupervisorWorkflow } from './workflows/devbrand-supervisor.workflow';
 import { DevBrandChatWorkflow } from './workflows/devbrand-chat.workflow';
 import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.service';
+import { RepositoryModule } from '../repositories/repository.module';
 import { WebResearchTools } from './core/tools/web-research.tools';
 import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
+import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 
 /**
  * DevBrand Chat Studio MVP Module - Post-Legacy Cleanup
- * 
+ *
  * Streamlined module focused on DevBrand Chat Studio MVP requirements:
  * - 3 core agents (GitHub Analysis, Brand Strategy, Content Creation)
  * - 2 functional-api workflows (Supervisor, Chat)
@@ -26,9 +29,14 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
   imports: [
     ConfigModule, // For environment configuration
     WorkflowEngineModule, // Required for DeclarativeWorkflowBase services
+    FunctionalApiModule, // Required for FunctionalWorkflow services
     MultiAgentModule, // Required for Agent decorator services
+    RepositoryModule, // Provides all repositories (ChromaDB + Neo4j)
   ],
   providers: [
+    // Neo4j CRUD Service (Composition Pattern for Repositories)
+    Neo4jCrudService,
+
     // MVP Core Agents - Using new decorator architecture
     GitHubCodeAnalyzerAgent,
     PersonalBrandStrategistAgent, // Reference implementation with workflow-agent type
@@ -39,7 +47,7 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
     DevBrandChatWorkflow, // Chat interface workflow
 
     // Core Business Services
-    PersonalBrandMemoryService, // ChromaDB + Neo4j integration
+    PersonalBrandMemoryService, // ChromaDB + Neo4j integration (repositories injected from RepositoryModule)
 
     // MVP Tools - Kept per user request
     WebResearchTools, // Social media profile searching
@@ -52,7 +60,11 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
         platforms: {
           linkedin: {
             enabled: configService.get('DEVBRAND_LINKEDIN_ENABLED', true),
-            contentTypes: ['technical-insights', 'career-updates', 'thought-leadership'],
+            contentTypes: [
+              'technical-insights',
+              'career-updates',
+              'thought-leadership',
+            ],
           },
           devto: {
             enabled: configService.get('DEVBRAND_DEVTO_ENABLED', true),
@@ -60,13 +72,22 @@ import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
           },
         },
         github: {
-          analysisDepth: configService.get('DEVBRAND_GITHUB_ANALYSIS_DEPTH', 'detailed'),
+          analysisDepth: configService.get(
+            'DEVBRAND_GITHUB_ANALYSIS_DEPTH',
+            'detailed'
+          ),
           timeframe: configService.get('DEVBRAND_GITHUB_TIMEFRAME', 'month'),
-          includePrivate: configService.get('DEVBRAND_GITHUB_INCLUDE_PRIVATE', false),
+          includePrivate: configService.get(
+            'DEVBRAND_GITHUB_INCLUDE_PRIVATE',
+            false
+          ),
         },
         memory: {
           namespace: 'devbrand-chat-studio',
-          retentionDays: configService.get('DEVBRAND_MEMORY_RETENTION_DAYS', 90),
+          retentionDays: configService.get(
+            'DEVBRAND_MEMORY_RETENTION_DAYS',
+            90
+          ),
           vectorCollection: 'personal_brand_knowledge',
         },
         llm: {

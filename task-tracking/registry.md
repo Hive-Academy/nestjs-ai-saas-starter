@@ -1,7 +1,6 @@
 # Task Registry
 
-Generated with sequential TASK_YYYY_NNN format for predictable task IDs.
-
-| Task ID      | Title                    | Status      | Type    | Priority | Effort | Created    | Updated    | Completed  | Branch      |
-| ------------ | ------------------------ | ----------- | ------- | -------- | ------ | ---------- | ---------- | ---------- | ----------- |
-| TASK_2025_001 | Systematically fix all dev-brand-api agent architecture issues | 🔄 Active | Feature | P1-High | L | 2025-10-02 | 2025-10-02 11:42:28 | | feature/001 |
+| Task ID       | Title                                          | Status                             | Type        | Priority  | Effort | Created    | Updated             | Completed | Branch      |
+| ------------- | ---------------------------------------------- | ---------------------------------- | ----------- | --------- | ------ | ---------- | ------------------- | --------- | ----------- |
+| TASK_2025_015 | Radical Angular 3D Architecture Simplification | Completed                          | Refactoring | P1-High   | L      | 2025-10-18 | 2025-10-18 23:15:00 |           | feature/015 |
+| TASK_2025_016 | Landing Page Sections Rebuild (13 Packages)    | 🔄 Active (Phase 5 Complete - 59%) | Feature     | P2-Medium | XL     | 2025-10-20 | 2025-10-21 00:45:00 |           | feature/016 |

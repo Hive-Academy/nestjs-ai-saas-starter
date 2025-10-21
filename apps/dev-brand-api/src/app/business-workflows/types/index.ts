@@ -30,6 +30,59 @@ export interface WorkflowAgentState extends AgentState {
   startedAt: Date;
 }
 
+/**
+ * 🆕 TYPE-SAFE: Generic workflow agent state with strongly-typed metadata
+ *
+ * Eliminates unsafe type assertions by providing compile-time type safety for metadata access.
+ * Each agent uses this with its specific metadata type (GitHubAnalyzerMetadata, BrandStrategistMetadata, etc.)
+ *
+ * @template TMetadata - Agent-specific metadata type extending WorkflowAgentMetadata
+ *
+ * @example GitHub Code Analyzer
+ * ```typescript
+ * import type { GitHubAnalyzerMetadata } from '../agents/shared/metadata.types';
+ *
+ * export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
+ *   TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+ * > {
+ *   async analyzeRepository(context: TaskExecutionContext<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>) {
+ *     // Type-safe access - no 'as string' needed!
+ *     const username = context.state.metadata.githubUsername; // ✅ string
+ *     const timeframe = context.state.metadata.timeframe; // ✅ string
+ *     const githubData = context.state.metadata.githubData; // ✅ GitHubData | undefined
+ *   }
+ * }
+ * ```
+ *
+ * @example Personal Brand Strategist
+ * ```typescript
+ * import type { BrandStrategistMetadata } from '../agents/shared/metadata.types';
+ *
+ * export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
+ *   TypedWorkflowAgentState<BrandStrategistMetadata>
+ * > {
+ *   async analyzeBrand(context: TaskExecutionContext<TypedWorkflowAgentState<BrandStrategistMetadata>>) {
+ *     // Type-safe access - no type assertions!
+ *     const brandScore = context.state.metadata.brandScore; // ✅ number | undefined
+ *     const strategyType = context.state.metadata.strategyType; // ✅ 'optimization' | 'rebuild' | undefined
+ *   }
+ * }
+ * ```
+ */
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
+  extends Omit<WorkflowAgentState, 'metadata'> {
+  /**
+   * Type-safe metadata property
+   * Replaces WorkflowAgentState['metadata'] with strongly-typed TMetadata
+   */
+  metadata: TMetadata;
+
+  /**
+   * Index signature for compatibility with FunctionalWorkflowState
+   */
+  [key: string]: unknown;
+}
+
 // Shared Business Types
 export interface BaseEntity {
   id: string;

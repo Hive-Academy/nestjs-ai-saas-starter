@@ -1,6 +1,9 @@
-import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import { NodeIdBuilder } from '@hive-academy/langgraph-core';
-import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import type {
+  IMemoryAdapter,
+  AgentState,
+  Store,
+} from '@hive-academy/langgraph-core';
 import type {
   AgentMemory,
   AgentMemoryContext,
@@ -8,41 +11,68 @@ import type {
   IAgentMemoryBridge,
   UserMemoryPatterns,
 } from '../interfaces/agent-memory.interface';
-import type {
-  MemoryEntry,
-  UserMemoryPatterns as ReadonlyUserMemoryPatterns,
-} from '../interfaces/memory.interface';
-import { MemoryService } from './memory.service';
-import { wrapMemoryError } from '../errors/memory.errors';
+import type { MemoryEntry } from '../interfaces/memory.interface';
+import type { IVectorService } from '../interfaces/vector-service.interface';
+import type { IGraphService } from '../interfaces/graph-service.interface';
+import type { IStoreService } from '../store/services/interfaces/store-service.interface';
+import { AgentMemoryCoreService } from './agent-memory-core.service';
+import { AgentMemoryContextService } from './agent-memory-context.service';
+import { AgentMemoryCheckpointService } from './agent-memory-checkpoint.service';
+import { AgentMemoryStatsService } from './agent-memory-stats.service';
 
 /**
- * Bridge service that enables agent-memory integration
+ * Bridge service orchestrator for agent-memory integration
  *
- * This service provides:
- * ✅ Memory context retrieval for agents during execution
- * ✅ Agent-generated memory storage with proper attribution
- * ✅ Checkpoint coordination for memory persistence
- * ✅ Agent-specific memory analytics and monitoring
- * ✅ Memory namespace management for agent isolation
+ * REFACTORED: Reduced from 997 lines to orchestrator pattern
+ *
+ * Responsibility: IMemoryAdapter implementation + service orchestration
+ * - Delegate CRUD operations to AgentMemoryCoreService
+ * - Delegate context retrieval to AgentMemoryContextService
+ * - Delegate checkpoint sync to AgentMemoryCheckpointService
+ * - Delegate statistics to AgentMemoryStatsService
+ * - Direct Store integration via IStoreService
+ * - IMemoryAdapter compliance methods (9 wrappers)
+ *
+ * Pattern: Orchestrator delegates to specialized services
+ * Architecture: Single Responsibility Principle - orchestration only
+ *
+ * TASK_2025_006: Split AgentMemoryBridgeService into Focused Services
+ * - AgentMemoryCoreService: CRUD operations (252 lines)
+ * - AgentMemoryContextService: Context retrieval (193 lines)
+ * - AgentMemoryCheckpointService: Checkpoint sync (133 lines)
+ * - AgentMemoryStatsService: Statistics tracking (104 lines)
+ * - AgentMemoryBridgeService: Orchestrator (this file, ~200 lines)
  */
 @Injectable()
-export class AgentMemoryBridgeService implements IAgentMemoryBridge {
+export class AgentMemoryBridgeService
+  implements IAgentMemoryBridge, IMemoryAdapter
+{
   private readonly logger = new Logger(AgentMemoryBridgeService.name);
-  private readonly agentStats = new Map<string, AgentMemoryStats>();
 
   constructor(
-    private readonly memoryService: MemoryService,
-    @Optional()
-    @Inject('ICheckpointAdapter')
-    private readonly checkpointAdapter?: ICheckpointAdapter
+    private readonly coreService: AgentMemoryCoreService,
+    private readonly contextService: AgentMemoryContextService,
+    private readonly checkpointService: AgentMemoryCheckpointService,
+    private readonly statsService: AgentMemoryStatsService,
+    @Inject('IStoreService')
+    private readonly storeService: IStoreService,
+    @Inject('IVectorService')
+    private readonly vectorService: IVectorService,
+    @Inject('IGraphService')
+    private readonly graphService: IGraphService
   ) {
     this.logger.log(
-      'AgentMemoryBridge initialized with memory and checkpoint services'
+      'AgentMemoryBridge initialized (orchestrator pattern) with specialized services'
     );
   }
 
+  // ========================================================================
+  // IAgentMemoryBridge Implementation - Delegate to Specialized Services
+  // ========================================================================
+
   /**
-   * Get comprehensive memory context for an agent during execution
+   * Get memory context for an agent during execution
+   * Delegates to AgentMemoryContextService
    */
   async getAgentMemoryContext(
     agentId: string,
@@ -50,249 +80,64 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
     query?: string,
     userId?: string
   ): Promise<AgentMemoryContext> {
-    const startTime = Date.now();
+    const context = await this.contextService.getAgentMemoryContext(
+      agentId,
+      threadId,
+      query,
+      userId
+    );
 
-    try {
-      this.logger.debug(
-        `Getting memory context for agent ${agentId} in thread ${threadId}`
-      );
+    // Update statistics
+    this.statsService.updateAgentStats(agentId, {
+      memoriesAccessed: context.contextWindow,
+    });
 
-      // Search for relevant memories with agent-specific namespace
-      const searchResults = await this.memoryService.searchForContext(
-        query || `agent context for ${agentId}`,
-        threadId,
-        userId
-      );
-
-      // Include agent-specific memories (memories created by this agent)
-      const agentSpecificMemories = await this.searchAgentMemories(
-        agentId,
-        query || '',
-        {
-          threadId,
-          userId,
-          limit: 5,
-          minRelevance: 0.6,
-        }
-      );
-
-      // Combine all relevant memories
-      const allMemories = [
-        ...searchResults.relevantMemories,
-        ...agentSpecificMemories.filter(
-          // Avoid duplicates
-          (agentMem) =>
-            !searchResults.relevantMemories.some(
-              (mem) => mem.id === agentMem.id
-            )
-        ),
-      ];
-
-      // Categorize memories by type
-      const threadMemories = allMemories.filter(
-        (m) => m.metadata?.threadId === threadId
-      );
-      const userMemories = allMemories.filter(
-        (m) =>
-          m.metadata?.userId === agentId && m.metadata?.threadId !== threadId
-      );
-      const agentMemoriesFiltered = allMemories.filter(
-        (m) => m.metadata?.agentId === agentId
-      );
-
-      // Calculate combined confidence
-      const confidence = searchResults.confidence;
-
-      // Update agent statistics
-      this.updateAgentStats(agentId, {
-        memoriesAccessed: allMemories.length,
-        searchTime: Date.now() - startTime,
-      });
-
-      const context: AgentMemoryContext = {
-        threadMemories: threadMemories,
-        userMemories: userMemories,
-        agentMemories: agentMemoriesFiltered,
-        userPatterns: this.convertToMutableUserPatterns(
-          searchResults.userPatterns
-        ) || {
-          userId: agentId || 'unknown',
-          commonTopics: [],
-          interactionFrequency: {},
-          preferredMemoryTypes: [],
-          averageSessionLength: 0,
-          totalSessions: 0,
-          lastInteraction: undefined,
-        },
-        relevanceScore: confidence,
-        contextWindow: allMemories.length,
-      };
-
-      this.logger.debug(
-        `Retrieved ${allMemories.length} memories for agent ${agentId} (confidence: ${confidence})`
-      );
-
-      return context;
-    } catch (error) {
-      this.logger.error(
-        `Failed to get memory context for agent ${agentId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-
-      // Return empty context on failure (graceful degradation)
-      return {
-        threadMemories: [],
-        userMemories: [],
-        agentMemories: [],
-        userPatterns: {
-          userId: agentId || 'unknown',
-          commonTopics: [],
-          interactionFrequency: {},
-          preferredMemoryTypes: [],
-          averageSessionLength: 0,
-          totalSessions: 0,
-          lastInteraction: undefined,
-        } as UserMemoryPatterns,
-        relevanceScore: 0,
-        contextWindow: 0,
-      };
-    }
+    return context;
   }
 
   /**
-   * Store memory generated by an agent with proper attribution
+   * Store memory generated by an agent
+   * Delegates to AgentMemoryCoreService
    */
   async storeAgentMemory(
     agentId: string,
     memory: AgentMemory
   ): Promise<MemoryEntry> {
-    try {
-      this.logger.debug(
-        `Storing memory from agent ${agentId}: ${memory.content.slice(
-          0,
-          50
-        )}...`
-      );
+    const storedMemory = await this.coreService.storeAgentMemory(
+      agentId,
+      memory
+    );
 
-      // Create canonical thread ID for agent memory
-      const agentThreadId = NodeIdBuilder.create()
-        .domain('agent')
-        .phase('memory')
-        .activity(agentId)
-        .detail(memory.threadId)
-        .build();
+    // Update statistics
+    this.statsService.updateAgentStats(agentId, { memoriesCreated: 1 });
 
-      // Enhance metadata with agent information
-      const enhancedMetadata = {
-        ...memory.metadata,
-        agentGenerated: true as const,
-        agentId,
-        source: `agent-${agentId}`,
-        namespace: `agent:${agentId}`,
-        createdByAgent: true,
-      };
-
-      // Store in memory system
-      const storedMemory = await this.memoryService.store(
-        agentThreadId,
-        memory.content,
-        enhancedMetadata,
-        memory.userId
-      );
-
-      // Update agent statistics
-      this.updateAgentStats(agentId, { memoriesCreated: 1 });
-
-      this.logger.debug(`✅ Agent memory stored: ${storedMemory.id}`);
-      return storedMemory;
-    } catch (error) {
-      this.logger.error(
-        `Failed to store agent memory: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      throw wrapMemoryError('storeAgentMemory', error);
-    }
+    return storedMemory;
   }
 
   /**
    * Store multiple agent memories in batch
+   * Delegates to AgentMemoryCoreService
    */
   async storeAgentMemoriesBatch(
     agentId: string,
     memories: readonly AgentMemory[]
   ): Promise<readonly MemoryEntry[]> {
-    if (memories.length === 0) return [];
+    const storedMemories = await this.coreService.storeAgentMemoriesBatch(
+      agentId,
+      memories
+    );
 
-    try {
-      this.logger.debug(
-        `Batch storing ${memories.length} memories from agent ${agentId}`
-      );
+    // Update statistics
+    this.statsService.updateAgentStats(agentId, {
+      memoriesCreated: storedMemories.length,
+    });
 
-      // Group memories by thread for efficient storage
-      const memoriesByThread = new Map<string, AgentMemory[]>();
-
-      for (const memory of memories) {
-        const agentThreadId = NodeIdBuilder.create()
-          .domain('agent')
-          .phase('memory')
-          .activity(agentId)
-          .detail(memory.threadId)
-          .build();
-
-        if (!memoriesByThread.has(agentThreadId)) {
-          memoriesByThread.set(agentThreadId, []);
-        }
-        memoriesByThread.get(agentThreadId)!.push(memory);
-      }
-
-      // Store memories for each thread
-      const storedMemories: MemoryEntry[] = [];
-
-      for (const [agentThreadId, threadMemories] of memoriesByThread) {
-        const batchEntries = threadMemories.map((memory) => ({
-          content: memory.content,
-          metadata: {
-            ...memory.metadata,
-            agentGenerated: true as const,
-            agentId,
-            source: `agent-${agentId}`,
-            namespace: `agent:${agentId}`,
-            createdByAgent: true,
-          },
-        }));
-
-        const batchResults = await this.memoryService.storeBatch(
-          agentThreadId,
-          batchEntries,
-          threadMemories[0]?.userId
-        );
-
-        storedMemories.push(...batchResults);
-      }
-
-      // Update agent statistics
-      this.updateAgentStats(agentId, {
-        memoriesCreated: storedMemories.length,
-      });
-
-      this.logger.debug(
-        `✅ Batch stored ${storedMemories.length} agent memories`
-      );
-      return storedMemories;
-    } catch (error) {
-      this.logger.error(
-        `Failed to batch store agent memories: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      throw wrapMemoryError('storeAgentMemoriesBatch', error);
-    }
+    return storedMemories;
   }
 
   /**
-   * Search for memories created by a specific agent
+   * Search for agent-specific memories
+   * Delegates to AgentMemoryCoreService
    */
   async searchAgentMemories(
     agentId: string,
@@ -304,251 +149,381 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge {
       readonly minRelevance?: number;
     }
   ): Promise<readonly MemoryEntry[]> {
-    try {
-      const searchOptions = {
-        query,
-        threadId: options?.threadId,
-        userId: options?.userId,
-        limit: options?.limit || 10,
-        minRelevance: options?.minRelevance || 0.5,
-        // Filter for agent-generated memories
-        tags: [`agent:${agentId}`],
-        type: 'custom' as const,
-      };
+    const startTime = Date.now();
+    const memories = await this.coreService.searchAgentMemories(
+      agentId,
+      query,
+      options
+    );
 
-      const memories = await this.memoryService.search(searchOptions);
+    // Update statistics
+    this.statsService.updateAgentStats(agentId, {
+      searchTime: Date.now() - startTime,
+    });
 
-      // Additional filtering for agent-specific memories
-      const agentMemories = memories.filter(
-        (memory) => memory.metadata.agentId === agentId
-      );
-
-      this.logger.debug(
-        `Found ${agentMemories.length} memories for agent ${agentId}`
-      );
-
-      return agentMemories;
-    } catch (error) {
-      this.logger.error(
-        `Failed to search agent memories: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return [];
-    }
+    return memories;
   }
 
   /**
-   * Sync agent memories with checkpoint for coordinated persistence
+   * Sync agent memories with checkpoint
+   * Delegates to AgentMemoryCheckpointService
    */
   async syncWithCheckpoint(
     threadId: string,
     checkpointId: string,
     agentMemories?: readonly MemoryEntry[]
   ): Promise<void> {
-    if (!this.checkpointAdapter) {
-      this.logger.debug(
-        'No checkpoint adapter available - skipping memory sync'
-      );
-      return;
-    }
-
-    try {
-      this.logger.debug(
-        `Syncing memories with checkpoint ${checkpointId} for thread ${threadId}`
-      );
-
-      // Get checkpoint metadata
-      const checkpoint = await this.checkpointAdapter.loadCheckpoint(
-        threadId,
-        checkpointId
-      );
-
-      if (!checkpoint) {
-        this.logger.warn(
-          `Checkpoint ${checkpointId} not found for thread ${threadId}`
-        );
-        return;
-      }
-
-      // Create memory-checkpoint link metadata
-      const syncMetadata = {
-        checkpointId,
-        threadId,
-        syncedAt: new Date().toISOString(),
-        memoryCount: agentMemories?.length || 0,
-      };
-
-      // Store sync information in checkpoint metadata
-      await this.checkpointAdapter.saveCheckpoint(
-        threadId,
-        checkpoint.channel_values,
-        {
-          timestamp: new Date().toISOString(),
-          source: 'update' as const,
-          step: 0,
-          parents: {},
-          memorySync: syncMetadata,
-        }
-      );
-
-      // If agent memories provided, ensure they're linked to this checkpoint
-      if (agentMemories && agentMemories.length > 0) {
-        await this.linkMemoriesToCheckpoint(agentMemories, checkpointId);
-      }
-
-      this.logger.debug(`✅ Memory-checkpoint sync completed for ${threadId}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to sync memories with checkpoint: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      // Don't throw - sync failures shouldn't break agent execution
-    }
+    await this.checkpointService.syncWithCheckpoint(
+      threadId,
+      checkpointId,
+      agentMemories
+    );
   }
 
   /**
-   * Get memory usage statistics for an agent
+   * Get agent memory statistics
+   * Delegates to AgentMemoryStatsService
    */
   async getAgentMemoryStats(agentId: string): Promise<AgentMemoryStats> {
-    const stats = this.agentStats.get(agentId);
+    return this.statsService.getAgentMemoryStats(agentId);
+  }
 
-    if (!stats) {
-      return {
+  /**
+   * Clear agent memories for a thread
+   * Delegates to AgentMemoryCoreService
+   */
+  async clearAgentMemories(agentId: string, threadId: string): Promise<number> {
+    return this.coreService.clearAgentMemories(agentId, threadId);
+  }
+
+  // ========================================================================
+  // Store Integration - Direct IStoreService Delegation
+  // ========================================================================
+
+  /**
+   * Get the Store instance for cross-thread memory sharing
+   * Provides hierarchical namespace-based storage
+   *
+   * Verification:
+   * - Pattern source: phase-2-architecture.md:842-900
+   * - Returns IStoreService (verified in store-service.interface.ts:5)
+   * - Simple delegation pattern
+   *
+   * @param collection - Optional collection name (defaults to 'langgraph-stores')
+   * @returns Store instance with put/get/search operations
+   *
+   * @example
+   * ```typescript
+   * const store = agentMemoryBridge.getStore();
+   * await store.putStoreItem(['user', 'user-123', 'preferences'], 'theme', { mode: 'dark' });
+   * ```
+   */
+  getStore(collection?: string): Store {
+    if (collection) {
+      this.logger.debug(`Creating scoped store for collection: ${collection}`);
+      this.storeService.setDefaultCollection(collection);
+    }
+
+    // Return Store-compliant wrapper around IStoreService
+    return {
+      search: async (namespace: string[], query?: string) => {
+        const filter = query ? { query } : undefined;
+        return this.storeService.searchStoreItems(namespace, filter, 100);
+      },
+      get: async (namespace: string[], key: string) => {
+        return this.storeService.getStoreItem(namespace, key);
+      },
+      put: async (
+        namespace: string[],
+        key: string,
+        value: Record<string, any>
+      ) => {
+        await this.storeService.putStoreItem(namespace, key, value);
+      },
+      delete: async (namespace: string[], key: string) => {
+        await this.storeService.deleteStoreItem(namespace, key);
+      },
+      list: async (namespace: string[]) => {
+        const items = await this.storeService.searchStoreItems(
+          namespace,
+          undefined,
+          1000
+        );
+        return items;
+      },
+    };
+  }
+
+  // ========================================================================
+  // IMemoryAdapter Compliance Methods - Delegate to Specialized Services
+  // ========================================================================
+  // These methods provide thin wrappers for IMemoryAdapter interface compliance
+  // All methods delegate to specialized services
+  // Pattern source: implementation-plan.md:1417-1662
+
+  /**
+   * IMemoryAdapter compliance: Get agent context from state
+   * Delegates to AgentMemoryContextService
+   *
+   * Pattern source: implementation-plan.md:1417-1432
+   */
+  async getAgentContext(state: AgentState): Promise<AgentMemoryContext> {
+    return this.getAgentMemoryContext(
+      state.current || 'unknown',
+      state.threadId || 'unknown',
+      state.messages?.[state.messages.length - 1]?.content,
+      state.userId
+    );
+  }
+
+  /**
+   * IMemoryAdapter compliance: Store agent execution result
+   * Delegates to AgentMemoryCoreService
+   *
+   * Pattern source: implementation-plan.md:1434-1459
+   */
+  async storeAgentExecution(
+    state: AgentState,
+    result: Partial<AgentState>,
+    agentId: string
+  ): Promise<void> {
+    const memory: AgentMemory = {
+      content: JSON.stringify({
+        input: state.messages?.[state.messages.length - 1]?.content,
+        output: result.messages?.[result.messages.length - 1]?.content,
+        timestamp: new Date().toISOString(),
+      }),
+      agentId,
+      threadId: state.threadId || 'unknown',
+      userId: state.userId,
+      metadata: {
+        agentGenerated: true as const,
+        type: 'fact',
+        memoryType: 'execution' as const,
+        success: !result.metadata?.error,
+        importance: result.metadata?.error ? 0.9 : 0.7,
+      },
+    };
+    await this.storeAgentMemory(agentId, memory);
+  }
+
+  /**
+   * IMemoryAdapter compliance: Store conversation turn
+   * Delegates to AgentMemoryCoreService
+   *
+   * Pattern source: implementation-plan.md:1461-1486
+   */
+  async storeConversationTurn(
+    threadId: string,
+    humanMessage: string,
+    aiMessage: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    const turnId = `turn_${threadId}_${Date.now()}`;
+    const agentId = (metadata?.agentId as string) || 'conversation-agent';
+    const memories: AgentMemory[] = [
+      {
+        content: humanMessage,
         agentId,
-        memoriesAccessed: 0,
-        memoriesCreated: 0,
-        averageSearchTime: 0,
-        contextHitRate: 0,
-        lastAccess: new Date(),
+        threadId,
+        userId: metadata?.userId as string,
+        metadata: {
+          agentGenerated: true as const,
+          memoryType: 'context' as const,
+          type: 'conversation',
+          role: 'human',
+          turnId,
+          ...metadata,
+        },
+      },
+      {
+        content: aiMessage,
+        agentId,
+        threadId,
+        userId: metadata?.userId as string,
+        metadata: {
+          agentGenerated: true as const,
+          memoryType: 'context' as const,
+          type: 'conversation',
+          role: 'assistant',
+          turnId,
+          ...metadata,
+        },
+      },
+    ];
+    await this.storeAgentMemoriesBatch(agentId, memories);
+  }
+
+  /**
+   * IMemoryAdapter compliance: Generic search
+   * Delegates to AgentMemoryCoreService or Store
+   *
+   * Pattern source: implementation-plan.md:1501-1532
+   */
+  async search(options: {
+    query: string;
+    threadId?: string;
+    userId?: string;
+    agentId?: string;
+    limit?: number;
+    namespace?: string[];
+    minRelevance?: number;
+  }): Promise<any[]> {
+    if (options.namespace) {
+      const store = this.getStore();
+      return store.search(options.namespace, options.query);
+    }
+    const results = await this.searchAgentMemories(
+      options.agentId || 'unknown',
+      options.query,
+      {
+        threadId: options.threadId,
+        userId: options.userId,
+        limit: options.limit || 10,
+        minRelevance: options.minRelevance || 0.5,
+      }
+    );
+    return [...results]; // Convert readonly array to mutable
+  }
+
+  /**
+   * IMemoryAdapter compliance: Store single memory
+   * Delegates to AgentMemoryCoreService
+   *
+   * Pattern source: implementation-plan.md:1534-1554
+   */
+  async store(
+    threadId: string,
+    content: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
+    const agentId = (metadata?.agentId as string) || 'unknown';
+    const memory: AgentMemory = {
+      content,
+      agentId,
+      threadId,
+      userId: metadata?.userId as string,
+      metadata: {
+        agentGenerated: true as const,
+        memoryType: 'context' as const,
+        type: 'custom',
+        ...metadata,
+      },
+    };
+    const stored = await this.storeAgentMemory(agentId, memory);
+    return stored.id;
+  }
+
+  /**
+   * IMemoryAdapter compliance: Store batch of memories
+   * Delegates to AgentMemoryCoreService
+   *
+   * Pattern source: implementation-plan.md:1556-1576
+   */
+  async storeBatch(
+    threadId: string,
+    entries: Array<{ content: string; metadata?: Record<string, unknown> }>
+  ): Promise<string[]> {
+    const agentId = (entries[0]?.metadata?.agentId as string) || 'unknown';
+    const memories: AgentMemory[] = entries.map((entry) => ({
+      content: entry.content,
+      agentId: (entry.metadata?.agentId as string) || agentId,
+      threadId,
+      userId: entry.metadata?.userId as string,
+      metadata: {
+        agentGenerated: true as const,
+        memoryType: 'context' as const,
+        type: 'custom',
+        ...entry.metadata,
+      },
+    }));
+    const stored = await this.storeAgentMemoriesBatch(agentId, memories);
+    return stored.map((m) => m.id);
+  }
+
+  /**
+   * IMemoryAdapter compliance: Get user behavior patterns
+   * Delegates to AgentMemoryContextService via graph or vector search
+   *
+   * Pattern source: implementation-plan.md:1578-1639
+   */
+  async getUserPatterns(
+    userId: string,
+    limitDays = 30
+  ): Promise<UserMemoryPatterns> {
+    if (!userId) {
+      return {
+        userId: 'unknown',
+        commonTopics: [],
+        interactionFrequency: {},
+        preferredMemoryTypes: [],
+        averageSessionLength: 0,
+        totalSessions: 0,
       };
     }
 
-    return stats;
+    // Delegate to graph adapter if available
+    if (
+      this.graphService &&
+      typeof (this.graphService as any).analyzeConversationPatterns ===
+        'function'
+    ) {
+      try {
+        return await (this.graphService as any).analyzeConversationPatterns(
+          userId,
+          limitDays
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Graph pattern analysis failed, falling back to vector search: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
+    // Fallback to context service's pattern extraction
+    // Use context service's method via a new context retrieval
+    const context = await this.contextService.getAgentMemoryContext(
+      'pattern-extraction',
+      'temp',
+      undefined,
+      userId
+    );
+
+    return context.userPatterns;
   }
 
   /**
-   * Clear all memories for an agent in a specific thread
+   * IMemoryAdapter compliance: Health check
+   * Verifies vector and graph adapter health
+   *
+   * Pattern source: implementation-plan.md:1641-1662
    */
-  async clearAgentMemories(agentId: string, threadId: string): Promise<number> {
+  async isHealthy(): Promise<boolean> {
     try {
-      this.logger.debug(
-        `Clearing memories for agent ${agentId} in thread ${threadId}`
-      );
-
-      // Create agent thread ID
-      const agentThreadId = NodeIdBuilder.create()
-        .domain('agent')
-        .phase('memory')
-        .activity(agentId)
-        .detail(threadId)
-        .build();
-
-      // Get agent memories for this thread
-      const agentMemories = await this.searchAgentMemories(agentId, '', {
-        threadId,
-        limit: 1000, // Get all memories
-      });
-
-      if (agentMemories.length === 0) {
-        return 0;
+      // Test vector adapter
+      if (
+        this.vectorService &&
+        typeof this.vectorService.getStats === 'function'
+      ) {
+        await this.vectorService.getStats('vector-memories');
       }
-
-      // Delete memories
-      const deletedCount = await this.memoryService.delete(
-        agentThreadId,
-        agentMemories.map((m) => m.id)
-      );
-
-      this.logger.debug(
-        `✅ Cleared ${deletedCount} memories for agent ${agentId}`
-      );
-      return deletedCount;
+      // Test graph adapter (optional)
+      if (
+        this.graphService &&
+        typeof this.graphService.getStats === 'function'
+      ) {
+        await this.graphService.getStats();
+      }
+      return true;
     } catch (error) {
       this.logger.error(
-        `Failed to clear agent memories: ${
+        `Health check failed: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
-      return 0;
+      return false;
     }
-  }
-
-  // Private helper methods
-
-  /**
-   * Update agent memory statistics
-   */
-  private updateAgentStats(
-    agentId: string,
-    updates: {
-      memoriesAccessed?: number;
-      memoriesCreated?: number;
-      searchTime?: number;
-    }
-  ): void {
-    const currentStats = this.agentStats.get(agentId) || {
-      agentId,
-      memoriesAccessed: 0,
-      memoriesCreated: 0,
-      averageSearchTime: 0,
-      contextHitRate: 0.85,
-      lastAccess: new Date(),
-    };
-
-    const newStats: AgentMemoryStats = {
-      agentId,
-      memoriesAccessed:
-        currentStats.memoriesAccessed + (updates.memoriesAccessed || 0),
-      memoriesCreated:
-        currentStats.memoriesCreated + (updates.memoriesCreated || 0),
-      averageSearchTime: updates.searchTime
-        ? (currentStats.averageSearchTime + updates.searchTime) / 2
-        : currentStats.averageSearchTime,
-      contextHitRate: currentStats.contextHitRate,
-      lastAccess: new Date(),
-    };
-
-    this.agentStats.set(agentId, newStats);
-  }
-
-  /**
-   * Link memories to a specific checkpoint
-   */
-  private async linkMemoriesToCheckpoint(
-    memories: readonly MemoryEntry[],
-    checkpointId: string
-  ): Promise<void> {
-    // This could be implemented by updating memory metadata
-    // or creating separate relationship tracking
-    this.logger.debug(
-      `Linking ${memories.length} memories to checkpoint ${checkpointId}`
-    );
-
-    // For now, we log the association
-    // In a full implementation, this could update memory metadata
-    // or create a separate relationship table/collection
-  }
-
-  /**
-   * Convert readonly UserMemoryPatterns to mutable version
-   */
-  private convertToMutableUserPatterns(
-    readonlyPatterns: ReadonlyUserMemoryPatterns | null
-  ): UserMemoryPatterns | null {
-    if (!readonlyPatterns) {
-      return null;
-    }
-
-    return {
-      userId: readonlyPatterns.userId,
-      commonTopics: [...readonlyPatterns.commonTopics],
-      interactionFrequency: { ...readonlyPatterns.interactionFrequency },
-      preferredMemoryTypes: [...readonlyPatterns.preferredMemoryTypes],
-      averageSessionLength: readonlyPatterns.averageSessionLength,
-      totalSessions: readonlyPatterns.totalSessions,
-      lastInteraction: undefined, // agent-memory interface doesn't have this field
-    };
   }
 }

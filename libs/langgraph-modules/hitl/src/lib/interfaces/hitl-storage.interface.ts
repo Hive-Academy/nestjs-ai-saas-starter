@@ -58,6 +58,43 @@ export abstract class IHitlStorageService {
   abstract getStorageStats(): Promise<HitlStorageStats>;
 
   /**
+   * Save approval request (alias for storeApprovalRequest)
+   */
+  abstract save(request: any): Promise<void>;
+
+  /**
+   * Get approval request (alias for getApprovalRequest)
+   */
+  abstract get(id: string): Promise<any>;
+
+  /**
+   * Get all pending approvals
+   */
+  abstract getAllPending(): Promise<any[]>;
+
+  /**
+   * Get approvals by execution ID
+   */
+  abstract getByExecutionId(executionId: string): Promise<any[]>;
+
+  /**
+   * Update approval request
+   */
+  abstract update(request: any): Promise<void>;
+
+  /**
+   * Backup all approval data
+   */
+  abstract backup(): Promise<{ backupId: string; count: number }>;
+
+  /**
+   * Restore approval data from backup
+   */
+  abstract restore(
+    backupId: string
+  ): Promise<{ restored: number; failed: number }>;
+
+  /**
    * Common validation method for approval request data
    * Available to all implementations as template method
    */

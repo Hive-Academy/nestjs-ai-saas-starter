@@ -53,7 +53,6 @@ export * from './safe.decorator';
 export * from './cypher-query.decorator';
 
 // Utility decorators
-export * from './inject-neo4j.decorator';
 export * from './transactional.decorator';
 
 // Constraint decorators (re-exported for convenience)

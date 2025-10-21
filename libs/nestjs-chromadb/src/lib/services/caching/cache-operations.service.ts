@@ -9,6 +9,7 @@ import {
   TtlCalculatorService,
   SizeEstimatorService,
 } from './cache-utilities.service';
+import { CacheStore } from './cache-store.service';
 
 /**
  * Core cache operations service - handles basic cache CRUD operations
@@ -17,14 +18,19 @@ import {
 @Injectable()
 export class CacheOperationsService implements ICacheOperations {
   private readonly logger = new Logger(CacheOperationsService.name);
+  private readonly cache: Map<string, CacheEntry>;
+  private readonly config: Required<CacheConfig>;
+  private readonly stats: MutableCacheStats;
 
   constructor(
-    private readonly cache: Map<string, CacheEntry>,
-    private readonly config: Required<CacheConfig>,
-    private readonly stats: MutableCacheStats,
+    private readonly cacheStore: CacheStore,
     private readonly ttlCalculator: TtlCalculatorService,
     private readonly sizeEstimator: SizeEstimatorService
-  ) {}
+  ) {
+    this.cache = this.cacheStore.getCache();
+    this.config = this.cacheStore.getConfig();
+    this.stats = this.cacheStore.getStats();
+  }
 
   /**
    * Get value from cache

@@ -1,0 +1,280 @@
+
+ NX   Running target typecheck for project dev-brand-api and 13 tasks it depends on:
+
+
+
+> nx run @hive-academy/langgraph-core:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/nestjs-neo4j:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/nestjs-chromadb:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-checkpoint:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-streaming:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-functional-api:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-hitl:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-multi-agent:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-time-travel:typecheck
+
+> npx tsc --noEmit --project tsconfig.lib.json --strict --skipLibCheck
+
+
+> nx run @hive-academy/langgraph-memory:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-workflow-engine:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-monitoring:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-platform:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run dev-brand-api:typecheck
+
+> tsc --build --emitDeclarationOnly
+
+src/app/app.module.ts(96,7): error TS2322: Type '(configService: ConfigService) => Neo4jModuleOptions' is not assignable to type '(...args: any[]) => Neo4jModuleOptions | Promise<Neo4jModuleOptions>'.
+  Type 'Neo4jModuleOptions' is not assignable to type 'Neo4jModuleOptions | Promise<Neo4jModuleOptions>'.
+    Property 'url' is missing in type 'import("D:/projects/nestjs-ai-saas-starter/node_modules/@hive-academy/nestjs-neo4j/src/lib/interfaces/neo4j-module-options.interface").Neo4jModuleOptions' but required in type 'Neo4jModuleOptions'.
+src/app/business-workflows/agents/content-creator/content-creator.agent.ts(32,3): error TS6196: 'BrandVoice' is declared but never used.
+src/app/business-workflows/agents/content-creator/content-creator.agent.ts(153,11): error TS2561: Object literal may only specify known properties, but 'workflowStarted' does not exist in type 'ContentCreatorMetadata'. Did you mean to write 'workflowStartTime'?
+src/app/business-workflows/agents/content-creator/content-creator.agent.ts(183,21): error TS2339: Property 'getBrandVoice' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/agents/content-creator/content-creator.agent.ts(184,21): error TS2551: Property 'getBrandStrategy' does not exist on type 'PersonalBrandMemoryService'. Did you mean 'storeBrandStrategy'?
+src/app/business-workflows/agents/content-creator/content-creator.agent.ts(186,21): error TS2339: Property 'getDevContext' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/agents/content-creator/content-creator.agent.ts(197,13): error TS2561: Object literal may only specify known properties, but 'devContext' does not exist in type 'ContentCreatorMetadata'. Did you mean to write 'devtoContent'?
+src/app/business-workflows/agents/content-creator/content-creator.utils.ts(8,28): error TS6196: 'ContentQualityScore' is declared but never used.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(33,3): error TS6196: 'DeveloperInsights' is declared but never used.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(161,11): error TS2561: Object literal may only specify known properties, but 'workflowStarted' does not exist in type 'GitHubAnalyzerMetadata'. Did you mean to write 'workflowStartTime'?
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(212,13): error TS2322: Type 'GitHubAnalysisResponse' is not assignable to type 'GitHubData'.
+  The types of 'patterns.commitFrequency' are incompatible between these types.
+    Type 'number' is not assignable to type 'string'.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(259,9): error TS2322: Type 'import("D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/business-workflows/agents/shared/agent.types").GitHubCommit[]' is not assignable to type 'GitHubCommit[]'.
+  Property 'commit' is missing in type 'import("D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/business-workflows/agents/shared/agent.types").GitHubCommit' but required in type 'GitHubCommit'.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(260,9): error TS2322: Type 'import("D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/business-workflows/agents/shared/agent.types").GitHubRepository[]' is not assignable to type 'GitHubRepository[]'.
+  Type 'GitHubRepository' is missing the following properties from type 'GitHubRepository': id, full_name, stargazers_count, forks_count, and 3 more.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(315,11): error TS2322: Type 'import("D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/business-workflows/agents/shared/agent.types").GitHubCommit[]' is not assignable to type 'GitHubCommit[]'.
+  Property 'commit' is missing in type 'import("D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/business-workflows/agents/shared/agent.types").GitHubCommit' but required in type 'GitHubCommit'.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(316,11): error TS2322: Type 'import("D:/projects/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/business-workflows/agents/shared/agent.types").GitHubRepository[]' is not assignable to type 'GitHubRepository[]'.
+  Type 'GitHubRepository' is missing the following properties from type 'GitHubRepository': id, full_name, stargazers_count, forks_count, and 3 more.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(374,9): error TS2345: Argument of type 'GitHubData | undefined' is not assignable to parameter of type 'GitHubData'.
+  Type 'undefined' is not assignable to type 'GitHubData'.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(414,13): error TS2322: Type '"fallback"' is not assignable to type '"test" | "real" | "demo" | undefined'.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(469,7): error TS2367: This comparison appears to be unintentional because the types '"test" | "real" | "demo"' and '"fallback"' have no overlap.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(475,13): error TS2345: Argument of type 'GitHubData | undefined' is not assignable to parameter of type 'GitHubData'.
+  Type 'undefined' is not assignable to type 'GitHubData'.
+src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts(499,28): error TS2367: This comparison appears to be unintentional because the types '"test" | "real" | "demo"' and '"fallback"' have no overlap.
+src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts(128,11): error TS2561: Object literal may only specify known properties, but 'workflowStarted' does not exist in type 'BrandStrategistMetadata'. Did you mean to write 'workflowStartTime'?
+src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts(157,21): error TS2339: Property 'getDevContext' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts(158,21): error TS2339: Property 'getBrandEvolution' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts(159,21): error TS2339: Property 'getBrandVoice' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts(495,11): error TS2741: Property 'positioning' is missing in type '{ userId: string; strategyType: "optimization" | "rebuild" | undefined; brandScore: number | undefined; strategy: string | undefined; analysis: BrandAnalysis | undefined; ... 4 more ...; workflowMetadata: { ...; }; }' but required in type 'BrandStrategy'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(18,23): error TS2323: Cannot redeclare exported variable 'BusinessWorkflowError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(82,14): error TS2323: Cannot redeclare exported variable 'AgentInitializationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(108,14): error TS2323: Cannot redeclare exported variable 'AgentExecutionError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(135,14): error TS2323: Cannot redeclare exported variable 'AgentTimeoutError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(166,14): error TS2323: Cannot redeclare exported variable 'WorkflowConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(191,14): error TS2323: Cannot redeclare exported variable 'WorkflowStateError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(218,14): error TS2323: Cannot redeclare exported variable 'WorkflowTransitionError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(250,14): error TS2323: Cannot redeclare exported variable 'ExternalServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(278,14): error TS2323: Cannot redeclare exported variable 'GitHubIntegrationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(293,10): error TS2540: Cannot assign to 'errorCode' because it is a read-only property.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(296,3): error TS4114: This member must have an 'override' modifier because it overrides a member in the base class 'ExternalServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(305,14): error TS2323: Cannot redeclare exported variable 'MemoryServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(332,14): error TS2323: Cannot redeclare exported variable 'LLMProviderError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(363,14): error TS2323: Cannot redeclare exported variable 'InputValidationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(389,14): error TS2323: Cannot redeclare exported variable 'StateValidationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(421,14): error TS2323: Cannot redeclare exported variable 'MissingConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(446,14): error TS2323: Cannot redeclare exported variable 'InvalidConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(475,14): error TS2323: Cannot redeclare exported variable 'BusinessWorkflowErrorFactory'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(666,3): error TS2323: Cannot redeclare exported variable 'BusinessWorkflowError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(666,3): error TS2484: Export declaration conflicts with exported declaration of 'BusinessWorkflowError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(667,3): error TS2323: Cannot redeclare exported variable 'AgentInitializationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(667,3): error TS2484: Export declaration conflicts with exported declaration of 'AgentInitializationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(668,3): error TS2323: Cannot redeclare exported variable 'AgentExecutionError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(668,3): error TS2484: Export declaration conflicts with exported declaration of 'AgentExecutionError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(669,3): error TS2323: Cannot redeclare exported variable 'AgentTimeoutError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(669,3): error TS2484: Export declaration conflicts with exported declaration of 'AgentTimeoutError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(670,3): error TS2323: Cannot redeclare exported variable 'WorkflowConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(670,3): error TS2484: Export declaration conflicts with exported declaration of 'WorkflowConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(671,3): error TS2323: Cannot redeclare exported variable 'WorkflowStateError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(671,3): error TS2484: Export declaration conflicts with exported declaration of 'WorkflowStateError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(672,3): error TS2323: Cannot redeclare exported variable 'WorkflowTransitionError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(672,3): error TS2484: Export declaration conflicts with exported declaration of 'WorkflowTransitionError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(673,3): error TS2323: Cannot redeclare exported variable 'ExternalServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(673,3): error TS2484: Export declaration conflicts with exported declaration of 'ExternalServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(674,3): error TS2323: Cannot redeclare exported variable 'GitHubIntegrationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(674,3): error TS2484: Export declaration conflicts with exported declaration of 'GitHubIntegrationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(675,3): error TS2323: Cannot redeclare exported variable 'MemoryServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(675,3): error TS2484: Export declaration conflicts with exported declaration of 'MemoryServiceError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(676,3): error TS2323: Cannot redeclare exported variable 'LLMProviderError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(676,3): error TS2484: Export declaration conflicts with exported declaration of 'LLMProviderError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(677,3): error TS2323: Cannot redeclare exported variable 'InputValidationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(677,3): error TS2484: Export declaration conflicts with exported declaration of 'InputValidationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(678,3): error TS2323: Cannot redeclare exported variable 'StateValidationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(678,3): error TS2484: Export declaration conflicts with exported declaration of 'StateValidationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(679,3): error TS2323: Cannot redeclare exported variable 'MissingConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(679,3): error TS2484: Export declaration conflicts with exported declaration of 'MissingConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(680,3): error TS2323: Cannot redeclare exported variable 'InvalidConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(680,3): error TS2484: Export declaration conflicts with exported declaration of 'InvalidConfigurationError'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(681,3): error TS2323: Cannot redeclare exported variable 'BusinessWorkflowErrorFactory'.
+src/app/business-workflows/core/errors/business-workflow.errors.ts(681,3): error TS2484: Export declaration conflicts with exported declaration of 'BusinessWorkflowErrorFactory'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(6,3): error TS2305: Module '"@hive-academy/nestjs-chromadb"' has no exported member 'Performance'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(118,3): error TS2353: Object literal may only specify known properties, and 'idField' does not exist in type 'ChromaRepositoryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(134,1): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  The runtime will invoke the decorator with 1 arguments, but the decorator expects 3.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(134,2): error TS1270: Decorator function return type 'PropertyDescriptor' is not assignable to type 'void | typeof CodeAchievementRepository'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(135,3): error TS2353: Object literal may only specify known properties, and 'strategy' does not exist in type 'TenantIsolationConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(144,5): error TS2353: Object literal may only specify known properties, and 'queryType' does not exist in type 'VectorQueryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(154,43): error TS2339: Property 'impact' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(171,7): error TS2353: Object literal may only specify known properties, and 'filter' does not exist in type 'RepositoryOperationOptions & { where?: Where | undefined; whereDocument?: WhereDocument | undefined; limit?: number | undefined; orderBy?: { ...; }[] | undefined; }'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(179,5): error TS2353: Object literal may only specify known properties, and 'queryType' does not exist in type 'VectorQueryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(182,26): error TS2322: Type '"semantic_achievements"' is not assignable to type '"auto" | "manual" | "method_name" | "collection_aware" | undefined'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(189,7): error TS2353: Object literal may only specify known properties, and 'filter' does not exist in type 'RepositorySearchOptions'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(205,16): error TS2339: Property 'analysis' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(214,21): error TS2339: Property 'analysis' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(217,21): error TS2339: Property 'analysis' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(230,25): error TS2339: Property 'analysis' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(230,54): error TS2339: Property 'analysis' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(236,19): error TS2339: Property 'technologies' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(236,41): error TS7006: Parameter 'tech' implicitly has an 'any' type.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(261,3): error TS2353: Object literal may only specify known properties, and 'idField' does not exist in type 'ChromaRepositoryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(279,1): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  The runtime will invoke the decorator with 1 arguments, but the decorator expects 3.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(279,2): error TS1270: Decorator function return type 'PropertyDescriptor' is not assignable to type 'void | typeof BrandStrategyRepository'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(280,3): error TS2353: Object literal may only specify known properties, and 'strategy' does not exist in type 'TenantIsolationConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(288,5): error TS2353: Object literal may only specify known properties, and 'queryType' does not exist in type 'VectorQueryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(291,26): error TS2322: Type '"brand_evolution"' is not assignable to type '"auto" | "manual" | "method_name" | "collection_aware" | undefined'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(297,7): error TS2353: Object literal may only specify known properties, and 'filter' does not exist in type 'RepositoryOperationOptions & { where?: Where | undefined; whereDocument?: WhereDocument | undefined; limit?: number | undefined; orderBy?: { ...; }[] | undefined; }'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(320,41): error TS2339: Property 'confidenceScore' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(331,54): error TS2339: Property 'confidenceScore' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(347,18): error TS2339: Property 'evolution' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(348,18): error TS2339: Property 'confidenceScore' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(366,32): error TS2339: Property 'confidenceScore' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(381,24): error TS2339: Property 'confidenceScore' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(386,24): error TS2339: Property 'evolution' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(391,24): error TS2339: Property 'metrics' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(396,24): error TS2339: Property 'metrics' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(412,3): error TS2353: Object literal may only specify known properties, and 'idField' does not exist in type 'ChromaRepositoryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(426,1): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  The runtime will invoke the decorator with 1 arguments, but the decorator expects 3.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(426,2): error TS1270: Decorator function return type 'PropertyDescriptor' is not assignable to type 'void | typeof ContentPerformanceRepository'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(427,3): error TS2353: Object literal may only specify known properties, and 'strategy' does not exist in type 'TenantIsolationConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(434,5): error TS2353: Object literal may only specify known properties, and 'queryType' does not exist in type 'VectorQueryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(456,7): error TS2353: Object literal may only specify known properties, and 'filter' does not exist in type 'RepositoryOperationOptions & { where?: Where | undefined; whereDocument?: WhereDocument | undefined; limit?: number | undefined; orderBy?: { ...; }[] | undefined; }'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(464,5): error TS2353: Object literal may only specify known properties, and 'queryType' does not exist in type 'VectorQueryConfig'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(473,7): error TS2353: Object literal may only specify known properties, and 'filter' does not exist in type 'RepositoryOperationOptions & { where?: Where | undefined; whereDocument?: WhereDocument | undefined; limit?: number | undefined; orderBy?: { ...; }[] | undefined; }'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(514,46): error TS2339: Property 'platform' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(518,30): error TS2339: Property 'platform' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(520,57): error TS2339: Property 'engagementScore' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(537,32): error TS2339: Property 'optimization' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(544,57): error TS2339: Property 'engagementScore' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(562,12): error TS2339: Property 'analysis' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(562,37): error TS7006: Parameter 'topic' implicitly has an 'any' type.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(569,59): error TS2339: Property 'engagementScore' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(585,48): error TS2339: Property 'engagementScore' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(683,9): error TS2353: Object literal may only specify known properties, and 'document' does not exist in type 'Partial<CodeAchievementDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(728,48): error TS2339: Property 'analysis' does not exist on type 'Partial<CodeAchievementDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(729,51): error TS2339: Property 'analysis' does not exist on type 'Partial<CodeAchievementDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(730,47): error TS2339: Property 'analysis' does not exist on type 'Partial<CodeAchievementDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(764,9): error TS2353: Object literal may only specify known properties, and 'document' does not exist in type 'Partial<BrandStrategyDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(782,59): error TS2339: Property 'confidenceScore' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(811,30): error TS2339: Property 'metrics' does not exist on type 'Partial<BrandStrategyDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(812,45): error TS2339: Property 'metrics' does not exist on type 'Partial<BrandStrategyDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(842,9): error TS2353: Object literal may only specify known properties, and 'document' does not exist in type 'Partial<ContentPerformanceDocument>'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1134,33): error TS2339: Property 'positioning' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1135,32): error TS2339: Property 'targetAudience' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1136,25): error TS2339: Property 'opportunities' does not exist on type 'BrandStrategyDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1150,39): error TS2339: Property 'metrics' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1156,17): error TS2339: Property 'metrics' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1157,17): error TS2339: Property 'metrics' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1158,17): error TS2339: Property 'metrics' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1165,51): error TS2339: Property 'analysis' does not exist on type 'CodeAchievementDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1197,53): error TS2339: Property 'engagementScore' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/memory/personal-brand-memory.service.ts(1200,54): error TS2339: Property 'engagementScore' does not exist on type 'ContentPerformanceDocument'.
+src/app/business-workflows/core/performance/optimization.decorators.ts(62,25): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/business-workflows/core/performance/optimization.decorators.ts(307,11): error TS6133: 'lastFailureTime' is declared but its value is never read.
+src/app/business-workflows/core/validation/workflow.validators.ts(24,7): error TS6133: 'STATE_METADATA_KEY' is declared but its value is never read.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(91,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(148,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(153,32): error TS2339: Property 'getPersonalizedContentStrategy' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(159,49): error TS2339: Property 'getDevContext' does not exist on type 'PersonalBrandMemoryService'.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(188,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(212,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(289,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(349,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(364,54): error TS2339: Property 'searchSocialProfiles' does not exist on type 'WebResearchTools'.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(428,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(492,23): error TS2352: Conversion of type 'FunctionalWorkflowState' to type 'ChatWorkflowState' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FunctionalWorkflowState' is missing the following properties from type 'ChatWorkflowState': userId, conversationId, userMessage, messageHistory, and 8 more.
+src/app/business-workflows/workflows/devbrand-chat.workflow.ts(523,16): error TS2322: Type 'ChatWorkflowState' is not assignable to type 'Partial<FunctionalWorkflowState>'.
+  Index signature for type 'string' is missing in type 'ChatWorkflowState'.
+src/app/business-workflows/workflows/devbrand-supervisor.workflow.ts(85,22): error TS6138: Property 'llmProvider' is declared but its value is never read.
+src/app/business-workflows/workflows/devbrand-supervisor.workflow.ts(254,13): error TS6133: 'strategyResult' is declared but its value is never read.
+src/app/config/chromadb.config.ts(275,7): error TS2353: Object literal may only specify known properties, and 'caching' does not exist in type 'DecoratorConfig'.
+src/app/config/multi-tenant-neo4j.config.ts(1,10): error TS2724: '"@hive-academy/nestjs-neo4j"' has no exported member named 'MultiTenantConfigurations'. Did you mean 'MultiTenantDecorators'?
+src/app/config/neo4j.config.ts(43,5): error TS2353: Object literal may only specify known properties, and 'enhanced' does not exist in type 'Neo4jModuleOptions'.
+src/app/repositories/neo4j/approval-request.repository.ts(17,3): error TS6196: 'ApprovalStorageStatus' is declared but never used.
+src/app/repositories/neo4j/approval-request.repository.ts(312,53): error TS2339: Property 'responseMessage' does not exist on type 'ApprovalStorageResponse'.
+src/app/repositories/neo4j/approval-request.repository.ts(580,9): error TS2353: Object literal may only specify known properties, and 'pendingRequests' does not exist in type 'HitlStorageStats'.
+src/app/repositories/neo4j/approval-request.repository.ts(620,9): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'ApprovalStorageResponse'.
+src/app/repositories/neo4j/feedback.repository.ts(461,9): error TS2740: Type 'Record<FeedbackType, number>' is missing the following properties from type 'Record<FeedbackType, number>': approval, rejection, modification, clarification, and 2 more.
+src/app/repositories/neo4j/feedback.repository.ts(648,7): error TS2322: Type 'FeedbackType' is not assignable to type 'import("D:/projects/nestjs-ai-saas-starter/node_modules/@hive-academy/langgraph-hitl/src/lib/interfaces/feedback-storage.interface").FeedbackType'.
+  Type '"positive"' is not assignable to type 'FeedbackType'.
+
+
+
+ NX   Running target typecheck for project dev-brand-api and 13 tasks it depends on failed
+
+Failed tasks:
+
+- dev-brand-api:typecheck
+
+Hint: run the command with --verbose for more details.
+

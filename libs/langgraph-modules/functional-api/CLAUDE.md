@@ -51,7 +51,13 @@ await workflowExecutionService.executeWorkflow(definition);
 
 ```typescript
 // REAL PRODUCTION WORKFLOW using functional-api decorators
-import { FunctionalWorkflow as Workflow, Entrypoint, Task, Node, Edge } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow as Workflow,
+  Entrypoint,
+  Task,
+  Node,
+  Edge,
+} from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 
@@ -63,7 +69,13 @@ import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 })
 @Injectable()
 export class DevBrandSupervisorWorkflow {
-  constructor(private readonly llmProvider: LlmProviderService, private readonly githubAnalyzer: GitHubCodeAnalyzerAgent, private readonly contentCreator: ContentCreatorAgent, private readonly brandStrategist: PersonalBrandStrategistAgent, private readonly brandMemory: PersonalBrandMemoryService) {}
+  constructor(
+    private readonly llmProvider: LlmProviderService,
+    private readonly githubAnalyzer: GitHubCodeAnalyzerAgent,
+    private readonly contentCreator: ContentCreatorAgent,
+    private readonly brandStrategist: PersonalBrandStrategistAgent,
+    private readonly brandMemory: PersonalBrandMemoryService
+  ) {}
 
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
@@ -123,7 +135,9 @@ export class DevBrandSupervisorWorkflow {
 
   @Node({ type: 'condition' })
   async routeBasedOnConfidence(context: TaskExecutionContext): Promise<{ route: string }> {
-    return workflowState.confidence > 0.8 ? { route: 'high-confidence' } : { route: 'low-confidence' };
+    return workflowState.confidence > 0.8
+      ? { route: 'high-confidence' }
+      : { route: 'low-confidence' };
   }
 
   @Edge('routeBasedOnConfidence', 'generateContent')
@@ -141,7 +155,12 @@ export class DevBrandSupervisorWorkflow {
 
 ```typescript
 // REAL WORKFLOW-ENGINE INTEGRATION
-import { getWorkflowMetadata, getWorkflowNodes, getWorkflowEdges, getAllStreamingMetadata } from '@hive-academy/langgraph-functional-api';
+import {
+  getWorkflowMetadata,
+  getWorkflowNodes,
+  getWorkflowEdges,
+  getAllStreamingMetadata,
+} from '@hive-academy/langgraph-functional-api';
 import type { NodeMetadata, EdgeMetadata } from '@hive-academy/langgraph-functional-api';
 
 @Injectable()
@@ -149,7 +168,9 @@ export class MetadataProcessorService {
   /**
    * Extract WorkflowDefinition from decorator metadata
    */
-  extractWorkflowDefinition<TState extends WorkflowState>(workflowClass: any): WorkflowDefinition<TState> {
+  extractWorkflowDefinition<TState extends WorkflowState>(
+    workflowClass: any
+  ): WorkflowDefinition<TState> {
     // 1. Get workflow metadata from @Workflow decorator
     const workflowOptions = getWorkflowMetadata(workflowClass);
     if (!workflowOptions) {
@@ -449,7 +470,12 @@ Defines workflow tasks with explicit dependencies.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Entrypoint, Task, TaskExecutionContext, TaskExecutionResult } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Entrypoint,
+  Task,
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class DataProcessingWorkflow {
@@ -551,7 +577,12 @@ Defines connections between nodes.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Node, Edge, ConditionalEdge, DeclarativeWorkflowBase } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Node,
+  Edge,
+  ConditionalEdge,
+  DeclarativeWorkflowBase,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class ApprovalWorkflow extends DeclarativeWorkflowBase {
@@ -851,3 +882,501 @@ async longRunningTask(context: TaskExecutionContext) {
 ```
 
 This module provides powerful workflow orchestration with both functional and declarative programming paradigms for enterprise AI applications.
+
+---
+
+## 🔍 Decorator Patterns - Complete Reference
+
+### Overview: Two Mutually Exclusive Patterns
+
+The Functional API Module supports **two workflow patterns** that **cannot be mixed**:
+
+1. **Task-Based Pattern** (Dependency-Driven)
+
+   - Uses `@Entrypoint` + `@Task` decorators
+   - Edges automatically created from `dependsOn` relationships
+   - Best for: Linear/sequential workflows with straightforward dependencies
+   - Method signature: `(context: TaskExecutionContext) => Promise<TaskExecutionResult>`
+
+2. **Node-Based Pattern** (Graph-Driven)
+   - Uses `@Node` + `@Edge` decorators
+   - Edges explicitly defined with `@Edge` decorators
+   - Best for: Complex routing, conditional logic, branching workflows
+   - Method signature: `(state: WorkflowState) => Promise<Partial<WorkflowState>>`
+
+**⚠️ CRITICAL RULE**: You **CANNOT** mix these patterns within a single workflow class.
+
+### Pattern Selection Guide
+
+**Choose Task-Based Pattern When:**
+
+- ✅ Workflow is mostly linear/sequential
+- ✅ Dependencies are straightforward (A → B → C)
+- ✅ You want automatic edge creation from `dependsOn`
+- ✅ Simpler implementation with less boilerplate
+
+**Choose Node-Based Pattern When:**
+
+- ✅ Complex conditional routing required
+- ✅ Multiple branching paths with dynamic routing
+- ✅ Need explicit control over graph structure
+- ✅ Advanced control flow (loops, dynamic routing)
+
+### Pattern 1: Task-Based Workflow (Functional)
+
+**Architecture**: Dependency-driven execution with implicit edges
+
+```typescript
+import {
+  Entrypoint,
+  Task,
+  TaskExecutionContext,
+  TaskExecutionResult,
+  WorkflowType,
+} from '@hive-academy/langgraph-functional-api';
+
+@FunctionalWorkflow({
+  name: 'task-workflow',
+  type: WorkflowType.FUNCTIONAL_TASK, // 🔑 Explicit type declaration
+  description: 'Linear workflow with task dependencies',
+})
+@Injectable()
+export class TaskBasedWorkflow {
+  @Entrypoint({ timeout: 15000 })
+  async initializeWorkflow(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    return {
+      state: {
+        initialized: true,
+        startTime: Date.now(),
+      },
+    };
+  }
+
+  @Task({ dependsOn: ['initializeWorkflow'] })
+  async processData(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+    // Process data
+    return {
+      state: {
+        processed: true,
+        results: processedData,
+      },
+    };
+  }
+
+  @Task({ dependsOn: ['processData'] })
+  async validateResults(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+    // Validate results
+    return {
+      state: {
+        validated: true,
+        confidence: 0.95,
+      },
+    };
+  }
+
+  @Task({ dependsOn: ['validateResults'] })
+  async finalizeWorkflow(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    return {
+      state: {
+        completed: true,
+        endTime: Date.now(),
+      },
+    };
+  }
+}
+```
+
+**Execution Flow** (implicit edges):
+
+```
+initializeWorkflow → processData → validateResults → finalizeWorkflow
+```
+
+**Key Features**:
+
+- ✅ `dependsOn` automatically creates edges
+- ✅ Parallel execution when dependencies allow: `@Task({ dependsOn: ['A', 'B'] })`
+- ✅ Type-safe context with `TaskExecutionContext`
+- ✅ Immutable state updates with `TaskExecutionResult`
+
+### Pattern 2: Node-Based Workflow (Declarative)
+
+**Architecture**: Graph-driven execution with explicit edges
+
+```typescript
+import { Node, Edge, WorkflowState, WorkflowType } from '@hive-academy/langgraph-functional-api';
+
+@FunctionalWorkflow({
+  name: 'node-workflow',
+  type: WorkflowType.FUNCTIONAL_NODE, // 🔑 Explicit type declaration
+  description: 'Graph workflow with conditional routing',
+})
+@Injectable()
+export class NodeBasedWorkflow extends DeclarativeWorkflowBase {
+  @Node({ type: 'standard' })
+  async initializeWorkflow(state: WorkflowState) {
+    return {
+      initialized: true,
+      startTime: Date.now(),
+    };
+  }
+
+  @Node({ type: 'standard' })
+  async processData(state: WorkflowState) {
+    // Process data
+    return {
+      processed: true,
+      confidence: 0.85,
+    };
+  }
+
+  @Node({ type: 'condition' })
+  async routeBasedOnConfidence(state: WorkflowState): Promise<{ route: string }> {
+    return {
+      route: state.confidence > 0.8 ? 'high-confidence' : 'low-confidence',
+    };
+  }
+
+  @Node({ type: 'standard' })
+  async processHighConfidence(state: WorkflowState) {
+    return { result: 'auto-approved' };
+  }
+
+  @Node({ type: 'human', requiresApproval: true })
+  async processLowConfidence(state: WorkflowState) {
+    return { result: 'requires-review' };
+  }
+
+  @Node({ type: 'standard' })
+  async finalizeWorkflow(state: WorkflowState) {
+    return {
+      completed: true,
+      endTime: Date.now(),
+    };
+  }
+
+  // Define all edges explicitly
+  @Edge('initializeWorkflow', 'processData')
+  initToProcess() {}
+
+  @Edge('processData', 'routeBasedOnConfidence')
+  processToRoute() {}
+
+  @Edge('routeBasedOnConfidence', 'processHighConfidence')
+  routeToHigh(state: WorkflowState): boolean {
+    return state.route === 'high-confidence';
+  }
+
+  @Edge('routeBasedOnConfidence', 'processLowConfidence')
+  routeToLow(state: WorkflowState): boolean {
+    return state.route === 'low-confidence';
+  }
+
+  @Edge('processHighConfidence', 'finalizeWorkflow')
+  highToFinalize() {}
+
+  @Edge('processLowConfidence', 'finalizeWorkflow')
+  lowToFinalize() {}
+}
+```
+
+**Execution Flow** (explicit edges):
+
+```
+                                      ┌─> processHighConfidence ─┐
+initializeWorkflow → processData → routeBasedOnConfidence           → finalizeWorkflow
+                                      └─> processLowConfidence ──┘
+```
+
+**Key Features**:
+
+- ✅ Explicit edge declarations for full control
+- ✅ Conditional routing with `@Node({ type: 'condition' })`
+- ✅ Dynamic branching based on state
+- ✅ Complex graph structures (loops, diamonds, etc.)
+
+### Cross-Cutting Decorators (Work with BOTH Patterns)
+
+The following decorators are **pattern-agnostic** and work with both task-based and node-based workflows:
+
+```typescript
+// ✅ ALLOWED: Cross-cutting decorators with task-based pattern
+@Entrypoint()
+@StreamProgress({ enabled: true })
+@RequiresApproval({ threshold: 0.8 })
+async start(context: TaskExecutionContext) { }
+
+@Task({ dependsOn: ['start'] })
+@Tool({ name: 'process_data' })
+@StreamToken({ enabled: true })
+async processData(context: TaskExecutionContext) { }
+
+// ✅ ALLOWED: Cross-cutting decorators with node-based pattern
+@Node({ type: 'standard' })
+@StreamProgress({ enabled: true })
+@RequiresApproval({ threshold: 0.9 })
+async analyze(state: WorkflowState) { }
+
+@Node({ type: 'tool' })
+@Tool({ name: 'search' })
+async searchData(state: WorkflowState) { }
+```
+
+**Cross-Cutting Decorators List**:
+
+- `@Tool` - Register methods as LangGraph tools
+- `@RequiresApproval` - Human-in-the-loop approval
+- `@StreamToken` - Token-level streaming for LLM responses
+- `@StreamProgress` - Progress updates for workflow steps
+- `@StreamEvent` - Custom event streaming
+
+### Explicit Workflow Type Declaration
+
+**Best Practice**: Always declare workflow type explicitly to prevent accidental mixing:
+
+```typescript
+// ✅ RECOMMENDED: Explicit type declaration
+@FunctionalWorkflow({
+  name: 'my-workflow',
+  type: WorkflowType.FUNCTIONAL_TASK, // Enforces task-based pattern
+})
+export class MyWorkflow {
+  @Entrypoint() // ✅ Allowed
+  async start(context: TaskExecutionContext) {}
+
+  @Task({ dependsOn: ['start'] }) // ✅ Allowed
+  async process(context: TaskExecutionContext) {}
+
+  @Node({ type: 'standard' }) // ❌ ERROR! Type mismatch
+  async invalid(state: WorkflowState) {}
+}
+```
+
+**Validation Flow**:
+
+1. First decorator sets the pattern (task-based or node-based)
+2. Subsequent decorators must match the established pattern
+3. Explicit `type` in `@FunctionalWorkflow` enforces pattern from the start
+4. Runtime validation throws `DecoratorPatternConflictError` if patterns conflict
+
+### Pattern Validation Rules
+
+| Decorator Category  | Task-Based    | Node-Based    | Class-Level | Notes                  |
+| ------------------- | ------------- | ------------- | ----------- | ---------------------- |
+| @Entrypoint         | ✅ PRIMARY    | ❌ FORBIDDEN  | ❌          | Task-based entry point |
+| @Task               | ✅ PRIMARY    | ❌ FORBIDDEN  | ❌          | Task-based node        |
+| @Node               | ❌ FORBIDDEN  | ✅ PRIMARY    | ❌          | Node-based node        |
+| @Edge               | ❌ FORBIDDEN  | ✅ PRIMARY    | ❌          | Node-based connection  |
+| @FunctionalWorkflow | ✅ Compatible | ✅ Compatible | ✅          | Class-level config     |
+| @Tool               | ✅ Compatible | ✅ Compatible | ❌          | Cross-cutting          |
+| @RequiresApproval   | ✅ Compatible | ✅ Compatible | ❌          | Cross-cutting          |
+| @Stream\*           | ✅ Compatible | ✅ Compatible | ❌          | Cross-cutting          |
+
+### Anti-Pattern: Mixing Decorators (FORBIDDEN)
+
+```typescript
+// ❌ FORBIDDEN: Mixing patterns - THIS WILL FAIL!
+@FunctionalWorkflow({ name: 'bad-workflow' })
+export class MixedPatternWorkflow {
+  @Entrypoint() // Sets pattern to 'task-based'
+  async start(context: TaskExecutionContext) {}
+
+  @Task({ dependsOn: ['start'] }) // ✅ Task-based - OK
+  async step1(context: TaskExecutionContext) {}
+
+  @Node({ type: 'standard' }) // ❌ ERROR! Attempting node-based in task-based workflow
+  async step2(state: WorkflowState) {}
+
+  @Edge('step1', 'step2') // ❌ ERROR! Attempting node-based in task-based workflow
+  route() {}
+}
+```
+
+**Error Thrown**:
+
+```
+╔════════════════════════════════════════════════════════════════════════╗
+║ DECORATOR PATTERN CONFLICT                                             ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+Incompatible decorator @Node detected in "MixedPatternWorkflow"
+
+📊 Pattern Status:
+   Current pattern:   task-based
+   Attempted pattern: node-based
+
+🚫 You cannot mix decorator patterns:
+   • Task-based:  @Entrypoint + @Task (dependency-driven)
+   • Node-based:  @Node + @Edge (graph-driven)
+
+📖 See: libs/langgraph-modules/functional-api/CLAUDE.md#decorator-patterns
+```
+
+### Common Migration Scenarios
+
+#### Migrating Task-Based → Node-Based
+
+**Before (Task-Based)**:
+
+```typescript
+@Entrypoint()
+async start(context: TaskExecutionContext) { }
+
+@Task({ dependsOn: ['start'] })
+async process(context: TaskExecutionContext) { }
+
+@Task({ dependsOn: ['process'] })
+async finalize(context: TaskExecutionContext) { }
+```
+
+**After (Node-Based)**:
+
+```typescript
+@Node({ type: 'standard' })
+async start(state: WorkflowState) { }
+
+@Node({ type: 'standard' })
+async process(state: WorkflowState) { }
+
+@Node({ type: 'standard' })
+async finalize(state: WorkflowState) { }
+
+@Edge('start', 'process')
+startToProcess() {}
+
+@Edge('process', 'finalize')
+processToFinalize() {}
+```
+
+**Changes Required**:
+
+1. Replace `@Entrypoint` with `@Node({ type: 'standard' })`
+2. Replace all `@Task` with `@Node`
+3. Add explicit `@Edge` decorators for all connections
+4. Change method signatures from `TaskExecutionContext` to `WorkflowState`
+5. Update return types from `TaskExecutionResult` to `Partial<WorkflowState>`
+6. Update `@FunctionalWorkflow.type` from `FUNCTIONAL_TASK` to `FUNCTIONAL_NODE`
+
+#### Migrating Node-Based → Task-Based
+
+**Before (Node-Based)**:
+
+```typescript
+@Node({ type: 'standard' })
+async start(state: WorkflowState) { }
+
+@Node({ type: 'standard' })
+async process(state: WorkflowState) { }
+
+@Edge('start', 'process')
+startToProcess() {}
+```
+
+**After (Task-Based)**:
+
+```typescript
+@Entrypoint()
+async start(context: TaskExecutionContext) { }
+
+@Task({ dependsOn: ['start'] })
+async process(context: TaskExecutionContext) { }
+```
+
+**Changes Required**:
+
+1. Replace first `@Node` with `@Entrypoint`
+2. Replace remaining `@Node` decorators with `@Task({ dependsOn: [...] })`
+3. Remove all `@Edge` decorators (dependencies now expressed via `dependsOn`)
+4. Change method signatures from `WorkflowState` to `TaskExecutionContext`
+5. Update return types to `TaskExecutionResult`
+6. Update `@FunctionalWorkflow.type` from `FUNCTIONAL_NODE` to `FUNCTIONAL_TASK`
+
+### Runtime Validation Implementation
+
+The functional-api module includes **compile-time validation** that prevents pattern mixing:
+
+**Validator Location**: `libs/langgraph-modules/functional-api/src/lib/utils/decorator-validator.ts`
+
+**Validation Flow**:
+
+```typescript
+// When @Entrypoint is applied
+validateDecoratorPattern(target, 'task-based', 'Entrypoint');
+// ✅ Sets pattern to 'task-based'
+
+// When @Task is applied
+validateDecoratorPattern(target, 'task-based', 'Task');
+// ✅ Matches existing 'task-based' pattern
+
+// When @Node is applied (in task-based workflow)
+validateDecoratorPattern(target, 'node-based', 'Node');
+// ❌ Throws DecoratorPatternConflictError
+```
+
+**Validation Triggers**:
+
+- ✅ During TypeScript compilation when decorators are applied
+- ✅ When `@Entrypoint`, `@Task`, `@Node`, or `@Edge` are used
+- ✅ When explicit `@FunctionalWorkflow.type` is declared
+- ✅ When explicit `@Agent.workflow.type` is declared
+
+### Troubleshooting Decorator Conflicts
+
+#### Error: "Target node 'X' not found"
+
+**Symptom**: Workflow compilation fails with missing node error
+
+**Cause**: Mixing `@Task` with `@Node`/`@Edge` - `getWorkflowNodes()` only finds `@Node` decorators
+
+**Solution**: Choose one pattern and stick to it
+
+```typescript
+// ❌ BEFORE: Mixed pattern
+@Task({ dependsOn: ['start'] })
+async process(context) { }
+
+@Edge('process', 'finalize') // ❌ Edge references @Task node
+route() {}
+
+// ✅ AFTER: Pure node-based
+@Node({ type: 'standard' })
+async process(state) { }
+
+@Edge('process', 'finalize') // ✅ Edge references @Node
+route() {}
+```
+
+#### Error: "DecoratorPatternConflictError"
+
+**Symptom**: Compile-time error when applying decorators
+
+**Cause**: Attempting to mix task-based and node-based decorators
+
+**Solution**: Remove conflicting decorators and use single pattern
+
+```typescript
+// ❌ BEFORE: Conflict
+@Entrypoint()
+async start(context) { }
+
+@Node({ type: 'standard' }) // ❌ Conflicts with @Entrypoint
+async process(state) { }
+
+// ✅ AFTER: Pure task-based
+@Entrypoint()
+async start(context) { }
+
+@Task({ dependsOn: ['start'] })
+async process(context) { }
+```
+
+### Key Takeaways
+
+1. **Two Patterns Only**: Task-based (@Entrypoint/@Task) OR Node-based (@Node/@Edge)
+2. **Pattern Exclusivity**: Never mix patterns in a single workflow
+3. **Explicit Types**: Always declare `@FunctionalWorkflow.type` for clarity
+4. **Cross-Cutting Freedom**: @Tool, @RequiresApproval, @Stream\* work with both patterns
+5. **Validation Timing**: Errors caught at compile-time during TypeScript decoration
+6. **Pattern Selection**: Task-based for simple flows, node-based for complex routing

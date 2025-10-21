@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  Repository,
+  Neo4jRepositoryBase,
   Safe,
-  BaseRepositoryService,
+  Authorize,
+  ValidateInput,
+  AuditLog,
+  RateLimit,
+  NeogmaService,
+  Neo4jCrudService,
 } from '@hive-academy/nestjs-neo4j';
 import { Memory } from '../../entities/neo4j';
 import type {
@@ -18,55 +23,51 @@ import type {
   GraphOperation,
   GraphBatchResult,
   GraphFindCriteria,
+  MemoryEntry,
 } from '@hive-academy/langgraph-memory';
 import { GraphTraversalService } from '../services/graph-traversal.service';
 import { GraphAgentService } from '../services/graph-agent.service';
 import { GraphCrudService } from '../services/graph-crud.service';
 
 /**
- * Memory Graph Repository (Refactored)
+ * Memory Graph Repository (Refactored - Extends Neo4jRepository)
  *
  * Main repository facade that delegates to specialized service classes.
  * Provides type-safe operations for graph-based memory management.
  *
  * Architecture:
+ * - Neo4jRepository<Memory>: Automatic CRUD operations via inheritance
  * - GraphTraversalService: Graph traversal, relationship queries, statistics
  * - GraphAgentService: Agent-aware operations, conversation flows, patterns
  * - GraphCrudService: Generic CRUD operations, batch processing
  *
  * Reduced from 1,312 lines to ~200 lines through composition pattern.
+ *
+ * CRUD methods (inherited from Neo4jRepository<Memory>):
+ * - findById, findAll, create, update, delete, count, exists
  */
-@Repository(() => Memory)
 @Injectable()
-export class MemoryGraphRepository extends BaseRepositoryService<Memory> {
+export class MemoryGraphRepository extends Neo4jRepositoryBase<Memory> {
   private readonly logger = new Logger(MemoryGraphRepository.name);
 
   constructor(
+    neogma: NeogmaService,
+    crud: Neo4jCrudService,
     private readonly traversalService: GraphTraversalService,
     private readonly agentService: GraphAgentService,
     private readonly crudService: GraphCrudService
   ) {
-    super();
+    super(Memory, 'Memory', neogma, crud);
     this.logger.debug(
-      'MemoryGraphRepository initialized with service composition'
+      'MemoryGraphRepository initialized with composition pattern'
     );
   }
-
-  // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
-  // ============================================================================
-  // - findById(id: string): Promise<Memory | null>
-  // - findAll(options?: FindOptions<Memory>): Promise<Memory[]>
-  // - create(data: Partial<Memory>): Promise<Memory>
-  // - update(id: string, updates: Partial<Memory>): Promise<Memory | null>
-  // - delete(id: string): Promise<boolean>
-  // - count(where?: Partial<Memory>): Promise<number>
-  // - exists(id: string): Promise<boolean>
 
   // ============================================================================
   // GRAPH TRAVERSAL OPERATIONS (Delegated to GraphTraversalService)
   // ============================================================================
 
+  @RateLimit({ strategy: 'fixed-window', requests: 100, window: '1h' }) // Rate limit to prevent abuse
   @Safe()
   async traverse(
     startMemoryId: string,
@@ -76,7 +77,7 @@ export class MemoryGraphRepository extends BaseRepositoryService<Memory> {
   }
 
   @Safe()
-  async findRelated(
+  async findRelatedMemories(
     memoryId: string,
     relationshipTypes?: string[],
     maxDepth = 2,
@@ -103,6 +104,8 @@ export class MemoryGraphRepository extends BaseRepositoryService<Memory> {
   // AGENT-AWARE MEMORY OPERATIONS (Delegated to GraphAgentService)
   // ============================================================================
 
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async createAgentMemoryRelationship(
     fromMemoryId: string,
@@ -175,6 +178,30 @@ export class MemoryGraphRepository extends BaseRepositoryService<Memory> {
     );
   }
 
+  /**
+   * Track a memory entry in graph - delegates to agent service
+   */
+  @Safe()
+  async trackMemory(memory: MemoryEntry): Promise<void> {
+    return this.agentService.trackMemory(memory);
+  }
+
+  /**
+   * Track multiple memories in batch - delegates to agent service
+   */
+  @Safe()
+  async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
+    return this.agentService.trackMemoriesBatch(memories);
+  }
+
+  /**
+   * Delete memories from graph - delegates to agent service
+   */
+  @Safe()
+  async deleteMemories(memoryIds: readonly string[]): Promise<number> {
+    return this.agentService.deleteMemories(memoryIds);
+  }
+
   // ============================================================================
   // GENERIC GRAPH OPERATIONS (Delegated to GraphCrudService)
   // ============================================================================
@@ -215,6 +242,8 @@ export class MemoryGraphRepository extends BaseRepositoryService<Memory> {
     return this.crudService.findGraphNodes(criteria);
   }
 
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
   @Safe()
   async deleteGraphNodes(nodeIds: readonly string[]): Promise<number> {
     return this.crudService.deleteGraphNodes([...nodeIds]);

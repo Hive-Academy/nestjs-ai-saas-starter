@@ -1,5 +1,10 @@
 import { Injectable, Inject, Optional, Logger } from '@nestjs/common';
-import type { AgentProvider, ToolProvider, WorkflowProvider } from '@hive-academy/langgraph-multi-agent';
+import type {
+  AgentProvider,
+  ToolProvider,
+  WorkflowProvider,
+} from '@hive-academy/langgraph-multi-agent';
+import { getClassTools } from '@hive-academy/langgraph-multi-agent';
 import type { WorkflowClass } from '@hive-academy/langgraph-functional-api';
 
 /**
@@ -9,20 +14,32 @@ import type { WorkflowClass } from '@hive-academy/langgraph-functional-api';
 @Injectable()
 export class CentralRegistryService {
   private readonly logger = new Logger(CentralRegistryService.name);
-  
+
   // Internal registries
   private readonly agents = new Map<string, AgentProvider>();
   private readonly tools = new Map<string, ToolProvider>();
-  private readonly workflows = new Map<string, WorkflowProvider | WorkflowClass>();
-  
+  private readonly workflows = new Map<
+    string,
+    WorkflowProvider | WorkflowClass
+  >();
+
   // Execution service references (injected from other modules)
   private multiAgentExecutor?: any;
   private functionalApiExecutor?: any;
 
   constructor(
-    @Optional() @Inject('WORKFLOW_ENGINE_AGENTS') private readonly configuredAgents: AgentProvider[] = [],
-    @Optional() @Inject('WORKFLOW_ENGINE_TOOLS') private readonly configuredTools: ToolProvider[] = [],
-    @Optional() @Inject('WORKFLOW_ENGINE_WORKFLOWS') private readonly configuredWorkflows: (WorkflowProvider | WorkflowClass)[] = []
+    @Optional()
+    @Inject('WORKFLOW_ENGINE_AGENTS')
+    private readonly configuredAgents: AgentProvider[] = [],
+    @Optional()
+    @Inject('WORKFLOW_ENGINE_TOOLS')
+    private readonly configuredTools: ToolProvider[] = [],
+    @Optional()
+    @Inject('WORKFLOW_ENGINE_WORKFLOWS')
+    private readonly configuredWorkflows: (
+      | WorkflowProvider
+      | WorkflowClass
+    )[] = []
   ) {
     this.initializeRegistry();
   }
@@ -32,23 +49,25 @@ export class CentralRegistryService {
    */
   private initializeRegistry(): void {
     this.logger.log('Initializing centralized registry...');
-    
-    // Register configured agents
-    this.configuredAgents.forEach(agent => {
-      this.registerAgent(agent);
-    });
-    
-    // Register configured tools
-    this.configuredTools.forEach(tool => {
+
+    // 🆕 ORDER: Register tools FIRST (before agents need them for validation)
+    this.configuredTools.forEach((tool) => {
       this.registerTool(tool);
     });
-    
+
+    // Register configured agents (with tool validation)
+    this.configuredAgents.forEach((agent) => {
+      this.registerAgent(agent);
+    });
+
     // Register configured workflows
-    this.configuredWorkflows.forEach(workflow => {
+    this.configuredWorkflows.forEach((workflow) => {
       this.registerWorkflow(workflow);
     });
 
-    this.logger.log(`Registry initialized with ${this.agents.size} agents, ${this.tools.size} tools, ${this.workflows.size} workflows`);
+    this.logger.log(
+      `Registry initialized with ${this.agents.size} agents, ${this.tools.size} tools, ${this.workflows.size} workflows`
+    );
   }
 
   /**
@@ -64,9 +83,58 @@ export class CentralRegistryService {
   }
 
   /**
+   * 🆕 VALIDATION: Validates that all tools requested by an agent are registered
+   * @throws Error if any requested tools are missing
+   */
+  private validateAgentTools(agent: AgentProvider): void {
+    // Extract agent class from provider
+    let agentClass: any;
+    if (typeof agent === 'function') {
+      agentClass = agent;
+    } else if (typeof agent === 'object' && agent !== null) {
+      const providerObj = agent as any;
+      agentClass = providerObj.useClass || providerObj;
+    } else {
+      return; // Cannot validate string providers
+    }
+
+    // Get agent configuration from decorator metadata
+    const agentConfig: any = Reflect.getMetadata('agent:config', agentClass);
+
+    if (!agentConfig || !agentConfig.tools || agentConfig.tools.length === 0) {
+      return; // No tools to validate
+    }
+
+    const missingTools: string[] = [];
+    const registeredToolIds = Array.from(this.tools.keys());
+
+    for (const toolName of agentConfig.tools) {
+      if (!this.tools.has(toolName)) {
+        missingTools.push(toolName);
+      }
+    }
+
+    if (missingTools.length > 0) {
+      const agentId = agentConfig.id || agentClass.name || 'unknown-agent';
+      throw new Error(
+        `❌ Agent "${agentId}" requests missing tools: ${missingTools.join(
+          ', '
+        )}\n\n` +
+          `Available tools: ${
+            registeredToolIds.length > 0 ? registeredToolIds.join(', ') : 'none'
+          }\n\n` +
+          `💡 Hint: Ensure tools are decorated with @Tool and registered in WorkflowEngineModule.forRoot({ tools: [...] })`
+      );
+    }
+  }
+
+  /**
    * Register an agent provider
    */
   registerAgent(agent: AgentProvider): void {
+    // 🆕 VALIDATION: Check that all requested tools exist
+    this.validateAgentTools(agent);
+
     const agentId = this.getAgentId(agent);
     if (this.agents.has(agentId)) {
       this.logger.warn(`Agent ${agentId} already registered, overriding`);
@@ -77,14 +145,72 @@ export class CentralRegistryService {
 
   /**
    * Register a tool provider
+   *
+   * For tool classes (decorated with @Tool), extracts individual tool methods
+   * and registers each by its tool name (from @Tool decorator or method name).
    */
   registerTool(tool: ToolProvider): void {
-    const toolId = this.getToolId(tool);
-    if (this.tools.has(toolId)) {
-      this.logger.warn(`Tool ${toolId} already registered, overriding`);
+    // Extract tool class from provider
+    let toolClass: any;
+    if (typeof tool === 'function') {
+      toolClass = tool;
+    } else if (typeof tool === 'object' && tool !== null) {
+      const providerObj = tool as any;
+      toolClass = providerObj.useClass || providerObj;
+    } else {
+      // String provider - register as-is
+      const toolId = this.getToolId(tool);
+      if (this.tools.has(toolId)) {
+        this.logger.warn(`Tool ${toolId} already registered, overriding`);
+      }
+      this.tools.set(toolId, tool);
+      this.logger.log(`Tool registered: ${toolId}`);
+      return;
     }
-    this.tools.set(toolId, tool);
-    this.logger.log(`Tool registered: ${toolId}`);
+
+    // Try to extract individual @Tool decorated methods
+    try {
+      const toolMetadataArray = getClassTools(toolClass);
+
+      if (toolMetadataArray && toolMetadataArray.length > 0) {
+        // Register each individual tool method by its name
+        toolMetadataArray.forEach((toolMetadata) => {
+          const toolName = toolMetadata.name;
+
+          if (this.tools.has(toolName)) {
+            this.logger.warn(`Tool ${toolName} already registered, overriding`);
+          }
+
+          // Store the tool metadata (includes handler, schema, etc.)
+          this.tools.set(toolName, {
+            name: toolName,
+            class: toolClass,
+            metadata: toolMetadata,
+          } as any);
+
+          this.logger.log(`Tool registered: ${toolName}`);
+        });
+      } else {
+        // No @Tool decorators found - fallback to class-level registration
+        const toolId = this.getToolId(tool);
+        if (this.tools.has(toolId)) {
+          this.logger.warn(`Tool ${toolId} already registered, overriding`);
+        }
+        this.tools.set(toolId, tool);
+        this.logger.log(`Tool registered: ${toolId}`);
+      }
+    } catch (error) {
+      // If extraction fails, fall back to class-level registration
+      this.logger.warn(
+        `Failed to extract tool metadata from ${toolClass.name}, registering class: ${error}`
+      );
+      const toolId = this.getToolId(tool);
+      if (this.tools.has(toolId)) {
+        this.logger.warn(`Tool ${toolId} already registered, overriding`);
+      }
+      this.tools.set(toolId, tool);
+      this.logger.log(`Tool registered: ${toolId}`);
+    }
   }
 
   /**

@@ -8,7 +8,7 @@ export { Neo4jModule } from './lib/neo4j.module';
 // ==================== MODERN SERVICES (PRIMARY) ====================
 // Use these services for all new development
 
-export { NeogmaService } from './lib/core/neogma.service';
+export { NeogmaService } from './lib/services/neogma.service';
 export { NeogmaMetricsService } from './lib/services/neogma-metrics.service';
 export { NeogmaConnectionService } from './lib/services/neogma-connection.service';
 
@@ -27,7 +27,7 @@ export { NeogmaModelFactoryService } from './lib/query-builder/neogma-model-fact
 
 export { InjectNeogma } from './lib/neogma/neogma.decorators';
 export type * from './lib/neogma/neogma.interfaces';
-export * from './lib/neogma/neogma.constants';
+export * from './lib/constants/neogma.constants';
 
 // Interfaces - Re-enabled to restore type safety
 export type {
@@ -67,29 +67,13 @@ export {
 } from './lib/decorators/safe.decorator';
 
 // Core Decorators
-export {
-  InjectNeo4j,
-  InjectNeo4jSession,
-  InjectNeo4jDriver,
-  InjectNeo4jConnection,
-} from './lib/decorators/inject-neo4j.decorator';
 export { Transactional } from './lib/decorators/transactional.decorator';
-
-// Legacy Decorators (DEPRECATED - use @Safe() instead)
-export {
-  Neo4jSafe,
-  type Neo4jSafeOptions,
-} from './lib/decorators/safe.decorator';
 
 // Decorator Framework
 export {
   CypherQuery,
   type CypherQueryConfig,
 } from './lib/decorators/cypher-query.decorator';
-export {
-  Repository,
-  Neo4jRepository,
-} from './lib/repositories/repository.decorator';
 export {
   Neo4jEntity,
   Neo4jProp,
@@ -138,13 +122,18 @@ export {
 } from './lib/constraints';
 
 // Multi-Tenancy Support
-export { MultiTenantNeo4jModule } from './lib/multi-tenancy/multi-tenant.module';
+export {
+  MultiTenantNeo4jModule,
+  MultiTenantConfigurations,
+} from './lib/multi-tenancy/multi-tenant.module';
 export { MultiTenantNeo4jService } from './lib/multi-tenancy/multi-tenant-neo4j.service';
 export { TenantContextService } from './lib/multi-tenancy/tenant-context.service';
 export * from './lib/multi-tenancy/multi-tenant.decorators';
 
-// Repository Framework (Specialized repositories only)
-export { GraphRepository } from './lib/repositories/graph-repository';
+// ❌ REMOVED: GraphRepository - Use specialized services instead:
+// - GraphTraversalService for path finding and traversal
+// - GraphMetricsService for centrality and statistics
+// - GraphPatternService for complex pattern matching
 
 // Modern Graph Services (Specialized graph operations)
 export { BaseGraphService } from './lib/repositories/graph/base-graph.service';
@@ -185,13 +174,14 @@ export {
   type CreateRelationshipData,
   type RelationshipResult,
   type BatchRelationshipOperation,
+  type BatchRelationshipMergeOperation,
+  type BatchRelationshipNodeMergeOperation,
   type RepositoryQueryOptions,
 } from './lib/repositories/relationship/base-relationship.service';
 export { RelationshipCoreRepository } from './lib/repositories/relationship/relationship-core.repository';
 export { RelationshipBulkOperationsService } from './lib/repositories/relationship/relationship-bulk.service';
 
-// Legacy Relationship Repository (DEPRECATED - use RelationshipCoreRepository instead)
-export { RelationshipRepository } from './lib/repositories/relationship/relationship-repository';
+// ❌ REMOVED: RelationshipRepository - Use RelationshipCoreRepository instead
 
 // Utils
 export * from './lib/utils/parameter-serializer';
@@ -199,7 +189,7 @@ export * from './lib/utils/parameter-serializer';
 // Query Builder types are now exported above in the main Neogma integration section
 
 // Constants
-export * from './lib/constants';
+export * from './lib/constants/constants';
 
 // Config Utilities
 export {
@@ -209,16 +199,66 @@ export {
   isNeo4jConfigured,
 } from './lib/utils/neo4j-config.accessor';
 
-// Entity CRUD operations are now internal to @Repository decorator
-// Use @Repository or @Neo4jRepository decorator for CRUD operations
-// The FindOptions type is still exported for repository method signatures
-export { type FindOptions } from './lib/repositories/crud-operations';
-
-// Base Repository Interface for TypeScript support
+// Neo4j CRUD Service (Composition Pattern for Repositories)
 export {
-  type IBaseRepository,
-  BaseRepositoryService,
-} from './lib/repositories/base-repository.interface';
+  Neo4jCrudService,
+  type FindOptions,
+} from './lib/services/neo4j-crud.service';
+
+// =============================================================================
+// TYPEORM-STYLE REPOSITORY PATTERN (v2.0.0+)
+// =============================================================================
+
+/**
+ * TypeORM-Style Auto-Generated Repositories
+ *
+ * These exports enable zero-boilerplate repository injection following
+ * the same pattern as TypeORM/Mongoose:
+ *
+ * @example
+ * ```typescript
+ * // Simple CRUD (auto-generated repository)
+ * @Module({
+ *   imports: [Neo4jModule.forFeature([User, Post])]
+ * })
+ * export class UserModule {}
+ *
+ * @Injectable()
+ * export class UserService {
+ *   constructor(
+ *     @InjectRepository(User)
+ *     private userRepo: Neo4jRepository<User>
+ *   ) {}
+ *
+ *   async getUser(id: string) {
+ *     return this.userRepo.findById(id);  // Works immediately
+ *   }
+ * }
+ *
+ * // Custom repository (extends base class)
+ * @Injectable()
+ * export class UserRepository extends Neo4jRepository<User> {
+ *   constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
+ *     super(User, 'User', neogma, crud);
+ *   }
+ *
+ *   async findByEmail(email: string) {
+ *     const qb = this.createQueryBuilder();
+ *     // ... custom query
+ *   }
+ * }
+ * ```
+ */
+
+// Base Repository Class
+export { Neo4jRepository as Neo4jRepositoryBase } from './lib/repositories/neo4j-repository';
+
+// Injection Decorators
+export {
+  InjectRepository,
+  getRepositoryToken,
+  getEntityLabel,
+} from './lib/decorators/inject-repository.decorator';
 
 // =============================================================================
 // EXAMPLES AND DOCUMENTATION

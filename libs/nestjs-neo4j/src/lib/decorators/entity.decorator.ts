@@ -563,10 +563,11 @@ function validateRelationshipConfig(config?: Neo4jRelationshipConfig): void {
     throw new Error('Neo4jRelationship direction must be IN, OUT, or BOTH');
   }
 
+  // Validate target/targetType if provided (optional - defaults to Object)
   const targetFunction = config.targetType || config.target;
-  if (!targetFunction || typeof targetFunction !== 'function') {
+  if (targetFunction && typeof targetFunction !== 'function') {
     throw new Error(
-      'Neo4jRelationship decorator requires a valid target or targetType function'
+      'Neo4jRelationship target or targetType must be a function when provided'
     );
   }
 

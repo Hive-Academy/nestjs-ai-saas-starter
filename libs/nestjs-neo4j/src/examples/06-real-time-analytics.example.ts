@@ -35,7 +35,7 @@ import {
   CreatedAt,
   UpdatedAt,
   NotNull,
-  Repository,
+  Neo4jRepositoryBase,
   InjectNeogma,
   NeogmaService,
   Safe,
@@ -43,7 +43,6 @@ import {
   CypherQuery,
   Transactional,
   PropIndex,
-  BaseRepositoryService,
 } from '../index';
 
 // ============================================================================
@@ -283,22 +282,34 @@ export interface FunnelAnalysis {
 // 3. HIGH-PERFORMANCE EVENT REPOSITORY
 // ============================================================================
 
-@Repository(() => Event)
+/**
+ * EventRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Event>:
+ * - findById(id: string): Promise<Event | null>
+ * - findAll(options?: FindOptions<Event>): Promise<Event[]>
+ * - findOne(options: FindOptions<Event>): Promise<Event | null>
+ * - create(data: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event>
+ * - update(id: string, updates: Partial<Event>): Promise<Event | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Event>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Event>): Promise<Event>
+ */
 @Injectable()
-export class EventRepository extends BaseRepositoryService<Event> {
-  constructor(@InjectNeogma() private readonly neogmaService: NeogmaService) {
-    super();
-  }
+export class EventRepository extends Neo4jRepositoryBase<Event> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Batch insert events for high throughput
+   * Uses inherited executeQuery() method
    */
   @Safe({ strict: true })
   @Transactional()
   async batchInsertEvents(events: EventInput[]): Promise<number> {
     if (events.length === 0) return 0;
 
-    const queryBuilder = this.neogmaService.createQueryBuilder();
+    const queryBuilder = this.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     // Prepare events with timestamps
@@ -331,12 +342,13 @@ export class EventRepository extends BaseRepositoryService<Event> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogmaService.run(cypher, params);
+    const result = await this.executeQuery(cypher, params);
     return result.records[0]?.get('insertedCount').toNumber() || 0;
   }
 
   /**
    * Get events in time range with efficient pagination
+   * Uses inherited executeQuery() method
    */
   @Safe({ strict: true })
   @CypherQuery({ cache: '30s' }) // 30 second cache for recent data
@@ -351,7 +363,7 @@ export class EventRepository extends BaseRepositoryService<Event> {
     },
     limit = 1000
   ): Promise<Event[]> {
-    const queryBuilder = this.neogmaService.createQueryBuilder();
+    const queryBuilder = this.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     // Add time range parameters
@@ -396,12 +408,13 @@ export class EventRepository extends BaseRepositoryService<Event> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogmaService.run(cypher, params);
+    const result = await this.executeQuery(cypher, params);
     return result.records.map((record) => record.get('e').properties as Event);
   }
 
   /**
    * Real-time aggregation query for live metrics
+   * Uses inherited createQueryBuilder() and executeQuery() methods
    */
   @Safe({ strict: true })
   async getLiveMetrics(timeWindow = 300): Promise<RealTimeMetrics> {
@@ -409,7 +422,7 @@ export class EventRepository extends BaseRepositoryService<Event> {
     const windowStart = new Date(Date.now() - timeWindow * 1000);
 
     // Main metrics query
-    const mainBuilder = this.neogmaService.createQueryBuilder();
+    const mainBuilder = this.createQueryBuilder();
     const mainBindParam = mainBuilder.getBindParam();
     const windowStartParam = mainBindParam.add(windowStart);
     const timeWindowSecondsParam = mainBindParam.add(timeWindow);
@@ -432,11 +445,11 @@ export class EventRepository extends BaseRepositoryService<Event> {
 
     const mainCypher = mainBuilder.getStatement();
     const mainParams = mainBindParam.get();
-    const result = await this.neogmaService.run(mainCypher, mainParams);
+    const result = await this.executeQuery(mainCypher, mainParams);
     const record = result.records[0];
 
     // Get top pages separately for better performance
-    const topPagesBuilder = this.neogmaService.createQueryBuilder();
+    const topPagesBuilder = this.createQueryBuilder();
     const topPagesBindParam = topPagesBuilder.getBindParam();
     const windowStartParam2 = topPagesBindParam.add(windowStart);
 
@@ -451,7 +464,7 @@ export class EventRepository extends BaseRepositoryService<Event> {
 
     const topPagesCypher = topPagesBuilder.getStatement();
     const topPagesParams = topPagesBindParam.get();
-    const topPagesResult = await this.neogmaService.run(
+    const topPagesResult = await this.executeQuery(
       topPagesCypher,
       topPagesParams
     );
@@ -461,7 +474,7 @@ export class EventRepository extends BaseRepositoryService<Event> {
     }));
 
     // Get top events
-    const topEventsBuilder = this.neogmaService.createQueryBuilder();
+    const topEventsBuilder = this.createQueryBuilder();
     const topEventsBindParam = topEventsBuilder.getBindParam();
     const windowStartParam3 = topEventsBindParam.add(windowStart);
 
@@ -474,7 +487,7 @@ export class EventRepository extends BaseRepositoryService<Event> {
 
     const topEventsCypher = topEventsBuilder.getStatement();
     const topEventsParams = topEventsBindParam.get();
-    const topEventsResult = await this.neogmaService.run(
+    const topEventsResult = await this.executeQuery(
       topEventsCypher,
       topEventsParams
     );

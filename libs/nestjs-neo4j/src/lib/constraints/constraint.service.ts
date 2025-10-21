@@ -12,7 +12,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 // import { ModuleRef } from '@nestjs/core'; // TODO: Future use for dependency resolution
 import type { Record } from 'neo4j-driver';
-import { NeogmaService } from '../core/neogma.service';
+import { NeogmaService } from '../services/neogma.service';
 import {
   ConstraintMetadata,
   ConstraintCreationStatus,

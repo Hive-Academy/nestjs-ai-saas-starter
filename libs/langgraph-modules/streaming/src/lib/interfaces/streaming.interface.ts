@@ -20,6 +20,13 @@ export interface StreamMetadata {
   executionId: string;
   nodeId?: string;
   agentType?: string;
+
+  // Node ID structure components (parsed from canonical node ID)
+  domain?: string;
+  phase?: string;
+  activity?: string;
+  detail?: string;
+
   [key: string]: any;
 }
 
@@ -60,7 +67,13 @@ export function getStreamTokenMetadata(
   nodeId: string,
   tokenIndex: number,
   totalTokens?: number,
-  role?: string
+  role?: string,
+  nodeIdParts?: {
+    domain?: string;
+    phase?: string;
+    activity?: string;
+    detail?: string;
+  }
 ): StreamTokenMetadata {
   return {
     timestamp: new Date(),
@@ -70,6 +83,11 @@ export function getStreamTokenMetadata(
     tokenIndex,
     totalTokens,
     role,
+    // Include parsed node ID components if provided
+    ...(nodeIdParts?.domain && { domain: nodeIdParts.domain }),
+    ...(nodeIdParts?.phase && { phase: nodeIdParts.phase }),
+    ...(nodeIdParts?.activity && { activity: nodeIdParts.activity }),
+    ...(nodeIdParts?.detail && { detail: nodeIdParts.detail }),
   };
 }
 
@@ -77,15 +95,27 @@ export function getStreamEventMetadata(
   executionId: string,
   nodeId: string,
   eventType: string,
-  eventData?: any
+  sequenceNumber: number,
+  eventData?: any,
+  nodeIdParts?: {
+    domain?: string;
+    phase?: string;
+    activity?: string;
+    detail?: string;
+  }
 ): StreamEventMetadata {
   return {
     timestamp: new Date(),
-    sequenceNumber: Date.now(),
+    sequenceNumber,
     executionId,
     nodeId,
     eventType,
     eventData,
+    // Include parsed node ID components if provided
+    ...(nodeIdParts?.domain && { domain: nodeIdParts.domain }),
+    ...(nodeIdParts?.phase && { phase: nodeIdParts.phase }),
+    ...(nodeIdParts?.activity && { activity: nodeIdParts.activity }),
+    ...(nodeIdParts?.detail && { detail: nodeIdParts.detail }),
   };
 }
 
@@ -93,16 +123,28 @@ export function getStreamProgressMetadata(
   executionId: string,
   nodeId: string,
   progress: number,
+  sequenceNumber: number,
   total?: number,
-  stage?: string
+  stage?: string,
+  nodeIdParts?: {
+    domain?: string;
+    phase?: string;
+    activity?: string;
+    detail?: string;
+  }
 ): StreamProgressMetadata {
   return {
     timestamp: new Date(),
-    sequenceNumber: Date.now(),
+    sequenceNumber,
     executionId,
     nodeId,
     progress,
     total,
     stage,
+    // Include parsed node ID components if provided
+    ...(nodeIdParts?.domain && { domain: nodeIdParts.domain }),
+    ...(nodeIdParts?.phase && { phase: nodeIdParts.phase }),
+    ...(nodeIdParts?.activity && { activity: nodeIdParts.activity }),
+    ...(nodeIdParts?.detail && { detail: nodeIdParts.detail }),
   };
 }

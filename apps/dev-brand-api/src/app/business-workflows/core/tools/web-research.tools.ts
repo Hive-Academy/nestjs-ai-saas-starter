@@ -113,7 +113,11 @@ export class WebResearchTools {
     });
   }
 
-  @Tool() // ✅ Zero-config! Tavily integration, rate limits, and search configuration inherited from MultiAgentModule.forRoot()
+  @Tool({
+    name: 'web-search',
+    description:
+      'Search the web using Tavily API for general information with configurable depth, result limits, and domain filtering',
+  })
   async webSearch({
     query,
     maxResults,
@@ -191,7 +195,11 @@ export class WebResearchTools {
     }
   }
 
-  @Tool() // ✅ Zero-config! News filtering, timeframes, and categories managed by global search configuration
+  @Tool({
+    name: 'news-search',
+    description:
+      'Search for news articles using Tavily API with timeframe filtering (day/week/month) and category classification (tech/business/science/health)',
+  })
   async newsSearch({
     query,
     timeframe,
@@ -267,7 +275,82 @@ export class WebResearchTools {
     }
   }
 
-  @Tool() // ✅ Zero-config! Research depth, source credibility scoring, and academic integration configured globally
+  @Tool({
+    name: 'social-profile-search',
+    description:
+      'Search for social media profiles across multiple platforms (LinkedIn, Twitter, GitHub, Dev.to, etc.) with intelligent username extraction',
+  })
+  async searchSocialProfiles({
+    query,
+    platforms,
+    limit,
+  }: {
+    query: string;
+    platforms: string[];
+    limit: number;
+  }): Promise<{
+    profiles: Array<{
+      platform: string;
+      url: string;
+      username: string;
+      score: number;
+    }>;
+  }> {
+    this.logger.log(
+      `🔍 Searching social profiles for: "${query}" on ${platforms.join(', ')}`
+    );
+
+    const profiles: Array<{
+      platform: string;
+      url: string;
+      username: string;
+      score: number;
+    }> = [];
+
+    try {
+      // Build platform-specific search queries
+      for (const platform of platforms) {
+        const searchQuery = `${query} ${platform} profile`;
+        const searchResult = await this.tavilyTool.invoke({
+          query: searchQuery,
+        });
+
+        const results = this.parseSearchResults(searchResult);
+
+        // Extract profiles from search results
+        const platformProfiles = results.items
+          .filter((item) => this.isPlatformUrl(item.url, platform))
+          .slice(0, Math.ceil(limit / platforms.length))
+          .map((item) => ({
+            platform,
+            url: item.url,
+            username: this.extractUsername(item.url, platform),
+            score: item.score,
+          }));
+
+        profiles.push(...platformProfiles);
+      }
+
+      this.logger.log(
+        `✅ Found ${profiles.length} social profiles across ${platforms.length} platforms`
+      );
+
+      return {
+        profiles: profiles.slice(0, limit),
+      };
+    } catch (error: any) {
+      this.logger.error(`❌ Social profile search failed:`, error.message);
+      return {
+        profiles: [],
+      };
+    }
+  }
+
+  @Tool({
+    name: 'research-search',
+    description:
+      'Comprehensive research search using Tavily API with academic source integration, credibility assessment, and multi-depth analysis (summary/detailed/comprehensive)',
+  })
   async researchSearch({
     topic,
     includeAcademic,
@@ -573,6 +656,71 @@ export class WebResearchTools {
       }
       default:
         return keyPoints;
+    }
+  }
+
+  /**
+   * Check if URL matches the specified platform
+   */
+  private isPlatformUrl(url: string, platform: string): boolean {
+    const platformDomains: Record<string, string[]> = {
+      linkedin: ['linkedin.com'],
+      twitter: ['twitter.com', 'x.com'],
+      'dev.to': ['dev.to'],
+      github: ['github.com'],
+      medium: ['medium.com'],
+      facebook: ['facebook.com', 'fb.com'],
+      instagram: ['instagram.com'],
+    };
+
+    const normalizedPlatform = platform.toLowerCase();
+    const domains = platformDomains[normalizedPlatform] || [normalizedPlatform];
+
+    return domains.some((domain) => url.toLowerCase().includes(domain));
+  }
+
+  /**
+   * Extract username from social media URL
+   */
+  private extractUsername(url: string, platform: string): string {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+
+      // Platform-specific username extraction
+      const normalizedPlatform = platform.toLowerCase();
+
+      switch (normalizedPlatform) {
+        case 'linkedin': {
+          // Extract from /in/username or /company/companyname
+          const match = pathname.match(/\/(in|company)\/([^/]+)/);
+          return match ? match[2] : 'unknown';
+        }
+        case 'twitter':
+        case 'x.com': {
+          // Extract from /username
+          const match = pathname.match(/^\/([^/]+)/);
+          return match ? match[1] : 'unknown';
+        }
+        case 'dev.to': {
+          // Extract from /username
+          const match = pathname.match(/^\/([^/]+)/);
+          return match ? match[1] : 'unknown';
+        }
+        case 'github': {
+          // Extract from /username
+          const match = pathname.match(/^\/([^/]+)/);
+          return match ? match[1] : 'unknown';
+        }
+        default: {
+          // Generic extraction - first path segment
+          const match = pathname.match(/^\/([^/]+)/);
+          return match ? match[1] : 'unknown';
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to extract username from URL: ${url}`);
+      return 'unknown';
     }
   }
 }

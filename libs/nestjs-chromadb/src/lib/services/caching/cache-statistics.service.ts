@@ -8,6 +8,7 @@ import type {
   CacheConfig,
   MutableCacheStats,
 } from './cache-interfaces';
+import { CacheStore } from './cache-store.service';
 
 /**
  * Cache statistics service - handles hit/miss tracking and health monitoring
@@ -16,12 +17,15 @@ import type {
 @Injectable()
 export class CacheStatisticsService implements ICacheStatistics {
   private readonly logger = new Logger(CacheStatisticsService.name);
+  private readonly cache: Map<string, CacheEntry>;
+  private readonly config: Required<CacheConfig>;
+  private readonly stats: MutableCacheStats;
 
-  constructor(
-    private readonly cache: Map<string, CacheEntry>,
-    private readonly config: Required<CacheConfig>,
-    private readonly stats: MutableCacheStats
-  ) {}
+  constructor(private readonly cacheStore: CacheStore) {
+    this.cache = this.cacheStore.getCache();
+    this.config = this.cacheStore.getConfig();
+    this.stats = this.cacheStore.getStats();
+  }
 
   /**
    * Increment cache hits

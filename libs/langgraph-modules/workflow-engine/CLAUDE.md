@@ -99,7 +99,11 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
 
 ```typescript
 import { Injectable, Inject, Optional } from '@nestjs/common';
-import type { AgentProvider, ToolProvider, WorkflowProvider } from '@hive-academy/langgraph-multi-agent';
+import type {
+  AgentProvider,
+  ToolProvider,
+  WorkflowProvider,
+} from '@hive-academy/langgraph-multi-agent';
 import type { WorkflowClass } from '@hive-academy/langgraph-functional-api';
 
 /**
@@ -152,7 +156,10 @@ export class CentralRegistryService {
       this.registerWorkflow(workflow);
     });
 
-    this.logger.log(`Registry initialized with ${this.agents.size} agents, ` + `${this.tools.size} tools, ${this.workflows.size} workflows`);
+    this.logger.log(
+      `Registry initialized with ${this.agents.size} agents, ` +
+        `${this.tools.size} tools, ${this.workflows.size} workflows`
+    );
   }
 
   /**
@@ -200,7 +207,11 @@ import { Injectable, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable, Subject, Subscription } from 'rxjs';
 import type { StreamUpdate, TokenData } from '@hive-academy/langgraph-streaming';
-import { getStreamTokenMetadata, getStreamEventMetadata, getStreamProgressMetadata } from '@hive-academy/langgraph-streaming';
+import {
+  getStreamTokenMetadata,
+  getStreamEventMetadata,
+  getStreamProgressMetadata,
+} from '@hive-academy/langgraph-streaming';
 import type { IStreamingService, ICheckpointAdapter } from '@hive-academy/langgraph-core';
 
 /**
@@ -344,7 +355,11 @@ class CentralRegistryService {
 
 ```typescript
 // VERIFIED EXPORTS: Streaming services within workflow-engine
-import { WorkflowStreamService, WorkflowStreamOrchestrator, TokenProcessingService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowStreamService,
+  WorkflowStreamOrchestrator,
+  TokenProcessingService,
+} from '@hive-academy/langgraph-workflow-engine';
 ```
 
 ### 🎯 Key Consumer Value
@@ -446,7 +461,10 @@ export class AppModule {}
 ```typescript
 @Injectable()
 export class MyWorkflowService {
-  constructor(private readonly registry: CentralRegistryService, private readonly execution: WorkflowExecutionService) {}
+  constructor(
+    private readonly registry: CentralRegistryService,
+    private readonly execution: WorkflowExecutionService
+  ) {}
 
   async registerAndExecute() {
     // Registry automatically manages all agents, tools, workflows
@@ -714,7 +732,11 @@ export class CompleteEcosystemWorkflowService {
             const agentResults = await state.multiAgent.coordinate({
               agents: ['analyzer', 'processor', 'validator'],
               sharedMemory: state.memory, // Embedded memory shared across agents
-              functionalComposition: state.functionalAPI.compose([validateInput, enrichWithMemory, processWithAgents]),
+              functionalComposition: state.functionalAPI.compose([
+                validateInput,
+                enrichWithMemory,
+                processWithAgents,
+              ]),
             });
 
             // HITL approval with checkpoint before decision
@@ -825,7 +847,9 @@ export class WorkflowOrchestrationAgent {
   }
 
   @Task({ dependsOn: ['initialize'] })
-  async processMultiModuleIntegration(context: TaskExecutionContext): Promise<Partial<WorkflowState>> {
+  async processMultiModuleIntegration(
+    context: TaskExecutionContext
+  ): Promise<Partial<WorkflowState>> {
     // Core orchestration step integrating multiple modules
     const result = await this.workflowEngine.orchestrateModules({
       modules: ['streaming', 'multi-agent', 'memory'],
@@ -916,7 +940,11 @@ export class ComprehensiveWorkflowService {
 // Example: Streaming + Multi-Agent Integration
 @Injectable()
 export class StreamingMultiAgentWorkflowService {
-  constructor(private readonly workflowEngine: IWorkflowEngine, private readonly streamingService: IStreamingService, private readonly multiAgentService: IMultiAgentService) {}
+  constructor(
+    private readonly workflowEngine: IWorkflowEngine,
+    private readonly streamingService: IStreamingService,
+    private readonly multiAgentService: IMultiAgentService
+  ) {}
 
   async processWithStreamingAndAgents(input: WorkflowInput): Promise<WorkflowOutput> {
     // Create coordinated workflow with streaming and multi-agent capabilities
@@ -928,7 +956,9 @@ export class StreamingMultiAgentWorkflowService {
           handler: async (state) => {
             // Coordinate streaming across multiple agents
             const agents = await this.multiAgentService.getActiveAgents();
-            const streams = await Promise.all(agents.map((agent) => this.streamingService.createAgentStream(agent.id, state)));
+            const streams = await Promise.all(
+              agents.map((agent) => this.streamingService.createAgentStream(agent.id, state))
+            );
             return { coordinatedStreams: streams };
           },
         },

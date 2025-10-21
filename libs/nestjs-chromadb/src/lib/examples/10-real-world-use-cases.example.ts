@@ -22,15 +22,15 @@
 
 import { Injectable, Module, OnModuleInit } from '@nestjs/common';
 import {
-  BaseChromaRepository,
   BaseDocument,
   ChromaDBModule,
+  ChromaDBRepository,
+  ChromaDBService,
   ChromaEmbedding,
   ChromaEntity,
   ChromaId,
   ChromaMetadata,
   ChromaProp,
-  ChromaRepository,
   CreatedAt,
   UpdatedAt,
 } from '../../index';
@@ -411,16 +411,17 @@ export class UserProfileEntity implements BaseDocument<UserProfileMetadata> {
 
 /**
  * E-commerce product repository with recommendation features
+ * Extends ChromaDBRepository<T> with TypeORM-style pattern
  */
 @Injectable()
-@ChromaRepository<EcommerceProductEntity>({
-  collection: 'ecommerce_products',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-export class EcommerceProductRepository extends BaseChromaRepository<EcommerceProductEntity> {
+export class EcommerceProductRepository extends ChromaDBRepository<EcommerceProductEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(EcommerceProductEntity, 'ecommerce_products', chromaDB);
+  }
   /**
    * Find similar products based on semantic similarity
    */
@@ -706,16 +707,17 @@ export class EcommerceProductRepository extends BaseChromaRepository<EcommercePr
 
 /**
  * Knowledge document repository with RAG capabilities
+ * Extends ChromaDBRepository<T> with TypeORM-style pattern
  */
 @Injectable()
-@ChromaRepository<KnowledgeDocumentEntity>({
-  collection: 'knowledge_documents',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-export class KnowledgeDocumentRepository extends BaseChromaRepository<KnowledgeDocumentEntity> {
+export class KnowledgeDocumentRepository extends ChromaDBRepository<KnowledgeDocumentEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(KnowledgeDocumentEntity, 'knowledge_documents', chromaDB);
+  }
   /**
    * Retrieve relevant context for RAG applications
    */
@@ -912,16 +914,17 @@ export class KnowledgeDocumentRepository extends BaseChromaRepository<KnowledgeD
 
 /**
  * User profile repository for personalization
+ * Extends ChromaDBRepository<T> with TypeORM-style pattern
  */
 @Injectable()
-@ChromaRepository<UserProfileEntity>({
-  collection: 'user_profiles',
-  autoEmbed: true,
-  enableCaching: true,
-  enableValidation: true,
-  autoTimestamp: true,
-})
-export class UserProfileRepository extends BaseChromaRepository<UserProfileEntity> {
+export class UserProfileRepository extends ChromaDBRepository<UserProfileEntity> {
+  /**
+   * Explicit constructor with ChromaDBService injection (TypeORM-style)
+   * @param chromaDB - ChromaDBService instance injected by NestJS
+   */
+  constructor(chromaDB: ChromaDBService) {
+    super(UserProfileEntity, 'user_profiles', chromaDB);
+  }
   /**
    * Find similar users for collaborative filtering
    */

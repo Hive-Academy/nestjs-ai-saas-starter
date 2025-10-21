@@ -21,7 +21,8 @@ import {
 
 const VALIDATION_METADATA_KEY = Symbol('validation');
 const PARAMETER_METADATA_KEY = Symbol('parameter_validation');
-const STATE_METADATA_KEY = Symbol('state_validation');
+// Reserved for future state validation features
+// const STATE_METADATA_KEY = Symbol('state_validation');
 
 // ============================================================================
 // VALIDATION RULE TYPES

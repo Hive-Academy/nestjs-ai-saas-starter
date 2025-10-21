@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Repository,
-  InjectNeogma,
+  Neo4jRepositoryBase,
   NeogmaService,
+  Neo4jCrudService,
   Safe,
-  BaseRepositoryService,
+  Authorize,
+  ValidateInput,
+  AuditLog,
+  GraphPatternService,
 } from '@hive-academy/nestjs-neo4j';
 import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
 import type {
@@ -23,27 +26,26 @@ import type {
  *
  * Replaces: neo4j-confidence-storage.adapter.ts (789 lines)
  *
+ * Extends Neo4jRepository<ConfidencePattern> for automatic CRUD operations.
  * Provides type-safe operations for confidence pattern analysis including
- * ML training data management, pattern insights, and approval analytics
- * using modern @Repository pattern.
+ * ML training data management, pattern insights, and approval analytics.
+ *
+ * CRUD methods (inherited from Neo4jRepository<ConfidencePattern>):
+ * - findById, findAll, create, update, delete, count, exists
+ *
+ * Enhanced with specialized graph services for optimized analytics:
+ * - GraphMetricsService: Analytics and statistics
+ * - GraphPatternService: Complex pattern matching and aggregation
  */
-@Repository(() => ConfidencePattern)
 @Injectable()
-export class ConfidencePatternRepository extends BaseRepositoryService<ConfidencePattern> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
+export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidencePattern> {
+  constructor(
+    neogma: NeogmaService,
+    crud: Neo4jCrudService,
+    private readonly graphPattern: GraphPatternService<ConfidencePattern>
+  ) {
+    super(ConfidencePattern, 'ConfidencePattern', neogma, crud);
   }
-
-  // ============================================================================
-  // AUTO-GENERATED CRUD METHODS (from @Repository decorator)
-  // ============================================================================
-  // - findById(id: string): Promise<ConfidencePattern | null>
-  // - findAll(options?: FindOptions<ConfidencePattern>): Promise<ConfidencePattern[]>
-  // - create(data: Partial<ConfidencePattern>): Promise<ConfidencePattern>
-  // - update(id: string, updates: Partial<ConfidencePattern>): Promise<ConfidencePattern | null>
-  // - delete(id: string): Promise<boolean>
-  // - count(where?: Partial<ConfidencePattern>): Promise<number>
-  // - exists(id: string): Promise<boolean>
 
   // ============================================================================
   // APPROVAL PATTERN MANAGEMENT
@@ -53,6 +55,8 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
    * Store an approval pattern for future reference
    * Migrated from: storeApprovalPattern in neo4j-confidence-storage.adapter.ts
    */
+  @ValidateInput()
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
   async storeApprovalPattern(pattern: ApprovalPattern): Promise<void> {
     try {
@@ -277,6 +281,8 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
    * Delete an approval pattern
    * Migrated from: deleteApprovalPattern in neo4j-confidence-storage.adapter.ts
    */
+  @Authorize({ roles: ['admin'] })
+  @AuditLog({ logLevel: 'standard', enabled: true, logSuccess: true })
   @Safe()
   async deleteApprovalPattern(patternId: string): Promise<boolean> {
     try {
@@ -400,54 +406,58 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
   /**
    * Get ML training data for confidence prediction models
    * Migrated from: getMLTrainingData in neo4j-confidence-storage.adapter.ts
+   *
+   * Optimized: Single unified query for outcomes + features
+   * - Reduced database round-trips: 2 → 1
+   * - Uses OPTIONAL MATCH for joining outcomes with features
    */
   @Safe()
   async getMLTrainingData(): Promise<MLTrainingSet> {
     try {
-      // Get patterns
+      // Get patterns (reuse existing method)
       const patterns = await this.getAllApprovalPatterns();
 
-      // Get outcomes
-      const outcomeBuilder = this.neogma.createQueryBuilder();
-      outcomeBuilder.match('(o:ConfidenceOutcome)')
-        .return(`o.executionId as executionId,
-                 o.approved as approved,
-                 o.actualOutcome as actualOutcome,
-                 o.humanConfidence as humanConfidence,
-                 o.systemConfidence as systemConfidence,
-                 o.timestamp as timestamp`);
+      // Single unified query for outcomes and features
+      const result = await this.executeQuery(
+        `MATCH (o:ConfidenceOutcome)
+         OPTIONAL MATCH (f:FeatureVector {executionId: o.executionId})
+         RETURN o.executionId as executionId,
+                o.approved as approved,
+                o.actualOutcome as actualOutcome,
+                o.humanConfidence as humanConfidence,
+                o.systemConfidence as systemConfidence,
+                o.timestamp as outcomeTimestamp,
+                f.features as features,
+                f.metadata as metadata,
+                f.timestamp as featureTimestamp`,
+        {}
+      );
 
-      const outcomeCypher = outcomeBuilder.getStatement();
-      const outcomeParams = {};
-      const outcomeResult = await this.neogma.run(outcomeCypher, outcomeParams);
-      const outcomes: ConfidenceOutcome[] = outcomeResult.records.map(
-        (record) => ({
+      const outcomes: ConfidenceOutcome[] = [];
+      const features: FeatureVector[] = [];
+
+      result.records.forEach((record) => {
+        // Add outcome
+        outcomes.push({
           executionId: record.get('executionId'),
           approved: record.get('approved'),
           actualOutcome: record.get('actualOutcome'),
           humanConfidence: record.get('humanConfidence'),
           systemConfidence: record.get('systemConfidence'),
-          timestamp: new Date(record.get('timestamp')),
-        })
-      );
+          timestamp: new Date(record.get('outcomeTimestamp')),
+        });
 
-      // Get feature vectors
-      const featureBuilder = this.neogma.createQueryBuilder();
-      featureBuilder.match('(f:FeatureVector)')
-        .return(`f.executionId as executionId,
-                 f.features as features,
-                 f.metadata as metadata,
-                 f.timestamp as timestamp`);
-
-      const featureCypher = featureBuilder.getStatement();
-      const featureParams = {};
-      const featureResult = await this.neogma.run(featureCypher, featureParams);
-      const features: FeatureVector[] = featureResult.records.map((record) => ({
-        executionId: record.get('executionId'),
-        features: JSON.parse(record.get('features') || '{}'),
-        metadata: JSON.parse(record.get('metadata') || '{}'),
-        timestamp: new Date(record.get('timestamp')),
-      }));
+        // Add feature if exists
+        const featureData = record.get('features');
+        if (featureData) {
+          features.push({
+            executionId: record.get('executionId'),
+            features: JSON.parse(featureData || '{}'),
+            metadata: JSON.parse(record.get('metadata') || '{}'),
+            timestamp: new Date(record.get('featureTimestamp')),
+          });
+        }
+      });
 
       // Generate labels from outcomes (1 for approved, 0 for rejected)
       const labels = outcomes.map((outcome) => (outcome.approved ? 1 : 0));
@@ -576,6 +586,10 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
   /**
    * Get comprehensive confidence analytics
    * Migrated from: getConfidenceAnalytics in neo4j-confidence-storage.adapter.ts
+   *
+   * Optimized: Moved aggregation logic to Cypher for performance
+   * - Confidence distribution calculated in-database
+   * - Factor impact calculated in-database
    */
   @Safe()
   async getConfidenceAnalytics(timeRange?: {
@@ -583,50 +597,57 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
     endDate: Date;
   }): Promise<ConfidenceAnalytics> {
     try {
-      const qb = this.neogma.createQueryBuilder();
+      // Build conditional WHERE clause
+      const whereClause = timeRange
+        ? `WHERE h.timestamp >= datetime($startDate) AND h.timestamp <= datetime($endDate)`
+        : '';
 
-      let baseQuery = qb.match('(h:ConfidenceHistory)');
+      const result = await this.executeQuery(
+        `MATCH (h:ConfidenceHistory)
+         ${whereClause}
+         WITH count(h) as totalEvaluations,
+              avg(h.value) as averageConfidence,
+              collect({value: h.value, type: h.factorType}) as dataPoints
+         UNWIND dataPoints as point
+         WITH totalEvaluations, averageConfidence,
+              toString(toFloat(floor(point.value * 10)) / 10.0) as bucket,
+              point.type as factorType
+         RETURN totalEvaluations,
+                averageConfidence,
+                collect(DISTINCT {bucket: bucket, count: 1}) as distributionData,
+                collect(DISTINCT {type: factorType, count: 1}) as factorData`,
+        timeRange
+          ? {
+              startDate: timeRange.startDate.toISOString(),
+              endDate: timeRange.endDate.toISOString(),
+            }
+          : {}
+      );
 
-      if (timeRange) {
-        baseQuery = baseQuery.where(
-          `h.timestamp >= datetime($startDate) AND h.timestamp <= datetime($endDate)`
-        );
-      }
-
-      baseQuery.return(`
-          count(h) as totalEvaluations,
-          avg(h.value) as averageConfidence,
-          collect(h.value) as confidenceValues,
-          collect(h.factorType) as factorTypes
-        `);
-
-      const cypher = baseQuery.getStatement();
-      const params = timeRange
-        ? {
-            startDate: timeRange.startDate.toISOString(),
-            endDate: timeRange.endDate.toISOString(),
-          }
-        : {};
-      const result = await this.neogma.run(cypher, params);
       const record = result.records[0];
-
-      const totalEvaluations = Number(record.get('totalEvaluations')) || 0;
+      const totalEvaluations =
+        typeof record.get('totalEvaluations') === 'object'
+          ? (record.get('totalEvaluations') as any).low || 0
+          : Number(record.get('totalEvaluations')) || 0;
       const averageConfidence = Number(record.get('averageConfidence')) || 0;
-      const confidenceValues: number[] = record.get('confidenceValues') || [];
-      const factorTypes: string[] = record.get('factorTypes') || [];
 
-      // Calculate confidence distribution
+      // Build confidence distribution
       const confidenceDistribution: Record<string, number> = {};
-      confidenceValues.forEach((value) => {
-        const bucket = Math.floor(value * 10) / 10; // Round to 1 decimal
-        const key = bucket.toFixed(1);
-        confidenceDistribution[key] = (confidenceDistribution[key] || 0) + 1;
+      const distributionData = record.get('distributionData') || [];
+      distributionData.forEach((item: any) => {
+        if (item.bucket) {
+          confidenceDistribution[item.bucket] =
+            (confidenceDistribution[item.bucket] || 0) + 1;
+        }
       });
 
-      // Calculate factor impact
+      // Build factor impact
       const factorImpact: Record<string, number> = {};
-      factorTypes.forEach((type) => {
-        factorImpact[type] = (factorImpact[type] || 0) + 1;
+      const factorData = record.get('factorData') || [];
+      factorData.forEach((item: any) => {
+        if (item.type) {
+          factorImpact[item.type] = (factorImpact[item.type] || 0) + 1;
+        }
       });
 
       return {
@@ -652,6 +673,8 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
   /**
    * Get pattern-based insights for confidence improvement
    * Migrated from: getPatternInsights in neo4j-confidence-storage.adapter.ts
+   *
+   * Optimized: Uses GraphPatternService for cleaner query construction
    */
   @Safe()
   async getPatternInsights(timeRange?: {
@@ -659,31 +682,35 @@ export class ConfidencePatternRepository extends BaseRepositoryService<Confidenc
     endDate: Date;
   }): Promise<PatternInsights> {
     try {
-      // Get most effective patterns (highest approval rates)
-      const patternBuilder = this.neogma.createQueryBuilder();
-      patternBuilder
-        .match('(p:ApprovalPattern)')
-        .return('p')
-        .orderBy('p.approvalRate DESC')
-        .limit('10');
+      // Get most effective patterns using GraphPatternService
+      const patternResult = await this.graphPattern.executeCustomPattern({
+        match: ['(p:ApprovalPattern)'],
+        return: [
+          'p.nodeId as nodeId',
+          'p.approvalRate as approvalRate',
+          'p.averageConfidence as averageConfidence',
+          'p.commonRejectionReasons as commonRejectionReasons',
+          'p.riskFactors as riskFactors',
+          'p.successfulExecutions as successfulExecutions',
+          'p.failedExecutions as failedExecutions',
+          'p.lastUpdated as lastUpdated',
+        ],
+        orderBy: ['p.approvalRate DESC'],
+        limit: 10,
+      });
 
-      const patternCypher = patternBuilder.getStatement();
-      const patternParams = {};
-      const patternResult = await this.neogma.run(patternCypher, patternParams);
-      const mostEffectivePatterns: ApprovalPattern[] =
-        patternResult.records.map((record) => {
-          const props = record.get('p').properties;
-          return {
-            nodeId: props.nodeId,
-            approvalRate: props.approvalRate,
-            averageConfidence: props.averageConfidence,
-            commonRejectionReasons: props.commonRejectionReasons || [],
-            riskFactors: props.riskFactors || [],
-            successfulExecutions: props.successfulExecutions || 0,
-            failedExecutions: props.failedExecutions || 0,
-            lastUpdated: new Date(props.lastUpdated),
-          };
-        });
+      const mostEffectivePatterns: ApprovalPattern[] = patternResult.map(
+        (record: any) => ({
+          nodeId: record.nodeId,
+          approvalRate: record.approvalRate,
+          averageConfidence: record.averageConfidence,
+          commonRejectionReasons: record.commonRejectionReasons || [],
+          riskFactors: record.riskFactors || [],
+          successfulExecutions: record.successfulExecutions || 0,
+          failedExecutions: record.failedExecutions || 0,
+          lastUpdated: new Date(record.lastUpdated),
+        })
+      );
 
       return {
         mostEffectivePatterns,

@@ -182,22 +182,6 @@ export class RetryConfigValidator {
       }
     }
 
-    // Check for deprecated settings
-    if (config.attemptTimeout !== undefined) {
-      warnings.push(
-        'attemptTimeout is deprecated, use timeout.timeoutMs instead'
-      );
-    }
-    if (config.logRetries !== undefined) {
-      warnings.push('logRetries is deprecated, use logging.enabled instead');
-    }
-    if (config.category !== undefined) {
-      warnings.push('category is deprecated, use metrics.category instead');
-    }
-    if (config.tags !== undefined) {
-      warnings.push('tags is deprecated, use metrics.tags instead');
-    }
-
     return {
       valid: errors.length === 0,
       errors,

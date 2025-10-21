@@ -28,6 +28,12 @@ export interface StreamTokenOptions {
     excludeWhitespace?: boolean;
     pattern?: RegExp;
   };
+  /** Delay between async iterator tokens in milliseconds (default: 25ms) */
+  streamingDelay?: number;
+  /** Buffer overflow strategy (default: 'pause') */
+  bufferStrategy?: 'drop' | 'pause';
+  /** Error handling strategy (default: 'throw') */
+  errorStrategy?: 'continue' | 'throw';
 }
 
 /**
@@ -37,6 +43,7 @@ export interface StreamTokenDecoratorMetadata extends StreamTokenOptions {
   nodeId?: string;
   methodName: string;
   enabled: boolean;
+  executionId?: string;
 }
 
 /**

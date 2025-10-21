@@ -27,8 +27,8 @@ export class FeedbackProcessorService implements OnModuleInit {
   private readonly executionCache = new Map<string, FeedbackEntry[]>();
 
   constructor(
-    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
-    @Inject(IFeedbackStorageService)
+    private readonly eventEmitter: EventEmitter2,
+    @Inject('IFeedbackStorageService')
     private readonly feedbackStorage: IFeedbackStorageService
   ) {
     this.logger.log(

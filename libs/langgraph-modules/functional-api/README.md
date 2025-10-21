@@ -53,7 +53,13 @@ await workflowExecutionService.executeWorkflow(definition);
 **DevBrand Supervisor Workflow** - Multi-agent personal branding workflow:
 
 ```typescript
-import { FunctionalWorkflow as Workflow, Entrypoint, Task, Node, Edge } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow as Workflow,
+  Entrypoint,
+  Task,
+  Node,
+  Edge,
+} from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 
@@ -64,7 +70,11 @@ import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 })
 @Injectable()
 export class DevBrandSupervisorWorkflow {
-  constructor(private readonly llmProvider: LlmProviderService, private readonly githubAnalyzer: GitHubCodeAnalyzerAgent, private readonly brandMemory: PersonalBrandMemoryService) {}
+  constructor(
+    private readonly llmProvider: LlmProviderService,
+    private readonly githubAnalyzer: GitHubCodeAnalyzerAgent,
+    private readonly brandMemory: PersonalBrandMemoryService
+  ) {}
 
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
@@ -229,7 +239,12 @@ Defines workflow tasks with explicit dependencies.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Entrypoint, Task, TaskExecutionContext, TaskExecutionResult } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Entrypoint,
+  Task,
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class DataProcessingWorkflow {
@@ -331,7 +346,12 @@ Defines connections between nodes.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { Node, Edge, ConditionalEdge, DeclarativeWorkflowBase } from '@hive-academy/langgraph-modules-functional-api';
+import {
+  Node,
+  Edge,
+  ConditionalEdge,
+  DeclarativeWorkflowBase,
+} from '@hive-academy/langgraph-modules-functional-api';
 
 @Injectable()
 export class ApprovalWorkflow extends DeclarativeWorkflowBase {
@@ -629,5 +649,176 @@ async longRunningTask(context: TaskExecutionContext) {
   // Long processing...
 }
 ```
+
+#### 4. DecoratorPatternConflictError
+
+**Error**: "Incompatible decorator @Node/@Edge detected"
+
+**Cause**: Mixing task-based (@Entrypoint/@Task) with node-based (@Node/@Edge) decorators
+
+**Solution**: Choose ONE pattern per workflow class
+
+```typescript
+// ❌ FORBIDDEN: Mixing patterns
+@Entrypoint()
+async start(context: TaskExecutionContext) { }
+
+@Node({ type: 'standard' }) // ❌ Conflict!
+async process(state: WorkflowState) { }
+
+// ✅ CORRECT: Pure task-based
+@Entrypoint()
+async start(context: TaskExecutionContext) { }
+
+@Task({ dependsOn: ['start'] })
+async process(context: TaskExecutionContext) { }
+```
+
+**Two Patterns Available**:
+
+- **Task-Based**: `@Entrypoint` + `@Task` (dependency-driven, automatic edges)
+- **Node-Based**: `@Node` + `@Edge` (graph-driven, explicit edges)
+
+**📖 See**: [Complete Decorator Patterns Guide](./CLAUDE.md#decorator-patterns-complete-reference)
+
+#### 5. Target Node 'X' Not Found
+
+**Error**: Workflow compilation fails with missing node error
+
+**Cause**: `@Edge` references a method decorated with `@Task` (edges only work with `@Node`)
+
+**Solution**: Convert to pure node-based pattern
+
+```typescript
+// ❌ BEFORE: Mixed pattern
+@Task({ dependsOn: ['start'] })
+async process(context: TaskExecutionContext) { }
+
+@Edge('process', 'finalize') // ❌ Can't find @Task node
+route() {}
+
+// ✅ AFTER: Pure node-based
+@Node({ type: 'standard' })
+async process(state: WorkflowState) { }
+
+@Edge('process', 'finalize') // ✅ Can find @Node
+route() {}
+```
+
+## Decorator Patterns Quick Reference
+
+### Task-Based Pattern (Recommended for Linear Workflows)
+
+**When to use**: Simple, sequential workflows with straightforward dependencies
+
+```typescript
+import {
+  FunctionalWorkflow,
+  Entrypoint,
+  Task,
+  WorkflowType,
+} from '@hive-academy/langgraph-functional-api';
+
+@FunctionalWorkflow({
+  name: 'my-workflow',
+  type: WorkflowType.FUNCTIONAL_TASK, // 🔑 Explicit type
+})
+export class MyWorkflow {
+  @Entrypoint()
+  async start(context: TaskExecutionContext) {
+    return { state: { initialized: true } };
+  }
+
+  @Task({ dependsOn: ['start'] })
+  async process(context: TaskExecutionContext) {
+    return { state: { processed: true } };
+  }
+
+  @Task({ dependsOn: ['process'] })
+  async finalize(context: TaskExecutionContext) {
+    return { state: { completed: true } };
+  }
+}
+```
+
+**Flow**: `start → process → finalize` (edges created automatically)
+
+### Node-Based Pattern (Recommended for Complex Routing)
+
+**When to use**: Complex workflows with conditional routing and branching
+
+```typescript
+import {
+  FunctionalWorkflow,
+  Node,
+  Edge,
+  WorkflowType,
+  DeclarativeWorkflowBase,
+} from '@hive-academy/langgraph-functional-api';
+
+@FunctionalWorkflow({
+  name: 'my-workflow',
+  type: WorkflowType.FUNCTIONAL_NODE, // 🔑 Explicit type
+})
+export class MyWorkflow extends DeclarativeWorkflowBase {
+  @Node({ type: 'standard' })
+  async start(state: WorkflowState) {
+    return { initialized: true };
+  }
+
+  @Node({ type: 'condition' })
+  async routeDecision(state: WorkflowState) {
+    return { route: state.confidence > 0.8 ? 'high' : 'low' };
+  }
+
+  @Node({ type: 'standard' })
+  async processHigh(state: WorkflowState) {
+    return { result: 'auto-approved' };
+  }
+
+  @Node({ type: 'standard' })
+  async processLow(state: WorkflowState) {
+    return { result: 'needs-review' };
+  }
+
+  @Edge('start', 'routeDecision')
+  startToRoute() {}
+
+  @Edge('routeDecision', 'processHigh')
+  routeToHigh(state: WorkflowState) {
+    return state.route === 'high';
+  }
+
+  @Edge('routeDecision', 'processLow')
+  routeToLow(state: WorkflowState) {
+    return state.route === 'low';
+  }
+}
+```
+
+**Flow**: `start → routeDecision → (processHigh OR processLow)` (edges defined explicitly)
+
+### Pattern Comparison
+
+| Feature              | Task-Based                        | Node-Based                |
+| -------------------- | --------------------------------- | ------------------------- |
+| **Decorators**       | `@Entrypoint` + `@Task`           | `@Node` + `@Edge`         |
+| **Edge Creation**    | Automatic from `dependsOn`        | Explicit with `@Edge`     |
+| **Best For**         | Linear/sequential flows           | Complex routing/branching |
+| **Boilerplate**      | Less (no edge definitions)        | More (explicit edges)     |
+| **Control**          | Dependency-driven                 | Full graph control        |
+| **Method Signature** | `(context: TaskExecutionContext)` | `(state: WorkflowState)`  |
+
+### Cross-Cutting Decorators (Work with Both Patterns)
+
+The following decorators work with **both** task-based and node-based patterns:
+
+- `@Tool` - Register methods as LangGraph tools
+- `@RequiresApproval` - Human-in-the-loop approval
+- `@StreamToken` - Token-level streaming for LLM responses
+- `@StreamProgress` - Progress updates for workflow steps
+- `@StreamEvent` - Custom event streaming
+
+**📖 For complete documentation**: See [CLAUDE.md - Decorator Patterns Reference](./CLAUDE.md#decorator-patterns-complete-reference)
 
 This module provides powerful workflow orchestration with both functional and declarative programming paradigms for enterprise AI applications.

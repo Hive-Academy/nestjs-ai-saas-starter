@@ -12,8 +12,15 @@ import {
   getWorkflowNodes,
   getWorkflowEdges,
   getAllStreamingMetadata,
+  getEntrypointMetadata,
+  getTaskMetadata,
 } from '@hive-academy/langgraph-functional-api';
-import type { NodeMetadata, EdgeMetadata } from '@hive-academy/langgraph-functional-api';
+import type {
+  NodeMetadata,
+  EdgeMetadata,
+  EntrypointMetadata,
+  TaskMetadata,
+} from '@hive-academy/langgraph-functional-api';
 
 // Placeholder types for streaming metadata
 interface StreamTokenMetadata {
@@ -43,6 +50,7 @@ export class MetadataProcessorService {
 
   /**
    * Extract WorkflowDefinition from decorator metadata
+   * Supports both functional-task (@Entrypoint/@Task) and functional-node (@Node/@Edge) patterns
    */
   extractWorkflowDefinition<TState extends WorkflowState = WorkflowState>(
     workflowClass: any
@@ -57,7 +65,212 @@ export class MetadataProcessorService {
       throw new Error(`No @Workflow decorator found on ${workflowClass.name}`);
     }
 
-    // Get node metadata
+    // 🔑 PATTERN DETECTION: Determine which pattern this workflow uses
+    const workflowPattern = this.detectWorkflowPattern(
+      workflowClass,
+      workflowOptions
+    );
+    this.logger.debug(
+      `Detected workflow pattern: ${workflowPattern} for ${workflowClass.name}`
+    );
+
+    // 🔑 PATTERN-SPECIFIC COMPILATION
+    if (workflowPattern === 'functional-task') {
+      return this.compileTaskBasedWorkflow<TState>(
+        workflowClass,
+        workflowOptions
+      );
+    } else {
+      return this.compileNodeBasedWorkflow<TState>(
+        workflowClass,
+        workflowOptions
+      );
+    }
+  }
+
+  /**
+   * Detect which workflow pattern is being used
+   * @returns 'functional-task' for @Entrypoint/@Task pattern, 'functional-node' for @Node/@Edge pattern
+   */
+  private detectWorkflowPattern(
+    workflowClass: any,
+    workflowOptions: any
+  ): 'functional-task' | 'functional-node' {
+    // 1. Check explicit type declaration in workflow config
+    if (
+      workflowOptions?.type === 'functional-task' ||
+      workflowOptions?.type === 'functional-node'
+    ) {
+      return workflowOptions.type;
+    }
+
+    // 2. Auto-detect based on decorators present
+    const prototype = workflowClass.prototype || workflowClass;
+    const methodNames = Object.getOwnPropertyNames(prototype);
+
+    let hasEntrypoint = false;
+    let hasTask = false;
+    let hasNode = false;
+
+    for (const methodName of methodNames) {
+      if (methodName === 'constructor') continue;
+
+      try {
+        // Check for @Entrypoint
+        if (getEntrypointMetadata(prototype, methodName)) {
+          hasEntrypoint = true;
+        }
+
+        // Check for @Task
+        if (getTaskMetadata(prototype, methodName)) {
+          hasTask = true;
+        }
+
+        // If we found task-based decorators, no need to continue
+        if (hasEntrypoint || hasTask) {
+          break;
+        }
+      } catch (error) {
+        // Continue checking other methods
+      }
+    }
+
+    // Check for @Node decorators
+    const nodeMetadata = getWorkflowNodes(workflowClass);
+    hasNode = nodeMetadata.length > 0;
+
+    // Pattern decision logic
+    if (hasEntrypoint || hasTask) {
+      if (hasNode) {
+        throw new Error(
+          `Mixed workflow patterns detected in ${workflowClass.name}: ` +
+            `Found both task-based (@Entrypoint/@Task) and node-based (@Node/@Edge) decorators. ` +
+            `Please use only one pattern per workflow.`
+        );
+      }
+      return 'functional-task';
+    }
+
+    if (hasNode) {
+      return 'functional-node';
+    }
+
+    throw new Error(
+      `Unable to detect workflow pattern for ${workflowClass.name}: ` +
+        `No @Entrypoint, @Task, or @Node decorators found. ` +
+        `Please decorate your workflow methods with the appropriate decorators.`
+    );
+  }
+
+  /**
+   * Compile task-based workflow (@Entrypoint + @Task pattern)
+   * Based on LangGraph's Functional API design
+   */
+  private compileTaskBasedWorkflow<TState extends WorkflowState>(
+    workflowClass: any,
+    workflowOptions: any
+  ): WorkflowDefinition<TState> {
+    const prototype = workflowClass.prototype || workflowClass;
+    const methodNames = Object.getOwnPropertyNames(prototype);
+
+    const nodes: NodeMetadata[] = [];
+    const taskDependencies = new Map<string, readonly string[]>();
+    let entrypointId: string | undefined;
+
+    // Discover all @Entrypoint and @Task decorated methods
+    for (const methodName of methodNames) {
+      if (methodName === 'constructor') continue;
+
+      try {
+        // Check for @Entrypoint
+        const entrypointMeta: EntrypointMetadata = getEntrypointMetadata(
+          prototype,
+          methodName
+        ) as EntrypointMetadata;
+        if (entrypointMeta) {
+          const nodeId = entrypointMeta.name || methodName;
+          nodes.push({
+            id: nodeId,
+            methodName,
+            name: entrypointMeta.name || methodName,
+            handler: prototype[methodName],
+            type: 'standard',
+            timeout: entrypointMeta.timeout,
+            maxRetries: entrypointMeta.retryCount,
+          });
+          entrypointId = nodeId;
+          taskDependencies.set(nodeId, []); // Entrypoint has no dependencies
+          continue;
+        }
+
+        // Check for @Task
+        const taskMeta: TaskMetadata = getTaskMetadata(
+          prototype,
+          methodName
+        ) as TaskMetadata;
+        if (taskMeta) {
+          const nodeId = taskMeta.name || methodName;
+          nodes.push({
+            id: nodeId,
+            methodName,
+            name: taskMeta.name || methodName,
+            handler: prototype[methodName],
+            type: 'standard',
+            timeout: taskMeta.timeout,
+            maxRetries: taskMeta.retryCount,
+          });
+          taskDependencies.set(nodeId, taskMeta.dependsOn || []);
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to process method ${methodName} in ${workflowClass.name}:`,
+          error
+        );
+      }
+    }
+
+    this.logger.debug(
+      `Found ${nodes.length} task-based nodes for workflow ${workflowOptions.name}`
+    );
+
+    // Generate edges from task dependencies
+    const edges = this.generateEdgesFromDependencies(nodes, taskDependencies);
+
+    // Convert to WorkflowDefinition
+    const definition: WorkflowDefinition<TState> = {
+      name: workflowOptions.name || workflowClass.name,
+      description: workflowOptions.description,
+      channels: workflowOptions.channels,
+      nodes: this.convertNodesToDefinition<TState>(nodes),
+      edges: this.convertEdgesToDefinition<TState>(edges, nodes),
+      entryPoint: entrypointId || nodes[0]?.id || 'start',
+      config: {
+        requiresApproval: workflowOptions.requiresHumanApproval,
+        streaming: workflowOptions.streaming,
+        metadata: {
+          pattern: 'functional-task',
+          tags: workflowOptions.tags,
+          interruptNodes: workflowOptions.interruptNodes,
+          ...workflowOptions,
+        },
+      },
+    };
+
+    this.logger.log(
+      `Generated task-based workflow definition for ${definition.name}`
+    );
+    return definition;
+  }
+
+  /**
+   * Compile node-based workflow (@Node + @Edge pattern)
+   * Traditional graph-based approach
+   */
+  private compileNodeBasedWorkflow<TState extends WorkflowState>(
+    workflowClass: any,
+    workflowOptions: any
+  ): WorkflowDefinition<TState> {
+    // Get node metadata (existing implementation)
     const nodeMetadata = getWorkflowNodes(workflowClass);
     this.logger.debug(
       `Found ${nodeMetadata.length} nodes for workflow ${workflowOptions.name}`
@@ -69,7 +282,7 @@ export class MetadataProcessorService {
       `Found ${edgeMetadata.length} edges for workflow ${workflowOptions.name}`
     );
 
-    // Convert to WorkflowDefinition
+    // Convert to WorkflowDefinition (existing implementation)
     const definition: WorkflowDefinition<TState> = {
       name: workflowOptions.name || workflowClass.name,
       description: workflowOptions.description,
@@ -81,7 +294,7 @@ export class MetadataProcessorService {
         requiresApproval: workflowOptions.requiresHumanApproval,
         streaming: workflowOptions.streaming,
         metadata: {
-          pattern: workflowOptions.pattern,
+          pattern: 'functional-node',
           tags: workflowOptions.tags,
           interruptNodes: workflowOptions.interruptNodes,
           ...workflowOptions,
@@ -89,8 +302,50 @@ export class MetadataProcessorService {
       },
     };
 
-    this.logger.log(`Generated workflow definition for ${definition.name}`);
+    this.logger.log(
+      `Generated node-based workflow definition for ${definition.name}`
+    );
     return definition;
+  }
+
+  /**
+   * Generate edges from task dependencies (for functional-task pattern)
+   * @param nodes All discovered nodes
+   * @param taskDependencies Map of task ID to its dependencies
+   * @returns EdgeMetadata array representing the dependency graph
+   */
+  private generateEdgesFromDependencies(
+    nodes: NodeMetadata[],
+    taskDependencies: Map<string, readonly string[]>
+  ): EdgeMetadata[] {
+    const edges: EdgeMetadata[] = [];
+
+    for (const [taskId, dependencies] of taskDependencies.entries()) {
+      // For each dependency, create an edge from dependency -> task
+      for (const depId of dependencies) {
+        const depNode = nodes.find(
+          (n) => n.id === depId || n.methodName === depId
+        );
+        if (!depNode) {
+          this.logger.warn(
+            `Dependency '${depId}' not found for task '${taskId}'`
+          );
+          continue;
+        }
+
+        edges.push({
+          from: depNode.id,
+          to: taskId,
+          condition: undefined,
+          metadata: {
+            type: 'dependency',
+            generated: true,
+          },
+        });
+      }
+    }
+
+    return edges;
   }
 
   /**
@@ -428,9 +683,15 @@ export class MetadataProcessorService {
     definition.nodes.forEach((node) => {
       const streamingMetadata = node.config?.metadata?.streaming;
       if (streamingMetadata) {
-        if (streamingMetadata.token?.enabled) {tokenNodes++;}
-        if (streamingMetadata.event?.enabled) {eventNodes++;}
-        if (streamingMetadata.progress?.enabled) {progressNodes++;}
+        if (streamingMetadata.token?.enabled) {
+          tokenNodes++;
+        }
+        if (streamingMetadata.event?.enabled) {
+          eventNodes++;
+        }
+        if (streamingMetadata.progress?.enabled) {
+          progressNodes++;
+        }
       }
     });
 

@@ -6,10 +6,12 @@ import {
   Neo4jEntity,
   Neo4jProp,
   Neo4jRelationship,
+  NodeKey,
   NotNull,
   PropIndex,
   Unique,
   UpdatedAt,
+  Validate,
 } from '@hive-academy/nestjs-neo4j';
 
 /**
@@ -24,6 +26,7 @@ import {
 @Neo4jEntity('ApprovalRequest', {
   description: 'HITL approval requests with workflow context',
 })
+@NodeKey(['executionId', 'nodeId'])
 export class ApprovalRequest extends Neo4jBaseEntity {
   @Id()
   @Unique()
@@ -41,6 +44,7 @@ export class ApprovalRequest extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @NotNull()
+  @PropIndex()
   message!: string;
 
   @Neo4jProp()
@@ -50,8 +54,20 @@ export class ApprovalRequest extends Neo4jBaseEntity {
   @Neo4jProp()
   @NotNull()
   @PropIndex()
+  @Validate({
+    validation: {
+      custom: {
+        validator: (value, entity) => {
+          const validStatuses = ['pending', 'approved', 'rejected', 'expired'];
+          return validStatuses.includes(value);
+        },
+        message: 'Status must be one of: pending, approved, rejected, expired',
+      },
+    },
+  })
   status!: 'pending' | 'approved' | 'rejected' | 'expired';
 
+  @PropIndex({ type: 'RANGE' })
   @CreatedAt()
   requestedAt!: Date;
 
@@ -60,10 +76,30 @@ export class ApprovalRequest extends Neo4jBaseEntity {
 
   @Neo4jProp()
   @PropIndex({ type: 'RANGE' })
+  @Validate({
+    validation: {
+      length: {
+        min: 0,
+        max: 1,
+      },
+    },
+    errorMessage: 'Confidence score must be between 0 and 1',
+  })
   confidence!: number;
 
   @Neo4jProp()
   @PropIndex()
+  @Validate({
+    validation: {
+      custom: {
+        validator(value, entity) {
+          const validLevels = ['low', 'medium', 'high', 'critical'];
+          return validLevels.includes(value);
+        },
+        message: 'Risk level must be one of: low, medium, high, critical',
+      },
+    },
+  })
   riskLevel!: 'low' | 'medium' | 'high' | 'critical';
 
   @Neo4jProp()

@@ -27,7 +27,11 @@ interface NavItem {
     <div class="floating-nav" [class.nav-open]="isExpanded()">
       <div class="relative">
         <!-- Main Navigation Button -->
-        <button class="nav-button" (click)="toggleNav()" [class.active]="isExpanded()">
+        <button
+          class="nav-button"
+          (click)="toggleNav()"
+          [class.active]="isExpanded()"
+        >
           🚀
         </button>
 
@@ -253,8 +257,13 @@ interface NavItem {
       }
 
       @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
       }
 
       .status-text {
@@ -277,7 +286,7 @@ interface NavItem {
           top: 10px;
           left: 10px;
         }
-        
+
         .nav-dropdown {
           width: calc(100vw - 40px);
           left: -10px;
@@ -357,7 +366,7 @@ export class ShowcaseNavigationComponent {
   }
 
   toggleNav() {
-    this.isExpanded.update(expanded => !expanded);
+    this.isExpanded.update((expanded) => !expanded);
   }
 
   closeNav() {

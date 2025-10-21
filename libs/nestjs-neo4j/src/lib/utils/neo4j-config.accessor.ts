@@ -1,14 +1,4 @@
-// Inline interface due to build configuration issue
-interface Neo4jModuleOptions {
-  url: string;
-  username: string;
-  password: string;
-  database?: string;
-  config?: any;
-  healthCheck?: boolean;
-  retryAttempts?: number;
-  retryDelay?: number;
-}
+import type { Neo4jModuleOptions } from '../interfaces/neo4j-module-options.interface';
 
 /**
  * Global storage for Neo4j module configuration
@@ -40,7 +30,7 @@ export function getNeo4jConfigWithDefaults(): Neo4jModuleOptions {
   const config = getNeo4jConfig();
 
   return {
-    url: config.url ?? 'bolt://localhost:7687',
+    uri: config.uri ?? 'bolt://localhost:7687',
     username: config.username ?? 'neo4j',
     password: config.password ?? 'password',
     database: config.database,
@@ -63,5 +53,5 @@ export function getNeo4jConfigWithDefaults(): Neo4jModuleOptions {
  * Check if Neo4j is configured
  */
 export function isNeo4jConfigured(): boolean {
-  return Object.keys(storedNeo4jConfig).length > 0 && !!storedNeo4jConfig.url;
+  return Object.keys(storedNeo4jConfig).length > 0 && !!storedNeo4jConfig.uri;
 }

@@ -5,12 +5,12 @@
  * and proper NestJS dependency injection using Neogma's QueryRunner.
  */
 
-import { Injectable, Logger, Inject } from '@nestjs/common';
-import { QueryRunner, QueryBuilder, type Runnable, type Neogma } from 'neogma';
+import { Injectable, Logger } from '@nestjs/common';
 import type { QueryResult as Neo4jQueryResult } from 'neo4j-driver';
+import { QueryBuilder, QueryRunner, type Neogma, type Runnable } from 'neogma';
+import { InjectNeogma } from '../neogma';
+import { NeogmaService } from '../services/neogma.service';
 import type { QueryResult } from '../types/neogma-types';
-import { NeogmaService } from '../core/neogma.service';
-import { NEOGMA_TOKEN } from '../constants/neogma.constants';
 
 /**
  * Query execution options
@@ -84,7 +84,7 @@ export class NeogmaQueryRunnerService {
   private readonly defaultOptions: Required<QueryExecutionOptions>;
 
   constructor(
-    @Inject(NEOGMA_TOKEN) private readonly neogma: Neogma,
+    @InjectNeogma() private readonly neogma: Neogma,
     private readonly neogmaService: NeogmaService
   ) {
     // Get the QueryRunner from Neogma using proper DI

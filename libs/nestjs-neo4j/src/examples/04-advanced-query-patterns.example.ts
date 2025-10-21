@@ -11,25 +11,24 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import type { Neo4jPrimitive, Neo4jProperties, Neo4jRecord } from '../index';
 import {
+  Authorize,
+  CreatedAt,
+  CypherQuery,
+  Id,
+  InjectNeogma,
   Neo4jEntity,
   Neo4jProp,
-  Id,
-  CreatedAt,
-  UpdatedAt,
+  Neo4jRepositoryBase,
+  NeogmaService,
   NotNull,
   PropIndex,
-  Repository,
-  InjectNeogma,
-  NeogmaService,
   Safe,
-  Authorize,
-  CypherQuery,
   Transactional,
-  GraphRepository,
-  BaseRepositoryService,
+  UpdatedAt,
+  GraphMetricsService,
 } from '../index';
-import type { Neo4jPrimitive, Neo4jProperties, Neo4jRecord } from '../index';
 
 // ============================================================================
 // 1. COMPLEX ENTITY MODEL FOR KNOWLEDGE GRAPH
@@ -278,15 +277,22 @@ export interface GraphInsights {
 // ============================================================================
 
 /**
- * DocumentRepository - demonstrates @Repository decorator with auto-generated CRUD methods
- * Auto-generated methods: findById, findAll, create, update, delete, count, exists
+ * DocumentRepository - demonstrates TypeORM-style inheritance pattern
+ *
+ * Inherited CRUD methods from Neo4jRepositoryBase<Document>:
+ * - findById(id: string): Promise<Document | null>
+ * - findAll(options?: FindOptions<Document>): Promise<Document[]>
+ * - findOne(options: FindOptions<Document>): Promise<Document | null>
+ * - create(data: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>): Promise<Document>
+ * - update(id: string, updates: Partial<Document>): Promise<Document | null>
+ * - delete(id: string, detach?: boolean): Promise<boolean>
+ * - count(where?: Partial<Document>): Promise<number>
+ * - exists(id: string): Promise<boolean>
+ * - save(data: Partial<Document>): Promise<Document>
  */
-@Repository(() => Document)
 @Injectable()
-export class DocumentRepository extends BaseRepositoryService<Document> {
-  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
-    super();
-  }
+export class DocumentRepository extends Neo4jRepositoryBase<Document> {
+  // NO manual CRUD delegation needed - all inherited from base class!
 
   /**
    * Advanced full-text search with relevance scoring
@@ -303,7 +309,7 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
     },
     limit = 20
   ): Promise<Document[]> {
-    const queryBuilder = this.neogma.createQueryBuilder();
+    const queryBuilder = this.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     const searchQueryParam = bindParam.add(`${query}*`); // Add wildcard for partial matches
@@ -352,7 +358,7 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogma.run(cypher, params);
+    const result = await this.executeQuery(cypher, params);
     return result.records.map(
       (record: Neo4jRecord) => record.get('doc').properties as Document
     );
@@ -367,7 +373,7 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
     algorithm: 'citation' | 'topic' | 'author' | 'content' = 'topic',
     limit = 10
   ): Promise<Array<{ document: Document; similarity: number }>> {
-    const queryBuilder = this.neogma.createQueryBuilder();
+    const queryBuilder = this.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     const documentIdParam = bindParam.add(documentId);
@@ -434,7 +440,7 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogma.run(cypher, params);
+    const result = await this.executeQuery(cypher, params);
     return result.records.map((record: Neo4jRecord) => ({
       document: record.get('similar').properties as Document,
       similarity: record.get('similarity').toNumber(),
@@ -449,7 +455,7 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
   async batchUpdateRelevanceScores(
     updates: Array<{ documentId: string; newScore: number }>
   ): Promise<number> {
-    const queryBuilder = this.neogma.createQueryBuilder();
+    const queryBuilder = this.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     const updatesParam = bindParam.add(updates);
@@ -464,7 +470,7 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogma.run(cypher, params);
+    const result = await this.executeQuery(cypher, params);
     return result.records[0]?.get('updatedCount').toNumber() || 0;
   }
 }
@@ -476,8 +482,8 @@ export class DocumentRepository extends BaseRepositoryService<Document> {
 @Injectable()
 export class KnowledgeGraphAnalyticsService {
   constructor(
-    private readonly graphRepo: GraphRepository<Document>,
-    @InjectNeogma() private readonly neogma: NeogmaService
+    private readonly graphMetrics: GraphMetricsService,
+    @InjectNeogma() private readonly neogmaService: NeogmaService
   ) {
     // No model registration needed - @Repository decorator handles it
   }
@@ -494,7 +500,7 @@ export class KnowledgeGraphAnalyticsService {
   })
   async getDocumentAnalytics(): Promise<DocumentAnalytics> {
     // Basic document statistics
-    const basicStatsBuilder = this.neogma.createQueryBuilder();
+    const basicStatsBuilder = this.neogmaService.createQueryBuilder();
     const basicBindParam = basicStatsBuilder.getBindParam();
 
     basicStatsBuilder.match('(d:Document)').return(`
@@ -505,14 +511,14 @@ export class KnowledgeGraphAnalyticsService {
 
     const basicStatsCypher = basicStatsBuilder.getStatement();
     const basicStatsParams = basicBindParam.get();
-    const basicStats = await this.neogma.run(
+    const basicStats = await this.neogmaService.run(
       basicStatsCypher,
       basicStatsParams
     );
     const basicRecord = basicStats.records[0];
 
     // Documents by type/category/status
-    const distributionBuilder = this.neogma.createQueryBuilder();
+    const distributionBuilder = this.neogmaService.createQueryBuilder();
     const distributionBindParam = distributionBuilder.getBindParam();
 
     distributionBuilder.match('(d:Document)').return(`
@@ -523,13 +529,13 @@ export class KnowledgeGraphAnalyticsService {
 
     const distributionCypher = distributionBuilder.getStatement();
     const distributionParams = distributionBindParam.get();
-    const distributionResult = await this.neogma.run(
+    const distributionResult = await this.neogmaService.run(
       distributionCypher,
       distributionParams
     );
 
     // Top authors with comprehensive stats
-    const topAuthorsBuilder = this.neogma.createQueryBuilder();
+    const topAuthorsBuilder = this.neogmaService.createQueryBuilder();
     const topAuthorsBindParam = topAuthorsBuilder.getBindParam();
 
     topAuthorsBuilder
@@ -547,13 +553,13 @@ export class KnowledgeGraphAnalyticsService {
 
     const topAuthorsCypher = topAuthorsBuilder.getStatement();
     const topAuthorsParams = topAuthorsBindParam.get();
-    const topAuthorsResult = await this.neogma.run(
+    const topAuthorsResult = await this.neogmaService.run(
       topAuthorsCypher,
       topAuthorsParams
     );
 
     // Citation network analysis
-    const citationBuilder = this.neogma.createQueryBuilder();
+    const citationBuilder = this.neogmaService.createQueryBuilder();
     const citationBindParam = citationBuilder.getBindParam();
 
     citationBuilder.match('(d1:Document)-[c:CITES]->(d2:Document)').return(`
@@ -563,13 +569,13 @@ export class KnowledgeGraphAnalyticsService {
 
     const citationCypher = citationBuilder.getStatement();
     const citationParams = citationBindParam.get();
-    const citationResult = await this.neogma.run(
+    const citationResult = await this.neogmaService.run(
       citationCypher,
       citationParams
     );
 
     // Most cited documents
-    const mostCitedBuilder = this.neogma.createQueryBuilder();
+    const mostCitedBuilder = this.neogmaService.createQueryBuilder();
     const mostCitedBindParam = mostCitedBuilder.getBindParam();
 
     mostCitedBuilder
@@ -580,7 +586,7 @@ export class KnowledgeGraphAnalyticsService {
 
     const mostCitedCypher = mostCitedBuilder.getStatement();
     const mostCitedParams = mostCitedBindParam.get();
-    const mostCitedResult = await this.neogma.run(
+    const mostCitedResult = await this.neogmaService.run(
       mostCitedCypher,
       mostCitedParams
     );
@@ -627,24 +633,28 @@ export class KnowledgeGraphAnalyticsService {
   }
 
   /**
-   * Advanced graph insights using centrality algorithms
+   * Advanced graph insights using centrality algorithms with GraphMetricsService
    */
   @Safe({ strict: true })
   @Authorize({ roles: ['admin', 'analyst'] })
   async getGraphInsights(): Promise<GraphInsights> {
     // Get central nodes using different centrality measures
-    const centralDocuments = await this.graphRepo.findCentralNodes(
-      'betweenness'
+    const centralDocuments = await this.graphMetrics.findCentralNodes(
+      'betweenness',
+      10
     );
-    const centralAuthors = await this.graphRepo.findCentralNodes('degree');
+    const centralAuthors = await this.graphMetrics.findCentralNodes(
+      'degree',
+      10
+    );
 
     // Detect communities
-    const communities = await this.graphRepo.detectCommunities({
+    const communities = await this.graphMetrics.detectCommunities({
       algorithm: 'louvain',
     });
 
     // Calculate graph statistics
-    const graphStats = await this.graphRepo.getGraphStatistics();
+    const graphStats = await this.graphMetrics.getGraphStatistics();
 
     return {
       communityStructure: communities.map((community: any) => ({
@@ -686,7 +696,7 @@ export class KnowledgeGraphAnalyticsService {
     } = {},
     limit = 10
   ): Promise<Array<{ document: Document; score: number; reason: string }>> {
-    const queryBuilder = this.neogma.createQueryBuilder();
+    const queryBuilder = this.neogmaService.createQueryBuilder();
     const bindParam = queryBuilder.getBindParam();
 
     // Add parameters
@@ -761,7 +771,7 @@ export class KnowledgeGraphAnalyticsService {
 
     const cypher = queryBuilder.getStatement();
     const params = bindParam.get();
-    const result = await this.neogma.run(cypher, params);
+    const result = await this.neogmaService.run(cypher, params);
 
     return result.records.map((record: Neo4jRecord) => ({
       document: record.get('recommendation').properties as Document,
@@ -782,7 +792,7 @@ export class KnowledgeGraphAnalyticsService {
     influentialCiters: Array<{ document: Document; influence: number }>;
   }> {
     // Direct citations
-    const directBuilder = this.neogma.createQueryBuilder();
+    const directBuilder = this.neogmaService.createQueryBuilder();
     const directBindParam = directBuilder.getBindParam();
     const docIdParam1 = directBindParam.add(documentId);
 
@@ -795,7 +805,7 @@ export class KnowledgeGraphAnalyticsService {
     const directParams = directBindParam.get();
 
     // Indirect citations (2-hop)
-    const indirectBuilder = this.neogma.createQueryBuilder();
+    const indirectBuilder = this.neogmaService.createQueryBuilder();
     const indirectBindParam = indirectBuilder.getBindParam();
     const docIdParam2 = indirectBindParam.add(documentId);
 
@@ -811,7 +821,7 @@ export class KnowledgeGraphAnalyticsService {
 
     // Citation growth analysis
     const recentDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // 1 year ago
-    const growthBuilder = this.neogma.createQueryBuilder();
+    const growthBuilder = this.neogmaService.createQueryBuilder();
     const growthBindParam = growthBuilder.getBindParam();
     const docIdParam3 = growthBindParam.add(documentId);
     const recentDateParam = growthBindParam.add(recentDate);
@@ -827,9 +837,9 @@ export class KnowledgeGraphAnalyticsService {
     const growthParams = growthBindParam.get();
 
     const [directResult, indirectResult, growthResult] = await Promise.all([
-      this.neogma.run(directCypher, directParams),
-      this.neogma.run(indirectCypher, indirectParams),
-      this.neogma.run(growthCypher, growthParams),
+      this.neogmaService.run(directCypher, directParams),
+      this.neogmaService.run(indirectCypher, indirectParams),
+      this.neogmaService.run(growthCypher, growthParams),
     ]);
 
     const directCitations =

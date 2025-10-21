@@ -16,6 +16,11 @@ import { HitlCheckpointService } from './services/hitl-checkpoint.service';
 import { HitlValidationService } from './services/hitl-validation.service';
 import { HitlRecoveryService } from './services/hitl-recovery.service';
 import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
+// Phase 1a SOLID Refactoring - New services
+import { ApproverIntelligenceService } from './services/approver-intelligence.service';
+import { ApprovalOutcomeService } from './services/approval-outcome.service';
+// Phase 1b SOLID Refactoring - Historical search service
+import { ApprovalHistorySearchService } from './services/approval-history-search.service';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Import interfaces only - adapters moved to application layer
@@ -60,7 +65,7 @@ export class HitlModule {
 
     return {
       module: HitlModule,
-      imports: [ConfigModule],
+      imports: [ConfigModule], // EventEmitter provided globally by app.module
       providers: [
         // Configuration provider
         {
@@ -70,8 +75,13 @@ export class HitlModule {
         // Adapter providers (conditional)
         ...adapterProviders,
         // Core services (order: dependencies first, orchestrator last)
+        // Phase 1a: New specialized services (SOLID refactoring)
+        ApproverIntelligenceService, // Approver selection using memory patterns
+        ApprovalOutcomeService, // Outcome tracking and memory learning
+        // Phase 1b: Historical search service
+        ApprovalHistorySearchService, // Historical approval pattern search
         // Processing & helper services
-        ApprovalProcessingService,
+        ApprovalProcessingService, // Depends on ApproverIntelligence & ApprovalOutcome
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -97,6 +107,11 @@ export class HitlModule {
       exports: [
         HumanApprovalService,
         ApprovalProcessingService,
+        // Phase 1a: Export new SOLID refactored services
+        ApproverIntelligenceService,
+        ApprovalOutcomeService,
+        // Phase 1b: Export historical search service
+        ApprovalHistorySearchService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -129,14 +144,23 @@ export class HitlModule {
 
     return {
       module: HitlModule,
-      imports: [ConfigModule, ...(options.imports || [])],
+      imports: [
+        ConfigModule,
+        // EventEmitter provided globally by app.module
+        ...(options.imports || []),
+      ],
       providers: [
         // Async configuration provider
         ...this.createAsyncProviders(options),
         // Adapter providers (self-contained)
         ...adapterProviders,
         // Core services (dependencies first)
-        ApprovalProcessingService,
+        // Phase 1a: New specialized services (SOLID refactoring)
+        ApproverIntelligenceService,
+        ApprovalOutcomeService,
+        // Phase 1b: Historical search service
+        ApprovalHistorySearchService,
+        ApprovalProcessingService, // Depends on ApproverIntelligence & ApprovalOutcome
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -156,6 +180,11 @@ export class HitlModule {
       exports: [
         HumanApprovalService,
         ApprovalProcessingService,
+        // Phase 1a: Export new SOLID refactored services
+        ApproverIntelligenceService,
+        ApprovalOutcomeService,
+        // Phase 1b: Export historical search service
+        ApprovalHistorySearchService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -394,21 +423,95 @@ export class HitlModule {
 
   /**
    * Create adapter providers for async configuration
-   * Applications must provide adapters - no defaults available
+   * Adapters are resolved from the async options factory and registered as providers
    */
   private static createAdapterProvidersAsync(
     options: HitlModuleAsyncOptions
   ): Provider[] {
-    // For async configuration, applications must provide adapters through dependency injection
-    console.error(
-      '❌ CRITICAL: HitlModule.forRootAsync() requires adapter providers. ' +
-        'Please ensure IHitlStorageService and IUserInterruptionStorageService are provided in your application module. ' +
-        'UserInterruptionService will fail to start without persistent storage.'
-    );
-    // 🛡️ FAIL FAST: Required dependencies missing in async mode
-    throw new Error(
-      'Async configuration requires external adapter providers - ensure both IHitlStorageService and IUserInterruptionStorageService are available'
-    );
+    const providers: Provider[] = [];
+
+    // Storage adapter provider - resolved from async options
+    providers.push({
+      provide: IHitlStorageService,
+      useFactory: (moduleOptions: HitlModuleOptions) => {
+        const storageAdapter = moduleOptions.adapters?.storage;
+        if (!storageAdapter) {
+          console.warn(
+            'HITL Module: No storage adapter provided. Approval persistence will be disabled (in-memory only).'
+          );
+          return null;
+        }
+        // Return the instance (already injected via useFactory)
+        return storageAdapter;
+      },
+      inject: [HITL_CONFIG],
+    });
+
+    // User interruption storage adapter provider
+    providers.push({
+      provide: IUserInterruptionStorageService,
+      useFactory: (moduleOptions: HitlModuleOptions) => {
+        const interruptionStorageAdapter =
+          moduleOptions.adapters?.interruptionStorage;
+        if (!interruptionStorageAdapter) {
+          throw new Error(
+            'UserInterruptionService requires IUserInterruptionStorageService - provide options.adapters.interruptionStorage'
+          );
+        }
+        return interruptionStorageAdapter;
+      },
+      inject: [HITL_CONFIG],
+    });
+
+    // Approval chain storage adapter provider
+    providers.push({
+      provide: 'IApprovalChainStorageService',
+      useFactory: (moduleOptions: HitlModuleOptions) => {
+        const approvalChainStorageAdapter =
+          moduleOptions.adapters?.approvalChainStorage;
+        if (!approvalChainStorageAdapter) {
+          throw new Error(
+            'ApprovalChainService requires IApprovalChainStorageService - provide options.adapters.approvalChainStorage'
+          );
+        }
+        return approvalChainStorageAdapter;
+      },
+      inject: [HITL_CONFIG],
+    });
+
+    // Feedback storage adapter provider
+    providers.push({
+      provide: 'IFeedbackStorageService',
+      useFactory: (moduleOptions: HitlModuleOptions) => {
+        const feedbackStorageAdapter = moduleOptions.adapters?.feedbackStorage;
+        if (!feedbackStorageAdapter) {
+          throw new Error(
+            'FeedbackProcessorService requires IFeedbackStorageService - provide options.adapters.feedbackStorage'
+          );
+        }
+        return feedbackStorageAdapter;
+      },
+      inject: [HITL_CONFIG],
+    });
+
+    // Confidence storage adapter provider (OPTIONAL)
+    providers.push({
+      provide: 'IConfidenceStorageService',
+      useFactory: (moduleOptions: HitlModuleOptions) => {
+        const confidenceStorageAdapter =
+          moduleOptions.adapters?.confidenceStorage;
+        if (!confidenceStorageAdapter) {
+          console.warn(
+            '⚠️  No confidence storage adapter provided. ConfidenceEvaluatorService will run in degraded mode.'
+          );
+          return null;
+        }
+        return confidenceStorageAdapter;
+      },
+      inject: [HITL_CONFIG],
+    });
+
+    return providers;
   }
 
   /**
@@ -465,7 +568,9 @@ export class HitlModule {
           'healthCheck',
         ];
         for (const method of requiredMethods) {
-          if (typeof (approvalChainStorageAdapter as any)[method] !== 'function') {
+          if (
+            typeof (approvalChainStorageAdapter as any)[method] !== 'function'
+          ) {
             throw new Error(
               `Custom approval chain storage adapter must implement IApprovalChainStorageService.${method}() method`
             );

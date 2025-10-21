@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import { FeedbackRepository } from '../../repositories/neo4j/feedback.repository';
+import { FeedbackEntry as FeedbackEntity } from '../../entities/neo4j/feedback-entry.entity';
 import {
   IFeedbackStorageService,
   FeedbackType,
@@ -23,7 +25,10 @@ import type {
 export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
   private readonly logger = new Logger(Neo4jFeedbackStorageAdapter.name);
 
-  constructor(private readonly feedbackRepo: FeedbackRepository) {
+  constructor(
+    @Inject(getRepositoryToken(FeedbackEntity))
+    private readonly feedbackRepo: FeedbackRepository
+  ) {
     super();
     this.logger.debug(
       'Neo4jFeedbackStorageAdapter initialized with FeedbackRepository'
@@ -83,23 +88,7 @@ export class Neo4jFeedbackStorageAdapter extends IFeedbackStorageService {
    * Get feedback by type - delegates to repository
    */
   async getFeedbackByType(type: FeedbackType): Promise<FeedbackEntry[]> {
-    // Map FeedbackType enum to entity type
-    let entityType: 'positive' | 'negative' | 'neutral' | 'suggestion';
-    switch (type) {
-      case FeedbackType.APPROVAL:
-      case FeedbackType.RATING:
-        entityType = 'positive';
-        break;
-      case FeedbackType.REJECTION:
-        entityType = 'negative';
-        break;
-      case FeedbackType.MODIFICATION:
-        entityType = 'suggestion';
-        break;
-      default:
-        entityType = 'neutral';
-    }
-    return this.feedbackRepo.getFeedbackByType(entityType);
+    return this.feedbackRepo.getFeedbackByType(type);
   }
 
   /**

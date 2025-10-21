@@ -13,6 +13,7 @@ import {
   PathResult,
 } from './base-graph.service';
 import type { NeogmaEntity } from '../../types/neogma-types';
+import { NeogmaService } from '../../services/neogma.service';
 
 /**
  * Path finding options
@@ -37,6 +38,10 @@ export class GraphTraversalService<
   protected readonly GraphTraversalLogger = new Logger(
     GraphTraversalService.name
   );
+
+  constructor(protected override readonly neogmaService: NeogmaService) {
+    super(neogmaService, 'Entity');
+  }
 
   // ==================== NEIGHBOR OPERATIONS ====================
 

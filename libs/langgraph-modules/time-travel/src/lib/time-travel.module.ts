@@ -31,28 +31,8 @@ export class TimeTravelModule {
         provide: 'WORKFLOW_REGISTRY',
         useValue: new Map<string, unknown>(),
       },
-      // Provide checkpoint adapter from config to services (consistent with other modules)
-      {
-        provide: 'ICheckpointAdapter',
-        useFactory: (config: TimeTravelConfig) => {
-          if (!config.checkpointAdapter) {
-            throw new Error(
-              'TimeTravelModule: checkpointAdapter is required but not provided in configuration'
-            );
-          }
-          return config.checkpointAdapter;
-        },
-        inject: ['TIME_TRAVEL_CONFIG'],
-      },
-      // 🧠 MEMORY INTEGRATION: Provide memory adapter for 2025 cross-module memory
-      {
-        provide: 'IMemoryAdapter',
-        useFactory: (config: TimeTravelConfig) => {
-          // Optional memory adapter for time-travel memory integration
-          return config.memoryAdapter || null;
-        },
-        inject: ['TIME_TRAVEL_CONFIG'],
-      },
+      // Don't re-provide adapter tokens - they're injected from external modules
+      // The adapters are passed via module options and don't need to be re-provided
       // Core focused services
       WorkflowRegistryService,
       ExecutionHistoryService,
@@ -90,28 +70,8 @@ export class TimeTravelModule {
         provide: 'WORKFLOW_REGISTRY',
         useValue: new Map<string, unknown>(),
       },
-      // Provide checkpoint adapter from config to services (consistent with other modules)
-      {
-        provide: 'ICheckpointAdapter',
-        useFactory: async (config: TimeTravelConfig) => {
-          if (!config.checkpointAdapter) {
-            throw new Error(
-              'TimeTravelModule: checkpointAdapter is required but not provided in configuration'
-            );
-          }
-          return config.checkpointAdapter;
-        },
-        inject: ['TIME_TRAVEL_CONFIG'],
-      },
-      // 🧠 MEMORY INTEGRATION: Provide memory adapter for 2025 cross-module memory
-      {
-        provide: 'IMemoryAdapter',
-        useFactory: async (config: TimeTravelConfig) => {
-          // Optional memory adapter for time-travel memory integration
-          return config.memoryAdapter || null;
-        },
-        inject: ['TIME_TRAVEL_CONFIG'],
-      },
+      // Don't re-provide adapter tokens - they're injected from external modules
+      // The adapters are passed via module options and don't need to be re-provided
       // Core focused services - all required for facade to work
       WorkflowRegistryService,
       ExecutionHistoryService,
