@@ -54,6 +54,41 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
 
     // Collection name for memory entries
     collection: process.env.MEMORY_COLLECTION_NAME || 'dev-brand-memory',
+
+    // Configurable operational limits
+    limits: {
+      countAccuracyLimit: parseInt(
+        process.env.MEMORY_COUNT_ACCURACY_LIMIT || '1000'
+      ),
+      memoryContentLimit: parseInt(process.env.MEMORY_CONTENT_LIMIT || '1000'),
+      relationshipQueryLimit: parseInt(
+        process.env.MEMORY_RELATIONSHIP_QUERY_LIMIT || '10'
+      ),
+      batchOperationLimit: parseInt(
+        process.env.MEMORY_BATCH_OPERATION_LIMIT || '100'
+      ),
+      searchResultLimit: parseInt(
+        process.env.MEMORY_SEARCH_RESULT_LIMIT || '100'
+      ),
+    },
+
+    // Semantic relationship configuration
+    semanticRelationships: {
+      enabled: process.env.MEMORY_SEMANTIC_RELATIONSHIPS_ENABLED !== 'false',
+      strategy:
+        (process.env.MEMORY_SEMANTIC_STRATEGY as
+          | 'word_matching'
+          | 'vector_similarity'
+          | 'hybrid') || 'hybrid',
+      similarityThreshold: parseFloat(
+        process.env.MEMORY_SIMILARITY_THRESHOLD || '0.7'
+      ),
+      minCommonWords: parseInt(process.env.MEMORY_MIN_COMMON_WORDS || '2'),
+      requireApoc: process.env.MEMORY_REQUIRE_APOC === 'true',
+      maxRelationshipsPerMemory: parseInt(
+        process.env.MEMORY_MAX_RELATIONSHIPS_PER_MEMORY || '5'
+      ),
+    },
   };
 }
 
@@ -84,6 +119,21 @@ export function getMemoryDevConfig(): Omit<MemoryModuleOptions, 'adapters'> {
     },
     neo4j: {
       database: 'neo4j',
+    },
+    limits: {
+      countAccuracyLimit: 500, // Smaller limit for dev
+      memoryContentLimit: 500, // Smaller content for dev
+      relationshipQueryLimit: 5, // Fewer relationships for dev
+      batchOperationLimit: 50, // Smaller batches for dev
+      searchResultLimit: 50, // Fewer search results for dev
+    },
+    semanticRelationships: {
+      enabled: true,
+      strategy: 'word_matching', // Use simpler strategy for dev
+      similarityThreshold: 0.6, // Lower threshold for more relationships
+      minCommonWords: 1, // Lower threshold for dev
+      requireApoc: false, // APOC-independent for dev reliability
+      maxRelationshipsPerMemory: 3, // Fewer relationships for dev
     },
   };
 }

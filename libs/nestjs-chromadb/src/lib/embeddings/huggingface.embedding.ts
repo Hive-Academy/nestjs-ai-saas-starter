@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseEmbeddingProvider } from './base.embedding';
-import type { HuggingFaceEmbeddingConfig } from '../interfaces/chromadb-module-options.interface';
-import { getErrorMessage, getErrorStack } from '../utils/error.utils';
+import type { HuggingFaceEmbeddingConfig } from '../interfaces/config/module-options.interface';
+import { getErrorMessage, getErrorStack } from '../utils/errors/error.utils';
+import { HttpClient, InputValidator } from '../utils/http/http-client.utils';
 
 /**
  * Constants for HuggingFace embedding provider
  */
-const HUGGINGFACE_EMBEDDING_DIMENSION = 384 as const; // all-MiniLM-L6-v2 dimension
+const HUGGINGFACE_EMBEDDING_DIMENSION = 384 as const; // Default for BAAI/bge-small-en-v1.5
 const DEFAULT_BATCH_SIZE = 50 as const;
 
 /**
@@ -28,24 +29,77 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
   private readonly logger = new Logger(HuggingFaceEmbeddingProvider.name);
   private readonly apiKey?: string;
   private readonly model: string;
-  private readonly endpoint: string;
+  private readonly apiEndpoint: string;
+  private readonly httpClient: HttpClient;
+  private readonly validator: InputValidator;
 
   constructor(config: HuggingFaceEmbeddingConfig) {
     super();
     this.apiKey = config.apiKey;
-    this.model = config.model ?? 'sentence-transformers/all-MiniLM-L6-v2';
-    this.endpoint =
-      config.endpoint ??
-      `https://api-inference.huggingface.co/pipeline/feature-extraction/${this.model}`;
+    this.model = config.model ?? 'BAAI/bge-small-en-v1.5';
+    this.apiEndpoint =
+      config.apiEndpoint ??
+      `https://api-inference.huggingface.co/models/${this.model}`;
     this.batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
+    this.httpClient = new HttpClient(config.http);
+    this.validator = new InputValidator();
+
+    // Validate API key if validation is enabled and key is provided
+    if (config.validation?.validateApiKey && this.apiKey) {
+      const validation = this.validator.validateApiKey(
+        this.apiKey,
+        'huggingface'
+      );
+      if (!validation.isValid) {
+        this.logger.warn(
+          `API key validation failed: ${validation.errors.join(', ')}`
+        );
+      }
+    }
   }
 
   public async embed(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) {
+      this.logger.warn(
+        'Empty texts array provided to HuggingFace embedding provider'
+      );
       return [];
     }
 
-    return this.processBatches(texts, async (batch) => this.embedBatch(batch));
+    // Comprehensive input validation
+    const validation = this.validator.validateTexts(texts, {
+      maxTextLength: 512 * 1000, // Most models have token limits
+      maxBatchSize: this.batchSize,
+      allowEmpty: false,
+    });
+
+    if (!validation.isValid) {
+      throw new Error(
+        `Input validation failed: ${validation.errors.join(', ')}`
+      );
+    }
+
+    // Filter valid texts
+    const validTexts = texts.filter(
+      (text) => text && typeof text === 'string' && text.trim().length > 0
+    );
+    if (validTexts.length === 0) {
+      throw new Error(
+        'No valid text content provided for embedding generation'
+      );
+    }
+
+    if (validTexts.length !== texts.length) {
+      this.logger.warn(
+        `Filtered out ${
+          texts.length - validTexts.length
+        } invalid texts from batch`
+      );
+    }
+
+    return this.processBatches(validTexts, async (batch) =>
+      this.embedBatch(batch)
+    );
   }
 
   private async embedBatch(texts: string[]): Promise<number[][]> {
@@ -81,37 +135,34 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
     }
   }
 
-  private async callHuggingFaceAPI(texts: string[]): Promise<HuggingFaceResponse> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+  private async callHuggingFaceAPI(
+    texts: string[]
+  ): Promise<HuggingFaceResponse> {
+    const headers: Record<string, string> = {};
 
     if (this.apiKey) {
       headers.Authorization = `Bearer ${this.apiKey}`;
     }
 
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        inputs: texts.length === 1 ? texts[0] : texts,
-        options: {
-          wait_for_model: true,
-        },
-      }),
-    });
+    const body = {
+      inputs: texts, // Always send as array
+      options: {
+        wait_for_model: true,
+      },
+    };
 
-    if (!response.ok) {
-      let errorMessage = 'Unknown error';
-      try {
-        errorMessage = await response.text();
-      } catch {
-        // Failed to read error response
-      }
+    try {
+      const data = await this.httpClient.postJson<HuggingFaceResponse>(
+        this.apiEndpoint,
+        body,
+        headers,
+        'HuggingFace Embeddings'
+      );
+      return data;
+    } catch (error) {
+      // Try to extract HuggingFace-specific error message
+      const errorMessage = getErrorMessage(error);
       throw new Error(`HuggingFace API error: ${errorMessage}`);
     }
-
-    const data = await response.json() as HuggingFaceResponse;
-    return data;
   }
 }

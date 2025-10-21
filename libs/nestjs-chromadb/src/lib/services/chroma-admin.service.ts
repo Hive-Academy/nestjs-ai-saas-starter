@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromaClient } from 'chromadb';
-import { getErrorMessage } from '../utils/error.utils';
+import { getErrorMessage } from '../utils/errors/error.utils';
 import { CHROMADB_CLIENT } from '../constants';
 
 /**
@@ -12,7 +12,7 @@ export class ChromaAdminService {
 
   constructor(
     @Inject(CHROMADB_CLIENT)
-    private readonly client: ChromaClient,
+    private readonly client: ChromaClient
   ) {}
 
   /**
@@ -56,7 +56,9 @@ export class ChromaAdminService {
    */
   public async reset(): Promise<boolean> {
     try {
-      this.logger.warn('Resetting entire ChromaDB instance - this will delete ALL data!');
+      this.logger.warn(
+        'Resetting entire ChromaDB instance - this will delete ALL data!'
+      );
       await this.client.reset();
       return true;
     } catch (error) {
@@ -102,7 +104,11 @@ export class ChromaAdminService {
           });
           stats.totalDocuments += count;
         } catch (error) {
-          this.logger.warn(`Failed to get count for collection ${collection.name}: ${getErrorMessage(error)}`);
+          this.logger.warn(
+            `Failed to get count for collection ${
+              collection.name
+            }: ${getErrorMessage(error)}`
+          );
           stats.collections.push({
             name: collection.name,
             id: collection.id,
@@ -148,7 +154,9 @@ export class ChromaAdminService {
             collection: collection.name,
             error: errorMsg,
           });
-          this.logger.error(`Failed to cleanup collection ${collection.name}: ${errorMsg}`);
+          this.logger.error(
+            `Failed to cleanup collection ${collection.name}: ${errorMsg}`
+          );
         }
       }
     } catch (error) {
@@ -162,14 +170,16 @@ export class ChromaAdminService {
   /**
    * Backup collections metadata
    */
-  public async backupMetadata(): Promise<Array<{
-    name: string;
-    id: string;
-    metadata?: Record<string, unknown>;
-  }>> {
+  public async backupMetadata(): Promise<
+    Array<{
+      name: string;
+      id: string;
+      metadata?: Record<string, unknown>;
+    }>
+  > {
     try {
       const collections = await this.client.listCollections();
-      return collections.map(collection => ({
+      return collections.map((collection) => ({
         name: collection.name,
         id: collection.id,
         metadata: collection.metadata,

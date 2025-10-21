@@ -11,10 +11,10 @@
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
     {
-      "path": "../core/tsconfig.lib.json"
+      "path": "../memory/tsconfig.lib.json"
     },
     {
-      "path": "../checkpoint/tsconfig.lib.json"
+      "path": "../core/tsconfig.lib.json"
     }
   ]
 }

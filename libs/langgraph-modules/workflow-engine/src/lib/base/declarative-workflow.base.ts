@@ -1,10 +1,13 @@
-import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UnifiedWorkflowBase } from './unified-workflow.base';
-import type {
-  WorkflowDefinition,
-  WorkflowState,
-} from '../interfaces';
+import type { WorkflowDefinition, WorkflowState } from '../interfaces';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { WorkflowGraphBuilderService } from '../core/workflow-graph-builder.service';
 import { SubgraphManagerService } from '../core/subgraph-manager.service';
@@ -99,10 +102,16 @@ export abstract class DeclarativeWorkflowBase<
     @Inject(WorkflowStreamService)
     protected override readonly streamService?: WorkflowStreamService,
     @Optional()
-    @Inject(EventStreamProcessorService)
+    @Optional()
     protected override readonly eventProcessor?: EventStreamProcessorService
   ) {
-    super(eventEmitter, graphBuilder, subgraphManager, streamService, eventProcessor);
+    super(
+      eventEmitter,
+      graphBuilder,
+      subgraphManager,
+      streamService,
+      eventProcessor
+    );
     this.logger = new Logger(this.constructor.name);
   }
 
@@ -302,39 +311,41 @@ export abstract class DeclarativeWorkflowBase<
   debugWorkflowStructure(): void {
     const definition = this.getWorkflowDefinition();
 
-    console.log('\n=== Workflow Structure Debug ===');
-    console.log(`Name: ${definition.name}`);
-    console.log(`Description: ${definition.description}`);
-    console.log(`Entry Point: ${definition.entryPoint}`);
+    this.logger.debug('\n=== Workflow Structure Debug ===');
+    this.logger.debug(`Name: ${definition.name}`);
+    this.logger.debug(`Description: ${definition.description}`);
+    this.logger.debug(`Entry Point: ${definition.entryPoint}`);
 
-    console.log('\nNodes:');
+    this.logger.debug('\nNodes:');
     definition.nodes.forEach((node) => {
-      console.log(
+      this.logger.debug(
         `  - ${node.id} (${node.config?.metadata?.type || 'standard'})`
       );
-      console.log(`    Method: ${node.config?.metadata?.methodName}`);
-      console.log(`    Requires Approval: ${node.requiresApproval || false}`);
-      console.log(`    Streaming: ${node.config?.streaming || false}`);
+      this.logger.debug(`    Method: ${node.config?.metadata?.methodName}`);
+      this.logger.debug(
+        `    Requires Approval: ${node.requiresApproval || false}`
+      );
+      this.logger.debug(`    Streaming: ${node.config?.streaming || false}`);
     });
 
-    console.log('\nEdges:');
+    this.logger.debug('\nEdges:');
     definition.edges.forEach((edge, index) => {
       const toDescription =
         typeof edge.to === 'string' ? edge.to : 'conditional routing';
-      console.log(`  ${index + 1}. ${edge.from} → ${toDescription}`);
+      this.logger.debug(`  ${index + 1}. ${edge.from} → ${toDescription}`);
       if (edge.config?.metadata?.type) {
-        console.log(`     Type: ${edge.config.metadata.type}`);
+        this.logger.debug(`     Type: ${edge.config.metadata.type}`);
       }
     });
 
-    console.log('\nConfiguration:');
-    console.log(
+    this.logger.debug('\nConfiguration:');
+    this.logger.debug(
       `  HITL Enabled: ${this.workflowConfig.hitl?.enabled || false}`
     );
-    console.log(`  Streaming: ${this.workflowConfig.streaming || false}`);
-    console.log(`  Caching: ${this.workflowConfig.cache || false}`);
-    console.log(`  Metrics: ${this.workflowConfig.metrics || false}`);
+    this.logger.debug(`  Streaming: ${this.workflowConfig.streaming || false}`);
+    this.logger.debug(`  Caching: ${this.workflowConfig.cache || false}`);
+    this.logger.debug(`  Metrics: ${this.workflowConfig.metrics || false}`);
 
-    console.log('=== End Debug ===\n');
+    this.logger.debug('=== End Debug ===\n');
   }
 }

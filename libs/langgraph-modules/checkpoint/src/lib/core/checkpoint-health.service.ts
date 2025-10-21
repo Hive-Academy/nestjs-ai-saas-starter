@@ -1,12 +1,13 @@
-import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
-import type { CheckpointStats } from '../interfaces/checkpoint.interface';
-import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
+import { generateThreadId } from '@hive-academy/langgraph-core';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import type {
   ICheckpointHealthService,
-  ICheckpointRegistryService,
   ICheckpointMetricsService,
+  ICheckpointRegistryService,
 } from '../interfaces/checkpoint-services.interface';
 import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
+import type { CheckpointStats } from '../interfaces/checkpoint.interface';
+import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
 
 interface HealthConfig {
   checkInterval: number;
@@ -459,7 +460,7 @@ export class CheckpointHealthService
    * Load health monitoring configuration
    */
   private loadHealthConfig(): HealthConfig {
-    const healthConfig = this.moduleOptions.checkpoint?.health || {};
+    const healthConfig = this.moduleOptions.health || {};
 
     return {
       checkInterval: healthConfig.checkInterval || 60000, // 1 minute
@@ -469,25 +470,59 @@ export class CheckpointHealthService
   }
 
   /**
-   * Perform basic health check using simple operations
+   * Perform comprehensive health check on checkpoint saver
    */
-  private async performBasicHealthCheck(saver: {
-    list?: (
-      config: { configurable: { thread_id: string } },
-      options?: { limit: number }
-    ) => AsyncIterableIterator<unknown>;
-  }): Promise<boolean> {
+  private async performBasicHealthCheck(saver: any): Promise<boolean> {
+    const testThreadId = generateThreadId('health-check');
+    const testConfig = { configurable: { thread_id: testThreadId } };
+    const testCheckpoint = {
+      id: 'health-test',
+      channel_values: { test: true, timestamp: Date.now() },
+      v: 1,
+      ts: new Date().toISOString(),
+    };
+    const testMetadata = { source: 'health-check' };
+
     try {
-      const testConfig = { configurable: { thread_id: 'health-check' } };
-      if (!saver.list) {
+      // Test 1: Check if saver has required methods
+      if (!saver.put || !saver.get || !saver.list) {
+        this.logger.warn('Saver missing required methods');
         return false;
       }
-      const generator = saver.list(testConfig, { limit: 1 });
 
-      // Try to get first item from generator
-      await generator.next();
+      // Test 2: Try to write a test checkpoint
+      await saver.put(testConfig, testCheckpoint, testMetadata, {});
+
+      // Test 3: Try to read back the checkpoint
+      const retrieved = await saver.get(testConfig);
+      if (!retrieved || retrieved.id !== testCheckpoint.id) {
+        this.logger.warn('Health check: Could not retrieve test checkpoint');
+        return false;
+      }
+
+      // Test 4: Try to list checkpoints
+      const generator = saver.list(testConfig, { limit: 1 });
+      const listResult = await generator.next();
+      if (!listResult.value) {
+        this.logger.warn('Health check: Could not list checkpoints');
+        return false;
+      }
+
+      // Test 5: Clean up test checkpoint (if delete method exists)
+      if (saver.delete) {
+        try {
+          await saver.delete(testConfig);
+        } catch (deleteError) {
+          this.logger.debug(
+            'Health check: Could not delete test checkpoint (non-critical)',
+            deleteError
+          );
+        }
+      }
+
       return true;
-    } catch (_error) {
+    } catch (error) {
+      this.logger.warn('Health check failed:', error);
       return false;
     }
   }

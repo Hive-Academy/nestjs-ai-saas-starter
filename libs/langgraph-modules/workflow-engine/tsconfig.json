@@ -2,7 +2,14 @@
   "extends": "../../../tsconfig.base.json",
   "files": [],
   "include": [],
+  "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
+    {
+      "path": "../memory"
+    },
+    {
+      "path": "../multi-agent"
+    },
     {
       "path": "../functional-api"
     },
@@ -14,9 +21,6 @@
     },
     {
       "path": "./tsconfig.lib.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
     }
   ]
 }

@@ -1,5 +1,9 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "workspaceLayout": {
+    "appsDir": "apps",
+    "libsDir": "libs"
+  },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -32,7 +36,6 @@
       "exclude": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/core/*",
         "libs/langgraph-modules/hitl/*",
@@ -67,14 +70,13 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/nestjs-ai-saas-starter-demo-e2e/**/*"]
+      "exclude": ["apps/dev-brand-ui-e2e/**/*"]
     },
     {
       "plugin": "@nx/js/typescript",
       "include": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/langgraph-modules/nestjs-langgraph/*",
         "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/core/*",
         "libs/langgraph-modules/hitl/*",
@@ -116,12 +118,17 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc --noEmit --skipLibCheck"
+        "command": "tsc --noEmit --skipLibCheck --exclude **/*.spec.ts --exclude **/*.test.ts"
       },
       "dependsOn": ["^typecheck"],
       "cache": true
     },
     "@angular/build:application": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "@nx/angular:package": {
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
@@ -131,7 +138,6 @@
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/langgraph-modules/nestjs-langgraph",
       "libs/langgraph-modules/checkpoint",
       "libs/langgraph-modules/core",
       "libs/langgraph-modules/hitl",
@@ -142,7 +148,8 @@
       "libs/langgraph-modules/functional-api",
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
-      "libs/langgraph-modules/platform"
+      "libs/langgraph-modules/platform",
+      "angular-3d"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",
@@ -175,6 +182,13 @@
       "linter": "eslint",
       "style": "css",
       "unitTestRunner": "jest"
+    },
+    "@nx/angular:library": {
+      "linter": "eslint",
+      "unitTestRunner": "jest"
+    },
+    "@nx/angular:component": {
+      "style": "css"
     }
   }
 }

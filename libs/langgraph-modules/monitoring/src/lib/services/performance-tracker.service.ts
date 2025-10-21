@@ -10,7 +10,7 @@ import {
 
 /**
  * PerformanceTrackerService - Performance metrics analysis and anomaly detection
- * 
+ *
  * Features:
  * - Workflow execution performance tracking
  * - Statistical baseline establishment using sliding windows
@@ -20,7 +20,9 @@ import {
  * - Capacity planning insights
  */
 @Injectable()
-export class PerformanceTrackerService implements IPerformanceTracker, OnModuleDestroy {
+export class PerformanceTrackerService
+  implements IPerformanceTracker, OnModuleDestroy
+{
   private readonly logger = new Logger(PerformanceTrackerService.name);
   private readonly performanceData = new Map<string, number[]>();
   private readonly resourceData = new Map<string, ResourceUtilization[]>();
@@ -39,32 +41,32 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
   // ================================
 
   async trackExecution(
-    name: string, 
-    duration: number, 
+    name: string,
+    duration: number,
     metadata?: Record<string, unknown>
   ): Promise<void> {
     try {
       // Store performance data
       const data = this.performanceData.get(name) || [];
       data.push(duration);
-      
+
       // Limit data points for memory efficiency
       if (data.length > this.maxDataPoints) {
         data.shift(); // Remove oldest data point
       }
-      
+
       this.performanceData.set(name, data);
-      
+
       // Update baseline if we have enough data
       if (data.length >= this.baselineMinSamples) {
         await this.updateBaseline(name, data);
       }
-      
+
       // Check for anomalies
       if (data.length >= this.baselineMinSamples) {
         await this.checkForAnomalies(name, duration);
       }
-      
+
       this.logger.debug(`Performance tracked: ${name} = ${duration}ms`, {
         metric: name,
         duration,
@@ -84,27 +86,30 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
         disk: 0, // Would be measured from system
         network: 0, // Would be measured from system
       };
-      
+
       await this.trackResourceUtilization(name, resourceUtil);
     } catch (error) {
       this.logger.error(`Failed to track memory usage for ${name}:`, error);
     }
   }
 
-  async trackResourceUtilization(name: string, utilization: ResourceUtilization): Promise<void> {
+  async trackResourceUtilization(
+    name: string,
+    utilization: ResourceUtilization
+  ): Promise<void> {
     try {
       const data = this.resourceData.get(name) || [];
       data.push({
         ...utilization,
       });
-      
+
       // Limit data points
       if (data.length > this.maxDataPoints) {
         data.shift();
       }
-      
+
       this.resourceData.set(name, data);
-      
+
       this.logger.debug(`Resource utilization tracked: ${name}`, {
         metric: name,
         cpu: utilization.cpu,
@@ -112,7 +117,10 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
         dataPoints: data.length,
       });
     } catch (error) {
-      this.logger.error(`Failed to track resource utilization for ${name}:`, error);
+      this.logger.error(
+        `Failed to track resource utilization for ${name}:`,
+        error
+      );
     }
   }
 
@@ -142,10 +150,13 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     return baseline;
   }
 
-  async analyzePerformanceTrend(metric: string, timeRange: TimeRange): Promise<TrendAnalysis> {
+  async analyzePerformanceTrend(
+    metric: string,
+    timeRange: TimeRange
+  ): Promise<TrendAnalysis> {
     try {
       const data = this.performanceData.get(metric) || [];
-      
+
       if (data.length < 10) {
         return {
           metric,
@@ -156,10 +167,10 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
           dataPoints: data.length,
         };
       }
-      
+
       // Simple linear regression for trend analysis
       const trend = this.calculateTrend(data);
-      
+
       return {
         metric,
         timeRange,
@@ -170,7 +181,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       };
     } catch (error) {
       this.logger.error(`Failed to analyze trend for ${metric}:`, error);
-      
+
       // Return neutral trend on error
       return {
         metric,
@@ -194,14 +205,16 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     try {
       const sortedData = [...data].sort((a, b) => a - b);
       const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
-      const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / data.length;
+      const variance =
+        data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+        data.length;
       const standardDeviation = Math.sqrt(variance);
-      
+
       // Calculate percentiles
       const p95Index = Math.floor(sortedData.length * 0.95);
       const p99Index = Math.floor(sortedData.length * 0.99);
       const medianIndex = Math.floor(sortedData.length * 0.5);
-      
+
       const baseline: PerformanceBaseline = {
         metric: name,
         mean: Math.round(mean * 100) / 100,
@@ -212,9 +225,9 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
         sampleSize: data.length,
         lastUpdated: new Date(),
       };
-      
+
       this.baselines.set(name, baseline);
-      
+
       this.logger.debug(`Baseline updated for ${name}:`, {
         mean: baseline.mean,
         p95: baseline.p95,
@@ -235,10 +248,11 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       if (!baseline) {
         return; // No baseline yet
       }
-      
+
       // Calculate z-score (number of standard deviations from mean)
-      const zScore = Math.abs(value - baseline.mean) / baseline.standardDeviation;
-      
+      const zScore =
+        Math.abs(value - baseline.mean) / baseline.standardDeviation;
+
       // Check if this is an anomaly
       if (zScore > this.anomalyThreshold) {
         const anomaly: Anomaly = {
@@ -251,18 +265,18 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
           severity: this.calculateAnomalySeverity(zScore),
           confidence: Math.min(zScore / this.anomalyThreshold, 1.0),
         };
-        
+
         // Store anomaly
         const anomalies = this.anomalies.get(name) || [];
         anomalies.push(anomaly);
-        
+
         // Limit anomaly history
         if (anomalies.length > 100) {
           anomalies.shift();
         }
-        
+
         this.anomalies.set(name, anomalies);
-        
+
         this.logger.warn(`Performance anomaly detected: ${name}`, {
           actualValue: value,
           expectedValue: baseline.mean,
@@ -286,34 +300,37 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     const n = data.length;
     const x = Array.from({ length: n }, (_, i) => i);
     const y = data;
-    
+
     // Calculate means
     const meanX = x.reduce((sum, val) => sum + val, 0) / n;
     const meanY = y.reduce((sum, val) => sum + val, 0) / n;
-    
+
     // Calculate slope and intercept
     let numerator = 0;
     let denominator = 0;
-    
+
     for (let i = 0; i < n; i++) {
       numerator += (x[i] - meanX) * (y[i] - meanY);
       denominator += (x[i] - meanX) * (x[i] - meanX);
     }
-    
+
     const slope = denominator !== 0 ? numerator / denominator : 0;
-    
+
     // Calculate correlation coefficient for confidence
     let correlation = 0;
     if (denominator !== 0) {
-      const yVariance = y.reduce((sum, val) => sum + Math.pow(val - meanY, 2), 0);
+      const yVariance = y.reduce(
+        (sum, val) => sum + Math.pow(val - meanY, 2),
+        0
+      );
       correlation = Math.abs(numerator) / Math.sqrt(denominator * yVariance);
     }
-    
+
     // Determine trend direction
     let direction: 'increasing' | 'decreasing' | 'stable' | 'volatile';
     const absSlope = Math.abs(slope);
     const slopeThreshold = meanY * 0.01; // 1% of mean as threshold
-    
+
     if (correlation < 0.3) {
       direction = 'volatile'; // Low correlation indicates high volatility
     } else if (absSlope < slopeThreshold) {
@@ -323,7 +340,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     } else {
       direction = 'decreasing';
     }
-    
+
     return {
       direction,
       slope: Math.round(slope * 1000) / 1000,
@@ -348,7 +365,8 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
    * Generate unique anomaly ID
    */
   private generateAnomalyId(): string {
-    return `anomaly_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const { generateId } = require('@hive-academy/langgraph-core');
+    return generateId('anomaly');
   }
 
   // ================================
@@ -392,20 +410,37 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       return { bottleneck: 'network', utilization: latest.network, threshold };
     }
 
-    return { bottleneck: 'none', utilization: Math.max(latest.cpu, latest.memory, latest.disk, latest.network), threshold };
+    return {
+      bottleneck: 'none',
+      utilization: Math.max(
+        latest.cpu,
+        latest.memory,
+        latest.disk,
+        latest.network
+      ),
+      threshold,
+    };
   }
 
   /**
    * Analyze resource patterns
    */
-  analyzeResourcePattern(metric: string, timeRange: TimeRange): {
+  analyzeResourcePattern(
+    metric: string,
+    timeRange: TimeRange
+  ): {
     pattern: 'increasing' | 'decreasing' | 'stable' | 'cyclic' | 'volatile';
     confidence: number;
     peak_hours: number[];
-    avg_utilization: { cpu: number; memory: number; disk: number; network: number };
+    avg_utilization: {
+      cpu: number;
+      memory: number;
+      disk: number;
+      network: number;
+    };
   } {
     const resourceData = this.resourceData.get(metric) || [];
-    
+
     if (resourceData.length < 10) {
       return {
         pattern: 'stable',
@@ -416,19 +451,26 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     }
 
     // Calculate averages
-    const avgCpu = resourceData.reduce((sum, r) => sum + r.cpu, 0) / resourceData.length;
-    const avgMemory = resourceData.reduce((sum, r) => sum + r.memory, 0) / resourceData.length;
-    const avgDisk = resourceData.reduce((sum, r) => sum + r.disk, 0) / resourceData.length;
-    const avgNetwork = resourceData.reduce((sum, r) => sum + r.network, 0) / resourceData.length;
+    const avgCpu =
+      resourceData.reduce((sum, r) => sum + r.cpu, 0) / resourceData.length;
+    const avgMemory =
+      resourceData.reduce((sum, r) => sum + r.memory, 0) / resourceData.length;
+    const avgDisk =
+      resourceData.reduce((sum, r) => sum + r.disk, 0) / resourceData.length;
+    const avgNetwork =
+      resourceData.reduce((sum, r) => sum + r.network, 0) / resourceData.length;
 
     // Simple pattern analysis based on variance
-    const memoryValues = resourceData.map(r => r.memory);
+    const memoryValues = resourceData.map((r) => r.memory);
     const memoryTrend = this.calculateTrend(memoryValues);
-    
+
     return {
-      pattern: memoryTrend.direction === 'stable' ? 'stable' : 
-               memoryTrend.direction === 'volatile' ? 'volatile' : 
-               memoryTrend.direction,
+      pattern:
+        memoryTrend.direction === 'stable'
+          ? 'stable'
+          : memoryTrend.direction === 'volatile'
+          ? 'volatile'
+          : memoryTrend.direction,
       confidence: memoryTrend.confidence,
       peak_hours: [9, 14, 16], // Mock peak hours
       avg_utilization: {
@@ -450,14 +492,15 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
 
     const anomalies: Anomaly[] = [];
     const baseline = this.baselines.get(metric);
-    
+
     if (!baseline) {
       return [];
     }
 
     data.forEach((value, index) => {
-      const zScore = Math.abs(value - baseline.mean) / baseline.standardDeviation;
-      
+      const zScore =
+        Math.abs(value - baseline.mean) / baseline.standardDeviation;
+
       if (zScore > this.anomalyThreshold) {
         anomalies.push({
           id: this.generateAnomalyId(),
@@ -478,13 +521,16 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
   /**
    * Predict performance trend
    */
-  predictPerformanceTrend(metric: string, forecastPeriods: number): {
+  predictPerformanceTrend(
+    metric: string,
+    forecastPeriods: number
+  ): {
     predictions: Array<{ time: Date; value: number; confidence: number }>;
     accuracy: number;
     trend_direction: 'improving' | 'degrading' | 'stable';
   } {
     const data = this.performanceData.get(metric) || [];
-    
+
     if (data.length < 10) {
       return {
         predictions: [],
@@ -495,15 +541,19 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
 
     const trend = this.calculateTrend(data);
     const latestValue = data[data.length - 1];
-    const predictions: Array<{ time: Date; value: number; confidence: number }> = [];
+    const predictions: Array<{
+      time: Date;
+      value: number;
+      confidence: number;
+    }> = [];
 
     // Simple linear extrapolation
     for (let i = 1; i <= forecastPeriods; i++) {
-      const predictedValue = latestValue + (trend.slope * i);
-      const confidence = Math.max(0, trend.confidence - (i * 0.1)); // Decrease confidence over time
-      
+      const predictedValue = latestValue + trend.slope * i;
+      const confidence = Math.max(0, trend.confidence - i * 0.1); // Decrease confidence over time
+
       predictions.push({
-        time: new Date(Date.now() + (i * 60000)), // Future minutes
+        time: new Date(Date.now() + i * 60000), // Future minutes
         value: Math.max(0, Math.round(predictedValue * 100) / 100),
         confidence: Math.round(confidence * 100) / 100,
       });
@@ -512,8 +562,12 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     return {
       predictions,
       accuracy: trend.confidence,
-      trend_direction: trend.direction === 'increasing' ? 'degrading' : 
-                      trend.direction === 'decreasing' ? 'improving' : 'stable',
+      trend_direction:
+        trend.direction === 'increasing'
+          ? 'degrading'
+          : trend.direction === 'decreasing'
+          ? 'improving'
+          : 'stable',
     };
   }
 
@@ -528,7 +582,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
   }> {
     const data = this.performanceData.get(metric) || [];
     const baseline = this.baselines.get(metric);
-    
+
     if (!baseline || data.length === 0) {
       return [];
     }
@@ -547,14 +601,19 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       bottlenecks.push({
         component: 'execution_time',
         severity: 'high',
-        impact: `Performance is ${Math.round(performanceRatio * 100)}% of baseline`,
-        recommendation: 'Review algorithm complexity and optimize critical paths',
+        impact: `Performance is ${Math.round(
+          performanceRatio * 100
+        )}% of baseline`,
+        recommendation:
+          'Review algorithm complexity and optimize critical paths',
       });
     } else if (performanceRatio > 1.5) {
       bottlenecks.push({
         component: 'processing_overhead',
         severity: 'medium',
-        impact: `Performance degradation of ${Math.round((performanceRatio - 1) * 100)}%`,
+        impact: `Performance degradation of ${Math.round(
+          (performanceRatio - 1) * 100
+        )}%`,
         recommendation: 'Consider caching and reduce I/O operations',
       });
     }
@@ -582,7 +641,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
   }> {
     const bottlenecks = this.identifyPerformanceBottlenecks(metric);
     const resourceBottleneck = this.identifyResourceBottleneck(metric);
-    
+
     const optimizations: Array<{
       type: 'algorithm' | 'caching' | 'infrastructure' | 'configuration';
       priority: 'low' | 'medium' | 'high';
@@ -590,7 +649,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       estimated_improvement: string;
     }> = [];
 
-    if (bottlenecks.some(b => b.component === 'execution_time')) {
+    if (bottlenecks.some((b) => b.component === 'execution_time')) {
       optimizations.push({
         type: 'algorithm',
         priority: 'high',
@@ -621,7 +680,8 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       optimizations.push({
         type: 'configuration',
         priority: 'low',
-        description: 'Performance is optimal, consider fine-tuning configuration',
+        description:
+          'Performance is optimal, consider fine-tuning configuration',
         estimated_improvement: '5-10% efficiency gain',
       });
     }
@@ -640,7 +700,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     recommendations: string[];
   } {
     const resourceData = this.resourceData.get(metric) || [];
-    
+
     if (resourceData.length === 0) {
       return {
         current_utilization: 0,
@@ -652,20 +712,30 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     }
 
     const latest = resourceData[resourceData.length - 1];
-    const currentUtilization = Math.max(latest.cpu, latest.memory, latest.disk, latest.network);
+    const currentUtilization = Math.max(
+      latest.cpu,
+      latest.memory,
+      latest.disk,
+      latest.network
+    );
     const capacityLimit = 100; // 100% utilization limit
-    
+
     // Simple projection based on recent trend
-    const memoryValues = resourceData.slice(-10).map(r => r.memory);
+    const memoryValues = resourceData.slice(-10).map((r) => r.memory);
     const trend = this.calculateTrend(memoryValues);
-    const projectedUtilization = Math.max(0, Math.min(100, currentUtilization + (trend.slope * 10)));
+    const projectedUtilization = Math.max(
+      0,
+      Math.min(100, currentUtilization + trend.slope * 10)
+    );
 
     const recommendations: string[] = [];
     if (currentUtilization > 80) {
       recommendations.push('Consider scaling resources immediately');
     }
     if (projectedUtilization > 90) {
-      recommendations.push('Plan for capacity expansion within the next period');
+      recommendations.push(
+        'Plan for capacity expansion within the next period'
+      );
     }
     if (trend.direction === 'increasing') {
       recommendations.push('Monitor growth trend closely');
@@ -678,7 +748,8 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       current_utilization: Math.round(currentUtilization * 100) / 100,
       projected_utilization: Math.round(projectedUtilization * 100) / 100,
       capacity_limit: capacityLimit,
-      time_to_limit: projectedUtilization > capacityLimit ? 'immediate' : '> 30 days',
+      time_to_limit:
+        projectedUtilization > capacityLimit ? 'immediate' : '> 30 days',
       recommendations,
     };
   }
@@ -686,7 +757,10 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
   /**
    * Analyze SLA compliance
    */
-  analyzeSLACompliance(metric: string, slaThreshold: number): {
+  analyzeSLACompliance(
+    metric: string,
+    slaThreshold: number
+  ): {
     compliance_rate: number;
     violations: number;
     total_measurements: number;
@@ -694,7 +768,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     trend: 'improving' | 'degrading' | 'stable';
   } {
     const data = this.performanceData.get(metric) || [];
-    
+
     if (data.length === 0) {
       return {
         compliance_rate: 100,
@@ -705,22 +779,28 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
       };
     }
 
-    const violations = data.filter(value => value > slaThreshold).length;
+    const violations = data.filter((value) => value > slaThreshold).length;
     const complianceRate = ((data.length - violations) / data.length) * 100;
-    
-    const worstViolation = Math.max(...data.filter(value => value > slaThreshold));
-    const worstIndex = data.findIndex(value => value === worstViolation);
-    
+
+    const worstViolation = Math.max(
+      ...data.filter((value) => value > slaThreshold)
+    );
+    const worstIndex = data.findIndex((value) => value === worstViolation);
+
     const trend = this.calculateTrend(data);
-    const slaCompliance = trend.direction === 'decreasing' ? 'improving' : 
-                         trend.direction === 'increasing' ? 'degrading' : 'stable';
+    const slaCompliance =
+      trend.direction === 'decreasing'
+        ? 'improving'
+        : trend.direction === 'increasing'
+        ? 'degrading'
+        : 'stable';
 
     return {
       compliance_rate: Math.round(complianceRate * 100) / 100,
       violations,
       total_measurements: data.length,
       worst_violation: {
-        timestamp: new Date(Date.now() - ((data.length - worstIndex) * 60000)),
+        timestamp: new Date(Date.now() - (data.length - worstIndex) * 60000),
         value: worstViolation || 0,
       },
       trend: slaCompliance,
@@ -734,10 +814,10 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     // Since we don't store timestamps with individual data points in this implementation,
     // we'll just limit the data to recent entries
     let totalRemoved = 0;
-    
+
     this.performanceData.forEach((data, metric) => {
       if (data.length > this.maxDataPoints / 2) {
-        const toRemove = data.length - (this.maxDataPoints / 2);
+        const toRemove = data.length - this.maxDataPoints / 2;
         data.splice(0, toRemove);
         totalRemoved += toRemove;
       }
@@ -758,7 +838,7 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     resourceMetrics: number;
   } {
     const baseStats = this.getTrackerStats();
-    
+
     return {
       ...baseStats,
       resourceMetrics: this.resourceData.size,
@@ -782,16 +862,18 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     } else if (format === 'csv') {
       const csvRows: string[] = [];
       csvRows.push('Metric,Type,Value,Timestamp');
-      
+
       this.performanceData.forEach((values, metric) => {
-        values.forEach(value => {
-          csvRows.push(`${metric},performance,${value},${new Date().toISOString()}`);
+        values.forEach((value) => {
+          csvRows.push(
+            `${metric},performance,${value},${new Date().toISOString()}`
+          );
         });
       });
-      
+
       return csvRows.join('\n');
     }
-    
+
     throw new Error(`Unsupported export format: ${format}`);
   }
 
@@ -815,21 +897,23 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
   /**
    * Create performance stream
    */
-  createPerformanceStream(metric: string): AsyncIterable<{ timestamp: Date; value: number }> {
+  createPerformanceStream(
+    metric: string
+  ): AsyncIterable<{ timestamp: Date; value: number }> {
     const performanceData = this.performanceData;
-    
+
     return {
       async *[Symbol.asyncIterator]() {
         const data = performanceData.get(metric) || [];
-        
+
         for (const value of data) {
           yield {
             timestamp: new Date(),
             value,
           };
-          
+
           // Small delay to simulate streaming
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
       },
     };
@@ -844,12 +928,16 @@ export class PerformanceTrackerService implements IPerformanceTracker, OnModuleD
     baselines: number;
     anomalies: number;
   } {
-    const totalDataPoints = Array.from(this.performanceData.values())
-      .reduce((total, data) => total + data.length, 0);
-      
-    const totalAnomalies = Array.from(this.anomalies.values())
-      .reduce((total, anomalies) => total + anomalies.length, 0);
-    
+    const totalDataPoints = Array.from(this.performanceData.values()).reduce(
+      (total, data) => total + data.length,
+      0
+    );
+
+    const totalAnomalies = Array.from(this.anomalies.values()).reduce(
+      (total, anomalies) => total + anomalies.length,
+      0
+    );
+
     return {
       trackedMetrics: this.performanceData.size,
       totalDataPoints,

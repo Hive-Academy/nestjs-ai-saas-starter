@@ -1,0 +1,70 @@
+import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
+import type {
+  IStreamingService,
+  ICheckpointAdapter,
+  IMemoryAdapter,
+} from '@hive-academy/langgraph-core';
+
+/**
+ * Global storage for workflow engine module configuration
+ * Set when WorkflowEngineModule.forRoot() is called
+ */
+let storedWorkflowEngineConfig: WorkflowEngineModuleOptions = {};
+
+/**
+ * Store workflow engine configuration for decorator access
+ * Called by WorkflowEngineModule.forRoot()
+ */
+export function setWorkflowEngineConfig(
+  config: WorkflowEngineModuleOptions
+): void {
+  storedWorkflowEngineConfig = { ...config };
+}
+
+/**
+ * Get stored workflow engine configuration for decorators
+ * Returns the config passed to WorkflowEngineModule.forRoot()
+ */
+export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
+  return storedWorkflowEngineConfig;
+}
+
+/**
+ * Get workflow engine config with safe defaults
+ * Used by decorators to inherit module configuration
+ */
+export function getWorkflowEngineConfigWithDefaults(): Omit<
+  Required<WorkflowEngineModuleOptions>,
+  'streamingAdapter' | 'checkpointAdapter' | 'memoryAdapter'
+> & {
+  streamingAdapter?: IStreamingService;
+  checkpointAdapter?: ICheckpointAdapter;
+  memoryAdapter?: IMemoryAdapter;
+} {
+  const config = getWorkflowEngineConfig();
+
+  return {
+    compilation: {
+      cacheEnabled: config.compilation?.cacheEnabled ?? true,
+      cacheTTL: config.compilation?.cacheTTL ?? 300000, // 5 minutes
+      optimizeGraphs: config.compilation?.optimizeGraphs ?? true,
+    },
+    execution: {
+      defaultTimeout: config.execution?.defaultTimeout ?? 30000,
+      streamingEnabled: config.execution?.streamingEnabled ?? true,
+      parallelExecution: config.execution?.parallelExecution ?? true,
+      maxConcurrency: config.execution?.maxConcurrency ?? 10,
+    },
+    debugging: {
+      enabled: config.debugging?.enabled ?? false,
+      logLevel: config.debugging?.logLevel ?? 'info',
+      traceExecution: config.debugging?.traceExecution ?? false,
+    },
+    agents: config.agents ?? [],
+    tools: config.tools ?? [],
+    workflows: config.workflows ?? [],
+    streamingAdapter: config.streamingAdapter,
+    checkpointAdapter: config.checkpointAdapter,
+    memoryAdapter: config.memoryAdapter,
+  };
+}

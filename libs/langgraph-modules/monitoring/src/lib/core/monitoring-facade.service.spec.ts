@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { MonitoringFacadeService } from './monitoring-facade.service';
 import type {
@@ -127,7 +127,7 @@ describe('MonitoringFacadeService', () => {
       mockAlertingService,
       mockHealthCheck,
       mockPerformanceTracker,
-      mockDashboardService,
+      mockDashboardService
     );
   });
 
@@ -163,7 +163,11 @@ describe('MonitoringFacadeService', () => {
     it('should record metrics with performance tracking', async () => {
       await service.recordMetric('test.metric', 42, testTags);
 
-      expect(mockMetricsCollector.collect).toHaveBeenCalledWith('test.metric', 42, testTags);
+      expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
+        'test.metric',
+        42,
+        testTags
+      );
       expect(mockPerformanceTracker.trackExecution).toHaveBeenCalledWith(
         'metrics.collection.test.metric',
         1,
@@ -174,56 +178,83 @@ describe('MonitoringFacadeService', () => {
     it('should record timer metrics with type tags', async () => {
       await service.recordTimer('test.timer', 150, testTags);
 
-      expect(mockMetricsCollector.collect).toHaveBeenCalledWith('test.timer', 150, {
-        ...testTags,
-        metric_type: 'timer',
-      });
+      expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
+        'test.timer',
+        150,
+        {
+          ...testTags,
+          metric_type: 'timer',
+        }
+      );
     });
 
     it('should record counter metrics with defaults', async () => {
       await service.recordCounter('test.counter', undefined, testTags);
 
-      expect(mockMetricsCollector.collect).toHaveBeenCalledWith('test.counter', 1, {
-        ...testTags,
-        metric_type: 'counter',
-      });
+      expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
+        'test.counter',
+        1,
+        {
+          ...testTags,
+          metric_type: 'counter',
+        }
+      );
     });
 
     it('should record gauge metrics with type identification', async () => {
       await service.recordGauge('test.gauge', 85.5, testTags);
 
-      expect(mockMetricsCollector.collect).toHaveBeenCalledWith('test.gauge', 85.5, {
-        ...testTags,
-        metric_type: 'gauge',
-      });
+      expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
+        'test.gauge',
+        85.5,
+        {
+          ...testTags,
+          metric_type: 'gauge',
+        }
+      );
     });
 
     it('should record histogram metrics correctly', async () => {
       await service.recordHistogram('test.histogram', 234, testTags);
 
-      expect(mockMetricsCollector.collect).toHaveBeenCalledWith('test.histogram', 234, {
-        ...testTags,
-        metric_type: 'histogram',
-      });
+      expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
+        'test.histogram',
+        234,
+        {
+          ...testTags,
+          metric_type: 'histogram',
+        }
+      );
     });
 
     it('should handle metrics collection failures gracefully', async () => {
-      mockMetricsCollector.collect.mockRejectedValueOnce(new Error('Collection failed'));
+      mockMetricsCollector.collect.mockRejectedValueOnce(
+        new Error('Collection failed')
+      );
 
       // Should not throw error - monitoring failures don't break workflows
-      await expect(service.recordMetric('test.failing.metric', 100)).resolves.toBeUndefined();
+      await expect(
+        service.recordMetric('test.failing.metric', 100)
+      ).resolves.toBeUndefined();
 
-      expect(mockMetricsCollector.collect).toHaveBeenCalledWith('test.failing.metric', 100, undefined);
+      expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
+        'test.failing.metric',
+        100,
+        undefined
+      );
     });
   });
 
   describe('Health Check Operations (AC4 Verification)', () => {
     it('should register health checks successfully', async () => {
       const healthCheckFn = jest.fn().mockResolvedValue(true);
-      
+
       await service.registerHealthCheck('test-service', healthCheckFn);
 
-      expect(mockHealthCheck.register).toHaveBeenCalledWith('test-service', healthCheckFn);
+      expect(mockHealthCheck.register).toHaveBeenCalledWith(
+        'test-service',
+        healthCheckFn
+      );
     });
 
     it('should return system health status', async () => {
@@ -265,13 +296,17 @@ describe('MonitoringFacadeService', () => {
     });
 
     it('should provide fallback health status on failure', async () => {
-      mockHealthCheck.getSystemHealth.mockRejectedValueOnce(new Error('Health check failed'));
+      mockHealthCheck.getSystemHealth.mockRejectedValueOnce(
+        new Error('Health check failed')
+      );
 
       const result = await service.getSystemHealth();
 
       expect(result.overall).toBe('unhealthy');
       expect(result.services.monitoring.state).toBe('unhealthy');
-      expect(result.services.monitoring.error).toBe('Health check system unavailable');
+      expect(result.services.monitoring.error).toBe(
+        'Health check system unavailable'
+      );
     });
   });
 
@@ -302,7 +337,9 @@ describe('MonitoringFacadeService', () => {
       const ruleId = await service.createAlertRule(testAlertRule);
 
       expect(ruleId).toBe('rule-123');
-      expect(mockAlertingService.createRule).toHaveBeenCalledWith(testAlertRule);
+      expect(mockAlertingService.createRule).toHaveBeenCalledWith(
+        testAlertRule
+      );
       expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
         'monitoring.alert_rules.created',
         1,
@@ -315,10 +352,13 @@ describe('MonitoringFacadeService', () => {
 
     it('should update alert rules and track changes', async () => {
       const updates = { enabled: false };
-      
+
       await service.updateAlertRule('rule-123', updates);
 
-      expect(mockAlertingService.updateRule).toHaveBeenCalledWith('rule-123', updates);
+      expect(mockAlertingService.updateRule).toHaveBeenCalledWith(
+        'rule-123',
+        updates
+      );
       expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
         'monitoring.alert_rules.updated',
         1,
@@ -359,7 +399,9 @@ describe('MonitoringFacadeService', () => {
     });
 
     it('should return empty array when alerting fails', async () => {
-      mockAlertingService.getActiveAlerts.mockRejectedValueOnce(new Error('Alerting failed'));
+      mockAlertingService.getActiveAlerts.mockRejectedValueOnce(
+        new Error('Alerting failed')
+      );
 
       const result = await service.getActiveAlerts();
 
@@ -431,7 +473,9 @@ describe('MonitoringFacadeService', () => {
       const result = await service.getDashboardData(dashboardId);
 
       expect(result).toEqual(expectedData);
-      expect(mockDashboardService.getDashboardData).toHaveBeenCalledWith(dashboardId);
+      expect(mockDashboardService.getDashboardData).toHaveBeenCalledWith(
+        dashboardId
+      );
     });
 
     it('should create dashboards and track creation', async () => {
@@ -452,7 +496,9 @@ describe('MonitoringFacadeService', () => {
       const result = await service.createDashboard(dashboardConfig);
 
       expect(result).toBe('dashboard-123');
-      expect(mockDashboardService.createDashboard).toHaveBeenCalledWith(dashboardConfig);
+      expect(mockDashboardService.createDashboard).toHaveBeenCalledWith(
+        dashboardConfig
+      );
       expect(mockMetricsCollector.collect).toHaveBeenCalledWith(
         'monitoring.dashboards.created',
         1,
@@ -477,20 +523,36 @@ describe('MonitoringFacadeService', () => {
   describe('Error Handling and Graceful Degradation', () => {
     it('should never throw errors - monitoring failures must not break workflows', async () => {
       // Make all services fail
-      mockMetricsCollector.collect.mockRejectedValue(new Error('Metrics failed'));
-      mockAlertingService.createRule.mockRejectedValue(new Error('Alerting failed'));
-      mockHealthCheck.register.mockRejectedValue(new Error('Health check failed'));
+      mockMetricsCollector.collect.mockRejectedValue(
+        new Error('Metrics failed')
+      );
+      mockAlertingService.createRule.mockRejectedValue(
+        new Error('Alerting failed')
+      );
+      mockHealthCheck.register.mockRejectedValue(
+        new Error('Health check failed')
+      );
 
       // All operations should complete without throwing
       await expect(service.recordMetric('test', 1)).resolves.toBeUndefined();
-      await expect(service.createAlertRule({} as AlertRule)).resolves.toBeDefined();
-      await expect(service.registerHealthCheck('test', jest.fn())).resolves.toBeUndefined();
+      await expect(
+        service.createAlertRule({} as AlertRule)
+      ).resolves.toBeDefined();
+      await expect(
+        service.registerHealthCheck('test', jest.fn())
+      ).resolves.toBeUndefined();
     });
 
     it('should provide meaningful fallback values', async () => {
-      mockHealthCheck.getSystemHealth.mockRejectedValue(new Error('Health failed'));
-      mockAlertingService.getActiveAlerts.mockRejectedValue(new Error('Alerts failed'));
-      mockDashboardService.queryMetrics.mockRejectedValue(new Error('Query failed'));
+      mockHealthCheck.getSystemHealth.mockRejectedValue(
+        new Error('Health failed')
+      );
+      mockAlertingService.getActiveAlerts.mockRejectedValue(
+        new Error('Alerts failed')
+      );
+      mockDashboardService.queryMetrics.mockRejectedValue(
+        new Error('Query failed')
+      );
 
       const health = await service.getSystemHealth();
       const alerts = await service.getActiveAlerts();
@@ -502,8 +564,12 @@ describe('MonitoringFacadeService', () => {
     });
 
     it('should log errors for debugging without propagating them', async () => {
-      const loggerSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
-      mockMetricsCollector.collect.mockRejectedValueOnce(new Error('Test error'));
+      const loggerSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation();
+      mockMetricsCollector.collect.mockRejectedValueOnce(
+        new Error('Test error')
+      );
 
       await service.recordMetric('test.metric', 100);
 
@@ -522,13 +588,13 @@ describe('MonitoringFacadeService', () => {
   describe('Performance Requirements (Non-Functional)', () => {
     it('should complete facade operations within performance budget', async () => {
       const startTime = Date.now();
-      
+
       await service.recordMetric('perf.test', 123);
       await service.getSystemHealth();
       await service.getActiveAlerts();
-      
+
       const duration = Date.now() - startTime;
-      
+
       // Should complete well under 100ms (target <5ms overhead)
       expect(duration).toBeLessThan(100);
     });

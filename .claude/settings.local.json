@@ -2,44 +2,17 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(npm run compile:*)",
-      "Bash(npm run build:webview:*)",
-      "Bash(npm run build:all:*)",
-      "mcp__sequential-thinking__sequentialthinking",
-      "WebSearch",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(mkdir:*)",
-      "Bash(touch:*)",
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(npx nx build:*)",
-      "Bash(for module in hitl monitoring multi-agent memory platform time-travel)",
-      "Bash(do)",
-      "Bash(ls:*)",
-      "Bash(echo:*)",
-      "Bash(done)",
-      "Bash(npm run api:*)",
-      "Bash(npx nx test:*)",
-      "Bash(npx tsc:*)",
-      "Bash(node:*)",
-      "Bash(npx nx typecheck:*)"
+      "Bash(npx nx test dev-brand-ui --testPathPattern=\"(core-foundation-section|workflow-orchestration-section)\" --no-cache)",
+      "mcp__nx-mcp__nx_workspace",
+      "mcp__nx-mcp__nx_project_details",
+      "Bash(git mv apps/dev-brand-ui/src/app/shared/components/intelligence-layer-section.component.ts apps/dev-brand-ui/src/app/features/landing-page/sections/intelligence-layer-section.component.ts)",
+      "Bash(git mv apps/dev-brand-ui/src/app/shared/components/intelligence-layer-section.component.spec.ts apps/dev-brand-ui/src/app/features/landing-page/sections/intelligence-layer-section.component.spec.ts)"
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["d:\\projects\\nestjs-ai-saas-starter"]
+    "additionalDirectories": ["D:\\projects\\nestjs-ai-saas-starter"]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "browser",
-    "sequential-thinking",
-    "nx-mcp",
-    "angular-cli",
-    "neo4j-graph-data-modeling",
-    "chroma"
-  ],
-  "statusLine": {
-    "type": "command",
-    "command": "powershell.exe -ExecutionPolicy Bypass -File \"D:\\projects\\nestjs-ai-saas-starter\\.claude\\status-line.ps1\""
-  }
+  "enabledMcpjsonServers": ["sequential-thinking", "nx-mcp", "angular-cli", "fetch"],
+  "outputStyle": "default"
 }

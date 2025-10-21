@@ -1,77 +1,61 @@
+// Import the specific checkpoint saver for this demo application
+import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
+import * as fs from 'fs';
+import * as path from 'path';
+
 import type { CheckpointModuleOptions } from '@hive-academy/langgraph-checkpoint';
 
 /**
- * Modular Checkpoint Configuration
+ * Checkpoint Configuration for Demo Application
  *
- * Extracted from centralized 271-line config - Part of Phase 3 Subtask 3.3
- * Reduces configuration complexity by 90%+
+ * This demo uses SQLite for persistent checkpoint storage.
+ * The checkpoint library will handle fallback to memory if SQLite fails.
  */
-export const getCheckpointConfig = (): CheckpointModuleOptions => {
-  const storageType =
-    (process.env.CHECKPOINT_STORAGE as
-      | 'memory'
-      | 'redis'
-      | 'postgres'
-      | 'sqlite') || 'memory';
+export async function getCheckpointConfig(): Promise<CheckpointModuleOptions> {
+  // Configure SQLite checkpoint saver for demo
+  const dbPath = process.env.CHECKPOINT_SQLITE_PATH || './data/checkpoints.db';
 
-  // Map 'postgresql' to 'postgres' for consistency
-  const mappedStorageType =
-    storageType === 'postgresql' ? 'postgres' : storageType;
-
-  const saverConfig = {
-    type: mappedStorageType,
-    name: 'default',
-    default: true,
-  } as any;
-
-  // Add type-specific configuration
-  switch (mappedStorageType) {
-    case 'redis':
-      saverConfig.redis = {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      };
-      break;
-    case 'postgres':
-      saverConfig.postgres = {
-        database: process.env.CHECKPOINT_DB_NAME || 'workflow_checkpoints',
-        user: process.env.CHECKPOINT_DB_USER,
-        password: process.env.CHECKPOINT_DB_PASSWORD,
-        host: process.env.POSTGRES_HOST || 'localhost',
-        port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-      };
-      break;
-    case 'sqlite':
-      saverConfig.sqlite = {
-        databasePath:
-          process.env.CHECKPOINT_SQLITE_PATH || './data/checkpoints.db',
-      };
-      break;
-    case 'memory':
-    default:
-      saverConfig.memory = {
-        maxCheckpoints: parseInt(
-          process.env.CHECKPOINT_MAX_CHECKPOINTS || '1000',
-          10
-        ),
-        ttl: parseInt(process.env.CHECKPOINT_TTL_MS || '3600000', 10), // 1 hour
-      };
-      break;
+  // Ensure the directory exists
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
   }
 
+  const saver = SqliteSaver.fromConnString(dbPath);
+
   return {
-    checkpoint: {
-      savers: [saverConfig],
-      maxPerThread: parseInt(process.env.CHECKPOINT_MAX_COUNT || '100', 10),
-      cleanupInterval: parseInt(
-        process.env.CHECKPOINT_INTERVAL_MS || '1000',
+    // Pass the configured saver to the checkpoint library
+    // The library will handle fallback to memory if saver is undefined
+    saver,
+
+    cleanup: {
+      enabled: process.env.CHECKPOINT_CLEANUP_ENABLED !== 'false',
+      maxAge: parseInt(process.env.CHECKPOINT_MAX_AGE || '604800000', 10), // 7 days
+      maxPerThread: parseInt(
+        process.env.CHECKPOINT_MAX_PER_THREAD || '100',
         10
       ),
-      health: {
-        checkInterval: 30000, // 30 seconds
-        degradedThreshold: 1000, // 1 second
-        unhealthyThreshold: 5000, // 5 seconds
-      },
+      interval: parseInt(
+        process.env.CHECKPOINT_CLEANUP_INTERVAL || '3600000',
+        10
+      ), // 1 hour
+    },
+
+    health: {
+      enabled: process.env.CHECKPOINT_HEALTH_ENABLED !== 'false',
+      checkInterval: parseInt(
+        process.env.CHECKPOINT_HEALTH_INTERVAL || '30000',
+        10
+      ), // 30 seconds
+      timeout: parseInt(process.env.CHECKPOINT_HEALTH_TIMEOUT || '5000', 10), // 5 seconds
+    },
+
+    metrics: {
+      enabled: process.env.CHECKPOINT_METRICS_ENABLED !== 'false',
+      collectInterval: parseInt(
+        process.env.CHECKPOINT_METRICS_INTERVAL || '60000',
+        10
+      ), // 1 minute
     },
   };
-};
+}

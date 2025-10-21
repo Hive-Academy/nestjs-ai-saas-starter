@@ -1,22 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "src",
     "outDir": "../../dist/libs/nestjs-neo4j",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "declaration": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
-    "lib": ["es2022", "dom"],
-    "target": "es2021",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": false
+    "experimentalDecorators": true,
+    "declaration": true,
+    "declarationMap": true
   },
   "include": ["src/**/*.ts"],
   "references": [],

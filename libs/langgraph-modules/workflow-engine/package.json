@@ -1,6 +1,9 @@
 {
   "name": "@hive-academy/langgraph-workflow-engine",
   "version": "0.0.1",
+  "description": "Central orchestration hub for LangGraph ecosystem - coordinates agents, tools, workflows with embedded streaming and state management",
+  "author": "Hive Academy",
+  "license": "MIT",
   "private": false,
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
@@ -32,11 +35,11 @@
     "rxjs": "7.8.2",
     "@langchain/langgraph": "^0.4.3",
     "reflect-metadata": "^0.1.13",
-    "@langchain/langgraph-checkpoint": "^0.1.0",
-    "@langchain/langgraph-checkpoint-sqlite": "^0.2.0",
     "@hive-academy/langgraph-streaming": "0.0.1",
     "@hive-academy/langgraph-core": "0.0.1",
-    "@hive-academy/langgraph-functional-api": "0.0.1"
+    "@hive-academy/langgraph-functional-api": "0.0.1",
+    "@nestjs/config": "4.0.2",
+    "@hive-academy/langgraph-multi-agent": "0.0.1"
   },
   "devDependencies": {
     "rollup": "4.49.0",

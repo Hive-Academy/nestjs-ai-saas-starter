@@ -1,6 +1,9 @@
 {
   "name": "@hive-academy/langgraph-hitl",
   "version": "0.0.1",
+  "description": "Enterprise-grade Human-in-the-Loop system with ML confidence scoring, approval chains, and memory integration for LangGraph workflows",
+  "author": "Hive Academy",
+  "license": "MIT",
   "private": false,
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
@@ -32,7 +35,9 @@
     "@nestjs/common": "^11.0.0",
     "@hive-academy/langgraph-core": "0.0.1",
     "reflect-metadata": "^0.1.13",
-    "@nestjs/event-emitter": "^3.0.1"
+    "@nestjs/event-emitter": "^3.0.1",
+    "@nestjs/config": "4.0.2",
+    "@hive-academy/langgraph-memory": "0.0.1"
   },
   "devDependencies": {
     "rollup": "4.49.0",

@@ -6,9 +6,12 @@
  * Injection tokens for HITL services
  */
 export const HUMAN_APPROVAL_SERVICE = Symbol('HUMAN_APPROVAL_SERVICE');
-export const CONFIDENCE_EVALUATOR_SERVICE = Symbol('CONFIDENCE_EVALUATOR_SERVICE');
+export const CONFIDENCE_EVALUATOR_SERVICE = Symbol(
+  'CONFIDENCE_EVALUATOR_SERVICE'
+);
 export const APPROVAL_CHAIN_SERVICE = Symbol('APPROVAL_CHAIN_SERVICE');
 export const FEEDBACK_PROCESSOR_SERVICE = Symbol('FEEDBACK_PROCESSOR_SERVICE');
+export const HITL_CONFIG = Symbol('HITL_CONFIG');
 
 /**
  * Event names for HITL system
@@ -29,12 +32,23 @@ export const HITL_EVENTS = {
  */
 export const HITL_DEFAULTS = {
   APPROVAL_TIMEOUT_MS: 3600000, // 1 hour
+  MAX_APPROVAL_TIMEOUT_MS: 7200000, // 2 hours max
   CONFIDENCE_THRESHOLD: 0.7,
+  ESCALATION_CONFIDENCE_THRESHOLD: 0.5,
   HIGH_CONFIDENCE_AUTO_APPROVE: 0.95,
   MAX_ESCALATION_LEVELS: 3,
   FEEDBACK_RETENTION_MS: 86400000 * 7, // 7 days
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY_MS: 5000,
+} as const;
+
+/**
+ * Default module configuration
+ */
+export const DEFAULT_HITL_CONFIG = {
+  enabled: true,
+  defaultTimeout: HITL_DEFAULTS.APPROVAL_TIMEOUT_MS,
+  confidenceThreshold: HITL_DEFAULTS.CONFIDENCE_THRESHOLD,
 } as const;
 
 /**

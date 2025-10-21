@@ -7,6 +7,12 @@ import {
   type CheckpointCleanupOptions,
 } from '@hive-academy/langgraph-core';
 import type { CheckpointManagerService } from '../core/checkpoint-manager.service';
+import type {
+  EnhancedCheckpointMetadata,
+  EnhancedCheckpoint,
+  ListCheckpointsOptions,
+  CheckpointCleanupOptions as EnhancedCheckpointCleanupOptions,
+} from '../interfaces/checkpoint.interface';
 
 /**
  * Adapter implementation that wraps CheckpointManagerService
@@ -52,7 +58,7 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
     }
 
     // Convert enhanced checkpoint to base checkpoint
-    return this.toBaseCheckpoint(result.checkpoint);
+    return this.toBaseCheckpoint<T>(result as EnhancedCheckpoint<T>);
   }
 
   async listCheckpoints(
@@ -82,6 +88,19 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
     );
   }
 
+  async deleteCheckpoint(
+    threadId: string,
+    checkpointId: string,
+    saverName?: string
+  ): Promise<boolean> {
+    // Use the CheckpointManagerService deleteCheckpoint method (will add it)
+    return this.checkpointManager.deleteCheckpoint(
+      threadId,
+      checkpointId,
+      saverName
+    );
+  }
+
   async cleanupCheckpoints(options: CheckpointCleanupOptions): Promise<number> {
     // Convert minimal cleanup options to enhanced options
     const enhancedOptions = this.toEnhancedCleanupOptions(options);
@@ -91,14 +110,20 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
 
   async isHealthy(saverName?: string): Promise<boolean> {
     try {
-      const health = await this.checkpointManager.getHealthStatus();
-
       if (saverName) {
-        return health.savers?.[saverName]?.status === 'healthy';
+        // Check health for a specific saver
+        const healthStatus = await this.checkpointManager.getHealthStatus(
+          saverName
+        );
+        return healthStatus?.status === 'healthy';
       }
 
-      return health.overall?.status === 'healthy';
+      // Check overall health using the synchronous summary method
+      const healthSummary = this.checkpointManager.getHealthSummary();
+      const overall = healthSummary.overall;
+      return overall && 'healthy' in overall ? overall.healthy : false;
     } catch (error) {
+      console.error('Health check failed:', error);
       return false;
     }
   }
@@ -106,9 +131,16 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
   /**
    * Convert base metadata to enhanced metadata
    */
-  private toEnhancedMetadata(metadata: BaseCheckpointMetadata): any {
+  private toEnhancedMetadata(
+    metadata: BaseCheckpointMetadata
+  ): EnhancedCheckpointMetadata {
     return {
       ...metadata,
+      parents: metadata.parents
+        ? Object.fromEntries(
+            Object.entries(metadata.parents).map(([k, v]) => [k, String(v)])
+          )
+        : {},
       // Add any additional fields that the enhanced version needs
     };
   }
@@ -116,7 +148,9 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
   /**
    * Convert enhanced checkpoint to base checkpoint
    */
-  private toBaseCheckpoint<T>(enhancedCheckpoint: any): BaseCheckpoint<T> {
+  private toBaseCheckpoint<T>(
+    enhancedCheckpoint: EnhancedCheckpoint<T>
+  ): BaseCheckpoint<T> {
     return {
       id: enhancedCheckpoint.id,
       channel_values: enhancedCheckpoint.channel_values,
@@ -126,12 +160,14 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
   /**
    * Convert enhanced metadata to base metadata
    */
-  private toBaseMetadata(enhancedMetadata: any): BaseCheckpointMetadata {
+  private toBaseMetadata(
+    enhancedMetadata: EnhancedCheckpointMetadata
+  ): BaseCheckpointMetadata {
     return {
-      timestamp: enhancedMetadata.timestamp,
+      timestamp: enhancedMetadata.timestamp || '',
       source: enhancedMetadata.source,
       step: enhancedMetadata.step,
-      parents: enhancedMetadata.parents,
+      parents: enhancedMetadata.parents || {},
       // Copy any additional fields
       ...Object.fromEntries(
         Object.entries(enhancedMetadata).filter(
@@ -144,12 +180,12 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
   /**
    * Convert base list options to enhanced list options
    */
-  private toEnhancedListOptions(options: CheckpointListOptions): any {
+  private toEnhancedListOptions(
+    options: CheckpointListOptions
+  ): ListCheckpointsOptions {
     return {
       limit: options.limit,
       offset: options.offset,
-      before: options.before,
-      metadata: options.metadata,
       // Add any additional mapping needed
     };
   }
@@ -157,9 +193,10 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
   /**
    * Convert base cleanup options to enhanced cleanup options
    */
-  private toEnhancedCleanupOptions(options: CheckpointCleanupOptions): any {
+  private toEnhancedCleanupOptions(
+    options: CheckpointCleanupOptions
+  ): EnhancedCheckpointCleanupOptions {
     return {
-      threadIds: options.threadIds,
       maxAge: options.maxAge,
       // Add any additional mapping needed
     };

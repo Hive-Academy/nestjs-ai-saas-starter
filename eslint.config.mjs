@@ -24,7 +24,7 @@ export default [
           enforceBuildableLibDependency: true,
           allow: [
             '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
-            '^@golevelup/nestjs-discovery'
+            '^@golevelup/nestjs-discovery',
           ],
           depConstraints: [
             // ===== APPLICATION LAYER =====
@@ -233,7 +233,6 @@ export default [
                 'module:platform',
               ],
             },
-
           ],
         },
       ],
@@ -280,7 +279,6 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 'off', // Sometimes needed for valid reasons
       '@typescript-eslint/prefer-optional-chain': 'off', // Modern JS feature, auto-fixable
       '@typescript-eslint/no-unnecessary-type-assertion': 'off', // Auto-fixable
-
       // === CONFIGURED WITH FLEXIBILITY ===
       '@typescript-eslint/explicit-function-return-type': [
         'off', // Downgraded to offing
@@ -343,6 +341,7 @@ export default [
       // Disabled rules
       'dot-notation': 'off',
       '@typescript-eslint/dot-notation': 'off',
+      '@typescript-eslint/no-namespace': 'off',
     },
   },
 

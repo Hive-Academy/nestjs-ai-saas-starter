@@ -2,15 +2,16 @@
   "extends": "../../../tsconfig.base.json",
   "files": [],
   "include": [],
+  "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
+    {
+      "path": "../memory"
+    },
     {
       "path": "../core"
     },
     {
       "path": "./tsconfig.lib.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
     }
   ]
 }

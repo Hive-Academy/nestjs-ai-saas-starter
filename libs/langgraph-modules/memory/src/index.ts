@@ -5,6 +5,13 @@ export { MemoryModule } from './lib/memory.module';
 export { MemoryService } from './lib/services/memory.service';
 export { MemoryStorageService } from './lib/services/memory-storage.service';
 export { MemoryGraphService } from './lib/services/memory-graph.service';
+export { AgentMemoryBridgeService } from './lib/services/agent-memory-bridge.service';
+
+// Specialized agent memory services (TASK_2025_006)
+export { AgentMemoryCoreService } from './lib/services/agent-memory-core.service';
+export { AgentMemoryContextService } from './lib/services/agent-memory-context.service';
+export { AgentMemoryCheckpointService } from './lib/services/agent-memory-checkpoint.service';
+export { AgentMemoryStatsService } from './lib/services/agent-memory-stats.service';
 
 // Interfaces
 export type {
@@ -15,9 +22,13 @@ export type {
   MemoryConfig,
   MemoryRetentionPolicy,
   MemoryStats,
-  UserMemoryPatterns,
+  UserMemoryPatterns as BaseUserMemoryPatterns,
   MemoryServiceInterface,
   MemoryOperationMetrics,
+  SerializableValue,
+  SerializableArray,
+  SerializableObject,
+  MetadataValue,
 } from './lib/interfaces/memory.interface';
 
 export type {
@@ -26,9 +37,52 @@ export type {
   MemoryOptionsFactory,
 } from './lib/interfaces/memory-module-options.interface';
 
+export {
+  DEFAULT_AGENTIC_CONFIG,
+  DEFAULT_RAG_CONFIG,
+  DEFAULT_AGENT_MEMORY_CONFIG,
+  DEFAULT_STORE_CONFIG,
+} from './lib/interfaces/memory-module-options.interface';
+
 // Adapter Pattern Interfaces
 export { IVectorService } from './lib/interfaces/vector-service.interface';
 export { IGraphService } from './lib/interfaces/graph-service.interface';
+
+// Memory Adapter Interfaces (re-exported from core)
+// Note: ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory removed
+// Use IMemoryAdapter from core and AgentMemoryBridgeService for implementations
+
+// Re-export core memory adapter interfaces for convenience
+export { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-core';
+
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions as CoreMemorySearchOptions,
+} from '@hive-academy/langgraph-core';
+
+// NEW: LangGraph Store Interface (LangGraph 2025 Compliance)
+export type {
+  Item,
+  Store as MemoryStore,
+} from './lib/interfaces/langgraph-store.interface';
+export {
+  ChromaLangGraphStore,
+  LangGraphStoreFactory,
+  NamespaceUtils,
+  isValidItem,
+} from './lib/interfaces/langgraph-store.interface';
+
+// NEW: Agent State Integration Interfaces (local extensions)
+export type {
+  IAgentMemoryService,
+  AgentMemory,
+  AgentMemoryConfig,
+  AgentMemoryStats,
+  IAgentMemoryBridge,
+} from './lib/interfaces/agent-memory.interface';
 
 export type {
   VectorStoreData,
@@ -82,6 +136,21 @@ export {
   EVICTION_STRATEGIES,
   SUMMARIZATION_STRATEGIES,
 } from './lib/constants/memory.constants';
+
+// Store namespace constants (TASK_2025_008 Phase 2)
+export {
+  STORE_COLLECTIONS,
+  validateNamespace,
+  NamespaceBuilder,
+  extractModule,
+  matchesPattern,
+} from './lib/constants/store-namespaces';
+
+export type {
+  StoreCollectionKey,
+  NamespaceValidationResult,
+  NamespaceValidationOptions,
+} from './lib/constants/store-namespaces';
 
 // Validation schemas
 export {

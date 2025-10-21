@@ -13,6 +13,7 @@ export const TOOL_REGISTRY = 'TOOL_REGISTRY';
  */
 export const DEFAULT_MULTI_AGENT_OPTIONS = {
   defaultLlm: {
+    provider: 'openai' as const,
     model: 'gpt-4',
     temperature: 0,
     maxTokens: 4000,

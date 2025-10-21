@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { StateGraph, END } from '@langchain/langgraph';
-import { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
-import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
+import { createHash } from 'crypto';
 import type { WorkflowState } from '../interfaces';
 import { CompilationCacheService } from './compilation-cache.service';
-import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
+import {
+  WorkflowStateAnnotation,
+  ICheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 
 export interface SubgraphOptions {
   /**
@@ -148,7 +150,10 @@ export class SubgraphManagerService {
   private readonly subgraphs = new Map<string, CompiledSubgraph<any>>();
   private readonly activeSubgraphs = new Map<string, SubgraphContext>();
 
-  constructor(private readonly cacheService: CompilationCacheService) {}
+  constructor(
+    private readonly cacheService: CompilationCacheService,
+    @Optional() private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {}
 
   /**
    * Compile a subgraph with caching support
@@ -282,14 +287,6 @@ export class SubgraphManagerService {
   }
 
   /**
-   * Create a checkpointer for workflow persistence
-   */
-  async createCheckpointer(config?: any): Promise<BaseCheckpointSaver> {
-    // Use the existing getCheckpointer method with enhanced configuration
-    return this.getCheckpointer(config || { type: 'memory' });
-  }
-
-  /**
    * Create a subgraph from a workflow definition
    */
   async createSubgraph<TState extends WorkflowState = WorkflowState>(
@@ -320,7 +317,7 @@ export class SubgraphManagerService {
           graph.addConditionalEdges(
             edge.from as any,
             edge.condition,
-            edge.targets || [edge.to, END] as any
+            edge.targets || ([edge.to, END] as any)
           );
         } else {
           graph.addEdge(edge.from as any, edge.to as any);
@@ -332,7 +329,9 @@ export class SubgraphManagerService {
     if (definition.entryPoint) {
       graph.setEntryPoint(definition.entryPoint as any);
     } else if (definition.nodes && definition.nodes.length > 0) {
-      graph.setEntryPoint(definition.nodes[0].id || definition.nodes[0].name as any);
+      graph.setEntryPoint(
+        definition.nodes[0].id || (definition.nodes[0].name as any)
+      );
     }
 
     // Compile and return the subgraph
@@ -493,7 +492,7 @@ export class SubgraphManagerService {
 
       // Add prefix to events if configured
       if (options.streaming?.prefix) {
-        (outputChunk).__streamPrefix = options.streaming.prefix;
+        outputChunk.__streamPrefix = options.streaming.prefix;
       }
 
       yield outputChunk;
@@ -553,10 +552,9 @@ export class SubgraphManagerService {
   }
 
   /**
-   * Private: Hash options for cache key
+   * Private: Hash options for cache key using cryptographic hash
    */
   private hashOptions(options: SubgraphOptions): string {
-    // Simple hash implementation - in production, use a proper hash function
     const str = JSON.stringify(options, (key, value) => {
       if (typeof value === 'function') {
         return value.toString();
@@ -564,26 +562,20 @@ export class SubgraphManagerService {
       return value;
     });
 
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-
-    return Math.abs(hash).toString(36);
+    return createHash('sha256').update(str).digest('hex').substring(0, 16); // Use first 16 chars for cache key
   }
 
   /**
    * Private: Get checkpointer
+   * @deprecated Use injected ICheckpointAdapter instead
    */
-  private async getCheckpointer(config: any): Promise<BaseCheckpointSaver> {
-    // Use SQLite in-memory checkpointer for better performance
-    if (config.type === 'sqlite' && config.path) {
-      return SqliteSaver.fromConnString(config.path);
-    }
-
-    // Default to in-memory SQLite
-    return SqliteSaver.fromConnString(':memory:');
+  private async getCheckpointer(
+    config: any
+  ): Promise<ICheckpointAdapter | null> {
+    // Return the injected adapter instead of creating a new one
+    this.logger.warn(
+      'getCheckpointer is deprecated. Use injected ICheckpointAdapter instead.'
+    );
+    return this.checkpointAdapter || null;
   }
 }

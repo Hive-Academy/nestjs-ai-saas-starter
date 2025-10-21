@@ -196,7 +196,7 @@ export class CompilationCacheService implements OnModuleDestroy {
    * Clear all cached items
    */
   clear(): void {
-    const {size} = this.cache;
+    const { size } = this.cache;
     this.cache.clear();
     this.logger.debug(`Cleared ${size} cache entries`);
   }

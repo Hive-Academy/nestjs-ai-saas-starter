@@ -1,0 +1,750 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+### Core Purpose
+
+This NestJS AI SaaS Starter is a sophisticated monorepo designed for building enterprise-grade AI-powered applications. It provides:
+
+- **Vector Database Integration**: Semantic search and embeddings via ChromaDB
+- **Graph Database Integration**: Complex relationship modeling with Neo4j
+- **AI Agent Workflows**: Advanced workflow orchestration using LangGraph
+- **Modular Architecture**: Specialized modules for memory, checkpointing, multi-agent coordination, and more
+
+### Target Applications
+
+- AI-powered SaaS platforms
+- Document processing and analysis systems
+- Knowledge management platforms
+- Multi-agent AI systems
+- Graph-based recommendation engines
+- RAG (Retrieval-Augmented Generation) applications
+
+## ⚠️ CRITICAL RULES
+
+### 🔴 TOP PRIORITY RULES (VIOLATIONS = IMMEDIATE FAILURE)
+
+1. **IMPLEMENT REAL BUSINESS LOGIC**: Always implement actual, production-ready business logic that uses the full stack (ChromaDB + Neo4j + LangGraph). NO stubs, simulations, or placeholder implementations
+2. **WIRE EVERYTHING TOGETHER**: Connect all the infrastructure components with real data flows, actual embeddings, real graph relationships, and functional AI workflows
+3. **NEVER CREATE TYPES**: Search codebase for shared types and core interfaces FIRST, document search in progress.md, extend don't duplicate
+4. **NO BACKWARD COMPATIBILITY**: Never work on or target backward compatibility unless verbally asked for by the user
+5. **NO RE-EXPORTS**: Never re-export a type or service from a library inside another library
+6. **NO CODE DUPLICATION**: Never create parallel implementations (v1, v2, legacy, enhanced versions)
+7. **NO COMPATIBILITY LAYERS**: Never build bridges, adapters, or version compatibility systems
+
+### 🔴 EXPANDED ANTI-BACKWARD COMPATIBILITY MANDATE
+
+**ZERO TOLERANCE FOR BACKWARD COMPATIBILITY CODE:**
+
+- ❌ **NEVER** create multiple versions of the same functionality (ServiceV1, ServiceV2, ServiceLegacy)
+- ❌ **NEVER** implement backward compatibility for APIs, services, databases, or UI components
+- ❌ **NEVER** maintain legacy implementations alongside new ones
+- ❌ **NEVER** create compatibility adapters, version bridges, or migration layers
+- ❌ **NEVER** use feature flags or conditional logic to support multiple versions
+- ❌ **NEVER** plan migration strategies that preserve old implementations for compatibility
+- ✅ **ALWAYS** directly replace existing functionality with modernized implementations
+- ✅ **ALWAYS** modernize existing code in-place rather than creating parallel versions
+
+**IMPLEMENTATION ENFORCEMENT:**
+
+- Replace existing APIs, services, and components directly, don't version them
+- Modify existing code instead of creating "enhanced" or "improved" versions
+- Update database schemas and configurations directly rather than maintaining multiple versions
+- Refactor existing business logic instead of creating compatibility layers
+
+**AUTOMATIC REJECTION TRIGGERS:**
+
+- File names with version suffixes (service.v1.ts, component.legacy.tsx, api.enhanced.js)
+- API endpoints with version paths (/api/v1/, /api/v2/, /api/legacy/)
+- Class/interface names with version indicators (UserServiceV1, UserServiceLegacy)
+- Database migrations that maintain old + new schemas simultaneously
+- Feature flags enabling multiple implementation versions
+- Conditional logic supporting both old and new approaches
+
+**CODE QUALITY ENFORCEMENT:**
+
+```typescript
+// ✅ CORRECT: Direct replacement
+export class UserService {
+  // Updated implementation replaces existing
+}
+
+// ❌ FORBIDDEN: Versioned implementations
+export class UserServiceV1 { /* old */ }
+export class UserServiceV2 { /* new */ }
+export class UserServiceLegacy { /* compatibility */ }
+export class UserServiceEnhanced { /* parallel */ }
+
+// ✅ CORRECT: Direct API replacement
+@Get('users')
+getUsers() { /* updated implementation */ }
+
+// ❌ FORBIDDEN: Versioned APIs
+@Get('v1/users')
+getUsersV1() { /* old */ }
+
+@Get('v2/users')
+getUsersV2() { /* new */ }
+```
+
+### ENFORCEMENT RULES
+
+1. **Type Safety**: NO 'any' types - will fail code review
+2. **Import Aliases**: Always use @hive-academy/\* paths
+3. **Real Implementations**: NO stubs, mocks, or simulations in production code - implement actual functionality
+4. **Full Stack Integration**: Every feature must use the complete stack (vector + graph + AI workflows)
+5. **Quality Gates**: Must pass 10/10 (see full checklist)
+6. **Branch Strategy**: Sequential by default (see Git Branch Operations)
+7. **Error Context**: Always include relevant debugging info
+8. **Testing**: 80% coverage minimum with real integrations
+9. **Type Discovery**: Per Type Search Protocol
+10. **Anti-Backward Compatibility**: Automatic rejection of versioned code, compatibility layers, and parallel implementations
+11. **Direct Replacement**: All modernization and improvements must replace existing code, not supplement it
+
+## Technical Architecture
+
+### Monorepo Structure (Nx-based)
+
+This is an Nx monorepo organized into two main library categories:
+
+#### Core Database Libraries (2)
+
+1. **@hive-academy/nestjs-chromadb** - Vector database for semantic search
+2. **@hive-academy/nestjs-neo4j** - Graph database for relationships
+
+#### LangGraph Specialized Modules (11)
+
+Located under `@libs/langgraph-modules/`:
+
+1. **core** - Workflow interfaces, state management, checkpoint/memory integration adapters
+2. **memory** - Contextual memory management for AI agents
+3. **checkpoint** - State persistence and recovery
+4. **functional-api** - Functional programming patterns
+5. **multi-agent** - Multi-agent coordination
+6. **platform** - LangGraph Platform integration
+7. **time-travel** - Workflow debugging and history
+8. **monitoring** - Production observability
+9. **hitl** - Human-in-the-loop patterns and implementations
+10. **streaming** - Real-time processing and streaming capabilities
+11. **workflow-engine** - Central workflow orchestration functionality
+
+### Library-Specific Documentation
+
+Each library has its own comprehensive CLAUDE.md file with detailed guidance:
+
+- **ChromaDB**: [libs/nestjs-chromadb/CLAUDE.md](./libs/nestjs-chromadb/CLAUDE.md)
+  - Vector database patterns, embedding strategies, semantic search
+- **Neo4j**: [libs/nestjs-neo4j/CLAUDE.md](./libs/nestjs-neo4j/CLAUDE.md)
+  - Graph modeling, transaction patterns, Cypher optimization
+- **LangGraph Core**: [libs/langgraph-modules/core/CLAUDE.md](./libs/langgraph-modules/core/CLAUDE.md)
+  - Workflow interfaces (WorkflowDefinition, WorkflowNode, WorkflowEdge)
+  - State management (WorkflowState, StateAnnotation, StateManager)
+  - Integration adapters for checkpoint, memory, streaming modules
+- **Memory Module**: [libs/langgraph-modules/memory/CLAUDE.md](./libs/langgraph-modules/memory/CLAUDE.md)
+  - Context management, summarization, retention policies
+- **Checkpoint Module**: [libs/langgraph-modules/checkpoint/CLAUDE.md](./libs/langgraph-modules/checkpoint/CLAUDE.md)
+  - State persistence, recovery, multi-backend storage
+- **Functional API**: [libs/langgraph-modules/functional-api/CLAUDE.md](./libs/langgraph-modules/functional-api/CLAUDE.md)
+  - Pure functions, immutability, pipeline composition
+- **Multi-Agent**: [libs/langgraph-modules/multi-agent/CLAUDE.md](./libs/langgraph-modules/multi-agent/CLAUDE.md)
+  - Agent coordination, network topology, communication
+- **Platform**: [libs/langgraph-modules/platform/CLAUDE.md](./libs/langgraph-modules/platform/CLAUDE.md)
+  - LangGraph Platform integration, hosted assistants
+- **Time Travel**: [libs/langgraph-modules/time-travel/CLAUDE.md](./libs/langgraph-modules/time-travel/CLAUDE.md)
+  - Workflow debugging, state history, replay mechanisms
+- **Monitoring**: [libs/langgraph-modules/monitoring/CLAUDE.md](./libs/langgraph-modules/monitoring/CLAUDE.md)
+  - Observability, metrics, production monitoring
+- **HITL Module**: [libs/langgraph-modules/hitl/CLAUDE.md](./libs/langgraph-modules/hitl/CLAUDE.md)
+  - Human approval services, approval chain management, confidence evaluation
+  - User interruption handling, approval timeouts, notification systems
+  - Exports: HumanApprovalService, ApprovalChainService, ConfidenceEvaluatorService
+- **Streaming Module**: [libs/langgraph-modules/streaming/CLAUDE.md](./libs/langgraph-modules/streaming/CLAUDE.md)
+  - Token streaming, WebSocket gateway, event stream processing
+  - Streaming decorators (@StreamToken, @StreamEvent, @StreamProgress)
+  - Exports: TokenStreamingService, WebSocketBridgeService, StreamingWebSocketService
+- **Workflow Engine**: [libs/langgraph-modules/workflow-engine/CLAUDE.md](./libs/langgraph-modules/workflow-engine/CLAUDE.md)
+  - Workflow graph building, compilation caching, execution orchestration
+  - Agent registration, decorator translation, multi-agent coordination
+  - Exports: WorkflowExecutionService, CentralRegistryService, UnifiedWorkflowBase
+
+## ✅ VERIFIED MODULE API REALITY (TASK_2025_016)
+
+**Evidence-Based Documentation**: The following API surface has been verified through direct source code inspection of all 11 modules.
+
+### Core LangGraph Infrastructure (4 modules)
+
+**@hive-academy/langgraph-core**:
+
+- **Primary Exports**: WorkflowDefinition, WorkflowNode, WorkflowEdge, WorkflowState, WorkflowStateAnnotation
+- **Integration Types**: ICheckpointAdapter, IMemoryAdapter, IStreamingService (NoOp implementations included)
+- **Utility Functions**: isWorkflow, createCustomStateAnnotation, workflow metadata utils
+
+**@hive-academy/langgraph-workflow-engine**:
+
+- **Core Services**: WorkflowExecutionService, WorkflowGraphBuilderService, MetadataProcessorService
+- **Base Classes**: UnifiedWorkflowBase, DeclarativeWorkflowBase, StreamingWorkflowBase, AgentNodeBase
+- **Registry**: CentralRegistryService (single source of truth for agents/tools/workflows)
+
+### Specialized Workflow Modules (7 modules)
+
+**@hive-academy/langgraph-hitl** (Human-in-the-Loop):
+
+- **Services**: HumanApprovalService, ApprovalChainService, ConfidenceEvaluatorService, UserInterruptionService
+- **Node Types**: HumanApprovalNode
+- **Decorators**: @RequiresApproval, approval routing decorators
+
+**@hive-academy/langgraph-streaming**:
+
+- **Services**: TokenStreamingService, WebSocketBridgeService, EventStreamProcessorService
+- **Decorators**: @StreamToken, @StreamEvent, @StreamProgress
+- **WebSocket Types**: WebSocketGatewayConfig, WebSocketMessage, streaming event types
+
+**@hive-academy/langgraph-memory**:
+
+- **Services**: MemoryService, ContextManager, memory retention and summarization services
+- **Storage**: Multiple backend support, conversation context management
+
+**@hive-academy/langgraph-checkpoint**:
+
+- **Services**: CheckpointService, state persistence, recovery mechanisms
+- **Storage**: Multi-backend checkpoint storage (Redis, PostgreSQL, etc.)
+
+**@hive-academy/langgraph-multi-agent**:
+
+- **Services**: Multi-agent coordination, network topology, agent communication
+- **Patterns**: Agent orchestration, distributed workflow execution
+
+**@hive-academy/langgraph-monitoring**:
+
+- **Services**: Metrics collection, observability, production monitoring
+- **Integration**: Performance tracking, error monitoring, analytics
+
+**@hive-academy/langgraph-platform**:
+
+- **Services**: LangGraph Platform integration, hosted assistants
+- **API**: Platform connectivity, cloud deployment patterns
+
+### Supporting Modules (3 modules)
+
+**@hive-academy/langgraph-functional-api**:
+
+- **Patterns**: Functional programming approaches, pure functions, immutability
+- **Utilities**: Pipeline composition, functional workflow patterns
+
+**@hive-academy/langgraph-time-travel**:
+
+- **Services**: Workflow debugging, state history, replay mechanisms
+- **Debug Tools**: State inspection, execution replay, debugging utilities
+
+### Integration Patterns (Verified)
+
+**Working Integration Example** (verified through actual exports):
+
+```typescript
+// Actual working imports based on source code analysis
+import { WorkflowDefinition, WorkflowState } from '@hive-academy/langgraph-core';
+import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
+import { MemoryService } from '@hive-academy/langgraph-memory';
+import { CheckpointService } from '@hive-academy/langgraph-checkpoint';
+import { TokenStreamingService } from '@hive-academy/langgraph-streaming';
+import { HumanApprovalService } from '@hive-academy/langgraph-hitl';
+
+// All imports verified to exist in actual source code
+```
+
+**Build Status** (verified):
+
+- ✅ **ChromaDB**: Builds successfully
+- ✅ **LangGraph Core**: Builds successfully
+- ⚠️ **Neo4j**: Build issues in service implementations (interfaces restored)
+- ✅ **All LangGraph Modules**: Individual module builds work
+
+## Common Development Commands
+
+### Essential Build & Test Commands
+
+```bash
+# Build all libraries
+npm run build:libs
+
+# Build specific library
+npx nx build @hive-academy/nestjs-chromadb
+# Note: Neo4j library has build configuration issues (see TASK_2025_016)
+# npx nx build @hive-academy/nestjs-neo4j  # Currently failing - under repair
+
+# Build LangGraph modules (select modules to build)
+npx nx build @hive-academy/langgraph-core
+npx nx build @hive-academy/langgraph-memory
+npx nx build @hive-academy/langgraph-checkpoint
+npx nx build @hive-academy/langgraph-workflow-engine
+npx nx build @hive-academy/langgraph-hitl
+npx nx build @hive-academy/langgraph-streaming
+
+# Run tests
+npx nx test <project-name>              # Test specific project
+npx nx run-many -t test                 # Test all projects
+npx nx affected:test                    # Test affected projects only
+npx nx test <project> --coverage        # Test with coverage
+npx nx test <project> --watch           # Test in watch mode
+
+# Run specific test file
+npx nx test <project> --testPathPattern=<filename>
+
+# Linting and formatting
+npm run lint:fix                        # Fix linting issues across all projects
+npm run format                          # Format all files with Prettier
+npm run format:check                    # Check formatting without changes
+npx nx run-many -t lint                 # Lint all projects
+```
+
+### Development Workflow
+
+```bash
+# Start development services (Neo4j, ChromaDB, Redis)
+npm run dev:services
+
+# Start the demo application
+npx nx serve nestjs-ai-saas-starter-demo
+
+# View service logs
+npm run dev:logs
+
+# Stop all services
+npm run dev:stop
+
+# Reset all data (clean slate)
+npm run dev:reset
+```
+
+### Publishing Libraries
+
+```bash
+# Test publish process (dry run)
+npm run publish:dry-run
+
+# Build and publish all libraries
+npm run publish:libs
+
+# Version libraries
+npm run version:libs
+
+# Generate documentation
+npm run docs:generate
+```
+
+## Cross-Library Integration Patterns
+
+### 1. Vector + Graph Database Integration
+
+```typescript
+// Store embeddings in ChromaDB, relationships in Neo4j
+@Injectable()
+export class HybridSearchService {
+  async searchWithContext(query: string) {
+    // Semantic search via ChromaDB
+    const vectorResults = await this.chromaDB.queryDocuments('knowledge', {
+      queryTexts: [query],
+      nResults: 10,
+    });
+
+    // Graph traversal via Neo4j for relationships
+    const graphResults = await this.neo4j.run(
+      `
+      MATCH (d:Document)-[r:RELATED_TO]->(related:Document)
+      WHERE d.embeddingId IN $ids
+      RETURN related
+    `,
+      { ids: vectorResults.ids }
+    );
+
+    return { vectorResults, graphResults };
+  }
+}
+```
+
+### 2. LangGraph Workflow with All Modules
+
+```typescript
+@Workflow({
+  name: 'comprehensive-ai-workflow',
+  modules: ['memory', 'checkpoint', 'multi-agent', 'monitoring'],
+})
+export class ComprehensiveWorkflow extends DeclarativeWorkflowBase {
+  // Leverages memory for context, checkpointing for persistence,
+  // multi-agent for coordination, and monitoring for observability
+}
+```
+
+### 3. RAG Pipeline with Full Stack
+
+```typescript
+@Injectable()
+export class RAGPipelineService {
+  async generateAnswer(query: string, userId: string) {
+    // 1. Retrieve from memory module
+    const memories = await this.memoryService.retrieveContext(userId);
+
+    // 2. Vector search via ChromaDB
+    const vectorContext = await this.chromaDB.queryDocuments('knowledge', {
+      queryTexts: [query],
+      nResults: 5,
+    });
+
+    // 3. Graph search via Neo4j
+    const graphContext = await this.neo4j.getRelatedEntities(query);
+
+    // 4. LangGraph workflow for generation
+    const workflow = new RAGWorkflow();
+    const result = await workflow.execute({
+      query,
+      memories,
+      vectorContext,
+      graphContext,
+    });
+
+    // 5. Store in memory for future context
+    await this.memoryService.storeEntry({
+      content: result.answer,
+      metadata: { userId, query },
+    });
+
+    return result;
+  }
+}
+```
+
+## Architecture Principles
+
+### SOLID Principles
+
+- **Single Responsibility**: Each service has one clear purpose
+- **Open/Closed**: Extensible via factory patterns and interfaces
+- **Liskov Substitution**: All implementations honor contracts
+- **Interface Segregation**: Focused interfaces for specific use cases
+- **Dependency Inversion**: Depend on abstractions via NestJS DI
+
+### Design Patterns
+
+- **Module Pattern**: Consistent `forRoot()` / `forRootAsync()` configuration
+- **Service Facade**: Simplified interfaces for complex operations
+- **Strategy Pattern**: Multiple providers (embedding, storage, etc.)
+- **Factory Pattern**: Dynamic service creation
+- **Decorator Pattern**: Cross-cutting concerns (@Transactional, @Tool, etc.)
+
+## Environment Configuration
+
+### Required Services
+
+- **Neo4j**: Graph database on ports 7687 (Bolt) and 7474 (Browser)
+- **ChromaDB**: Vector database on port 8000
+- **Redis**: Cache/session store on port 6379
+
+### Critical Environment Variables
+
+```bash
+# AI Services
+OPENAI_API_KEY=your_openai_key_here
+
+# Database Connections
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=your_neo4j_password
+CHROMADB_URL=http://localhost:8000
+REDIS_URL=redis://localhost:6379
+
+# LangGraph Platform (optional)
+LANGGRAPH_API_KEY=your_langgraph_key
+LANGGRAPH_ENDPOINT=your_endpoint
+```
+
+## Development Guidelines
+
+### Code Organization
+
+- Use TypeScript strict mode throughout
+- Follow NestJS naming conventions
+- Implement proper error boundaries
+- Add comprehensive logging for debugging
+- Write unit tests for new features
+- Document breaking changes in CHANGELOG
+
+### ⚠️ Anti-Backward Compatibility Development Principles
+
+**MANDATORY DEVELOPMENT APPROACH:**
+
+- ✅ **DIRECT REPLACEMENT**: Always modify existing code instead of creating new versions
+- ✅ **SINGLE IMPLEMENTATION**: One authoritative implementation per feature/component
+- ✅ **IN-PLACE MODERNIZATION**: Update existing files rather than creating parallel versions
+- ❌ **NO VERSIONED FILES**: Never create files with version suffixes (service.v1.ts, component.legacy.tsx)
+- ❌ **NO COMPATIBILITY LAYERS**: Never build adapters, bridges, or version compatibility systems
+- ❌ **NO FEATURE FLAGS FOR VERSIONS**: Never use conditional logic to support multiple implementations
+
+**DEVELOPMENT WORKFLOW ENFORCEMENT:**
+
+```bash
+# ✅ CORRECT: Direct file modification
+git add src/services/user.service.ts  # Updated existing file
+
+# ❌ FORBIDDEN: Versioned file creation
+git add src/services/user.service.v1.ts  # Old version
+git add src/services/user.service.v2.ts  # New version
+git add src/services/user.service.enhanced.ts  # Enhanced version
+```
+
+**CODE REVIEW CHECKPOINTS:**
+
+- ✓ No files with version indicators in names
+- ✓ No classes/interfaces with version suffixes
+- ✓ No conditional logic supporting multiple implementations
+- ✓ No compatibility adapters or bridge patterns
+- ✓ All improvements made to existing implementations directly
+
+### Testing Strategy
+
+- **Unit Tests**: Mock external dependencies, test individual services
+- **Integration Tests**: Test with real services running in Docker
+- **E2E Tests**: Full application workflow testing
+- **Performance Tests**: Measure and optimize critical paths
+
+### Git Workflow
+
+- Conventional commits enforced via Husky hooks
+- Format: `type(scope): description`
+- Scopes: `chromadb`, `neo4j`, `langgraph`, `memory`, `checkpoint`, etc.
+- Pre-commit: Linting and formatting
+- Pre-push: Tests and build validation
+
+## Key Value Propositions
+
+- **Rapid Development**: Pre-built integrations eliminate boilerplate
+- **Type Safety**: Full TypeScript support with comprehensive type definitions
+- **Scalable Architecture**: Nx monorepo with modular library design
+- **Production Ready**: Docker deployment, health monitoring, enterprise patterns
+- **AI-First Design**: Built specifically for AI-powered applications
+- **Flexible Integration**: Mix and match libraries based on your needs
+
+## Getting Help
+
+For detailed implementation guidance, always refer to the specific library CLAUDE.md files listed above. Each contains comprehensive documentation tailored to that library's domain and patterns.
+
+## Important Instructions
+
+**Implement complete, production-ready solutions that utilize the full AI stack.**
+
+- **CREATE whatever files are needed to implement real functionality**
+- **BUILD complete integrations between ChromaDB, Neo4j, and LangGraph**
+- **IMPLEMENT actual business logic, not stubs or simulations**
+- **WIRE all components together with real data flows**
+- **REPLACE existing implementations directly, never create parallel versions**
+- **MODERNIZE in-place rather than building compatibility layers**
+- **Only use emojis if the user explicitly requests it**
+
+### 🔴 FUNDAMENTAL ANTI-BACKWARD COMPATIBILITY PRINCIPLE
+
+**NEVER create duplicated functionality with small additions in completely new files. This is strictly forbidden at all costs.**
+
+**ENFORCEMENT:**
+
+- ❌ **FORBIDDEN**: Creating ServiceV1, ServiceV2, ServiceEnhanced, ServiceLegacy
+- ❌ **FORBIDDEN**: Maintaining old + new implementations simultaneously
+- ❌ **FORBIDDEN**: Building compatibility layers or version bridges
+- ❌ **FORBIDDEN**: Using feature flags to support multiple versions
+- ✅ **REQUIRED**: Direct replacement of existing functionality
+- ✅ **REQUIRED**: In-place modernization of existing code
+- ✅ **REQUIRED**: Single authoritative implementation per feature
+
+**This principle applies to ALL development activities: planning, coding, testing, and deployment.**
+
+For library-specific work, always consult the relevant CLAUDE.md file first to understand the domain-specific patterns and best practices.
+
+### 🔴 FUNDAMENTAL OPERATING PRINCIPLE
+
+**IMPLEMENT REAL SOLUTIONS DIRECTLY when you have all the infrastructure and context needed. Use agents only when you need specialized expertise or complex planning. Prioritize getting functional code running over process overhead.**
+
+### ✨ NEW: ORCHESTRATOR COMMAND
+
+**All agent workflows are now managed through the `/orchestrate` slash command with sequential task IDs:**
+
+```bash
+# Start new task (generates TASK_2025_XXX automatically)
+/orchestrate implement user authentication system
+
+# Continue existing task (uses new sequential IDs)
+/orchestrate TASK_2025_001
+
+# Continue last incomplete task
+/orchestrate continue
+```
+
+**Benefits:**
+
+- **Sequential Task IDs**: Predictable TASK_YYYY_NNN format (TASK_2025_001, TASK_2025_002, etc.)
+- **Registry-First**: Single source of truth for all task information
+- **Automatic Discovery**: Agents auto-load task management functions
+- **Real Implementation**: Zero tolerance for stubs or placeholders
+- **Live Progress**: Registry updates throughout agent workflow
+
+### 🔴 TYPE CREATION PRINCIPLE
+
+**NEVER create new TypeScript types without FIRST searching codebase for shared types and core interfaces and documenting the search. Extend existing types rather than duplicating.**
+
+---
+
+## 🚨 CRITICAL WORKFLOW PROTOCOL
+
+### ⚡ RULE #1: IMPLEMENT REAL FUNCTIONALITY
+
+**MANDATORY**: For EVERY user request, implement actual, working business logic that uses the full stack. NO stubs, simulations, or placeholders. Create real integrations between ChromaDB, Neo4j, and LangGraph with actual data flows.
+
+### MANDATORY: Before ANY User Request
+
+1. **Check Task Registry** (ALWAYS FIRST)
+
+   ```bash
+   # TASK REGISTRY CHECK PROTOCOL - Uses new sequential IDs
+   registry=$(cat task-tracking/registry.md 2>/dev/null || echo "No registry found")
+   branch=$(git branch --show-current)
+   status=$(git status --short)
+
+   # TASK ANALYSIS - Look for new format
+   active_tasks=$(grep "🔄 Active" task-tracking/registry.md 2>/dev/null | wc -l)
+   pending_tasks=$(grep "⏳ Pending" task-tracking/registry.md 2>/dev/null | wc -l)
+   complete_tasks=$(grep "✅ Complete" task-tracking/registry.md 2>/dev/null | wc -l)
+   ```
+
+2. **Present Context & Options**
+
+   ```markdown
+   📊 Current Context:
+
+   - Branch: [current_branch]
+   - Active Tasks: [active_tasks]
+   - Pending Tasks: [pending_tasks]
+   - Complete Tasks: [complete_tasks]
+   - Uncommitted: [X files]
+
+   Options:
+
+   1. Continue task → /orchestrate TASK_2025_XXX
+   2. Start new task → /orchestrate [description] (auto-generates TASK_2025_XXX)
+   3. Quick fix (no tracking) → Requires explicit confirmation
+
+   **Registry-First**: All tasks use sequential IDs and track progress automatically.
+   ```
+
+3. **Route Decision**
+   - Any Agent Task → Use `/orchestrate` command (generates/continues TASK_2025_XXX)
+   - New Task → `/orchestrate [task description]` (auto-generates next sequential ID)
+   - Continue Task → `/orchestrate TASK_2025_XXX` (uses exact sequential ID)
+   - Quick Fix → **ONLY IF** user explicitly confirms no agent needed
+
+---
+
+## 🤖 AGENT ORCHESTRATION
+
+### 📌 AGENT SELECTION MATRIX (USE FOR EVERY REQUEST)
+
+| User Request Type         | Required Agent                                    | Example Triggers                    |
+| ------------------------- | ------------------------------------------------- | ----------------------------------- |
+| "Implement X"             | project-manager → architect → developer           | Any new feature/component           |
+| "Fix bug in X"            | project-manager → developer → tester              | Bug reports, issues                 |
+| "Research how to X"       | researcher-expert → architect                     | Technical questions, best practices |
+| "Review my code"          | code-reviewer                                     | Code quality checks                 |
+| "Test X functionality"    | senior-tester                                     | Testing requests                    |
+| "Plan architecture for X" | software-architect                                | Design questions                    |
+| "Continue working on X"   | Check progress.md → last agent                    | Task continuation                   |
+| "Quick syntax question"   | ASK USER: "Should I use researcher-expert agent?" | Simple queries                      |
+
+**⚠️ DEFAULT RULE**: When uncertain, ALWAYS start with project-manager
+
+### Core Principles
+
+1. **Sequential Execution**: One agent at a time
+2. **Central Control**: Claude Code orchestrates all interactions
+3. **No Direct Communication**: Agents return to main thread
+4. **Structured Returns**: Agents use delegation protocol
+
+### 🎯 ORCHESTRATOR COMMAND WORKFLOW
+
+All agent workflows are now managed through the `/orchestrate` command which ensures:
+
+- Sequential execution (no memory leaks)
+- Quality gate validation at each step
+- Automatic agent transitions
+- Progress tracking
+- Standards enforcement
+
+#### Using the Orchestrator
+
+```bash
+# Start a new task
+/orchestrate implement WebSocket integration
+
+# Continue an existing task
+/orchestrate TASK_CMD_009
+
+# Continue last incomplete task
+/orchestrate continue
+```
+
+---
+
+## 📁 TASK MANAGEMENT
+
+### Task ID Format
+
+`TASK_[DOMAIN]_[NUMBER]`
+
+- **Domains**: CMD (command center), INT (integration), WF (workflow), BUG (fixes), DOC (documentation)
+- **Number**: Sequential (001, 002, 003)
+
+### Standard Folder Structure
+
+```
+task-tracking/
+  TASK_[ID]/
+    ├── task-description.md    # Requirements, metrics, risks
+    ├── implementation-plan.md  # Technical design, subtasks
+    ├── progress.md            # ⏰ PROGRESS RULE: Update every 30 minutes
+    ├── code-review.md         # Quality validation
+    └── completion-report.md   # Final metrics
+```
+
+### Git Branch Strategy
+
+#### Sequential Branching (DEFAULT)
+
+```bash
+main
+  └── feature/TASK_001-initial
+      └── feature/TASK_002-enhancement  # Builds on 001
+          └── feature/TASK_003-refinement  # Builds on 002
+```
+
+#### GIT BRANCH OPERATIONS REFERENCE
+
+```bash
+# New Task (from current branch)
+git add . && git commit -m "chore: checkpoint"
+git push origin $(git branch --show-current)
+git checkout -b feature/TASK_[ID]-[description]
+git push -u origin feature/TASK_[ID]-[description]
+
+# Continue Task
+git add . && git commit -m "chore: checkpoint"
+git checkout feature/TASK_[ID]-[description]
+git pull origin feature/TASK_[ID]-[description] --rebase
+
+# Complete Task
+git add . && git commit -m "feat(TASK_[ID]): [description]"
+git push origin feature/TASK_[ID]-[description]
+gh pr create --title "feat(TASK_[ID]): [description]"
+
+# Subtask Checkpoint (per ⏰ Progress Rule)
+git add [files] && git commit -m "feat(TASK_[ID]): complete [subtask]"
+git push origin feature/TASK_[ID]-[description]
+```
+
+---

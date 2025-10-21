@@ -1,315 +1,112 @@
-import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
+import { Module, DynamicModule, Provider } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-// NOTE: Removed ChromaDBModule and Neo4jModule imports - adapters handle their own DB dependencies
-
-import { MemoryService } from './services/memory.service';
-import { MemoryStorageService } from './services/memory-storage.service';
-import { MemoryGraphService } from './services/memory-graph.service';
-
-// Import interfaces only - adapters moved to application layer
-import { IVectorService } from './interfaces/vector-service.interface';
-import { IGraphService } from './interfaces/graph-service.interface';
 
 import type {
   MemoryModuleOptions,
   MemoryModuleAsyncOptions,
-  MemoryOptionsFactory,
 } from './interfaces/memory-module-options.interface';
 
 import {
-  MEMORY_CONFIG,
-  DEFAULT_MEMORY_CONFIG,
-} from './constants/memory.constants';
+  MemoryConfigFactory,
+  MemoryAdapterFactory,
+  MemoryProviderFactory,
+  MemoryAsyncProviderFactory,
+} from './factories';
 
 /**
  * Enhanced NestJS Memory Module with Adapter Pattern Support
  *
+ * REFACTORED: Extracted responsibilities into focused factories
+ * - MemoryConfigFactory: Configuration merging
+ * - MemoryAdapterFactory: Adapter validation and provider creation
+ * - MemoryProviderFactory: Service provider creation
+ * - MemoryAsyncProviderFactory: Async configuration provider creation
+ *
+ * Benefits:
+ * - Single Responsibility Principle (SRP)
+ * - DRY: No duplication between forRoot and forRootAsync
+ * - Testable: Each factory can be unit tested independently
+ * - Maintainable: Easy to extend and modify
+ *
  * Provides:
- * - Adapter-based vector database integration (default: ChromaDB)
- * - Adapter-based graph database integration (default: Neo4j)
+ * - Adapter-based vector database integration (required)
+ * - Adapter-based graph database integration (optional)
  * - Memory orchestration services
- * - 100% backward compatibility with existing configurations
- * - Extensibility through custom adapter injection
+ * - Store services for cross-thread memory
+ * - Agent memory services
+ * - Global IMemoryAdapter for consuming modules
  */
 @Module({})
 export class MemoryModule {
   /**
    * Configure module with synchronous options
-   * Supports both legacy configuration (backward compatible) and new adapter injection
+   *
+   * REFACTORED: Now uses factories for clean separation of concerns
    */
   static forRoot(options: MemoryModuleOptions = {}): DynamicModule {
-    const config = { ...DEFAULT_MEMORY_CONFIG, ...options };
+    // 1. Merge options with defaults
+    const mergedOptions = MemoryConfigFactory.mergeWithDefaults(options);
 
-    // Validate adapter configuration if provided
-    this.validateAdapters(options);
+    // 2. Validate adapters
+    MemoryAdapterFactory.validateAdapters(options);
 
-    // NOTE: Removed conditional database imports - adapters are now self-contained
-    // Each adapter handles its own database connection and dependencies
+    // 3. Build providers
+    const providers: Provider[] = [
+      // Configuration
+      MemoryProviderFactory.createConfigProvider(mergedOptions),
 
-    // Create adapter providers
-    const adapterProviders = this.createAdapterProviders(options);
+      // Adapters (IVectorService, IGraphService)
+      ...MemoryAdapterFactory.createAdapterProviders(options),
+
+      // Core services (Store, Memory, Agent services)
+      ...MemoryProviderFactory.createCoreProviders(),
+    ];
+
+    // 4. Add IMemoryAdapter provider if vector adapter available
+    const hasVectorAdapter = !!options.adapters?.vector;
+    if (hasVectorAdapter) {
+      providers.push(MemoryProviderFactory.createMemoryAdapterProvider());
+    }
+
+    // 5. Build exports
+    const exports = MemoryProviderFactory.getExports(hasVectorAdapter);
 
     return {
       module: MemoryModule,
-      imports: [
-        ConfigModule,
-        // NOTE: No database module imports - pure adapter pattern
-      ],
-      providers: [
-        // Configuration provider
-        {
-          provide: MEMORY_CONFIG,
-          useValue: config,
-        },
-        // Adapter providers (conditional)
-        ...adapterProviders,
-        // Core services (updated to use adapters)
-        MemoryStorageService,
-        MemoryGraphService,
-        MemoryService,
-      ],
-      exports: [
-        MemoryService,
-        MemoryStorageService,
-        MemoryGraphService,
-        MEMORY_CONFIG,
-        // Export adapter interfaces for external use
-        IVectorService,
-        IGraphService,
-      ],
-      global: false,
+      imports: [ConfigModule],
+      providers,
+      exports,
+      global: true, // ← CRITICAL: Make memory global like checkpoint
     };
   }
 
   /**
    * Configure module with asynchronous options
-   * NOTE: Updated to follow adapter pattern - no direct database imports
+   *
+   * REFACTORED: Now uses factories for clean separation of concerns
    */
   static forRootAsync(options: MemoryModuleAsyncOptions): DynamicModule {
-    // Apply same adapter pattern as forRoot
-    const adapterProviders = this.createAdapterProvidersAsync(options);
+    // 1. Build providers
+    const providers: Provider[] = [
+      // Async configuration
+      ...MemoryAsyncProviderFactory.createAsyncProviders(options),
+
+      // Core services (Store, Memory, Agent services)
+      ...MemoryProviderFactory.createCoreProviders(),
+
+      // IMemoryAdapter (always provided in async mode)
+      MemoryProviderFactory.createMemoryAdapterProvider(),
+    ];
+
+    // 2. Build exports (always include IMemoryAdapter in async mode)
+    const exports = MemoryProviderFactory.getExports(true);
 
     return {
       module: MemoryModule,
-      imports: [
-        ConfigModule,
-        // NOTE: No database module imports - adapters handle their own connections
-        ...(options.imports || []),
-      ],
-      providers: [
-        // Async configuration provider
-        ...this.createAsyncProviders(options),
-        // Adapter providers (self-contained)
-        ...adapterProviders,
-        // Core services
-        MemoryStorageService,
-        MemoryGraphService,
-        MemoryService,
-      ],
-      exports: [
-        MemoryService,
-        MemoryStorageService,
-        MemoryGraphService,
-        MEMORY_CONFIG,
-        // Export adapter interfaces for external use
-        IVectorService,
-        IGraphService,
-      ],
-      global: false,
+      imports: [ConfigModule, ...(options.imports || [])],
+      providers,
+      exports,
+      global: true,
     };
-  }
-
-  /**
-   * Create async providers for different configuration strategies
-   */
-  private static createAsyncProviders(
-    options: MemoryModuleAsyncOptions
-  ): Provider[] {
-    if (options.useExisting || options.useFactory) {
-      return [this.createAsyncOptionsProvider(options)];
-    }
-
-    if (options.useClass) {
-      return [
-        this.createAsyncOptionsProvider(options),
-        {
-          provide: options.useClass,
-          useClass: options.useClass,
-        },
-      ];
-    }
-
-    return [];
-  }
-
-  /**
-   * Create async options provider
-   */
-  private static createAsyncOptionsProvider(
-    options: MemoryModuleAsyncOptions
-  ): Provider {
-    if (options.useFactory) {
-      return {
-        provide: MEMORY_CONFIG,
-        useFactory: async (...args: unknown[]) => {
-          const config = await options.useFactory!(...args);
-          return { ...DEFAULT_MEMORY_CONFIG, ...config };
-        },
-        inject: options.inject || ([] as any[]),
-      };
-    }
-
-    if (options.useExisting) {
-      return {
-        provide: MEMORY_CONFIG,
-        useFactory: async (optionsFactory: MemoryOptionsFactory) => {
-          const config = await optionsFactory.createMemoryOptions();
-          return { ...DEFAULT_MEMORY_CONFIG, ...config };
-        },
-        inject: [options.useExisting],
-      };
-    }
-
-    if (options.useClass) {
-      return {
-        provide: MEMORY_CONFIG,
-        useFactory: async (optionsFactory: MemoryOptionsFactory) => {
-          const config = await optionsFactory.createMemoryOptions();
-          return { ...DEFAULT_MEMORY_CONFIG, ...config };
-        },
-        inject: [options.useClass],
-      };
-    }
-
-    throw new Error('Invalid async options provided to MemoryModule');
-  }
-
-  /**
-   * Create adapter providers based on options
-   * Handles both default adapters and custom adapter injection
-   */
-  private static createAdapterProviders(
-    options: MemoryModuleOptions
-  ): Provider[] {
-    const providers: Provider[] = [];
-
-    // Vector service adapter provider
-    const vectorAdapter = options.adapters?.vector;
-    if (vectorAdapter) {
-      // Custom adapter provided
-      if (typeof vectorAdapter === 'function') {
-        // It's a class type
-        providers.push({
-          provide: IVectorService,
-          useClass: vectorAdapter as Type<IVectorService>,
-        });
-      } else {
-        // It's an instance
-        providers.push({
-          provide: IVectorService,
-          useValue: vectorAdapter,
-        });
-      }
-    } else {
-      // No default adapter - applications must provide their own adapters
-      throw new Error(
-        'MemoryModule requires a vector adapter. Please provide options.adapters.vector or import adapters in your application module.'
-      );
-    }
-
-    // Graph service adapter provider
-    const graphAdapter = options.adapters?.graph;
-    if (graphAdapter) {
-      // Custom adapter provided
-      if (typeof graphAdapter === 'function') {
-        // It's a class type
-        providers.push({
-          provide: IGraphService,
-          useClass: graphAdapter as Type<IGraphService>,
-        });
-      } else {
-        // It's an instance
-        providers.push({
-          provide: IGraphService,
-          useValue: graphAdapter,
-        });
-      }
-    } else {
-      // No default adapter - applications must provide their own adapters
-      throw new Error(
-        'MemoryModule requires a graph adapter. Please provide options.adapters.graph or import adapters in your application module.'
-      );
-    }
-
-    return providers;
-  }
-
-  /**
-   * Create adapter providers for async configuration
-   * Applications must provide adapters - no defaults available
-   */
-  private static createAdapterProvidersAsync(
-    options: MemoryModuleAsyncOptions
-  ): Provider[] {
-    // For async configuration, applications must provide adapters through dependency injection
-    // or extend MemoryModuleAsyncOptions to support adapter configuration
-    throw new Error(
-      'MemoryModule.forRootAsync() requires adapters to be provided through dependency injection. ' +
-        'Please ensure IVectorService and IGraphService are provided in your application module.'
-    );
-  }
-
-  /**
-   * Validate adapter configuration
-   * Ensures provided adapters implement the required interfaces
-   */
-  private static validateAdapters(options: MemoryModuleOptions): void {
-    if (options.adapters?.vector) {
-      const vectorAdapter = options.adapters.vector;
-      if (typeof vectorAdapter === 'function') {
-        // For class types, we can't validate at runtime easily
-        // NestJS will handle this during injection
-      } else {
-        // For instances, check if it has required methods
-        const requiredMethods = [
-          'store',
-          'storeBatch',
-          'search',
-          'delete',
-          'getStats',
-        ];
-        for (const method of requiredMethods) {
-          if (typeof (vectorAdapter as any)[method] !== 'function') {
-            throw new Error(
-              `Custom vector adapter must implement IVectorService.${method}() method`
-            );
-          }
-        }
-      }
-    }
-
-    if (options.adapters?.graph) {
-      const graphAdapter = options.adapters.graph;
-      if (typeof graphAdapter === 'function') {
-        // For class types, we can't validate at runtime easily
-        // NestJS will handle this during injection
-      } else {
-        // For instances, check if it has required methods
-        const requiredMethods = [
-          'createNode',
-          'createRelationship',
-          'traverse',
-          'executeCypher',
-          'getStats',
-        ];
-        for (const method of requiredMethods) {
-          if (typeof (graphAdapter as any)[method] !== 'function') {
-            throw new Error(
-              `Custom graph adapter must implement IGraphService.${method}() method`
-            );
-          }
-        }
-      }
-    }
   }
 }

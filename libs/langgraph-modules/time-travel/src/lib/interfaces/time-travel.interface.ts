@@ -3,6 +3,7 @@ import type { ModuleMetadata, Type } from '@nestjs/common';
 import type {
   ICheckpointAdapter,
   AsyncModuleFactory,
+  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
 
 /**
@@ -38,6 +39,20 @@ export interface ReplayOptions<T = unknown> {
    * Speed multiplier for replay (1 = real-time, 2 = 2x speed, etc.)
    */
   replaySpeed?: number;
+
+  /**
+   * Callback executed before each node execution
+   */
+  beforeNodeExecution?: (nodeId: string, state: T) => Promise<void>;
+
+  /**
+   * Callback executed after each node execution
+   */
+  afterNodeExecution?: (
+    nodeId: string,
+    state: T,
+    result: unknown
+  ) => Promise<void>;
 }
 
 /**
@@ -317,26 +332,6 @@ export interface WorkflowExecution<T = unknown> {
  */
 export interface TimeTravelConfig {
   /**
-   * Maximum number of checkpoints to keep per thread
-   */
-  maxCheckpointsPerThread?: number;
-
-  /**
-   * Maximum age of checkpoints in milliseconds
-   */
-  maxCheckpointAge?: number;
-
-  /**
-   * Whether to enable automatic checkpoint creation
-   */
-  enableAutoCheckpoint?: boolean;
-
-  /**
-   * Checkpoint creation interval in milliseconds
-   */
-  checkpointInterval?: number;
-
-  /**
    * Whether to enable branch management
    */
   enableBranching?: boolean;
@@ -347,18 +342,56 @@ export interface TimeTravelConfig {
   maxBranchesPerThread?: number;
 
   /**
-   * Storage backend for checkpoints
+   * Performance configuration
    */
-  storage?: {
-    type: 'memory' | 'redis' | 'postgres' | 'sqlite';
-    config?: Record<string, unknown>;
+  performance?: {
+    /**
+     * Enable lazy loading of execution history
+     */
+    lazyLoading?: boolean;
+
+    /**
+     * Cache size for execution history
+     */
+    cacheSize?: number;
+
+    /**
+     * Enable index optimization for queries
+     */
+    indexOptimization?: boolean;
   };
 
   /**
-   * Optional checkpoint adapter for dependency injection
-   * If provided, enables checkpointing features
+   * Security configuration
+   */
+  security?: {
+    /**
+     * Sanitize sensitive data from states
+     */
+    sanitizeStates?: boolean;
+
+    /**
+     * Enable audit logging
+     */
+    auditLogging?: boolean;
+
+    /**
+     * Enable encryption for stored data
+     */
+    encryptionEnabled?: boolean;
+  };
+
+  /**
+   * Checkpoint adapter for dependency injection (follows same pattern as other modules)
+   * This enables time travel operations on workflow state
    */
   checkpointAdapter?: ICheckpointAdapter;
+
+  /**
+   * Memory adapter for dependency injection (optional)
+   * Enables intelligent memory integration for time-travel learning and optimization
+   */
+  memoryAdapter?: IMemoryAdapter;
 }
 
 /**

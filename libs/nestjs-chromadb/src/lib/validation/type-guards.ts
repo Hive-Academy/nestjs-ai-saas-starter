@@ -3,15 +3,16 @@
  */
 
 import type {
-  ChromaDocument,
+  ChromaWireDocument,
   ChromaSearchOptions,
   ChromaBulkOptions,
-} from '../interfaces/chromadb-service.interface';
+} from '../types/core.interface';
+import { isValidCollectionName } from '../types/core.interface';
 import type {
   ChromaDBModuleOptions,
   EmbeddingConfig,
   CollectionConfig,
-} from '../interfaces/chromadb-module-options.interface';
+} from '../interfaces/config/module-options.interface';
 import { ChromaDBValidationError } from '../errors/chromadb.errors';
 
 /**
@@ -57,9 +58,13 @@ export function isValidMetadata(
 /**
  * Type guard for metadata filter operators
  */
-export function isMetadataFilterOperator(value: unknown): value is '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$in' | '$nin' {
-  return typeof value === 'string' && 
-    ['$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$in', '$nin'].includes(value);
+export function isMetadataFilterOperator(
+  value: unknown
+): value is '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$in' | '$nin' {
+  return (
+    typeof value === 'string' &&
+    ['$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$in', '$nin'].includes(value)
+  );
 }
 
 /**
@@ -69,9 +74,9 @@ export function isMetadataFilterCondition(value: unknown): boolean {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
-  
+
   const condition = value as Record<string, unknown>;
-  return Object.keys(condition).every(key => isMetadataFilterOperator(key));
+  return Object.keys(condition).every((key) => isMetadataFilterOperator(key));
 }
 
 /**
@@ -81,15 +86,16 @@ export function isValidMetadataFilter(value: unknown): boolean {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
-  
+
   const filter = value as Record<string, unknown>;
-  return Object.values(filter).every(val => 
-    val === null ||
-    typeof val === 'string' ||
-    typeof val === 'number' ||
-    typeof val === 'boolean' ||
-    Array.isArray(val) ||
-    isMetadataFilterCondition(val)
+  return Object.values(filter).every(
+    (val) =>
+      val === null ||
+      typeof val === 'string' ||
+      typeof val === 'number' ||
+      typeof val === 'boolean' ||
+      Array.isArray(val) ||
+      isMetadataFilterCondition(val)
   );
 }
 
@@ -100,19 +106,21 @@ export function isValidDocumentFilter(value: unknown): boolean {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
-  
+
   const filter = value as Record<string, unknown>;
   const validKeys = ['$contains', '$not_contains'];
-  
-  return Object.entries(filter).every(([key, val]) => 
-    validKeys.includes(key) && typeof val === 'string'
+
+  return Object.entries(filter).every(
+    ([key, val]) => validKeys.includes(key) && typeof val === 'string'
   );
 }
 
 /**
- * Type guard to check if a value is a valid ChromaDocument
+ * Type guard to check if a value is a valid ChromaWireDocument
  */
-export function isValidChromaDocument(value: unknown): value is ChromaDocument {
+export function isValidChromaDocument(
+  value: unknown
+): value is ChromaWireDocument {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -143,11 +151,11 @@ export function isValidChromaDocument(value: unknown): value is ChromaDocument {
 }
 
 /**
- * Type guard to check if a value is a valid array of ChromaDocuments
+ * Type guard to check if a value is a valid array of ChromaWireDocuments
  */
 export function isValidChromaDocumentArray(
   value: unknown
-): value is ChromaDocument[] {
+): value is ChromaWireDocument[] {
   return Array.isArray(value) && value.every(isValidChromaDocument);
 }
 
@@ -219,18 +227,6 @@ export function isValidBulkOptions(value: unknown): value is ChromaBulkOptions {
 }
 
 /**
- * Type guard to check if a value is a valid collection name
- */
-export function isValidCollectionName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    value.length <= 63 &&
-    /^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$/.test(value)
-  );
-}
-
-/**
  * Type guard to check if a value is valid embedding configuration
  */
 export function isValidEmbeddingConfig(
@@ -290,7 +286,7 @@ export function isValidCollectionConfig(
 export function validateChromaDocument(
   value: unknown,
   context?: string
-): asserts value is ChromaDocument {
+): asserts value is ChromaWireDocument {
   if (!isValidChromaDocument(value)) {
     throw new ChromaDBValidationError(
       `Invalid ChromaDocument${context ? ` in ${context}` : ''}`,
@@ -306,7 +302,7 @@ export function validateChromaDocument(
 export function validateChromaDocumentArray(
   value: unknown,
   context?: string
-): asserts value is ChromaDocument[] {
+): asserts value is ChromaWireDocument[] {
   if (!isValidChromaDocumentArray(value)) {
     throw new ChromaDBValidationError(
       `Invalid ChromaDocument array${context ? ` in ${context}` : ''}`,

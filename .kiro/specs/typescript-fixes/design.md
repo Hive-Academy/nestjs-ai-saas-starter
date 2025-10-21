@@ -113,7 +113,10 @@ interface Neo4jQueryResult<TRecord = Record<string, unknown>> {
 }
 
 interface Neo4jSession {
-  run<TRecord = Record<string, unknown>>(query: string, parameters?: Record<string, unknown>): Promise<Neo4jQueryResult<TRecord>>;
+  run<TRecord = Record<string, unknown>>(
+    query: string,
+    parameters?: Record<string, unknown>
+  ): Promise<Neo4jQueryResult<TRecord>>;
 
   beginTransaction(): Promise<Neo4jTransaction>;
   close(): Promise<void>;

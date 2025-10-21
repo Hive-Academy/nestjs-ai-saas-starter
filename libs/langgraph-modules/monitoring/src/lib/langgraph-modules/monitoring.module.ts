@@ -37,7 +37,7 @@ export class LanggraphModulesMonitoringModule {
         retention: '24h',
         defaultTags: {
           service: 'langgraph-monitoring',
-          environment: process.env.NODE_ENV || 'development',
+          environment: 'development',
         },
       },
       alerting: {
@@ -84,6 +84,15 @@ export class LanggraphModulesMonitoringModule {
         {
           provide: 'MONITORING_CONFIG',
           useValue: mergedConfig,
+        },
+        // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+        {
+          provide: 'IMemoryAdapter',
+          useFactory: (config: MonitoringConfig) => {
+            // Optional memory adapter for monitoring memory integration
+            return config.memoryAdapter || null;
+          },
+          inject: ['MONITORING_CONFIG'],
         },
         // Core services - provided as concrete classes and interface tokens
         MetricsCollectorService,
@@ -153,6 +162,15 @@ export class LanggraphModulesMonitoringModule {
           provide: 'MONITORING_CONFIG',
           useFactory: options.useFactory,
           inject: options.inject || [],
+        },
+        // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
+        {
+          provide: 'IMemoryAdapter',
+          useFactory: async (config: MonitoringConfig) => {
+            // Optional memory adapter for monitoring memory integration
+            return config.memoryAdapter || null;
+          },
+          inject: ['MONITORING_CONFIG'],
         },
         // Core services - provided as concrete classes and interface tokens
         MetricsCollectorService,

@@ -2,9 +2,14 @@ import type { Neo4jModuleOptions } from '@hive-academy/nestjs-neo4j';
 import type { ConfigService } from '@nestjs/config';
 
 /**
- * Neo4j Configuration Factory
+ * Enhanced Neo4j Configuration Factory
  *
- * Provides centralized configuration for Neo4j connections and settings
+ * Provides centralized configuration for Neo4j connections with enhanced features:
+ * - Constraint management and auto-creation
+ * - Caching and query optimization
+ * - Multi-tenancy support
+ * - Circuit breaker and retry mechanisms
+ * - Metrics and monitoring
  */
 export const getNeo4jConfig = (...args: unknown[]): Neo4jModuleOptions => {
   const configService = args[0] as ConfigService;

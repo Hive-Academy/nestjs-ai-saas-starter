@@ -1,9 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { CHROMADB_CLIENT } from '../constants';
+// Removed unused import
 
 /**
  * Decorator to inject ChromaDB service into a class property or constructor parameter
- * 
+ *
  * @example
  * ```typescript
  * @Injectable()
@@ -14,11 +15,12 @@ import { CHROMADB_CLIENT } from '../constants';
  * }
  * ```
  */
-export const InjectChromaDB = (): ParameterDecorator => Inject('ChromaDBService');
+export const InjectChromaDB = (): ParameterDecorator =>
+  Inject('ChromaDBService');
 
 /**
  * Decorator to inject ChromaDB client directly
- * 
+ *
  * @example
  * ```typescript
  * @Injectable()
@@ -29,4 +31,5 @@ export const InjectChromaDB = (): ParameterDecorator => Inject('ChromaDBService'
  * }
  * ```
  */
-export const InjectChromaDBClient = (): ParameterDecorator => Inject(CHROMADB_CLIENT);
+export const InjectChromaDBClient = (): ParameterDecorator =>
+  Inject(CHROMADB_CLIENT);

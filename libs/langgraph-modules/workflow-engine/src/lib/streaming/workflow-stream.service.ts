@@ -4,7 +4,9 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
+import 'reflect-metadata';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BaseMessage } from '@langchain/core/messages';
 import { StateGraph } from '@langchain/langgraph';
@@ -13,9 +15,6 @@ import type {
   StreamUpdate,
   StreamMetadata,
   TokenData,
-  StreamTokenMetadata,
-  StreamEventMetadata,
-  StreamProgressMetadata,
 } from '@hive-academy/langgraph-streaming';
 import {
   StreamEventType,
@@ -26,7 +25,18 @@ import {
   StreamEventDecoratorMetadata,
   StreamProgressDecoratorMetadata,
 } from '@hive-academy/langgraph-streaming';
-import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
+import type {
+  IStreamingService,
+  ICheckpointAdapter,
+} from '@hive-academy/langgraph-core';
+import {
+  WorkflowCheckpointMetadata,
+  WorkflowPerformanceMetadata,
+} from '../interfaces/workflow-metadata.interface';
+import {
+  WorkflowStateAnnotation,
+  TokenStreamOptions,
+} from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 
 /**
@@ -53,17 +63,32 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   >();
   private readonly activeSubscriptions = new Set<Subscription>();
   private readonly streamingEnabled = new Map<string, boolean>();
+  private readonly checkpointingEnabled: boolean;
 
   constructor(
     @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2,
-    private readonly metadataProcessor: MetadataProcessorService
-  ) {}
+    private readonly metadataProcessor: MetadataProcessorService,
+
+    // Inject the streaming service - could be real service or no-op
+    @Inject('IStreamingService')
+    private readonly streamingService: IStreamingService,
+
+    // Inject checkpoint adapter - optional for backward compatibility
+    @Optional()
+    @Inject('ICheckpointAdapter')
+    private readonly checkpointAdapter?: ICheckpointAdapter
+  ) {
+    this.checkpointingEnabled = !!this.checkpointAdapter;
+  }
 
   /**
    * Initialize module - setup event listeners
    */
   async onModuleInit(): Promise<void> {
     this.logger.log('Initializing WorkflowStreamService');
+    this.logger.log(
+      `Checkpoint adapter available: ${this.checkpointingEnabled}`
+    );
     this.setupEventListeners();
   }
 
@@ -106,6 +131,20 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       methodName
     );
     if (tokenMetadata?.enabled) {
+      const options: TokenStreamOptions = {
+        executionId,
+        nodeId,
+        config: tokenMetadata,
+      };
+
+      // Initialize token streaming via injected service
+      this.streamingService.initializeTokenStream(options).catch((error) => {
+        this.logger.error(
+          `Failed to initialize token streaming for ${nodeId}:`,
+          error
+        );
+      });
+
       this.tokenStreamConfigs.set(`${executionId}:${nodeId}`, tokenMetadata);
       this.logger.debug(
         `Configured token streaming for ${nodeId}: ${JSON.stringify(
@@ -216,6 +255,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
         executionId
       );
 
+      // Save initial checkpoint if checkpoint adapter is available
+      if (this.checkpointingEnabled && this.checkpointAdapter) {
+        await this.saveInitialCheckpoint(executionId, input, config);
+      }
+
       // Get the compiled graph
       const compiledGraph = graph.compile(config);
 
@@ -318,6 +362,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
       const finalState = await compiledGraph.invoke(input, config);
       yield this.createUpdate(StreamEventType.FINAL, finalState, executionId);
 
+      // Save final checkpoint if checkpoint adapter is available
+      if (this.checkpointingEnabled && this.checkpointAdapter) {
+        await this.saveFinalCheckpoint(executionId, finalState, config);
+      }
+
       yield this.createUpdate(
         StreamEventType.NODE_COMPLETE,
         { message: 'Workflow execution completed' },
@@ -346,7 +395,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     message: any,
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): AsyncGenerator<StreamUpdate> {
     if (!message.content || typeof message.content !== 'string') {
       return;
@@ -372,6 +421,13 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         accumulatedContent += processedToken;
 
+        // Stream via injected service instead of console.log
+        this.streamingService.streamToken(executionId, nodeId, processedToken, {
+          index: i,
+          totalTokens: tokens.length,
+          progress: ((i + 1) / tokens.length) * 100,
+        });
+
         const tokenData: TokenData = {
           content: processedToken,
           index: i,
@@ -394,7 +450,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 
         yield update;
 
-        // Emit token event for WebSocket bridge
+        // Still emit token event for backward compatibility
         this.eventEmitter.emit(`workflow.token.${executionId}`, {
           ...tokenData,
           nodeId,
@@ -408,6 +464,9 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
           );
         }
       }
+
+      // Flush remaining tokens
+      await this.streamingService.flushTokens(executionId, nodeId);
 
       // Emit completion event
       this.eventEmitter.emit(`workflow.token.complete.${executionId}`, {
@@ -431,7 +490,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     llmStream: AsyncGenerator<any>,
-    config?: StreamTokenMetadata
+    config?: StreamTokenDecoratorMetadata
   ): AsyncGenerator<StreamUpdate> {
     const tokenConfig =
       config || this.getTokenStreamConfig(executionId, nodeId);
@@ -595,6 +654,14 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     message?: string,
     metadata?: any
   ): void {
+    // Stream via injected service
+    this.streamingService.streamProgress(executionId, 'workflow', {
+      progress,
+      message,
+      ...metadata,
+    });
+
+    // Continue with local streaming for backward compatibility
     const update = this.createUpdate(
       StreamEventType.PROGRESS,
       { progress, message, ...metadata },
@@ -657,18 +724,19 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Create a stream update with metadata
+   * Create a stream update with type-safe metadata
    */
-  private createUpdate(
+  private createUpdate<TData = unknown, TStreamData = Record<string, unknown>>(
     type: StreamEventType,
-    data: any,
+    data: TData,
     executionId: string,
-    additionalMetadata?: Partial<StreamMetadata>
+    additionalMetadata?: Partial<StreamMetadata> & { streamData?: TStreamData }
   ): StreamUpdate {
     const sequenceNumber = this.getNextSequence(executionId);
+    const timestamp = new Date();
 
     const metadata: StreamMetadata = {
-      timestamp: new Date(),
+      timestamp,
       sequenceNumber,
       executionId,
       ...additionalMetadata,
@@ -802,7 +870,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private getTokenStreamConfig(
     executionId: string,
     nodeId: string
-  ): StreamTokenMetadata | undefined {
+  ): StreamTokenDecoratorMetadata | undefined {
     return this.tokenStreamConfigs.get(`${executionId}:${nodeId}`);
   }
 
@@ -812,7 +880,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   private getEventStreamConfig(
     executionId: string,
     nodeId: string
-  ): StreamEventMetadata | undefined {
+  ): StreamEventDecoratorMetadata | undefined {
     return this.eventStreamConfigs.get(`${executionId}:${nodeId}`);
   }
 
@@ -842,7 +910,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   private tokenizeContent(
     content: string,
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): string[] {
     // Simple word-based tokenization - can be enhanced with proper tokenizers
     const tokens = content.split(/\s+/).filter((token) => token.length > 0);
@@ -864,7 +932,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   private shouldIncludeToken(
     token: string,
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): boolean {
     if (!config.filter) {
       return true;
@@ -894,7 +962,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Filter events based on configuration
    */
-  private filterEvents(events: any[], config: StreamEventMetadata): any[] {
+  private filterEvents(
+    events: any[],
+    config: StreamEventDecoratorMetadata
+  ): any[] {
     if (!config.filter) {
       return events;
     }
@@ -925,7 +996,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
   /**
    * Transform events using configuration
    */
-  private transformEvents(events: any[], config: StreamEventMetadata): any[] {
+  private transformEvents(
+    events: any[],
+    config: StreamEventDecoratorMetadata
+  ): any[] {
     if (!config.transformer) {
       return events;
     }
@@ -940,7 +1014,7 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     buffer: string[],
-    config: StreamTokenMetadata
+    config: StreamTokenDecoratorMetadata
   ): Promise<void> {
     if (buffer.length === 0) {
       return;
@@ -973,5 +1047,133 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
    */
   getActiveStreamCount(): number {
     return this.streams.size;
+  }
+
+  /**
+   * Save initial checkpoint for workflow execution with type safety
+   */
+  private async saveInitialCheckpoint<TMetadata = WorkflowPerformanceMetadata>(
+    executionId: string,
+    input: unknown,
+    config: unknown,
+    customMetadata?: TMetadata
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return;
+    }
+
+    try {
+      const threadId = this.generateWorkflowThreadId(executionId);
+      const timestamp = new Date().toISOString();
+      const checkpointData = {
+        executionId,
+        timestamp,
+        type: 'initial',
+        input,
+        config,
+        status: 'started',
+      };
+
+      const metadata: WorkflowCheckpointMetadata<TMetadata> = {
+        timestamp,
+        source: 'input',
+        step: 0,
+        parents: {},
+        executionId,
+        type: 'initial',
+        created_at: timestamp,
+        payload: customMetadata,
+      };
+
+      // Extract base metadata for LangGraph compatibility
+      const { payload, ...baseMetadata } = metadata;
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        {
+          id: `${threadId}_initial`,
+          thread_id: threadId,
+          checkpoint: { version: 1, data: checkpointData },
+          metadata,
+        },
+        baseMetadata
+      );
+      this.logger.debug(
+        `Saved initial checkpoint for execution ${executionId} with thread ID ${threadId}`
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save initial checkpoint for execution ${executionId}:`,
+        error
+      );
+      // Don't throw - checkpointing is optional and shouldn't break workflow
+    }
+  }
+
+  /**
+   * Save final checkpoint for workflow execution with type safety
+   */
+  private async saveFinalCheckpoint<TMetadata = WorkflowPerformanceMetadata>(
+    executionId: string,
+    finalState: unknown,
+    config: unknown,
+    customMetadata?: TMetadata
+  ): Promise<void> {
+    if (!this.checkpointAdapter) {
+      return;
+    }
+
+    try {
+      const threadId = this.generateWorkflowThreadId(executionId);
+      const timestamp = new Date().toISOString();
+      const checkpointData = {
+        executionId,
+        timestamp,
+        type: 'final',
+        state: finalState,
+        config,
+        status: 'completed',
+      };
+
+      const metadata: WorkflowCheckpointMetadata<TMetadata> = {
+        timestamp,
+        source: 'update',
+        step: 1,
+        parents: {},
+        executionId,
+        type: 'final',
+        created_at: timestamp,
+        payload: customMetadata,
+      };
+
+      // Extract base metadata for LangGraph compatibility
+      const { payload, ...baseMetadata } = metadata;
+      await this.checkpointAdapter.saveCheckpoint(
+        threadId,
+        {
+          id: `${threadId}_final`,
+          thread_id: threadId,
+          checkpoint: { version: 1, data: checkpointData },
+          metadata,
+        },
+        baseMetadata
+      );
+      this.logger.debug(
+        `Saved final checkpoint for execution ${executionId} with thread ID ${threadId}`
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save final checkpoint for execution ${executionId}:`,
+        error
+      );
+      // Don't throw - checkpointing is optional and shouldn't break workflow
+    }
+  }
+
+  /**
+   * Generate canonical thread ID for workflow using NodeIdBuilder pattern
+   * Follows pattern: workflow-engine.execution.{executionId}
+   */
+  private generateWorkflowThreadId(executionId: string): string {
+    return `workflow-engine.execution.${executionId}`;
   }
 }

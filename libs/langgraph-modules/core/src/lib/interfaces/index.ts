@@ -66,3 +66,14 @@ import type { Command } from './workflow.interface';
 export type NodeHandler<TState = any> = (
   state: TState
 ) => Promise<Partial<TState> | Command<TState>>;
+
+// Export memory adapter interfaces for cross-package imports
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions,
+} from './memory-adapter.interface';
+
+export { IMemoryAdapter, isMemoryAdapter } from './memory-adapter.interface';

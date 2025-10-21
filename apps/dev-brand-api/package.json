@@ -23,7 +23,6 @@
     "@hive-academy/langgraph-time-travel": "0.0.1",
     "@hive-academy/langgraph-workflow-engine": "0.0.1",
     "@hive-academy/nestjs-chromadb": "0.0.1",
-    "@hive-academy/nestjs-langgraph": "0.0.1",
     "@hive-academy/nestjs-neo4j": "0.0.1"
   },
   "devDependencies": {

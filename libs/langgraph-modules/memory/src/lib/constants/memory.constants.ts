@@ -28,6 +28,21 @@ export const DEFAULT_MEMORY_CONFIG = {
   neo4j: {
     database: 'neo4j',
   },
+  limits: {
+    countAccuracyLimit: 1000,
+    memoryContentLimit: 1000,
+    relationshipQueryLimit: 10,
+    batchOperationLimit: 100,
+    searchResultLimit: 100,
+  },
+  semanticRelationships: {
+    enabled: true,
+    strategy: 'hybrid' as const,
+    similarityThreshold: 0.7,
+    minCommonWords: 2,
+    requireApoc: false,
+    maxRelationshipsPerMemory: 5,
+  },
 } as const;
 
 // Memory types

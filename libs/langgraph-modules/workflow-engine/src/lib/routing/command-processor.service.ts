@@ -19,9 +19,10 @@ export class CommandProcessorService {
       sourceNodeId?: string;
       validateCommand?: boolean;
       applyMetadata?: boolean;
-    },
+    }
   ): Promise<Partial<TState>> {
-    const sourceNodeId = options?.sourceNodeId || currentState.currentNodeId || 'unknown';
+    const sourceNodeId =
+      options?.sourceNodeId || currentState.currentNode || 'unknown';
     const validateCommand = options?.validateCommand ?? true;
     const applyMetadata = options?.applyMetadata ?? true;
 
@@ -42,18 +43,26 @@ export class CommandProcessorService {
       });
 
       // Build state updates based on command type
-      const stateUpdates = await this.buildStateUpdates(command, currentState, sourceNodeId);
+      const stateUpdates = await this.buildStateUpdates(
+        command,
+        currentState,
+        sourceNodeId
+      );
 
       // Apply metadata if requested
       if (applyMetadata && command.metadata) {
         this.applyCommandMetadata(stateUpdates, command.metadata, currentState);
       }
 
-      this.logger.debug(`Command processed successfully, targeting: ${command.goto || 'none'}`);
+      this.logger.debug(
+        `Command processed successfully, targeting: ${command.goto || 'none'}`
+      );
       return stateUpdates;
-
     } catch (error) {
-      this.logger.error(`Failed to process command from ${sourceNodeId}:`, error);
+      this.logger.error(
+        `Failed to process command from ${sourceNodeId}:`,
+        error
+      );
       return this.createErrorState(error as Error, sourceNodeId, currentState);
     }
   }
@@ -64,14 +73,14 @@ export class CommandProcessorService {
   private async buildStateUpdates<TState extends WorkflowState>(
     command: Command<TState>,
     currentState: TState,
-    sourceNodeId: string,
+    sourceNodeId: string
   ): Promise<Partial<TState>> {
     const type = command.type || 'goto';
 
     // Base state updates from command
     const baseUpdates = {
       ...(command.update || {}),
-      currentNodeId: sourceNodeId,
+      currentNode: sourceNodeId,
       completedNodes: [...(currentState.completedNodes || []), sourceNodeId],
     } as unknown as Partial<TState>;
 
@@ -110,7 +119,7 @@ export class CommandProcessorService {
   private handleGotoCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     const targetNode = String(command.goto);
 
@@ -135,7 +144,7 @@ export class CommandProcessorService {
   private handleRetryCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     const retryCount = (currentState.retryCount || 0) + 1;
     const maxAttempts = command.maxAttempts || 3;
@@ -173,7 +182,7 @@ export class CommandProcessorService {
   private handleSkipCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       ...baseUpdates,
@@ -196,7 +205,7 @@ export class CommandProcessorService {
   private handleStopCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       ...baseUpdates,
@@ -219,7 +228,7 @@ export class CommandProcessorService {
   private handleUpdateCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       ...baseUpdates,
@@ -239,7 +248,7 @@ export class CommandProcessorService {
   private handleEndCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       ...baseUpdates,
@@ -260,7 +269,7 @@ export class CommandProcessorService {
   private handleErrorCommand<TState extends WorkflowState>(
     command: Command<TState>,
     baseUpdates: Partial<TState>,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       ...baseUpdates,
@@ -284,7 +293,7 @@ export class CommandProcessorService {
   private applyCommandMetadata<TState extends WorkflowState>(
     stateUpdates: Partial<TState>,
     metadata: Record<string, unknown>,
-    currentState: TState,
+    currentState: TState
   ): void {
     // Handle human approval requirement
     if (metadata.requiresApproval) {
@@ -319,7 +328,7 @@ export class CommandProcessorService {
   private createErrorState<TState extends WorkflowState>(
     error: Error,
     sourceNodeId: string,
-    currentState: TState,
+    currentState: TState
   ): Partial<TState> {
     return {
       workflowStatus: 'failed',
@@ -341,7 +350,7 @@ export class CommandProcessorService {
    * Validate a command
    */
   validateCommand<TState extends WorkflowState>(
-    command: Command<TState>,
+    command: Command<TState>
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
@@ -358,7 +367,11 @@ export class CommandProcessorService {
     }
 
     // Validate retry command
-    if (command.type === 'retry' && command.maxAttempts && command.maxAttempts < 1) {
+    if (
+      command.type === 'retry' &&
+      command.maxAttempts &&
+      command.maxAttempts < 1
+    ) {
       errors.push('Max attempts must be at least 1');
     }
 
@@ -371,7 +384,9 @@ export class CommandProcessorService {
   /**
    * Check if a value is a valid command
    */
-  isCommand<TState extends WorkflowState>(value: unknown): value is Command<TState> {
+  isCommand<TState extends WorkflowState>(
+    value: unknown
+  ): value is Command<TState> {
     return (
       typeof value === 'object' &&
       value !== null &&
@@ -392,7 +407,7 @@ export class CommandProcessorService {
       /temporary/i,
     ];
 
-    return recoverablePatterns.some(pattern => pattern.test(error.message));
+    return recoverablePatterns.some((pattern) => pattern.test(error.message));
   }
 
   /**

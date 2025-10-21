@@ -1,1171 +1,1602 @@
-# CLAUDE.md - @hive-academy/nestjs-neo4j Library
+# CLAUDE.md - @hive-academy/nestjs-neo4j
 
-This file provides comprehensive guidance for working with the `@hive-academy/nestjs-neo4j` library in the NestJS AI SaaS Starter monorepo.
+This comprehensive guide provides detailed information for AI assistants working with the `@hive-academy/nestjs-neo4j` library. This document is based on actual code analysis and reflects the current implementation.
 
-## Business Domain and Purpose
+## 🎯 Library Overview
 
 ### Core Purpose
 
-The `@hive-academy/nestjs-neo4j` library provides seamless integration between NestJS applications and Neo4j graph databases, enabling sophisticated relationship modeling and graph-based data operations for AI-powered applications.
+The `@hive-academy/nestjs-neo4j` library is an enterprise-grade Neo4j integration for NestJS applications that provides:
 
-### Key Value Propositions
+- **Neogma OGM Integration**: Type-safe Neo4j operations through Neogma (NOT raw driver) with model management
+- **Specialized Repositories**: GraphRepository for graph algorithms and traversal, RelationshipRepository for relationship management
+- **Decorator-Based Operations**: Rich set of decorators for entities, queries, repositories, security, and constraints
+- **Multi-Tenant Architecture**: Complete database-per-tenant isolation with automatic routing
+- **Enterprise Security**: Comprehensive security layer with @Safe, @Authorize, @ValidateInput, @AuditLog, @RateLimit, @EncryptSensitive
+- **Query Builder**: Type-safe query construction with fluent API
+- **Constraint Management**: Database constraints via decorators (@PropIndex, @ClassIndex, @Unique, @NotNull, @NodeKey)
+- **Performance Optimization**: Metrics service, connection pooling, parameter serialization
 
-- **Graph Relationships**: Model complex relationships between entities with native graph traversal
-- **Real-time Analytics**: Perform complex graph analytics for recommendations and insights
-- **Knowledge Graphs**: Build AI knowledge graphs with semantic relationships
-- **Social Networks**: Model user connections, interactions, and influence networks
-- **Recommendation Engines**: Leverage graph algorithms for personalized recommendations
-- **Fraud Detection**: Identify suspicious patterns through relationship analysis
+## 🏗️ Core Architecture Components
 
-### Business Use Cases
+### 1. Core Services
 
-- **AI Agent Knowledge**: Store agent knowledge as interconnected concepts and relationships
-- **User Behavior Analysis**: Track user journeys and interaction patterns
-- **Content Recommendation**: Suggest content based on user preferences and similarity networks
-- **Enterprise Knowledge Management**: Model organizational structures and expertise networks
-- **Supply Chain Optimization**: Analyze dependencies and bottlenecks in complex supply chains
-- **Financial Risk Assessment**: Detect risk patterns through transaction and relationship analysis
+#### NeogmaService
 
-## Technical Architecture
-
-### Module Architecture Pattern
-
-The library follows NestJS module patterns with three configuration approaches and enhanced type safety:
-
-```typescript
-// Synchronous configuration
-Neo4jModule.forRoot({
-  uri: 'bolt://localhost:7687',
-  username: 'neo4j',
-  password: 'password',
-  database: 'neo4j',
-});
-
-// Asynchronous configuration
-Neo4jModule.forRootAsync({
-  useFactory: (configService: ConfigService) => ({
-    uri: configService.get('NEO4J_URI'),
-    username: configService.get('NEO4J_USERNAME'),
-    password: configService.get('NEO4J_PASSWORD'),
-    database: configService.get('NEO4J_DATABASE'),
-  }),
-  inject: [ConfigService],
-});
-
-// Feature-specific databases
-Neo4jModule.forFeature(['users', 'analytics']);
-```
-
-#### Enhanced Module Options Interface
-
-Recent improvements to the `Neo4jModuleAsyncOptions` interface provide better type safety:
-
-```typescript
-export interface Neo4jModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
-  useExisting?: Type<Neo4jModuleOptionsFactory>;
-  useClass?: Type<Neo4jModuleOptionsFactory>;
-  useFactory?: (...args: unknown[]) => Promise<Neo4jModuleOptions> | Neo4jModuleOptions;
-  // Enhanced with stricter type definition for dependency injection
-  inject?: Array<Type | string | symbol | { token: string | symbol; optional: boolean }>;
-}
-```
-
-### Connection Pooling Strategy
-
-The library implements sophisticated connection pooling with:
-
-- **Automatic Pool Management**: Configurable pool size and connection lifecycle
-- **Connection Health Monitoring**: Automatic health checks and retry mechanisms
-- **Resource Cleanup**: Proper session and transaction cleanup
-- **Connection Reuse**: Efficient connection reuse across operations
-
-```typescript
-const DEFAULT_NEO4J_CONFIG = {
-  connectionAcquisitionTimeout: 60000,
-  maxConnectionPoolSize: 100,
-  maxConnectionLifetime: 3600000, // 1 hour
-  connectionTimeout: 30000,
-  maxTransactionRetryTime: 30000,
-};
-```
-
-### Transaction Management Architecture
-
-Multi-layer transaction support with:
-
-- **Declarative Transactions**: `@Transactional()` decorator for automatic transaction management
-- **Manual Transactions**: Direct session and transaction control
-- **Nested Transactions**: Context-aware transaction nesting
-- **Rollback Strategies**: Automatic error handling and rollback
-
-## Core Patterns
-
-### Repository Pattern Implementation
-
-Implement repositories for domain-specific graph operations:
+The primary service for Neo4j operations using Neogma OGM:
 
 ```typescript
 @Injectable()
+export class NeogmaService {
+  // Model Management
+  registerModel<T>(name: string, model: TypedNeogmaModel<T>): void;
+  getModel<T>(modelName: string): TypedNeogmaModel<T>;
+
+  // CRUD Operations
+  findById<T>(modelName: string, id: string): Promise<T | null>;
+  findMany<T>(modelName: string, options?: FindOptions<T>): Promise<T[]>;
+  create<T>(modelName: string, data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>;
+  update<T>(modelName: string, id: string, updates: Partial<T>): Promise<T | null>;
+  delete<T>(modelName: string, id: string, detach?: boolean): Promise<boolean>;
+  count<T>(modelName: string, where?: Partial<T>): Promise<number>;
+  exists<T>(modelName: string, id: string): Promise<boolean>;
+
+  // Query Execution
+  run(cypher: string, params?: Record<string, any>): Promise<QueryResult>;
+  createQueryBuilder(): NeogmaQueryBuilder;
+
+  // Metrics
+  getMetrics(): NeogmaMetrics;
+}
+```
+
+#### NeogmaConnectionService
+
+Manages database connections and sessions:
+
+```typescript
+@Injectable()
+export class NeogmaConnectionService {
+  getDriver(): Driver;
+  getSession(options?: SessionConfig): Session;
+  verifyConnectivity(): Promise<void>;
+  close(): Promise<void>;
+}
+```
+
+#### NeogmaMetricsService
+
+Tracks performance and usage metrics:
+
+```typescript
+@Injectable()
+export class NeogmaMetricsService {
+  recordQuery(duration: number, success: boolean): void;
+  getMetrics(): NeogmaMetrics;
+  resetMetrics(): void;
+}
+```
+
+### 2. Decorators
+
+#### Entity Decorators
+
+```typescript
+// Entity definition with smart defaults
+@Neo4jEntity('User') // String shorthand supported
+class User {
+  @Id() id: string; // Auto-generated UUID
+  @Neo4jProp() name: string; // Property mapping
+  @CreatedAt() createdAt: Date; // Auto-managed
+  @UpdatedAt() updatedAt: Date; // Auto-managed
+  @JsonProperty() metadata: any; // JSON serialization
+  @Neo4jRelationship() friends: User[]; // Relationship mapping
+}
+```
+
+#### Query Decorator
+
+```typescript
+@Injectable()
+export class UserService {
+  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {}
+
+  @CypherQuery({
+    cacheTTL: 600000, // 10 minutes
+    retries: 3,
+    timeout: 5000,
+  })
+  async findUserById(id: string): Promise<User> {
+    const queryBuilder = this.neogma.createQueryBuilder();
+
+    const query = queryBuilder.match('(u:User)').where('u.id = $id', { id }).return('u').build();
+
+    const result = await this.neogma.run(query.cypher, query.params);
+    return result.records[0]?.get('u').properties;
+  }
+}
+```
+
+#### Repository Decorator
+
+```typescript
+@Repository('User') // Or @Neo4jRepository('User')
 export class UserRepository {
-  constructor(@InjectNeo4j() private readonly neo4j: Neo4jService) {}
-
-  @Transactional()
-  async createUser(userData: CreateUserDto): Promise<User> {
-    return this.neo4j.write(async (session) => {
-      const result = await session.run('CREATE (u:User $props) RETURN u', { props: userData });
-      return result.records[0].get('u').properties;
-    });
-  }
-
-  async findConnectedUsers(userId: string, hops = 2): Promise<User[]> {
-    const query = cypher().match('(u:User {id: $userId})').match(`(u)-[*1..${hops}]-(connected:User)`).return('DISTINCT connected').build();
-
-    return this.neo4j.readQuery(query.cypher, query.parameters);
-  }
+  // Auto-generates: findOne, findMany, create, update, delete, count, exists
+  // All methods are automatically injected
 }
 ```
 
-### @Transactional Decorator Pattern
-
-The `@Transactional` decorator provides declarative transaction management:
-
-```typescript
-export class PostService {
-  constructor(@InjectNeo4j() private readonly neo4j: Neo4jService) {}
-
-  @Transactional({ database: 'social' })
-  async createPostWithTags(postData: CreatePostDto, tags: string[]): Promise<Post> {
-    // All operations within this method run in a single transaction
-    const post = await this.createPost(postData);
-    await this.linkPostToTags(post.id, tags);
-    await this.updateUserStats(postData.authorId);
-    return post;
-  }
-
-  // Nested transactional methods reuse the existing transaction
-  @Transactional()
-  private async linkPostToTags(postId: string, tags: string[]): Promise<void> {
-    // Implementation here runs in the same transaction as parent method
-  }
-}
-```
-
-### Query Builder Pattern
-
-Fluent Cypher query construction with type safety:
-
-```typescript
-const complexQuery = cypher().match('(u:User {active: true})').optionalMatch('(u)-[:FOLLOWS]->(following:User)').where('u.lastLogin > $minDate', { minDate: thirtyDaysAgo }).andWhere('following.verified = true').with('u, count(following) as followingCount').orderBy('followingCount', 'DESC').skip(offset).limit(pageSize).return('u, followingCount').build();
-
-const results = await neo4jService.run(complexQuery.cypher, complexQuery.parameters);
-```
-
-## Best Practices for Graph Modeling
-
-### Node Design Principles
-
-1. **Single Responsibility**: Each node type should represent one clear entity
-2. **Property Indexing**: Index frequently queried properties for performance
-3. **Label Strategy**: Use hierarchical labels for classification
-
-```typescript
-// Good: Clear entity types with appropriate properties
-CREATE (u:User:Person {
-  id: $userId,
-  email: $email,
-  createdAt: timestamp(),
-  active: true
-})
-
-// Good: Use composite labels for classification
-CREATE (a:User:Admin:Person { ... })
-```
-
-### Relationship Modeling Best Practices
-
-1. **Relationship Direction**: Model natural direction of relationships
-2. **Relationship Properties**: Store relationship metadata as properties
-3. **Relationship Types**: Use descriptive, action-oriented relationship types
-
-```typescript
-// Good: Descriptive relationship with metadata
-CREATE (u1:User)-[:FOLLOWS {
-  since: timestamp(),
-  notificationsEnabled: true,
-  strength: 'strong'
-}]->(u2:User)
-
-// Good: Bidirectional relationships when appropriate
-CREATE (u1:User)-[:FRIENDS_WITH { since: $date }]-(u2:User)
-```
-
-### Graph Schema Design
-
-1. **Avoid Deep Nesting**: Limit relationship chains to 3-4 hops for performance
-2. **Denormalization**: Duplicate frequently accessed properties
-3. **Aggregate Nodes**: Create summary nodes for heavy aggregations
-
-```typescript
-// Pattern: Aggregate nodes for performance
-CREATE (u:User)-[:HAS_STATS]->(stats:UserStats {
-  totalPosts: 150,
-  followerCount: 1250,
-  lastUpdated: timestamp()
-})
-```
-
-## Key Services
-
-### Neo4jService - Core Operations
-
-Primary service for all graph operations:
+#### Security Decorators
 
 ```typescript
 @Injectable()
-export class GraphDataService {
-  constructor(@InjectNeo4j() private readonly neo4j: Neo4jService) {}
-
-  // High-performance read operations
-  async getRecommendations(userId: string): Promise<Recommendation[]> {
-    return this.neo4j.read(async (session) => {
-      const result = await session.run(
-        `
-        MATCH (u:User {id: $userId})-[:LIKES]->(p:Product)
-        MATCH (p)<-[:LIKES]-(other:User)-[:LIKES]->(rec:Product)
-        WHERE NOT (u)-[:LIKES]->(rec)
-        RETURN rec, count(*) as score
-        ORDER BY score DESC
-        LIMIT 10
-      `,
-        { userId }
-      );
-
-      return result.records.map((r) => ({
-        product: r.get('rec').properties,
-        score: r.get('score').toNumber(),
-      }));
-    });
-  }
-
-  // Transactional write operations
-  async createRelationshipNetwork(operations: NetworkOperation[]): Promise<void> {
-    await this.neo4j.write(async (session) => {
-      const tx = session.beginTransaction();
-
-      try {
-        for (const op of operations) {
-          await tx.run(op.query, op.params);
-        }
-        await tx.commit();
-      } catch (error) {
-        await tx.rollback();
-        throw error;
-      }
-    });
+export class SecureService {
+  @Safe({
+    validateInput: true,
+    sanitizeOutput: true,
+    logErrors: true,
+  })
+  @Authorize({ roles: ['admin'] })
+  @ValidateInput({ schema: UserSchema })
+  @AuditLog({ level: 'info' })
+  @RateLimit({ maxRequests: 100, window: 60000 })
+  @EncryptSensitive({ fields: ['ssn', 'creditCard'] })
+  async sensitiveOperation(data: any): Promise<any> {
+    // Multi-layer security protection
   }
 }
 ```
 
-### Neo4jConnectionService - Connection Management
-
-Handles database connections, health checks, and automatic retries:
+#### Constraint Decorators
 
 ```typescript
-// Connection monitoring and management
-const connectionInfo = connectionService.getConnectionInfo();
-console.log(connectionInfo);
-// Output: { uri: 'bolt://localhost:7687', database: 'neo4j', isConnected: true, retryCount: 0 }
+@Neo4jEntity('Product')
+class Product {
+  @Id()
+  @NodeKey() // Unique constraint
+  id: string;
 
-// Manual connection checks
-const isHealthy = await connectionService.isConnected();
-if (!isHealthy) {
-  // Handle connection issues
-  await this.handleConnectionFailure();
-}
-```
+  @Neo4jProp()
+  @NotNull()
+  @Unique()
+  sku: string;
 
-### Neo4jHealthService - Health Monitoring
+  @Neo4jProp()
+  @PropIndex() // Regular index
+  category: string;
 
-Comprehensive health monitoring for production environments with enhanced metrics:
-
-```typescript
-@Controller('health')
-export class HealthController {
-  constructor(private readonly neo4jHealth: Neo4jHealthService) {}
-
-  @Get('neo4j')
-  async checkNeo4jHealth() {
-    const health = await this.neo4jHealth.checkHealth();
-    // Returns: { name: 'neo4j', status: 'up', message: 'Neo4j is healthy', details: {...} }
-
-    return {
-      status: health.status,
-      database: health.details?.database,
-      version: health.details?.version,
-      responseTime: health.details?.responseTime,
-    };
-  }
-
-  @Get('metrics')
-  async getNeo4jMetrics() {
-    return this.neo4jHealth.getMetrics();
-    // Enhanced metrics now support more complex data types and APOC integration
-    // Returns: {
-    //   nodes: 10000,
-    //   relationships: 25000,
-    //   labels: 5,
-    //   propertyKeys: 25,
-    //   relationshipTypes: 8,
-    //   apocStats: {...} // APOC metadata if available
-    // }
-  }
-}
-```
-
-#### Enhanced Health Monitoring Features
-
-The service now includes improved type safety and APOC integration:
-
-- **Extended Metrics Types**: Support for `Record<string, number | string | object>` allowing complex metric data
-- **APOC Integration**: Automatic detection and utilization of APOC procedures for advanced statistics
-- **Better Error Handling**: Graceful fallback when APOC is not available
-- **Improved Type Safety**: Enhanced TypeScript definitions for metrics and health data
-
-## Enhanced Query Result Processing
-
-### Improved Notification Handling
-
-The library now provides enhanced processing of Neo4j query notifications with better type safety:
-
-```typescript
-// Enhanced notification processing with type-safe position information
-interface EnhancedNotification {
-  code: string;
-  title: string;
+  @Neo4jProp()
+  @TextIndex() // Full-text search index
   description: string;
-  severity: 'WARNING' | 'INFORMATION' | 'UNKNOWN';
-  position?: {
-    offset: number;
-    line: number;
-    column: number;
-  };
-}
 
-// Automatic notification mapping in query results
-const result = await this.neo4j.run(query, params);
-console.log('Query notifications:', result.summary.notifications);
-// Each notification now includes proper type checking for position information
-```
+  @Neo4jProp()
+  @RangeIndex() // Range queries
+  price: number;
 
-### Robust Summary Processing
-
-Enhanced query summary processing with null safety:
-
-```typescript
-// The service now handles undefined plan/profile data gracefully
-const queryResult = await this.neo4j.run(complexQuery, params);
-const summary = queryResult.summary;
-
-// These properties are now properly handled with null checks
-console.log('Execution plan:', summary.plan || 'No plan available');
-console.log('Profile data:', summary.profile || 'No profile data');
-console.log('Notifications:', summary.notifications.length, 'notifications received');
-```
-
-### Key Enhancements
-
-- **Type-Safe Notifications**: Proper TypeScript definitions for query notifications
-- **Position Information**: Safe extraction of position data from notifications
-- **Null Safety**: Graceful handling of undefined plan/profile data
-- **Enhanced Error Context**: Better error reporting with notification details
-
-## Testing Strategies
-
-### Unit Testing with Mocks
-
-Mock Neo4j services for isolated unit testing:
-
-```typescript
-describe('UserService', () => {
-  let service: UserService;
-  let neo4jService: jest.Mocked<Neo4jService>;
-
-  beforeEach(async () => {
-    const mockNeo4jService = {
-      read: jest.fn(),
-      write: jest.fn(),
-      run: jest.fn(),
-    };
-
-    const module = await Test.createTestingModule({
-      providers: [UserService, { provide: Neo4jService, useValue: mockNeo4jService }],
-    }).compile();
-
-    service = module.get<UserService>(UserService);
-    neo4jService = module.get(Neo4jService);
-  });
-
-  it('should find user by ID', async () => {
-    const mockUser = { id: '1', name: 'Test User' };
-    neo4jService.read.mockResolvedValue(mockUser);
-
-    const result = await service.findById('1');
-    expect(result).toEqual(mockUser);
-    expect(neo4jService.read).toHaveBeenCalledWith(expect.any(Function));
-  });
-});
-```
-
-### Integration Testing with TestContainers
-
-Test with real Neo4j instances using Docker containers:
-
-```typescript
-describe('Neo4j Integration', () => {
-  let neo4jContainer: StartedTestContainer;
-  let neo4jService: Neo4jService;
-
-  beforeAll(async () => {
-    neo4jContainer = await new GenericContainer('neo4j:5')
-      .withExposedPorts(7687)
-      .withEnvironment({
-        NEO4J_AUTH: 'neo4j/testpassword',
-        NEO4J_PLUGINS: '["apoc"]',
-      })
-      .start();
-
-    const module = await Test.createTestingModule({
-      imports: [
-        Neo4jModule.forRoot({
-          uri: `bolt://localhost:${neo4jContainer.getMappedPort(7687)}`,
-          username: 'neo4j',
-          password: 'testpassword',
-        }),
-      ],
-      providers: [GraphService],
-    }).compile();
-
-    neo4jService = module.get<Neo4jService>(Neo4jService);
-  });
-
-  afterAll(async () => {
-    await neo4jContainer.stop();
-  });
-
-  it('should create and retrieve nodes', async () => {
-    await neo4jService.write(async (session) => {
-      await session.run('CREATE (n:TestNode {name: $name})', { name: 'test' });
-    });
-
-    const result = await neo4jService.read(async (session) => {
-      const res = await session.run('MATCH (n:TestNode {name: $name}) RETURN n', { name: 'test' });
-      return res.records[0]?.get('n').properties;
-    });
-
-    expect(result.name).toBe('test');
-  });
-});
-```
-
-### Performance Testing
-
-Test graph operations under load:
-
-```typescript
-describe('Performance Tests', () => {
-  it('should handle concurrent reads efficiently', async () => {
-    const startTime = Date.now();
-    const promises = Array.from({ length: 100 }, () =>
-      neo4jService.read(async (session) => {
-        const result = await session.run('MATCH (n:User) RETURN count(n) as count');
-        return result.records[0].get('count').toNumber();
-      })
-    );
-
-    const results = await Promise.all(promises);
-    const endTime = Date.now();
-
-    expect(results).toHaveLength(100);
-    expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
-  });
-});
-```
-
-## Performance Considerations
-
-### Query Optimization Strategies
-
-1. **Index Critical Properties**: Create indexes on frequently queried node properties
-2. **Profile Queries**: Use PROFILE to identify bottlenecks
-3. **Limit Result Sets**: Always use LIMIT clauses for large datasets
-4. **Avoid Cartesian Products**: Use proper relationship patterns
-
-```cypher
--- Create indexes for performance
-CREATE INDEX user_email FOR (u:User) ON (u.email);
-CREATE INDEX user_active FOR (u:User) ON (u.active);
-CREATE CONSTRAINT user_id FOR (u:User) REQUIRE u.id IS UNIQUE;
-
--- Optimize query patterns
-// Good: Specific relationship pattern
-MATCH (u:User {active: true})-[:FOLLOWS]->(f:User)
-WHERE u.lastLogin > $date
-RETURN f LIMIT 100
-
-// Bad: Cartesian product
-MATCH (u:User), (f:User)
-WHERE u.active = true AND f.verified = true
-```
-
-### Connection Pooling Optimization
-
-Configure connection pools based on application load:
-
-```typescript
-Neo4jModule.forRoot({
-  uri: 'bolt://localhost:7687',
-  username: 'neo4j',
-  password: 'password',
-  config: {
-    maxConnectionPoolSize: 50, // Adjust based on concurrent users
-    connectionAcquisitionTimeout: 60000, // Wait time for connection
-    maxConnectionLifetime: 3600000, // 1 hour connection lifetime
-    connectionTimeout: 30000, // Connection establishment timeout
-    maxTransactionRetryTime: 30000, // Transaction retry timeout
-  },
-});
-```
-
-### Bulk Operations Performance
-
-Use batch operations for large datasets:
-
-```typescript
-async bulkCreateUsers(users: CreateUserDto[]): Promise<void> {
-  const batchSize = 1000;
-
-  for (let i = 0; i < users.length; i += batchSize) {
-    const batch = users.slice(i, i + batchSize);
-
-    await this.neo4j.write(async (session) => {
-      await session.run(`
-        UNWIND $users AS userData
-        CREATE (u:User)
-        SET u = userData, u.createdAt = timestamp()
-      `, { users: batch });
-    });
-  }
+  @Neo4jProp()
+  @Validate((value) => value > 0) // Custom validation
+  quantity: number;
 }
 ```
 
-### Indexing Best Practices
-
-Strategic indexing for optimal performance:
-
-```cypher
--- Single property indexes
-CREATE INDEX user_email FOR (u:User) ON (u.email);
-CREATE INDEX post_created FOR (p:Post) ON (p.createdAt);
-
--- Composite indexes for complex queries
-CREATE INDEX user_active_last_login FOR (u:User) ON (u.active, u.lastLogin);
-
--- Full-text search indexes
-CREATE FULLTEXT INDEX post_content FOR (p:Post) ON EACH [p.title, p.content];
-
--- Relationship property indexes
-CREATE INDEX follow_since FOR ()-[r:FOLLOWS]-() ON (r.since);
-```
-
-## Common Use Cases
-
-### Social Network Implementation
-
-Model user connections and interactions:
+#### Transaction Decorator
 
 ```typescript
 @Injectable()
-export class SocialNetworkService {
-  constructor(@InjectNeo4j() private neo4j: Neo4jService) {}
-
+export class TransactionalService {
   @Transactional()
-  async followUser(followerId: string, followeeId: string): Promise<void> {
-    await this.neo4j.write(async (session) => {
-      await session.run(
-        `
-        MATCH (follower:User {id: $followerId})
-        MATCH (followee:User {id: $followeeId})
-        CREATE (follower)-[:FOLLOWS {
-          since: timestamp(),
-          notificationsEnabled: true
-        }]->(followee)
-      `,
-        { followerId, followeeId }
-      );
-    });
-  }
-
-  async getMutualConnections(userId1: string, userId2: string): Promise<User[]> {
-    return this.neo4j.readQuery(
-      `
-      MATCH (u1:User {id: $userId1})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(u2:User {id: $userId2})
-      RETURN mutual
-      ORDER BY mutual.name
-    `,
-      { userId1, userId2 }
-    );
-  }
-
-  async getInfluenceScore(userId: string): Promise<number> {
-    const result = await this.neo4j.readQuery(
-      `
-      MATCH (u:User {id: $userId})<-[:FOLLOWS]-(follower)
-      MATCH (follower)<-[:FOLLOWS]-(secondDegree)
-      RETURN count(DISTINCT follower) + count(DISTINCT secondDegree) * 0.1 as score
-    `,
-      { userId }
-    );
-
-    return result[0]?.score || 0;
+  async transferFunds(fromId: string, toId: string, amount: number): Promise<void> {
+    // All operations run in a single transaction
+    // Automatic rollback on error
   }
 }
 ```
 
-### Recommendation Engine
+### 3. Specialized Repositories
 
-Build collaborative filtering recommendations:
+#### GraphRepository
+
+For graph-specific operations:
 
 ```typescript
 @Injectable()
-export class RecommendationService {
-  constructor(@InjectNeo4j() private neo4j: Neo4jService) {}
+export class GraphRepository<T> {
+  // Graph Traversal
+  findNeighbors(nodeId: string, options?: GraphTraversalOptions): Promise<T[]>;
+  findShortestPath(startId: string, endId: string, options?: PathOptions): Promise<Path>;
+  findAllPaths(startId: string, endId: string, options?: PathOptions): Promise<Path[]>;
 
-  async getContentRecommendations(userId: string, limit = 10): Promise<Recommendation[]> {
-    return this.neo4j.readQuery(
-      `
-      MATCH (u:User {id: $userId})-[:LIKES]->(content)
-      MATCH (content)<-[:LIKES]-(other:User)-[:LIKES]->(rec)
-      WHERE NOT (u)-[:LIKES]->(rec)
-      WITH rec, count(*) as commonLikes,
-           collect(DISTINCT other.id)[0..5] as similarUsers
-      
-      OPTIONAL MATCH (rec)<-[:LIKES]-(allUsers:User)
-      WITH rec, commonLikes, similarUsers, count(allUsers) as totalLikes
-      
-      RETURN rec {
-        .*,
-        recommendationScore: commonLikes * 1.0 / totalLikes,
-        sharedWithUsers: similarUsers
-      } as recommendation
-      ORDER BY recommendation.recommendationScore DESC
-      LIMIT $limit
-    `,
-      { userId, limit }
-    );
-  }
+  // Graph Algorithms
+  calculatePageRank(options?: PageRankOptions): Promise<Map<string, number>>;
+  detectCommunities(algorithm: 'louvain' | 'label-propagation'): Promise<Community[]>;
+  findCentralNodes(metric: 'degree' | 'betweenness' | 'closeness'): Promise<Node[]>;
 
-  async getSimilarUsers(userId: string): Promise<User[]> {
-    return this.neo4j.readQuery(
-      `
-      MATCH (u:User {id: $userId})-[:LIKES]->(content)<-[:LIKES]-(similar:User)
-      WHERE u <> similar
-      WITH similar, count(content) as sharedInterests
-      ORDER BY sharedInterests DESC
-      LIMIT 10
-      RETURN similar
-    `,
-      { userId }
-    );
-  }
+  // Subgraph Operations
+  getSubgraph(nodeIds: string[], options?: SubgraphOptions): Promise<Graph>;
+  expandGraph(nodeId: string, depth: number): Promise<Graph>;
+
+  // Analysis
+  getGraphStatistics(): Promise<GraphStats>;
+  findCycles(maxLength?: number): Promise<Cycle[]>;
 }
 ```
 
-### Knowledge Graph Implementation
+#### RelationshipRepository
 
-Build AI knowledge graphs with semantic relationships:
+For relationship management:
 
 ```typescript
 @Injectable()
-export class KnowledgeGraphService {
-  constructor(@InjectNeo4j() private neo4j: Neo4jService) {}
+export class RelationshipRepository {
+  // CRUD Operations
+  createRelationship(data: CreateRelationshipData): Promise<RelationshipResult>;
+  updateRelationship(id: string, updates: Partial<Relationship>): Promise<RelationshipResult>;
+  deleteRelationship(id: string): Promise<boolean>;
 
-  async addConcept(concept: ConceptDto): Promise<void> {
-    await this.neo4j.write(async (session) => {
-      await session.run(
-        `
-        CREATE (c:Concept {
-          id: $id,
-          name: $name,
-          definition: $definition,
-          domain: $domain,
-          confidence: $confidence,
-          createdAt: timestamp()
-        })
-      `,
-        concept
-      );
-    });
-  }
+  // Query Operations
+  findRelationships(options: RelationshipQueryOptions): Promise<RelationshipResult[]>;
+  findByNodes(sourceId: string, targetId?: string): Promise<RelationshipResult[]>;
+  findByType(type: string, options?: QueryOptions): Promise<RelationshipResult[]>;
 
-  @Transactional()
-  async createSemanticRelationship(fromConceptId: string, toConceptId: string, relationshipType: string, strength: number): Promise<void> {
-    await this.neo4j.write(async (session) => {
-      const relationshipQuery = `
-        MATCH (from:Concept {id: $fromId})
-        MATCH (to:Concept {id: $toId})
-        CREATE (from)-[r:${relationshipType.toUpperCase()} {
-          strength: $strength,
-          createdAt: timestamp(),
-          verified: false
-        }]->(to)
-        RETURN r
-      `;
+  // Batch Operations
+  batchCreate(operations: BatchRelationshipOperation[]): Promise<RelationshipResult[]>;
+  batchUpdate(operations: BatchRelationshipOperation[]): Promise<RelationshipResult[]>;
+  batchDelete(ids: string[]): Promise<boolean>;
 
-      await session.run(relationshipQuery, {
-        fromId: fromConceptId,
-        toId: toConceptId,
-        strength,
-      });
-    });
-  }
-
-  async findRelatedConcepts(conceptId: string, maxDepth = 3): Promise<ConceptPath[]> {
-    return this.neo4j.readQuery(
-      `
-      MATCH path = (start:Concept {id: $conceptId})-[*1..${maxDepth}]-(related:Concept)
-      WHERE start <> related
-      WITH related, 
-           [rel in relationships(path) | {
-             type: type(rel),
-             strength: rel.strength
-           }] as relationships,
-           length(path) as distance
-      RETURN {
-        concept: related,
-        relationships: relationships,
-        distance: distance,
-        pathStrength: reduce(s = 1.0, rel in relationships | s * rel.strength)
-      } as conceptPath
-      ORDER BY conceptPath.pathStrength DESC, conceptPath.distance ASC
-      LIMIT 50
-    `,
-      { conceptId }
-    );
-  }
+  // Analysis
+  getRelationshipTypes(): Promise<string[]>;
+  countByType(type?: string): Promise<number>;
 }
 ```
 
-## Integration Patterns with Other Libraries
+### 4. Query Builder
 
-### Integration with @hive-academy/nestjs-langgraph
-
-Use Neo4j as memory backend for AI agents:
+Type-safe query construction:
 
 ```typescript
+const queryBuilder = neogmaService.createQueryBuilder();
+
+const query = queryBuilder
+  .match('(u:User)')
+  .where('u.age > $minAge', { minAge: 18 })
+  .andWhere('u.city = $city', { city: 'New York' })
+  .with('u')
+  .match('(u)-[:FRIEND]->(friend:User)')
+  .return('u, collect(friend) as friends')
+  .orderBy('u.name', 'ASC')
+  .limit(10)
+  .build();
+
+const result = await neogmaService.run(query.cypher, query.params);
+```
+
+### 5. Multi-Tenancy Support
+
+Complete tenant isolation:
+
+```typescript
+// Module Configuration
+@Module({
+  imports: [
+    MultiTenantNeo4jModule.forRoot({
+      tenantResolver: (context) => context.tenantId,
+      connectionFactory: (tenantId) => ({
+        uri: `bolt://tenant-${tenantId}.neo4j.local:7687`,
+        username: 'neo4j',
+        password: getTenantPassword(tenantId),
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+
+// Service Usage
 @Injectable()
-export class GraphMemoryService implements MemoryProvider {
-  constructor(@InjectNeo4j() private neo4j: Neo4jService, @InjectLangGraph() private langGraph: LangGraphService) {}
+export class TenantAwareService {
+  constructor(
+    private readonly multiTenantService: MultiTenantNeo4jService,
+    private readonly tenantContext: TenantContextService
+  ) {}
 
-  async storeAgentMemory(agentId: string, memory: AgentMemory): Promise<void> {
-    await this.neo4j.write(async (session) => {
-      await session.run(
-        `
-        MERGE (agent:Agent {id: $agentId})
-        CREATE (agent)-[:HAS_MEMORY]->(memory:Memory {
-          id: $memoryId,
-          content: $content,
-          type: $type,
-          timestamp: timestamp(),
-          importance: $importance
-        })
-      `,
-        {
-          agentId,
-          memoryId: memory.id,
-          content: memory.content,
-          type: memory.type,
-          importance: memory.importance,
-        }
-      );
-    });
-  }
-
-  async getRelevantMemories(agentId: string, query: string): Promise<AgentMemory[]> {
-    // Use full-text search to find relevant memories
-    return this.neo4j.readQuery(
-      `
-      MATCH (agent:Agent {id: $agentId})-[:HAS_MEMORY]->(memory:Memory)
-      CALL db.index.fulltext.queryNodes('memory_content', $query) 
-      YIELD node as matchedMemory, score
-      WHERE memory = matchedMemory
-      RETURN memory {
-        .*,
-        relevanceScore: score
-      } as relevantMemory
-      ORDER BY relevantMemory.importance DESC, relevantMemory.relevanceScore DESC
-      LIMIT 10
-    `,
-      { agentId, query }
-    );
+  async getUsersForTenant(): Promise<User[]> {
+    const tenantId = this.tenantContext.getCurrentTenant();
+    const session = await this.multiTenantService.getSession(tenantId);
+    // Queries automatically routed to tenant database
   }
 }
 ```
 
-### Integration with @hive-academy/nestjs-chromadb
+## 📁 Module Configuration
 
-Combine graph relationships with vector similarity:
-
-```typescript
-@Injectable()
-export class HybridSearchService {
-  constructor(@InjectNeo4j() private neo4j: Neo4jService, @InjectChromaDB() private chromaDb: ChromaDBService) {}
-
-  async hybridRecommendation(userId: string, query: string): Promise<HybridResult[]> {
-    // Get graph-based recommendations
-    const graphRecs = await this.neo4j.readQuery(
-      `
-      MATCH (u:User {id: $userId})-[:LIKES]->(item)
-      MATCH (item)<-[:LIKES]-(similar:User)-[:LIKES]->(rec)
-      WHERE NOT (u)-[:LIKES]->(rec)
-      RETURN rec.id as itemId, count(*) as graphScore
-      ORDER BY graphScore DESC
-      LIMIT 50
-    `,
-      { userId }
-    );
-
-    // Get semantic similarity from vector database
-    const semanticResults = await this.chromaDb.query({
-      queryTexts: [query],
-      nResults: 50,
-    });
-
-    // Combine and rank results
-    const combinedResults = this.combineResults(graphRecs, semanticResults);
-    return this.rankResults(combinedResults);
-  }
-
-  private combineResults(graphResults: any[], vectorResults: any[]): HybridResult[] {
-    // Implementation to merge graph and vector scores
-    const resultMap = new Map<string, HybridResult>();
-
-    graphResults.forEach((result) => {
-      resultMap.set(result.itemId, {
-        itemId: result.itemId,
-        graphScore: result.graphScore,
-        vectorScore: 0,
-        combinedScore: result.graphScore * 0.6,
-      });
-    });
-
-    vectorResults.forEach((result, index) => {
-      const itemId = result.id;
-      const existing = resultMap.get(itemId) || {
-        itemId,
-        graphScore: 0,
-        vectorScore: 0,
-        combinedScore: 0,
-      };
-
-      existing.vectorScore = 1 - (result.distance || 0);
-      existing.combinedScore = existing.graphScore * 0.6 + existing.vectorScore * 0.4;
-      resultMap.set(itemId, existing);
-    });
-
-    return Array.from(resultMap.values());
-  }
-}
-```
-
-## Security Considerations
-
-### Authentication and Authorization
-
-Secure database access with proper credentials management:
+### Basic Configuration
 
 ```typescript
-// Production configuration with encrypted connections
-Neo4jModule.forRootAsync({
-  useFactory: (configService: ConfigService) => ({
-    uri: configService.get('NEO4J_URI'),
-    username: configService.get('NEO4J_USERNAME'),
-    password: configService.get('NEO4J_PASSWORD'),
-    config: {
+@Module({
+  imports: [
+    Neo4jModule.forRoot({
+      uri: 'bolt://localhost:7687',
+      username: 'neo4j',
+      password: 'password',
+      database: 'neo4j', // Optional: specific database
+
+      // Neogma Configuration
+      neogma: {
+        logger: console.log, // Optional: logging
+      },
+
+      // Connection Pool
+      maxConnectionPoolSize: 100,
+      connectionAcquisitionTimeout: 60000,
+
+      // Performance
+      disableLosslessIntegers: true, // Better performance for regular numbers
+
+      // Security
       encrypted: true,
       trust: 'TRUST_SYSTEM_CA_SIGNED_CERTIFICATES',
-      maxConnectionPoolSize: 50,
-    },
-  }),
-  inject: [ConfigService],
-});
+    }),
+  ],
+})
+export class AppModule {}
 ```
 
-### Query Injection Prevention
-
-Use parameterized queries to prevent Cypher injection:
+### Async Configuration
 
 ```typescript
-// SECURE: Use parameters for all user input
-async findUserByEmail(email: string): Promise<User | null> {
-  const result = await this.neo4j.readQuery(
-    'MATCH (u:User {email: $email}) RETURN u',
-    { email } // Always use parameters
-  );
-  return result[0] || null;
-}
+@Module({
+  imports: [
+    Neo4jModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        uri: config.get('NEO4J_URI'),
+        username: config.get('NEO4J_USERNAME'),
+        password: config.get('NEO4J_PASSWORD'),
+        database: config.get('NEO4J_DATABASE', 'neo4j'),
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
 
-// INSECURE: Never concatenate user input
-async badExample(email: string): Promise<User | null> {
-  // DON'T DO THIS - vulnerable to injection
-  const result = await this.neo4j.readQuery(
-    `MATCH (u:User {email: '${email}'}) RETURN u`
-  );
-  return result[0] || null;
+## 🔧 Dependency Injection
+
+### Service Injection
+
+```typescript
+@Injectable()
+export class MyService {
+  constructor(
+    // Inject Neogma Service (Recommended)
+    @InjectNeogma() private readonly neogmaService: NeogmaService,
+
+    // Alternative injection tokens
+    @InjectNeo4jDriver() private readonly driver: Driver,
+    @InjectNeo4jSession() private readonly session: Session,
+    @InjectNeo4jConnection() private readonly connection: NeogmaConnectionService
+  ) {}
 }
 ```
 
-### Data Privacy and Encryption
+## 📊 Type Definitions
 
-Implement data privacy controls:
+### Core Types
+
+```typescript
+// From types/neogma-types.ts
+interface NeogmaEntity {
+  id: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  [key: string]: any;
+}
+
+interface FindOptions<T> {
+  where?: Partial<T>;
+  orderBy?: Array<{ [K in keyof T]?: 'ASC' | 'DESC' }>;
+  limit?: number;
+  skip?: number;
+}
+
+interface QueryResult {
+  records: Neo4jRecord[];
+  summary: ResultSummary;
+  metrics?: QueryMetrics;
+}
+
+interface NeogmaMetrics {
+  totalQueries: number;
+  averageQueryTime: number;
+  activeConnections: number;
+  errorRate: number;
+}
+```
+
+## 🚀 Usage Examples
+
+### Basic CRUD Operations
+
+```typescript
+@Injectable()
+export class UserService {
+  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {
+    // Register Neogma model
+    this.neogma.registerModel('User', UserModel);
+  }
+
+  // Create
+  async createUser(data: CreateUserDto): Promise<User> {
+    return this.neogma.create('User', data);
+  }
+
+  // Read
+  async getUser(id: string): Promise<User | null> {
+    return this.neogma.findById('User', id);
+  }
+
+  // Update
+  async updateUser(id: string, updates: UpdateUserDto): Promise<User | null> {
+    return this.neogma.update('User', id, updates);
+  }
+
+  // Delete
+  async deleteUser(id: string): Promise<boolean> {
+    return this.neogma.delete('User', id, true); // detach relationships
+  }
+
+  // List with filters
+  async listUsers(filters?: UserFilters): Promise<User[]> {
+    return this.neogma.findMany('User', {
+      where: filters,
+      orderBy: [{ createdAt: 'DESC' }],
+      limit: 20,
+    });
+  }
+}
+```
+
+### Repository Pattern (RECOMMENDED)
+
+```typescript
+@Repository(() => User)
+@Injectable()
+export class UserRepository extends BaseRepositoryService<User> {
+  constructor(@InjectNeogma() neogmaService: NeogmaService) {
+    super();
+  }
+
+  // Methods auto-generated by @Repository decorator:
+  // findById, findAll, create, update, delete, count, exists
+
+  // Add custom methods
+  async findActiveUsers(): Promise<User[]> {
+    return this.findAll({ where: { isActive: true } });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const users = await this.findAll({ where: { email } });
+    return users[0] || null;
+  }
+}
+```
+
+### Advanced QueryBuilder Usage (RECOMMENDED)
+
+```typescript
+@Injectable()
+export class AnalyticsService {
+  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {}
+
+  async getMostConnectedUsers(limit = 10): Promise<any[]> {
+    const queryBuilder = this.neogma.createQueryBuilder();
+
+    const query = queryBuilder
+      .match('(u:User)')
+      .optionalMatch('(u)-[r:FRIEND]->()')
+      .return('u, count(r) as friendCount')
+      .orderBy('friendCount', 'DESC')
+      .limit(limit)
+      .build();
+
+    const result = await this.neogma.run(query.cypher, query.params);
+    return result.records.map((record) => ({
+      user: record.get('u').properties,
+      friendCount: record.get('friendCount').toInt(),
+    }));
+  }
+
+  async getRecommendations(userId: string): Promise<User[]> {
+    const queryBuilder = this.neogma.createQueryBuilder();
+
+    const query = queryBuilder
+      .match('(u:User)')
+      .where('u.id = $userId', { userId })
+      .match('(u)-[:FRIEND]->(friend)-[:FRIEND]->(recommendation:User)')
+      .where('NOT (u)-[:FRIEND]->(recommendation)')
+      .andWhere('recommendation.id <> $userId', { userId })
+      .return('DISTINCT recommendation')
+      .limit(10)
+      .build();
+
+    const result = await this.neogma.run(query.cypher, query.params);
+    return result.records.map((r) => r.get('recommendation').properties);
+  }
+}
+```
+
+### Graph Operations
+
+```typescript
+@Injectable()
+export class GraphAnalysisService {
+  constructor(private readonly graphRepo: GraphRepository<User>) {}
+
+  async findInfluencers(): Promise<User[]> {
+    // Find users with high centrality
+    return this.graphRepo.findCentralNodes('betweenness');
+  }
+
+  async findCommunities(): Promise<Community[]> {
+    // Detect communities using Louvain algorithm
+    return this.graphRepo.detectCommunities('louvain');
+  }
+
+  async findConnectionPath(userId1: string, userId2: string): Promise<Path> {
+    // Find shortest path between two users
+    return this.graphRepo.findShortestPath(userId1, userId2, {
+      relationshipType: 'FRIEND',
+      maxDepth: 6,
+    });
+  }
+}
+```
+
+## 🛡️ Security Best Practices
+
+### Parameter Sanitization
+
+Always use QueryBuilder with parameters (RECOMMENDED):
+
+```typescript
+// ✅ EXCELLENT - Using QueryBuilder (RECOMMENDED)
+const queryBuilder = neogma.createQueryBuilder();
+const query = queryBuilder
+  .match('(u:User)')
+  .where('u.email = $email', { email: userInput })
+  .return('u')
+  .build();
+await neogma.run(query.cypher, query.params);
+
+// ✅ ACCEPTABLE - Using raw Cypher with parameters
+const query = 'MATCH (u:User {email: $email}) RETURN u';
+await neogma.run(query, { email: userInput });
+
+// ❌ BAD - String interpolation (Cypher injection risk)
+const query = `MATCH (u:User {email: '${userInput}'}) RETURN u`;
+```
+
+### Use Security Decorators
 
 ```typescript
 @Injectable()
 export class SecureUserService {
-  constructor(@InjectNeo4j() private neo4j: Neo4jService) {}
+  @Safe({ validateInput: true, sanitizeOutput: true })
+  @Authorize({ roles: ['admin', 'user'] })
+  @ValidateInput({ schema: UpdateUserSchema })
+  @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
+  async updateUserProfile(userId: string, data: UpdateUserDto): Promise<User> {
+    // Automatically protected with multiple security layers
+    return this.neogma.update('User', userId, data);
+  }
+}
+```
 
-  async getUserDataForExport(userId: string, requesterId: string): Promise<UserData> {
-    // Check permissions first
-    const hasPermission = await this.checkDataAccess(requesterId, userId);
-    if (!hasPermission) {
-      throw new ForbiddenException('Insufficient permissions');
+### Transaction Management
+
+```typescript
+@Injectable()
+export class BankingService {
+  @Transactional() // Ensures atomicity
+  async transferMoney(fromId: string, toId: string, amount: number): Promise<void> {
+    // All operations in single transaction
+    const from = await this.neogma.findById('Account', fromId);
+    const to = await this.neogma.findById('Account', toId);
+
+    if (from.balance < amount) {
+      throw new Error('Insufficient funds');
     }
 
-    return this.neo4j.readQuery(
-      `
-      MATCH (u:User {id: $userId})
-      RETURN {
-        id: u.id,
-        email: u.email,
-        // Exclude sensitive fields in production
-        createdAt: u.createdAt
-      } as userData
-    `,
-      { userId }
-    );
-  }
-
-  private async checkDataAccess(requesterId: string, targetUserId: string): Promise<boolean> {
-    // Implement your permission logic
-    return requesterId === targetUserId || (await this.isAdmin(requesterId));
-  }
-}
-```
-
-### Network Security
-
-Configure secure network connections:
-
-```typescript
-// Use TLS encryption in production
-const secureConfig = {
-  encrypted: true,
-  trust: 'TRUST_SYSTEM_CA_SIGNED_CERTIFICATES',
-  // For self-signed certificates in development
-  // trust: 'TRUST_ALL_CERTIFICATES'
-};
-```
-
-## Troubleshooting Guide
-
-### Common Connection Issues
-
-#### Connection Timeout Errors
-
-```typescript
-// Symptom: ServiceUnavailableError or connection timeouts
-// Solution: Increase timeout values
-Neo4jModule.forRoot({
-  uri: 'bolt://localhost:7687',
-  username: 'neo4j',
-  password: 'password',
-  config: {
-    connectionAcquisitionTimeout: 120000, // Increase from default 60s
-    connectionTimeout: 60000, // Increase connection timeout
-    maxTransactionRetryTime: 60000, // Increase retry time
-  },
-});
-```
-
-#### Database Not Found
-
-```typescript
-// Symptom: Database does not exist error
-// Solution: Verify database configuration
-await this.neo4j.write(async (session) => {
-  // Check if database exists
-  const result = await session.run('SHOW DATABASES');
-  console.log(
-    'Available databases:',
-    result.records.map((r) => r.get('name'))
-  );
-});
-```
-
-### Performance Issues
-
-#### Slow Query Performance
-
-```cypher
--- Use PROFILE to identify bottlenecks
-PROFILE
-MATCH (u:User)-[:FOLLOWS]->(f:User)
-WHERE u.active = true
-RETURN f.name
-ORDER BY f.name
-LIMIT 100;
-
--- Check for missing indexes
-SHOW INDEXES;
-
--- Create necessary indexes
-CREATE INDEX user_active IF NOT EXISTS FOR (u:User) ON (u.active);
-```
-
-#### Memory Issues with Large Results
-
-```typescript
-// Problem: Loading large result sets into memory
-// Solution: Use streaming or pagination
-async getLotsOfUsers(offset: number, limit: number): Promise<User[]> {
-  return this.neo4j.readQuery(`
-    MATCH (u:User)
-    RETURN u
-    ORDER BY u.createdAt
-    SKIP $offset
-    LIMIT $limit
-  `, { offset, limit });
-}
-
-// For very large datasets, process in batches
-async processAllUsers(batchProcessor: (users: User[]) => Promise<void>): Promise<void> {
-  let offset = 0;
-  const batchSize = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const batch = await this.getLotsOfUsers(offset, batchSize);
-
-    if (batch.length === 0) {
-      hasMore = false;
-    } else {
-      await batchProcessor(batch);
-      offset += batchSize;
-    }
-  }
-}
-```
-
-### Transaction Issues
-
-#### Transaction Deadlocks
-
-```typescript
-// Problem: Concurrent transactions causing deadlocks
-// Solution: Implement retry logic with exponential backoff
-async withRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-
-      if (error instanceof Error && error.message.includes('DeadlockDetected')) {
-        const delay = Math.pow(2, attempt) * 100; // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
-      throw error; // Re-throw if not a deadlock
-    }
-  }
-
-  throw lastError;
-}
-
-@Transactional()
-async safeUpdateUser(userId: string, updates: Partial<User>): Promise<User> {
-  return this.withRetry(async () => {
-    return this.neo4j.write(async (session) => {
-      const result = await session.run(`
-        MATCH (u:User {id: $userId})
-        SET u += $updates
-        RETURN u
-      `, { userId, updates });
-
-      return result.records[0]?.get('u').properties;
+    await this.neogma.update('Account', fromId, {
+      balance: from.balance - amount,
     });
-  });
+    await this.neogma.update('Account', toId, {
+      balance: to.balance + amount,
+    });
+    // Automatic commit on success, rollback on error
+  }
 }
 ```
 
-### Debugging Tips
+## 🏢 Multi-Tenancy Patterns
 
-#### Enable Query Logging
+### Database-per-Tenant
 
 ```typescript
-// Add logging to see executed queries
-Neo4jModule.forRoot({
-  uri: 'bolt://localhost:7687',
-  username: 'neo4j',
-  password: 'password',
-  config: {
-    logging: {
-      level: 'debug',
-      logger: (level: string, message: string) => {
-        console.log(`[Neo4j ${level.toUpperCase()}] ${message}`);
+@Module({
+  imports: [
+    MultiTenantNeo4jModule.forRoot({
+      tenantResolver: (context: ExecutionContext) => {
+        const request = context.switchToHttp().getRequest();
+        return request.headers['x-tenant-id'];
       },
+      connectionFactory: (tenantId: string) => ({
+        uri: `bolt://neo4j-${tenantId}.internal:7687`,
+        username: 'neo4j',
+        password: getSecretForTenant(tenantId),
+      }),
+      connectionPoolSize: 50,
+      cacheTTL: 3600000, // 1 hour
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Schema-per-Tenant
+
+```typescript
+@Injectable()
+export class TenantAwareRepository {
+  constructor(
+    @InjectNeogma() private readonly neogma: NeogmaService,
+    private readonly tenantContext: TenantContextService
+  ) {}
+
+  async findUsers(): Promise<User[]> {
+    const tenantId = this.tenantContext.getCurrentTenant();
+    const query = `
+      MATCH (u:User:${tenantId})  // Tenant label
+      RETURN u
+    `;
+    return this.neogma.run(query);
+  }
+}
+```
+
+## 📈 Performance Optimization
+
+### Connection Pooling
+
+```typescript
+Neo4jModule.forRoot({
+  // Connection pool settings
+  maxConnectionPoolSize: 100,
+  connectionAcquisitionTimeout: 60000,
+  maxTransactionRetryTime: 30000,
+
+  // Performance optimizations
+  disableLosslessIntegers: true, // Use native JS numbers
+  logging: {
+    level: 'warn', // Reduce logging overhead
+    logger: (level, message) => {
+      if (level === 'error') console.error(message);
     },
   },
 });
 ```
 
-#### Health Check Debugging
+### Query Optimization
 
 ```typescript
 @Injectable()
-export class Neo4jDebugService {
-  constructor(private readonly neo4jHealth: Neo4jHealthService, private readonly neo4jConnection: Neo4jConnectionService) {}
+export class OptimizedService {
+  constructor(@InjectNeogma() private readonly neogma: NeogmaService) {}
 
-  async diagnose(): Promise<DiagnosticReport> {
-    const health = await this.neo4jHealth.checkHealth();
-    const connectionInfo = this.neo4jConnection.getConnectionInfo();
-    const metrics = await this.neo4jHealth.getMetrics();
+  // Use indexes with QueryBuilder
+  @CypherQuery({
+    cacheTTL: 3600000, // Cache for 1 hour
+  })
+  async findByEmail(email: string) {
+    const queryBuilder = this.neogma.createQueryBuilder();
 
-    return {
-      health,
-      connectionInfo,
-      metrics,
-      timestamp: new Date(),
-      recommendations: this.generateRecommendations(health, metrics),
-    };
+    const query = queryBuilder
+      .match('(u:User)')
+      .where('u.email = $email', { email })
+      .return('u')
+      .build();
+
+    return this.neogma.run(query.cypher, query.params);
   }
 
-  private generateRecommendations(health: any, metrics: any): string[] {
-    const recommendations: string[] = [];
+  // Batch operations with QueryBuilder
+  async batchCreateUsers(users: CreateUserDto[]): Promise<void> {
+    const queryBuilder = this.neogma.createQueryBuilder();
 
-    if (health.status === 'down') {
-      recommendations.push('Check Neo4j server status and network connectivity');
-    }
+    const query = queryBuilder
+      .unwind('$users as userData')
+      .create('(u:User)')
+      .set('u = userData')
+      .build();
 
-    if (metrics.nodes > 100000 && !metrics.indexes) {
-      recommendations.push('Consider adding indexes for better performance');
-    }
+    await this.neogma.run(query.cypher, { users });
+  }
 
-    return recommendations;
+  // Complex queries with QueryBuilder (RECOMMENDED)
+  async complexQuery() {
+    const queryBuilder = this.neogma.createQueryBuilder();
+
+    return queryBuilder
+      .match('(u:User)')
+      .where('u.age > $minAge', { minAge: 18 })
+      .with('u')
+      .limit(100) // Always limit results
+      .build();
   }
 }
 ```
 
-This comprehensive guide provides everything needed to effectively work with the `@hive-academy/nestjs-neo4j` library in production applications, from basic usage to advanced optimization and troubleshooting scenarios.
+### Metrics Monitoring
+
+```typescript
+@Injectable()
+export class MonitoringService {
+  constructor(
+    @InjectNeogma() private readonly neogma: NeogmaService,
+    private readonly metrics: NeogmaMetricsService
+  ) {}
+
+  async getHealthStatus() {
+    const metrics = this.metrics.getMetrics();
+
+    return {
+      healthy: metrics.errorRate < 0.01,
+      metrics: {
+        queries: metrics.totalQueries,
+        avgQueryTime: metrics.averageQueryTime,
+        activeConnections: metrics.activeConnections,
+        errorRate: `${(metrics.errorRate * 100).toFixed(2)}%`,
+      },
+    };
+  }
+}
+```
+
+## 🧪 Testing
+
+### Unit Testing
+
+```typescript
+describe('UserService', () => {
+  let service: UserService;
+  let neogmaService: jest.Mocked<NeogmaService>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        UserService,
+        {
+          provide: NEOGMA_TOKEN,
+          useValue: createMockNeogmaService(),
+        },
+      ],
+    }).compile();
+
+    service = module.get(UserService);
+    neogmaService = module.get(NEOGMA_TOKEN);
+  });
+
+  it('should create user', async () => {
+    const userData = { name: 'Test User', email: 'test@example.com' };
+    const expectedUser = { id: '123', ...userData };
+
+    neogmaService.create.mockResolvedValue(expectedUser);
+
+    const result = await service.createUser(userData);
+
+    expect(result).toEqual(expectedUser);
+    expect(neogmaService.create).toHaveBeenCalledWith('User', userData);
+  });
+});
+```
+
+### Integration Testing
+
+```typescript
+describe('UserService (Integration)', () => {
+  let app: INestApplication;
+  let neogmaService: NeogmaService;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      imports: [
+        Neo4jModule.forRoot({
+          uri: 'bolt://localhost:7687',
+          username: 'neo4j',
+          password: 'test',
+        }),
+      ],
+      providers: [UserService],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+
+    neogmaService = module.get(NeogmaService);
+  });
+
+  afterAll(async () => {
+    // Clean up test data
+    await neogmaService.run('MATCH (n:TestUser) DETACH DELETE n');
+    await app.close();
+  });
+
+  it('should perform CRUD operations', async () => {
+    // Test with real database
+  });
+});
+```
+
+## 🚨 Common Issues and Solutions
+
+### Issue: Connection Pool Exhaustion
+
+```typescript
+// Solution: Increase pool size and add timeout
+Neo4jModule.forRoot({
+  maxConnectionPoolSize: 200,
+  connectionAcquisitionTimeout: 120000,
+});
+```
+
+### Issue: Integer Overflow
+
+```typescript
+// Solution: Use disableLosslessIntegers for regular numbers
+Neo4jModule.forRoot({
+  disableLosslessIntegers: true,
+});
+```
+
+### Issue: Transaction Deadlocks
+
+```typescript
+// Solution: Use proper transaction management
+@Transactional({
+  maxRetries: 3,
+  retryDelay: 1000
+})
+async complexOperation() {}
+```
+
+### Issue: Slow Queries
+
+```typescript
+// Solution: Add indexes and use query optimization
+@Neo4jEntity('User')
+class User {
+  @Neo4jProp()
+  @PropIndex() // Add index
+  email: string;
+}
+```
+
+## 📚 Additional Resources
+
+- [Neo4j Documentation](https://neo4j.com/docs/)
+- [Neogma Documentation](https://github.com/danstarns/neogma)
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [Cypher Query Language](https://neo4j.com/docs/cypher-manual/)
+
+## 🔄 Migration Guide
+
+### From Raw Neo4j Driver to QueryBuilder
+
+```typescript
+// Before (Raw Driver)
+const session = driver.session();
+const result = await session.run('MATCH (u:User) RETURN u');
+await session.close();
+
+// After (QueryBuilder - RECOMMENDED)
+const queryBuilder = neogmaService.createQueryBuilder();
+const query = queryBuilder.match('(u:User)').return('u').build();
+const result = await neogmaService.run(query.cypher, query.params);
+
+// Or (Neogma Service for simple CRUD)
+const users = await neogmaService.findMany('User');
+```
+
+### From Manual Repositories to @Repository
+
+```typescript
+// Before (Manual)
+@Injectable()
+export class UserRepository {
+  constructor(@InjectNeo4j() private neo4j: Neo4jService) {}
+
+  async findOne(id: string) {
+    const result = await this.neo4j.run('MATCH (u:User {id: $id}) RETURN u', { id });
+    return result.records[0]?.get('u').properties;
+  }
+}
+
+// After (@Repository) - RECOMMENDED PATTERN
+@Repository(() => User)
+@Injectable()
+export class UserRepository extends BaseRepositoryService<User> {
+  constructor(@InjectNeogma() neogmaService: NeogmaService) {
+    super();
+  }
+  // findById, findAll, create, update, delete, count, exists auto-generated
+}
+```
+
+## 🎯 SPECIALIZED SERVICES - Use Instead of Custom Queries
+
+**IMPORTANT**: Before writing complex custom queries in your repositories, check if these specialized services already provide the functionality you need. These services are battle-tested, optimized, and cover most graph database operations.
+
+### When to Use Specialized Services vs Custom Repositories
+
+**✅ USE SPECIALIZED SERVICES FOR:**
+
+- Complex graph pattern matching → **GraphPatternService**
+- Path finding and traversal → **GraphTraversalService**
+- Graph analytics and metrics → **GraphMetricsService**
+- Relationship management → **RelationshipCoreRepository**
+- Batch relationship operations → **RelationshipBulkOperationsService**
+
+**✅ USE CUSTOM REPOSITORIES ONLY FOR:**
+
+- Domain-specific business logic
+- Complex multi-step workflows unique to your entity
+- Queries that combine multiple specialized services
+
+### 1. GraphPatternService - Complex Pattern Matching
+
+Use for multi-node graph patterns, subgraph extraction, and cycle detection:
+
+```typescript
+import { GraphPatternService } from '@hive-academy/nestjs-neo4j';
+
+@Injectable()
+export class ApprovalAnalyticsService {
+  constructor(private readonly graphPattern: GraphPatternService) {}
+
+  async findApprovalChains() {
+    // Complex multi-node pattern matching
+    return this.graphPattern.matchPattern(
+      {
+        nodes: [
+          { variable: 'req', label: 'ApprovalRequest' },
+          { variable: 'chain', label: 'ApprovalChain' },
+          { variable: 'level', label: 'ApprovalLevel' },
+        ],
+        relationships: [
+          { from: 'req', to: 'chain', type: 'IN_CHAIN', direction: 'out' },
+          { from: 'chain', to: 'level', type: 'HAS_LEVEL', direction: 'out' },
+        ],
+      },
+      { limit: 100 }
+    );
+  }
+
+  async extractApprovalSubgraph(approvalId: string) {
+    // Get entire subgraph around an approval
+    return this.graphPattern.getSubgraph([approvalId], {
+      depth: 2,
+      includeNodeProperties: true,
+      includeRelationshipProperties: true,
+    });
+  }
+
+  async detectCycles() {
+    // Find circular approval dependencies
+    return this.graphPattern.findCycles({ maxLength: 10 });
+  }
+}
+```
+
+**API Methods:**
+
+- `matchPattern()` - Match complex graph patterns
+- `executeCustomPattern()` - Execute custom graph queries
+- `getSubgraph()` - Extract subgraphs around nodes
+- `expandGraph()` - Expand graph from a node
+- `findCycles()` - Detect cycles in the graph
+
+### 2. GraphTraversalService - Path Finding & Traversal
+
+Use for shortest paths, neighbor discovery, and graph traversal:
+
+```typescript
+import { GraphTraversalService } from '@hive-academy/nestjs-neo4j';
+
+@Injectable()
+export class ConnectionService {
+  constructor(private readonly graphTraversal: GraphTraversalService) {}
+
+  async findConnectionPath(userId1: string, userId2: string) {
+    // Find shortest path between two users
+    return this.graphTraversal.findShortestPath(userId1, userId2, {
+      relationshipType: 'KNOWS',
+      maxDepth: 6,
+      direction: 'both',
+    });
+  }
+
+  async getAllConnectionPaths(userId1: string, userId2: string) {
+    // Find all paths (up to limit)
+    return this.graphTraversal.findAllPaths(userId1, userId2, {
+      relationshipType: 'KNOWS',
+      maxDepth: 4,
+      limit: 10,
+    });
+  }
+
+  async getNeighbors(userId: string, depth: number = 1) {
+    // Get neighbors at specific depth
+    return this.graphTraversal.findNeighbors(userId, {
+      depth,
+      relationshipTypes: ['KNOWS', 'WORKS_WITH'],
+      direction: 'both',
+    });
+  }
+}
+```
+
+**API Methods:**
+
+- `findShortestPath()` - Shortest path between two nodes
+- `findAllPaths()` - Find multiple paths (with limit)
+- `findNeighbors()` - Get neighbors at depth
+- `traverseFrom()` - Custom traversal from a node
+
+### 3. GraphMetricsService - Graph Analytics
+
+Use for centrality calculations, community detection, and graph statistics:
+
+```typescript
+import { GraphMetricsService } from '@hive-academy/nestjs-neo4j';
+
+@Injectable()
+export class NetworkAnalyticsService {
+  constructor(private readonly graphMetrics: GraphMetricsService) {}
+
+  async findInfluencers() {
+    // Find nodes with high betweenness centrality
+    return this.graphMetrics.calculateCentrality('betweenness', {
+      limit: 20,
+      direction: 'both',
+    });
+  }
+
+  async detectCommunities() {
+    // Detect communities using Louvain algorithm
+    return this.graphMetrics.detectCommunities({
+      algorithm: 'louvain',
+      relationshipTypes: ['KNOWS', 'WORKS_WITH'],
+    });
+  }
+
+  async getNetworkStats() {
+    // Get comprehensive graph statistics
+    return this.graphMetrics.getGraphStatistics({
+      includeDistribution: true,
+      sampleSize: 10000,
+    });
+  }
+}
+```
+
+**API Methods:**
+
+- `calculateCentrality()` - Degree, betweenness, closeness, eigenvector centrality
+- `detectCommunities()` - Louvain, label propagation algorithms
+- `getGraphStatistics()` - Node/relationship counts, degree distribution
+- `findConnectedComponents()` - Identify disconnected subgraphs
+
+### 4. RelationshipCoreRepository - Relationship CRUD
+
+Use for all relationship management operations:
+
+```typescript
+import { RelationshipCoreRepository } from '@hive-academy/nestjs-neo4j';
+
+@Injectable()
+export class TechnologyService {
+  constructor(
+    @Inject('USES_TECHNOLOGY_REPOSITORY')
+    private readonly techRelRepo: RelationshipCoreRepository<
+      { proficiency: string; since: Date },
+      Achievement,
+      Technology
+    >
+  ) {}
+
+  async addTechnology(achievementId: string, techId: string) {
+    return this.techRelRepo.createRelationship({
+      sourceId: achievementId,
+      targetId: techId,
+      type: 'USES_TECHNOLOGY',
+      properties: {
+        proficiency: 'intermediate',
+        since: new Date(),
+      },
+    });
+  }
+
+  async getTechnologiesForAchievement(achievementId: string) {
+    return this.techRelRepo.findBySource(achievementId, {
+      includeRelationshipProps: true,
+      limit: 50,
+    });
+  }
+
+  async updateProficiency(achievementId: string, techId: string, level: string) {
+    return this.techRelRepo.updateRelationship(
+      achievementId,
+      techId,
+      { proficiency: level },
+      { type: 'USES_TECHNOLOGY' }
+    );
+  }
+}
+```
+
+**API Methods:**
+
+- `createRelationship()` - Create relationship with properties
+- `findBySource()` / `findByTarget()` - Find relationships from/to node
+- `findBetween()` - Find relationship between specific nodes
+- `updateRelationship()` - Update relationship properties
+- `deleteRelationship()` / `softDeleteRelationship()` - Remove relationships
+- `countBySource()` / `countByTarget()` - Count relationships
+- `relationshipExists()` - Check relationship existence
+
+### 5. RelationshipBulkOperationsService - Batch Operations
+
+Use for batch relationship creation, updates, and deletes:
+
+```typescript
+import { RelationshipBulkOperationsService } from '@hive-academy/nestjs-neo4j';
+
+@Injectable()
+export class BulkTechnologyService {
+  constructor(
+    @Inject('USES_TECHNOLOGY_BULK_SERVICE')
+    private readonly bulkService: RelationshipBulkOperationsService<
+      { proficiency: string },
+      Achievement,
+      Technology
+    >
+  ) {}
+
+  async addMultipleTechnologies(achievementId: string, techIds: string[]) {
+    // Batch create relationships
+    const operations = techIds.map((techId) => ({
+      sourceId: achievementId,
+      targetId: techId,
+      type: 'USES_TECHNOLOGY' as const,
+      properties: { proficiency: 'beginner' },
+    }));
+
+    return this.bulkService.batchCreate(operations);
+  }
+
+  async updateAllProficiencies(achievementId: string, newLevel: string) {
+    // Batch update all relationships from a source
+    return this.bulkService.batchUpdateFromSource(
+      achievementId,
+      { proficiency: newLevel },
+      { type: 'USES_TECHNOLOGY' }
+    );
+  }
+
+  async removeAllTechnologies(achievementId: string) {
+    // Batch delete all relationships from a source
+    return this.bulkService.deleteAllFromSource(achievementId, {
+      type: 'USES_TECHNOLOGY',
+      hard: true,
+    });
+  }
+}
+```
+
+**API Methods:**
+
+- `batchCreate()` - Create multiple relationships at once
+- `batchUpdate()` - Update multiple relationships
+- `batchDelete()` - Delete multiple relationships
+- `batchUpdateFromSource()` / `batchUpdateToTarget()` - Bulk update by source/target
+- `deleteAllFromSource()` / `deleteAllToTarget()` - Bulk delete by source/target
+
+### 6. Module Configuration for Specialized Services
+
+To use specialized services, register them in your module:
+
+```typescript
+import {
+  Neo4jModule,
+  GraphPatternService,
+  GraphTraversalService,
+  GraphMetricsService,
+  RelationshipCoreRepository,
+  RelationshipBulkOperationsService,
+} from '@hive-academy/nestjs-neo4j';
+
+@Module({
+  imports: [Neo4jModule.forFeature([Achievement, Technology])],
+  providers: [
+    // Graph services (no configuration needed)
+    GraphPatternService,
+    GraphTraversalService,
+    GraphMetricsService,
+
+    // Relationship services (configure per relationship type)
+    {
+      provide: 'USES_TECHNOLOGY_REPOSITORY',
+      useFactory: (neogma: NeogmaService) => {
+        return new RelationshipCoreRepository(
+          'USES_TECHNOLOGY',
+          'Achievement',
+          'Technology',
+          neogma
+        );
+      },
+      inject: [NeogmaService],
+    },
+    {
+      provide: 'USES_TECHNOLOGY_BULK_SERVICE',
+      useFactory: (neogma: NeogmaService) => {
+        return new RelationshipBulkOperationsService(
+          'USES_TECHNOLOGY',
+          'Achievement',
+          'Technology',
+          neogma
+        );
+      },
+      inject: [NeogmaService],
+    },
+
+    // Your services
+    ApprovalAnalyticsService,
+    ConnectionService,
+    NetworkAnalyticsService,
+    TechnologyService,
+  ],
+  exports: [GraphPatternService, GraphTraversalService, 'USES_TECHNOLOGY_REPOSITORY'],
+})
+export class AnalyticsModule {}
+```
+
+### 7. When to Write Custom Repository Code
+
+**Only create custom repository methods when:**
+
+1. **Domain-Specific Business Logic**: Complex workflows unique to your entity
+
+   ```typescript
+   @Injectable()
+   export class ApprovalRequestRepository extends Neo4jRepository<ApprovalRequest> {
+     // ✅ GOOD - Domain-specific workflow
+     async storeApprovalRequest(data: ApprovalStorageData): Promise<string> {
+       // Multi-step creation with validation and JSON parsing
+       // that's specific to approval request business logic
+     }
+   }
+   ```
+
+2. **Combining Multiple Specialized Services**: When you need to orchestrate multiple services
+
+   ```typescript
+   async analyzeApprovalNetwork(executionId: string) {
+     // Use GraphPatternService to get approval chain
+     const chain = await this.graphPattern.matchPattern(...);
+
+     // Use GraphMetricsService to calculate metrics
+     const metrics = await this.graphMetrics.calculateCentrality(...);
+
+     // Combine results with domain logic
+     return this.combineAndFormat(chain, metrics);
+   }
+   ```
+
+**❌ DO NOT create custom repository methods for:**
+
+- Relationship loading (use `RelationshipCoreRepository.findBySource()`)
+- Batch operations (use `RelationshipBulkOperationsService.batchCreate()`)
+- Path finding (use `GraphTraversalService.findShortestPath()`)
+- Pattern matching (use `GraphPatternService.matchPattern()`)
+- Analytics (use `GraphMetricsService.calculateCentrality()`)
+
+## 📋 Checklist for Implementation
+
+- [ ] Install @hive-academy/nestjs-neo4j package
+- [ ] Configure Neo4jModule in AppModule
+- [ ] Create entity classes with decorators
+- [ ] Register Neogma models in services
+- [ ] Implement repositories with @Repository
+- [ ] Add security decorators where needed
+- [ ] Set up constraint decorators on entities
+- [ ] Configure multi-tenancy if required
+- [ ] Add transaction decorators for critical operations
+- [ ] Implement metrics monitoring
+- [ ] Write unit and integration tests
+- [ ] Set up proper indexes for performance
+
+## 🎯 Best Practices Summary
+
+1. **ALWAYS use @Repository decorator** - This is the RECOMMENDED pattern for all repository services
+2. **Extend BaseRepositoryService<T>** - Provides TypeScript support for auto-generated methods
+3. **PREFER QueryBuilder over raw Cypher** - Use `neogmaService.createQueryBuilder()` for type-safe queries
+4. **Use parameters in queries** - Never concatenate user input into Cypher (QueryBuilder handles this automatically)
+5. **Apply security decorators** - Layer security with @Safe, @Authorize, etc.
+6. **Use transactions** - Apply @Transactional for multi-step operations
+7. **Index frequently queried properties** - Use constraint decorators
+8. **Monitor metrics** - Track performance with NeogmaMetricsService
+9. **Test thoroughly** - Both unit and integration tests
+10. **Handle errors gracefully** - Use try-catch and proper error messages
+
+### 🎯 RECOMMENDED REPOSITORY PATTERN
+
+```typescript
+@Repository(() => EntityType)
+@Injectable()
+export class EntityRepository extends BaseRepositoryService<EntityType> {
+  constructor(@InjectNeogma() neogmaService: NeogmaService) {
+    super();
+  }
+  // Auto-generated: findById, findAll, create, update, delete, count, exists
+
+  // Add custom business methods here
+}
+```
+
+## Repository Pattern (TypeORM-Style) - NEW
+
+### Auto-Generated Repositories (Zero Boilerplate)
+
+For simple CRUD operations, use auto-generated repositories with **ZERO manual code**:
+
+```typescript
+// 1. Entity definition (already exists - no changes)
+@Neo4jEntity('User')
+export class User extends Neo4jBaseEntity {
+  @Id() id: string;
+  @Neo4jProp() @NotNull() email: string;
+  @Neo4jProp() name: string;
+}
+
+// 2. Register entities in module (TypeORM-style)
+@Module({
+  imports: [
+    Neo4jModule.forFeature([User, Post, Comment]), // Auto-generates repositories!
+  ],
+  providers: [UserService],
+})
+export class UserModule {}
+
+// 3. Inject and use repository (WORKS IMMEDIATELY)
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User) // Auto-injection!
+    private userRepo: Neo4jRepository<User> // Fully functional
+  ) {}
+
+  async getUser(id: string) {
+    // Works immediately - NO manual code needed
+    return this.userRepo.findById(id);
+  }
+
+  async getAllUsers() {
+    return this.userRepo.findAll();
+  }
+
+  async createUser(data: Partial<User>) {
+    return this.userRepo.create(data);
+  }
+
+  async searchUsers(criteria: Partial<User>) {
+    return this.userRepo.findAll({ where: criteria });
+  }
+}
+```
+
+**Benefits**:
+
+- Zero boilerplate code
+- TypeORM/Mongoose ecosystem consistency
+- Full TypeScript type safety
+- All CRUD methods work immediately (findById, findAll, create, update, delete, count, exists, save)
+
+### Custom Repositories (Extend Base)
+
+For custom business logic, extend the base repository:
+
+```typescript
+// 1. Define custom repository (extends base)
+@Injectable()
+export class ApprovalRequestRepository extends Neo4jRepository<ApprovalRequest> {
+  // Inherits ALL CRUD methods from base (9 methods)
+  // Add ONLY custom business logic
+
+  async storeApprovalRequest(request: ApprovalStorageData): Promise<string> {
+    const qb = this.createQueryBuilder(); // Helper from base
+    const bindParam = qb.getBindParam();
+
+    const idParam = bindParam.add(request.id);
+    const statusParam = bindParam.add(request.status);
+
+    qb.create(
+      `(a:ApprovalRequest {
+      id: $${idParam},
+      status: $${statusParam},
+      createdAt: datetime()
+    })`
+    ).return('a.id as id');
+
+    const result = await this.executeQuery(qb.getStatement(), bindParam.get());
+    return result.records[0].get('id');
+  }
+
+  async getPendingApprovals(): Promise<ApprovalRequest[]> {
+    const qb = this.createQueryBuilder();
+    const bindParam = qb.getBindParam();
+
+    const statusParam = bindParam.add('pending');
+
+    qb.match('(a:ApprovalRequest)')
+      .where(`a.status = $${statusParam}`)
+      .return('a')
+      .orderBy('a.requestedAt ASC');
+
+    const result = await this.executeQuery(qb.getStatement(), bindParam.get());
+    return result.records.map((r) => r.get('a').properties);
+  }
+}
+
+// 2. Register custom repository (replaces default)
+@Module({
+  imports: [Neo4jModule.forFeature([ApprovalRequest])],
+  providers: [
+    {
+      provide: getRepositoryToken(ApprovalRequest), // Replace default
+      useClass: ApprovalRequestRepository,
+    },
+    HitlService,
+  ],
+  exports: [getRepositoryToken(ApprovalRequest)],
+})
+export class HitlModule {}
+
+// 3. Inject custom repository (same injection pattern)
+@Injectable()
+export class HitlService {
+  constructor(
+    @InjectRepository(ApprovalRequest) // Injects custom repository
+    private approvalRepo: ApprovalRequestRepository
+  ) {}
+
+  async getPending() {
+    return this.approvalRepo.getPendingApprovals(); // Custom method
+  }
+
+  async findById(id: string) {
+    return this.approvalRepo.findById(id); // Inherited CRUD method
+  }
+}
+```
+
+**Benefits**:
+
+- No manual CRUD delegation (49 lines saved per repository)
+- Focus only on custom business logic
+- All helper methods available (createQueryBuilder, executeQuery, findRelated, etc.)
+- Full type safety with generics
+
+### Available Methods
+
+**Neo4jRepository<T> provides these methods automatically**:
+
+**CRUD Operations** (9 methods):
+
+- `findById(id: string): Promise<T | null>`
+- `findAll(options?: FindOptions<T>): Promise<T[]>`
+- `findOne(options: FindOptions<T>): Promise<T | null>`
+- `create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>`
+- `update(id: string, data: Partial<T>): Promise<T | null>`
+- `delete(id: string, detach?: boolean): Promise<boolean>`
+- `count(where?: Partial<T>): Promise<number>`
+- `exists(id: string): Promise<boolean>`
+- `save(data: Partial<T>): Promise<T>`
+
+**Helper Methods** (for custom repositories - 7 methods):
+
+- `createQueryBuilder(): QueryBuilder`
+- `executeQuery<R>(cypher: string, params?: Record<string, any>): Promise<R>`
+- `createRelationship(fromId: string, toId: string, type: string, properties?: Record<string, unknown>): Promise<void>`
+- `findRelated<R>(id: string, relationshipType: string, direction?: 'OUT' | 'IN' | 'BOTH'): Promise<R[]>`
+- `getLabel(): string`
+- `getEntity(): Type<T>`
+- `getNeogmaService(): NeogmaService`
+
+### Migration from Old Pattern
+
+**Before (Old Manual Pattern)**:
+
+```typescript
+@Neo4jRepository(() => User)
+@Injectable()
+export class UserRepository {
+  private readonly label = 'User';
+
+  constructor(
+    private readonly crud: Neo4jCrudService,
+    @InjectNeogma() private readonly neogma: NeogmaService
+  ) {}
+
+  // 49 lines of manual CRUD delegation
+  findById(id: string) {
+    return this.crud.findById<User>(this.label, id);
+  }
+  findAll(options?) {
+    return this.crud.findAll<User>(this.label, options);
+  }
+  create(data) {
+    return this.crud.create<User>(this.label, data);
+  }
+  update(id, data) {
+    return this.crud.update<User>(this.label, id, data);
+  }
+  delete(id) {
+    return this.crud.delete(this.label, id);
+  }
+  count(where?) {
+    return this.crud.count<User>(this.label, where);
+  }
+  exists(id) {
+    return this.crud.exists(this.label, id);
+  }
+}
+```
+
+**After (TypeORM-Style - Zero Boilerplate)**:
+
+```typescript
+// NO repository class needed for simple CRUD!
+
+@Module({
+  imports: [Neo4jModule.forFeature([User])], // Auto-generates repository
+})
+export class UserModule {}
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private userRepo: Neo4jRepository<User>
+  ) {}
+
+  async getUser(id: string) {
+    return this.userRepo.findById(id); // Works immediately
+  }
+}
+```
+
+**For custom repositories, extend base**:
+
+```typescript
+@Injectable()
+export class UserRepository extends Neo4jRepository<User> {
+  // Inherits ALL CRUD methods automatically
+
+  // Add ONLY custom business logic
+  async findByEmail(email: string): Promise<User | null> {
+    const qb = this.createQueryBuilder();
+    // ... custom query
+  }
+}
+```

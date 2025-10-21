@@ -1,487 +1,668 @@
-# @hive-academy/langgraph-modules-monitoring
-
-Enterprise-grade observability and monitoring module for AI workflow systems built with LangGraph.
+# Monitoring Module - User Manual
 
 ## Overview
 
-The Monitoring Module provides comprehensive observability for AI agent workflows, enabling production-ready monitoring, alerting, and performance tracking for sophisticated AI applications.
+The **@hive-academy/langgraph-monitoring** module provides enterprise-grade observability and performance monitoring for LangGraph workflows, enabling real-time metrics collection, intelligent alerting, comprehensive health checks, and production-ready dashboard capabilities.
 
-### Core Philosophy
+**Key Features:**
 
-This module follows a **clean separation of concerns** approach - we provide the observability infrastructure, you add the business intelligence. Your AI workflow packages handle the technical operations while you implement monitoring for the metrics that matter to your specific business domain.
-
-```typescript
-// ✅ Clean Architecture: Separate concerns
-@Module({
-  imports: [
-    // 🔧 INFRASTRUCTURE: AI workflow building blocks
-    NestjsLanggraphModule.forRoot({...}),
-    ChromaDBModule.forRoot({...}),
-    Neo4jModule.forRoot({...}),
-
-    // 📊 OBSERVABILITY: Monitoring as a separate concern
-    LanggraphModulesMonitoringModule.forRoot({...})
-  ]
-})
-export class YourAppModule {}
-```
-
-## Key Features
-
-- **🎯 Real-time Metrics**: Collect custom business metrics and performance data
-- **🚨 Smart Alerting**: Rule-based alerts with multi-channel notifications (Slack, email, PagerDuty)
-- **💊 Health Monitoring**: System and dependency health checks with automatic recovery
-- **📈 Performance Tracking**: Anomaly detection and baseline performance analysis
-- **📊 Dashboard Integration**: Native support for Grafana, Prometheus, and custom dashboards
-- **📋 Compliance**: Audit trails and regulatory compliance reporting
-- **🔍 Distributed Tracing**: End-to-end workflow tracing and debugging
-
-## Installation
-
-```bash
-npm install @hive-academy/langgraph-modules-monitoring
-```
+- **Real-Time Metrics Collection** - Counters, gauges, histograms, and timers with batch processing
+- **Intelligent Alerting** - Rule-based alerts with multi-channel notifications and cooldown management
+- **Health Check System** - Comprehensive service health monitoring with dependency tracking
+- **Performance Tracking** - Anomaly detection, baseline analysis, and resource utilization monitoring
+- **Dashboard & Visualization** - Real-time dashboards with customizable widgets and data export
+- **Production-Ready** - Circuit breakers, fallback mechanisms, and failure-safe operations
 
 ## Quick Start
 
-### Basic Setup
+### Installation & Setup
+
+```bash
+npm install @hive-academy/langgraph-monitoring
+```
 
 ```typescript
+import { Module } from '@nestjs/common';
+import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
+
 @Module({
   imports: [
-    LanggraphModulesMonitoringModule.forRoot({
+    MonitoringModule.forRoot({
+      enabled: true,
       metrics: {
         backend: 'prometheus',
-        exportInterval: 30000,
+        batchSize: 100,
+        flushInterval: 30000,
+        maxBufferSize: 10000,
+        defaultTags: { service: 'my-app', environment: 'production' },
       },
-      alerting: {
-        enabled: true,
-        channels: ['slack', 'email'],
-      },
-      healthChecks: {
-        enabled: true,
-        interval: 60000,
-      },
-    }),
-  ],
-  providers: [YourAIService],
-})
-export class AppModule {}
-```
-
-### Business-Focused Monitoring
-
-The real power comes from monitoring **your specific business logic** built on top of our AI packages:
-
-```typescript
-@Injectable()
-export class ResearcherAgentService {
-  constructor(
-    private workflow: WorkflowService, // From @hive-academy/nestjs-langgraph
-    private chromadb: ChromaDBService, // From @hive-academy/nestjs-chromadb
-    private neo4j: Neo4jService, // From @hive-academy/nestjs-neo4j
-    private monitoring: MonitoringFacadeService // Your business observability
-  ) {}
-
-  async researchTopic(topic: string): Promise<ResearchResult> {
-    // 🎯 YOUR business metrics - only YOU know what matters
-    await this.monitoring.recordCounter('research.topic.started', 1, {
-      topic_category: this.categorize(topic),
-      user_tier: this.getUserTier(),
-      research_depth: 'comprehensive',
-    });
-
-    // Use our packages for the technical work
-    const workflow = await this.workflow.execute('research-workflow', { topic });
-
-    // 💰 Track YOUR business value
-    await this.monitoring.recordMetric('research.value_generated', this.calculateBusinessValue(workflow.result), {
-      research_quality: workflow.confidence,
-      sources_found: workflow.sources.length,
-      time_saved_hours: this.calculateTimeSaved(workflow),
-    });
-
-    return workflow.result;
-  }
-}
-```
-
-## Real-World Examples
-
-### 🏢 Enterprise SaaS Application
-
-```typescript
-@Injectable()
-export class CustomerSupportBotService {
-  constructor(private workflow: WorkflowService, private memory: MemoryService, private chromadb: ChromaDBService, private monitoring: MonitoringFacadeService) {}
-
-  async handleCustomerQuery(query: string, customerId: string): Promise<SupportResponse> {
-    // SaaS business metrics
-    await this.monitoring.recordCounter('support.interaction.started', 1, {
-      customer_tier: await this.getCustomerTier(customerId),
-      query_complexity: this.assessComplexity(query),
-      support_channel: 'ai_bot',
-      tenant_id: this.getTenantId(),
-    });
-
-    // Use our AI packages for technical implementation
-    const context = await this.chromadb.search(query);
-    const customerHistory = await this.memory.getCustomerContext(customerId);
-    const response = await this.workflow.execute('support-workflow', {
-      query,
-      context,
-      customerHistory,
-    });
-
-    // Track SaaS KPIs
-    await this.monitoring.recordMetric('support.resolution.satisfaction', response.confidence, {
-      resolution_time_ms: response.duration,
-      escalation_needed: response.needsHuman,
-      cost_saved_usd: this.calculateCostSavings(response),
-      customer_lifetime_value: await this.getCLV(customerId),
-    });
-
-    return response;
-  }
-}
-```
-
-### 🎓 Educational Platform
-
-```typescript
-@Injectable()
-export class LearningAssistantService {
-  async provideLearningGuidance(studentQuery: string, studentId: string): Promise<LearningResponse> {
-    // Education-specific metrics
-    await this.monitoring.recordCounter('learning.session.started', 1, {
-      student_level: await this.getStudentLevel(studentId),
-      subject_area: this.identifySubject(studentQuery),
-      learning_style: await this.getLearningStyle(studentId),
-    });
-
-    const guidance = await this.generateGuidance(studentQuery, studentId);
-
-    // Track educational outcomes
-    await this.monitoring.recordMetric('learning.comprehension.improvement', guidance.comprehensionScore, {
-      engagement_level: guidance.engagementMetrics,
-      knowledge_gap_filled: guidance.knowledgeGapsClosed,
-      learning_velocity: guidance.learningVelocity,
-    });
-
-    return guidance;
-  }
-}
-```
-
-### 🔬 Research Laboratory
-
-```typescript
-@Injectable()
-export class BiotechResearchService {
-  async analyzeCompound(compoundData: CompoundData): Promise<AnalysisResult> {
-    // Research-specific metrics
-    await this.monitoring.recordCounter('research.compound.analysis.started', 1, {
-      compound_type: compoundData.type,
-      research_grant: this.getCurrentGrant(),
-      lab_equipment_id: compoundData.equipmentUsed,
-    });
-
-    const analysis = await this.performAnalysis(compoundData);
-
-    // Scientific outcome tracking
-    await this.monitoring.recordMetric('research.discovery.potential', analysis.noveltyScore, {
-      statistical_significance: analysis.pValue,
-      reproducibility_score: analysis.reproducibility,
-      clinical_trial_readiness: analysis.clinicalViability,
-      publication_potential: analysis.publicationScore,
-    });
-
-    return analysis;
-  }
-}
-```
-
-## Architecture Benefits
-
-### 🎯 **Focused Package Design**
-
-Each package in the ecosystem has a single, clear responsibility:
-
-```typescript
-const packageResponsibilities = {
-  '@hive-academy/nestjs-langgraph': 'AI workflow orchestration',
-  '@hive-academy/nestjs-chromadb': 'Semantic search & vector operations',
-  '@hive-academy/nestjs-neo4j': 'Graph relationships & analytics',
-  '@hive-academy/langgraph-modules-monitoring': 'Production observability infrastructure',
-  '@hive-academy/langgraph-modules-memory': 'AI agent memory management',
-};
-
-// ✅ Clean separation - no package tries to do everything
-// ✅ Composable - mix and match what you need
-// ✅ Business-focused - you define what success looks like
-```
-
-### 🧠 **Business Context Awareness**
-
-Only **you** understand your business domain and what metrics actually matter:
-
-```typescript
-// 🎯 E-commerce Recommendation Engine
-await this.monitoring.recordMetric('recommendation.conversion_impact', revenueGenerated, {
-  recommendation_algorithm: 'graph_collaborative_filtering',
-  user_segment: 'high_value_customers',
-  product_category: 'electronics',
-  business_impact: 'revenue_driving',
-});
-
-// 🎯 Healthcare Diagnostic Assistant
-await this.monitoring.recordMetric('diagnosis.accuracy_confidence', diagnosticConfidence, {
-  medical_specialty: 'cardiology',
-  patient_risk_level: 'moderate',
-  diagnostic_complexity: 'high',
-  clinical_validation: 'peer_reviewed',
-});
-
-// Our packages can't know these business contexts - only you can!
-```
-
-## Monitoring Configuration
-
-### Production Configuration
-
-```typescript
-@Module({
-  imports: [
-    LanggraphModulesMonitoringModule.forRoot({
-      // Metrics Configuration
-      metrics: {
-        backend: 'prometheus',
-        exportInterval: 15000,
-        maxCardinality: 100000,
-        retention: '90d',
-      },
-
-      // Alerting Configuration
       alerting: {
         enabled: true,
         evaluationInterval: 30000,
-        channels: {
-          slack: { webhook: process.env.SLACK_WEBHOOK },
-          email: { smtp: process.env.SMTP_CONFIG },
-          pagerduty: { routingKey: process.env.PAGERDUTY_KEY },
-        },
-        rules: [
-          {
-            name: 'high_error_rate',
-            condition: 'workflow.error_rate > 0.05',
-            severity: 'critical',
-            channels: ['slack', 'pagerduty'],
-          },
-          {
-            name: 'slow_response_time',
-            condition: 'workflow.avg_duration > 30000',
-            severity: 'warning',
-            channels: ['slack'],
-          },
+        defaultCooldown: 300000,
+        channels: [
+          { type: 'slack', name: 'alerts', config: { webhook: process.env.SLACK_WEBHOOK } },
+          { type: 'email', name: 'critical', config: { smtp: process.env.SMTP_CONFIG } },
         ],
       },
-
-      // Health Checks
       healthChecks: {
         enabled: true,
         interval: 30000,
         timeout: 5000,
-        dependencies: ['neo4j', 'chromadb', 'redis', 'openai'],
-      },
-
-      // Performance Tracking
-      performance: {
-        tracing: { enabled: true, samplingRate: 0.1 },
-        anomalyDetection: true,
-        baselineWindow: '24h',
+        retries: 3,
       },
     }),
   ],
 })
-export class ProductionAppModule {}
+export class AppModule {}
 ```
 
-### Development Configuration
+## ✅ VERIFIED ECOSYSTEM INTEGRATION
+
+**Evidence-Based Integration** (verified through source code analysis)
+
+### Integration Architecture
+
+| Integration Point       | Module            | Pattern                                  | Status    |
+| ----------------------- | ----------------- | ---------------------------------------- | --------- |
+| **Production Config**   | `dev-brand-api`   | Prometheus backend with webhook alerting | ✅ Active |
+| **Workflow Monitoring** | `workflow-engine` | Embedded monitoring in execution context | ✅ Active |
+| **Agent Network**       | `multi-agent`     | Health checks and performance metrics    | ✅ Active |
+| **Memory Tracking**     | `memory`          | Cache hit rates and search time          | ✅ Active |
+| **Checkpoint Health**   | `checkpoint`      | Saver health and storage metrics         | ✅ Active |
+| **Vector DB**           | `nestjs-chromadb` | Query time and document counts           | ✅ Active |
+| **Graph DB**            | `nestjs-neo4j`    | Connection health and query performance  | ✅ Active |
+| **Streaming**           | `streaming`       | Throughput and anomaly detection         | ✅ Active |
+
+**Key Insight**: Monitoring provides a **facade pattern** coordinating 5 specialized services (MetricsCollector, Alerting, HealthCheck, PerformanceTracker, Dashboard) for complete ecosystem observability.
+
+### Real Production Configuration
+
+**Source**: `apps/dev-brand-api/src/app/config/monitoring.config.ts`
 
 ```typescript
-// Simpler setup for development
-@Module({
-  imports: [
-    LanggraphModulesMonitoringModule.forRoot({
-      metrics: { backend: 'memory' },
-      alerting: { enabled: false },
-      healthChecks: { enabled: true, interval: 60000 },
-    }),
-  ],
-})
-export class DevAppModule {}
+// VERIFIED: Production monitoring configuration
+{
+  metrics: {
+    backend: 'prometheus',      // Production-ready backend
+    batchSize: 100,
+    flushInterval: 10000,       // 10 seconds
+    retention: '24h',
+    defaultTags: { service: 'dev-brand-api', environment: 'production' }
+  },
+
+  alerting: {
+    evaluationInterval: 30000,  // 30 seconds
+    defaultCooldown: 300000,    // 5 minutes
+    channels: [{ type: 'webhook', name: 'default-webhook' }],
+    escalationPolicies: [{
+      rules: [{ delay: 300000, severity: 'critical' }]
+    }]
+  },
+
+  healthChecks: {
+    interval: 30000,            // 30 seconds
+    timeout: 5000,              // 5 seconds
+    retries: 3,
+    gracefulShutdownTimeout: 30000
+  },
+
+  performance: {
+    anomalyDetection: true,
+    baselineWindow: '1h',
+    sensitivityThreshold: 2.0,
+    minSamples: 30
+  }
+}
 ```
 
-## API Reference
+**Benefits for Ecosystem Consumers**:
 
-### MonitoringFacadeService
+- ✅ **Workflow-Engine**: Automatic workflow execution tracking
+- ✅ **Multi-Agent**: Agent network health monitoring
+- ✅ **Memory**: Cache performance and search time metrics
+- ✅ **Checkpoint**: Storage health and save time tracking
+- ✅ **Streaming**: Real-time throughput and anomaly alerts
 
-Primary interface for all monitoring operations:
+## Core Services
+
+### MonitoringFacadeService - Primary Interface
+
+**Central orchestrator** for all monitoring operations with failure-safe design:
 
 ```typescript
-// Record various metric types
-await monitoring.recordCounter('workflow.executions', 1, { type: 'research' });
-await monitoring.recordGauge('active.sessions', 42);
-await monitoring.recordHistogram('response.time', 1250, { endpoint: '/api/search' });
-await monitoring.recordTimer('operation.duration', 2500, { operation: 'vector_search' });
+// Metric recording operations
+recordMetric(name: string, value: number, tags?: MetricTags): Promise<void>
+recordTimer(name: string, duration: number, tags?: MetricTags): Promise<void>
+recordCounter(name: string, increment?: number, tags?: MetricTags): Promise<void>
+recordGauge(name: string, value: number, tags?: MetricTags): Promise<void>
+recordHistogram(name: string, value: number, tags?: MetricTags): Promise<void>
 
-// Health check management
-await monitoring.registerHealthCheck('custom_service', async () => {
-  const isHealthy = await this.checkServiceHealth();
-  return { status: isHealthy ? 'up' : 'down' };
-});
+// Health check operations
+registerHealthCheck(name: string, check: HealthCheckFunction): Promise<void>
+getSystemHealth(): Promise<HealthStatus>
+getServiceHealth(serviceName: string): Promise<ServiceHealth>
 
 // Alert management
-const alertId = await monitoring.createAlertRule({
-  name: 'business_kpi_alert',
-  condition: 'revenue.daily < 10000',
-  severity: 'high',
-  channels: ['slack', 'email'],
-});
+createAlertRule(rule: AlertRule): Promise<string>
+updateAlertRule(ruleId: string, updates: Partial<AlertRule>): Promise<void>
+getActiveAlerts(): Promise<Alert[]>
+```
 
-// Query metrics for dashboards
-const metrics = await monitoring.queryMetrics({
-  metric: 'user.engagement.score',
-  timeRange: '24h',
-  aggregation: 'avg',
+### Complete Production Usage Example
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { MonitoringFacadeService, AlertRule } from '@hive-academy/langgraph-monitoring';
+
+interface WorkflowMetrics {
+  executionTime: number;
+  nodeCount: number;
+  memoryUsage: number;
+  success: boolean;
+  errorType?: string;
+}
+
+@Injectable()
+export class ProductionWorkflowMonitoringService {
+  constructor(private readonly monitoring: MonitoringFacadeService) {}
+
+  async initializeProductionMonitoring(): Promise<void> {
+    // Register health checks for critical dependencies
+    await this.monitoring.registerHealthCheck('database', async () => {
+      try {
+        await this.testDatabaseConnection();
+        return { healthy: true, responseTime: 50 };
+      } catch (error) {
+        return { healthy: false, error: error.message };
+      }
+    });
+
+    await this.monitoring.registerHealthCheck('external-api', async () => {
+      const startTime = Date.now();
+      try {
+        await this.pingExternalAPI();
+        return { healthy: true, responseTime: Date.now() - startTime };
+      } catch (error) {
+        return { healthy: false, error: error.message, degraded: true };
+      }
+    });
+
+    // Create critical alert rules
+    const criticalErrorRule: AlertRule = {
+      id: 'workflow-critical-errors',
+      name: 'Workflow Critical Error Rate',
+      description: 'Alert when workflow error rate exceeds 5%',
+      condition: {
+        metric: 'workflow.error_rate',
+        operator: 'gt',
+        threshold: 0.05,
+        timeWindow: 300000, // 5 minutes
+        aggregation: 'avg',
+        evaluationWindow: 60000, // 1 minute
+      },
+      severity: 'critical',
+      channels: [
+        { type: 'slack', name: 'alerts', config: {}, enabled: true },
+        { type: 'email', name: 'critical', config: {}, enabled: true },
+      ],
+      cooldownPeriod: 900000, // 15 minutes
+      enabled: true,
+      metadata: { team: 'platform', priority: 'high' },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await this.monitoring.createAlertRule(criticalErrorRule);
+
+    console.log('Production monitoring initialized with health checks and alert rules');
+  }
+
+  async trackWorkflowExecution(
+    workflowName: string,
+    threadId: string,
+    execution: WorkflowMetrics
+  ): Promise<void> {
+    const tags = {
+      workflow_name: workflowName,
+      thread_id: threadId,
+      success: execution.success.toString(),
+      environment: 'production',
+    };
+
+    // Record execution metrics
+    await Promise.all([
+      this.monitoring.recordTimer('workflow.execution.duration', execution.executionTime, tags),
+      this.monitoring.recordGauge('workflow.execution.nodes', execution.nodeCount, tags),
+      this.monitoring.recordGauge(
+        'workflow.execution.memory_mb',
+        execution.memoryUsage / 1024 / 1024,
+        tags
+      ),
+      this.monitoring.recordCounter('workflow.executions.total', 1, tags),
+    ]);
+
+    // Record success/error metrics
+    if (execution.success) {
+      await this.monitoring.recordCounter('workflow.executions.success', 1, tags);
+    } else {
+      await this.monitoring.recordCounter('workflow.executions.error', 1, {
+        ...tags,
+        error_type: execution.errorType || 'unknown',
+      });
+
+      // Calculate and record error rate
+      const errorRate = await this.calculateErrorRate(workflowName);
+      await this.monitoring.recordGauge('workflow.error_rate', errorRate, {
+        workflow_name: workflowName,
+      });
+    }
+
+    // Track performance anomalies
+    await this.detectPerformanceAnomalies(workflowName, execution);
+  }
+
+  private async calculateErrorRate(workflowName: string): Promise<number> {
+    // In production, this would query your metrics backend
+    // For this example, we'll simulate error rate calculation
+    const totalExecutions = 100; // Would come from metrics query
+    const errorCount = 5; // Would come from metrics query
+    return errorCount / totalExecutions;
+  }
+
+  private async detectPerformanceAnomalies(
+    workflowName: string,
+    execution: WorkflowMetrics
+  ): Promise<void> {
+    // Detect execution time anomalies
+    const avgExecutionTime = 5000; // Would come from baseline calculation
+    if (execution.executionTime > avgExecutionTime * 3) {
+      await this.monitoring.recordCounter('workflow.anomalies.slow_execution', 1, {
+        workflow_name: workflowName,
+        severity: 'high',
+        deviation: (execution.executionTime / avgExecutionTime - 1).toFixed(2),
+      });
+    }
+
+    // Detect memory usage spikes
+    const avgMemoryUsage = 50 * 1024 * 1024; // 50MB baseline
+    if (execution.memoryUsage > avgMemoryUsage * 2) {
+      await this.monitoring.recordCounter('workflow.anomalies.high_memory', 1, {
+        workflow_name: workflowName,
+        severity: execution.memoryUsage > avgMemoryUsage * 5 ? 'critical' : 'medium',
+      });
+    }
+  }
+
+  async generateHealthReport(): Promise<HealthReport> {
+    const systemHealth = await this.monitoring.getSystemHealth();
+    const activeAlerts = await this.monitoring.getActiveAlerts();
+
+    return {
+      overall: systemHealth.overall,
+      timestamp: new Date(),
+      services: systemHealth.services,
+      activeAlerts: activeAlerts.length,
+      criticalAlerts: activeAlerts.filter((a) => a.severity === 'critical').length,
+      uptime: systemHealth.uptime,
+      recommendations: this.generateHealthRecommendations(systemHealth, activeAlerts),
+    };
+  }
+
+  private generateHealthRecommendations(health: HealthStatus, alerts: Alert[]): string[] {
+    const recommendations: string[] = [];
+
+    if (health.overall === 'unhealthy') {
+      recommendations.push('Immediate attention required - system is unhealthy');
+    }
+
+    if (alerts.filter((a) => a.severity === 'critical').length > 0) {
+      recommendations.push('Address critical alerts immediately');
+    }
+
+    const degradedServices = Object.entries(health.services)
+      .filter(([, service]) => service.state === 'degraded')
+      .map(([name]) => name);
+
+    if (degradedServices.length > 0) {
+      recommendations.push(`Monitor degraded services: ${degradedServices.join(', ')}`);
+    }
+
+    return recommendations;
+  }
+
+  private async testDatabaseConnection(): Promise<void> {
+    // Simulate database health check
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+
+  private async pingExternalAPI(): Promise<void> {
+    // Simulate external API health check
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+```
+
+## Configuration
+
+### Basic Configuration
+
+```typescript
+MonitoringModule.forRoot({
+  enabled: true,
+  metrics: {
+    backend: 'memory',
+    batchSize: 50,
+    flushInterval: 30000,
+  },
+  alerting: {
+    enabled: true,
+    evaluationInterval: 30000,
+  },
+  healthChecks: {
+    enabled: true,
+    interval: 30000,
+  },
 });
 ```
 
-## Integration Examples
-
-### Multi-Package AI System
+### Production Configuration
 
 ```typescript
+MonitoringModule.forRootAsync({
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => ({
+    enabled: configService.get('MONITORING_ENABLED', true),
+    metrics: {
+      backend: configService.get('METRICS_BACKEND', 'prometheus'),
+      batchSize: configService.get('METRICS_BATCH_SIZE', 100),
+      flushInterval: configService.get('METRICS_FLUSH_INTERVAL', 30000),
+      maxBufferSize: configService.get('METRICS_BUFFER_SIZE', 10000),
+      retention: configService.get('METRICS_RETENTION', '7d'),
+      defaultTags: {
+        service: configService.get('SERVICE_NAME', 'unknown'),
+        environment: configService.get('NODE_ENV', 'development'),
+        version: configService.get('APP_VERSION', '1.0.0'),
+      },
+    },
+    alerting: {
+      enabled: configService.get('ALERTING_ENABLED', true),
+      evaluationInterval: configService.get('ALERT_EVALUATION_INTERVAL', 30000),
+      defaultCooldown: configService.get('ALERT_DEFAULT_COOLDOWN', 300000),
+      channels: [
+        {
+          type: 'slack',
+          name: 'production-alerts',
+          config: { webhook: configService.get('SLACK_WEBHOOK_URL') },
+          enabled: true,
+        },
+        {
+          type: 'email',
+          name: 'critical-alerts',
+          config: {
+            smtp: {
+              host: configService.get('SMTP_HOST'),
+              port: configService.get('SMTP_PORT', 587),
+              auth: {
+                user: configService.get('SMTP_USER'),
+                pass: configService.get('SMTP_PASS'),
+              },
+            },
+          },
+          enabled: true,
+        },
+      ],
+    },
+    healthChecks: {
+      enabled: configService.get('HEALTH_CHECKS_ENABLED', true),
+      interval: configService.get('HEALTH_CHECK_INTERVAL', 30000),
+      timeout: configService.get('HEALTH_CHECK_TIMEOUT', 5000),
+      retries: configService.get('HEALTH_CHECK_RETRIES', 3),
+      gracefulShutdownTimeout: configService.get('HEALTH_GRACEFUL_SHUTDOWN', 30000),
+    },
+    performance: {
+      trackingEnabled: configService.get('PERFORMANCE_TRACKING', true),
+      anomalyDetection: configService.get('ANOMALY_DETECTION', true),
+      baselineWindow: configService.get('BASELINE_WINDOW', '7d'),
+      sensitivityThreshold: configService.get('ANOMALY_SENSITIVITY', 2.0),
+      minSamples: configService.get('MIN_SAMPLES', 100),
+    },
+  }),
+  inject: [ConfigService],
+});
+```
+
+## Core Interfaces
+
+### Monitoring Types
+
+```typescript
+interface MetricTags {
+  readonly [key: string]: string | number | boolean;
+}
+
+interface Metric {
+  readonly name: string;
+  readonly type: 'counter' | 'gauge' | 'histogram' | 'timer' | 'summary';
+  readonly value: number;
+  readonly tags: MetricTags;
+  readonly timestamp: Date;
+  readonly unit?: string;
+}
+
+interface AlertRule {
+  readonly id: string;
+  readonly name: string;
+  readonly condition: AlertCondition;
+  readonly severity: 'info' | 'warning' | 'error' | 'critical';
+  readonly channels: readonly NotificationChannel[];
+  readonly cooldownPeriod: number;
+  readonly enabled: boolean;
+}
+
+interface HealthStatus {
+  readonly overall: 'healthy' | 'degraded' | 'unhealthy';
+  readonly services: Record<string, ServiceHealth>;
+  readonly timestamp: Date;
+  readonly uptime: number;
+}
+```
+
+### Service Interfaces
+
+```typescript
+interface IMonitoringFacade {
+  recordMetric(name: string, value: number, tags?: MetricTags): Promise<void>;
+  recordTimer(name: string, duration: number, tags?: MetricTags): Promise<void>;
+  registerHealthCheck(name: string, check: HealthCheckFunction): Promise<void>;
+  getSystemHealth(): Promise<HealthStatus>;
+  createAlertRule(rule: AlertRule): Promise<string>;
+  queryMetrics(query: MetricQuery): Promise<MetricData[]>;
+}
+
+type HealthCheckFunction = () => Promise<boolean | DetailedHealthCheckResult>;
+
+interface DetailedHealthCheckResult {
+  healthy: boolean;
+  degraded?: boolean;
+  responseTime?: number;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}
+```
+
+## Error Handling
+
+```typescript
+import {
+  MetricsCollectionError,
+  AlertingError,
+  HealthCheckError,
+} from '@hive-academy/langgraph-monitoring';
+
 @Injectable()
-export class IntelligentContentService {
-  constructor(
-    private workflow: WorkflowService, // LangGraph workflows
-    private vectorDB: ChromaDBService, // Semantic search
-    private graphDB: Neo4jService, // Relationship data
-    private memory: MemoryService, // Conversational memory
-    private monitoring: MonitoringFacadeService // Business observability
-  ) {}
+export class RobustMonitoringService {
+  constructor(private readonly monitoring: MonitoringFacadeService) {}
 
-  async generatePersonalizedContent(userId: string, topic: string): Promise<Content> {
-    // Start business tracking
-    const startTime = Date.now();
-    await this.monitoring.recordCounter('content.generation.started', 1, {
-      user_segment: await this.getUserSegment(userId),
-      content_type: this.getContentType(topic),
-      personalization_level: 'high',
-    });
-
+  async safeRecordMetric(name: string, value: number, tags?: MetricTags): Promise<void> {
     try {
-      // Use multiple packages together
-      const userPreferences = await this.vectorDB.findSimilar(`user preferences for ${topic}`);
-
-      const userHistory = await this.graphDB.getUserJourney(userId);
-      const conversationalContext = await this.memory.getContext(userId);
-
-      const content = await this.workflow.execute('content-generation', {
-        topic,
-        preferences: userPreferences,
-        history: userHistory,
-        context: conversationalContext,
-      });
-
-      // Track business success metrics
-      await this.monitoring.recordMetric('content.engagement.predicted', content.engagementScore, {
-        content_length: content.wordCount,
-        personalization_accuracy: content.relevanceScore,
-        generation_time_ms: Date.now() - startTime,
-      });
-
-      return content;
+      await this.monitoring.recordMetric(name, value, tags);
     } catch (error) {
-      await this.monitoring.recordCounter('content.generation.failed', 1, {
-        error_type: error.constructor.name,
-        failure_stage: this.identifyFailureStage(error),
-      });
+      if (error instanceof MetricsCollectionError) {
+        this.logger.warn('Metrics collection failed, continuing execution:', error.message);
+        // Don't throw - monitoring failures should not break business logic
+      } else {
+        this.logger.error('Unexpected monitoring error:', error);
+      }
+    }
+  }
+
+  async safeHealthCheck(serviceName: string): Promise<ServiceHealth | null> {
+    try {
+      return await this.monitoring.getServiceHealth(serviceName);
+    } catch (error) {
+      if (error instanceof HealthCheckError) {
+        this.logger.warn(`Health check failed for ${serviceName}:`, error.message);
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async safeCreateAlert(rule: AlertRule): Promise<string | null> {
+    try {
+      return await this.monitoring.createAlertRule(rule);
+    } catch (error) {
+      if (error instanceof AlertingError) {
+        this.logger.error('Alert rule creation failed:', error.message);
+        return null;
+      }
       throw error;
     }
   }
 }
 ```
 
-## Why This Architecture Works
+## Testing
 
-### 🎯 **Package Focus**
+### Unit Testing
 
-- Each package excels at **one specific capability**
-- No package tries to guess your business metrics
-- Clean interfaces and clear responsibilities
+```typescript
+import { Test } from '@nestjs/testing';
+import { MonitoringModule, MonitoringFacadeService } from '@hive-academy/langgraph-monitoring';
 
-### 🧠 **Business Intelligence Where It Belongs**
+describe('MonitoringFacadeService', () => {
+  let service: MonitoringFacadeService;
 
-- **You** define what success looks like for your domain
-- **You** track the KPIs that matter to your business
-- **You** set the alert thresholds based on your SLAs
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      imports: [
+        MonitoringModule.forRoot({
+          enabled: true,
+          metrics: { backend: 'memory', batchSize: 10 },
+          alerting: { enabled: false },
+          healthChecks: { enabled: true, interval: 10000 },
+        }),
+      ],
+    }).compile();
 
-### 🔧 **Maximum Flexibility**
+    service = module.get<MonitoringFacadeService>(MonitoringFacadeService);
+  });
 
-- Mix and match packages based on your needs
-- Implement monitoring that fits your industry
-- Scale observability as your application grows
+  it('should record metrics without throwing', async () => {
+    await expect(service.recordCounter('test.counter', 1, { test: true })).resolves.not.toThrow();
+    await expect(service.recordGauge('test.gauge', 50)).resolves.not.toThrow();
+    await expect(service.recordTimer('test.timer', 1000)).resolves.not.toThrow();
+  });
 
-### 🚀 **Enterprise Ready**
+  it('should register and check health', async () => {
+    await service.registerHealthCheck('test-service', async () => ({
+      healthy: true,
+      responseTime: 10,
+    }));
 
-- Production-grade monitoring infrastructure
-- Support for all major observability backends
-- Compliance and audit trail capabilities
+    const health = await service.getServiceHealth('test-service');
+    expect(health.state).toBe('healthy');
+  });
 
-## Getting Started
+  it('should create alert rules', async () => {
+    const rule: AlertRule = {
+      id: 'test-rule',
+      name: 'Test Rule',
+      description: 'Test alert rule',
+      condition: {
+        metric: 'test.metric',
+        operator: 'gt',
+        threshold: 100,
+        timeWindow: 60000,
+        aggregation: 'avg',
+        evaluationWindow: 30000,
+      },
+      severity: 'warning',
+      channels: [],
+      cooldownPeriod: 300000,
+      enabled: true,
+      metadata: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-1. **Install the monitoring module**:
+    const ruleId = await service.createAlertRule(rule);
+    expect(ruleId).toBe('test-rule');
+  });
+});
+```
 
-   ```bash
-   npm install @hive-academy/langgraph-modules-monitoring
-   ```
+## Troubleshooting
 
-2. **Add basic configuration**:
+### Common Issues
 
-   ```typescript
-   LanggraphModulesMonitoringModule.forRoot({
-     metrics: { backend: 'memory' }, // Start simple
-     healthChecks: { enabled: true },
-   });
-   ```
+#### 1. High Memory Usage from Metric Buffering
 
-3. **Start tracking YOUR business metrics**:
+```typescript
+// Solution: Configure smaller batch sizes and frequent flushing
+const config = {
+  metrics: {
+    batchSize: 50, // Smaller batches
+    flushInterval: 10000, // More frequent flushing (10s)
+    maxBufferSize: 1000, // Smaller buffer limit
+  },
+};
+```
 
-   ```typescript
-   await this.monitoring.recordMetric('your.business.kpi', value, {
-     context: 'that matters to you',
-   });
-   ```
+#### 2. Alert Spam from Noisy Metrics
 
-4. **Scale up with production backends**:
-   ```typescript
-   // When ready, integrate with Prometheus, Grafana, etc.
-   metrics: {
-     backend: 'prometheus';
-   }
-   ```
+```typescript
+// Solution: Implement longer cooldowns and aggregation windows
+const alertRule: AlertRule = {
+  condition: {
+    metric: 'noisy.metric',
+    timeWindow: 300000, // 5 minute window
+    aggregation: 'avg', // Use average to smooth spikes
+    evaluationWindow: 120000, // 2 minute evaluation
+  },
+  cooldownPeriod: 900000, // 15 minute cooldown
+};
+```
 
-## Support
+#### 3. Health Check Timeouts
 
-- 📚 [Full Documentation](./docs/monitoring-guide.md)
-- 🎯 [Best Practices](./docs/best-practices.md)
-- 🔧 [Configuration Reference](./docs/configuration.md)
-- 🚀 [Production Setup](./docs/production-guide.md)
+```typescript
+// Solution: Increase timeouts and implement circuit breakers
+await monitoring.registerHealthCheck('slow-service', async () => {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Health check timeout')), 8000)
+  );
 
----
+  const check = this.performHealthCheck();
 
-**Built with ❤️ for the AI development community**
+  try {
+    await Promise.race([check, timeout]);
+    return { healthy: true };
+  } catch (error) {
+    return { healthy: false, error: error.message, degraded: true };
+  }
+});
+```
 
-_Part of the `@hive-academy` ecosystem for building sophisticated AI applications_
+This comprehensive monitoring module provides production-grade observability with intelligent alerting, health monitoring, and performance tracking capabilities for enterprise LangGraph AI applications.

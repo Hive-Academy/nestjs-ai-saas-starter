@@ -1,5 +1,4 @@
 // Module
-export * from './lib/core.module';
 
 // Constants (runtime exports)
 export * from './lib/constants';
@@ -73,10 +72,12 @@ export {
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
+export * from './lib/utils/node-id';
+export * from './lib/utils/id-generation.utils';
 
 // Checkpoint integration exports for consumer libraries
 export {
-  CHECKPOINT_ADAPTER_TOKEN,
+  // CHECKPOINT_ADAPTER_TOKEN, // Removed - using abstract class pattern
   NoOpCheckpointAdapter,
   ICheckpointAdapter,
 } from './lib/interfaces/checkpoint-adapter.interface';
@@ -93,3 +94,35 @@ export {
   CheckpointIntegrationHelper,
   createCheckpointIntegration,
 } from './lib/utils/checkpoint-integration.helper';
+
+// Streaming integration exports for consumer libraries
+export {
+  NoOpStreamingService,
+  NoOpTokenStreamingService,
+  NoOpEventStreamProcessorService,
+  NoOpWebSocketBridgeService,
+} from './lib/interfaces/streaming.interface';
+
+export { StreamEventType } from './lib/interfaces/streaming.interface';
+
+export type {
+  IStreamingService,
+  ITokenStreamingService,
+  IEventStreamProcessorService,
+  IWebSocketBridgeService,
+  TokenStreamOptions,
+} from './lib/interfaces/streaming.interface';
+
+// Memory adapter integration exports for consumer libraries
+export {
+  IMemoryAdapter,
+  isMemoryAdapter,
+} from './lib/interfaces/memory-adapter.interface';
+
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions,
+} from './lib/interfaces/memory-adapter.interface';

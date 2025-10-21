@@ -1,104 +1,124 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
-// Library imports
+// Core library imports
+import {
+  IGraphService,
+  IVectorService,
+  MemoryModule,
+  MemoryModuleOptions,
+} from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
-import { NestjsLanggraphModule } from '@hive-academy/nestjs-langgraph';
 
-import { MemoryModule } from '@hive-academy/langgraph-memory';
+// Adapters Module - Provides memory and HITL adapters with token injection
+import { AdaptersModule } from './adapters';
 
-// Import adapters from application layer - NOT from library
-import { ChromaVectorAdapter, Neo4jGraphAdapter } from './adapters';
+// Remove non-existent entity and repository imports for now
 
-// Direct child module imports - Phase 3 Subtask 3.3: Modular configuration pattern
-import {
-  LanggraphModulesCheckpointModule,
-  CheckpointManagerService,
-  CheckpointManagerAdapter,
-} from '@hive-academy/langgraph-checkpoint';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
-import { HitlModule } from '@hive-academy/langgraph-hitl';
-
-// Additional LangGraph child modules for complete demo
+// LangGraph modules with proper streaming integration
+import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import {
+  HitlModule,
+  HitlModuleOptions,
+  IHitlStorageService,
+  IUserInterruptionStorageService,
+  IConfidenceStorageService,
+  IFeedbackStorageService,
+  IApprovalChainStorageService,
+} from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { PlatformModule } from '@hive-academy/langgraph-platform';
+import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowEngineModule,
+  WorkflowEngineModuleOptions,
+} from '@hive-academy/langgraph-workflow-engine';
 
-// Configuration imports
-import { getChromaDBConfig } from './config/chromadb.config';
-import { getNeo4jConfig } from './config/neo4j.config';
-import { getLangGraphCoreConfig } from './config/langgraph-core.config';
 import { getCheckpointConfig } from './config/checkpoint.config';
-import { getStreamingConfig } from './config/streaming.config';
-import { getHitlConfig } from './config/hitl.config';
-
-// Additional configuration functions for new modules
-import { getMemoryConfig } from './config/memory.config';
+import { getChromaDBConfig } from './config/chromadb.config';
 import { getFunctionalApiConfig } from './config/functional-api.config';
-import { getMultiAgentConfig } from './config/multi-agent.config';
+import { getHitlConfig } from './config/hitl.config';
+import { getMemoryConfig } from './config/memory.config';
 import { getMonitoringConfig } from './config/monitoring.config';
-import { getPlatformConfig } from './config/platform.config';
+import { getMultiAgentConfig } from './config/multi-agent.config';
+import { getNeo4jConfig } from './config/neo4j.config';
+import { getStreamingConfig } from './config/streaming.config';
 import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
-// Test services and controllers for child module verification
-import { AdapterTestService } from './services/adapter-test.service';
-import { AdapterTestController } from './controllers/adapter-test.controller';
-
-// Checkpoint DI pattern demonstration
-import { CheckpointExamplesService } from './services/checkpoint-examples.service';
-import { CheckpointExamplesController } from './controllers/checkpoint-examples.controller';
-
-// Health check imports for Phase 1 Subtask 1.3
+// Health check
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
+import { PerformanceController } from './controllers/performance.controller';
+import { DevBrandController } from './controllers/devbrand.controller';
 
-/**
- * Demo Application Module - Showcasing Optional Checkpoint DI Pattern
- *
- * This module demonstrates the new dependency injection pattern for optional
- * checkpoint integration across consumer libraries. It showcases two scenarios:
- *
- * SCENARIO A: Checkpoint-enabled libraries
- * - Use forRootAsync() with CheckpointManagerAdapter injection
- * - Enable persistent state management and recovery capabilities
- * - Examples: FunctionalApiModule, MultiAgentModule, TimeTravelModule
- *
- * SCENARIO B: Checkpoint-disabled libraries
- * - Use forRoot() without checkpointAdapter (defaults to NoOpCheckpointAdapter)
- * - In-memory operation only, no persistent state
- * - Examples: MonitoringModule, PlatformModule, WorkflowEngineModule
- *
- * Benefits of this pattern:
- * - Optional dependency: checkpoint functionality not required for basic operation
- * - Backward compatibility: existing code works without changes
- * - Flexible deployment: enable/disable checkpointing per environment
- * - Clear separation: checkpoint concerns isolated to adapter layer
- * - Type safety: Full TypeScript support for both scenarios
- *
- * Dependencies flow:
- * library → core ← checkpoint (optional)
- */
+// Performance monitoring
+import { PerformanceDashboardService } from './services/performance-dashboard.service';
+
+// Brand monitoring
+import { BrandMonitoringService } from './services/brand-monitoring.service';
+
+// Content Strategy Intelligence
+import { ContentStrategyEngine } from './services/content-strategy-engine.service';
+
+// Competitive Intelligence
+import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
+
+// Business modules
+import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
+
+// App streaming manager
+import { AppStreamingManager } from './services/app-streaming-manager.service';
+
+// Core interface for adapter pattern
+import {
+  ICheckpointAdapter,
+  IMemoryAdapter,
+  IStreamingService,
+} from '@hive-academy/langgraph-core';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
     }),
 
-    // ChromaDB Module with extracted configuration
+    // CRITICAL: Global EventEmitter - provided once for entire app
+    // Increased maxListeners from 10 to 20 to prevent false-positive warnings
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
+    }),
+
+    // Core database modules - Enhanced with decorator and performance support
     ChromaDBModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        getChromaDBConfig(configService),
+      useFactory: async (configService: ConfigService) => ({
+        ...getChromaDBConfig(configService),
+        // Enable new decorator-driven features
+        decorators: {
+          enabled: true,
+          autoGenerate: true,
+          typeValidation: true,
+        },
+        performance: {
+          caching: true,
+          monitoring: true,
+          circuitBreaker: true,
+        },
+      }),
       inject: [ConfigService],
     }),
 
-    // Neo4j Module with extracted configuration
     Neo4jModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -106,108 +126,172 @@ import { HealthController } from './controllers/health.controller';
         getNeo4jConfig(configService),
     }),
 
-    NestjsLanggraphModule.forRoot(getLangGraphCoreConfig()),
+    // Adapters module (imports RepositoryModule, provides adapter tokens)
+    AdaptersModule,
 
-    MemoryModule.forRoot({
-      ...getMemoryConfig(),
-      adapters: {
-        vector: ChromaVectorAdapter, // Uses existing ChromaDB configuration
-        graph: Neo4jGraphAdapter, // Uses existing Neo4j configuration
+    // Memory module with adapters - injects tokens from AdaptersModule
+    MemoryModule.forRootAsync({
+      imports: [AdaptersModule], // Import to access exported adapter tokens
+      useFactory: async (
+        vectorAdapter: IVectorService,
+        graphAdapter: IGraphService
+      ): Promise<MemoryModuleOptions> => ({
+        ...getMemoryConfig(),
+        adapters: {
+          vector: vectorAdapter,
+          graph: graphAdapter,
+        },
+      }),
+      inject: ['IVectorService', 'IGraphService'],
+    }),
+
+    // Checkpoint module with new adapter pattern
+    LanggraphModulesCheckpointModule.forRootAsync({
+      useFactory: async () => {
+        const config = await getCheckpointConfig();
+        return config;
       },
     }),
 
-    // Direct child module imports - Independent module usage
-    // 🎯 CHECKPOINT MODULE: Configure checkpoint storage once at application level
-    // This provides CheckpointManagerService for dependency injection into consumer libraries
-    LanggraphModulesCheckpointModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) =>
-        getCheckpointConfig(configService),
+    // PROPERLY CONFIGURED STREAMING MODULE
+    StreamingModule.forRoot({
+      ...getStreamingConfig(),
+      websocket: {
+        enabled: true,
+        port: 3000, // Using main server port
+      },
+      gateway: {
+        enabled: true,
+        cors: {
+          origin: true,
+          credentials: true,
+        },
+      },
     }),
 
-    // Other core modules (checkpoint-independent)
-    StreamingModule.forRoot(getStreamingConfig()),
-    HitlModule.forRoot(getHitlConfig()),
-
-    // 🔥 CHECKPOINT INTEGRATION DEMO: Showcasing both scenarios
-
-    // ═══════════════════════════════════════════════════════════════
-    // SCENARIO A: CHECKPOINT-ENABLED MODULES
-    // ═══════════════════════════════════════════════════════════════
-    // Pattern: forRootAsync + CheckpointManagerAdapter injection
-    // Behavior: Persistent state, automatic recovery, debugging capabilities
-    // Use case: Production workflows requiring reliability and observability
-
-    FunctionalApiModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
-        ...getFunctionalApiConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
+    // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
+    HitlModule.forRootAsync({
+      imports: [AdaptersModule], // Import to access HITL adapter tokens
+      useFactory: async (
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter,
+        hitlStorage: IHitlStorageService,
+        interruptionStorage: IUserInterruptionStorageService,
+        confidenceStorage: IConfidenceStorageService,
+        feedbackStorage: IFeedbackStorageService,
+        approvalChainStorage: IApprovalChainStorageService
+      ): Promise<HitlModuleOptions> => ({
+        ...getHitlConfig(),
+        checkpointAdapter,
+        memoryAdapter,
+        adapters: {
+          storage: hitlStorage,
+          interruptionStorage: interruptionStorage,
+          confidenceStorage: confidenceStorage,
+          feedbackStorage: feedbackStorage,
+          approvalChainStorage: approvalChainStorage,
+        },
       }),
-      inject: [CheckpointManagerService],
-      // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
-      // Enables: Workflow state persistence, step-by-step recovery, execution replay
+      inject: [
+        'ICheckpointAdapter',
+        'IMemoryAdapter',
+        'HITL_STORAGE',
+        'HITL_INTERRUPTION_STORAGE',
+        'HITL_CONFIDENCE_STORAGE',
+        'HITL_FEEDBACK_STORAGE',
+        'HITL_APPROVAL_CHAIN_STORAGE',
+      ],
     }),
 
+    // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
+    WorkflowEngineModule.forRootAsync({
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
+      ): Promise<WorkflowEngineModuleOptions> => {
+        return {
+          ...getWorkflowEngineConfig(),
+          streamingAdapter,
+          checkpointAdapter,
+          memoryAdapter,
+        };
+      },
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
+    }),
+
+    // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
     MultiAgentModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
-        ...getMultiAgentConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
-      inject: [CheckpointManagerService],
-      // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
-      // Enables: Agent network state, communication history, coordinated recovery
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
+      ) => {
+        return {
+          ...getMultiAgentConfig(),
+          streamingAdapter,
+          checkpointAdapter,
+          memoryAdapter,
+        };
+      },
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    TimeTravelModule.forRootAsync({
-      useFactory: (checkpointManager: CheckpointManagerService) => ({
-        ...getTimeTravelConfig(),
-        checkpointAdapter: new CheckpointManagerAdapter(checkpointManager),
-      }),
-      inject: [CheckpointManagerService],
-      // Result: CHECKPOINT_ADAPTER_TOKEN = CheckpointManagerAdapter instance
-      // Enables: Timeline branching, state snapshots, workflow debugging
+    // Functional API with STREAMING, CHECKPOINT, AND MEMORY - adapter injection
+    FunctionalApiModule.forRootAsync({
+      useFactory: async (
+        streamingAdapter: IStreamingService,
+        checkpointAdapter: ICheckpointAdapter,
+        memoryAdapter: IMemoryAdapter
+      ): Promise<any> => {
+        return {
+          ...getFunctionalApiConfig(),
+          streamingAdapter,
+          checkpointAdapter,
+          memoryAdapter,
+        };
+      },
+      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // ═══════════════════════════════════════════════════════════════
-    // SCENARIO B: CHECKPOINT-DISABLED MODULES
-    // ═══════════════════════════════════════════════════════════════
-    // Pattern: forRoot without checkpointAdapter
-    // Behavior: In-memory operation, no persistent state, faster execution
-    // Use case: Development environments, lightweight deployments, monitoring-only
-
+    // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
-    // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
-    // Behavior: Metrics collection without state persistence
 
-    PlatformModule.forRoot(getPlatformConfig()),
-    // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
-    // Behavior: Platform operations without checkpoint overhead
+    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT AND MEMORY - adapter injection
+    ...(process.env.NODE_ENV !== 'production' ||
+    process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
+      ? [
+          TimeTravelModule.forRootAsync({
+            useFactory: async (
+              checkpointAdapter: ICheckpointAdapter,
+              memoryAdapter: IMemoryAdapter
+            ) => ({
+              ...getTimeTravelConfig(),
+              checkpointAdapter,
+              memoryAdapter,
+            }),
+            inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
+          }),
+        ]
+      : []),
 
-    WorkflowEngineModule.forRoot(getWorkflowEngineConfig()),
-    // Result: CHECKPOINT_ADAPTER_TOKEN = NoOpCheckpointAdapter (implicit)
-    // Behavior: Basic workflow execution without state tracking
+    // Health checks
+    TerminusModule.forRoot({
+      logger: false,
+      errorLogStyle: 'pretty',
+    }),
 
-    // Health checks module for Phase 1 Subtask 1.3
-    TerminusModule,
+    // Business modules
+    BusinessWorkflowsModule,
   ],
+  controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [
-    // Test service to verify child module service injection
-    AdapterTestService,
-
-    // Checkpoint DI pattern demonstration service
-    CheckpointExamplesService,
+    AppStreamingManager,
+    PerformanceDashboardService,
+    BrandMonitoringService,
+    ContentStrategyEngine,
+    CompetitiveIntelligenceService,
+    // All adapters are now provided by AdaptersModule
   ],
-  controllers: [
-    // Test controller to expose child module verification endpoints
-    AdapterTestController,
-
-    // Checkpoint DI pattern demonstration controller
-    CheckpointExamplesController,
-
-    // Health check controller
-    HealthController,
-  ],
-  exports: [],
 })
 export class AppModule {}

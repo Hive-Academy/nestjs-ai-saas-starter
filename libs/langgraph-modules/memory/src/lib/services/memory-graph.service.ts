@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { IGraphService } from '../interfaces/graph-service.interface';
+import { IVectorService } from '../interfaces/vector-service.interface';
 import type { MemoryEntry, MemoryConfig } from '../interfaces/memory.interface';
 import { MEMORY_CONFIG } from '../constants/memory.constants';
 // import { wrapMemoryError } from '../errors/memory.errors'; // Not used in this service
@@ -19,7 +20,10 @@ export class MemoryGraphService {
   private readonly logger = new Logger(MemoryGraphService.name);
 
   constructor(
+    @Inject('IGraphService')
     private readonly graphService: IGraphService,
+    @Inject('IVectorService')
+    private readonly vectorService: IVectorService,
     @Inject(MEMORY_CONFIG) private readonly config: MemoryConfig
   ) {
     this.logger.debug('MemoryGraphService initialized with configuration', {
@@ -29,43 +33,11 @@ export class MemoryGraphService {
   }
 
   /**
-   * Track a memory in the graph database
+   * Track a memory in the graph database - delegates to adapter
    */
   async trackMemory(memory: MemoryEntry): Promise<void> {
     try {
-      // Create memory node and connect to thread
-      const cypher = `
-        MERGE (t:Thread {id: $threadId})
-        SET t.lastActivity = datetime()
-        MERGE (m:Memory {id: $memoryId})
-        SET m.content = $content,
-            m.type = $type,
-            m.importance = $importance,
-            m.createdAt = datetime($createdAt),
-            m.accessCount = $accessCount
-        MERGE (t)-[:CONTAINS]->(m)
-        ${
-          memory.metadata.userId
-            ? `
-          MERGE (u:User {id: $userId})
-          MERGE (u)-[:HAS_MEMORY]->(m)
-        `
-            : ''
-        }
-        RETURN m.id as memoryId
-      `;
-
-      await this.graphService.executeCypher(cypher, {
-        threadId: memory.threadId,
-        memoryId: memory.id,
-        content: memory.content,
-        type: memory.metadata.type,
-        importance: memory.metadata.importance || 0.5,
-        createdAt: memory.createdAt.toISOString(),
-        accessCount: memory.accessCount,
-        userId: memory.metadata.userId,
-      });
-
+      await this.graphService.trackMemory(memory);
       this.logger.debug(`Tracked memory ${memory.id} in graph`);
     } catch (error) {
       // Graceful degradation - don't fail memory storage if graph tracking fails
@@ -74,39 +46,13 @@ export class MemoryGraphService {
   }
 
   /**
-   * Track multiple memories in batch
+   * Track multiple memories in batch - delegates to adapter
    */
   async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
     if (memories.length === 0) return;
 
     try {
-      // Batch create memories and relationships
-      const cypher = `
-        UNWIND $memories as memoryData
-        MERGE (t:Thread {id: memoryData.threadId})
-        SET t.lastActivity = datetime()
-        MERGE (m:Memory {id: memoryData.memoryId})
-        SET m.content = memoryData.content,
-            m.type = memoryData.type,
-            m.importance = memoryData.importance,
-            m.createdAt = datetime(memoryData.createdAt),
-            m.accessCount = memoryData.accessCount
-        MERGE (t)-[:CONTAINS]->(m)
-        RETURN count(m) as created
-      `;
-
-      const memoryData = memories.map((memory) => ({
-        threadId: memory.threadId,
-        memoryId: memory.id,
-        content: memory.content.substring(0, 1000), // Limit content length
-        type: memory.metadata.type,
-        importance: memory.metadata.importance || 0.5,
-        createdAt: memory.createdAt.toISOString(),
-        accessCount: memory.accessCount,
-      }));
-
-      await this.graphService.executeCypher(cypher, { memories: memoryData });
-
+      await this.graphService.trackMemoriesBatch(memories);
       this.logger.debug(`Batch tracked ${memories.length} memories in graph`);
     } catch (error) {
       this.logger.warn(`Failed to batch track memories in graph`, error);
@@ -114,73 +60,184 @@ export class MemoryGraphService {
   }
 
   /**
-   * Remove memories from graph
+   * Remove memories from graph - delegates to adapter
    */
   async removeMemories(memoryIds: readonly string[]): Promise<void> {
     if (memoryIds.length === 0) return;
 
     try {
-      const cypher = `
-        MATCH (m:Memory)
-        WHERE m.id IN $memoryIds
-        DETACH DELETE m
-        RETURN count(m) as deleted
-      `;
-
-      await this.graphService.executeCypher(cypher, {
-        memoryIds: [...memoryIds],
-      });
-
-      this.logger.debug(`Removed ${memoryIds.length} memories from graph`);
+      const deletedCount = await this.graphService.deleteMemories(memoryIds);
+      this.logger.debug(`Removed ${deletedCount} memories from graph`);
     } catch (error) {
       this.logger.warn(`Failed to remove memories from graph`, error);
     }
   }
 
   /**
-   * Build semantic relationships between memories
+   * Build semantic relationships between memories using configurable strategies
    */
   async buildSemanticRelationships(): Promise<void> {
-    // Only build relationships if auto-summarization is enabled (requires graph features)
-    if (!this.config.enableAutoSummarization) {
-      this.logger.debug(
-        'Semantic relationships disabled - auto-summarization not enabled'
-      );
+    // Check if semantic relationships are enabled
+    if (!this.config.semanticRelationships?.enabled) {
+      this.logger.debug('Semantic relationships disabled in configuration');
       return;
     }
 
+    const strategy = this.config.semanticRelationships.strategy || 'hybrid';
+    const maxRelationships =
+      this.config.semanticRelationships.maxRelationshipsPerMemory || 5;
+
     try {
-      // Find memories with similar content or shared tags
-      const cypher = `
-        MATCH (m1:Memory), (m2:Memory)
-        WHERE m1.id <> m2.id
-        AND (
-          m1.type = m2.type OR
-          size(apoc.text.split(toLower(m1.content), ' ')) > 5 AND
-          size([word IN apoc.text.split(toLower(m1.content), ' ') 
-                WHERE word IN apoc.text.split(toLower(m2.content), ' ')]) > 2
-        )
-        AND NOT (m1)-[:RELATED_TO]-(m2)
-        WITH m1, m2, 
-             size([word IN apoc.text.split(toLower(m1.content), ' ') 
-                   WHERE word IN apoc.text.split(toLower(m2.content), ' ')]) as commonWords
-        WHERE commonWords > 2
-        CREATE (m1)-[:RELATED_TO {strength: toFloat(commonWords)/10, createdAt: datetime()}]->(m2)
-        RETURN count(*) as relationshipsCreated
-      `;
+      let totalRelationships = 0;
 
-      const result = await this.graphService.executeCypher(cypher);
-      const recordValue = result.records[0]?.relationshipsCreated;
-      const count = typeof recordValue === 'number' ? recordValue : 0;
+      switch (strategy) {
+        case 'vector_similarity':
+          totalRelationships = await this.buildVectorBasedRelationships(
+            maxRelationships
+          );
+          break;
+        case 'word_matching':
+          totalRelationships = await this.buildWordMatchingRelationships(
+            maxRelationships
+          );
+          break;
+        case 'hybrid':
+        default:
+          // Try vector similarity first, fallback to word matching
+          try {
+            totalRelationships = await this.buildVectorBasedRelationships(
+              maxRelationships
+            );
+            this.logger.debug(
+              `Built ${totalRelationships} relationships using vector similarity`
+            );
+          } catch (vectorError) {
+            this.logger.warn(
+              'Vector similarity failed, falling back to word matching',
+              vectorError
+            );
+            totalRelationships = await this.buildWordMatchingRelationships(
+              maxRelationships
+            );
+            this.logger.debug(
+              `Built ${totalRelationships} relationships using word matching fallback`
+            );
+          }
+          break;
+      }
 
-      this.logger.debug(`Built ${count} semantic relationships`);
+      this.logger.debug(
+        `Built ${totalRelationships} semantic relationships using ${strategy} strategy`
+      );
     } catch (error) {
       this.logger.warn(`Failed to build semantic relationships`, error);
     }
   }
 
   /**
-   * Get graph statistics
+   * Build relationships using vector similarity
+   *
+   * Clean separation of concerns:
+   * 1. VectorService finds similar memory pairs using embeddings
+   * 2. GraphService creates relationship edges in Neo4j
+   */
+  private async buildVectorBasedRelationships(
+    maxRelationships: number
+  ): Promise<number> {
+    const similarityThreshold =
+      this.config.semanticRelationships?.similarityThreshold || 0.7;
+    const countLimit = this.config.limits?.countAccuracyLimit || 1000;
+
+    try {
+      // Step 1: Use vectorService to find similar memory pairs
+      const memoryPairs =
+        await this.vectorService.buildVectorBasedRelationships(
+          maxRelationships,
+          similarityThreshold,
+          countLimit
+        );
+
+      if (memoryPairs.length === 0) {
+        this.logger.debug('No similar memory pairs found');
+        return 0;
+      }
+
+      this.logger.debug(
+        `Found ${memoryPairs.length} similar memory pairs, creating graph relationships`
+      );
+
+      // Step 2: Create relationships in the graph database
+      let relationshipsCreated = 0;
+
+      for (const pair of memoryPairs) {
+        try {
+          await this.graphService.createRelationship(
+            pair.fromMemoryId,
+            pair.toMemoryId,
+            {
+              type: 'RELATED_TO',
+              properties: {
+                similarityScore: pair.similarityScore,
+                relationshipType: 'vector_similarity',
+                createdAt: new Date().toISOString(),
+              },
+            }
+          );
+          relationshipsCreated++;
+        } catch (error) {
+          this.logger.warn(
+            `Failed to create relationship from ${pair.fromMemoryId} to ${pair.toMemoryId}`,
+            error
+          );
+        }
+      }
+
+      this.logger.debug(
+        `Created ${relationshipsCreated} vector-based relationships in graph`
+      );
+
+      return relationshipsCreated;
+    } catch (error) {
+      throw new Error(
+        `Vector-based relationship building failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  /**
+   * Build relationships using word matching - delegates to adapter
+   */
+  private async buildWordMatchingRelationships(
+    maxRelationships: number
+  ): Promise<number> {
+    const minCommonWords =
+      this.config.semanticRelationships?.minCommonWords || 2;
+    const requireApoc = this.config.semanticRelationships?.requireApoc ?? false;
+
+    try {
+      return await this.graphService.buildWordMatchingRelationships(
+        maxRelationships,
+        minCommonWords,
+        requireApoc
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message?.includes('apoc') &&
+        !requireApoc
+      ) {
+        throw new Error(
+          'APOC procedures not available and requireApoc is false'
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get graph statistics - delegates to adapter
    */
   async getGraphStats(): Promise<{
     totalMemories: number;
@@ -189,29 +246,7 @@ export class MemoryGraphService {
     averageMemoriesPerThread: number;
   }> {
     try {
-      const cypher = `
-        MATCH (m:Memory) 
-        OPTIONAL MATCH (t:Thread)-[:CONTAINS]->(m)
-        OPTIONAL MATCH (m)-[r:RELATED_TO]-()
-        RETURN 
-          count(DISTINCT m) as totalMemories,
-          count(DISTINCT t) as totalThreads,
-          count(DISTINCT r) as totalRelationships
-      `;
-
-      const result = await this.graphService.executeCypher(cypher);
-      const record = result.records[0];
-
-      const totalMemories = Number(record?.totalMemories) || 0;
-      const totalThreads = Number(record?.totalThreads) || 1;
-      const totalRelationships = Number(record?.totalRelationships) || 0;
-
-      return {
-        totalMemories,
-        totalThreads,
-        totalRelationships,
-        averageMemoriesPerThread: totalMemories / totalThreads,
-      };
+      return await this.graphService.getMemoryGraphStats();
     } catch (error) {
       this.logger.warn(`Failed to get graph stats`, error);
       return {
@@ -224,26 +259,20 @@ export class MemoryGraphService {
   }
 
   /**
-   * Find connected memories for conversation flow
+   * Find connected memories for conversation flow - delegates to adapter
    */
   async findMemoryConnections(
     memoryId: string,
     depth = 2
   ): Promise<readonly string[]> {
     try {
-      const cypher = `
-        MATCH (m:Memory {id: $memoryId})-[:RELATED_TO*1..$depth]-(connected:Memory)
-        WHERE connected.id <> $memoryId
-        RETURN DISTINCT connected.id as connectedId
-        ORDER BY connected.importance DESC
-        LIMIT 10
-      `;
-
-      const result = await this.graphService.executeCypher(cypher, {
+      const relationshipLimit =
+        this.config.limits?.relationshipQueryLimit || 10;
+      return await this.graphService.findMemoryConnections(
         memoryId,
         depth,
-      });
-      return result.records.map((record) => String(record.connectedId));
+        relationshipLimit
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to find connections for memory ${memoryId}`,
@@ -254,7 +283,7 @@ export class MemoryGraphService {
   }
 
   /**
-   * Get conversation flow for a thread
+   * Get conversation flow for a thread - delegates to adapter
    */
   async getThreadFlow(threadId: string): Promise<
     ReadonlyArray<{
@@ -266,28 +295,7 @@ export class MemoryGraphService {
     }>
   > {
     try {
-      const cypher = `
-        MATCH (t:Thread {id: $threadId})-[:CONTAINS]->(m:Memory)
-        OPTIONAL MATCH (m)-[:RELATED_TO]-(connected:Memory)
-        WITH m, collect(DISTINCT connected.id) as connections
-        RETURN m.id as memoryId, m.content as content, m.type as type, 
-               m.createdAt as createdAt, connections
-        ORDER BY m.createdAt
-      `;
-
-      const result = await this.graphService.executeCypher(cypher, {
-        threadId,
-      });
-
-      return result.records.map((record) => ({
-        memoryId: String(record.memoryId),
-        content: String(record.content),
-        type: String(record.type),
-        createdAt: new Date(String(record.createdAt)),
-        connections: Array.isArray(record.connections)
-          ? (record.connections as string[])
-          : [],
-      }));
+      return await this.graphService.getThreadFlow(threadId);
     } catch (error) {
       this.logger.warn(`Failed to get thread flow for ${threadId}`, error);
       return [];

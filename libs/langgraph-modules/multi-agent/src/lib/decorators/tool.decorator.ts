@@ -94,10 +94,16 @@ export interface ToolMetadata extends ToolOptions {
  * }
  * ```
  */
-export function Tool(options: ToolOptions): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    // Create tool metadata
+export function Tool(options: Partial<ToolOptions> = {}): MethodDecorator {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
+    // Create tool metadata with defaults for zero-config usage
     const toolMetadata: ToolMetadata = {
+      name: options.name || String(propertyKey),
+      description: options.description || `Tool: ${String(propertyKey)}`,
       ...options,
       methodName: String(propertyKey),
       handler: descriptor.value,
@@ -105,22 +111,30 @@ export function Tool(options: ToolOptions): MethodDecorator {
     };
 
     // Get existing tools or initialize
-    const existingTools = Reflect.getMetadata(WORKFLOW_TOOLS_KEY, target.constructor) || [];
+    const existingTools =
+      Reflect.getMetadata(WORKFLOW_TOOLS_KEY, target.constructor) || [];
 
     // Add this tool
     existingTools.push(toolMetadata);
 
     // Store updated tools
-    Reflect.defineMetadata(WORKFLOW_TOOLS_KEY, existingTools, target.constructor);
+    Reflect.defineMetadata(
+      WORKFLOW_TOOLS_KEY,
+      existingTools,
+      target.constructor
+    );
 
     // Also store on the method itself for direct access
     Reflect.defineMetadata('tool:metadata', toolMetadata, target, propertyKey);
 
     // Wrap the original method to add validation and rate limiting
     const originalMethod = descriptor.value;
-    const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+    const rateLimitMap = new Map<
+      string,
+      { count: number; resetTime: number }
+    >();
 
-    descriptor.value = async function(this: any, ...args: any[]) {
+    descriptor.value = async function (this: any, ...args: any[]) {
       // Validate input with Zod schema if provided
       if (options.schema) {
         try {
@@ -130,8 +144,11 @@ export function Tool(options: ToolOptions): MethodDecorator {
           if (this.logger) {
             this.logger.error(`Tool ${options.name} validation failed:`, error);
           }
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          throw new Error(`Invalid input for tool ${options.name}: ${errorMessage}`);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          throw new Error(
+            `Invalid input for tool ${options.name}: ${errorMessage}`
+          );
         }
       }
 
@@ -144,7 +161,9 @@ export function Tool(options: ToolOptions): MethodDecorator {
         if (limit && limit.resetTime > now) {
           if (limit.count >= options.rateLimit.requests) {
             const waitTime = Math.ceil((limit.resetTime - now) / 1000);
-            throw new Error(`Rate limit exceeded for tool ${options.name}. Try again in ${waitTime} seconds.`);
+            throw new Error(
+              `Rate limit exceeded for tool ${options.name}. Try again in ${waitTime} seconds.`
+            );
           }
           limit.count++;
         } else {
@@ -193,7 +212,10 @@ export function getClassTools(target: any): ToolMetadata[] {
 /**
  * Get tool metadata from a method
  */
-export function getToolMetadata(target: any, propertyKey: string | symbol): ToolMetadata | undefined {
+export function getToolMetadata(
+  target: any,
+  propertyKey: string | symbol
+): ToolMetadata | undefined {
   return Reflect.getMetadata('tool:metadata', target, propertyKey);
 }
 
@@ -229,25 +251,39 @@ export interface ComposedToolOptions extends ToolOptions {
  * }
  * ```
  */
-export function ComposedTool(options: ComposedToolOptions): MethodDecorator {
+export function ComposedTool(
+  options: Partial<ComposedToolOptions> = {}
+): MethodDecorator {
   return Tool({
     ...options,
-    tags: [...(options.tags || []), 'composed', options.strategy || 'sequential'],
+    tags: [
+      ...(options.tags || []),
+      'composed',
+      options.strategy || 'sequential',
+    ],
   });
 }
 
 /**
  * Mark a tool as deprecated
  */
-export function DeprecatedTool(reason: string, alternative?: string): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+export function DeprecatedTool(
+  reason: string,
+  alternative?: string
+): MethodDecorator {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function(this: any, ...args: any[]) {
+    descriptor.value = function (this: any, ...args: any[]) {
       if (this.logger) {
         this.logger.warn(
           `Tool ${String(propertyKey)} is deprecated: ${reason}${
-          alternative ? ` Use ${alternative} instead.` : ''}`
+            alternative ? ` Use ${alternative} instead.` : ''
+          }`
         );
       }
       return originalMethod.apply(this, args);

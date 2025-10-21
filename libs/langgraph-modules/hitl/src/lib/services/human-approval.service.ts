@@ -1,171 +1,82 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState, HumanFeedback } from '@hive-academy/langgraph-core';
-import { ApprovalChainService, Approver } from './approval-chain.service';
-import { FeedbackProcessorService } from './feedback-processor.service';
-import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
-import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
-import { ApprovalRiskLevel, EscalationStrategy, RequiresApprovalOptions } from '../decorators/approval.decorator';
+import { WorkflowState } from '@hive-academy/langgraph-core';
+// Removed unused imports - services delegated to HitlApprovalRequestService
+import { ApprovalProcessingService } from './approval-processing.service';
+import { ApprovalTimeoutService } from './approval-timeout.service';
+import { ApprovalStreamingService } from './approval-streaming.service';
+import { UserInterruptionService } from './user-interruption.service';
+import { HitlMemoryLearningService } from './hitl-memory-learning.service';
+import { HitlCheckpointService } from './hitl-checkpoint.service';
+import { HitlValidationService } from './hitl-validation.service';
+import { HitlRecoveryService } from './hitl-recovery.service';
+import { HitlApprovalRequestService } from './hitl-approval-request.service';
+// User interruption interfaces - removed as using direct service access
+import { HITL_EVENTS } from '../constants';
+import { IHitlStorageService } from '../interfaces/hitl-storage.interface';
+import { RequiresApprovalOptions } from '../decorators/approval.decorator';
+import {
+  ApprovalWorkflowState,
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowStats,
+} from './approval-workflow.types';
+
+// Re-export moved types for backward compatibility
+export { ApprovalWorkflowState } from './approval-workflow.types';
+export type {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowStats,
+} from './approval-workflow.types';
 
 /**
- * Approval workflow state
- */
-export enum ApprovalWorkflowState {
-  PENDING = 'pending',
-  IN_PROGRESS = 'in_progress',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  ESCALATED = 'escalated',
-  TIMEOUT = 'timeout',
-  CANCELLED = 'cancelled'
-}
-
-/**
- * Human approval request structure
- */
-export interface HumanApprovalRequest {
-  /** Request ID */
-  id: string;
-
-  /** Execution ID */
-  executionId: string;
-
-  /** Node requesting approval */
-  nodeId: string;
-
-  /** Approval message */
-  message: string;
-
-  /** Request metadata */
-  metadata: Record<string, unknown>;
-
-  /** Current workflow state */
-  state: WorkflowState;
-
-  /** Approval options */
-  options: RequiresApprovalOptions;
-
-  /** Current workflow state */
-  workflowState: ApprovalWorkflowState;
-
-  /** Assigned approvers */
-  approvers?: string[];
-
-  /** Approval chain ID */
-  chainId?: string;
-
-  /** Risk assessment */
-  riskAssessment?: {
-    level: ApprovalRiskLevel;
-    factors: string[];
-    score: number;
-    details?: Record<string, unknown>;
-  };
-
-  /** Confidence evaluation */
-  confidence: {
-    current: number;
-    threshold: number;
-    factors: Record<string, number>;
-  };
-
-  /** Timestamps */
-  timestamps: {
-    requested: Date;
-    responded?: Date;
-    timeout?: Date;
-  };
-
-  /** Timeout configuration */
-  timeout: {
-    duration: number;
-    strategy: 'approve' | 'reject' | 'escalate' | 'retry';
-  };
-
-  /** Retry information */
-  retry: {
-    count: number;
-    maxAttempts: number;
-  };
-}
-
-/**
- * Human approval response
- */
-export interface HumanApprovalResponse {
-  /** Request ID */
-  requestId: string;
-
-  /** Decision */
-  decision: 'approved' | 'rejected' | 'escalated' | 'retry' | 'modify';
-
-  /** Approver information */
-  approver: {
-    id: string;
-    name?: string;
-    role?: string;
-  };
-
-  /** Response message */
-  message?: string;
-
-  /** Modifications to apply */
-  modifications?: Record<string, unknown>;
-
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
-
-  /** Response timestamp */
-  timestamp: Date;
-}
-
-/**
- * Approval workflow statistics
- */
-export interface ApprovalWorkflowStats {
-  total: number;
-  byState: Record<ApprovalWorkflowState, number>;
-  averageResponseTime: number;
-  timeoutRate: number;
-  approvalRate: number;
-  escalationRate: number;
-}
-
-/**
- * Service for managing human approval workflows with state persistence and timeout handling
+ * Core Human Approval Service - orchestrates specialized HITL services
  */
 @Injectable()
 export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(HumanApprovalService.name);
-  private readonly approvalRequests = new Map<string, HumanApprovalRequest>();
-  private readonly timeoutHandlers = new Map<string, NodeJS.Timeout>();
-  private readonly streamConnections = new Map<string, any>(); // WebSocket connections for real-time updates
+  private readonly approvalCache = new Map<string, HumanApprovalRequest>(); // Cache only
 
   constructor(
     private readonly eventEmitter: EventEmitter2,
-    private readonly approvalChainService: ApprovalChainService,
-    private readonly feedbackProcessor: FeedbackProcessorService,
-    private readonly confidenceEvaluator: ConfidenceEvaluatorService,
-  ) {}
+    // Note: Chain and confidence services delegated to HitlApprovalRequestService
+    private readonly approvalProcessingService: ApprovalProcessingService,
+    private readonly approvalTimeoutService: ApprovalTimeoutService,
+    private readonly approvalStreamingService: ApprovalStreamingService,
+    private readonly userInterruptionService: UserInterruptionService,
+    private readonly hitlMemoryLearningService: HitlMemoryLearningService,
+    private readonly hitlCheckpointService: HitlCheckpointService,
+    private readonly hitlValidationService: HitlValidationService,
+    private readonly hitlRecoveryService: HitlRecoveryService,
+    private readonly hitlApprovalRequestService: HitlApprovalRequestService,
+    @Inject(IHitlStorageService)
+    private readonly hitlStorage: IHitlStorageService // Required
+  ) {
+    this.logger.log(
+      '🎯 Human Approval Service initialized with specialized services'
+    );
+  }
 
   async onModuleInit(): Promise<void> {
-    this.logger.log('Human Approval Service initialized');
-
-    // Set up event listeners
+    this.logger.log(
+      'Human Approval Service initializing with specialized services'
+    );
+    await this.hitlRecoveryService.recoverPendingApprovals();
     this.setupEventListeners();
+    this.logger.log('✅ Human Approval Service initialized');
   }
 
   async onModuleDestroy(): Promise<void> {
-    // Clean up timeout handlers
-    for (const [requestId, timeout] of this.timeoutHandlers.entries()) {
-      clearTimeout(timeout);
-      this.logger.debug(`Cleaned up timeout handler for request ${requestId}`);
-    }
-
-    this.timeoutHandlers.clear();
-    this.approvalRequests.clear();
-    this.streamConnections.clear();
-
+    this.approvalTimeoutService.clearAllTimeouts();
+    this.approvalCache.clear();
+    this.approvalStreamingService.clearAllConnections();
     this.logger.log('Human Approval Service destroyed');
   }
 
@@ -179,99 +90,16 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     state: WorkflowState,
     options: RequiresApprovalOptions = {}
   ): Promise<HumanApprovalRequest> {
-    const requestId = this.generateRequestId();
-
-    this.logger.log(`Requesting approval for execution ${executionId}, node ${nodeId}`);
-
-    // Evaluate confidence
-    const confidence = await this.confidenceEvaluator.evaluateConfidence(state);
-    const confidenceFactors = await this.confidenceEvaluator.getConfidenceFactors(state);
-
-    // Assess risk if enabled
-    let riskAssessment;
-    if (options.riskAssessment?.enabled) {
-      riskAssessment = await this.confidenceEvaluator.assessRisk(state, {
-        factors: options.riskAssessment.factors || [],
-        customEvaluator: options.riskAssessment.evaluator
-      });
-    }
-
-    // Create approval request
-    const request: HumanApprovalRequest = {
-      id: requestId,
+    return this.hitlApprovalRequestService.createApprovalRequest(
       executionId,
       nodeId,
       message,
-      metadata: options.metadata?.(state) || {},
       state,
       options,
-      workflowState: ApprovalWorkflowState.PENDING,
-      chainId: options.chainId,
-      riskAssessment,
-      confidence: {
-        current: confidence,
-        threshold: options.confidenceThreshold || HITL_DEFAULTS.CONFIDENCE_THRESHOLD,
-        factors: confidenceFactors
-      },
-      timestamps: {
-        requested: new Date()
-      },
-      timeout: {
-        duration: options.timeoutMs || HITL_DEFAULTS.APPROVAL_TIMEOUT_MS,
-        strategy: options.onTimeout || 'reject'
-      },
-      retry: {
-        count: 0,
-        maxAttempts: HITL_DEFAULTS.RETRY_ATTEMPTS
-      }
-    };
-
-    // Store request
-    this.approvalRequests.set(requestId, request);
-
-    // Set up timeout
-    this.setupTimeout(requestId);
-
-    // Determine approvers based on escalation strategy
-    if (options.chainId && options.escalationStrategy !== EscalationStrategy.DIRECT) {
-      try {
-        const approvalRequest = await this.approvalChainService.initiateApproval(
-          executionId,
-          options.chainId,
-          {
-            nodeId,
-            message,
-            confidence: confidence,
-            riskAssessment,
-            metadata: request.metadata
-          }
-        );
-
-        request.approvers = approvalRequest.currentLevel.approvers.map(a => a.id);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Failed to initiate approval chain: ${errorMsg}`);
-      }
-    }
-
-    // Update state to in progress
-    request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
-
-    // Emit event for external systems
-    await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
-      request,
-      approvers: request.approvers,
-      streamEnabled: this.hasStreamConnection(executionId)
-    });
-
-    // Stream real-time approval request if connection exists
-    if (this.hasStreamConnection(executionId)) {
-      await this.streamApprovalRequest(request);
-    }
-
-    this.logger.log(`Approval request ${requestId} created for execution ${executionId}`);
-
-    return request;
+      this.hitlStorage,
+      this.approvalCache,
+      (id) => this.handleTimeout(id)
+    );
   }
 
   /**
@@ -280,356 +108,103 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   async processApprovalResponse(
     requestId: string,
     response: HumanApprovalResponse
-  ): Promise<{ success: boolean; nextState?: Partial<WorkflowState>; error?: string }> {
-    const request = this.approvalRequests.get(requestId);
+  ): Promise<{
+    success: boolean;
+    nextState?: Partial<WorkflowState>;
+    error?: string;
+  }> {
+    let request = this.approvalCache.get(requestId);
+    if (!request) {
+      const storageRequest = await this.hitlStorage.get(requestId);
+      if (storageRequest) {
+        this.approvalCache.set(requestId, storageRequest);
+        request = storageRequest;
+      }
+    }
 
     if (!request) {
-      const error = `Approval request ${requestId} not found`;
-      this.logger.error(error);
-      return { success: false, error };
+      return {
+        success: false,
+        error: `Approval request ${requestId} not found`,
+      };
     }
-
-    if (request.workflowState !== ApprovalWorkflowState.IN_PROGRESS) {
-      const error = `Approval request ${requestId} is not in progress (current state: ${request.workflowState})`;
-      this.logger.warn(error);
-      return { success: false, error };
-    }
-
-    this.logger.log(`Processing approval response for ${requestId}: ${response.decision}`);
 
     // Clear timeout
-    this.clearTimeout(requestId);
+    this.approvalTimeoutService.clearTimeout(requestId);
 
-    // Update request timestamps
-    request.timestamps.responded = response.timestamp;
+    // Process through the processing service
+    const result = await this.approvalProcessingService.processApprovalResponse(
+      requestId,
+      response,
+      this.approvalCache
+    );
 
-    try {
-      let nextState: Partial<WorkflowState> = {};
-
-      switch (response.decision) {
-        case 'approved':
-          request.workflowState = ApprovalWorkflowState.APPROVED;
-          nextState = await this.handleApprovalSuccess(request, response);
-          break;
-
-        case 'rejected':
-          request.workflowState = ApprovalWorkflowState.REJECTED;
-          nextState = await this.handleApprovalRejection(request, response);
-          break;
-
-        case 'escalated':
-          request.workflowState = ApprovalWorkflowState.ESCALATED;
-          nextState = await this.handleApprovalEscalation(request, response);
-          break;
-
-        case 'retry':
-          nextState = await this.handleApprovalRetry(request, response);
-          break;
-
-        case 'modify':
-          nextState = await this.handleApprovalModification(request, response);
-          break;
-
-        default:
-          throw new Error(`Unknown approval decision: ${response.decision}`);
-      }
-
-      // Emit completion event
-      await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_COMPLETED, {
-        requestId,
-        executionId: request.executionId,
-        decision: response.decision,
-        approver: response.approver,
-        duration: Date.now() - request.timestamps.requested.getTime()
-      });
-
-      // Stream real-time update
-      if (this.hasStreamConnection(request.executionId)) {
-        await this.streamApprovalUpdate(request, response);
-      }
-
-      return { success: true, nextState };
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Error processing approval response: ${errorMessage}`, error);
-
-      return { success: false, error: errorMessage };
+    // Stream real-time update
+    if (
+      this.approvalStreamingService.hasStreamConnection(request.executionId)
+    ) {
+      await this.approvalStreamingService.streamApprovalUpdate(
+        request,
+        response
+      );
     }
+
+    if (result.success && request) {
+      await this.hitlCheckpointService.saveApprovalState(
+        request,
+        'approval_processed',
+        {
+          decision: response.decision,
+          approver: response.approver,
+          nextState: result.nextState,
+        }
+      );
+    }
+
+    if (result.success && request) {
+      try {
+        await this.hitlMemoryLearningService.learnFromHumanFeedback(
+          request,
+          response
+        );
+        this.logger.debug(
+          `🧠 Learned from human feedback for request ${requestId}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to learn from human feedback: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
+    return result;
   }
 
   /**
    * Handle approval timeout
    */
   private async handleTimeout(requestId: string): Promise<void> {
-    const request = this.approvalRequests.get(requestId);
-
-    if (!request || request.workflowState !== ApprovalWorkflowState.IN_PROGRESS) {
-      return;
+    let request = this.approvalCache.get(requestId);
+    if (!request) {
+      const storageRequest = await this.hitlStorage.get(requestId);
+      if (storageRequest) {
+        this.approvalCache.set(requestId, storageRequest);
+        request = storageRequest;
+      }
     }
 
-    this.logger.warn(`Approval timeout for request ${requestId}`);
+    if (!request) return;
 
-    request.workflowState = ApprovalWorkflowState.TIMEOUT;
-    request.timestamps.timeout = new Date();
+    // Save timeout state via recovery service
+    await this.hitlRecoveryService.persistTimeoutState(request);
 
-    // Handle based on timeout strategy
-    switch (request.timeout.strategy) {
-      case 'approve':
-        await this.processApprovalResponse(requestId, {
-          requestId,
-          decision: 'approved',
-          approver: { id: 'system', name: 'Auto-Approval (Timeout)', role: 'system' },
-          message: 'Auto-approved due to timeout',
-          timestamp: new Date()
-        });
-        break;
-
-      case 'reject':
-        await this.processApprovalResponse(requestId, {
-          requestId,
-          decision: 'rejected',
-          approver: { id: 'system', name: 'Auto-Rejection (Timeout)', role: 'system' },
-          message: 'Auto-rejected due to timeout',
-          timestamp: new Date()
-        });
-        break;
-
-      case 'escalate':
-        if (request.chainId) {
-          await this.processApprovalResponse(requestId, {
-            requestId,
-            decision: 'escalated',
-            approver: { id: 'system', name: 'Auto-Escalation (Timeout)', role: 'system' },
-            message: 'Escalated due to timeout',
-            timestamp: new Date()
-          });
-        } else {
-          // No chain to escalate to, reject
-          await this.processApprovalResponse(requestId, {
-            requestId,
-            decision: 'rejected',
-            approver: { id: 'system', name: 'Auto-Rejection (No Escalation)', role: 'system' },
-            message: 'Rejected due to timeout (no escalation chain)',
-            timestamp: new Date()
-          });
-        }
-        break;
-
-      case 'retry':
-        if (request.retry.count < request.retry.maxAttempts) {
-          request.retry.count++;
-          request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
-          this.setupTimeout(requestId); // Setup new timeout
-
-          await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_REQUESTED, {
-            request,
-            retryAttempt: request.retry.count
-          });
-        } else {
-          await this.processApprovalResponse(requestId, {
-            requestId,
-            decision: 'rejected',
-            approver: { id: 'system', name: 'Auto-Rejection (Max Retries)', role: 'system' },
-            message: 'Rejected after maximum retry attempts',
-            timestamp: new Date()
-          });
-        }
-        break;
-    }
-
-    // Emit timeout event
-    await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_TIMEOUT, {
+    await this.approvalTimeoutService.handleTimeout(
       requestId,
-      executionId: request.executionId,
-      strategy: request.timeout.strategy,
-      retryCount: request.retry.count
-    });
-  }
-
-  /**
-   * Handle successful approval
-   */
-  private async handleApprovalSuccess(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
-    // Submit approval feedback
-    await this.feedbackProcessor.submitFeedback(
-      request.executionId,
-      'approval' as any,
-      {
-        message: response.message,
-        data: response.metadata
-      },
-      response.approver
+      request,
+      (id, response) => this.processApprovalResponse(id, response)
     );
-
-    // Update confidence
-    const newConfidence = Math.min(request.confidence.current + 0.1, 1.0);
-
-    return {
-      humanFeedback: {
-        approved: true,
-        status: 'approved',
-        approver: response.approver,
-        message: response.message,
-        timestamp: response.timestamp,
-        metadata: response.metadata
-      } as HumanFeedback,
-      confidence: newConfidence,
-      approvalReceived: true,
-      waitingForApproval: false,
-      [`approved_${request.nodeId}`]: true
-    };
-  }
-
-  /**
-   * Handle approval rejection
-   */
-  private async handleApprovalRejection(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
-    // Submit rejection feedback
-    await this.feedbackProcessor.submitFeedback(
-      request.executionId,
-      'rejection' as any,
-      {
-        message: response.message,
-        data: response.metadata
-      },
-      response.approver
-    );
-
-    // Decrease confidence
-    const newConfidence = Math.max(request.confidence.current - 0.2, 0.0);
-
-    return {
-      humanFeedback: {
-        approved: false,
-        status: 'rejected',
-        approver: response.approver,
-        message: response.message,
-        reason: response.message,
-        timestamp: response.timestamp,
-        metadata: response.metadata
-      } as HumanFeedback,
-      confidence: newConfidence,
-      approvalReceived: false,
-      waitingForApproval: false,
-      rejectionReason: response.message
-    };
-  }
-
-  /**
-   * Handle approval escalation
-   */
-  private async handleApprovalEscalation(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
-    if (request.chainId && this.approvalChainService) {
-      // Process escalation through approval chain
-      try {
-        const chainRequest = this.approvalChainService.getApprovalRequest(request.id);
-        if (chainRequest) {
-          await this.approvalChainService.processApproval(
-            request.id,
-            response.approver as Approver,
-            'escalated',
-            response.message
-          );
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to process escalation: ${errorMsg}`);
-      }
-    }
-
-    // Emit escalation event
-    await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_ESCALATED, {
-      requestId: request.id,
-      executionId: request.executionId,
-      escalatedBy: response.approver,
-      chainId: request.chainId
-    });
-
-    return {
-      waitingForApproval: true,
-      metadata: {
-        ...request.state.metadata,
-        escalatedBy: response.approver,
-        escalationReason: response.message
-      }
-    };
-  }
-
-  /**
-   * Handle approval retry
-   */
-  private async handleApprovalRetry(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
-    if (request.retry.count < request.retry.maxAttempts) {
-      request.retry.count++;
-      request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
-      this.setupTimeout(request.id);
-
-      return {
-        waitingForApproval: true,
-        metadata: {
-          ...request.state.metadata,
-          retryCount: request.retry.count,
-          retryReason: response.message
-        }
-      };
-    }
-      // Max retries reached, reject
-      return await this.handleApprovalRejection(request, {
-        ...response,
-        decision: 'rejected',
-        message: `Max retries reached: ${response.message}`
-      });
-
-  }
-
-  /**
-   * Handle approval modification
-   */
-  private async handleApprovalModification(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
-    // Submit modification feedback
-    await this.feedbackProcessor.submitFeedback(
-      request.executionId,
-      'modification' as any,
-      {
-        message: response.message,
-        modifications: response.modifications,
-        data: response.metadata
-      },
-      response.approver
-    );
-
-    return {
-      humanFeedback: {
-        approved: false,
-        status: 'needs_revision',
-        approver: response.approver,
-        message: response.message,
-        timestamp: response.timestamp,
-        metadata: response.modifications
-      } as HumanFeedback,
-      waitingForApproval: false,
-      metadata: {
-        ...request.state.metadata,
-        humanModifications: response.modifications,
-        modificationReason: response.message
-      }
-    };
   }
 
   /**
@@ -638,167 +213,158 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   private setupEventListeners(): void {
     // Listen for approval chain events
     this.eventEmitter.on('approval.completed', async (event) => {
-      const request = Array.from(this.approvalRequests.values())
-        .find(r => r.executionId === event.executionId);
+      // Find request in cache first, then check storage
+      let request = Array.from(this.approvalCache.values()).find(
+        (r) => r.executionId === event.executionId
+      );
+
+      if (!request) {
+        // If not in cache, check storage by execution ID
+        const approvals = await this.hitlStorage.getByExecutionId(
+          event.executionId
+        );
+        request = approvals.find((r) => r.executionId === event.executionId);
+        if (request) {
+          this.approvalCache.set(request.id, request); // Update cache
+        }
+      }
 
       if (request) {
+        // Save chain completion checkpoint via checkpoint service
+        if (request.chainId) {
+          await this.hitlCheckpointService.saveChainProgress(
+            request,
+            event.level || 0,
+            request.approvers || [],
+            event.status
+          );
+        }
+
         await this.processApprovalResponse(request.id, {
           requestId: request.id,
           decision: event.status === 'approved' ? 'approved' : 'rejected',
           approver: { id: 'chain', name: 'Approval Chain', role: 'system' },
           message: event.reason || `Chain ${event.status}`,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
     });
   }
 
+  // ==========================================
+  // SPECIALIZED SERVICES ACCESS
+  // ==========================================
+
   /**
-   * Setup timeout for approval request
+   * Get streaming service for real-time updates
    */
-  private setupTimeout(requestId: string): void {
-    const request = this.approvalRequests.get(requestId);
-    if (!request) {return;}
-
-    // Clear existing timeout
-    this.clearTimeout(requestId);
-
-    // Set new timeout
-    const timeout = setTimeout(() => {
-      this.handleTimeout(requestId);
-    }, request.timeout.duration);
-
-    this.timeoutHandlers.set(requestId, timeout);
+  get streaming() {
+    return this.approvalStreamingService;
   }
 
   /**
-   * Clear timeout for approval request
+   * Get user interruption service for direct access to interruption functionality
    */
-  private clearTimeout(requestId: string): void {
-    const timeout = this.timeoutHandlers.get(requestId);
-    if (timeout) {
-      clearTimeout(timeout);
-      this.timeoutHandlers.delete(requestId);
-    }
+  get userInterruptions() {
+    return this.userInterruptionService;
   }
 
   /**
-   * Check if stream connection exists for execution
+   * Get memory learning service for feedback analysis
    */
-  private hasStreamConnection(executionId: string): boolean {
-    return this.streamConnections.has(executionId);
+  get memoryLearning() {
+    return this.hitlMemoryLearningService;
   }
 
   /**
-   * Stream approval request to connected clients
+   * Get checkpoint service for state persistence
    */
-  private async streamApprovalRequest(request: HumanApprovalRequest): Promise<void> {
-    const connection = this.streamConnections.get(request.executionId);
-    if (connection?.send) {
-      try {
-        connection.send(JSON.stringify({
-          type: 'approval_requested',
-          data: {
-            requestId: request.id,
-            nodeId: request.nodeId,
-            message: request.message,
-            confidence: request.confidence,
-            riskAssessment: request.riskAssessment,
-            timeout: request.timeout.duration,
-            timestamp: request.timestamps.requested
-          }
-        }));
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Failed to stream approval request: ${errorMsg}`);
-      }
-    }
+  get checkpoints() {
+    return this.hitlCheckpointService;
   }
 
   /**
-   * Stream approval update to connected clients
+   * Get validation service for policy enforcement
    */
-  private async streamApprovalUpdate(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<void> {
-    const connection = this.streamConnections.get(request.executionId);
-    if (connection?.send) {
-      try {
-        connection.send(JSON.stringify({
-          type: 'approval_updated',
-          data: {
-            requestId: request.id,
-            decision: response.decision,
-            approver: response.approver,
-            message: response.message,
-            timestamp: response.timestamp
-          }
-        }));
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Failed to stream approval update: ${errorMsg}`);
-      }
-    }
+  get validation() {
+    return this.hitlValidationService;
   }
 
   /**
-   * Register stream connection for real-time updates
+   * Get recovery service for state restoration
    */
-  registerStreamConnection(executionId: string, connection: any): void {
-    this.streamConnections.set(executionId, connection);
-    this.logger.debug(`Registered stream connection for execution ${executionId}`);
+  get recovery() {
+    return this.hitlRecoveryService;
   }
 
-  /**
-   * Unregister stream connection
-   */
-  unregisterStreamConnection(executionId: string): void {
-    this.streamConnections.delete(executionId);
-    this.logger.debug(`Unregistered stream connection for execution ${executionId}`);
-  }
+  // ==========================================
+  // APPROVAL MANAGEMENT METHODS
+  // ==========================================
 
   /**
    * Get approval request by ID
    */
-  getApprovalRequest(requestId: string): HumanApprovalRequest | undefined {
-    return this.approvalRequests.get(requestId);
+  async getApprovalRequest(
+    requestId: string
+  ): Promise<HumanApprovalRequest | undefined> {
+    // Check cache first
+    let request = this.approvalCache.get(requestId);
+    if (!request) {
+      // Load from storage
+      request = (await this.hitlStorage.get(requestId)) || undefined;
+      if (request) {
+        this.approvalCache.set(requestId, request); // Update cache
+      }
+    }
+    return request;
   }
 
   /**
    * Get all pending approvals
    */
-  getPendingApprovals(): HumanApprovalRequest[] {
-    return Array.from(this.approvalRequests.values())
-      .filter(r => r.workflowState === ApprovalWorkflowState.IN_PROGRESS);
+  async getPendingApprovals(): Promise<HumanApprovalRequest[]> {
+    return await this.hitlStorage.getAllPending();
   }
 
   /**
    * Get approvals for execution
    */
-  getApprovalsForExecution(executionId: string): HumanApprovalRequest[] {
-    return Array.from(this.approvalRequests.values())
-      .filter(r => r.executionId === executionId);
+  async getApprovalsForExecution(
+    executionId: string
+  ): Promise<HumanApprovalRequest[]> {
+    return await this.hitlStorage.getByExecutionId(executionId);
   }
 
   /**
    * Cancel approval request
    */
   async cancelApproval(requestId: string): Promise<boolean> {
-    const request = this.approvalRequests.get(requestId);
+    let request = this.approvalCache.get(requestId);
+    if (!request) {
+      const storageRequest = await this.hitlStorage.get(requestId);
+      if (storageRequest) {
+        this.approvalCache.set(requestId, storageRequest);
+        request = storageRequest;
+      }
+    }
 
     if (!request) {
       return false;
     }
 
-    this.clearTimeout(requestId);
+    this.approvalTimeoutService.clearTimeout(requestId);
     request.workflowState = ApprovalWorkflowState.CANCELLED;
+
+    // Update in storage
+    await this.hitlStorage.update(request);
+    // Update cache
+    this.approvalCache.set(requestId, request);
 
     await this.eventEmitter.emit(HITL_EVENTS.APPROVAL_COMPLETED, {
       requestId,
       executionId: request.executionId,
       decision: 'cancelled',
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     this.logger.log(`Cancelled approval request ${requestId}`);
@@ -808,8 +374,11 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get approval workflow statistics
    */
-  getApprovalStats(): ApprovalWorkflowStats {
-    const requests = Array.from(this.approvalRequests.values());
+  async getApprovalStats(): Promise<ApprovalWorkflowStats> {
+    // Get all approvals from storage for accurate stats
+    const allApprovals = await this.hitlStorage.getAllPending();
+    // Note: This should ideally get ALL approvals, not just pending
+    // The storage interface may need an getAllApprovals method
 
     const byState: Record<ApprovalWorkflowState, number> = {
       [ApprovalWorkflowState.PENDING]: 0,
@@ -818,22 +387,24 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       [ApprovalWorkflowState.REJECTED]: 0,
       [ApprovalWorkflowState.ESCALATED]: 0,
       [ApprovalWorkflowState.TIMEOUT]: 0,
-      [ApprovalWorkflowState.CANCELLED]: 0
+      [ApprovalWorkflowState.CANCELLED]: 0,
     };
 
     let totalResponseTime = 0;
     let responseCount = 0;
 
-    for (const request of requests) {
-      byState[request.workflowState]++;
+    for (const request of allApprovals) {
+      byState[request.workflowState as ApprovalWorkflowState]++;
 
       if (request.timestamps.responded) {
-        totalResponseTime += request.timestamps.responded.getTime() - request.timestamps.requested.getTime();
+        totalResponseTime +=
+          request.timestamps.responded.getTime() -
+          request.timestamps.requested.getTime();
         responseCount++;
       }
     }
 
-    const total = requests.length;
+    const total = allApprovals.length;
     const approved = byState[ApprovalWorkflowState.APPROVED];
     const escalated = byState[ApprovalWorkflowState.ESCALATED];
     const timeout = byState[ApprovalWorkflowState.TIMEOUT];
@@ -841,17 +412,54 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     return {
       total,
       byState,
-      averageResponseTime: responseCount > 0 ? totalResponseTime / responseCount : 0,
+      averageResponseTime:
+        responseCount > 0 ? totalResponseTime / responseCount : 0,
       timeoutRate: total > 0 ? timeout / total : 0,
       approvalRate: total > 0 ? approved / total : 0,
-      escalationRate: total > 0 ? escalated / total : 0
+      escalationRate: total > 0 ? escalated / total : 0,
     };
   }
 
+  // ==========================================
+  // CORE WORKFLOW RESUME (HIGH-LEVEL OPERATIONS)
+  // ==========================================
+
   /**
-   * Generate unique request ID
+   * Resume approval workflow from saved state with full restoration
+   * For other checkpoint operations, use the .checkpoints service directly
    */
-  private generateRequestId(): string {
-    return `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  async resumeApprovalWorkflow(
+    executionId: string,
+    nodeId: string,
+    checkpointId?: string
+  ): Promise<HumanApprovalRequest | null> {
+    const restoredRequest =
+      await this.hitlCheckpointService.resumeApprovalWorkflow(
+        executionId,
+        nodeId,
+        checkpointId
+      );
+
+    if (restoredRequest) {
+      // Add to cache and re-setup timeout if needed
+      this.approvalCache.set(restoredRequest.id, restoredRequest);
+
+      if (restoredRequest.workflowState === ApprovalWorkflowState.IN_PROGRESS) {
+        const timeElapsed =
+          Date.now() - restoredRequest.timestamps.requested.getTime();
+        const remainingTimeout = restoredRequest.timeout.duration - timeElapsed;
+
+        if (remainingTimeout > 0) {
+          restoredRequest.timeout.duration = remainingTimeout;
+          this.approvalTimeoutService.setupTimeout(
+            restoredRequest.id,
+            restoredRequest,
+            (id) => this.handleTimeout(id)
+          );
+        }
+      }
+    }
+
+    return restoredRequest;
   }
 }

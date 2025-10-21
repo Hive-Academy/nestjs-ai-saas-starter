@@ -20,7 +20,7 @@ export const libraryEslintConfig = {
           '{projectRoot}/**/*.test.{js,ts,jsx,tsx,mjs,cjs}',
           '{projectRoot}/**/*.spec.{js,ts,jsx,tsx,mjs,cjs}',
           '{projectRoot}/__tests__/**',
-          '{projectRoot}/__mocks__/**'
+          '{projectRoot}/__mocks__/**',
         ],
       },
     ],

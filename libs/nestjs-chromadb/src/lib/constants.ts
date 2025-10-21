@@ -4,13 +4,20 @@ export const CHROMADB_CLIENT = Symbol('CHROMADB_CLIENT');
 export const CHROMADB_CONNECTION = Symbol('CHROMADB_CONNECTION');
 
 // Default configuration values
-export const DEFAULT_CHROMA_HOST = 'localhost';
+// NOTE: HOST is required and must be explicitly configured in production
 export const DEFAULT_CHROMA_PORT = 8000;
 export const DEFAULT_CHROMA_SSL = false;
-export const DEFAULT_COLLECTION_NAME = 'default';
+export const DEFAULT_COLLECTION_NAME = 'documents';
 export const DEFAULT_BATCH_SIZE = 100;
 export const DEFAULT_MAX_RETRIES = 3;
 export const DEFAULT_RETRY_DELAY = 1000;
+export const DEFAULT_RETRY_BACKOFF_FACTOR = 2;
+export const DEFAULT_HTTP_TIMEOUT = 30000;
+
+// Text processing defaults
+export const DEFAULT_CHUNK_SIZE = 1000;
+export const DEFAULT_CHUNK_OVERLAP = 200;
+export const DEFAULT_MAX_TEXT_LENGTH = 8000;
 
 // Embedding provider types (enum version)
 export enum EmbeddingProviderEnum {

@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { NxWelcome } from './nx-welcome';
+import { ShowcaseNavigationComponent } from './shared/navigation/showcase-navigation.component';
 
 @Component({
-  imports: [NxWelcome, RouterModule],
+  imports: [RouterModule, ShowcaseNavigationComponent],
   selector: 'brand-root',
   templateUrl: './app.html',
   styleUrl: './app.css',

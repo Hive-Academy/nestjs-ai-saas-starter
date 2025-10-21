@@ -15,7 +15,7 @@ const colors = {
   blue: (text) => `\x1b[34m${text}\x1b[0m`,
   magenta: (text) => `\x1b[35m${text}\x1b[0m`,
   cyan: (text) => `\x1b[36m${text}\x1b[0m`,
-  white: (text) => `\x1b[37m${text}\x1b[0m`
+  white: (text) => `\x1b[37m${text}\x1b[0m`,
 };
 
 const chalk = colors;
@@ -24,14 +24,13 @@ const chalk = colors;
 const LIBRARIES = [
   'nestjs-chromadb',
   'nestjs-neo4j',
-  'nestjs-langgraph',
   'langgraph-modules/checkpoint',
   'langgraph-modules/memory',
   'langgraph-modules/time-travel',
   'langgraph-modules/multi-agent',
   'langgraph-modules/functional-api',
   'langgraph-modules/monitoring',
-  'langgraph-modules/platform'
+  'langgraph-modules/platform',
 ];
 
 /**
@@ -63,7 +62,11 @@ function updateLibraryTsConfig(library, template) {
     try {
       existingConfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
     } catch (error) {
-      console.log(chalk.red(`❌ Failed to parse existing tsconfig for ${library}: ${error.message}`));
+      console.log(
+        chalk.red(
+          `❌ Failed to parse existing tsconfig for ${library}: ${error.message}`
+        )
+      );
       return false;
     }
   }
@@ -76,19 +79,20 @@ function updateLibraryTsConfig(library, template) {
       // Preserve any library-specific settings
       ...(existingConfig.compilerOptions || {}),
       // Override with strict settings
-      ...template.compilerOptions
+      ...template.compilerOptions,
     },
     // Preserve existing include/exclude if they exist and are more specific
     include: existingConfig.include || template.include,
     exclude: [
       ...(template.exclude || []),
-      ...(existingConfig.exclude || [])
-    ].filter((value, index, self) => self.indexOf(value) === index) // Remove duplicates
+      ...(existingConfig.exclude || []),
+    ].filter((value, index, self) => self.indexOf(value) === index), // Remove duplicates
   };
 
   // Adjust extends path based on library depth
   const depth = library.split('/').length;
-  const extendsPath = depth === 1 ? '../../tsconfig.base.json' : '../../../tsconfig.base.json';
+  const extendsPath =
+    depth === 1 ? '../../tsconfig.base.json' : '../../../tsconfig.base.json';
   newConfig.extends = extendsPath;
 
   // Write updated config
@@ -97,7 +101,9 @@ function updateLibraryTsConfig(library, template) {
     console.log(chalk.green(`✅ Updated tsconfig.lib.json for ${library}`));
     return true;
   } catch (error) {
-    console.log(chalk.red(`❌ Failed to write tsconfig for ${library}: ${error.message}`));
+    console.log(
+      chalk.red(`❌ Failed to write tsconfig for ${library}: ${error.message}`)
+    );
     return false;
   }
 }
@@ -123,7 +129,10 @@ function createBackup() {
     const tsconfigPath = path.join(libPath, 'tsconfig.lib.json');
 
     if (fs.existsSync(tsconfigPath)) {
-      const backupFile = path.join(backupPath, `${library.replace('/', '-')}-tsconfig.lib.json`);
+      const backupFile = path.join(
+        backupPath,
+        `${library.replace('/', '-')}-tsconfig.lib.json`
+      );
       fs.copyFileSync(tsconfigPath, backupFile);
     }
   }
@@ -171,7 +180,9 @@ async function main() {
 
     // Load template
     const template = loadStrictTemplate();
-    console.log(chalk.blue('📋 Loaded strict TypeScript configuration template'));
+    console.log(
+      chalk.blue('📋 Loaded strict TypeScript configuration template')
+    );
 
     // Apply to all libraries
     let successCount = 0;
@@ -182,7 +193,9 @@ async function main() {
       }
     }
 
-    console.log(chalk.cyan(`\n📊 Updated ${successCount}/${LIBRARIES.length} libraries`));
+    console.log(
+      chalk.cyan(`\n📊 Updated ${successCount}/${LIBRARIES.length} libraries`)
+    );
 
     // Validate configurations unless skipped
     if (!skipValidation) {
@@ -192,20 +205,31 @@ async function main() {
       if (!isValid) {
         console.log(chalk.red('❌ Some configurations failed validation'));
         if (backupPath) {
-          console.log(chalk.yellow(`💡 You can restore from backup at: ${backupPath}`));
+          console.log(
+            chalk.yellow(`💡 You can restore from backup at: ${backupPath}`)
+          );
         }
         process.exit(1);
       }
     }
 
-    console.log(chalk.green('\n🎉 Successfully applied strict TypeScript configuration to all libraries!'));
+    console.log(
+      chalk.green(
+        '\n🎉 Successfully applied strict TypeScript configuration to all libraries!'
+      )
+    );
 
     // Provide next steps
     console.log(chalk.cyan('\n📋 Next Steps:'));
-    console.log(chalk.white('1. Run: npm run validate:types to check for issues'));
-    console.log(chalk.white('2. Fix any TypeScript errors that are now caught'));
-    console.log(chalk.white('3. Run: npm run build:libs to ensure everything builds'));
-
+    console.log(
+      chalk.white('1. Run: npm run validate:types to check for issues')
+    );
+    console.log(
+      chalk.white('2. Fix any TypeScript errors that are now caught')
+    );
+    console.log(
+      chalk.white('3. Run: npm run build:libs to ensure everything builds')
+    );
   } catch (error) {
     console.error(chalk.red('💥 Failed to apply strict configuration:'), error);
     process.exit(1);
@@ -214,7 +238,7 @@ async function main() {
 
 // Handle CLI usage
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error(chalk.red('💥 Script failed:'), error);
     process.exit(1);
   });

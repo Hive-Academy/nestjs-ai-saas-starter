@@ -104,6 +104,11 @@ export interface StateAnnotation<T> {
    * Apply reducers to merge state updates
    */
   applyReducers: (current: T, update: Partial<T>) => T;
+
+  /**
+   * Validate state using annotation rules
+   */
+  validate?: (state: T) => { isValid: boolean; errors?: string[] };
 }
 
 /**
@@ -249,6 +254,16 @@ export interface StateMergeOptions {
    * Whether to validate the merged result
    */
   validate?: boolean;
+
+  /**
+   * Schema name for validation
+   */
+  schemaName?: string;
+
+  /**
+   * Annotation name for validation
+   */
+  annotationName?: string;
 }
 
 /**
