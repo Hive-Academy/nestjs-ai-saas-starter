@@ -62,13 +62,13 @@ export class WorkflowRegistrationService {
       try {
         await this.registerWorkflowProvider(WorkflowClass);
         const executionTime = Date.now() - workflowStartTime;
-        
+
         registrationResults.push({
           workflowName: WorkflowClass.name,
           success: true,
-          executionTime
+          executionTime,
         });
-        
+
         // 🧠 MEMORY LEARNING: Store individual workflow registration success
         await this.storeWorkflowRegistrationEvent(
           WorkflowClass.name,
@@ -76,32 +76,34 @@ export class WorkflowRegistrationService {
           executionTime,
           {
             hasWorkflowMetadata: !!getWorkflowMetadata(WorkflowClass),
-            registrationOrder: registrationResults.length
+            registrationOrder: registrationResults.length,
           }
         );
       } catch (error) {
         const executionTime = Date.now() - workflowStartTime;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
         registrationResults.push({
           workflowName: WorkflowClass.name,
           success: false,
           executionTime,
-          error: errorMessage
+          error: errorMessage,
         });
-        
+
         // 🧠 MEMORY LEARNING: Store registration failure patterns
         await this.storeWorkflowRegistrationEvent(
           WorkflowClass.name,
           false,
           executionTime,
           {
-            errorType: error instanceof Error ? error.constructor.name : 'UnknownError',
+            errorType:
+              error instanceof Error ? error.constructor.name : 'UnknownError',
             errorMessage,
-            registrationOrder: registrationResults.length
+            registrationOrder: registrationResults.length,
           }
         );
-        
+
         this.logger.error(
           `Failed to register workflow provider ${WorkflowClass.name}:`,
           error
@@ -111,7 +113,7 @@ export class WorkflowRegistrationService {
     }
 
     const totalRegistrationTime = Date.now() - registrationStartTime;
-    
+
     // 🧠 MEMORY LEARNING: Store comprehensive batch registration analytics
     await this.storeBatchRegistrationComplete(
       workflowProviders.length,
@@ -251,17 +253,14 @@ export class WorkflowRegistrationService {
     this.workflowInstances.set(workflowName, instance);
 
     // 🧠 MEMORY ENHANCEMENT: Store workflow structure analytics for discovery optimization
-    await this.storeWorkflowStructureAnalytics(
-      workflowName,
-      {
-        totalTasks: taskMetadatas.length,
-        hasEntrypoint: !!entrypointMetadata,
-        complexityScore: this.calculateWorkflowComplexity(workflowDefinition),
-        dependencyCount: Array.from(dependencies.values()).flat().length,
-        taskNames: Array.from(tasks.keys()),
-        metadata: (workflowMetadata as Record<string, unknown>) || {}
-      }
-    );
+    await this.storeWorkflowStructureAnalytics(workflowName, {
+      totalTasks: taskMetadatas.length,
+      hasEntrypoint: !!entrypointMetadata,
+      complexityScore: this.calculateWorkflowComplexity(workflowDefinition),
+      dependencyCount: Array.from(dependencies.values()).flat().length,
+      taskNames: Array.from(tasks.keys()),
+      metadata: (workflowMetadata as Record<string, unknown>) || {},
+    });
 
     this.logger.debug(
       `Registered workflow: ${workflowName} (${className}) with ${taskMetadatas.length} tasks`
@@ -274,7 +273,7 @@ export class WorkflowRegistrationService {
   getWorkflows(): Map<string, FunctionalWorkflowDefinition> {
     // 🧠 MEMORY LEARNING: Track bulk workflow discovery usage
     this.storeWorkflowDiscoveryEvent('list_all', this.workflows.size);
-    
+
     return new Map(this.workflows);
   }
 
@@ -283,14 +282,14 @@ export class WorkflowRegistrationService {
    */
   getWorkflow(workflowId: string): FunctionalWorkflowDefinition | undefined {
     const workflow = this.workflows.get(workflowId);
-    
+
     // 🧠 MEMORY LEARNING: Track workflow access patterns for intelligent discovery
     if (workflow) {
       this.storeWorkflowAccessEvent(workflowId, 'found');
     } else {
       this.storeWorkflowAccessEvent(workflowId, 'not_found');
     }
-    
+
     return workflow;
   }
 
@@ -324,17 +323,18 @@ export class WorkflowRegistrationService {
       totalWorkflows: this.workflows.size,
       totalTasks,
       workflows: Array.from(this.workflows.keys()),
-      
+
       // Memory-enhanced analytics
       analytics: memoryAnalytics,
-      
+
       // Real-time complexity analysis
       complexityMetrics: {
-        averageTasksPerWorkflow: this.workflows.size > 0 ? totalTasks / this.workflows.size : 0,
+        averageTasksPerWorkflow:
+          this.workflows.size > 0 ? totalTasks / this.workflows.size : 0,
         mostComplexWorkflow: this.findMostComplexWorkflow(),
         simplestWorkflow: this.findSimplestWorkflow(),
-        totalDependencies: this.calculateTotalDependencies()
-      }
+        totalDependencies: this.calculateTotalDependencies(),
+      },
     };
   }
 
@@ -358,7 +358,7 @@ export class WorkflowRegistrationService {
     try {
       const namespace = `workflows.registration.events.${workflowName}`;
       const timestamp = new Date().toISOString();
-      
+
       const registrationEvent = {
         workflowName,
         timestamp,
@@ -368,15 +368,15 @@ export class WorkflowRegistrationService {
           ...metadata,
           registrationTimestamp: timestamp,
           hour: new Date().getHours(),
-          dayOfWeek: new Date().getDay()
+          dayOfWeek: new Date().getDay(),
         },
-        
+
         // Performance classification
         performance: {
           speed: this.categorizeRegistrationSpeed(executionTime),
           efficient: executionTime < 1000, // < 1 second is efficient
-          complexity: metadata.totalTasks ? 'complex' : 'simple'
-        }
+          complexity: metadata.totalTasks ? 'complex' : 'simple',
+        },
       };
 
       await this.memoryAdapter.store(
@@ -393,22 +393,22 @@ export class WorkflowRegistrationService {
             'workflow_registration',
             success ? 'success' : 'failure',
             workflowName,
-            this.categorizeRegistrationSpeed(executionTime)
-          ])
+            this.categorizeRegistrationSpeed(executionTime),
+          ]),
         }
       );
 
       this.logger.debug(`Stored workflow registration event`, {
         workflowName,
         success,
-        executionTime
+        executionTime,
       });
     } catch (error) {
-      this.handleMemoryError(
-        'storeWorkflowRegistrationEvent',
-        error,
-        { workflowName, success, executionTime }
-      );
+      this.handleMemoryError('storeWorkflowRegistrationEvent', error, {
+        workflowName,
+        success,
+        executionTime,
+      });
     }
   }
 
@@ -425,7 +425,7 @@ export class WorkflowRegistrationService {
     try {
       const namespace = 'workflows.registration.batch';
       const timestamp = new Date().toISOString();
-      
+
       const batchStart = {
         type: 'batch_registration_start',
         timestamp,
@@ -433,29 +433,23 @@ export class WorkflowRegistrationService {
         context: {
           hour: new Date().getHours(),
           existingWorkflows: this.workflows.size,
-          totalTasksBefore: this.getTotalTaskCount()
-        }
+          totalTasksBefore: this.getTotalTaskCount(),
+        },
       };
 
-      await this.memoryAdapter.store(
-        namespace,
-        JSON.stringify(batchStart),
-        {
-          type: 'context',
-          source: 'batch_registration',
-          agentId: 'workflow_registration',
-          userId: 'system',
-          importance: 0.5,
-          persistent: false,
-          tags: JSON.stringify(['batch_registration', 'start'])
-        }
-      );
+      await this.memoryAdapter.store(namespace, JSON.stringify(batchStart), {
+        type: 'context',
+        source: 'batch_registration',
+        agentId: 'workflow_registration',
+        userId: 'system',
+        importance: 0.5,
+        persistent: false,
+        tags: JSON.stringify(['batch_registration', 'start']),
+      });
     } catch (error) {
-      this.handleMemoryError(
-        'storeBatchRegistrationStart',
-        error,
-        { workflowCount }
-      );
+      this.handleMemoryError('storeBatchRegistrationStart', error, {
+        workflowCount,
+      });
     }
   }
 
@@ -479,10 +473,10 @@ export class WorkflowRegistrationService {
     try {
       const namespace = 'workflows.registration.performance';
       const timestamp = new Date().toISOString();
-      
-      const successfulRegistrations = results.filter(r => r.success);
-      const failedRegistrations = results.filter(r => !r.success);
-      
+
+      const successfulRegistrations = results.filter((r) => r.success);
+      const failedRegistrations = results.filter((r) => !r.success);
+
       const performanceAnalytics = {
         type: 'batch_registration_complete',
         timestamp,
@@ -490,32 +484,45 @@ export class WorkflowRegistrationService {
           totalWorkflows: workflowCount,
           successful: successfulRegistrations.length,
           failed: failedRegistrations.length,
-          successRate: workflowCount > 0 ? (successfulRegistrations.length / workflowCount) : 0,
+          successRate:
+            workflowCount > 0
+              ? successfulRegistrations.length / workflowCount
+              : 0,
           totalTime,
-          averageTimePerWorkflow: workflowCount > 0 ? (totalTime / workflowCount) : 0
+          averageTimePerWorkflow:
+            workflowCount > 0 ? totalTime / workflowCount : 0,
         },
-        
+
         performance: {
-          fastestRegistration: Math.min(...successfulRegistrations.map(r => r.executionTime)),
-          slowestRegistration: Math.max(...successfulRegistrations.map(r => r.executionTime)),
-          averageSuccessTime: successfulRegistrations.length > 0 ? 
-            (successfulRegistrations.reduce((sum, r) => sum + r.executionTime, 0) / successfulRegistrations.length) : 0,
-          totalWorkflowsAfterBatch: this.workflows.size
+          fastestRegistration: Math.min(
+            ...successfulRegistrations.map((r) => r.executionTime)
+          ),
+          slowestRegistration: Math.max(
+            ...successfulRegistrations.map((r) => r.executionTime)
+          ),
+          averageSuccessTime:
+            successfulRegistrations.length > 0
+              ? successfulRegistrations.reduce(
+                  (sum, r) => sum + r.executionTime,
+                  0
+                ) / successfulRegistrations.length
+              : 0,
+          totalWorkflowsAfterBatch: this.workflows.size,
         },
-        
+
         // Error patterns for learning
-        errors: failedRegistrations.map(r => ({
+        errors: failedRegistrations.map((r) => ({
           workflowName: r.workflowName,
           error: r.error,
-          executionTime: r.executionTime
+          executionTime: r.executionTime,
         })),
-        
+
         // Context for pattern analysis
         context: {
           batchSize: workflowCount,
           registrationHour: new Date().getHours(),
-          systemLoad: this.calculateSystemLoad(results)
-        }
+          systemLoad: this.calculateSystemLoad(results),
+        },
       };
 
       await this.memoryAdapter.store(
@@ -531,23 +538,24 @@ export class WorkflowRegistrationService {
           tags: JSON.stringify([
             'batch_registration',
             'performance_analytics',
-            `success_rate_${Math.floor(performanceAnalytics.summary.successRate * 100)}`,
-            this.categorizeBatchSize(workflowCount)
-          ])
+            `success_rate_${Math.floor(
+              performanceAnalytics.summary.successRate * 100
+            )}`,
+            this.categorizeBatchSize(workflowCount),
+          ]),
         }
       );
 
       this.logger.debug(`Stored batch registration analytics`, {
         workflowCount,
         successRate: performanceAnalytics.summary.successRate,
-        totalTime
+        totalTime,
       });
     } catch (error) {
-      this.handleMemoryError(
-        'storeBatchRegistrationComplete',
-        error,
-        { workflowCount, totalTime }
-      );
+      this.handleMemoryError('storeBatchRegistrationComplete', error, {
+        workflowCount,
+        totalTime,
+      });
     }
   }
 
@@ -572,30 +580,42 @@ export class WorkflowRegistrationService {
     try {
       const namespace = `workflows.registration.structure.${workflowName}`;
       const timestamp = new Date().toISOString();
-      
+
       const structureAnalytics = {
         workflowName,
         timestamp,
         structure: {
           ...structure,
-          
+
           // Derived analytics
-          taskDensity: structure.dependencyCount > 0 ? 
-            (structure.totalTasks / structure.dependencyCount) : structure.totalTasks,
-          complexityCategory: this.categorizeComplexity(structure.complexityScore),
+          taskDensity:
+            structure.dependencyCount > 0
+              ? structure.totalTasks / structure.dependencyCount
+              : structure.totalTasks,
+          complexityCategory: this.categorizeComplexity(
+            structure.complexityScore
+          ),
           hasDependencies: structure.dependencyCount > 0,
-          taskVariety: new Set(structure.taskNames.map(name => 
-            name.replace(/[0-9]+/g, '')  // Remove numbers to find patterns
-          )).size
+          taskVariety: new Set(
+            structure.taskNames.map(
+              (name) => name.replace(/[0-9]+/g, '') // Remove numbers to find patterns
+            )
+          ).size,
         },
-        
+
         // Discovery optimization hints
         discoveryHints: {
-          searchKeywords: this.extractSearchKeywords(workflowName, structure.taskNames),
-          category: this.categorizeWorkflowType(workflowName, structure.taskNames),
+          searchKeywords: this.extractSearchKeywords(
+            workflowName,
+            structure.taskNames
+          ),
+          category: this.categorizeWorkflowType(
+            workflowName,
+            structure.taskNames
+          ),
           usagePattern: this.predictUsagePattern(structure),
-          priority: this.calculateDiscoveryPriority(structure)
-        }
+          priority: this.calculateDiscoveryPriority(structure),
+        },
       };
 
       await this.memoryAdapter.store(
@@ -614,22 +634,21 @@ export class WorkflowRegistrationService {
             structureAnalytics.structure.complexityCategory,
             structureAnalytics.discoveryHints.category,
             `tasks_${structure.totalTasks}`,
-            `complexity_${Math.floor(structure.complexityScore)}`
-          ])
+            `complexity_${Math.floor(structure.complexityScore)}`,
+          ]),
         }
       );
 
       this.logger.debug(`Stored workflow structure analytics`, {
         workflowName,
         complexityScore: structure.complexityScore,
-        totalTasks: structure.totalTasks
+        totalTasks: structure.totalTasks,
       });
     } catch (error) {
-      this.handleMemoryError(
-        'storeWorkflowStructureAnalytics',
-        error,
-        { workflowName, structure }
-      );
+      this.handleMemoryError('storeWorkflowStructureAnalytics', error, {
+        workflowName,
+        structure,
+      });
     }
   }
 
@@ -647,7 +666,7 @@ export class WorkflowRegistrationService {
     try {
       const namespace = `workflows.registration.usage.${workflowId}`;
       const timestamp = new Date().toISOString();
-      
+
       const accessEvent = {
         workflowId,
         timestamp,
@@ -655,33 +674,24 @@ export class WorkflowRegistrationService {
         context: {
           hour: new Date().getHours(),
           dayOfWeek: new Date().getDay(),
-          totalRegisteredWorkflows: this.workflows.size
-        }
+          totalRegisteredWorkflows: this.workflows.size,
+        },
       };
 
-      await this.memoryAdapter.store(
-        namespace,
-        JSON.stringify(accessEvent),
-        {
-          type: 'context',
-          source: 'workflow_access',
-          agentId: 'workflow_registration',
-          userId: 'system',
-          importance: accessResult === 'found' ? 0.4 : 0.6, // Not found events are more important
-          persistent: false,
-          tags: JSON.stringify([
-            'workflow_access',
-            accessResult,
-            workflowId
-          ])
-        }
-      );
+      await this.memoryAdapter.store(namespace, JSON.stringify(accessEvent), {
+        type: 'context',
+        source: 'workflow_access',
+        agentId: 'workflow_registration',
+        userId: 'system',
+        importance: accessResult === 'found' ? 0.4 : 0.6, // Not found events are more important
+        persistent: false,
+        tags: JSON.stringify(['workflow_access', accessResult, workflowId]),
+      });
     } catch (error) {
-      this.handleMemoryError(
-        'storeWorkflowAccessEvent',
-        error,
-        { workflowId, accessResult }
-      );
+      this.handleMemoryError('storeWorkflowAccessEvent', error, {
+        workflowId,
+        accessResult,
+      });
     }
   }
 
@@ -700,7 +710,7 @@ export class WorkflowRegistrationService {
     try {
       const namespace = 'workflows.registration.discovery';
       const timestamp = new Date().toISOString();
-      
+
       const discoveryEvent = {
         type: 'workflow_discovery',
         discoveryType,
@@ -710,8 +720,8 @@ export class WorkflowRegistrationService {
         context: {
           hour: new Date().getHours(),
           totalWorkflows: this.workflows.size,
-          discoveryEfficiency: resultCount > 0 ? 'successful' : 'unsuccessful'
-        }
+          discoveryEfficiency: resultCount > 0 ? 'successful' : 'unsuccessful',
+        },
       };
 
       await this.memoryAdapter.store(
@@ -727,16 +737,15 @@ export class WorkflowRegistrationService {
           tags: JSON.stringify([
             'workflow_discovery',
             discoveryType,
-            resultCount > 0 ? 'successful' : 'unsuccessful'
-          ])
+            resultCount > 0 ? 'successful' : 'unsuccessful',
+          ]),
         }
       );
     } catch (error) {
-      this.handleMemoryError(
-        'storeWorkflowDiscoveryEvent',
-        error,
-        { discoveryType, resultCount }
-      );
+      this.handleMemoryError('storeWorkflowDiscoveryEvent', error, {
+        discoveryType,
+        resultCount,
+      });
     }
   }
 
@@ -754,7 +763,7 @@ export class WorkflowRegistrationService {
         query: 'batch registration performance',
         agentId: 'workflow_registration',
         limit: 10,
-        namespace: ['workflows', 'registration', 'performance']
+        namespace: ['workflows', 'registration', 'performance'],
       });
 
       // Get access patterns
@@ -762,7 +771,7 @@ export class WorkflowRegistrationService {
         query: 'workflow access pattern',
         agentId: 'workflow_registration',
         limit: 20,
-        namespace: ['workflows', 'registration', 'usage']
+        namespace: ['workflows', 'registration', 'usage'],
       });
 
       // Get discovery analytics
@@ -770,29 +779,33 @@ export class WorkflowRegistrationService {
         query: 'workflow discovery pattern',
         agentId: 'workflow_registration',
         limit: 15,
-        namespace: ['workflows', 'registration', 'discovery']
+        namespace: ['workflows', 'registration', 'discovery'],
       });
 
       return {
         memoryStatus: 'available',
         analytics: {
-          registrationPerformance: this.analyzeRegistrationPerformance(registrationPerformance),
+          registrationPerformance: this.analyzeRegistrationPerformance(
+            registrationPerformance
+          ),
           accessPatterns: this.analyzeAccessPatterns(accessPatterns),
           discoveryPatterns: this.analyzeDiscoveryPatterns(discoveryPatterns),
-          totalMemoryEntries: registrationPerformance.length + accessPatterns.length + discoveryPatterns.length
+          totalMemoryEntries:
+            registrationPerformance.length +
+            accessPatterns.length +
+            discoveryPatterns.length,
         },
         insights: {
-          mostAccessedWorkflows: this.extractMostAccessedWorkflows(accessPatterns),
-          performanceBottlenecks: this.identifyPerformanceBottlenecks(registrationPerformance),
-          discoveryTrends: this.extractDiscoveryTrends(discoveryPatterns)
-        }
+          mostAccessedWorkflows:
+            this.extractMostAccessedWorkflows(accessPatterns),
+          performanceBottlenecks: this.identifyPerformanceBottlenecks(
+            registrationPerformance
+          ),
+          discoveryTrends: this.extractDiscoveryTrends(discoveryPatterns),
+        },
       };
     } catch (error) {
-      return this.handleMemoryError(
-        'getWorkflowAnalytics',
-        error,
-        {}
-      );
+      return this.handleMemoryError('getWorkflowAnalytics', error, {});
     }
   }
 
@@ -800,13 +813,16 @@ export class WorkflowRegistrationService {
   // HELPER METHODS - Analysis and Classification
   // ============================================================================
 
-  private calculateWorkflowComplexity(definition: FunctionalWorkflowDefinition): number {
+  private calculateWorkflowComplexity(
+    definition: FunctionalWorkflowDefinition
+  ): number {
     const taskCount = definition.tasks.size;
-    const dependencyCount = Array.from(definition.dependencies.values()).flat().length;
+    const dependencyCount = Array.from(definition.dependencies.values()).flat()
+      .length;
     const hasErrorHandlers = definition.errorHandlers.size > 0;
-    
+
     // Complex formula: tasks + dependencies + error handling bonus
-    return taskCount + (dependencyCount * 1.5) + (hasErrorHandlers ? 5 : 0);
+    return taskCount + dependencyCount * 1.5 + (hasErrorHandlers ? 5 : 0);
   }
 
   private categorizeRegistrationSpeed(executionTime: number): string {
@@ -831,45 +847,60 @@ export class WorkflowRegistrationService {
     return 'large_batch';
   }
 
-  private extractSearchKeywords(workflowName: string, taskNames: string[]): string[] {
+  private extractSearchKeywords(
+    workflowName: string,
+    taskNames: string[]
+  ): string[] {
     const keywords: string[] = [];
-    
+
     // Extract from workflow name
     keywords.push(...workflowName.toLowerCase().split(/[_-]/));
-    
+
     // Extract common patterns from task names
-    const taskPatterns = taskNames.map(name => 
-      name.toLowerCase().replace(/[0-9]+/g, '').split(/[_-]/)
-    ).flat();
-    
+    const taskPatterns = taskNames
+      .map((name) =>
+        name
+          .toLowerCase()
+          .replace(/[0-9]+/g, '')
+          .split(/[_-]/)
+      )
+      .flat();
+
     // Find most common task patterns
     const patternCounts = taskPatterns.reduce((counts, pattern) => {
-      if (pattern.length > 2) { // Only meaningful patterns
+      if (pattern.length > 2) {
+        // Only meaningful patterns
         counts[pattern] = (counts[pattern] || 0) + 1;
       }
       return counts;
     }, {} as Record<string, number>);
-    
+
     // Add most frequent patterns
     Object.entries(patternCounts)
       .filter(([_, count]) => count > 1)
       .map(([pattern]) => pattern)
-      .forEach(pattern => keywords.push(pattern));
-    
+      .forEach((pattern) => keywords.push(pattern));
+
     return [...new Set(keywords)]; // Remove duplicates
   }
 
-  private categorizeWorkflowType(workflowName: string, taskNames: string[]): string {
+  private categorizeWorkflowType(
+    workflowName: string,
+    taskNames: string[]
+  ): string {
     const name = workflowName.toLowerCase();
     const tasks = taskNames.join(' ').toLowerCase();
-    
+
     if (name.includes('test') || tasks.includes('test')) return 'testing';
-    if (name.includes('data') || tasks.includes('process')) return 'data_processing';
-    if (name.includes('auth') || tasks.includes('auth')) return 'authentication';
+    if (name.includes('data') || tasks.includes('process'))
+      return 'data_processing';
+    if (name.includes('auth') || tasks.includes('auth'))
+      return 'authentication';
     if (name.includes('api') || tasks.includes('api')) return 'api_integration';
-    if (name.includes('notification') || tasks.includes('notify')) return 'notification';
+    if (name.includes('notification') || tasks.includes('notify'))
+      return 'notification';
     if (name.includes('report') || tasks.includes('report')) return 'reporting';
-    
+
     return 'general';
   }
 
@@ -890,12 +921,12 @@ export class WorkflowRegistrationService {
     hasEntrypoint: boolean;
   }): number {
     let priority = 0.5; // Base priority
-    
+
     if (structure.hasEntrypoint) priority += 0.2;
     if (structure.totalTasks > 1) priority += 0.1;
     if (structure.complexityScore < 10) priority += 0.1; // Simple workflows are more discoverable
     if (structure.complexityScore > 25) priority -= 0.2; // Very complex workflows are less discoverable
-    
+
     return Math.max(0, Math.min(1, priority));
   }
 
@@ -906,9 +937,12 @@ export class WorkflowRegistrationService {
     );
   }
 
-  private calculateSystemLoad(results: Array<{ executionTime: number }>): string {
-    const avgTime = results.reduce((sum, r) => sum + r.executionTime, 0) / results.length;
-    
+  private calculateSystemLoad(
+    results: Array<{ executionTime: number }>
+  ): string {
+    const avgTime =
+      results.reduce((sum, r) => sum + r.executionTime, 0) / results.length;
+
     if (avgTime < 1000) return 'low';
     if (avgTime < 3000) return 'moderate';
     return 'high';
@@ -917,7 +951,7 @@ export class WorkflowRegistrationService {
   private findMostComplexWorkflow(): string | null {
     let maxComplexity = 0;
     let mostComplex: string | null = null;
-    
+
     for (const [name, definition] of this.workflows) {
       const complexity = this.calculateWorkflowComplexity(definition);
       if (complexity > maxComplexity) {
@@ -925,14 +959,14 @@ export class WorkflowRegistrationService {
         mostComplex = name;
       }
     }
-    
+
     return mostComplex;
   }
 
   private findSimplestWorkflow(): string | null {
     let minComplexity = Infinity;
     let simplest: string | null = null;
-    
+
     for (const [name, definition] of this.workflows) {
       const complexity = this.calculateWorkflowComplexity(definition);
       if (complexity < minComplexity) {
@@ -940,13 +974,14 @@ export class WorkflowRegistrationService {
         simplest = name;
       }
     }
-    
+
     return simplest;
   }
 
   private calculateTotalDependencies(): number {
     return Array.from(this.workflows.values()).reduce(
-      (sum, workflow) => sum + Array.from(workflow.dependencies.values()).flat().length,
+      (sum, workflow) =>
+        sum + Array.from(workflow.dependencies.values()).flat().length,
       0
     );
   }
@@ -955,12 +990,14 @@ export class WorkflowRegistrationService {
   // MEMORY ANALYTICS PROCESSING
   // ============================================================================
 
-  private analyzeRegistrationPerformance(memories: any[]): Record<string, unknown> {
+  private analyzeRegistrationPerformance(
+    memories: any[]
+  ): Record<string, unknown> {
     if (memories.length === 0) return { status: 'no_data' };
-    
+
     try {
       const performanceData = memories
-        .map(memory => {
+        .map((memory) => {
           try {
             return typeof memory === 'string' ? JSON.parse(memory) : memory;
           } catch {
@@ -969,18 +1006,24 @@ export class WorkflowRegistrationService {
         })
         .filter(Boolean);
 
-      const avgTime = performanceData.reduce((sum, data) => 
-        sum + (data.summary?.averageTimePerWorkflow || 0), 0) / performanceData.length;
-      
-      const avgSuccessRate = performanceData.reduce((sum, data) => 
-        sum + (data.summary?.successRate || 0), 0) / performanceData.length;
+      const avgTime =
+        performanceData.reduce(
+          (sum, data) => sum + (data.summary?.averageTimePerWorkflow || 0),
+          0
+        ) / performanceData.length;
+
+      const avgSuccessRate =
+        performanceData.reduce(
+          (sum, data) => sum + (data.summary?.successRate || 0),
+          0
+        ) / performanceData.length;
 
       return {
         status: 'analyzed',
         averageRegistrationTime: avgTime,
         averageSuccessRate: avgSuccessRate,
         totalBatches: performanceData.length,
-        lastRegistration: performanceData[0]?.timestamp
+        lastRegistration: performanceData[0]?.timestamp,
       };
     } catch (error) {
       return { status: 'analysis_error', error: String(error) };
@@ -989,10 +1032,10 @@ export class WorkflowRegistrationService {
 
   private analyzeAccessPatterns(memories: any[]): Record<string, unknown> {
     if (memories.length === 0) return { status: 'no_data' };
-    
+
     try {
       const accessData = memories
-        .map(memory => {
+        .map((memory) => {
           try {
             return typeof memory === 'string' ? JSON.parse(memory) : memory;
           } catch {
@@ -1009,8 +1052,11 @@ export class WorkflowRegistrationService {
         return counts;
       }, {} as Record<string, number>);
 
-      const successfulAccess = accessData.filter(access => access.accessResult === 'found').length;
-      const successRate = accessData.length > 0 ? (successfulAccess / accessData.length) : 0;
+      const successfulAccess = accessData.filter(
+        (access) => access.accessResult === 'found'
+      ).length;
+      const successRate =
+        accessData.length > 0 ? successfulAccess / accessData.length : 0;
 
       return {
         status: 'analyzed',
@@ -1019,7 +1065,7 @@ export class WorkflowRegistrationService {
         mostAccessedWorkflows: Object.entries(workflowAccess)
           .sort(([, a], [, b]) => (b as number) - (a as number))
           .slice(0, 5)
-          .map(([workflow, count]) => ({ workflow, count }))
+          .map(([workflow, count]) => ({ workflow, count })),
       };
     } catch (error) {
       return { status: 'analysis_error', error: String(error) };
@@ -1028,10 +1074,10 @@ export class WorkflowRegistrationService {
 
   private analyzeDiscoveryPatterns(memories: any[]): Record<string, unknown> {
     if (memories.length === 0) return { status: 'no_data' };
-    
+
     try {
       const discoveryData = memories
-        .map(memory => {
+        .map((memory) => {
           try {
             return typeof memory === 'string' ? JSON.parse(memory) : memory;
           } catch {
@@ -1048,18 +1094,22 @@ export class WorkflowRegistrationService {
         return counts;
       }, {} as Record<string, number>);
 
-      const successfulDiscoveries = discoveryData.filter(d => 
-        d.context?.discoveryEfficiency === 'successful').length;
-      const discoverySuccessRate = discoveryData.length > 0 ? 
-        (successfulDiscoveries / discoveryData.length) : 0;
+      const successfulDiscoveries = discoveryData.filter(
+        (d) => d.context?.discoveryEfficiency === 'successful'
+      ).length;
+      const discoverySuccessRate =
+        discoveryData.length > 0
+          ? successfulDiscoveries / discoveryData.length
+          : 0;
 
       return {
         status: 'analyzed',
         totalDiscoveries: discoveryData.length,
         discoverySuccessRate,
         discoveryTypes,
-        mostCommonDiscoveryType: Object.entries(discoveryTypes)
-          .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0]
+        mostCommonDiscoveryType: Object.entries(discoveryTypes).sort(
+          ([, a], [, b]) => (b as number) - (a as number)
+        )[0]?.[0],
       };
     } catch (error) {
       return { status: 'analysis_error', error: String(error) };
@@ -1069,7 +1119,7 @@ export class WorkflowRegistrationService {
   private extractMostAccessedWorkflows(memories: any[]): string[] {
     try {
       const accessCounts = memories
-        .map(memory => {
+        .map((memory) => {
           try {
             return typeof memory === 'string' ? JSON.parse(memory) : memory;
           } catch {
@@ -1096,9 +1146,9 @@ export class WorkflowRegistrationService {
   private identifyPerformanceBottlenecks(memories: any[]): string[] {
     try {
       const bottlenecks: string[] = [];
-      
+
       const performanceData = memories
-        .map(memory => {
+        .map((memory) => {
           try {
             return typeof memory === 'string' ? JSON.parse(memory) : memory;
           } catch {
@@ -1108,17 +1158,19 @@ export class WorkflowRegistrationService {
         .filter(Boolean);
 
       // Identify slow average times
-      const slowBatches = performanceData.filter(data => 
-        (data.summary?.averageTimePerWorkflow || 0) > 5000);
-      
+      const slowBatches = performanceData.filter(
+        (data) => (data.summary?.averageTimePerWorkflow || 0) > 5000
+      );
+
       if (slowBatches.length > 0) {
         bottlenecks.push('slow_registration_times');
       }
 
       // Identify low success rates
-      const lowSuccessRates = performanceData.filter(data => 
-        (data.summary?.successRate || 1) < 0.8);
-      
+      const lowSuccessRates = performanceData.filter(
+        (data) => (data.summary?.successRate || 1) < 0.8
+      );
+
       if (lowSuccessRates.length > 0) {
         bottlenecks.push('registration_failures');
       }
@@ -1132,7 +1184,7 @@ export class WorkflowRegistrationService {
   private extractDiscoveryTrends(memories: any[]): Record<string, unknown> {
     try {
       const discoveryData = memories
-        .map(memory => {
+        .map((memory) => {
           try {
             return typeof memory === 'string' ? JSON.parse(memory) : memory;
           } catch {
@@ -1149,13 +1201,14 @@ export class WorkflowRegistrationService {
         return hours;
       }, {} as Record<number, number>);
 
-      const peakHour = Object.entries(hourlyPattern)
-        .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0];
+      const peakHour = Object.entries(hourlyPattern).sort(
+        ([, a], [, b]) => (b as number) - (a as number)
+      )[0]?.[0];
 
       return {
         hourlyPattern,
         peakDiscoveryHour: peakHour ? parseInt(peakHour) : null,
-        totalDiscoveries: discoveryData.length
+        totalDiscoveries: discoveryData.length,
       };
     } catch {
       return { status: 'analysis_error' };
@@ -1174,7 +1227,7 @@ export class WorkflowRegistrationService {
       `Memory operation '${operation}' failed - continuing with degraded functionality`,
       {
         error: error instanceof Error ? error.message : String(error),
-        context
+        context,
       }
     );
     // Return empty object for graceful degradation

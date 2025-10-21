@@ -131,7 +131,11 @@ export class AgentMemoryCheckpointService {
     private readonly checkpointAdapter?: ICheckpointAdapter
   ) {}
 
-  async syncWithCheckpoint(threadId: string, checkpointId: string, agentMemories?: readonly MemoryEntry[]): Promise<void> {
+  async syncWithCheckpoint(
+    threadId: string,
+    checkpointId: string,
+    agentMemories?: readonly MemoryEntry[]
+  ): Promise<void> {
     // Real checkpoint integration implementation
     if (!this.checkpointAdapter) {
       this.logger.debug('No checkpoint adapter available - skipping memory sync');

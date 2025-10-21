@@ -212,7 +212,11 @@ async createWorkerNode(agent: AgentDefinition, config: SupervisorConfig) {
 **Integration Point** (workflow-engine/metadata-processor.service.ts:14-101):
 
 ```typescript
-import { getWorkflowMetadata, getWorkflowNodes, getWorkflowEdges } from '@hive-academy/langgraph-functional-api';
+import {
+  getWorkflowMetadata,
+  getWorkflowNodes,
+  getWorkflowEdges,
+} from '@hive-academy/langgraph-functional-api';
 
 @Injectable()
 export class MetadataProcessorService {
@@ -247,9 +251,16 @@ export class MetadataProcessorService {
 // Multi-agent coordinator with command processing
 @Injectable()
 export class MultiAgentCoordinatorService {
-  constructor(private readonly commandProcessor: CommandProcessorService, private readonly networkManager: NetworkManagerService) {}
+  constructor(
+    private readonly commandProcessor: CommandProcessorService,
+    private readonly networkManager: NetworkManagerService
+  ) {}
 
-  async executeWithCommandRouting(networkId: string, input: any, config: any): Promise<MultiAgentResult> {
+  async executeWithCommandRouting(
+    networkId: string,
+    input: any,
+    config: any
+  ): Promise<MultiAgentResult> {
     const graph = this.networkManager.getNetwork(networkId);
 
     for await (const chunk of graph.stream(input, config)) {
@@ -289,7 +300,10 @@ export class MultiAgentCoordinatorService {
 ```typescript
 @Injectable()
 export class NodeFactoryService {
-  constructor(private readonly subgraphManager: SubgraphManagerService, private readonly agentRegistry: AgentRegistryService) {}
+  constructor(
+    private readonly subgraphManager: SubgraphManagerService,
+    private readonly agentRegistry: AgentRegistryService
+  ) {}
 
   async createWorkerNode(agent: AgentDefinition, config: SupervisorConfig): Promise<WorkerNode> {
     // Get agent's workflow graph
@@ -315,26 +329,33 @@ export class NodeFactoryService {
 
     // Return wrapped worker node
     return async (state: AgentState) => {
-      return this.subgraphManager.executeAsSubgraph('supervisor', state.executionId, agent.id, agentGraph, state, {
-        transforms: {
-          input: (supervisorState) => ({
-            messages: supervisorState.messages,
-            task: supervisorState.task,
-            metadata: {
-              ...supervisorState.metadata,
-              workerContext: agent.id,
-            },
-          }),
-          output: (workerResult) => ({
-            ...workerResult,
-            metadata: {
-              ...workerResult.metadata,
-              lastWorker: agent.id,
-              workerExecutionTime: Date.now() - startTime,
-            },
-          }),
-        },
-      });
+      return this.subgraphManager.executeAsSubgraph(
+        'supervisor',
+        state.executionId,
+        agent.id,
+        agentGraph,
+        state,
+        {
+          transforms: {
+            input: (supervisorState) => ({
+              messages: supervisorState.messages,
+              task: supervisorState.task,
+              metadata: {
+                ...supervisorState.metadata,
+                workerContext: agent.id,
+              },
+            }),
+            output: (workerResult) => ({
+              ...workerResult,
+              metadata: {
+                ...workerResult.metadata,
+                lastWorker: agent.id,
+                workerExecutionTime: Date.now() - startTime,
+              },
+            }),
+          },
+        }
+      );
     };
   }
 }

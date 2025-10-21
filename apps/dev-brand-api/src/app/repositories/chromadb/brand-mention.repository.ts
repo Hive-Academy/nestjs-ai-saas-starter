@@ -52,7 +52,9 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
       });
     } catch (error) {
       throw new Error(
-        `Failed to fetch recent mentions for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch recent mentions for user ${userId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }
@@ -81,7 +83,9 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
       });
     } catch (error) {
       throw new Error(
-        `Failed to fetch ${sentiment} mentions for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch ${sentiment} mentions for user ${userId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }
@@ -112,7 +116,9 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
         .sort((a, b) => b.metadata.reach - a.metadata.reach);
     } catch (error) {
       throw new Error(
-        `Failed to fetch high-impact mentions for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch high-impact mentions for user ${userId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }
@@ -140,7 +146,9 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
       });
     } catch (error) {
       throw new Error(
-        `Failed to fetch ${platform} mentions for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch ${platform} mentions for user ${userId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }
@@ -172,7 +180,9 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
       return topicCounts;
     } catch (error) {
       throw new Error(
-        `Failed to fetch trending topics for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch trending topics for user ${userId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }
@@ -189,9 +199,7 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
   async getTopInfluencers(
     userId: string,
     limit = 10
-  ): Promise<
-    Array<{ id: string; platform: string; influencerScore: number }>
-  > {
+  ): Promise<Array<{ id: string; platform: string; influencerScore: number }>> {
     try {
       const allMentions = await this.findAll({
         where: { userId } as any,
@@ -209,7 +217,9 @@ export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntit
         .slice(0, limit);
     } catch (error) {
       throw new Error(
-        `Failed to fetch top influencers for user ${userId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch top influencers for user ${userId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       );
     }
   }

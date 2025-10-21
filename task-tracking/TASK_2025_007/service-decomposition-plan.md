@@ -414,15 +414,25 @@ export class ApproverIntelligenceService {
  * Phase 1 Refactoring - SOLID Enforcement
  */
 
-import type { HumanApprovalRequest, HumanApprovalResponse } from '../services/approval-workflow.types';
-import type { ApproverProfile, ApproverExpertise, ApproverRanking } from './approver-intelligence.interface';
+import type {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+} from '../services/approval-workflow.types';
+import type {
+  ApproverProfile,
+  ApproverExpertise,
+  ApproverRanking,
+} from './approver-intelligence.interface';
 import type { AgentMemoryContext, UserMemoryPatterns } from '@hive-academy/langgraph-core';
 
 /**
  * Approver Intelligence Service Interface
  */
 export interface IApproverIntelligenceService {
-  selectBestApprover(request: HumanApprovalRequest, potentialApprovers: string[]): Promise<ApproverRanking>;
+  selectBestApprover(
+    request: HumanApprovalRequest,
+    potentialApprovers: string[]
+  ): Promise<ApproverRanking>;
 
   getApproverProfile(approverId: string, context: HumanApprovalRequest): Promise<ApproverProfile>;
 }
@@ -431,18 +441,32 @@ export interface IApproverIntelligenceService {
  * Approver Expertise Service Interface
  */
 export interface IApproverExpertiseService {
-  calculateApproverExpertise(context: AgentMemoryContext, patterns: UserMemoryPatterns, request: HumanApprovalRequest): ApproverExpertise;
+  calculateApproverExpertise(
+    context: AgentMemoryContext,
+    patterns: UserMemoryPatterns,
+    request: HumanApprovalRequest
+  ): ApproverExpertise;
 
-  analyzeHistoricalPatterns(patterns: UserMemoryPatterns, workflowType: string): { relevantWorkflows: string[]; totalExperience: number };
+  analyzeHistoricalPatterns(
+    patterns: UserMemoryPatterns,
+    workflowType: string
+  ): { relevantWorkflows: string[]; totalExperience: number };
 }
 
 /**
  * Approval Outcome Service Interface
  */
 export interface IApprovalOutcomeService {
-  storeApprovalOutcome(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void>;
+  storeApprovalOutcome(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): Promise<void>;
 
-  storeApprovalMemoryForLearning(request: HumanApprovalRequest, response: HumanApprovalResponse, decision: 'approved' | 'rejected'): Promise<void>;
+  storeApprovalMemoryForLearning(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse,
+    decision: 'approved' | 'rejected'
+  ): Promise<void>;
 }
 ```
 
@@ -516,7 +540,11 @@ export interface IApprovalOutcomeService {
 
 4. **Update imports** to use shared types:
    ```typescript
-   import type { ApproverProfile, ApproverExpertise, ApproverRanking } from '../interfaces/approver-intelligence.interface';
+   import type {
+     ApproverProfile,
+     ApproverExpertise,
+     ApproverRanking,
+   } from '../interfaces/approver-intelligence.interface';
    ```
 
 **Quality Gates**:
@@ -825,7 +853,11 @@ export class MyService {
     await this.outcomeService.storeApprovalOutcome(request, response);
 
     // Store learning patterns
-    await this.outcomeService.storeApprovalMemoryForLearning(request, response, response.decision === 'approved' ? 'approved' : 'rejected');
+    await this.outcomeService.storeApprovalMemoryForLearning(
+      request,
+      response,
+      response.decision === 'approved' ? 'approved' : 'rejected'
+    );
   }
 }
 ```

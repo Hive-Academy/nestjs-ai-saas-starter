@@ -1,548 +1,686 @@
-[Nest] 25964 - 10/13/2025, 1:47:56 AM ERROR [HuggingFaceEmbeddingProvider] HuggingFace embedding failed: HuggingFace API error: Request timeout after 3000ms: <https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5>
-Error: HuggingFace API error: Request timeout after 3000ms: <https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5>
-at HuggingFaceEmbeddingProvider.callHuggingFaceAPI (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3854:13)
-at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-at async HuggingFaceEmbeddingProvider.embedBatch (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3811:24)
-at async HuggingFaceEmbeddingProvider.processBatches (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3392:28)
-at async EmbeddingService.embed (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:4045:14)
-at async ChromaDBEmbeddingProcessorService.generateEmbeddingsBatch (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:6250:26)
-at async ChromaDBEmbeddingProcessorService.processQueryEmbeddings (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:6229:26)
-at async ChromaDBService.searchDocuments (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:6550:38)
-at async VectorMemoryRepository.searchWithScores (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:544:20)
-at async VectorMemoryRepository.searchMemoriesSimilar (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:16039)
-[Nest] 25964 - 10/13/2025, 1:47:56 AM WARN [ChromaDBEmbeddingProcessorService] Failed to generate query embeddings: HuggingFace embedding failed: HuggingFace API error: Request timeout after 3000ms: <https://api-inference.huggingface.co/models/BAAI/bge-small-en-v1.5>
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 0,
-timeout: 3000,
-timestamp: '2025-10-12T22:47:56.139Z'
-}
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:47:56.140Z'
-}
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:47:56 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:47:58 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:47:58 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2697,
-totalTime: 2697,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:47:58 AM WARN [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:47:58 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:47:58 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 2712
-}
-[Nest] 25964 - 10/13/2025, 1:47:59 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:47:59 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3011,
-totalTime: 3011,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:47:59 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:47:59 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:47:59 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Connection not established, reconnecting...
-[Nest] 25964 - 10/13/2025, 1:47:59 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 8ms
-[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 3021
-}
-[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:47:59.161Z'
-}
-[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:47:59 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2272,
-totalTime: 4983,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:01 AM WARN [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 4998
-}
-[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:48:01 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2264,
-totalTime: 2264,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:01 AM WARN [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:01 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 2278
-}
-[Nest] 25964 - 10/13/2025, 1:48:02 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:02 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3015,
-totalTime: 6028,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:02 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:02 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:02 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Connection not established, reconnecting...
-[Nest] 25964 - 10/13/2025, 1:48:02 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 4ms
-[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 6048
-}
-[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:48:02.187Z'
-}
-[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:02 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] ❌ FAILED on attempt 3/3
-[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2264,
-totalTime: 7262,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: false,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] [op-1760309276140-r42iktdnq] 🔴 FINAL FAILURE after 7263ms
-[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] Object(2) {
-totalAttempts: 3,
-finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
-}
-[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:03 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2280,
-totalTime: 4558,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:03 AM WARN [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:03 AM DEBUG [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:03 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 4572
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3001,
-totalTime: 3001,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] ❌ FAILED on attempt 3/3
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3007,
-totalTime: 9050,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: false,
-willRetry: false,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] [op-1760309276139-izpnsllq1] 🔴 FINAL FAILURE after 9051ms
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaDBConnectionService] Object(2) {
-totalAttempts: 3,
-finalError: 'Operation timed out after 3000ms'
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaMetricsService] Slow operation detected: searchDocuments took 9051ms
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [ChromaMetricsService] Operation failed: searchDocuments - Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [VectorMemoryRepository] Failed to search memories
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [VectorMemoryRepository] ChromaDBTimeoutError: Operation timed out after 3000ms
-at Timeout.\_onTimeout (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3304:31)
-at listOnTimeout (node:internal/timers:588:17)
-at process.processTimers (node:internal/timers:523:7) {
-timestamp: 2025-10-12T22:48:05.189Z,
-context: {
-timeoutMs: undefined
-},
-timeoutMs: undefined,
-code: 'CHROMADB_TIMEOUT_ERROR'
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM ERROR [AgentMemoryCoreService] Failed to search agent memories: Failed to search memories
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBEmbeddingProcessorService] Generating embeddings for 1 query texts
-[Nest] 25964 - 10/13/2025, 1:48:05 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Connection not established, reconnecting...
-[Nest] 25964 - 10/13/2025, 1:48:05 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 2ms
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 3008
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBEmbeddingProcessorService] Successfully generated embeddings for 1 queries
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:48:05.920Z'
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 1
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:48:05.921Z'
-}
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:05 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] ❌ FAILED on attempt 3/3
-[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2283,
-totalTime: 6855,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: false,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] [op-1760309279161-9drcim8dx] 🔴 FINAL FAILURE after 6857ms
-[Nest] 25964 - 10/13/2025, 1:48:06 AM ERROR [ChromaDBConnectionService] Object(2) {
-totalAttempts: 3,
-finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
-}
-[Nest] 25964 - 10/13/2025, 1:48:07 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:07 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2759,
-totalTime: 5765,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:07 AM WARN [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:07 AM DEBUG [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:07 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 5780
-}
-[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2354,
-totalTime: 2354,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 2363
-}
-[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:48:08 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3007,
-totalTime: 3008,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:48:08 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Connection not established, reconnecting...
-[Nest] 25964 - 10/13/2025, 1:48:08 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 2ms
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 3019
-}
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:48:08.939Z'
-}
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:08 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] ❌ FAILED on attempt 3/3
-[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2262,
-totalTime: 8042,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: false,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] [op-1760309282187-fd32g3nsw] 🔴 FINAL FAILURE after 8043ms
-[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] Object(2) {
-totalAttempts: 3,
-finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
-}
-[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:10 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2272,
-totalTime: 4635,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:10 AM WARN [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:10 AM DEBUG [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:10 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 4639
-}
-[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3002,
-totalTime: 3002,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:11 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3007,
-totalTime: 6022,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: false,
-willRetry: true,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Connection not established, reconnecting...
-[Nest] 25964 - 10/13/2025, 1:48:11 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Connection not established, reconnecting...
-[Nest] 25964 - 10/13/2025, 1:48:11 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 4ms
-[Nest] 25964 - 10/13/2025, 1:48:11 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:11 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 3016
-}
-[Nest] 25964 - 10/13/2025, 1:48:12 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 564ms
-[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 6596
-}
-[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] [op-1760309292517-856whr53z] Starting ChromaDB operation
-[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] Object(4) {
-isConnected: true,
-maxRetries: 3,
-timeout: 3000,
-timestamp: '2025-10-12T22:48:12.517Z'
-}
-[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] [op-1760309292517-856whr53z] Attempt 1/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:12 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 0
-}
-[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] ❌ FAILED on attempt 3/3
-[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2286,
-totalTime: 6925,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: false,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] [op-1760309285921-2dtv2m9a9] 🔴 FINAL FAILURE after 6925ms
-[Nest] 25964 - 10/13/2025, 1:48:12 AM ERROR [ChromaDBConnectionService] Object(2) {
-totalAttempts: 3,
-finalError: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.'
-}
-[Nest] 25964 - 10/13/2025, 1:48:14 AM ERROR [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ❌ FAILED on attempt 2/3
-[Nest] 25964 - 10/13/2025, 1:48:14 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2824,
-totalTime: 5836,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:14 AM WARN [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] ⏳ Waiting 0ms before retry 3...
-[Nest] 25964 - 10/13/2025, 1:48:14 AM DEBUG [ChromaDBConnectionService] [op-1760309288939-j9irj4l2v] Attempt 3/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:14 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 5837
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] [op-1760309292517-856whr53z] ❌ FAILED on attempt 1/3
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 2602,
-totalTime: 2602,
-errorType: 'UNKNOWN',
-errorMessage: 'Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.',
-isConnectionError: false,
-wasConnected: true,
-willRetry: true,
-stack: 'ChromaConnectionError: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.\n at chromaFetch (file:///D:/projects/nestjs-ai-saas-starter/node_modules/chromadb/dist/chromadb.mjs:1710:13)\n at process.processTicksAndRejections (node:internal/process/task_queues:105:5)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [ChromaDBConnectionService] [op-1760309292517-856whr53z] ⏳ Waiting 0ms before retry 2...
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [ChromaDBConnectionService] [op-1760309292517-856whr53z] Attempt 2/3 - executing operation
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [ChromaDBConnectionService] Object(1) {
-timeElapsed: 2608
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] ❌ FAILED on attempt 3/3
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] Object(8) {
-duration: 3566,
-totalTime: 9598,
-errorType: 'TIMEOUT',
-errorMessage: 'Operation timed out after 3000ms',
-isConnectionError: true,
-wasConnected: true,
-willRetry: false,
-stack: 'ChromaDBTimeoutError: Operation timed out after 3000ms\n at Timeout.\_onTimeout (D:\\projects\\nestjs-ai-saas-starter\\node_modules\\@hive-academy\\nestjs-chromadb\\index.cjs.js:3304:31)\n at listOnTimeout (node:internal/timers:588:17)'
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [ChromaDBConnectionService] [op-1760309285920-fddq589fs] Marking connection as unhealthy due to: Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] [op-1760309285920-fddq589fs] 🔴 FINAL FAILURE after 9599ms
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaDBConnectionService] Object(2) {
-totalAttempts: 3,
-finalError: 'Operation timed out after 3000ms'
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [ChromaMetricsService] Slow operation detected: searchDocuments took 9600ms
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [ChromaMetricsService] Operation failed: searchDocuments - Operation timed out after 3000ms
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [VectorMemoryRepository] Failed to search memories
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [VectorMemoryRepository] ChromaDBTimeoutError: Operation timed out after 3000ms
-at Timeout.\_onTimeout (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\nestjs-chromadb\index.cjs.js:3304:31)
-at listOnTimeout (node:internal/timers:588:17)
-at process.processTimers (node:internal/timers:523:7) {
-timestamp: 2025-10-12T22:48:15.518Z,
-context: {
-timeoutMs: undefined
-},
-timeoutMs: undefined,
-code: 'CHROMADB_TIMEOUT_ERROR'
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [AgentMemoryCoreService] Failed to search agent memories: Failed to search memories
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [NetworkSetupService] Retrieved network optimizations for devbrand-supervisor-network
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [NetworkSetupService] Object(3) {
-agentOrderOptimized: true,
-topologyOptimized: false,
-performanceTuned: false
-}
-[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [AgentRegistryService] Agent github-code-analyzer is already registered, updating definition
-[Nest] 25964 - 10/13/2025, 1:48:15 AM LOG [AgentRegistryService] Registered agent: github-code-analyzer (GitHub Code Analyzer)
-[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [AgentRegistryService] Agent personal-brand-strategist is already registered, updating definition
-[Nest] 25964 - 10/13/2025, 1:48:15 AM LOG [AgentRegistryService] Registered agent: personal-brand-strategist (Personal Brand Strategist)
-[Nest] 25964 - 10/13/2025, 1:48:15 AM WARN [AgentRegistryService] Agent content-creator is already registered, updating definition
-[Nest] 25964 - 10/13/2025, 1:48:15 AM LOG [AgentRegistryService] Registered agent: content-creator (Content Creator)
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [NetworkManagerService] CheckpointManager not available - checkpointing disabled
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [GraphBuilderService] Building supervisor graph with agents:
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [GraphBuilderService] Array(3) [
-'github-code-analyzer',
-'personal-brand-strategist',
-'content-creator'
-]
-[Nest] 25964 - 10/13/2025, 1:48:15 AM DEBUG [LlmProviderService] Using cached LLM: moonshotai/kimi-k2:free
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [NetworkManagerService] Failed to create network devbrand-supervisor-network:
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [NetworkManagerService] TypeError
-at Reflect.getMetadata (D:\projects\nestjs-ai-saas-starter\node_modules\reflect-metadata\Reflect.js:354:23)
-at getAgentConfig (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2824:18)
-at D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2876:46
-at Array.map (<anonymous>)
-at GraphBuilderService.buildSupervisorGraph (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2874:38)
-at async NetworkManagerService.createNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17249:19)
-at async NetworkSetupService.setupNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:23116:30)
-at async DevBrandSupervisorWorkflow.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:27569:24)
-at async Promise.all (index 3)
-at async callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
-[Nest] 25964 - 10/13/2025, 1:48:15 AM ERROR [DevBrandSupervisorWorkflow] Failed to initialize multi-agent workflow: Failed to create network:
-D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17276
-throw new NetworkConfigurationError(`Failed to create network: ${error instanceof Error ? error.message : 'Unknown error'}`, error);
-^
-
-NetworkConfigurationError: Failed to create network:
-at NetworkManagerService.createNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17276:13)
-at async NetworkSetupService.setupNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:23116:30)
-at async DevBrandSupervisorWorkflow.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:27569:24)
-at async Promise.all (index 3)
-at async callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
-at async NestApplication.callInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application-context.js:242:13)
-at async NestApplication.init (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\nest-application.js:103:9)
-at async D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:456887 {
-code: 'NETWORK_CONFIGURATION_ERROR',
-details: TypeError
-at Reflect.getMetadata (D:\projects\nestjs-ai-saas-starter\node_modules\reflect-metadata\Reflect.js:354:23)
-at getAgentConfig (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2824:18)
-at D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2876:46
-at Array.map (<anonymous>)
-at GraphBuilderService.buildSupervisorGraph (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:2874:38)
-at async NetworkManagerService.createNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:17249:19)
-at async NetworkSetupService.setupNetwork (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:23116:30)
-at async DevBrandSupervisorWorkflow.onModuleInit (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-multi-agent\index.cjs.js:27569:24)
-at async Promise.all (index 3)
-at async callModuleInitHook (D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\hooks\on-module-init.hook.js:43:5)
-}
+Angular is running in development mode.
+content_script_bundle.js:1 Attempting initialization Sat Oct 18 2025 19:20:30 GMT+0300 (Eastern European Summer Time)
+angular-3d-state.store.ts:738 The 'allowSignalWrites' flag is deprecated and no longer impacts effect() (writes are always allowed)
+effect @ resource.mjs:140
+setupAngularThreeSync @ angular-3d-state.store.ts:738
+\_Angular3DStateStore @ angular-3d-state.store.ts:316
+Angular3DStateStore_Factory @ angular-3d-state.store.ts:792
+(anonymous) @ root_effect_scheduler.mjs:2154
+runInInjectorProfilerContext @ root_effect_scheduler.mjs:720
+hydrate @ root_effect_scheduler.mjs:2152
+get @ root_effect_scheduler.mjs:2007
+get @ root_effect_scheduler.mjs:2019
+get @ debug_node.mjs:12288
+lookupTokenUsingModuleInjector @ debug_node.mjs:1718
+getOrCreateInjectable @ debug_node.mjs:1766
+ɵɵdirectiveInject @ debug_node.mjs:12339
+ɵɵinject @ root_effect_scheduler.mjs:1032
+inject2 @ root_effect_scheduler.mjs:1118
+<instance_members_initializer> @ hybrid-scene.component.ts:277
+\_HybridSceneComponent @ hybrid-scene.component.ts:384
+HybridSceneComponent_Factory @ hybrid-scene.component.ts:879
+getNodeInjectable @ debug_node.mjs:1989
+instantiateAllDirectives @ debug_node.mjs:8176
+createDirectivesInstances @ debug_node.mjs:7949
+ɵɵelementStart @ debug_node.mjs:22438
+HeroSectionComponent_Template @ hero-section.component.ts:26
+executeTemplate @ debug_node.mjs:7935
+renderView @ debug_node.mjs:8551
+renderComponent @ debug_node.mjs:8496
+renderChildComponents @ debug_node.mjs:8599
+renderView @ debug_node.mjs:8579
+renderComponent @ debug_node.mjs:8496
+renderChildComponents @ debug_node.mjs:8599
+renderView @ debug_node.mjs:8579
+create @ debug_node.mjs:13481
+createComponent @ debug_node.mjs:13855
+activateWith @ router2.mjs:2782
+activateRoutes @ router2.mjs:3262
+(anonymous) @ router2.mjs:3218
+activateChildRoutes @ router2.mjs:3217
+activate @ router2.mjs:3128
+(anonymous) @ router2.mjs:3107
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ map.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ take.js:12
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ defaultIfEmpty.js:8
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ combineLatest.js:47
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+Subscriber2.\_next @ Subscriber.js:63
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ Subject.js:41
+errorContext @ errorContext.js:19
+Subject2.next @ Subject.js:31
+Subscriber2.\_next @ Subscriber.js:63
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:61
+invoke @ zone.js:398
+onInvoke @ debug_node.mjs:16672
+invoke @ zone.js:397
+run @ zone.js:113
+(anonymous) @ zone.js:2537
+invokeTask @ zone.js:431
+(anonymous) @ debug_node.mjs:16336
+onInvokeTask @ debug_node.mjs:16336
+invokeTask @ zone.js:430
+onInvokeTask @ debug_node.mjs:16659
+invokeTask @ zone.js:430
+runTask @ zone.js:161
+drainMicroTaskQueue @ zone.js:612
+Zone - Promise.then
+onScheduleTask @ debug_node.mjs:16330
+scheduleTask @ zone.js:411
+onScheduleTask @ zone.js:273
+scheduleTask @ zone.js:411
+scheduleTask @ zone.js:207
+scheduleMicroTask @ zone.js:227
+scheduleResolveOrReject @ zone.js:2527
+resolvePromise @ zone.js:2461
+(anonymous) @ zone.js:2540
+invokeTask @ zone.js:431
+(anonymous) @ debug_node.mjs:16336
+onInvokeTask @ debug_node.mjs:16336
+invokeTask @ zone.js:430
+onInvokeTask @ debug_node.mjs:16659
+invokeTask @ zone.js:430
+runTask @ zone.js:161
+drainMicroTaskQueue @ zone.js:612
+Zone - Promise.then
+onScheduleTask @ debug_node.mjs:16330
+scheduleTask @ zone.js:411
+onScheduleTask @ zone.js:273
+scheduleTask @ zone.js:411
+scheduleTask @ zone.js:207
+scheduleMicroTask @ zone.js:227
+scheduleResolveOrReject @ zone.js:2527
+resolvePromise @ zone.js:2461
+(anonymous) @ zone.js:2369
+(anonymous) @ zone.js:2385
+Promise.then
+(anonymous) @ zone.js:2779
+ZoneAwarePromise @ zone.js:2701
+Ctor.then @ zone.js:2778
+loadComponent @ app.routes.ts:12
+(anonymous) @ router2.mjs:4463
+runInInjectionContext @ root_effect_scheduler.mjs:2348
+loadComponent @ router2.mjs:4463
+loadComponents @ router2.mjs:4926
+loadComponents @ router2.mjs:4931
+(anonymous) @ router2.mjs:4935
+(anonymous) @ router2.mjs:4318
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ mergeInternals.js:25
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ mergeInternals.js:25
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+doInnerSub @ mergeInternals.js:19
+outerNext @ mergeInternals.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ takeLast.js:18
+OperatorSubscriber2.\_this.\_complete @ OperatorSubscriber.js:38
+Subscriber2.complete @ Subscriber.js:52
+(anonymous) @ tap.js:23
+OperatorSubscriber2.\_this.\_complete @ OperatorSubscriber.js:38
+Subscriber2.complete @ Subscriber.js:52
+checkComplete @ mergeInternals.js:11
+(anonymous) @ mergeInternals.js:55
+OperatorSubscriber2.\_this.\_complete @ OperatorSubscriber.js:38
+Subscriber2.complete @ Subscriber.js:52
+(anonymous) @ innerFrom.js:87
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+mergeInternals @ mergeInternals.js:53
+(anonymous) @ mergeMap.js:14
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ takeLast.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+mergeInternals @ mergeInternals.js:53
+(anonymous) @ mergeMap.js:14
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+doInnerSub @ mergeInternals.js:19
+outerNext @ mergeInternals.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+mergeInternals @ mergeInternals.js:53
+(anonymous) @ mergeMap.js:14
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ map.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ filter.js:6
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ tap.js:18
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ mergeInternals.js:25
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ map.js:7
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ mergeInternals.js:25
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ defaultIfEmpty.js:11
+OperatorSubscriber2.\_this.\_complete @ OperatorSubscriber.js:38
+Subscriber2.complete @ Subscriber.js:52
+Subscriber2.\_complete @ Subscriber.js:75
+Subscriber2.complete @ Subscriber.js:52
+Subscriber2.\_complete @ Subscriber.js:75
+Subscriber2.complete @ Subscriber.js:52
+checkComplete @ mergeInternals.js:11
+(anonymous) @ mergeInternals.js:55
+OperatorSubscriber2.\_this.\_complete @ OperatorSubscriber.js:38
+Subscriber2.complete @ Subscriber.js:52
+(anonymous) @ innerFrom.js:53
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+mergeInternals @ mergeInternals.js:53
+(anonymous) @ mergeMap.js:14
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ filter.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ take.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ defaultIfEmpty.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+doInnerSub @ mergeInternals.js:19
+outerNext @ mergeInternals.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ defaultIfEmpty.js:11
+OperatorSubscriber2.\_this.\_complete @ OperatorSubscriber.js:38
+Subscriber2.complete @ Subscriber.js:52
+Subscriber2.\_complete @ Subscriber.js:75
+Subscriber2.complete @ Subscriber.js:52
+Subscriber2.\_complete @ Subscriber.js:75
+Subscriber2.complete @ Subscriber.js:52
+checkComplete @ mergeInternals.js:11
+(anonymous) @ mergeInternals.js:55
+Zone - Promise.then
+onScheduleTask @ debug_node.mjs:16330
+scheduleTask @ zone.js:411
+onScheduleTask @ zone.js:273
+scheduleTask @ zone.js:411
+scheduleTask @ zone.js:207
+scheduleMicroTask @ zone.js:227
+scheduleResolveOrReject @ zone.js:2527
+then @ zone.js:2732
+(anonymous) @ innerFrom.js:59
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+mergeInternals @ mergeInternals.js:53
+(anonymous) @ mergeMap.js:14
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ innerFrom.js:51
+Observable2.\_trySubscribe @ Observable.js:38
+(anonymous) @ Observable.js:32
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ map.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+mergeInternals @ mergeInternals.js:53
+(anonymous) @ mergeMap.js:14
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ filter.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ map.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ map.js:6
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ take.js:10
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ takeUntil.js:8
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ tap.js:15
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ takeUntil.js:8
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ finalize.js:5
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ catchError.js:9
+(anonymous) @ lift.js:10
+(anonymous) @ Observable.js:27
+errorContext @ errorContext.js:19
+Observable2.subscribe @ Observable.js:23
+(anonymous) @ switchMap.js:14
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ filter.js:6
+OperatorSubscriber2.\_this.\_next @ OperatorSubscriber.js:15
+Subscriber2.next @ Subscriber.js:34
+(anonymous) @ Subject.js:41
+errorContext @ errorContext.js:19
+Subject2.next @ Subject.js:31
+BehaviorSubject2.next @ BehaviorSubject.js:31
+handleNavigationRequest @ router2.mjs:4756
+scheduleNavigation @ router2.mjs:6026
+navigateToSyncWithBrowser @ router2.mjs:5732
+initialNavigation @ router2.mjs:5684
+(anonymous) @ router_module.mjs:1221
+(anonymous) @ debug_node.mjs:20415
+\_loadComponent @ debug_node.mjs:20415
+(anonymous) @ debug_node.mjs:20208
+invoke @ zone.js:398
+onInvoke @ debug_node.mjs:16672
+invoke @ zone.js:397
+run @ zone.js:113
+run @ debug_node.mjs:16518
+bootstrapImpl @ debug_node.mjs:20168
+bootstrap @ debug_node.mjs:20164
+(anonymous) @ core.mjs:970
+invoke @ zone.js:398
+onInvoke @ debug_node.mjs:16672
+invoke @ zone.js:397
+run @ zone.js:113
+(anonymous) @ zone.js:2537
+invokeTask @ zone.js:431
+(anonymous) @ debug_node.mjs:16336
+onInvokeTask @ debug_node.mjs:16336
+invokeTask @ zone.js:430
+onInvokeTask @ debug_node.mjs:16659
+invokeTask @ zone.js:430
+runTask @ zone.js:161
+drainMicroTaskQueue @ zone.js:612
+Zone - Promise.then
+onScheduleTask @ debug_node.mjs:16330
+scheduleTask @ zone.js:411
+onScheduleTask @ zone.js:273
+scheduleTask @ zone.js:411
+scheduleTask @ zone.js:207
+scheduleMicroTask @ zone.js:227
+scheduleResolveOrReject @ zone.js:2527
+then @ zone.js:2732
+(anonymous) @ core.mjs:951
+\_callAndReportToErrorHandler @ core.mjs:1012
+(anonymous) @ core.mjs:945
+invoke @ zone.js:398
+onInvoke @ debug_node.mjs:16672
+invoke @ zone.js:397
+run @ zone.js:113
+run @ debug_node.mjs:16518
+bootstrap @ core.mjs:904
+internalCreateApplication @ core.mjs:2659
+(anonymous) @ browser.mjs:440
+invoke @ zone.js:398
+run @ zone.js:113
+(anonymous) @ zone.js:2537
+invokeTask @ zone.js:431
+runTask @ zone.js:161
+drainMicroTaskQueue @ zone.js:612
+Promise.then
+nativeScheduleMicroTask @ zone.js:588
+scheduleMicroTask @ zone.js:599
+scheduleTask @ zone.js:420
+scheduleTask @ zone.js:207
+scheduleMicroTask @ zone.js:227
+scheduleResolveOrReject @ zone.js:2527
+then @ zone.js:2732
+resolveComponentResources @ debug_node.mjs:14689
+bootstrapApplication @ browser.mjs:437
+(anonymous) @ main.ts:5Understand this warning
+landing-page.component.ts:373 [LandingPage] Waiting for all sections to load using RxJS observable...
+three-integration.service.ts:113 3D scene 'platform-pillars' created successfully
+three-integration.service.ts:141 3D scene 'platform-pillars' activated
+angular-three-primitives.ts:54 [Angular Three] Registering THREE.js primitives...
+angular-three-primitives.ts:137 [Angular Three] ✓ THREE.js primitives registered successfully
+content-texture-pipeline.service.ts:305 ContentTexturePipeline initialized successfully
+4angular-three-primitives.ts:50 [Angular Three] Primitives already registered, skipping
+35angular-three-primitives.ts:50 [Angular Three] Primitives already registered, skipping
+float-3d.directive.ts:206 [Float3dDirective] Floating animation created for mesh: unnamed - Timeline ID: timeline-1760804431658-1omhuxy01
+float-3d.directive.ts:132 [Float3dDirective] Animation initialized for mesh: unnamed
+glow-3d.directive.ts:106 [Glow3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:206 [Float3dDirective] Floating animation created for mesh: unnamed - Timeline ID: timeline-1760804431660-0hmb1m78u
+float-3d.directive.ts:132 [Float3dDirective] Animation initialized for mesh: unnamed
+glow-3d.directive.ts:106 [Glow3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:206 [Float3dDirective] Floating animation created for mesh: unnamed - Timeline ID: timeline-1760804431660-x7ovyd6br
+float-3d.directive.ts:132 [Float3dDirective] Animation initialized for mesh: unnamed
+glow-3d.directive.ts:106 [Glow3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:206 [Float3dDirective] Floating animation created for mesh: unnamed - Timeline ID: timeline-1760804431661-ywglf85qc
+float-3d.directive.ts:132 [Float3dDirective] Animation initialized for mesh: unnamed
+glow-3d.directive.ts:106 [Glow3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:206 [Float3dDirective] Floating animation created for mesh: unnamed - Timeline ID: timeline-1760804431662-gui60tvhi
+float-3d.directive.ts:132 [Float3dDirective] Animation initialized for mesh: unnamed
+glow-3d.directive.ts:106 [Glow3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+float-3d.directive.ts:96 [Float3dDirective] No config provided, directive inactive
+performance-3d.directive.ts:83 [Performance3dDirective] Object registered for performance optimization: unnamed
+hybrid-scene.component.ts:652 [HybridSceneComponent] Canvas created event received
+hybrid-scene.component.ts:672 [HybridSceneComponent] Canvas initialization complete
+hybrid-scene-graph.component.ts:88 [HybridSceneGraph] Initializing inside NgtCanvas
+hybrid-scene-graph.component.ts:95 [HybridSceneGraph] Store access - scene: true
+hybrid-scene-graph.component.ts:96 [HybridSceneGraph] Store access - camera: true
+hybrid-scene-graph.component.ts:97 [HybridSceneGraph] Store access - renderer: true
+hybrid-scene-graph.component.ts:117 [HybridSceneGraph] Scene initialized successfully
+hybrid-scene-graph.component.ts:120 [HybridSceneGraph] Setting scene references in HybridUIService
+hero-section.component.ts:207 [HeroSectionComponent] HybridUIService initialized, calling onSceneInitialized
+hero-section.component.ts:310 Hero scene initialized with Angular Three Scene {isObject3D: true, uuid: 'cd32a7d4-a89d-470c-bf31-ad479cf00905', name: '**ngt_root_scene**', type: 'Scene', parent: null, …}
+landing-page.component.ts:394 [LandingPage] ✅ Hero loaded, showing page...

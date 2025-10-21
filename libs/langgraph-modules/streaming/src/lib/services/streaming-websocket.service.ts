@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  Inject,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { createServer } from 'http';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -43,7 +38,7 @@ interface WebSocketConfig {
 
 /**
  * Clean WebSocket Service for real-time streaming communication
- * 
+ *
  * Features:
  * - Manual Socket.io server creation and lifecycle control (NO @WebSocketGateway decorator)
  * - Real-time bidirectional communication via Socket.io
@@ -108,7 +103,7 @@ export class StreamingWebSocketService implements IInitializableService {
 
       // Create HTTP server for Socket.io
       this.httpServer = createServer();
-      
+
       // Create Socket.io server manually
       this.server = new Server(this.httpServer, {
         cors: this.config.cors || { origin: true, credentials: true },
@@ -118,7 +113,7 @@ export class StreamingWebSocketService implements IInitializableService {
 
       // Setup all Socket.io event handlers
       this.setupSocketIOHandlers();
-      
+
       // Setup bridge service integration
       this.setupBridgeServiceIntegration();
 
@@ -173,13 +168,19 @@ export class StreamingWebSocketService implements IInitializableService {
       this.handleConnection(socket);
 
       // Setup message handlers for this socket
-      socket.on('subscribe_execution', (payload) => this.handleSubscribeExecution(socket, payload));
+      socket.on('subscribe_execution', (payload) =>
+        this.handleSubscribeExecution(socket, payload)
+      );
       socket.on('ping', () => socket.emit('pong', { timestamp: new Date() }));
       socket.on('get_status', () => this.handleGetStatus(socket));
-      
+
       // User interruption handlers
-      socket.on('interrupt_agent', (payload) => this.handleInterruptAgent(socket, payload));
-      socket.on('inject_input', (payload) => this.handleInjectInput(socket, payload));
+      socket.on('interrupt_agent', (payload) =>
+        this.handleInterruptAgent(socket, payload)
+      );
+      socket.on('inject_input', (payload) =>
+        this.handleInjectInput(socket, payload)
+      );
 
       socket.on('disconnect', () => this.handleDisconnect(socket));
     });
@@ -234,7 +235,9 @@ export class StreamingWebSocketService implements IInitializableService {
         serverTime: new Date(),
       });
 
-      this.logger.debug(`Client connected: ${connectionId} (${socket.handshake.address})`);
+      this.logger.debug(
+        `Client connected: ${connectionId} (${socket.handshake.address})`
+      );
     } catch (error) {
       this.logger.error('Connection handling error:', error);
       socket.disconnect();
@@ -276,7 +279,10 @@ export class StreamingWebSocketService implements IInitializableService {
   /**
    * Handle subscription to execution streams
    */
-  private async handleSubscribeExecution(socket: Socket, payload: any): Promise<void> {
+  private async handleSubscribeExecution(
+    socket: Socket,
+    payload: any
+  ): Promise<void> {
     try {
       const connection = this.getConnection(socket);
       if (!connection) throw new Error('Connection not found');
@@ -291,7 +297,10 @@ export class StreamingWebSocketService implements IInitializableService {
 
       // Link with bridge service
       if (this.bridgeService) {
-        this.bridgeService.linkClientToExecution(connection.id, payload.executionId);
+        this.bridgeService.linkClientToExecution(
+          connection.id,
+          payload.executionId
+        );
       }
 
       // Send confirmation
@@ -301,10 +310,14 @@ export class StreamingWebSocketService implements IInitializableService {
         timestamp: new Date(),
       });
 
-      this.logger.debug(`Client ${connection.id} subscribed to execution: ${payload.executionId}`);
+      this.logger.debug(
+        `Client ${connection.id} subscribed to execution: ${payload.executionId}`
+      );
     } catch (error) {
       this.logger.error('Subscribe execution error:', error);
-      socket.emit('error', { message: error instanceof Error ? error.message : 'Unknown error' });
+      socket.emit('error', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 
@@ -325,14 +338,19 @@ export class StreamingWebSocketService implements IInitializableService {
       });
     } catch (error) {
       this.logger.error('Get status error:', error);
-      socket.emit('error', { message: error instanceof Error ? error.message : 'Unknown error' });
+      socket.emit('error', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 
   /**
    * Handle user interruption requests
    */
-  private async handleInterruptAgent(socket: Socket, payload: any): Promise<void> {
+  private async handleInterruptAgent(
+    socket: Socket,
+    payload: any
+  ): Promise<void> {
     try {
       const connection = this.getConnection(socket);
       if (!connection) throw new Error('Connection not found');
@@ -361,7 +379,9 @@ export class StreamingWebSocketService implements IInitializableService {
       this.stats.messagesSent++;
     } catch (error) {
       this.logger.error('Interrupt agent error:', error);
-      socket.emit('error', { message: error instanceof Error ? error.message : 'Unknown error' });
+      socket.emit('error', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 
@@ -396,7 +416,9 @@ export class StreamingWebSocketService implements IInitializableService {
       this.stats.messagesSent++;
     } catch (error) {
       this.logger.error('Inject input error:', error);
-      socket.emit('error', { message: error instanceof Error ? error.message : 'Unknown error' });
+      socket.emit('error', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 
@@ -451,7 +473,9 @@ export class StreamingWebSocketService implements IInitializableService {
     }
 
     this.logger.debug(
-      `Emitted token update to ${this.connections.size} connections: ${token.substring(0, 50)}...`
+      `Emitted token update to ${
+        this.connections.size
+      } connections: ${token.substring(0, 50)}...`
     );
   }
 
@@ -478,7 +502,9 @@ export class StreamingWebSocketService implements IInitializableService {
 
   private setupBridgeServiceIntegration(): void {
     if (!this.bridgeService) {
-      this.logger.warn('WebSocketBridgeService not available - some features will be limited');
+      this.logger.warn(
+        'WebSocketBridgeService not available - some features will be limited'
+      );
       return;
     }
 
@@ -514,10 +540,13 @@ export class StreamingWebSocketService implements IInitializableService {
   }
 
   private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      }
+    );
   }
 }

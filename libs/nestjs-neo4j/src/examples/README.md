@@ -179,7 +179,15 @@ async secureOperation(data: any): Promise<any> {
 ```typescript
 const queryBuilder = this.neogma.createQueryBuilder();
 
-const query = queryBuilder.match('(u:User)').where('u.age > $minAge', { minAge: 18 }).with('u').match('(u)-[:FRIEND]->(friend:User)').return('u, collect(friend) as friends').orderBy('u.name', 'ASC').limit(10).build();
+const query = queryBuilder
+  .match('(u:User)')
+  .where('u.age > $minAge', { minAge: 18 })
+  .with('u')
+  .match('(u)-[:FRIEND]->(friend:User)')
+  .return('u, collect(friend) as friends')
+  .orderBy('u.name', 'ASC')
+  .limit(10)
+  .build();
 
 const result = await this.neogma.run(query.cypher, query.params);
 ```

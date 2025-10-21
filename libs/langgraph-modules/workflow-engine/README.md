@@ -93,7 +93,12 @@ waitForApproval(approvalId: string): Promise<boolean>
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { UnifiedWorkflowBase, WorkflowDefinition, WorkflowState, Command } from '@hive-academy/langgraph-workflow-engine';
+import {
+  UnifiedWorkflowBase,
+  WorkflowDefinition,
+  WorkflowState,
+  Command,
+} from '@hive-academy/langgraph-workflow-engine';
 
 interface CustomerServiceState extends WorkflowState {
   customer: {
@@ -186,8 +191,10 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
             requiresApproval: true,
             approval: {
               threshold: 0.9,
-              condition: (state) => state.customer.tier === 'enterprise' || state.conversation.urgency === 'critical',
-              message: (state) => `Auto-resolution for ${state.customer.tier} customer: ${state.customer.currentIssue.summary}`,
+              condition: (state) =>
+                state.customer.tier === 'enterprise' || state.conversation.urgency === 'critical',
+              message: (state) =>
+                `Auto-resolution for ${state.customer.tier} customer: ${state.customer.currentIssue.summary}`,
             },
           },
         },
@@ -262,7 +269,8 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
         {
           from: 'auto-resolution',
           to: {
-            condition: (state) => (state.resolution.status === 'resolved' ? 'resolved' : 'needs-escalation'),
+            condition: (state) =>
+              state.resolution.status === 'resolved' ? 'resolved' : 'needs-escalation',
             routes: {
               resolved: 'resolution-verification',
               'needs-escalation': 'human-escalation',
@@ -279,7 +287,9 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     };
   }
 
-  private async initializeSession(state: CustomerServiceState): Promise<Partial<CustomerServiceState>> {
+  private async initializeSession(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState>> {
     const customerId = state.customer.id;
 
     // Load customer context
@@ -312,7 +322,9 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     };
   }
 
-  private async analyzeRequest(state: CustomerServiceState): Promise<Partial<CustomerServiceState>> {
+  private async analyzeRequest(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState>> {
     const issue = state.customer.currentIssue;
 
     try {
@@ -328,7 +340,8 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
         completedNodes: ['analyze-request'],
         conversation: {
           ...state.conversation,
-          sentiment: sentimentScore > 0.3 ? 'positive' : sentimentScore < -0.3 ? 'negative' : 'neutral',
+          sentiment:
+            sentimentScore > 0.3 ? 'positive' : sentimentScore < -0.3 ? 'negative' : 'neutral',
           urgency: urgencyLevel,
         },
         automation: {
@@ -348,7 +361,9 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     }
   }
 
-  private async determineComplexity(state: CustomerServiceState): Promise<Partial<CustomerServiceState> | Command> {
+  private async determineComplexity(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState> | Command> {
     const { automation, customer, conversation } = state;
 
     // Complexity scoring algorithm
@@ -378,7 +393,10 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     const finalComplexity = Math.max(0.1, Math.min(1.0, complexityScore));
 
     // Determine if human involvement is required
-    const requiresHuman = finalComplexity < 0.6 || conversation.urgency === 'critical' || customer.tier === 'enterprise';
+    const requiresHuman =
+      finalComplexity < 0.6 ||
+      conversation.urgency === 'critical' ||
+      customer.tier === 'enterprise';
 
     return {
       currentNode: 'determine-complexity',
@@ -393,7 +411,9 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     };
   }
 
-  private async attemptAutoResolution(state: CustomerServiceState): Promise<Partial<CustomerServiceState> | Command> {
+  private async attemptAutoResolution(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState> | Command> {
     const issue = state.customer.currentIssue;
 
     try {
@@ -433,11 +453,16 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     }
   }
 
-  private async escalateToHuman(state: CustomerServiceState): Promise<Partial<CustomerServiceState> | Command> {
+  private async escalateToHuman(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState> | Command> {
     const escalationContext = this.buildEscalationContext(state);
 
     // Find available human agent
-    const assignedAgent = await this.findAvailableAgent(state.conversation.urgency, state.customer.tier);
+    const assignedAgent = await this.findAvailableAgent(
+      state.conversation.urgency,
+      state.customer.tier
+    );
 
     if (!assignedAgent) {
       return {
@@ -469,7 +494,9 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     };
   }
 
-  private async routeToSpecialist(state: CustomerServiceState): Promise<Partial<CustomerServiceState>> {
+  private async routeToSpecialist(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState>> {
     const specializationType = this.determineSpecializationType(state);
     const specialistQueue = await this.findSpecialistQueue(specializationType);
 
@@ -492,7 +519,9 @@ export class EnterpriseCustomerServiceWorkflow extends UnifiedWorkflowBase<Custo
     };
   }
 
-  private async verifyResolution(state: CustomerServiceState): Promise<Partial<CustomerServiceState> | Command> {
+  private async verifyResolution(
+    state: CustomerServiceState
+  ): Promise<Partial<CustomerServiceState> | Command> {
     if (state.resolution.status !== 'resolved') {
       return {
         type: 'error',
@@ -673,11 +702,19 @@ abstract class UnifiedWorkflowBase<TState extends WorkflowState> {
 ## Error Handling
 
 ```typescript
-import { WorkflowError, Command, UnifiedWorkflowBase } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowError,
+  Command,
+  UnifiedWorkflowBase,
+} from '@hive-academy/langgraph-workflow-engine';
 
 @Injectable()
 export class RobustWorkflowService extends UnifiedWorkflowBase<WorkflowState> {
-  protected async safeNodeExecution<TState extends WorkflowState>(nodeId: string, handler: (state: TState) => Promise<Partial<TState> | Command<TState>>, state: TState): Promise<Partial<TState> | Command<TState>> {
+  protected async safeNodeExecution<TState extends WorkflowState>(
+    nodeId: string,
+    handler: (state: TState) => Promise<Partial<TState> | Command<TState>>,
+    state: TState
+  ): Promise<Partial<TState> | Command<TState>> {
     try {
       const startTime = Date.now();
       const result = await handler(state);
@@ -740,7 +777,11 @@ export class RobustWorkflowService extends UnifiedWorkflowBase<WorkflowState> {
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { WorkflowEngineModule, UnifiedWorkflowBase, WorkflowGraphBuilderService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowEngineModule,
+  UnifiedWorkflowBase,
+  WorkflowGraphBuilderService,
+} from '@hive-academy/langgraph-workflow-engine';
 
 describe('UnifiedWorkflowBase', () => {
   let workflow: TestWorkflow;
@@ -813,9 +854,13 @@ class TestWorkflow extends UnifiedWorkflowBase<WorkflowState> {
 const validateWorkflowDefinition = (definition: WorkflowDefinition) => {
   // Check for circular dependencies
   const nodeIds = definition.nodes.map((n) => n.id);
-  const edgeTargets = definition.edges.map((e) => (typeof e.to === 'string' ? e.to : 'conditional'));
+  const edgeTargets = definition.edges.map((e) =>
+    typeof e.to === 'string' ? e.to : 'conditional'
+  );
 
-  const invalidTargets = edgeTargets.filter((target) => target !== 'conditional' && !nodeIds.includes(target));
+  const invalidTargets = edgeTargets.filter(
+    (target) => target !== 'conditional' && !nodeIds.includes(target)
+  );
 
   if (invalidTargets.length > 0) {
     throw new Error(`Invalid edge targets: ${invalidTargets.join(', ')}`);

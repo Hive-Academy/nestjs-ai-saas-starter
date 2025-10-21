@@ -257,7 +257,11 @@ const confidence = searchResults.length > 0
 try {
   await this.graphService.trackMemory(storedMemory);
 } catch (graphError) {
-  this.logger.warn(`Graph tracking failed (graceful degradation): ${graphError instanceof Error ? graphError.message : String(graphError)}`);
+  this.logger.warn(
+    `Graph tracking failed (graceful degradation): ${
+      graphError instanceof Error ? graphError.message : String(graphError)
+    }`
+  );
 }
 ```
 

@@ -6,16 +6,16 @@
  * Follows Angular best practices with injectable services and signal-based patterns.
  */
 
-import {
-  Injectable,
-  signal,
-  computed,
-  effect,
-} from '@angular/core';
-// import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // Commented out as unused
+import { Injectable, signal, computed, effect } from '@angular/core';
 import * as THREE from 'three';
 import { injectStore } from 'angular-three';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import {
+  map,
+  distinctUntilChanged,
+  debounceTime,
+  filter,
+} from 'rxjs/operators';
 
 // State interfaces
 export interface SceneState {
@@ -101,6 +101,43 @@ export interface PerformanceState {
   readonly textures: number;
 }
 
+// Component registry and event types (merged from ReactiveStateManagerService)
+export interface ComponentRegistration {
+  readonly componentId: string;
+  readonly componentType: 'scene-node' | 'hybrid-scene' | 'animation-demo';
+  readonly sceneObjectId?: string;
+  readonly isActive: boolean;
+  readonly dependencies: readonly string[];
+}
+
+export interface SceneGraphEvent {
+  readonly type:
+    | 'node-added'
+    | 'node-removed'
+    | 'node-updated'
+    | 'animation-started'
+    | 'animation-stopped';
+  readonly source: string; // component ID
+  readonly target?: string; // target component ID
+  readonly data: unknown;
+  readonly timestamp: number;
+}
+
+export interface CrossComponentMessage {
+  readonly from: string;
+  readonly to: string;
+  readonly action: string;
+  readonly payload: unknown;
+}
+
+export interface SceneQuery {
+  readonly sceneId?: string;
+  readonly objectType?: 'mesh' | 'group' | 'light' | 'camera';
+  readonly visible?: boolean;
+  readonly hasAnimation?: boolean;
+  readonly parent?: string;
+}
+
 // Main application state interface
 export interface Angular3DAppState {
   readonly scenes: Record<string, SceneState>;
@@ -154,14 +191,22 @@ const initialState: Angular3DAppState = {
 })
 export class Angular3DStateStore {
   private readonly ngtStore = injectStore({ optional: true });
-  // private readonly destroyRef = inject(DestroyRef); // Commented out as unused
 
   // Core state signals
   private readonly _state = signal<Angular3DAppState>(initialState);
   private readonly _lastUpdateTime = signal<number>(Date.now());
 
+  // Component registry and event bus (merged from ReactiveStateManagerService)
+  private readonly componentRegistry = signal<
+    Map<string, ComponentRegistration>
+  >(new Map());
+  private readonly eventBus$ = new Subject<SceneGraphEvent>();
+  private readonly _componentMessages$ = new Subject<CrossComponentMessage>();
+
   // State update subject for reactive streams
-  private readonly stateUpdates$ = new BehaviorSubject<Angular3DAppState>(initialState);
+  private readonly stateUpdates$ = new BehaviorSubject<Angular3DAppState>(
+    initialState
+  );
 
   // Public readonly state accessors
   readonly state = this._state.asReadonly();
@@ -188,12 +233,78 @@ export class Angular3DStateStore {
   });
 
   readonly playingAnimations = computed(() => {
-    return Object.values(this._state().animations).filter(anim => anim.isPlaying);
+    return Object.values(this._state().animations).filter(
+      (anim) => anim.isPlaying
+    );
   });
 
   readonly isDebugMode = computed(() => this._state().isDebugMode);
 
   readonly performance = computed(() => this._state().performance);
+
+  // Component registry computed properties (merged from ReactiveStateManagerService)
+  readonly activeComponents = computed(() => {
+    return Array.from(this.componentRegistry().values()).filter(
+      (comp) => comp.isActive
+    );
+  });
+
+  readonly sceneObjectsByType = computed(() => {
+    const state = this._state();
+    const activeScene = state.activeSceneId
+      ? state.scenes[state.activeSceneId]
+      : null;
+
+    if (!activeScene) return {};
+
+    const objects = Object.values(activeScene.objects);
+    return objects.reduce((acc, obj) => {
+      if (!acc[obj.type]) acc[obj.type] = [];
+      acc[obj.type].push(obj);
+      return acc;
+    }, {} as Record<string, SceneObjectState[]>);
+  });
+
+  readonly animatedObjects = computed(() => {
+    return Object.values(this._state().animations)
+      .filter((anim) => anim.isPlaying)
+      .map((anim) => anim.target);
+  });
+
+  readonly performanceStatus = computed(() => {
+    const performance = this._state().performance;
+    const componentCount = this.activeComponents().length;
+
+    return {
+      ...performance,
+      componentCount,
+      averageLoad:
+        componentCount > 0 ? performance.drawCalls / componentCount : 0,
+      isHealthy: performance.fps >= 30 && performance.frameTime < 33.33,
+    };
+  });
+
+  // Event streams (merged from ReactiveStateManagerService)
+  readonly events$ = this.eventBus$.asObservable();
+  readonly componentMessages$ = this._componentMessages$.asObservable();
+
+  readonly sceneUpdates$ = this.getStateStream().pipe(
+    map((state) => state.scenes),
+    distinctUntilChanged(),
+    debounceTime(16) // Throttle to ~60fps
+  );
+
+  readonly animationUpdates$ = this.getStateStream().pipe(
+    map((state) => state.animations),
+    distinctUntilChanged(),
+    debounceTime(32) // Throttle animation updates
+  );
+
+  readonly performanceUpdates$ = this.getStateStream().pipe(
+    map((state) => state.performance),
+    distinctUntilChanged(),
+    debounceTime(100) // Performance updates every 100ms
+  );
 
   // Angular Three integration computed properties
   readonly ngtScene = computed(() => this.ngtStore?.get('scene') || null);
@@ -210,7 +321,7 @@ export class Angular3DStateStore {
 
   // State update methods with immutable updates
   updateScene(sceneId: string, updates: Partial<Omit<SceneState, 'id'>>) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       scenes: {
         ...state.scenes,
@@ -218,31 +329,35 @@ export class Angular3DStateStore {
           ...state.scenes[sceneId],
           ...updates,
           id: sceneId,
-        }
-      }
+        },
+      },
     }));
     this.notifyStateChange();
   }
 
   addSceneObject(sceneId: string, objectState: SceneObjectState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       scenes: {
         ...state.scenes,
         [sceneId]: {
           ...state.scenes[sceneId],
           objects: {
-            ...state.scenes[sceneId]?.objects || {},
-            [objectState.id]: objectState
-          }
-        }
-      }
+            ...(state.scenes[sceneId]?.objects || {}),
+            [objectState.id]: objectState,
+          },
+        },
+      },
     }));
     this.notifyStateChange();
   }
 
-  updateSceneObject(sceneId: string, objectId: string, updates: Partial<Omit<SceneObjectState, 'id'>>) {
-    this._state.update(state => {
+  updateSceneObject(
+    sceneId: string,
+    objectId: string,
+    updates: Partial<Omit<SceneObjectState, 'id'>>
+  ) {
+    this._state.update((state) => {
       const scene = state.scenes[sceneId];
       if (!scene || !scene.objects[objectId]) return state;
 
@@ -258,17 +373,17 @@ export class Angular3DStateStore {
                 ...scene.objects[objectId],
                 ...updates,
                 id: objectId,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   removeSceneObject(sceneId: string, objectId: string) {
-    this._state.update(state => {
+    this._state.update((state) => {
       const scene = state.scenes[sceneId];
       if (!scene || !scene.objects[objectId]) return state;
 
@@ -280,35 +395,35 @@ export class Angular3DStateStore {
           ...state.scenes,
           [sceneId]: {
             ...scene,
-            objects: remainingObjects
-          }
-        }
+            objects: remainingObjects,
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   updateCamera(updates: Partial<CameraState>) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      camera: { ...state.camera, ...updates }
+      camera: { ...state.camera, ...updates },
     }));
     this.notifyStateChange();
   }
 
   addLight(lightState: LightState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       lights: {
         ...state.lights,
-        [lightState.id]: lightState
-      }
+        [lightState.id]: lightState,
+      },
     }));
     this.notifyStateChange();
   }
 
   updateLight(lightId: string, updates: Partial<Omit<LightState, 'id'>>) {
-    this._state.update(state => {
+    this._state.update((state) => {
       if (!state.lights[lightId]) return state;
 
       return {
@@ -319,37 +434,40 @@ export class Angular3DStateStore {
             ...state.lights[lightId],
             ...updates,
             id: lightId,
-          }
-        }
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   removeLight(lightId: string) {
-    this._state.update(state => {
+    this._state.update((state) => {
       const { [lightId]: removed, ...remainingLights } = state.lights;
       return {
         ...state,
-        lights: remainingLights
+        lights: remainingLights,
       };
     });
     this.notifyStateChange();
   }
 
   addMaterial(materialState: MaterialState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       materials: {
         ...state.materials,
-        [materialState.id]: materialState
-      }
+        [materialState.id]: materialState,
+      },
     }));
     this.notifyStateChange();
   }
 
-  updateMaterial(materialId: string, updates: Partial<Omit<MaterialState, 'id'>>) {
-    this._state.update(state => {
+  updateMaterial(
+    materialId: string,
+    updates: Partial<Omit<MaterialState, 'id'>>
+  ) {
+    this._state.update((state) => {
       if (!state.materials[materialId]) return state;
 
       return {
@@ -360,26 +478,29 @@ export class Angular3DStateStore {
             ...state.materials[materialId],
             ...updates,
             id: materialId,
-          }
-        }
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   addAnimation(animationState: AnimationState) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       animations: {
         ...state.animations,
-        [animationState.id]: animationState
-      }
+        [animationState.id]: animationState,
+      },
     }));
     this.notifyStateChange();
   }
 
-  updateAnimation(animationId: string, updates: Partial<Omit<AnimationState, 'id'>>) {
-    this._state.update(state => {
+  updateAnimation(
+    animationId: string,
+    updates: Partial<Omit<AnimationState, 'id'>>
+  ) {
+    this._state.update((state) => {
       if (!state.animations[animationId]) return state;
 
       return {
@@ -390,33 +511,33 @@ export class Angular3DStateStore {
             ...state.animations[animationId],
             ...updates,
             id: animationId,
-          }
-        }
+          },
+        },
       };
     });
     this.notifyStateChange();
   }
 
   updatePerformance(updates: Partial<PerformanceState>) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      performance: { ...state.performance, ...updates }
+      performance: { ...state.performance, ...updates },
     }));
     // Don't notify for performance updates to avoid spam
   }
 
   setActiveScene(sceneId: string | null) {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      activeSceneId: sceneId
+      activeSceneId: sceneId,
     }));
     this.notifyStateChange();
   }
 
   toggleDebugMode() {
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
-      isDebugMode: !state.isDebugMode
+      isDebugMode: !state.isDebugMode,
     }));
     this.notifyStateChange();
   }
@@ -427,7 +548,11 @@ export class Angular3DStateStore {
   }
 
   // Utility methods
-  createScene(id: string, name: string, config?: Partial<SceneState>): SceneState {
+  createScene(
+    id: string,
+    name: string,
+    config?: Partial<SceneState>
+  ): SceneState {
     const sceneState: SceneState = {
       id,
       name,
@@ -437,21 +562,169 @@ export class Angular3DStateStore {
       ...config,
     };
 
-    this._state.update(state => ({
+    this._state.update((state) => ({
       ...state,
       scenes: {
         ...state.scenes,
-        [id]: sceneState
-      }
+        [id]: sceneState,
+      },
     }));
 
     this.notifyStateChange();
     return sceneState;
   }
 
+  // Component registration and lifecycle management (merged from ReactiveStateManagerService)
+  registerComponent(registration: ComponentRegistration): void {
+    this.componentRegistry.update((registry) => {
+      const newRegistry = new Map(registry);
+      newRegistry.set(registration.componentId, registration);
+      return newRegistry;
+    });
+
+    this.emitEvent({
+      type: 'node-added',
+      source: registration.componentId,
+      data: registration,
+    });
+  }
+
+  unregisterComponent(componentId: string): void {
+    const registration = this.componentRegistry().get(componentId);
+    if (registration) {
+      this.componentRegistry.update((registry) => {
+        const newRegistry = new Map(registry);
+        newRegistry.delete(componentId);
+        return newRegistry;
+      });
+
+      this.emitEvent({
+        type: 'node-removed',
+        source: componentId,
+        data: registration,
+      });
+
+      // Clean up associated scene objects
+      if (registration.sceneObjectId) {
+        const activeSceneId = this._state().activeSceneId;
+        if (activeSceneId) {
+          this.removeSceneObject(activeSceneId, registration.sceneObjectId);
+        }
+      }
+    }
+  }
+
+  updateComponent(
+    componentId: string,
+    updates: Partial<ComponentRegistration>
+  ): void {
+    this.componentRegistry.update((registry) => {
+      const existing = registry.get(componentId);
+      if (!existing) return registry;
+
+      const newRegistry = new Map(registry);
+      newRegistry.set(componentId, { ...existing, ...updates });
+      return newRegistry;
+    });
+  }
+
+  // Query methods for component coordination (merged from ReactiveStateManagerService)
+  querySceneObjects(query: SceneQuery): SceneObjectState[] {
+    const state = this._state();
+    const sceneId = query.sceneId || state.activeSceneId;
+
+    if (!sceneId || !state.scenes[sceneId]) return [];
+
+    const objects = Object.values(state.scenes[sceneId].objects);
+
+    return objects.filter((obj) => {
+      if (query.objectType && obj.type !== query.objectType) return false;
+      if (query.visible !== undefined && obj.visible !== query.visible)
+        return false;
+      if (query.parent !== undefined && obj.parent !== query.parent)
+        return false;
+      if (query.hasAnimation) {
+        const hasAnim = Object.values(state.animations).some(
+          (anim) => anim.target === obj.id
+        );
+        if (!hasAnim) return false;
+      }
+      return true;
+    });
+  }
+
+  getComponentDependencies(componentId: string): ComponentRegistration[] {
+    const component = this.componentRegistry().get(componentId);
+    if (!component) return [];
+
+    return component.dependencies
+      .map((depId) => this.componentRegistry().get(depId))
+      .filter((comp): comp is ComponentRegistration => comp !== undefined);
+  }
+
+  getComponentsByType(
+    type: ComponentRegistration['componentType']
+  ): ComponentRegistration[] {
+    return Array.from(this.componentRegistry().values()).filter(
+      (comp) => comp.componentType === type
+    );
+  }
+
+  // Event communication methods (merged from ReactiveStateManagerService)
+  emitEvent(event: Omit<SceneGraphEvent, 'timestamp'>): void {
+    this.eventBus$.next({
+      ...(event as SceneGraphEvent),
+      timestamp: Date.now(),
+    });
+  }
+
+  sendMessage(message: CrossComponentMessage): void {
+    this._componentMessages$.next(message);
+  }
+
+  // Observable factories for reactive streams (merged from ReactiveStateManagerService)
+  createObjectStream(objectId: string): Observable<SceneObjectState | null> {
+    return this.sceneUpdates$.pipe(
+      map((scenes) => {
+        for (const scene of Object.values(scenes)) {
+          if (scene.objects[objectId]) {
+            return scene.objects[objectId];
+          }
+        }
+        return null;
+      }),
+      distinctUntilChanged()
+    );
+  }
+
+  createAnimationStream(
+    animationId: string
+  ): Observable<AnimationState | null> {
+    return this.animationUpdates$.pipe(
+      map((animations) => animations[animationId] || null),
+      distinctUntilChanged()
+    );
+  }
+
+  createComponentMessagesStream(
+    componentId: string
+  ): Observable<CrossComponentMessage> {
+    return this.componentMessages$.pipe(
+      filter((message) => message.to === componentId || message.to === '*')
+    );
+  }
+
+  // Cleanup and resource management (merged from ReactiveStateManagerService)
+  cleanup(): void {
+    this.componentRegistry.set(new Map());
+    this.eventBus$.complete();
+    this._componentMessages$.complete();
+  }
+
   // Reset state to initial
   reset() {
     this._state.set(initialState);
+    this.componentRegistry.set(new Map());
     this.notifyStateChange();
   }
 
@@ -462,23 +735,30 @@ export class Angular3DStateStore {
 
   private setupAngularThreeSync() {
     // Sync Angular Three store changes with our state
-    effect(() => {
-      const ngtScene = this.ngtScene();
-      const ngtCamera = this.ngtCamera();
+    effect(
+      () => {
+        const ngtScene = this.ngtScene();
+        const ngtCamera = this.ngtCamera();
 
-      if (ngtScene && ngtCamera) {
-        // Update camera state from Angular Three
-        if (ngtCamera instanceof THREE.PerspectiveCamera) {
-          this.updateCamera({
-            type: 'perspective',
-            position: [ngtCamera.position.x, ngtCamera.position.y, ngtCamera.position.z],
-            fov: ngtCamera.fov,
-            near: ngtCamera.near,
-            far: ngtCamera.far,
-          });
+        if (ngtScene && ngtCamera) {
+          // Update camera state from Angular Three
+          if (ngtCamera instanceof THREE.PerspectiveCamera) {
+            this.updateCamera({
+              type: 'perspective',
+              position: [
+                ngtCamera.position.x,
+                ngtCamera.position.y,
+                ngtCamera.position.z,
+              ],
+              fov: ngtCamera.fov,
+              near: ngtCamera.near,
+              far: ngtCamera.far,
+            });
+          }
         }
-      }
-    }, { allowSignalWrites: true });
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   private setupPerformanceMonitoring() {
@@ -490,7 +770,8 @@ export class Angular3DStateStore {
       const currentTime = performance.now();
       const deltaTime = currentTime - lastTime;
 
-      if (deltaTime >= 1000) { // Update every second
+      if (deltaTime >= 1000) {
+        // Update every second
         const fps = Math.round((frameCount * 1000) / deltaTime);
         const frameTime = deltaTime / frameCount;
 

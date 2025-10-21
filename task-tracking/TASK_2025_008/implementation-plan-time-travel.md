@@ -55,16 +55,22 @@ export class BranchManagerService {
    * Create branch with relationship tracking
    * Phase 2: Store-based branch graph
    */
-  async createBranch(executionId: string, parentBranchId: string | null, divergencePoint: string): Promise<string> {
+  async createBranch(
+    executionId: string,
+    parentBranchId: string | null,
+    divergencePoint: string
+  ): Promise<string> {
     // 1. Create branch (core operation)
     const branchId = this.generateBranchId();
     await this.createBranchLogic(branchId, executionId, parentBranchId, divergencePoint);
 
     // 2. Store branch relationship (non-blocking)
     if (this.memoryAdapter) {
-      this.storeBranchRelationship(executionId, branchId, parentBranchId, divergencePoint).catch((error) => {
-        this.logger.warn('Failed to store branch relationship:', error);
-      });
+      this.storeBranchRelationship(executionId, branchId, parentBranchId, divergencePoint).catch(
+        (error) => {
+          this.logger.warn('Failed to store branch relationship:', error);
+        }
+      );
     }
 
     return branchId;
@@ -74,7 +80,12 @@ export class BranchManagerService {
    * Store branch with parent relationship
    * Phase 2: Hierarchical namespace for branch tree
    */
-  private async storeBranchRelationship(executionId: string, branchId: string, parentBranchId: string | null, divergencePoint: string): Promise<void> {
+  private async storeBranchRelationship(
+    executionId: string,
+    branchId: string,
+    parentBranchId: string | null,
+    divergencePoint: string
+  ): Promise<void> {
     const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.TIME_TRAVEL.BRANCHES);
 
     // Hierarchical namespace: [collection, domain, executionId, subdomain, branchId]
@@ -125,7 +136,9 @@ export class BranchManagerService {
     // Flatten tree and rank by outcome
     const allBranches = this.flattenTree(branchTree);
 
-    const rankedBranches = allBranches.filter((b) => b.outcome !== undefined).sort((a, b) => this.compareBranchOutcomes(a.outcome!, b.outcome!));
+    const rankedBranches = allBranches
+      .filter((b) => b.outcome !== undefined)
+      .sort((a, b) => this.compareBranchOutcomes(a.outcome!, b.outcome!));
 
     return rankedBranches[0]?.branchId || null;
   }
@@ -133,7 +146,11 @@ export class BranchManagerService {
   /**
    * Search related branches across executions
    */
-  async findSimilarBranches(executionId: string, branchId: string, query: string): Promise<BranchSummary[]> {
+  async findSimilarBranches(
+    executionId: string,
+    branchId: string,
+    query: string
+  ): Promise<BranchSummary[]> {
     if (!this.memoryAdapter) {
       return [];
     }
@@ -209,13 +226,19 @@ export class BranchManagerService {
     return result;
   }
 
-  private async calculateBranchDepth(executionId: string, parentBranchId: string | null): Promise<number> {
+  private async calculateBranchDepth(
+    executionId: string,
+    parentBranchId: string | null
+  ): Promise<number> {
     if (parentBranchId === null) return 0;
 
     const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.TIME_TRAVEL.BRANCHES);
 
     try {
-      const parent = await store.get(['executions', executionId, 'branches', parentBranchId], parentBranchId);
+      const parent = await store.get(
+        ['executions', executionId, 'branches', parentBranchId],
+        parentBranchId
+      );
 
       return (parent?.metadata?.depth || 0) + 1;
     } catch {
@@ -435,7 +458,11 @@ describe('BranchManagerService - Branch Relationship Graph', () => {
       },
     ]);
 
-    const similar = await service.findSimilarBranches('exec-123', 'branch-1', 'similar divergence pattern');
+    const similar = await service.findSimilarBranches(
+      'exec-123',
+      'branch-1',
+      'similar divergence pattern'
+    );
 
     expect(similar).toHaveLength(1);
     expect(similar[0].executionId).toBe('exec-456');
@@ -517,7 +544,11 @@ export class WorkflowReplayService {
   /**
    * Generate breakpoint suggestions based on user history
    */
-  private generateBreakpointSuggestions(workflowType: string, commonErrorNodes: string[], patterns: UserMemoryPatterns): BreakpointSuggestion[] {
+  private generateBreakpointSuggestions(
+    workflowType: string,
+    commonErrorNodes: string[],
+    patterns: UserMemoryPatterns
+  ): BreakpointSuggestion[] {
     const suggestions: BreakpointSuggestion[] = [];
 
     // Suggest breakpoints at common error nodes
@@ -541,7 +572,10 @@ export class WorkflowReplayService {
   /**
    * Get workflow-specific breakpoints from user patterns
    */
-  private getWorkflowSpecificBreakpoints(workflowType: string, patterns: UserMemoryPatterns): BreakpointSuggestion[] {
+  private getWorkflowSpecificBreakpoints(
+    workflowType: string,
+    patterns: UserMemoryPatterns
+  ): BreakpointSuggestion[] {
     const suggestions: BreakpointSuggestion[] = [];
 
     // Analyze successful workflows for this type
@@ -578,7 +612,11 @@ export class WorkflowReplayService {
   /**
    * Record replay session for learning
    */
-  async recordReplaySession(userId: string, executionId: string, replayResult: ReplayResult): Promise<void> {
+  async recordReplaySession(
+    userId: string,
+    executionId: string,
+    replayResult: ReplayResult
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     // Non-blocking storage

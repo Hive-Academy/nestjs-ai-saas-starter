@@ -162,8 +162,12 @@ Essential CSS that cannot be replicated with Tailwind utilities
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-progress {
@@ -266,11 +270,21 @@ Essential CSS that cannot be replicated with Tailwind utilities
   font-weight: bold;
 }
 
-.grade-a { color: #32cd32; }
-.grade-b { color: #90ee90; }
-.grade-c { color: #ffd700; }
-.grade-d { color: #ffa500; }
-.grade-f { color: #ff4444; }
+.grade-a {
+  color: #32cd32;
+}
+.grade-b {
+  color: #90ee90;
+}
+.grade-c {
+  color: #ffd700;
+}
+.grade-d {
+  color: #ffa500;
+}
+.grade-f {
+  color: #ff4444;
+}
 
 /* Print styles */
 @media print {

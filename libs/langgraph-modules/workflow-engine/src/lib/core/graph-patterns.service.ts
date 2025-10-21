@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, END } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
-import type {
-  WorkflowState,
-} from '../interfaces';
+import type { WorkflowState } from '../interfaces';
 // Removed unused imports: WorkflowNode, WorkflowEdge, Command
-import type { NodeHandler, EdgeCondition } from './workflow-graph-builder.service';
+import type {
+  NodeHandler,
+  EdgeCondition,
+} from './workflow-graph-builder.service';
 
 /**
  * Service responsible for common graph patterns and specialized graph builders
@@ -159,7 +160,9 @@ export class GraphPatternsService {
     );
 
     this.logger.debug(
-      `Supervisor graph '${name}' created with ${Object.keys(workers).length} workers`
+      `Supervisor graph '${name}' created with ${
+        Object.keys(workers).length
+      } workers`
     );
     return graph;
   }
@@ -357,7 +360,9 @@ export class GraphPatternsService {
     graph.setEntryPoint('decision' as any);
 
     this.logger.debug(
-      `Branching graph '${name}' created with ${Object.keys(branches).length} branches`
+      `Branching graph '${name}' created with ${
+        Object.keys(branches).length
+      } branches`
     );
     return graph;
   }
@@ -384,7 +389,7 @@ export class GraphPatternsService {
     // Add operation node with retry logic
     this.safeAddNode(graph, 'operation', async (state: TState) => {
       const retryCount = (state as any).retryCount || 0;
-      
+
       try {
         const result = await operation.handler(state);
         return {
@@ -396,8 +401,8 @@ export class GraphPatternsService {
         if (retryCount < operation.maxRetries) {
           // Wait with exponential backoff
           const delay = operation.backoffMs * Math.pow(2, retryCount);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          
+          await new Promise((resolve) => setTimeout(resolve, delay));
+
           return {
             ...state,
             retryCount: retryCount + 1,
@@ -405,7 +410,7 @@ export class GraphPatternsService {
             shouldRetry: true,
           } as Partial<TState>;
         }
-        
+
         // Max retries exceeded
         return {
           ...state,

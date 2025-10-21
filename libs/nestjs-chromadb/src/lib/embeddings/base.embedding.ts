@@ -31,7 +31,7 @@ export interface EmbeddingProvider {
 /**
  * Abstract base class for embedding providers
  */
- 
+
 export abstract class BaseEmbeddingProvider implements EmbeddingProvider {
   // Abstract properties
   public abstract readonly name: string;
@@ -69,7 +69,10 @@ export abstract class BaseEmbeddingProvider implements EmbeddingProvider {
   /**
    * Validate embedding dimensions
    */
-  protected validateDimensions(embeddings: number[][], expectedCount: number): void {
+  protected validateDimensions(
+    embeddings: number[][],
+    expectedCount: number
+  ): void {
     if (embeddings.length !== expectedCount) {
       throw new Error(
         `Expected ${expectedCount} embeddings, got ${embeddings.length}`

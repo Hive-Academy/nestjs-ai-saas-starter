@@ -148,7 +148,11 @@ grep "vectorService\." libs/langgraph-modules/memory/src/lib/services/agent-memo
 // memory.module.ts
 providers.push({
   provide: 'IMemoryAdapter',
-  useFactory: (vectorAdapter: IVectorService, graphAdapter: IGraphService, checkpointAdapter: ICheckpointAdapter) => {
+  useFactory: (
+    vectorAdapter: IVectorService,
+    graphAdapter: IGraphService,
+    checkpointAdapter: ICheckpointAdapter
+  ) => {
     return new AgentMemoryBridgeService(vectorAdapter, graphAdapter, checkpointAdapter); // ✅ Direct usage as IMemoryAdapter
   },
   inject: ['IVectorService', 'IGraphService', 'ICheckpointAdapter'],

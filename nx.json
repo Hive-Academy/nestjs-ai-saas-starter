@@ -127,6 +127,11 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    },
+    "@nx/angular:package": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "release": {
@@ -143,7 +148,8 @@
       "libs/langgraph-modules/functional-api",
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
-      "libs/langgraph-modules/platform"
+      "libs/langgraph-modules/platform",
+      "angular-3d"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",
@@ -176,6 +182,13 @@
       "linter": "eslint",
       "style": "css",
       "unitTestRunner": "jest"
+    },
+    "@nx/angular:library": {
+      "linter": "eslint",
+      "unitTestRunner": "jest"
+    },
+    "@nx/angular:component": {
+      "style": "css"
     }
   }
 }
