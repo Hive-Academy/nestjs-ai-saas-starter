@@ -67,7 +67,7 @@ export class ParticleSystemComponent implements AfterViewInit {
     viewChild<ElementRef<THREE.Points>>('particlePoints');
 
   // Configuration inputs
-  readonly particleCount = input<number>(200);
+
   readonly colorPalette = input<string[]>([
     '#4a1d6b', // Darker purple
     '#2d1b47', // Dark purple
@@ -75,6 +75,7 @@ export class ParticleSystemComponent implements AfterViewInit {
     '#261242', // Dark violet
     '#1e1139', // Dark navy
   ]);
+  readonly particleCount = input<number>(200);
   readonly exclusionZone = input<{ x: number; y: number }>({ x: 8, y: 4 });
   readonly size = input<number>(0.8);
   readonly opacity = input<number>(0.5);
@@ -92,7 +93,13 @@ export class ParticleSystemComponent implements AfterViewInit {
     const colors = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
     const exclusion = this.exclusionZone();
-    const colorChoices = this.colorPalette().map((hex) => new THREE.Color(hex));
+    const colorChoices = this.colorPalette()?.map(
+      (hex) => new THREE.Color(hex)
+    );
+
+    if (!colorChoices || colorChoices.length === 0) {
+      return { positions, colors, sizes };
+    }
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
@@ -131,11 +138,14 @@ export class ParticleSystemComponent implements AfterViewInit {
     const meshEl = this.meshRef();
     if (meshEl?.nativeElement) {
       const mesh = meshEl.nativeElement;
-      mesh.userData['originalPosition'] = {
-        x: mesh.position.x,
-        y: mesh.position.y,
-        z: mesh.position.z,
-      };
+      // Safety check: ensure position exists before accessing properties
+      if (mesh.position) {
+        mesh.userData['originalPosition'] = {
+          x: mesh.position.x,
+          y: mesh.position.y,
+          z: mesh.position.z,
+        };
+      }
     }
   }
 

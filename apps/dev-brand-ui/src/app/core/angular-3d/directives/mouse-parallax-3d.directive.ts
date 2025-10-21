@@ -117,6 +117,9 @@ export class MouseParallax3dDirective implements OnInit, OnDestroy {
 
         const originalPos = object.userData['originalPosition'];
 
+        // Safety check: ensure originalPosition exists before using it
+        if (!originalPos) return;
+
         // Different parallax factors based on object type/distance
         let parallaxFactorX = 1.0;
         let parallaxFactorZ = 0.5;

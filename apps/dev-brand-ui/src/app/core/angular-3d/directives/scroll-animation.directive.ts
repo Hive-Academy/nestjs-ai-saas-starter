@@ -163,23 +163,9 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
     // Create GSAP timeline (paused by default to prevent auto-play)
     const timeline = gsap.timeline({
       paused: true,
-      onStart: () => console.log('[ScrollAnimation] Timeline started'),
-      onUpdate: () =>
-        console.log(
-          '[ScrollAnimation] Timeline progress:',
-          timeline.progress()
-        ),
     });
     timeline.fromTo(element, animationProps.from, animationProps.to);
     this.animation = timeline;
-
-    console.log('[ScrollAnimation] Animation config:', {
-      from: animationProps.from,
-      to: animationProps.to,
-      start: config.start,
-      end: config.end,
-      scrub: config.scrub,
-    });
 
     // Create ScrollTrigger with the timeline
     this.scrollTrigger = ScrollTrigger.create({
@@ -194,48 +180,32 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
       once: config.once ?? false,
       toggleActions: config.toggleActions ?? 'play none none none',
       onEnter: () => {
-        console.log('[ScrollAnimation] ScrollTrigger ENTER');
+        // console.log('[ScrollAnimation] ScrollTrigger ENTER');
         config.onEnter?.();
       },
       onLeave: () => {
-        console.log('[ScrollAnimation] ScrollTrigger LEAVE');
+        // console.log('[ScrollAnimation] ScrollTrigger LEAVE');
         config.onLeave?.();
       },
       onEnterBack: () => {
-        console.log('[ScrollAnimation] ScrollTrigger ENTER BACK');
+        // console.log('[ScrollAnimation] ScrollTrigger ENTER BACK');
         config.onEnterBack?.();
       },
       onLeaveBack: () => {
-        console.log('[ScrollAnimation] ScrollTrigger LEAVE BACK');
+        // console.log('[ScrollAnimation] ScrollTrigger LEAVE BACK');
         config.onLeaveBack?.();
       },
       onUpdate: (self) => {
-        console.log(
-          '[ScrollAnimation] ScrollTrigger UPDATE - Progress:',
-          self.progress
-        );
         config.onUpdate?.(self.progress);
       },
       onRefresh: () => {
-        console.log('[ScrollAnimation] ScrollTrigger REFRESH');
+        // console.log('[ScrollAnimation] ScrollTrigger REFRESH');
       },
-    });
-
-    console.log('[ScrollAnimation] ScrollTrigger created:', {
-      id: this.scrollTrigger.vars.id,
-      start: this.scrollTrigger.start,
-      end: this.scrollTrigger.end,
-      scroller: this.scrollTrigger.scroller,
     });
 
     // Refresh ScrollTrigger after a short delay to ensure DOM is ready
     setTimeout(() => {
-      console.log('[ScrollAnimation] Refreshing ScrollTrigger...');
       ScrollTrigger.refresh();
-      console.log(
-        '[ScrollAnimation] Total ScrollTriggers:',
-        ScrollTrigger.getAll().length
-      );
     }, 100);
   }
 
