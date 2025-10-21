@@ -50,7 +50,6 @@ import {
   ElementRef,
 } from '@angular/core';
 import { Mesh } from 'three';
-import { AnimationService } from '../services/animation.service';
 
 /**
  * Float3dDirective
@@ -64,7 +63,6 @@ import { AnimationService } from '../services/animation.service';
 })
 export class Float3dDirective implements AfterViewInit, OnDestroy {
   // Dependency injection
-  private readonly animationService = inject(AnimationService);
   private readonly elementRef = inject(ElementRef<Mesh>);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -88,7 +86,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
   readonly autoStart = input<boolean>(true); // Auto-start animation
 
   // Internal state
-  private timelineId: string | null = null;
+  private gsapTimeline: any | null = null; // Direct GSAP timeline reference
   private mesh: Mesh | null = null;
   private originalPosition: [number, number, number] | null = null;
 
@@ -96,7 +94,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     // Skip if no configuration provided (directive is optional)
     const config = this.floatConfig();
     if (!config) {
-      console.log('[Float3dDirective] No config provided, directive inactive');
+      // console.log('[Float3dDirective] No config provided, directive inactive');
       return;
     }
 
@@ -104,9 +102,9 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     this.mesh = this.elementRef.nativeElement;
 
     if (!this.mesh) {
-      console.warn(
-        '[Float3dDirective] Could not access mesh from nativeElement'
-      );
+      // console.warn(
+      //   '[Float3dDirective] Could not access mesh from nativeElement'
+      // );
       return;
     }
 
@@ -134,10 +132,10 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     // Create floating animation
     this.createFloatingAnimation();
 
-    console.log(
-      '[Float3dDirective] Animation initialized for mesh:',
-      this.mesh.name || 'unnamed'
-    );
+    // console.log(
+    //   '[Float3dDirective] Animation initialized for mesh:',
+    //   this.mesh.name || 'unnamed'
+    // );
   }
 
   ngOnDestroy(): void {
@@ -146,11 +144,13 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
 
   /**
    * Create the floating animation timeline
+   *
+   * Uses a seamless continuous loop animation instead of yoyo to avoid jarring transitions.
+   * Creates a smooth sine-wave-like motion by animating UP and DOWN as separate sequential steps
+   * within a repeating timeline, ensuring no sudden drops at loop boundaries.
    */
   private createFloatingAnimation(): void {
     if (!this.mesh || !this.originalPosition) return;
-
-    const [x, y, z] = this.originalPosition;
 
     // Get config with fallback to legacy inputs
     const config = this.floatConfig();
@@ -160,71 +160,61 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     const ease = config?.ease ?? this.floatEase();
     const autoStart = config?.autoStart ?? this.autoStart();
 
-    // Create timeline with AnimationService
-    this.timelineId = this.animationService.createTimeline({
-      name: `Float Animation (${this.mesh.name || 'unnamed'})`,
-      animations: [
-        {
-          type: 'slide',
-          duration: speed,
-          delay,
-          ease,
-          repeat: -1, // Infinite loop
-          yoyo: true, // Back and forth
-        },
-      ],
-      targets: [
-        {
-          elementId: `float-${this.mesh.uuid || Date.now()}`,
-          object3D: this.mesh,
-          position: [x, y + height, z] as const,
-        },
-      ],
-      loop: true,
-      paused: !autoStart,
-    });
+    // Import GSAP to create direct timeline (bypass AnimationService for better control)
+    import('gsap').then(({ gsap }) => {
+      if (!this.mesh || !this.originalPosition) return;
 
-    // Add animation to timeline
-    if (this.timelineId) {
-      this.animationService.addAnimationToTimeline(
-        this.timelineId,
-        {
-          elementId: `float-${this.mesh.uuid || Date.now()}`,
-          object3D: this.mesh,
-          position: [x, y + height, z] as const,
-        },
-        {
-          type: 'slide',
-          duration: speed,
-          delay,
-          ease,
-          repeat: -1,
-          yoyo: true,
-        }
-      );
+      const [_x, y, _z] = this.originalPosition;
+
+      // Create a seamless continuous loop timeline
+      // Instead of yoyo (which causes sudden drops), we create a smooth cycle:
+      // 1. Start at original position
+      // 2. Animate UP to (y + height) with easeInOut
+      // 3. Animate DOWN back to original y with easeInOut
+      // 4. Repeat infinitely - seamless loop, no jarring transitions
+      const timeline = gsap.timeline({
+        repeat: -1, // Infinite loop
+        delay: delay / 1000, // Convert ms to seconds
+      });
+
+      // Phase 1: Float UP (smooth acceleration and deceleration)
+      timeline.to(this.mesh.position, {
+        y: y + height,
+        duration: speed / 2000, // Half the total speed for up phase (convert ms to s)
+        ease: ease || 'sine.inOut',
+      });
+
+      // Phase 2: Float DOWN (smooth acceleration and deceleration)
+      timeline.to(this.mesh.position, {
+        y: y,
+        duration: speed / 2000, // Half the total speed for down phase
+        ease: ease || 'sine.inOut',
+      });
+
+      // Store timeline reference for cleanup and control
+      this.gsapTimeline = timeline;
 
       // Auto-start if configured
-      if (autoStart) {
-        this.animationService.playTimeline(this.timelineId);
+      if (!autoStart) {
+        timeline.pause();
       }
 
-      console.log(
-        `[Float3dDirective] Floating animation created for mesh:`,
-        this.mesh.name || 'unnamed',
-        `- Timeline ID: ${this.timelineId}`
-      );
-    }
+      // console.log(
+      //   `[Float3dDirective] Seamless floating animation created for mesh:`,
+      //   this.mesh.name || 'unnamed',
+      //   `- Height: ${height}, Speed: ${speed}ms, Ease: ${ease}`
+      // );
+    });
   }
 
   /**
    * Cleanup animation resources
    */
   private cleanup(): void {
-    if (this.timelineId) {
-      this.animationService.stopTimeline(this.timelineId);
-      this.animationService.removeTimeline(this.timelineId);
-      this.timelineId = null;
-      console.log('[Float3dDirective] Animation cleanup completed');
+    if (this.gsapTimeline) {
+      this.gsapTimeline.kill();
+      this.gsapTimeline = null;
+      // console.log('[Float3dDirective] Animation cleanup completed');
     }
 
     // Reset position to original if mesh still exists
@@ -238,8 +228,8 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
    * Public API: Play the floating animation
    */
   play(): void {
-    if (this.timelineId) {
-      this.animationService.playTimeline(this.timelineId);
+    if (this.gsapTimeline) {
+      this.gsapTimeline.play();
     }
   }
 
@@ -247,8 +237,8 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
    * Public API: Pause the floating animation
    */
   pause(): void {
-    if (this.timelineId) {
-      this.animationService.pauseTimeline(this.timelineId);
+    if (this.gsapTimeline) {
+      this.gsapTimeline.pause();
     }
   }
 
@@ -256,8 +246,8 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
    * Public API: Stop and reset the floating animation
    */
   stop(): void {
-    if (this.timelineId) {
-      this.animationService.stopTimeline(this.timelineId);
+    if (this.gsapTimeline) {
+      this.gsapTimeline.progress(0).pause();
       if (this.mesh && this.originalPosition) {
         const [x, y, z] = this.originalPosition;
         this.mesh.position.set(x, y, z);
@@ -269,8 +259,6 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
    * Public API: Check if animation is playing
    */
   isPlaying(): boolean {
-    if (!this.timelineId) return false;
-    const state = this.animationService.getTimelineState(this.timelineId);
-    return state?.isActive ?? false;
+    return this.gsapTimeline ? this.gsapTimeline.isActive() : false;
   }
 }

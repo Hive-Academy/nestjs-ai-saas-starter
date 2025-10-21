@@ -1,38 +1,30 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
-  computed,
-  DestroyRef,
   ElementRef,
-  inject,
-  OnDestroy,
-  OnInit,
   signal,
   ViewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { first, delay, timeout, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { ArchitectureDiagramComponent } from './sections/architecture-diagram.component';
-import { DemoTheaterComponent } from './sections/demo-theater.component';
-// import { EcosystemExplorerComponent } from './sections/ecosystem-explorer.component';
 
-import { PlatformPillarsComponent } from './sections/platform-pillars.component';
-import { LoadingStateService } from './services/loading-state.service';
 import { HeroSectionComponent } from './sections/hero-section.component';
-// import { HeroSection3dComponent } from "./components/hero-section-3d/hero-section-3d.component";
+import { DataFoundationSectionComponent } from './sections/data-foundation-section.component';
+import { CoreFoundationSectionComponent } from './sections/core-foundation-section.component';
+import { WorkflowOrchestrationSectionComponent } from './sections/workflow-orchestration-section.component';
+import { IntelligenceLayerSectionComponent } from './sections/intelligence-layer-section.component';
+import { ProductionSystemsSectionComponent } from './sections/production-systems-section.component';
 
 @Component({
   selector: 'brand-landing-page',
   standalone: true,
   imports: [
     CommonModule,
-    PlatformPillarsComponent,
-    DemoTheaterComponent,
-    // EcosystemExplorerComponent,
-    ArchitectureDiagramComponent,
     HeroSectionComponent,
-    // HeroSection3dComponent,
+    DataFoundationSectionComponent,
+    CoreFoundationSectionComponent,
+    WorkflowOrchestrationSectionComponent,
+    IntelligenceLayerSectionComponent,
+    ProductionSystemsSectionComponent,
   ],
   template: ` <div
     class="w-full min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out relative"
@@ -48,125 +40,25 @@ import { HeroSectionComponent } from './sections/hero-section.component';
         <div
           class="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"
         ></div>
-        <h2 class="text-white text-2xl font-bold mb-2">
-          {{ loadingStateService.currentStage() }}
-        </h2>
+        <h2 class="text-white text-2xl font-bold mb-2">Loading Experience</h2>
         <p class="text-gray-400 text-sm mb-4">
-          {{ loadingStateService.globalLoadingState().stage }}
+          Preparing your immersive journey...
         </p>
 
         <!-- Progress Bar -->
         <div class="w-64 h-2 bg-gray-800 rounded-full mx-auto overflow-hidden">
           <div
             class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-            [style.width.%]="loadingStateService.loadingProgress()"
+            [style.width.%]="loadingProgress()"
           ></div>
         </div>
 
         <p class="text-gray-500 text-xs mt-2">
-          {{ loadingStateService.loadingProgress() | number : '1.0-0' }}%
-          Complete
+          {{ loadingProgress() }}% Complete
         </p>
-
-        <!-- Section Status -->
-        <div class="mt-6 text-xs text-gray-600">
-          @if (loadingStateService.sectionLoadingStates(); as sections) {
-          <div class="flex gap-2 justify-center flex-wrap">
-            @for (section of sections; track section.sectionId) {
-            <span
-              class="px-2 py-1 rounded"
-              [class.bg-green-900]="section.isLoaded"
-              [class.bg-gray-800]="!section.isLoaded"
-              [class.text-green-400]="section.isLoaded"
-              [class.text-gray-500]="!section.isLoaded"
-            >
-              {{ section.sectionId }} @if (section.isLoaded) { ✓ } @else { ... }
-            </span>
-            }
-          </div>
-          }
-        </div>
       </div>
     </div>
     }
-
-    <!-- Floating Page Controls -->
-    <div
-      class="fixed top-5 right-5 transition-all duration-300 ease-out"
-      style="z-index: 1000"
-      [class.opacity-0]="!showCinematicControls()"
-      [class.translate-x-full]="!showCinematicControls()"
-      [class.opacity-100]="showCinematicControls()"
-      [class.translate-x-0]="showCinematicControls()"
-    >
-      <!-- Floating Button -->
-      <div class="relative">
-        <button
-          class="w-14 h-14 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-full shadow-lg backdrop-blur-lg border border-white/20 flex items-center justify-center text-white transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95"
-          (click)="toggleDropdownControls()"
-        >
-          ⚙️
-        </button>
-
-        <!-- Simple Dropdown Panel -->
-        <div
-          class="absolute top-16 right-0 bg-black/90 border border-white/20 rounded-xl backdrop-blur-lg shadow-2xl overflow-hidden transition-all duration-300 w-72"
-          [class.hidden]="!showDropdownControls()"
-        >
-          <div class="p-4 space-y-3">
-            <div
-              class="text-center text-xs text-white/70 border-b border-white/10 pb-2 mb-3"
-            >
-              Page Controls
-            </div>
-
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-white/80">Smooth Scroll</span>
-                <button
-                  class="px-3 py-1 bg-purple-600/30 hover:bg-purple-600/50 rounded text-xs"
-                  (click)="toggleSmoothScroll()"
-                >
-                  Toggle
-                </button>
-              </div>
-
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-white/80">Navigation Dots</span>
-                <button
-                  class="px-3 py-1 bg-blue-600/30 hover:bg-blue-600/50 rounded text-xs"
-                  (click)="toggleNavigationDots()"
-                >
-                  Toggle
-                </button>
-              </div>
-            </div>
-
-            <div class="border-t border-white/10 pt-3">
-              <div class="flex items-center justify-between text-xs mb-2">
-                <span class="text-white/60">Sections</span>
-                <span class="text-white/60">{{ sections().length }}</span>
-              </div>
-
-              <div class="flex items-center justify-between mt-2 text-xs">
-                <button
-                  class="px-2 py-1 bg-sky-600/30 hover:bg-sky-600/50 rounded text-xs"
-                  (click)="scrollToTop()"
-                >
-                  Scroll to Top
-                </button>
-                <button
-                  class="px-2 py-1 bg-green-600/30 hover:bg-green-600/50 rounded text-xs"
-                  (click)="exportSectionInfo()"
-                >
-                  Export
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Navigation Dots (Optional) -->
     <nav
@@ -203,97 +95,36 @@ import { HeroSectionComponent } from './sections/hero-section.component';
     <main class="w-full">
       <!-- Hero Section -->
       <div id="hero" class="section-container">
-        <!-- <app-hero-angular-three
-          (getStarted)="onGetStarted()"
-          (watchDemo)="onWatchDemo()"
-          (featureSelected)="onFeatureSelected($event)">
-        </app-hero-angular-three> -->
         <brand-hero-section />
-        <!-- <hero-section-3d /> -->
       </div>
 
-      <!-- Platform Pillars Section -->
-      <div id="platform-pillars" class="section-container">
-        <brand-platform-pillars></brand-platform-pillars>
-      </div>
+      <!-- LangGraph Module Showcase (11 modules across 5 sections) -->
+      <section class="langgraph-modules-showcase">
+        <!-- Data Foundation: ChromaDB + Neo4j -->
+        <div id="data-foundation" class="section-container">
+          <app-data-foundation-section />
+        </div>
 
-      <!-- Demo Theater Section -->
-      <div id="demo-theater" class="section-container">
-        <brand-demo-theater></brand-demo-theater>
-      </div>
+        <!-- Core Foundation: Core + Functional API -->
+        <div id="core-foundation" class="section-container">
+          <app-core-foundation-section />
+        </div>
 
-      <!-- Ecosystem Explorer Section -->
-      <!-- <div id="ecosystem-explorer" class="section-container">
-        <brand-ecosystem-explorer></brand-ecosystem-explorer>
-      </div> -->
+        <!-- Workflow Orchestration: Multi-agent + Checkpoint + Memory -->
+        <div id="workflow-orchestration" class="section-container">
+          <app-workflow-orchestration-section />
+        </div>
 
-      <!-- Architecture Diagram Section -->
-      <div id="architecture-diagram" class="section-container">
-        <brand-architecture-diagram></brand-architecture-diagram>
-      </div>
+        <!-- Intelligence Layer: HITL + Time-Travel -->
+        <div id="intelligence-layer" class="section-container">
+          <app-intelligence-layer-section />
+        </div>
 
-      <!-- Navigation to other features -->
-      <div id="feature-navigation" class="section-container">
-        <section
-          class="h-screen w-full flex flex-col items-center justify-center box-border text-center bg-black/30 relative"
-        >
-          <h3 class="text-3xl mb-8 text-white text-center">
-            Explore Platform Features
-          </h3>
-          <div
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-auto-fit gap-6 max-w-6xl mx-auto"
-            style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))"
-          >
-            <a
-              href="/spatial-interface"
-              class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
-            >
-              <h4 class="m-0 mb-2 text-xl text-purple-500">
-                3D Agent Visualization
-              </h4>
-              <p class="m-0 text-white/70 text-sm">
-                Interactive spatial interface
-              </p>
-            </a>
-            <a
-              href="/workflow-canvas"
-              class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
-            >
-              <h4 class="m-0 mb-2 text-xl text-purple-500">Workflow Canvas</h4>
-              <p class="m-0 text-white/70 text-sm">Visual workflow designer</p>
-            </a>
-            <a
-              href="/memory-constellation"
-              class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
-            >
-              <h4 class="m-0 mb-2 text-xl text-purple-500">
-                Memory Constellation
-              </h4>
-              <p class="m-0 text-white/70 text-sm">Distributed memory system</p>
-            </a>
-            <a
-              href="/chat-interface"
-              class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
-            >
-              <h4 class="m-0 mb-2 text-xl text-purple-500">
-                AI Chat Interface
-              </h4>
-              <p class="m-0 text-white/70 text-sm">
-                Conversational AI experience
-              </p>
-            </a>
-            <a
-              href="/content-forge"
-              class="block p-6 bg-white/5 border border-white/10 rounded-xl no-underline text-white transition-all duration-300 backdrop-blur-lg hover:bg-white/10 hover:border-purple-500/50 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/30"
-            >
-              <h4 class="m-0 mb-2 text-xl text-purple-500">Content Forge</h4>
-              <p class="m-0 text-white/70 text-sm">
-                AI-powered content creation
-              </p>
-            </a>
-          </div>
-        </section>
-      </div>
+        <!-- Production Systems: Monitoring + Streaming + Platform -->
+        <div id="production-systems" class="section-container">
+          <app-production-systems-section />
+        </div>
+      </section>
     </main>
   </div>`,
   styles: [
@@ -302,6 +133,13 @@ import { HeroSectionComponent } from './sections/hero-section.component';
         width: 100%;
         min-height: 100vh;
         scroll-margin-top: 0;
+      }
+
+      .langgraph-modules-showcase {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
       }
 
       html {
@@ -328,7 +166,7 @@ import { HeroSectionComponent } from './sections/hero-section.component';
     `,
   ],
 })
-export class LandingPageComponent implements OnInit, OnDestroy {
+export class LandingPageComponent implements AfterViewInit {
   @ViewChild('landingContainer', { static: true })
   landingContainer!: ElementRef<HTMLElement>;
 
@@ -338,78 +176,42 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   readonly showNavigationDots = signal(true);
   readonly smoothScrollEnabled = signal(true);
 
-  public loadingStateService = inject(LoadingStateService);
-
   // Component state
   readonly isLoaded = signal(false);
+  readonly loadingProgress = signal(0);
   readonly sections = signal([
     'hero',
-    'platform-pillars',
-    'demo-theater',
-    'ecosystem-explorer',
-    'architecture-diagram',
-    'feature-navigation',
+    'data-foundation',
+    'core-foundation',
+    'workflow-orchestration',
+    'intelligence-layer',
+    'production-systems',
   ]);
 
-  readonly loadingProgress = computed(() => {
-    // Calculate loading progress based on loaded sections
-    return 100; // For now, return 100% once component initializes
-  });
+  ngAfterViewInit(): void {
+    // Simple, immediate loading - no complex observables
+    // Angular Three (NgtCanvas) handles its own initialization
+    // We just need a brief moment for the initial render, then fade in
 
-  ngOnInit(): void {
-    this.initializeLandingPage();
+    // Use requestAnimationFrame to wait for next paint cycle
+    requestAnimationFrame(() => {
+      // Update progress for visual feedback
+      this.loadingProgress.set(50);
+
+      // Wait one more frame for Angular Three to mount
+      requestAnimationFrame(() => {
+        this.loadingProgress.set(100);
+
+        // Short delay for smooth transition, then show content
+        setTimeout(() => {
+          console.log('[LandingPage] ✅ Content ready, fading in...');
+          this.isLoaded.set(true);
+        }, 300);
+      });
+    });
+
     this.setupSmoothScrolling();
   }
-
-  ngOnDestroy(): void {
-    this.loadingStateService.reset();
-  }
-
-  private async initializeLandingPage(): Promise<void> {
-    try {
-      // Start loading state service
-      this.loadingStateService.startLoading();
-
-      console.log(
-        '[LandingPage] Waiting for all sections to load using RxJS observable...'
-      );
-
-      // Use pure RxJS - NO setTimeout!
-      // Wait for hero section to load with 5-second timeout
-      this.loadingStateService.allSectionsLoaded$
-        .pipe(
-          first((allLoaded) => allLoaded === true),
-          timeout(5000), // 5-second timeout - hero should load quickly
-          delay(300), // Short transition delay
-          catchError((error) => {
-            if (error.name === 'TimeoutError') {
-              console.warn(
-                '[LandingPage] ⚠️ Timeout after 5s - completing anyway'
-              );
-            } else {
-              console.error('[LandingPage] ❌ Loading error:', error);
-            }
-            return of(true); // Continue with loading completion
-          }),
-          takeUntilDestroyed(this.destroyRef)
-        )
-        .subscribe({
-          next: () => {
-            console.log('[LandingPage] ✅ Hero loaded, showing page...');
-            this.loadingStateService.completeLoading();
-            this.isLoaded.set(true);
-          },
-        });
-    } catch (error) {
-      console.error('Failed to initialize landing page:', error);
-      // Complete loading even if there are errors
-      this.loadingStateService.completeLoading();
-      this.isLoaded.set(true);
-    }
-  }
-
-  // Add DestroyRef for cleanup
-  private readonly destroyRef = inject(DestroyRef);
 
   private setupSmoothScrolling(): void {
     if (typeof window !== 'undefined') {
@@ -440,11 +242,11 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   getSectionLabel(sectionId: string): string {
     const labelMap: Record<string, string> = {
       hero: 'Hero',
-      'platform-pillars': 'Platform',
-      'demo-theater': 'Demos',
-      'ecosystem-explorer': 'Ecosystem',
-      'architecture-diagram': 'Architecture',
-      'feature-navigation': 'Features',
+      'data-foundation': 'Data Foundation',
+      'core-foundation': 'Core Foundation',
+      'workflow-orchestration': 'Workflow',
+      'intelligence-layer': 'Intelligence',
+      'production-systems': 'Production',
     };
     return labelMap[sectionId] || sectionId.replace('-', ' ');
   }
@@ -487,31 +289,31 @@ export class LandingPageComponent implements OnInit, OnDestroy {
 
   // Hero component event handlers
   onGetStarted(): void {
-    // Navigate to the next section or show a getting started modal
-    this.scrollToSection('platform-pillars');
+    // Navigate to the data foundation section
+    this.scrollToSection('data-foundation');
   }
 
   onWatchDemo(): void {
-    // Scroll to the demo section
-    this.scrollToSection('demo-theater');
+    // Scroll to the workflow orchestration section
+    this.scrollToSection('workflow-orchestration');
   }
 
   onFeatureSelected(featureId: string): void {
     // Handle feature selection - could trigger animations or navigation
     console.log('Feature selected:', featureId);
-    // You could implement feature-specific navigation here
+    // Navigate to relevant LangGraph module sections
     switch (featureId) {
       case 'ai-automation':
-        this.scrollToSection('platform-pillars');
+        this.scrollToSection('intelligence-layer');
         break;
       case 'data-analytics':
-        this.scrollToSection('ecosystem-explorer');
+        this.scrollToSection('data-foundation');
         break;
       case 'cloud-integration':
-        this.scrollToSection('architecture-diagram');
+        this.scrollToSection('production-systems');
         break;
       default:
-        this.scrollToSection('demo-theater');
+        this.scrollToSection('core-foundation');
     }
   }
 }
