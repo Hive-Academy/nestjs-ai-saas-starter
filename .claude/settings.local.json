@@ -2,14 +2,11 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "mcp__sequential-thinking__sequentialthinking",
-      "Bash(cat:*)",
-      "Bash(npx nx build:*)",
-      "Bash(npx tsc:*)",
+      "Bash(npx nx test dev-brand-ui --testPathPattern=\"(core-foundation-section|workflow-orchestration-section)\" --no-cache)",
+      "mcp__nx-mcp__nx_workspace",
       "mcp__nx-mcp__nx_project_details",
-      "Bash(npm run format:*)",
-      "mcp__chrome-devtools__list_pages",
-      "mcp__chrome-devtools__navigate_page"
+      "Bash(git mv apps/dev-brand-ui/src/app/shared/components/intelligence-layer-section.component.ts apps/dev-brand-ui/src/app/features/landing-page/sections/intelligence-layer-section.component.ts)",
+      "Bash(git mv apps/dev-brand-ui/src/app/shared/components/intelligence-layer-section.component.spec.ts apps/dev-brand-ui/src/app/features/landing-page/sections/intelligence-layer-section.component.spec.ts)"
     ],
     "deny": [],
     "ask": [],
