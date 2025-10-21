@@ -83,10 +83,8 @@ export class BrandMonitoringService {
 
     try {
       // Fetch recent mentions (last 24 hours)
-      const recentMentions = await this.brandMentionRepository.getRecentMentions(
-        userId,
-        24
-      );
+      const recentMentions =
+        await this.brandMentionRepository.getRecentMentions(userId, 24);
 
       this.totalMentionsProcessed += recentMentions.length;
 
@@ -107,10 +105,8 @@ export class BrandMonitoringService {
       const engagementRate = reachScore > 0 ? totalEngagement / reachScore : 0;
 
       // Get top influencers
-      const topInfluencers = await this.brandMentionRepository.getTopInfluencers(
-        userId,
-        10
-      );
+      const topInfluencers =
+        await this.brandMentionRepository.getTopInfluencers(userId, 10);
 
       // Get trending topics
       const trendingTopicsData = await this.getTrendingTopics(userId);
@@ -288,7 +284,9 @@ export class BrandMonitoringService {
     if (negativePercentage > 0.3) {
       alerts.push({
         type: 'negative-sentiment',
-        message: `Negative sentiment spike: ${(negativePercentage * 100).toFixed(1)}% of mentions are negative`,
+        message: `Negative sentiment spike: ${(
+          negativePercentage * 100
+        ).toFixed(1)}% of mentions are negative`,
       });
     }
 

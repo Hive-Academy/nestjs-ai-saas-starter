@@ -489,4 +489,159 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
       return `multi-agent.network.${networkId}`;
     }
   }
+
+  // ============================================================================
+  // PHASE 2: User-Agent Affinity Patterns
+  // ============================================================================
+
+  /**
+   * Select agent for user with affinity consideration
+   * Phase 2: Personalized agent selection using getUserPatterns()
+   *
+   * Verification:
+   * - getUserPatterns interface: langgraph-core/src/lib/interfaces/memory-adapter.interface.ts:184-187
+   * - UserMemoryPatterns type: langgraph-core/src/lib/interfaces/memory-adapter.interface.ts:21-32
+   * - Pattern: implementation-plan-multi-agent.md:397-463
+   */
+  async selectAgentForUser(
+    userId: string,
+    task: { type: string; capabilities?: string[] }
+  ): Promise<string> {
+    // 1. Get compatible agents for task
+    const compatibleAgents = this.getCompatibleAgents(task);
+
+    if (compatibleAgents.length === 0) {
+      throw new Error(`No agents compatible with task type: ${task.type}`);
+    }
+
+    // 2. Apply user affinity if memory available
+    if (this.memoryAdapter) {
+      try {
+        const preferredAgent = await this.selectWithUserAffinity(
+          userId,
+          task,
+          compatibleAgents
+        );
+        return preferredAgent;
+      } catch (error) {
+        this.logger.debug(`User affinity selection failed: ${error}`);
+        // Fallback to first compatible agent
+      }
+    }
+
+    // 3. Default selection (no personalization)
+    return compatibleAgents[0].id;
+  }
+
+  /**
+   * Select agent using user affinity patterns
+   * Uses getUserPatterns() for personalization
+   */
+  private async selectWithUserAffinity(
+    userId: string,
+    task: { type: string },
+    compatibleAgents: AgentDefinition[]
+  ): Promise<string> {
+    // Get user's historical agent preferences
+    const userPatterns = await this.memoryAdapter!.getUserPatterns(userId);
+
+    // Filter by user preference
+    const preferredAgents = userPatterns.preferredAgents || [];
+
+    // Find preferred agent that's compatible with task
+    const preferredCompatible = compatibleAgents.find((agent) =>
+      preferredAgents.includes(agent.id)
+    );
+
+    if (preferredCompatible) {
+      this.logger.log(
+        `Selected preferred agent ${preferredCompatible.id} for user ${userId}`
+      );
+      return preferredCompatible.id;
+    }
+
+    // No preference match - select by success rate
+    return this.selectBySuccessRate(compatibleAgents, userPatterns);
+  }
+
+  /**
+   * Select agent by historical success rate for this user
+   */
+  private selectBySuccessRate(
+    agents: AgentDefinition[],
+    patterns: { successfulWorkflows?: string[] }
+  ): string {
+    const successfulWorkflows = patterns.successfulWorkflows || [];
+
+    // Count successful workflows per agent
+    const agentSuccess = agents.map((agent) => {
+      const successCount = successfulWorkflows.filter((wf) =>
+        wf.includes(agent.id)
+      ).length;
+
+      return {
+        agentId: agent.id,
+        successCount,
+      };
+    });
+
+    // Sort by success count
+    agentSuccess.sort((a, b) => b.successCount - a.successCount);
+
+    return agentSuccess[0].agentId;
+  }
+
+  /**
+   * Get agents compatible with task type
+   */
+  private getCompatibleAgents(task: {
+    type: string;
+    capabilities?: string[];
+  }): AgentDefinition[] {
+    const allAgents = this.agentRegistry.getAllAgents();
+
+    return allAgents.filter((agent) => {
+      const agentCapabilities = agent.capabilities || [];
+
+      // Check if agent has required task type capability
+      if (task.capabilities && task.capabilities.length > 0) {
+        return task.capabilities.some((cap) => agentCapabilities.includes(cap));
+      }
+
+      // Fallback: check if agent has task type as capability
+      return agentCapabilities.includes(task.type);
+    });
+  }
+
+  /**
+   * Store agent selection outcome for learning
+   * Phase 2: Track selection outcomes for user pattern learning
+   */
+  async recordAgentOutcome(
+    userId: string,
+    agentId: string,
+    task: { type: string },
+    success: boolean
+  ): Promise<void> {
+    if (!this.memoryAdapter) return;
+
+    // Non-blocking storage
+    this.memoryAdapter
+      .store(
+        `agent-outcome-${userId}`,
+        JSON.stringify({
+          agentId,
+          taskType: task.type,
+          success,
+          timestamp: new Date(),
+        }),
+        {
+          namespace: ['agent-outcomes', userId],
+          tags: ['outcome', success ? 'success' : 'failure', task.type],
+        }
+      )
+      .catch((error) => {
+        this.logger.warn(`Failed to store agent outcome: ${error}`);
+      });
+  }
 }

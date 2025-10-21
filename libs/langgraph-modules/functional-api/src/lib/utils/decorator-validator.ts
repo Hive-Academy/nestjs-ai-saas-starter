@@ -100,7 +100,8 @@ export function validateDecoratorPattern(
   decoratorName: string,
   className?: string
 ): void {
-  const targetName = className || target.constructor?.name || target.name || 'Unknown';
+  const targetName =
+    className || target.constructor?.name || target.name || 'Unknown';
 
   // 🆕 ENHANCED: Check for explicit workflow type from @Agent.workflow.type
   const agentMetadata = Reflect.getMetadata('agent:config', target);
@@ -166,7 +167,8 @@ export class DecoratorPatternConflictError extends Error {
     decoratorName: string,
     customMessage?: string
   ) {
-    const conflictReason = customMessage || `Incompatible decorator @${decoratorName} detected`;
+    const conflictReason =
+      customMessage || `Incompatible decorator @${decoratorName} detected`;
     const message = `
 ╔════════════════════════════════════════════════════════════════════════╗
 ║ DECORATOR PATTERN CONFLICT                                             ║

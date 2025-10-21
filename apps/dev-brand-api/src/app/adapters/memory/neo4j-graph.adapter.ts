@@ -16,6 +16,7 @@ import {
   GraphNode,
   TransactionError,
   AgentState,
+  MemoryEntry,
 } from '@hive-academy/langgraph-memory';
 
 /**
@@ -208,5 +209,116 @@ export class Neo4jGraphAdapter extends IGraphService {
       memoryIds,
       similarityThreshold
     );
+  }
+
+  // ============================================================================
+  // PRIORITY 0: CORE MEMORY TRACKING OPERATIONS
+  // ============================================================================
+
+  /**
+   * Track a memory entry in the graph database - delegates to repository
+   */
+  async trackMemory(memory: MemoryEntry): Promise<void> {
+    return this.memoryGraphRepo.trackMemory(memory);
+  }
+
+  /**
+   * Track multiple memories in batch - delegates to repository
+   */
+  async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
+    return this.memoryGraphRepo.trackMemoriesBatch(memories);
+  }
+
+  /**
+   * Delete memories from graph - delegates to repository
+   */
+  async deleteMemories(memoryIds: readonly string[]): Promise<number> {
+    return this.memoryGraphRepo.deleteMemories(memoryIds);
+  }
+
+  // ============================================================================
+  // PRIORITY 1/2: OPTIONAL GRAPH OPERATIONS (Graceful Degradation)
+  // ============================================================================
+
+  /**
+   * Build word-matching relationships (Priority 1 - not critical)
+   * Gracefully degrades if not implemented
+   */
+  async buildWordMatchingRelationships(
+    maxRelationships: number,
+    minCommonWords: number,
+    requireApoc: boolean
+  ): Promise<number> {
+    this.logger.warn(
+      'buildWordMatchingRelationships not yet implemented (Priority 1 feature)'
+    );
+    return 0; // Graceful degradation
+  }
+
+  /**
+   * Get memory graph statistics (Priority 1 - not critical)
+   * Returns basic stats if not fully implemented
+   */
+  async getMemoryGraphStats(): Promise<{
+    totalMemories: number;
+    totalThreads: number;
+    totalRelationships: number;
+    averageMemoriesPerThread: number;
+  }> {
+    this.logger.warn(
+      'getMemoryGraphStats not yet fully implemented (Priority 1 feature)'
+    );
+
+    try {
+      const stats = await this.getStats();
+      return {
+        totalMemories: stats.nodeCount,
+        totalThreads: 0, // Not yet tracked
+        totalRelationships: stats.relationshipCount,
+        averageMemoriesPerThread: 0, // Not yet calculated
+      };
+    } catch (error) {
+      this.logger.error('Failed to get basic graph stats', error);
+      return {
+        totalMemories: 0,
+        totalThreads: 0,
+        totalRelationships: 0,
+        averageMemoriesPerThread: 0,
+      };
+    }
+  }
+
+  /**
+   * Find memory connections via graph traversal (Priority 2 - not critical)
+   * Returns empty array if not implemented
+   */
+  async findMemoryConnections(
+    memoryId: string,
+    depth: number,
+    relationshipLimit: number
+  ): Promise<readonly string[]> {
+    this.logger.warn(
+      'findMemoryConnections not yet implemented (Priority 2 feature)'
+    );
+    return []; // Graceful degradation
+  }
+
+  /**
+   * Get thread flow with relationships (Priority 2 - not critical)
+   * Returns basic thread data if not fully implemented
+   */
+  async getThreadFlow(threadId: string): Promise<
+    ReadonlyArray<{
+      memoryId: string;
+      content: string;
+      type: string;
+      createdAt: Date;
+      connections: readonly string[];
+    }>
+  > {
+    this.logger.warn(
+      'getThreadFlow not yet fully implemented (Priority 2 feature)'
+    );
+    return []; // Graceful degradation
   }
 }

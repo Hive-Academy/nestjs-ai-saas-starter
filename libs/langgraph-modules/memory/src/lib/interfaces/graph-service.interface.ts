@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { MemoryEntry } from './memory.interface';
 
 /**
  * Graph database service interface for memory relationship operations
@@ -76,6 +77,68 @@ export abstract class IGraphService {
   abstract runTransaction<T>(
     operations: (service: IGraphService) => Promise<T>
   ): Promise<T>;
+
+  /**
+   * Track a memory entry in the graph database
+   * Creates Thread and Memory nodes with relationships
+   */
+  abstract trackMemory(memory: MemoryEntry): Promise<void>;
+
+  /**
+   * Track multiple memory entries in batch
+   * Performance-optimized batch version of trackMemory
+   */
+  abstract trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void>;
+
+  /**
+   * Delete memories from graph with DETACH DELETE semantics
+   * Removes all relationships and the memory nodes
+   */
+  abstract deleteMemories(memoryIds: readonly string[]): Promise<number>;
+
+  /**
+   * Build word-matching relationships between memories
+   * Uses word overlap analysis to create RELATED_TO relationships
+   */
+  abstract buildWordMatchingRelationships(
+    maxRelationships: number,
+    minCommonWords: number,
+    requireApoc: boolean
+  ): Promise<number>;
+
+  /**
+   * Get comprehensive graph statistics for memories
+   */
+  abstract getMemoryGraphStats(): Promise<{
+    totalMemories: number;
+    totalThreads: number;
+    totalRelationships: number;
+    averageMemoriesPerThread: number;
+  }>;
+
+  /**
+   * Find connected memories via graph traversal
+   * Returns memory IDs connected to the given memory within specified depth
+   */
+  abstract findMemoryConnections(
+    memoryId: string,
+    depth: number,
+    relationshipLimit: number
+  ): Promise<readonly string[]>;
+
+  /**
+   * Get conversation flow for a thread
+   * Returns memories with their relationships in chronological order
+   */
+  abstract getThreadFlow(threadId: string): Promise<
+    ReadonlyArray<{
+      memoryId: string;
+      content: string;
+      type: string;
+      createdAt: Date;
+      connections: readonly string[];
+    }>
+  >;
 
   /**
    * Common validation method for node IDs

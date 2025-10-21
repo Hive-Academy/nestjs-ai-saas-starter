@@ -132,7 +132,15 @@ export class UserService {
 ### 4. Define Entities with Decorators
 
 ```typescript
-import { Neo4jEntity, Neo4jProp, Neo4jRelationship, Id, CreatedAt, Unique, ClassIndex } from '@hive-academy/nestjs-neo4j';
+import {
+  Neo4jEntity,
+  Neo4jProp,
+  Neo4jRelationship,
+  Id,
+  CreatedAt,
+  Unique,
+  ClassIndex,
+} from '@hive-academy/nestjs-neo4j';
 
 @Neo4jEntity({
   label: 'User',
@@ -648,7 +656,10 @@ export class UserRepository extends BaseRepository<User> {
 
   @CypherQuery({ cache: '15m' })
   async findActiveUsers(limit: number = 50): Promise<User[]> {
-    return this.query('MATCH (u:User {active: true}) RETURN u ORDER BY u.createdAt DESC LIMIT $limit', { limit });
+    return this.query(
+      'MATCH (u:User {active: true}) RETURN u ORDER BY u.createdAt DESC LIMIT $limit',
+      { limit }
+    );
   }
 }
 ```
@@ -700,10 +711,18 @@ export class SocialGraphRepository extends GraphRepository {
 ```typescript
 @Injectable()
 export class UserSocialService {
-  constructor(private readonly userRepo: UserRepository, private readonly socialRepo: SocialGraphRepository) {}
+  constructor(
+    private readonly userRepo: UserRepository,
+    private readonly socialRepo: SocialGraphRepository
+  ) {}
 
   async getCompleteUserProfile(userId: string): Promise<CompleteProfile> {
-    const [user, followers, following, recommendations] = await Promise.all([this.userRepo.findById(userId), this.socialRepo.getFollowers(userId), this.socialRepo.getFollowing(userId), this.socialRepo.getFollowRecommendations(userId)]);
+    const [user, followers, following, recommendations] = await Promise.all([
+      this.userRepo.findById(userId),
+      this.socialRepo.getFollowers(userId),
+      this.socialRepo.getFollowing(userId),
+      this.socialRepo.getFollowRecommendations(userId),
+    ]);
 
     return { user, followers, following, recommendations };
   }

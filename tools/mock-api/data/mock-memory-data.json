@@ -12,7 +12,7 @@
       "relatedAgents": ["agent_coordinator_001", "agent_specialist_ui"]
     },
     {
-      "id": "mem_ep_002", 
+      "id": "mem_ep_002",
       "type": "episodic",
       "content": "Successful completion of Phase 1 & 2: 3D Agent Constellation with navigation",
       "relevanceScore": 0.85,
@@ -24,7 +24,7 @@
     },
     {
       "id": "mem_ep_003",
-      "type": "episodic", 
+      "type": "episodic",
       "content": "Backend library integration issues blocking real API development",
       "relevanceScore": 0.95,
       "isActive": true,

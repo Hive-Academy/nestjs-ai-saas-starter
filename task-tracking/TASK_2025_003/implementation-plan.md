@@ -188,7 +188,9 @@ describe('processStringTokens - Fixed Implementation', () => {
     };
 
     const emittedTokens: string[] = [];
-    service.getTokenStream('exec-123', 'node-456').subscribe((update) => emittedTokens.push(update.data.content));
+    service
+      .getTokenStream('exec-123', 'node-456')
+      .subscribe((update) => emittedTokens.push(update.data.content));
 
     await service['processStringTokens'](content, config);
 
@@ -872,8 +874,12 @@ describe('Sequence Number Generation Verification', () => {
     const exec1Sequences: number[] = [];
     const exec2Sequences: number[] = [];
 
-    service.getTokenStream('exec-1').subscribe((u) => exec1Sequences.push(u.metadata.sequenceNumber));
-    service.getTokenStream('exec-2').subscribe((u) => exec2Sequences.push(u.metadata.sequenceNumber));
+    service
+      .getTokenStream('exec-1')
+      .subscribe((u) => exec1Sequences.push(u.metadata.sequenceNumber));
+    service
+      .getTokenStream('exec-2')
+      .subscribe((u) => exec2Sequences.push(u.metadata.sequenceNumber));
 
     // Emit to both executions
     service.streamToken('exec-1', 'node-1', 'token-a');

@@ -323,7 +323,9 @@ generateContent (devbrand|generate:content:post)
 
 ```typescript
 // ✅ Can filter events by node
-events.filter((e) => e.metadata.nodeId === 'devbrand|analyze:github:activity').sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+events
+  .filter((e) => e.metadata.nodeId === 'devbrand|analyze:github:activity')
+  .sort((a, b) => a.sequenceNumber - b.sequenceNumber);
 // → [0, 1, 2] - clean sequence per node
 
 // ✅ Can detect missing events per node

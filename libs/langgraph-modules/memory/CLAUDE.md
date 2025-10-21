@@ -1,5 +1,55 @@
 # Memory Module - Dual Storage Orchestration
 
+## 🚀 NEW: Phase 3 & 4 Complete - IMemoryAdapter Compliance
+
+**TASK_2025_005 Phase 3 & 4**: AgentMemoryBridgeService now fully implements IMemoryAdapter interface, providing standardized memory operations for all consuming modules (multi-agent, HITL, workflow-engine, functional-api).
+
+### Key Changes (Phase 3 & 4)
+
+1. **AgentMemoryBridgeService** implements `IMemoryAdapter` interface with 9 wrapper methods
+2. **MemoryService** refactored - removed IAgentMemoryService duplication (283 lines), now pure generic facade
+3. **MemoryModule** provides global `'IMemoryAdapter'` token via AgentMemoryBridgeService
+4. **Architecture**: Clear separation between generic facade (MemoryService) and agent-specific operations (AgentMemoryBridgeService)
+
+### IMemoryAdapter Interface Compliance
+
+AgentMemoryBridgeService implements all 9 required methods:
+
+```typescript
+// Core memory retrieval and storage
+async getAgentContext(state: AgentState): Promise<AgentMemoryContext>
+async storeAgentExecution(state: AgentState, result: Partial<AgentState>, agentId: string): Promise<void>
+async storeConversationTurn(threadId: string, humanMessage: string, aiMessage: string, metadata?: Record<string, unknown>): Promise<void>
+
+// LangGraph Store access
+getStore(collection?: string): Store
+
+// Generic search and storage
+async search(options: { query: string; threadId?: string; userId?: string; agentId?: string; limit?: number; namespace?: string[]; minRelevance?: number; }): Promise<any[]>
+async store(threadId: string, content: string, metadata?: Record<string, unknown>): Promise<string>
+async storeBatch(threadId: string, entries: Array<{ content: string; metadata?: Record<string, unknown>; }>): Promise<string[]>
+
+// User patterns and health
+async getUserPatterns(userId: string, limitDays?: number): Promise<UserMemoryPatterns>
+async isHealthy(): Promise<boolean>
+```
+
+### Dependency Injection Pattern
+
+```typescript
+// Consuming modules inject IMemoryAdapter
+@Injectable()
+export class NodeFactoryService {
+  constructor(
+    @Optional()
+    @Inject('IMemoryAdapter')
+    private readonly memoryAdapter?: IMemoryAdapter
+  ) {}
+
+  // Memory adapter automatically available if MemoryModule imported
+}
+```
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Evidence-Based Documentation**: The following integration patterns are verified through direct source code inspection across all modules that import from `@hive-academy/langgraph-memory`.
@@ -28,7 +78,11 @@ export class NodeFactoryService {
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
-  private async enhanceAgentWithMemory(agent: AgentDefinition, state: AgentState, agentExecution: () => Promise<Partial<AgentState>>): Promise<Partial<AgentState>> {
+  private async enhanceAgentWithMemory(
+    agent: AgentDefinition,
+    state: AgentState,
+    agentExecution: () => Promise<Partial<AgentState>>
+  ): Promise<Partial<AgentState>> {
     // 1. Retrieve memory context BEFORE agent execution
     if (this.memoryAdapter) {
       const memoryContext = await this.memoryAdapter.getAgentContext(state);
@@ -67,7 +121,10 @@ export class HitlMemoryLearningService implements IHitlMemoryLearningService {
     private readonly memoryAdapter: IMemoryAdapter
   ) {}
 
-  async learnFromHumanFeedback(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void> {
+  async learnFromHumanFeedback(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     const learningThreadId = `hitl-learning-${request.executionId}`;
@@ -96,9 +153,15 @@ export class WorkflowGraphBuilderService {
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
-  async buildFromDefinition<TState extends WorkflowState>(definition: WorkflowDefinition<TState>, options: GraphBuilderOptions = {}): Promise<StateGraph<TState>> {
+  async buildFromDefinition<TState extends WorkflowState>(
+    definition: WorkflowDefinition<TState>,
+    options: GraphBuilderOptions = {}
+  ): Promise<StateGraph<TState>> {
     // Apply optimization patterns if memory adapter is available
-    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(definition, options);
+    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(
+      definition,
+      options
+    );
     // Memory-aware graph compilation...
   }
 }
@@ -115,7 +178,10 @@ export class FunctionalWorkflowService {
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
-  async executeWorkflow<TState>(workflowName: string, options: WorkflowExecutionOptions = {}): Promise<WorkflowExecutionResult<TState>> {
+  async executeWorkflow<TState>(
+    workflowName: string,
+    options: WorkflowExecutionOptions = {}
+  ): Promise<WorkflowExecutionResult<TState>> {
     // Memory adapter optionally enhances workflow execution
     // with context retrieval and result storage
   }
@@ -142,32 +208,76 @@ export { MemoryGraphService } from '@hive-academy/langgraph-memory'; // Graph op
 
 ```typescript
 // Core Memory Types
-export type { MemoryEntry, MemoryMetadata, MemorySearchOptions, MemorySummarizationOptions, MemoryConfig, MemoryRetentionPolicy, MemoryStats, MemoryServiceInterface, MemoryOperationMetrics, SerializableValue, SerializableArray, SerializableObject, MetadataValue } from '@hive-academy/langgraph-memory';
+export type {
+  MemoryEntry,
+  MemoryMetadata,
+  MemorySearchOptions,
+  MemorySummarizationOptions,
+  MemoryConfig,
+  MemoryRetentionPolicy,
+  MemoryStats,
+  MemoryServiceInterface,
+  MemoryOperationMetrics,
+  SerializableValue,
+  SerializableArray,
+  SerializableObject,
+  MetadataValue,
+} from '@hive-academy/langgraph-memory';
 
 // Configuration Types
-export type { MemoryModuleOptions, MemoryModuleAsyncOptions, MemoryOptionsFactory } from '@hive-academy/langgraph-memory';
+export type {
+  MemoryModuleOptions,
+  MemoryModuleAsyncOptions,
+  MemoryOptionsFactory,
+} from '@hive-academy/langgraph-memory';
 
 // Adapter Pattern Interfaces
 export { IVectorService } from '@hive-academy/langgraph-memory';
 export { IGraphService } from '@hive-academy/langgraph-memory';
 
 // Vector Service Types
-export type { VectorStoreData, VectorSearchQuery, VectorSearchResult, VectorStats, VectorGetOptions, VectorGetResult } from '@hive-academy/langgraph-memory';
+export type {
+  VectorStoreData,
+  VectorSearchQuery,
+  VectorSearchResult,
+  VectorStats,
+  VectorGetOptions,
+  VectorGetResult,
+} from '@hive-academy/langgraph-memory';
 
 // Graph Service Types
-export type { GraphNodeData, GraphRelationshipData, TraversalSpec, GraphTraversalResult, GraphQueryResult, GraphStats, GraphOperation, GraphBatchResult, GraphFindCriteria, GraphNode, GraphRelationship, GraphPath } from '@hive-academy/langgraph-memory';
+export type {
+  GraphNodeData,
+  GraphRelationshipData,
+  TraversalSpec,
+  GraphTraversalResult,
+  GraphQueryResult,
+  GraphStats,
+  GraphOperation,
+  GraphBatchResult,
+  GraphFindCriteria,
+  GraphNode,
+  GraphRelationship,
+  GraphPath,
+} from '@hive-academy/langgraph-memory';
 ```
 
-### Enhanced Memory Adapters (New)
+### Memory Adapter Interfaces
 
 ```typescript
-// Memory Adapter Extensions
-export { ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory } from '@hive-academy/langgraph-memory';
-
-// Core Re-exports
+// Core Memory Adapter Interface (from langgraph-core)
 export { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-memory';
 
-export type { AgentState, AgentMemoryContext, UserMemoryPatterns, Store } from '@hive-academy/langgraph-memory';
+export type {
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+  MemorySearchOptions as CoreMemorySearchOptions,
+} from '@hive-academy/langgraph-memory';
+
+// Implementation: Use AgentMemoryBridgeService (exported from this module)
+// AgentMemoryBridgeService implements IMemoryAdapter and is provided via MemoryModule
 ```
 
 ### LangGraph Store Integration (2025 Compliance)
@@ -176,34 +286,75 @@ export type { AgentState, AgentMemoryContext, UserMemoryPatterns, Store } from '
 // LangGraph Store Interface
 export type { Item, Store as MemoryStore } from '@hive-academy/langgraph-memory';
 
-export { ChromaLangGraphStore, LangGraphStoreFactory, NamespaceUtils, isValidItem } from '@hive-academy/langgraph-memory';
+export {
+  ChromaLangGraphStore,
+  LangGraphStoreFactory,
+  NamespaceUtils,
+  isValidItem,
+} from '@hive-academy/langgraph-memory';
 ```
 
 ### Agent Integration Types
 
 ```typescript
 // Agent Memory Interfaces
-export type { IAgentMemoryService, AgentMemory, AgentMemoryConfig, AgentMemoryStats, IAgentMemoryBridge } from '@hive-academy/langgraph-memory';
+export type {
+  IAgentMemoryService,
+  AgentMemory,
+  AgentMemoryConfig,
+  AgentMemoryStats,
+  IAgentMemoryBridge,
+} from '@hive-academy/langgraph-memory';
 ```
 
 ### Error Handling
 
 ```typescript
 // Memory-specific Error Types
-export { MemoryException, MemoryNotFoundException, MemoryStorageException, MemoryValidationException, MemoryQuotaExceededException, MemoryConfigurationException, extractErrorMessage, wrapMemoryError } from '@hive-academy/langgraph-memory';
+export {
+  MemoryException,
+  MemoryNotFoundException,
+  MemoryStorageException,
+  MemoryValidationException,
+  MemoryQuotaExceededException,
+  MemoryConfigurationException,
+  extractErrorMessage,
+  wrapMemoryError,
+} from '@hive-academy/langgraph-memory';
 
 // Vector Service Errors
-export { InvalidCollectionError, InvalidInputError, VectorOperationError } from '@hive-academy/langgraph-memory';
+export {
+  InvalidCollectionError,
+  InvalidInputError,
+  VectorOperationError,
+} from '@hive-academy/langgraph-memory';
 
 // Graph Service Errors
-export { InvalidNodeError, InvalidInputError as GraphInvalidInputError, SecurityError, GraphOperationError, TransactionError } from '@hive-academy/langgraph-memory';
+export {
+  InvalidNodeError,
+  InvalidInputError as GraphInvalidInputError,
+  SecurityError,
+  GraphOperationError,
+  TransactionError,
+} from '@hive-academy/langgraph-memory';
 ```
 
 ### Constants and Configuration
 
 ```typescript
 // Configuration Constants
-export { MEMORY_CONFIG, MEMORY_SERVICE, DEFAULT_MEMORY_CONFIG, MEMORY_TYPES, EVICTION_STRATEGIES, SUMMARIZATION_STRATEGIES, DEFAULT_AGENTIC_CONFIG, DEFAULT_RAG_CONFIG, DEFAULT_AGENT_MEMORY_CONFIG, DEFAULT_STORE_CONFIG } from '@hive-academy/langgraph-memory';
+export {
+  MEMORY_CONFIG,
+  MEMORY_SERVICE,
+  DEFAULT_MEMORY_CONFIG,
+  MEMORY_TYPES,
+  EVICTION_STRATEGIES,
+  SUMMARIZATION_STRATEGIES,
+  DEFAULT_AGENTIC_CONFIG,
+  DEFAULT_RAG_CONFIG,
+  DEFAULT_AGENT_MEMORY_CONFIG,
+  DEFAULT_STORE_CONFIG,
+} from '@hive-academy/langgraph-memory';
 
 // Validation Schemas
 export { MemoryEntrySchema, MemorySearchOptionsSchema } from '@hive-academy/langgraph-memory';
@@ -244,7 +395,12 @@ npm install @hive-academy/langgraph-memory
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { MemoryModule, MemoryModuleOptions, DEFAULT_MEMORY_CONFIG, EVICTION_STRATEGIES } from '@hive-academy/langgraph-memory';
+import {
+  MemoryModule,
+  MemoryModuleOptions,
+  DEFAULT_MEMORY_CONFIG,
+  EVICTION_STRATEGIES,
+} from '@hive-academy/langgraph-memory';
 
 @Module({
   imports: [
@@ -332,7 +488,12 @@ export class Neo4jAdapter implements IGraphService {
 ### Basic Memory Operations
 
 ```typescript
-import { MemoryService, MemoryEntry, MemorySearchOptions, MemoryMetadata } from '@hive-academy/langgraph-memory';
+import {
+  MemoryService,
+  MemoryEntry,
+  MemorySearchOptions,
+  MemoryMetadata,
+} from '@hive-academy/langgraph-memory';
 
 @Injectable()
 export class ApplicationMemoryService {
@@ -465,12 +626,18 @@ export class ApprovalWorkflowService {
 **VERIFIED INTEGRATION**: Workflow-engine optionally uses memory for workflow enhancement
 
 ```typescript
-import { WorkflowExecutionService, WorkflowDefinition } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowExecutionService,
+  WorkflowDefinition,
+} from '@hive-academy/langgraph-workflow-engine';
 import { IMemoryAdapter } from '@hive-academy/langgraph-core';
 
 @Injectable()
 export class MemoryAwareWorkflowService {
-  constructor(private readonly workflowExecution: WorkflowExecutionService, private readonly memory: MemoryService) {}
+  constructor(
+    private readonly workflowExecution: WorkflowExecutionService,
+    private readonly memory: MemoryService
+  ) {}
 
   async createMemoryAwareWorkflow(): Promise<WorkflowDefinition> {
     return {
@@ -624,7 +791,11 @@ export class ProductionEcosystemModule {}
 // Real usage: All modules automatically benefit from shared memory
 @Injectable()
 export class ProductionWorkflowService {
-  constructor(private readonly multiAgent: MultiAgentCoordinatorService, private readonly hitl: HumanApprovalService, private readonly functionalWorkflow: FunctionalWorkflowService) {}
+  constructor(
+    private readonly multiAgent: MultiAgentCoordinatorService,
+    private readonly hitl: HumanApprovalService,
+    private readonly functionalWorkflow: FunctionalWorkflowService
+  ) {}
 
   async executeIntelligentWorkflow(input: any): Promise<any> {
     // 1. Multi-agent automatically uses memory for context
@@ -640,96 +811,39 @@ export class ProductionWorkflowService {
     }
 
     // 3. Functional workflow automatically enhanced with memory
-    return await this.functionalWorkflow.executeWorkflow('MemoryAwareWorkflow', { initialState: { agentResult } });
+    return await this.functionalWorkflow.executeWorkflow('MemoryAwareWorkflow', {
+      initialState: { agentResult },
+    });
   }
 }
 ```
 
-### Previous Example (Not Accurate)
+### Deprecated Example (Removed Classes)
 
 ```typescript
-// ❌ OLD EXAMPLE (NOT VERIFIED): Multi-agent using MemoryService directly
-import { MultiAgentCoordinatorService, AgentDefinition } from '@hive-academy/langgraph-multi-agent';
-import { MemoryService, ExtendedMemoryAdapter, MemoryEntry, MemorySearchOptions } from '@hive-academy/langgraph-memory';
-
-@Injectable()
-export class SharedMemoryAgentSystem {
-  constructor(private readonly multiAgent: MultiAgentCoordinatorService, private readonly sharedMemory: MemoryService) {}
-
-  async createMemoryAwareAgentNetwork(): Promise<AgentDefinition[]> {
-    const agents: AgentDefinition[] = [
-      {
-        id: 'analyzer-agent',
-        type: 'analyzer',
-        capabilities: ['text-analysis', 'pattern-recognition'],
-        memoryConfig: {
-          sharedMemory: true,
-          privateMemory: false,
-        },
-      },
-      {
-        id: 'synthesizer-agent',
-        type: 'synthesizer',
-        capabilities: ['content-generation', 'summarization'],
-        memoryConfig: {
-          sharedMemory: true,
-          privateMemory: true,
-        },
-      },
-    ];
-
-    const sharedAdapter = new ExtendedMemoryAdapter({
-      enableSharedAccess: true,
-      enableCrossAgentLearning: true,
-      memoryService: this.sharedMemory,
-    });
-
-    await this.multiAgent.registerAgents(agents, {
-      sharedMemoryAdapter: sharedAdapter,
-      enableCollectiveIntelligence: true,
-    });
-
-    return agents;
-  }
-
-  async coordinateWithSharedMemory(task: string): Promise<any> {
-    const contextSearch: MemorySearchOptions = {
-      query: task,
-      includeMetadata: true,
-      crossAgentMemory: true,
-      limit: 20,
-    };
-
-    const collectiveContext = await this.sharedMemory.search(contextSearch);
-
-    const result = await this.multiAgent.coordinate({
-      task,
-      context: collectiveContext,
-      enableMemorySharing: true,
-    });
-
-    const coordinationEntry: MemoryEntry = {
-      content: JSON.stringify(result),
-      metadata: {
-        type: 'agent-coordination',
-        importance: 0.9,
-        tags: ['multi-agent', 'coordination'],
-        agentsInvolved: result.agentsUsed,
-        timestamp: new Date(),
-      },
-    };
-
-    await this.sharedMemory.storeEntry(coordinationEntry);
-
-    return result;
-  }
-}
+// ❌ DEPRECATED: ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory removed
+// These concrete implementations were architectural violations (concrete code in interface file)
+//
+// ✅ CORRECT APPROACH: Use IMemoryAdapter interface with AgentMemoryBridgeService
+// AgentMemoryBridgeService is automatically provided by MemoryModule via 'IMemoryAdapter' token
+//
+// Consuming modules should inject IMemoryAdapter:
+// constructor(
+//   @Optional()
+//   @Inject('IMemoryAdapter')
+//   private readonly memoryAdapter?: IMemoryAdapter
+// ) {}
 ```
 
 ### LangGraph Store Integration (2025 Compliance)
 
 ```typescript
-import { ChromaLangGraphStore, Item, MemoryStore, isValidItem } from '@hive-academy/langgraph-memory';
+import {
+  ChromaLangGraphStore,
+  Item,
+  MemoryStore,
+  isValidItem,
+} from '@hive-academy/langgraph-memory';
 
 @Injectable()
 export class LangGraphStoreService {
@@ -753,7 +867,12 @@ export class LangGraphStoreService {
 
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
-import { MemoryModule, MemoryService, MemoryEntry, MemorySearchOptions } from '@hive-academy/langgraph-memory';
+import {
+  MemoryModule,
+  MemoryService,
+  MemoryEntry,
+  MemorySearchOptions,
+} from '@hive-academy/langgraph-memory';
 
 describe('Memory Module Integration', () => {
   let memoryService: MemoryService;

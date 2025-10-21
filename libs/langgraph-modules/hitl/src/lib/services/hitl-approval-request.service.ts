@@ -7,8 +7,14 @@ import { ApprovalTimeoutService } from './approval-timeout.service';
 import { ApprovalStreamingService } from './approval-streaming.service';
 import { HitlCheckpointService } from './hitl-checkpoint.service';
 import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
-import { EscalationStrategy, RequiresApprovalOptions } from '../decorators/approval.decorator';
-import { ApprovalWorkflowState, HumanApprovalRequest } from './approval-workflow.types';
+import {
+  EscalationStrategy,
+  RequiresApprovalOptions,
+} from '../decorators/approval.decorator';
+import {
+  ApprovalWorkflowState,
+  HumanApprovalRequest,
+} from './approval-workflow.types';
 
 // Storage interface for HITL operations
 interface IHitlStorageService {
@@ -126,7 +132,10 @@ export class HitlApprovalRequestService {
     }
 
     // Save checkpoint after approval is created via checkpoint service
-    await this.hitlCheckpointService.saveApprovalState(request, 'approval_created');
+    await this.hitlCheckpointService.saveApprovalState(
+      request,
+      'approval_created'
+    );
 
     this.logger.log(
       `Approval request ${requestId} created for execution ${executionId}`
@@ -160,10 +169,9 @@ export class HitlApprovalRequestService {
             }
           );
 
-        const currentLevelObj = approvalRequest.chain[approvalRequest.currentLevel];
-        request.approvers = currentLevelObj.approvers.map(
-          (a) => a.id
-        );
+        const currentLevelObj =
+          approvalRequest.chain[approvalRequest.currentLevel];
+        request.approvers = currentLevelObj.approvers.map((a) => a.id);
 
         // Save chain progress checkpoint via checkpoint service
         await this.hitlCheckpointService.saveChainProgress(

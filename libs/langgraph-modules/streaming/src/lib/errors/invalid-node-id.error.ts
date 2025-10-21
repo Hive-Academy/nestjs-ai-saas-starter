@@ -7,15 +7,11 @@ export class InvalidNodeIdError extends Error {
   readonly normalized: string;
   readonly validation: any;
 
-  constructor(
-    raw: string,
-    normalized: string,
-    validation: any
-  ) {
+  constructor(raw: string, normalized: string, validation: any) {
     super(
-      `Invalid or non-canonical nodeId '${raw}'. Expected canonical form '${normalized}'. Errors: ${validation.errors
-        ?.map((e: any) => e.code)
-        ?.join(', ') || 'unknown'}`
+      `Invalid or non-canonical nodeId '${raw}'. Expected canonical form '${normalized}'. Errors: ${
+        validation.errors?.map((e: any) => e.code)?.join(', ') || 'unknown'
+      }`
     );
     this.name = 'InvalidNodeIdError';
     this.raw = raw;

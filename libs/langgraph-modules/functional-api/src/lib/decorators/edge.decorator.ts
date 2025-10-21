@@ -73,14 +73,26 @@ export interface EdgeMetadata extends EdgeOptions {
  * }
  * ```
  */
-export function Edge(from: string, to: string, options?: EdgeOptions): MethodDecorator;
-export function Edge(from: string, to: (state: any) => string | null, options?: EdgeOptions): MethodDecorator;
+export function Edge(
+  from: string,
+  to: string,
+  options?: EdgeOptions
+): MethodDecorator;
+export function Edge(
+  from: string,
+  to: (state: any) => string | null,
+  options?: EdgeOptions
+): MethodDecorator;
 export function Edge(
   from: string,
   to: string | ((state: any) => string | null),
   options: EdgeOptions = {}
 ): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor?: PropertyDescriptor) => {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor?: PropertyDescriptor
+  ) => {
     // 🔒 VALIDATION: Enforce node-based pattern
     // @Edge is mutually exclusive with @Entrypoint and @Task
     validateDecoratorPattern(
@@ -99,7 +111,11 @@ export function Edge(
     // Create edge metadata
     const edgeMetadata: EdgeMetadata = {
       ...options,
-      id: options.id || `${from}_to_${typeof to === 'string' ? to : 'conditional'}_${String(propertyKey)}`,
+      id:
+        options.id ||
+        `${from}_to_${typeof to === 'string' ? to : 'conditional'}_${String(
+          propertyKey
+        )}`,
       from,
       to,
       methodName: String(propertyKey),
@@ -108,38 +124,49 @@ export function Edge(
 
     // If method accepts state parameter and 'to' is a string, use method as condition
     if (isFunctionalCondition && typeof to === 'string' && !options.condition) {
-      edgeMetadata.condition = function(state: any): boolean {
+      edgeMetadata.condition = function (state: any): boolean {
         try {
           const result = originalMethod.call(this, state);
           return Boolean(result);
         } catch (error) {
-          console.warn(`Edge condition method ${String(propertyKey)} failed:`, error);
+          console.warn(
+            `Edge condition method ${String(propertyKey)} failed:`,
+            error
+          );
           return false;
         }
       };
     }
 
     // Get existing edges or initialize
-    const existingEdges = Reflect.getMetadata(WORKFLOW_EDGES_KEY, target.constructor) || [];
+    const existingEdges =
+      Reflect.getMetadata(WORKFLOW_EDGES_KEY, target.constructor) || [];
 
     // Add this edge
     existingEdges.push(edgeMetadata);
 
     // Store updated edges
-    Reflect.defineMetadata(WORKFLOW_EDGES_KEY, existingEdges, target.constructor);
+    Reflect.defineMetadata(
+      WORKFLOW_EDGES_KEY,
+      existingEdges,
+      target.constructor
+    );
 
     // Also store on the method itself for direct access
     Reflect.defineMetadata('edge:metadata', edgeMetadata, target, propertyKey);
 
     // Replace method to return metadata when called without arguments
     if (descriptor) {
-      descriptor.value = function(this: any, state?: any) {
+      descriptor.value = function (this: any, state?: any) {
         if (state !== undefined && isFunctionalCondition) {
           // Called as condition function with state
           try {
             return Boolean(originalMethod.call(this, state));
           } catch (error) {
-            console.warn(`Edge condition method ${String(propertyKey)} failed:`, error);
+            console.warn(
+              `Edge condition method ${String(propertyKey)} failed:`,
+              error
+            );
             return false;
           }
         }
@@ -168,11 +195,11 @@ export interface ConditionalRouteOptions {
 
 /**
  * Decorator to mark a method as a conditional route
- * 
+ *
  * @example
  * ```typescript
  * @Edge('process', 'approve')
- * @ConditionalRoute({ 
+ * @ConditionalRoute({
  *   minConfidence: 0.8,
  *   requiredFields: ['analysis', 'risk_assessment']
  * })
@@ -183,22 +210,34 @@ export interface ConditionalRouteOptions {
  * }
  * ```
  */
-export function ConditionalRoute(options: ConditionalRouteOptions): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+export function ConditionalRoute(
+  options: ConditionalRouteOptions
+): MethodDecorator {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     // Store conditional route metadata
     Reflect.defineMetadata('conditional:route', options, target, propertyKey);
-    
+
     // Wrap the method to add validation
     const originalMethod = descriptor.value;
-    descriptor.value = function(this: any, state: any): any {
+    descriptor.value = function (this: any, state: any): any {
       // Check confidence
-      if (options.minConfidence !== undefined && state.confidence < options.minConfidence) {
+      if (
+        options.minConfidence !== undefined &&
+        state.confidence < options.minConfidence
+      ) {
         return false;
       }
-      if (options.maxConfidence !== undefined && state.confidence > options.maxConfidence) {
+      if (
+        options.maxConfidence !== undefined &&
+        state.confidence > options.maxConfidence
+      ) {
         return false;
       }
-      
+
       // Check required fields
       if (options.requiredFields) {
         for (const field of options.requiredFields) {
@@ -207,16 +246,16 @@ export function ConditionalRoute(options: ConditionalRouteOptions): MethodDecora
           }
         }
       }
-      
+
       // Custom validation
       if (options.validate && !options.validate(state)) {
         return false;
       }
-      
+
       // Call original method
       return originalMethod.call(this, state);
     };
-    
+
     return descriptor;
   };
 }
@@ -231,7 +270,10 @@ export function getWorkflowEdges(target: any): EdgeMetadata[] {
 /**
  * Get edge metadata from a method
  */
-export function getEdgeMetadata(target: any, propertyKey: string | symbol): EdgeMetadata | undefined {
+export function getEdgeMetadata(
+  target: any,
+  propertyKey: string | symbol
+): EdgeMetadata | undefined {
   return Reflect.getMetadata('edge:metadata', target, propertyKey);
 }
 
@@ -258,7 +300,9 @@ export function createConditionalEdge(
       if (typeof result === 'string') {
         return routes[result] || 'end';
       }
-      return result ? (routes.true || routes.approved || 'end') : (routes.false || routes.rejected || 'end');
+      return result
+        ? routes.true || routes.approved || 'end'
+        : routes.false || routes.rejected || 'end';
     },
     type: 'conditional',
   };
@@ -266,7 +310,7 @@ export function createConditionalEdge(
 
 /**
  * Conditional edge decorator for complex routing logic
- * 
+ *
  * @example
  * ```typescript
  * @ConditionalEdge('analyze', {
@@ -287,15 +331,21 @@ export function ConditionalEdge(
   routes: Record<string, string>,
   options: EdgeOptions & { default?: string } = {}
 ): MethodDecorator {
-  return (target: any, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) => {
     const originalMethod = descriptor.value;
-    
+
     // Create conditional routing function
     const conditionalRouting = (state: any): string | null => {
       const result = originalMethod.call(target, state);
-      return result && routes[result] ? routes[result] : options.default || null;
+      return result && routes[result]
+        ? routes[result]
+        : options.default || null;
     };
-    
+
     // Create edge metadata with conditional routing
     const edgeMetadata: EdgeMetadata = {
       ...options,
@@ -304,23 +354,33 @@ export function ConditionalEdge(
       to: conditionalRouting,
       methodName: String(propertyKey),
     };
-    
+
     // Get existing edges or initialize
-    const existingEdges = Reflect.getMetadata(WORKFLOW_EDGES_KEY, target.constructor) || [];
-    
+    const existingEdges =
+      Reflect.getMetadata(WORKFLOW_EDGES_KEY, target.constructor) || [];
+
     // Add this edge
     existingEdges.push(edgeMetadata);
-    
+
     // Store updated edges
-    Reflect.defineMetadata(WORKFLOW_EDGES_KEY, existingEdges, target.constructor);
-    
+    Reflect.defineMetadata(
+      WORKFLOW_EDGES_KEY,
+      existingEdges,
+      target.constructor
+    );
+
     // Store routing metadata for introspection
-    Reflect.defineMetadata('edge:metadata', {
-      ...edgeMetadata,
-      routes,
-      conditionMethod: propertyKey
-    }, target, propertyKey);
-    
+    Reflect.defineMetadata(
+      'edge:metadata',
+      {
+        ...edgeMetadata,
+        routes,
+        conditionMethod: propertyKey,
+      },
+      target,
+      propertyKey
+    );
+
     return descriptor;
   };
 }
@@ -340,22 +400,28 @@ export function ConfidenceRoute(
 ): MethodDecorator {
   const routingFunction = (state: any): string | null => {
     const confidence = state.confidence || 0;
-    
-    if (options.highConfidence && confidence >= options.highConfidence.threshold) {
+
+    if (
+      options.highConfidence &&
+      confidence >= options.highConfidence.threshold
+    ) {
       return options.highConfidence.target;
     }
-    
-    if (options.mediumConfidence && confidence >= options.mediumConfidence.threshold) {
+
+    if (
+      options.mediumConfidence &&
+      confidence >= options.mediumConfidence.threshold
+    ) {
       return options.mediumConfidence.target;
     }
-    
+
     if (options.lowConfidence) {
       return options.lowConfidence.target;
     }
-    
+
     return options.default || null;
   };
-  
+
   return Edge(from, routingFunction, {
     ...options,
     metadata: {
@@ -363,35 +429,43 @@ export function ConfidenceRoute(
       type: 'confidence_routing',
       confidenceThresholds: {
         high: options.highConfidence?.threshold,
-        medium: options.mediumConfidence?.threshold
-      }
-    }
+        medium: options.mediumConfidence?.threshold,
+      },
+    },
   });
 }
 
 /**
  * Special decorator for default fallback edges
  */
-export function FallbackEdge(from: string, to: string, options?: EdgeOptions): MethodDecorator {
+export function FallbackEdge(
+  from: string,
+  to: string,
+  options?: EdgeOptions
+): MethodDecorator {
   return Edge(from, to, {
     ...options,
     priority: -1, // Lower priority than other edges
     metadata: {
       ...options?.metadata,
-      type: 'fallback'
-    }
+      type: 'fallback',
+    },
   });
 }
 
 /**
  * Special decorator for error handling edges
  */
-export function ErrorEdge(from: string, to = 'error_handler', options?: EdgeOptions): MethodDecorator {
-  return Edge(from, (state: any) => state.error ? to : null, {
+export function ErrorEdge(
+  from: string,
+  to = 'error_handler',
+  options?: EdgeOptions
+): MethodDecorator {
+  return Edge(from, (state: any) => (state.error ? to : null), {
     ...options,
     metadata: {
       ...options?.metadata,
-      type: 'error_handling'
-    }
+      type: 'error_handling',
+    },
   });
 }

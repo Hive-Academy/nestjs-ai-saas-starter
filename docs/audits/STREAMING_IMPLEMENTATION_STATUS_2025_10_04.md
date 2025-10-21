@@ -267,7 +267,11 @@ export class EventStreamProcessorService {
   private readonly aggregators = new Map<string, Subject<any>>();
 
   // ✅ REAL: Event batching with RxJS (lines 42-62)
-  processBatch(events: StreamUpdate[], batchSize = 10, debounceMs = 100): Observable<StreamUpdate[]> {
+  processBatch(
+    events: StreamUpdate[],
+    batchSize = 10,
+    debounceMs = 100
+  ): Observable<StreamUpdate[]> {
     const subject = new Subject<StreamUpdate>();
 
     events.forEach((event) => subject.next(event));
@@ -400,7 +404,9 @@ export class StreamingWebSocketService implements IInitializableService {
     const executionId = update.metadata?.executionId;
     if (!executionId) return;
 
-    const targetConnections = Array.from(this.connections.values()).filter((conn) => conn.subscriptions.executionIds.has(executionId));
+    const targetConnections = Array.from(this.connections.values()).filter((conn) =>
+      conn.subscriptions.executionIds.has(executionId)
+    );
 
     targetConnections.forEach((connection) => {
       connection.socket.emit('stream_update', {

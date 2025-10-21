@@ -20,7 +20,12 @@ npm install @hive-academy/langgraph-core
 ## Quick Start
 
 ```typescript
-import { WorkflowState, WorkflowDefinition, WorkflowStateAnnotation, createCustomStateAnnotation } from '@hive-academy/langgraph-core';
+import {
+  WorkflowState,
+  WorkflowDefinition,
+  WorkflowStateAnnotation,
+  createCustomStateAnnotation,
+} from '@hive-academy/langgraph-core';
 
 // Define your workflow state
 interface MyWorkflowState extends WorkflowState {
@@ -64,13 +69,35 @@ const workflow: WorkflowDefinition<MyWorkflowState> = {
 
 ```typescript
 // Primary workflow interfaces
-export type { WorkflowState, WorkflowDefinition, WorkflowNode, WorkflowEdge, WorkflowExecutionError, WorkflowMetadata, Command, ConditionalRouting, HumanFeedback } from '@hive-academy/langgraph-core';
+export type {
+  WorkflowState,
+  WorkflowDefinition,
+  WorkflowNode,
+  WorkflowEdge,
+  WorkflowExecutionError,
+  WorkflowMetadata,
+  Command,
+  ConditionalRouting,
+  HumanFeedback,
+} from '@hive-academy/langgraph-core';
 
 // State management interfaces
-export type { BaseWorkflowState, StateManager, StateTransformer, StateValidator, WorkflowError, WorkflowTimestamps } from '@hive-academy/langgraph-core';
+export type {
+  BaseWorkflowState,
+  StateManager,
+  StateTransformer,
+  StateValidator,
+  WorkflowError,
+  WorkflowTimestamps,
+} from '@hive-academy/langgraph-core';
 
 // Configuration interfaces
-export type { LangGraphModuleOptions, LangGraphModuleAsyncOptions, WorkflowNodeConfig, WorkflowEdgeConfig } from '@hive-academy/langgraph-core';
+export type {
+  LangGraphModuleOptions,
+  LangGraphModuleAsyncOptions,
+  WorkflowNodeConfig,
+  WorkflowEdgeConfig,
+} from '@hive-academy/langgraph-core';
 ```
 
 ### Runtime Exports
@@ -86,7 +113,13 @@ export { isWorkflow, generateNodeId, generateExecutionId } from '@hive-academy/l
 export { CommandType } from '@hive-academy/langgraph-core';
 
 // Integration adapters (NoOp implementations)
-export { NoOpCheckpointAdapter, NoOpStreamingService, ICheckpointAdapter, IStreamingService, IMemoryAdapter } from '@hive-academy/langgraph-core';
+export {
+  NoOpCheckpointAdapter,
+  NoOpStreamingService,
+  ICheckpointAdapter,
+  IStreamingService,
+  IMemoryAdapter,
+} from '@hive-academy/langgraph-core';
 ```
 
 ## Key Interfaces
@@ -219,7 +252,11 @@ The core module provides abstract interfaces and NoOp implementations for option
 ### Checkpoint Integration
 
 ```typescript
-import { ICheckpointAdapter, NoOpCheckpointAdapter, createCheckpointIntegration } from '@hive-academy/langgraph-core';
+import {
+  ICheckpointAdapter,
+  NoOpCheckpointAdapter,
+  createCheckpointIntegration,
+} from '@hive-academy/langgraph-core';
 
 // Use NoOp when checkpointing is disabled
 const adapter = new NoOpCheckpointAdapter();
@@ -237,7 +274,11 @@ const integration = createCheckpointIntegration({
 ### Streaming Integration
 
 ```typescript
-import { IStreamingService, NoOpStreamingService, StreamEventType } from '@hive-academy/langgraph-core';
+import {
+  IStreamingService,
+  NoOpStreamingService,
+  StreamEventType,
+} from '@hive-academy/langgraph-core';
 
 // NoOp implementation when streaming is disabled
 const streamingService = new NoOpStreamingService();

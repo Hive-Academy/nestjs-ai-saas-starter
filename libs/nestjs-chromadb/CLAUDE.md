@@ -106,7 +106,15 @@ The module provides a **TypeORM-style repository pattern** with explicit constru
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { BaseDocument, BaseChromaEntity, ChromaEntity, ChromaId, ChromaProp, ChromaDBRepository, ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import {
+  BaseDocument,
+  BaseChromaEntity,
+  ChromaEntity,
+  ChromaId,
+  ChromaProp,
+  ChromaDBRepository,
+  ChromaDBService,
+} from '@hive-academy/nestjs-chromadb';
 
 // ============================================
 // Step 1: Define Entity (Decorator-Based Class)
@@ -791,7 +799,11 @@ ChromaDBModule.forRoot({
     enableRegistry: true,
     enableResourceLimits: true,
     enableCrossTenantAdmin: true,
-    securityPolicies: [TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE, TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE, TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION],
+    securityPolicies: [
+      TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE,
+      TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE,
+      TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION,
+    ],
     lifecycleHooks: {
       onTenantCreate: async (tenant) => {
         console.log(`New tenant created: ${tenant.tenantId}`);
@@ -864,7 +876,8 @@ ChromaDBModule.forRootAsync({
             },
             enableRegistry: true,
             enableResourceLimits: true,
-            defaultResourceLimits: TENANT_CONSTANTS.RESOURCE_LIMITS[configService.get('DEFAULT_TENANT_TIER', 'pro')],
+            defaultResourceLimits:
+              TENANT_CONSTANTS.RESOURCE_LIMITS[configService.get('DEFAULT_TENANT_TIER', 'pro')],
           }
         : undefined,
       defaultCollection: 'documents',
@@ -1008,7 +1021,11 @@ Embedding utilities throw on failure; wrap bulk operations in try/catch when gra
 ### Metadata Management
 
 ```typescript
-import { sanitizeMetadata, validateMetadata, validateMetadataSchema } from '@hive-academy/nestjs-chromadb';
+import {
+  sanitizeMetadata,
+  validateMetadata,
+  validateMetadataSchema,
+} from '@hive-academy/nestjs-chromadb';
 
 // Sanitize metadata for ChromaDB compatibility
 const sanitized = sanitizeMetadata({
@@ -1028,11 +1045,19 @@ const validation = validateMetadataSchema(metadata, schema);
 ## Dependency Injection
 
 ```typescript
-import { InjectChromaDB, InjectChromaDBClient, InjectCollection } from '@hive-academy/nestjs-chromadb';
+import {
+  InjectChromaDB,
+  InjectChromaDBClient,
+  InjectCollection,
+} from '@hive-academy/nestjs-chromadb';
 
 @Injectable()
 export class DocumentService {
-  constructor(@InjectChromaDB() private chromaDB: ChromaDBService, @InjectChromaDBClient() private client: ChromaApi, @InjectCollection('documents') private collection: Collection) {}
+  constructor(
+    @InjectChromaDB() private chromaDB: ChromaDBService,
+    @InjectChromaDBClient() private client: ChromaApi,
+    @InjectCollection('documents') private collection: Collection
+  ) {}
 }
 ```
 
@@ -1112,7 +1137,11 @@ export class HealthService {
 ## Error Handling
 
 ```typescript
-import { ChromaDBConnectionError, ChromaDBCollectionNotFoundError, ChromaDBEmbeddingNotConfiguredError } from '@hive-academy/nestjs-chromadb';
+import {
+  ChromaDBConnectionError,
+  ChromaDBCollectionNotFoundError,
+  ChromaDBEmbeddingNotConfiguredError,
+} from '@hive-academy/nestjs-chromadb';
 
 try {
   await this.chromaDB.addDocuments('collection', [document]);
@@ -1211,7 +1240,11 @@ for (let i = 0; i < documents.length; i += chunkSize) {
 Monitor vector operations with comprehensive metrics:
 
 ```typescript
-import { getPerformanceStatistics, getCacheStatistics, getRetryStatistics } from '@hive-academy/nestjs-chromadb';
+import {
+  getPerformanceStatistics,
+  getCacheStatistics,
+  getRetryStatistics,
+} from '@hive-academy/nestjs-chromadb';
 
 // Performance monitoring
 const perfStats = await getPerformanceStatistics();

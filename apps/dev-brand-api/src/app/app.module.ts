@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Core library imports
 import {
@@ -53,6 +54,7 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
 import { PerformanceController } from './controllers/performance.controller';
+import { DevBrandController } from './controllers/devbrand.controller';
 
 // Performance monitoring
 import { PerformanceDashboardService } from './services/performance-dashboard.service';
@@ -83,6 +85,18 @@ import {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+
+    // CRITICAL: Global EventEmitter - provided once for entire app
+    // Increased maxListeners from 10 to 20 to prevent false-positive warnings
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
     }),
 
     // Core database modules - Enhanced with decorator and performance support
@@ -270,7 +284,7 @@ import {
     // Business modules
     BusinessWorkflowsModule,
   ],
-  controllers: [HealthController, PerformanceController],
+  controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [
     AppStreamingManager,
     PerformanceDashboardService,
