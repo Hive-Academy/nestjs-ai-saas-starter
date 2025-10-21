@@ -207,7 +207,9 @@ export class DeveloperProfileRepository extends ChromaDBRepository<DeveloperProf
 
     // Sort by contribution score and return top N
     return allProfiles
-      .sort((a, b) => b.metadata.contributionScore - a.metadata.contributionScore)
+      .sort(
+        (a, b) => b.metadata.contributionScore - a.metadata.contributionScore
+      )
       .slice(0, limit);
   }
 
@@ -249,7 +251,10 @@ export class DeveloperProfileRepository extends ChromaDBRepository<DeveloperProf
     topLanguages.forEach((lang) => specializations.add(lang));
 
     // Add domain specializations based on language combinations
-    if (topLanguages.includes('TypeScript') || topLanguages.includes('JavaScript')) {
+    if (
+      topLanguages.includes('TypeScript') ||
+      topLanguages.includes('JavaScript')
+    ) {
       specializations.add('Web Development');
     }
     if (topLanguages.includes('Python')) {
@@ -357,7 +362,10 @@ export class DeveloperProfileRepository extends ChromaDBRepository<DeveloperProf
    */
   private calculateTechnicalDepth(githubData: GitHubProfile): number {
     const languages = githubData.repositories.languages;
-    const totalBytes = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0);
+    const totalBytes = Object.values(languages).reduce(
+      (sum, bytes) => sum + bytes,
+      0
+    );
     const maxLanguageBytes = Math.max(...Object.values(languages));
 
     return maxLanguageBytes / totalBytes;
@@ -367,7 +375,8 @@ export class DeveloperProfileRepository extends ChromaDBRepository<DeveloperProf
    * Analyze collaboration style from activity patterns
    */
   private analyzeCollaborationStyle(githubData: GitHubProfile): string {
-    const prRatio = githubData.activity.pullRequests / (githubData.activity.commits || 1);
+    const prRatio =
+      githubData.activity.pullRequests / (githubData.activity.commits || 1);
 
     if (prRatio > 0.3) return 'Highly Collaborative';
     if (prRatio > 0.1) return 'Team Player';
@@ -405,8 +414,12 @@ export class DeveloperProfileRepository extends ChromaDBRepository<DeveloperProf
       codingPatterns: string[];
     }
   ): string {
-    return `${githubData.name} - ${analysis.experience} developer specializing in ${analysis.specializations.join(', ')}.
-${githubData.repositories.total} repositories with ${githubData.repositories.stars} stars.
+    return `${githubData.name} - ${
+      analysis.experience
+    } developer specializing in ${analysis.specializations.join(', ')}.
+${githubData.repositories.total} repositories with ${
+      githubData.repositories.stars
+    } stars.
 Active contributor with ${githubData.activity.commits} commits.
 Coding patterns: ${analysis.codingPatterns.join(', ')}.
 ${githubData.bio || ''}`;
@@ -440,11 +453,17 @@ ${githubData.bio || ''}`;
     );
 
     // Generate learning path based on experience level
-    if (profile.metadata.experience === 'junior' || profile.metadata.experience === 'mid') {
+    if (
+      profile.metadata.experience === 'junior' ||
+      profile.metadata.experience === 'mid'
+    ) {
       recommendations.learningPath.push('Advanced architectural patterns');
       recommendations.learningPath.push('System design fundamentals');
     }
-    if (profile.metadata.experience === 'senior' || profile.metadata.experience === 'lead') {
+    if (
+      profile.metadata.experience === 'senior' ||
+      profile.metadata.experience === 'lead'
+    ) {
       recommendations.learningPath.push('Team leadership and mentoring');
       recommendations.learningPath.push('Strategic technical planning');
     }
@@ -465,9 +484,15 @@ ${githubData.bio || ''}`;
         'Increase community engagement through open source'
       );
     }
-    if (profile.metadata.analysis.codingPatterns.includes('Open Source Leadership')) {
+    if (
+      profile.metadata.analysis.codingPatterns.includes(
+        'Open Source Leadership'
+      )
+    ) {
       recommendations.networkingRecommendations.push('Speak at conferences');
-      recommendations.networkingRecommendations.push('Write technical blog posts');
+      recommendations.networkingRecommendations.push(
+        'Write technical blog posts'
+      );
     }
 
     return recommendations;

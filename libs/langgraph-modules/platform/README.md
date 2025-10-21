@@ -165,7 +165,10 @@ interface AssistantConfig {
 
 @Injectable()
 export class EnterpriseAssistantService {
-  constructor(private readonly platformClient: PlatformClientService, private readonly webhookService: WebhookService) {}
+  constructor(
+    private readonly platformClient: PlatformClientService,
+    private readonly webhookService: WebhookService
+  ) {}
 
   async createProductionAssistant(config: AssistantConfig): Promise<Assistant> {
     // Create assistant on LangGraph Platform
@@ -198,7 +201,11 @@ export class EnterpriseAssistantService {
     return assistant;
   }
 
-  async executeConversationalWorkflow(assistantId: string, userId: string, message: string): Promise<ConversationResult> {
+  async executeConversationalWorkflow(
+    assistantId: string,
+    userId: string,
+    message: string
+  ): Promise<ConversationResult> {
     // Create or get existing thread for user
     let thread: Thread;
     const threadId = `user-${userId}`;
@@ -240,18 +247,25 @@ export class EnterpriseAssistantService {
     );
 
     // Get final thread state
-    const finalState = await this.platformClient.get<ThreadState>(`/threads/${thread.thread_id}/state`);
+    const finalState = await this.platformClient.get<ThreadState>(
+      `/threads/${thread.thread_id}/state`
+    );
 
     return {
       runId: completedRun.run_id,
       threadId: thread.thread_id,
       response: finalState.values.messages?.[finalState.values.messages.length - 1],
       status: completedRun.status,
-      executionTime: new Date(completedRun.updated_at).getTime() - new Date(completedRun.created_at).getTime(),
+      executionTime:
+        new Date(completedRun.updated_at).getTime() - new Date(completedRun.created_at).getTime(),
     };
   }
 
-  private async waitForRunCompletion(threadId: string, runId: string, timeoutMs: number = 300000): Promise<Run> {
+  private async waitForRunCompletion(
+    threadId: string,
+    runId: string,
+    timeoutMs: number = 300000
+  ): Promise<Run> {
     const startTime = Date.now();
     const pollInterval = 1000; // 1 second
 
@@ -363,7 +377,10 @@ export class LangGraphWebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
   @Post('langgraph')
-  async handleLangGraphWebhook(@Body() payload: WebhookPayload, @Headers('x-langgraph-signature') signature: string): Promise<void> {
+  async handleLangGraphWebhook(
+    @Body() payload: WebhookPayload,
+    @Headers('x-langgraph-signature') signature: string
+  ): Promise<void> {
     // Verify webhook signature for security
     const secret = process.env.WEBHOOK_SECRET;
     const isValid = this.webhookService.verifySignature(JSON.stringify(payload), signature, secret);
@@ -463,7 +480,10 @@ export class LangGraphWebhookController {
 export class ThreadManagementService {
   constructor(private readonly platformClient: PlatformClientService) {}
 
-  async createConversationThread(userId: string, metadata: Record<string, any> = {}): Promise<Thread> {
+  async createConversationThread(
+    userId: string,
+    metadata: Record<string, any> = {}
+  ): Promise<Thread> {
     const thread = await this.platformClient.post<Thread>('/threads', {
       metadata: {
         user_id: userId,
@@ -480,7 +500,11 @@ export class ThreadManagementService {
     return this.platformClient.get<ThreadState>(`/threads/${threadId}/state`);
   }
 
-  async updateThreadState(threadId: string, values: Record<string, any>, asNode?: string): Promise<ThreadState> {
+  async updateThreadState(
+    threadId: string,
+    values: Record<string, any>,
+    asNode?: string
+  ): Promise<ThreadState> {
     const updatePayload: any = { values };
 
     if (asNode) {
@@ -490,7 +514,12 @@ export class ThreadManagementService {
     return this.platformClient.patch<ThreadState>(`/threads/${threadId}/state`, updatePayload);
   }
 
-  async getThreadHistory(threadId: string, limit: number = 10, before?: string, metadata?: Record<string, any>): Promise<ThreadHistoryResponse> {
+  async getThreadHistory(
+    threadId: string,
+    limit: number = 10,
+    before?: string,
+    metadata?: Record<string, any>
+  ): Promise<ThreadHistoryResponse> {
     const params: any = { limit };
 
     if (before) params.before = before;
@@ -575,11 +604,17 @@ export class RateLimitedPlatformService {
   }
 
   async createAssistantWithRateLimit(config: AssistantConfig): Promise<Assistant> {
-    return this.executeWithRateLimit(() => this.platformClient.post<Assistant>('/assistants', config), 'assistant_creation');
+    return this.executeWithRateLimit(
+      () => this.platformClient.post<Assistant>('/assistants', config),
+      'assistant_creation'
+    );
   }
 
   async executeRunWithRateLimit(threadId: string, runConfig: RunConfig): Promise<Run> {
-    return this.executeWithRateLimit(() => this.platformClient.post<Run>(`/threads/${threadId}/runs`, runConfig), `run_execution_${threadId}`);
+    return this.executeWithRateLimit(
+      () => this.platformClient.post<Run>(`/threads/${threadId}/runs`, runConfig),
+      `run_execution_${threadId}`
+    );
   }
 }
 ```

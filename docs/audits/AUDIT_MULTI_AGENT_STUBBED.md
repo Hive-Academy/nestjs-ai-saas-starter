@@ -65,7 +65,9 @@ private createCohereLLM(): BaseLanguageModelInterface {
 // Lines 50-55
 // TODO: Register workflows when workflow system is implemented
 if (this.options.workflows && this.options.workflows.length > 0) {
-  this.logger.debug(`${this.options.workflows.length} workflows provided (registration not implemented yet)`);
+  this.logger.debug(
+    `${this.options.workflows.length} workflows provided (registration not implemented yet)`
+  );
 }
 ```
 

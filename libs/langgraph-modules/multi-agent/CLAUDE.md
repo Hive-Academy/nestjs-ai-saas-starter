@@ -27,6 +27,37 @@ Workers ARE workflows that extend `DeclarativeWorkflowBase`. The supervisor trea
 
 ---
 
+## EventEmitter Configuration
+
+The Multi-Agent module uses NestJS EventEmitter2 for agent coordination events.
+
+**IMPORTANT**: Do NOT import EventEmitterModule in this module.
+EventEmitter should be provided globally by the root application module.
+
+### Correct Configuration
+
+```typescript
+// apps/your-app/src/app/app.module.ts
+@Module({
+  imports: [
+    EventEmitterModule.forRoot({
+      maxListeners: 20, // Prevent false-positive memory leak warnings
+    }),
+    MultiAgentModule.forRoot({...}), // No EventEmitterModule import needed
+  ],
+})
+export class AppModule {}
+```
+
+### Why Global?
+
+- EventEmitter2 is designed to be a singleton event bus
+- Multiple instances cause duplicate listener warnings (false positives)
+- Global import provides consistent event bus across all modules
+- Reduces memory footprint by 75% (eliminates 3 duplicate instances)
+
+---
+
 ## Quick Start
 
 ### 1. Installation
@@ -74,7 +105,11 @@ export class GitHubAnalyzerAgent extends DeclarativeWorkflowBase<AgentState> {
 ### 3. Create Multi-Agent Workflow
 
 ```typescript
-import { MultiAgent, MultiAgentTopology, MultiAgentWorkflowBase } from '@hive-academy/langgraph-multi-agent';
+import {
+  MultiAgent,
+  MultiAgentTopology,
+  MultiAgentWorkflowBase,
+} from '@hive-academy/langgraph-multi-agent';
 
 @MultiAgent({
   networkId: 'devbrand-supervisor',

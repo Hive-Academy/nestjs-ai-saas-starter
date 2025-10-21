@@ -158,7 +158,10 @@ const history = await memory.retrieve('abc-123', 10);
 
 ```typescript
 // Store user preference accessible from any thread
-await store.put(['user', 'user-123', 'preferences'], 'theme', { mode: 'dark', colorScheme: 'blue' });
+await store.put(['user', 'user-123', 'preferences'], 'theme', {
+  mode: 'dark',
+  colorScheme: 'blue',
+});
 
 // Retrieve from different thread
 const theme = await store.get(['user', 'user-123', 'preferences'], 'theme');
@@ -194,10 +197,16 @@ const context = await memory.retrieve('cs-session-001');
 
 ```typescript
 // Store customer preference (accessible from any thread)
-await store.put(['user', 'customer-456', 'preferences'], 'communication_style', { preferredLanguage: 'formal', notificationChannel: 'email' });
+await store.put(['user', 'customer-456', 'preferences'], 'communication_style', {
+  preferredLanguage: 'formal',
+  notificationChannel: 'email',
+});
 
 // Store customer history (accessible from any thread)
-await store.put(['user', 'customer-456', 'history'], 'past_issues', { issues: ['delayed_delivery', 'wrong_item'], resolved: 2 });
+await store.put(['user', 'customer-456', 'history'], 'past_issues', {
+  issues: ['delayed_delivery', 'wrong_item'],
+  resolved: 2,
+});
 
 // NEW support session in different thread: cs-session-002
 // Agent can access customer preferences immediately
@@ -351,7 +360,10 @@ const conversationContext = await memory.retrieve('cs-session-789', 10);
 
 ```typescript
 // Agent uses Store to access customer data from ANY thread
-const customerPrefs = await store.get(['user', 'customer-456', 'preferences'], 'communication_style');
+const customerPrefs = await store.get(
+  ['user', 'customer-456', 'preferences'],
+  'communication_style'
+);
 const pastIssues = await store.get(['user', 'customer-456', 'history'], 'past_issues');
 
 // Agent combines both:

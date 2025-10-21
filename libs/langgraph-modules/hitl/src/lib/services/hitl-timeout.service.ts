@@ -171,7 +171,9 @@ export class HitlTimeoutService {
           }
         } catch (error) {
           this.logger.error(
-            `Failed to get approval data for timeout: ${(error as Error).message}`
+            `Failed to get approval data for timeout: ${
+              (error as Error).message
+            }`
           );
         }
       }

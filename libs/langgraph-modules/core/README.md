@@ -28,7 +28,11 @@ npm install @hive-academy/langgraph-core
 ## ⚡ Quick Start
 
 ```typescript
-import { WorkflowState, WorkflowDefinition, WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
+import {
+  WorkflowState,
+  WorkflowDefinition,
+  WorkflowStateAnnotation,
+} from '@hive-academy/langgraph-core';
 
 // 1. Define your AI workflow state
 interface AIWorkflowState extends WorkflowState {

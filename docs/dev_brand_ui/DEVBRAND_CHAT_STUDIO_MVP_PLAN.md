@@ -261,7 +261,10 @@ async extractAchievements({ commits, patterns }) {
 @WebSocketGateway(3000, { cors: true })
 export class DevBrandChatGateway {
   @SubscribeMessage('chat-message')
-  async handleChatMessage(@ConnectedSocket() client: Socket, @MessageBody() data: { message: string; userId: string }) {
+  async handleChatMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { message: string; userId: string }
+  ) {
     // Initialize workflow with streaming
     const executionId = uuidv4();
 
@@ -332,7 +335,9 @@ export class DevBrandChatStateService {
   currentAgent = computed(() => this.state().currentAgent);
   isAgentActive = computed(() => this.state().currentAgent !== null);
   activeMemories = computed(() => this.state().memoryContext.filter((m) => m.relevance > 0.7));
-  pendingApprovals = computed(() => this.state().approvalRequests.filter((r) => r.status === 'pending'));
+  pendingApprovals = computed(() =>
+    this.state().approvalRequests.filter((r) => r.status === 'pending')
+  );
 
   // State mutations via WebSocket events
   handleAgentSwitch(agent: AgentType) {

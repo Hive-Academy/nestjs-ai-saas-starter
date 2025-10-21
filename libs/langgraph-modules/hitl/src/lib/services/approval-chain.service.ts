@@ -1,5 +1,6 @@
 import { generateId } from '@hive-academy/langgraph-core';
 import type { IMemoryAdapter, Store } from '@hive-academy/langgraph-core';
+import { STORE_COLLECTIONS } from '@hive-academy/langgraph-memory';
 import {
   Inject,
   Injectable,
@@ -759,7 +760,14 @@ export class ApprovalChainService implements OnModuleInit {
    * Track approval chain progression in Store (IMemoryAdapter.getStore())
    * Uses hierarchical namespaces for multi-level chain tracking
    *
-   * Namespace pattern: ['approval-chains', executionId, chainId, 'level', levelIndex]
+   * Phase 2: Enhanced with STORE_COLLECTIONS constants
+   *
+   * Namespace pattern: ['chains', executionId, chainId, 'level', levelIndex]
+   *
+   * Verification:
+   * - Store interface: memory-adapter.interface.ts:60-100
+   * - Constants: memory/src/lib/constants/store-namespaces.ts
+   * - Pattern: implementation-plan-hitl.md:75-105
    */
   private async trackChainProgressionInStore(
     request: ApprovalRequest,
@@ -772,13 +780,16 @@ export class ApprovalChainService implements OnModuleInit {
     }
 
     try {
-      const store: Store = this.memoryAdapter.getStore('hitl-approval-chains');
+      // Use standardized collection constant
+      const store: Store = this.memoryAdapter.getStore(
+        STORE_COLLECTIONS.HITL.CHAINS
+      );
       const currentLevel = request.chain[levelIndex];
 
       // Store current chain level state with hierarchical namespace
-      // Pattern: ['approval-chains', executionId, chainId, 'level', levelIndex.toString()]
+      // Pattern: ['chains', executionId, chainId, 'level', levelIndex.toString()]
       const namespace = [
-        'approval-chains',
+        'chains',
         request.executionId,
         request.chainId,
         'level',
@@ -804,7 +815,7 @@ export class ApprovalChainService implements OnModuleInit {
 
       // Store chain overview for quick queries
       const chainOverviewNamespace = [
-        'approval-chains',
+        'chains',
         request.executionId,
         request.chainId,
       ];
@@ -836,6 +847,8 @@ export class ApprovalChainService implements OnModuleInit {
   /**
    * Get approval chain history from Store
    * Query all levels for a specific approval chain
+   *
+   * Phase 2: Enhanced with STORE_COLLECTIONS constants
    */
   async getChainHistoryFromStore(
     executionId: string,
@@ -846,15 +859,12 @@ export class ApprovalChainService implements OnModuleInit {
     }
 
     try {
-      const store: Store = this.memoryAdapter.getStore('hitl-approval-chains');
+      const store: Store = this.memoryAdapter.getStore(
+        STORE_COLLECTIONS.HITL.CHAINS
+      );
 
       // List all levels in the chain
-      const chainLevelsNamespace = [
-        'approval-chains',
-        executionId,
-        chainId,
-        'level',
-      ];
+      const chainLevelsNamespace = ['chains', executionId, chainId, 'level'];
 
       const levels = await store.list(chainLevelsNamespace);
 
@@ -875,6 +885,8 @@ export class ApprovalChainService implements OnModuleInit {
   /**
    * Search related approval chains via Store namespace search
    * Find similar chains by execution context or chain characteristics
+   *
+   * Phase 2: Enhanced with STORE_COLLECTIONS constants
    */
   async searchRelatedChains(
     executionId: string,
@@ -885,10 +897,12 @@ export class ApprovalChainService implements OnModuleInit {
     }
 
     try {
-      const store: Store = this.memoryAdapter.getStore('hitl-approval-chains');
+      const store: Store = this.memoryAdapter.getStore(
+        STORE_COLLECTIONS.HITL.CHAINS
+      );
 
       // Search within execution's approval chains
-      const executionChainsNamespace = ['approval-chains', executionId];
+      const executionChainsNamespace = ['chains', executionId];
 
       const results = await store.search(executionChainsNamespace, searchQuery);
 

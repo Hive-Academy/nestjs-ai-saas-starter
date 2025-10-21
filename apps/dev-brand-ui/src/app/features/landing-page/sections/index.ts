@@ -8,15 +8,6 @@
 // Core landing page sections
 export { HeroSectionComponent } from './hero-section.component';
 
-// Architecture and demo sections
-export { ArchitectureDiagramComponent } from './architecture-diagram.component';
-export { DemoTheaterComponent } from './demo-theater.component';
-
-// Platform showcase sections
-export { EcosystemExplorerComponent } from './ecosystem-explorer.component';
-export { LibrariesShowcaseComponent } from './libraries-showcase.component';
-export { PlatformPillarsComponent } from './platform-pillars.component';
-
 // Type definitions for landing page
 export interface LandingPageSection {
   readonly id: string;

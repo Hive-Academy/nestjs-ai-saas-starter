@@ -259,10 +259,15 @@ if (config.enableDynamicHandoffs && agent.handoffTools) {
   const handoffDecision = this.checkForHandoff(result, agent.handoffTools);
 
   if (handoffDecision) {
-    this.logger.debug(`Agent ${agent.id} initiating handoff to ${handoffDecision.targetAgent}`, { reason: handoffDecision.reason, task: handoffDecision.task });
+    this.logger.debug(`Agent ${agent.id} initiating handoff to ${handoffDecision.targetAgent}`, {
+      reason: handoffDecision.reason,
+      task: handoffDecision.task,
+    });
 
     // Apply context filter if specified
-    const contextFilter = agent.handoffTools.find((tool) => tool.targetAgent === handoffDecision.targetAgent)?.contextFilter;
+    const contextFilter = agent.handoffTools.find(
+      (tool) => tool.targetAgent === handoffDecision.targetAgent
+    )?.contextFilter;
 
     let filteredState = { ...state, ...result };
     if (contextFilter) {
@@ -438,7 +443,10 @@ Workflow complete
 ```typescript
 describe('HandoffToolBuilderService', () => {
   it('should create real LangChain handoff tool', async () => {
-    const tool = service.createLangChainHandoffTool({ targetAgent: 'analyst', description: 'Analyze data' }, 'researcher');
+    const tool = service.createLangChainHandoffTool(
+      { targetAgent: 'analyst', description: 'Analyze data' },
+      'researcher'
+    );
 
     expect(tool).toBeInstanceOf(DynamicStructuredTool);
     expect(tool.name).toBe('transfer_to_analyst');

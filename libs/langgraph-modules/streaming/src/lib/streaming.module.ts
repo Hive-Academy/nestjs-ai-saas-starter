@@ -1,5 +1,4 @@
 import { Module, DynamicModule, Global } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TokenStreamingService } from './services/token-streaming.service';
 // AutoInitTokenStreamingService removed - functionality merged into TokenStreamingService
 import { EventStreamProcessorService } from './services/event-stream-processor.service';
@@ -92,24 +91,7 @@ export class StreamingModule {
 
     return {
       module: StreamingModule,
-      imports: [
-        EventEmitterModule.forRoot({
-          // Set this to `true` to use wildcards
-          wildcard: false,
-          // The delimiter used to segment namespaces
-          delimiter: '.',
-          // Set this to `true` if you want to emit the newListener event
-          newListener: false,
-          // Set this to `true` if you want to emit the removeListener event
-          removeListener: false,
-          // The maximum amount of listeners that can be assigned to an event
-          maxListeners: 10,
-          // Show event name in memory leak message when more than maximum amount of listeners are assigned
-          verboseMemoryLeak: false,
-          // Disable throwing uncaughtException if an error event is emitted and it has no listeners
-          ignoreErrors: false,
-        }),
-      ],
+      imports: [], // EventEmitter provided globally by app.module with maxListeners: 20
       providers,
       exports,
       global: true, // Make streaming services globally available

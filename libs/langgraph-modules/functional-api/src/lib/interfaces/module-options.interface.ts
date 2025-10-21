@@ -16,7 +16,6 @@ export type WorkflowProvider = new (...args: any[]) => any;
  * NOTE: Registration is now handled by WorkflowEngineModule centrally
  */
 export interface FunctionalApiModuleOptions {
-
   /**
    * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
    * This array is populated by the workflow engine's workflow registration system

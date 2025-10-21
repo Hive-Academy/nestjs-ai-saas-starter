@@ -48,7 +48,15 @@ export async function createCheckpointSavers(
   } = {}
 ): Promise<CheckpointSaverConfig[]> {
   const savers: CheckpointSaverConfig[] = [];
-  const { nodeEnv = 'production', sqliteEnabled = false, sqlitePath = './data/checkpoints.db', redisEnabled = false, redisUrl, redisKeyPrefix = 'checkpoints:', defaultStorage = 'memory' } = options;
+  const {
+    nodeEnv = 'production',
+    sqliteEnabled = false,
+    sqlitePath = './data/checkpoints.db',
+    redisEnabled = false,
+    redisUrl,
+    redisKeyPrefix = 'checkpoints:',
+    defaultStorage = 'memory',
+  } = options;
 
   // Memory saver (always available)
   savers.push({

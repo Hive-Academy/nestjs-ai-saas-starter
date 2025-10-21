@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
 import type { TypedWorkflowAgentState } from '../../types';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import { Entrypoint, Task } from '@hive-academy/langgraph-functional-api';
 import type {
   TaskExecutionContext,
@@ -85,6 +86,9 @@ import {
     // 🆕 enableInternalStreaming, enableInternalCheckpointing, enableErrorRecovery,
     // maxInternalRetries, enableStepProgress now use module defaults
     // 🆕 multiAgentStreaming and multiAgentInterruption now use module defaults
+    multiAgentInterruption: {
+      enabled: true, // Enable HITL approval at end of agent execution
+    },
   },
 })
 @Injectable()
@@ -419,9 +423,30 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   /**
    * Finalize comprehensive analysis results
    * Note: Confidence assessment integrated directly (removed separate assessAnalysisQuality node)
+   *
+   * HITL Integration: Requires user approval before proceeding to next agent
+   * - Users can validate achievements, request changes, or provide feedback
+   * - Approval timeout: 2 minutes (escalates if no response)
+   * - WebSocket events: interruption_request, interruption_resolved
    */
   @Task({ dependsOn: ['synthesizeWithAI'] })
   @StreamProgress({ enabled: true })
+  @RequiresApproval({
+    confidenceThreshold: 0.8,
+    timeoutMs: 120000, // 2 minutes
+    message: (state) => {
+      const achievementCount = state.metadata?.achievementCount || 0;
+      const githubUsername = state.metadata?.githubUsername || 'user';
+      return `GitHub analysis complete for ${githubUsername}. Found ${achievementCount} achievements. Please review and approve to continue.`;
+    },
+    onTimeout: 'escalate', // Escalate if user doesn't respond
+    metadata: (state) => ({
+      agentId: 'github-code-analyzer',
+      achievementCount: state.metadata?.achievementCount,
+      repositoriesAnalyzed: state.metadata?.repositoriesAnalyzed,
+      confidenceScore: state.metadata?.confidenceScore,
+    }),
+  })
   async finalizeAnalysis(
     context: TaskExecutionContext<
       TypedWorkflowAgentState<GitHubAnalyzerMetadata>

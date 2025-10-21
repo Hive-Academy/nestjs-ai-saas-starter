@@ -202,7 +202,7 @@ Based on task type and complexity, choose the appropriate agent sequence:
 project-manager → business-analyst validation
 [if research needed] → researcher-expert → business-analyst validation
 software-architect → business-analyst validation
-[backend-developer OR frontend-developer] → business-analyst validation
+[ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer] → business-analyst validation
 senior-tester → business-analyst validation
 code-reviewer → business-analyst validation
 modernization-detector → business-analyst validation
@@ -213,7 +213,7 @@ modernization-detector → business-analyst validation
 ```
 [skip project-manager - requirements already known]
 [optional] researcher-expert (if complex) → validation
-[backend-developer OR frontend-developer] → business-analyst validation
+[ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer] → business-analyst validation
 senior-tester → business-analyst validation
 code-reviewer → business-analyst validation
 ```
@@ -222,10 +222,21 @@ code-reviewer → business-analyst validation
 
 ```
 software-architect → business-analyst validation
-[backend-developer OR frontend-developer] → business-analyst validation
+[ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer] → business-analyst validation
 senior-tester (regression testing) → business-analyst validation
 code-reviewer → business-analyst validation
 ```
+
+**Developer Selection** (Analyze task nature):
+
+When selecting between backend-developer and frontend-developer, analyze:
+
+- What layers of the application are being modified? (UI vs API vs business logic)
+- What files are being created/modified? (components vs services vs controllers)
+- What technologies are primarily involved? (Angular/React vs NestJS vs tooling)
+- What expertise is most critical for success?
+
+Use your intelligence to determine which developer type best fits the task at hand. You may consider both if the task spans multiple domains, but typically select the primary focus area.
 
 **DOCUMENTATION (Minimal)**:
 

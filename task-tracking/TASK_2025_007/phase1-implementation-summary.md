@@ -190,7 +190,11 @@ await this.storeApprovalOutcome(request, response);
 
 ```typescript
 // Approver Intelligence Types (Phase 1 P0-CRITICAL)
-export type { ApproverProfile, ApproverExpertise, ApproverRanking } from './lib/interfaces/approver-intelligence.interface';
+export type {
+  ApproverProfile,
+  ApproverExpertise,
+  ApproverRanking,
+} from './lib/interfaces/approver-intelligence.interface';
 ```
 
 **Purpose**: Makes intelligent approver types available to consuming applications.

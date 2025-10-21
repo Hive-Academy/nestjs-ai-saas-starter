@@ -395,7 +395,11 @@ async storeAgentMemory(...) {
 // memory.module.ts
 providers.push({
   provide: 'IMemoryAdapter',
-  useFactory: (vectorAdapter: IVectorService, graphAdapter: IGraphService, checkpointAdapter: ICheckpointAdapter) => {
+  useFactory: (
+    vectorAdapter: IVectorService,
+    graphAdapter: IGraphService,
+    checkpointAdapter: ICheckpointAdapter
+  ) => {
     return new AgentMemoryBridgeService(vectorAdapter, graphAdapter, checkpointAdapter); // ✅ Direct usage
   },
   inject: ['IVectorService', 'IGraphService', 'ICheckpointAdapter'],

@@ -5,7 +5,11 @@ export class FunctionalWorkflowError extends Error {
   public readonly code: string;
   public readonly context?: Record<string, unknown>;
 
-  constructor(message: string, code: string, context?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    code: string,
+    context?: Record<string, unknown>
+  ) {
     super(message);
     this.name = 'FunctionalWorkflowError';
     this.code = code;
@@ -67,7 +71,11 @@ export class TaskTimeoutError extends FunctionalWorkflowError {
   public readonly taskName: string;
   public readonly timeout: number;
 
-  constructor(taskName: string, timeout: number, context?: Record<string, unknown>) {
+  constructor(
+    taskName: string,
+    timeout: number,
+    context?: Record<string, unknown>
+  ) {
     super(
       `Task '${taskName}' timed out after ${timeout}ms`,
       'TASK_TIMEOUT',
@@ -126,7 +134,11 @@ export class UnknownTaskError extends FunctionalWorkflowError {
   public readonly taskName: string;
   public readonly workflowName: string;
 
-  constructor(taskName: string, workflowName: string, context?: Record<string, unknown>) {
+  constructor(
+    taskName: string,
+    workflowName: string,
+    context?: Record<string, unknown>
+  ) {
     super(
       `Task '${taskName}' not found in workflow '${workflowName}'`,
       'UNKNOWN_TASK',

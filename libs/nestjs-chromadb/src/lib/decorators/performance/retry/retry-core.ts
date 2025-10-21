@@ -179,7 +179,12 @@ async function executeWithRetry(
       context.logger.warn('Circuit breaker is open, skipping operation');
     }
 
-    return handleFallback(context, args, new Error('Circuit breaker is open'), this);
+    return handleFallback(
+      context,
+      args,
+      new Error('Circuit breaker is open'),
+      this
+    );
   }
 
   let lastError: Error = new Error('Unknown error');

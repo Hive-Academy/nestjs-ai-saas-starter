@@ -117,7 +117,10 @@ export abstract class IStoreService {
    * @param options Pagination and filtering options
    * @returns Array of items
    */
-  abstract list(namespace: readonly string[], options?: StoreListOptions): Promise<readonly StoreItem[]>;
+  abstract list(
+    namespace: readonly string[],
+    options?: StoreListOptions
+  ): Promise<readonly StoreItem[]>;
 
   /**
    * Search items by namespace and optional query
@@ -126,7 +129,11 @@ export abstract class IStoreService {
    * @param options Search options
    * @returns Array of items matching query
    */
-  abstract search(namespace: readonly string[], query?: string, options?: StoreSearchOptions): Promise<readonly StoreItem[]>;
+  abstract search(
+    namespace: readonly string[],
+    query?: string,
+    options?: StoreSearchOptions
+  ): Promise<readonly StoreItem[]>;
 
   /**
    * Delete all items in a namespace (and optionally child namespaces)
@@ -452,7 +459,10 @@ export class NamespaceEntity {
 ```typescript
 @Injectable()
 export class LangGraphStoreAdapter implements IStoreService {
-  constructor(private readonly storeRepo: LangGraphStoreRepository, private readonly storeGraphRepo: StoreGraphRepository) {}
+  constructor(
+    private readonly storeRepo: LangGraphStoreRepository,
+    private readonly storeGraphRepo: StoreGraphRepository
+  ) {}
 
   async put(namespace: readonly string[], key: string, value: unknown): Promise<void> {
     // Pure delegation to repository
@@ -563,7 +573,10 @@ getStore(): IStoreService {
 // BEFORE (Direct implementation - causes bug)
 @Injectable()
 export class ChromaLangGraphStore implements Store {
-  constructor(private readonly vectorService: IVectorService, private readonly collection = 'langgraph_store') {}
+  constructor(
+    private readonly vectorService: IVectorService,
+    private readonly collection = 'langgraph_store'
+  ) {}
 
   async put(namespace: string[], key: string, value: unknown): Promise<void> {
     // BROKEN: this.vectorService.store(this.collection, ...) ignores collection
@@ -644,7 +657,13 @@ export { StoreStorageService } from './lib/services/store/store-storage.service'
 export { StoreGraphService } from './lib/services/store/store-graph.service';
 
 // Store interfaces
-export { IStoreService, StoreItem, StoreListOptions, StoreSearchOptions, NamespaceStats } from './lib/interfaces/store-service.interface';
+export {
+  IStoreService,
+  StoreItem,
+  StoreListOptions,
+  StoreSearchOptions,
+  NamespaceStats,
+} from './lib/interfaces/store-service.interface';
 
 // Updated ChromaLangGraphStore
 export { ChromaLangGraphStore, Store, Item } from './lib/interfaces/langgraph-store.interface';
