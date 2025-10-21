@@ -24,7 +24,13 @@ import {
 
 // Real implementation: Facade coordinating specialized services
 class MonitoringFacadeService {
-  constructor(private readonly metricsCollector: MetricsCollectorService, private readonly alerting: AlertingService, private readonly healthCheck: HealthCheckService, private readonly performanceTracker: PerformanceTrackerService, private readonly dashboard: DashboardService) {}
+  constructor(
+    private readonly metricsCollector: MetricsCollectorService,
+    private readonly alerting: AlertingService,
+    private readonly healthCheck: HealthCheckService,
+    private readonly performanceTracker: PerformanceTrackerService,
+    private readonly dashboard: DashboardService
+  ) {}
 }
 ```
 
@@ -308,8 +314,14 @@ export class EcosystemMonitoringService {
     // Memory usage metrics
     const memoryMetrics = await this.getMemoryMetrics();
     await this.monitoring.recordGauge('ecosystem.memory.total_entries', memoryMetrics.totalEntries);
-    await this.monitoring.recordGauge('ecosystem.memory.cache_hit_rate', memoryMetrics.cacheHitRate);
-    await this.monitoring.recordTimer('ecosystem.memory.search_time', memoryMetrics.averageSearchTime);
+    await this.monitoring.recordGauge(
+      'ecosystem.memory.cache_hit_rate',
+      memoryMetrics.cacheHitRate
+    );
+    await this.monitoring.recordTimer(
+      'ecosystem.memory.search_time',
+      memoryMetrics.averageSearchTime
+    );
 
     // Database performance metrics
     const dbMetrics = await this.getDatabaseMetrics();
@@ -322,7 +334,10 @@ export class EcosystemMonitoringService {
     const agentMetrics = await this.getAgentMetrics();
     await this.monitoring.recordGauge('ecosystem.agents.active', agentMetrics.activeAgents);
     await this.monitoring.recordGauge('ecosystem.agents.message_rate', agentMetrics.messageRate);
-    await this.monitoring.recordTimer('ecosystem.agents.response_time', agentMetrics.averageResponseTime);
+    await this.monitoring.recordTimer(
+      'ecosystem.agents.response_time',
+      agentMetrics.averageResponseTime
+    );
   }
 }
 ```
@@ -336,7 +351,10 @@ import { WorkflowEngine, WorkflowExecutionContext } from '@hive-academy/langgrap
 
 @Injectable()
 export class WorkflowMonitoringService {
-  constructor(private readonly workflowEngine: WorkflowEngine, private readonly monitoring: MonitoringFacadeService) {}
+  constructor(
+    private readonly workflowEngine: WorkflowEngine,
+    private readonly monitoring: MonitoringFacadeService
+  ) {}
 
   async createMonitoredWorkflow(workflowName: string): Promise<MonitoredWorkflow> {
     return this.workflowEngine.create({
@@ -363,19 +381,27 @@ export class WorkflowMonitoringService {
               const result = await this.processData(state.input);
 
               // Automatically track successful execution
-              await context.monitoring.recordTimer('workflow.node.duration', Date.now() - startTime, {
-                workflow_name: workflowName,
-                node_name: 'data-processing',
-                success: 'true',
-              });
+              await context.monitoring.recordTimer(
+                'workflow.node.duration',
+                Date.now() - startTime,
+                {
+                  workflow_name: workflowName,
+                  node_name: 'data-processing',
+                  success: 'true',
+                }
+              );
 
               // Track memory usage if memory module is enabled
               if (context.memory) {
                 const memoryStats = await context.memory.getStats();
-                await context.monitoring.recordGauge('workflow.memory.usage', memoryStats.totalMemories, {
-                  workflow_name: workflowName,
-                  node_name: 'data-processing',
-                });
+                await context.monitoring.recordGauge(
+                  'workflow.memory.usage',
+                  memoryStats.totalMemories,
+                  {
+                    workflow_name: workflowName,
+                    node_name: 'data-processing',
+                  }
+                );
               }
 
               return result;
@@ -405,10 +431,14 @@ export class WorkflowMonitoringService {
                 channel_values: state,
               });
 
-              await context.monitoring.recordTimer('workflow.checkpoint.save', Date.now() - checkpointStart, {
-                workflow_name: workflowName,
-                success: 'true',
-              });
+              await context.monitoring.recordTimer(
+                'workflow.checkpoint.save',
+                Date.now() - checkpointStart,
+                {
+                  workflow_name: workflowName,
+                  success: 'true',
+                }
+              );
             } catch (error) {
               await context.monitoring.recordCounter('workflow.checkpoint.failures', 1, {
                 workflow_name: workflowName,
@@ -457,7 +487,10 @@ import { MultiAgentNetwork, Agent, AgentMessage } from '@hive-academy/langgraph-
 
 @Injectable()
 export class AgentNetworkMonitoringService {
-  constructor(private readonly agentNetwork: MultiAgentNetwork, private readonly monitoring: MonitoringFacadeService) {}
+  constructor(
+    private readonly agentNetwork: MultiAgentNetwork,
+    private readonly monitoring: MonitoringFacadeService
+  ) {}
 
   async createMonitoredAgentNetwork(): Promise<MonitoredAgentNetwork> {
     const networkId = 'production-agent-network';
@@ -582,7 +615,10 @@ import { StreamingWorkflow, StreamEvent } from '@hive-academy/langgraph-streamin
 
 @Injectable()
 export class StreamingMonitoringService {
-  constructor(private readonly streaming: StreamingWorkflow, private readonly monitoring: MonitoringFacadeService) {}
+  constructor(
+    private readonly streaming: StreamingWorkflow,
+    private readonly monitoring: MonitoringFacadeService
+  ) {}
 
   async createMonitoredStream(streamId: string): Promise<MonitoredStream> {
     return this.streaming.create({
@@ -623,9 +659,13 @@ export class StreamingMonitoringService {
               });
 
               // Track throughput
-              await context.monitoring.recordGauge('stream.throughput.events_per_second', this.calculateThroughput(streamId), {
-                stream_id: streamId,
-              });
+              await context.monitoring.recordGauge(
+                'stream.throughput.events_per_second',
+                this.calculateThroughput(streamId),
+                {
+                  stream_id: streamId,
+                }
+              );
 
               return processedEvent;
             } catch (error) {
@@ -649,18 +689,26 @@ export class StreamingMonitoringService {
             const anomalies = await this.detectAnomalies(event);
 
             if (anomalies.length > 0) {
-              await context.monitoring.recordCounter('stream.anomalies.detected', anomalies.length, {
-                stream_id: streamId,
-                severity: this.getMaxSeverity(anomalies),
-              });
+              await context.monitoring.recordCounter(
+                'stream.anomalies.detected',
+                anomalies.length,
+                {
+                  stream_id: streamId,
+                  severity: this.getMaxSeverity(anomalies),
+                }
+              );
 
               // Trigger immediate alert for critical anomalies
               const criticalAnomalies = anomalies.filter((a) => a.severity === 'critical');
               if (criticalAnomalies.length > 0) {
-                await context.monitoring.recordCounter('stream.anomalies.critical', criticalAnomalies.length, {
-                  stream_id: streamId,
-                  immediate_alert: 'true',
-                });
+                await context.monitoring.recordCounter(
+                  'stream.anomalies.critical',
+                  criticalAnomalies.length,
+                  {
+                    stream_id: streamId,
+                    immediate_alert: 'true',
+                  }
+                );
               }
             }
 
@@ -704,7 +752,21 @@ export class ProductionDashboardService {
 
   async generateEcosystemDashboard(): Promise<DashboardData> {
     // Collect metrics from all ecosystem components
-    const [workflowMetrics, agentMetrics, memoryMetrics, checkpointMetrics, streamingMetrics, databaseMetrics] = await Promise.all([this.getWorkflowMetrics(), this.getAgentMetrics(), this.getMemoryMetrics(), this.getCheckpointMetrics(), this.getStreamingMetrics(), this.getDatabaseMetrics()]);
+    const [
+      workflowMetrics,
+      agentMetrics,
+      memoryMetrics,
+      checkpointMetrics,
+      streamingMetrics,
+      databaseMetrics,
+    ] = await Promise.all([
+      this.getWorkflowMetrics(),
+      this.getAgentMetrics(),
+      this.getMemoryMetrics(),
+      this.getCheckpointMetrics(),
+      this.getStreamingMetrics(),
+      this.getDatabaseMetrics(),
+    ]);
 
     // System health overview
     const systemHealth = await this.monitoring.getSystemHealth();
@@ -890,7 +952,11 @@ export class ProductionWorkflowMonitoringService {
     console.log('Production monitoring initialized with health checks and alert rules');
   }
 
-  async trackWorkflowExecution(workflowName: string, threadId: string, execution: WorkflowMetrics): Promise<void> {
+  async trackWorkflowExecution(
+    workflowName: string,
+    threadId: string,
+    execution: WorkflowMetrics
+  ): Promise<void> {
     const tags = {
       workflow_name: workflowName,
       thread_id: threadId,
@@ -899,7 +965,16 @@ export class ProductionWorkflowMonitoringService {
     };
 
     // Record execution metrics
-    await Promise.all([this.monitoring.recordTimer('workflow.execution.duration', execution.executionTime, tags), this.monitoring.recordGauge('workflow.execution.nodes', execution.nodeCount, tags), this.monitoring.recordGauge('workflow.execution.memory_mb', execution.memoryUsage / 1024 / 1024, tags), this.monitoring.recordCounter('workflow.executions.total', 1, tags)]);
+    await Promise.all([
+      this.monitoring.recordTimer('workflow.execution.duration', execution.executionTime, tags),
+      this.monitoring.recordGauge('workflow.execution.nodes', execution.nodeCount, tags),
+      this.monitoring.recordGauge(
+        'workflow.execution.memory_mb',
+        execution.memoryUsage / 1024 / 1024,
+        tags
+      ),
+      this.monitoring.recordCounter('workflow.executions.total', 1, tags),
+    ]);
 
     // Record success/error metrics
     if (execution.success) {
@@ -929,7 +1004,10 @@ export class ProductionWorkflowMonitoringService {
     return errorCount / totalExecutions;
   }
 
-  private async detectPerformanceAnomalies(workflowName: string, execution: WorkflowMetrics): Promise<void> {
+  private async detectPerformanceAnomalies(
+    workflowName: string,
+    execution: WorkflowMetrics
+  ): Promise<void> {
     // Detect execution time anomalies
     const avgExecutionTime = 5000; // Would come from baseline calculation
     if (execution.executionTime > avgExecutionTime * 3) {
@@ -1150,7 +1228,11 @@ interface DetailedHealthCheckResult {
 ## Error Handling
 
 ```typescript
-import { MetricsCollectionError, AlertingError, HealthCheckError } from '@hive-academy/langgraph-monitoring';
+import {
+  MetricsCollectionError,
+  AlertingError,
+  HealthCheckError,
+} from '@hive-academy/langgraph-monitoring';
 
 @Injectable()
 export class RobustMonitoringService {
@@ -1302,7 +1384,9 @@ const alertRule: AlertRule = {
 ```typescript
 // Solution: Increase timeouts and implement circuit breakers
 await monitoring.registerHealthCheck('slow-service', async () => {
-  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), 8000));
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Health check timeout')), 8000)
+  );
 
   const check = this.performHealthCheck();
 

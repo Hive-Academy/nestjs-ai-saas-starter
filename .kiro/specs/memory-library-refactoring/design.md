@@ -82,9 +82,17 @@ interface MemoryModuleOptions {
 ```typescript
 @Injectable()
 export class MemoryCoreService implements MemoryServiceInterface {
-  constructor(private readonly chromaDBService: ChromaDBService, private readonly neo4jService: Neo4jService, private readonly configService: ConfigService) {}
+  constructor(
+    private readonly chromaDBService: ChromaDBService,
+    private readonly neo4jService: Neo4jService,
+    private readonly configService: ConfigService
+  ) {}
 
-  async store(threadId: string, content: string, metadata?: Partial<MemoryMetadata>): Promise<MemoryEntry> {
+  async store(
+    threadId: string,
+    content: string,
+    metadata?: Partial<MemoryMetadata>
+  ): Promise<MemoryEntry> {
     // Use ChromaDBService for vector storage
     // Use Neo4jService for relationship storage
   }
@@ -96,7 +104,10 @@ export class MemoryCoreService implements MemoryServiceInterface {
 ```typescript
 @Injectable()
 export class SemanticSearchService {
-  constructor(private readonly chromaDBService: ChromaDBService, private readonly neo4jService: Neo4jService) {}
+  constructor(
+    private readonly chromaDBService: ChromaDBService,
+    private readonly neo4jService: Neo4jService
+  ) {}
 
   async hybridSearch(options: MemorySearchOptions): Promise<MemoryEntry[]> {
     // Use ChromaDBService for vector similarity search
@@ -192,7 +203,11 @@ interface MemoryRelationship {
 ```typescript
 // Wrap underlying service errors with memory context
 export class MemoryStorageError extends Error {
-  constructor(message: string, public readonly cause: ChromaDBError | Neo4jError, public readonly context: MemoryErrorContext) {
+  constructor(
+    message: string,
+    public readonly cause: ChromaDBError | Neo4jError,
+    public readonly context: MemoryErrorContext
+  ) {
     super(message);
   }
 }

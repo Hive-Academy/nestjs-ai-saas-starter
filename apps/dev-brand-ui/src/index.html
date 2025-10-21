@@ -6,8 +6,276 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <style>
+      /* App-level loading overlay styles */
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(
+          135deg,
+          #000000 0%,
+          #6b21a8 50%,
+          #000000 100%
+        );
+        transition: opacity 0.5s ease-out;
+      }
+      #app-loading.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .app-loading-content {
+        text-align: center;
+      }
+      .app-loading-icons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 32px;
+      }
+      .app-icon {
+        opacity: 0.3;
+        transform: scale(0.9);
+        animation: icon-pulse 2s ease-in-out infinite;
+      }
+      .app-icon-1 {
+        animation-delay: 0s;
+      }
+      .app-icon-2 {
+        animation-delay: 0.3s;
+      }
+      .app-icon-3 {
+        animation-delay: 0.6s;
+      }
+      @keyframes icon-pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(0.9);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+      .app-loading-title {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 8px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .app-loading-subtitle {
+        color: #9ca3af;
+        font-size: 14px;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .app-loading-dots {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        background: #a855f7;
+        border-radius: 50%;
+        animation: dot-bounce 1.4s ease-in-out infinite;
+      }
+      .dot:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes dot-bounce {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+          opacity: 0.3;
+        }
+        40% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
   <body>
+    <!-- App-level loading overlay -->
+    <div id="app-loading">
+      <div class="app-loading-content">
+        <!-- Animated SVG Icons (3 icons in a row, pulsing in sequence) -->
+        <div class="app-loading-icons">
+          <svg
+            class="app-icon app-icon-1"
+            width="60"
+            height="60"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <!-- Brain Icon -->
+            <path
+              d="M12 2C9.24 2 7 4.24 7 7v3c0 1.1-.9 2-2 2s-2 .9-2 2v3c0 2.76 2.24 5 5 5h4c2.76 0 5-2.24 5-5v-3c0-1.1-.9-2-2-2s-2-.9-2-2V7c0-2.76-2.24-5-5-5z"
+              stroke="#a855f7"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <circle cx="9" cy="9" r="1" fill="#a855f7" />
+            <circle cx="15" cy="9" r="1" fill="#a855f7" />
+          </svg>
+
+          <svg
+            class="app-icon app-icon-2"
+            width="60"
+            height="60"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <!-- Network Nodes Icon -->
+            <circle cx="12" cy="12" r="2" fill="#a855f7" />
+            <circle cx="6" cy="6" r="2" fill="#a855f7" />
+            <circle cx="18" cy="6" r="2" fill="#a855f7" />
+            <circle cx="6" cy="18" r="2" fill="#a855f7" />
+            <circle cx="18" cy="18" r="2" fill="#a855f7" />
+            <line
+              x1="12"
+              y1="12"
+              x2="6"
+              y2="6"
+              stroke="#a855f7"
+              stroke-width="2"
+            />
+            <line
+              x1="12"
+              y1="12"
+              x2="18"
+              y2="6"
+              stroke="#a855f7"
+              stroke-width="2"
+            />
+            <line
+              x1="12"
+              y1="12"
+              x2="6"
+              y2="18"
+              stroke="#a855f7"
+              stroke-width="2"
+            />
+            <line
+              x1="12"
+              y1="12"
+              x2="18"
+              y2="18"
+              stroke="#a855f7"
+              stroke-width="2"
+            />
+          </svg>
+
+          <svg
+            class="app-icon app-icon-3"
+            width="60"
+            height="60"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <!-- Rocket Icon -->
+            <path
+              d="M12 2L4 14h16L12 2z"
+              stroke="#a855f7"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M12 14v8"
+              stroke="#a855f7"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              d="M8 18l4 4 4-4"
+              stroke="#a855f7"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <h2 class="app-loading-title">Initializing AI Platform</h2>
+        <p class="app-loading-subtitle">Bootstrapping Enterprise Features...</p>
+
+        <!-- Progress dots -->
+        <div class="app-loading-dots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
     <brand-root></brand-root>
+
+    <script>
+      // Remove loading screen when Angular fully bootstraps
+      (function () {
+        let loadingElement = document.getElementById('app-loading');
+
+        // Wait for Angular to bootstrap
+        function checkAngularReady() {
+          const rootElement = document.querySelector('brand-root');
+
+          // Check if Angular has rendered content
+          if (
+            rootElement &&
+            (rootElement.children.length > 0 || rootElement.shadowRoot)
+          ) {
+            // Angular has bootstrapped, fade out loading screen
+            setTimeout(function () {
+              if (loadingElement) {
+                loadingElement.classList.add('fade-out');
+                setTimeout(function () {
+                  if (loadingElement && loadingElement.parentNode) {
+                    loadingElement.parentNode.removeChild(loadingElement);
+                    loadingElement = null;
+                  }
+                }, 500); // Match transition duration
+              }
+            }, 200); // Small delay to ensure smooth transition
+          } else {
+            // Check again in 50ms
+            setTimeout(checkAngularReady, 50);
+          }
+        }
+
+        // Start checking after DOM is loaded
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', checkAngularReady);
+        } else {
+          checkAngularReady();
+        }
+
+        // Fallback: Remove after 10 seconds to prevent permanent loading screen
+        setTimeout(function () {
+          if (loadingElement) {
+            loadingElement.classList.add('fade-out');
+            setTimeout(function () {
+              if (loadingElement && loadingElement.parentNode) {
+                loadingElement.parentNode.removeChild(loadingElement);
+              }
+            }, 500);
+          }
+        }, 10000);
+      })();
+    </script>
   </body>
 </html>

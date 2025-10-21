@@ -87,7 +87,10 @@ export class RateLimiterService {
 
   private refill(bucket: BucketState, now: number): void {
     const intervals = Math.floor((now - bucket.lastRefill) / this.config.intervalMs);
-    bucket.tokens = Math.min(this.config.burst, bucket.tokens + intervals * this.config.tokensPerInterval);
+    bucket.tokens = Math.min(
+      this.config.burst,
+      bucket.tokens + intervals * this.config.tokensPerInterval
+    );
   }
 }
 ```

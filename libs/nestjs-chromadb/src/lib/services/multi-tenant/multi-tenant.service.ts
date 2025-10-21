@@ -4,10 +4,7 @@
 
 import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import { ChromaDBService } from '../chromadb.service';
-import {
-  TenantContext,
-  TenantIsolationConfig,
-} from './tenant-context.service';
+import { TenantContext, TenantIsolationConfig } from './tenant-context.service';
 import {
   TenantIsolationService,
   TenantCollectionResult,
@@ -378,7 +375,7 @@ export class MultiTenantService implements OnModuleInit {
     try {
       // Get all collections for the tenant
       const allCollectionObjects = await this.chromaService.listCollections();
-      const allCollectionNames = allCollectionObjects.map(col => col.name);
+      const allCollectionNames = allCollectionObjects.map((col) => col.name);
       const tenantCollections =
         this.tenantIsolationService.filterCollectionsByTenant(
           allCollectionNames,
@@ -450,7 +447,7 @@ export class MultiTenantService implements OnModuleInit {
   }> {
     try {
       const allCollectionObjects = await this.chromaService.listCollections();
-      const allCollectionNames = allCollectionObjects.map(col => col.name);
+      const allCollectionNames = allCollectionObjects.map((col) => col.name);
       const stats = this.tenantIsolationService.getCollectionStatsForTenant(
         allCollectionNames,
         tenantId,

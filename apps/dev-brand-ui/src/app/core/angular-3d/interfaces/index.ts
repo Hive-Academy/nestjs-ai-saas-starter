@@ -99,6 +99,50 @@ export interface HybridElementConfigExtended {
     memoryBudget?: number; // MB
     texturePooling?: boolean;
   };
+
+  // Scene objects - large decorative 3D objects (spheres, cubes, lights, particles)
+  sceneObjects?: {
+    spheres?: Array<{
+      position: [number, number, number];
+      radius: number;
+      color: string | number;
+      emissive?: string | number;
+      emissiveIntensity?: number;
+      opacity?: number;
+      metalness?: number;
+      roughness?: number;
+      animation?: 'float' | 'rotate' | 'pulse' | 'none';
+      animationSpeed?: number;
+    }>;
+    cubes?: Array<{
+      position: [number, number, number];
+      size: number | [number, number, number];
+      color: string | number;
+      opacity?: number;
+      rotation?: [number, number, number];
+      animation?: 'float' | 'rotate' | 'pulse' | 'none';
+      animationSpeed?: number;
+    }>;
+    particles?: {
+      count: number;
+      colors?: (string | number)[];
+      sizeRange?: [number, number];
+      spread?: { x: number; y: number; z: number };
+      opacity?: number;
+      animation?: 'float' | 'rotate' | 'spiral' | 'none';
+      animationSpeed?: number;
+    };
+    lights?: Array<{
+      type: 'point' | 'directional' | 'ambient' | 'spot';
+      position?: [number, number, number];
+      target?: [number, number, number];
+      color: string | number;
+      intensity: number;
+      distance?: number;
+      decay?: number;
+      castShadow?: boolean;
+    }>;
+  };
 }
 
 export interface AnimationConfig {
@@ -148,7 +192,7 @@ export interface HybridElementExtended {
   }>;
 
   // Reactive texture updates
-  texture: WritableSignal<THREE.CanvasTexture>;
+  texture: WritableSignal<THREE.Texture>;
   needsTextureUpdate: WritableSignal<boolean>;
 
   // Animation controller

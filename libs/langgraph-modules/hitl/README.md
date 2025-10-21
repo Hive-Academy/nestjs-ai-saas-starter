@@ -214,7 +214,12 @@ async processLargeTransaction(state: WorkflowState): Promise<WorkflowState>
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { HumanApprovalService, RequiresApproval, ApprovalRiskLevel, EscalationStrategy } from '@hive-academy/langgraph-hitl';
+import {
+  HumanApprovalService,
+  RequiresApproval,
+  ApprovalRiskLevel,
+  EscalationStrategy,
+} from '@hive-academy/langgraph-hitl';
 
 interface CodeGenerationTask {
   prompt: string;
@@ -261,7 +266,12 @@ export class EnterpriseAIWorkflowService {
         const task = state.task as CodeGenerationTask;
         const riskScore = this.calculateCodeRisk(task);
         return {
-          level: riskScore > 8 ? ApprovalRiskLevel.HIGH : riskScore > 5 ? ApprovalRiskLevel.MEDIUM : ApprovalRiskLevel.LOW,
+          level:
+            riskScore > 8
+              ? ApprovalRiskLevel.HIGH
+              : riskScore > 5
+              ? ApprovalRiskLevel.MEDIUM
+              : ApprovalRiskLevel.LOW,
           factors: ['Code complexity', 'File modifications', 'System dependencies'],
           score: riskScore,
         };
@@ -351,7 +361,14 @@ export class EnterpriseAIWorkflowService {
         }
 
         return {
-          level: riskScore > 8 ? ApprovalRiskLevel.CRITICAL : riskScore > 5 ? ApprovalRiskLevel.HIGH : riskScore > 2 ? ApprovalRiskLevel.MEDIUM : ApprovalRiskLevel.LOW,
+          level:
+            riskScore > 8
+              ? ApprovalRiskLevel.CRITICAL
+              : riskScore > 5
+              ? ApprovalRiskLevel.HIGH
+              : riskScore > 2
+              ? ApprovalRiskLevel.MEDIUM
+              : ApprovalRiskLevel.LOW,
           factors: riskFactors,
           score: riskScore,
         };
@@ -414,7 +431,12 @@ export class EnterpriseAIWorkflowService {
     }
   }
 
-  async processManualApproval(requestId: string, decision: 'approved' | 'rejected', userId: string, feedback?: string): Promise<void> {
+  async processManualApproval(
+    requestId: string,
+    decision: 'approved' | 'rejected',
+    userId: string,
+    feedback?: string
+  ): Promise<void> {
     const response: HumanApprovalResponse = {
       requestId,
       decision,
@@ -605,7 +627,14 @@ export class CustomRiskEvaluator {
     }
 
     return {
-      level: score > 7 ? ApprovalRiskLevel.CRITICAL : score > 4 ? ApprovalRiskLevel.HIGH : score > 2 ? ApprovalRiskLevel.MEDIUM : ApprovalRiskLevel.LOW,
+      level:
+        score > 7
+          ? ApprovalRiskLevel.CRITICAL
+          : score > 4
+          ? ApprovalRiskLevel.HIGH
+          : score > 2
+          ? ApprovalRiskLevel.MEDIUM
+          : ApprovalRiskLevel.LOW,
       factors,
       score,
       details: { businessHours: isBusinessHours, systemsCritical: context.criticalSystems },
@@ -738,7 +767,10 @@ export class RobustHitlService {
     }
   }
 
-  private async handleApprovalRejection(request: HumanApprovalRequest, error: ApprovalRejectedError): Promise<string | null> {
+  private async handleApprovalRejection(
+    request: HumanApprovalRequest,
+    error: ApprovalRejectedError
+  ): Promise<string | null> {
     // Log rejection for audit
     this.logger.info(`Approval rejected for ${request.executionId}: ${error.reason}`);
 

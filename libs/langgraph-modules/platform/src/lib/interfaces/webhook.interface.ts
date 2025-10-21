@@ -3,7 +3,7 @@
  * Based on the official LangGraph Platform API structure
  */
 
-import type { RunStatus } from "./run.interface";
+import type { RunStatus } from './run.interface';
 
 export interface Webhook {
   webhook_id: string;
@@ -62,4 +62,3 @@ export interface WebhookEventData {
 export interface WebhooksSearchResponse {
   webhooks: readonly Webhook[];
 }
-

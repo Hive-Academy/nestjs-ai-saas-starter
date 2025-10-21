@@ -647,14 +647,22 @@ export class NewEntity extends Neo4jBaseEntity {
 
 ## 🤝 Developer Handoff
 
-### Backend Developer Tasks
+### Developer Delegation Recommendation
 
-**Task B1**: [Specific task]
+**IMPORTANT**: Analyze the task nature to recommend the appropriate developer type:
+
+- **frontend-developer**: UI components, browser APIs, client-side logic, animations
+- **backend-developer**: NestJS services, APIs, databases, server-side logic, tooling
+
+**Recommended Developer**: [frontend-developer OR backend-developer based on task analysis]
+
+**Task**: [Specific task]
 **Complexity**: HIGH/MEDIUM/LOW
 **Estimated Time**: X hours
+**Rationale**: [Why this developer type is appropriate for this task]
 
 **CRITICAL: Codebase Verification Required**:
-Before implementing, backend-developer MUST verify:
+Before implementing, developer MUST verify:
 
 1. All imports proposed exist in library
 2. All decorators proposed are exported

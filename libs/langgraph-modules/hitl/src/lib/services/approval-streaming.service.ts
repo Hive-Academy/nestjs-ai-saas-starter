@@ -3,7 +3,10 @@ import {
   HumanApprovalRequest,
   HumanApprovalResponse,
 } from './approval-workflow.types';
-import { UserInterruption, UserInterruptionResponse } from '../interfaces/user-interruption.interface';
+import {
+  UserInterruption,
+  UserInterruptionResponse,
+} from '../interfaces/user-interruption.interface';
 
 /**
  * Approval Streaming Service
@@ -101,7 +104,9 @@ export class ApprovalStreamingService {
   /**
    * Stream interruption request to connected clients
    */
-  async streamInterruptionRequest(interruption: UserInterruption): Promise<void> {
+  async streamInterruptionRequest(
+    interruption: UserInterruption
+  ): Promise<void> {
     const connection = this.streamConnections.get(interruption.executionId);
     if (connection?.send) {
       try {

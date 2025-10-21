@@ -451,8 +451,8 @@ export class Neo4jRepository<T extends Neo4jCompatibleEntity> {
 
 - **File**: `libs/nestjs-neo4j/src/lib/decorators/inject-repository.decorator.ts`
 - **Exports**:
-    - `getRepositoryToken(entity: Type<any>): string`
-    - `InjectRepository(entity: Type<any>): ParameterDecorator`
+  - `getRepositoryToken(entity: Type<any>): string`
+  - `InjectRepository(entity: Type<any>): ParameterDecorator`
 - **Dependencies**: `@Inject` from `@nestjs/common`, entity label extraction utility
 - **Testing**: Unit tests with test entities, 80%+ coverage
 
@@ -513,6 +513,7 @@ export function InjectRepository(entity: Type<any>): ParameterDecorator {
 1. Open existing file `libs/nestjs-neo4j/src/lib/neo4j.module.ts`
 2. Add new static method `forFeature(entities: Type<any>[]): DynamicModule`
 3. For each entity in array:
+
    - Extract label from `@Neo4jEntity` metadata
    - Generate injection token using `getRepositoryToken(entity)`
    - Create factory provider:
@@ -613,14 +614,14 @@ export class Neo4jModule {
       module: Neo4jModule,
       providers: [
         // ... existing providers
-        Neo4jCrudService,  // ✅ Add this
+        Neo4jCrudService, // ✅ Add this
         // ...
       ],
       exports: [
         // ... existing exports
-        Neo4jCrudService,  // ✅ Add this
+        Neo4jCrudService, // ✅ Add this
         // ...
-      ]
+      ],
     };
   }
 
@@ -629,14 +630,14 @@ export class Neo4jModule {
       module: Neo4jModule,
       providers: [
         // ... existing providers
-        Neo4jCrudService,  // ✅ Add this
+        Neo4jCrudService, // ✅ Add this
         // ...
       ],
       exports: [
         // ... existing exports
-        Neo4jCrudService,  // ✅ Add this
+        Neo4jCrudService, // ✅ Add this
         // ...
-      ]
+      ],
     };
   }
 }
@@ -671,6 +672,7 @@ export class Neo4jModule {
 # MIGRATION_V2.md Structure
 
 ## Breaking Changes Summary
+
 - Neo4jCrudService now globally provided
 - @Neo4jRepository decorator deprecated
 - Repository pattern changed to TypeORM-style
@@ -678,18 +680,22 @@ export class Neo4jModule {
 ## Migration Patterns
 
 ### Pattern 1: Simple CRUD Repository (DELETE ENTIRE FILE)
+
 Before: 750 lines with manual CRUD
 After: 0 lines - use forFeature([Entity])
 
 ### Pattern 2: Custom Repository (EXTEND BASE)
+
 Before: 750 lines (49 CRUD + 700 custom)
 After: 700 lines (0 CRUD + 700 custom) - extends Neo4jRepository<T>
 
 ### Pattern 3: Module Configuration
+
 Before: Manual providers
 After: forFeature([...]) auto-registration
 
 ## Step-by-Step Migration
+
 1. Update module imports
 2. Remove manual CRUD methods
 3. Extend Neo4jRepository<T>
@@ -697,6 +703,7 @@ After: forFeature([...]) auto-registration
 5. Test and verify
 
 ## Troubleshooting
+
 - Common error X → Solution Y
 - Migration checklist
 ```
@@ -768,9 +775,9 @@ After: forFeature([...]) auto-registration
 **Repositories to Migrate** (if ONLY CRUD, otherwise skip to 3.2):
 
 - Analyze each of 8 repositories:
-    - `apps/dev-brand-api/src/app/repositories/neo4j/developer.repository.ts`
-    - `apps/dev-brand-api/src/app/repositories/neo4j/achievement.repository.ts`
-    - (others - analyze for custom methods)
+  - `apps/dev-brand-api/src/app/repositories/neo4j/developer.repository.ts`
+  - `apps/dev-brand-api/src/app/repositories/neo4j/achievement.repository.ts`
+  - (others - analyze for custom methods)
 
 **Backend Developer Handoff**:
 
@@ -783,15 +790,16 @@ After: forFeature([...]) auto-registration
 
 1. Analyze repository file for custom methods (anything beyond 7 CRUD methods)
 2. IF repository has ONLY CRUD:
+
    - Delete entire repository file
    - Update `repository.module.ts`:
 
      ```typescript
      // Before
-     providers: [DeveloperRepository]
+     providers: [DeveloperRepository];
 
      // After
-     imports: [Neo4jModule.forFeature([Developer])]
+     imports: [Neo4jModule.forFeature([Developer])];
      ```
 
    - Update consuming services:
@@ -868,6 +876,7 @@ After: forFeature([...]) auto-registration
    ```
 
 2. Delete ALL CRUD methods (7-9 methods × ~7 lines = 49-63 lines):
+
    - Delete `findById()`
    - Delete `findAll()`
    - Delete `create()`
@@ -976,18 +985,18 @@ npx nx e2e dev-brand-api-e2e --grep="<feature>"
          Feedback,
          MemoryGraph,
          Developer,
-         Achievement
-       ])
+         Achievement,
+       ]),
      ],
      providers: [
        // Override with custom repositories (if they have custom methods)
        {
          provide: getRepositoryToken(ApprovalRequest),
-         useClass: ApprovalRequestRepository
+         useClass: ApprovalRequestRepository,
        },
        {
          provide: getRepositoryToken(ApprovalChain),
-         useClass: ApprovalChainRepository
+         useClass: ApprovalChainRepository,
        },
        // ... (only custom repositories)
      ],
@@ -996,7 +1005,7 @@ npx nx e2e dev-brand-api-e2e --grep="<feature>"
        getRepositoryToken(ApprovalRequest),
        getRepositoryToken(ApprovalChain),
        // ... (all repositories)
-     ]
+     ],
    })
    export class RepositoryModule {}
    ```
@@ -1041,8 +1050,8 @@ npx nx e2e dev-brand-api-e2e --grep="<feature>"
 - **Files**: All 6 example files
 - **Action**: Replace current composition pattern with TypeORM-style pattern
 - **Pattern**:
-    - Simple CRUD: Use `forFeature()` + `@InjectRepository()`
-    - Custom methods: Extend `Neo4jRepository<T>`
+  - Simple CRUD: Use `forFeature()` + `@InjectRepository()`
+  - Custom methods: Extend `Neo4jRepository<T>`
 - **Testing**: Compilation only (examples not executed)
 
 **Implementation Pattern** (apply to all 6 files):
@@ -1065,7 +1074,7 @@ export class UserRepository {
 // After (TypeORM-Style Pattern - Simple CRUD)
 // NO repository class needed! Just use forFeature()
 @Module({
-  imports: [Neo4jModule.forFeature([User])]
+  imports: [Neo4jModule.forFeature([User])],
 })
 export class UserModule {}
 
@@ -1097,9 +1106,9 @@ export class UserCustomRepository extends Neo4jRepository<User> {
   providers: [
     {
       provide: getRepositoryToken(User),
-      useClass: UserCustomRepository
-    }
-  ]
+      useClass: UserCustomRepository,
+    },
+  ],
 })
 export class UserModule {}
 ```
@@ -1576,6 +1585,7 @@ interface ModuleIntegration {
 ## Phase 1: Core Infrastructure ✅ Completed / 🔄 In Progress / ⏳ Pending
 
 - [x] 1.1 Create Neo4jRepository<T> Base Class
+
   - Implemented all 9 CRUD methods with delegation
   - Implemented all 7 helper methods
   - Added comprehensive TSDoc comments
@@ -1608,11 +1618,13 @@ interface ModuleIntegration {
 
 **Research Coverage**: 100% of requirements addressed with documented evidence
 **Evidence Sources**:
+
 - task-description.md (8 requirements, 4 acceptance criteria each)
 - docs/PLAN_NEO4J_TYPEORM_PATTERN.md (1246 lines technical plan)
 - docs/ARCHITECTURE_ANALYSIS_REPOSITORY_PATTERN.md (architecture evaluation)
 
 **Quantified Benefits**:
+
 - Code Reduction: 392 lines of boilerplate eliminated (49 lines × 8 repositories)
 - Developer Productivity: 87% faster simple CRUD (15 min → 2 min)
 - Custom Repository Creation: 67% faster (30 min → 10 min)
@@ -1628,6 +1640,7 @@ interface ModuleIntegration {
 **Integration Points**: NestJS Dependency Injection with token-based resolution
 
 **Quality Attributes Addressed** (Evidence-Backed):
+
 - Performance: ⭐⭐⭐⭐⭐ (<10ms instantiation, <5ms injection)
 - Type Safety: ⭐⭐⭐⭐⭐ (100% strict TypeScript, zero 'any')
 - Developer Experience: ⭐⭐⭐⭐⭐ (87% faster, TypeORM consistency)
@@ -1637,6 +1650,7 @@ interface ModuleIntegration {
 ### 📋 Professional Progress Tracking
 
 **Generated Files**:
+
 - ✅ `implementation-plan.md` - Comprehensive architecture with evidence-backed design
 - ✅ Developer handoff protocols with absolute paths and acceptance criteria
 - ✅ Quality gates enforcement (10/10 checklist)
@@ -1644,28 +1658,34 @@ interface ModuleIntegration {
 **Implementation Strategy** (Evidence-Prioritized):
 
 **Phase 0: TypeScript Error Resolution (BLOCKING)** - 0.75 days
+
 - Subtask 0.1: Fix Neo4j example files (100+ errors) - P0 BLOCKER
 - Subtask 0.2: Fix HITL module errors (2 errors) - P1 BLOCKER
 
 **Phase 1: Core Infrastructure** - 2 days
+
 - Subtask 1.1: Neo4jRepository<T> base class (9 CRUD + 7 helper methods)
 - Subtask 1.2: Injection decorators (getRepositoryToken, @InjectRepository)
 - Subtask 1.3: Neo4jModule.forFeature() factory
 - Subtask 1.4: Export Neo4jCrudService globally
 
 **Phase 2: Migration Documentation** - 1 day
+
 - Subtask 2.1: MIGRATION_V2.md guide
 - Subtask 2.2: CLAUDE.md update
 
 **Phase 3: Application Repository Migration** - 1-2 days
+
 - Subtask 3.1: Simple CRUD repositories (delete files)
 - Subtask 3.2: Custom repositories (extend base, remove boilerplate)
 - Subtask 3.3: Update module configuration
 
 **Phase 4: Example Files Update** - 0.5 days
+
 - Subtask 4.1: Update 6 example files with TypeORM-style patterns
 
 **Phase 5: Testing and QA** - 1 day
+
 - Subtask 5.1: Unit tests (80%+ coverage)
 - Subtask 5.2: Performance benchmarks
 - Subtask 5.3: Quality validation (10/10 gates)
@@ -1679,6 +1699,7 @@ interface ModuleIntegration {
 **Estimated Timeline**: 5.5-6.5 days total implementation
 
 **Critical Success Factors**:
+
 1. ✅ Complete Phase 0 (blockers) BEFORE any refactoring
 2. ✅ Follow sequential phase execution (0 → 1 → 2 → 3 → 4 → 5)
 3. ✅ Meet ALL acceptance criteria per subtask
@@ -1686,6 +1707,7 @@ interface ModuleIntegration {
 5. ✅ Achieve 10/10 quality gate compliance
 
 **Quality Gates**: All tasks include:
+
 - Specific acceptance criteria with measurable outcomes
 - Absolute file paths for all files to create/modify
 - Step-by-step implementation guidance
@@ -1696,18 +1718,21 @@ interface ModuleIntegration {
 ### 🎯 Success Metrics & Monitoring
 
 **Architecture Quality Metrics**:
+
 - Code Reduction: 392 lines deleted (7.5% codebase reduction)
 - Coupling: Efferent coupling <5 (composition pattern)
 - Cohesion: Single responsibility per repository
 - Complexity: Zero CRUD boilerplate in custom repositories
 
 **Runtime Performance Targets** (Evidence-Backed):
+
 - Repository Instantiation: <10ms per repository
 - Injection Resolution: <5ms for @InjectRepository()
 - CRUD Operations: Zero overhead vs. direct service calls
 - Memory Usage: <500 bytes per instance
 
 **Developer Experience Metrics**:
+
 - Simple CRUD Creation: 87% faster (15 min → 2 min)
 - Custom Repository Creation: 67% faster (30 min → 10 min)
 - Ecosystem Consistency: 100% TypeORM/Mongoose match

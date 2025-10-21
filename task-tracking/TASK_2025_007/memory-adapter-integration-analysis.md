@@ -150,7 +150,11 @@ private readonly memoryAdapter: IMemoryAdapter
 
   ```typescript
   // Store approval coordinator decisions
-  await this.memoryAdapter.storeAgentExecution(state, { decision, confidence, reasoning }, 'approval-coordinator');
+  await this.memoryAdapter.storeAgentExecution(
+    state,
+    { decision, confidence, reasoning },
+    'approval-coordinator'
+  );
   ```
 
 - **Priority**: P1-High
@@ -218,7 +222,11 @@ class ApprovalProcessingService {
 
 // ENHANCED: Approval chain tracking with Store
 class ApprovalChainService {
-  async trackApprovalChain(executionId: string, approvalId: string, decision: ApprovalDecision): Promise<void> {
+  async trackApprovalChain(
+    executionId: string,
+    approvalId: string,
+    decision: ApprovalDecision
+  ): Promise<void> {
     const store = this.memoryAdapter.getStore('hitl-approvals');
 
     // Store approval with hierarchical namespace
@@ -322,7 +330,10 @@ private readonly memoryAdapter?: IMemoryAdapter
 
   ```typescript
   const store = this.memoryAdapter.getStore('workflow-compositions');
-  await store.put(['compositions', compositionId], { workflows: [workflow1, workflow2], performance: metrics });
+  await store.put(['compositions', compositionId], {
+    workflows: [workflow1, workflow2],
+    performance: metrics,
+  });
   ```
 
 - **Priority**: P2-Medium
@@ -411,20 +422,29 @@ private readonly memoryAdapter?: IMemoryAdapter
 ```typescript
 // ENHANCED: Workflow pattern discovery with Store
 class GraphOptimizationService {
-  async enhanceWithOptimizationPatterns(definition: WorkflowDefinition, options: GraphBuilderOptions): Promise<GraphBuilderOptions> {
+  async enhanceWithOptimizationPatterns(
+    definition: WorkflowDefinition,
+    options: GraphBuilderOptions
+  ): Promise<GraphBuilderOptions> {
     const store = this.memoryAdapter.getStore('workflow-patterns');
 
     // Classify workflow to find similar patterns
     const workflowType = this.classifyGraphType(definition);
 
     // Search similar workflows with Store namespaces
-    const similarWorkflows = await store.search(['workflows', workflowType], `${definition.nodes.length} nodes ${definition.edges.length} edges`);
+    const similarWorkflows = await store.search(
+      ['workflows', workflowType],
+      `${definition.nodes.length} nodes ${definition.edges.length} edges`
+    );
 
     // Apply learned optimizations
     return this.applyOptimizationsFromPatterns(options, similarWorkflows);
   }
 
-  async storeWorkflowCompilation(definition: WorkflowDefinition, result: CompilationResult): Promise<void> {
+  async storeWorkflowCompilation(
+    definition: WorkflowDefinition,
+    result: CompilationResult
+  ): Promise<void> {
     // Track as agent execution for learning
     await this.memoryAdapter.storeAgentExecution(
       {
@@ -507,7 +527,11 @@ private readonly memoryAdapter?: IMemoryAdapter
 
   ```typescript
   // Current (generic store)
-  await this.memoryAdapter.store(`network-topology-${networkId}`, JSON.stringify(topologyData), metadata);
+  await this.memoryAdapter.store(
+    `network-topology-${networkId}`,
+    JSON.stringify(topologyData),
+    metadata
+  );
 
   // Enhanced (Store-based with graph relationships)
   const store = this.memoryAdapter.getStore('agent-networks');
@@ -620,7 +644,12 @@ private readonly memoryAdapter?: IMemoryAdapter
 ```typescript
 // ENHANCED: Agent collaboration tracking with Store
 class NetworkSetupService {
-  async trackAgentCollaboration(networkId: string, agent1Id: string, agent2Id: string, collaborationResult: CollaborationMetrics): Promise<void> {
+  async trackAgentCollaboration(
+    networkId: string,
+    agent1Id: string,
+    agent2Id: string,
+    collaborationResult: CollaborationMetrics
+  ): Promise<void> {
     const store = this.memoryAdapter.getStore('agent-networks');
 
     // Store bidirectional collaboration data
@@ -632,7 +661,12 @@ class NetworkSetupService {
     });
 
     // Query best collaboration partners
-    const agent1Collaborators = await store.list(['networks', networkId, 'collaborations', agent1Id]);
+    const agent1Collaborators = await store.list([
+      'networks',
+      networkId,
+      'collaborations',
+      agent1Id,
+    ]);
 
     this.logger.log(`Agent ${agent1Id} has ${agent1Collaborators.length} collaboration patterns`);
   }
@@ -649,7 +683,8 @@ class MultiAgentCoordinatorService {
     const compatibleAgents = this.getCompatibleAgents(task);
 
     // Prioritize agents user has successfully worked with
-    const bestAgent = compatibleAgents.find((agent) => preferredAgents.includes(agent.id)) || compatibleAgents[0];
+    const bestAgent =
+      compatibleAgents.find((agent) => preferredAgents.includes(agent.id)) || compatibleAgents[0];
 
     return bestAgent.id;
   }
@@ -724,7 +759,10 @@ private readonly memoryAdapter?: IMemoryAdapter
   });
 
   // Discover similar successful compositions
-  const similarPatterns = await store.search(['compositions'], `${taskCount} tasks ${dependencyCount} dependencies`);
+  const similarPatterns = await store.search(
+    ['compositions'],
+    `${taskCount} tasks ${dependencyCount} dependencies`
+  );
   ```
 
 - **Priority**: P1-High
@@ -738,7 +776,11 @@ private readonly memoryAdapter?: IMemoryAdapter
 
   ```typescript
   const store = this.memoryAdapter.getStore('workflow-versions');
-  await store.put(['workflows', workflowName, 'versions', version], { decorators, performance, changes });
+  await store.put(['workflows', workflowName, 'versions', version], {
+    decorators,
+    performance,
+    changes,
+  });
   ```
 
 - **Priority**: P2-Medium
@@ -829,7 +871,10 @@ private readonly memoryAdapter?: IMemoryAdapter
 ```typescript
 // ENHANCED: Workflow composition tracking
 class WorkflowRegistrationService {
-  async registerWorkflowComposition(workflowClass: Type<any>, metadata: WorkflowMetadata): Promise<void> {
+  async registerWorkflowComposition(
+    workflowClass: Type<any>,
+    metadata: WorkflowMetadata
+  ): Promise<void> {
     const store = this.memoryAdapter.getStore('functional-patterns');
 
     // Analyze composition pattern
@@ -843,7 +888,10 @@ class WorkflowRegistrationService {
     await store.put(['compositions', workflowClass.name, 'structure'], composition);
 
     // Find similar successful compositions
-    const similarWorkflows = await store.search(['compositions'], `${composition.tasks.length} tasks functional-task pattern`);
+    const similarWorkflows = await store.search(
+      ['compositions'],
+      `${composition.tasks.length} tasks functional-task pattern`
+    );
 
     this.suggestOptimizations(similarWorkflows);
   }
@@ -959,7 +1007,11 @@ private readonly memoryAdapter?: IMemoryAdapter
 
   ```typescript
   const store = this.memoryAdapter.getStore('replay-patterns');
-  await store.put(['patterns', userId, 'replays'], { commonBreakpoints, avgReplayCount, errorTypes });
+  await store.put(['patterns', userId, 'replays'], {
+    commonBreakpoints,
+    avgReplayCount,
+    errorTypes,
+  });
   ```
 
 - **Priority**: P2-Medium
@@ -982,7 +1034,11 @@ private readonly memoryAdapter?: IMemoryAdapter
 - **Implementation**:
 
   ```typescript
-  await this.memoryAdapter.storeAgentExecution({ messages: [], metadata: { replayType: 'branch' } }, { stepsReplayed, issueFound, resolutionTime }, 'time-travel-replay-service');
+  await this.memoryAdapter.storeAgentExecution(
+    { messages: [], metadata: { replayType: 'branch' } },
+    { stepsReplayed, issueFound, resolutionTime },
+    'time-travel-replay-service'
+  );
   ```
 
 - **Priority**: P2-Medium
@@ -1032,7 +1088,11 @@ private readonly memoryAdapter?: IMemoryAdapter
 ```typescript
 // ENHANCED: Branch relationship tracking
 class BranchManagerService {
-  async createBranch(executionId: string, parentBranchId: string, divergencePoint: string): Promise<string> {
+  async createBranch(
+    executionId: string,
+    parentBranchId: string,
+    divergencePoint: string
+  ): Promise<string> {
     const branchId = this.generateBranchId();
     const store = this.memoryAdapter.getStore('time-travel-branches');
 
@@ -1158,7 +1218,11 @@ class ServiceComponent {
     const decision = this.decideWithContext(input, context);
 
     // 3. Store decision for learning
-    await this.memoryAdapter.storeAgentExecution({ messages: [], metadata: input }, { decision, success: decision.succeeded }, 'service-component-name');
+    await this.memoryAdapter.storeAgentExecution(
+      { messages: [], metadata: input },
+      { decision, success: decision.succeeded },
+      'service-component-name'
+    );
 
     return decision;
   }

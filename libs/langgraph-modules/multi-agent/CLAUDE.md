@@ -105,7 +105,11 @@ export class GitHubAnalyzerAgent extends DeclarativeWorkflowBase<AgentState> {
 ### 3. Create Multi-Agent Workflow
 
 ```typescript
-import { MultiAgent, MultiAgentTopology, MultiAgentWorkflowBase } from '@hive-academy/langgraph-multi-agent';
+import {
+  MultiAgent,
+  MultiAgentTopology,
+  MultiAgentWorkflowBase,
+} from '@hive-academy/langgraph-multi-agent';
 
 @MultiAgent({
   networkId: 'devbrand-supervisor',

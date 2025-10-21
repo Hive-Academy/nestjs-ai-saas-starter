@@ -62,7 +62,11 @@ import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 
 // ✅ CORRECT: Streaming services embedded in workflow-engine
 import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-import { WorkflowStreamService, WorkflowStreamOrchestrator, TokenProcessingService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowStreamService,
+  WorkflowStreamOrchestrator,
+  TokenProcessingService,
+} from '@hive-academy/langgraph-workflow-engine';
 // ✅ No circular dependency: streaming is part of workflow-engine
 
 // Decorators still imported from streaming module
@@ -119,11 +123,26 @@ export const getStreamingConfig = (): StreamingModuleOptions => ({
 **WorkflowStreamService Integration** (verified source: `workflow-stream.service.ts:1-100`):
 
 ```typescript
-import { Inject, Injectable, Logger, OnModuleInit, OnModuleDestroy, Optional } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable, Subject, filter, map, Subscription } from 'rxjs';
 import type { StreamUpdate, StreamMetadata, TokenData } from '@hive-academy/langgraph-streaming';
-import { StreamEventType, getStreamTokenMetadata, getStreamEventMetadata, getStreamProgressMetadata, StreamTokenDecoratorMetadata, StreamEventDecoratorMetadata, StreamProgressDecoratorMetadata } from '@hive-academy/langgraph-streaming';
+import {
+  StreamEventType,
+  getStreamTokenMetadata,
+  getStreamEventMetadata,
+  getStreamProgressMetadata,
+  StreamTokenDecoratorMetadata,
+  StreamEventDecoratorMetadata,
+  StreamProgressDecoratorMetadata,
+} from '@hive-academy/langgraph-streaming';
 import type { IStreamingService, ICheckpointAdapter } from '@hive-academy/langgraph-core';
 
 /**
@@ -180,7 +199,10 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
     if (options?.workflowClass) {
       const tokenMeta = getStreamTokenMetadata(options.workflowClass.prototype, options.methodName);
       const eventMeta = getStreamEventMetadata(options.workflowClass.prototype, options.methodName);
-      const progressMeta = getStreamProgressMetadata(options.workflowClass.prototype, options.methodName);
+      const progressMeta = getStreamProgressMetadata(
+        options.workflowClass.prototype,
+        options.methodName
+      );
 
       if (tokenMeta) this.tokenStreamConfigs.set(executionId, tokenMeta);
       if (eventMeta) this.eventStreamConfigs.set(executionId, eventMeta);
@@ -199,7 +221,11 @@ export class WorkflowStreamService implements OnModuleInit, OnModuleDestroy {
 **DevBrand Supervisor Workflow Streaming** (verified source: `devbrand-supervisor.workflow.ts:14,96,120`):
 
 ```typescript
-import { FunctionalWorkflow as Workflow, Entrypoint, Task } from '@hive-academy/langgraph-functional-api';
+import {
+  FunctionalWorkflow as Workflow,
+  Entrypoint,
+  Task,
+} from '@hive-academy/langgraph-functional-api';
 import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
 
 @Workflow({
@@ -319,7 +345,12 @@ class TokenStreamingService {
 
 ```typescript
 // VERIFIED EXPORTS: WebSocket types and configuration
-import type { WebSocketGatewayConfig, WebSocketConnection, WebSocketMessage, WebSocketGatewayEvents } from '@hive-academy/langgraph-streaming';
+import type {
+  WebSocketGatewayConfig,
+  WebSocketConnection,
+  WebSocketMessage,
+  WebSocketGatewayEvents,
+} from '@hive-academy/langgraph-streaming';
 
 // Real WebSocket message types
 enum WebSocketMessageType {
@@ -442,7 +473,11 @@ export class AppModule {}
 ```typescript
 @Injectable()
 export class MyStreamingService {
-  constructor(private readonly tokenStreaming: TokenStreamingService, private readonly eventProcessor: EventStreamProcessorService, private readonly websocketBridge: WebSocketBridgeService) {}
+  constructor(
+    private readonly tokenStreaming: TokenStreamingService,
+    private readonly eventProcessor: EventStreamProcessorService,
+    private readonly websocketBridge: WebSocketBridgeService
+  ) {}
 
   async setupRealtimeWorkflow() {
     // Token streaming with RxJS observables
@@ -665,7 +700,10 @@ export class StreamingWorkflowService {
 // Example: Integration with Memory Module
 @Injectable()
 export class StreamingMemoryService {
-  constructor(private readonly streamingService: IStreamingService, private readonly memoryService: MemoryService) {}
+  constructor(
+    private readonly streamingService: IStreamingService,
+    private readonly memoryService: MemoryService
+  ) {}
 
   async processWithMemory(input: StreamInput): Promise<StreamOutput> {
     // Retrieve relevant memories

@@ -157,7 +157,11 @@ export class AIContentPipeline {
 
 ```typescript
 export class EnhancedDecoratorTranslationService extends DecoratorTranslationService {
-  async translateDecoratorDefinition<TState>(definition: DecoratorDefinition<TState>, instance: object, config?: DecoratorBridgeConfig): Promise<EnhancedDecoratorTranslationResult<TState>> {
+  async translateDecoratorDefinition<TState>(
+    definition: DecoratorDefinition<TState>,
+    instance: object,
+    config?: DecoratorBridgeConfig
+  ): Promise<EnhancedDecoratorTranslationResult<TState>> {
     // Get base translation
     const baseResult = await super.translateDecoratorDefinition(definition, instance, config);
 
@@ -171,7 +175,10 @@ export class EnhancedDecoratorTranslationService extends DecoratorTranslationSer
     };
   }
 
-  private async enhanceNodesWithAllDecorators<TState>(nodes: WorkflowNode<TState>[], instance: object): Promise<EnhancedWorkflowNode<TState>[]> {
+  private async enhanceNodesWithAllDecorators<TState>(
+    nodes: WorkflowNode<TState>[],
+    instance: object
+  ): Promise<EnhancedWorkflowNode<TState>[]> {
     return Promise.all(
       nodes.map(async (node) => {
         const methodName = node.id;
@@ -187,7 +194,11 @@ export class EnhancedDecoratorTranslationService extends DecoratorTranslationSer
         };
 
         // Enhance node handler to support all decorators
-        const enhancedHandler = await this.createEnhancedHandler(node.handler, decoratorMetadata, instance);
+        const enhancedHandler = await this.createEnhancedHandler(
+          node.handler,
+          decoratorMetadata,
+          instance
+        );
 
         return {
           ...node,
@@ -199,7 +210,11 @@ export class EnhancedDecoratorTranslationService extends DecoratorTranslationSer
     );
   }
 
-  private async createEnhancedHandler<TState>(originalHandler: WorkflowNodeHandler<TState>, metadata: DecoratorMetadata, instance: object): Promise<WorkflowNodeHandler<TState>> {
+  private async createEnhancedHandler<TState>(
+    originalHandler: WorkflowNodeHandler<TState>,
+    metadata: DecoratorMetadata,
+    instance: object
+  ): Promise<WorkflowNodeHandler<TState>> {
     return async (state: TState): Promise<Partial<TState>> => {
       // Create enhanced execution context
       const enhancedContext = await this.createEnhancedExecutionContext(state, metadata, instance);
@@ -210,7 +225,11 @@ export class EnhancedDecoratorTranslationService extends DecoratorTranslationSer
       }
 
       if (metadata.subworkflow) {
-        return await this.executeAsSubworkflow(originalHandler, enhancedContext, metadata.subworkflow);
+        return await this.executeAsSubworkflow(
+          originalHandler,
+          enhancedContext,
+          metadata.subworkflow
+        );
       }
 
       if (metadata.command) {
@@ -382,9 +401,17 @@ export class PersonalBrandStrategistAgent {
 ```typescript
 @Injectable()
 export class AgentWorkflowBridgeService {
-  constructor(private readonly agentRegistry: AgentRegistryService, private readonly universalBridge: UniversalBridgeService, @Optional() private readonly streamingService?: IStreamingService, @Optional() private readonly memoryAdapter?: IMemoryAdapter) {}
+  constructor(
+    private readonly agentRegistry: AgentRegistryService,
+    private readonly universalBridge: UniversalBridgeService,
+    @Optional() private readonly streamingService?: IStreamingService,
+    @Optional() private readonly memoryAdapter?: IMemoryAdapter
+  ) {}
 
-  async createAgentStepNode<TState>(agentStepMetadata: AgentStepMetadata, workflowContext: WorkflowExecutionContext): Promise<WorkflowNode<TState>> {
+  async createAgentStepNode<TState>(
+    agentStepMetadata: AgentStepMetadata,
+    workflowContext: WorkflowExecutionContext
+  ): Promise<WorkflowNode<TState>> {
     const agent = this.agentRegistry.getAgent(agentStepMetadata.agentId);
     if (!agent) {
       throw new Error(`Agent ${agentStepMetadata.agentId} not found`);
@@ -405,22 +432,35 @@ export class AgentWorkflowBridgeService {
           streaming:
             agentStepMetadata.streaming && this.streamingService
               ? {
-                  streamToken: (token: string) => this.streamingService!.streamToken(workflowContext.executionId, agentStepMetadata.method, token),
-                  streamEvent: (event: any) => this.streamingService!.streamEvent(workflowContext.executionId, agentStepMetadata.method, event),
+                  streamToken: (token: string) =>
+                    this.streamingService!.streamToken(
+                      workflowContext.executionId,
+                      agentStepMetadata.method,
+                      token
+                    ),
+                  streamEvent: (event: any) =>
+                    this.streamingService!.streamEvent(
+                      workflowContext.executionId,
+                      agentStepMetadata.method,
+                      event
+                    ),
                 }
               : undefined,
 
           memory:
             agentStepMetadata.memory && this.memoryAdapter
               ? {
-                  store: (key: string, value: any) => this.memoryAdapter!.store(`agent-${agent.id}`, key, value),
+                  store: (key: string, value: any) =>
+                    this.memoryAdapter!.store(`agent-${agent.id}`, key, value),
                   retrieve: (query: any) => this.memoryAdapter!.search(`agent-${agent.id}`, query),
                 }
               : undefined,
         };
 
         // Execute agent with enhanced context
-        const agentResult = await agent.nodeFunction(this.transformWorkflowStateToAgentState(state, agentContext));
+        const agentResult = await agent.nodeFunction(
+          this.transformWorkflowStateToAgentState(state, agentContext)
+        );
 
         // Transform agent result back to workflow state
         return this.transformAgentResultToWorkflowState(agentResult, state);
@@ -435,16 +475,26 @@ export class AgentWorkflowBridgeService {
     };
   }
 
-  async executeAgentCoordinationWorkflow<TState>(agents: string[], coordinationConfig: AgentCoordinationConfig, workflowState: TState): Promise<TState> {
+  async executeAgentCoordinationWorkflow<TState>(
+    agents: string[],
+    coordinationConfig: AgentCoordinationConfig,
+    workflowState: TState
+  ): Promise<TState> {
     // Create coordination workflow using workflow-engine
-    const coordinationDefinition = await this.createCoordinationWorkflowDefinition(agents, coordinationConfig);
+    const coordinationDefinition = await this.createCoordinationWorkflowDefinition(
+      agents,
+      coordinationConfig
+    );
 
     // Use workflow-engine for execution
-    const compiledWorkflow = await this.universalBridge.compileWorkflowDefinition(coordinationDefinition, {
-      streaming: coordinationConfig.streaming,
-      memory: coordinationConfig.memory,
-      checkpoint: coordinationConfig.checkpoint,
-    });
+    const compiledWorkflow = await this.universalBridge.compileWorkflowDefinition(
+      coordinationDefinition,
+      {
+        streaming: coordinationConfig.streaming,
+        memory: coordinationConfig.memory,
+        checkpoint: coordinationConfig.checkpoint,
+      }
+    );
 
     return await compiledWorkflow.invoke(workflowState);
   }
@@ -551,7 +601,10 @@ export function MemoryContext(config: MemoryContextConfig = {}) {
 
       if (memoryAdapter) {
         // Get memory context
-        const memoryContext = await memoryAdapter.getMemoryContext(config.contextKey || this.executionId, config);
+        const memoryContext = await memoryAdapter.getMemoryContext(
+          config.contextKey || this.executionId,
+          config
+        );
 
         // Add memory to method arguments
         const enhancedArgs = [...args, { memory: memoryContext }];
@@ -576,15 +629,19 @@ export function StoreMemory(config: MemoryStorageConfig = {}) {
       const memoryAdapter = this.getMemoryAdapter?.();
 
       if (memoryAdapter && config.store !== false) {
-        await memoryAdapter.store(config.namespace || this.workflowName, config.key || propertyKey, {
-          result,
-          metadata: {
-            method: propertyKey,
-            timestamp: new Date(),
-            executionId: this.executionId,
-            includeInput: config.includeInput ? args : undefined,
-          },
-        });
+        await memoryAdapter.store(
+          config.namespace || this.workflowName,
+          config.key || propertyKey,
+          {
+            result,
+            metadata: {
+              method: propertyKey,
+              timestamp: new Date(),
+              executionId: this.executionId,
+              includeInput: config.includeInput ? args : undefined,
+            },
+          }
+        );
       }
 
       return result;
@@ -628,9 +685,16 @@ export function RequiresApproval(config: EnhancedApprovalConfig) {
       if (approvalService && this.needsApproval(config, args)) {
         // Multi-agent consensus if configured
         if (config.multiAgent) {
-          const agentApprovals = await this.collectAgentApprovals(config.multiAgent, { method: propertyKey, args, context: this });
+          const agentApprovals = await this.collectAgentApprovals(config.multiAgent, {
+            method: propertyKey,
+            args,
+            context: this,
+          });
 
-          const consensus = this.evaluateConsensus(agentApprovals, config.multiAgent.votingStrategy || 'majority');
+          const consensus = this.evaluateConsensus(
+            agentApprovals,
+            config.multiAgent.votingStrategy || 'majority'
+          );
 
           if (!consensus.approved) {
             throw new WorkflowApprovalError('Multi-agent consensus not reached', consensus);

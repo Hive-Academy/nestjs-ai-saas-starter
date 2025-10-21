@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, START, END } from '@langchain/langgraph';
-import { 
-  WorkflowDefinition, 
+import {
+  WorkflowDefinition,
   TaskDefinition,
   FunctionalWorkflowState,
   TaskExecutionContext,
-  TaskExecutionResult
+  TaskExecutionResult,
 } from '../interfaces/functional-workflow.interface';
 
 /**
@@ -22,20 +22,23 @@ export class GraphGeneratorService {
    * @param instance The workflow class instance containing the actual methods
    * @returns A compiled LangGraph StateGraph ready for execution
    */
-  async generateStateGraph<TState extends FunctionalWorkflowState = FunctionalWorkflowState>(
-    definition: WorkflowDefinition,
-    instance: object
-  ): Promise<any> {
+  async generateStateGraph<
+    TState extends FunctionalWorkflowState = FunctionalWorkflowState
+  >(definition: WorkflowDefinition, instance: object): Promise<any> {
     this.logger.log(`Generating StateGraph for workflow: ${definition.name}`);
 
     // Create the state graph with proper channels
     const workflow = new StateGraph<TState>({
-      channels: this.createStateChannels<TState>()
+      channels: this.createStateChannels<TState>(),
     } as any);
 
     // Add nodes for each task
     for (const [taskName, taskDef] of definition.tasks) {
-      const nodeHandler = this.createNodeHandler<TState>(taskDef, instance, definition);
+      const nodeHandler = this.createNodeHandler<TState>(
+        taskDef,
+        instance,
+        definition
+      );
       // Strategic type assertion for LangGraph compatibility
       (workflow as any).addNode(taskName, nodeHandler);
     }
@@ -45,8 +48,10 @@ export class GraphGeneratorService {
 
     // Compile the graph
     const compiledGraph = workflow.compile();
-    
-    this.logger.log(`StateGraph generated successfully for workflow: ${definition.name}`);
+
+    this.logger.log(
+      `StateGraph generated successfully for workflow: ${definition.name}`
+    );
     return compiledGraph;
   }
 
@@ -54,44 +59,47 @@ export class GraphGeneratorService {
    * Creates state channels for the workflow
    * Defines how state is managed and merged between nodes
    */
-  private createStateChannels<TState extends FunctionalWorkflowState>(): Record<string, any> {
+  private createStateChannels<TState extends FunctionalWorkflowState>(): Record<
+    string,
+    any
+  > {
     return {
       // Core workflow state
       workflowName: {
         value: (x: string, y: string) => y ?? x,
-        default: () => ''
+        default: () => '',
       },
       executionId: {
         value: (x: string, y: string) => y ?? x,
-        default: () => ''
+        default: () => '',
       },
       currentStep: {
         value: (x: number, y: number) => y ?? x,
-        default: () => 0
+        default: () => 0,
       },
       currentTask: {
         value: (x: string, y: string) => y ?? x,
-        default: () => ''
+        default: () => '',
       },
-      
+
       // Dynamic state that gets merged
       // This allows tasks to add arbitrary state properties
       state: {
         value: (x: any, y: any) => ({ ...x, ...y }),
-        default: () => ({})
+        default: () => ({}),
       },
-      
+
       // Error tracking
       error: {
         value: (x: any, y: any) => y ?? x,
-        default: () => null
+        default: () => null,
       },
-      
+
       // Metadata accumulation
       metadata: {
         value: (x: any, y: any) => ({ ...x, ...y }),
-        default: () => ({})
-      }
+        default: () => ({}),
+      },
     };
   }
 
@@ -110,7 +118,9 @@ export class GraphGeneratorService {
         // Get the method from the instance
         const method = (instance as any)[taskDef.methodName];
         if (!method || typeof method !== 'function') {
-          throw new Error(`Method '${taskDef.methodName}' not found on workflow instance`);
+          throw new Error(
+            `Method '${taskDef.methodName}' not found on workflow instance`
+          );
         }
 
         // Create execution context
@@ -119,11 +129,14 @@ export class GraphGeneratorService {
           taskName: taskDef.name,
           workflowId: state.workflowName || definition.name,
           executionId: state.executionId || `exec_${Date.now()}`,
-          metadata: (state.metadata as Record<string, unknown>) || {}
+          metadata: (state.metadata as Record<string, unknown>) || {},
         };
 
         // Execute the task
-        const result: TaskExecutionResult = await method.call(instance, context);
+        const result: TaskExecutionResult = await method.call(
+          instance,
+          context
+        );
 
         // Return state update for LangGraph
         return {
@@ -132,21 +145,20 @@ export class GraphGeneratorService {
           currentStep: (state.currentStep || 0) + 1,
           metadata: {
             ...(state.metadata || {}),
-            [`${taskDef.name}_completed`]: new Date().toISOString()
-          }
+            [`${taskDef.name}_completed`]: new Date().toISOString(),
+          },
         } as unknown as Partial<TState>;
-
       } catch (error) {
         this.logger.error(`Task '${taskDef.name}' failed:`, error);
-        
+
         // Return error state
         return {
           error: {
             task: taskDef.name,
             message: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           },
-          currentTask: taskDef.name
+          currentTask: taskDef.name,
         } as unknown as Partial<TState>;
       }
     };
@@ -160,8 +172,9 @@ export class GraphGeneratorService {
     definition: WorkflowDefinition
   ): void {
     // Find the entrypoint task
-    const entrypoint = Array.from(definition.tasks.values())
-      .find(task => task.isEntrypoint);
+    const entrypoint = Array.from(definition.tasks.values()).find(
+      (task) => task.isEntrypoint
+    );
 
     if (!entrypoint) {
       throw new Error('No entrypoint found in workflow definition');
@@ -172,7 +185,7 @@ export class GraphGeneratorService {
 
     // Build dependency graph edges
     const tasksByDependency = new Map<string, string[]>();
-    
+
     for (const [taskName, taskDef] of definition.tasks) {
       if (taskDef.dependencies && taskDef.dependencies.length > 0) {
         // This task depends on others
@@ -209,8 +222,10 @@ export class GraphGeneratorService {
     }
 
     // Find terminal tasks (tasks with no dependents)
-    const terminalTasks = Array.from(definition.tasks.keys())
-      .filter(taskName => !tasksByDependency.has(taskName) && taskName !== entrypoint?.name);
+    const terminalTasks = Array.from(definition.tasks.keys()).filter(
+      (taskName) =>
+        !tasksByDependency.has(taskName) && taskName !== entrypoint?.name
+    );
 
     // Add edges from terminal tasks to END
     for (const terminalTask of terminalTasks) {
@@ -218,11 +233,17 @@ export class GraphGeneratorService {
     }
 
     // If entrypoint has no dependents and is not a terminal task, connect it to END
-    if (entrypoint && !tasksByDependency.has(entrypoint.name) && terminalTasks.length === 0) {
+    if (
+      entrypoint &&
+      !tasksByDependency.has(entrypoint.name) &&
+      terminalTasks.length === 0
+    ) {
       workflow.addEdge(entrypoint.name as any, END);
     }
 
-    this.logger.debug(`Added ${tasksByDependency.size} dependency edges to workflow`);
+    this.logger.debug(
+      `Added ${tasksByDependency.size} dependency edges to workflow`
+    );
   }
 
   /**
@@ -232,27 +253,30 @@ export class GraphGeneratorService {
     const lines: string[] = ['digraph Workflow {'];
     lines.push('  rankdir=TB;');
     lines.push('  node [shape=box];');
-    
+
     // Add START node
     lines.push('  START [shape=circle, label="START"];');
-    
+
     // Add task nodes
     for (const [taskName, taskDef] of definition.tasks) {
-      const label = taskDef.isEntrypoint ? `${taskName}\\n(entrypoint)` : taskName;
+      const label = taskDef.isEntrypoint
+        ? `${taskName}\\n(entrypoint)`
+        : taskName;
       lines.push(`  "${taskName}" [label="${label}"];`);
     }
-    
+
     // Add END node
     lines.push('  END [shape=circle, label="END"];');
-    
+
     // Find entrypoint
-    const entrypoint = Array.from(definition.tasks.values())
-      .find((task: TaskDefinition) => task.isEntrypoint);
-    
+    const entrypoint = Array.from(definition.tasks.values()).find(
+      (task: TaskDefinition) => task.isEntrypoint
+    );
+
     if (entrypoint) {
       lines.push(`  START -> "${entrypoint.name}";`);
     }
-    
+
     // Add dependency edges
     for (const [taskName, taskDef] of definition.tasks) {
       if (taskDef.dependencies) {
@@ -261,7 +285,7 @@ export class GraphGeneratorService {
         }
       }
     }
-    
+
     // Find terminal tasks and connect to END
     const tasksByDependency = new Map<string, string[]>();
     for (const [taskName, taskDef] of definition.tasks) {
@@ -274,16 +298,17 @@ export class GraphGeneratorService {
         }
       }
     }
-    
-    const terminalTasks = Array.from(definition.tasks.keys())
-      .filter(taskName => !tasksByDependency.has(taskName));
-    
+
+    const terminalTasks = Array.from(definition.tasks.keys()).filter(
+      (taskName) => !tasksByDependency.has(taskName)
+    );
+
     for (const terminal of terminalTasks) {
       if (terminal !== entrypoint?.name) {
         lines.push(`  "${terminal}" -> END;`);
       }
     }
-    
+
     lines.push('}');
     return lines.join('\n');
   }
@@ -291,24 +316,27 @@ export class GraphGeneratorService {
   /**
    * Validates that a workflow can be converted to a StateGraph
    */
-  validateWorkflowForGraphGeneration(definition: WorkflowDefinition): { 
-    valid: boolean; 
-    errors: string[] 
+  validateWorkflowForGraphGeneration(definition: WorkflowDefinition): {
+    valid: boolean;
+    errors: string[];
   } {
     const errors: string[] = [];
 
     // Check for entrypoint
-    const entrypoint = Array.from(definition.tasks.values())
-      .find((task: TaskDefinition) => task.isEntrypoint);
-    
+    const entrypoint = Array.from(definition.tasks.values()).find(
+      (task: TaskDefinition) => task.isEntrypoint
+    );
+
     if (!entrypoint) {
-      errors.push('Workflow must have exactly one @Entrypoint decorated method');
+      errors.push(
+        'Workflow must have exactly one @Entrypoint decorated method'
+      );
     }
 
     // Check for circular dependencies
     const visited = new Set<string>();
     const visiting = new Set<string>();
-    
+
     const hasCycle = (taskName: string): boolean => {
       if (visiting.has(taskName)) {
         return true;
@@ -316,10 +344,10 @@ export class GraphGeneratorService {
       if (visited.has(taskName)) {
         return false;
       }
-      
+
       visiting.add(taskName);
       const task = definition.tasks.get(taskName);
-      
+
       if (task?.dependencies) {
         for (const dep of task.dependencies) {
           if (hasCycle(dep)) {
@@ -327,7 +355,7 @@ export class GraphGeneratorService {
           }
         }
       }
-      
+
       visiting.delete(taskName);
       visited.add(taskName);
       return false;
@@ -335,7 +363,9 @@ export class GraphGeneratorService {
 
     for (const taskName of definition.tasks.keys()) {
       if (hasCycle(taskName)) {
-        errors.push(`Circular dependency detected involving task '${taskName}'`);
+        errors.push(
+          `Circular dependency detected involving task '${taskName}'`
+        );
         break;
       }
     }
@@ -345,7 +375,9 @@ export class GraphGeneratorService {
       if (taskDef.dependencies) {
         for (const dep of taskDef.dependencies) {
           if (!definition.tasks.has(dep)) {
-            errors.push(`Task '${taskName}' depends on undefined task '${dep}'`);
+            errors.push(
+              `Task '${taskName}' depends on undefined task '${dep}'`
+            );
           }
         }
       }
@@ -353,7 +385,7 @@ export class GraphGeneratorService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

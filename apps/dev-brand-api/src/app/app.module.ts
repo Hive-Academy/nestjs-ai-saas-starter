@@ -54,6 +54,7 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
 import { PerformanceController } from './controllers/performance.controller';
+import { DevBrandController } from './controllers/devbrand.controller';
 
 // Performance monitoring
 import { PerformanceDashboardService } from './services/performance-dashboard.service';
@@ -283,7 +284,7 @@ import {
     // Business modules
     BusinessWorkflowsModule,
   ],
-  controllers: [HealthController, PerformanceController],
+  controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [
     AppStreamingManager,
     PerformanceDashboardService,

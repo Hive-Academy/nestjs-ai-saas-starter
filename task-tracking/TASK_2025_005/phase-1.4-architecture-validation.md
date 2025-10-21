@@ -266,7 +266,10 @@ async put(namespace: readonly string[], key: string, value: unknown): Promise<vo
 // ✅ CORRECT ORCHESTRATION PATTERN
 @Injectable()
 export class StoreService implements IStoreService {
-  constructor(private readonly storageService: StoreStorageService, private readonly graphService: StoreGraphService) {}
+  constructor(
+    private readonly storageService: StoreStorageService,
+    private readonly graphService: StoreGraphService
+  ) {}
 
   async put(namespace: readonly string[], key: string, value: unknown): Promise<void> {
     // Coordinate both vector and graph storage
@@ -548,7 +551,10 @@ MERGE (n)-[:CHILD_OF]->(parent)
 ```typescript
 @Injectable()
 export class LangGraphStoreAdapter implements IStoreService {
-  constructor(private readonly storeRepo: LangGraphStoreRepository, private readonly storeGraphRepo: StoreGraphRepository) {}
+  constructor(
+    private readonly storeRepo: LangGraphStoreRepository,
+    private readonly storeGraphRepo: StoreGraphRepository
+  ) {}
 
   async put(namespace: readonly string[], key: string, value: unknown): Promise<void> {
     // Pure delegation to repositories
@@ -1218,8 +1224,12 @@ test('Collections are isolated', async () => {
   await memoryService.store('thread-123', 'memory data');
   await storeService.put(['user', '123'], 'key', 'store data');
 
-  const memoryResults = await chromaVectorAdapter.search('vector-memories', { query: 'store data' });
-  const storeResults = await chromaVectorAdapter.search('langgraph-store', { query: 'memory data' });
+  const memoryResults = await chromaVectorAdapter.search('vector-memories', {
+    query: 'store data',
+  });
+  const storeResults = await chromaVectorAdapter.search('langgraph-store', {
+    query: 'memory data',
+  });
 
   expect(memoryResults.length).toBe(0); // No cross-contamination
   expect(storeResults.length).toBe(0); // No cross-contamination
@@ -1402,7 +1412,11 @@ export class NodeFactoryService {
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
-  private async enhanceAgentWithMemory(agent: AgentDefinition, state: AgentState, agentExecution: () => Promise<Partial<AgentState>>): Promise<Partial<AgentState>> {
+  private async enhanceAgentWithMemory(
+    agent: AgentDefinition,
+    state: AgentState,
+    agentExecution: () => Promise<Partial<AgentState>>
+  ): Promise<Partial<AgentState>> {
     // 1. Retrieve memory context BEFORE agent execution
     if (this.memoryAdapter) {
       const memoryContext = await this.memoryAdapter.getAgentContext(state);
@@ -1447,7 +1461,10 @@ export class HitlMemoryLearningService implements IHitlMemoryLearningService {
     private readonly memoryAdapter: IMemoryAdapter
   ) {}
 
-  async learnFromHumanFeedback(request: HumanApprovalRequest, response: HumanApprovalResponse): Promise<void> {
+  async learnFromHumanFeedback(
+    request: HumanApprovalRequest,
+    response: HumanApprovalResponse
+  ): Promise<void> {
     if (!this.memoryAdapter) return;
 
     // Store rich feedback memory with metadata for learning
@@ -1474,10 +1491,15 @@ export class HitlMemoryLearningService implements IHitlMemoryLearningService {
 ```typescript
 // Example: Store user approval preferences
 const userId = 'user-123';
-await store.put(['user', userId, 'approval-preferences'], 'confidence-threshold', { threshold: 0.85 });
+await store.put(['user', userId, 'approval-preferences'], 'confidence-threshold', {
+  threshold: 0.85,
+});
 
 // Later, in different thread: Retrieve user preference
-const userPreference = await store.get(['user', userId, 'approval-preferences'], 'confidence-threshold');
+const userPreference = await store.get(
+  ['user', userId, 'approval-preferences'],
+  'confidence-threshold'
+);
 // Result: { threshold: 0.85 }
 ```
 
@@ -1501,9 +1523,15 @@ export class WorkflowGraphBuilderService {
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
-  async buildFromDefinition<TState extends WorkflowState>(definition: WorkflowDefinition<TState>, options: GraphBuilderOptions = {}): Promise<StateGraph<TState>> {
+  async buildFromDefinition<TState extends WorkflowState>(
+    definition: WorkflowDefinition<TState>,
+    options: GraphBuilderOptions = {}
+  ): Promise<StateGraph<TState>> {
     // Apply optimization patterns if memory adapter is available
-    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(definition, options);
+    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(
+      definition,
+      options
+    );
     // Memory-aware graph compilation...
   }
 }
@@ -1535,7 +1563,10 @@ export class FunctionalWorkflowService {
     private readonly memoryAdapter?: IMemoryAdapter
   ) {}
 
-  async executeWorkflow<TState>(workflowName: string, options: WorkflowExecutionOptions = {}): Promise<WorkflowExecutionResult<TState>> {
+  async executeWorkflow<TState>(
+    workflowName: string,
+    options: WorkflowExecutionOptions = {}
+  ): Promise<WorkflowExecutionResult<TState>> {
     // Memory adapter optionally enhances workflow execution
     // with context retrieval and result storage
   }
@@ -1866,7 +1897,12 @@ npx nx test dev-brand-api --testPathPattern="store.e2e.spec.ts"
 ```typescript
 import { Injectable, Inject } from '@nestjs/common';
 import { IVectorService } from '../interfaces/vector-service.interface';
-import { IStoreService, StoreItem, StoreListOptions, StoreSearchOptions } from '../interfaces/store-service.interface';
+import {
+  IStoreService,
+  StoreItem,
+  StoreListOptions,
+  StoreSearchOptions,
+} from '../interfaces/store-service.interface';
 
 @Injectable()
 export class StoreStorageService {

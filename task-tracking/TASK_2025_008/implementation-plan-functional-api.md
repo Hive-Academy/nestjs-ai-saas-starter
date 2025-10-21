@@ -55,7 +55,10 @@ export class WorkflowRegistrationService {
    * Register workflow composition pattern
    * Phase 2: Store-based composition tracking
    */
-  async registerWorkflowComposition(workflowClass: Type<any>, metadata: WorkflowMetadata): Promise<void> {
+  async registerWorkflowComposition(
+    workflowClass: Type<any>,
+    metadata: WorkflowMetadata
+  ): Promise<void> {
     // 1. Standard registration (blocking)
     await this.registerWorkflowLogic(workflowClass, metadata);
 
@@ -71,8 +74,13 @@ export class WorkflowRegistrationService {
    * Store workflow composition in Store
    * Phase 2: Hierarchical namespace for compositions
    */
-  private async storeCompositionPattern(workflowClass: Type<any>, metadata: WorkflowMetadata): Promise<void> {
-    const store: Store = this.memoryAdapter!.getStore(STORE_COLLECTIONS.FUNCTIONAL_API.COMPOSITIONS);
+  private async storeCompositionPattern(
+    workflowClass: Type<any>,
+    metadata: WorkflowMetadata
+  ): Promise<void> {
+    const store: Store = this.memoryAdapter!.getStore(
+      STORE_COLLECTIONS.FUNCTIONAL_API.COMPOSITIONS
+    );
 
     // Analyze composition structure
     const composition = {
@@ -98,7 +106,11 @@ export class WorkflowRegistrationService {
    * Discover similar successful compositions
    * Phase 2: Store semantic search
    */
-  async discoverSimilarCompositions(taskCount: number, dependencyCount: number, query: string): Promise<CompositionPattern[]> {
+  async discoverSimilarCompositions(
+    taskCount: number,
+    dependencyCount: number,
+    query: string
+  ): Promise<CompositionPattern[]> {
     if (!this.memoryAdapter) {
       return [];
     }
@@ -125,12 +137,18 @@ export class WorkflowRegistrationService {
   /**
    * Get optimal composition pattern for task structure
    */
-  async suggestCompositionOptimizations(proposedComposition: WorkflowComposition): Promise<CompositionSuggestion[]> {
+  async suggestCompositionOptimizations(
+    proposedComposition: WorkflowComposition
+  ): Promise<CompositionSuggestion[]> {
     const taskCount = proposedComposition.tasks.length;
     const dependencyCount = proposedComposition.edges.length;
 
     // Find similar successful compositions
-    const similar = await this.discoverSimilarCompositions(taskCount, dependencyCount, 'successful high-performance');
+    const similar = await this.discoverSimilarCompositions(
+      taskCount,
+      dependencyCount,
+      'successful high-performance'
+    );
 
     if (similar.length === 0) {
       return [];
@@ -146,21 +164,30 @@ export class WorkflowRegistrationService {
 
   private calculateCompositionComplexity(metadata: WorkflowMetadata): number {
     const taskCount = metadata.tasks.length;
-    const dependencyCount = metadata.tasks.reduce((sum, task) => sum + (task.dependsOn?.length || 0), 0);
+    const dependencyCount = metadata.tasks.reduce(
+      (sum, task) => sum + (task.dependsOn?.length || 0),
+      0
+    );
 
     return dependencyCount / Math.max(taskCount, 1);
   }
 
-  private generateSuggestions(proposed: WorkflowComposition, similar: CompositionPattern[]): CompositionSuggestion[] {
+  private generateSuggestions(
+    proposed: WorkflowComposition,
+    similar: CompositionPattern[]
+  ): CompositionSuggestion[] {
     const suggestions: CompositionSuggestion[] = [];
 
     // Find common patterns in successful compositions
-    const avgComplexity = similar.reduce((sum, p) => sum + p.composition.complexity, 0) / similar.length;
+    const avgComplexity =
+      similar.reduce((sum, p) => sum + p.composition.complexity, 0) / similar.length;
 
     if (proposed.complexity > avgComplexity * 1.5) {
       suggestions.push({
         type: 'simplify',
-        message: `Composition complexity (${proposed.complexity.toFixed(2)}) is higher than similar successful workflows (${avgComplexity.toFixed(2)})`,
+        message: `Composition complexity (${proposed.complexity.toFixed(
+          2
+        )}) is higher than similar successful workflows (${avgComplexity.toFixed(2)})`,
         recommendation: 'Consider breaking into smaller workflows or reducing dependencies',
       });
     }
@@ -249,7 +276,10 @@ export class FunctionalWorkflowService {
    * Execute workflow with agent tracking
    * Phase 2: Workflows tracked as agents
    */
-  async executeWorkflow<TState>(workflowName: string, options: WorkflowExecutionOptions = {}): Promise<WorkflowExecutionResult<TState>> {
+  async executeWorkflow<TState>(
+    workflowName: string,
+    options: WorkflowExecutionOptions = {}
+  ): Promise<WorkflowExecutionResult<TState>> {
     // 1. Get workflow's learned patterns (non-blocking on failure)
     const workflowContext = await this.getWorkflowContext(workflowName, options).catch((error) => {
       this.logger.debug('No workflow context available:', error);
@@ -275,7 +305,10 @@ export class FunctionalWorkflowService {
    * Get workflow agent context
    * Phase 2: Retrieve workflow's learned patterns
    */
-  private async getWorkflowContext(workflowName: string, options: WorkflowExecutionOptions): Promise<AgentMemoryContext | null> {
+  private async getWorkflowContext(
+    workflowName: string,
+    options: WorkflowExecutionOptions
+  ): Promise<AgentMemoryContext | null> {
     if (!this.memoryAdapter) return null;
 
     const state: AgentState = {
@@ -293,7 +326,11 @@ export class FunctionalWorkflowService {
   /**
    * Execute workflow with learned optimizations
    */
-  private async executeWorkflowLogic<TState>(workflowName: string, options: WorkflowExecutionOptions, context: AgentMemoryContext | null): Promise<WorkflowExecutionResult<TState>> {
+  private async executeWorkflowLogic<TState>(
+    workflowName: string,
+    options: WorkflowExecutionOptions,
+    context: AgentMemoryContext | null
+  ): Promise<WorkflowExecutionResult<TState>> {
     // Apply learned optimizations from context
     const enhancedOptions = context ? this.applyLearnedOptimizations(options, context) : options;
 
@@ -304,9 +341,14 @@ export class FunctionalWorkflowService {
   /**
    * Apply learned optimizations from agent context
    */
-  private applyLearnedOptimizations(options: WorkflowExecutionOptions, context: AgentMemoryContext): WorkflowExecutionOptions {
+  private applyLearnedOptimizations(
+    options: WorkflowExecutionOptions,
+    context: AgentMemoryContext
+  ): WorkflowExecutionOptions {
     // Extract successful patterns
-    const successfulExecutions = context.agentMemories.filter((m) => m.success === true).slice(0, 5);
+    const successfulExecutions = context.agentMemories
+      .filter((m) => m.success === true)
+      .slice(0, 5);
 
     if (successfulExecutions.length === 0) {
       return options;
@@ -321,7 +363,8 @@ export class FunctionalWorkflowService {
   }
 
   private calculateOptimalTimeout(executions: any[]): number {
-    const avgExecutionTime = executions.reduce((sum, exec) => sum + (exec.executionTime || 5000), 0) / executions.length;
+    const avgExecutionTime =
+      executions.reduce((sum, exec) => sum + (exec.executionTime || 5000), 0) / executions.length;
 
     // Set timeout to 2x average execution time
     return Math.ceil(avgExecutionTime * 2);
@@ -331,7 +374,11 @@ export class FunctionalWorkflowService {
    * Store workflow execution as agent
    * Phase 2: storeAgentExecution for workflows
    */
-  private async storeWorkflowExecution(workflowName: string, result: WorkflowExecutionResult<any>, executionTime: number): Promise<void> {
+  private async storeWorkflowExecution(
+    workflowName: string,
+    result: WorkflowExecutionResult<any>,
+    executionTime: number
+  ): Promise<void> {
     const state: AgentState = {
       messages: [],
       metadata: {

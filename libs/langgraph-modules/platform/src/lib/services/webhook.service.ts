@@ -34,7 +34,10 @@ export class WebhookService {
   /**
    * Update webhook
    */
-  async update(webhookId: string, request: UpdateWebhookRequest): Promise<Webhook> {
+  async update(
+    webhookId: string,
+    request: UpdateWebhookRequest
+  ): Promise<Webhook> {
     this.logger.log(`Updating webhook: ${webhookId}`);
     return this.client.patch<Webhook>(`/webhooks/${webhookId}`, request);
   }
@@ -57,7 +60,9 @@ export class WebhookService {
   /**
    * Test webhook delivery
    */
-  async test(webhookId: string): Promise<{ success: boolean; message?: string }> {
+  async test(
+    webhookId: string
+  ): Promise<{ success: boolean; message?: string }> {
     this.logger.log(`Testing webhook: ${webhookId}`);
     return this.client.post<{ success: boolean; message?: string }>(
       `/webhooks/${webhookId}/test`

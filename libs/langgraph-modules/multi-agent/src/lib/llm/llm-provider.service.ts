@@ -371,8 +371,7 @@ export class LlmProviderService {
       case 'openai':
       default:
         hasApiKey = !!(
-          this.options.defaultLlm?.openaiApiKey ||
-          process.env.OPENAI_API_KEY
+          this.options.defaultLlm?.openaiApiKey || process.env.OPENAI_API_KEY
         );
         keyName = 'openaiApiKey';
         break;

@@ -1,9 +1,9 @@
 /**
  * Enhanced Error Hierarchy for Business Workflows Module
- * 
+ *
  * Provides comprehensive error handling with context preservation,
  * proper error categorization, and recovery guidance.
- * 
+ *
  * Follows enterprise error handling patterns:
  * - Specific error types for different failure scenarios
  * - Context preservation for debugging
@@ -17,7 +17,12 @@
  */
 export abstract class BusinessWorkflowError extends Error {
   public readonly errorCode: string;
-  public readonly category: 'agent' | 'workflow' | 'integration' | 'validation' | 'configuration';
+  public readonly category:
+    | 'agent'
+    | 'workflow'
+    | 'integration'
+    | 'validation'
+    | 'configuration';
   public readonly severity: 'low' | 'medium' | 'high' | 'critical';
   public readonly context: Record<string, any>;
   public readonly timestamp: Date;
@@ -283,13 +288,10 @@ export class GitHubIntegrationError extends ExternalServiceError {
     statusCode?: number,
     context: Record<string, any> = {}
   ) {
-    super(
-      'GitHub',
-      operation,
-      `${reason} for user '${username}'`,
-      statusCode,
-      { username, ...context }
-    );
+    super('GitHub', operation, `${reason} for user '${username}'`, statusCode, {
+      username,
+      ...context,
+    });
     // Note: errorCode is set by parent ExternalServiceError constructor
   }
 
@@ -630,12 +632,7 @@ export class BusinessWorkflowErrorFactory {
 
       default:
         // Default to agent execution error
-        return new AgentExecutionError(
-          'unknown',
-          'general',
-          message,
-          context
-        );
+        return new AgentExecutionError('unknown', 'general', message, context);
     }
   }
 

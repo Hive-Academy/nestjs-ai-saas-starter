@@ -2,11 +2,7 @@ import { Logger, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type {
-  WorkflowState,
-  Command,
-  WorkflowError
-} from '../interfaces';
+import type { WorkflowState, Command, WorkflowError } from '../interfaces';
 import { WorkflowCommandType } from '../constants';
 
 /**
@@ -33,7 +29,10 @@ export interface AgentNodeConfig {
  * Base class for all agent nodes in a workflow
  * Provides common functionality for LLM interaction, error handling, and state management
  */
-export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState> implements OnModuleInit {
+export abstract class AgentNodeBase<
+  TState extends WorkflowState = WorkflowState
+> implements OnModuleInit
+{
   protected readonly logger: Logger;
   protected readonly eventEmitter?: EventEmitter2;
 
@@ -74,12 +73,16 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    * Execute the node logic
    * Nodes can return either a state update or a Command for control flow
    */
-  public abstract execute(state: TState): Promise<Partial<TState> | Command<TState>>;
+  public abstract execute(
+    state: TState
+  ): Promise<Partial<TState> | Command<TState>>;
 
   /**
    * Execute with hooks and error handling
    */
-  public async executeWithHooks(state: TState): Promise<Partial<TState> | Command<TState>> {
+  public async executeWithHooks(
+    state: TState
+  ): Promise<Partial<TState> | Command<TState>> {
     try {
       // Pre-execution
       await this.preExecute(state);
@@ -136,7 +139,9 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   protected async initializeLLM(): Promise<void> {
     // Override in subclasses to provide LLM initialization
     // This is where you'd inject your LLM provider service
-    this.logger.warn('LLM required but not initialized - override initializeLLM()');
+    this.logger.warn(
+      'LLM required but not initialized - override initializeLLM()'
+    );
     return Promise.resolve();
   }
 
@@ -171,7 +176,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected async postExecute(
     state: TState,
-    result: Partial<TState> | Command<TState>,
+    result: Partial<TState> | Command<TState>
   ): Promise<void> {
     this.logger.debug(`Post-executing node ${this.nodeConfig.id}`);
 
@@ -192,15 +197,14 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected async withTimeout<T>(
     promise: Promise<T>,
-    timeoutMs: number,
+    timeoutMs: number
   ): Promise<T> {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) => {
-        setTimeout(
-          () => { reject(new Error(`Node timeout after ${timeoutMs}ms`)); },
-          timeoutMs,
-        );
+        setTimeout(() => {
+          reject(new Error(`Node timeout after ${timeoutMs}ms`));
+        }, timeoutMs);
       }),
     ]);
   }
@@ -210,11 +214,11 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected async handleError(
     error: Error,
-    state: TState,
+    state: TState
   ): Promise<Command<TState>> {
     this.logger.error(
       `Error in node ${this.nodeConfig.id}: ${error.message}`,
-      error.stack,
+      error.stack
     );
 
     const workflowError: WorkflowError = {
@@ -283,7 +287,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
       'econnrefused',
       'etimedout',
     ];
-    return recoverableKeywords.some(keyword => message.includes(keyword));
+    return recoverableKeywords.some((keyword) => message.includes(keyword));
   }
 
   /**
@@ -316,7 +320,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected createCommand(
     type: WorkflowCommandType,
-    options: Partial<Command<TState>> = {},
+    options: Partial<Command<TState>> = {}
   ): Command<TState> {
     return {
       type,
@@ -332,10 +336,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
   /**
    * Create a goto command
    */
-  protected goto(
-    target: string,
-    update?: Partial<TState>,
-  ): Command<TState> {
+  protected goto(target: string, update?: Partial<TState>): Command<TState> {
     return this.createCommand(WorkflowCommandType.GOTO, {
       goto: target,
       update,
@@ -396,7 +397,7 @@ export abstract class AgentNodeBase<TState extends WorkflowState = WorkflowState
    */
   protected async checkApproval(
     state: TState,
-    nextNode: string,
+    nextNode: string
   ): Promise<Command<TState>> {
     if (this.requiresApproval(state)) {
       this.logger.log('Routing to human approval');
