@@ -241,20 +241,107 @@ task-tracking/
     └── future-enhancements.md # Future work
 ```
 
-### Git Operations
+### Git Operations & Commit Standards
+
+**CRITICAL**: All commits MUST follow commitlint rules to pass pre-commit hooks.
+
+#### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer]
+```
+
+#### Allowed Types (REQUIRED)
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style (formatting, no logic change)
+- `refactor`: Code restructuring (no bug fix or feature)
+- `perf`: Performance improvements
+- `test`: Adding/updating tests
+- `build`: Build system/dependency changes
+- `ci`: CI configuration changes
+- `chore`: Maintenance tasks (no src/test changes)
+- `revert`: Revert previous commit
+
+#### Allowed Scopes (REQUIRED)
+
+- `chromadb`: ChromaDB library changes
+- `neo4j`: Neo4j library changes
+- `langgraph`: LangGraph modules changes
+- `deps`: Dependency updates
+- `release`: Release-related changes
+- `ci`: CI/CD changes
+- `docs`: Documentation changes
+- `hooks`: Git hooks changes
+- `scripts`: Script changes
+- `angular-3d`: Angular 3D UI changes
+
+#### Commit Rules (ENFORCED)
+
+- ✅ Type: lowercase, required, from allowed list
+- ✅ Scope: lowercase, required, from allowed list
+- ✅ Subject:
+  - lowercase only (NOT Sentence-case, Start-case, UPPER-CASE)
+  - 3-72 characters
+  - No period at end
+  - Imperative mood ("add" not "added")
+- ✅ Header: max 100 characters total
+- ✅ Body/Footer lines: max 100 characters each
+
+#### Valid Examples
+
+```bash
+feat(chromadb): add semantic search for documents
+fix(neo4j): resolve connection timeout issue
+docs(langgraph): update workflow examples
+refactor(hooks): simplify pre-commit validation
+chore(deps): update langchain to v0.3.30
+```
+
+#### Invalid Examples (WILL FAIL)
+
+```bash
+❌ "Feature: Add search" # Wrong type, wrong case
+❌ "feat: Add search"    # Missing scope
+❌ "feat(search): Add search" # Invalid scope, wrong case
+❌ "feat(chromadb): Add search." # Period at end
+❌ "feat(chromadb): Add Search" # Uppercase in subject
+```
+
+#### Branch & PR Operations
 
 ```bash
 # New task (orchestrator handles this)
-git checkout -b feature/XXX
-git push -u origin feature/XXX
+git checkout -b feature/TASK_2025_XXX
+git push -u origin feature/TASK_2025_XXX
 
 # Continue task
-git checkout feature/XXX
-git pull origin feature/XXX --rebase
+git checkout feature/TASK_2025_XXX
+git pull origin feature/TASK_2025_XXX --rebase
+
+# Commit changes
+git add .
+git commit -m "type(scope): description"
 
 # Complete task (orchestrator handles this)
-gh pr create --title "feat(TASK_XXX): description"
+gh pr create --title "type(scope): description"
 ```
+
+#### Pre-commit Checks
+
+All commits automatically run:
+
+1. **lint-staged** (no auto-stash): Format & lint staged files
+2. **typecheck:affected**: Type-check changed libraries
+3. **commitlint**: Validate commit message format
+
+If pre-commit fails, manually fix issues before retrying commit.
 
 ---
 
